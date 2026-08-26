@@ -21,6 +21,8 @@ subsystem that is not here yet.
 | Page | What it covers |
 | --- | --- |
 | [What this is for](Manifest.md) | The pitch, what each line of it means, and where it stands |
+| [Screens](Screens.md) | The shell: the status band, the splash, the menu, and adding a screen |
 | [The link](Link.md) | The frame, the page and register model, the decoder, and what the wire costs |
 | [Safety](Safety.md) | The heartbeat, and the three independent ways this bench stops |
+| [Performance](Performance.md) | Why the frame rate is what it is, and the two findings that shape every screen |
 | [Building](Building.md) | The tree, the three toolchains, and what CI checks |

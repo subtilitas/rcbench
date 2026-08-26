@@ -138,3 +138,39 @@ void ui_icon_sliders(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
                               size / 7, size / 5, 3, color);
     }
 }
+
+/*
+ * A cell with its terminal and three bars.  Three rather than four because at
+ * 30 px a fourth bar is two pixels wide and reads as noise.
+ */
+void ui_icon_battery(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
+{
+    const int w = size;
+    const int h = (size * 3) / 5;
+    const int left = x - w / 2;
+    const int top  = y - h / 2;
+
+    gfx_draw_round_rect(c, left, top, w - 3, h, 2, color);
+    gfx_fill_rect(c, left + w - 3, y - h / 6, 3, h / 3, color);
+
+    const int bw = (w - 3 - 10) / 3;
+    for (int i = 0; i < 3; ++i) {
+        gfx_fill_rect(c, left + 4 + i * (bw + 1), top + 4, bw, h - 8, color);
+    }
+}
+
+/*
+ * A disc with an out-of-balance mass and the arc it sweeps: the imbalance is
+ * the point, so it is drawn off-centre rather than as a tidy wheel.
+ */
+void ui_icon_balance(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
+{
+    const int r = size / 2;
+    gfx_draw_circle(c, x, y, r, color);
+    gfx_draw_circle(c, x, y, r / 4, color);
+    /* The heavy spot, up and to the right. */
+    gfx_fill_circle(c, x + (r * 5) / 8, y - (r * 5) / 8, r / 4, color);
+    /* Two ticks opposite it, where the correction goes. */
+    gfx_fill_rect(c, x - (r * 3) / 4, y + (r * 2) / 3, r / 3, 2, color);
+    gfx_fill_rect(c, x - (r * 2) / 3, y + (r * 3) / 4, 2, r / 3, color);
+}
