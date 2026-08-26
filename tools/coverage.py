@@ -39,6 +39,13 @@ TRACKED = [
     "shared/gfx/gfx.c",
     "shared/touch/touch_map.c",
     "shared/ui/ui_theme.c",
+    "shared/ui/ui_widgets.c",
+    "shared/ui/ui_icons.c",
+    "shared/ui/ui_band.c",
+    "shared/ui/ui_router.c",
+    "shared/ui/splash_screen.c",
+    "shared/ui/overview_screen.c",
+    "shared/ui/stub_screen.c",
     "shared/settings/settings.c",
     "shared/logfile/log_numbers.c",
     "shared/logfile/log_csv.c",
@@ -54,13 +61,6 @@ TRACKED = [
 # not a decision -- see check_tracked_is_complete().
 UNTRACKED_OK = {
     "greatest.h",
-    # Ported and compiled, but nothing exercises them yet: their cases lived in
-    # test_ui, which covers the bench screen, and the screens are being re-cut.
-    # Listing them in TRACKED would put two permanent 0.0% rows in the README
-    # and drag the total down to describe a gap in the *tests* as if it were a
-    # gap in the code.  They go back in TRACKED with the suite that drives them.
-    "ui_widgets.c",
-    "ui_icons.c",
     # Test scaffolding, not code under test.  A fake wire at 100% would say
     # nothing about the firmware and would dilute the number that does.
     "fake_wire.c",

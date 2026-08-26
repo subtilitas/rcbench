@@ -25,6 +25,8 @@ void ui_icon_chart(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
 void ui_icon_record(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
 void ui_icon_chip(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
 void ui_icon_sliders(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
+void ui_icon_battery(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
+void ui_icon_balance(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
 
 #ifdef __cplusplus
 }
