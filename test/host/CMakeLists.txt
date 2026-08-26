@@ -44,7 +44,7 @@ endforeach()
 
 enable_testing()
 
-foreach(suite gfx touch_map settings logfile link_crc link_frame)
+foreach(suite gfx touch_map settings logfile link_crc link_frame link_pages link_watchdog)
     add_executable(test_${suite} test_${suite}.c)
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
