@@ -31,7 +31,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build gcc fonts-dejavu-core
+            cmake ninja-build gcc fonts-dejavu-core valgrind
           python3 -m pip install --upgrade pillow
 
       - name: Unit tests
@@ -53,11 +53,23 @@ jobs:
       - name: The docs agree with the tree
         run: python3 tools/check_docs.py
 
-      # Not run yet: render_ui.py --check and frame_cost.py.  Both need the
-      # screens, which are being re-cut against the two-processor model.  They
-      # come back to this job with them -- listed here rather than silently
-      # absent, because a check that quietly stopped running is worse than one
-      # that was never added.
+      # Frame rate on this panel is bandwidth-bound, so the thing worth
+      # guarding against regression is cache-line traffic per frame, not
+      # wall-clock on a runner that shares nothing with an ESP32-S3.  The
+      # ceiling is near the cost of a full-screen clear: a screen that exceeds
+      # it is repainting everything, which is the mistake worth catching here
+      # rather than on hardware.
+      - name: Frame cost has not regressed
+        run: python3 tools/frame_cost.py frame overview --max-lines 12000
+
+      - name: The frame-cost table in the docs is current
+        run: python3 tools/frame_cost.py --check-doc
+
+      # The screens are rendered by the same code the panel runs, so a golden
+      # image is a real check on what they look like -- not a substitute for
+      # the unit tests, which cover what they decide.
+      - name: The committed screenshots match the current render
+        run: python3 tools/render_ui.py --check
 
       - uses: actions/upload-artifact@v7
         if: always()
