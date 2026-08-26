@@ -48,7 +48,7 @@ set(FAKES "${CMAKE_CURRENT_SOURCE_DIR}/fakes/fake_wire.c")
 
 enable_testing()
 
-foreach(suite gfx touch_map nav settings logfile link_crc link_frame link_pages link_watchdog link_loopback)
+foreach(suite gfx touch_map nav widgets settings logfile link_crc link_frame link_pages link_watchdog link_loopback)
     add_executable(test_${suite} test_${suite}.c ${FAKES})
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE
