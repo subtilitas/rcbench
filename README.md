@@ -80,7 +80,7 @@ voltage batched to 100 Hz, decoded ESC frames and an accelerometer burst come to
 | Locale-tolerant CSV and number parsing | inherited | **ported**, with its fixtures |
 | Board, display, GT911, SD storage | inherited | to port as-is |
 | Golden-image renderer, coverage, doc and frame-cost checks | inherited | to port as-is |
-| **The link codec** | new | framing, the page/register envelope and a resynchronising decoder, written and tested; the page map and both watchdogs next |
+| **The link codec** | new | framing, the page map, the dispatcher and both watchdogs, written and tested; the UART transports next |
 | **The safety heartbeat** | new | not written |
 | Splash, overview, bench, settings and log-viewer screens | re-cut | against the two-processor model |
 | Coprocessor firmware | new | builds in CI with the codec linked in; the failsafe and the PIO assembler proven on the host; only the UART transport is untested silicon |
@@ -172,7 +172,9 @@ same problem for a decade:
   command cannot queue behind a telemetry burst *by construction*.
 - **Two watchdogs, the tighter one on the coprocessor.** It fills failsafe
   values after 200 ms of silence on its own authority; the host escalates after
-  a second.
+  a second. **Traffic returning does not lift the failsafe** — a link that
+  recovers is not consent to spin a propeller, so leaving it takes a deliberate
+  write of a known value to the control page.
 - **The coprocessor protects hardware without asking** — overcurrent,
   over-temperature, stall timeout, lost link — and reports what it did at the
   next poll. It never waits for permission to fail safe.
@@ -194,18 +196,18 @@ test before the decoder was written, and the first decoder failed it.
 The protocol is rate-agnostic. The schedule that uses it is not, and the bench
 and the finished board are not the same wire.
 
-The finished board runs the panel's own RS485 interface at **1.5 Mbaud with
-automatic direction control**. The module build — where the protocol firmware
-is actually being written — runs a breakout at **128 or 256 kbaud with an
-explicit direction pin**. Twelvefold, so anything that merely fits at 1.5 Mbaud
-has to be checked against the bring-up rate before it is relied on. 8N1 is ten
-bits per byte:
+The finished board runs at **1.5 Mbaud**; the module build, where the protocol
+firmware is actually being written, runs at **256 kbaud**. Sixfold, so anything
+that merely fits at 1.5 Mbaud has to be checked against the bring-up rate
+before it is relied on. 8N1 is ten bits per byte:
 
 | | 128 kbaud | 256 kbaud | 1.5 Mbaud |
 | --- | ---: | ---: | ---: |
 | Throughput | 12.8 kB/s | 25.6 kB/s | 187.5 kB/s |
 | A whole-page poll (8 + 72 bytes) | 6.25 ms | 3.13 ms | 0.53 ms |
 | Whole-page polls per second | **160** | 320 | 1875 |
+
+**128 kbaud is not used, on the schematic's evidence — see below.**
 
 **This is what makes "nothing raw crosses" load-bearing rather than tidy.** The
 research budgeted four channels of current and voltage at 1 kHz batched into
@@ -230,29 +232,57 @@ them — so moving from the bench to the finished board is a constant, not a
 rewrite. A `#error` there fires if a future page grows the frame past what the
 bring-up link's budget allows.
 
-### The two ends are not symmetric
+### What the schematic settles
 
-The panel uses **its own on-board RS485 interface**, which Waveshare document as
-having automatic transmit/receive control, with A and B leaving on a PH2.0
-terminal. So the panel drives no direction line, needs no transceiver wired to
-it, and has no 5 V logic anywhere near it. GPIO6 stays the heartbeat and 43/44
-stay free.
+Read off the board schematic rather than inferred, and it closes three open
+questions and overturns one assumption.
 
-The coprocessor end is a **MAX485 breakout with an explicit DE/RE pin**, which
-the RP2350 drives. That is the easier half — the turnaround is under firmware
-control rather than being a property of an RC circuit — and its one trap is
-the familiar one: do not release the driver until the last stop bit has left
-the shift register.
+**The panel's RS485 is real, and it is 3.3 V.** U6 is an **SP3485EN** on
+**GPIO16 (TX) and GPIO15 (RX)** — the opposite of the obvious reading, and the
+schematic's own pin table does not settle it: that table calls GPIO15
+`RS485_TX`, which is the naming of the *transceiver's* data directions, not the
+ESP32's. The connectivity settles it twice over. GPIO15 reaches U6 pin 1, `RO`
+— the receiver's *output*, which the ESP32 cannot drive. GPIO16 reaches pin 4,
+`DI`, and also the input of the buffer that operates the direction line, and an
+automatic-direction circuit only makes sense watching the line the ESP32
+transmits on.
 
-So the transport is written for both, because it has to be: automatic
-direction on one end, an explicit pin on the other, one protocol between them.
+**GPIO6 reaches a connector.** It is on **J8**, a three-pin header carrying
+3V3, GND and GPIO6 and nothing else — a rail and a ground beside it, which is
+exactly what a monostable on a small daughterboard wants. The pin table lists
+GPIO6 against no peripheral at all: the one genuinely uncommitted fast pin.
 
-**The turnaround is still not modelled**, because it is a property of a part
-rather than of arithmetic. An automatic-direction circuit holds its driver
-enabled for a fixed time after the last edge, which puts a floor under bus
-turnaround. Now that the panel's own interface is the one carrying the bench
-link, that floor is measurable today rather than at the end — and it is on the
-finished board too, so it is worth measuring early.
+**The direction circuit is an RC one-shot, and it sets a floor rather than a
+ceiling.** An SN74LVC1G125 follows the transmit line and charges C51 (1 nF)
+through R76 (200 kΩ); the gate turns on Q1, which pulls DE and /RE low against
+R79's 1 kΩ pull-up, and a Schottky across R76 dumps the gate the instant the
+line falls. So the driver enables on the first start bit and releases only
+after the line has been high long enough to reach the FET's threshold —
+72 µs at Vth = 1.0 V, 179 µs at 2.0 V.
+
+That has a consequence nobody was looking for. The longest run of high bits
+inside an 8N1 frame is nine bit times, and **if that run outlasts the hold, the
+driver switches off mid-frame and the rest of the transmission never reaches
+the bus.** Nine bit times must fit inside the worst-case 72 µs, which puts a
+floor at about **125,000 baud**. 1.5 Mbaud clears it twelvefold and 256 kbaud
+twofold; **128 kbaud clears it by two percent, which is not a margin** — so the
+bring-up rate is 256 kbaud, and `link_wire.h` has an `#error` for anything
+below the floor.
+
+The record previously carried this as an open question about a possible baud
+*ceiling*. There is no ceiling; there is a floor, and the rate that was nearly
+chosen sits on it.
+
+**And the far end must not answer too early.** The hold runs from the last
+*falling* edge rather than the end of the frame — a final byte of `0xFF` starts
+its hold nine bit times early — so the coprocessor waits a conservative 200 µs
+after the last received byte. At 1.5 Mbaud that is 37% on top of a whole-page
+transaction; at 256 kbaud, 6%.
+
+The coprocessor's own end is a MAX485 breakout with an explicit DE/RE pin,
+which is the easier half: the turnaround is under firmware control, and its one
+trap is not releasing the driver until the last stop bit has left the shift
+register.
 
 ## The safety line is a heartbeat, not an enable
 
@@ -308,8 +338,9 @@ start from it rather than a bare `menuconfig`.
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them, opens a release |
 
-Six binaries, each printing one line per case: `test_gfx`, `test_touch_map`,
-`test_settings`, `test_logfile`, `test_link_crc` and `test_link_frame`. The
+Eight binaries, each printing one line per case: `test_gfx`, `test_touch_map`,
+`test_settings`, `test_logfile`, `test_link_crc`, `test_link_frame`,
+`test_link_pages` and `test_link_watchdog`. The
 harness is `test/host/greatest.h`, about a hundred lines, with nothing
 vendored. `tools/check_docs.py` holds that list to this file — a page in the
 predecessor said *seven* for two releases after it was ten, and nobody reads a
@@ -334,7 +365,9 @@ find.
 | `shared/logfile/log_fields.c` | 46 | 45 | 97.8% |
 | `shared/link/link_crc.c` | 7 | 7 | 100.0% |
 | `shared/link/link_frame.c` | 112 | 107 | 95.5% |
-| **total** | **1869** | **1746** | **93.4%** |
+| `shared/link/link_dev.c` | 69 | 66 | 95.7% |
+| `shared/link/link_host.c` | 69 | 63 | 91.3% |
+| **total** | **2007** | **1875** | **93.4%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -355,19 +388,22 @@ CRC against bit-flipped frames, resynchronisation after truncation and injected
 noise so that a corrupt frame is **never** accepted, the watchdog transition
 against a mock clock, and register round-trips at both ends of every range.
 
-## Six things this repository has not yet settled
+## What is still unsettled
 
-The research behind the split is thorough, but a record is not a measurement,
-and a part on the bench is not the part on the schematic.
+Three of the six things this list carried were closed by the board schematic —
+the RS485 pins, whether GPIO6 reaches a connector, and the direction circuit's
+turnaround, all of which are now written up under
+[what the schematic settles](#what-the-schematic-settles). A fourth was closed
+by being answered wrongly: the question was which end set a baud *ceiling*, and
+there is no ceiling.
 
-| Claim | Where it stands |
+Two remain, and one is new.
+
+| | Where it stands |
 | --- | --- |
-| RS485 on the panel's **GPIO15/16**, with automatic direction control | Waveshare's documentation says so and lists no direction pin; the expander's bit assignments corroborate it by omission. But the inherited pin map claims neither pin, so it is unconfirmed here. GPIO 6, 15, 16, 19, 20, 43 and 44 are what the panel does not already own, which is at least consistent. **This is now load-bearing rather than incidental** — the bench link runs on that interface, so it is the first thing to check on the board rather than something to confirm later. |
-| **Which end sets the bench's baud ceiling** | The bench runs at 128 or 256 kbaud against a target of 1.5 Mbaud, and the reason was the cheap transceiver. With the breakout moved to the coprocessor end and driven by an explicit DE pin, the MAX485 itself is good well past 1.5 Mbaud — so if something is holding the bench to 128 k it may be the panel's *automatic-direction* circuit, which does not go away on the finished board. Worth establishing which, because the answer decides whether 1.5 Mbaud is a target or an assumption. |
-| **GPIO6 reaches a connector** | The wiki describes a PH2.0 header carrying ADC, CAN, I²C and RS485 without naming the ADC pin. If it does not reach one, the fallback is to *watch* SCL rather than drive a line — continuous traffic on that bus **is** the touch controller being polled, which is precisely what the heartbeat exists to prove. |
-| The auto-direction circuit's **turnaround time** | Unmeasured, and it puts a floor under bus turnaround. The first thing to check if the link misbehaves, and the reason not to raise the baud rate past what the traffic needs. |
-| **The MAX485 breakout's 5 V against the RP2350's power-up order** | The breakout sits at the coprocessor end, where Bank 0 *is* 5 V tolerant — but only **while the 3.3 V rail is up**. On a module build the 5 V rail (VBUS or VSYS) comes up first and the module's own regulator follows, which is exactly the wrong order: at every power-on the transceiver can drive 5 V into an unpowered input. A series resistor of about 2.2 kΩ on RO into the RX pin bounds the clamp current and costs 11 ns of edge at 5 pF — invisible even at 1.5 Mbaud. Unresolved only in the sense that the part is not fitted yet. |
 | **INA228** is the sensing part | Right on merit — 85 V, twenty bits, charge and energy accumulated in hardware — but back-ordered into January 2027, and the obvious substitute stops at 36 V, which is under 8S. Check the INA238 before a layout commits to it. |
+| **The MAX485 breakout's 5 V against the RP2350's power-up order** | The breakout sits at the coprocessor end, where Bank 0 *is* 5 V tolerant — but only while the 3.3 V rail is up. On a module build the 5 V rail comes up first, so at every power-on the transceiver can drive 5 V into an unpowered input. A 2.2 kΩ series resistor on RO bounds the clamp current and costs eleven nanoseconds of edge. Unresolved only in the sense that the part is not fitted yet. |
+| **Q1's threshold voltage is not on the schematic** | The direction circuit's hold time — and therefore the baud floor — depends on it, and the schematic names R76, C51, D7 and R79 but not the FET. The floor is quoted from the pessimistic end of a plausible range (1.0 V → 72 µs → 125 kbaud). Worth one measurement: scope DE against TX at 256 kbaud and read the release directly. |
 
 ## What is deliberately not built
 

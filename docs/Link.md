@@ -112,29 +112,101 @@ derives its rates from the configured baud rather than hardcoding them, so
 moving between the two wires is a constant and not a rewrite. An `#error` there
 fires if a future page grows the frame past what the bring-up link can afford.
 
-## The two ends are not symmetric
+## The two ends, from the schematic
 
-The panel uses **its own on-board RS485 interface**, which Waveshare document as
-having automatic transmit/receive control, with A and B leaving on a PH2.0
-terminal. It drives no direction line and has no 5 V logic near it.
+Read off the board schematic (ESP32-S3-Touch-LCD-7B, May 2025) rather than
+inferred from documentation.
 
-The coprocessor end is a **MAX485 breakout with an explicit DE/RE pin**. That is
+**The panel.** U6 is an **SP3485EN** — a 3.3 V transceiver, so no level
+shifting and no 5 V anywhere near the module — on **GPIO16 (TX)** and
+**GPIO15 (RX)**.
+
+That direction is the opposite of the obvious reading, and the schematic's own
+pin table does not settle it: the table calls GPIO15 `RS485_TX`, which names
+the *transceiver's* data directions rather than the ESP32's. The connectivity
+settles it twice. GPIO15 reaches U6 pin 1, `RO` — the receiver's output, which
+the ESP32 cannot drive, so GPIO15 is an input. GPIO16 reaches pin 4, `DI`, and
+also the input of the buffer that operates the direction line — and an
+automatic-direction circuit only makes sense watching the line the ESP32
+transmits on.
+
+`RO` carries a 4.7 kΩ pull-up to the transceiver rail, so the panel's RX idles
+high while the receiver is disabled and no spurious start bit appears during
+its own transmission.
+
+**The coprocessor** is a MAX485 breakout with an explicit DE/RE pin. That is
 the easier half — the turnaround is under firmware control rather than a
-property of an RC circuit — and its one trap is the familiar one: do not release
-the driver until the last stop bit has left the shift register.
+property of an RC circuit — and its one trap is the familiar one: do not
+release the driver until the last stop bit has left the shift register.
 
-Two things about that arrangement are not settled and are in the README's open
-list. An automatic-direction circuit holds its driver enabled for a fixed time
-after the last edge, which puts a floor under bus turnaround that has to be
-measured rather than assumed. And the breakout's 5 V receiver output is safe on
-the RP2350's Bank 0 only *while the 3.3 V rail is up*, which on a module build
-is not the order the rails come up in.
+### The direction circuit sets a floor, not a ceiling
+
+```
+  TX ──▶ SN74LVC1G125 ──▶ ──[ R76 200k ]── ┬── gate ──▶ Q1 ──▶ DE + /RE
+         (/OE to GND)      ◀──[ D7 ]──     │                    ▲
+                                          C51 1nF              R79 1k
+                                           │                    │
+                                          GND              RS485_VCC
+```
+
+The buffer follows the transmit line. When it falls, the Schottky dumps the
+gate charge at once, Q1 turns off, and R79 pulls DE and /RE high — the driver
+is enabled on the first start bit. When the line goes high, C51 charges through
+R76 and the driver releases only once the gate reaches the FET's threshold:
+
+    t = −R76 · C51 · ln(1 − Vth / 3.3)
+
+| Vth | hold |
+| ---: | ---: |
+| 1.0 V | 72 µs |
+| 1.5 V | 121 µs |
+| 2.0 V | 179 µs |
+
+**The consequence nobody was looking for.** The longest run of high bits inside
+an 8N1 frame is nine bit times — eight data bits and the stop bit, with the next
+start bit low. If that run outlasts the hold, the gate crosses the threshold
+mid-frame, the driver switches off, and the rest of the transmission never
+reaches the bus.
+
+Nine bit times must fit inside the worst-case 72 µs, which puts a floor at about
+**125,000 baud**. 1.5 Mbaud clears it twelvefold and 256 kbaud twofold;
+**128 kbaud clears it by two percent**, which is why the bring-up rate is 256 k
+and why `link_wire.h` carries an `#error` for anything below the floor.
+
+This was carried in the record for a while as an open question about a possible
+baud *ceiling*. There is no ceiling.
+
+**And the far end must not answer too early.** The hold runs from the last
+*falling* edge rather than the end of the frame — a final byte of `0xFF` starts
+its hold nine bit times early — so the coprocessor waits a conservative 200 µs
+after the last received byte. At 1.5 Mbaud that is 37% on top of a whole-page
+transaction; at 256 kbaud, 6%.
+
+One number is not on the schematic: **Q1's threshold**. The parts around it are
+named — R76, C51, D7, R79 — but the FET is not, so the floor above is quoted
+from the pessimistic end of a plausible range. One measurement settles it:
+scope DE against TX at 256 kbaud and read the release directly.
 
 ## Watchdogs
 
 **Two, and the tighter one is on the coprocessor.** IOMCU's ratio is worth
 copying: the coprocessor fills failsafe values after 200 ms of silence, on its
-own authority, while the host escalates after a second.
+own authority, while the host escalates after a second — so the end holding the
+outputs is always the more suspicious of the two.
+
+**Traffic returning does not lift the failsafe.** A request arriving is proof
+the host is alive and stops the silence counter, but the failsafe is latched
+and leaving it takes a deliberate write of a known value to the control page.
+Those are different facts, and conflating them is how a bench re-arms itself
+while nobody is looking at it.
+
+**Both are wrap-safe**, and that is tested at the boundary rather than asserted.
+The failure mode is not the obvious one: `now >= then + timeout` is evaluated in
+32-bit arithmetic, so the deadline wraps along with the clock and the two agree
+perfectly *after* the turnover. They differ **before** it — while the clock is
+still large and the deadline has already wrapped small, the naive form reports
+the timeout expired the moment the deadline wrapped, firing up to a whole
+interval early with the outputs live.
 
 **The coprocessor protects hardware without asking** — overcurrent,
 over-temperature, stall timeout, lost link — and reports what it did at the next
