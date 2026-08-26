@@ -96,6 +96,16 @@ typedef struct {
     uint16_t faults;        /**< a link_fault_t bitmap; 0 is quiet          */
     uint32_t run_seconds;
     const char *mode;       /**< "DSHOT600", "SBUS", ... or NULL            */
+    /**
+     * The numbers are modelled, not measured.
+     *
+     * Set whenever telemetry comes from anywhere but the coprocessor.  The
+     * router writes SIMULATION across the whole screen when it is set, and
+     * that is deliberately not something a screen can opt out of: the risk is
+     * a simulated reading being screenshotted and quoted as a measured one,
+     * and every screen would have its own reason to think itself exempt.
+     */
+    bool simulated;
 } ui_bench_status_t;
 
 void ui_router_set_status(const ui_bench_status_t *status);

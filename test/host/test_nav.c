@@ -19,6 +19,7 @@
 #include "ui_band.h"
 #include "ui_screen.h"
 #include "ui_theme.h"
+#include "ui_watermark.h"
 #include "ui_widgets.h"
 
 #define W 800
@@ -382,6 +383,159 @@ TEST_CASE(the_alert_band_renders_at_the_bottom)
     ui_router_set_alert(NULL);
 }
 
+/* ------------------------------------------------------- the simulation mark */
+
+/*
+ * The bench is useful without hardware, and the whole danger is a modelled
+ * number being screenshotted and quoted as a measured one.  So the mark is
+ * drawn over everything, on every screen, and no screen can opt out.
+ */
+TEST_CASE(the_simulation_mark_covers_the_whole_screen)
+{
+    fresh();
+    to_overview();
+
+    ui_bench_status_t st = *ui_router_status();
+    st.simulated = false;
+    ui_router_set_status(&st);
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    ui_router_render(&cv, 0);
+    gfx_color_t *plain = malloc((size_t)W * H * sizeof(gfx_color_t));
+    memcpy(plain, fb, (size_t)W * H * sizeof(gfx_color_t));
+
+    st.simulated = true;
+    ui_router_set_status(&st);
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    ui_router_render(&cv, 0);
+
+    /*
+     * The property that matters is anti-crop: no horizontal strip and no
+     * vertical strip of the screen is free of the mark, so no crop of a
+     * photograph loses it.
+     *
+     * Not quadrants.  An earlier version of this case demanded 200 marked
+     * pixels in each of the four, which a single diagonal word does not
+     * produce -- the top-left had 51 -- and the assertion described a mark
+     * nobody had built rather than the one that was asked for.
+     *
+     * Also not asserted: ink inside the status band. The router draws the
+     * mark last, over the whole canvas, clipped to nothing; but the top 48
+     * rows are corner, and measuring zero there says something about the
+     * shape of the letters rather than about the policy.
+     */
+    const int strips = 5;
+    for (int i = 0; i < strips; ++i) {
+        int rows = 0, cols = 0;
+        for (int y = i * H / strips; y < (i + 1) * H / strips; ++y) {
+            for (int x = 0; x < W; ++x) {
+                if (fb[(size_t)y * W + x] != plain[(size_t)y * W + x]) {
+                    ++rows;
+                }
+            }
+        }
+        for (int x = i * W / strips; x < (i + 1) * W / strips; ++x) {
+            for (int y = 0; y < H; ++y) {
+                if (fb[(size_t)y * W + x] != plain[(size_t)y * W + x]) {
+                    ++cols;
+                }
+            }
+        }
+        if (rows < 100) {
+            T_FAIL("horizontal strip %d has only %d marked pixels", i, rows);
+        }
+        if (cols < 100) {
+            T_FAIL("vertical strip %d has only %d marked pixels", i, cols);
+        }
+    }
+
+    free(plain);
+}
+
+/* It blends rather than overwrites: the numbers underneath stay readable,
+ * which is what makes a permanent mark tolerable instead of something people
+ * want switched off. */
+TEST_CASE(the_simulation_mark_blends_rather_than_covers)
+{
+    fresh();
+    to_overview();
+    ui_bench_status_t st = *ui_router_status();
+
+    st.simulated = false;
+    ui_router_set_status(&st);
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    ui_router_render(&cv, 0);
+    gfx_color_t *plain = malloc((size_t)W * H * sizeof(gfx_color_t));
+    memcpy(plain, fb, (size_t)W * H * sizeof(gfx_color_t));
+
+    st.simulated = true;
+    ui_router_set_status(&st);
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    ui_router_render(&cv, 0);
+
+    const gfx_color_t ink = ui_theme_color(UI_C_TEXT);
+    int changed = 0, opaque = 0;
+    for (int i = 0; i < W * H; ++i) {
+        if (fb[i] != plain[i]) {
+            ++changed;
+            if (fb[i] == ink) {
+                ++opaque;
+            }
+        }
+    }
+    CHECK(changed > 2000);
+    /* At 15% almost nothing should reach the ink colour outright. */
+    if (opaque * 20 > changed) {
+        T_FAIL("%d of %d marked pixels are fully opaque", opaque, changed);
+    }
+    free(plain);
+}
+
+/*
+ * Screens cache their chrome per framebuffer.  Switching the mark changes
+ * pixels they believe they have already drawn correctly, so the router has to
+ * invalidate them -- otherwise the mark appears on one buffer and not the
+ * other, and on a panel that alternates between two that is a flicker rather
+ * than a watermark.
+ *
+ * The setup matters more than the assertion: both buffers are painted *before*
+ * the flag flips. An earlier version flipped it first, so each buffer was
+ * being drawn for the first time anyway and the case passed with the
+ * invalidation deleted.
+ */
+TEST_CASE(switching_the_mark_invalidates_the_cached_chrome)
+{
+    fresh();
+    to_overview();
+    ui_bench_status_t st = *ui_router_status();
+
+    st.simulated = false;
+    ui_router_set_status(&st);
+    ui_router_render(&cv, 0);
+    ui_router_render(&cv, 1);   /* both caches now warm and unmarked */
+
+    st.simulated = true;
+    ui_router_set_status(&st);
+
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    ui_router_render(&cv, 0);
+    gfx_color_t *first = malloc((size_t)W * H * sizeof(gfx_color_t));
+    memcpy(first, fb, (size_t)W * H * sizeof(gfx_color_t));
+
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    ui_router_render(&cv, 1);
+
+    /* Both buffers must be the marked screen, not one of each. */
+    CHECK_EQ(memcmp(first, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
+
+    /* And they must actually be drawn, not left as the memset. */
+    int lit = 0;
+    for (int i = 0; i < W * H; ++i) {
+        if (fb[i] != 0) { ++lit; }
+    }
+    CHECK(lit > 100000);
+    free(first);
+}
+
 int main(void)
 {
     RUN(the_router_starts_on_the_splash);
@@ -401,5 +555,8 @@ int main(void)
     RUN(a_tap_skips_the_splash_hold);
     RUN(a_failed_step_is_drawn_in_its_own_colour);
     RUN(the_alert_band_renders_at_the_bottom);
+    RUN(the_simulation_mark_covers_the_whole_screen);
+    RUN(the_simulation_mark_blends_rather_than_covers);
+    RUN(switching_the_mark_invalidates_the_cached_chrome);
     return test_summary("nav");
 }
