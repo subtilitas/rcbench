@@ -15,25 +15,36 @@ no font files.  CI runs --check so the two cannot drift apart.
 from __future__ import annotations
 
 import argparse
+import os
 import pathlib
 import sys
 
 from PIL import Image, ImageDraw, ImageFont
 
+# RCBENCH_FONT_DIR first, then the user's own font directory, then the system
+# paths.  The environment variable is not a convenience: on a machine without
+# root the system directories cannot be written, so a hardcoded list makes this
+# tool unrunnable rather than merely inconvenient -- and a --check that cannot
+# run is a check nobody notices has stopped working.
 FONT_CANDIDATES = [
-    "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
-    "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf",
+    p for p in (
+        os.path.join(os.environ["RCBENCH_FONT_DIR"], "DejaVuSansMono-Bold.ttf")
+        if os.environ.get("RCBENCH_FONT_DIR") else None,
+        os.path.expanduser("~/.local/share/fonts/DejaVuSansMono-Bold.ttf"),
+        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf",
+    ) if p
 ]
 
 # name, cell w, cell h, first, last, ttf size, dx, dy, threshold, output file
 FONTS = [
     ("gfx_font_8x16",      8, 16, 0x20, 0x7E, 13, -1, 0, 110,
-     "components/gfx/gfx_font8x16.c"),
+     "shared/gfx/gfx_font8x16.c"),
     ("gfx_font_16x28",    16, 28, 0x20, 0x7E, 26, -1, 0, 120,
-     "components/gfx/gfx_font16x28.c"),
+     "shared/gfx/gfx_font16x28.c"),
     ("gfx_font_num_24x30", 24, 30, 0x20, 0x3A, 39, -1, -8, 120,
-     "components/gfx/gfx_font_num24x30.c"),
+     "shared/gfx/gfx_font_num24x30.c"),
 ]
 
 HEADER = """/*

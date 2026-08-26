@@ -104,8 +104,13 @@ def suites() -> list[str]:
 
 
 def check_suites(problems: list[str]) -> None:
-    """Testing-and-CI.md names every binary, and counts them correctly."""
-    doc = DOCS / "Testing-and-CI.md"
+    """The README names every binary, and counts them correctly.
+
+    This lived on Testing-and-CI.md in the predecessor.  Here the README is
+    the running record, so the claim it makes about the suite is the one worth
+    holding to the tree; the page gets the check back when it is written.
+    """
+    doc = REPO / "README.md"
     text = read(doc)
     built = set(suites())
     named = set(re.findall(r"`test_(\w+)`", text))
@@ -126,47 +131,10 @@ def check_suites(problems: list[str]) -> None:
                             f"builds {len(built)}")
 
 
-def unwired_settings() -> list[str]:
-    """Schema keys no code outside the settings machinery ever reads.
-
-    settings_screen.c is excluded deliberately: showing a row is what makes an
-    unwired setting a trap rather than a placeholder, so a key the screen
-    displays and nothing else consumes is exactly what we are counting.
-    """
-    header = read(REPO / "components" / "settings" / "include" / "settings.h")
-    keys = sorted({
-        k for k in re.findall(r"\bSET_[A-Z0-9_]+\b", header)
-        if not k.startswith(("SET_CAT_", "SET_TYPE_")) and k != "SET_COUNT"
-    })
-    sources = [
-        p for d in ("main", "components")
-        for p in (REPO / d).rglob("*.[ch]")
-        if "components/settings/" not in p.as_posix()
-        and p.name != "settings_screen.c"
-    ]
-    body = "\n".join(read(p) for p in sources)
-    # A key named only inside a comment is not a consumer.
-    body = re.sub(r"/\*.*?\*/", " ", body, flags=re.S)
-    body = re.sub(r"//[^\n]*", " ", body)
-    used = set(re.findall(r"\bSET_[A-Z0-9_]+\b", body))
-    return [k for k in keys if k not in used]
-
-
-def check_settings(problems: list[str]) -> None:
-    doc = DOCS / "Settings.md"
-    text = read(doc)
-    m = re.search(r"(\w+) rows below are stored", text)
-    if not m:
-        problems.append(f"{doc.name}: no '<N> rows below are stored' sentence "
-                        "to check")
-        return
-    said = as_number(m.group(1))
-    actual = unwired_settings()
-    if said != len(actual):
-        problems.append(
-            f"{doc.name}: says {m.group(1)} rows reach no code; "
-            f"{len(actual)} do: {', '.join(actual)}")
-
+# Settings.md's "<N> rows reach no code" check and the unwired-schema scan
+# behind it are not here.  They need the settings *screen* -- showing a row is
+# what makes an unwired setting a trap rather than a placeholder -- and the
+# screen is being re-cut.  Both return with it.
 
 OPTIONS_RE = re.compile(
     r"static const char \*const (k_\w+)\s*\[\]\s*=\s*\{(.*?)\}\s*;", re.S)
@@ -175,8 +143,7 @@ OPTIONS_RE = re.compile(
 # only the ones that name user-visible choices, because those are what prose
 # enumerates and therefore what prose gets wrong.
 OPTION_SOURCES = (
-    REPO / "components" / "settings" / "settings.c",
-    REPO / "components" / "ui" / "servo_prog_screen.c",
+    REPO / "shared" / "settings" / "settings.c",
 )
 
 
@@ -218,15 +185,19 @@ def check_option_lists(problems: list[str]) -> None:
                     f"{', '.join(missing)}")
 
 
-def check_components(problems: list[str]) -> None:
-    """Building.md's tree lists every component directory."""
+def check_shared_modules(problems: list[str]) -> None:
+    """Building.md's tree lists every module under shared/.
+
+    shared/ is the one directory three build systems read, so a module that
+    exists and is undocumented is a module somebody will not know to add to
+    their build.
+    """
     doc = DOCS / "Building.md"
     text = read(doc)
-    for comp in sorted(p.name for p in (REPO / "components").iterdir()
-                       if p.is_dir()):
-        if not re.search(rf"^\s+{re.escape(comp)}/", text, re.M):
-            problems.append(f"{doc.name}: the project tree omits "
-                            f"components/{comp}/")
+    for module in sorted(p.name for p in (REPO / "shared").iterdir()
+                         if p.is_dir()):
+        if not re.search(rf"^\s+{re.escape(module)}/", text, re.M):
+            problems.append(f"{doc.name}: the tree omits shared/{module}/")
 
 
 def main() -> int:
@@ -234,9 +205,8 @@ def main() -> int:
     check_links(problems)
     check_sidebar(problems)
     check_suites(problems)
-    check_settings(problems)
     check_option_lists(problems)
-    check_components(problems)
+    check_shared_modules(problems)
 
     for problem in problems:
         print(problem, file=sys.stderr)
