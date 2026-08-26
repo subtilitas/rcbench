@@ -9,6 +9,10 @@ set(SRCS
     ui_widgets.c
     ui_icons.c
     ui_band.c
+    ui_plot.c
+    ui_hero.c
+    ui_slider.c
+    ui_tabs.c
     ui_router.c
     splash_screen.c
     overview_screen.c
