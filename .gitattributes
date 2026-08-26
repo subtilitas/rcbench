@@ -1,0 +1,17 @@
+# The repository stores text as LF, and every checkout gets LF back.
+#
+# Without this, git has no opinion and both machines impose their own: a
+# Windows checkout writes CRLF, a Linux VM reaching the same tree over a mount
+# writes LF, and the result is dozens of files reported as wholly rewritten in
+# every session.  That is not cosmetic -- it means no commit can use a
+# directory pathspec, because `git add shared/` sweeps in files whose only
+# change is invisible.  The predecessor learned this the expensive way and
+# settled it in a dedicated commit; here it is settled before the first file.
+* text=auto eol=lf
+
+# Not text.  Git's own detection usually gets these right, but "usually" on a
+# 15 KB golden screenshot means a corrupted image and a render check that
+# fails for a reason nobody will guess.
+*.png binary
+*.uf2 binary
+*.bin binary
