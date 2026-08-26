@@ -45,6 +45,8 @@ TRACKED = [
     "shared/logfile/log_fields.c",
     "shared/link/link_crc.c",
     "shared/link/link_frame.c",
+    "shared/link/link_dev.c",
+    "shared/link/link_host.c",
 ]
 
 # Sources that are compiled into the suite but deliberately not measured.

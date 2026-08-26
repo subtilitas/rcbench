@@ -9,8 +9,13 @@
  */
 #include <stdio.h>
 
+#include "driver/gpio.h"
+#include "driver/uart.h"
+
 #include "gfx.h"
 #include "link_crc.h"
+#include "link_wire.h"
+#include "panel_pins.h"
 #include "touch_map.h"
 
 void app_main(void)
@@ -38,4 +43,13 @@ void app_main(void)
            canvas.width, canvas.height, p.x, p.y,
            link_crc(LINK_CRC_INIT, "123456789", 9) == LINK_CRC_CHECK
                ? "passes" : "FAILS");
+
+    /* Reading the pins back is not decoration: panel_pins.h is otherwise a
+     * header nothing includes, so nothing would compile it and a wrong
+     * constant would wait until the transport is written to be discovered. */
+    printf("rcbench-panel: link TX=GPIO%d RX=GPIO%d @ %u baud, "
+           "heartbeat GPIO%d (J8), turnaround %u us\n",
+           (int)PANEL_LINK_PIN_TX, (int)PANEL_LINK_PIN_RX,
+           (unsigned)LINK_BAUD_BRINGUP, (int)PANEL_HEARTBEAT_PIN,
+           (unsigned)LINK_TURNAROUND_US);
 }
