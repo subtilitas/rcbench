@@ -4,14 +4,16 @@ A **motor, ESC and servo test bench** in two halves: an ESP32-S3 panel that
 decides, draws and stores, and an RP2350 coprocessor that measures, drives and
 talks to everything with a deadline.
 
-> **Where this stands.** The foundation is being laid. The tree and its build
-> wiring are down and proven: `shared/link` compiles out of one directory into
-> the panel firmware, the coprocessor firmware and the host suite, and all
-> three build. What is claimed as *inherited* is running in
-> [esp32display7](https://github.com/subtilitas/esp32display7) and comes over
-> with its tests. This file is the running record — it says what is true today,
-> not what is intended, and every table in it is updated by the commit that
-> changes the answer.
+> **Where this stands.** The foundation is down. `shared/link` compiles out of
+> one directory into the panel firmware, the coprocessor firmware and the host
+> suite; the protocol between the two processors is complete and proven end to
+> end on a laptop, and unrun on silicon. The UI shell and its instrument
+> widgets are built; the benches behind it are not. What is marked *inherited*
+> below came from an earlier project of the same author's, with its tests.
+>
+> This file is the running record — it says what is true today, not what is
+> intended, and every table in it is updated by the commit that changes the
+> answer.
 
 ## What it is for
 
@@ -84,6 +86,7 @@ voltage batched to 100 Hz, decoded ESC frames and an accelerometer burst come to
 | **The safety heartbeat** | new | not written |
 | The shell — band, router, splash, menu | re-cut | **built**: STOP on every screen, screens handed a sub-canvas so they cannot draw over it |
 | The five benches and three scaffolds | re-cut | routed and rendered; each says what it will do and what is blocking it |
+| Instrument widgets — plot, rails, hero, slider, tabs | re-cut | **built** and tested: the scale ladder, the shrink hysteresis, and the press-ownership contracts |
 | Coprocessor firmware | new | answers polls over a real UART with an explicit direction pin, honours the turnaround, fails safe at 200 ms; unrun on silicon |
 | Panel link transport | new | UART on GPIO16/15, board-switched direction, poll loop with the one-second escalation; unrun on silicon |
 | **The heartbeat** | new | pin configured and **deliberately held low** — it must be driven by the loop that owns STOP, and that loop does not exist yet |
@@ -347,10 +350,10 @@ start from it rather than a bare `menuconfig`.
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them, opens a release |
 
-Ten binaries, each printing one line per case: `test_gfx`, `test_touch_map`,
-`test_nav`, `test_settings`, `test_logfile`, `test_link_crc`,
-`test_link_frame`, `test_link_pages`, `test_link_watchdog` and
-`test_link_loopback`. The
+Eleven binaries, each printing one line per case: `test_gfx`,
+`test_touch_map`, `test_nav`, `test_widgets`, `test_settings`, `test_logfile`,
+`test_link_crc`, `test_link_frame`, `test_link_pages`, `test_link_watchdog`
+and `test_link_loopback`. The
 harness is `test/host/greatest.h`, about a hundred lines, with nothing
 vendored. `tools/check_docs.py` holds that list to this file — a page in the
 predecessor said *seven* for two releases after it was ten, and nobody reads a
@@ -361,18 +364,22 @@ screenshots to the current render, and `frame_cost.py` holds the steady-state
 frame to 12,000 cache-line fills. It currently costs **740**.
 
 <!-- coverage:start -->
-![coverage](https://img.shields.io/badge/host--test%20coverage-93.7%25-brightgreen)
+![coverage](https://img.shields.io/badge/host--test%20coverage-95.1%25-brightgreen)
 
 | File | Lines | Covered | Coverage |
 | --- | ---: | ---: | ---: |
 | `shared/gfx/gfx.c` | 467 | 455 | 97.4% |
 | `shared/touch/touch_map.c` | 100 | 100 | 100.0% |
 | `shared/ui/ui_theme.c` | 42 | 41 | 97.6% |
-| `shared/ui/ui_widgets.c` | 111 | 54 | 48.6% |
+| `shared/ui/ui_widgets.c` | 111 | 103 | 92.8% |
 | `shared/ui/ui_icons.c` | 109 | 109 | 100.0% |
 | `shared/ui/ui_band.c` | 34 | 32 | 94.1% |
+| `shared/ui/ui_plot.c` | 137 | 126 | 92.0% |
+| `shared/ui/ui_hero.c` | 17 | 16 | 94.1% |
+| `shared/ui/ui_slider.c` | 91 | 83 | 91.2% |
+| `shared/ui/ui_tabs.c` | 45 | 39 | 86.7% |
 | `shared/ui/ui_router.c` | 115 | 111 | 96.5% |
-| `shared/ui/splash_screen.c` | 58 | 55 | 94.8% |
+| `shared/ui/splash_screen.c` | 60 | 57 | 95.0% |
 | `shared/ui/overview_screen.c` | 65 | 60 | 92.3% |
 | `shared/ui/stub_screen.c` | 37 | 35 | 94.6% |
 | `shared/settings/settings.c` | 131 | 125 | 95.4% |
@@ -383,7 +390,7 @@ frame to 12,000 cache-line fills. It currently costs **740**.
 | `shared/link/link_frame.c` | 112 | 107 | 95.5% |
 | `shared/link/link_dev.c` | 69 | 66 | 95.7% |
 | `shared/link/link_host.c` | 69 | 63 | 91.3% |
-| **total** | **2536** | **2375** | **93.7%** |
+| **total** | **2828** | **2690** | **95.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
