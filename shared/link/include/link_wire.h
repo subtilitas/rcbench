@@ -52,13 +52,42 @@
  *
  * ------------------------------------------------------------- the turnaround
  *
- * Not modelled here, because it is a property of a part rather than of
- * arithmetic.  A breakout with an explicit direction pin puts the turnaround
- * under firmware control, and the trap is releasing the driver before the last
- * stop bit has left the shift register.  An automatic-direction circuit holds
- * the driver enabled for a fixed time after the last edge instead, which puts
- * a floor under bus turnaround that has to be measured rather than assumed.
- * The finished board has the second kind; the bench has the first.
+ * Read off the panel's schematic rather than guessed.  Its automatic-direction
+ * circuit is an RC one-shot: an SN74LVC1G125 buffer follows the transmit line
+ * and charges C51 (1 nF) through R76 (200 kOhm); the resulting gate voltage
+ * turns on Q1, which pulls DE and /RE low against R79's 1 kOhm pull-up, and a
+ * Schottky across R76 dumps the gate the instant the transmit line falls.
+ *
+ * So the driver enables on the first start bit and releases only once the line
+ * has stayed high long enough for the gate to reach the FET's threshold:
+ *
+ *      t = -R76 * C51 * ln(1 - Vth / 3.3)
+ *
+ *      Vth = 1.0 V  ->   72 us
+ *      Vth = 1.5 V  ->  121 us
+ *      Vth = 2.0 V  ->  179 us
+ *
+ * Two consequences, and the first is the opposite of what was assumed.
+ *
+ * THERE IS A MINIMUM BAUD RATE, NOT A MAXIMUM.  The longest run of high bits
+ * inside an 8N1 frame is nine bit times -- eight data bits and the stop bit,
+ * with the next start bit low.  If that run outlasts t, the gate crosses the
+ * threshold mid-frame, the driver switches off, and the rest of the
+ * transmission never reaches the bus.  Nine bit times must fit inside the
+ * worst-case 72 us, which puts the floor at about 125,000 baud.  1.5 Mbaud is
+ * twelve times clear of it; 256 kbaud is twice clear; 128 kbaud clears it by
+ * two percent, which is not a margin.
+ *
+ * THE BUS IS HELD AFTER THE LAST EDGE.  The far end must not answer until the
+ * driver has released, and the hold starts from the last *falling* edge rather
+ * than from the end of the frame -- a final byte of 0xFF begins its hold nine
+ * bit times early.  Waiting a conservative 200 us after the last received byte
+ * covers every threshold and every trailing byte.
+ *
+ * One number is not on the schematic: Q1's threshold.  R76, C51, D7 and R79
+ * are named; the FET is not, so the floor is quoted from the pessimistic end
+ * of a plausible range.  One measurement settles it -- scope DE against TX at
+ * 256 kbaud and read the release directly.
  */
 #ifndef RCBENCH_LINK_WIRE_H
 #define RCBENCH_LINK_WIRE_H
@@ -70,6 +99,19 @@
 
 /** The finished board's own RS485 interface. */
 #define LINK_BAUD_TARGET 1500000u
+
+/**
+ * How long to wait after receiving a frame before answering it.  Covers the
+ * slowest plausible release of the panel's direction circuit; see above.
+ */
+#define LINK_TURNAROUND_US 200u
+
+/**
+ * Below this, a run of high bits inside a frame outlasts the direction
+ * circuit's hold and the driver drops mid-transmission.  Not a recommendation
+ * -- a floor.
+ */
+#define LINK_BAUD_FLOOR 125000u
 
 /**
  * The module build: the rate the protocol firmware is written and debugged at,
@@ -114,7 +156,18 @@
 #error "a whole-page poll no longer fits the bring-up link's budget"
 #endif
 
-/* A rate below the floor does not run slowly, it corrupts frames. */
+/*
+ * A rate below the floor does not run slowly, it corrupts frames.
+ *
+ * The #ifdef is not belt-and-braces.  These two guards were once written
+ * against a LINK_BAUD_FLOOR that had failed to land in this file, and the
+ * preprocessor treats an undefined identifier as 0 -- so `128000 < 0` was
+ * false, both guards passed, and the check silently protected nothing.  A
+ * missing constant now breaks the build instead of disarming the test.
+ */
+#ifndef LINK_BAUD_FLOOR
+#error "LINK_BAUD_FLOOR is not defined; the baud guards below would be inert"
+#endif
 #if LINK_BAUD_BRINGUP < LINK_BAUD_FLOOR
 #error "the bring-up baud is below the direction circuit's floor"
 #endif
