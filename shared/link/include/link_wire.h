@@ -72,12 +72,17 @@
 #define LINK_BAUD_TARGET 1500000u
 
 /**
- * The module build.  A breakout board, an explicit direction pin, and the
- * rate the protocol firmware is actually being written and debugged at -- so
- * it is the rate the poll schedule is budgeted against.  What fits here fits
- * everywhere.
+ * The module build: the rate the protocol firmware is written and debugged at,
+ * and therefore the rate the poll schedule is budgeted against.  What fits
+ * here fits everywhere.
+ *
+ * 256 kbaud rather than 128, on the schematic's evidence.  Both were on the
+ * table and 128 is the worse choice: it clears LINK_BAUD_FLOOR by two percent,
+ * and the failure it risks is not a slow link but a driver that switches off
+ * partway through a frame.  256 clears the floor by a factor of two and still
+ * budgets the schedule pessimistically against the finished board's 1.5 Mbaud.
  */
-#define LINK_BAUD_BRINGUP 128000u
+#define LINK_BAUD_BRINGUP 256000u
 
 /* Both macros are written without casts so that the #if below can evaluate
  * them: the preprocessor has no types, and a (uint32_t) in the expression is
@@ -107,6 +112,14 @@
  */
 #if LINK_POLLS_PER_SEC(LINK_BAUD_BRINGUP) < 100u
 #error "a whole-page poll no longer fits the bring-up link's budget"
+#endif
+
+/* A rate below the floor does not run slowly, it corrupts frames. */
+#if LINK_BAUD_BRINGUP < LINK_BAUD_FLOOR
+#error "the bring-up baud is below the direction circuit's floor"
+#endif
+#if LINK_BAUD_TARGET < LINK_BAUD_FLOOR
+#error "the target baud is below the direction circuit's floor"
 #endif
 
 #endif /* RCBENCH_LINK_WIRE_H */
