@@ -42,12 +42,17 @@ foreach(lib ${UNDER_TEST})
     endif()
 endforeach()
 
+# The fakes are compiled into every suite rather than a library of their own:
+# they are small, and a suite that does not use one pays nothing for it.
+set(FAKES "${CMAKE_CURRENT_SOURCE_DIR}/fakes/fake_wire.c")
+
 enable_testing()
 
-foreach(suite gfx touch_map settings logfile link_crc link_frame link_pages link_watchdog)
-    add_executable(test_${suite} test_${suite}.c)
+foreach(suite gfx touch_map settings logfile link_crc link_frame link_pages link_watchdog link_loopback)
+    add_executable(test_${suite} test_${suite}.c ${FAKES})
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
-    target_include_directories(test_${suite} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+    target_include_directories(test_${suite} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/fakes")
     add_test(NAME ${suite} COMMAND test_${suite})
     # The CSV fixtures are the ones logwiju is held to; the suite finds them
     # relative to its own source directory, not the build tree.
