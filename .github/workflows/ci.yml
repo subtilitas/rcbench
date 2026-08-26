@@ -109,7 +109,10 @@ jobs:
           if-no-files-found: error
 
   copro:
-    name: Coprocessor (pico-sdk ${{ env.PICO_SDK_TAG }})
+    # The env context is not available in a job name -- only github,
+    # needs, strategy, matrix, vars and inputs are -- so the pin is spelled
+    # out here and lives for real in env.PICO_SDK_TAG below.
+    name: Coprocessor (pico-sdk 2.3.0)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
