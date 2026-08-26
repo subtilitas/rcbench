@@ -1,0 +1,251 @@
+#!/usr/bin/env python3
+"""Check the docs against the code for the claims a machine can verify.
+
+Not a linter and not a spell checker.  This looks only at assertions whose
+truth is decidable from the tree: does that screenshot exist, does that link
+go anywhere, is that list of test binaries the list CMake builds, is that
+count still the count.
+
+It exists because those are exactly the claims that rot.  A doc audit found a
+page still naming seven test binaries when CMake built ten, a components tree
+missing three components, and a "six rows are not wired up" that had been
+thirteen for months -- none of which any reader would check, and all of which
+a script checks in under a second.
+
+    python3 tools/check_docs.py
+
+Prints one line per problem and exits 1 if there were any.  Frame-cost numbers
+are checked separately by `tools/frame_cost.py --check-doc`, and the coverage
+table by `tools/coverage.py --check`, because both of those have to run a
+measurement first.
+
+SPDX-License-Identifier: MIT
+"""
+
+from __future__ import annotations
+
+import pathlib
+import re
+import sys
+
+REPO = pathlib.Path(__file__).resolve().parent.parent
+DOCS = REPO / "docs"
+IMG = DOCS / "img"
+
+# Pages that are navigation rather than content, and so are not expected to be
+# linked from the sidebar like the rest.
+SIDEBAR_EXEMPT = {"_Sidebar.md", "Home.md"}
+
+WORDS = {
+    "no": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
+    "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12,
+    "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16,
+    "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20,
+}
+
+LINK_RE = re.compile(r"\]\(([^)\s#]+)(?:#[^)\s]*)?\)")
+
+
+def as_number(text: str) -> int | None:
+    text = text.strip().lower().replace(",", "")
+    if text.isdigit():
+        return int(text)
+    return WORDS.get(text)
+
+
+def read(path: pathlib.Path) -> str:
+    with open(path, encoding="utf-8", newline="") as fh:
+        return fh.read()
+
+
+def pages() -> list[pathlib.Path]:
+    return sorted(DOCS.glob("*.md"))
+
+
+def check_links(problems: list[str]) -> None:
+    """Every relative link and image reference resolves to a real file."""
+    referenced: set[pathlib.Path] = set()
+    for page in pages() + [REPO / "README.md"]:
+        base = page.parent
+        for target in LINK_RE.findall(read(page)):
+            if "://" in target or target.startswith("mailto:"):
+                continue
+            resolved = (base / target).resolve()
+            if not resolved.exists():
+                problems.append(f"{page.name}: link to {target} goes nowhere")
+            elif resolved.suffix.lower() == ".png":
+                referenced.add(resolved)
+
+    for image in sorted(IMG.glob("*.png")):
+        if image.resolve() not in referenced:
+            problems.append(
+                f"docs/img/{image.name} is committed but no page shows it")
+
+
+def check_sidebar(problems: list[str]) -> None:
+    """The sidebar is the wiki's only navigation, so it has to be complete."""
+    sidebar = read(DOCS / "_Sidebar.md")
+    linked = {t for t in LINK_RE.findall(sidebar) if t.endswith(".md")}
+    for page in pages():
+        if page.name in SIDEBAR_EXEMPT:
+            continue
+        if page.name not in linked:
+            problems.append(f"_Sidebar.md does not link {page.name}")
+
+
+def suites() -> list[str]:
+    """The suite names test/host/CMakeLists.txt actually builds."""
+    text = read(REPO / "test" / "host" / "CMakeLists.txt")
+    m = re.search(r"foreach\s*\(\s*suite([^)]*)\)", text)
+    if not m:
+        sys.exit("could not find the `foreach(suite ...)` list in "
+                 "test/host/CMakeLists.txt")
+    return m.group(1).split()
+
+
+def check_suites(problems: list[str]) -> None:
+    """Testing-and-CI.md names every binary, and counts them correctly."""
+    doc = DOCS / "Testing-and-CI.md"
+    text = read(doc)
+    built = set(suites())
+    named = set(re.findall(r"`test_(\w+)`", text))
+    for missing in sorted(built - named):
+        problems.append(f"{doc.name}: does not mention test_{missing}, "
+                        "which CMake builds")
+    for ghost in sorted(named - built):
+        problems.append(f"{doc.name}: names test_{ghost}, which CMake does "
+                        "not build")
+
+    m = re.search(r"(\w+) binaries", text)
+    if not m:
+        problems.append(f"{doc.name}: no '<N> binaries' sentence to check")
+    else:
+        said = as_number(m.group(1))
+        if said != len(built):
+            problems.append(f"{doc.name}: says {m.group(1)} binaries; CMake "
+                            f"builds {len(built)}")
+
+
+def unwired_settings() -> list[str]:
+    """Schema keys no code outside the settings machinery ever reads.
+
+    settings_screen.c is excluded deliberately: showing a row is what makes an
+    unwired setting a trap rather than a placeholder, so a key the screen
+    displays and nothing else consumes is exactly what we are counting.
+    """
+    header = read(REPO / "components" / "settings" / "include" / "settings.h")
+    keys = sorted({
+        k for k in re.findall(r"\bSET_[A-Z0-9_]+\b", header)
+        if not k.startswith(("SET_CAT_", "SET_TYPE_")) and k != "SET_COUNT"
+    })
+    sources = [
+        p for d in ("main", "components")
+        for p in (REPO / d).rglob("*.[ch]")
+        if "components/settings/" not in p.as_posix()
+        and p.name != "settings_screen.c"
+    ]
+    body = "\n".join(read(p) for p in sources)
+    # A key named only inside a comment is not a consumer.
+    body = re.sub(r"/\*.*?\*/", " ", body, flags=re.S)
+    body = re.sub(r"//[^\n]*", " ", body)
+    used = set(re.findall(r"\bSET_[A-Z0-9_]+\b", body))
+    return [k for k in keys if k not in used]
+
+
+def check_settings(problems: list[str]) -> None:
+    doc = DOCS / "Settings.md"
+    text = read(doc)
+    m = re.search(r"(\w+) rows below are stored", text)
+    if not m:
+        problems.append(f"{doc.name}: no '<N> rows below are stored' sentence "
+                        "to check")
+        return
+    said = as_number(m.group(1))
+    actual = unwired_settings()
+    if said != len(actual):
+        problems.append(
+            f"{doc.name}: says {m.group(1)} rows reach no code; "
+            f"{len(actual)} do: {', '.join(actual)}")
+
+
+OPTIONS_RE = re.compile(
+    r"static const char \*const (k_\w+)\s*\[\]\s*=\s*\{(.*?)\}\s*;", re.S)
+
+# Files whose option arrays the docs quote.  Not every array in the tree --
+# only the ones that name user-visible choices, because those are what prose
+# enumerates and therefore what prose gets wrong.
+OPTION_SOURCES = (
+    REPO / "components" / "settings" / "settings.c",
+    REPO / "components" / "ui" / "servo_prog_screen.c",
+)
+
+
+def option_lists() -> dict[str, list[str]]:
+    lists: dict[str, list[str]] = {}
+    for source in OPTION_SOURCES:
+        for name, body in OPTIONS_RE.findall(read(source)):
+            members = re.findall(r'"([^"]+)"', body)
+            if len(members) > 1:
+                lists[f"{source.name}:{name}"] = members
+    return lists
+
+
+def check_option_lists(problems: list[str]) -> None:
+    """A doc that enumerates a menu enumerates all of it.
+
+    Settings.md listed four of the five telemetry sources for months, dropping
+    the one that is both the default and the only honest option -- which
+    inverted what the paragraph was trying to say.  A line that names two
+    members of a list and not the rest is nearly always that mistake rather
+    than a deliberate aside.
+    """
+    lists = option_lists()
+    for page in pages() + [REPO / "README.md"]:
+        # Paragraphs, not lines: prose wraps, and a list that happens to break
+        # across two lines is still one enumeration.
+        line_no = 1
+        for para in re.split(r"\n\s*\n", read(page)):
+            at = line_no
+            line_no += para.count("\n") + 2
+            for name, members in lists.items():
+                present = [m for m in members if m in para]
+                if len(present) < 2 or len(present) == len(members):
+                    continue
+                missing = [m for m in members if m not in para]
+                problems.append(
+                    f"{page.name}:{at}: names {len(present)} of the "
+                    f"{len(members)} {name} options; missing "
+                    f"{', '.join(missing)}")
+
+
+def check_components(problems: list[str]) -> None:
+    """Building.md's tree lists every component directory."""
+    doc = DOCS / "Building.md"
+    text = read(doc)
+    for comp in sorted(p.name for p in (REPO / "components").iterdir()
+                       if p.is_dir()):
+        if not re.search(rf"^\s+{re.escape(comp)}/", text, re.M):
+            problems.append(f"{doc.name}: the project tree omits "
+                            f"components/{comp}/")
+
+
+def main() -> int:
+    problems: list[str] = []
+    check_links(problems)
+    check_sidebar(problems)
+    check_suites(problems)
+    check_settings(problems)
+    check_option_lists(problems)
+    check_components(problems)
+
+    for problem in problems:
+        print(problem, file=sys.stderr)
+    if problems:
+        print(f"\n{len(problems)} stale claim(s) in the docs", file=sys.stderr)
+        return 1
+    print("docs agree with the tree")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
