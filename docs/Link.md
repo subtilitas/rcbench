@@ -212,6 +212,34 @@ interval early with the outputs live.
 over-temperature, stall timeout, lost link — and reports what it did at the next
 poll. It never waits for permission to fail safe. See [Safety](Safety.md).
 
+## The two transports
+
+Both are deliberately dumb: they move bytes and nothing else. Framing, CRC,
+page semantics and both watchdogs live in `shared/link` and are tested on a
+laptop, so every decision a transport could make is one that could then only be
+tested on hardware.
+
+**The panel** (`firmware/panel/components/link_uart`) is an ordinary
+full-duplex port that never asserts RTS, because the board switches its own
+transceiver. Its pins arrive as arguments rather than being looked up: a
+transport that reached into the application for a pin map would be a component
+depending on `main`, and would be specific to one board for no gain.
+
+**The coprocessor** (`firmware/copro/src/link_uart.c`) drives DE and /RE, and
+does two things the panel's does not:
+
+It waits for `uart_tx_wait_blocking` before releasing the driver. That call
+spins on the UART's BUSY flag, which clears only once the *shift register* has
+emptied — not merely the FIFO. Releasing on an empty FIFO cuts the final byte
+off every frame; the far end correctly refuses the truncated result, so the
+link simply never works and nothing says why.
+
+And it waits out the panel's turnaround before answering, measured from the
+last byte received — which is later than the last falling edge, and therefore
+covers it.
+
+Both refuse a baud rate below the floor rather than running one.
+
 ## What is tested, and where
 
 The codec is pure C with the transport injected, so all of this runs on a
@@ -222,3 +250,13 @@ false syncs; a good frame following a corrupt one; frames back to back with no
 gap; 200,000 bytes of deterministic noise that must never manufacture a frame;
 and a frame that verifies but claims an impossible shape, which is a version
 mismatch rather than line noise and is refused just the same.
+
+Above that, `test_link_loopback` runs the two ends against each other — the
+real host state machine and the real device dispatcher, over a wire that can
+corrupt a chosen byte, truncate a frame, or go deaf. No mock of either end,
+because a mock agrees with whatever the test expects. It covers a thousand
+polls leaving nothing in either decoder, a corrupted request that is never
+answered, a corrupted reply that times out and recovers on the next poll, a
+refusal travelling as an answer, and the whole failure end to end: the far end
+goes silent, both watchdogs fire in the right order, the wire comes back, and
+the bench stays disarmed until a deliberate write says otherwise.
