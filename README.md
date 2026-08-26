@@ -480,3 +480,7 @@ subsystem that is not here yet.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+---
+
+In collaboration with Claude Code.
