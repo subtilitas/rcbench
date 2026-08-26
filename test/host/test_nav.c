@@ -536,6 +536,39 @@ TEST_CASE(switching_the_mark_invalidates_the_cached_chrome)
     free(first);
 }
 
+/*
+ * The stub copy is drawn with gfx_text, which clips at the canvas edge rather
+ * than wrapping.  A line that is too long is silently cut mid-word and reads
+ * as a rendering fault rather than as an over-long string -- which is exactly
+ * how it was found: a line about balancing ran off the right edge and the
+ * golden image looked broken.
+ */
+TEST_CASE(no_line_of_stub_copy_runs_off_the_screen)
+{
+    fresh();
+    for (int id = SCREEN_MOTOR; id < SCREEN_COUNT; ++id) {
+        const char *const *lines = stub_copy_lines((ui_screen_id_t)id);
+        if (lines == NULL) {
+            continue;
+        }
+        for (int i = 0; i < 4 && lines[i] != NULL; ++i) {
+            const int w = gfx_text_width(&gfx_font_8x16, lines[i], 1);
+            if (w > STUB_COPY_MAX_W) {
+                T_FAIL("screen %d line %d is %d px, over %d",
+                       id, i, w, STUB_COPY_MAX_W);
+            }
+        }
+        const char *blocker = stub_copy_blocker((ui_screen_id_t)id);
+        if (blocker != NULL) {
+            const int w = gfx_text_width(&gfx_font_8x16, blocker, 1);
+            if (w > STUB_COPY_MAX_W) {
+                T_FAIL("screen %d blocker is %d px, over %d",
+                       id, w, STUB_COPY_MAX_W);
+            }
+        }
+    }
+}
+
 int main(void)
 {
     RUN(the_router_starts_on_the_splash);
@@ -549,6 +582,7 @@ int main(void)
     RUN(a_second_contact_cannot_steal_the_release);
     RUN(a_tile_navigates_and_a_slip_does_not);
     RUN(every_stub_renders_something_and_says_something);
+    RUN(no_line_of_stub_copy_runs_off_the_screen);
     RUN(an_alert_survives_navigation);
     RUN(the_band_shows_what_is_wrong);
     RUN(the_splash_holds_then_hands_over);
