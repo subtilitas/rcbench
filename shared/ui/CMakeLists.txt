@@ -8,12 +8,18 @@ set(SRCS
     ui_theme.c
     ui_widgets.c
     ui_icons.c
+    ui_band.c
+    ui_router.c
+    splash_screen.c
+    overview_screen.c
+    stub_screen.c
 )
 
 if(ESP_PLATFORM)
-    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES gfx)
+    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
+                           REQUIRES gfx touch)
 else()
     add_library(rcbench_ui STATIC ${SRCS})
     target_include_directories(rcbench_ui PUBLIC include)
-    target_link_libraries(rcbench_ui PUBLIC rcbench_gfx)
+    target_link_libraries(rcbench_ui PUBLIC rcbench_gfx rcbench_touch)
 endif()

@@ -103,9 +103,8 @@ first, then `~/.local/share/fonts`, then the system paths — so it runs on a
 machine where you cannot write `/usr/share/fonts`, which a hardcoded list made
 impossible.
 
-`render_ui.py` and `frame_cost.py` have nothing to do yet: both need the
-screens, which are being re-cut against the two-processor model. They return to
-CI with them.
+`frame_cost.py` needs `valgrind`; everything else needs only a C compiler and
+Pillow.
 
 ## What CI checks
 
