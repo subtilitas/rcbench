@@ -27,6 +27,16 @@ pico_sdk_init()
 # suite builds with plain gcc.  One source list, three build systems.
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/link" link)
 
-add_executable(rcbench-copro src/main.c)
-target_link_libraries(rcbench-copro pico_stdlib hardware_pio rcbench_link)
+add_executable(rcbench-copro
+    src/main.c
+    src/link_uart.c
+)
+target_include_directories(rcbench-copro PRIVATE include src)
+target_link_libraries(rcbench-copro
+    pico_stdlib
+    hardware_pio
+    hardware_uart
+    hardware_gpio
+    rcbench_link
+)
 pico_add_extra_outputs(rcbench-copro)

@@ -61,6 +61,9 @@ UNTRACKED_OK = {
     # gap in the code.  They go back in TRACKED with the suite that drives them.
     "ui_widgets.c",
     "ui_icons.c",
+    # Test scaffolding, not code under test.  A fake wire at 100% would say
+    # nothing about the firmware and would dilute the number that does.
+    "fake_wire.c",
 }
 
 # Below this, CI fails.  Raise it when the suite gets better; never lower it
