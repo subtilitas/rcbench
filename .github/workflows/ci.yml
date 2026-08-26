@@ -1,0 +1,159 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    # Tags too: a release is built from whatever commit was tagged, which is
+    # not necessarily one that ever landed on main.  Publishing firmware no
+    # host test has run against is the one gap worth closing here.
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PICO_SDK_TAG: '2.3.0'
+
+jobs:
+  host-tests:
+    name: Host suite, coverage and the checks that hold prose to the tree
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build gcc fonts-dejavu-core
+          python3 -m pip install --upgrade pillow
+
+      - name: Unit tests
+        run: |
+          cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug
+          cmake --build test/host/build -j"$(nproc)"
+          ctest --test-dir test/host/build --output-on-failure
+
+      # Fails when the table in README.md no longer matches reality, rather
+      # than committing a fixup nobody reads the diff of.
+      - name: Coverage is current
+        run: python3 tools/coverage.py --check --json coverage.json
+
+      - name: The checked-in fonts match their generator
+        run: python3 tools/gen_font.py --check
+
+      # Links, the sidebar, the list of test binaries, and the tree that
+      # Building.md prints.  None of these are claims a reader would check.
+      - name: The docs agree with the tree
+        run: python3 tools/check_docs.py
+
+      # Not run yet: render_ui.py --check and frame_cost.py.  Both need the
+      # screens, which are being re-cut against the two-processor model.  They
+      # come back to this job with them -- listed here rather than silently
+      # absent, because a check that quietly stopped running is worse than one
+      # that was never added.
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: coverage
+          path: coverage.json
+          if-no-files-found: warn
+
+  panel:
+    name: Panel (ESP-IDF ${{ matrix.idf }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # v5.4 is the floor -- the RGB panel's on_frame_buf_complete event
+        # landed there -- and it is built on purpose rather than only building
+        # the newest.  The predecessor's components compile against a later
+        # v5.4.x point release but not against v5.4.0, because they include
+        # esp_timer.h without requiring it; that is precisely the class of
+        # mistake a floor build catches.
+        idf: [v5.4, v5.5]
+    steps:
+      - uses: actions/checkout@v6
+
+      # No cache step: the build runs inside the espressif/idf container, so
+      # ~/.espressif on the runner is never written or read and the cache was
+      # a guaranteed miss on every run.
+      - name: Build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ matrix.idf }}
+          target: esp32s3
+          path: 'firmware/panel'
+
+      - name: Size report
+        run: |
+          ls -l firmware/panel/build/*.bin firmware/panel/build/bootloader/bootloader.bin
+          sha256sum firmware/panel/build/*.bin
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: panel-${{ matrix.idf }}
+          path: |
+            firmware/panel/build/rcbench-panel.bin
+            firmware/panel/build/rcbench-panel.elf
+            firmware/panel/build/bootloader/bootloader.bin
+            firmware/panel/build/partition_table/partition-table.bin
+            firmware/panel/build/flash_args
+          if-no-files-found: error
+
+  copro:
+    name: Coprocessor (pico-sdk ${{ env.PICO_SDK_TAG }})
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # Ubuntu's packaged toolchain rather than ARM's tarball, because it is
+      # one line and the RP2350's Cortex-M33 is not exotic.  This is the one
+      # step in this file that was not reproduced locally -- no sudo on the
+      # machine it was written on -- so if it fails, the verified fallback is
+      # ARM's own 14.2 release, unpacked and put on PATH.
+      - name: Install the ARM toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi \
+            libstdc++-arm-none-eabi-newlib libusb-1.0-0-dev
+
+      # Pinned, and cached on the tag: the SDK is 400 MB of checkout and it
+      # does not change between runs unless this pin does.
+      - name: Cache the pico-sdk
+        id: sdk-cache
+        uses: actions/cache@v6
+        with:
+          path: pico-sdk
+          key: pico-sdk-${{ env.PICO_SDK_TAG }}
+
+      - name: Clone the pico-sdk
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 -b "$PICO_SDK_TAG" --recursive \
+            --shallow-submodules https://github.com/raspberrypi/pico-sdk.git
+
+      - name: Build
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          cmake -S firmware/copro -B firmware/copro/build -G Ninja
+          cmake --build firmware/copro/build -j"$(nproc)"
+          ls -l firmware/copro/build/rcbench-copro.uf2
+          sha256sum firmware/copro/build/rcbench-copro.uf2
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: copro
+          path: |
+            firmware/copro/build/rcbench-copro.uf2
+            firmware/copro/build/rcbench-copro.elf
+          if-no-files-found: error
