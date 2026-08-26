@@ -9,6 +9,15 @@
 #ifndef RCBENCH_PANEL_PINS_H
 #define RCBENCH_PANEL_PINS_H
 
+/* Self-contained on purpose.  These constants are GPIO_NUM_* and UART_NUM_*,
+ * so a header that named them without including their definitions would
+ * compile or not depending on the order of the includes above it -- which is
+ * a property of the caller rather than of this file, and exactly the sort of
+ * thing that works everywhere it is first used and then breaks somewhere
+ * else. */
+#include "driver/gpio.h"
+#include "driver/uart.h"
+
 /*
  * The RS485 link.  U6 is an SP3485EN -- a 3.3 V transceiver, so there is no
  * level shifting to do and no 5 V anywhere near the module.

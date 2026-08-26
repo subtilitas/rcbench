@@ -83,7 +83,9 @@ voltage batched to 100 Hz, decoded ESC frames and an accelerometer burst come to
 | **The link codec** | new | framing, the page map, the dispatcher and both watchdogs, written and tested; the UART transports next |
 | **The safety heartbeat** | new | not written |
 | Splash, overview, bench, settings and log-viewer screens | re-cut | against the two-processor model |
-| Coprocessor firmware | new | builds in CI with the codec linked in; the failsafe and the PIO assembler proven on the host; only the UART transport is untested silicon |
+| Coprocessor firmware | new | answers polls over a real UART with an explicit direction pin, honours the turnaround, fails safe at 200 ms; unrun on silicon |
+| Panel link transport | new | UART on GPIO16/15, board-switched direction, poll loop with the one-second escalation; unrun on silicon |
+| **The heartbeat** | new | pin configured and **deliberately held low** — it must be driven by the loop that owns STOP, and that loop does not exist yet |
 | Throttle output on the panel | **removed** | GPIO6 is the heartbeat; the panel emits no servo pulse |
 | Servo programmer | **held** | the KST work stays in the predecessor until asked for |
 
@@ -170,7 +172,13 @@ same problem for a decade:
 - **Strictly host-polled. The coprocessor never speaks unsolicited.** This is
   what makes the rest simple: nothing arbitrates outbound priority, so a stop
   command cannot queue behind a telemetry burst *by construction*.
-- **Two watchdogs, the tighter one on the coprocessor.** It fills failsafe
+- **Both ends are written and neither has met silicon.** The protocol between
+them is proven end-to-end on a laptop — `test_link_loopback` drives the real
+host state machine against the real device dispatcher across a wire that can
+corrupt, truncate and go deaf — so what bring-up has left to find is the wire
+itself, not the conversation.
+
+**Two watchdogs, the tighter on the coprocessor.** It fills failsafe
   values after 200 ms of silence on its own authority; the host escalates after
   a second. **Traffic returning does not lift the failsafe** — a link that
   recovers is not consent to spin a propeller, so leaving it takes a deliberate
@@ -338,9 +346,9 @@ start from it rather than a bare `menuconfig`.
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them, opens a release |
 
-Eight binaries, each printing one line per case: `test_gfx`, `test_touch_map`,
+Nine binaries, each printing one line per case: `test_gfx`, `test_touch_map`,
 `test_settings`, `test_logfile`, `test_link_crc`, `test_link_frame`,
-`test_link_pages` and `test_link_watchdog`. The
+`test_link_pages`, `test_link_watchdog` and `test_link_loopback`. The
 harness is `test/host/greatest.h`, about a hundred lines, with nothing
 vendored. `tools/check_docs.py` holds that list to this file — a page in the
 predecessor said *seven* for two releases after it was ten, and nobody reads a
