@@ -130,11 +130,55 @@ measured rather than assumed. And the breakout's 5 V receiver output is safe on
 the RP2350's Bank 0 only *while the 3.3 V rail is up*, which on a module build
 is not the order the rails come up in.
 
+## The page map
+
+| Page | | |
+| --- | --- | --- |
+| `0x00` | IDENTITY | protocol and firmware versions, hardware revision, capability bitmap — read-only |
+| `0x01` | STATUS | state, sticky fault bitmap, uptime, and the decoder's own frame and error counts — read-only |
+| `0x10` | CONTROL | arm, throttle, and the register that leaves failsafe |
+| `0x11` | LIMITS | the cutouts the coprocessor enforces without asking |
+| `0x12` | FAILSAFE | where the outputs go when nobody is asking |
+| `0x20` | BENCH | the numbers — read-only |
+
+Numbers are spaced with gaps between the groups on purpose. A page number is
+part of the contract between two firmwares that are flashed separately and can
+disagree about their versions, so renumbering one is a breaking change; gaps
+mean a new page never has to be squeezed in beside an unrelated neighbour.
+
+The protocol version is the first register of the first page, because it is the
+one thing a host must be able to read from a coprocessor whose every other page
+it might not understand.
+
+**Every request is answered, refusals included.** Silence on this link already
+means the coprocessor is not there; it must never also mean "I heard you and
+declined". A refusal is a `NACK` carrying its reason — bad page, bad range,
+read-only, bad value, not armed.
+
+**An `ACK` echoes what was stored, not what was sent.** A value clamped on the
+way in is still accepted, and the host has to be able to see that it was
+clamped.
+
 ## Watchdogs
 
 **Two, and the tighter one is on the coprocessor.** IOMCU's ratio is worth
 copying: the coprocessor fills failsafe values after 200 ms of silence, on its
-own authority, while the host escalates after a second.
+own authority, while the host escalates after a second — so the end holding the
+outputs is always the more suspicious of the two.
+
+**Traffic returning does not lift the failsafe.** A request arriving is proof
+the host is alive and stops the silence counter, but the failsafe is latched
+and leaving it takes a deliberate write of a known value to the control page.
+Those are different facts, and conflating them is how a bench re-arms itself
+while nobody is looking at it.
+
+**Both are wrap-safe**, and that is tested at the boundary rather than asserted.
+The failure mode is not the obvious one: `now >= then + timeout` is evaluated in
+32-bit arithmetic, so the deadline wraps along with the clock and the two agree
+perfectly *after* the turnover. They differ **before** it — while the clock is
+still large and the deadline has already wrapped small, the naive form reports
+the timeout expired the moment the deadline wrapped, firing up to a whole
+interval early with the outputs live.
 
 **The coprocessor protects hardware without asking** — overcurrent,
 over-temperature, stall timeout, lost link — and reports what it did at the next
