@@ -37,26 +37,26 @@ DOC_END = "<!-- framecost:end -->"
 
 SOURCES = [
     "test/host/bench_frame.c",
-    "components/gfx/gfx.c",
-    "components/gfx/gfx_font8x16.c",
-    "components/gfx/gfx_font16x28.c",
-    "components/gfx/gfx_font_num24x30.c",
-    "components/settings/settings.c",
-    "components/ui/ui_theme.c",
-    "components/ui/ui_widgets.c",
-    "components/ui/tester_ui.c",
-    "components/ui/servo_prog_screen.c",
-    "main/telemetry_sim.c",
+    "shared/gfx/gfx.c",
+    "shared/gfx/gfx_font8x16.c",
+    "shared/gfx/gfx_font16x28.c",
+    "shared/gfx/gfx_font_num24x30.c",
+    "shared/ui/ui_theme.c",
+    "shared/ui/ui_widgets.c",
+    "shared/ui/ui_icons.c",
+    "shared/ui/ui_band.c",
+    "shared/ui/ui_router.c",
+    "shared/ui/splash_screen.c",
+    "shared/ui/overview_screen.c",
+    "shared/ui/stub_screen.c",
 ]
 INCLUDES = [
-    "components/gfx/include",
-    "components/touch/include",
-    "components/settings/include",
-    "components/ui/include",
-    "main",
+    "shared/gfx/include",
+    "shared/touch/include",
+    "shared/ui/include",
 ]
 
-MODES = ["frame", "chrome", "servoprog", "clear", "vlines", "hlines"]
+MODES = ["frame", "chrome", "overview", "clear", "vlines", "hlines"]
 
 # ESP32-S3 with CONFIG_ESP32S3_DATA_CACHE_64KB + _LINE_64B.
 D1 = "65536,8,64"
