@@ -1,0 +1,129 @@
+name: Release
+
+# A tag ships both processors.  The coprocessor image is not optional baggage:
+# the panel refuses to arm when the versions disagree, so a release that
+# carried only one half would be a release nobody could run.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to package'
+        required: true
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  PICO_SDK_TAG: '2.3.0'
+
+jobs:
+  panel:
+    name: Panel image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.4
+          target: esp32s3
+          path: 'firmware/panel'
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: panel
+          path: |
+            firmware/panel/build/rcbench-panel.bin
+            firmware/panel/build/rcbench-panel.elf
+            firmware/panel/build/bootloader/bootloader.bin
+            firmware/panel/build/partition_table/partition-table.bin
+            firmware/panel/build/flash_args
+          if-no-files-found: error
+
+  copro:
+    name: Coprocessor image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # Ubuntu's packaged toolchain rather than ARM's tarball, because it is
+      # one line and the RP2350's Cortex-M33 is not exotic.  This is the one
+      # step in this file that was not reproduced locally -- no sudo on the
+      # machine it was written on -- so if it fails, the verified fallback is
+      # ARM's own 14.2 release, unpacked and put on PATH.
+      - name: Install the ARM toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi \
+            libstdc++-arm-none-eabi-newlib libusb-1.0-0-dev
+
+      - name: Cache the pico-sdk
+        id: sdk-cache
+        uses: actions/cache@v6
+        with:
+          path: pico-sdk
+          key: pico-sdk-${{ env.PICO_SDK_TAG }}
+
+      - name: Clone the pico-sdk
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 -b "$PICO_SDK_TAG" --recursive \
+            --shallow-submodules https://github.com/raspberrypi/pico-sdk.git
+
+      - name: Build
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          cmake -S firmware/copro -B firmware/copro/build -G Ninja
+          cmake --build firmware/copro/build -j"$(nproc)"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: copro
+          path: |
+            firmware/copro/build/rcbench-copro.uf2
+            firmware/copro/build/rcbench-copro.elf
+          if-no-files-found: error
+
+  publish:
+    name: Package and publish
+    needs: [panel, copro]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v7
+        with:
+          path: artifacts
+
+      - name: Package
+        run: |
+          TAG="${GITHUB_REF_NAME:-${{ inputs.tag }}}"
+          mkdir -p dist
+          # One archive per processor rather than one for both: they are
+          # flashed by different tools over different cables, and a person
+          # holding a UF2 should not have to unpack an ESP-IDF binary to
+          # find it.
+          (cd artifacts/panel && zip -r "../../dist/rcbench-panel-$TAG.zip" .)
+          (cd artifacts/copro && zip -r "../../dist/rcbench-copro-$TAG.zip" .)
+          (cd dist && sha256sum ./*.zip > SHA256SUMS)
+          ls -l dist
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME:-${{ inputs.tag }}}"
+          gh release create "$TAG" dist/*.zip dist/SHA256SUMS \
+            --repo "${{ github.repository }}" \
+            --title "$TAG" \
+            --generate-notes
