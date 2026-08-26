@@ -11,6 +11,8 @@
  *   frame     steady state: the band redrawn, screen chrome cached
  *   chrome    everything repainted every frame, i.e. what not caching costs
  *   overview  the menu, whose tiles are chrome and must never be in a frame
+ *   sim       the same steady state with the SIMULATION watermark over it,
+ *             which is the only thing here that blends rather than writes
  *   clear     a full-screen clear, for reference
  *   vlines    17 full-height vertical lines, the pathological case
  *   hlines    the same pixel count as horizontal lines
@@ -81,6 +83,12 @@ int main(int argc, char **argv)
             }
         }
         return 0;
+    }
+
+    if (strcmp(mode, "sim") == 0) {
+        ui_bench_status_t sim = k_status;
+        sim.simulated = true;
+        ui_router_set_status(&sim);
     }
 
     ui_router_goto(strcmp(mode, "overview") == 0 ? SCREEN_OVERVIEW

@@ -219,6 +219,27 @@ int gfx_text(gfx_canvas_t *c, int x, int y, const char *s,
 int gfx_text_bg(gfx_canvas_t *c, int x, int y, const char *s,
                 const gfx_font_t *font, gfx_color_t fg, gfx_color_t bg, int scale);
 
+/**
+ * Draw @p s rotated about (@p cx, @p cy) and blended into what is already
+ * there, at @p alpha out of 255.
+ *
+ * Inverse-mapped: every destination pixel in the rotated bounding box asks
+ * which glyph pixel it came from, rather than every source pixel being scaled
+ * and thrown at a destination.  Forward mapping leaves holes at any angle that
+ * is not a multiple of 90 degrees, and they show badly on large text.
+ *
+ * Only pixels the glyph actually sets are touched, so the cost is the ink
+ * rather than the box -- which matters on a panel whose frame rate is decided
+ * by how many cache lines a frame dirties.
+ *
+ * This exists for one job: a watermark that says the numbers behind it are not
+ * real.  It is not a general text transform, and it is not fast enough to be
+ * one.
+ */
+void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
+                      const gfx_font_t *font, gfx_color_t fg, int scale,
+                      uint8_t alpha, float angle_deg);
+
 typedef enum {
     GFX_ALIGN_LEFT = 0,
     GFX_ALIGN_CENTER,

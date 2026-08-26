@@ -45,6 +45,7 @@ SOURCES = [
     "shared/ui/ui_widgets.c",
     "shared/ui/ui_icons.c",
     "shared/ui/ui_band.c",
+    "shared/ui/ui_watermark.c",
     "shared/ui/ui_router.c",
     "shared/ui/splash_screen.c",
     "shared/ui/overview_screen.c",
@@ -56,7 +57,7 @@ INCLUDES = [
     "shared/ui/include",
 ]
 
-MODES = ["frame", "chrome", "overview", "clear", "vlines", "hlines"]
+MODES = ["frame", "sim", "chrome", "overview", "clear", "vlines", "hlines"]
 
 # ESP32-S3 with CONFIG_ESP32S3_DATA_CACHE_64KB + _LINE_64B.
 D1 = "65536,8,64"

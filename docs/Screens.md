@@ -87,6 +87,30 @@ The rest, each naming its own blocker:
 ![Balance](img/balance.png)
 ![Programmer](img/programmer.png)
 
+## When the numbers are not real
+
+The bench is useful without hardware: a modelled pack, motor and propeller let
+every screen be built, reviewed and demonstrated before the coprocessor exists.
+The whole danger of that is a simulated reading being screenshotted, quoted or
+remembered as a measured one, and no caption in a corner prevents it.
+
+![The motor bench with simulated telemetry](img/motor-sim.png)
+
+So it is written across the whole screen, corner to corner, at 15% — faint
+enough to read straight through and impossible to crop out of a photograph.
+The router draws it last, over the band and over any alert, and **no screen can
+opt out**: every screen would find its own reason to think itself exempt.
+
+It is sized by solving for the largest scale whose *rotated bounding box* fits
+the canvas, not by a fraction of the diagonal — sizing against the diagonal
+alone ignores the text's own height, which is what pushes the first and last
+letters off the corners.
+
+It costs 3,015 cache-line fills a frame against 736 without it. That is four
+times the steady state and still a fifth of the ceiling, and the panel holds
+39 Hz either way — see [Performance](Performance.md). It is only paid while the
+numbers are fake.
+
 ## What a bench will look like
 
 Numbers and controls stay put; the large area switches pane. Full-width
