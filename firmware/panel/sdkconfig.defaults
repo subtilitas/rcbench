@@ -1,0 +1,59 @@
+# Target -------------------------------------------------------------------
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+
+# Flash --------------------------------------------------------------------
+# 8 MB is the safe common denominator: the board ships as either
+# ESP32-S3-WROOM-1-N8R8 or -N16R8 and an 8 MB image boots on both.
+# Note: with XIP-from-PSRAM enabled below, IDF resolves the effective mode to
+# "dio" regardless of this choice.  That is expected, not a misconfiguration.
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# PSRAM --------------------------------------------------------------------
+# Both framebuffers (2 x 750 KiB) live here, and the LCD DMA reads straight
+# out of it, so the octal bus and the 64-byte cache line matter.
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_SPIRAM_XIP_FROM_PSRAM=y
+CONFIG_SPIRAM_RODATA=y
+CONFIG_SPIRAM_FETCH_INSTRUCTIONS=y
+CONFIG_SPIRAM_MEMTEST=n
+
+# Cache --------------------------------------------------------------------
+CONFIG_ESP32S3_INSTRUCTION_CACHE_32KB=y
+CONFIG_ESP32S3_DATA_CACHE_64KB=y
+CONFIG_ESP32S3_DATA_CACHE_LINE_64B=y
+
+# LCD ----------------------------------------------------------------------
+# Keep the RGB ISR in IRAM: it refills the bounce buffers, and a cache miss
+# there shows up as a torn or shifted frame.
+CONFIG_LCD_RGB_ISR_IRAM_SAFE=y
+CONFIG_LCD_RGB_RESTART_IN_VSYNC=y
+
+# Performance --------------------------------------------------------------
+# ESP-IDF defaults to -Og. The rasteriser is a pile of tight pixel loops, so
+# -O2 is worth real frames here.
+CONFIG_COMPILER_OPTIMIZATION_PERF=y
+
+# The frame rate on this board is decided by PSRAM bandwidth: the LCD scans
+# ~30 MB/s out of PSRAM continuously, and every pixel the CPU writes costs two
+# bytes of bus (write-allocate fetches the 64-byte line before overwriting it,
+# then writes it back).  If you need more headroom than -O2 and fewer redrawn
+# pixels can buy, the next lever is 120 MHz PSRAM:
+#
+#   CONFIG_SPIRAM_SPEED_120M=y
+#
+# It is ~50% more bandwidth and marked experimental: it needs the flash at
+# 80 MHz or below, and Espressif documents temperature-related instability
+# outside 0-80 C.  Measure with tools/frame_cost.py before and after.
+
+# Scheduler ----------------------------------------------------------------
+CONFIG_FREERTOS_HZ=1000
+
+# Console over the built-in USB-Serial-JTAG bridge --------------------------
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y

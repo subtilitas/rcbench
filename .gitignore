@@ -1,0 +1,26 @@
+# Build trees -------------------------------------------------------------
+build/
+*/build/
+sdkconfig
+sdkconfig.old
+managed_components/
+dependencies.lock
+
+# Host suite and coverage -------------------------------------------------
+test/host/build/
+*.gcda
+*.gcno
+*.gcov
+coverage.json
+cachegrind.out.*
+
+# Editors and platforms ---------------------------------------------------
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Python ------------------------------------------------------------------
+__pycache__/
+*.pyc
