@@ -10,6 +10,7 @@
  */
 #include <inttypes.h>
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "driver/gpio.h"
@@ -27,6 +28,7 @@
 #include "link_pages.h"
 #include "link_uart.h"
 #include "link_wire.h"
+#include "log_writer.h"
 #include "motor_screen.h"
 #include "splash_screen.h"
 #include "storage.h"
@@ -141,6 +143,68 @@ static bool bring_up(void)
     pump();
 
     return ok;
+}
+
+/* ------------------------------------------------------------- the logger */
+
+/*
+ * A run is written while the bench is armed and closed when it disarms, which
+ * is the only definition of "a run" the bench has.  The file is the one the
+ * log viewer reads, and there is a host test that writes one and parses it
+ * back rather than trusting that.
+ */
+static FILE       *s_log_file;
+static log_writer_t s_log;
+static float        s_log_t;
+
+static int file_write(void *ctx, const void *data, size_t len)
+{
+    FILE *f = (FILE *)ctx;
+    return (int)fwrite(data, 1, len, f);
+}
+
+static void log_start(void)
+{
+    if (s_log_file != NULL || !storage_mounted()) {
+        return;
+    }
+    /* Numbered rather than timestamped: there is no clock on this board that
+     * survives a power cycle, and a file called 1970-01-01 every time is
+     * worse than one called 3. */
+    for (int i = 1; i < 1000 && s_log_file == NULL; ++i) {
+        char path[64];
+        snprintf(path, sizeof(path), "/sdcard/BENCH%03d.CSV", i);
+        FILE *probe = fopen(path, "r");
+        if (probe != NULL) {
+            fclose(probe);
+            continue;
+        }
+        s_log_file = fopen(path, "w");
+        if (s_log_file != NULL) {
+            ESP_LOGI(TAG, "logging to %s", path);
+        }
+    }
+    if (s_log_file == NULL) {
+        return;
+    }
+    const log_sink_t sink = { file_write, s_log_file };
+    log_writer_init(&s_log, &sink);
+    s_log_t = 0.0f;
+}
+
+static void log_stop(void)
+{
+    if (s_log_file == NULL) {
+        return;
+    }
+    if (log_writer_failed(&s_log)) {
+        ESP_LOGW(TAG, "the log is short: a write failed after %u rows",
+                 (unsigned)s_log.rows);
+    } else {
+        ESP_LOGI(TAG, "%u rows written", (unsigned)s_log.rows);
+    }
+    fclose(s_log_file);
+    s_log_file = NULL;
 }
 
 /* ---------------------------------------------------- asking the far end */
@@ -276,12 +340,23 @@ void app_main(void)
         throttle_keepalive(&thr, now_ms());
         motor_screen_set_armed(thr.armed);
 
+        const bool was_armed = (s_log_file != NULL);
+        if (thr.armed && !was_armed) {
+            log_start();
+        } else if (!thr.armed && was_armed) {
+            log_stop();
+        }
+
         const float emitted = throttle_step(&thr, dt_s);
         beat(!touch_dead);
 
         /* --- the numbers ------------------------------------------------- */
         telemetry_sim_step(&sim, emitted, dt_s, &bench);
         motor_screen_push(&bench);
+        if (s_log_file != NULL) {
+            s_log_t += dt_s;
+            (void)log_writer_row(&s_log, s_log_t, &bench);
+        }
 
         /* --- the far end, at 1 Hz until it answers ----------------------- */
         if ((uint32_t)(now_ms() - last_poll) >= (link_up ? 50u : 1000u)) {

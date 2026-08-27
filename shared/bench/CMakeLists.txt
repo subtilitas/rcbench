@@ -7,6 +7,7 @@
 set(SRCS
     bench_state.c
     telemetry_sim.c
+    log_writer.c
     throttle.c
 )
 
