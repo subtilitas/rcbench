@@ -36,11 +36,16 @@ jobs:
           esp_idf_version: v5.4
           target: esp32s3
           path: 'firmware/panel'
+          # A single image flashable at 0x0, as well as the three parts.
+          # Flashing bootloader, partition table and app at three offsets is
+          # three chances to get an offset wrong; the merged one has none.
+          command: idf.py build && idf.py merge-bin -o rcbench-panel-merged.bin
 
       - uses: actions/upload-artifact@v7
         with:
           name: panel
           path: |
+            firmware/panel/build/rcbench-panel-merged.bin
             firmware/panel/build/rcbench-panel.bin
             firmware/panel/build/rcbench-panel.elf
             firmware/panel/build/bootloader/bootloader.bin
@@ -112,7 +117,9 @@ jobs:
           # One archive per processor rather than one for both: they are
           # flashed by different tools over different cables, and a person
           # holding a UF2 should not have to unpack an ESP-IDF binary to
-          # find it.
+          # find it.  The panel archive carries both the merged image, which
+          # goes to 0x0 on its own, and the three parts for anyone who wants
+          # to flash them separately.
           (cd artifacts/panel && zip -r "../../dist/rcbench-panel-$TAG.zip" .)
           (cd artifacts/copro && zip -r "../../dist/rcbench-copro-$TAG.zip" .)
           (cd dist && sha256sum ./*.zip > SHA256SUMS)

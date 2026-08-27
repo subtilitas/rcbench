@@ -19,9 +19,22 @@ CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_OCT=y
 CONFIG_SPIRAM_SPEED_80M=y
-CONFIG_SPIRAM_XIP_FROM_PSRAM=y
-CONFIG_SPIRAM_RODATA=y
-CONFIG_SPIRAM_FETCH_INSTRUCTIONS=y
+#
+# Code and constants stay in flash, and only the framebuffers live in PSRAM.
+#
+# Putting them in PSRAM frees internal RAM, which is why it was on -- but the
+# LCD scans 30 MB/s out of that same PSRAM continuously, and every instruction
+# fetch or font lookup that misses the cache is taken out of the panel's
+# budget.  It survived a 193 KB image and did not survive a 415 KB one: the
+# first hardware boot flickered, showed torn glyphs, and drifted two or three
+# scanlines with the top wrapping to the bottom, which is what an RGB panel
+# does when its DMA is starved.
+#
+# Flash XIP has its own cache and its own bus, so the fonts and the screen code
+# no longer compete with the scan-out.
+CONFIG_SPIRAM_XIP_FROM_PSRAM=n
+CONFIG_SPIRAM_RODATA=n
+CONFIG_SPIRAM_FETCH_INSTRUCTIONS=n
 CONFIG_SPIRAM_MEMTEST=n
 
 # Cache --------------------------------------------------------------------
