@@ -45,16 +45,26 @@ SOURCES = [
     "shared/ui/ui_widgets.c",
     "shared/ui/ui_icons.c",
     "shared/ui/ui_band.c",
+    "shared/ui/ui_plot.c",
+    "shared/ui/ui_hero.c",
+    "shared/ui/ui_slider.c",
+    "shared/ui/ui_tabs.c",
     "shared/ui/ui_watermark.c",
     "shared/ui/ui_router.c",
     "shared/ui/splash_screen.c",
     "shared/ui/overview_screen.c",
     "shared/ui/stub_screen.c",
+    "shared/ui/motor_screen.c",
+    "shared/bench/bench_state.c",
+    "shared/bench/telemetry_sim.c",
+    "shared/bench/throttle.c",
 ]
 INCLUDES = [
     "shared/gfx/include",
     "shared/touch/include",
     "shared/ui/include",
+    "shared/bench/include",
+    "shared/link/include",
 ]
 
 MODES = ["frame", "sim", "chrome", "overview", "clear", "vlines", "hlines"]

@@ -18,6 +18,13 @@ typedef struct {
     const char *unit;
     gfx_color_t color;
     int         decimals;
+    /**
+     * What the second number is called: "pk" for most channels, "min" for
+     * voltage.  A pack's interesting extreme is how far *down* it went, and
+     * printing the sag floor under a "pk" label is a misreading waiting to
+     * happen -- it was one, in the first render of this screen.
+     */
+    const char *extreme_label;
 } ui_hero_def_t;
 
 /** Draw one readout inside @p r.  Pass NAN as @p peak to omit it. */
