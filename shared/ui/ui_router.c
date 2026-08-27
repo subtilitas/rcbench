@@ -8,6 +8,7 @@
 #include "stub_screen.h"
 #include "ui_band.h"
 #include "ui_theme.h"
+#include "ui_watermark.h"
 #include "ui_widgets.h"
 
 #define PANEL_W 800
@@ -98,8 +99,16 @@ void ui_router_tick(float dt_s)
 
 void ui_router_set_status(const ui_bench_status_t *status)
 {
-    if (status != NULL) {
-        s.status = *status;
+    if (status == NULL) {
+        return;
+    }
+    /* Screens cache their chrome per framebuffer.  The watermark is painted
+     * over the whole canvas, so switching it changes pixels the screens
+     * believe they have already drawn correctly. */
+    const bool was = s.status.simulated;
+    s.status = *status;
+    if (was != s.status.simulated) {
+        ui_router_invalidate();
     }
 }
 
@@ -218,6 +227,9 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
 
     if (!has_band(s.current)) {
         scr->render(c, buffer_index);
+        if (s.status.simulated) {
+            ui_watermark(c);
+        }
         return;
     }
 
@@ -239,5 +251,13 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
 
     if (s.has_alert) {
         draw_alert(c, s.alert);
+    }
+
+    /*
+     * Last, over everything including the band and the alert.  A watermark a
+     * screen can paint over is one that will eventually be painted over.
+     */
+    if (s.status.simulated) {
+        ui_watermark(c);
     }
 }

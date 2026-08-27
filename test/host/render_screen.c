@@ -37,6 +37,7 @@ static const ui_bench_status_t k_status = {
     .faults      = 0,
     .run_seconds = 257,
     .mode        = "DSHOT600",
+    .simulated   = false,
 };
 
 static void write_ppm(const char *path, const gfx_color_t *pixels)
@@ -99,11 +100,14 @@ int main(int argc, char **argv)
     }
     const ui_screen_id_t id = id_of(argv[2]);
     const bool light = (argc > 3 && strcmp(argv[3], "light") == 0);
+    const bool sim   = (argc > 3 && strcmp(argv[3], "sim") == 0);
 
     ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);
     ui_router_init();
     pose_splash();
-    ui_router_set_status(&k_status);
+    ui_bench_status_t st = k_status;
+    st.simulated = sim;
+    ui_router_set_status(&st);
     ui_router_goto(id);
 
     gfx_canvas_t c;

@@ -6,6 +6,9 @@
 #include "ui_widgets.h"
 
 #define W 800
+/* Where the copy starts, and the margin it must leave on the right. */
+#define COPY_X 44
+#define COPY_R 24
 #define H (480 - UI_BAND_H)
 
 typedef struct {
@@ -28,12 +31,31 @@ static const copy_t k_copy[SCREEN_COUNT] = {
           "KISS telemetry decoded, and limits that cut out without asking" },
         "the bench page is not defined yet; the link that carries it is",
     },
+    /*
+     * The surface-angle line is measured with an accelerometer stuck to the
+     * control surface, not an encoder on the servo's output shaft.  The
+     * encoder tells you what the horn did; the accelerometer tells you what
+     * the aeroplane got, linkage slop, horn geometry and pushrod flex
+     * included.  Sub-0.1 degrees, limited by how repeatably it is mounted
+     * rather than by the part.
+     *
+     * The gyro in the same package covers what the accelerometer cannot: it
+     * gives rate through the transit, where the accelerometer is contaminated
+     * by the very motion it is trying to measure.
+     *
+     * One thing to know before mounting one, because it costs an afternoon:
+     * gravity gives two observable axes and never three.  Rotation *about*
+     * the gravity vector is invisible, so a rudder on an upright model --
+     * vertical hinge line -- reads exactly zero across its whole throw.  Lay
+     * the model on its side and it reads like anything else.  Ailerons and
+     * elevators on a level model are fine as they are.
+     */
     [SCREEN_SERVO] = {
         "SERVO",
         { "Eight channels of pulse, any width and rate, narrow band included",
           "Sweep, step, centre, hold, manual and endpoint",
           "Width, frame rate and jitter measured; glitches and dropouts kept",
-          "Behaviour across supply voltage, and the brown-out found on purpose" },
+          "Surface angle measured on the surface: linkage slop included" },
         "the coprocessor's PWM and capture are not written",
     },
     [SCREEN_ANALYSER] = {
@@ -68,14 +90,33 @@ static const copy_t k_copy[SCREEN_COUNT] = {
           "Smart-battery data: cycles, chemistry, error history" },
         "a cell-monitor part, and the INA228 is back-ordered into 2027",
     },
+    /*
+     * Not the same sensor as the servo bench uses, and the reason is worth
+     * writing down because the parts look interchangeable in a catalogue.
+     *
+     * A packaged serial IMU -- 9 axes, onboard fusion, RS232 on a lead -- is
+     * ideal for a surface angle and useless here.  Balancing is a *phase*
+     * measurement: the answer is an angle, "add mass there".  A prop at
+     * 10,000 rpm turns once every 6 ms, and serial framing plus fusion group
+     * delay is easily 5 ms and neither constant nor published.  That is 300
+     * degrees of error.  Even a helicopter head at 2,000 rpm, one turn every
+     * 30 ms, lands 60 degrees out.  The mass goes on with great precision, in
+     * the wrong place.
+     *
+     * So: an analogue accelerometer or piezo on a shielded lead, sampled by
+     * the coprocessor's own converter in lockstep with the index capture.
+     * One timebase because the sampling happens at the instrument rather than
+     * at the sensor.  The converter's 7.5 effective bits are poor for
+     * absolute measurement and ample for relative amplitude and phase
+     * averaged over many revolutions.
+     */
     [SCREEN_BALANCE] = {
         "BALANCE",
-        { "Vibration spectrum from an accelerometer",
-          "Phase from an index pulse on the same timebase -- which is the "
-          "whole difficulty",
-          "Where to add mass, and how much",
-          NULL },
-        "an accelerometer and an index pickup on the coprocessor",
+        { "Vibration spectrum from an accelerometer on a shielded lead",
+          "Phase against an index pulse on one timebase -- the whole difficulty",
+          "Sampled at the instrument: a serial IMU cannot hold that phase",
+          "Where to add mass, and how much" },
+        "an analogue accelerometer and an index pickup on the coprocessor",
     },
     [SCREEN_PROGRAMMER] = {
         "PROGRAMMER",
@@ -86,6 +127,22 @@ static const copy_t k_copy[SCREEN_COUNT] = {
         "for the rest: borrow the programmer and capture the wire",
     },
 };
+
+const char *const *stub_copy_lines(ui_screen_id_t id)
+{
+    if (id < 0 || id >= SCREEN_COUNT || k_copy[id].title == NULL) {
+        return NULL;
+    }
+    return k_copy[id].what;
+}
+
+const char *stub_copy_blocker(ui_screen_id_t id)
+{
+    if (id < 0 || id >= SCREEN_COUNT) {
+        return NULL;
+    }
+    return k_copy[id].blocker;
+}
 
 static struct {
     ui_screen_id_t id;
@@ -114,7 +171,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
     int y = 64;
     for (int i = 0; i < 4 && k->what[i] != NULL; ++i) {
         gfx_fill_rect(c, 26, y + 7, 6, 6, ui_theme_color(UI_C_ACCENT));
-        gfx_text(c, 44, y, k->what[i], &gfx_font_8x16,
+        gfx_text(c, COPY_X, y, k->what[i], &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT), 1);
         y += 34;
     }
