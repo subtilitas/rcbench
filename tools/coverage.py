@@ -59,6 +59,8 @@ TRACKED = [
     "shared/logfile/log_csv.c",
     "shared/logfile/log_fields.c",
     "shared/safety/heartbeat.c",
+    "shared/servo/servo_limit.c",
+    "shared/servo/servo_sim.c",
     "shared/link/link_crc.c",
     "shared/link/link_frame.c",
     "shared/link/link_dev.c",
