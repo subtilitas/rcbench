@@ -84,7 +84,7 @@ voltage batched to 100 Hz, decoded ESC frames and an accelerometer burst come to
 | Locale-tolerant CSV and number parsing | inherited | **ported**, with its fixtures |
 | Board, display, GT911, SD storage | inherited | **ported**: the panel boots, reports each step to the splash, and runs the shell |
 | Golden-image renderer, coverage, doc and frame-cost checks | inherited | to port as-is |
-| **The link codec** | new | framing, the page map, the dispatcher and both watchdogs, written and tested; the UART transports next |
+| **The link codec** | new | framing, the page map, the dispatcher, both watchdogs and both transports — and a bench page that crosses the wire and reads back as the same `bench_state` |
 | **The safety heartbeat** | new | not written |
 | The shell — band, router, splash, menu | re-cut | **built**: STOP on every screen, screens handed a sub-canvas so they cannot draw over it |
 | **Motor & ESC bench** | re-cut | **built**: four traces on independent scales, hero readouts, throttle with presets, arm and reset — reading a `bench_state` the link or the simulator fills |
@@ -94,7 +94,7 @@ voltage batched to 100 Hz, decoded ESC frames and an accelerometer burst come to
 | The other two benches and three scaffolds | re-cut | routed and rendered; each says what it will do and what is blocking it |
 | Instrument widgets — plot, rails, hero, slider, tabs | re-cut | **built** and tested: the scale ladder, the shrink hysteresis, and the press-ownership contracts |
 | The simulation watermark | new | **built**: SIMULATION across the whole screen at 15% whenever the numbers are modelled, and no screen can opt out |
-| Coprocessor firmware | new | answers polls over a real UART with an explicit direction pin, honours the turnaround, fails safe at 200 ms; unrun on silicon |
+| Coprocessor firmware | new | answers identity, status, control and bench pages over a real UART, honours the turnaround, fails safe at 200 ms; unrun on silicon |
 | Panel link transport | new | UART on GPIO16/15, board-switched direction, poll loop with the one-second escalation; unrun on silicon |
 | **The heartbeat** | new | pin configured and **deliberately held low** — it must be driven by the loop that owns STOP, and that loop does not exist yet |
 | Throttle output on the panel | **removed** | GPIO6 is the heartbeat; the panel emits no servo pulse |

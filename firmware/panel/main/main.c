@@ -216,12 +216,12 @@ static void log_stop(void)
  * there is never a second frame in flight, and the whole transaction is well
  * under one panel frame at either baud rate.
  */
-static bool poll_identity(link_host_t *host, link_decoder_t *rx,
-                          link_msg_t *reply)
+static bool poll_page(link_host_t *host, link_decoder_t *rx, uint8_t page,
+                      uint8_t count, link_msg_t *reply)
 {
     uint8_t frame[LINK_MAX_FRAME];
-    const size_t n = link_host_read(host, LINK_PAGE_IDENTITY, 0,
-                                    LINK_ID_COUNT, frame, sizeof(frame));
+    const size_t n = link_host_read(host, page, 0, count, frame,
+                                    sizeof(frame));
     if (n == 0 || link_uart_write(frame, n) < 0) {
         return false;
     }
@@ -243,6 +243,28 @@ static bool poll_identity(link_host_t *host, link_decoder_t *rx,
             return false;
         }
     }
+}
+
+/*
+ * The seam.
+ *
+ * When the coprocessor answers, its numbers are the numbers -- measured or
+ * modelled, it says which and the flag travels with them.  When it does not,
+ * the panel models locally and says so the same way.  Nothing above this
+ * function knows the difference, which is the whole point of bench_state.
+ */
+static bool read_bench(link_host_t *host, link_decoder_t *rx,
+                       bench_state_t *out)
+{
+    link_msg_t reply;
+    if (!poll_page(host, rx, LINK_PAGE_BENCH, LINK_BN_COUNT, &reply)) {
+        return false;
+    }
+    if (reply.op == LINK_OP_NACK) {
+        return false;
+    }
+    bench_state_from_regs(out, reply.regs, reply.offset, reply.count);
+    return true;
 }
 
 /* ------------------------------------------------------------------- main */
@@ -351,7 +373,11 @@ void app_main(void)
         beat(!touch_dead);
 
         /* --- the numbers ------------------------------------------------- */
-        telemetry_sim_step(&sim, emitted, dt_s, &bench);
+        /* Modelled here only while nothing is answering; when the link is up,
+         * read_bench has already filled this with what the far end said. */
+        if (!link_up) {
+            telemetry_sim_step(&sim, emitted, dt_s, &bench);
+        }
         motor_screen_push(&bench);
         if (s_log_file != NULL) {
             s_log_t += dt_s;
@@ -362,7 +388,27 @@ void app_main(void)
         if ((uint32_t)(now_ms() - last_poll) >= (link_up ? 50u : 1000u)) {
             last_poll = now_ms();
             link_msg_t reply;
-            const bool answered = poll_identity(&host, &rx, &reply);
+            bool answered;
+            if (link_up) {
+                /* Ask for what is wanted every frame; identity is asked once
+                 * and then only to notice the far end coming back. */
+                answered = read_bench(&host, &rx, &bench);
+            } else {
+                answered = poll_page(&host, &rx, LINK_PAGE_IDENTITY,
+                                     LINK_ID_COUNT, &reply);
+                if (answered
+                    && reply.regs[LINK_ID_PROTOCOL_MAJOR]
+                           != LINK_PROTOCOL_MAJOR) {
+                    /* Refusing to arm when the versions disagree is one
+                     * register and some spine.  This is the register. */
+                    ESP_LOGE(TAG, "coprocessor speaks protocol %u, we speak %u",
+                             reply.regs[LINK_ID_PROTOCOL_MAJOR],
+                             (unsigned)LINK_PROTOCOL_MAJOR);
+                    throttle_arm(&thr, false, now_ms());
+                    ui_router_set_alert("protocol mismatch -- will not arm");
+                    answered = false;
+                }
+            }
             if (answered != link_up) {
                 ESP_LOGI(TAG, "coprocessor %s",
                          answered ? "answered" : "went quiet");
@@ -375,7 +421,7 @@ void app_main(void)
             .armed       = thr.armed,
             .faults      = 0,
             .run_seconds = now_ms() / 1000u,
-            .mode        = "SIM",
+            .mode        = link_up ? "LINK" : "SIM",
             .simulated   = bench_state_simulated(&bench),
         };
         ui_router_set_status(&status);
