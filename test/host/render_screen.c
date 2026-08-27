@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "log_viewer_screen.h"
 #include "motor_screen.h"
 #include "overview_screen.h"
 #include "telemetry_sim.h"
@@ -33,6 +34,91 @@ static gfx_color_t fb[W * H];
  * zeroes: a band with nothing in it would make the golden image agree with a
  * band that had stopped working.
  */
+/* A card that does not exist, so the log screenshots are of states the UI
+ * can actually reach rather than of an empty browser. */
+static char g_csv[32768];
+static log_mem_ctx_t g_csv_ctx;
+
+static void make_log_csv(void)
+{
+    /*
+     * A run written the way the logger will write one: units in the header,
+     * which is the shape the fixtures use.
+     *
+     * Worth a look later -- a *separate* units row is read for its units and
+     * then counted as a data row as well, so a file in that shape reports its
+     * first row as unreadable cells.  Both cannot be right.
+     */
+    telemetry_sim_t sim;
+    bench_state_t   b;
+    memset(&b, 0, sizeof(b));
+    telemetry_sim_init(&sim, NULL);
+
+    size_t n = (size_t)snprintf(g_csv, sizeof(g_csv),
+                                "time (s);voltage (V);current (A);"
+                                "power (W);rpm (rpm)\n");
+    for (int i = 0; i < 320 && n + 80u < sizeof(g_csv); ++i) {
+        const float t = (float)i * 0.05f;
+        float th = 0.0f;
+        if (t >= 1.0f && t < 5.0f)  { th = 24.0f; }
+        else if (t < 9.0f)          { th = 58.0f; }
+        else if (t < 11.0f)         { th = 92.0f; }
+        else if (t >= 11.0f)        { th = 40.0f; }
+        telemetry_sim_step(&sim, th, 0.05f, &b);
+        n += (size_t)snprintf(g_csv + n, sizeof(g_csv) - n,
+                              "%.2f;%.2f;%.2f;%.0f;%.0f\n",
+                              (double)t, (double)b.voltage, (double)b.current,
+                              (double)b.power, (double)b.rpm);
+    }
+}
+
+static const struct {
+    const char *name;
+    uint32_t size;
+} k_card[] = {
+    { "BENCH_2026-08-22_1.CSV", 18422 },
+    { "BENCH_2026-08-22_2.CSV", 9210 },
+    { "LOG00015.BFL", 1048576 },
+    { "SWEEP_920KV.CSV", 4096 },
+};
+
+static int fake_list(log_viewer_file_t *out, int max_entries, void *ctx)
+{
+    (void)ctx;
+    int n = 0;
+    for (size_t i = 0; i < sizeof(k_card) / sizeof(k_card[0]) && n < max_entries;
+         ++i) {
+        snprintf(out[n].name, sizeof(out[n].name), "%s", k_card[i].name);
+        out[n].size = k_card[i].size;
+        out[n].is_dir = false;
+        ++n;
+    }
+    return n;
+}
+
+static bool fake_open(const char *name, log_source_t *src, void *ctx)
+{
+    (void)ctx;
+    (void)name;
+    log_source_memory(src, &g_csv_ctx, g_csv, strlen(g_csv));
+    return true;
+}
+
+static const char *fake_volume(void *ctx)
+{
+    (void)ctx;
+    return "BENCH SD  14.7 GB FREE";
+}
+
+static const log_viewer_io_t k_io = {
+    .list = fake_list,
+    .open = fake_open,
+    .close = NULL,
+    .volume = fake_volume,
+    .ctx = NULL,
+};
+
+
 static const ui_bench_status_t k_status = {
     .link_up     = true,
     .armed       = false,
@@ -56,6 +142,20 @@ static void write_ppm(const char *path, const gfx_color_t *pixels)
         fputc(r, f); fputc(g, f); fputc(b, f);
     }
     fclose(f);
+}
+
+/* IM_BTN_Y from log_viewer_screen.c: if the layout moves this moves
+ * with it, and render_ui --check is what notices. */
+#define IM_BTN_Y_LOCAL 368
+
+static void tap(int x, int y)
+{
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)x,
+                                   .y = (int16_t)y, .strength = 40 } };
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
 }
 
 static ui_screen_id_t id_of(const char *name)
@@ -102,6 +202,8 @@ int main(int argc, char **argv)
     }
     const ui_screen_id_t id = id_of(argv[2]);
     const bool light = (argc > 3 && strcmp(argv[3], "light") == 0);
+    /* argv[4] is the golden's name; several share one screen. */
+    const char *view = (argc > 4) ? argv[4] : argv[2];
     const bool sim   = (argc > 3 && strcmp(argv[3], "sim") == 0);
 
     ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);
@@ -138,6 +240,31 @@ int main(int argc, char **argv)
     st.armed     = (id == SCREEN_MOTOR);
     ui_router_set_status(&st);
     ui_router_goto(id);
+
+    if (id == SCREEN_LOGS) {
+        /* Driven the way a person would, so the shots are of reachable
+         * states.  Taps are in panel coordinates; the router removes the
+         * band before the screen sees them. */
+        make_log_csv();
+        log_viewer_set_io(&k_io);
+        log_viewer_refresh();
+        /*
+         * BR_LIST starts at y = 76 in screen coordinates and rows are 44 px,
+         * so the first row's middle is 76 + 22.  The band offset is added
+         * here because ui_router_event takes panel coordinates and strips it
+         * again on the way in.
+         */
+        if (strcmp(view, "logs") != 0) {
+            /* Rows begin at BR_LIST.y + 30, not at BR_LIST.y: the panel
+             * has a header. */
+            tap(400, UI_BAND_H + 36 + 30 + 22);   /* select */
+            tap(400, UI_BAND_H + 36 + 30 + 22);   /* open   */
+        }
+        if (strcmp(view, "logs-plot") == 0) {
+            tap(690, UI_BAND_H + IM_BTN_Y_LOCAL + 23);   /* PLOT */
+        }
+    }
+
 
     gfx_canvas_t c;
     gfx_canvas_init(&c, fb, W, H, W);

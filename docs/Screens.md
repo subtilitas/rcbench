@@ -79,6 +79,18 @@ and less comfortable position than being blocked:
 
 ![Logs](img/logs.png)
 
+Which is now built: browse the card, see what the import view detected and the
+evidence behind it, then plot.
+
+![The import view](img/logs-import.png)
+![The plot](img/logs-plot.png)
+
+The layout moved up 40 px on the way in. It was drawn for a screen that owned
+all 480 and painted its own home tag in the top 40; the router owns both now
+and hands it a 432 px window, so without the shift the footer ran from 430 to
+472 in a canvas 432 tall and RESCAN, OPEN and PLOT could not be pressed at
+all.
+
 The rest, each naming its own blocker:
 
 ![Servo](img/servo.png)
