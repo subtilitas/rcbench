@@ -98,6 +98,7 @@ voltage batched to 100 Hz, decoded ESC frames and an accelerometer burst come to
 | Panel link transport | new | UART on GPIO16/15, board-switched direction, poll loop with the one-second escalation; unrun on silicon |
 | **The heartbeat** | new | **driven**: edges from the render loop, dropped the instant STOP latches or touch stops answering. The monostable it gates is not fitted, so today the edges reach a header pin and a scope |
 | Throttle output on the panel | **removed** | GPIO6 is the heartbeat; the panel emits no servo pulse |
+| **The OpenYGE ESC protocol** | new | **specified**, not yet implemented: framing, the telemetry payload, the drip-fed parameter table, the status byte and its overloaded warning nibble. Seven things still want a logic analyser before any of it is trusted |
 | **Finding a servo's installed limit** | new | **the search is built and tested** against a modelled servo — the knee in current against position, with three protections. It has nothing to drive until the coprocessor has PWM and a sensor per output |
 | **Synchronising two servos on one surface** | new | **built and tested**: total current minimised at centre and at each end, which separates an offset error from a travel error. Waiting on the same sensor |
 | Servo programmer | **held** | the KST work stays in the predecessor until asked for |
@@ -454,12 +455,13 @@ turnaround, all of which are now written up under
 by being answered wrongly: the question was which end set a baud *ceiling*, and
 there is no ceiling.
 
-Two remain, and one is new.
+Two remain, and two are new.
 
 | | Where it stands |
 | --- | --- |
 | **INA228** is the sensing part | Right on merit — 85 V, twenty bits, charge and energy accumulated in hardware — but back-ordered into January 2027, and the obvious substitute stops at 36 V, which is under 8S. Check the INA238 before a layout commits to it. |
 | **The MAX485 breakout's 5 V against the RP2350's power-up order** | The breakout sits at the coprocessor end, where Bank 0 *is* 5 V tolerant — but only while the 3.3 V rail is up. On a module build the 5 V rail comes up first, so at every power-on the transceiver can drive 5 V into an unpowered input. A 2.2 kΩ series resistor on RO bounds the clamp current and costs eleven nanoseconds of edge. Unresolved only in the sense that the part is not fitted yet. |
+| **Seven OpenYGE numbers want a logic analyser** | The protocol came from YGE's developer as code rather than as a document, and code answers "what does this do" rather than "what does the wire guarantee". The RPM scale is the one that actually contradicts itself — the field is described as 0.1 eRPM and multiplied by ten — and a wrong answer there is a tachometer that reads a hundredfold out. [The spec](docs/OpenYGE.md) lists all seven; each is one measurement, and the parameter indices want confirming before anything is *written* to an ESC. |
 | **Q1's threshold voltage is not on the schematic** | The direction circuit's hold time — and therefore the baud floor — depends on it, and the schematic names R76, C51, D7 and R79 but not the FET. The floor is quoted from the pessimistic end of a plausible range (1.0 V → 72 µs → 125 kbaud). Worth one measurement: scope DE against TX at 256 kbaud and read the release directly. |
 
 ## What is deliberately not built
@@ -485,6 +487,16 @@ The permissive exceptions are PX4's receiver decoders (BSD) and MIT reference
 code for SRXL2, JETI EX Bus, DShot and DroneCAN. Everything else is written from
 the specification, not from somebody's line.
 
+**OpenYGE is the first time that rule was actually exercised**, and it is worth
+recording how, because the same shape will recur. YGE's own developer supplied
+the protocol — there is no published document — but supplied it as code
+carrying a GPL header. The code is kept outside this repository entirely: not
+in the tree, not in the history. What came across is what cannot be owned, a
+byte offset and a scale factor and a polynomial, written up from scratch as
+[the OpenYGE specification](docs/OpenYGE.md), and that page is what any
+implementation here is written from. Six defects in the supplied code are
+recorded on it rather than inherited.
+
 ## The order of work
 
 1. **The foundation** — the tree, the ported floor with its tests green, the
@@ -492,14 +504,23 @@ the specification, not from somebody's line.
    re-cut screens.
 2. **The link, on silicon** — when the module lands.
 3. **Make the numbers real** — a KISS frame or bidirectional DShot, and the
-   current sensor. The bench stops simulating.
+   current sensor. The bench stops simulating. [OpenYGE](docs/OpenYGE.md) now
+   looks like the shortest path through this: a YGE ESC reports voltage,
+   current, consumption, eRPM and four temperatures itself, which fills every
+   modelled field of `bench_state` **without** the INA228 that is back-ordered
+   into 2027. It does not replace that sensor — the ESC reports what it
+   believes about itself and a shunt reports what the bench knows — but it
+   takes the watermark off the screen a year earlier.
 4. **Make them keep** — the logger, then the viewer reads what the bench wrote.
 5. **Make it drive** — servo outputs, then the sum-signal protocols, then the
    servo tester as it is described on the box.
 6. **Make it listen** — one bus decoder at a time; each is a day and each adds a
    product feature.
 7. **Make it programme** — BLHeli_S and AM32 first, because they need nobody's
-   permission; Hitec first on the servo side, for the same reason.
+   permission; Hitec first on the servo side, for the same reason. OpenYGE
+   reads and writes an ESC's whole configuration over the same wire as its
+   telemetry, with no reverse engineering and the vendor's own help, so it is
+   arguably ahead of both.
 
 Nothing in steps 1 to 6 is blocked on anything but time.
 
@@ -507,8 +528,8 @@ Nothing in steps 1 to 6 is blocked on anything but time.
 
 [`docs/`](docs/) is the wiki source and the reference behind this record:
 [what this is for](docs/Manifest.md), [the link](docs/Link.md),
-[safety](docs/Safety.md), [the servo procedures](docs/Servo.md), and
-[building](docs/Building.md). Pages are written
+[safety](docs/Safety.md), [the servo procedures](docs/Servo.md),
+[the OpenYGE protocol](docs/OpenYGE.md), and [building](docs/Building.md). Pages are written
 by the commit that lands the code they describe, so a page that is missing is a
 subsystem that is not here yet.
 

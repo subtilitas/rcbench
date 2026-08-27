@@ -5,5 +5,6 @@
 - [The link](Link.md)
 - [Safety](Safety.md)
 - [Servo procedures](Servo.md)
+- [The OpenYGE protocol](OpenYGE.md)
 - [Performance](Performance.md)
 - [Building](Building.md)
