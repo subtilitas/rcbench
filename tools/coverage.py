@@ -51,6 +51,7 @@ TRACKED = [
     "shared/ui/splash_screen.c",
     "shared/ui/overview_screen.c",
     "shared/ui/stub_screen.c",
+    "shared/ui/motor_screen.c",
     "shared/settings/settings.c",
     "shared/logfile/log_numbers.c",
     "shared/logfile/log_csv.c",

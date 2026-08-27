@@ -15,7 +15,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "motor_screen.h"
 #include "overview_screen.h"
+#include "telemetry_sim.h"
 #include "splash_screen.h"
 #include "stub_screen.h"
 #include "ui_screen.h"
@@ -105,8 +107,35 @@ int main(int argc, char **argv)
     ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);
     ui_router_init();
     pose_splash();
+    /*
+     * A scripted run, so the bench screenshot always shows the same
+     * interesting moment: spin up, hold, a burst, then settle.  Pushed one
+     * sample per plot column at the rate the panel polls.
+     */
+    if (id == SCREEN_MOTOR) {
+        telemetry_sim_t sim;
+        bench_state_t bench;
+        memset(&bench, 0, sizeof(bench));
+        telemetry_sim_init(&sim, NULL);
+        for (int i = 0; i < 780; ++i) {
+            const float t = (float)i * 0.05f;
+            float th = 0.0f;
+            if (t < 4.0f)                { th = 0.0f; }
+            else if (t < 12.0f)          { th = 22.0f; }
+            else if (t < 20.0f)          { th = 46.0f; }
+            else if (t < 24.0f)          { th = 88.0f; }
+            else if (t < 30.0f)          { th = 30.0f; }
+            else                         { th = 64.0f; }
+            telemetry_sim_step(&sim, th, 0.05f, &bench);
+            motor_screen_push(&bench);
+        }
+        motor_screen_set_throttle(64.0f);
+        motor_screen_set_armed(true);
+    }
+
     ui_bench_status_t st = k_status;
-    st.simulated = sim;
+    st.simulated = sim || (id == SCREEN_MOTOR);
+    st.armed     = (id == SCREEN_MOTOR);
     ui_router_set_status(&st);
     ui_router_goto(id);
 

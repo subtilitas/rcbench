@@ -94,7 +94,7 @@ every screen be built, reviewed and demonstrated before the coprocessor exists.
 The whole danger of that is a simulated reading being screenshotted, quoted or
 remembered as a measured one, and no caption in a corner prevents it.
 
-![The motor bench with simulated telemetry](img/motor-sim.png)
+![The motor bench with simulated telemetry](img/motor.png)
 
 So it is written across the whole screen, corner to corner, at 15% — faint
 enough to read straight through and impossible to crop out of a photograph.
@@ -106,9 +106,9 @@ the canvas, not by a fraction of the diagonal — sizing against the diagonal
 alone ignores the text's own height, which is what pushes the first and last
 letters off the corners.
 
-It costs 3,015 cache-line fills a frame against 736 without it. That is four
-times the steady state and still a fifth of the ceiling, and the panel holds
-39 Hz either way — see [Performance](Performance.md). It is only paid while the
+It costs about 1,650 cache-line fills a frame — 15,079 against 13,423 on the
+bench screen — and both sides of that are inside the budget for one frame per
+telemetry sample. See [Performance](Performance.md). It is only paid while the
 numbers are fake.
 
 ## What a bench will look like
