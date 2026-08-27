@@ -78,6 +78,11 @@ idf.py -C firmware/panel set-target esp32s3
 idf.py -C firmware/panel build
 idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor    # COMx on Windows
 
+# or one image, to one offset
+idf.py -C firmware/panel merge-bin -o rcbench-panel-merged.bin
+esptool.py -p /dev/ttyACM0 write_flash 0x0 \
+    firmware/panel/build/rcbench-panel-merged.bin
+
 # the coprocessor
 export PICO_SDK_PATH=/path/to/pico-sdk
 cmake -S firmware/copro -B firmware/copro/build
