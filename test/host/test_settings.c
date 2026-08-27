@@ -1,21 +1,44 @@
 /*
- * The settings model: the schema, the values behind it, and the rules for
- * clamping, cycling and persisting them.
+ * The settings model and the screen that edits it.
  *
- * The cases that drove the settings *screen* are not here.  They came over
- * with this file and were removed deliberately, because the screen is being
- * re-cut against the two-processor model and a test asserting the old
- * layout's pixel geometry would be asserting the wrong thing.  They return
- * with the screen.
+ * The screen cases were held back while it was re-cut and are here again.  The
+ * layout they address moved up 40 px -- the router owns the band and the home
+ * tag now -- so the geometry below follows it, and the taps are in panel
+ * coordinates because ui_router_event strips the band on the way in.
  */
 #include "greatest.h"
 
 #include <math.h>
 
 #include "settings.h"
+#include "settings_screen.h"
+#include "ui_screen.h"
+#include "ui_widgets.h"
+#include <stdlib.h>
 #include "ui_theme.h"
 
 #define W 800
+#define H 480
+
+/* Geometry mirrored from settings_screen.c; if the layout moves these move
+ * with it, and the test names say what they were aiming at. */
+#define CAT_X    16
+#define CAT_Y    (16 + UI_BAND_H)
+#define CAT_H    64
+#define CAT_GAP  8
+#define LIST_X   236
+#define LIST_Y   (16 + UI_BAND_H)
+#define ROW_PITCH 58
+#define ROW_H    54
+#define PLUS_X   726
+#define MINUS_X  556
+#define BTN_W    44
+#define RESET_Y  (358 + UI_BAND_H)
+
+static gfx_color_t *s_fb;
+static gfx_canvas_t s_c;
+
+
 #define H 480
 
 /* Geometry mirrored from settings_screen.c; if the layout moves these move
@@ -31,7 +54,6 @@
 #define PLUS_X   726
 #define MINUS_X  556
 #define BTN_W    44
-#define RESET_Y  398
 
 static gfx_color_t *s_fb;
 static gfx_canvas_t s_c;
@@ -438,6 +460,201 @@ TEST_CASE(brightness_and_contrast_are_clamped_and_monotonic)
     CHECK_EQ(ui_theme_get(), UI_THEME_DARK);
 }
 
+static void fresh_screen(void)
+{
+    if (!s_fb) {
+        s_fb = calloc((size_t)W * H, sizeof(gfx_color_t));
+    }
+    memset(s_fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    gfx_canvas_init(&s_c, s_fb, W, H, W);
+    fresh_model();
+    /* The predecessor initialised its bench screen here; ours is set up by
+     * ui_router_init, which reset()s every screen. */
+    ui_router_init();
+    ui_router_goto(SCREEN_SETUP);
+}
+
+static void tap(int x, int y)
+{
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)x, .y = (int16_t)y } };
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+}
+
+static int row_y(int index)
+{
+    return LIST_Y + index * ROW_PITCH + ROW_H / 2;
+}
+
+/* ---------------------------------------------------------------- screen */
+
+TEST_CASE(screen_switches_category_and_renders)
+{
+    fresh_screen();
+    ui_router_render(&s_c, 0);
+    CHECK(gfx_pixel_get(&s_c, 400, 100) != 0);
+
+    for (int i = 0; i < SET_CAT_COUNT; ++i) {
+        tap(CAT_X + 100, CAT_Y + i * (CAT_H + CAT_GAP) + CAT_H / 2);
+        ui_router_render(&s_c, 0);
+        CHECK(gfx_pixel_get(&s_c, 400, 100) != 0);
+    }
+}
+
+TEST_CASE(plus_and_minus_change_the_setting_under_them)
+{
+    fresh_screen();
+    setting_id_t ids[64];
+    settings_in_category(SET_CAT_ESC, ids, 64);
+
+    int before = settings_get_int(ids[0]);
+    tap(PLUS_X + BTN_W / 2, row_y(0));
+    CHECK_EQ(settings_get_int(ids[0]) - before,
+             (long)settings_def(ids[0])->step);
+
+    tap(MINUS_X + BTN_W / 2, row_y(0));
+    CHECK_EQ(settings_get_int(ids[0]), before);
+
+    /* The second row is a different setting, and only it moves. */
+    int row1 = settings_get_int(ids[1]);
+    tap(PLUS_X + BTN_W / 2, row_y(1));
+    CHECK(settings_get_int(ids[1]) != row1);
+    CHECK_EQ(settings_get_int(ids[0]), before);
+}
+
+TEST_CASE(changing_the_theme_from_the_screen_takes_effect)
+{
+    fresh_screen();
+    tap(CAT_X + 100, CAT_Y + 1 * (CAT_H + CAT_GAP) + CAT_H / 2);   /* APPLICATION */
+
+    setting_id_t ids[64];
+    int n = settings_in_category(SET_CAT_APP, ids, 64);
+    int theme_row = -1;
+    for (int i = 0; i < n; ++i) {
+        if (ids[i] == SET_THEME) { theme_row = i; }
+    }
+    CHECK(theme_row >= 0);
+
+    gfx_color_t before = ui_theme_color(UI_C_BG);
+    tap(PLUS_X + BTN_W / 2, row_y(theme_row));
+    CHECK_EQ(settings_get_int(SET_THEME), UI_THEME_LIGHT);
+    CHECK(ui_theme_color(UI_C_BG) != before);
+
+    tap(MINUS_X + BTN_W / 2, row_y(theme_row));
+    CHECK_EQ(settings_get_int(SET_THEME), UI_THEME_DARK);
+    CHECK_EQ(ui_theme_color(UI_C_BG), before);
+}
+
+TEST_CASE(a_drag_scrolls_instead_of_pressing)
+{
+    fresh_screen();
+    setting_id_t ids[64];
+    settings_in_category(SET_CAT_ESC, ids, 64);
+    int before = settings_get_int(ids[0]);
+
+    /* Press on the + key, then move well past the slop before releasing. */
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = PLUS_X + BTN_W / 2,
+                                   .y = (int16_t)row_y(0) } };
+    ui_router_event(&e);
+    int after_press = settings_get_int(ids[0]);
+
+    e.type = TOUCH_EVENT_MOVE;
+    for (int i = 1; i <= 10; ++i) {
+        e.point.y = (int16_t)(row_y(0) - i * 12);
+        ui_router_event(&e);
+    }
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+
+    /* The press itself already applied one step; the drag must not add more. */
+    CHECK_EQ(settings_get_int(ids[0]), after_press);
+    CHECK(after_press != before);
+
+    ui_router_render(&s_c, 0);
+}
+
+TEST_CASE(holding_a_key_repeats_with_acceleration)
+{
+    fresh_screen();
+    setting_id_t ids[64];
+    settings_in_category(SET_CAT_ESC, ids, 64);
+
+    /* Row 1 is capacity: 0..30000 in steps of 100, which is why holding has
+     * to work at all. */
+    settings_set(ids[1], settings_def(ids[1])->def);
+    int start = settings_get_int(ids[1]);
+
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = PLUS_X + BTN_W / 2,
+                                   .y = (int16_t)row_y(1) } };
+    ui_router_event(&e);
+    int after_press = settings_get_int(ids[1]);
+    CHECK(after_press > start);
+
+    /* Nothing repeats before the delay. */
+    for (int i = 0; i < 5; ++i) {
+        ui_router_tick(0.05f);
+    }
+    CHECK_EQ(settings_get_int(ids[1]), after_press);
+
+    for (int i = 0; i < 20; ++i) {
+        ui_router_tick(0.05f);
+    }
+    int slow = settings_get_int(ids[1]);
+    CHECK(slow > after_press);
+
+    /* And it speeds up rather than plodding through three hundred taps. */
+    for (int i = 0; i < 40; ++i) {
+        ui_router_tick(0.05f);
+    }
+    int fast = settings_get_int(ids[1]);
+    CHECK((fast - slow) > (slow - after_press));
+
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    int settled = settings_get_int(ids[1]);
+    ui_router_tick(0.5f);
+    CHECK_EQ(settings_get_int(ids[1]), settled);      /* release stops it */
+}
+
+TEST_CASE(reset_button_restores_the_open_category)
+{
+    fresh_screen();
+    setting_id_t ids[64];
+    settings_in_category(SET_CAT_ESC, ids, 64);
+
+    settings_set(ids[0], settings_def(ids[0])->max);
+    settings_set(SET_BRIGHTNESS, 50);
+
+    tap(CAT_X + 100, RESET_Y + 20);
+    CHECK_EQ(settings_get_int(ids[0]), (long)settings_def(ids[0])->def);
+    CHECK_EQ(settings_get_int(SET_BRIGHTNESS), 50);   /* other category kept */
+}
+
+TEST_CASE(leaving_the_screen_saves)
+{
+    fresh_screen();
+    settings_set_store(&s_mem_store);
+    s_save_calls = 0;
+
+    setting_id_t ids[64];
+    settings_in_category(SET_CAT_ESC, ids, 64);
+    tap(PLUS_X + BTN_W / 2, row_y(0));
+    CHECK(settings_dirty());
+
+    ui_router_goto(SCREEN_OVERVIEW);
+    CHECK(!settings_dirty());
+    CHECK_EQ(s_save_calls, 1);
+
+    settings_set_store(NULL);
+}
+
+
+
+
 int main(void)
 {
     RUN(defaults_come_from_the_schema);
@@ -454,5 +671,12 @@ int main(void)
     RUN(bad_ids_are_survivable);
     RUN(theme_switch_changes_the_palette);
     RUN(brightness_and_contrast_are_clamped_and_monotonic);
+    RUN(screen_switches_category_and_renders);
+    RUN(plus_and_minus_change_the_setting_under_them);
+    RUN(changing_the_theme_from_the_screen_takes_effect);
+    RUN(a_drag_scrolls_instead_of_pressing);
+    RUN(holding_a_key_repeats_with_acceleration);
+    RUN(reset_button_restores_the_open_category);
+    RUN(leaving_the_screen_saves);
     return test_summary("settings");
 }

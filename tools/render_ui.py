@@ -42,6 +42,8 @@ SOURCES = [
     "shared/ui/stub_screen.c",
     "shared/ui/motor_screen.c",
     "shared/ui/log_viewer_screen.c",
+    "shared/ui/settings_screen.c",
+    "shared/settings/settings.c",
     "shared/logfile/log_numbers.c",
     "shared/logfile/log_csv.c",
     "shared/logfile/log_fields.c",
@@ -65,6 +67,7 @@ SCREENS = {
     "logs-import":("logs-import.png","logs",       "dark"),
     "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
     "setup":      ("setup.png",      "setup",      "dark"),
+    "setup-light":("setup-light.png","setup",      "light"),
     "battery":    ("battery.png",    "battery",    "dark"),
     "balance":    ("balance.png",    "balance",    "dark"),
     "programmer": ("programmer.png", "programmer", "dark"),
@@ -76,6 +79,7 @@ INCLUDES = [
     "shared/bench/include",
     "shared/link/include",
     "shared/logfile/include",
+    "shared/settings/include",
 ]
 
 

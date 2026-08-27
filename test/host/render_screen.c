@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include "log_viewer_screen.h"
+#include "settings.h"
 #include "motor_screen.h"
 #include "overview_screen.h"
 #include "telemetry_sim.h"
@@ -207,6 +208,7 @@ int main(int argc, char **argv)
     const bool sim   = (argc > 3 && strcmp(argv[3], "sim") == 0);
 
     ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);
+    settings_init();
     ui_router_init();
     pose_splash();
     /*

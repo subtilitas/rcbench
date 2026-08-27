@@ -61,6 +61,12 @@ Five are live. Three are named, routed and honest:
 
 ![Setup](img/setup.png)
 
+Built, and the seven screen cases that were held back while it was re-cut are
+back with it. In the light theme too, because a palette change that only
+breaks one theme is the kind that ships:
+
+![Setup in the light theme](img/setup-light.png)
+
 Both themes are committed, because a palette change that only breaks one theme
 is the kind that ships:
 
