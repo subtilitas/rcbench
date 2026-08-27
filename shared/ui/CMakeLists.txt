@@ -19,13 +19,14 @@ set(SRCS
     overview_screen.c
     stub_screen.c
     motor_screen.c
+    log_viewer_screen.c
 )
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
-                           REQUIRES gfx touch bench)
+                           REQUIRES gfx touch bench logfile)
 else()
     add_library(rcbench_ui STATIC ${SRCS})
     target_include_directories(rcbench_ui PUBLIC include)
-    target_link_libraries(rcbench_ui PUBLIC rcbench_gfx rcbench_touch rcbench_bench)
+    target_link_libraries(rcbench_ui PUBLIC rcbench_gfx rcbench_touch rcbench_bench rcbench_logfile)
 endif()

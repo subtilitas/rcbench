@@ -41,6 +41,10 @@ SOURCES = [
     "shared/ui/overview_screen.c",
     "shared/ui/stub_screen.c",
     "shared/ui/motor_screen.c",
+    "shared/ui/log_viewer_screen.c",
+    "shared/logfile/log_numbers.c",
+    "shared/logfile/log_csv.c",
+    "shared/logfile/log_fields.c",
     "shared/bench/bench_state.c",
     "shared/bench/telemetry_sim.c",
     "shared/bench/throttle.c",
@@ -58,6 +62,8 @@ SCREENS = {
     "servo":      ("servo.png",      "servo",      "dark"),
     "analyser":   ("analyser.png",   "analyser",   "dark"),
     "logs":       ("logs.png",       "logs",       "dark"),
+    "logs-import":("logs-import.png","logs",       "dark"),
+    "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
     "setup":      ("setup.png",      "setup",      "dark"),
     "battery":    ("battery.png",    "battery",    "dark"),
     "balance":    ("balance.png",    "balance",    "dark"),
@@ -69,6 +75,7 @@ INCLUDES = [
     "shared/ui/include",
     "shared/bench/include",
     "shared/link/include",
+    "shared/logfile/include",
 ]
 
 
@@ -85,7 +92,10 @@ def build(tmp: pathlib.Path) -> pathlib.Path:
 
 def render_one(exe, tmp, name, screen, theme):
     ppm = tmp / f"{name}.ppm"
-    subprocess.run([str(exe), str(ppm), screen, theme],
+    # The view name as well as the screen: three log goldens are all the
+    # same screen in different states, and the renderer needs to know
+    # which state to drive it into.
+    subprocess.run([str(exe), str(ppm), screen, theme, name],
                    check=True)
     from PIL import Image
     return Image.open(ppm).convert("RGB")
