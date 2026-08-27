@@ -31,11 +31,19 @@ SOURCES = [
     "shared/ui/ui_widgets.c",
     "shared/ui/ui_icons.c",
     "shared/ui/ui_band.c",
+    "shared/ui/ui_plot.c",
+    "shared/ui/ui_hero.c",
+    "shared/ui/ui_slider.c",
+    "shared/ui/ui_tabs.c",
     "shared/ui/ui_watermark.c",
     "shared/ui/ui_router.c",
     "shared/ui/splash_screen.c",
     "shared/ui/overview_screen.c",
     "shared/ui/stub_screen.c",
+    "shared/ui/motor_screen.c",
+    "shared/bench/bench_state.c",
+    "shared/bench/telemetry_sim.c",
+    "shared/bench/throttle.c",
 ]
 
 # Every screen gets a committed screenshot; CI checks them all.
@@ -47,8 +55,6 @@ SCREENS = {
     # that only breaks one theme is the kind that ships.
     "overview-light": ("overview-light.png", "overview", "light"),
     "motor":      ("motor.png",      "motor",      "dark"),
-    # The same screen with the numbers modelled rather than measured.
-    "motor-sim":  ("motor-sim.png",  "motor",      "sim"),
     "servo":      ("servo.png",      "servo",      "dark"),
     "analyser":   ("analyser.png",   "analyser",   "dark"),
     "logs":       ("logs.png",       "logs",       "dark"),
@@ -61,6 +67,8 @@ INCLUDES = [
     "shared/gfx/include",
     "shared/touch/include",
     "shared/ui/include",
+    "shared/bench/include",
+    "shared/link/include",
 ]
 
 

@@ -59,8 +59,19 @@ jobs:
       # ceiling is near the cost of a full-screen clear: a screen that exceeds
       # it is repainting everything, which is the mistake worth catching here
       # rather than on hardware.
-      - name: Frame cost has not regressed
-        run: python3 tools/frame_cost.py frame sim overview --max-lines 12000
+      # Two ceilings, because a chrome-cached screen and a live plot have
+      # nothing to do with each other and one number would guard neither.
+      #
+      # 15,600 is not a preference: the panel moves 976 KiB per frame at
+      # 39 Hz, and a render costing twice that lands at 19.5 fps -- exactly
+      # one frame per 20 Hz telemetry sample.  Above it the panel can no
+      # longer deliver a frame per sample, which is the regression worth
+      # catching.  2,000 catches a menu that has stopped caching its chrome.
+      - name: The bench frame still fits one telemetry sample
+        run: python3 tools/frame_cost.py frame sim --max-lines 15600
+
+      - name: The chrome-cached screens have not started repainting
+        run: python3 tools/frame_cost.py overview --max-lines 2000
 
       - name: The frame-cost table in the docs is current
         run: python3 tools/frame_cost.py --check-doc

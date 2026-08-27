@@ -34,7 +34,9 @@ void ui_hero_render(gfx_canvas_t *c, gfx_rect_t r, const ui_hero_def_t *def,
         char pk[24];
         ui_fmt(pk, sizeof(pk), peak, def->decimals);
         char line[32];
-        snprintf(line, sizeof(line), "pk %s", pk);
+        const char *tag = (def->extreme_label != NULL)
+                              ? def->extreme_label : "pk";
+        snprintf(line, sizeof(line), "%s %s", tag, pk);
         gfx_text(c, r.x, r.y + 52, line, &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
