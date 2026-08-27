@@ -4,5 +4,6 @@
 - [Screens](Screens.md)
 - [The link](Link.md)
 - [Safety](Safety.md)
+- [Servo procedures](Servo.md)
 - [Performance](Performance.md)
 - [Building](Building.md)

@@ -28,6 +28,10 @@ pico_sdk_init()
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/link"  link)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/bench" bench)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/safety" safety)
+# Not called yet -- it has nothing to drive until there is PWM and a sensor per
+# output -- but built here so the ARM toolchain compiles it alongside the host
+# one.  --gc-sections drops it from the image.
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/servo"  servo)
 
 add_executable(rcbench-copro
     src/main.c
@@ -42,5 +46,6 @@ target_link_libraries(rcbench-copro
     rcbench_link
     rcbench_bench
     rcbench_safety
+    rcbench_servo
 )
 pico_add_extra_outputs(rcbench-copro)
