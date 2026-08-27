@@ -23,10 +23,10 @@ panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
 
 mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
-frame           13,614     1702 KiB     44.7      19.5
-sim             15,171     1896 KiB     49.8      19.5
-chrome          24,461     3058 KiB     80.3       9.8
-overview           745       93 KiB      2.4      39.0
+frame           13,602     1700 KiB     44.6      19.5
+sim             15,161     1895 KiB     49.8      19.5
+chrome          24,450     3056 KiB     80.2       9.8
+overview           751       94 KiB      2.5      39.0
 clear           12,006     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0

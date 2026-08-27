@@ -5,6 +5,7 @@
 
 #include "log_viewer_screen.h"
 #include "motor_screen.h"
+#include "settings_screen.h"
 #include "overview_screen.h"
 #include "splash_screen.h"
 #include "stub_screen.h"
@@ -38,6 +39,7 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
     case SCREEN_OVERVIEW: return overview_screen();
     case SCREEN_MOTOR:    return motor_screen();
     case SCREEN_LOGS:     return log_viewer_screen();
+    case SCREEN_SETUP:    return settings_screen();
     default:              return stub_screen(id);
     }
 }
@@ -93,6 +95,7 @@ void ui_router_invalidate(void)
     stub_invalidate();
     motor_invalidate();
     log_viewer_invalidate();
+    settings_screen_invalidate();
 }
 
 void ui_router_tick(float dt_s)
