@@ -16,6 +16,7 @@
 #include "pico/stdlib.h"
 
 #include "copro_pins.h"
+#include "heartbeat.h"
 #include "link_dev.h"
 #include "link_frame.h"
 #include "link_pages.h"
@@ -34,6 +35,11 @@ typedef struct {
 
 static copro_state_t s_state;
 static link_dev_t    s_dev;
+
+/* The panel's safety line, as judged in firmware.  Declared here with the
+ * other state because the control page consults it before it will arm --
+ * the reasoning is with heartbeat_init() below. */
+static heartbeat_mon_t s_beat;
 
 static void identity_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
@@ -91,7 +97,8 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
         }
         /* Refusing to arm while in failsafe is the coprocessor's own decision
          * to make: the panel is not the authority on whether it is safe here. */
-        if (reg == LINK_CT_ARM && in[i] != 0 && s_dev.failsafe) {
+        if (reg == LINK_CT_ARM && in[i] != 0
+            && (s_dev.failsafe || !s_beat.alive)) {
             return LINK_NACK_NOT_ARMED;
         }
         s->control[reg] = in[i];
@@ -105,6 +112,51 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_CONTROL,  LINK_CT_COUNT, control_read,  control_write },
     { LINK_PAGE_BENCH,    LINK_BN_COUNT, bench_read,    NULL },
 };
+
+/* ------------------------------------------------------------ the heartbeat */
+
+/*
+ * The panel's safety line, watched in firmware as well as in hardware.
+ *
+ * The retriggerable monostable on the daughterboard is the backstop: it holds
+ * the output enable up only while edges keep arriving, and it does that with
+ * no software involved, which is exactly what a backstop should be.  What it
+ * cannot do is tell a heartbeat from noise.  Anything that edges fast enough
+ * retriggers it -- a ringing line, a short to a clock, a floating input next
+ * to a switching supply -- and it would hold the outputs enabled through all
+ * of them.  heartbeat_mon_t knows what period to expect and rejects what
+ * cannot be a 39 Hz render loop.
+ *
+ * The pin is sampled in the main loop rather than through an interrupt.  The
+ * loop turns over every millisecond at worst -- the UART read times out at
+ * 1000 us -- which is four times faster than HEARTBEAT_MIN_GAP_MS, so an edge
+ * cannot hide between two samples at any rate the monitor would accept.  An
+ * ISR would notice edges faster than the floor, which is not useful: those are
+ * the ones being rejected anyway.
+ */
+static bool s_beat_level;
+
+static void heartbeat_init(void)
+{
+    gpio_init(COPRO_HEARTBEAT_PIN);
+    gpio_set_dir(COPRO_HEARTBEAT_PIN, GPIO_IN);
+    /* Pulled down, so an unplugged or unpowered panel reads as a line that is
+     * not edging rather than as one held high. */
+    gpio_pull_down(COPRO_HEARTBEAT_PIN);
+    heartbeat_mon_init(&s_beat);
+    s_beat_level = gpio_get(COPRO_HEARTBEAT_PIN);
+}
+
+/** Sample the line; returns whether it may currently be believed. */
+static bool heartbeat_poll(uint32_t now)
+{
+    const bool level = gpio_get(COPRO_HEARTBEAT_PIN);
+    if (level != s_beat_level) {
+        s_beat_level = level;
+        heartbeat_mon_edge(&s_beat, now);
+    }
+    return heartbeat_mon_alive(&s_beat, now);
+}
 
 /* ---------------------------------------------------------------- the loop */
 
@@ -126,12 +178,19 @@ static void sample(float dt_s)
     bench_state_to_regs(&s_bench, s_state.bench);
 
     s_state.status[LINK_ST_STATE] =
-        s_dev.failsafe ? (uint16_t)LINK_STATE_FAILSAFE
-                       : (s_state.control[LINK_CT_ARM] != 0
-                              ? (uint16_t)LINK_STATE_ARMED
-                              : (uint16_t)LINK_STATE_IDLE);
-    s_state.status[LINK_ST_FAULTS] =
-        s_dev.failsafe ? (uint16_t)LINK_FAULT_LINK_SILENT : 0u;
+        (s_dev.failsafe || !s_beat.alive)
+            ? (uint16_t)LINK_STATE_FAILSAFE
+            : (s_state.control[LINK_CT_ARM] != 0
+                   ? (uint16_t)LINK_STATE_ARMED
+                   : (uint16_t)LINK_STATE_IDLE);
+    uint16_t faults = 0;
+    if (s_dev.failsafe) {
+        faults |= (uint16_t)LINK_FAULT_LINK_SILENT;
+    }
+    if (!s_beat.alive) {
+        faults |= (uint16_t)LINK_FAULT_HEARTBEAT;
+    }
+    s_state.status[LINK_ST_FAULTS] = faults;
 
     const uint32_t up = (uint32_t)to_ms_since_boot(get_absolute_time());
     s_state.status[LINK_ST_UPTIME_MS_LO] = (uint16_t)(up & 0xFFFFu);
@@ -168,6 +227,7 @@ int main(void)
         }
     }
 
+    heartbeat_init();
     telemetry_sim_init(&s_sim, NULL);
     memset(&s_bench, 0, sizeof(s_bench));
 
@@ -208,6 +268,18 @@ int main(void)
         if ((uint32_t)(now - last_sample) >= 20u) {
             sample((float)(now - last_sample) / 1000.0f);
             last_sample = now;
+        }
+
+        /*
+         * Two independent watchdogs, deliberately not folded together.  The
+         * link one says the panel has stopped talking; this one says the
+         * panel has stopped *running*.  A panel that is wedged mid-frame can
+         * still have a UART interrupt answering polls, so the link watchdog
+         * alone would never fire -- which is the failure this line exists for.
+         */
+        const bool was_beating = s_beat.alive;
+        if (!heartbeat_poll(now) && was_beating) {
+            outputs_off();   /* the edge, once */
         }
 
         if (link_dev_tick(&s_dev, now)) {
