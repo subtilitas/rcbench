@@ -2,6 +2,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "ui_hero.h"
@@ -64,6 +65,12 @@ static struct {
     bool          armed;
     motor_cmd_t   pending;
     unsigned      drawn_mask;
+    /* The push count last painted into each framebuffer; UINT32_MAX
+     * means "nothing yet", which is not a count push can reach. */
+    uint32_t      drawn_push[2];
+    /* Bumped by anything that changes a control's appearance. */
+    uint32_t      ctrl_rev;
+    uint32_t      drawn_ctrl[2];
     gfx_rect_t    arm_rect;
     gfx_rect_t    reset_rect;
     int           pressed;      /**< 0 none, 1 arm, 2 reset */
@@ -71,7 +78,14 @@ static struct {
     bool          have_press;
 } s;
 
-void motor_invalidate(void) { s.drawn_mask = 0; }
+void motor_invalidate(void)
+{
+    s.drawn_mask = 0;
+    s.drawn_push[0] = UINT32_MAX;
+    s.drawn_push[1] = UINT32_MAX;
+    s.drawn_ctrl[0] = UINT32_MAX;
+    s.drawn_ctrl[1] = UINT32_MAX;
+}
 
 /* The palette is not a compile-time constant -- it changes with the theme --
  * so the series colours are bound here rather than in the table above. */
@@ -87,6 +101,12 @@ static void bind_colours(void)
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
+    /* Not zero: a zeroed drawn_* must not read as "already drawn revision 0",
+     * or the first frame after a reset skips what it is meant to paint. */
+    s.drawn_push[0] = UINT32_MAX;
+    s.drawn_push[1] = UINT32_MAX;
+    s.drawn_ctrl[0] = UINT32_MAX;
+    s.drawn_ctrl[1] = UINT32_MAX;
     ui_plot_init(&s.plot, k_series, S_COUNT,
                  (float)PLOT_W / SAMPLE_HZ);
     ui_tabs_init(&s.tabs, k_tab_labels, MOTOR_PANE_COUNT,
@@ -154,9 +174,19 @@ void motor_screen_push(const bench_state_t *b)
     ui_plot_update_scales(&s.plot, PLOT_W);
 }
 
-void motor_screen_set_armed(bool armed) { s.armed = armed; }
+void motor_screen_set_armed(bool armed)
+{
+    if (s.armed != armed) {
+        s.armed = armed;
+        ++s.ctrl_rev;
+    }
+}
 float motor_screen_throttle(void) { return s.slider.value; }
-void motor_screen_set_throttle(float pct) { ui_slider_set(&s.slider, pct); }
+void motor_screen_set_throttle(float pct)
+{
+    ui_slider_set(&s.slider, pct);
+    ++s.ctrl_rev;
+}
 
 /* ------------------------------------------------------------------ events */
 
@@ -165,8 +195,20 @@ static void event(const touch_event_t *evt)
     if (evt == NULL) {
         return;
     }
+    /*
+     * Any touch at all invalidates the controls.  Enumerating which events
+     * move a pixel -- a preset going down, a press sliding off, a drag that
+     * lands on the value it already had -- is a list that gets one case wrong
+     * and leaves a button stuck looking pressed.  Touches arrive at a few per
+     * second against 39 frames, so repainting on all of them costs nothing
+     * measurable and cannot be incomplete.
+     */
+    ++s.ctrl_rev;
+
     if (ui_tabs_event(&s.tabs, evt)) {
-        s.drawn_mask = 0;
+        /* The other pane paints over this one's region, so the record of
+         * what was drawn there is void -- not merely the chrome's. */
+        motor_invalidate();
     }
     if (ui_slider_event(&s.slider, evt)) {
         post(MOTOR_CMD_THROTTLE, s.slider.value);
@@ -251,35 +293,65 @@ static void render(gfx_canvas_t *c, int buffer_index)
         s.drawn_mask |= bit;
     }
 
-    ui_tabs_render(&s.tabs, c);
-
-    if (s.tabs.selected == MOTOR_PANE_PLOT) {
-        ui_plot_render(&s.plot, c,
-                       (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H });
-        ui_plot_render_rails(&s.plot, c,
-                             (gfx_rect_t){ RAIL_X, PLOT_Y, RAIL_W, PLOT_H });
-    } else {
-        gfx_fill_rect(c, 0, PLOT_Y, W, PLOT_H, ui_theme_color(UI_C_BG));
-        draw_table(c);
+    if (s.drawn_ctrl[buffer_index & 1] != s.ctrl_rev
+        || s.drawn_push[buffer_index & 1] != s.plot.pushes) {
+        ui_tabs_render(&s.tabs, c);
     }
 
-    /* The heroes: live value, its peak, its unit. */
-    gfx_fill_rect(c, 0, HERO_Y, W, HERO_H, ui_theme_color(UI_C_BG));
-    const float now[S_COUNT] = { s.bench.voltage, s.bench.current,
-                                 s.bench.power, s.bench.rpm };
-    const float pk[S_COUNT]  = { s.bench.voltage_min, s.bench.current_max,
-                                 s.bench.power_max, s.bench.rpm_max };
-    for (int i = 0; i < S_COUNT; ++i) {
-        const ui_hero_def_t def = { k_series[i].name, k_series[i].unit,
-                                    s.plot.series[i].color,
-                                    k_series[i].decimals, k_extreme[i] };
-        ui_hero_render(c, (gfx_rect_t){ (int16_t)(8 + i * 196),
-                                        HERO_Y, 190, HERO_H },
-                       &def, s.bench.valid ? now[i] : NAN,
-                       s.bench.valid ? pk[i] : NAN);
+    /*
+     * Everything that comes from the numbers is painted only when there are
+     * new numbers.  The panel refreshes at 39 Hz and samples arrive at 20, so
+     * about half of all frames would otherwise repaint an identical plot and
+     * an identical set of readouts into the very PSRAM the LCD is scanning
+     * out of -- which is the traffic that starved the first hardware boot.
+     *
+     * Per framebuffer, because the panel alternates between two: a buffer
+     * whose last paint was two samples ago still needs one even when the
+     * other is current.
+     */
+    const int buf = buffer_index & 1;
+    if (s.drawn_push[buf] != s.plot.pushes) {
+        s.drawn_push[buf] = s.plot.pushes;
+
+        if (s.tabs.selected == MOTOR_PANE_PLOT) {
+            ui_plot_render(&s.plot, c,
+                           (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H });
+            ui_plot_render_rails(&s.plot, c,
+                                 (gfx_rect_t){ RAIL_X, PLOT_Y, RAIL_W, PLOT_H });
+        } else {
+            gfx_fill_rect(c, 0, PLOT_Y, W, PLOT_H, ui_theme_color(UI_C_BG));
+            draw_table(c);
+        }
+
+        /* The heroes: live value, its extreme, its unit. */
+        gfx_fill_rect(c, 0, HERO_Y, W, HERO_H, ui_theme_color(UI_C_BG));
+        const float now[S_COUNT] = { s.bench.voltage, s.bench.current,
+                                     s.bench.power, s.bench.rpm };
+        const float pk[S_COUNT]  = { s.bench.voltage_min, s.bench.current_max,
+                                     s.bench.power_max, s.bench.rpm_max };
+        for (int i = 0; i < S_COUNT; ++i) {
+            const ui_hero_def_t def = { k_series[i].name, k_series[i].unit,
+                                        s.plot.series[i].color,
+                                        k_series[i].decimals, k_extreme[i] };
+            ui_hero_render(c, (gfx_rect_t){ (int16_t)(8 + i * 196),
+                                            HERO_Y, 190, HERO_H },
+                           &def, s.bench.valid ? now[i] : NAN,
+                           s.bench.valid ? pk[i] : NAN);
+        }
     }
 
-    /* The controls. */
+    /*
+     * The controls change when somebody touches them, not when a sample
+     * arrives, so they get their own revision counter.  On a frame where
+     * neither the numbers nor a control moved, this screen paints nothing at
+     * all -- which on a panel whose refresh outruns its sample rate is most
+     * frames.
+     */
+    if (s.drawn_ctrl[buf] == s.ctrl_rev) {
+        return;
+    }
+    s.drawn_ctrl[buf] = s.ctrl_rev;
+
     gfx_fill_rect(c, 0, CTRL_Y, W, H - CTRL_Y, ui_theme_color(UI_C_BG));
     ui_slider_render(&s.slider, c);
 

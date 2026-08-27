@@ -57,6 +57,17 @@ typedef struct {
     int   focus;     /**< index, or -1                                     */
 
     float span_s;    /**< the width of the time base, for the axis label   */
+
+    /**
+     * How many samples have ever been pushed.
+     *
+     * A screen keeps the value it last drew into each framebuffer and skips
+     * the plot when it has not moved.  The panel refreshes at 39 Hz and
+     * samples arrive at 20, so about half of all frames would otherwise
+     * repaint an identical 762 x 212 region into the very PSRAM the LCD is
+     * scanning out of -- which is the traffic that starves it.
+     */
+    uint32_t pushes;
 } ui_plot_t;
 
 /**

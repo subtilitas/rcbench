@@ -75,7 +75,8 @@ INCLUDES = [
     "shared/settings/include",
 ]
 
-MODES = ["frame", "sim", "chrome", "overview", "clear", "vlines", "hlines"]
+MODES = ["frame", "frame-idle", "sim", "chrome", "overview", "clear",
+         "vlines", "hlines"]
 
 # ESP32-S3 with CONFIG_ESP32S3_DATA_CACHE_64KB + _LINE_64B.
 D1 = "65536,8,64"

@@ -200,6 +200,61 @@ TEST_CASE(the_tabs_switch_panes_and_both_render)
 }
 
 /*
+ * The screen skips painting what has not changed, which is what keeps it off
+ * the PSRAM bus the LCD is scanning out of.  The failure mode that buys is a
+ * stale framebuffer: the panel alternates between two, so a buffer whose last
+ * paint was a sample ago still needs one even when the other is current.
+ *
+ * Both counters are checked, because they are bumped by different things --
+ * new numbers and a touch -- and either one forgetting which buffer it drew
+ * into leaves half the frames showing the previous value.
+ */
+TEST_CASE(each_framebuffer_is_updated_independently)
+{
+    fresh();
+    bench_state_t b;
+    telemetry_sim_t sim;
+    memset(&b, 0, sizeof(b));
+    telemetry_sim_init(&sim, NULL);
+
+    gfx_color_t *other = malloc((size_t)W * H * sizeof(gfx_color_t));
+    gfx_canvas_t cv1;
+    gfx_canvas_init(&cv1, other, W, H, W);
+
+    /* Both buffers start current and identical. */
+    for (int i = 0; i < 200; ++i) {
+        telemetry_sim_step(&sim, 20.0f, 0.05f, &b);
+        motor_screen_push(&b);
+    }
+    scr->render(&cv, 0);
+    scr->render(&cv1, 1);
+    CHECK_EQ(memcmp(fb, other, (size_t)W * H * sizeof(gfx_color_t)), 0);
+
+    /* New numbers, painted into buffer 1 only.  Buffer 0 is now a sample
+     * behind, and the next render into it has to notice. */
+    for (int i = 0; i < 200; ++i) {
+        telemetry_sim_step(&sim, 95.0f, 0.05f, &b);
+        motor_screen_push(&b);
+    }
+    scr->render(&cv1, 1);
+    scr->render(&cv, 0);
+    CHECK_EQ(memcmp(fb, other, (size_t)W * H * sizeof(gfx_color_t)), 0);
+
+    /* Same again for a control: the ARM button changes with no new sample. */
+    motor_screen_set_armed(true);
+    scr->render(&cv1, 1);
+    scr->render(&cv, 0);
+    CHECK_EQ(memcmp(fb, other, (size_t)W * H * sizeof(gfx_color_t)), 0);
+
+    /* And a frame with nothing new must still leave a correct buffer alone
+     * rather than merely leaving it untouched -- checked by rendering twice
+     * and requiring the second to be a no-op on already-correct pixels. */
+    scr->render(&cv, 0);
+    CHECK_EQ(memcmp(fb, other, (size_t)W * H * sizeof(gfx_color_t)), 0);
+    free(other);
+}
+
+/*
  * Redrawing state B on top of state A must give the same pixels as drawing B
  * onto a buffer that never saw A.  Anything drawn outside the region it
  * clears violates that -- and with alternating framebuffers the leftovers
@@ -281,6 +336,7 @@ int main(void)
     RUN(reset_peaks_posts_its_own_command);
     RUN(leaving_the_screen_disarms);
     RUN(the_tabs_switch_panes_and_both_render);
+    RUN(each_framebuffer_is_updated_independently);
     RUN(a_redraw_leaves_no_stale_pixels);
     RUN(an_unanswered_bench_does_not_show_numbers);
     return test_summary("motor");
