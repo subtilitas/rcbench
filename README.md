@@ -4,11 +4,13 @@ A **motor, ESC and servo test bench** in two halves: an ESP32-S3 panel that
 decides, draws and stores, and an RP2350 coprocessor that measures, drives and
 talks to everything with a deadline.
 
-> **Where this stands.** The foundation is down. `shared/link` compiles out of
-> one directory into the panel firmware, the coprocessor firmware and the host
-> suite; the protocol between the two processors is complete and proven end to
-> end on a laptop, and unrun on silicon. The UI shell and its instrument
-> widgets are built; the benches behind it are not. What is marked *inherited*
+> **Where this stands.** The panel boots into the bench. The foundation is `shared/link` compiles out of
+> down, `shared/link` compiles out of one directory into the panel firmware,
+> the coprocessor firmware and the host suite, and the protocol between the two
+> processors is complete and proven end to end on a laptop — and unrun on
+> silicon. The shell, the instrument widgets and the motor bench are built, and
+> the panel firmware runs them against the simulator until a coprocessor
+> answers. What is marked *inherited*
 > below came from an earlier project of the same author's, with its tests.
 >
 > This file is the running record — it says what is true today, not what is
@@ -80,7 +82,7 @@ voltage batched to 100 Hz, decoded ESC frames and an accelerometer burst come to
 | Router | inherited | waits for the screens — it includes every one of them |
 | Settings model | inherited | **ported**, with the model half of its suite; the screen cases return with the screen |
 | Locale-tolerant CSV and number parsing | inherited | **ported**, with its fixtures |
-| Board, display, GT911, SD storage | inherited | to port as-is |
+| Board, display, GT911, SD storage | inherited | **ported**: the panel boots, reports each step to the splash, and runs the shell |
 | Golden-image renderer, coverage, doc and frame-cost checks | inherited | to port as-is |
 | **The link codec** | new | framing, the page map, the dispatcher and both watchdogs, written and tested; the UART transports next |
 | **The safety heartbeat** | new | not written |

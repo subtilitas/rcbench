@@ -1,4 +1,5 @@
 idf_component_register(
     SRCS "main.c"
-    REQUIRES link link_uart esp_driver_gpio esp_driver_uart esp_timer
+    REQUIRES board display gt911 storage link link_uart bench ui gfx touch
+             esp_driver_gpio esp_driver_uart esp_timer
 )
