@@ -23,6 +23,7 @@
 #include "board_pins.h"
 #include "display.h"
 #include "gfx.h"
+#include "heartbeat.h"
 #include "link_frame.h"
 #include "link_host.h"
 #include "link_pages.h"
@@ -57,17 +58,23 @@ static uint32_t now_ms(void)
 /* ------------------------------------------------------------- the heartbeat */
 
 /*
- * Configured and deliberately not driven.
+ * Driven from the loop that reads touch and draws STOP, which is the whole
+ * reason it is a heartbeat rather than a level: what it asserts is not "the
+ * operator permits this" but "the processor that owns the STOP button is
+ * still going round its loop".  A level cannot say that, and neither can a
+ * crashed panel.
  *
- * It must be toggled by the loop that reads touch and draws STOP -- that is
- * the whole reason it is a heartbeat rather than a level.  That loop now
- * exists, and it still is not driven, because the coprocessor's monostable is
- * not wired and nothing downstream of it can move.  Emitting edges into
- * nothing would make the line look finished.
- *
- * The one line to change when the daughterboard arrives is in beat(), and it
- * is marked.
+ * The monostable it is meant to gate is not fitted yet, so today these edges
+ * reach a header pin and nothing else.  They are emitted anyway.  The
+ * alternative -- holding the line low until the daughterboard exists -- means
+ * the first time this code runs for real is the first time it matters, and it
+ * costs one GPIO write per frame to have it already running and scopeable.
  */
+static heartbeat_gen_t s_beat;
+
+/* Latched by STOP; cleared only by an explicit arm.  See the loop. */
+static bool s_stopped;
+
 static void heartbeat_init(void)
 {
     const gpio_config_t cfg = {
@@ -79,16 +86,16 @@ static void heartbeat_init(void)
     };
     ESP_ERROR_CHECK(gpio_config(&cfg));
     ESP_ERROR_CHECK(gpio_set_level(PANEL_HEARTBEAT_PIN, 0));
-    ESP_LOGW(TAG, "heartbeat on GPIO%d (J8) is held low: no coprocessor to "
-                  "gate, so its outputs stay disabled",
-             (int)PANEL_HEARTBEAT_PIN);
+    heartbeat_gen_init(&s_beat);
+    ESP_LOGI(TAG, "heartbeat on GPIO%d (J8) every %u ms; the monostable it "
+                  "gates is not fitted, so nothing is listening yet",
+             (int)PANEL_HEARTBEAT_PIN, (unsigned)HEARTBEAT_PERIOD_MS);
 }
 
 static void beat(bool alive)
 {
-    (void)alive;
-    /* When the monostable is wired: gpio_set_level(PANEL_HEARTBEAT_PIN,
-     * alive ? !level : 0) from here, and only from here. */
+    const bool level = heartbeat_gen_step(&s_beat, now_ms(), alive);
+    gpio_set_level(PANEL_HEARTBEAT_PIN, level ? 1 : 0);
 }
 
 /* ------------------------------------------------------------------- boot */
@@ -380,17 +387,30 @@ void app_main(void)
             ui_router_set_alert("touch stopped answering -- disarmed");
         }
 
+        /*
+         * STOP latches here rather than clearing on the next frame.  The
+         * button's job is to stop the bench, and a stop that lasts one frame
+         * is a stop the coprocessor may never have seen -- its monostable
+         * holds for longer than a frame either way.  Clearing it is a
+         * deliberate act: disarm and arm again.
+         */
         if (ui_router_take_stop()) {
             throttle_arm(&thr, false, now_ms());
             motor_screen_set_armed(false);
+            s_stopped = true;
         }
+
 
         /* --- what the bench screen asked for ----------------------------- */
         motor_cmd_t cmd;
         while (motor_screen_poll_cmd(&cmd)) {
             switch (cmd.kind) {
             case MOTOR_CMD_ARM:
+                /* Arming is the deliberate act that clears a latched stop.
+                 * Nothing else does: not navigating away, not the alert
+                 * expiring, not the link coming back. */
                 if (!touch_dead) {
+                    s_stopped = false;
                     throttle_arm(&thr, true, now_ms());
                 }
                 break;
@@ -411,7 +431,15 @@ void app_main(void)
         }
 
         const float emitted = throttle_step(&thr, dt_s);
-        beat(!touch_dead);
+        /*
+         * Deliberately not gated on the link.  The heartbeat says "the
+         * processor that owns STOP is still running its loop"; whether the
+         * two boards can still talk is a separate question with its own
+         * watchdog at each end.  Folding them together would mean a dropped
+         * frame of UART traffic cutting the safety line, and a safety line
+         * that cries wolf is one people bypass.
+         */
+        beat(!touch_dead && !s_stopped);
 
         /* --- the numbers ------------------------------------------------- */
         /* Modelled here only while nothing is answering; when the link is up,

@@ -13,9 +13,9 @@ That design fails the most likely failure. Firmware wedges with the pin still
 high and the outputs stay live — the one case where you most want the bench to
 stop is the one case a level cannot express.
 
-So **GPIO6 toggles at 100 Hz to 1 kHz**, driven by the loop that reads touch and
-draws the STOP button, and the coprocessor's output enable and its servo and ESC
-power path are gated from a **retriggerable monostable with a 20–50 ms window**.
+So **GPIO6 edges**, driven by the loop that reads touch and draws the STOP
+button, and the coprocessor's output enable and its servo and ESC power path
+are gated from a **retriggerable monostable**.
 
 A crash, a wedged task, a reset, a brown-out and an unplugged cable then present
 identically: no edges, so no output. Fail-safe by absence, in hardware,
@@ -26,6 +26,55 @@ backstop and the coprocessor also checks the period in firmware. And the
 heartbeat is driven from the loop whose liveness it asserts — never from a
 timer or its own task, because a heartbeat driven by a timer proves the timer is
 alive, which is not the question.
+
+### What the rate had to become, and why
+
+This page carried **100 Hz to 1 kHz** and a **20–50 ms** monostable window from
+before the panel had a measured frame rate. Those two numbers cannot both stand
+with the paragraph above them, and the paragraph is the part worth keeping.
+
+The heartbeat comes from the render loop, so the render loop sets the rate. That
+loop runs at 39 Hz with nothing changing on screen and **19.5 Hz on the frames a
+telemetry sample lands** — see [Performance](Performance.md) for why 19.5 is the
+design point rather than a shortfall. The fastest honest edge rate is therefore
+about 39 Hz, not 100, and the slowest interval between two edges is about 52 ms.
+A 50 ms monostable would drop the outputs on every second frame of a bench under
+load.
+
+The numbers that follow from the loop, all of them in
+[`shared/safety/heartbeat.h`](../shared/safety/include/heartbeat.h):
+
+| | | |
+| --- | ---: | --- |
+| The panel asks for an edge every | **20 ms** | i.e. every frame, without the generator needing to know the frame rate |
+| The loop actually delivers one every | **26–52 ms** | 39 Hz idle, 19.5 Hz on a sample frame |
+| Firmware accepts an interval of | **4–150 ms** | below the floor it is noise; above the ceiling the panel has stopped drawing |
+| Firmware trusts the line after | **4 good intervals** | a little over a tenth of a second |
+
+> **This changes a part value on a board that is not built yet.** The monostable
+> must hold for longer than the slowest interval the render loop produces, with
+> margin for a frame that runs long — so its window belongs at **roughly 150 ms**,
+> not the 20–50 ms this page used to say. It still fires well inside the
+> coprocessor's own 200 ms link failsafe. Anyone laying out the daughterboard
+> should size the RC for 150 ms and treat the old figure as withdrawn.
+
+### Slow to trust, instant to doubt
+
+The firmware monitor is deliberately asymmetric. It wants four consecutive
+well-spaced intervals before it will call the line alive, and a single bad one —
+too fast, too slow, or a window of silence — takes that away immediately.
+
+The reason is that the two errors are not equally bad. Trusting a line too
+slowly costs a tenth of a second before the bench will arm. Trusting one too
+readily means a burst of noise at power-on can enable an output. A safety
+interlock that enables on a glitch and hesitates to disable is the precise
+inverse of the thing it is named after.
+
+The case the monostable cannot see is the fast one: anything that edges quickly
+enough retriggers it perfectly well, and it would hold the outputs enabled
+throughout. Only something that knows what period to expect can call that what
+it is, which is the whole reason the firmware check exists alongside the
+hardware one rather than instead of it.
 
 ## Why the direction line cannot be the heartbeat
 
@@ -46,10 +95,11 @@ failure the heartbeat exists to catch.
 means stopping transmission — so you cannot send the command you just stopped
 the wire to send.
 
-**The rates do not meet.** A 20–50 ms monostable window wants edges at 100 Hz to
-1 kHz. A 20 Hz telemetry schedule gives one every 50 ms, so the poll rate would
-become safety-critical — and [the link](Link.md) has no spare wire to burn at
-128 kbaud.
+**The rates do not meet.** The heartbeat's floor rejects anything faster than
+one edge per 4 ms and its ceiling anything slower than one per 150 ms, which is
+the render loop's range and not the link's. A 20 Hz telemetry schedule sits at
+the very bottom of that, so the poll rate would become safety-critical — and
+[the link](Link.md) has no spare wire to burn at 128 kbaud.
 
 **It collapses the redundancy.** Three independent mechanisms become two,
 sharing one transceiver as a common failure point.

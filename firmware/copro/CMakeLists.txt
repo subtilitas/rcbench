@@ -27,6 +27,7 @@ pico_sdk_init()
 # suite builds with plain gcc.  One source list, three build systems.
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/link"  link)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/bench" bench)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/safety" safety)
 
 add_executable(rcbench-copro
     src/main.c
@@ -40,5 +41,6 @@ target_link_libraries(rcbench-copro
     hardware_gpio
     rcbench_link
     rcbench_bench
+    rcbench_safety
 )
 pico_add_extra_outputs(rcbench-copro)
