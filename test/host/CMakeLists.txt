@@ -21,6 +21,7 @@ add_subdirectory("${SHARED}/settings" settings)
 add_subdirectory("${SHARED}/logfile"  logfile)
 add_subdirectory("${SHARED}/link"     link)
 add_subdirectory("${SHARED}/bench"    bench)
+add_subdirectory("${SHARED}/safety"   safety)
 
 set(UNDER_TEST
     rcbench_gfx
@@ -30,6 +31,7 @@ set(UNDER_TEST
     rcbench_logfile
     rcbench_link
     rcbench_bench
+    rcbench_safety
 )
 
 # -Wconversion is the one that earns its place: this code does arithmetic on
@@ -50,7 +52,7 @@ set(FAKES "${CMAKE_CURRENT_SOURCE_DIR}/fakes/fake_wire.c")
 
 enable_testing()
 
-foreach(suite gfx touch_map nav widgets bench motor logview logwriter settings logfile link_crc link_frame link_pages link_watchdog link_loopback)
+foreach(suite gfx touch_map nav widgets bench motor logview logwriter settings logfile link_crc link_frame link_pages link_watchdog link_loopback heartbeat)
     add_executable(test_${suite} test_${suite}.c ${FAKES})
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE

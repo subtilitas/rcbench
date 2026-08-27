@@ -85,7 +85,7 @@ voltage batched to 100 Hz, decoded ESC frames and an accelerometer burst come to
 | Board, display, GT911, SD storage | inherited | **ported**: the panel boots, reports each step to the splash, and runs the shell |
 | Golden-image renderer, coverage, doc and frame-cost checks | inherited | to port as-is |
 | **The link codec** | new | framing, the page map, the dispatcher, both watchdogs and both transports — and a bench page that crosses the wire and reads back as the same `bench_state` |
-| **The safety heartbeat** | new | not written |
+| **The safety heartbeat** | new | **built and driven at both ends**: the panel edges from the loop that owns STOP, the coprocessor judges the period in firmware and refuses to arm without it |
 | The shell — band, router, splash, menu | re-cut | **built**: STOP on every screen, screens handed a sub-canvas so they cannot draw over it |
 | **Motor & ESC bench** | re-cut | **built**: four traces on independent scales, hero readouts, throttle with presets, arm and reset — reading a `bench_state` the link or the simulator fills |
 | **Log viewer** | re-cut | **built**: browse, import with its evidence, plot with cursors |
@@ -96,7 +96,7 @@ voltage batched to 100 Hz, decoded ESC frames and an accelerometer burst come to
 | The simulation watermark | new | **built**: SIMULATION across the whole screen at 15% whenever the numbers are modelled, and no screen can opt out |
 | Coprocessor firmware | new | answers identity, status, control and bench pages over a real UART, honours the turnaround, fails safe at 200 ms; unrun on silicon |
 | Panel link transport | new | UART on GPIO16/15, board-switched direction, poll loop with the one-second escalation; unrun on silicon |
-| **The heartbeat** | new | pin configured and **deliberately held low** — it must be driven by the loop that owns STOP, and that loop does not exist yet |
+| **The heartbeat** | new | **driven**: edges from the render loop, dropped the instant STOP latches or touch stops answering. The monostable it gates is not fitted, so today the edges reach a header pin and a scope |
 | Throttle output on the panel | **removed** | GPIO6 is the heartbeat; the panel emits no servo pulse |
 | Servo programmer | **held** | the KST work stays in the predecessor until asked for |
 
@@ -307,9 +307,19 @@ register.
 
 A static enable-high line fails the most likely failure — firmware wedges with
 the pin still high and the outputs stay live. So the loop that draws the STOP
-button and reads touch toggles **GPIO6** at 100 Hz to 1 kHz, and the
-coprocessor's output enable and its servo and ESC power path are gated from a
-retriggerable monostable with a 20–50 ms window.
+button and reads touch edges **GPIO6**, and the coprocessor's output enable and
+its servo and ESC power path are gated from a retriggerable monostable.
+
+The rate follows that loop, because that is the loop whose liveness is being
+asserted: it asks for an edge every 20 ms and gets one every 26–52 ms — 39 Hz
+with nothing changing, 19.5 Hz on the frames a telemetry sample lands. The
+coprocessor accepts intervals from 4 to 150 ms and wants four consecutive good
+ones before it will believe the line. **This supersedes the 100 Hz–1 kHz and
+20–50 ms figures this record used to carry**, which predate the panel having a
+measured frame rate; a 50 ms monostable would drop the outputs on every second
+frame of a bench under load. The window belongs at roughly 150 ms, which is
+still well inside the coprocessor's 200 ms link failsafe —
+[Safety](docs/Safety.md) has the arithmetic.
 
 A crash, a wedged task, a reset, a brown-out and an unplugged cable then present
 identically: no edges, so no output. Fail-safe by absence, in hardware,
@@ -357,12 +367,12 @@ start from it rather than a bare `menuconfig`.
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them, opens a release |
 
-Fifteen binaries, each printing one line per case: `test_gfx`,
+Sixteen binaries, each printing one line per case: `test_gfx`,
 `test_touch_map`, `test_nav`, `test_widgets`, `test_bench`, `test_motor`,
 `test_settings`,
 `test_logfile`, `test_link_crc`, `test_link_frame`, `test_link_pages`,
-`test_link_watchdog`, `test_link_loopback`, `test_logview` and
-`test_logwriter`. The
+`test_link_watchdog`, `test_link_loopback`, `test_heartbeat`, `test_logview`
+and `test_logwriter`. The
 harness is `test/host/greatest.h`, about a hundred lines, with nothing
 vendored. `tools/check_docs.py` holds that list to this file — a page in the
 predecessor said *seven* for two releases after it was ten, and nobody reads a
@@ -373,7 +383,7 @@ screenshots to the current render, and `frame_cost.py` holds the steady-state
 frame to 12,000 cache-line fills. It currently costs **740**.
 
 <!-- coverage:start -->
-![coverage](https://img.shields.io/badge/host--test%20coverage-94.3%25-brightgreen)
+![coverage](https://img.shields.io/badge/host--test%20coverage-94.4%25-brightgreen)
 
 | File | Lines | Covered | Coverage |
 | --- | ---: | ---: | ---: |
@@ -399,6 +409,7 @@ frame to 12,000 cache-line fills. It currently costs **740**.
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
 | `shared/logfile/log_csv.c` | 571 | 543 | 95.1% |
 | `shared/logfile/log_fields.c` | 46 | 45 | 97.8% |
+| `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
 | `shared/link/link_crc.c` | 7 | 7 | 100.0% |
 | `shared/link/link_frame.c` | 112 | 107 | 95.5% |
 | `shared/link/link_dev.c` | 69 | 66 | 95.7% |
@@ -407,7 +418,7 @@ frame to 12,000 cache-line fills. It currently costs **740**.
 | `shared/bench/throttle.c` | 53 | 45 | 84.9% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
 | `shared/bench/log_writer.c` | 43 | 40 | 93.0% |
-| **total** | **4209** | **3971** | **94.3%** |
+| **total** | **4267** | **4029** | **94.4%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

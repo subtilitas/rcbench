@@ -18,6 +18,7 @@ rcbench/
     logfile/              number and CSV parsing
     link/                 framing · CRC-16 · the wire budget
     bench/                bench_state · throttle policy · the simulator
+    safety/               the heartbeat: the panel generates, the copro judges
   firmware/
     panel/                ESP-IDF project
     copro/                pico-sdk project
