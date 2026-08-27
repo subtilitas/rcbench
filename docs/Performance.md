@@ -23,10 +23,11 @@ panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
 
 mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
-frame           13,602     1700 KiB     44.6      19.5
-sim             15,161     1895 KiB     49.8      19.5
-chrome          24,450     3056 KiB     80.2       9.8
-overview           751       94 KiB      2.5      39.0
+frame           10,264     1283 KiB     33.7      19.5
+frame-idle          740       92 KiB      2.4      39.0
+sim             11,825     1478 KiB     38.8      19.5
+chrome          24,896     3112 KiB     81.7       9.8
+overview           821      103 KiB      2.7      39.0
 clear           12,006     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
@@ -41,8 +42,8 @@ each fill is already resident from the pixel before it. This is why the shell
 stratifies into horizontal bands rather than columns, and why a vertical rule
 is a deliberate expense rather than a free separator.
 
-**Cache the chrome.** Repainting everything every frame costs 14,686 fills
-against **740** for the steady state — twenty times the traffic for pixels
+**Cache the chrome.** Repainting everything every frame costs 24,896 fills
+against **740** for the steady state — thirty times the traffic for pixels
 that did not change. Every screen keeps a per-framebuffer bitmask of what it
 has already painted, which is what the `buffer_index` argument to `render()`
 is for. The panel alternates between two buffers, so a screen that invalidates
@@ -53,10 +54,11 @@ buffers that reads as *flicker* rather than as an obviously stale pixel.
 
 | | fills/frame | fps |
 | --- | ---: | ---: |
-| The menu, and any chrome-cached screen | **746** | 39.0 |
-| The motor bench, live plot | **13,423** | 19.5 |
-| The same, with the simulation watermark | **15,079** | 19.5 |
-| Nothing cached at all | 24,268 | 9.8 |
+| The menu, and any chrome-cached screen | **821** | 39.0 |
+| The motor bench, between samples | **740** | 39.0 |
+| The motor bench, on the frame a sample lands | **10,264** | 19.5 |
+| The same, with the simulation watermark | **11,825** | 19.5 |
+| Nothing cached at all | 24,896 | 9.8 |
 
 The bench screen runs at half the panel's rate, and that is the design point
 rather than a shortfall. The panel moves 976 KiB per frame at 39 Hz; a render
@@ -69,10 +71,30 @@ and not a preference: above it the panel can no longer deliver a frame per
 sample, and that is the regression worth catching. Chrome-cached screens are
 held to **2,000**, which catches a menu that has stopped caching.
 
-The margin in simulation is thin on purpose rather than by accident: 15,079 of
-15,600 is 97% of the budget. If a future pane needs room, the levers in order
-of bluntness are the plot's height, skipping the plot on frames where no new
-sample arrived, and narrowing the plot.
+**Only paint on the frames that have something to paint.** Samples arrive at
+20 Hz and the panel refreshes at 39, so roughly every other frame has nothing
+new to show. The bench screen keeps the plot's push count and a control
+revision, each per framebuffer, and repaints the plot, the readouts and the
+controls only when the corresponding counter has moved. A frame between two
+samples with nobody touching the screen costs **740 fills** — the cached
+chrome and nothing else.
+
+That is the change that bought the margin the table now shows: the worst-case
+frame in simulation went from 15,603 to 11,825 against the 15,600 ceiling, and
+the typical frame from 14,042 to 740. It matters more than the averages
+suggest, because the traffic being avoided is not merely wasted — it is
+contending with the LCD's own scan-out for the same PSRAM, which is what made
+the first hardware boot tear.
+
+The counters are per framebuffer for the reason given above: the panel
+alternates between two, so a buffer whose last paint was a sample ago still
+needs one even when the other is current. `test_motor`'s
+`each_framebuffer_is_updated_independently` pins that, and collapsing either
+counter to a single slot fails it.
+
+If a future pane needs more room still, the remaining levers in order of
+bluntness are the plot's height, its width, and clipping the simulation
+watermark to the region that was actually repainted.
 
 The table above is checked by `frame_cost.py --check-doc`, to a tolerance
 rather than byte for byte: absolute fills shift by a few between machines
