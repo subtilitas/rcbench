@@ -13,7 +13,7 @@
 
 typedef struct {
     const char *title;
-    const char *what[4];   /**< what it will do; NULL-terminated          */
+    const char *what[6];   /**< what it will do; NULL-terminated          */
     const char *blocker;   /**< NULL when nothing is blocking it          */
 } copy_t;
 
@@ -49,14 +49,56 @@ static const copy_t k_copy[SCREEN_COUNT] = {
      * vertical hinge line -- reads exactly zero across its whole throw.  Lay
      * the model on its side and it reads like anything else.  Ailerons and
      * elevators on a level model are fine as they are.
+     *
+     * ------------------------------------------------------- the last two
+     *
+     * Both come from current, and both are about the servo *as installed*
+     * rather than the servo as sold.
+     *
+     * FINDING THE LIMIT.  Endpoints set by eye in a transmitter are guesses,
+     * and a servo held against a mechanical stop draws stall current for as
+     * long as it is asked to: it cooks itself, empties the pack and wears the
+     * gears, and nobody finds out until something strips.  The stop has a
+     * signature -- current against commanded position is flat and low while
+     * the surface is free, and climbs steeply the moment it binds.  Walk up
+     * to the knee slowly, stop at the first rise rather than pushing through
+     * it, back off by a margin, and programme *that* as the endpoint.
+     *
+     * It has to be measured in place: the limit belongs to the linkage, the
+     * horn position and the surface stops, not to the servo, so it is
+     * different in every installation and cannot be looked up.
+     *
+     * This one deliberately drives toward a stop, so it is the clearest case
+     * for the coprocessor's rule of protecting hardware without asking:
+     * current limit, stall timeout, and a slow approach.
+     *
+     * SYNCHRONISING TWO.  Two servos on one surface -- dual ailerons, elevator
+     * halves -- fight each other through the surface whenever their travel or
+     * centre disagree, and both draw extra current continuously to do it.  So
+     * the objective is not a position at all: **the minimum of total current
+     * is the point where they stop fighting**, which is a one-dimensional
+     * search with a physical answer rather than a judgement.
+     *
+     * And the two errors separate cleanly, which saves searching blindly:
+     * fighting at centre is an offset error, fighting at the extremes is a
+     * travel error.  Measure at the centre and at both ends and each
+     * correction falls out of its own measurement.
+     *
+     * The accelerometer adds the one thing current cannot say -- whether they
+     * agree and are *both* wrong, or disagree.
+     *
+     * Both want a current sensor per output, which the catalogue costs as
+     * medium: one sensor per channel, or a multiplexer.
      */
     [SCREEN_SERVO] = {
         "SERVO",
         { "Eight channels of pulse, any width and rate, narrow band included",
           "Sweep, step, centre, hold, manual and endpoint",
           "Width, frame rate and jitter measured; glitches and dropouts kept",
-          "Surface angle measured on the surface: linkage slop included" },
-        "the coprocessor's PWM and capture are not written",
+          "Surface angle measured on the surface: linkage slop included",
+          "Find the installed mechanical limit by current, and stop short of it",
+          "Synchronise two servos on one surface by minimising what they fight" },
+        "the coprocessor's PWM and capture, and a sensor per servo output",
     },
     [SCREEN_ANALYSER] = {
         "ANALYSER",
@@ -170,7 +212,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
     ui_rule(c, 24, 44, W - 48, ui_theme_color(UI_C_EDGE));
 
     int y = 64;
-    for (int i = 0; i < 4 && k->what[i] != NULL; ++i) {
+    for (int i = 0; i < 6 && k->what[i] != NULL; ++i) {
         gfx_fill_rect(c, 26, y + 7, 6, 6, ui_theme_color(UI_C_ACCENT));
         gfx_text(c, COPY_X, y, k->what[i], &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT), 1);
