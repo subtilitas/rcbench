@@ -120,3 +120,104 @@ float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms)
     amps += noise(s);
     return amps < 0.0f ? 0.0f : amps;
 }
+
+/* ------------------------------------------ two servos on one surface */
+
+void servo_pair_defaults(servo_pair_cfg_t *cfg, uint16_t centre_us)
+{
+    if (cfg == NULL) {
+        return;
+    }
+    memset(cfg, 0, sizeof(*cfg));
+    cfg->centre_us      = centre_us;
+    cfg->offset_us      = 18;     /* B's centre about half a degree out */
+    cfg->travel         = 1.06f;  /* and its throw six per cent long */
+    cfg->free_a         = 0.24f;  /* two servos, free */
+    cfg->fight_a_per_us = 0.011f;
+    cfg->travel_a       = 1.10f;
+    cfg->slew_us_per_ms = 1.2f;
+    cfg->noise_a        = 0.02f;
+}
+
+void servo_pair_init(servo_pair_t *p, const servo_pair_cfg_t *cfg)
+{
+    if (p == NULL || cfg == NULL) {
+        return;
+    }
+    memset(p, 0, sizeof(*p));
+    p->cfg      = *cfg;
+    p->seed     = 0x2B0DDA7Au;
+    p->pos_a_us = (float)cfg->centre_us;
+    p->pos_b_us = (float)cfg->centre_us;
+}
+
+float servo_pair_disagreement(const servo_pair_t *p, uint16_t cmd_a_us,
+                              uint16_t cmd_b_us)
+{
+    if (p == NULL) {
+        return 0.0f;
+    }
+    const float centre = (float)p->cfg.centre_us;
+    /*
+     * Where each servo is really holding the surface.  A is taken as the
+     * reference -- not because it is right, but because there is nothing to
+     * be right against: what matters is only the difference between them,
+     * which is what the surface has to absorb.
+     */
+    const float a = (float)cmd_a_us;
+    const float b = centre + (float)p->cfg.offset_us
+                    + p->cfg.travel * ((float)cmd_b_us - centre);
+    const float d = a - b;
+    return d < 0.0f ? -d : d;
+}
+
+/* Move @p pos toward @p target by at most @p reach; true if it arrived. */
+static bool approach(float *pos, float target, float reach)
+{
+    if (*pos < target) {
+        *pos += reach;
+        if (*pos > target) {
+            *pos = target;
+        }
+    } else if (*pos > target) {
+        *pos -= reach;
+        if (*pos < target) {
+            *pos = target;
+        }
+    }
+    return *pos == target;
+}
+
+float servo_pair_step(servo_pair_t *p, uint16_t cmd_a_us, uint16_t cmd_b_us,
+                      uint32_t now_ms)
+{
+    if (p == NULL) {
+        return 0.0f;
+    }
+    if (!p->started) {
+        p->started = true;
+        p->last_ms = now_ms;
+    }
+    const uint32_t dt_ms = (uint32_t)(now_ms - p->last_ms);
+    p->last_ms = now_ms;
+
+    const float reach = p->cfg.slew_us_per_ms * (float)dt_ms;
+    const bool  a_in  = approach(&p->pos_a_us, (float)cmd_a_us, reach);
+    const bool  b_in  = approach(&p->pos_b_us, (float)cmd_b_us, reach);
+
+    p->seed = p->seed * 1664525u + 1013904223u;
+    const float unit = (float)((p->seed >> 8) & 0xFFFFu) / 65535.0f;
+    const float n    = (unit - 0.5f) * p->cfg.noise_a;
+
+    float amps;
+    if (!a_in || !b_in) {
+        /* In transit.  Whatever they will disagree about, they are not
+         * disagreeing about it yet. */
+        amps = p->cfg.travel_a + n;
+    } else {
+        const float fight = servo_pair_disagreement(
+            p, (uint16_t)p->pos_a_us, (uint16_t)p->pos_b_us);
+        amps = p->cfg.free_a + p->cfg.fight_a_per_us * fight + n;
+    }
+    return amps < 0.0f ? 0.0f : amps;
+}
