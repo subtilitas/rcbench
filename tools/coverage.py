@@ -59,6 +59,9 @@ TRACKED = [
     "shared/link/link_frame.c",
     "shared/link/link_dev.c",
     "shared/link/link_host.c",
+    "shared/bench/bench_state.c",
+    "shared/bench/throttle.c",
+    "shared/bench/telemetry_sim.c",
 ]
 
 # Sources that are compiled into the suite but deliberately not measured.
