@@ -7,6 +7,7 @@
 #include "gfx.h"
 
 #include <limits.h>
+#include <math.h>
 #include <string.h>
 
 #define GFX_MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -833,4 +834,78 @@ void gfx_text_in(gfx_canvas_t *c, gfx_rect_t box, const char *s,
         gfx_text(c, x, y, s, font, fg, scale);
     }
     c->clip = saved;
+}
+
+/* ------------------------------------------------------------- rotated text */
+
+void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
+                      const gfx_font_t *font, gfx_color_t fg, int scale,
+                      uint8_t alpha, float angle_deg)
+{
+    if (!canvas_ok(c) || s == NULL || font == NULL || alpha == 0) {
+        return;
+    }
+    if (scale < 1) {
+        scale = 1;
+    }
+
+    const int len = (int)strlen(s);
+    if (len <= 0) {
+        return;
+    }
+    const int tw = len * font->width * scale;
+    const int th = font->height * scale;
+
+    const float rad = angle_deg * 3.14159265358979f / 180.0f;
+    const float ca = cosf(rad);
+    const float sa = sinf(rad);
+
+    /* The rotated box, so the scan covers the glyphs and little else. */
+    const float hw = (fabsf((float)tw * ca) + fabsf((float)th * sa)) * 0.5f;
+    const float hh = (fabsf((float)tw * sa) + fabsf((float)th * ca)) * 0.5f;
+
+    int x0 = cx - (int)hw - 1, x1 = cx + (int)hw + 1;
+    int y0 = cy - (int)hh - 1, y1 = cy + (int)hh + 1;
+    if (x0 < c->clip.x) { x0 = c->clip.x; }
+    if (y0 < c->clip.y) { y0 = c->clip.y; }
+    if (x1 > c->clip.x + c->clip.w) { x1 = c->clip.x + c->clip.w; }
+    if (y1 > c->clip.y + c->clip.h) { y1 = c->clip.y + c->clip.h; }
+
+    for (int dy = y0; dy < y1; ++dy) {
+        const float v = (float)(dy - cy);
+        for (int dx = x0; dx < x1; ++dx) {
+            const float u = (float)(dx - cx);
+
+            /* Rotate the destination point back into the string's own frame. */
+            const float fx = u * ca + v * sa + (float)tw * 0.5f;
+            const float fy = -u * sa + v * ca + (float)th * 0.5f;
+            if (fx < 0.0f || fy < 0.0f) {
+                continue;
+            }
+            const int tx = (int)fx;
+            const int ty = (int)fy;
+            if (tx >= tw || ty >= th) {
+                continue;
+            }
+
+            const int idx = tx / (font->width * scale);
+            const unsigned char ch = (unsigned char)s[idx];
+            if (ch < font->first || ch > font->last) {
+                continue;
+            }
+            const int col = (tx % (font->width * scale)) / scale;
+            const int row = ty / scale;
+
+            const uint8_t *glyph = font->glyphs
+                + (size_t)(ch - font->first) * font->height * font->bytes_per_row;
+            const uint8_t byte = glyph[(size_t)row * font->bytes_per_row
+                                       + (size_t)(col >> 3)];
+            if ((byte & (uint8_t)(0x80u >> (col & 7))) == 0) {
+                continue;
+            }
+
+            gfx_pixel(c, dx, dy,
+                      gfx_lerp(gfx_pixel_get(c, dx, dy), fg, alpha));
+        }
+    }
 }

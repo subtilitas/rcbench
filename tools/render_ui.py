@@ -31,6 +31,7 @@ SOURCES = [
     "shared/ui/ui_widgets.c",
     "shared/ui/ui_icons.c",
     "shared/ui/ui_band.c",
+    "shared/ui/ui_watermark.c",
     "shared/ui/ui_router.c",
     "shared/ui/splash_screen.c",
     "shared/ui/overview_screen.c",
@@ -46,6 +47,8 @@ SCREENS = {
     # that only breaks one theme is the kind that ships.
     "overview-light": ("overview-light.png", "overview", "light"),
     "motor":      ("motor.png",      "motor",      "dark"),
+    # The same screen with the numbers modelled rather than measured.
+    "motor-sim":  ("motor-sim.png",  "motor",      "sim"),
     "servo":      ("servo.png",      "servo",      "dark"),
     "analyser":   ("analyser.png",   "analyser",   "dark"),
     "logs":       ("logs.png",       "logs",       "dark"),
