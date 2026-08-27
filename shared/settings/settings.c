@@ -44,7 +44,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "telem_src", "Telemetry", "Where V, A and RPM come from", "",
         SET_CAT_ESC, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_telem_src) },
     [SET_TELEM_HZ] = {
-        "telem_hz", "Sample rate", "Trace is 492 wide; 20 Hz is ~25 s", "Hz",
+        "telem_hz", "Sample rate", "Trace is 762 wide; 20 Hz is ~38 s", "Hz",
         SET_CAT_ESC, SET_TYPE_INT, 5, 100, 5, 20, NULL, 0 },
     [SET_OUT_PROTO] = {
         "out_proto", "Output", "Throttle signal to the ESC", "",

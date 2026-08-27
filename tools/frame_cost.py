@@ -56,6 +56,8 @@ SOURCES = [
     "shared/ui/stub_screen.c",
     "shared/ui/motor_screen.c",
     "shared/ui/log_viewer_screen.c",
+    "shared/ui/settings_screen.c",
+    "shared/settings/settings.c",
     "shared/logfile/log_numbers.c",
     "shared/logfile/log_csv.c",
     "shared/logfile/log_fields.c",
@@ -70,6 +72,7 @@ INCLUDES = [
     "shared/bench/include",
     "shared/link/include",
     "shared/logfile/include",
+    "shared/settings/include",
 ]
 
 MODES = ["frame", "sim", "chrome", "overview", "clear", "vlines", "hlines"]
