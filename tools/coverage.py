@@ -51,6 +51,7 @@ TRACKED = [
     "shared/ui/splash_screen.c",
     "shared/ui/overview_screen.c",
     "shared/ui/stub_screen.c",
+    "shared/ui/motor_screen.c",
     "shared/settings/settings.c",
     "shared/logfile/log_numbers.c",
     "shared/logfile/log_csv.c",
@@ -59,6 +60,9 @@ TRACKED = [
     "shared/link/link_frame.c",
     "shared/link/link_dev.c",
     "shared/link/link_host.c",
+    "shared/bench/bench_state.c",
+    "shared/bench/throttle.c",
+    "shared/bench/telemetry_sim.c",
 ]
 
 # Sources that are compiled into the suite but deliberately not measured.

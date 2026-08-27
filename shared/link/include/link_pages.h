@@ -85,6 +85,51 @@ typedef enum {
     LINK_STATE_FAILSAFE = 2, /**< acted on its own authority    */
 } link_dev_state_t;
 
+/* ------------------------------------------------------------------- bench */
+/*
+ * The numbers, read-only.
+ *
+ * Fixed-point rather than floats, because a register is sixteen bits and a
+ * float is not, and because the scale is then part of the contract rather
+ * than a convention two firmwares have to agree on by accident.
+ *
+ * The peaks are here rather than computed on the panel: the coprocessor has
+ * the fast samples and the panel sees one poll in fifty of them.  A peak
+ * derived from what crossed the wire is not a peak, it is the largest thing
+ * that happened to be polled.
+ */
+enum {
+    LINK_BN_VOLTAGE_CV   = 0,  /**< 10 mV steps, 0..655.35 V              */
+    LINK_BN_CURRENT_CA   = 1,  /**< 10 mA steps, 0..655.35 A              */
+    LINK_BN_POWER_W      = 2,  /**< watts                                  */
+    LINK_BN_RPM          = 3,
+    LINK_BN_TEMP_ESC_DC  = 4,  /**< 0.1 C, signed -- read as int16_t       */
+    LINK_BN_TEMP_MOT_DC  = 5,  /**< 0.1 C, signed                          */
+    LINK_BN_CHARGE_MAH   = 6,  /**< accumulated in the INA228, not here    */
+    LINK_BN_ENERGY_DWH   = 7,  /**< 0.1 Wh                                 */
+    LINK_BN_VOLT_MIN_CV  = 8,  /**< sag: the lowest the bus went           */
+    LINK_BN_CURR_MAX_CA  = 9,
+    LINK_BN_POWER_MAX_W  = 10,
+    LINK_BN_RPM_MAX      = 11,
+    LINK_BN_FLAGS        = 12, /**< a bitmap of link_bench_flag_t          */
+    LINK_BN_COUNT        = 13,
+};
+
+/** What the coprocessor says about the numbers it is sending. */
+typedef enum {
+    LINK_BN_VOLTAGE_OK = 1u << 0, /**< a sensor answered; else the field is 0 */
+    LINK_BN_CURRENT_OK = 1u << 1,
+    LINK_BN_RPM_OK     = 1u << 2,
+    LINK_BN_TEMP_OK    = 1u << 3,
+    /**
+     * The numbers are modelled, not measured.  Set by a coprocessor running
+     * without a front end, and by the panel's own simulator -- the panel
+     * writes SIMULATION across the screen either way, and this is how a
+     * *remote* fake declares itself rather than being assumed honest.
+     */
+    LINK_BN_SIMULATED  = 1u << 7,
+} link_bench_flag_t;
+
 /* ----------------------------------------------------------------- control */
 enum {
     LINK_CT_ARM        = 0, /**< non-zero asks for ARMED                    */

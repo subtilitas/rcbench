@@ -23,10 +23,10 @@ panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
 
 mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
-frame              736       92 KiB      2.4      39.0
-sim              3,015      377 KiB      9.9      39.0
-chrome          14,687     1836 KiB     48.2      19.5
-overview           749       94 KiB      2.5      39.0
+frame           13,423     1678 KiB     44.1      19.5
+sim             15,079     1885 KiB     49.5      19.5
+chrome          24,268     3034 KiB     79.6       9.8
+overview           746       93 KiB      2.4      39.0
 clear           12,005     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
@@ -49,17 +49,30 @@ is for. The panel alternates between two buffers, so a screen that invalidates
 only the one being drawn leaves the other a frame behind — and with alternating
 buffers that reads as *flicker* rather than as an obviously stale pixel.
 
-## What the shell costs
+## What the bench costs, and why 19.5 fps is the target
 
-740 fills is 92 KiB per frame against a 976 KiB budget, so the shell as it
-stands is not close to the limit: only the status band repaints, and the tiles
-and stub copy are chrome. That headroom is the budget the instrument screens
-will spend — a live plot redrawing a 760 × 210 region is where it goes.
+| | fills/frame | fps |
+| --- | ---: | ---: |
+| The menu, and any chrome-cached screen | **746** | 39.0 |
+| The motor bench, live plot | **13,423** | 19.5 |
+| The same, with the simulation watermark | **15,079** | 19.5 |
+| Nothing cached at all | 24,268 | 9.8 |
 
-CI holds the line at **12,000 fills** for `frame` and `overview`. That ceiling
-is deliberately near the cost of a full-screen clear: a screen that exceeds it
-is one that is repainting everything, which is the mistake worth catching
-automatically rather than noticing on hardware.
+The bench screen runs at half the panel's rate, and that is the design point
+rather than a shortfall. The panel moves 976 KiB per frame at 39 Hz; a render
+costing twice that lands at **19.5 fps — exactly one frame per 20 Hz telemetry
+sample**. Drawing faster than the numbers arrive would repaint identical
+pixels; drawing slower would drop samples on the floor.
+
+So the ceiling is **15,600 fills** for the bench modes, which is that threshold
+and not a preference: above it the panel can no longer deliver a frame per
+sample, and that is the regression worth catching. Chrome-cached screens are
+held to **2,000**, which catches a menu that has stopped caching.
+
+The margin in simulation is thin on purpose rather than by accident: 15,079 of
+15,600 is 97% of the budget. If a future pane needs room, the levers in order
+of bluntness are the plot's height, skipping the plot on frames where no new
+sample arrived, and narrowing the plot.
 
 The table above is checked by `frame_cost.py --check-doc`, to a tolerance
 rather than byte for byte: absolute fills shift by a few between machines
