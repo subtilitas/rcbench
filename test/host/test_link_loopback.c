@@ -18,12 +18,14 @@
 #include "link_host.h"
 #include "link_pages.h"
 #include "link_wire.h"
+#include "telemetry_sim.h"
 
 /* ------------------------------------------------------------ the far end */
 
 typedef struct {
     uint16_t identity[LINK_ID_COUNT];
     uint16_t control[LINK_CT_COUNT];
+    uint16_t bench[LINK_BN_COUNT];
 } dev_state_t;
 
 static dev_state_t   g_state;
@@ -59,9 +61,16 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
     return 0;
 }
 
+static void bench_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    memcpy(out, ((dev_state_t *)ctx)->bench + off, (size_t)n * 2u);
+}
+
+/* No write handler: a measurement a host could set is not a measurement. */
 static const link_page_t k_pages[] = {
     { LINK_PAGE_IDENTITY, LINK_ID_COUNT, identity_read, NULL },
     { LINK_PAGE_CONTROL,  LINK_CT_COUNT, control_read,  control_write },
+    { LINK_PAGE_BENCH,    LINK_BN_COUNT, bench_read,    NULL },
 };
 
 /* --------------------------------------------------------------- the wire */
@@ -77,7 +86,7 @@ static void fresh(void)
     g_state.identity[LINK_ID_PROTOCOL_MAJOR] = LINK_PROTOCOL_MAJOR;
     g_state.identity[LINK_ID_HARDWARE]       = 7;
     now_ms = 0;
-    link_dev_init(&g_dev, k_pages, 2, &g_state, now_ms);
+    link_dev_init(&g_dev, k_pages, 3, &g_state, now_ms);
     link_decoder_reset(&g_dev_rx);
     link_decoder_reset(&host_rx);
     link_host_init(&host, now_ms);
@@ -328,6 +337,80 @@ TEST_CASE(a_dead_far_end_trips_both_watchdogs_in_order)
     CHECK(!g_dev.failsafe);
 }
 
+/*
+ * The seam, end to end: numbers made on one processor, written to registers,
+ * put on a wire, decoded on the other, and read back as a bench_state that
+ * the screens cannot tell from a local one.
+ */
+TEST_CASE(a_bench_page_crosses_the_wire_intact)
+{
+    fresh();
+
+    telemetry_sim_t sim;
+    bench_state_t far;
+    memset(&far, 0, sizeof(far));
+    telemetry_sim_init(&sim, NULL);
+    for (int i = 0; i < 60; ++i) {
+        telemetry_sim_step(&sim, 75.0f, 0.05f, &far);
+    }
+    bench_state_to_regs(&far, g_state.bench);
+
+    uint8_t wire[LINK_MAX_FRAME];
+    const size_t n = link_host_read(&host, LINK_PAGE_BENCH, 0, LINK_BN_COUNT,
+                                    wire, sizeof(wire));
+    fake_wire_write(&to_dev, wire, n);
+    dev_pump(0);
+
+    link_msg_t reply = { 0 };
+    uint8_t byte;
+    bool got = false;
+    while (fake_wire_read(&to_host, &byte, 1) == 1) {
+        if (link_decode_byte(&host_rx, byte, &reply)) {
+            got = link_host_reply(&host, &reply, now_ms);
+        }
+    }
+    CHECK(got);
+    CHECK_EQ(reply.op, LINK_OP_DATA);
+
+    bench_state_t near;
+    memset(&near, 0, sizeof(near));
+    bench_state_from_regs(&near, reply.regs, reply.offset, reply.count);
+
+    CHECK_NEAR(near.voltage, far.voltage, 0.01f);
+    CHECK_NEAR(near.current, far.current, 0.01f);
+    CHECK_NEAR(near.rpm, far.rpm, 1.0f);
+    CHECK_NEAR(near.voltage_min, far.voltage_min, 0.01f);
+    CHECK_NEAR(near.current_max, far.current_max, 0.01f);
+
+    /* And the far end's admission that it is modelling travels with them.
+     * A remote fake declares itself rather than being assumed honest. */
+    CHECK(bench_state_simulated(&near));
+}
+
+/* A measurement the host could write is not a measurement. */
+TEST_CASE(the_bench_page_refuses_to_be_written)
+{
+    fresh();
+    const uint16_t v = 9999;
+    uint8_t wire[LINK_MAX_FRAME];
+    const size_t n = link_host_write(&host, LINK_PAGE_BENCH,
+                                     LINK_BN_VOLTAGE_CV, 1, &v, wire,
+                                     sizeof(wire));
+    fake_wire_write(&to_dev, wire, n);
+    dev_pump(0);
+
+    link_msg_t reply = { 0 };
+    uint8_t byte;
+    while (fake_wire_read(&to_host, &byte, 1) == 1) {
+        if (link_decode_byte(&host_rx, byte, &reply)) {
+            (void)link_host_reply(&host, &reply, now_ms);
+        }
+    }
+    CHECK_EQ(reply.op, LINK_OP_NACK);
+    CHECK_EQ(reply.regs[0], LINK_NACK_READ_ONLY);
+    CHECK_EQ(g_state.bench[LINK_BN_VOLTAGE_CV], 0);
+}
+
 int main(void)
 {
     RUN(a_poll_gets_its_answer);
@@ -339,5 +422,7 @@ int main(void)
     RUN(the_far_end_waits_the_turnaround_before_answering);
     RUN(a_refusal_travels_as_an_answer);
     RUN(a_dead_far_end_trips_both_watchdogs_in_order);
+    RUN(a_bench_page_crosses_the_wire_intact);
+    RUN(the_bench_page_refuses_to_be_written);
     return test_summary("link_loopback");
 }
