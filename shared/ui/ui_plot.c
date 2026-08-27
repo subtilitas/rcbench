@@ -64,6 +64,7 @@ void ui_plot_push(ui_plot_t *p, const float *values)
         const float v = values[k];
         p->ring[k][p->head] = isfinite(v) ? v : 0.0f;
     }
+    ++p->pushes;
     p->head = (p->head + 1) % UI_PLOT_HISTORY;
     if (p->filled < UI_PLOT_HISTORY) {
         ++p->filled;

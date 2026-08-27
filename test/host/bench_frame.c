@@ -13,6 +13,10 @@
  *   overview  the menu, whose tiles are chrome and must never be in a frame
  *   sim       the same steady state with the SIMULATION watermark over it,
  *             which is the only thing here that blends rather than writes
+ *   frame-idle the bench between samples: the panel refreshes at 39 Hz and
+ *             samples arrive at 20, so about half of all frames have nothing
+ *             new to plot.  `frame` keeps pushing one per frame and so stays
+ *             the worst case, which is what the ceiling should guard.
  *   clear     a full-screen clear, for reference
  *   vlines    17 full-height vertical lines, the pathological case
  *   hlines    the same pixel count as horizontal lines
@@ -28,7 +32,9 @@
 #include "overview_screen.h"
 #include "splash_screen.h"
 #include "stub_screen.h"
+#include "telemetry_sim.h"
 #include "ui_screen.h"
+#include "motor_screen.h"
 #include "ui_theme.h"
 
 #define W 800
@@ -98,7 +104,17 @@ int main(int argc, char **argv)
     ui_router_render(&c, 0);
     ui_router_render(&c, 1);
 
+    telemetry_sim_t sim;
+    bench_state_t bench;
+    memset(&bench, 0, sizeof(bench));
+    telemetry_sim_init(&sim, NULL);
+    const bool feed = (strcmp(mode, "frame-idle") != 0);
+
     for (int i = 0; i < frames; ++i) {
+        if (feed) {
+            telemetry_sim_step(&sim, 60.0f, 0.05f, &bench);
+            motor_screen_push(&bench);
+        }
         if (strcmp(mode, "chrome") == 0) {
             /* Nothing cached: what repainting the chrome every frame costs. */
             ui_router_invalidate();
