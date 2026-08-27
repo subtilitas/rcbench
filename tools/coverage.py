@@ -65,6 +65,7 @@ TRACKED = [
     "shared/bench/bench_state.c",
     "shared/bench/throttle.c",
     "shared/bench/telemetry_sim.c",
+    "shared/bench/log_writer.c",
 ]
 
 # Sources that are compiled into the suite but deliberately not measured.
