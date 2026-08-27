@@ -25,7 +25,8 @@ pico_sdk_init()
 
 # The same directory the panel registers as an IDF component and the host
 # suite builds with plain gcc.  One source list, three build systems.
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/link" link)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/link"  link)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/bench" bench)
 
 add_executable(rcbench-copro
     src/main.c
@@ -38,5 +39,6 @@ target_link_libraries(rcbench-copro
     hardware_uart
     hardware_gpio
     rcbench_link
+    rcbench_bench
 )
 pico_add_extra_outputs(rcbench-copro)
