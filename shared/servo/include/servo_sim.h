@@ -83,3 +83,63 @@ void servo_sim_init(servo_sim_t *s, const servo_sim_cfg_t *cfg);
  * return the current its sensor would report.
  */
 float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms);
+
+/* ------------------------------------------ two servos on one surface */
+
+/*
+ * A pair, coupled through the surface they both drive.
+ *
+ * The only thing this has to render honestly is that disagreement costs
+ * current and agreement does not, and that the disagreement is settled
+ * mechanically rather than reported by anything. The second servo's centre
+ * and its throw are each wrong by a configurable amount -- which is the
+ * installation error the synchroniser exists to measure, and the two errors
+ * are given separately because the routine's whole claim is that they can be
+ * told apart.
+ */
+typedef struct {
+    uint16_t centre_us;
+    /** How far servo B's real centre sits from where it is commanded. */
+    int16_t  offset_us;
+    /** B's real throw as a multiple of what it is commanded. 1.0 is right. */
+    float    travel;
+    /** What the pair draws with nothing to fight about. */
+    float    free_a;
+    /** Extra *total* current per microsecond of disagreement. */
+    float    fight_a_per_us;
+    /** What the pair draws while either of them is still travelling. As with
+     *  the single servo, this is what a reading taken too early sees. */
+    float    travel_a;
+    float    slew_us_per_ms;
+    float    noise_a;
+} servo_pair_cfg_t;
+
+typedef struct {
+    servo_pair_cfg_t cfg;
+    float    pos_a_us;
+    float    pos_b_us;
+    uint32_t last_ms;
+    bool     started;
+    uint32_t seed;
+} servo_pair_t;
+
+void servo_pair_defaults(servo_pair_cfg_t *cfg, uint16_t centre_us);
+void servo_pair_init(servo_pair_t *p, const servo_pair_cfg_t *cfg);
+
+/**
+ * Advance both servos to @p now_ms with the commands given, and return the
+ * total current the pair draws.
+ *
+ * Both servos take time to get where they are told, which is why this needs a
+ * clock: a reading taken before they have arrived is a reading of two servos
+ * in transit rather than of two servos disagreeing, and telling those apart
+ * is the entire job of the settle time.
+ */
+float servo_pair_step(servo_pair_t *p, uint16_t cmd_a_us, uint16_t cmd_b_us,
+                      uint32_t now_ms);
+
+/** How far apart the two are actually holding the surface, in microseconds.
+ *  Not something hardware can report -- it is what the search is blind to and
+ *  what a test is allowed to look at. */
+float servo_pair_disagreement(const servo_pair_t *p, uint16_t cmd_a_us,
+                              uint16_t cmd_b_us);

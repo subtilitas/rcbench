@@ -83,8 +83,6 @@ has a test of its own.
 
 ## Synchronising two servos on one surface
 
-Designed, not yet written.
-
 Two servos on one surface — dual ailerons, elevator halves — fight each other
 through the surface whenever their travel or their centre disagree, and both
 draw extra current continuously to do it. Nothing about the model tells you;
@@ -100,10 +98,60 @@ And the two errors separate cleanly, which saves searching blindly:
 - fighting **at the extremes** is a travel error
 
 Measure at the centre and at both ends and each correction falls out of its own
-measurement. The accelerometer adds the one thing current cannot say — whether
-the two servos agree with each other and are both wrong, or disagree.
+measurement. Each end gets its own number, for the same reason the limit search
+measures both ends separately: a linkage is not symmetric about centre once a
+horn and a pushrod are involved.
+
+The accelerometer adds the one thing current cannot say — whether the two
+servos agree with each other and are *both* wrong. A surface that is stiff
+nowhere but sits five degrees off is invisible to this measurement, because
+there is nothing for the two of them to fight about.
+
+### How the minimum is found
+
+A coarse-to-fine scan, three times. Each stage sweeps one variable across a
+window, settles and measures at each point, takes the lowest, and narrows the
+window to the interval between that point's neighbours. Three rounds of seven
+points take a ±40 µs window down to about ±1.5 µs.
+
+Total current, not per-servo: what is being minimised is what the two of them
+draw together, and one sensor across both outputs is enough to find it — which
+matters, because sensors are what this whole family of measurements is short of.
+
+### The settle time has two parts
+
+Stepping to the next point of a scan moves a few microseconds. Changing stage
+swings a servo across its whole deflection, which on a slow servo is well over
+a second. One fixed wait is either sized for the big move — and then most of
+the search is spent waiting for small ones — or sized for the small move, and
+the first reading of every stage is taken of two servos still travelling.
+
+So the wait is a fixed part plus however long the move just commanded ought to
+take at a configured slew estimate. That estimate wants to be pessimistic:
+setting it slow costs time, and setting it fast costs the answer. The scan
+sweeps in one direction, so a servo that has not arrived is *always* a step
+behind — a bias that does not average out, it moves the minimum.
+
+### A minimum it cannot see is reported, not invented
+
+If the best point of the first, widest scan does not sit a configured margin
+below the worst, the search stops and says so.
+
+Note what that does **not** mean. A pair that is already synchronised still
+produces a clean minimum, because moving one servo away from agreement is
+exactly what the scan does — a correct installation shows as a minimum *at zero
+correction*, not as an absent one. So the only honest reading left is that the
+sensor cannot resolve the fight, and saying that beats returning a correction
+assembled out of noise, which would have the shape of an answer without being
+one.
 
 ## What both are waiting for
 
-A current sensor per servo output, and the coprocessor's PWM. Neither exists
-yet; see [the record](../README.md) for where those sit in the order of work.
+The coprocessor's PWM, and current sensing on the outputs — per output for the
+limit search, and one across the pair for the synchroniser. Neither exists yet;
+see [the record](../README.md) for where those sit in the order of work.
+
+Both searches are written as state machines fed measurements and returning
+commands, so what is missing is only the hardware underneath them: the same
+code runs in the host suite against a modelled servo today and against a real
+one when there is one.
