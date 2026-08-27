@@ -66,6 +66,7 @@ static const copy_t k_copy[SCREEN_COUNT] = {
           "A raw view: bytes, gaps, errors, framing" },
         "one PIO soft UART, and then one parser at a time",
     },
+    /* Reached only if the log viewer is ever unrouted; it is built. */
     [SCREEN_LOGS] = {
         "LOGS",
         { "Record every channel to the card at up to 1 kHz",
