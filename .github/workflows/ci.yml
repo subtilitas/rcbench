@@ -114,6 +114,10 @@ jobs:
           esp_idf_version: ${{ matrix.idf }}
           target: esp32s3
           path: 'firmware/panel'
+          # A single image flashable at 0x0, as well as the three parts.
+          # Flashing bootloader, partition table and app at three offsets is
+          # three chances to get an offset wrong; the merged one has none.
+          command: idf.py build && idf.py merge-bin -o rcbench-panel-merged.bin
 
       - name: Size report
         run: |
@@ -124,6 +128,7 @@ jobs:
         with:
           name: panel-${{ matrix.idf }}
           path: |
+            firmware/panel/build/rcbench-panel-merged.bin
             firmware/panel/build/rcbench-panel.bin
             firmware/panel/build/rcbench-panel.elf
             firmware/panel/build/bootloader/bootloader.bin

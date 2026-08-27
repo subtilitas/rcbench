@@ -353,7 +353,7 @@ start from it rather than a bare `menuconfig`.
 
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
-| `ci.yml` | push / PR / tag `v*` / manual | host suite, coverage `--check`, the font and documentation checks, the ESP-IDF matrix (v5.4, v5.5) building the panel, the pico-sdk build of the coprocessor, firmware artifacts |
+| `ci.yml` | push / PR / tag `v*` / manual | host suite, coverage `--check`, the font, frame-cost, golden-image and documentation checks, the ESP-IDF matrix (v5.4, v5.5) building the panel, the pico-sdk build of the coprocessor, and firmware artifacts including a merged panel image that flashes to `0x0` on its own |
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them, opens a release |
 

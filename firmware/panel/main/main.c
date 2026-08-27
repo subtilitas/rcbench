@@ -41,6 +41,14 @@
 
 static const char *TAG = "rcbench";
 
+/* Used during bring-up as well as in the loop, so file scope. */
+static link_host_t    s_host;
+static link_decoder_t s_rx;
+
+/* Defined below; bring_up() asks who is there before the loop starts. */
+static bool poll_page(link_host_t *host, link_decoder_t *rx, uint8_t page,
+                      uint8_t count, link_msg_t *reply);
+
 static uint32_t now_ms(void)
 {
     return (uint32_t)(esp_timer_get_time() / 1000);
@@ -134,11 +142,48 @@ static bool bring_up(void)
     splash_screen_set(SPLASH_STEP_SETTINGS, SPLASH_OK, "defaults");
     pump();
 
-    if (link_uart_init(PANEL_LINK_UART_NUM, LINK_BAUD_BRINGUP,
-                       PANEL_LINK_PIN_TX, PANEL_LINK_PIN_RX) == ESP_OK) {
-        splash_screen_set(SPLASH_STEP_LINK, SPLASH_OK, "256k 8N1");
+    const bool link_open = (link_uart_init(PANEL_LINK_UART_NUM,
+                                           LINK_BAUD_BRINGUP,
+                                           PANEL_LINK_PIN_TX,
+                                           PANEL_LINK_PIN_RX) == ESP_OK);
+    splash_screen_set(SPLASH_STEP_LINK,
+                      link_open ? SPLASH_OK : SPLASH_WARN,
+                      link_open ? "256k 8N1" : "not opened");
+    pump();
+
+    /*
+     * And ask who is there.
+     *
+     * This step existed and was never answered, so all_answered() was never
+     * true, so the splash never handed over -- the panel sat on its own boot
+     * screen for ever.  A step that is declared and never set is worse than
+     * one that does not exist: the list looks complete and the machine waits.
+     */
+    link_host_init(&s_host, now_ms());
+    link_decoder_reset(&s_rx);
+    if (link_open) {
+        link_msg_t reply;
+        if (poll_page(&s_host, &s_rx, LINK_PAGE_IDENTITY, LINK_ID_COUNT,
+                      &reply) && reply.op == LINK_OP_DATA) {
+            /* Wide enough for three 16-bit registers plus the words: the
+             * splash truncates its own detail field anyway, but a
+             * truncating snprintf is a warning, and warnings are errors. */
+            char detail[40];
+            snprintf(detail, sizeof(detail), "proto %u.%u hw %u",
+                     reply.regs[LINK_ID_PROTOCOL_MAJOR],
+                     reply.regs[LINK_ID_PROTOCOL_MINOR],
+                     reply.regs[LINK_ID_HARDWARE]);
+            const bool speaks_ours =
+                reply.regs[LINK_ID_PROTOCOL_MAJOR] == LINK_PROTOCOL_MAJOR;
+            splash_screen_set(SPLASH_STEP_COPRO,
+                              speaks_ours ? SPLASH_OK : SPLASH_FAIL, detail);
+            ok = ok && speaks_ours;
+        } else {
+            /* Not a failure: the bench is useful without one, and says so. */
+            splash_screen_set(SPLASH_STEP_COPRO, SPLASH_WARN, "no answer");
+        }
     } else {
-        splash_screen_set(SPLASH_STEP_LINK, SPLASH_WARN, "not opened");
+        splash_screen_set(SPLASH_STEP_COPRO, SPLASH_WARN, "no link");
     }
     pump();
 
@@ -292,15 +337,11 @@ void app_main(void)
     telemetry_sim_init(&sim, NULL);
     throttle_init(&thr, NULL, now_ms());
 
-    link_host_t    host;
-    link_decoder_t rx;
-    link_host_init(&host, now_ms());
-    link_decoder_reset(&rx);
-
     if (!healthy) {
         ui_router_set_alert("touch did not answer -- the bench will not arm");
     }
 
+    uint32_t frames    = 0;
     uint32_t last_us   = (uint32_t)esp_timer_get_time();
     uint32_t last_poll = 0;
     uint32_t last_touch_ok = now_ms();
@@ -392,9 +433,9 @@ void app_main(void)
             if (link_up) {
                 /* Ask for what is wanted every frame; identity is asked once
                  * and then only to notice the far end coming back. */
-                answered = read_bench(&host, &rx, &bench);
+                answered = read_bench(&s_host, &s_rx, &bench);
             } else {
-                answered = poll_page(&host, &rx, LINK_PAGE_IDENTITY,
+                answered = poll_page(&s_host, &s_rx, LINK_PAGE_IDENTITY,
                                      LINK_ID_COUNT, &reply);
                 if (answered
                     && reply.regs[LINK_ID_PROTOCOL_MAJOR]
@@ -432,7 +473,23 @@ void app_main(void)
         ui_router_tick(dt_s);
 
         gfx_canvas_t *c = display_canvas();
+        const int64_t draw_start = esp_timer_get_time();
         ui_router_render(c, display_back_index());
+        const uint32_t draw_us = (uint32_t)(esp_timer_get_time() - draw_start);
         display_flip();   /* blocks until the swap has taken effect */
+
+        /*
+         * DRAW is how long the frame took to paint; WAIT is how long the flip
+         * then blocked.  A healthy frame is mostly WAIT -- the loop paced by
+         * the panel.  DRAW climbing until WAIT reaches zero is the frame
+         * budget being spent, and it is the number to look at before
+         * believing anything about the frame rate.  The driver has counted
+         * this since the beginning and nothing ever printed it.
+         */
+        if (++frames % 300u == 0u) {
+            ESP_LOGI(TAG, "%.1f fps  DRAW %u us  WAIT %u us",
+                     (double)display_fps(), (unsigned)draw_us,
+                     (unsigned)display_last_wait_us());
+        }
     }
 }
