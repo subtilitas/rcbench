@@ -55,6 +55,10 @@ SOURCES = [
     "shared/ui/overview_screen.c",
     "shared/ui/stub_screen.c",
     "shared/ui/motor_screen.c",
+    "shared/ui/log_viewer_screen.c",
+    "shared/logfile/log_numbers.c",
+    "shared/logfile/log_csv.c",
+    "shared/logfile/log_fields.c",
     "shared/bench/bench_state.c",
     "shared/bench/telemetry_sim.c",
     "shared/bench/throttle.c",
@@ -65,6 +69,7 @@ INCLUDES = [
     "shared/ui/include",
     "shared/bench/include",
     "shared/link/include",
+    "shared/logfile/include",
 ]
 
 MODES = ["frame", "sim", "chrome", "overview", "clear", "vlines", "hlines"]
