@@ -19,7 +19,7 @@ rcbench/
     link/                 framing · CRC-16 · the wire budget
     bench/                bench_state · throttle policy · the simulator
     safety/               the heartbeat: the panel generates, the copro judges
-    servo/                the limit search, and a servo to run it against
+    servo/                the limit and sync searches, and servos to run them against
   firmware/
     panel/                ESP-IDF project
     copro/                pico-sdk project
