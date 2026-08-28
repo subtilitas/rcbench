@@ -66,6 +66,7 @@ TRACKED = [
     "shared/openyge/openyge_params.c",
     "shared/servo/servo_sim.c",
     "shared/link/link_bringup.c",
+    "shared/link/link_can.c",
     "shared/link/link_crc.c",
     "shared/link/link_frame.c",
     "shared/link/link_dev.c",

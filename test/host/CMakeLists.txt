@@ -56,7 +56,7 @@ set(FAKES "${CMAKE_CURRENT_SOURCE_DIR}/fakes/fake_wire.c")
 
 enable_testing()
 
-foreach(suite gfx touch_map nav widgets bench motor logview logwriter settings logfile link_crc link_frame link_pages link_watchdog link_loopback link_bringup heartbeat servo_limit servo_sync openyge_frame openyge_status openyge_params)
+foreach(suite gfx touch_map nav widgets bench motor logview logwriter settings logfile link_crc link_frame link_can link_pages link_watchdog link_loopback link_bringup heartbeat servo_limit servo_sync openyge_frame openyge_status openyge_params)
     add_executable(test_${suite} test_${suite}.c ${FAKES})
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE

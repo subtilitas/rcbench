@@ -212,6 +212,88 @@ interval early with the outputs live.
 over-temperature, stall timeout, lost link — and reports what it did at the next
 poll. It never waits for permission to fail safe. See [Safety](Safety.md).
 
+## Moving to CAN
+
+The board turned out to have a CAN path already — an FSUSB42UMX multiplexes it
+against USB — and the coprocessor module arrived with an **XL2515** controller
+(MCP2515-compatible, SPI) behind a **SIT65HVD230** transceiver. That changes
+the transport, and it is worth being exact about what it buys and what it
+costs.
+
+**What it deletes.** CAN arbitrates rather than taking turns, so there is no
+direction line. Everything downstream of that goes with it: the RC one-shot,
+`LINK_TURNAROUND_US`, the ~125 kbaud floor, Q1's unmeasured threshold, and the
+transceiver's 5 V power-up hazard. Three of the six faults the
+[bring-up procedure](Bringup.md) was written to tell apart stop being possible
+rather than becoming easier to diagnose. The controller also brings a 15-bit
+CRC, an acknowledge slot, automatic retransmission and bus-off confinement,
+none of which had to be written.
+
+**What it gains.** Arbitration is by identifier, lowest wins — so priority is a
+property of the address rather than of a scheduler. A write to the control page
+outranks every telemetry read *on the wire*, against traffic already in flight,
+with no software involved at either end. RS485 cannot make that promise at any
+baud rate, and it is the strongest argument here.
+
+**What it costs.** The ESP32-S3's TWAI is classic CAN only — no FD, 1 Mbit/s
+ceiling — and eight data bytes a frame:
+
+| | payload |
+| --- | ---: |
+| Classic CAN, 1 Mbit/s, 29-bit IDs, worst-case stuffing | **52 kB/s** |
+| The same with 11-bit IDs | 62 kB/s |
+| RS485 at the 1.5 Mbaud target | 133 kB/s |
+
+Against the 12–30 kB/s of section [what the wire costs](#what-the-wire-costs),
+the margin falls from five-to-twelve times to about two. That is thinner and it
+is still enough: a `bench_state` poll is thirteen registers, five frames and
+**1.55% of the bus at 20 Hz**, and a 60 kB coprocessor image takes 1.2 s.
+
+### The mapping
+
+`link_msg_t` never knew what carried it, so the dispatcher does not change.
+What changes is the framing, and the 29-bit identifier turns out to hold
+exactly the fields the message already had:
+
+| bits | field | |
+| --- | --- | --- |
+| 28..26 | priority | 3 bits, lower wins |
+| 25..22 | op | a `link_op_t` |
+| 21..14 | page | the page map, unchanged |
+| 13..6 | offset | first register this frame carries |
+| 5..0 | count | registers this frame is about |
+
+Three consequences fall out of that, and each is worth more than it looks:
+
+**A read has no payload.** The whole question is its address, so polling costs
+one zero-byte frame. The identifier is arbitrated whether or not it carries
+anything.
+
+**Nothing is reassembled.** Each frame carries its own offset and its own
+count, so a thirteen-register reply is four independent messages rather than a
+sequence. A dropped frame costs one register range instead of a whole
+transfer, there is no timer waiting for a continuation that is not coming, and
+order does not matter — which `test_link_can` checks by decoding a split reply
+backwards.
+
+**The frame CRC is gone.** CAN has one in silicon, with an acknowledge slot and
+retransmission behind it. Carrying another two bytes would spend a quarter of
+an eight-byte payload duplicating that. End-to-end integrity over something
+larger than a page — a firmware image — belongs to that transfer rather than to
+the transport.
+
+### What is not built yet
+
+The mapping and its tests. **Not** the drivers: the ESP32-S3 TWAI side, the
+XL2515 over SPI, or the bit timing at either end. The firmware still speaks
+RS485, and both transports are in the tree while that is true.
+
+And one problem to solve before the first CAN bring-up: the panel's console is
+`CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG` with no secondary, while USB and CAN share
+the FSUSB42UMX. **Selecting CAN takes the console away**, which is exactly when
+the bring-up report is wanted. Moving the link off RS485 frees GPIO16 and
+GPIO15, and a UART console there is the obvious answer.
+
 ## The two transports
 
 Both are deliberately dumb: they move bytes and nothing else. Framing, CRC,
