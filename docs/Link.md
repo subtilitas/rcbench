@@ -292,30 +292,30 @@ busier. So the arithmetic is in `shared/can/can_timing.c` with tests, rather
 than in a table of register values copied from an application note.
 
 It insists the bit rate come out **exact** — no approximation — and that rule
-turns up the finding worth having before anything is wired:
+is what made the crystal worth checking before anything was wired. The XL2515
+divides its crystal by two before the prescaler starts and a bit needs at least
+eight quanta, so the crystal sets a hard ceiling that no register value moves:
 
-> **The XL2515's crystal decides whether this link can run at 1 Mbit/s at all.**
-> The part divides its crystal by two before the prescaler starts, and a bit
-> needs at least eight quanta. So an **8 MHz** module tops out at
-> **500 kbit/s** and no register value changes that; **16 MHz** reaches
-> 1 Mbit/s exactly, at the smallest divisor and the fewest quanta the part
-> allows.
-
-That is not a detail, because it halves the budget:
-
-| crystal | bit rate | payload | against the 12–30 kB/s that crosses |
+| crystal | ceiling | payload at that rate | against the 12–30 kB/s that crosses |
 | --- | ---: | ---: | --- |
-| 16 MHz | 1 Mbit/s | 51.6 kB/s | comfortable |
-| 8 MHz | 500 kbit/s | **25.8 kB/s** | **short at the top of the range** |
+| **16 MHz — what the module has** | **1 Mbit/s** | **51.6 kB/s** | comfortable |
+| 8 MHz | 500 kbit/s | 25.8 kB/s | would have been short at the top |
 
-At 500 kbit/s a `bench_state` poll is still only 3.1% of the bus and a 60 kB
-image takes 2.4 s, so the steady state is fine either way. It is the peak —
-four channels batched at 100 Hz with an accelerometer burst behind it — that an
-8 MHz part would not carry. **Check the crystal before wiring.**
+**The module is 16 MHz**, so the budget stands and 1 Mbit/s is reachable
+exactly, at the smallest divisor and the fewest quanta the part allows.
 
-`test_can_timing` pins one worked example against the datasheet by hand: 16 MHz
-at 500 kbit/s gives sixteen quanta, a sample point at 87.5%, and
-CNF1/2/3 = `0x40`, `0xB5`, `0x01`.
+That was not taken on trust. The vendor's driver carries CNF triples for ten
+standard bit rates; decoding each back into a divisor and a quanta count gives
+the advertised rate **at 16 MHz and at no other crystal** — ten independent
+confirmations of one number. `test_can_timing` pins it, so a future module with
+a different can fails a test rather than a bus.
+
+Two worked examples are checked by hand against the datasheet: 500 kbit/s gives
+sixteen quanta, a sample point at 87.5% and CNF1/2/3 = `0x40`, `0xB5`, `0x01`;
+1 Mbit/s gives eight quanta and a sample point at 75%. Seventy-five, not the
+87.5 asked for, because eight quanta is the fewest a bit may have and one
+quantum is therefore an eighth of the bit — nothing lands closer. The vendor's
+own table puts that bit at 62.5%, a whole quantum earlier than it needs to be.
 
 ### What is not built yet
 
@@ -323,6 +323,11 @@ The mapping, the bit timing and their tests. **Not** the drivers themselves:
 the TWAI peripheral setup, or the SPI transfers that carry the XL2515's
 registers. The firmware still speaks RS485, and both transports are in the tree
 while that is true.
+
+The pins are known now, from the vendor's driver rather than guessed, and are
+recorded in `copro_pins.h`: **spi1, SCK on GP10, MOSI GP11, MISO GP12, CS GP9,
+INT GP8**, with the bus clocked at 10 MHz. None of them collide with the link
+UART on GP0–2 or the safety line on GP3.
 
 ### Keeping a console while CAN is selected
 

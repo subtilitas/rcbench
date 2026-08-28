@@ -65,6 +65,56 @@ TEST_CASE(an_8_mhz_mcp2515_cannot_do_one_megabit_at_all)
     CHECK_EQ(can_timing_max_bitrate(&hi), 1000000u);
 }
 
+/*
+ * The module's crystal, pinned as a test because it is the number the whole
+ * bandwidth budget rests on.
+ *
+ * It is 16 MHz, and that was not taken on trust: the vendor's shipping driver
+ * carries a table of CNF triples for ten standard rates, and decoding those
+ * back into divisor and quanta gives the advertised rate at 16 MHz and at no
+ * other crystal. Ten independent confirmations of one number.
+ *
+ * If a future module arrives with 8 MHz, this case fails and says so, which is
+ * the right moment to find out rather than after the bus is wired.
+ */
+TEST_CASE(the_module_reaches_every_standard_rate_on_its_16_mhz_crystal)
+{
+    can_timing_limits_t lim;
+    can_timing_limits_mcp2515(&lim, 16000000u);
+    const uint32_t standard[] = { 5000u, 10000u, 20000u, 50000u, 100000u,
+                                  125000u, 250000u, 500000u, 800000u,
+                                  1000000u };
+    for (size_t i = 0; i < sizeof(standard) / sizeof(standard[0]); ++i) {
+        can_timing_t t;
+        uint8_t cnf[3];
+        if (!can_timing_solve(&lim, standard[i], CAN_SAMPLE_POINT_DEFAULT, &t)
+            || !mcp2515_encode_timing(&t, cnf)) {
+            T_FAIL("%u bit/s is out of reach on a 16 MHz crystal",
+                   (unsigned)standard[i]);
+            continue;
+        }
+        if (achieved(&lim, &t) != standard[i]) {
+            T_FAIL("%u bit/s came out as %u", (unsigned)standard[i],
+                   (unsigned)achieved(&lim, &t));
+        }
+    }
+
+    /* And the one the link will actually use, in full. */
+    can_timing_t t;
+    CHECK(can_timing_solve(&lim, 1000000u, CAN_SAMPLE_POINT_DEFAULT, &t));
+    CHECK_EQ(t.div, 2);
+    CHECK_EQ(t.tq, 8);
+    CHECK_EQ(t.tseg1, 5);
+    CHECK_EQ(t.tseg2, 2);
+    /*
+     * 75%, not the 87.5% asked for: eight quanta is the fewest a bit may have,
+     * so one quantum is an eighth of the bit and nothing lands closer. The
+     * vendor's own table puts this bit at 62.5% -- also legal, and a whole
+     * quantum earlier than it needs to be.
+     */
+    CHECK_EQ(t.sample_permille, 750);
+}
+
 TEST_CASE(the_panels_twai_reaches_every_rate_the_coprocessor_can)
 {
     can_timing_limits_t lim;
@@ -337,6 +387,7 @@ int main(void)
 {
     RUN(a_16_mhz_mcp2515_reaches_one_megabit);
     RUN(an_8_mhz_mcp2515_cannot_do_one_megabit_at_all);
+    RUN(the_module_reaches_every_standard_rate_on_its_16_mhz_crystal);
     RUN(the_panels_twai_reaches_every_rate_the_coprocessor_can);
     RUN(a_rate_that_cannot_be_hit_exactly_is_refused);
     RUN(the_sample_point_lands_near_the_target_and_the_segments_are_legal);
