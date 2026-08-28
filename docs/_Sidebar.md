@@ -4,6 +4,7 @@
 - [Screens](Screens.md)
 - [The link](Link.md)
 - [Safety](Safety.md)
+- [Bringing up the link](Bringup.md)
 - [Servo procedures](Servo.md)
 - [The OpenYGE protocol](OpenYGE.md)
 - [Performance](Performance.md)
