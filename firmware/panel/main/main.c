@@ -500,9 +500,25 @@ void app_main(void)
         last_us = us;
 
         /* --- touch, and the rule that outlives every screen --------------- */
+        /*
+         * touch_wait_event returns bool, not esp_err_t.  This was written as
+         * `== ESP_OK` for a year, and ESP_OK is zero -- so the loop ran while
+         * there was *no* event and stopped the moment one arrived.  Three
+         * things followed from that one comparison:
+         *
+         *   - it never terminated, because the queue is empty most of the
+         *     time, so the loop below it never ran and nothing was drawn
+         *     after the first frame;
+         *   - ui_router_event was handed uninitialised stack on every spin;
+         *   - saw_touch was set on every spin, so last_touch_ok never aged
+         *     and the disarm-on-dead-touch rule could not fire.
+         *
+         * The function has a timeout argument, which is what made it look
+         * like an esp_err_t call.  It is not one.
+         */
         touch_event_t evt;
         bool saw_touch = false;
-        while (touch_wait_event(&evt, 0) == ESP_OK) {
+        while (touch_wait_event(&evt, 0)) {
             saw_touch = true;
             ui_router_event(&evt);
         }

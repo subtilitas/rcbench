@@ -67,6 +67,22 @@ void link_dev_init(link_dev_t *d, const link_page_t *pages, uint8_t page_count,
  * reserved for a coprocessor that is not there, so it must never also mean
  * "I heard you and declined".
  */
+/**
+ * Decide what to answer, without deciding how to carry it.
+ *
+ * The whole of the dispatcher's judgement -- which page, whether the range
+ * fits, whether the write was accepted, what a NACK should say -- with no
+ * transport in it. Two of them exist now: bytes over a UART, and identifiers
+ * over CAN. Neither is visible from here, which is what let CAN be added
+ * without touching a line of this file's reasoning.
+ *
+ * False only on a null argument; every real request produces a reply, because
+ * a request that gets no answer is indistinguishable from a dead link.
+ */
+bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
+                       link_msg_t *reply, uint32_t now_ms);
+
+/** Dispatch and encode as a byte frame, for the UART transport. */
 size_t link_dev_handle(link_dev_t *d, const link_msg_t *req,
                        uint8_t *out, size_t cap, uint32_t now_ms);
 
