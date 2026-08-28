@@ -45,24 +45,21 @@ void link_dev_clear_failsafe(link_dev_t *d, uint32_t now_ms)
     d->last_request_ms = now_ms;
 }
 
-static size_t refuse(uint8_t *out, size_t cap, const link_msg_t *req,
-                     link_nack_t why)
+static void refuse(link_msg_t *reply, const link_msg_t *req, link_nack_t why)
 {
-    link_msg_t reply;
-    memset(&reply, 0, sizeof(reply));
-    reply.op      = LINK_OP_NACK;
-    reply.page    = req->page;
-    reply.offset  = req->offset;
-    reply.count   = 1;
-    reply.regs[0] = (uint16_t)why;
-    return link_encode(out, cap, &reply);
+    memset(reply, 0, sizeof(*reply));
+    reply->op      = LINK_OP_NACK;
+    reply->page    = req->page;
+    reply->offset  = req->offset;
+    reply->count   = 1;
+    reply->regs[0] = (uint16_t)why;
 }
 
-size_t link_dev_handle(link_dev_t *d, const link_msg_t *req,
-                       uint8_t *out, size_t cap, uint32_t now_ms)
+bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
+                       link_msg_t *reply, uint32_t now_ms)
 {
-    if (d == NULL || req == NULL || out == NULL) {
-        return 0;
+    if (d == NULL || req == NULL || reply == NULL) {
+        return false;
     }
 
     /*
@@ -76,48 +73,62 @@ size_t link_dev_handle(link_dev_t *d, const link_msg_t *req,
 
     const link_page_t *p = find_page(d, req->page);
     if (p == NULL) {
-        return refuse(out, cap, req, LINK_NACK_BAD_PAGE);
+        refuse(reply, req, LINK_NACK_BAD_PAGE);
+        return true;
     }
     /* The frame layer already refused anything wider than a page; this is the
      * narrower question of whether it fits *this* page. */
     if (req->count == 0
         || (uint16_t)req->offset + (uint16_t)req->count > p->count) {
-        return refuse(out, cap, req, LINK_NACK_BAD_RANGE);
+        refuse(reply, req, LINK_NACK_BAD_RANGE);
+        return true;
     }
 
-    link_msg_t reply;
-    memset(&reply, 0, sizeof(reply));
-    reply.page   = req->page;
-    reply.offset = req->offset;
-    reply.count  = req->count;
+    memset(reply, 0, sizeof(*reply));
+    reply->page   = req->page;
+    reply->offset = req->offset;
+    reply->count  = req->count;
 
     if (req->op == LINK_OP_READ) {
-        reply.op = LINK_OP_DATA;
-        p->read(d->ctx, req->offset, req->count, reply.regs);
-        return link_encode(out, cap, &reply);
+        reply->op = LINK_OP_DATA;
+        p->read(d->ctx, req->offset, req->count, reply->regs);
+        return true;
     }
 
     if (req->op == LINK_OP_WRITE) {
         if (p->write == NULL) {
-            return refuse(out, cap, req, LINK_NACK_READ_ONLY);
+            refuse(reply, req, LINK_NACK_READ_ONLY);
+            return true;
         }
         const uint8_t why = p->write(d->ctx, req->offset, req->count,
                                      req->regs);
         if (why != 0) {
-            return refuse(out, cap, req, (link_nack_t)why);
+            refuse(reply, req, (link_nack_t)why);
+            return true;
         }
-        reply.op    = LINK_OP_ACK;
-        reply.count = req->count;
+        reply->op    = LINK_OP_ACK;
+        reply->count = req->count;
         /* An ACK echoes what was stored rather than what was sent.  A value
          * that was clamped on the way in is still accepted, and the host has
          * to be able to see that it was clamped. */
-        p->read(d->ctx, req->offset, req->count, reply.regs);
-        return link_encode(out, cap, &reply);
+        p->read(d->ctx, req->offset, req->count, reply->regs);
+        return true;
     }
 
     /* DATA, ACK and NACK are the coprocessor's own vocabulary.  Receiving one
      * means something is talking that should be listening. */
-    return refuse(out, cap, req, LINK_NACK_BAD_VALUE);
+    refuse(reply, req, LINK_NACK_BAD_VALUE);
+    return true;
+}
+
+size_t link_dev_handle(link_dev_t *d, const link_msg_t *req,
+                       uint8_t *out, size_t cap, uint32_t now_ms)
+{
+    link_msg_t reply;
+    if (out == NULL || !link_dev_dispatch(d, req, &reply, now_ms)) {
+        return 0;
+    }
+    return link_encode(out, cap, &reply);
 }
 
 bool link_dev_tick(link_dev_t *d, uint32_t now_ms)
