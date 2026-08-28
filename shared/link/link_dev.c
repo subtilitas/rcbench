@@ -121,15 +121,6 @@ bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
     return true;
 }
 
-size_t link_dev_handle(link_dev_t *d, const link_msg_t *req,
-                       uint8_t *out, size_t cap, uint32_t now_ms)
-{
-    link_msg_t reply;
-    if (out == NULL || !link_dev_dispatch(d, req, &reply, now_ms)) {
-        return 0;
-    }
-    return link_encode(out, cap, &reply);
-}
 
 bool link_dev_tick(link_dev_t *d, uint32_t now_ms)
 {

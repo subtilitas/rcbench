@@ -94,8 +94,8 @@ voltage batched to 100 Hz, decoded ESC frames and an accelerometer burst come to
 | The other two benches and three scaffolds | re-cut | routed and rendered; each says what it will do and what is blocking it |
 | Instrument widgets — plot, rails, hero, slider, tabs | re-cut | **built** and tested: the scale ladder, the shrink hysteresis, and the press-ownership contracts |
 | The simulation watermark | new | **built**: SIMULATION across the whole screen at 15% whenever the numbers are modelled, and no screen can opt out |
-| Coprocessor firmware | new | answers identity, status, control and bench pages over a real UART, honours the turnaround, fails safe at 200 ms; unrun on silicon |
-| Panel link transport | new | UART on GPIO16/15, board-switched direction, poll loop with the one-second escalation; unrun on silicon |
+| Coprocessor firmware | new | answers identity, status, control and bench pages over CAN, fails safe at 200 ms. **Run on silicon**: the bus is up at 1 Mbit/s with zero errors at either end |
+| Panel link transport | new | TWAI on GPIO19/20 through the board's multiplexer, poll loop with the one-second escalation and fragment reassembly. **Run on silicon** |
 | **The link moves to CAN** | new | **drivers at both ends, and a bring-up self-test that runs on silicon**: an echo across the bus that answers only "do frames cross intact", separately from whether the link works. The coprocessor echoes permanently; the panel side is opt-in because it costs native USB. [The procedure](docs/Bringup.md). The mapping and the bit timing are tested on the host, and both ends' pins came from the vendor's own driver rather than a guess; the drivers are not. A coprocessor module with an XL2515 controller and a SIT65HVD230 transceiver, against the panel's own CAN path — which the board already has, multiplexed with USB. `link_msg_t` never knew what carried it, so the dispatcher is unchanged and this is an added transport rather than a rewrite. [What it buys and costs](docs/Link.md) |
 | **Bring-up diagnosis** | new | **built**: both ends' counters compared and the most fundamental fault named rather than the loudest — a return path that never releases looks nothing like a dead coprocessor once the far end's own frame count is in the room. The coprocessor now fills the three STATUS registers it had always declared and never written. [The procedure](docs/Bringup.md) |
 | **The heartbeat** | new | **driven**: edges from the render loop, dropped the instant STOP latches or touch stops answering. The monostable it gates is not fitted, so today the edges reach a header pin and a scope |
@@ -174,139 +174,72 @@ Includes are flat: `#include "gfx.h"`, not `"rcbench/gfx.h"`.
 
 ## The link
 
-Half-duplex RS485, 8N1, because that is what the panel brings out — and beside
-100–300 A of switching current, differential signalling is what one would
-choose anyway. The protocol copies ArduPilot's **IOMCU**, which has flown the
-same problem for a decade:
+**CAN, 1 Mbit/s**, between the panel's TWAI controller and an XL2515 on the
+coprocessor. It began as half-duplex RS485 because that is what the panel
+brought out; the board turned out to have a CAN path already, multiplexed
+against USB, and the coprocessor module arrived with a controller on it.
+
+The protocol above it did not change, and that is the point. It copies
+ArduPilot's **IOMCU**, which has flown the same problem for a decade:
 
 - **A page and register model.** Every transaction is a page, an offset and a
   count over up to 32 sixteen-bit registers. A new feature adds a page, not a
   message type.
-- **A delimited envelope** — sync byte, length, CRSF's shape — so a decoder
-  resynchronises after noise instead of waiting for a gap. CRC-16 rather than
-  IOMCU's CRC-8, since this link also carries firmware images.
-- **Strictly host-polled. The coprocessor never speaks unsolicited.** This is
-  what makes the rest simple: nothing arbitrates outbound priority, so a stop
-  command cannot queue behind a telemetry burst *by construction*.
-- **Both ends are written and neither has met silicon.** The protocol between
-them is proven end-to-end on a laptop — `test_link_loopback` drives the real
-host state machine against the real device dispatcher across a wire that can
-corrupt, truncate and go deaf — so what bring-up has left to find is the wire
-itself, not the conversation.
-
-**Two watchdogs, the tighter on the coprocessor.** It fills failsafe
-  values after 200 ms of silence on its own authority; the host escalates after
-  a second. **Traffic returning does not lift the failsafe** — a link that
+- **Strictly host-polled. The coprocessor never speaks unsolicited.** That rule
+  predates CAN and is kept even though arbitration would now make an
+  unsolicited frame harmless.
+- **Two watchdogs, the tighter on the coprocessor.** It fills failsafe values
+  after 200 ms of silence on its own authority; the host escalates after a
+  second. **Traffic returning does not lift the failsafe** — a link that
   recovers is not consent to spin a propeller, so leaving it takes a deliberate
   write of a known value to the control page.
 - **The coprocessor protects hardware without asking** — overcurrent,
   over-temperature, stall timeout, lost link — and reports what it did at the
   next poll. It never waits for permission to fail safe.
 
-A page is 32 registers, so a whole-page transfer is 72 bytes — six of header,
-sixty-four of payload, two of CRC. The research put the frame cap at 64 bytes;
-here it follows the page size instead, because at every rate below the target
-one a bigger frame amortises a turnaround that a smaller one pays twice.
+`link_msg_t` never knew what carried it, and `link_dev_dispatch` — which
+decides what to answer — has no transport in it at all. That is what let the
+byte transport be **deleted** rather than adapted when the wire changed:
+the dispatcher, the page map, both watchdogs and their tests were untouched.
 
-The decoder examines **every** sync byte in its buffer rather than committing
-to the first one. Noise containing a plausible-looking sync and length, in
-front of a genuine frame, is what breaks the obvious implementation: it sits
-waiting for bytes that will never make sense while the real frame — already
-whole, already in the buffer — goes unreported. That failure was written as a
-test before the decoder was written, and the first decoder failed it.
+### What CAN changed, and what it cost
 
-## The wire
+Arbitration replaces taking turns, so there is no direction line. With it went
+the RC one-shot, the turnaround wait, the ~125 kbaud floor, an unmeasured FET
+threshold and a 5 V transceiver hazard — two open questions in this record
+closed by ceasing to be askable. The controller also brings a 15-bit CRC, an
+acknowledge slot, automatic retransmission and bus-off confinement, none of
+which had to be written.
 
-The protocol is rate-agnostic. The schedule that uses it is not, and the bench
-and the finished board are not the same wire.
+**Priority became a property of the address.** CAN arbitrates by identifier,
+lowest wins, so a write to the control page outranks every telemetry read *on
+the wire*, against traffic already in flight, with no software involved at
+either end. RS485 could not promise that at any baud rate.
 
-The finished board runs at **1.5 Mbaud**; the module build, where the protocol
-firmware is actually being written, runs at **256 kbaud**. Sixfold, so anything
-that merely fits at 1.5 Mbaud has to be checked against the bring-up rate
-before it is relied on. 8N1 is ten bits per byte:
+The cost is bandwidth. TWAI is classic CAN only — 1 Mbit/s, eight data bytes a
+frame:
 
-| | 128 kbaud | 256 kbaud | 1.5 Mbaud |
-| --- | ---: | ---: | ---: |
-| Throughput | 12.8 kB/s | 25.6 kB/s | 187.5 kB/s |
-| A whole-page poll (8 + 72 bytes) | 6.25 ms | 3.13 ms | 0.53 ms |
-| Whole-page polls per second | **160** | 320 | 1875 |
+| | payload |
+| --- | ---: |
+| Classic CAN, 1 Mbit/s, 29-bit IDs, worst-case stuffing | **52 kB/s** |
+| RS485 at the 1.5 Mbaud it was heading for | 133 kB/s |
 
-**128 kbaud is not used, on the schematic's evidence — see below.**
+Against the 12–30 kB/s that actually crosses, the margin fell from five-to-
+twelve times to about two. A `bench_state` poll is thirteen registers, five
+frames, **1.55% of the bus at 20 Hz**, and a 60 kB coprocessor image takes
+1.2 s. Two is enough — but this record said twelve, and now says two.
 
-**This is what makes "nothing raw crosses" load-bearing rather than tidy.** The
-research budgeted four channels of current and voltage at 1 kHz batched into
-100 Hz packets. Sent raw that is 4,000 registers a second — about 125 whole
-pages, **78% of the wire at 128 kbaud**, leaving nothing for telemetry. At
-1.5 Mbaud the same stream is 7% and nobody would notice. Firmware written
-against the comfortable case would have had to be redesigned at exactly the
-wrong moment.
+The 29-bit identifier holds exactly the fields the message already had:
+priority, op, page, offset, count. Three things fall out of that. A read has
+**no payload**, because the whole question is its address. **Nothing is
+reassembled at the transport**: each frame carries its own offset and count, so
+a thirteen-register reply is four independent messages and a dropped one costs
+one register range rather than a transfer. And the **frame CRC is gone**,
+because carrying another two bytes would spend a quarter of an eight-byte
+payload duplicating what the controller already did.
 
-So it is not sent raw at either rate. The coprocessor accumulates minimum,
-maximum and mean per batch and reads charge and energy out of the INA228's
-hardware accumulators, and reports those with the rest of the bench state for
-almost no extra bytes. Raw samples cross only during a **bounded capture** the
-panel asks for by name: one second of four channels at 1 kHz is 8 kB of
-samples, 10 kB framed — 0.78 s of wire at 128 kbaud, 67 ms at 1.5 Mbaud. Every
-measurement that wants raw samples is a burst of exactly that shape, so this
-costs nothing that was wanted.
-
-The arithmetic lives in `shared/link/include/link_wire.h`, where the poll
-schedule derives its rates from the configured baud rather than hardcoding
-them — so moving from the bench to the finished board is a constant, not a
-rewrite. A `#error` there fires if a future page grows the frame past what the
-bring-up link's budget allows.
-
-### What the schematic settles
-
-Read off the board schematic rather than inferred, and it closes three open
-questions and overturns one assumption.
-
-**The panel's RS485 is real, and it is 3.3 V.** U6 is an **SP3485EN** on
-**GPIO16 (TX) and GPIO15 (RX)** — the opposite of the obvious reading, and the
-schematic's own pin table does not settle it: that table calls GPIO15
-`RS485_TX`, which is the naming of the *transceiver's* data directions, not the
-ESP32's. The connectivity settles it twice over. GPIO15 reaches U6 pin 1, `RO`
-— the receiver's *output*, which the ESP32 cannot drive. GPIO16 reaches pin 4,
-`DI`, and also the input of the buffer that operates the direction line, and an
-automatic-direction circuit only makes sense watching the line the ESP32
-transmits on.
-
-**GPIO6 reaches a connector.** It is on **J8**, a three-pin header carrying
-3V3, GND and GPIO6 and nothing else — a rail and a ground beside it, which is
-exactly what a monostable on a small daughterboard wants. The pin table lists
-GPIO6 against no peripheral at all: the one genuinely uncommitted fast pin.
-
-**The direction circuit is an RC one-shot, and it sets a floor rather than a
-ceiling.** An SN74LVC1G125 follows the transmit line and charges C51 (1 nF)
-through R76 (200 kΩ); the gate turns on Q1, which pulls DE and /RE low against
-R79's 1 kΩ pull-up, and a Schottky across R76 dumps the gate the instant the
-line falls. So the driver enables on the first start bit and releases only
-after the line has been high long enough to reach the FET's threshold —
-72 µs at Vth = 1.0 V, 179 µs at 2.0 V.
-
-That has a consequence nobody was looking for. The longest run of high bits
-inside an 8N1 frame is nine bit times, and **if that run outlasts the hold, the
-driver switches off mid-frame and the rest of the transmission never reaches
-the bus.** Nine bit times must fit inside the worst-case 72 µs, which puts a
-floor at about **125,000 baud**. 1.5 Mbaud clears it twelvefold and 256 kbaud
-twofold; **128 kbaud clears it by two percent, which is not a margin** — so the
-bring-up rate is 256 kbaud, and `link_wire.h` has an `#error` for anything
-below the floor.
-
-The record previously carried this as an open question about a possible baud
-*ceiling*. There is no ceiling; there is a floor, and the rate that was nearly
-chosen sits on it.
-
-**And the far end must not answer too early.** The hold runs from the last
-*falling* edge rather than the end of the frame — a final byte of `0xFF` starts
-its hold nine bit times early — so the coprocessor waits a conservative 200 µs
-after the last received byte. At 1.5 Mbaud that is 37% on top of a whole-page
-transaction; at 256 kbaud, 6%.
-
-The coprocessor's own end is a MAX485 breakout with an explicit DE/RE pin,
-which is the easier half: the turnaround is under firmware control, and its one
-trap is not releasing the driver until the last stop bit has left the shift
-register.
+[The link](docs/Link.md) has the identifier layout, the bit timing and the
+arithmetic; [bringing it up](docs/Bringup.md) has the procedure.
 
 ## The safety line is a heartbeat, not an enable
 
@@ -372,10 +305,10 @@ start from it rather than a bare `menuconfig`.
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them, opens a release |
 
-26 binaries, each printing one line per case: `test_gfx`,
+25 binaries, each printing one line per case: `test_gfx`,
 `test_touch_map`, `test_nav`, `test_widgets`, `test_bench`, `test_motor`,
 `test_settings`,
-`test_logfile`, `test_link_crc`, `test_link_frame`, `test_link_pages`,
+`test_logfile`, `test_link_crc`, `test_link_pages`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
 `test_link_can`, `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`,
@@ -432,14 +365,13 @@ frame to 12,000 cache-line fills. It currently costs **740**.
 | `shared/link/link_bringup.c` | 61 | 50 | 82.0% |
 | `shared/link/link_can.c` | 94 | 92 | 97.9% |
 | `shared/link/link_crc.c` | 7 | 7 | 100.0% |
-| `shared/link/link_frame.c` | 112 | 107 | 95.5% |
-| `shared/link/link_dev.c` | 78 | 74 | 94.9% |
-| `shared/link/link_host.c` | 69 | 63 | 91.3% |
+| `shared/link/link_dev.c` | 74 | 71 | 96.0% |
+| `shared/link/link_host.c` | 104 | 94 | 90.4% |
 | `shared/bench/bench_state.c` | 61 | 57 | 93.4% |
 | `shared/bench/throttle.c` | 53 | 45 | 84.9% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
 | `shared/bench/log_writer.c` | 43 | 40 | 93.0% |
-| **total** | **5377** | **5099** | **94.8%** |
+| **total** | **5296** | **5020** | **94.8%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -462,12 +394,12 @@ against a mock clock, and register round-trips at both ends of every range.
 
 ## What is still unsettled
 
-Three of the six things this list carried were closed by the board schematic —
-the RS485 pins, whether GPIO6 reaches a connector, and the direction circuit's
-turnaround, all of which are now written up under
-[what the schematic settles](#what-the-schematic-settles). A fourth was closed
-by being answered wrongly: the question was which end set a baud *ceiling*, and
-there is no ceiling.
+Of the six this list started with, three were closed by reading the board
+schematic — the link's pins, whether GPIO6 reaches a connector, and the
+direction circuit's turnaround. A fourth was closed by being answered wrongly:
+the question was which end set a baud *ceiling*, and there was no ceiling. The
+last two were closed by the move to CAN, which is a stronger kind of closed:
+the direction circuit they were about no longer exists.
 
 Two are open. Two more were closed by the move to CAN — and closed in the
 strong sense: the questions stop being asked rather than being answered, which

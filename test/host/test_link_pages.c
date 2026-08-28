@@ -10,7 +10,6 @@
 #include "greatest.h"
 
 #include "link_dev.h"
-#include "link_frame.h"
 #include "link_pages.h"
 
 /* A stand-in for the coprocessor's own state. */
@@ -72,23 +71,11 @@ static void fresh(void)
     link_dev_init(&dev, k_pages, 2, &g, 0);
 }
 
-/* Round-trip a request through the encoder, the device and the decoder, the
- * way it would travel. */
+/* Ask the dispatcher directly.  What a transport does with the answer is
+ * tested where the transport is; this file is about what the answer *is*. */
 static bool ask(const link_msg_t *req, link_msg_t *reply)
 {
-    uint8_t wire[LINK_MAX_FRAME];
-    const size_t n = link_dev_handle(&dev, req, wire, sizeof(wire), 0);
-    if (n == 0) {
-        return false;
-    }
-    link_decoder_t d;
-    link_decoder_reset(&d);
-    for (size_t i = 0; i < n; ++i) {
-        if (link_decode_byte(&d, wire[i], reply)) {
-            return true;
-        }
-    }
-    return false;
+    return link_dev_dispatch(&dev, req, reply, 0);
 }
 
 static link_msg_t read_req(uint8_t page, uint8_t off, uint8_t count)
@@ -232,8 +219,8 @@ TEST_CASE(every_request_is_answered)
         read_req(LINK_PAGE_CONTROL, LINK_CT_COUNT, 1),
     };
     for (size_t i = 0; i < sizeof(reqs) / sizeof(reqs[0]); ++i) {
-        uint8_t wire[LINK_MAX_FRAME];
-        CHECK(link_dev_handle(&dev, &reqs[i], wire, sizeof(wire), 0) > 0);
+        link_msg_t ignored;
+        CHECK(link_dev_dispatch(&dev, &reqs[i], &ignored, 0));
     }
 }
 

@@ -37,7 +37,6 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/can"     can)
 
 add_executable(rcbench-copro
     src/main.c
-    src/link_uart.c
     src/xl2515.c
 )
 target_include_directories(rcbench-copro PRIVATE include src)
@@ -45,7 +44,6 @@ target_link_libraries(rcbench-copro
     pico_stdlib
     hardware_pio
     hardware_spi
-    hardware_uart
     hardware_gpio
     rcbench_link
     rcbench_bench
@@ -57,12 +55,11 @@ target_link_libraries(rcbench-copro
 #
 # Diagnostics go out over USB CDC, and explicitly not over a UART.
 #
-# The SDK's default is stdio on uart0, and uart0 on this board is GP0/GP1 --
-# which is the link to the panel.  Left at the default, every printf here
-# transmits into the RS485 link and every reply from the panel arrives in
-# stdin.  Two subsystems sharing a UART is not a diagnostic, it is a fault
-# injector, and it was there from the first line of console output this
-# firmware ever had.
+# The SDK's default is stdio on uart0.  That used to be the link to the panel
+# -- every printf transmitted into it and every reply arrived in stdin, which
+# is a fault injector rather than a diagnostic -- and the link has since moved
+# to CAN, which frees those pins.  Both lines are still stated explicitly,
+# because relying on a default is what caused it the first time.
 #
 pico_enable_stdio_usb(rcbench-copro 1)
 pico_enable_stdio_uart(rcbench-copro 0)

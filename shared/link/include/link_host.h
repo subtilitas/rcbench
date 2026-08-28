@@ -13,7 +13,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "link_frame.h"
+#include "link_msg.h"
 #include "link_pages.h"
 
 #ifdef __cplusplus
@@ -44,6 +44,16 @@ typedef struct {
     uint32_t mismatches; /**< answers to questions nobody is still asking */
     uint32_t nacks;
     uint32_t timeouts;   /**< requests abandoned at the escalation           */
+
+    /*
+     * Reassembly.  A CAN frame carries four registers, so a reply to a
+     * thirteen-register read arrives as four messages, each describing itself
+     * -- its own offset and its own count.  There is no sequence to follow and
+     * no continuation to wait for; the window asked for is known here, and a
+     * bit is set as each part of it lands.
+     */
+    uint16_t acc[LINK_MAX_REGS];
+    uint32_t acc_seen;   /**< bit per register within the request's window */
 } link_host_t;
 
 void link_host_init(link_host_t *h, uint32_t now_ms);
@@ -52,11 +62,10 @@ void link_host_init(link_host_t *h, uint32_t now_ms);
  * Build a request.  Returns its length on the wire, or 0 if it would not fit
  * or a request is already outstanding -- the caller does not get to have two.
  */
-size_t link_host_read(link_host_t *h, uint8_t page, uint8_t offset,
-                      uint8_t count, uint8_t *out, size_t cap);
-size_t link_host_write(link_host_t *h, uint8_t page, uint8_t offset,
-                       uint8_t count, const uint16_t *regs,
-                       uint8_t *out, size_t cap);
+bool link_host_read(link_host_t *h, uint8_t page, uint8_t offset,
+                    uint8_t count, link_msg_t *out);
+bool link_host_write(link_host_t *h, uint8_t page, uint8_t offset,
+                     uint8_t count, const uint16_t *regs, link_msg_t *out);
 
 /**
  * Offer a decoded frame as the answer.  Returns true only if it answers the
@@ -66,7 +75,22 @@ size_t link_host_write(link_host_t *h, uint8_t page, uint8_t offset,
  * the host has moved on, and accepting it would attribute one page's registers
  * to another -- silently, and with the CRC entirely happy.
  */
-bool link_host_reply(link_host_t *h, const link_msg_t *reply, uint32_t now_ms);
+/**
+ * Offer one received message against the outstanding request.
+ *
+ * True when the request is *answered*, which for a read may take several
+ * messages: @p whole then holds the reassembled reply. Parts that land
+ * without completing it return false and are not a fault -- the caller keeps
+ * feeding until it gets true or the request times out.
+ *
+ * Anything that does not answer the question in flight is counted as a
+ * mismatch and refused. An answer to a question nobody is still asking is the
+ * failure this exists to catch: on a bus where a late reply can arrive after
+ * the panel has moved on, accepting it would attach one page's numbers to
+ * another page's request.
+ */
+bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
+                      link_msg_t *whole);
 
 /** True on the edge where the host escalates, so it is reported once. */
 bool link_host_tick(link_host_t *h, uint32_t now_ms);

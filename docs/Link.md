@@ -1,191 +1,13 @@
 # The link
 
-Half-duplex RS485 between the panel and the coprocessor, 8N1. Differential
+**CAN at 1 Mbit/s** between the panel and the coprocessor. Differential
 signalling beside 100–300 A of switching current is what one would choose
-anyway; it is also, conveniently, what the panel already brings out.
+anyway; arbitration and hardware error handling are what made it the right
+choice over the RS485 this started as.
 
 The protocol copies ArduPilot's **IOMCU**, which has flown this exact problem
 for a decade — a small processor owning RC input and PWM output while the main
 one does everything else.
-
-## The frame
-
-```
-  0      1      2     3      4       5       6 .. 6+2n      last two
-  +------+------+-----+------+-------+-------+-------------+---------+
-  | SYNC | LEN  | OP  | PAGE | OFFS  | COUNT | payload ... |  CRC16  |
-  +------+------+-----+------+-------+-------+-------------+---------+
-```
-
-`LEN` counts every byte after itself, CRC included, so a frame is `LEN + 2`
-bytes and a receiver knows how much to read from byte one. Registers are
-little-endian and so is the CRC — one convention, not two.
-
-`SYNC` is `0xA5`, chosen because it is neither `0x00` nor `0xFF`: an idle line
-and a stuck driver both present as one of those, and a sync byte a fault can
-manufacture is not a sync byte.
-
-The CRC covers `SYNC` and `LEN` as well as the payload. A corrupted `LEN` would
-be caught by the arithmetic anyway — the CRC would be read from the wrong
-offset — but covering it costs nothing and makes the check whole rather than
-nearly whole.
-
-| Op | | |
-| --- | --- | --- |
-| `READ` | 0x01 | host asks for COUNT registers from PAGE:OFFS |
-| `WRITE` | 0x02 | host sets them |
-| `DATA` | 0x03 | coprocessor answers a read |
-| `ACK` | 0x04 | coprocessor accepted a write |
-| `NACK` | 0x05 | coprocessor refused it; `regs[0]` says why |
-
-A `READ` carries no payload however large its count: the count is the question,
-not the answer.
-
-## Two properties the rest depends on
-
-**The coprocessor never speaks unsolicited.** There is no event op and there is
-not going to be one. Nothing arbitrates outbound priority because nothing
-competes for it — which is how a stop command is kept from queueing behind a
-telemetry burst *by construction* rather than by scheduling. High-rate streams
-are served by polling a batch page.
-
-**A corrupt frame is never accepted.** CCITT-FALSE was chosen over the other
-CRC-16 variants for one reason: it has an unambiguous published check value
-(`0x29B1` over the ASCII string `123456789`), so a second implementation —
-written by somebody else, in another language, years from now — can be verified
-against one number before it is trusted.
-
-## The decoder resynchronises inside its own buffer
-
-Every sync byte in the buffer is a candidate, and they are examined in order
-rather than one at a time.
-
-The reason is the case that breaks the obvious implementation: noise containing
-a byte that looks like a sync, followed by a length byte that happens to be
-plausible, in front of a genuine frame. Commit to that first candidate and the
-decoder sits waiting for bytes that will never make sense while the real frame
-— already whole, already in the buffer — goes unreported. That is not a
-hypothetical: it was written as a test before the decoder existed, and the
-first decoder failed it.
-
-Preferring the earliest *complete* candidate over an earlier incomplete one is
-safe. For a later candidate to verify inside a genuine frame, its own CRC would
-have to hold by accident.
-
-Waiting for an idle gap instead would be worse: on a polled link the frame
-after the corrupt one is the reply.
-
-## What the wire costs
-
-The framing is rate-agnostic. The schedule that uses it is not, and the bench
-and the finished board are not the same wire — the module build runs a breakout
-at **128 or 256 kbaud** while the finished board runs the panel's own interface
-at **1.5 Mbaud**. 8N1 is ten bits per byte:
-
-| | 128 kbaud | 256 kbaud | 1.5 Mbaud |
-| --- | ---: | ---: | ---: |
-| Throughput | 12.8 kB/s | 25.6 kB/s | 187.5 kB/s |
-| A whole-page poll (8 + 72 bytes) | 6.25 ms | 3.13 ms | 0.53 ms |
-| Whole-page polls per second | **160** | 320 | 1875 |
-
-A page is 32 registers, so a whole-page transfer is 72 bytes. The research
-behind this link put the cap at 64; it follows the page size here instead,
-because a bigger frame amortises a turnaround that two smaller ones pay twice.
-
-**This is what makes "nothing raw crosses" load-bearing rather than tidy.** Four
-channels of current and voltage streamed raw at 1 kHz is 4,000 registers a
-second — about 125 whole pages, **78% of the wire at 128 kbaud**, leaving
-nothing for telemetry. At 1.5 Mbaud the same stream is 7% and nobody would
-notice. Firmware written against the comfortable case would need redesigning at
-exactly the wrong moment.
-
-So it is not sent raw at either rate. The coprocessor accumulates minimum,
-maximum and mean per batch and reads charge and energy out of the INA228's
-hardware accumulators, and reports those with the rest of the bench state for
-almost no extra bytes. Raw samples cross only during a **bounded capture** the
-panel asks for by name: one second of four channels at 1 kHz is 8 kB of
-samples, 10 kB framed — 0.78 s of wire at 128 kbaud, 67 ms at 1.5 Mbaud. Every
-measurement that wants raw samples is a burst of exactly that shape.
-
-The arithmetic is in `shared/link/include/link_wire.h`, and the schedule
-derives its rates from the configured baud rather than hardcoding them, so
-moving between the two wires is a constant and not a rewrite. An `#error` there
-fires if a future page grows the frame past what the bring-up link can afford.
-
-## The two ends, from the schematic
-
-Read off the board schematic (ESP32-S3-Touch-LCD-7B, May 2025) rather than
-inferred from documentation.
-
-**The panel.** U6 is an **SP3485EN** — a 3.3 V transceiver, so no level
-shifting and no 5 V anywhere near the module — on **GPIO16 (TX)** and
-**GPIO15 (RX)**.
-
-That direction is the opposite of the obvious reading, and the schematic's own
-pin table does not settle it: the table calls GPIO15 `RS485_TX`, which names
-the *transceiver's* data directions rather than the ESP32's. The connectivity
-settles it twice. GPIO15 reaches U6 pin 1, `RO` — the receiver's output, which
-the ESP32 cannot drive, so GPIO15 is an input. GPIO16 reaches pin 4, `DI`, and
-also the input of the buffer that operates the direction line — and an
-automatic-direction circuit only makes sense watching the line the ESP32
-transmits on.
-
-`RO` carries a 4.7 kΩ pull-up to the transceiver rail, so the panel's RX idles
-high while the receiver is disabled and no spurious start bit appears during
-its own transmission.
-
-**The coprocessor** is a MAX485 breakout with an explicit DE/RE pin. That is
-the easier half — the turnaround is under firmware control rather than a
-property of an RC circuit — and its one trap is the familiar one: do not
-release the driver until the last stop bit has left the shift register.
-
-### The direction circuit sets a floor, not a ceiling
-
-```
-  TX ──▶ SN74LVC1G125 ──▶ ──[ R76 200k ]── ┬── gate ──▶ Q1 ──▶ DE + /RE
-         (/OE to GND)      ◀──[ D7 ]──     │                    ▲
-                                          C51 1nF              R79 1k
-                                           │                    │
-                                          GND              RS485_VCC
-```
-
-The buffer follows the transmit line. When it falls, the Schottky dumps the
-gate charge at once, Q1 turns off, and R79 pulls DE and /RE high — the driver
-is enabled on the first start bit. When the line goes high, C51 charges through
-R76 and the driver releases only once the gate reaches the FET's threshold:
-
-    t = −R76 · C51 · ln(1 − Vth / 3.3)
-
-| Vth | hold |
-| ---: | ---: |
-| 1.0 V | 72 µs |
-| 1.5 V | 121 µs |
-| 2.0 V | 179 µs |
-
-**The consequence nobody was looking for.** The longest run of high bits inside
-an 8N1 frame is nine bit times — eight data bits and the stop bit, with the next
-start bit low. If that run outlasts the hold, the gate crosses the threshold
-mid-frame, the driver switches off, and the rest of the transmission never
-reaches the bus.
-
-Nine bit times must fit inside the worst-case 72 µs, which puts a floor at about
-**125,000 baud**. 1.5 Mbaud clears it twelvefold and 256 kbaud twofold;
-**128 kbaud clears it by two percent**, which is why the bring-up rate is 256 k
-and why `link_wire.h` carries an `#error` for anything below the floor.
-
-This was carried in the record for a while as an open question about a possible
-baud *ceiling*. There is no ceiling.
-
-**And the far end must not answer too early.** The hold runs from the last
-*falling* edge rather than the end of the frame — a final byte of `0xFF` starts
-its hold nine bit times early — so the coprocessor waits a conservative 200 µs
-after the last received byte. At 1.5 Mbaud that is 37% on top of a whole-page
-transaction; at 256 kbaud, 6%.
-
-One number is not on the schematic: **Q1's threshold**. The parts around it are
-named — R76, C51, D7, R79 — but the FET is not, so the floor above is quoted
-from the pessimistic end of a plausible range. One measurement settles it:
-scope DE against TX at 256 kbaud and read the release directly.
 
 ## Watchdogs
 
@@ -212,13 +34,18 @@ interval early with the outputs live.
 over-temperature, stall timeout, lost link — and reports what it did at the next
 poll. It never waits for permission to fail safe. See [Safety](Safety.md).
 
-## Moving to CAN
+## The wire
 
-The board turned out to have a CAN path already — an FSUSB42UMX multiplexes it
-against USB — and the coprocessor module arrived with an **XL2515** controller
-(MCP2515-compatible, SPI) behind a **SIT65HVD230** transceiver. That changes
-the transport, and it is worth being exact about what it buys and what it
-costs.
+**CAN at 1 Mbit/s.** The panel's TWAI controller against an **XL2515**
+(MCP2515-compatible, over SPI) behind a **SIT65HVD230** transceiver on the
+coprocessor.
+
+It began as half-duplex RS485, because that is what the panel brought out. The
+board turned out to have a CAN path already — an FSUSB42UMX multiplexes it
+against USB — and the coprocessor module arrived with a controller on it. The
+byte transport has since been **deleted**: its framing, its decoder, both UART
+drivers, the direction handling and their suites are gone. What follows is
+what that change bought and what it cost.
 
 **What it deletes.** CAN arbitrates rather than taking turns, so there is no
 direction line. Everything downstream of that goes with it: the RC one-shot,
@@ -244,7 +71,7 @@ ceiling — and eight data bytes a frame:
 | The same with 11-bit IDs | 62 kB/s |
 | RS485 at the 1.5 Mbaud target | 133 kB/s |
 
-Against the 12–30 kB/s of section [what the wire costs](#what-the-wire-costs),
+Against the 12–30 kB/s that actually crosses,
 the margin falls from five-to-twelve times to about two. That is thinner and it
 is still enough: a `bench_state` poll is thirteen registers, five frames and
 **1.55% of the bus at 20 Hz**, and a 60 kB coprocessor image takes 1.2 s.
@@ -317,17 +144,27 @@ sixteen quanta, a sample point at 87.5% and CNF1/2/3 = `0x40`, `0xB5`, `0x01`;
 quantum is therefore an eighth of the bit — nothing lands closer. The vendor's
 own table puts that bit at 62.5%, a whole quantum earlier than it needs to be.
 
-### What is not built yet
+### The pins
 
-The mapping, the bit timing and their tests. **Not** the drivers themselves:
-the TWAI peripheral setup, or the SPI transfers that carry the XL2515's
-registers. The firmware still speaks RS485, and both transports are in the tree
-while that is true.
+From the vendor's own driver rather than guessed, recorded in `copro_pins.h`:
+**spi1, SCK on GP10, MOSI GP11, MISO GP12, CS GP9, INT GP8**, with the bus
+clocked at 10 MHz. The panel's TWAI is on **GPIO19/20** — the native USB pins,
+which is why USB and CAN are mutually exclusive and why the console is on UART.
 
-The pins are known now, from the vendor's driver rather than guessed, and are
-recorded in `copro_pins.h`: **spi1, SCK on GP10, MOSI GP11, MISO GP12, CS GP9,
-INT GP8**, with the bus clocked at 10 MHz. None of them collide with the link
-UART on GP0–2 or the safety line on GP3.
+### Reassembly, and where it is not
+
+A CAN frame carries four registers, so a reply to a thirteen-register read
+arrives as four messages. There is no reassembly *in the transport*: each frame
+says which registers it holds, so a frame is a complete message on its own.
+
+The joining-up happens in the poller, which is the only place that knows what
+was asked for. It keeps a bit per register of the window it requested and
+answers the caller when the window is full. A part that lands without
+completing it is not a fault and is not counted as one; a part that falls
+outside the window is, because that is a reply to a question nobody is still
+asking. `test_link_loopback` runs the real host against the real dispatcher
+over a bus that drops, delays and reverses, including a reply delivered back to
+front — order is not information when every frame carries its own offset.
 
 ### Keeping a console while CAN is selected
 
@@ -345,51 +182,46 @@ secondary costs nothing while USB is selected and means the arrangement fails
 soft if the bridged socket turns out to be wired somewhere other than UART0's
 default pins.
 
-## The two transports
+## The two ends
 
-Both are deliberately dumb: they move bytes and nothing else. Framing, CRC,
-page semantics and both watchdogs live in `shared/link` and are tested on a
-laptop, so every decision a transport could make is one that could then only be
-tested on hardware.
+Both drivers are deliberately dumb: they move frames and nothing else. The page
+semantics, the identifier layout, the bit timing and both watchdogs live in
+`shared/` and are tested on a laptop — so every decision a driver could make is
+one that could only be tested on hardware.
 
-**The panel** (`firmware/panel/components/link_uart`) is an ordinary
-full-duplex port that never asserts RTS, because the board switches its own
-transceiver. Its pins arrive as arguments rather than being looked up: a
-transport that reached into the application for a pin map would be a component
-depending on `main`, and would be specific to one board for no gain.
+**The panel** (`firmware/panel/components/can_twai`) configures the TWAI
+peripheral from the timing solver and switches the board's multiplexer, which
+is the one thing it does that is not a wrapper: selecting CAN costs native USB,
+so it is a deliberate call rather than something `board_init` does quietly.
 
-**The coprocessor** (`firmware/copro/src/link_uart.c`) drives DE and /RE, and
-does two things the panel's does not:
+**The coprocessor** (`firmware/copro/src/xl2515.c`) is chip-select edges and a
+handful of register writes in the order the datasheet gives them. It checks
+that the controller wakes in configuration mode, which the datasheet
+guarantees — so a failure there is the **SPI** wiring and not the CAN wiring,
+and those are opposite ends of the board.
 
-It waits for `uart_tx_wait_blocking` before releasing the driver. That call
-spins on the UART's BUSY flag, which clears only once the *shift register* has
-emptied — not merely the FIFO. Releasing on an empty FIFO cuts the final byte
-off every frame; the far end correctly refuses the truncated result, so the
-link simply never works and nothing says why.
-
-And it waits out the panel's turnaround before answering, measured from the
-last byte received — which is later than the last falling edge, and therefore
-covers it.
-
-Both refuse a baud rate below the floor rather than running one.
+Its transmit buffer holds one frame, so a multi-frame answer waits for each to
+win arbitration; the wait is bounded, because a bus that has stopped accepting
+must not stall the failsafe.
 
 ## What is tested, and where
 
-The codec is pure C with the transport injected, so all of this runs on a
-laptop with no wire: the CRC against its published check value and against every
-single-bit flip in a 64-byte frame; the frame against every single-bit flip and
-every truncation of itself; a genuine frame behind a burst of noise containing
-false syncs; a good frame following a corrupt one; frames back to back with no
-gap; 200,000 bytes of deterministic noise that must never manufacture a frame;
-and a frame that verifies but claims an impossible shape, which is a version
-mismatch rather than line noise and is refused just the same.
+All of it runs on a laptop with no wire.
 
-Above that, `test_link_loopback` runs the two ends against each other — the
-real host state machine and the real device dispatcher, over a wire that can
-corrupt a chosen byte, truncate a frame, or go deaf. No mock of either end,
-because a mock agrees with whatever the test expects. It covers a thousand
-polls leaving nothing in either decoder, a corrupted request that is never
-answered, a corrupted reply that times out and recovers on the next poll, a
-refusal travelling as an answer, and the whole failure end to end: the far end
-goes silent, both watchdogs fire in the right order, the wire comes back, and
-the bench stays disarmed until a deliberate write says otherwise.
+The identifier layout is checked bit by bit against the datasheet rather than
+by round-tripping values — a round trip agrees with itself even when both
+halves share a mistake — and the whole 29-bit space is swept. The bit timing is
+solved for exactness rather than approximation, with one worked example pinned
+by hand against the datasheet, and a test that both ends land on the *same*
+sample point at the link's bit rate: they are not free to decide that
+separately, and once did.
+
+`test_link_loopback` runs the two ends against each other — the real host
+poller and the real device dispatcher — over a bus that drops, delays and
+reverses. No mock of either end, because a mock agrees with whatever the test
+expects. It covers a page wider than a frame coming back whole, the pieces
+arriving back to front, a window that starts inside a page keeping its offset,
+a write acknowledged with what was *stored* rather than what was sent, a
+refusal travelling as an answer, a lost piece leaving the request unanswered
+rather than half-answered, a reply to an abandoned question being refused, and
+the device's own watchdog still firing on a bus that has gone quiet.

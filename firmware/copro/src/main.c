@@ -19,10 +19,7 @@
 #include "can_selftest.h"
 #include "heartbeat.h"
 #include "link_dev.h"
-#include "link_frame.h"
 #include "link_pages.h"
-#include "link_uart.h"
-#include "link_wire.h"
 #include "telemetry_sim.h"
 #include "xl2515.h"
 
@@ -42,6 +39,14 @@ static link_dev_t    s_dev;
  * other state because the control page consults it before it will arm --
  * the reasoning is with heartbeat_init() below. */
 static heartbeat_mon_t s_beat;
+
+/*
+ * Requests this end has answered, published on the STATUS page.  Those
+ * registers have been in the page map since it was written and nothing ever
+ * filled them -- three that read as zero and look like data, which is worse
+ * than three that are not there.
+ */
+static uint32_t s_frames;
 
 static void identity_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
@@ -217,6 +222,35 @@ static void can_service(void)
         st.overflows = (uint16_t)s_can_overflows;
         if (can_selftest_status_reply(&in, &st, &out)) {
             (void)xl2515_send(&out);
+            continue;
+        }
+
+        /*
+         * And everything else is the link itself: a page request, answered by
+         * the same dispatcher that answered them over the old byte transport.
+         * It never knew what carried it, which is why that transport could be
+         * deleted rather than adapted.
+         */
+        link_msg_t req, reply;
+        if (!link_can_decode(&in, &req)) {
+            continue;
+        }
+        ++s_frames;
+        if (!link_dev_dispatch(&s_dev, &req, &reply,
+                               (uint32_t)to_ms_since_boot(get_absolute_time()))) {
+            continue;
+        }
+        link_can_frame_t frames[LINK_CAN_MAX_FRAMES];
+        const size_t n = link_can_encode(&reply, frames, LINK_CAN_MAX_FRAMES);
+        for (size_t i = 0; i < n; ++i) {
+            /*
+             * The transmit buffer holds one frame, so a multi-frame answer
+             * has to wait for each to win arbitration.  Bounded, because a bus
+             * that has stopped accepting must not stall the failsafe.
+             */
+            for (int spin = 0; spin < 1000 && !xl2515_send(&frames[i]); ++spin) {
+                tight_loop_contents();
+            }
         }
     }
 }
@@ -275,14 +309,7 @@ static void can_report(uint32_t now)
 static telemetry_sim_t s_sim;
 static bench_state_t   s_bench;
 
-/*
- * The receive decoder lives here rather than in main() so that sample() can
- * publish its counters.  The STATUS page has carried registers for frames,
- * CRC errors and resyncs since the page map was written and nothing ever
- * filled them -- three registers that read as zero and look like data, which
- * is worse than three registers that are not there.
- */
-static link_decoder_t s_rx;
+
 
 static void sample(float dt_s)
 {
@@ -314,14 +341,18 @@ static void sample(float dt_s)
     /* What this end has seen of the wire.  The panel compares these against
      * its own, and the comparison is what tells a dead coprocessor apart from
      * a return path that never releases. */
-    s_state.status[LINK_ST_FRAMES_LO]  = (uint16_t)(s_rx.frames & 0xFFFFu);
-    s_state.status[LINK_ST_FRAMES_HI]  = (uint16_t)(s_rx.frames >> 16);
-    /* Saturating rather than wrapping: a counter that rolls over to nothing
-     * reads as a link that healed itself. */
-    s_state.status[LINK_ST_CRC_ERRORS] =
-        (uint16_t)(s_rx.crc_errors > 0xFFFFu ? 0xFFFFu : s_rx.crc_errors);
-    s_state.status[LINK_ST_RESYNCS]    =
-        (uint16_t)(s_rx.resyncs > 0xFFFFu ? 0xFFFFu : s_rx.resyncs);
+    s_state.status[LINK_ST_FRAMES_LO] = (uint16_t)(s_frames & 0xFFFFu);
+    s_state.status[LINK_ST_FRAMES_HI] = (uint16_t)(s_frames >> 16);
+    /*
+     * The CRC and resync counters belonged to a byte transport that had to
+     * find its own frame boundaries.  CAN finds them in silicon and checks
+     * them there, so what used to be counted here is now the controller's
+     * error registers -- reported over the bus itself, and zero here.
+     */
+    uint8_t tec = 0, rec = 0;
+    xl2515_errors(&tec, &rec, NULL);
+    s_state.status[LINK_ST_CRC_ERRORS] = rec;
+    s_state.status[LINK_ST_RESYNCS]    = tec;
 }
 
 static void outputs_off(void)
@@ -344,51 +375,20 @@ int main(void)
     const uint32_t now0 = (uint32_t)to_ms_since_boot(get_absolute_time());
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 
-    if (!link_uart_init(LINK_BAUD_BRINGUP)) {
-        /* Below the floor the driver switches off mid-frame, which looks like
-         * a flaky link rather than a misconfiguration.  Refuse instead. */
-        for (;;) {
-            printf("rcbench-copro: %u baud is below the floor of %u\n",
-                   (unsigned)LINK_BAUD_BRINGUP, (unsigned)LINK_BAUD_FLOOR);
-            sleep_ms(1000);
-        }
-    }
-
     heartbeat_init();
     can_start();
     telemetry_sim_init(&s_sim, NULL);
     memset(&s_bench, 0, sizeof(s_bench));
 
-    link_decoder_reset(&s_rx);
-    link_msg_t req;
     uint32_t last_sample = (uint32_t)to_ms_since_boot(get_absolute_time());
 
     for (;;) {
         const uint32_t now = (uint32_t)to_ms_since_boot(get_absolute_time());
 
-        /* A short read rather than a blocking one: the failsafe has to fire on
-         * time whether or not anything is arriving, and 200 ms of silence is
-         * exactly the case where nothing is. */
-        const int byte = link_uart_read_byte(1000);
-        if (byte >= 0 && link_decode_byte(&s_rx, (uint8_t)byte, &req)) {
-            /*
-             * Wait out the panel's own direction circuit before answering.
-             * Its RC one-shot holds the bus for up to 179 us after its last
-             * falling edge, and the hold starts from that edge rather than
-             * from the end of the frame -- so this waits from the last byte
-             * received, which is later, and covers both.
-             */
-            while (link_uart_since_last_rx_us() < LINK_TURNAROUND_US) {
-                tight_loop_contents();
-            }
-
-            uint8_t reply[LINK_MAX_FRAME];
-            const size_t n = link_dev_handle(&s_dev, &req, reply,
-                                             sizeof(reply), now);
-            if (n > 0) {
-                link_uart_write(reply, n);
-            }
-        }
+        /* Polled rather than interrupt-driven: the loop turns over far faster
+         * than a frame takes to arrive, and the failsafe has to fire on time
+         * whether or not anything is arriving. */
+        can_service();
 
         /* 50 Hz, which is faster than the panel polls, so a poll always finds
          * a fresh sample rather than the one it was already shown. */
@@ -409,7 +409,6 @@ int main(void)
             outputs_off();   /* the edge, once */
         }
 
-        can_service();
         can_report(now);
         /* Again straight after the report: printing to a USB host can take
          * milliseconds, and the part holds two frames. */

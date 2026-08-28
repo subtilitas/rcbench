@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+#include <string.h>
+
 static bool elapsed(uint32_t now, uint32_t then, uint32_t ms)
 {
     return (uint32_t)(now - then) >= ms;
@@ -16,91 +18,143 @@ void link_host_init(link_host_t *h, uint32_t now_ms)
     h->last_reply_ms = now_ms;
 }
 
-static size_t start(link_host_t *h, uint8_t op, uint8_t page, uint8_t offset,
-                    uint8_t count, const uint16_t *regs,
-                    uint8_t *out, size_t cap)
+static bool start(link_host_t *h, uint8_t op, uint8_t page, uint8_t offset,
+                  uint8_t count, const uint16_t *regs, link_msg_t *out)
 {
     if (h == NULL || out == NULL || h->pending) {
-        return 0;
+        return false;
+    }
+    if (count == 0 || count > LINK_MAX_REGS
+        || (uint16_t)offset + (uint16_t)count > LINK_MAX_REGS) {
+        return false;
     }
 
-    link_msg_t req;
-    memset(&req, 0, sizeof(req));
-    req.op     = op;
-    req.page   = page;
-    req.offset = offset;
-    req.count  = count;
-    if (regs != NULL && count <= LINK_MAX_REGS) {
-        memcpy(req.regs, regs, (size_t)count * sizeof(uint16_t));
+    memset(out, 0, sizeof(*out));
+    out->op     = op;
+    out->page   = page;
+    out->offset = offset;
+    out->count  = count;
+    if (regs != NULL) {
+        memcpy(out->regs, regs, (size_t)count * sizeof(regs[0]));
     }
 
-    const size_t n = link_encode(out, cap, &req);
-    if (n == 0) {
-        return 0;   /* malformed or too big: no request was started */
-    }
-
-    h->pending = true;
-    h->op      = op;
-    h->page    = page;
-    h->offset  = offset;
-    h->count   = count;
+    h->pending  = true;
+    h->op       = op;
+    h->page     = page;
+    h->offset   = offset;
+    h->count    = count;
+    h->acc_seen = 0;
+    memset(h->acc, 0, sizeof(h->acc));
     ++h->polls;
-    return n;
+    return true;
 }
 
-size_t link_host_read(link_host_t *h, uint8_t page, uint8_t offset,
-                      uint8_t count, uint8_t *out, size_t cap)
+bool link_host_read(link_host_t *h, uint8_t page, uint8_t offset,
+                    uint8_t count, link_msg_t *out)
 {
-    return start(h, LINK_OP_READ, page, offset, count, NULL, out, cap);
+    return start(h, LINK_OP_READ, page, offset, count, NULL, out);
 }
 
-size_t link_host_write(link_host_t *h, uint8_t page, uint8_t offset,
-                       uint8_t count, const uint16_t *regs,
-                       uint8_t *out, size_t cap)
+bool link_host_write(link_host_t *h, uint8_t page, uint8_t offset,
+                     uint8_t count, const uint16_t *regs, link_msg_t *out)
 {
     if (regs == NULL) {
-        return 0;
+        return false;
     }
-    return start(h, LINK_OP_WRITE, page, offset, count, regs, out, cap);
+    return start(h, LINK_OP_WRITE, page, offset, count, regs, out);
 }
 
-bool link_host_reply(link_host_t *h, const link_msg_t *reply, uint32_t now_ms)
+/* Everything in the window has arrived. */
+static bool window_complete(const link_host_t *h)
 {
-    if (h == NULL || reply == NULL || !h->pending) {
+    const uint32_t want = (h->count >= 32u) ? 0xFFFFFFFFu
+                                            : (((uint32_t)1u << h->count) - 1u);
+    return (h->acc_seen & want) == want;
+}
+
+static void answered(link_host_t *h, uint32_t now_ms, bool refused)
+{
+    h->pending       = false;
+    h->last_reply_ms = now_ms;
+    h->escalated     = false;
+    ++h->replies;
+    if (refused) {
+        ++h->nacks;
+    }
+}
+
+bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
+                      link_msg_t *whole)
+{
+    if (h == NULL || part == NULL || whole == NULL || !h->pending) {
         if (h != NULL) {
             ++h->mismatches;
         }
         return false;
     }
 
-    /* A NACK answers the request it refuses, and carries its own offset back;
-     * DATA and ACK have to match the window that was asked for. */
+    /* A NACK answers the request it refuses and carries its own offset back;
+     * DATA and ACK have to fall inside the window that was asked for. */
     const bool answers_read  = (h->op == LINK_OP_READ
-                                && reply->op == LINK_OP_DATA);
+                                && part->op == LINK_OP_DATA);
     const bool answers_write = (h->op == LINK_OP_WRITE
-                                && reply->op == LINK_OP_ACK);
-    const bool refuses       = (reply->op == LINK_OP_NACK);
+                                && part->op == LINK_OP_ACK);
+    const bool refuses       = (part->op == LINK_OP_NACK);
 
-    if (!answers_read && !answers_write && !refuses) {
-        ++h->mismatches;
-        return false;
-    }
-    if (reply->page != h->page || reply->offset != h->offset) {
-        ++h->mismatches;
-        return false;
-    }
-    if (!refuses && reply->count != h->count) {
+    if ((!answers_read && !answers_write && !refuses)
+        || part->page != h->page) {
         ++h->mismatches;
         return false;
     }
 
-    h->pending       = false;
-    h->last_reply_ms = now_ms;
-    h->escalated     = false;
-    ++h->replies;
     if (refuses) {
-        ++h->nacks;
+        if (part->offset != h->offset) {
+            ++h->mismatches;
+            return false;
+        }
+        *whole = *part;
+        answered(h, now_ms, true);
+        return true;
     }
+
+    if (answers_write) {
+        if (part->offset != h->offset || part->count != h->count) {
+            ++h->mismatches;
+            return false;
+        }
+        *whole = *part;
+        answered(h, now_ms, false);
+        return true;
+    }
+
+    /*
+     * A read's answer may be in pieces.  Each says where it belongs, so the
+     * only questions are whether it belongs to this window at all and whether
+     * the window is now full.
+     */
+    if (part->count == 0 || part->offset < h->offset
+        || (uint16_t)part->offset + (uint16_t)part->count
+               > (uint16_t)h->offset + (uint16_t)h->count) {
+        ++h->mismatches;
+        return false;
+    }
+
+    const uint8_t at = (uint8_t)(part->offset - h->offset);
+    for (uint8_t i = 0; i < part->count; ++i) {
+        h->acc[at + i] = part->regs[i];
+        h->acc_seen |= (uint32_t)1u << (at + i);
+    }
+    if (!window_complete(h)) {
+        return false;   /* not a fault: more of it is still coming */
+    }
+
+    memset(whole, 0, sizeof(*whole));
+    whole->op     = LINK_OP_DATA;
+    whole->page   = h->page;
+    whole->offset = h->offset;
+    whole->count  = h->count;
+    memcpy(whole->regs, h->acc, (size_t)h->count * sizeof(h->acc[0]));
+    answered(h, now_ms, false);
     return true;
 }
 

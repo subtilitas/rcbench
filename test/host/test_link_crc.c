@@ -1,5 +1,10 @@
 /*
- * The CRC is the only thing standing between a noisy RS485 pair and a register
+ * Nothing in the panel link uses this any more: CAN carries a CRC, an
+ * acknowledge slot and retransmission in silicon.  It stays for OpenYGE,
+ * which needs the same polynomial with a different seed -- and the check
+ * values below are what tell those two apart.
+ *
+ * It was written when a CRC was the only thing between a noisy pair and a register
  * write nobody asked for, so it is tested against the published check value
  * rather than against itself.
  */

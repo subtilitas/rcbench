@@ -52,13 +52,14 @@ foreach(lib ${UNDER_TEST})
     endif()
 endforeach()
 
-# The fakes are compiled into every suite rather than a library of their own:
-# they are small, and a suite that does not use one pays nothing for it.
-set(FAKES "${CMAKE_CURRENT_SOURCE_DIR}/fakes/fake_wire.c")
+# No fakes left.  The one that existed simulated a byte wire between the two
+# ends; the CAN loopback puts the real host and the real device against each
+# other over a bus this suite controls, which needs nothing pretended.
+set(FAKES "")
 
 enable_testing()
 
-foreach(suite gfx touch_map nav widgets bench motor logview logwriter settings logfile link_crc link_frame link_can link_pages link_watchdog link_loopback link_bringup heartbeat servo_limit servo_sync openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515)
+foreach(suite gfx touch_map nav widgets bench motor logview logwriter settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup heartbeat servo_limit servo_sync openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515)
     add_executable(test_${suite} test_${suite}.c ${FAKES})
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE

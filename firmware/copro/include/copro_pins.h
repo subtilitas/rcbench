@@ -15,20 +15,6 @@
 #define RCBENCH_COPRO_PINS_H
 
 /*
- * The link.  UART0 on GPIO0/1, which is the default pair on every RP2350
- * module and therefore the one least likely to be wrong on whichever board
- * arrives.
- *
- * Unlike the panel, this end has an explicit direction pin: the breakout is a
- * MAX485 with DE and /RE brought out together.  That makes this the easier
- * half -- the turnaround is under firmware control rather than a property of
- * an RC circuit -- with one trap, which link_uart.c is written around.
- */
-#define COPRO_LINK_UART      uart0
-#define COPRO_LINK_PIN_TX    0
-#define COPRO_LINK_PIN_RX    1
-#define COPRO_LINK_PIN_DE    2   /**< DE and /RE, tied together on the board */
-
 /*
  * The safety heartbeat from the panel's J8, through the retriggerable
  * monostable.  An input here: the coprocessor gates its own outputs from it

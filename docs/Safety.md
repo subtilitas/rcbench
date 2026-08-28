@@ -78,6 +78,11 @@ hardware one rather than instead of it.
 
 ## Why the direction line cannot be the heartbeat
 
+> **Moot since the link moved to CAN**, which has no direction line at all. The
+> reasoning is kept because the first argument below is about *what a signal
+> proves*, and that applies to any candidate for this job — including the next
+> one somebody suggests.
+
 It was asked, and it is worth writing down, because the idea is not silly — a
 line that toggles whenever the panel transmits *is* evidence that the panel is
 transmitting.

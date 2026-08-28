@@ -1,428 +1,340 @@
 /*
- * The two ends talking to each other.
+ * Both ends of the link, talking to each other over a simulated CAN bus.
  *
- * Everything below drives the real host state machine against the real device
- * dispatcher through a wire that can lose, corrupt and delay -- no mock of
- * either end, because a mock agrees with whatever the test expects.  This is
- * the closest thing to the bench that exists without hardware, and it is what
- * the two UART transports have to reproduce: move bytes, honour the
- * turnaround, and change nothing else.
+ * Every other link suite tests one half: the dispatcher's judgement, the
+ * poller's matching, the identifier layout.  This one puts them together and
+ * runs real questions through real answers, because the interesting failures
+ * live in the seam -- a reply that reassembles into the wrong window, a
+ * fragment attributed to a request that has already been given up on, a
+ * refusal that leaves the poller waiting for ever.
+ *
+ * The bus here can drop, delay and reorder, because a real one does.
  */
 #include <string.h>
 
 #include "greatest.h"
 
-#include "fake_wire.h"
+#include "link_can.h"
 #include "link_dev.h"
-#include "link_frame.h"
 #include "link_host.h"
 #include "link_pages.h"
-#include "link_wire.h"
-#include "telemetry_sim.h"
 
-/* ------------------------------------------------------------ the far end */
+/* ------------------------------------------------------------ the device */
 
 typedef struct {
     uint16_t identity[LINK_ID_COUNT];
     uint16_t control[LINK_CT_COUNT];
     uint16_t bench[LINK_BN_COUNT];
-} dev_state_t;
+} state_t;
 
-static dev_state_t   g_state;
-static link_dev_t    g_dev;
-static link_decoder_t g_dev_rx;
+static state_t   g;
+static link_dev_t dev;
+static link_host_t host;
 
-static void identity_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+static void id_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    memcpy(out, ((dev_state_t *)ctx)->identity + off, (size_t)n * 2u);
+    memcpy(out, ((state_t *)ctx)->identity + off, (size_t)n * 2u);
 }
-static void control_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+static void ct_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    memcpy(out, ((dev_state_t *)ctx)->control + off, (size_t)n * 2u);
+    memcpy(out, ((state_t *)ctx)->control + off, (size_t)n * 2u);
 }
-static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
-                             const uint16_t *in)
+static uint8_t ct_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
 {
-    dev_state_t *s = (dev_state_t *)ctx;
-    for (uint8_t i = 0; i < n; ++i) {
-        const uint8_t reg = (uint8_t)(off + i);
-        if (reg == LINK_CT_THROTTLE && in[i] > LINK_THROTTLE_MAX) {
-            return LINK_NACK_BAD_VALUE;
-        }
-        if (reg == LINK_CT_CLEAR) {
-            if (in[i] != LINK_CLEAR_MAGIC) {
-                return LINK_NACK_BAD_VALUE;
-            }
-            link_dev_clear_failsafe(&g_dev, 0);
-            continue;
-        }
-        s->control[reg] = in[i];
+    if (off == LINK_CT_THROTTLE && in[0] > LINK_THROTTLE_MAX) {
+        return LINK_NACK_BAD_VALUE;
     }
+    memcpy(((state_t *)ctx)->control + off, in, (size_t)n * 2u);
     return 0;
 }
-
-static void bench_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+static void bn_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    memcpy(out, ((dev_state_t *)ctx)->bench + off, (size_t)n * 2u);
+    memcpy(out, ((state_t *)ctx)->bench + off, (size_t)n * 2u);
 }
 
-/* No write handler: a measurement a host could set is not a measurement. */
 static const link_page_t k_pages[] = {
-    { LINK_PAGE_IDENTITY, LINK_ID_COUNT, identity_read, NULL },
-    { LINK_PAGE_CONTROL,  LINK_CT_COUNT, control_read,  control_write },
-    { LINK_PAGE_BENCH,    LINK_BN_COUNT, bench_read,    NULL },
+    { LINK_PAGE_IDENTITY, LINK_ID_COUNT, id_read, NULL },
+    { LINK_PAGE_CONTROL,  LINK_CT_COUNT, ct_read, ct_write },
+    { LINK_PAGE_BENCH,    LINK_BN_COUNT, bn_read, NULL },
 };
 
-/* --------------------------------------------------------------- the wire */
+/* --------------------------------------------------------------- the bus */
 
-static fake_wire_t to_dev, to_host;
-static link_host_t host;
-static link_decoder_t host_rx;
-static uint32_t now_ms;
+typedef struct {
+    int      drop_every;   /* 0 = never */
+    bool     reverse;      /* deliver a reply's frames back to front */
+    uint32_t carried;
+    uint32_t dropped;
+} bus_t;
 
-static void fresh(void)
-{
-    memset(&g_state, 0, sizeof(g_state));
-    g_state.identity[LINK_ID_PROTOCOL_MAJOR] = LINK_PROTOCOL_MAJOR;
-    g_state.identity[LINK_ID_HARDWARE]       = 7;
-    now_ms = 0;
-    link_dev_init(&g_dev, k_pages, 3, &g_state, now_ms);
-    link_decoder_reset(&g_dev_rx);
-    link_decoder_reset(&host_rx);
-    link_host_init(&host, now_ms);
-    fake_wire_reset(&to_dev);
-    fake_wire_reset(&to_host);
-}
+static bus_t bus;
 
 /*
- * One turn of the coprocessor's loop: drain the wire, and when a whole frame
- * verifies, answer it.
- *
- * The turnaround is why this is not simply "reply".  The panel's own direction
- * circuit holds the bus for up to 179 us after its last falling edge, so the
- * far end waits before it answers -- and on this wire that wait is a number
- * rather than a delay, which is the only reason it can be asserted at all.
+ * Carry one request to the device and its answer back, feeding every frame of
+ * the reply to the host.  Returns true if the request was answered.
  */
-static uint32_t g_dev_answered_us;
-static uint32_t g_dev_frame_us;
-
-static void dev_pump(uint32_t at_us)
+static bool exchange(const link_msg_t *req, uint32_t now_ms, link_msg_t *got)
 {
-    uint8_t byte;
-    link_msg_t req;
-    while (fake_wire_read(&to_dev, &byte, 1) == 1) {
-        if (link_decode_byte(&g_dev_rx, byte, &req)) {
-            g_dev_frame_us = at_us;
-            uint8_t reply[LINK_MAX_FRAME];
-            const size_t n = link_dev_handle(&g_dev, &req, reply,
-                                             sizeof(reply), now_ms);
-            g_dev_answered_us = at_us + LINK_TURNAROUND_US;
-            fake_wire_write(&to_host, reply, n);
-        }
+    link_can_frame_t out[LINK_CAN_MAX_FRAMES];
+    const size_t n = link_can_encode(req, out, LINK_CAN_MAX_FRAMES);
+    if (n == 0) {
+        return false;
     }
-}
 
-/** One turn of the panel's loop: drain the wire into the host. */
-static bool host_pump(void)
-{
-    uint8_t byte;
+    /* Outbound: the device sees each frame as a message of its own.  A
+     * request never exceeds one frame in this protocol, but the loop does not
+     * assume it. */
     link_msg_t reply;
+    bool have_reply = false;
+    for (size_t i = 0; i < n; ++i) {
+        link_msg_t part;
+        ++bus.carried;
+        if (!link_can_decode(&out[i], &part)) {
+            continue;
+        }
+        have_reply = link_dev_dispatch(&dev, &part, &reply, now_ms);
+    }
+    if (!have_reply) {
+        return false;
+    }
+
+    link_can_frame_t back[LINK_CAN_MAX_FRAMES];
+    const size_t m = link_can_encode(&reply, back, LINK_CAN_MAX_FRAMES);
     bool answered = false;
-    while (fake_wire_read(&to_host, &byte, 1) == 1) {
-        if (link_decode_byte(&host_rx, byte, &reply)) {
-            if (link_host_reply(&host, &reply, now_ms)) {
-                answered = true;
-            }
+    for (size_t k = 0; k < m; ++k) {
+        const size_t i = bus.reverse ? (m - 1u - k) : k;
+        ++bus.carried;
+        if (bus.drop_every != 0 && (bus.carried % (uint32_t)bus.drop_every) == 0u) {
+            ++bus.dropped;
+            continue;
+        }
+        link_msg_t part;
+        if (!link_can_decode(&back[i], &part)) {
+            continue;
+        }
+        if (link_host_accept(&host, &part, now_ms, got)) {
+            answered = true;
         }
     }
     return answered;
 }
 
-/** Ask, let the far end answer, and collect it. */
-static bool transact_read(uint8_t page, uint8_t off, uint8_t count)
+static void fresh(void)
 {
-    uint8_t wire[LINK_MAX_FRAME];
-    const size_t n = link_host_read(&host, page, off, count, wire,
-                                    sizeof(wire));
-    if (n == 0) {
-        return false;
+    memset(&g, 0, sizeof(g));
+    memset(&bus, 0, sizeof(bus));
+    for (uint8_t i = 0; i < LINK_BN_COUNT; ++i) {
+        g.bench[i] = (uint16_t)(0x2000 + i);
     }
-    fake_wire_write(&to_dev, wire, n);
-    dev_pump(0);
-    return host_pump();
+    g.identity[LINK_ID_PROTOCOL_MAJOR] = LINK_PROTOCOL_MAJOR;
+    g.identity[LINK_ID_PROTOCOL_MINOR] = LINK_PROTOCOL_MINOR;
+    link_dev_init(&dev, k_pages, 3, &g, 0);
+    link_host_init(&host, 0);
 }
 
-/* --------------------------------------------------------------- the cases */
+/* ----------------------------------------------------------------- cases */
 
-TEST_CASE(a_poll_gets_its_answer)
+/*
+ * The whole bench page in one question.  Thirteen registers is four frames
+ * back, which is the case the byte transport never had and the one most worth
+ * proving: the answer is assembled from pieces and comes out as the window
+ * that was asked for.
+ */
+TEST_CASE(a_page_wider_than_a_frame_comes_back_whole)
 {
     fresh();
-    CHECK(transact_read(LINK_PAGE_IDENTITY, 0, LINK_ID_COUNT));
+    link_msg_t req, got;
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, LINK_BN_COUNT, &req));
+    CHECK(exchange(&req, 100, &got));
+
+    CHECK_EQ(got.op, LINK_OP_DATA);
+    CHECK_EQ(got.page, LINK_PAGE_BENCH);
+    CHECK_EQ(got.offset, 0);
+    CHECK_EQ(got.count, LINK_BN_COUNT);
+    for (uint8_t i = 0; i < LINK_BN_COUNT; ++i) {
+        CHECK_EQ(got.regs[i], 0x2000 + i);
+    }
     CHECK_EQ(host.replies, 1u);
     CHECK_EQ(host.mismatches, 0u);
     CHECK(!host.pending);
 }
 
-TEST_CASE(a_write_round_trips_through_the_wire)
+/*
+ * Every frame says where it belongs, so the order they arrive in is not
+ * information.  A transport that quietly relied on order would pass a
+ * forward-only test and fail on a bus that retried one frame of four.
+ */
+TEST_CASE(the_pieces_may_arrive_in_any_order)
 {
     fresh();
-    const uint16_t v = 4200;
-    uint8_t wire[LINK_MAX_FRAME];
-    const size_t n = link_host_write(&host, LINK_PAGE_CONTROL,
-                                     LINK_CT_THROTTLE, 1, &v, wire,
-                                     sizeof(wire));
-    fake_wire_write(&to_dev, wire, n);
-    dev_pump(0);
-    CHECK(host_pump());
-    CHECK_EQ(g_state.control[LINK_CT_THROTTLE], 4200);
-}
-
-/* The whole conversation, a thousand times, with the counters agreeing at the
- * end.  A leak in the decoder or a frame the far end fails to consume shows up
- * here and nowhere else. */
-TEST_CASE(a_thousand_polls_leave_nothing_behind)
-{
-    fresh();
-    for (int i = 0; i < 1000; ++i) {
-        CHECK(transact_read(LINK_PAGE_IDENTITY, 0, LINK_ID_COUNT));
+    bus.reverse = true;
+    link_msg_t req, got;
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, LINK_BN_COUNT, &req));
+    CHECK(exchange(&req, 100, &got));
+    for (uint8_t i = 0; i < LINK_BN_COUNT; ++i) {
+        CHECK_EQ(got.regs[i], 0x2000 + i);
     }
-    CHECK_EQ(host.polls, 1000u);
-    CHECK_EQ(host.replies, 1000u);
-    CHECK_EQ(host.mismatches, 0u);
-    CHECK_EQ(g_dev.requests, 1000u);
-    CHECK_EQ(fake_wire_pending(&to_dev), 0u);
-    CHECK_EQ(fake_wire_pending(&to_host), 0u);
-    CHECK_EQ(host_rx.len, 0);
-    CHECK_EQ(g_dev_rx.len, 0);
 }
 
-/* A corrupted request must not be answered at all -- the far end never saw a
- * frame -- and the host must then time out rather than hang. */
-TEST_CASE(a_corrupted_request_is_never_answered)
+/* A window that starts inside a page keeps its offset all the way back. */
+TEST_CASE(a_window_inside_a_page_answers_with_that_window)
 {
     fresh();
-    to_dev.corrupt_byte = 3;
-
-    uint8_t wire[LINK_MAX_FRAME];
-    const size_t n = link_host_read(&host, LINK_PAGE_IDENTITY, 0, 4, wire,
-                                    sizeof(wire));
-    fake_wire_write(&to_dev, wire, n);
-    dev_pump(0);
-
-    CHECK_EQ(g_dev.requests, 0u);
-    CHECK_EQ(fake_wire_pending(&to_host), 0u);
-    CHECK(!host_pump());
-
-    now_ms = LINK_HOST_TIMEOUT_MS;
-    CHECK(link_host_tick(&host, now_ms));
-    CHECK(host.escalated);
-}
-
-/* A corrupted *reply* is the other half: the far end acted, the host never
- * learned it did.  The host must time out, and the next poll must work. */
-TEST_CASE(a_corrupted_reply_times_out_and_the_next_poll_recovers)
-{
-    fresh();
-    to_host.corrupt_byte = 2;
-
-    uint8_t wire[LINK_MAX_FRAME];
-    size_t n = link_host_read(&host, LINK_PAGE_IDENTITY, 0, 4, wire,
-                              sizeof(wire));
-    fake_wire_write(&to_dev, wire, n);
-    dev_pump(0);
-    CHECK_EQ(g_dev.requests, 1u);      /* it did act */
-    CHECK(!host_pump());               /* and the host did not hear */
-
-    now_ms = LINK_HOST_TIMEOUT_MS;
-    CHECK(link_host_tick(&host, now_ms));
-
-    to_host.corrupt_byte = -1;
-    CHECK(transact_read(LINK_PAGE_IDENTITY, 0, 4));
-    CHECK(!host.escalated);
-}
-
-/* A reply cut off mid-frame is what a mistimed turnaround looks like. */
-TEST_CASE(a_truncated_reply_is_not_an_answer)
-{
-    fresh();
-    uint8_t wire[LINK_MAX_FRAME];
-    const size_t n = link_host_read(&host, LINK_PAGE_IDENTITY, 0,
-                                    LINK_ID_COUNT, wire, sizeof(wire));
-    fake_wire_write(&to_dev, wire, n);
-    to_host.truncate_after = 5;
-    dev_pump(0);
-    CHECK(!host_pump());
-    CHECK_EQ(host.replies, 0u);
-}
-
-/* The far end answers only after the turnaround, and the panel's own driver
- * needs every microsecond of it. */
-TEST_CASE(the_far_end_waits_the_turnaround_before_answering)
-{
-    fresh();
-    uint8_t wire[LINK_MAX_FRAME];
-    const size_t n = link_host_read(&host, LINK_PAGE_IDENTITY, 0, 2, wire,
-                                    sizeof(wire));
-    fake_wire_write(&to_dev, wire, n);
-    dev_pump(1000);
-    CHECK_EQ(g_dev_frame_us, 1000u);
-    CHECK_EQ(g_dev_answered_us - g_dev_frame_us, LINK_TURNAROUND_US);
-    /* And the wait covers the slowest release the circuit can produce. */
-    CHECK(LINK_TURNAROUND_US >= 179u);
-}
-
-/* A refusal must travel the wire as an answer, or a read-only page would be
- * indistinguishable from a dead link. */
-TEST_CASE(a_refusal_travels_as_an_answer)
-{
-    fresh();
-    const uint16_t v = 1;
-    uint8_t wire[LINK_MAX_FRAME];
-    const size_t n = link_host_write(&host, LINK_PAGE_IDENTITY, 0, 1, &v,
-                                     wire, sizeof(wire));
-    fake_wire_write(&to_dev, wire, n);
-    dev_pump(0);
-    CHECK(host_pump());
-    CHECK_EQ(host.nacks, 1u);
-    CHECK(!host.pending);
-}
-
-/* The whole failure, end to end: the far end stops answering, both watchdogs
- * fire in the right order, and traffic returning does not re-arm anything. */
-TEST_CASE(a_dead_far_end_trips_both_watchdogs_in_order)
-{
-    fresh();
-    CHECK(transact_read(LINK_PAGE_IDENTITY, 0, 2));
-
-    to_dev.deaf = true;
-    uint8_t wire[LINK_MAX_FRAME];
-    const size_t n = link_host_read(&host, LINK_PAGE_IDENTITY, 0, 2, wire,
-                                    sizeof(wire));
-    fake_wire_write(&to_dev, wire, n);
-
-    /*
-     * Both loops keep running throughout -- that is what makes the wire's
-     * deafness the thing under test.  An earlier version ticked the clock
-     * without pumping either end, so the coprocessor saw silence because
-     * nobody delivered its bytes rather than because the wire had swallowed
-     * them, and it passed just as happily with the fault switched off.
-     */
-    uint32_t dev_fired = 0, host_fired = 0;
-    for (now_ms = 1; now_ms <= 2000; ++now_ms) {
-        dev_pump(0);
-        (void)host_pump();
-        if (link_dev_tick(&g_dev, now_ms) && !dev_fired) {
-            dev_fired = now_ms;
-        }
-        if (link_host_tick(&host, now_ms) && !host_fired) {
-            host_fired = now_ms;
-        }
+    link_msg_t req, got;
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 8, 5, &req));
+    CHECK(exchange(&req, 100, &got));
+    CHECK_EQ(got.offset, 8);
+    CHECK_EQ(got.count, 5);
+    for (uint8_t i = 0; i < 5; ++i) {
+        CHECK_EQ(got.regs[i], 0x2000 + 8 + i);
     }
-    CHECK_EQ(dev_fired, LINK_DEV_SILENCE_MS);
-    CHECK_EQ(host_fired, LINK_HOST_TIMEOUT_MS);
+}
 
-    /* The wire comes back.  The bench does not. */
-    to_dev.deaf = false;
-    CHECK(transact_read(LINK_PAGE_IDENTITY, 0, 2));
-    CHECK(!g_dev.silent);
-    CHECK(g_dev.failsafe);
-
-    /* Only the deliberate write clears it. */
-    const uint16_t magic = LINK_CLEAR_MAGIC;
-    const size_t m = link_host_write(&host, LINK_PAGE_CONTROL, LINK_CT_CLEAR,
-                                     1, &magic, wire, sizeof(wire));
-    fake_wire_write(&to_dev, wire, m);
-    dev_pump(0);
-    CHECK(host_pump());
-    CHECK(!g_dev.failsafe);
+TEST_CASE(a_write_is_acknowledged_with_what_was_stored)
+{
+    fresh();
+    link_msg_t req, got;
+    const uint16_t v[2] = { 1, 4321 };
+    CHECK(link_host_write(&host, LINK_PAGE_CONTROL, 0, 2, v, &req));
+    CHECK(exchange(&req, 100, &got));
+    CHECK_EQ(got.op, LINK_OP_ACK);
+    CHECK_EQ(g.control[LINK_CT_ARM], 1);
+    CHECK_EQ(g.control[LINK_CT_THROTTLE], 4321);
+    /* The acknowledgement carries what the device kept, not what was sent. */
+    CHECK_EQ(got.regs[1], 4321);
 }
 
 /*
- * The seam, end to end: numbers made on one processor, written to registers,
- * put on a wire, decoded on the other, and read back as a bench_state that
- * the screens cannot tell from a local one.
+ * A refusal is an answer.  A host that kept waiting on a NACK could not tell a
+ * page it may not write from a link that has died.
  */
-TEST_CASE(a_bench_page_crosses_the_wire_intact)
+TEST_CASE(a_refusal_answers_and_says_why)
 {
     fresh();
+    link_msg_t req, got;
+    const uint16_t bad = LINK_THROTTLE_MAX + 1u;
+    CHECK(link_host_write(&host, LINK_PAGE_CONTROL, LINK_CT_THROTTLE, 1,
+                          &bad, &req));
+    CHECK(exchange(&req, 100, &got));
+    CHECK_EQ(got.op, LINK_OP_NACK);
+    CHECK_EQ(got.regs[0], LINK_NACK_BAD_VALUE);
+    CHECK_EQ(host.nacks, 1u);
+    CHECK(!host.pending);
+    CHECK_EQ(g.control[LINK_CT_THROTTLE], 0);   /* and nothing was stored */
 
-    telemetry_sim_t sim;
-    bench_state_t far;
-    memset(&far, 0, sizeof(far));
-    telemetry_sim_init(&sim, NULL);
-    for (int i = 0; i < 60; ++i) {
-        telemetry_sim_step(&sim, 75.0f, 0.05f, &far);
-    }
-    bench_state_to_regs(&far, g_state.bench);
-
-    uint8_t wire[LINK_MAX_FRAME];
-    const size_t n = link_host_read(&host, LINK_PAGE_BENCH, 0, LINK_BN_COUNT,
-                                    wire, sizeof(wire));
-    fake_wire_write(&to_dev, wire, n);
-    dev_pump(0);
-
-    link_msg_t reply = { 0 };
-    uint8_t byte;
-    bool got = false;
-    while (fake_wire_read(&to_host, &byte, 1) == 1) {
-        if (link_decode_byte(&host_rx, byte, &reply)) {
-            got = link_host_reply(&host, &reply, now_ms);
-        }
-    }
-    CHECK(got);
-    CHECK_EQ(reply.op, LINK_OP_DATA);
-
-    bench_state_t near;
-    memset(&near, 0, sizeof(near));
-    bench_state_from_regs(&near, reply.regs, reply.offset, reply.count);
-
-    CHECK_NEAR(near.voltage, far.voltage, 0.01f);
-    CHECK_NEAR(near.current, far.current, 0.01f);
-    CHECK_NEAR(near.rpm, far.rpm, 1.0f);
-    CHECK_NEAR(near.voltage_min, far.voltage_min, 0.01f);
-    CHECK_NEAR(near.current_max, far.current_max, 0.01f);
-
-    /* And the far end's admission that it is modelling travels with them.
-     * A remote fake declares itself rather than being assumed honest. */
-    CHECK(bench_state_simulated(&near));
+    /* A read-only page refuses the same way. */
+    const uint16_t one = 1;
+    CHECK(link_host_write(&host, LINK_PAGE_IDENTITY, 0, 1, &one, &req));
+    CHECK(exchange(&req, 200, &got));
+    CHECK_EQ(got.op, LINK_OP_NACK);
+    CHECK_EQ(got.regs[0], LINK_NACK_READ_ONLY);
 }
 
-/* A measurement the host could write is not a measurement. */
-TEST_CASE(the_bench_page_refuses_to_be_written)
+/*
+ * One frame of four lost.  The request must stay outstanding rather than be
+ * answered by a partial window -- three quarters of a page reported as a whole
+ * one is worse than no answer, because it looks like an answer.
+ */
+TEST_CASE(a_lost_piece_leaves_the_request_unanswered)
 {
     fresh();
-    const uint16_t v = 9999;
-    uint8_t wire[LINK_MAX_FRAME];
-    const size_t n = link_host_write(&host, LINK_PAGE_BENCH,
-                                     LINK_BN_VOLTAGE_CV, 1, &v, wire,
-                                     sizeof(wire));
-    fake_wire_write(&to_dev, wire, n);
-    dev_pump(0);
+    bus.drop_every = 3;      /* every third frame carried disappears */
+    link_msg_t req, got;
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, LINK_BN_COUNT, &req));
+    CHECK_EQ(exchange(&req, 100, &got), false);
+    CHECK(bus.dropped > 0);
+    CHECK(host.pending);
+    CHECK_EQ(host.replies, 0u);
 
-    link_msg_t reply = { 0 };
-    uint8_t byte;
-    while (fake_wire_read(&to_host, &byte, 1) == 1) {
-        if (link_decode_byte(&host_rx, byte, &reply)) {
-            (void)link_host_reply(&host, &reply, now_ms);
-        }
+    /* And the host gives up on it in its own time rather than for ever. */
+    CHECK(link_host_tick(&host, 100 + LINK_HOST_TIMEOUT_MS));
+    CHECK(!host.pending);
+    CHECK_EQ(host.timeouts, 1u);
+}
+
+/*
+ * The bad case the poller exists for: a reply to a question already abandoned,
+ * arriving while a different one is outstanding.  Accepting it would attach
+ * one page's registers to another page's request.
+ */
+TEST_CASE(a_reply_to_an_abandoned_question_is_refused)
+{
+    fresh();
+    link_msg_t req, got;
+
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, &req));
+    link_can_frame_t stale[LINK_CAN_MAX_FRAMES];
+    link_msg_t reply;
+    CHECK(link_dev_dispatch(&dev, &req, &reply, 100));
+    const size_t n = link_can_encode(&reply, stale, LINK_CAN_MAX_FRAMES);
+    CHECK(n > 0);
+
+    /* It times out, and a different question goes out. */
+    CHECK(link_host_tick(&host, LINK_HOST_TIMEOUT_MS));
+    CHECK(link_host_read(&host, LINK_PAGE_IDENTITY, 0, 2, &req));
+
+    /* Now the old answer turns up. */
+    for (size_t i = 0; i < n; ++i) {
+        link_msg_t part;
+        CHECK(link_can_decode(&stale[i], &part));
+        CHECK_EQ(link_host_accept(&host, &part, LINK_HOST_TIMEOUT_MS + 10,
+                                  &got), false);
     }
-    CHECK_EQ(reply.op, LINK_OP_NACK);
-    CHECK_EQ(reply.regs[0], LINK_NACK_READ_ONLY);
-    CHECK_EQ(g_state.bench[LINK_BN_VOLTAGE_CV], 0);
+    CHECK(host.mismatches >= 1u);
+    CHECK(host.pending);      /* still waiting for the identity it asked for */
+}
+
+/* The device's own watchdog runs off requests arriving, whatever carries
+ * them, and a link that goes quiet must fail safe on the far end too. */
+TEST_CASE(the_devices_watchdog_still_runs_on_can)
+{
+    fresh();
+    link_msg_t req, got;
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, &req));
+    CHECK(exchange(&req, 1000, &got));
+    CHECK(!dev.failsafe);
+
+    CHECK(link_dev_tick(&dev, 1000 + LINK_DEV_SILENCE_MS));
+    CHECK(dev.failsafe);
+
+    /* And a request arriving again stops the silence without lifting the
+     * latch: those are different facts. */
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, &req));
+    CHECK(exchange(&req, 2000, &got));
+    CHECK(dev.failsafe);
+}
+
+/* Nothing the host asks for can be answered by a page it did not ask about,
+ * however well-formed the frame is. */
+TEST_CASE(another_pages_answer_is_not_this_pages_answer)
+{
+    fresh();
+    link_msg_t req, got;
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, &req));
+
+    link_msg_t other = { 0 };
+    other.op = LINK_OP_DATA; other.page = LINK_PAGE_CONTROL;
+    other.offset = 0; other.count = 4;
+    link_can_frame_t f[LINK_CAN_MAX_FRAMES];
+    CHECK(link_can_encode(&other, f, LINK_CAN_MAX_FRAMES) > 0);
+
+    link_msg_t part;
+    CHECK(link_can_decode(&f[0], &part));
+    CHECK_EQ(link_host_accept(&host, &part, 100, &got), false);
+    CHECK_EQ(host.mismatches, 1u);
+    CHECK(host.pending);
 }
 
 int main(void)
 {
-    RUN(a_poll_gets_its_answer);
-    RUN(a_write_round_trips_through_the_wire);
-    RUN(a_thousand_polls_leave_nothing_behind);
-    RUN(a_corrupted_request_is_never_answered);
-    RUN(a_corrupted_reply_times_out_and_the_next_poll_recovers);
-    RUN(a_truncated_reply_is_not_an_answer);
-    RUN(the_far_end_waits_the_turnaround_before_answering);
-    RUN(a_refusal_travels_as_an_answer);
-    RUN(a_dead_far_end_trips_both_watchdogs_in_order);
-    RUN(a_bench_page_crosses_the_wire_intact);
-    RUN(the_bench_page_refuses_to_be_written);
+    RUN(a_page_wider_than_a_frame_comes_back_whole);
+    RUN(the_pieces_may_arrive_in_any_order);
+    RUN(a_window_inside_a_page_answers_with_that_window);
+    RUN(a_write_is_acknowledged_with_what_was_stored);
+    RUN(a_refusal_answers_and_says_why);
+    RUN(a_lost_piece_leaves_the_request_unanswered);
+    RUN(a_reply_to_an_abandoned_question_is_refused);
+    RUN(the_devices_watchdog_still_runs_on_can);
+    RUN(another_pages_answer_is_not_this_pages_answer);
     return test_summary("link_loopback");
 }
