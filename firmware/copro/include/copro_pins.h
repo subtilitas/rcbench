@@ -63,4 +63,11 @@
 /* The vendor's driver clocks the bus at 10 MHz; the part is rated to 10. */
 #define COPRO_CAN_SPI_HZ     10000000u
 
+/*
+ * The bit rate both ends must agree on.  1 Mbit/s is what the 16 MHz crystal
+ * reaches exactly; see docs/Link.md for what the budget looks like at it, and
+ * test_can_timing for why nothing slower is forced on us.
+ */
+#define COPRO_CAN_BITRATE    1000000u
+
 #endif /* RCBENCH_COPRO_PINS_H */

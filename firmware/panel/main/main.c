@@ -21,6 +21,8 @@
 
 #include "board.h"
 #include "board_pins.h"
+#include "can_selftest.h"
+#include "can_twai.h"
 #include "display.h"
 #include "gfx.h"
 #include "heartbeat.h"
@@ -312,6 +314,76 @@ static bool poll_page(link_host_t *host, link_decoder_t *rx, uint8_t page,
     }
 }
 
+/* ------------------------------------------------------------ CAN bring-up */
+
+/*
+ * The first thing to run when the two boards are wired together.
+ *
+ * Built in only when asked for, because starting it takes native USB away --
+ * GPIO19 and GPIO20 carry both, and the multiplexer has to choose.  Build with
+ *
+ *     idf.py build -DRCBENCH_CAN_SELFTEST=1
+ *
+ * and watch the UART socket, not the USB one.  docs/Bringup.md has the rest.
+ *
+ * It answers one question and deliberately not two: do frames cross this bus
+ * intact?  Nothing above the wire is involved, so a pass here and a link that
+ * still does not work means the fault is in the protocol rather than the
+ * cabling -- which is worth knowing before anybody unplugs anything.
+ */
+#ifdef RCBENCH_CAN_SELFTEST
+static void can_selftest_run(uint32_t seconds)
+{
+    if (can_twai_start(PANEL_CAN_BITRATE) != ESP_OK) {
+        ESP_LOGE(TAG, "CAN would not start; nothing to test");
+        return;
+    }
+
+    can_selftest_t st;
+    can_selftest_init(&st, 50);
+    const uint32_t until = now_ms() + seconds * 1000u;
+
+    while (now_ms() < until) {
+        link_can_frame_t probe;
+        if (can_selftest_probe(&st, now_ms(), &probe)) {
+            const int64_t sent_us = esp_timer_get_time();
+            if (!can_twai_send(&probe, 10)) {
+                ESP_LOGW(TAG, "the transmit queue would not take a frame");
+            }
+            link_can_frame_t in;
+            if (can_twai_recv(&in, 20)) {
+                can_selftest_rx(&st, &in,
+                                (uint32_t)(esp_timer_get_time() - sent_us));
+            }
+        }
+        can_selftest_tick(&st, now_ms());
+        vTaskDelay(pdMS_TO_TICKS(2));
+    }
+
+    const can_selftest_verdict_t v = can_selftest_verdict(&st);
+    ESP_LOGI(TAG, "CAN self-test: %s", can_selftest_text(v));
+    if (v != CAN_SELFTEST_OK && v != CAN_SELFTEST_RUNNING) {
+        ESP_LOGW(TAG, "  check: %s", can_selftest_hint(v));
+    }
+    ESP_LOGI(TAG, "  sent %lu echoed %lu corrupt %lu lost %lu stale %lu",
+             (unsigned long)st.sent, (unsigned long)st.echoed,
+             (unsigned long)st.corrupt, (unsigned long)st.timed_out,
+             (unsigned long)st.stale);
+    if (st.echoed > 0) {
+        ESP_LOGI(TAG, "  round trip min %lu max %lu us",
+                 (unsigned long)st.rtt_min_us, (unsigned long)st.rtt_max_us);
+    }
+    uint32_t tx_err = 0, rx_err = 0, bus_err = 0;
+    bool bus_off = false;
+    can_twai_errors(&tx_err, &rx_err, &bus_err, &bus_off);
+    ESP_LOGI(TAG, "  controller tx_err %lu rx_err %lu bus_err %lu%s",
+             (unsigned long)tx_err, (unsigned long)rx_err,
+             (unsigned long)bus_err, bus_off ? "  BUS OFF" : "");
+
+    can_twai_stop();
+}
+#endif /* RCBENCH_CAN_SELFTEST */
+
 /*
  * One block, naming the most fundamental thing that is wrong rather than the
  * loudest.  Printed while the link is unhealthy and once a minute when it is,
@@ -388,6 +460,9 @@ void app_main(void)
 {
     ESP_ERROR_CHECK(board_init());
     heartbeat_init();
+#ifdef RCBENCH_CAN_SELFTEST
+    can_selftest_run(5);
+#endif
 
     ui_theme_set(UI_THEME_DARK);
     ui_router_init();
