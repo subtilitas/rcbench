@@ -14,7 +14,7 @@
 #ifndef RCBENCH_LINK_PAGES_H
 #define RCBENCH_LINK_PAGES_H
 
-#include "link_frame.h"
+#include "link_msg.h"
 
 #ifdef __cplusplus
 extern "C" {

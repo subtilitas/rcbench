@@ -4,7 +4,7 @@
  * The first hardware boot of the panel cost three symptoms and two root
  * causes, worked out from a description over a wire rather than from the
  * board.  The link has more ways to be half-broken than the display does --
- * wrong pins, wrong baud, a direction line that never releases, a turnaround
+ * wrong pins, a bit rate that does not match, a missing terminator, a turnaround
  * shorter than the transceiver's, a firmware skew -- and most of them present
  * as "it does not work", which is the least useful sentence in engineering.
  *
@@ -68,7 +68,8 @@ typedef enum {
     LINK_DIAG_REPLIES_LOST,
     /** Frames arrive corrupt. Baud, noise, or a transceiver clipping edges. */
     LINK_DIAG_CORRUPT,
-    /** Answers arrive too late to be wanted. Turnaround or timeout. */
+    /** Answers arrive too late to be wanted. A slow far end, or a
+     *  timeout tighter than the round trip. */
     LINK_DIAG_STALE,
     /** It works, and not every time. */
     LINK_DIAG_INTERMITTENT,

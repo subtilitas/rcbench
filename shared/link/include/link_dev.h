@@ -14,7 +14,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "link_frame.h"
+#include "link_msg.h"
 #include "link_pages.h"
 
 #ifdef __cplusplus
@@ -82,9 +82,6 @@ void link_dev_init(link_dev_t *d, const link_page_t *pages, uint8_t page_count,
 bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
                        link_msg_t *reply, uint32_t now_ms);
 
-/** Dispatch and encode as a byte frame, for the UART transport. */
-size_t link_dev_handle(link_dev_t *d, const link_msg_t *req,
-                       uint8_t *out, size_t cap, uint32_t now_ms);
 
 /**
  * Advance the silence watchdog.  Returns true on the edge where failsafe

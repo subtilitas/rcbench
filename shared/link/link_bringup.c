@@ -1,5 +1,7 @@
 #include "link_bringup.h"
 
+#include <stddef.h>
+
 #include "link_pages.h"
 
 /*
@@ -117,17 +119,17 @@ const char *link_diag_hint(link_diag_t d)
     switch (d) {
     case LINK_DIAG_SILENT:
         /* In the order that costs least to check. */
-        return "copro powered? TX/RX swapped? both ends same baud? DE stuck high?";
+        return "copro powered? CANH/CANL swapped? same bit rate? terminators?";
     case LINK_DIAG_PROTOCOL_MISMATCH:
         return "flash both ends from the same tree";
     case LINK_DIAG_REPLIES_LOST:
-        return "direction line not releasing, or /RE still disabled";
+        return "the far end hears us and we do not hear it: its transmit path";
     case LINK_DIAG_CORRUPT:
-        return "baud mismatch, or below the transceiver's floor";
+        return "bit timing or sample point disagreeing between the two ends";
     case LINK_DIAG_STALE:
-        return "turnaround shorter than the transceiver holds the bus";
+        return "a reply slower than the poll timeout, or a stalled far end";
     case LINK_DIAG_INTERMITTENT:
-        return "marginal baud, or a poll period tighter than the round trip";
+        return "marginal timing, or a poll period tighter than the round trip";
     case LINK_DIAG_OK:
     default:
         return "";

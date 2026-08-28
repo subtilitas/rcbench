@@ -26,12 +26,9 @@
 #include "display.h"
 #include "gfx.h"
 #include "heartbeat.h"
-#include "link_frame.h"
 #include "link_bringup.h"
 #include "link_host.h"
 #include "link_pages.h"
-#include "link_uart.h"
-#include "link_wire.h"
 #include "log_writer.h"
 #include "motor_screen.h"
 #include "splash_screen.h"
@@ -48,11 +45,10 @@ static const char *TAG = "rcbench";
 /* Used during bring-up as well as in the loop, so file scope. */
 static link_host_t    s_host;
 static link_bringup_t s_bring;
-static link_decoder_t s_rx;
 
 /* Defined below; bring_up() asks who is there before the loop starts. */
-static bool poll_page(link_host_t *host, link_decoder_t *rx, uint8_t page,
-                      uint8_t count, link_msg_t *reply);
+static bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
+                      link_msg_t *reply);
 
 static uint32_t now_ms(void)
 {
@@ -153,13 +149,14 @@ static bool bring_up(void)
     splash_screen_set(SPLASH_STEP_SETTINGS, SPLASH_OK, "defaults");
     pump();
 
-    const bool link_open = (link_uart_init(PANEL_LINK_UART_NUM,
-                                           LINK_BAUD_BRINGUP,
-                                           PANEL_LINK_PIN_TX,
-                                           PANEL_LINK_PIN_RX) == ESP_OK);
+    /*
+     * CAN, and from here on there is no USB: GPIO19 and GPIO20 carry both and
+     * the multiplexer has to choose.  That is why the console is on UART.
+     */
+    const bool link_open = (can_twai_start(PANEL_CAN_BITRATE) == ESP_OK);
     splash_screen_set(SPLASH_STEP_LINK,
                       link_open ? SPLASH_OK : SPLASH_WARN,
-                      link_open ? "256k 8N1" : "not opened");
+                      link_open ? "CAN 1 Mbit/s" : "not opened");
     pump();
 
     /*
@@ -171,10 +168,9 @@ static bool bring_up(void)
      * one that does not exist: the list looks complete and the machine waits.
      */
     link_host_init(&s_host, now_ms());
-    link_decoder_reset(&s_rx);
     if (link_open) {
         link_msg_t reply;
-        if (poll_page(&s_host, &s_rx, LINK_PAGE_IDENTITY, LINK_ID_COUNT,
+        if (poll_page(&s_host, LINK_PAGE_IDENTITY, LINK_ID_COUNT,
                       &reply) && reply.op == LINK_OP_DATA) {
             /* Wide enough for three 16-bit registers plus the words: the
              * splash truncates its own detail field anyway, but a
@@ -275,28 +271,37 @@ static void log_stop(void)
  * there is never a second frame in flight, and the whole transaction is well
  * under one panel frame at either baud rate.
  */
-static bool poll_page(link_host_t *host, link_decoder_t *rx, uint8_t page,
-                      uint8_t count, link_msg_t *reply)
+static bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
+                      link_msg_t *reply)
 {
-    uint8_t frame[LINK_MAX_FRAME];
-    const size_t n = link_host_read(host, page, 0, count, frame,
-                                    sizeof(frame));
-    if (n == 0 || link_uart_write(frame, n) < 0) {
+    link_msg_t req;
+    if (!link_host_read(host, page, 0, count, &req)) {
         return false;
     }
-    /*
-     * Measured from the last byte handed to the driver to the byte that
-     * completes the reply, so it includes the far end's turnaround wait.
-     * That is the number LINK_TURNAROUND_US has to be checked against, and it
-     * cannot be got any other way than from the wire.
-     */
+    link_can_frame_t out[LINK_CAN_MAX_FRAMES];
+    const size_t n = link_can_encode(&req, out, LINK_CAN_MAX_FRAMES);
+    if (n == 0) {
+        return false;
+    }
     const uint32_t sent_us = (uint32_t)esp_timer_get_time();
+    for (size_t i = 0; i < n; ++i) {
+        if (!can_twai_send(&out[i], 5)) {
+            return false;
+        }
+    }
+
+    /*
+     * A reply wider than four registers arrives in pieces, each saying where
+     * it belongs, so this keeps feeding them to the poller until the window
+     * it asked for is full.  No sequence to follow and no continuation timer:
+     * the host knows what it asked for, and that is the only state there is.
+     */
     for (;;) {
-        uint8_t buf[LINK_MAX_FRAME];
-        const int got = link_uart_read(buf, sizeof(buf), 5);
-        for (int i = 0; i < got; ++i) {
-            if (link_decode_byte(rx, buf[i], reply)
-                && link_host_reply(host, reply, now_ms())) {
+        link_can_frame_t in;
+        if (can_twai_recv(&in, 5)) {
+            link_msg_t part;
+            if (link_can_decode(&in, &part)
+                && link_host_accept(host, &part, now_ms(), reply)) {
                 link_bringup_add_rtt(
                     &s_bring,
                     (uint32_t)((uint32_t)esp_timer_get_time() - sent_us));
@@ -304,11 +309,6 @@ static bool poll_page(link_host_t *host, link_decoder_t *rx, uint8_t page,
             }
         }
         if (link_host_tick(host, now_ms())) {
-            /* The bytes of an abandoned reply are still on their way; letting
-             * them reach the decoder is how a stale frame gets offered as the
-             * answer to the next question. */
-            link_uart_flush();
-            link_decoder_reset(rx);
             return false;
         }
     }
@@ -352,11 +352,6 @@ static bool can_ask_remote(can_remote_status_t *out)
 
 static void can_selftest_run(uint32_t seconds)
 {
-    if (can_twai_start(PANEL_CAN_BITRATE) != ESP_OK) {
-        ESP_LOGE(TAG, "CAN would not start; nothing to test");
-        return;
-    }
-
     /*
      * The far end's counter runs from its own boot, so a reading taken only
      * at the end is a total and not a measurement.  Sampling either side of
@@ -481,8 +476,6 @@ static void can_selftest_run(uint32_t seconds)
     } else {
         ESP_LOGW(TAG, "  copro  did not answer a status request");
     }
-
-    can_twai_stop();
 }
 #endif /* RCBENCH_CAN_SELFTEST */
 
@@ -498,8 +491,17 @@ static void link_report(void)
     s_bring.timeouts      = s_host.timeouts;
     s_bring.mismatches    = s_host.mismatches;
     s_bring.nacks         = s_host.nacks;
-    s_bring.rx_crc_errors = s_rx.crc_errors;
-    s_bring.rx_resyncs    = s_rx.resyncs;
+    /*
+     * The controller counts what the byte transport used to have to count for
+     * itself.  A CRC error there was a frame this end had assembled and found
+     * wrong; here it is a frame the silicon rejected before the software saw
+     * it, and a resync has no equivalent at all -- CAN finds its own frame
+     * boundaries.
+     */
+    uint32_t tx_err = 0, rx_err = 0, bus_err = 0;
+    can_twai_errors(&tx_err, &rx_err, &bus_err, NULL);
+    s_bring.rx_crc_errors = bus_err;
+    s_bring.rx_resyncs    = rx_err;
 
     const link_diag_t d = link_bringup_diagnose(&s_bring);
     ESP_LOGI(TAG, "LINK %s", link_diag_text(d));
@@ -522,15 +524,15 @@ static void link_report(void)
         ESP_LOGI(TAG, "  copro  never answered a status read");
     }
     if (s_bring.rt_samples > 0) {
-        /* Against LINK_TURNAROUND_US: if the minimum round trip is close to
-         * it, the far end is waiting out the direction circuit and not the
-         * wire, and the poll period is being spent on an RC network. */
-        ESP_LOGI(TAG, "  round trip min %lu avg %lu max %lu us "
-                      "(turnaround allowance %u us)",
+        /*
+         * There is no turnaround allowance to compare against any more: CAN
+         * arbitrates rather than taking turns, so nothing is waiting out a
+         * direction circuit.  What is left is the honest round trip.
+         */
+        ESP_LOGI(TAG, "  round trip min %lu avg %lu max %lu us",
                  (unsigned long)s_bring.rt_min_us,
                  (unsigned long)s_bring.rt_mean_us,
-                 (unsigned long)s_bring.rt_max_us,
-                 (unsigned)LINK_TURNAROUND_US);
+                 (unsigned long)s_bring.rt_max_us);
     }
 }
 
@@ -542,11 +544,10 @@ static void link_report(void)
  * the panel models locally and says so the same way.  Nothing above this
  * function knows the difference, which is the whole point of bench_state.
  */
-static bool read_bench(link_host_t *host, link_decoder_t *rx,
-                       bench_state_t *out)
+static bool read_bench(link_host_t *host, bench_state_t *out)
 {
     link_msg_t reply;
-    if (!poll_page(host, rx, LINK_PAGE_BENCH, LINK_BN_COUNT, &reply)) {
+    if (!poll_page(host, LINK_PAGE_BENCH, LINK_BN_COUNT, &reply)) {
         return false;
     }
     if (reply.op == LINK_OP_NACK) {
@@ -719,9 +720,9 @@ void app_main(void)
             if (link_up) {
                 /* Ask for what is wanted every frame; identity is asked once
                  * and then only to notice the far end coming back. */
-                answered = read_bench(&s_host, &s_rx, &bench);
+                answered = read_bench(&s_host, &bench);
             } else {
-                answered = poll_page(&s_host, &s_rx, LINK_PAGE_IDENTITY,
+                answered = poll_page(&s_host, LINK_PAGE_IDENTITY,
                                      LINK_ID_COUNT, &reply);
                 if (answered
                     && reply.regs[LINK_ID_PROTOCOL_MAJOR]
@@ -752,7 +753,7 @@ void app_main(void)
                 && (uint32_t)(now_ms() - last_status) >= 1000u) {
                 last_status = now_ms();
                 link_msg_t st;
-                if (poll_page(&s_host, &s_rx, LINK_PAGE_STATUS,
+                if (poll_page(&s_host, LINK_PAGE_STATUS,
                               LINK_ST_COUNT, &st)
                     && st.op == LINK_OP_DATA) {
                     s_bring.have_status = true;

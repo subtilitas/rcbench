@@ -10,7 +10,6 @@
 #include "greatest.h"
 
 #include "link_dev.h"
-#include "link_frame.h"
 #include "link_host.h"
 #include "link_pages.h"
 
@@ -58,8 +57,8 @@ static void poll_at(uint32_t now)
     link_msg_t req = { 0 };
     req.op = LINK_OP_READ; req.page = LINK_PAGE_CONTROL;
     req.offset = 0; req.count = 1;
-    uint8_t wire[LINK_MAX_FRAME];
-    link_dev_handle(&dev, &req, wire, sizeof(wire), now);
+    link_msg_t reply;
+    link_dev_dispatch(&dev, &req, &reply, now);
 }
 
 /* -------------------------------------------------- the coprocessor's 200 ms */
@@ -127,17 +126,15 @@ TEST_CASE(only_the_magic_value_clears_the_failsafe)
     link_dev_tick(&dev, LINK_DEV_SILENCE_MS);
     CHECK(dev.failsafe);
 
-    link_msg_t w = { 0 };
+    link_msg_t w = { 0 }, reply;
     w.op = LINK_OP_WRITE; w.page = LINK_PAGE_CONTROL;
     w.offset = LINK_CT_CLEAR; w.count = 1;
-    uint8_t wire[LINK_MAX_FRAME];
-
     w.regs[0] = 1;                     /* any old truthy value */
-    CHECK(link_dev_handle(&dev, &w, wire, sizeof(wire), 300) > 0);
+    CHECK(link_dev_dispatch(&dev, &w, &reply, 300));
     CHECK(dev.failsafe);
 
     w.regs[0] = LINK_CLEAR_MAGIC;
-    CHECK(link_dev_handle(&dev, &w, wire, sizeof(wire), 300) > 0);
+    CHECK(link_dev_dispatch(&dev, &w, &reply, 300));
     CHECK(!dev.failsafe);
 }
 
@@ -186,6 +183,7 @@ static link_host_t host;
 TEST_CASE(the_host_escalates_after_one_second)
 {
     link_host_init(&host, 0);
+    link_msg_t req, got;
     CHECK(!link_host_tick(&host, LINK_HOST_TIMEOUT_MS - 1));
     CHECK(link_host_tick(&host, LINK_HOST_TIMEOUT_MS));
     CHECK(host.escalated);
@@ -203,33 +201,29 @@ TEST_CASE(the_host_is_the_more_patient_of_the_two)
 TEST_CASE(a_reply_resets_the_host_and_its_escalation)
 {
     link_host_init(&host, 0);
-    uint8_t wire[LINK_MAX_FRAME];
-    CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, wire,
-                         sizeof(wire)) > 0);
+    link_msg_t req, got;
+    CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, &req));
     CHECK(link_host_tick(&host, LINK_HOST_TIMEOUT_MS));
     CHECK(host.escalated);
     CHECK_EQ(host.timeouts, 1u);
 
     /* The abandoned request must not block the next one -- a host that stopped
      * asking would never notice the link recovering. */
-    CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, wire,
-                         sizeof(wire)) > 0);
+    CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, &req));
 
     link_msg_t reply = { 0 };
     reply.op = LINK_OP_DATA; reply.page = LINK_PAGE_CONTROL;
     reply.offset = 0; reply.count = 1;
-    CHECK(link_host_reply(&host, &reply, 1500));
+    CHECK(link_host_accept(&host, &reply, 1500, &got));
     CHECK(!host.escalated);
 }
 
 TEST_CASE(only_one_request_is_outstanding_at_a_time)
 {
     link_host_init(&host, 0);
-    uint8_t wire[LINK_MAX_FRAME];
-    CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, wire,
-                         sizeof(wire)) > 0);
-    CHECK_EQ(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, wire,
-                            sizeof(wire)), 0u);
+    link_msg_t req, got;
+    CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, &req));
+    CHECK_EQ(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, &req), false);
 }
 
 /*
@@ -240,11 +234,10 @@ TEST_CASE(only_one_request_is_outstanding_at_a_time)
 TEST_CASE(a_stale_reply_cannot_answer_the_current_question)
 {
     link_host_init(&host, 0);
-    uint8_t wire[LINK_MAX_FRAME];
-
-    link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, wire, sizeof(wire));
+    link_msg_t req, got;
+    link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, &req);
     link_host_tick(&host, LINK_HOST_TIMEOUT_MS);          /* gave up */
-    link_host_read(&host, LINK_PAGE_BENCH, 4, 2, wire, sizeof(wire));
+    link_host_read(&host, LINK_PAGE_BENCH, 4, 2, &req);
 
     /*
      * Each of these differs from the outstanding request in exactly one
@@ -256,48 +249,66 @@ TEST_CASE(a_stale_reply_cannot_answer_the_current_question)
     link_msg_t wrong_page = { 0 };
     wrong_page.op = LINK_OP_DATA; wrong_page.page = LINK_PAGE_CONTROL;
     wrong_page.offset = 4; wrong_page.count = 2;
-    CHECK(!link_host_reply(&host, &wrong_page, 1100));
+    CHECK(!link_host_accept(&host, &wrong_page, 1100, &got));
 
     link_msg_t wrong_offset = { 0 };
     wrong_offset.op = LINK_OP_DATA; wrong_offset.page = LINK_PAGE_BENCH;
     wrong_offset.offset = 0; wrong_offset.count = 2;
-    CHECK(!link_host_reply(&host, &wrong_offset, 1100));
+    CHECK(!link_host_accept(&host, &wrong_offset, 1100, &got));
 
-    link_msg_t wrong_width = { 0 };
-    wrong_width.op = LINK_OP_DATA; wrong_width.page = LINK_PAGE_BENCH;
-    wrong_width.offset = 4; wrong_width.count = 1;
-    CHECK(!link_host_reply(&host, &wrong_width, 1100));
+    link_msg_t past_end = { 0 };
+    past_end.op = LINK_OP_DATA; past_end.page = LINK_PAGE_BENCH;
+    past_end.offset = 5; past_end.count = 2;   /* runs off the window's end */
+    CHECK(!link_host_accept(&host, &past_end, 1100, &got));
 
     CHECK_EQ(host.mismatches, 3u);
 
-    link_msg_t good = { 0 };
-    good.op = LINK_OP_DATA; good.page = LINK_PAGE_BENCH;
-    good.offset = 4; good.count = 2;
-    CHECK(link_host_reply(&host, &good, 1200));
+    /*
+     * A narrow reply *inside* the window is a different thing entirely: on a
+     * bus that carries four registers to a frame, that is one piece of the
+     * answer arriving.  It is not a mismatch and it is not an answer either --
+     * the request stays outstanding until the window is full.
+     */
+    link_msg_t part = { 0 };
+    part.op = LINK_OP_DATA; part.page = LINK_PAGE_BENCH;
+    part.offset = 4; part.count = 1; part.regs[0] = 0x1111;
+    CHECK(!link_host_accept(&host, &part, 1150, &got));
+    CHECK_EQ(host.mismatches, 3u);   /* still three; a fragment is not a fault */
+    CHECK(host.pending);
+
+    link_msg_t rest = { 0 };
+    rest.op = LINK_OP_DATA; rest.page = LINK_PAGE_BENCH;
+    rest.offset = 5; rest.count = 1; rest.regs[0] = 0x2222;
+    CHECK(link_host_accept(&host, &rest, 1200, &got));
+    CHECK(!host.pending);
+    /* And the answer is the whole window, assembled from both pieces. */
+    CHECK_EQ(got.offset, 4);
+    CHECK_EQ(got.count, 2);
+    CHECK_EQ(got.regs[0], 0x1111);
+    CHECK_EQ(got.regs[1], 0x2222);
 }
 
 TEST_CASE(a_reply_of_the_wrong_shape_is_not_an_answer)
 {
     link_host_init(&host, 0);
-    uint8_t wire[LINK_MAX_FRAME];
-
+    link_msg_t req, got;
     /* An ACK does not answer a READ, and a DATA of the wrong width does not
      * answer the window that was asked for. */
-    link_host_read(&host, LINK_PAGE_CONTROL, 0, 2, wire, sizeof(wire));
+    link_host_read(&host, LINK_PAGE_CONTROL, 0, 2, &req);
     link_msg_t ack = { 0 };
     ack.op = LINK_OP_ACK; ack.page = LINK_PAGE_CONTROL;
     ack.offset = 0; ack.count = 2;
-    CHECK(!link_host_reply(&host, &ack, 10));
+    CHECK(!link_host_accept(&host, &ack, 10, &got));
 
     link_msg_t narrow = { 0 };
     narrow.op = LINK_OP_DATA; narrow.page = LINK_PAGE_CONTROL;
     narrow.offset = 0; narrow.count = 1;
-    CHECK(!link_host_reply(&host, &narrow, 10));
+    CHECK(!link_host_accept(&host, &narrow, 10, &got));
 
     link_msg_t right = { 0 };
     right.op = LINK_OP_DATA; right.page = LINK_PAGE_CONTROL;
     right.offset = 0; right.count = 2;
-    CHECK(link_host_reply(&host, &right, 10));
+    CHECK(link_host_accept(&host, &right, 10, &got));
 }
 
 /* A refusal is an answer.  The host must stop waiting on a NACK, or a page it
@@ -305,14 +316,14 @@ TEST_CASE(a_reply_of_the_wrong_shape_is_not_an_answer)
 TEST_CASE(a_nack_answers_the_request_it_refuses)
 {
     link_host_init(&host, 0);
-    uint8_t wire[LINK_MAX_FRAME];
+    link_msg_t req, got;
     const uint16_t v = 1;
-    link_host_write(&host, LINK_PAGE_IDENTITY, 0, 1, &v, wire, sizeof(wire));
+    link_host_write(&host, LINK_PAGE_IDENTITY, 0, 1, &v, &req);
 
     link_msg_t nack = { 0 };
     nack.op = LINK_OP_NACK; nack.page = LINK_PAGE_IDENTITY;
     nack.offset = 0; nack.count = 1; nack.regs[0] = LINK_NACK_READ_ONLY;
-    CHECK(link_host_reply(&host, &nack, 5));
+    CHECK(link_host_accept(&host, &nack, 5, &got));
     CHECK_EQ(host.nacks, 1u);
     CHECK(!host.pending);
 }
@@ -321,6 +332,7 @@ TEST_CASE(the_host_watchdog_survives_the_millisecond_wrap)
 {
     const uint32_t near_wrap = (uint32_t)0u - (LINK_HOST_TIMEOUT_MS / 2u);
     link_host_init(&host, near_wrap);
+    link_msg_t req, got;
 
     CHECK(near_wrap + LINK_HOST_TIMEOUT_MS < near_wrap);
 
@@ -345,8 +357,8 @@ TEST_CASE(the_coprocessor_gives_up_long_before_the_panel_does)
 {
     fresh_dev(0);
     link_host_init(&host, 0);
-    uint8_t wire[LINK_MAX_FRAME];
-    link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, wire, sizeof(wire));
+    link_msg_t req, got;
+        link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, &req);
 
     uint32_t dev_fired = 0, host_fired = 0;
     for (uint32_t t = 1; t <= 2000; ++t) {

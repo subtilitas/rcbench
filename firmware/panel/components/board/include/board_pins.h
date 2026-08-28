@@ -12,7 +12,6 @@
 #pragma once
 
 #include "driver/gpio.h"
-#include "driver/uart.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -167,32 +166,6 @@ extern "C" {
  * reaches exactly; see COPRO_CAN_BITRATE and docs/Link.md. */
 #define PANEL_CAN_BITRATE  1000000u
 
-/* ------------------------------------------------------------------- link */
-/*
- * The RS485 link to the coprocessor.  U6 is an SP3485EN -- a 3.3 V
- * transceiver, so there is no level shifting to do and no 5 V anywhere near
- * the module.
- *
- * The direction of these two is the opposite of the obvious reading, and the
- * schematic's own pin table does not settle it: that table calls GPIO15
- * "RS485_TX" and GPIO16 "RS485_RX", which names the *transceiver's* data
- * directions rather than the ESP32's.  The connectivity settles it twice:
- *
- *   GPIO15 is on the net reaching U6 pin 1, RO -- the receiver's *output*,
- *   which the ESP32 cannot drive.  So GPIO15 is an input: RX.
- *
- *   GPIO16 reaches pin 4, DI, and also the input of the buffer that operates
- *   the direction line.  An automatic-direction circuit only makes sense
- *   watching the line the ESP32 transmits on.  So GPIO16 is TX.
- *
- * Getting these the wrong way round costs an afternoon and looks like a dead
- * transceiver, so the reasoning is here rather than only the conclusion.
- *
- * There is no direction pin: the board switches DE and /RE itself.
- */
-#define PANEL_LINK_UART_NUM   UART_NUM_1
-#define PANEL_LINK_PIN_TX     GPIO_NUM_16
-#define PANEL_LINK_PIN_RX     GPIO_NUM_15
 
 /* ----------------------------------------------------------------- safety */
 /*

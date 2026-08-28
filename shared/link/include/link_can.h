@@ -10,8 +10,9 @@
  *
  * What survives untouched is the part that matters: `link_msg_t` -- an op, a
  * page, an offset, a count and some registers -- never knew what carried it.
- * This file is a second way to carry it, beside link_frame.c, and the
- * dispatcher above does not change.
+ * This is how it is carried.  There was a byte transport over RS485 before
+ * it, and the dispatcher above never knew the difference -- which is what let
+ * that one be deleted rather than adapted.
  *
  * THREE THINGS THIS MAPPING DOES DIFFERENTLY, and why:
  *
@@ -50,7 +51,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "link_frame.h"
+#include "link_msg.h"
 
 #ifdef __cplusplus
 extern "C" {

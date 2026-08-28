@@ -20,7 +20,7 @@ typedef enum {
     SPLASH_STEP_TOUCH,
     SPLASH_STEP_STORAGE,
     SPLASH_STEP_SETTINGS,
-    SPLASH_STEP_LINK,     /**< the RS485 wire                              */
+    SPLASH_STEP_LINK,     /**< the CAN bus                                   */
     SPLASH_STEP_COPRO,    /**< who answered, and whether we speak its dialect */
     SPLASH_STEP_COUNT
 } splash_step_t;
