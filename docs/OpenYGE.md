@@ -28,12 +28,12 @@ The master hears its own transmission — a sender discards exactly as many
 received bytes as it just sent — so the connection is a **single wire** with TX
 and RX commoned.
 
-**This line cannot go through the RS485 transceiver.** rcbench's panel link has
-a baud *floor* near 125 kbaud, set by the RC one-shot in the board's
-auto-direction circuit; below it the driver releases the bus mid-frame
-([the link](Link.md) has the arithmetic). OpenYGE's 115200 is under that floor.
-Not a conflict — a different link — but it settles the wiring: a dedicated
-half-duplex UART on the coprocessor, never the RS485 path. Either a hardware
+**This needs a UART of its own.** rcbench's panel link is
+[CAN](Link.md) and carries nothing else; OpenYGE is an asynchronous byte
+stream at 115200 and cannot share it. (When the panel link was RS485 there was
+a second reason — its auto-direction circuit had a baud *floor* near 125 kbaud,
+which 115200 sits under — but that transceiver is gone.) So: a dedicated
+half-duplex UART on the coprocessor. Either a hardware
 UART with TX and RX tied through a resistor and the echo discarded, or a PIO
 soft UART. The coprocessor already plans PIO UARTs for the receiver-bus
 analyser, so the second costs one state machine of twelve and gives cleaner

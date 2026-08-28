@@ -144,7 +144,7 @@ TEST_CASE(a_page_wider_than_a_frame_comes_back_whole)
 {
     fresh();
     link_msg_t req, got;
-    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, LINK_BN_COUNT, &req));
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, LINK_BN_COUNT, 0, &req));
     CHECK(exchange(&req, 100, &got));
 
     CHECK_EQ(got.op, LINK_OP_DATA);
@@ -169,7 +169,7 @@ TEST_CASE(the_pieces_may_arrive_in_any_order)
     fresh();
     bus.reverse = true;
     link_msg_t req, got;
-    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, LINK_BN_COUNT, &req));
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, LINK_BN_COUNT, 0, &req));
     CHECK(exchange(&req, 100, &got));
     for (uint8_t i = 0; i < LINK_BN_COUNT; ++i) {
         CHECK_EQ(got.regs[i], 0x2000 + i);
@@ -181,7 +181,7 @@ TEST_CASE(a_window_inside_a_page_answers_with_that_window)
 {
     fresh();
     link_msg_t req, got;
-    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 8, 5, &req));
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 8, 5, 0, &req));
     CHECK(exchange(&req, 100, &got));
     CHECK_EQ(got.offset, 8);
     CHECK_EQ(got.count, 5);
@@ -195,7 +195,7 @@ TEST_CASE(a_write_is_acknowledged_with_what_was_stored)
     fresh();
     link_msg_t req, got;
     const uint16_t v[2] = { 1, 4321 };
-    CHECK(link_host_write(&host, LINK_PAGE_CONTROL, 0, 2, v, &req));
+    CHECK(link_host_write(&host, LINK_PAGE_CONTROL, 0, 2, v, 0, &req));
     CHECK(exchange(&req, 100, &got));
     CHECK_EQ(got.op, LINK_OP_ACK);
     CHECK_EQ(g.control[LINK_CT_ARM], 1);
@@ -213,8 +213,7 @@ TEST_CASE(a_refusal_answers_and_says_why)
     fresh();
     link_msg_t req, got;
     const uint16_t bad = LINK_THROTTLE_MAX + 1u;
-    CHECK(link_host_write(&host, LINK_PAGE_CONTROL, LINK_CT_THROTTLE, 1,
-                          &bad, &req));
+    CHECK(link_host_write(&host, LINK_PAGE_CONTROL, LINK_CT_THROTTLE, 1, &bad, 0, &req));
     CHECK(exchange(&req, 100, &got));
     CHECK_EQ(got.op, LINK_OP_NACK);
     CHECK_EQ(got.regs[0], LINK_NACK_BAD_VALUE);
@@ -224,7 +223,7 @@ TEST_CASE(a_refusal_answers_and_says_why)
 
     /* A read-only page refuses the same way. */
     const uint16_t one = 1;
-    CHECK(link_host_write(&host, LINK_PAGE_IDENTITY, 0, 1, &one, &req));
+    CHECK(link_host_write(&host, LINK_PAGE_IDENTITY, 0, 1, &one, 0, &req));
     CHECK(exchange(&req, 200, &got));
     CHECK_EQ(got.op, LINK_OP_NACK);
     CHECK_EQ(got.regs[0], LINK_NACK_READ_ONLY);
@@ -240,7 +239,7 @@ TEST_CASE(a_lost_piece_leaves_the_request_unanswered)
     fresh();
     bus.drop_every = 3;      /* every third frame carried disappears */
     link_msg_t req, got;
-    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, LINK_BN_COUNT, &req));
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, LINK_BN_COUNT, 0, &req));
     CHECK_EQ(exchange(&req, 100, &got), false);
     CHECK(bus.dropped > 0);
     CHECK(host.pending);
@@ -262,7 +261,7 @@ TEST_CASE(a_reply_to_an_abandoned_question_is_refused)
     fresh();
     link_msg_t req, got;
 
-    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, &req));
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, 0, &req));
     link_can_frame_t stale[LINK_CAN_MAX_FRAMES];
     link_msg_t reply;
     CHECK(link_dev_dispatch(&dev, &req, &reply, 100));
@@ -271,7 +270,7 @@ TEST_CASE(a_reply_to_an_abandoned_question_is_refused)
 
     /* It times out, and a different question goes out. */
     CHECK(link_host_tick(&host, LINK_HOST_TIMEOUT_MS));
-    CHECK(link_host_read(&host, LINK_PAGE_IDENTITY, 0, 2, &req));
+    CHECK(link_host_read(&host, LINK_PAGE_IDENTITY, 0, 2, 0, &req));
 
     /* Now the old answer turns up. */
     for (size_t i = 0; i < n; ++i) {
@@ -290,7 +289,7 @@ TEST_CASE(the_devices_watchdog_still_runs_on_can)
 {
     fresh();
     link_msg_t req, got;
-    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, &req));
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, 0, &req));
     CHECK(exchange(&req, 1000, &got));
     CHECK(!dev.failsafe);
 
@@ -299,7 +298,7 @@ TEST_CASE(the_devices_watchdog_still_runs_on_can)
 
     /* And a request arriving again stops the silence without lifting the
      * latch: those are different facts. */
-    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, &req));
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, 0, &req));
     CHECK(exchange(&req, 2000, &got));
     CHECK(dev.failsafe);
 }
@@ -310,7 +309,7 @@ TEST_CASE(another_pages_answer_is_not_this_pages_answer)
 {
     fresh();
     link_msg_t req, got;
-    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, &req));
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, 0, &req));
 
     link_msg_t other = { 0 };
     other.op = LINK_OP_DATA; other.page = LINK_PAGE_CONTROL;

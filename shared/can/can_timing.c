@@ -82,11 +82,17 @@ bool can_timing_solve(const can_timing_limits_t *lim, uint32_t bitrate,
          * anything else is a bit rate that is nearly right -- which two nodes
          * will agree about on short frames and disagree about on long ones.
          */
-        const uint32_t denom = div * bitrate;
-        if (denom == 0 || lim->clock_hz % denom != 0) {
+        /*
+         * Sixty-four bits, because div * bitrate overflows thirty-two for the
+         * larger divisors at megabit rates -- and a wrapped product can be an
+         * exact divisor of the clock, which would let the one rule this module
+         * has (the rate comes out exact) pass on a rate that does not.
+         */
+        const uint64_t denom = (uint64_t)div * (uint64_t)bitrate;
+        if (denom == 0 || (uint64_t)lim->clock_hz % denom != 0) {
             continue;
         }
-        const uint32_t tq = lim->clock_hz / denom;
+        const uint32_t tq = (uint32_t)((uint64_t)lim->clock_hz / denom);
         if (tq < lim->tq_min || tq > lim->tq_max) {
             continue;
         }
@@ -102,9 +108,10 @@ bool can_timing_solve(const can_timing_limits_t *lim, uint32_t bitrate,
             const uint32_t err = sp_error((uint8_t)t1, (uint8_t)tq,
                                           target_permille);
             /*
-             * Prefer the closest sample point; break ties on the larger
-             * prescaler, which means fewer quanta per bit and so a coarser --
-             * and more forgiving -- resynchronisation step.
+             * The closest sample point wins.  Ties go to the first candidate
+             * found, and divisors ascend, so that is the *smallest* prescaler
+             * and therefore the most quanta per bit -- a finer
+             * resynchronisation step, which is the better of the two.
              */
             if (!found || err < best_err) {
                 found    = true;
@@ -134,14 +141,32 @@ uint32_t can_timing_max_bitrate(const can_timing_limits_t *lim)
     if (lim == NULL || lim->clock_hz == 0) {
         return 0;
     }
-    /* The fastest bit is the smallest divisor with the fewest quanta. */
-    const uint32_t denom = (uint32_t)lim->div_min * lim->tq_min;
-    if (denom == 0) {
-        return 0;
+    /*
+     * The obvious candidate -- smallest divisor, fewest quanta -- need not be
+     * solvable: it can be a rate that divides the clock only with a segment
+     * split the controller will not accept.  Probing just that one reported a
+     * controller reaching many rates as reaching none, so every combination is
+     * tried and the highest that actually solves is returned.
+     */
+    uint32_t best = 0;
+    for (uint32_t tq = lim->tq_min; tq <= lim->tq_max; ++tq) {
+        for (uint32_t div = lim->div_min; div <= lim->div_max;
+             div += lim->div_step) {
+            const uint64_t denom = (uint64_t)div * (uint64_t)tq;
+            if (denom == 0 || (uint64_t)lim->clock_hz % denom != 0) {
+                continue;
+            }
+            const uint32_t rate = (uint32_t)((uint64_t)lim->clock_hz / denom);
+            if (rate <= best) {
+                continue;
+            }
+            can_timing_t t;
+            if (can_timing_solve(lim, rate, CAN_SAMPLE_POINT_DEFAULT, &t)) {
+                best = rate;
+            }
+        }
     }
-    const uint32_t rate = lim->clock_hz / denom;
-    can_timing_t t;
-    return can_timing_solve(lim, rate, CAN_SAMPLE_POINT_DEFAULT, &t) ? rate : 0;
+    return best;
 }
 
 bool mcp2515_encode_timing(const can_timing_t *t, uint8_t cnf[3])

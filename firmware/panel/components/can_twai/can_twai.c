@@ -36,7 +36,17 @@ esp_err_t can_twai_start(uint32_t bitrate)
      * USB pins, so from here until can_twai_stop() there is no USB. The
      * console is on UART because of this.
      */
-    ESP_ERROR_CHECK(board_select_can(true));
+    /*
+     * Reported, not asserted.  Every other failure here returns esp_err_t and
+     * leaves the caller to decide; aborting the whole panel because one I2C
+     * transaction to the expander glitched would take the STOP button with it.
+     */
+    esp_err_t sel = board_select_can(true);
+    if (sel != ESP_OK) {
+        ESP_LOGE(TAG, "could not route the multiplexer to CAN: %s",
+                 esp_err_to_name(sel));
+        return sel;
+    }
 
     const twai_general_config_t g = {
         .mode = TWAI_MODE_NORMAL,

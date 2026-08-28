@@ -59,9 +59,11 @@ coprocessor answered but the panel never heard are a return-path fault; frames
 it never answered are an outbound one; and a coprocessor that dropped frames
 for want of a free buffer is neither, which no bus counter anywhere records.
 
-The status exchange is polled, shares the echo test's page, runs at the same
-lowest priority, and happens only after the echo phase — so it cannot disturb
-the measurement it is reporting on.
+The status exchange is polled, shares the echo test's page and runs at the same
+lowest priority. It happens **either side** of the echo phase, not only after:
+the far end's counter runs from its own boot, so only the difference across the
+measurement means anything — a reading taken once at the end is a lifetime
+total and says nothing.
 
 | What it says | What it means | Where to look |
 | --- | --- | --- |

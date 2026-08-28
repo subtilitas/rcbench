@@ -166,6 +166,16 @@ bool xl2515_recv(link_can_frame_t *f)
     if (!mcp2515_unpack_id(buf, &f->id)) {
         return false;   /* an 11-bit identifier; nothing here sends those */
     }
+    /*
+     * Bit 6 of the DLC register is RTR: a remote frame, which carries a length
+     * but no data.  Its data registers hold whatever the last real frame left
+     * there, so accepting one would deliver stale bytes under a fresh
+     * identifier -- and nothing on this bus sends remote frames, so anything
+     * that does is somebody else's traffic or a fault.
+     */
+    if ((buf[4] & 0x40u) != 0u) {
+        return false;
+    }
     f->dlc = (uint8_t)(buf[4] & 0x0Fu);
     if (f->dlc > 8) {
         return false;

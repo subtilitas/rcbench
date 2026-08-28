@@ -245,6 +245,34 @@ TEST_CASE(corruption_outranks_a_clean_bus_losing_frames)
  * produces these, and they are not corruption -- calling them corruption would
  * send somebody to check terminators when the answer is a longer timeout.
  */
+/*
+ * A bus whose every echo arrives just past the timeout is not a silent bus.
+ * It answers every probe; the timeout is simply too tight for it. Reporting
+ * "no probe came back" sends somebody to check whether the far end is even
+ * powered, while it is answering perfectly.
+ */
+TEST_CASE(a_bus_that_is_merely_late_is_not_reported_as_silent)
+{
+    can_selftest_t st;
+    can_selftest_init(&st, 50);
+
+    uint32_t now = 1000;
+    for (int i = 0; i < 12; ++i) {
+        link_can_frame_t probe, echo;
+        CHECK(can_selftest_probe(&st, now, &probe));
+        CHECK(can_selftest_echo(&probe, &echo));
+        now += st.timeout_ms + 10u;      /* it answers, just too late */
+        can_selftest_tick(&st, now);
+        can_selftest_rx(&st, &echo, 60000);
+    }
+    CHECK_EQ(st.echoed, 0u);
+    CHECK_EQ(st.corrupt, 0u);
+    CHECK(st.stale > 0);
+    if (can_selftest_verdict(&st) == CAN_SELFTEST_SILENT) {
+        T_FAIL("a bus answering every probe was reported as silent");
+    }
+}
+
 TEST_CASE(a_late_echo_is_stale_rather_than_corrupt)
 {
     can_selftest_t st;
@@ -577,6 +605,7 @@ int main(void)
     RUN(corruption_outranks_loss_when_a_bus_does_both);
     RUN(loss_with_bus_errors_and_loss_without_are_different_faults);
     RUN(corruption_outranks_a_clean_bus_losing_frames);
+    RUN(a_bus_that_is_merely_late_is_not_reported_as_silent);
     RUN(a_late_echo_is_stale_rather_than_corrupt);
     RUN(the_whole_payload_is_checked_and_not_just_the_sequence);
     RUN(the_probes_cycle_through_the_patterns_that_stress_stuffing);

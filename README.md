@@ -57,7 +57,9 @@ And the constraint that follows it: **nothing raw crosses the link.** DShot bit
 timing, GCR decoding, S.BUS framing and pulse capture all die on the
 coprocessor; only results travel. Live telemetry, four channels of current and
 voltage batched to 100 Hz, decoded ESC frames and an accelerometer burst come to
-12–30 kB/s together — five to twelve times less than the link carries.
+12–30 kB/s together — comfortably inside what the link carries, though the
+margin is about two-fold on CAN rather than the five-to-twelve RS485 was
+heading for. [The link](#the-link) has that arithmetic.
 
 | | Panel | Coprocessor |
 | --- | :---: | :---: |
@@ -96,7 +98,9 @@ voltage batched to 100 Hz, decoded ESC frames and an accelerometer burst come to
 | The simulation watermark | new | **built**: SIMULATION across the whole screen at 15% whenever the numbers are modelled, and no screen can opt out |
 | Coprocessor firmware | new | answers identity, status, control and bench pages over CAN, fails safe at 200 ms. **Run on silicon**: the bus is up at 1 Mbit/s with zero errors at either end |
 | Panel link transport | new | TWAI on GPIO19/20 through the board's multiplexer, poll loop with the one-second escalation and fragment reassembly. **Run on silicon** |
-| **The link moves to CAN** | new | **drivers at both ends, and a bring-up self-test that runs on silicon**: an echo across the bus that answers only "do frames cross intact", separately from whether the link works. The coprocessor echoes permanently; the panel side is opt-in because it costs native USB. [The procedure](docs/Bringup.md). The mapping and the bit timing are tested on the host, and both ends' pins came from the vendor's own driver rather than a guess; the drivers are not. A coprocessor module with an XL2515 controller and a SIT65HVD230 transceiver, against the panel's own CAN path — which the board already has, multiplexed with USB. `link_msg_t` never knew what carried it, so the dispatcher is unchanged and this is an added transport rather than a rewrite. [What it buys and costs](docs/Link.md) |
+| **The link moves to CAN** | new | **drivers at both ends, and a bring-up self-test that runs on silicon**: an echo across the bus that answers only "do frames cross intact", separately from whether the link works. The coprocessor echoes permanently; the panel side is opt-in because it costs native USB. [The procedure](docs/Bringup.md). The mapping and the bit timing are tested on the host, the coprocessor's pins came from the vendor's own driver rather than a guess,
+while the panel's TWAI pins are inferred from the multiplexer and still want
+tracing on the schematic; the drivers are not. A coprocessor module with an XL2515 controller and a SIT65HVD230 transceiver, against the panel's own CAN path — which the board already has, multiplexed with USB. `link_msg_t` never knew what carried it, so the dispatcher is unchanged and this is an added transport rather than a rewrite. [What it buys and costs](docs/Link.md) |
 | **Bring-up diagnosis** | new | **built**: both ends' counters compared and the most fundamental fault named rather than the loudest — a return path that never releases looks nothing like a dead coprocessor once the far end's own frame count is in the room. The coprocessor now fills the three STATUS registers it had always declared and never written. [The procedure](docs/Bringup.md) |
 | **The heartbeat** | new | **driven**: edges from the render loop, dropped the instant STOP latches or touch stops answering. The monostable it gates is not fitted, so today the edges reach a header pin and a scope |
 | Throttle output on the panel | **removed** | GPIO6 is the heartbeat; the panel emits no servo pulse |
@@ -120,12 +124,12 @@ rcbench/
     ui/                   theme · widgets · icons · router · screens
     settings/             typed schema and values
     logfile/              number and CSV parsing
-    link/                 framing · CRC-16 · pages · watchdog
+    link/                 messages · CAN framing · pages · watchdogs · diagnosis
     bench/                bench_state · throttle policy · simulator
 
   firmware/panel/         ESP-IDF
-    main/                 main · panel_boot · heartbeat · link_host
-    components/           board · display · touch · storage · link_uart
+    main/                 main.c
+    components/           board · display · gt911 · storage · can_twai
     sdkconfig.defaults  partitions.csv
 
   firmware/copro/         pico-sdk
@@ -321,9 +325,10 @@ vendored. `tools/check_docs.py` holds that list to this file — a page in the
 predecessor said *seven* for two releases after it was ten, and nobody reads a
 doc looking for that.
 
-All five tools run in CI again: `render_ui.py --check` holds eleven committed
-screenshots to the current render, and `frame_cost.py` holds the steady-state
-frame to 12,000 cache-line fills. It currently costs **740**.
+All five tools run in CI again: `render_ui.py --check` holds fourteen committed
+screenshots to the current render, and `frame_cost.py` holds a bench frame to
+15,600 cache-line fills and a chrome-cached one to 2,000. A frame between
+samples currently costs **740**.
 
 <!-- coverage:start -->
 ![coverage](https://img.shields.io/badge/host--test%20coverage-94.8%25-brightgreen)
@@ -359,19 +364,19 @@ frame to 12,000 cache-line fills. It currently costs **740**.
 | `shared/openyge/openyge_status.c` | 39 | 39 | 100.0% |
 | `shared/openyge/openyge_params.c` | 66 | 66 | 100.0% |
 | `shared/servo/servo_sim.c` | 122 | 122 | 100.0% |
-| `shared/can/can_timing.c` | 97 | 94 | 96.9% |
+| `shared/can/can_timing.c` | 105 | 103 | 98.1% |
 | `shared/can/can_selftest.c` | 145 | 134 | 92.4% |
 | `shared/can/mcp2515.c` | 20 | 20 | 100.0% |
 | `shared/link/link_bringup.c` | 61 | 50 | 82.0% |
 | `shared/link/link_can.c` | 94 | 92 | 97.9% |
 | `shared/link/link_crc.c` | 7 | 7 | 100.0% |
 | `shared/link/link_dev.c` | 74 | 71 | 96.0% |
-| `shared/link/link_host.c` | 104 | 94 | 90.4% |
+| `shared/link/link_host.c` | 113 | 102 | 90.3% |
 | `shared/bench/bench_state.c` | 61 | 57 | 93.4% |
 | `shared/bench/throttle.c` | 53 | 45 | 84.9% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
 | `shared/bench/log_writer.c` | 43 | 40 | 93.0% |
-| **total** | **5296** | **5020** | **94.8%** |
+| **total** | **5313** | **5037** | **94.8%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -387,10 +392,16 @@ than committing a fixup — a file that rewrites itself is one nobody reads the
 diff of. What the screens *look like* is a separate question, answered by golden
 images the same renderer produces on a laptop.
 
-What the link codec has to survive on that laptop, before it ever sees a wire:
-CRC against bit-flipped frames, resynchronisation after truncation and injected
-noise so that a corrupt frame is **never** accepted, the watchdog transition
-against a mock clock, and register round-trips at both ends of every range.
+What the link has to survive on that laptop, before it ever sees a wire: every
+bit position of the extended identifier checked against the datasheet, a reply
+wider than a frame reassembled from pieces that arrive back to front, a lost
+piece leaving a request unanswered rather than half-answered, a reply to an
+abandoned question refused, both watchdogs against a mock clock including two
+timeouts in a row, and register round-trips at both ends of every range.
+
+The CRC lives on for [OpenYGE](docs/OpenYGE.md), which needs the same
+polynomial with a different seed. The link itself no longer has one: CAN
+carries a CRC, an acknowledge slot and retransmission in silicon.
 
 ## What is still unsettled
 
@@ -453,7 +464,9 @@ recorded on it rather than inherited.
 1. **The foundation** — the tree, the ported floor with its tests green, the
    tools and CI, the link codec, the heartbeat, the coprocessor skeleton, the
    re-cut screens.
-2. **The link, on silicon** — when the module lands.
+2. ~~**The link, on silicon**~~ — **done.** The module landed, the bus came up
+   at 1 Mbit/s, and an echo test ran 2144 probes with zero errors at either
+   end. [Bringing it up](docs/Bringup.md) is the procedure and what it found.
 3. **Make the numbers real** — a KISS frame or bidirectional DShot, and the
    current sensor. The bench stops simulating. ESC telemetry is the shortest
    path through this and [OpenYGE](docs/OpenYGE.md) is the worked example, but

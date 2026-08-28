@@ -61,7 +61,9 @@ TEST_CASE(every_single_bit_flip_is_caught)
 }
 
 /* A frame that arrives one byte short must not verify as the frame it was.
- * Truncation is what a mid-frame turnaround on an auto-direction transceiver
+ * Truncation is what a byte stream that loses its tail produces -- OpenYGE
+ * frames arrive on a UART with no framing beneath them.  (It was also what a
+ * mid-frame turnaround on an auto-direction transceiver
  * actually looks like, so it is not a hypothetical. */
 TEST_CASE(truncation_changes_the_residue)
 {
