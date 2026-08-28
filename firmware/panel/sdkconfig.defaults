@@ -68,5 +68,20 @@ CONFIG_COMPILER_OPTIMIZATION_PERF=y
 # Scheduler ----------------------------------------------------------------
 CONFIG_FREERTOS_HZ=1000
 
-# Console over the built-in USB-Serial-JTAG bridge --------------------------
-CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+# Console on BOTH sockets ---------------------------------------------------
+#
+# The board has two USB-C sockets: one through a USB-UART bridge to UART0, and
+# one carrying the ESP32-S3's native USB.  Native USB -- USB-Serial-JTAG and
+# USB-OTG alike -- lives on GPIO19/20, which are dedicated analog pins that
+# cannot be moved through the GPIO matrix, and those are what the FSUSB42UMX
+# multiplexes against CAN.  So the moment BOARD_EXIO_USB_SEL selects CAN, the
+# native USB console goes away -- which is precisely the session that most
+# wants a console.
+#
+# The bridged socket does not share anything with CAN, so it is the primary.
+# The native one stays as the secondary: it costs nothing while USB is
+# selected, and it means an existing setup does not lose its console if the
+# UART socket turns out to be wired somewhere other than UART0's default pins.
+# Output goes to both; whichever is plugged in shows it.
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG=y

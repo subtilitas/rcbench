@@ -119,6 +119,23 @@ extern "C" {
 #define BOARD_EXIO_DISP             2  /* DISP + BL_EN, active high */
 #define BOARD_EXIO_LCD_RST          3  /* LCD_RST,    active low  */
 #define BOARD_EXIO_SD_CS            4  /* SDCS,       active low  */
+/*
+ * The USB/CAN multiplexer, and the reason the console is not on native USB.
+ *
+ * The board has two USB-C sockets: one behind a USB-UART bridge, and one
+ * carrying the ESP32-S3's own USB.  Native USB -- USB-Serial-JTAG and USB-OTG
+ * both -- is on GPIO19 and GPIO20, dedicated analog pins that cannot be routed
+ * elsewhere, and the FSUSB42UMX switches that pair against CAN.  So CAN and
+ * native USB are mutually exclusive whichever way round the mux is wired, and
+ * selecting CAN costs the native console exactly when a bring-up wants one.
+ *
+ * The bridged socket shares nothing with CAN, which is why sdkconfig.defaults
+ * makes UART0 the primary console and leaves USB-Serial-JTAG as a secondary.
+ *
+ * NOT YET CONFIRMED FROM THE SCHEMATIC: which GPIOs the bridged socket lands
+ * on.  UART0's defaults are assumed; if the board disagrees the secondary
+ * console still works whenever USB is selected, so the assumption fails soft.
+ */
 #define BOARD_EXIO_USB_SEL          5  /* 0 = USB, 1 = CAN        */
 #define BOARD_EXIO_LCD_VDD_EN       6
 

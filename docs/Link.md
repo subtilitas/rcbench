@@ -288,11 +288,21 @@ The mapping and its tests. **Not** the drivers: the ESP32-S3 TWAI side, the
 XL2515 over SPI, or the bit timing at either end. The firmware still speaks
 RS485, and both transports are in the tree while that is true.
 
-And one problem to solve before the first CAN bring-up: the panel's console is
-`CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG` with no secondary, while USB and CAN share
-the FSUSB42UMX. **Selecting CAN takes the console away**, which is exactly when
-the bring-up report is wanted. Moving the link off RS485 frees GPIO16 and
-GPIO15, and a UART console there is the obvious answer.
+### Keeping a console while CAN is selected
+
+Native USB is the wrong place for it, which is the opposite of the obvious
+answer. USB-Serial-JTAG and USB-OTG both live on **GPIO19 and GPIO20** —
+dedicated analog pins that cannot be routed anywhere else — and those are the
+pair the FSUSB42UMX switches against CAN. Selecting CAN therefore costs the
+native console whichever way round the multiplexer is wired, and that is
+exactly the session that wants one.
+
+The board's second USB-C socket sits behind a USB-UART bridge and shares
+nothing with CAN, so the console is **UART0 primary with USB-Serial-JTAG as a
+secondary**. Output goes to both; whichever socket is plugged in shows it. The
+secondary costs nothing while USB is selected and means the arrangement fails
+soft if the bridged socket turns out to be wired somewhere other than UART0's
+default pins.
 
 ## The two transports
 
