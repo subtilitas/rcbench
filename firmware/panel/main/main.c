@@ -342,13 +342,20 @@ static void can_selftest_run(uint32_t seconds)
     can_selftest_t st;
     can_selftest_init(&st, 50);
     const uint32_t until = now_ms() + seconds * 1000u;
+    uint32_t queue_full = 0;
+    bool said_unacked = false;
 
     while (now_ms() < until) {
         link_can_frame_t probe;
         if (can_selftest_probe(&st, now_ms(), &probe)) {
             const int64_t sent_us = esp_timer_get_time();
             if (!can_twai_send(&probe, 10)) {
-                ESP_LOGW(TAG, "the transmit queue would not take a frame");
+                /*
+                 * Counted, not printed.  A bus with nobody on it fills the
+                 * queue and then says this on every pass, and ninety copies
+                 * of a symptom buries the one line that names the cause.
+                 */
+                ++queue_full;
             }
             link_can_frame_t in;
             if (can_twai_recv(&in, 20)) {
@@ -357,6 +364,26 @@ static void can_selftest_run(uint32_t seconds)
             }
         }
         can_selftest_tick(&st, now_ms());
+
+        /*
+         * The definitive signal, said once and early.  A CAN transmitter needs
+         * one other node to pull the acknowledge slot dominant; without one,
+         * every frame fails and is retried, and the error counter climbs by
+         * eight each time.  Reaching 128 is error-passive, and it means the
+         * far end is not on the bus at all -- which is a different fault from
+         * a bus that garbles what crosses it, and worth saying before five
+         * seconds of silence have gone by.
+         */
+        uint32_t tec = 0;
+        can_twai_errors(&tec, NULL, NULL, NULL);
+        if (!said_unacked && tec >= 128u) {
+            said_unacked = true;
+            ESP_LOGE(TAG, "nothing is acknowledging: transmit errors reached "
+                          "%lu, so no other node is answering on this bus",
+                     (unsigned long)tec);
+            ESP_LOGE(TAG, "  coprocessor powered and its own console showing "
+                          "CAN up? CANH/CANL the right way round?");
+        }
         vTaskDelay(pdMS_TO_TICKS(2));
     }
 
@@ -365,10 +392,11 @@ static void can_selftest_run(uint32_t seconds)
     if (v != CAN_SELFTEST_OK && v != CAN_SELFTEST_RUNNING) {
         ESP_LOGW(TAG, "  check: %s", can_selftest_hint(v));
     }
-    ESP_LOGI(TAG, "  sent %lu echoed %lu corrupt %lu lost %lu stale %lu",
+    ESP_LOGI(TAG, "  sent %lu echoed %lu corrupt %lu lost %lu stale %lu"
+                  "  (transmit queue full %lu times)",
              (unsigned long)st.sent, (unsigned long)st.echoed,
              (unsigned long)st.corrupt, (unsigned long)st.timed_out,
-             (unsigned long)st.stale);
+             (unsigned long)st.stale, (unsigned long)queue_full);
     if (st.echoed > 0) {
         ESP_LOGI(TAG, "  round trip min %lu max %lu us",
                  (unsigned long)st.rtt_min_us, (unsigned long)st.rtt_max_us);

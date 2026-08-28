@@ -115,6 +115,62 @@ TEST_CASE(the_module_reaches_every_standard_rate_on_its_16_mhz_crystal)
     CHECK_EQ(t.sample_permille, 750);
 }
 
+/*
+ * The two ends must agree about where the bit is sampled.
+ *
+ * They are not free to decide that separately.  The coprocessor has exactly
+ * one way to make 1 Mbit/s from 16 MHz -- eight quanta, the fewest a bit may
+ * have -- so its sample point is fixed at 75% and the panel, which has slack,
+ * has to come to it.
+ *
+ * Both ends did solve independently once, at 87.5% and 75%, with the panel
+ * additionally taking a phase 2 of one quantum and therefore a jump width of
+ * one.  That is a node that can absorb an eighth of a bit of drift and no
+ * more, talking to one whose quantum is an eighth of a bit.
+ */
+TEST_CASE(both_ends_sample_the_bit_in_the_same_place)
+{
+    can_timing_limits_t copro, panel;
+    can_timing_limits_mcp2515(&copro, 16000000u);
+    can_timing_limits_twai(&panel);
+
+    can_timing_t a, b;
+    CHECK(can_timing_solve(&copro, 1000000u, CAN_SAMPLE_POINT_LINK, &a));
+    CHECK(can_timing_solve(&panel, 1000000u, CAN_SAMPLE_POINT_LINK, &b));
+
+    CHECK_EQ(a.sample_permille, CAN_SAMPLE_POINT_LINK);
+    CHECK_EQ(b.sample_permille, CAN_SAMPLE_POINT_LINK);
+    CHECK_EQ(a.bitrate_hz, b.bitrate_hz);
+
+    /* And neither end is left with a jump width of one, which is no headroom
+     * at all on a bus this fast. */
+    CHECK(a.sjw >= 2);
+    CHECK(b.sjw >= 2);
+    CHECK(a.tseg2 >= 2);
+    CHECK(b.tseg2 >= 2);
+}
+
+/* The panel must never be handed a phase 2 of one quantum, whatever it asks
+ * for: it bounds the jump width, and one is none. */
+TEST_CASE(the_panel_never_gets_a_jump_width_of_one)
+{
+    can_timing_limits_t panel;
+    can_timing_limits_twai(&panel);
+    for (uint32_t rate = 50000u; rate <= 1000000u; rate += 25000u) {
+        for (uint16_t tgt = 600; tgt <= 900; tgt += 25) {
+            can_timing_t t;
+            if (!can_timing_solve(&panel, rate, tgt, &t)) {
+                continue;
+            }
+            if (t.tseg2 < 2 || t.sjw < 2) {
+                T_FAIL("%u bit/s target %u gave tseg2 %u sjw %u",
+                       (unsigned)rate, tgt, t.tseg2, t.sjw);
+                return;
+            }
+        }
+    }
+}
+
 TEST_CASE(the_panels_twai_reaches_every_rate_the_coprocessor_can)
 {
     can_timing_limits_t lim;
@@ -388,6 +444,8 @@ int main(void)
     RUN(a_16_mhz_mcp2515_reaches_one_megabit);
     RUN(an_8_mhz_mcp2515_cannot_do_one_megabit_at_all);
     RUN(the_module_reaches_every_standard_rate_on_its_16_mhz_crystal);
+    RUN(both_ends_sample_the_bit_in_the_same_place);
+    RUN(the_panel_never_gets_a_jump_width_of_one);
     RUN(the_panels_twai_reaches_every_rate_the_coprocessor_can);
     RUN(a_rate_that_cannot_be_hit_exactly_is_refused);
     RUN(the_sample_point_lands_near_the_target_and_the_segments_are_legal);

@@ -40,7 +40,15 @@ void can_timing_limits_twai(can_timing_limits_t *out)
     out->div_step  = 2;
     out->tseg1_min = 1;
     out->tseg1_max = 16;
-    out->tseg2_min = 1;
+    /*
+     * Two, not the one the peripheral would accept.  Phase 2 bounds the
+     * resynchronisation jump width, so a phase 2 of one quantum forces SJW to
+     * one -- a node that can absorb a single quantum of drift and no more.
+     * The controller at the other end of this bus runs eight quanta to the
+     * bit, where one quantum is an eighth of it.  Nothing is gained by
+     * allowing it and a margin is lost.
+     */
+    out->tseg2_min = 2;
     out->tseg2_max = 8;
     out->sjw_max   = 4;
     out->tq_min    = 3;

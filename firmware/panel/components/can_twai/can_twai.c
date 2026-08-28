@@ -21,7 +21,7 @@ esp_err_t can_twai_start(uint32_t bitrate)
     can_timing_limits_t lim;
     can_timing_limits_twai(&lim);
     can_timing_t t;
-    if (!can_timing_solve(&lim, bitrate, CAN_SAMPLE_POINT_DEFAULT, &t)) {
+    if (!can_timing_solve(&lim, bitrate, CAN_SAMPLE_POINT_LINK, &t)) {
         ESP_LOGE(TAG, "%u bit/s cannot be made exactly from the APB clock",
                  (unsigned)bitrate);
         return ESP_ERR_INVALID_ARG;

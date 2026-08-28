@@ -90,7 +90,7 @@ bool xl2515_init(uint32_t bitrate)
     can_timing_limits_mcp2515(&lim, COPRO_CAN_CRYSTAL_HZ);
     can_timing_t t;
     uint8_t cnf[3];
-    if (!can_timing_solve(&lim, bitrate, CAN_SAMPLE_POINT_DEFAULT, &t)
+    if (!can_timing_solve(&lim, bitrate, CAN_SAMPLE_POINT_LINK, &t)
         || !mcp2515_encode_timing(&t, cnf)) {
         return false;   /* the crystal cannot make this rate; see can_timing */
     }

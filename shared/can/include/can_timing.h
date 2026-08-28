@@ -73,6 +73,23 @@ typedef struct {
 #define CAN_SAMPLE_POINT_DEFAULT 875
 
 /**
+ * The sample point *this link* uses, at both ends.
+ *
+ * Not 87.5%, and not a preference: the coprocessor's XL2515 has exactly one
+ * way to make 1 Mbit/s from a 16 MHz crystal -- the smallest divisor and the
+ * eight quanta that are the fewest a bit may have -- and eight quanta put the
+ * sample at 75%. Nothing closer to 87.5 exists on that end.
+ *
+ * The panel has slack and the coprocessor has none, so the panel matches the
+ * coprocessor rather than each optimising alone. They did optimise alone once,
+ * and landed on 87.5% and 75% with the panel additionally taking a phase 2 of
+ * one quantum -- a jump width of one, on a bus where the other node's quantum
+ * is an eighth of a bit. Two nodes disagreeing about where the bit is is not
+ * something to leave to whichever constant each end happened to pass.
+ */
+#define CAN_SAMPLE_POINT_LINK 750
+
+/**
  * Solve for the segmentation closest to @p target_permille that hits
  * @p bitrate exactly.
  *
