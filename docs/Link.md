@@ -282,11 +282,47 @@ an eight-byte payload duplicating that. End-to-end integrity over something
 larger than a page — a firmware image — belongs to that transfer rather than to
 the transport.
 
+### Bit timing, and the number that decides it
+
+Both controllers divide a clock into time quanta and split each bit into a
+fixed sync quantum plus two programmable segments. Getting that wrong does not
+fail cleanly: a node a fraction of a percent off works on a short bench cable
+with one other node and starts logging errors once the bus is longer, colder or
+busier. So the arithmetic is in `shared/can/can_timing.c` with tests, rather
+than in a table of register values copied from an application note.
+
+It insists the bit rate come out **exact** — no approximation — and that rule
+turns up the finding worth having before anything is wired:
+
+> **The XL2515's crystal decides whether this link can run at 1 Mbit/s at all.**
+> The part divides its crystal by two before the prescaler starts, and a bit
+> needs at least eight quanta. So an **8 MHz** module tops out at
+> **500 kbit/s** and no register value changes that; **16 MHz** reaches
+> 1 Mbit/s exactly, at the smallest divisor and the fewest quanta the part
+> allows.
+
+That is not a detail, because it halves the budget:
+
+| crystal | bit rate | payload | against the 12–30 kB/s that crosses |
+| --- | ---: | ---: | --- |
+| 16 MHz | 1 Mbit/s | 51.6 kB/s | comfortable |
+| 8 MHz | 500 kbit/s | **25.8 kB/s** | **short at the top of the range** |
+
+At 500 kbit/s a `bench_state` poll is still only 3.1% of the bus and a 60 kB
+image takes 2.4 s, so the steady state is fine either way. It is the peak —
+four channels batched at 100 Hz with an accelerometer burst behind it — that an
+8 MHz part would not carry. **Check the crystal before wiring.**
+
+`test_can_timing` pins one worked example against the datasheet by hand: 16 MHz
+at 500 kbit/s gives sixteen quanta, a sample point at 87.5%, and
+CNF1/2/3 = `0x40`, `0xB5`, `0x01`.
+
 ### What is not built yet
 
-The mapping and its tests. **Not** the drivers: the ESP32-S3 TWAI side, the
-XL2515 over SPI, or the bit timing at either end. The firmware still speaks
-RS485, and both transports are in the tree while that is true.
+The mapping, the bit timing and their tests. **Not** the drivers themselves:
+the TWAI peripheral setup, or the SPI transfers that carry the XL2515's
+registers. The firmware still speaks RS485, and both transports are in the tree
+while that is true.
 
 ### Keeping a console while CAN is selected
 

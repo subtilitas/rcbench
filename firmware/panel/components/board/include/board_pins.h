@@ -145,6 +145,24 @@ extern "C" {
     ((1u << BOARD_EXIO_TOUCH_RST) | (1u << BOARD_EXIO_DISP) |               \
      (1u << BOARD_EXIO_LCD_RST) | (1u << BOARD_EXIO_SD_CS))
 
+/* -------------------------------------------------------------------- CAN */
+/*
+ * TWAI, on the pins the multiplexer switches.
+ *
+ * These are the ESP32-S3's native USB pins.  That is not a coincidence and it
+ * is the whole reason USB and CAN are mutually exclusive here: GPIO19 and
+ * GPIO20 are dedicated analog pins that cannot be routed through the matrix,
+ * so a board wanting both has to switch them, which is what the FSUSB42UMX
+ * does under BOARD_EXIO_USB_SEL.
+ *
+ * INFERRED, NOT READ OFF THE SCHEMATIC.  The mux, the "0 = USB, 1 = CAN"
+ * comment and the pins' fixed function agree, but nobody has traced it.  Two
+ * minutes with the schematic settles it, and getting it wrong presents as a
+ * bus that never asserts -- the first line the bring-up report prints.
+ */
+#define PANEL_CAN_PIN_TX   GPIO_NUM_20
+#define PANEL_CAN_PIN_RX   GPIO_NUM_19
+
 /* ------------------------------------------------------------------- link */
 /*
  * The RS485 link to the coprocessor.  U6 is an SP3485EN -- a 3.3 V

@@ -20,6 +20,7 @@ rcbench/
     bench/                bench_state · throttle policy · the simulator
     safety/               the heartbeat: the panel generates, the copro judges
     servo/                the limit and sync searches, and servos to run them against
+    can/                  bit timing for both controllers, and the MCP2515 registers
     openyge/              the ESC protocol: framing, status, parameters
   firmware/
     panel/                ESP-IDF project

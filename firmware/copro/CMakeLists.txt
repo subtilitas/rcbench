@@ -33,6 +33,7 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/safety" safety)
 # one.  --gc-sections drops it from the image.
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/servo"  servo)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/openyge" openyge)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/can"     can)
 
 add_executable(rcbench-copro
     src/main.c
@@ -49,5 +50,6 @@ target_link_libraries(rcbench-copro
     rcbench_safety
     rcbench_servo
     rcbench_openyge
+    rcbench_can
 )
 pico_add_extra_outputs(rcbench-copro)
