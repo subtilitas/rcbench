@@ -41,4 +41,14 @@ bool xl2515_recv(link_can_frame_t *f);
  *  pointer may be NULL. */
 void xl2515_errors(uint8_t *tx_errors, uint8_t *rx_errors, uint8_t *flags);
 
+/**
+ * True if a frame arrived with both receive buffers full since the last call.
+ *
+ * The flags are sticky and the MCU has to clear them, which makes this the
+ * one record of a frame lost with nothing wrong on the wire: it arrived, it
+ * was correct, and there was nowhere to put it. Reading clears them, so the
+ * answer is "since you last asked" rather than "ever".
+ */
+bool xl2515_take_overflow(void);
+
 #endif /* RCBENCH_XL2515_H */

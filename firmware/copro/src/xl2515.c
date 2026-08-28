@@ -174,6 +174,18 @@ bool xl2515_recv(link_can_frame_t *f)
     return true;
 }
 
+bool xl2515_take_overflow(void)
+{
+    const uint8_t eflg = read_reg(MCP2515_EFLG);
+    if ((eflg & MCP2515_EFLG_OVR) == 0u) {
+        return false;
+    }
+    /* Sticky until cleared, so clear them: the next report should say what
+     * happened since this one, not what has ever happened. */
+    bit_modify(MCP2515_EFLG, MCP2515_EFLG_OVR, 0);
+    return true;
+}
+
 void xl2515_errors(uint8_t *tx_errors, uint8_t *rx_errors, uint8_t *flags)
 {
     if (tx_errors != NULL) {

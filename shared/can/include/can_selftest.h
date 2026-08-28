@@ -55,8 +55,22 @@ typedef enum {
     CAN_SELFTEST_SILENT,
     /** Frames come back with the wrong contents. Bit timing or termination. */
     CAN_SELFTEST_CORRUPT,
-    /** Frames cross, and not all of them. */
+    /** Frames cross, and not all of them, and the bus reported errors while
+     *  they went missing. Electrical: timing, termination, length. */
     CAN_SELFTEST_LOSSY,
+    /**
+     * Frames went missing with **no bus error at all**.
+     *
+     * A different fault entirely, and one that is easy to misread as the one
+     * above. If a frame had been corrupted on the wire, some controller would
+     * have seen a bit, stuff, form or CRC error and counted it. None did. So
+     * the frame arrived intact and something stopped reading in time -- a
+     * receive buffer that overran while its owner was busy elsewhere.
+     *
+     * Sending somebody to check terminators for this wastes an afternoon on
+     * hardware that is working.
+     */
+    CAN_SELFTEST_DROPPED,
 } can_selftest_verdict_t;
 
 typedef struct {
@@ -74,6 +88,19 @@ typedef struct {
 
     uint32_t rtt_min_us;
     uint32_t rtt_max_us;
+
+    /**
+     * Bus errors the local controller counted, filled in by the caller before
+     * asking for a verdict.
+     *
+     * The transport knows things this module cannot infer, and this is the
+     * one that separates a wire fault from a software one. Left at zero it
+     * simply reads as "no errors reported", which is the safe default only
+     * because a caller that has no counter to offer has no evidence either
+     * way -- and the verdict then says DROPPED, which is the diagnosis that
+     * does not send anybody to the wrong end of the problem.
+     */
+    uint32_t bus_errors;
 } can_selftest_t;
 
 void can_selftest_init(can_selftest_t *st, uint32_t timeout_ms);
