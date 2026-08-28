@@ -163,6 +163,10 @@ extern "C" {
 #define PANEL_CAN_PIN_TX   GPIO_NUM_20
 #define PANEL_CAN_PIN_RX   GPIO_NUM_19
 
+/* Both ends must agree.  1 Mbit/s is what the coprocessor's 16 MHz crystal
+ * reaches exactly; see COPRO_CAN_BITRATE and docs/Link.md. */
+#define PANEL_CAN_BITRATE  1000000u
+
 /* ------------------------------------------------------------------- link */
 /*
  * The RS485 link to the coprocessor.  U6 is an SP3485EN -- a 3.3 V

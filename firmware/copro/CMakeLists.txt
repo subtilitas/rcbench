@@ -38,11 +38,13 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/can"     can)
 add_executable(rcbench-copro
     src/main.c
     src/link_uart.c
+    src/xl2515.c
 )
 target_include_directories(rcbench-copro PRIVATE include src)
 target_link_libraries(rcbench-copro
     pico_stdlib
     hardware_pio
+    hardware_spi
     hardware_uart
     hardware_gpio
     rcbench_link

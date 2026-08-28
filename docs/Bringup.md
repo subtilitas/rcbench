@@ -9,14 +9,82 @@ and two root causes, worked out from a description rather than from the board.
 The link has more ways to be half-broken than the display does, and most of
 them present as "it does not work". So the firmware now says which one.
 
-> **This describes the RS485 transport, which is being superseded.** The link
-> is moving to CAN — see [the link](Link.md) — and three of the six faults
-> below are properties of the direction circuit and stop existing with it: the
-> return path that will not release, the turnaround that is too short, and
-> corruption from running under the transceiver's baud floor. The diagnosis
-> module itself is transport-independent and stays; the wiring checks and the
-> direction-circuit measurement below apply only while RS485 is what is
-> fitted.
+## Start here: does anything cross the bus?
+
+Before the page protocol means anything, one question has to be answered on
+its own: **do frames cross this bus intact?** Answering it together with "does
+the link work" is how a bring-up turns into an afternoon — a bit timing that is
+slightly wrong, a missing terminator, a transceiver in the wrong mode and a
+dispatcher bug all present as "the panel shows no numbers".
+
+So there is an echo test that answers only that. The panel sends a frame, the
+coprocessor sends it straight back, the panel checks it came back byte for
+byte. No page map, no registers, no state machine. **If this passes and the
+link still does not work, the fault is above the wire** — which is worth
+knowing before anybody unplugs anything.
+
+### Running it
+
+The coprocessor needs nothing: it tries CAN at boot, says whether the
+controller answered, and echoes probes from then on. That costs one register
+read per loop and answers only a page the map does not use, so it is left in
+permanently — the bring-up tool that is already flashed is the one that gets
+used.
+
+The panel side is opt-in, because starting CAN takes native USB away:
+
+```bash
+cd firmware/panel
+idf.py -DRCBENCH_CAN_SELFTEST=1 build flash
+```
+
+**Watch the UART socket, not the USB one.** GPIO19 and GPIO20 carry both the
+native USB and the CAN transceiver, and the multiplexer has to choose — see
+[the link](Link.md). The console is on UART0 with USB-Serial-JTAG as a
+secondary precisely so this session has somewhere to talk.
+
+It runs for five seconds at boot and prints:
+
+    can: 1000000 bit/s: brp 2, tseg1 5, tseg2 2, sjw 2, sample point 75.0%
+    panel: CAN self-test: every probe came back intact
+      sent 96 echoed 96 corrupt 0 lost 0 stale 0
+      round trip min 210 max 480 us
+      controller tx_err 0 rx_err 0 bus_err 0
+
+| What it says | What it means | Where to look |
+| --- | --- | --- |
+| `no probe came back` | Nothing crosses at all | CANH/CANL swapped? Far end powered? Both at the same bit rate? Terminators at **both** ends? |
+| `probes come back altered` | Frames cross and arrive wrong | Sample point or bit timing; a missing terminator reflects |
+| `probes cross, and not all of them` | Marginal | Timing, one terminator, or a bus longer than the rate |
+| `every probe came back intact` | The wire is fine | Anything still wrong is above it |
+
+Corruption outranks loss in that table, and the ordering is deliberate: a
+marginal bus does both, loss is the louder number, and it points at cable
+length while the corruption says the bit timing is wrong.
+
+The payloads are not arbitrary either. CAN stuffs a complementary bit after
+five of the same polarity, so the patterns that stress a marginal bus are long
+runs of one level — the probes cycle through all-dominant, all-recessive and
+both alternating patterns, and a test sending only counting integers would pass
+on a bus that drops real traffic.
+
+If the coprocessor prints `CAN DID NOT ANSWER` at boot, the fault is on **SPI
+and not on CAN**: the datasheet guarantees the controller wakes in
+configuration mode, so a CANSTAT that says otherwise means nothing is listening
+on the SPI bus the driver thinks it has. That is worth telling apart before a
+scope comes out.
+
+---
+
+## The RS485 transport, superseded
+
+> The link is moving to CAN — see [the link](Link.md) — and three of the six
+> faults below are properties of the direction circuit and stop existing with
+> it: the return path that will not release, the turnaround that is too short,
+> and corruption from running under the transceiver's baud floor. The
+> diagnosis module itself is transport-independent and stays; the wiring
+> checks and the direction-circuit measurement below apply only while RS485 is
+> what is fitted.
 
 ## Before power
 

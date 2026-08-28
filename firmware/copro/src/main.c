@@ -16,6 +16,7 @@
 #include "pico/stdlib.h"
 
 #include "copro_pins.h"
+#include "can_selftest.h"
 #include "heartbeat.h"
 #include "link_dev.h"
 #include "link_frame.h"
@@ -23,6 +24,7 @@
 #include "link_uart.h"
 #include "link_wire.h"
 #include "telemetry_sim.h"
+#include "xl2515.h"
 
 /* ------------------------------------------------------------- the pages */
 
@@ -158,6 +160,45 @@ static bool heartbeat_poll(uint32_t now)
     return heartbeat_mon_alive(&s_beat, now);
 }
 
+/* ------------------------------------------------------------ the CAN bus */
+
+/*
+ * Tried at boot, and not fatal if it fails.
+ *
+ * The controller either answers on SPI or it does not, and the datasheet
+ * guarantees which mode it wakes in -- so this distinguishes "no module
+ * fitted" and "SPI miswired" from anything to do with the CAN bus itself,
+ * before a scope comes out.
+ *
+ * The echo responder then runs unconditionally.  It costs one register read
+ * per loop, answers only frames addressed to a page the map does not use, and
+ * runs at the lowest priority on the bus -- so it can be left in and cannot
+ * get in the way of anything.  Leaving it in is the point: the bring-up tool
+ * that is already flashed is the one that gets used.
+ */
+static bool s_can_up;
+
+static void can_start(void)
+{
+    s_can_up = xl2515_init(COPRO_CAN_BITRATE);
+    printf("rcbench-copro: CAN %s at %u bit/s\n",
+           s_can_up ? "up" : "DID NOT ANSWER (module fitted? SPI wiring?)",
+           (unsigned)COPRO_CAN_BITRATE);
+}
+
+static void can_service(void)
+{
+    if (!s_can_up) {
+        return;
+    }
+    link_can_frame_t in, out;
+    while (xl2515_recv(&in)) {
+        if (can_selftest_echo(&in, &out)) {
+            (void)xl2515_send(&out);
+        }
+    }
+}
+
 /* ---------------------------------------------------------------- the loop */
 
 /*
@@ -249,6 +290,7 @@ int main(void)
     }
 
     heartbeat_init();
+    can_start();
     telemetry_sim_init(&s_sim, NULL);
     memset(&s_bench, 0, sizeof(s_bench));
 
@@ -301,6 +343,8 @@ int main(void)
         if (!heartbeat_poll(now) && was_beating) {
             outputs_off();   /* the edge, once */
         }
+
+        can_service();
 
         if (link_dev_tick(&s_dev, now)) {
             outputs_off();   /* the edge, once */
