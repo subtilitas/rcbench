@@ -222,7 +222,14 @@ can_selftest_verdict_t can_selftest_verdict(const can_selftest_t *st)
      * the checks run from the most fundamental fault outwards, and the first
      * one that fires is the one worth reporting.
      */
-    if (st->echoed == 0u && st->corrupt == 0u) {
+    /*
+     * Silent means nothing came back at all -- including nothing that came
+     * back late.  A bus whose every echo arrives just past the timeout has
+     * echoed == 0 and corrupt == 0, and calling that silent would send
+     * somebody to check whether the far end is powered while it answers every
+     * single probe.  The stale count is the evidence that frames cross.
+     */
+    if (st->echoed == 0u && st->corrupt == 0u && st->stale == 0u) {
         return CAN_SELFTEST_SILENT;
     }
     if (st->corrupt > 0u) {

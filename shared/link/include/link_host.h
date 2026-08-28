@@ -36,6 +36,7 @@ typedef struct {
     uint8_t  offset;
     uint8_t  count;
 
+    uint32_t sent_ms;      /**< when the outstanding request went out */
     uint32_t last_reply_ms;
     bool     escalated;
 
@@ -59,13 +60,14 @@ typedef struct {
 void link_host_init(link_host_t *h, uint32_t now_ms);
 
 /**
- * Build a request.  Returns its length on the wire, or 0 if it would not fit
+ * Build a request.  Returns false if one is already outstanding if it would not fit
  * or a request is already outstanding -- the caller does not get to have two.
  */
 bool link_host_read(link_host_t *h, uint8_t page, uint8_t offset,
-                    uint8_t count, link_msg_t *out);
+                    uint8_t count, uint32_t now_ms, link_msg_t *out);
 bool link_host_write(link_host_t *h, uint8_t page, uint8_t offset,
-                     uint8_t count, const uint16_t *regs, link_msg_t *out);
+                     uint8_t count, const uint16_t *regs, uint32_t now_ms,
+                     link_msg_t *out);
 
 /**
  * Offer a decoded frame as the answer.  Returns true only if it answers the
@@ -93,7 +95,30 @@ bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
                       link_msg_t *whole);
 
 /** True on the edge where the host escalates, so it is reported once. */
+/**
+ * Time out the outstanding request, and report the link down once.
+ *
+ * Those are two clocks and used to be one. A request is abandoned when *it*
+ * has been outstanding too long, which happens every time one is; the link is
+ * reported down after a second with nothing answered, which happens once.
+ * Conflating them meant only the first timeout ever released a request, so the
+ * second unanswered one stayed pending for ever -- and a caller whose only
+ * loop exit is this function never left it.
+ *
+ * True if it abandoned a request or escalated. A caller waiting for a reply
+ * should treat that as "stop waiting".
+ */
 bool link_host_tick(link_host_t *h, uint32_t now_ms);
+
+/**
+ * Give up on the outstanding request now.
+ *
+ * For a caller that has just failed to *transmit* it: there is nothing on the
+ * wire to wait for, and leaving it outstanding would refuse every later
+ * request until its timeout -- or for ever, if the caller returns before it
+ * ever ticks again.
+ */
+void link_host_abandon(link_host_t *h);
 
 #ifdef __cplusplus
 }

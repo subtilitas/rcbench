@@ -63,7 +63,7 @@ foreach(suite gfx touch_map nav widgets bench motor logview logwriter settings l
     add_executable(test_${suite} test_${suite}.c ${FAKES})
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/fakes")
+        "${CMAKE_CURRENT_SOURCE_DIR}")
     add_test(NAME ${suite} COMMAND test_${suite})
     # The CSV fixtures are the ones logwiju is held to; the suite finds them
     # relative to its own source directory, not the build tree.

@@ -202,14 +202,14 @@ TEST_CASE(a_reply_resets_the_host_and_its_escalation)
 {
     link_host_init(&host, 0);
     link_msg_t req, got;
-    CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, &req));
+    CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, 0, &req));
     CHECK(link_host_tick(&host, LINK_HOST_TIMEOUT_MS));
     CHECK(host.escalated);
     CHECK_EQ(host.timeouts, 1u);
 
     /* The abandoned request must not block the next one -- a host that stopped
      * asking would never notice the link recovering. */
-    CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, &req));
+    CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, 0, &req));
 
     link_msg_t reply = { 0 };
     reply.op = LINK_OP_DATA; reply.page = LINK_PAGE_CONTROL;
@@ -218,12 +218,77 @@ TEST_CASE(a_reply_resets_the_host_and_its_escalation)
     CHECK(!host.escalated);
 }
 
+/*
+ * Two unanswered requests in a row.
+ *
+ * Every case here escalated once and then fed a reply, so nothing ever took a
+ * second timeout -- and a second timeout was where the poller died. The
+ * abandonment used to be gated on the escalation latch, which is set once and
+ * cleared only by a reply, so the second request stayed pending for ever: the
+ * host could never ask again, and the panel's poll loop -- whose only exit is
+ * link_host_tick returning true -- spun with no render, no touch and no
+ * heartbeat until somebody pulled the power.
+ *
+ * A request times out from when it was sent; the link is reported down when
+ * nothing has answered for a second. Two clocks, and they were one.
+ */
+TEST_CASE(every_timeout_releases_its_request_not_only_the_first)
+{
+    link_host_init(&host, 0);
+    link_msg_t req, got;
+    (void)got;
+
+    for (uint32_t n = 1; n <= 5; ++n) {
+        const uint32_t sent = (n - 1u) * LINK_HOST_TIMEOUT_MS;
+        if (!link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, sent, &req)) {
+            T_FAIL("request %u was refused: the previous one never cleared",
+                   n);
+            return;
+        }
+        if (!link_host_tick(&host, sent + LINK_HOST_TIMEOUT_MS)) {
+            T_FAIL("request %u never timed out", n);
+            return;
+        }
+        if (host.pending) {
+            T_FAIL("request %u was still outstanding after its timeout", n);
+            return;
+        }
+        CHECK_EQ(host.timeouts, n);
+    }
+
+    /* Escalation is still a one-shot: it is the report that the link is down,
+     * not permission to stop timing out. */
+    CHECK(host.escalated);
+}
+
+/* And a request that never reached the wire is given up on directly, because
+ * there is nothing coming and waiting out its timeout would refuse every
+ * later request in the meantime. */
+TEST_CASE(a_request_that_was_never_sent_can_be_abandoned)
+{
+    link_host_init(&host, 0);
+    link_msg_t req;
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, 0, &req));
+    CHECK(host.pending);
+
+    link_host_abandon(&host);
+    CHECK(!host.pending);
+    CHECK_EQ(host.timeouts, 1u);
+
+    /* And the next one goes out immediately rather than waiting a second. */
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, 4, 1, &req));
+
+    /* Abandoning nothing is not an event. */
+    link_host_abandon(&host);
+    link_host_abandon(NULL);
+}
+
 TEST_CASE(only_one_request_is_outstanding_at_a_time)
 {
     link_host_init(&host, 0);
     link_msg_t req, got;
-    CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, &req));
-    CHECK_EQ(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, &req), false);
+    CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, 0, &req));
+    CHECK_EQ(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, 0, &req), false);
 }
 
 /*
@@ -235,9 +300,9 @@ TEST_CASE(a_stale_reply_cannot_answer_the_current_question)
 {
     link_host_init(&host, 0);
     link_msg_t req, got;
-    link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, &req);
+    link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, 0, &req);
     link_host_tick(&host, LINK_HOST_TIMEOUT_MS);          /* gave up */
-    link_host_read(&host, LINK_PAGE_BENCH, 4, 2, &req);
+    link_host_read(&host, LINK_PAGE_BENCH, 4, 2, 0, &req);
 
     /*
      * Each of these differs from the outstanding request in exactly one
@@ -294,7 +359,7 @@ TEST_CASE(a_reply_of_the_wrong_shape_is_not_an_answer)
     link_msg_t req, got;
     /* An ACK does not answer a READ, and a DATA of the wrong width does not
      * answer the window that was asked for. */
-    link_host_read(&host, LINK_PAGE_CONTROL, 0, 2, &req);
+    link_host_read(&host, LINK_PAGE_CONTROL, 0, 2, 0, &req);
     link_msg_t ack = { 0 };
     ack.op = LINK_OP_ACK; ack.page = LINK_PAGE_CONTROL;
     ack.offset = 0; ack.count = 2;
@@ -318,7 +383,7 @@ TEST_CASE(a_nack_answers_the_request_it_refuses)
     link_host_init(&host, 0);
     link_msg_t req, got;
     const uint16_t v = 1;
-    link_host_write(&host, LINK_PAGE_IDENTITY, 0, 1, &v, &req);
+    link_host_write(&host, LINK_PAGE_IDENTITY, 0, 1, &v, 0, &req);
 
     link_msg_t nack = { 0 };
     nack.op = LINK_OP_NACK; nack.page = LINK_PAGE_IDENTITY;
@@ -358,7 +423,7 @@ TEST_CASE(the_coprocessor_gives_up_long_before_the_panel_does)
     fresh_dev(0);
     link_host_init(&host, 0);
     link_msg_t req, got;
-        link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, &req);
+        link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, 0, &req);
 
     uint32_t dev_fired = 0, host_fired = 0;
     for (uint32_t t = 1; t <= 2000; ++t) {
@@ -385,6 +450,8 @@ int main(void)
     RUN(the_host_escalates_after_one_second);
     RUN(the_host_is_the_more_patient_of_the_two);
     RUN(a_reply_resets_the_host_and_its_escalation);
+    RUN(every_timeout_releases_its_request_not_only_the_first);
+    RUN(a_request_that_was_never_sent_can_be_abandoned);
     RUN(only_one_request_is_outstanding_at_a_time);
     RUN(a_stale_reply_cannot_answer_the_current_question);
     RUN(a_reply_of_the_wrong_shape_is_not_an_answer);

@@ -98,8 +98,15 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
             if (in[i] != LINK_CLEAR_MAGIC) {
                 return LINK_NACK_BAD_VALUE;
             }
-            link_dev_clear_failsafe(&s_dev, (uint32_t)to_ms_since_boot(
-                                                get_absolute_time()));
+            /*
+             * The clock this pass is using, which the dispatcher has already
+             * recorded -- not a fresh read.  A fresh one would be later than
+             * the `now` that link_dev_tick is given a few lines further on,
+             * and the wrap-safe comparison there would read a timestamp in the
+             * future as forty-nine days of silence.  Clearing the failsafe
+             * would have re-armed it on the spot.
+             */
+            link_dev_clear_failsafe(&s_dev, s_dev.last_request_ms);
             continue;
         }
         /* Refusing to arm while in failsafe is the coprocessor's own decision
@@ -134,12 +141,15 @@ static const link_page_t k_pages[] = {
  * of them.  heartbeat_mon_t knows what period to expect and rejects what
  * cannot be a 39 Hz render loop.
  *
- * The pin is sampled in the main loop rather than through an interrupt.  The
- * loop turns over every millisecond at worst -- the UART read times out at
- * 1000 us -- which is four times faster than HEARTBEAT_MIN_GAP_MS, so an edge
- * cannot hide between two samples at any rate the monitor would accept.  An
- * ISR would notice edges faster than the floor, which is not useful: those are
- * the ones being rejected anyway.
+ * The pin is sampled in the main loop rather than through an interrupt.  That
+ * used to be justified by a blocking UART read bounding the loop at a
+ * millisecond; there is no blocking call left, so the loop now runs as fast as
+ * the processor allows and the bound is far tighter than it was.  What has to
+ * stay true is that a sample cannot miss an edge the monitor would have
+ * accepted -- the floor is HEARTBEAT_MIN_GAP_MS, and the slowest thing in this
+ * loop is a printf every three seconds, which is the one place worth watching
+ * if that ever stops holding.  An ISR would notice edges faster than the
+ * floor, which is not useful: those are the ones being rejected anyway.
  */
 static bool s_beat_level;
 
@@ -193,7 +203,17 @@ static void can_start(void)
            (unsigned)COPRO_CAN_BITRATE);
 }
 
-static void can_service(void)
+/*
+ * One clock for the whole pass, handed in.
+ *
+ * This read its own clock and the loop read another, so the dispatcher could
+ * stamp last_request_ms a millisecond *later* than the `now` that link_dev_tick
+ * was then given.  The comparison is wrap-safe unsigned subtraction, so a
+ * timestamp one millisecond in the future reads as 4,294,967,295 ms of silence
+ * -- past every timeout there is.  The failsafe fired on the very requests
+ * that proved the link was alive.
+ */
+static void can_service(uint32_t now)
 {
     if (!s_can_up) {
         return;
@@ -236,8 +256,7 @@ static void can_service(void)
             continue;
         }
         ++s_frames;
-        if (!link_dev_dispatch(&s_dev, &req, &reply,
-                               (uint32_t)to_ms_since_boot(get_absolute_time()))) {
+        if (!link_dev_dispatch(&s_dev, &req, &reply, now)) {
             continue;
         }
         link_can_frame_t frames[LINK_CAN_MAX_FRAMES];
@@ -383,12 +402,22 @@ int main(void)
     uint32_t last_sample = (uint32_t)to_ms_since_boot(get_absolute_time());
 
     for (;;) {
+        /*
+         * ONE CLOCK PER PASS, used by everything below.
+         *
+         * Not a style preference.  Every timeout here is a wrap-safe unsigned
+         * subtraction, so a timestamp even a millisecond ahead of the `now` it
+         * is later compared against reads as 4,294,967,295 ms of silence --
+         * past every timeout there is.  Reading the clock twice in one pass is
+         * enough to make the failsafe fire on the very request that proved the
+         * link was alive.
+         */
         const uint32_t now = (uint32_t)to_ms_since_boot(get_absolute_time());
 
         /* Polled rather than interrupt-driven: the loop turns over far faster
          * than a frame takes to arrive, and the failsafe has to fire on time
          * whether or not anything is arriving. */
-        can_service();
+        can_service(now);
 
         /* 50 Hz, which is faster than the panel polls, so a poll always finds
          * a fresh sample rather than the one it was already shown. */
@@ -412,7 +441,7 @@ int main(void)
         can_report(now);
         /* Again straight after the report: printing to a USB host can take
          * milliseconds, and the part holds two frames. */
-        can_service();
+        can_service(now);
 
         if (link_dev_tick(&s_dev, now)) {
             outputs_off();   /* the edge, once */

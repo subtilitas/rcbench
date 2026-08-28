@@ -1,5 +1,13 @@
 /*
- * CRC-16/CCITT-FALSE for the panel-to-coprocessor link.
+ * CRC-16/CCITT-FALSE.
+ *
+ * Nothing in the panel link uses this any more -- CAN carries a CRC, an
+ * acknowledge slot and retransmission in silicon.  It stays because OpenYGE
+ * needs the same polynomial with a different seed, and because the two check
+ * values below are what tell those variants apart.  The reasoning it was
+ * written with follows, and still applies to any byte stream that needs one.
+ *
+ * Originally: CRC-16/CCITT-FALSE for the panel-to-coprocessor link.
  *
  * Why sixteen bits and not IOMCU's eight: this link carries coprocessor
  * firmware images as well as register traffic, and an eight-bit residue over a

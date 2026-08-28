@@ -46,6 +46,10 @@ static const char *TAG = "rcbench";
 static link_host_t    s_host;
 static link_bringup_t s_bring;
 
+#ifdef RCBENCH_CAN_SELFTEST
+static void can_selftest_run(uint32_t seconds);
+#endif
+
 /* Defined below; bring_up() asks who is there before the loop starts. */
 static bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
                       link_msg_t *reply);
@@ -157,6 +161,18 @@ static bool bring_up(void)
     splash_screen_set(SPLASH_STEP_LINK,
                       link_open ? SPLASH_OK : SPLASH_WARN,
                       link_open ? "CAN 1 Mbit/s" : "not opened");
+#ifdef RCBENCH_CAN_SELFTEST
+    /*
+     * Here, and not before: the bus has to be up for an echo test to mean
+     * anything.  Run earlier it reported "nothing came back" whatever the
+     * hardware was doing, which is the most confident way to be useless.
+     * Before the identity poll, so a broken bus is diagnosed rather than
+     * showing up as an identity that never answers.
+     */
+    if (link_open) {
+        can_selftest_run(5);
+    }
+#endif
     pump();
 
     /*
@@ -275,17 +291,21 @@ static bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
                       link_msg_t *reply)
 {
     link_msg_t req;
-    if (!link_host_read(host, page, 0, count, &req)) {
+    if (!link_host_read(host, page, 0, count, now_ms(), &req)) {
         return false;
     }
     link_can_frame_t out[LINK_CAN_MAX_FRAMES];
     const size_t n = link_can_encode(&req, out, LINK_CAN_MAX_FRAMES);
     if (n == 0) {
+        link_host_abandon(host);
         return false;
     }
     const uint32_t sent_us = (uint32_t)esp_timer_get_time();
     for (size_t i = 0; i < n; ++i) {
         if (!can_twai_send(&out[i], 5)) {
+            /* Nothing reached the wire, so there is nothing to wait for.
+             * Leaving it outstanding would refuse every later request. */
+            link_host_abandon(host);
             return false;
         }
     }
@@ -459,9 +479,16 @@ static void can_selftest_run(uint32_t seconds)
                      remote.overflows);
         }
         if (have_before) {
+            /*
+             * Everything that came back, not only what was accepted: a late
+             * or altered echo still crossed the return path, and counting
+             * only the good ones would blame the return path for frames that
+             * arrived perfectly well.
+             */
+            const uint32_t received = st.echoed + st.stale + st.corrupt;
             const uint16_t lost = can_selftest_return_loss(before.echoes,
                                                            remote.echoes,
-                                                           st.echoed);
+                                                           received);
             if (lost > 0u) {
                 ESP_LOGW(TAG, "  it answered %u more than we heard: the "
                               "return path is losing frames", lost);
@@ -492,16 +519,18 @@ static void link_report(void)
     s_bring.mismatches    = s_host.mismatches;
     s_bring.nacks         = s_host.nacks;
     /*
-     * The controller counts what the byte transport used to have to count for
-     * itself.  A CRC error there was a frame this end had assembled and found
-     * wrong; here it is a frame the silicon rejected before the software saw
-     * it, and a resync has no equivalent at all -- CAN finds its own frame
-     * boundaries.
+     * Deliberately left at zero rather than filled with something close.
+     *
+     * link_bringup reads rx_crc_errors as "frames this end received and found
+     * corrupt", and TWAI has no counter for that: bus_error_count is
+     * cumulative for the life of the driver and counts transmit-side
+     * acknowledge errors too, so a single missing ACK at power-on would pin
+     * the diagnosis at "frames arrive corrupt" for the rest of the session and
+     * outrank every other verdict.  The controller's real counters are printed
+     * below, where they are labelled as what they are.
      */
-    uint32_t tx_err = 0, rx_err = 0, bus_err = 0;
-    can_twai_errors(&tx_err, &rx_err, &bus_err, NULL);
-    s_bring.rx_crc_errors = bus_err;
-    s_bring.rx_resyncs    = rx_err;
+    s_bring.rx_crc_errors = 0;
+    s_bring.rx_resyncs    = 0;
 
     const link_diag_t d = link_bringup_diagnose(&s_bring);
     ESP_LOGI(TAG, "LINK %s", link_diag_text(d));
@@ -563,9 +592,6 @@ void app_main(void)
 {
     ESP_ERROR_CHECK(board_init());
     heartbeat_init();
-#ifdef RCBENCH_CAN_SELFTEST
-    can_selftest_run(5);
-#endif
 
     ui_theme_set(UI_THEME_DARK);
     ui_router_init();

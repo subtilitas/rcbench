@@ -169,7 +169,11 @@ bool can_selftest_status_parse(const link_can_frame_t *in,
  * Frames the far end answered that this end never heard.
  *
  * @p before and @p after are the far end's echo counter sampled either side
- * of the measurement, and @p heard is what this end received in between.
+ * of the measurement, and @p heard is everything this end *received* in
+ * between -- not only what it accepted. An echo that arrived late or altered
+ * still crossed the return path, and counting only the good ones would report
+ * a return-path fault for frames that got here perfectly well and were merely
+ * too late to be wanted.
  *
  * **It is the difference that means anything.** The far end's counter runs
  * from its own boot, not from the start of this test, and a coprocessor left
