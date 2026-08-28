@@ -2,7 +2,7 @@
 # compile: the panel polls with it, the coprocessor answers with it, and the
 # host suite feeds it truncated and bit-flipped frames to prove it never
 # accepts one.
-set(SRCS link_crc.c link_frame.c link_dev.c link_host.c)
+set(SRCS link_crc.c link_frame.c link_dev.c link_host.c link_bringup.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include)

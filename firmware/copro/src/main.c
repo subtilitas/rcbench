@@ -169,6 +169,15 @@ static bool heartbeat_poll(uint32_t now)
 static telemetry_sim_t s_sim;
 static bench_state_t   s_bench;
 
+/*
+ * The receive decoder lives here rather than in main() so that sample() can
+ * publish its counters.  The STATUS page has carried registers for frames,
+ * CRC errors and resyncs since the page map was written and nothing ever
+ * filled them -- three registers that read as zero and look like data, which
+ * is worse than three registers that are not there.
+ */
+static link_decoder_t s_rx;
+
 static void sample(float dt_s)
 {
     const float throttle = (s_state.control[LINK_CT_ARM] != 0)
@@ -195,6 +204,18 @@ static void sample(float dt_s)
     const uint32_t up = (uint32_t)to_ms_since_boot(get_absolute_time());
     s_state.status[LINK_ST_UPTIME_MS_LO] = (uint16_t)(up & 0xFFFFu);
     s_state.status[LINK_ST_UPTIME_MS_HI] = (uint16_t)(up >> 16);
+
+    /* What this end has seen of the wire.  The panel compares these against
+     * its own, and the comparison is what tells a dead coprocessor apart from
+     * a return path that never releases. */
+    s_state.status[LINK_ST_FRAMES_LO]  = (uint16_t)(s_rx.frames & 0xFFFFu);
+    s_state.status[LINK_ST_FRAMES_HI]  = (uint16_t)(s_rx.frames >> 16);
+    /* Saturating rather than wrapping: a counter that rolls over to nothing
+     * reads as a link that healed itself. */
+    s_state.status[LINK_ST_CRC_ERRORS] =
+        (uint16_t)(s_rx.crc_errors > 0xFFFFu ? 0xFFFFu : s_rx.crc_errors);
+    s_state.status[LINK_ST_RESYNCS]    =
+        (uint16_t)(s_rx.resyncs > 0xFFFFu ? 0xFFFFu : s_rx.resyncs);
 }
 
 static void outputs_off(void)
@@ -231,8 +252,7 @@ int main(void)
     telemetry_sim_init(&s_sim, NULL);
     memset(&s_bench, 0, sizeof(s_bench));
 
-    link_decoder_t rx;
-    link_decoder_reset(&rx);
+    link_decoder_reset(&s_rx);
     link_msg_t req;
     uint32_t last_sample = (uint32_t)to_ms_since_boot(get_absolute_time());
 
@@ -243,7 +263,7 @@ int main(void)
          * time whether or not anything is arriving, and 200 ms of silence is
          * exactly the case where nothing is. */
         const int byte = link_uart_read_byte(1000);
-        if (byte >= 0 && link_decode_byte(&rx, (uint8_t)byte, &req)) {
+        if (byte >= 0 && link_decode_byte(&s_rx, (uint8_t)byte, &req)) {
             /*
              * Wait out the panel's own direction circuit before answering.
              * Its RC one-shot holds the bus for up to 179 us after its last

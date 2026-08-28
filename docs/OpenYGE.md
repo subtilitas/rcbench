@@ -4,6 +4,11 @@ A written specification of the protocol: frame format, telemetry payload,
 parameter access, and the status encoding — with the arithmetic needed to
 implement it.
 
+> **The implementation lives in a separate repository.** This page stays here
+> because it is the specification of record, because it is going to YGE to be
+> checked, and because the CRC seed and decoder shape it settles are shared
+> with this project's own link. The codec under `shared/openyge/` is dormant.
+
 **Marked ° = inferred, not stated.** Those meanings come from a field name and
 ordinary ESC practice rather than from anything authoritative, and they are the
 parts most worth correcting. Section 8 lists what still needs a measurement or

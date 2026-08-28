@@ -25,6 +25,7 @@
 #include "gfx.h"
 #include "heartbeat.h"
 #include "link_frame.h"
+#include "link_bringup.h"
 #include "link_host.h"
 #include "link_pages.h"
 #include "link_uart.h"
@@ -44,6 +45,7 @@ static const char *TAG = "rcbench";
 
 /* Used during bring-up as well as in the loop, so file scope. */
 static link_host_t    s_host;
+static link_bringup_t s_bring;
 static link_decoder_t s_rx;
 
 /* Defined below; bring_up() asks who is there before the loop starts. */
@@ -180,6 +182,9 @@ static bool bring_up(void)
                      reply.regs[LINK_ID_PROTOCOL_MAJOR],
                      reply.regs[LINK_ID_PROTOCOL_MINOR],
                      reply.regs[LINK_ID_HARDWARE]);
+            s_bring.have_identity = true;
+            s_bring.proto_major   = reply.regs[LINK_ID_PROTOCOL_MAJOR];
+            s_bring.proto_minor   = reply.regs[LINK_ID_PROTOCOL_MINOR];
             const bool speaks_ours =
                 reply.regs[LINK_ID_PROTOCOL_MAJOR] == LINK_PROTOCOL_MAJOR;
             splash_screen_set(SPLASH_STEP_COPRO,
@@ -277,12 +282,22 @@ static bool poll_page(link_host_t *host, link_decoder_t *rx, uint8_t page,
     if (n == 0 || link_uart_write(frame, n) < 0) {
         return false;
     }
+    /*
+     * Measured from the last byte handed to the driver to the byte that
+     * completes the reply, so it includes the far end's turnaround wait.
+     * That is the number LINK_TURNAROUND_US has to be checked against, and it
+     * cannot be got any other way than from the wire.
+     */
+    const uint32_t sent_us = (uint32_t)esp_timer_get_time();
     for (;;) {
         uint8_t buf[LINK_MAX_FRAME];
         const int got = link_uart_read(buf, sizeof(buf), 5);
         for (int i = 0; i < got; ++i) {
             if (link_decode_byte(rx, buf[i], reply)
                 && link_host_reply(host, reply, now_ms())) {
+                link_bringup_add_rtt(
+                    &s_bring,
+                    (uint32_t)((uint32_t)esp_timer_get_time() - sent_us));
                 return true;
             }
         }
@@ -294,6 +309,54 @@ static bool poll_page(link_host_t *host, link_decoder_t *rx, uint8_t page,
             link_decoder_reset(rx);
             return false;
         }
+    }
+}
+
+/*
+ * One block, naming the most fundamental thing that is wrong rather than the
+ * loudest.  Printed while the link is unhealthy and once a minute when it is,
+ * because a bring-up wants it constantly and a working bench does not.
+ */
+static void link_report(void)
+{
+    s_bring.polls         = s_host.polls;
+    s_bring.replies       = s_host.replies;
+    s_bring.timeouts      = s_host.timeouts;
+    s_bring.mismatches    = s_host.mismatches;
+    s_bring.nacks         = s_host.nacks;
+    s_bring.rx_crc_errors = s_rx.crc_errors;
+    s_bring.rx_resyncs    = s_rx.resyncs;
+
+    const link_diag_t d = link_bringup_diagnose(&s_bring);
+    ESP_LOGI(TAG, "LINK %s", link_diag_text(d));
+    if (d != LINK_DIAG_OK) {
+        ESP_LOGW(TAG, "  check: %s", link_diag_hint(d));
+    }
+    ESP_LOGI(TAG, "  panel  polls %lu replies %lu timeouts %lu stale %lu "
+                  "nack %lu crc %lu resync %lu",
+             (unsigned long)s_bring.polls, (unsigned long)s_bring.replies,
+             (unsigned long)s_bring.timeouts,
+             (unsigned long)s_bring.mismatches, (unsigned long)s_bring.nacks,
+             (unsigned long)s_bring.rx_crc_errors,
+             (unsigned long)s_bring.rx_resyncs);
+    if (s_bring.have_status) {
+        ESP_LOGI(TAG, "  copro  frames %lu crc %lu resync %lu",
+                 (unsigned long)s_bring.dev_frames,
+                 (unsigned long)s_bring.dev_crc_errors,
+                 (unsigned long)s_bring.dev_resyncs);
+    } else {
+        ESP_LOGI(TAG, "  copro  never answered a status read");
+    }
+    if (s_bring.rt_samples > 0) {
+        /* Against LINK_TURNAROUND_US: if the minimum round trip is close to
+         * it, the far end is waiting out the direction circuit and not the
+         * wire, and the poll period is being spent on an RC network. */
+        ESP_LOGI(TAG, "  round trip min %lu avg %lu max %lu us "
+                      "(turnaround allowance %u us)",
+                 (unsigned long)s_bring.rt_min_us,
+                 (unsigned long)s_bring.rt_mean_us,
+                 (unsigned long)s_bring.rt_max_us,
+                 (unsigned)LINK_TURNAROUND_US);
     }
 }
 
@@ -351,6 +414,8 @@ void app_main(void)
     uint32_t frames    = 0;
     uint32_t last_us   = (uint32_t)esp_timer_get_time();
     uint32_t last_poll = 0;
+    uint32_t last_status = 0;
+    uint32_t last_report = 0;
     uint32_t last_touch_ok = now_ms();
     bool     link_up = false;
 
@@ -483,6 +548,39 @@ void app_main(void)
                          answered ? "answered" : "went quiet");
             }
             link_up = answered;
+
+            /*
+             * The far end's own view, once a second.  Not every poll: it
+             * costs a whole transaction and the numbers it carries move
+             * slowly.  Without it the panel can see that something is wrong
+             * and not which end of the cable it is at.
+             */
+            if (link_up
+                && (uint32_t)(now_ms() - last_status) >= 1000u) {
+                last_status = now_ms();
+                link_msg_t st;
+                if (poll_page(&s_host, &s_rx, LINK_PAGE_STATUS,
+                              LINK_ST_COUNT, &st)
+                    && st.op == LINK_OP_DATA) {
+                    s_bring.have_status = true;
+                    s_bring.dev_frames =
+                        (uint32_t)st.regs[LINK_ST_FRAMES_LO]
+                        | ((uint32_t)st.regs[LINK_ST_FRAMES_HI] << 16);
+                    s_bring.dev_crc_errors = st.regs[LINK_ST_CRC_ERRORS];
+                    s_bring.dev_resyncs    = st.regs[LINK_ST_RESYNCS];
+                }
+            }
+        }
+
+        /*
+         * Every five seconds while it is unhealthy, once a minute when it is
+         * not.  A bring-up wants this constantly; a bench that has been
+         * running for an hour wants its log readable.
+         */
+        if ((uint32_t)(now_ms() - last_report)
+            >= (link_up ? 60000u : 5000u)) {
+            last_report = now_ms();
+            link_report();
         }
 
         const ui_bench_status_t status = {
