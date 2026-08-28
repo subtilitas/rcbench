@@ -168,7 +168,62 @@ TEST_CASE(corruption_outranks_loss_when_a_bus_does_both)
     CHECK_EQ(can_selftest_verdict(&st), CAN_SELFTEST_CORRUPT);
 }
 
-TEST_CASE(an_occasional_loss_is_reported_as_loss)
+/*
+ * Loss with bus errors and loss without them are different faults, and they
+ * send you to opposite ends of the bench.
+ *
+ * A frame corrupted on the wire is counted by whichever controller saw it go
+ * wrong.  A frame dropped because nobody read it in time arrives perfectly and
+ * is counted by nothing at all.  The first is termination, timing or cable
+ * length; the second is a receive buffer that overran while its owner was busy
+ * elsewhere, and telling somebody to check terminators for it wastes an
+ * afternoon on hardware that is working.
+ *
+ * The real bring-up produced exactly this: 2019 of 2024 echoed, and the
+ * controller reporting tx_err 0, rx_err 0, bus_err 0 two lines under a hint
+ * about terminators.
+ */
+TEST_CASE(loss_with_bus_errors_and_loss_without_are_different_faults)
+{
+    for (int with_errors = 0; with_errors <= 1; ++with_errors) {
+        can_selftest_t st;
+        bus_t bus;
+        can_selftest_init(&st, 50);
+        memset(&bus, 0, sizeof(bus));
+
+        uint32_t now = 1000;
+        for (int i = 0; i < 40; ++i) {
+            if (i % 9 == 0) {
+                bus.drop_next = true;
+            }
+            exchange(&st, &bus, &now);
+        }
+        /* The controller's own count, which only the transport can supply. */
+        st.bus_errors = with_errors ? 17u : 0u;
+
+        CHECK(st.timed_out > 0);
+        CHECK(st.echoed > 0);
+        CHECK_EQ(st.corrupt, 0);
+
+        const can_selftest_verdict_t want = with_errors ? CAN_SELFTEST_LOSSY
+                                                        : CAN_SELFTEST_DROPPED;
+        if (can_selftest_verdict(&st) != want) {
+            T_FAIL("%s bus errors: wrong verdict",
+                   with_errors ? "with" : "without");
+        }
+    }
+
+    /* And the hint for the no-error case must not mention the wire, because
+     * the absence of bus errors is evidence the wire is fine. */
+    const char *h = can_selftest_hint(CAN_SELFTEST_DROPPED);
+    CHECK(h[0] != '\0');
+    CHECK(strstr(h, "terminator") == NULL);
+    CHECK(strstr(h, "not a wiring fault") != NULL);
+}
+
+/* Corruption still outranks both, because a frame that arrives altered is a
+ * wire fault whatever the counters say about the ones that did not. */
+TEST_CASE(corruption_outranks_a_clean_bus_losing_frames)
 {
     can_selftest_t st;
     bus_t bus;
@@ -177,15 +232,12 @@ TEST_CASE(an_occasional_loss_is_reported_as_loss)
 
     uint32_t now = 1000;
     for (int i = 0; i < 40; ++i) {
-        if (i % 9 == 0) {
-            bus.drop_next = true;
-        }
+        if (i % 9 == 0) { bus.drop_next = true; }
+        else if (i == 23) { bus.flip_a_bit = true; }
         exchange(&st, &bus, &now);
     }
-    CHECK(st.timed_out > 0);
-    CHECK(st.echoed > 0);
-    CHECK_EQ(st.corrupt, 0);
-    CHECK_EQ(can_selftest_verdict(&st), CAN_SELFTEST_LOSSY);
+    st.bus_errors = 0;
+    CHECK_EQ(can_selftest_verdict(&st), CAN_SELFTEST_CORRUPT);
 }
 
 /*
@@ -393,7 +445,8 @@ int main(void)
     RUN(a_silent_bus_is_reported_as_silent_not_as_timeouts);
     RUN(one_altered_bit_outranks_a_hundred_good_frames);
     RUN(corruption_outranks_loss_when_a_bus_does_both);
-    RUN(an_occasional_loss_is_reported_as_loss);
+    RUN(loss_with_bus_errors_and_loss_without_are_different_faults);
+    RUN(corruption_outranks_a_clean_bus_losing_frames);
     RUN(a_late_echo_is_stale_rather_than_corrupt);
     RUN(the_whole_payload_is_checked_and_not_just_the_sequence);
     RUN(the_probes_cycle_through_the_patterns_that_stress_stuffing);

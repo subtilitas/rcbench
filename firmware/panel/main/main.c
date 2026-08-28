@@ -387,6 +387,18 @@ static void can_selftest_run(uint32_t seconds)
         vTaskDelay(pdMS_TO_TICKS(2));
     }
 
+    /*
+     * The controller's error count decides between two faults this module
+     * cannot tell apart on its own: frames corrupted on the wire, and frames
+     * that arrived intact and were dropped because nobody read them.  Fill it
+     * in before asking, or the answer sends somebody to check terminators
+     * that are fine.
+     */
+    uint32_t tx_err = 0, rx_err = 0, bus_err = 0;
+    bool bus_off = false;
+    can_twai_errors(&tx_err, &rx_err, &bus_err, &bus_off);
+    st.bus_errors = bus_err;
+
     const can_selftest_verdict_t v = can_selftest_verdict(&st);
     ESP_LOGI(TAG, "CAN self-test: %s", can_selftest_text(v));
     if (v != CAN_SELFTEST_OK && v != CAN_SELFTEST_RUNNING) {
@@ -401,9 +413,6 @@ static void can_selftest_run(uint32_t seconds)
         ESP_LOGI(TAG, "  round trip min %lu max %lu us",
                  (unsigned long)st.rtt_min_us, (unsigned long)st.rtt_max_us);
     }
-    uint32_t tx_err = 0, rx_err = 0, bus_err = 0;
-    bool bus_off = false;
-    can_twai_errors(&tx_err, &rx_err, &bus_err, &bus_off);
     ESP_LOGI(TAG, "  controller tx_err %lu rx_err %lu bus_err %lu%s",
              (unsigned long)tx_err, (unsigned long)rx_err,
              (unsigned long)bus_err, bus_off ? "  BUS OFF" : "");

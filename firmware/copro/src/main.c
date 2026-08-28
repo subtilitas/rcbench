@@ -178,6 +178,7 @@ static bool heartbeat_poll(uint32_t now)
  */
 static bool     s_can_up;
 static uint32_t s_can_echoes;
+static uint32_t s_can_overflows;
 
 static void can_start(void)
 {
@@ -191,6 +192,9 @@ static void can_service(void)
 {
     if (!s_can_up) {
         return;
+    }
+    if (xl2515_take_overflow()) {
+        ++s_can_overflows;
     }
     link_can_frame_t in, out;
     while (xl2515_recv(&in)) {
@@ -228,6 +232,19 @@ static void can_report(uint32_t now)
            "tx_err %u rx_err %u eflg 0x%02X\n",
            (unsigned)COPRO_CAN_BITRATE, (unsigned long)s_can_echoes,
            tec, rec, eflg);
+    /*
+     * Said in words rather than left in a hex code, because it is the one
+     * thing here that explains a frame going missing while the bus reports no
+     * error at all: it arrived, it was correct, and both buffers were full.
+     * The part has two, so anything that stops this loop for two frame times
+     * costs a frame -- and a printf to a USB host that has stopped reading is
+     * exactly such a thing.
+     */
+    if (s_can_overflows > 0u) {
+        printf("rcbench-copro: CAN receive buffers overran %lu time(s) -- "
+               "frames arrived with nowhere to put them; not a bus fault\n",
+               (unsigned long)s_can_overflows);
+    }
 }
 
 /* ---------------------------------------------------------------- the loop */
@@ -377,6 +394,9 @@ int main(void)
 
         can_service();
         can_report(now);
+        /* Again straight after the report: printing to a USB host can take
+         * milliseconds, and the part holds two frames. */
+        can_service();
 
         if (link_dev_tick(&s_dev, now)) {
             outputs_off();   /* the edge, once */

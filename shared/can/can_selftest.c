@@ -138,7 +138,15 @@ can_selftest_verdict_t can_selftest_verdict(const can_selftest_t *st)
         return CAN_SELFTEST_CORRUPT;
     }
     if (st->timed_out > 0u || st->stale > 0u) {
-        return CAN_SELFTEST_LOSSY;
+        /*
+         * Loss with no bus error is not the same fault as loss with one, and
+         * the two send you to opposite ends of the bench.  A frame corrupted
+         * on the wire is counted by whichever controller saw it go wrong; a
+         * frame dropped because nobody read it in time is counted by nothing
+         * at all and arrives perfectly.
+         */
+        return (st->bus_errors == 0u) ? CAN_SELFTEST_DROPPED
+                                      : CAN_SELFTEST_LOSSY;
     }
     return CAN_SELFTEST_OK;
 }
@@ -150,6 +158,7 @@ const char *can_selftest_text(can_selftest_verdict_t v)
     case CAN_SELFTEST_SILENT:  return "no probe came back";
     case CAN_SELFTEST_CORRUPT: return "probes come back altered";
     case CAN_SELFTEST_LOSSY:   return "probes cross, and not all of them";
+    case CAN_SELFTEST_DROPPED: return "probes go missing without a bus error";
     case CAN_SELFTEST_RUNNING:
     default:                   return "running";
     }
@@ -167,6 +176,11 @@ const char *can_selftest_hint(can_selftest_verdict_t v)
         return "sample point or bit timing; a missing terminator reflects";
     case CAN_SELFTEST_LOSSY:
         return "marginal timing, one terminator, or a bus longer than the rate";
+    case CAN_SELFTEST_DROPPED:
+        /* Deliberately says nothing about the wire: the absence of bus errors
+         * is evidence the wire is fine. */
+        return "a receive buffer overran -- something stopped reading in time,"
+               " not a wiring fault";
     case CAN_SELFTEST_OK:
     case CAN_SELFTEST_RUNNING:
     default:

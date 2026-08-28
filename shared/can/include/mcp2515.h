@@ -66,6 +66,15 @@ extern "C" {
 #define MCP2515_INTF_TX0  0x04u
 #define MCP2515_INTF_ERR  0x20u
 
+/* EFLG.  The two overflow bits are the ones worth naming: they are set when a
+ * frame arrives with both receive buffers still full, they are sticky, and the
+ * MCU has to clear them -- so they are the record of a frame that was lost
+ * without anything going wrong on the wire. */
+#define MCP2515_EFLG_RX0OVR 0x40u
+#define MCP2515_EFLG_RX1OVR 0x80u
+#define MCP2515_EFLG_TXBO   0x20u
+#define MCP2515_EFLG_OVR    (MCP2515_EFLG_RX0OVR | MCP2515_EFLG_RX1OVR)
+
 /* RXB0CTRL / RXB1CTRL receive-mode field. */
 #define MCP2515_RXM_ANY      0x60u  /**< accept everything, filters off */
 #define MCP2515_RXM_EXT_ONLY 0x40u  /**< extended identifiers only */
