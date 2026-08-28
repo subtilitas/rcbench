@@ -165,6 +165,28 @@ bool can_selftest_status_reply(const link_can_frame_t *in,
 bool can_selftest_status_parse(const link_can_frame_t *in,
                                can_remote_status_t *out);
 
+/**
+ * Frames the far end answered that this end never heard.
+ *
+ * @p before and @p after are the far end's echo counter sampled either side
+ * of the measurement, and @p heard is what this end received in between.
+ *
+ * **It is the difference that means anything.** The far end's counter runs
+ * from its own boot, not from the start of this test, and a coprocessor left
+ * powered through several panel reboots will be tens of thousands ahead of
+ * anything the panel counted. Comparing the two absolutes reported a
+ * return-path fault on a run where 2144 of 2144 probes came back -- a
+ * diagnostic crying wolf on a perfect result, which is worse than no
+ * diagnostic at all.
+ *
+ * The counter is sixteen bits and wraps; unsigned subtraction handles that.
+ *
+ * Returns how many went missing, or 0. A probe in flight across either
+ * boundary is not a fault, so a small difference is not reported.
+ */
+uint16_t can_selftest_return_loss(uint16_t before, uint16_t after,
+                                  uint32_t heard);
+
 /* ------------------------------------------------------------- responder */
 
 /**

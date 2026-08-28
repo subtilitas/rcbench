@@ -332,12 +332,38 @@ static bool poll_page(link_host_t *host, link_decoder_t *rx, uint8_t page,
  * cabling -- which is worth knowing before anybody unplugs anything.
  */
 #ifdef RCBENCH_CAN_SELFTEST
+/* Ask the far end what it can see.  False if it did not answer. */
+static bool can_ask_remote(can_remote_status_t *out)
+{
+    for (int try = 0; try < 5; ++try) {
+        link_can_frame_t req, in;
+        if (!can_selftest_status_request(&req) || !can_twai_send(&req, 10)) {
+            return false;
+        }
+        const uint32_t deadline = now_ms() + 50u;
+        while (now_ms() < deadline) {
+            if (can_twai_recv(&in, 10) && can_selftest_status_parse(&in, out)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 static void can_selftest_run(uint32_t seconds)
 {
     if (can_twai_start(PANEL_CAN_BITRATE) != ESP_OK) {
         ESP_LOGE(TAG, "CAN would not start; nothing to test");
         return;
     }
+
+    /*
+     * The far end's counter runs from its own boot, so a reading taken only
+     * at the end is a total and not a measurement.  Sampling either side of
+     * the echo phase turns it into one.
+     */
+    can_remote_status_t before;
+    const bool have_before = can_ask_remote(&before);
 
     can_selftest_t st;
     can_selftest_init(&st, 50);
@@ -399,25 +425,8 @@ static void can_selftest_run(uint32_t seconds)
     can_twai_errors(&tx_err, &rx_err, &bus_err, &bus_off);
     st.bus_errors = bus_err;
 
-    /*
-     * Ask the far end what it saw, over the bus rather than over a second USB
-     * cable.  Polled, and only once the echo phase is done, so it cannot
-     * disturb the measurement it is reporting on.
-     */
     can_remote_status_t remote;
-    bool have_remote = false;
-    for (int try = 0; try < 5 && !have_remote; ++try) {
-        link_can_frame_t req, in;
-        if (!can_selftest_status_request(&req) || !can_twai_send(&req, 10)) {
-            break;
-        }
-        const uint32_t deadline = now_ms() + 50u;
-        while (now_ms() < deadline && !have_remote) {
-            if (can_twai_recv(&in, 10)) {
-                have_remote = can_selftest_status_parse(&in, &remote);
-            }
-        }
-    }
+    const bool have_remote = can_ask_remote(&remote);
 
     const can_selftest_verdict_t v = can_selftest_verdict(&st);
     ESP_LOGI(TAG, "CAN self-test: %s", can_selftest_text(v));
@@ -454,10 +463,20 @@ static void can_selftest_run(uint32_t seconds)
                           "a free buffer -- not a bus fault",
                      remote.overflows);
         }
-        if (remote.echoes > st.echoed) {
-            ESP_LOGW(TAG, "  it answered %u and we heard %lu: the return path "
-                          "is losing frames",
-                     remote.echoes, (unsigned long)st.echoed);
+        if (have_before) {
+            const uint16_t lost = can_selftest_return_loss(before.echoes,
+                                                           remote.echoes,
+                                                           st.echoed);
+            if (lost > 0u) {
+                ESP_LOGW(TAG, "  it answered %u more than we heard: the "
+                              "return path is losing frames", lost);
+            }
+        } else {
+            /* Without a reading from before the run there is only a total,
+             * and a total says nothing.  Better to say so than to subtract
+             * two numbers that do not belong to the same window. */
+            ESP_LOGI(TAG, "  (no baseline from the far end, so its echo count "
+                          "is a lifetime total and not comparable)");
         }
     } else {
         ESP_LOGW(TAG, "  copro  did not answer a status request");
