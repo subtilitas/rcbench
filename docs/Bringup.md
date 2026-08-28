@@ -9,6 +9,15 @@ and two root causes, worked out from a description rather than from the board.
 The link has more ways to be half-broken than the display does, and most of
 them present as "it does not work". So the firmware now says which one.
 
+> **This describes the RS485 transport, which is being superseded.** The link
+> is moving to CAN — see [the link](Link.md) — and three of the six faults
+> below are properties of the direction circuit and stop existing with it: the
+> return path that will not release, the turnaround that is too short, and
+> corruption from running under the transceiver's baud floor. The diagnosis
+> module itself is transport-independent and stays; the wiring checks and the
+> direction-circuit measurement below apply only while RS485 is what is
+> fitted.
+
 ## Before power
 
 | | |
