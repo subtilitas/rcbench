@@ -418,6 +418,95 @@ TEST_CASE(the_round_trip_keeps_its_extremes)
     CHECK_EQ(st.rtt_max_us, 1500);
 }
 
+/*
+ * The far end's numbers, carried across the bus so that one console shows both
+ * halves of a fault instead of a USB cable being swapped to see the other.
+ */
+TEST_CASE(the_far_ends_counters_survive_the_round_trip)
+{
+    const can_remote_status_t sent = {
+        .up = true, .tx_errors = 128, .rx_errors = 3, .flags = 0xC0,
+        .echoes = 51234, .overflows = 7,
+    };
+    link_can_frame_t req, rsp;
+    CHECK(can_selftest_status_request(&req));
+    CHECK_EQ(req.dlc, 0);            /* the whole question is its address */
+    CHECK(can_selftest_status_reply(&req, &sent, &rsp));
+    CHECK_EQ(rsp.dlc, 8);
+
+    can_remote_status_t got;
+    memset(&got, 0, sizeof(got));
+    CHECK(can_selftest_status_parse(&rsp, &got));
+    CHECK_EQ(got.up, true);
+    CHECK_EQ(got.tx_errors, 128);
+    CHECK_EQ(got.rx_errors, 3);
+    CHECK_EQ(got.flags, 0xC0);
+    CHECK_EQ(got.echoes, 51234);     /* past a byte, so the order matters */
+    CHECK_EQ(got.overflows, 7);
+
+    /* A far end that never came up says so, and says it distinctly from one
+     * that came up with nothing to report. */
+    const can_remote_status_t down = { .up = false };
+    CHECK(can_selftest_status_reply(&req, &down, &rsp));
+    CHECK(can_selftest_status_parse(&rsp, &got));
+    CHECK_EQ(got.up, false);
+}
+
+/*
+ * The status exchange shares a page with the echo test, so the two must not be
+ * mistaken for each other in either direction -- an echo counted as a status
+ * would be read as counters, and a status counted as an echo would be a lost
+ * probe that never was.
+ */
+TEST_CASE(status_and_echo_traffic_do_not_answer_each_other)
+{
+    can_selftest_t st;
+    can_selftest_init(&st, 50);
+
+    link_can_frame_t probe, echo, sreq, srsp;
+    const can_remote_status_t rs = { .up = true, .echoes = 9 };
+    CHECK(can_selftest_probe(&st, 1000, &probe));
+    CHECK(can_selftest_status_request(&sreq));
+    CHECK(probe.id != sreq.id);
+
+    /* The echo responder ignores a status request ... */
+    CHECK_EQ(can_selftest_echo(&sreq, &echo), false);
+    /* ... and the status responder ignores a probe. */
+    CHECK_EQ(can_selftest_status_reply(&probe, &rs, &srsp), false);
+
+    /* A status reply is not an echo, and does not disturb an outstanding
+     * probe or get counted as anything. */
+    CHECK(can_selftest_status_reply(&sreq, &rs, &srsp));
+    CHECK_EQ(can_selftest_rx(&st, &srsp, 400), false);
+    CHECK_EQ(st.echoed, 0);
+    CHECK_EQ(st.corrupt, 0);
+    CHECK_EQ(st.stale, 0);
+    CHECK(st.waiting);
+
+    /* And an echo is not a status. */
+    can_remote_status_t junk;
+    CHECK(can_selftest_echo(&probe, &echo));
+    CHECK_EQ(can_selftest_status_parse(&echo, &junk), false);
+}
+
+/* Both stay at the lowest priority, so leaving the diagnostics running cannot
+ * delay anything the bench actually does. */
+TEST_CASE(the_status_exchange_never_outranks_real_traffic)
+{
+    link_can_frame_t sreq, srsp;
+    const can_remote_status_t rs = { .up = true };
+    CHECK(can_selftest_status_request(&sreq));
+    CHECK(can_selftest_status_reply(&sreq, &rs, &srsp));
+    const uint32_t control = link_can_id(LINK_CAN_PRIO_CONTROL, LINK_OP_WRITE,
+                                         LINK_PAGE_CONTROL, 0, 1);
+    const uint32_t telemetry = link_can_id(LINK_CAN_PRIO_NORMAL, LINK_OP_READ,
+                                           LINK_PAGE_BENCH, 0, 13);
+    CHECK(sreq.id > control);
+    CHECK(sreq.id > telemetry);
+    CHECK(srsp.id > control);
+    CHECK(srsp.id > telemetry);
+}
+
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     can_selftest_t st;
@@ -434,6 +523,11 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
     CHECK_EQ(can_selftest_verdict(NULL), CAN_SELFTEST_RUNNING);
     CHECK_EQ(can_selftest_echo(NULL, &f), false);
     CHECK_EQ(can_selftest_echo(&f, NULL), false);
+    can_remote_status_t rs;
+    CHECK_EQ(can_selftest_status_request(NULL), false);
+    CHECK_EQ(can_selftest_status_reply(NULL, NULL, NULL), false);
+    CHECK_EQ(can_selftest_status_parse(NULL, &rs), false);
+    CHECK_EQ(can_selftest_status_parse(&f, NULL), false);
     CHECK(can_selftest_text(CAN_SELFTEST_OK)[0] != '\0');
     CHECK(can_selftest_hint((can_selftest_verdict_t)99)[0] == '\0');
 }
@@ -454,6 +548,9 @@ int main(void)
     RUN(the_probes_never_outrank_real_traffic);
     RUN(unrelated_traffic_is_ignored_rather_than_miscounted);
     RUN(the_round_trip_keeps_its_extremes);
+    RUN(the_far_ends_counters_survive_the_round_trip);
+    RUN(status_and_echo_traffic_do_not_answer_each_other);
+    RUN(the_status_exchange_never_outranks_real_traffic);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("can_selftest");
 }

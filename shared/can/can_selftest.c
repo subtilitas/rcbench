@@ -11,18 +11,91 @@
 static const uint8_t k_patterns[] = { 0x00u, 0xFFu, 0x55u, 0xAAu };
 #define PATTERN_COUNT ((uint8_t)(sizeof(k_patterns) / sizeof(k_patterns[0])))
 
+/*
+ * The status exchange shares the echo test's page and is told apart by the
+ * offset field of the identifier -- 0 is an echo, 1 is a status.  Reusing the
+ * page keeps both at the same lowest priority and means one filter covers the
+ * pair.
+ */
+#define OFF_ECHO   0u
+#define OFF_STATUS 1u
+
 /* A probe from the initiator; the echo comes back as DATA so the two are
  * never confused for each other on a bus that hears its own traffic. */
 static uint32_t probe_id(void)
 {
     return link_can_id(LINK_CAN_PRIO_BULK, LINK_OP_READ, CAN_SELFTEST_PAGE,
-                       0, 4);
+                       OFF_ECHO, 4);
 }
 
 static uint32_t echo_id(void)
 {
     return link_can_id(LINK_CAN_PRIO_BULK, LINK_OP_DATA, CAN_SELFTEST_PAGE,
-                       0, 4);
+                       OFF_ECHO, 4);
+}
+
+static uint32_t status_req_id(void)
+{
+    return link_can_id(LINK_CAN_PRIO_BULK, LINK_OP_READ, CAN_SELFTEST_PAGE,
+                       OFF_STATUS, 4);
+}
+
+static uint32_t status_rsp_id(void)
+{
+    return link_can_id(LINK_CAN_PRIO_BULK, LINK_OP_DATA, CAN_SELFTEST_PAGE,
+                       OFF_STATUS, 4);
+}
+
+bool can_selftest_status_request(link_can_frame_t *out)
+{
+    if (out == NULL) {
+        return false;
+    }
+    memset(out, 0, sizeof(*out));
+    out->id  = status_req_id();
+    out->dlc = 0;
+    return true;
+}
+
+bool can_selftest_status_reply(const link_can_frame_t *in,
+                               const can_remote_status_t *st,
+                               link_can_frame_t *out)
+{
+    if (in == NULL || st == NULL || out == NULL
+        || in->id != status_req_id() || in->dlc != 0) {
+        return false;
+    }
+    memset(out, 0, sizeof(*out));
+    out->id  = status_rsp_id();
+    out->dlc = 8;
+    out->data[0] = st->up ? 1u : 0u;
+    out->data[1] = st->tx_errors;
+    out->data[2] = st->rx_errors;
+    out->data[3] = st->flags;
+    out->data[4] = (uint8_t)(st->echoes & 0xFFu);
+    out->data[5] = (uint8_t)(st->echoes >> 8);
+    out->data[6] = (uint8_t)(st->overflows & 0xFFu);
+    out->data[7] = (uint8_t)(st->overflows >> 8);
+    return true;
+}
+
+bool can_selftest_status_parse(const link_can_frame_t *in,
+                               can_remote_status_t *out)
+{
+    if (in == NULL || out == NULL || in->id != status_rsp_id()
+        || in->dlc != 8) {
+        return false;
+    }
+    memset(out, 0, sizeof(*out));
+    out->up        = (in->data[0] != 0u);
+    out->tx_errors = in->data[1];
+    out->rx_errors = in->data[2];
+    out->flags     = in->data[3];
+    out->echoes    = (uint16_t)((uint16_t)in->data[4]
+                                | ((uint16_t)in->data[5] << 8));
+    out->overflows = (uint16_t)((uint16_t)in->data[6]
+                                | ((uint16_t)in->data[7] << 8));
+    return true;
 }
 
 /* Sequence in the first two bytes, the pattern in the remaining six.  The

@@ -198,8 +198,25 @@ static void can_service(void)
     }
     link_can_frame_t in, out;
     while (xl2515_recv(&in)) {
-        if (can_selftest_echo(&in, &out) && xl2515_send(&out)) {
-            ++s_can_echoes;
+        if (can_selftest_echo(&in, &out)) {
+            if (xl2515_send(&out)) {
+                ++s_can_echoes;
+            }
+            continue;
+        }
+        /*
+         * The far end asking what this end can see.  Answering it is what
+         * lets one console show both halves of a fault instead of a USB
+         * cable being moved to find the other half.
+         */
+        can_remote_status_t st;
+        memset(&st, 0, sizeof(st));
+        st.up = s_can_up;
+        xl2515_errors(&st.tx_errors, &st.rx_errors, &st.flags);
+        st.echoes    = (uint16_t)s_can_echoes;
+        st.overflows = (uint16_t)s_can_overflows;
+        if (can_selftest_status_reply(&in, &st, &out)) {
+            (void)xl2515_send(&out);
         }
     }
 }
