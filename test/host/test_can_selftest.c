@@ -507,6 +507,42 @@ TEST_CASE(the_status_exchange_never_outranks_real_traffic)
     CHECK(srsp.id > telemetry);
 }
 
+/*
+ * The far end's counter runs from its own boot, so only the difference across
+ * the measurement means anything.
+ *
+ * This exists because comparing the absolutes reported "the return path is
+ * losing frames" on a run where 2144 of 2144 probes came back: the
+ * coprocessor had been powered through several panel reboots and was 12182
+ * ahead. A diagnostic that cries wolf on a perfect result is worse than none,
+ * because the next real warning is the one nobody believes.
+ */
+TEST_CASE(the_far_ends_counter_is_read_as_a_difference_not_a_total)
+{
+    /* The run that produced the false alarm: 2144 answered, 2144 heard, and a
+     * counter that started at 10038 because the far end had been up longer. */
+    CHECK_EQ(can_selftest_return_loss(10038, 12182, 2144), 0);
+
+    /* Compared as absolutes it would have claimed ten thousand lost. */
+    CHECK(12182u - 2144u > 9000u);
+
+    /* A real return-path fault is still caught: answered a hundred, heard
+     * sixty. */
+    CHECK_EQ(can_selftest_return_loss(100, 200, 60), 40);
+
+    /* Sixteen bits, and it wraps.  136 answered across the turnover. */
+    CHECK_EQ(can_selftest_return_loss(65500, 100, 136), 0);
+    CHECK_EQ(can_selftest_return_loss(65500, 100, 36), 100);
+
+    /* A probe in flight at either edge is the measurement's own resolution,
+     * not a fault -- but three missing is. */
+    CHECK_EQ(can_selftest_return_loss(0, 102, 100), 0);
+    CHECK_EQ(can_selftest_return_loss(0, 103, 100), 3);
+
+    /* Hearing more than the far end answered is not negative loss. */
+    CHECK_EQ(can_selftest_return_loss(0, 100, 200), 0);
+}
+
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     can_selftest_t st;
@@ -549,6 +585,7 @@ int main(void)
     RUN(unrelated_traffic_is_ignored_rather_than_miscounted);
     RUN(the_round_trip_keeps_its_extremes);
     RUN(the_far_ends_counters_survive_the_round_trip);
+    RUN(the_far_ends_counter_is_read_as_a_difference_not_a_total);
     RUN(status_and_echo_traffic_do_not_answer_each_other);
     RUN(the_status_exchange_never_outranks_real_traffic);
     RUN(null_arguments_are_refused_rather_than_dereferenced);

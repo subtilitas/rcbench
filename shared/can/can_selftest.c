@@ -98,6 +98,24 @@ bool can_selftest_status_parse(const link_can_frame_t *in,
     return true;
 }
 
+/*
+ * One probe may be in flight across either edge of the window, so a
+ * difference of one or two is the measurement's own resolution rather than a
+ * fault.  Anything more is frames that were answered and never arrived.
+ */
+#define RETURN_LOSS_SLACK 2u
+
+uint16_t can_selftest_return_loss(uint16_t before, uint16_t after,
+                                  uint32_t heard)
+{
+    /* Unsigned, so a counter that wrapped past 65535 still subtracts. */
+    const uint16_t answered = (uint16_t)(after - before);
+    if ((uint32_t)answered <= heard + RETURN_LOSS_SLACK) {
+        return 0;
+    }
+    return (uint16_t)((uint32_t)answered - heard);
+}
+
 /* Sequence in the first two bytes, the pattern in the remaining six.  The
  * pattern is derived from the sequence, so a frame that comes back with a
  * payload from a different probe is detectable as corrupt rather than being
