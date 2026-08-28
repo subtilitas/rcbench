@@ -176,7 +176,8 @@ static bool heartbeat_poll(uint32_t now)
  * get in the way of anything.  Leaving it in is the point: the bring-up tool
  * that is already flashed is the one that gets used.
  */
-static bool s_can_up;
+static bool     s_can_up;
+static uint32_t s_can_echoes;
 
 static void can_start(void)
 {
@@ -193,10 +194,40 @@ static void can_service(void)
     }
     link_can_frame_t in, out;
     while (xl2515_recv(&in)) {
-        if (can_selftest_echo(&in, &out)) {
-            (void)xl2515_send(&out);
+        if (can_selftest_echo(&in, &out) && xl2515_send(&out)) {
+            ++s_can_echoes;
         }
     }
+}
+
+/*
+ * Repeated rather than printed once at boot.
+ *
+ * USB CDC does not exist until a host enumerates it, so anything printed
+ * before the terminal is opened is gone -- and a boot message you have to
+ * catch by power-cycling at the right moment is a boot message nobody reads.
+ * Saying it every few seconds costs nothing and means the answer is on screen
+ * whenever somebody looks.
+ */
+static void can_report(uint32_t now)
+{
+    static uint32_t last;
+    if (now - last < 3000u && last != 0u) {
+        return;
+    }
+    last = now;
+
+    if (!s_can_up) {
+        printf("rcbench-copro: CAN did not answer on SPI -- module fitted? "
+               "wiring on GP9-12?\n");
+        return;
+    }
+    uint8_t tec = 0, rec = 0, eflg = 0;
+    xl2515_errors(&tec, &rec, &eflg);
+    printf("rcbench-copro: CAN up, %u bit/s, %lu echoes served, "
+           "tx_err %u rx_err %u eflg 0x%02X\n",
+           (unsigned)COPRO_CAN_BITRATE, (unsigned long)s_can_echoes,
+           tec, rec, eflg);
 }
 
 /* ---------------------------------------------------------------- the loop */
@@ -345,6 +376,7 @@ int main(void)
         }
 
         can_service();
+        can_report(now);
 
         if (link_dev_tick(&s_dev, now)) {
             outputs_off();   /* the edge, once */

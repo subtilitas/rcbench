@@ -54,4 +54,17 @@ target_link_libraries(rcbench-copro
     rcbench_openyge
     rcbench_can
 )
+#
+# Diagnostics go out over USB CDC, and explicitly not over a UART.
+#
+# The SDK's default is stdio on uart0, and uart0 on this board is GP0/GP1 --
+# which is the link to the panel.  Left at the default, every printf here
+# transmits into the RS485 link and every reply from the panel arrives in
+# stdin.  Two subsystems sharing a UART is not a diagnostic, it is a fault
+# injector, and it was there from the first line of console output this
+# firmware ever had.
+#
+pico_enable_stdio_usb(rcbench-copro 1)
+pico_enable_stdio_uart(rcbench-copro 0)
+
 pico_add_extra_outputs(rcbench-copro)
