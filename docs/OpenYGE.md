@@ -424,21 +424,36 @@ interface with the vendor's help, which is arguably ahead of BLHeli_S and AM32
 on the same list. Head speed free from parameters 20–22. And a fault display
 with real content, since section 6 is a diagnostic rather than a status LED.
 
-**Suggested shape:**
+**What is built:**
 
     shared/openyge/          pure C, host-tested, no SDK
       openyge_frame.c        encode and decode, reusing link_crc with seed 0
       openyge_status.c       status1 -> state, subject, warnings, faults
       openyge_params.c       the drip-fed cache and its completeness rule
-      openyge_session.c      the request/response state machine, fed bytes
-                             and a clock, like [the servo searches](Servo.md)
 
-All host-testable against captured and synthesised frames, including the ones
-to be suspicious of: a truncated frame, a good CRC with an impossible length, a
-pre-v3 ESC that never answers, a table that never completes, and `0xC0` in the
-warning nibble. Keep the byte, frame, timeout, CRC-error and sync-error counters
-— rcbench's link decoder already counts the same four, and the analyser screen
-promises *"a raw view: bytes, gaps, errors, framing"*.
+The decoder is the panel link's shape: every sync byte in the buffer is a
+candidate and the earliest complete one wins, so a real frame arriving behind
+noise that happens to contain a plausible sync is still recovered. It counts
+frames, CRC errors, resyncs, and separately the frames whose CRC held but whose
+shape was impossible — the last of those is a version mismatch or a bug at the
+far end rather than a noisy line, and the two want different things done about
+them. The analyser screen promises *"a raw view: bytes, gaps, errors,
+framing"*, and those counters are it.
+
+Two decisions in the codec worth knowing:
+
+- **Nothing is cast over the receive buffer.** Every field is assembled byte by
+  byte, because the wire is packed little-endian and a host need be neither.
+- **A half-read parameter table refuses to be read at all.** `openyge_params_get`
+  returns false until every index has arrived, and a pending write withdraws
+  the whole table rather than the indices being written. Partly-old and
+  partly-new reads as the ESC's settings and is not.
+
+**What is not built:** `openyge_session.c`, the request/response state machine —
+polling at the frame period, matching the sequence number, the read and write
+timeouts, and falling back to listening when the ESC turns out to be pre-v3. It
+wants the turnaround measurement from section 8 before its timing means
+anything, so it is next rather than now.
 
 **One thing to decide first: which ESCs are supported.** OpenYGE is YGE's. The
 material sits beside Hobbywing, Kontronik, Scorpion, OMP, ZTW, APD, FLY,

@@ -32,6 +32,7 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/safety" safety)
 # output -- but built here so the ARM toolchain compiles it alongside the host
 # one.  --gc-sections drops it from the image.
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/servo"  servo)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/openyge" openyge)
 
 add_executable(rcbench-copro
     src/main.c
@@ -47,5 +48,6 @@ target_link_libraries(rcbench-copro
     rcbench_bench
     rcbench_safety
     rcbench_servo
+    rcbench_openyge
 )
 pico_add_extra_outputs(rcbench-copro)
