@@ -399,6 +399,26 @@ static void can_selftest_run(uint32_t seconds)
     can_twai_errors(&tx_err, &rx_err, &bus_err, &bus_off);
     st.bus_errors = bus_err;
 
+    /*
+     * Ask the far end what it saw, over the bus rather than over a second USB
+     * cable.  Polled, and only once the echo phase is done, so it cannot
+     * disturb the measurement it is reporting on.
+     */
+    can_remote_status_t remote;
+    bool have_remote = false;
+    for (int try = 0; try < 5 && !have_remote; ++try) {
+        link_can_frame_t req, in;
+        if (!can_selftest_status_request(&req) || !can_twai_send(&req, 10)) {
+            break;
+        }
+        const uint32_t deadline = now_ms() + 50u;
+        while (now_ms() < deadline && !have_remote) {
+            if (can_twai_recv(&in, 10)) {
+                have_remote = can_selftest_status_parse(&in, &remote);
+            }
+        }
+    }
+
     const can_selftest_verdict_t v = can_selftest_verdict(&st);
     ESP_LOGI(TAG, "CAN self-test: %s", can_selftest_text(v));
     if (v != CAN_SELFTEST_OK && v != CAN_SELFTEST_RUNNING) {
@@ -413,9 +433,35 @@ static void can_selftest_run(uint32_t seconds)
         ESP_LOGI(TAG, "  round trip min %lu max %lu us",
                  (unsigned long)st.rtt_min_us, (unsigned long)st.rtt_max_us);
     }
-    ESP_LOGI(TAG, "  controller tx_err %lu rx_err %lu bus_err %lu%s",
+    ESP_LOGI(TAG, "  panel  tx_err %lu rx_err %lu bus_err %lu%s",
              (unsigned long)tx_err, (unsigned long)rx_err,
              (unsigned long)bus_err, bus_off ? "  BUS OFF" : "");
+    if (have_remote) {
+        ESP_LOGI(TAG, "  copro  %s, %u echoes, %u overflow(s), "
+                      "tx_err %u rx_err %u flags 0x%02X",
+                 remote.up ? "CAN up" : "CAN DOWN",
+                 remote.echoes, remote.overflows, remote.tx_errors,
+                 remote.rx_errors, remote.flags);
+        /*
+         * The comparison only both ends together can make.  Frames the
+         * coprocessor answered but the panel never heard are a return-path
+         * fault; frames it never answered are an outbound one; and overflows
+         * are neither -- they are a buffer that filled while its owner was
+         * busy, which no bus counter records anywhere.
+         */
+        if (remote.overflows > 0u) {
+            ESP_LOGW(TAG, "  the coprocessor dropped %u frame(s) for want of "
+                          "a free buffer -- not a bus fault",
+                     remote.overflows);
+        }
+        if (remote.echoes > st.echoed) {
+            ESP_LOGW(TAG, "  it answered %u and we heard %lu: the return path "
+                          "is losing frames",
+                     remote.echoes, (unsigned long)st.echoed);
+        }
+    } else {
+        ESP_LOGW(TAG, "  copro  did not answer a status request");
+    }
 
     can_twai_stop();
 }

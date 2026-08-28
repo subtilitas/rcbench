@@ -45,22 +45,41 @@ secondary precisely so this session has somewhere to talk.
 
 It runs for five seconds at boot and prints:
 
-    can: 1000000 bit/s: brp 2, tseg1 5, tseg2 2, sjw 2, sample point 75.0%
+    can: 1000000 bit/s: brp 4, tseg1 14, tseg2 5, sjw 4, sample point 75.0%
     panel: CAN self-test: every probe came back intact
-      sent 96 echoed 96 corrupt 0 lost 0 stale 0
-      round trip min 210 max 480 us
-      controller tx_err 0 rx_err 0 bus_err 0
+      sent 2024 echoed 2024 corrupt 0 lost 0 stale 0  (transmit queue full 0 times)
+      round trip min 334 max 1356 us
+      panel  tx_err 0 rx_err 0 bus_err 0
+      copro  CAN up, 2024 echoes, 0 overflow(s), tx_err 0 rx_err 0 flags 0x00
+
+**Both ends are in that report**, and the coprocessor's half arrived over the
+bus rather than over a second USB cable. That matters more than the
+convenience: several faults are only visible in the comparison. Frames the
+coprocessor answered but the panel never heard are a return-path fault; frames
+it never answered are an outbound one; and a coprocessor that dropped frames
+for want of a free buffer is neither, which no bus counter anywhere records.
+
+The status exchange is polled, shares the echo test's page, runs at the same
+lowest priority, and happens only after the echo phase — so it cannot disturb
+the measurement it is reporting on.
 
 | What it says | What it means | Where to look |
 | --- | --- | --- |
 | `no probe came back` | Nothing crosses at all | CANH/CANL swapped? Far end powered? Both at the same bit rate? Terminators at **both** ends? |
 | `probes come back altered` | Frames cross and arrive wrong | Sample point or bit timing; a missing terminator reflects |
 | `probes cross, and not all of them` | Marginal | Timing, one terminator, or a bus longer than the rate |
+| `probes go missing without a bus error` | They arrived intact and nobody read them | A receive buffer overran. **Not** a wiring fault — check the coprocessor's overflow count in the same report |
 | `every probe came back intact` | The wire is fine | Anything still wrong is above it |
 
 Corruption outranks loss in that table, and the ordering is deliberate: a
 marginal bus does both, loss is the louder number, and it points at cable
 length while the corruption says the bit timing is wrong.
+
+Loss itself splits in two, on the controller's own error count. Frames lost
+*with* bus errors were corrupted on the wire — termination, timing, length.
+Frames lost with **zero** bus errors arrived perfectly and were dropped by
+something that stopped reading in time, and sending somebody to check
+terminators for that wastes an afternoon on hardware that is working.
 
 The payloads are not arbitrary either. CAN stuffs a complementary bit after
 five of the same polarity, so the patterns that stress a marginal bus are long

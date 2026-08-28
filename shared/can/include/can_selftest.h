@@ -130,6 +130,41 @@ can_selftest_verdict_t can_selftest_verdict(const can_selftest_t *st);
 const char *can_selftest_text(can_selftest_verdict_t v);
 const char *can_selftest_hint(can_selftest_verdict_t v);
 
+/* ----------------------------------------------- the far end's own numbers */
+
+/*
+ * The coprocessor's view of the bus, carried across the bus.
+ *
+ * Two consoles for two boards means swapping a USB cable to see the other
+ * half of a fault, and a fault you can only see half of at a time is one you
+ * argue about.  Eight bytes is enough for everything the far end knows, so it
+ * travels on the same page as the echo test at the same lowest priority.
+ *
+ * It is *polled*, not volunteered.  The coprocessor never speaks unless
+ * spoken to -- that rule predates CAN and is worth keeping even though
+ * arbitration would now make an unsolicited frame harmless.
+ */
+typedef struct {
+    bool     up;          /**< the controller answered on SPI at boot */
+    uint8_t  tx_errors;   /**< TEC: 128 is error-passive */
+    uint8_t  rx_errors;   /**< REC */
+    uint8_t  flags;       /**< EFLG, whatever the far end's part calls it */
+    uint16_t echoes;      /**< probes it has answered, wrapping */
+    uint16_t overflows;   /**< frames that arrived with nowhere to put them */
+} can_remote_status_t;
+
+/** Build the request. One frame, no payload, like every other question here. */
+bool can_selftest_status_request(link_can_frame_t *out);
+
+/** The far end's answer. True if @p in was a status request. */
+bool can_selftest_status_reply(const link_can_frame_t *in,
+                               const can_remote_status_t *st,
+                               link_can_frame_t *out);
+
+/** Read an answer. True if @p in was one. */
+bool can_selftest_status_parse(const link_can_frame_t *in,
+                               can_remote_status_t *out);
+
 /* ------------------------------------------------------------- responder */
 
 /**
