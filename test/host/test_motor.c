@@ -50,11 +50,9 @@ static void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 
 /* Geometry mirrored from motor_screen.c; if the layout moves these move with
  * it, and the test names say what they were aiming at. */
-#define CTRL_Y   366
-#define TRACK_H  26
-#define PRESET_Y 400
-#define PRESET_H 28
-#define ROW_Y    (PRESET_Y + PRESET_H / 2)
+#define CTRL_Y   380
+#define TRACK_H  36
+#define ROW_Y    (342 + 14)   /* ARM and RESET share the readout row */
 #define ARM_X    490
 #define RESET_X  694
 #define TRACK_Y  (CTRL_Y + TRACK_H / 2)

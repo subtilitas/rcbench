@@ -26,6 +26,13 @@ void ui_slider_init(ui_slider_t *s, gfx_rect_t track, float min, float max,
     s->pressed_preset = -1;
 }
 
+void ui_slider_set_ticks(ui_slider_t *s, int n)
+{
+    if (s != NULL && n >= 0) {
+        s->ticks = n;
+    }
+}
+
 void ui_slider_set_presets(ui_slider_t *s, const float *values,
                            const char *const *labels, int count,
                            gfx_rect_t row)
@@ -156,6 +163,27 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
                             rad, s->color);
         gfx_hline(c, s->track.x + rad, s->track.y + 1, filled - 2 * rad,
                   gfx_lerp(s->color, GFX_WHITE, 70));
+    }
+
+    /*
+     * Scale divisions, cut into both edges rather than ruled across.
+     *
+     * These carry what the row of preset buttons underneath used to: where a
+     * quarter, a half and three quarters are.  As marks they cost no tap
+     * target and no row of screen, and they stay readable while the throttle
+     * is moving, which five buttons never did.
+     */
+    for (int t = 1; s->ticks > 0 && t < s->ticks; ++t) {
+        const int tx = s->track.x + (int)((float)s->track.w
+                                          * (float)t / (float)s->ticks + 0.5f);
+        /* Over the fill it has to darken and over the trough it has to
+         * lighten, or half the scale disappears at every throttle setting. */
+        const gfx_color_t tc = (tx < s->track.x + filled)
+            ? gfx_lerp(s->color, GFX_BLACK, 105)
+            : gfx_lerp(ui_theme_color(UI_C_PANEL_SUNK),
+                       ui_theme_color(UI_C_TEXT), 105);
+        gfx_vline(c, tx, s->track.y + 3, 5, tc);
+        gfx_vline(c, tx, s->track.y + s->track.h - 8, 5, tc);
     }
 
     /*

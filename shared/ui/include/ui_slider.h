@@ -41,6 +41,7 @@ typedef struct {
     float      preset_value[UI_SLIDER_MAX_PRESETS];
     const char *preset_label[UI_SLIDER_MAX_PRESETS];
     int        preset_count;
+    int        ticks;      /**< scale divisions on the track, 0 for none */
 
     float min, max, step;
     float value;
@@ -55,6 +56,9 @@ typedef struct {
 void ui_slider_init(ui_slider_t *s, gfx_rect_t track, float min, float max,
                     gfx_color_t color);
 /** Presets are laid out in a row under the track. */
+/** Draw @p n scale divisions across the track.  0 turns them off. */
+void ui_slider_set_ticks(ui_slider_t *s, int n);
+
 void ui_slider_set_presets(ui_slider_t *s, const float *values,
                            const char *const *labels, int count,
                            gfx_rect_t row);

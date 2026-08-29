@@ -26,12 +26,20 @@
 #define CARD_Y    44
 #define CARD_H    196
 #define HERO_Y    248
-#define HERO_H    90
-#define LABEL_Y   346
-#define CTRL_Y    366
-#define TRACK_H   26
-#define PRESET_Y  400
-#define PRESET_H  28
+#define HERO_H    88
+/*
+ * The throttle owns the bottom of the screen now.
+ *
+ * A row of 0/25/50/75/100 buttons used to sit under the track, duplicating
+ * the one control beside them and taking a band of screen to do it.  The
+ * quarters they marked are ticks on the track itself, and the band they cost
+ * pays for a track half again as tall and a readout you can see from across
+ * a bench.
+ */
+#define ROW_Y     342                  /* the readout, ARM and RESET share it */
+#define ROW_H     30
+#define CTRL_Y    380
+#define TRACK_H   36
 
 /* The scale rails live inside the plot card now, as its left gutter.  Loose
  * on the background they were a 26px strip of coloured stripes butted against
@@ -69,8 +77,6 @@ static const char *const k_extreme[S_COUNT] = { "min", "pk", "pk", "pk" };
  */
 #define SAMPLE_HZ 20.0f
 
-static const float k_presets[] = { 0.0f, 25.0f, 50.0f, 75.0f, 100.0f };
-static const char *const k_preset_labels[] = { "0", "25", "50", "75", "100" };
 static const char *const k_tab_labels[] = { "PLOT", "TABLE" };
 
 static struct {
@@ -130,11 +136,10 @@ static void reset(void)
 
     const gfx_rect_t track = { PAD, CTRL_Y, W - 2 * PAD, TRACK_H };
     ui_slider_init(&s.slider, track, 0.0f, 100.0f, 0);
-    ui_slider_set_presets(&s.slider, k_presets, k_preset_labels, 5,
-                          (gfx_rect_t){ PAD, PRESET_Y, 380, PRESET_H });
+    ui_slider_set_ticks(&s.slider, 4);   /* the quarters the buttons marked */
 
-    s.arm_rect   = (gfx_rect_t){ 400, PRESET_Y, 180, PRESET_H };
-    s.reset_rect = (gfx_rect_t){ 594, PRESET_Y, 200, PRESET_H };
+    s.arm_rect   = (gfx_rect_t){ 400, ROW_Y, 180, (int16_t)(ROW_H - 2) };
+    s.reset_rect = (gfx_rect_t){ 594, ROW_Y, 200, (int16_t)(ROW_H - 2) };
     bind_colours();
 }
 
@@ -375,20 +380,26 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
     s.drawn_ctrl[buf] = s.ctrl_rev;
 
-    gfx_fill_rect(c, 0, LABEL_Y, W, H - LABEL_Y, ui_theme_color(UI_C_BG));
+    gfx_fill_rect(c, 0, ROW_Y, W, H - ROW_Y, ui_theme_color(UI_C_BG));
 
     /*
      * The number moves off the track and onto its own line.  Printed over a
      * full-width bar it sat on whatever colour the fill happened to reach,
      * and at high throttle that was its own accent.
      */
-    gfx_text(c, PAD, LABEL_Y, "THROTTLE", &gfx_font_8x16,
+    gfx_text(c, PAD, ROW_Y + 8, "THROTTLE", &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT_DIM), 1);
+
+    /* Set in the numeral face the readings above use, because the throttle is
+     * a reading too -- and the one the operator's hand is on. */
     char pct[16];
-    snprintf(pct, sizeof(pct), "%.1f %%", (double)s.slider.value);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(W - PAD - 200), LABEL_Y, 200, 16 },
-                pct, &gfx_font_8x16, ui_theme_color(UI_C_TEXT), 1,
-                GFX_ALIGN_RIGHT);
+    snprintf(pct, sizeof(pct), "%.1f", (double)s.slider.value);
+    const int pw = gfx_text_width(UI_FONT_NUM, pct, 1);
+    const int px = 386 - 20 - pw;
+    gfx_text(c, px, ROW_Y, pct, UI_FONT_NUM,
+             ui_theme_color(UI_C_ACCENT), 1);
+    gfx_text(c, 386 - 16, ROW_Y + 14, "%", &gfx_font_8x16,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
 
     ui_slider_render(&s.slider, c);
 
