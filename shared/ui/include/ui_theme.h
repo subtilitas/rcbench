@@ -133,6 +133,21 @@ int ui_theme_contrast(void);
 #define UI_R_CTL   6
 #define UI_R_CHIP  4
 
+/*
+ * The bench's numeral style, in one place: the four readings and the throttle
+ * are the same instrument and must not drift apart.  Thickness is about a
+ * eighth of the height: any fatter and the horizontals, which only span the
+ * gap between the two verticals, come out shorter than they are thick and
+ * every segment collapses into a lens.  The lean is the couple of degrees a
+ * panel meter has.
+ */
+static inline gfx_seg_style_t ui_seg_hero(void)
+{
+    gfx_seg_style_t s = { .digit_w = 22, .digit_h = 32, .thickness = 4,
+                          .gap = 5, .slant = 3, .ghost = true };
+    return s;
+}
+
 #define UI_FONT_LABEL    (&gfx_font_8x16)
 #define UI_FONT_HEAD     (&gfx_font_16x28)
 #define UI_FONT_NUM      (&gfx_font_num_24x30)

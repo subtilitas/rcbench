@@ -3,6 +3,7 @@
 # the panel, to a PNG on a laptop, and into the test suite.
 set(SRCS
     gfx.c
+    gfx_seg.c
     gfx_font8x16.c
     gfx_font16x28.c
     gfx_font_num24x30.c

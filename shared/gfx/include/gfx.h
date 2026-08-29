@@ -205,6 +205,28 @@ extern const gfx_font_t gfx_font_16x28;
 /** 24x30 digits and punctuation, 0x20..0x3A.  Hero numerals. */
 extern const gfx_font_t gfx_font_num_24x30;
 
+/* ------------------------------------------------- seven-segment numerals */
+
+/*
+ * The look of a bench instrument rather than of a screen: digits built from
+ * seven bars, with the unlit ones optionally left showing.  Covers 0-9, '-',
+ * '.', ':' and space; anything else draws as blank.
+ */
+typedef struct {
+    int  digit_w;    /**< one digit cell, excluding the gap                 */
+    int  digit_h;
+    int  thickness;  /**< bar thickness; about digit_h/7 looks right        */
+    int  gap;        /**< between cells                                     */
+    int  slant;      /**< pixels of lean over the full height, 0 upright    */
+    bool ghost;      /**< draw the unlit segments in @p off                 */
+} gfx_seg_style_t;
+
+/** Draw @p s as segment digits.  Returns the width drawn. */
+int gfx_seg_text(gfx_canvas_t *c, int x, int y, const char *s,
+                 const gfx_seg_style_t *st, gfx_color_t on, gfx_color_t off);
+/** Width @p s would occupy, without drawing it. */
+int gfx_seg_width(const char *s, const gfx_seg_style_t *st);
+
 /** Pixel width of @p s at integer @p scale (scale < 1 is treated as 1). */
 int gfx_text_width(const gfx_font_t *font, const char *s, int scale);
 /** Pixel height of one line at integer @p scale. */

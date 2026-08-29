@@ -24,6 +24,7 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 SOURCES = [
     "test/host/render_screen.c",
     "shared/gfx/gfx.c",
+    "shared/gfx/gfx_seg.c",
     "shared/gfx/gfx_font8x16.c",
     "shared/gfx/gfx_font16x28.c",
     "shared/gfx/gfx_font_num24x30.c",
