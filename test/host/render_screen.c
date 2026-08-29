@@ -18,6 +18,8 @@
 #include "log_viewer_screen.h"
 #include "settings.h"
 #include "motor_screen.h"
+#include "servo_screen.h"
+#include "servo_sim.h"
 #include "overview_screen.h"
 #include "telemetry_sim.h"
 #include "splash_screen.h"
@@ -235,6 +237,23 @@ int main(int argc, char **argv)
         }
         motor_screen_set_throttle(64.0f);
         motor_screen_set_armed(true);
+    }
+
+    if (id == SCREEN_SERVO) {
+        /* Driven by the same model the limit finder is tested against, so
+         * the screenshot shows a servo that lags its command and draws
+         * current for doing so, rather than four dashes. */
+        servo_sim_t ss;
+        servo_sim_cfg_t cfg;
+        servo_sim_defaults(&cfg);
+        servo_sim_init(&ss, &cfg);
+        servo_screen_set_commanded(38.0f);
+        for (int i = 0; i < 200; ++i) {
+            const float a = servo_sim_step(&ss, servo_screen_commanded(),
+                                           (uint32_t)(i * 10));
+            servo_screen_feedback((uint16_t)ss.position_us, a, true);
+            ui_router_tick(0.01f);
+        }
     }
 
     ui_bench_status_t st = k_status;

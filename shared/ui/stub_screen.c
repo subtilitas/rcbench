@@ -90,16 +90,6 @@ static const copy_t k_copy[SCREEN_COUNT] = {
      * Both want a current sensor per output, which the catalogue costs as
      * medium: one sensor per channel, or a multiplexer.
      */
-    [SCREEN_SERVO] = {
-        "SERVO",
-        { "Eight channels of pulse, any width and rate, narrow band included",
-          "Sweep, step, centre, hold, manual and endpoint",
-          "Width, frame rate and jitter measured; glitches and dropouts kept",
-          "Surface angle measured on the surface: linkage slop included",
-          "Find the installed mechanical limit by current, and stop short of it",
-          "Synchronise two servos on one surface by minimising what they fight" },
-        "the coprocessor's PWM and capture, and a sensor per servo output",
-    },
     [SCREEN_ANALYSER] = {
         "ANALYSER",
         { "Decode a receiver bus and show the channels",

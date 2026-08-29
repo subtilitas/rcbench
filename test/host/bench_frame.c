@@ -11,6 +11,8 @@
  *   frame     steady state: the band redrawn, screen chrome cached
  *   chrome    everything repainted every frame, i.e. what not caching costs
  *   overview  the menu, whose tiles are chrome and must never be in a frame
+ *   servo     the servo card, whose arm and grip are drawn from coverage
+ *   servo-grip  the same, repainting only the breathing grip
  *   sim       the same steady state with the SIMULATION watermark over it,
  *             which is the only thing here that blends rather than writes
  *   frame-idle the bench between samples: the panel refreshes at 39 Hz and
@@ -30,6 +32,7 @@
 
 #include "gfx.h"
 #include "overview_screen.h"
+#include "servo_screen.h"
 #include "splash_screen.h"
 #include "stub_screen.h"
 #include "telemetry_sim.h"
@@ -97,8 +100,15 @@ int main(int argc, char **argv)
         ui_router_set_status(&sim);
     }
 
-    ui_router_goto(strcmp(mode, "overview") == 0 ? SCREEN_OVERVIEW
-                                                 : SCREEN_MOTOR);
+    const bool servo = (strncmp(mode, "servo", 5) == 0);
+    ui_screen_id_t start = SCREEN_MOTOR;
+    if (strcmp(mode, "overview") == 0) {
+        start = SCREEN_OVERVIEW;
+    } else if (servo) {
+        start = SCREEN_SERVO;
+        servo_screen_set_commanded(38.0f);
+    }
+    ui_router_goto(start);
 
     /* Warm both framebuffers the way the panel does, before measuring. */
     ui_router_render(&c, 0);
@@ -111,6 +121,19 @@ int main(int argc, char **argv)
     const bool feed = (strcmp(mode, "frame-idle") != 0);
 
     for (int i = 0; i < frames; ++i) {
+        if (servo) {
+            /* "servo" moves the arm every frame, which is the drag case and
+             * the worst one.  "servo-grip" holds it still, so only the grip
+             * breathes -- and that is the frame the clipped repaint exists
+             * for, so it is the one worth guarding. */
+            if (strcmp(mode, "servo") == 0) {
+                servo_screen_set_commanded(38.0f + (float)((i % 20) - 10));
+            }
+            servo_screen_feedback(servo_screen_commanded(), 0.4f, true);
+            ui_router_tick(0.026f);
+            ui_router_render(&c, i & 1);
+            continue;
+        }
         if (feed) {
             telemetry_sim_step(&sim, 60.0f, 0.05f, &bench);
             motor_screen_push(&bench);

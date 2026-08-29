@@ -886,6 +886,193 @@ static const uint8_t k_bayer8[64] = {
     63, 31, 55, 23, 61, 29, 53, 21,
 };
 
+/*
+ * Coverage-filled shapes: a disc and a capsule, both from the distance to
+ * their own skeleton.
+ *
+ * Everything else on the servo card is antialiased -- the segment numerals,
+ * the arcs, the text -- and a hard-edged arm in the middle of it looks like a
+ * different drawing pasted in.  Working from distance rather than from a
+ * scanline span means the round caps and the straight sides come out of one
+ * expression, so there is no seam where a cap meets a side, which is what a
+ * disc drawn over a rectangle gives you: two soft edges blended twice.
+ *
+ * The bounding box is clipped before the loop, not inside it, because the
+ * grip's breathing repaints a 72-pixel box and must not pay for the whole
+ * arm's extent to do it.
+ */
+static void cov_blend(gfx_canvas_t *c, int x, int y, gfx_color_t col, float cov)
+{
+    if (cov <= 0.0f) {
+        return;
+    }
+    if (cov >= 1.0f) {
+        gfx_pixel(c, x, y, col);
+        return;
+    }
+    gfx_pixel(c, x, y,
+              gfx_lerp(gfx_pixel_get(c, x, y), col, (uint8_t)(cov * 255.0f)));
+}
+
+/* The box to walk, already intersected with the clip.  False if nothing of
+ * it survives, so the caller can skip the shape entirely. */
+static bool cov_box(const gfx_canvas_t *c, float cx, float cy, float reach,
+                    int *x0, int *y0, int *x1, int *y1)
+{
+    int lo_x = (int)floorf(cx - reach), hi_x = (int)ceilf(cx + reach);
+    int lo_y = (int)floorf(cy - reach), hi_y = (int)ceilf(cy + reach);
+    if (lo_x < c->clip.x) { lo_x = c->clip.x; }
+    if (lo_y < c->clip.y) { lo_y = c->clip.y; }
+    if (hi_x > c->clip.x + c->clip.w) { hi_x = c->clip.x + c->clip.w; }
+    if (hi_y > c->clip.y + c->clip.h) { hi_y = c->clip.y + c->clip.h; }
+    *x0 = lo_x; *y0 = lo_y; *x1 = hi_x; *y1 = hi_y;
+    return (hi_x > lo_x) && (hi_y > lo_y);
+}
+
+void gfx_fill_circle_aa(gfx_canvas_t *c, int cx, int cy, int r,
+                        gfx_color_t col)
+{
+    if (!canvas_ok(c) || r <= 0) {
+        return;
+    }
+    const float fx = (float)cx, fy = (float)cy, fr = (float)r;
+    int x0, y0, x1, y1;
+    if (!cov_box(c, fx, fy, fr + 1.0f, &x0, &y0, &x1, &y1)) {
+        return;
+    }
+    for (int y = y0; y < y1; ++y) {
+        const float dy = (float)y - fy;
+        for (int x = x0; x < x1; ++x) {
+            const float dx = (float)x - fx;
+            const float d  = sqrtf(dx * dx + dy * dy);
+            cov_blend(c, x, y, col, fr + 0.5f - d);
+        }
+    }
+}
+
+void gfx_capsule_aa(gfx_canvas_t *c, int ax, int ay, int bx, int by,
+                    int thickness, gfx_color_t col)
+{
+    if (!canvas_ok(c) || thickness <= 0) {
+        return;
+    }
+    const float hw = (float)thickness / 2.0f;
+    const float pax = (float)ax, pay = (float)ay;
+    const float ex = (float)(bx - ax), ey = (float)(by - ay);
+    const float len2 = ex * ex + ey * ey;
+
+    const float midx = (float)(ax + bx) / 2.0f;
+    const float midy = (float)(ay + by) / 2.0f;
+    const float reach = sqrtf(len2) / 2.0f + hw + 1.0f;
+    int x0, y0, x1, y1;
+    if (!cov_box(c, midx, midy, reach, &x0, &y0, &x1, &y1)) {
+        return;
+    }
+
+    for (int y = y0; y < y1; ++y) {
+        for (int x = x0; x < x1; ++x) {
+            const float px = (float)x - pax, py = (float)y - pay;
+            /* How far along the segment the nearest point is, clamped to its
+             * ends -- which is what turns the sides and the caps into one
+             * distance. */
+            float t = (len2 > 0.0f) ? (px * ex + py * ey) / len2 : 0.0f;
+            if (t < 0.0f) { t = 0.0f; }
+            if (t > 1.0f) { t = 1.0f; }
+            const float qx = px - t * ex, qy = py - t * ey;
+            const float d  = sqrtf(qx * qx + qy * qy);
+            cov_blend(c, x, y, col, hw + 0.5f - d);
+        }
+    }
+}
+
+/*
+ * An arc, walked rather than solved.
+ *
+ * Stepping by one pixel of arc length at the *outer* radius is what stops it
+ * dashing: step by the inner radius instead and the outside of a thick arc
+ * comes out as a row of dots with the gaps growing as the radius does.
+ *
+ * The two radial edges are blended the same way a segment bar's ends are, so
+ * an arc and a numeral on this screen have the same kind of edge.
+ *
+ * @p fade_deg, when non-zero, brings each end up out of @p into and takes it
+ * back down again -- an arc that stops dead has two bright full-width ends
+ * that read as breakage, where one that dissolves reads as an arc that
+ * happens to be lit over part of its length.
+ */
+static void arc_walk(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
+                     float a0_deg, float a1_deg, gfx_color_t col,
+                     gfx_color_t into, float fade_deg)
+{
+    if (!canvas_ok(c) || r <= 0 || thickness <= 0) {
+        return;
+    }
+    const float k    = 3.14159265358979f / 180.0f;
+    const float half = (float)thickness / 2.0f;
+    const float r0   = (float)r - half;
+    const float r1   = (float)r + half;
+    if (r0 <= 0.0f) {
+        return;
+    }
+
+    const float span  = fabsf(a1_deg - a0_deg);
+    const float sweep = span * k;
+    int steps = (int)(sweep * r1) + 1;
+    if (steps > 4096) {
+        steps = 4096;      /* a full turn at any radius this panel can hold */
+    }
+
+    for (int i = 0; i <= steps; ++i) {
+        const float f  = (float)i / (float)steps;
+        const float a  = (a0_deg + (a1_deg - a0_deg) * f) * k;
+        const float ca = cosf(a), sa = sinf(a);
+
+        gfx_color_t here = col;
+        if (fade_deg > 0.0f) {
+            const float from_end = fminf(f, 1.0f - f) * span;
+            float lit = from_end / fade_deg;
+            if (lit > 1.0f) {
+                lit = 1.0f;
+            }
+            here = gfx_lerp(into, col, (uint8_t)(lit * 255.0f));
+        }
+
+        const int in  = (int)ceilf(r0);
+        const int out = (int)floorf(r1);
+        if ((float)in > r0) {
+            const float cov = (float)in - r0;
+            const int px = cx + (int)((float)(in - 1) * ca + 0.5f);
+            const int py = cy - (int)((float)(in - 1) * sa + 0.5f);
+            gfx_pixel(c, px, py, gfx_lerp(gfx_pixel_get(c, px, py), here,
+                                          (uint8_t)(cov * 255.0f)));
+        }
+        for (int rr = in; rr < out; ++rr) {
+            gfx_pixel(c, cx + (int)((float)rr * ca + 0.5f),
+                         cy - (int)((float)rr * sa + 0.5f), here);
+        }
+        if (r1 > (float)out) {
+            const float cov = r1 - (float)out;
+            const int px = cx + (int)((float)out * ca + 0.5f);
+            const int py = cy - (int)((float)out * sa + 0.5f);
+            gfx_pixel(c, px, py, gfx_lerp(gfx_pixel_get(c, px, py), here,
+                                          (uint8_t)(cov * 255.0f)));
+        }
+    }
+}
+
+void gfx_arc(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
+             float a0_deg, float a1_deg, gfx_color_t col)
+{
+    arc_walk(c, cx, cy, r, thickness, a0_deg, a1_deg, col, col, 0.0f);
+}
+
+void gfx_arc_fade(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
+                  float a0_deg, float a1_deg, gfx_color_t col,
+                  gfx_color_t into, float fade_deg)
+{
+    arc_walk(c, cx, cy, r, thickness, a0_deg, a1_deg, col, into, fade_deg);
+}
+
 void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
                       const gfx_font_t *font, gfx_color_t fg, int scale,
                       uint8_t alpha, float angle_deg)

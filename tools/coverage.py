@@ -53,6 +53,7 @@ TRACKED = [
     "shared/ui/overview_screen.c",
     "shared/ui/stub_screen.c",
     "shared/ui/motor_screen.c",
+    "shared/ui/servo_screen.c",
     "shared/ui/log_viewer_screen.c",
     "shared/ui/settings_screen.c",
     "shared/settings/settings.c",

@@ -19,6 +19,7 @@ set(SRCS
     overview_screen.c
     stub_screen.c
     motor_screen.c
+    servo_screen.c
     log_viewer_screen.c
     settings_screen.c
 )

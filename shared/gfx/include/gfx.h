@@ -148,7 +148,36 @@ void gfx_thick_line(gfx_canvas_t *c, int x0, int y0, int x1, int y1,
                     int thickness, gfx_color_t color);
 
 void gfx_draw_circle(gfx_canvas_t *c, int cx, int cy, int r, gfx_color_t color);
+
+/*
+ * Antialiased disc and capsule, filled from the distance to their own centre
+ * or spine.  The capsule is a thick line with round ends, and its sides and
+ * caps come out of one expression -- so there is no seam where they meet,
+ * which a disc drawn over a rectangle cannot avoid.
+ */
+void gfx_fill_circle_aa(gfx_canvas_t *c, int cx, int cy, int r,
+                        gfx_color_t col);
+void gfx_capsule_aa(gfx_canvas_t *c, int ax, int ay, int bx, int by,
+                    int thickness, gfx_color_t col);
 void gfx_fill_circle(gfx_canvas_t *c, int cx, int cy, int r, gfx_color_t color);
+
+/*
+ * An arc of @p thickness centred on (cx, cy), from @p a0_deg to @p a1_deg.
+ * Angles are degrees counter-clockwise from the +x axis, so 90 is straight up
+ * on screen.  The radial edges are antialiased.
+ */
+void gfx_arc(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
+             float a0_deg, float a1_deg, gfx_color_t col);
+
+/*
+ * The same arc, with each end brought up out of @p into over @p fade_deg and
+ * taken back down into it.  An arc that stops dead has two bright full-width
+ * ends that read as breakage; one that dissolves reads as an arc lit over
+ * part of its length.
+ */
+void gfx_arc_fade(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
+                  float a0_deg, float a1_deg, gfx_color_t col,
+                  gfx_color_t into, float fade_deg);
 
 void gfx_draw_round_rect(gfx_canvas_t *c, int x, int y, int w, int h,
                          int r, gfx_color_t color);

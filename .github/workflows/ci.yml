@@ -73,6 +73,15 @@ jobs:
       - name: The chrome-cached screens have not started repainting
         run: python3 tools/frame_cost.py overview --max-lines 2000
 
+      # The servo card draws its arm and grip from coverage, which is not
+      # cheap; 17,000 catches that growing.  The grip figure is the one that
+      # matters most: a breath repaints a clipped box and nothing else, and
+      # 4,000 catches the day something bumps the revision on every poll and
+      # quietly puts the whole card back in the frame.
+      - name: The servo card is drawn, and its grip is only breathed on
+        run: python3 tools/frame_cost.py servo --max-lines 17000
+             && python3 tools/frame_cost.py servo-grip --max-lines 4000
+
       - name: The frame-cost table in the docs is current
         run: python3 tools/frame_cost.py --check-doc
 
