@@ -895,9 +895,15 @@ static const uint8_t k_bayer8[64] = {
  *
  * The two radial edges are blended the same way a segment bar's ends are, so
  * an arc and a numeral on this screen have the same kind of edge.
+ *
+ * @p fade_deg, when non-zero, brings each end up out of @p into and takes it
+ * back down again -- an arc that stops dead has two bright full-width ends
+ * that read as breakage, where one that dissolves reads as an arc that
+ * happens to be lit over part of its length.
  */
-void gfx_arc(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
-             float a0_deg, float a1_deg, gfx_color_t col)
+static void arc_walk(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
+                     float a0_deg, float a1_deg, gfx_color_t col,
+                     gfx_color_t into, float fade_deg)
 {
     if (!canvas_ok(c) || r <= 0 || thickness <= 0) {
         return;
@@ -910,16 +916,27 @@ void gfx_arc(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
         return;
     }
 
-    const float sweep = fabsf(a1_deg - a0_deg) * k;
+    const float span  = fabsf(a1_deg - a0_deg);
+    const float sweep = span * k;
     int steps = (int)(sweep * r1) + 1;
     if (steps > 4096) {
         steps = 4096;      /* a full turn at any radius this panel can hold */
     }
 
     for (int i = 0; i <= steps; ++i) {
-        const float a  = (a0_deg + (a1_deg - a0_deg)
-                                       * (float)i / (float)steps) * k;
+        const float f  = (float)i / (float)steps;
+        const float a  = (a0_deg + (a1_deg - a0_deg) * f) * k;
         const float ca = cosf(a), sa = sinf(a);
+
+        gfx_color_t here = col;
+        if (fade_deg > 0.0f) {
+            const float from_end = fminf(f, 1.0f - f) * span;
+            float lit = from_end / fade_deg;
+            if (lit > 1.0f) {
+                lit = 1.0f;
+            }
+            here = gfx_lerp(into, col, (uint8_t)(lit * 255.0f));
+        }
 
         const int in  = (int)ceilf(r0);
         const int out = (int)floorf(r1);
@@ -927,21 +944,34 @@ void gfx_arc(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
             const float cov = (float)in - r0;
             const int px = cx + (int)((float)(in - 1) * ca + 0.5f);
             const int py = cy - (int)((float)(in - 1) * sa + 0.5f);
-            gfx_pixel(c, px, py, gfx_lerp(gfx_pixel_get(c, px, py), col,
+            gfx_pixel(c, px, py, gfx_lerp(gfx_pixel_get(c, px, py), here,
                                           (uint8_t)(cov * 255.0f)));
         }
         for (int rr = in; rr < out; ++rr) {
             gfx_pixel(c, cx + (int)((float)rr * ca + 0.5f),
-                         cy - (int)((float)rr * sa + 0.5f), col);
+                         cy - (int)((float)rr * sa + 0.5f), here);
         }
         if (r1 > (float)out) {
             const float cov = r1 - (float)out;
             const int px = cx + (int)((float)out * ca + 0.5f);
             const int py = cy - (int)((float)out * sa + 0.5f);
-            gfx_pixel(c, px, py, gfx_lerp(gfx_pixel_get(c, px, py), col,
+            gfx_pixel(c, px, py, gfx_lerp(gfx_pixel_get(c, px, py), here,
                                           (uint8_t)(cov * 255.0f)));
         }
     }
+}
+
+void gfx_arc(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
+             float a0_deg, float a1_deg, gfx_color_t col)
+{
+    arc_walk(c, cx, cy, r, thickness, a0_deg, a1_deg, col, col, 0.0f);
+}
+
+void gfx_arc_fade(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
+                  float a0_deg, float a1_deg, gfx_color_t col,
+                  gfx_color_t into, float fade_deg)
+{
+    arc_walk(c, cx, cy, r, thickness, a0_deg, a1_deg, col, into, fade_deg);
 }
 
 void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,

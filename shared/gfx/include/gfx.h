@@ -158,6 +158,16 @@ void gfx_fill_circle(gfx_canvas_t *c, int cx, int cy, int r, gfx_color_t color);
 void gfx_arc(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
              float a0_deg, float a1_deg, gfx_color_t col);
 
+/*
+ * The same arc, with each end brought up out of @p into over @p fade_deg and
+ * taken back down into it.  An arc that stops dead has two bright full-width
+ * ends that read as breakage; one that dissolves reads as an arc lit over
+ * part of its length.
+ */
+void gfx_arc_fade(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
+                  float a0_deg, float a1_deg, gfx_color_t col,
+                  gfx_color_t into, float fade_deg);
+
 void gfx_draw_round_rect(gfx_canvas_t *c, int x, int y, int w, int h,
                          int r, gfx_color_t color);
 void gfx_fill_round_rect(gfx_canvas_t *c, int x, int y, int w, int h,

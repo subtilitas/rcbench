@@ -37,7 +37,7 @@
 #define SHAFT_X 300
 #define SHAFT_Y ((H) / 2)          /* centred in the card, not under it */
 #define ARC_R   140
-#define HORN_L  106
+#define HORN_L  92
 #define BODY_W  260
 #define BODY_H  88
 
@@ -336,32 +336,68 @@ static void draw_body(gfx_canvas_t *c)
     }
 }
 
+/*
+ * Where a ring of radius @p r has to stop so that a constant band of dark
+ * card shows between its end and the arm.
+ *
+ * A fixed angle will not do it.  The arm is the same width at every radius,
+ * so it subtends less angle the further out you go, and two rings sharing one
+ * angular gap end up with the outer one standing much further clear of the
+ * arm than the inner -- which reads as a mistake rather than as a pair.  The
+ * outer ring is therefore the longer of the two.
+ */
+static float ring_gap_deg(float r, float half_w, float dark_px)
+{
+    const float k = 180.0f / 3.14159265358979f;
+    float sine = half_w / r;
+    if (sine > 0.99f) {
+        sine = 0.99f;
+    }
+    return (asinf(sine) + dark_px / r) * k;
+}
+
 static void draw_horn(gfx_canvas_t *c, float deg, gfx_color_t col)
 {
     int tx, ty;
     at(deg, HORN_L, &tx, &ty);
 
+    /*
+     * The unlit rings go down first and whole, so the arm is drawn over them
+     * and they pass behind it.  A ring that stopped at the arm on both sides
+     * would be two dark arcs that happen to line up; one that disappears
+     * under the metal and comes out the far side is a ring with an arm across
+     * it, which is what this is.
+     */
+    const gfx_color_t ghost =
+        gfx_lerp(ui_theme_color(UI_C_PANEL), col, 46);
+    gfx_arc(c, tx, ty, 25, 3, 0.0f, 360.0f, ghost);
+    gfx_arc(c, tx, ty, 33, 2, 0.0f, 360.0f, ghost);
+
     gfx_thick_line(c, SHAFT_X, SHAFT_Y, tx, ty, 26, col);
     gfx_fill_circle(c, tx, ty, 13, col);
     gfx_fill_circle(c, SHAFT_X, SHAFT_Y, 25, col);
 
-    /* Holes along the arm, which is what tells you it is a horn. */
-    for (int i = 1; i <= 4; ++i) {
+    /* Holes along the arm, which is what tells you it is a horn.  Spaced
+     * from the tip inwards rather than from the boss outwards: fixed radii
+     * put the outermost ones past the end when the arm was shortened, and a
+     * hole drawn on the card behind the arm reads as a bite out of it. */
+    for (int i = 1; i <= 3; ++i) {
         int hx, hy;
-        at(deg, 46 + i * 15, &hx, &hy);
+        at(deg, HORN_L - 12 - (3 - i) * 14, &hx, &hy);
         gfx_fill_circle(c, hx, hy, 5, ui_theme_color(UI_C_PANEL));
     }
+    /* And the outermost one, which is the hole the ring is pointing at. */
     gfx_fill_circle(c, tx, ty, 5, ui_theme_color(UI_C_PANEL));
 
     /*
-     * Two broken rings around the outermost hole: the grip.
+     * The lit part of each ring, over the top.
      *
-     * The dial can be touched anywhere along its sweep, but nothing on the
-     * drawing said so, and an arm you are meant to take hold of should look
-     * like one.  They are split along the arm's own axis and stop well short
-     * of it, so the gaps sit where the arm enters and leaves -- a closed ring
-     * reads as another hole, which is the one thing this must not be
-     * mistaken for.
+     * It is split on the side the arm comes in from, with a constant band of
+     * dark either side of the metal -- a fixed angle will not do that, since
+     * the arm subtends less of a circle the further out you go, so the outer
+     * ring is the longer of the two.  Each end dissolves into the unlit ring
+     * beneath rather than stopping, the way a segment goes dark without the
+     * bar leaving the glass.
      *
      * They breathe while the output is being held.  A servo under command is
      * a servo that will move if the linkage lets it, and that is worth saying
@@ -371,14 +407,18 @@ static void draw_horn(gfx_canvas_t *c, float deg, gfx_color_t col)
                              ? 0.42f + 0.58f * (0.5f + 0.5f * sinf(s.pulse))
                              : 0.62f;
     const gfx_color_t grip =
-        gfx_lerp(col, GFX_WHITE, (uint8_t)(70.0f + 150.0f * breath));
+        gfx_lerp(col, GFX_WHITE, (uint8_t)(150.0f + 100.0f * breath));
     const gfx_color_t faint =
-        gfx_lerp(col, GFX_WHITE, (uint8_t)(40.0f + 90.0f * breath));
+        gfx_lerp(col, GFX_WHITE, (uint8_t)(90.0f + 90.0f * breath));
 
-    gfx_arc(c, tx, ty, 18, 3, deg + 34.0f, deg + 146.0f, grip);
-    gfx_arc(c, tx, ty, 18, 3, deg + 214.0f, deg + 326.0f, grip);
-    gfx_arc(c, tx, ty, 24, 2, deg + 44.0f, deg + 136.0f, faint);
-    gfx_arc(c, tx, ty, 24, 2, deg + 224.0f, deg + 316.0f, faint);
+    const float half_w = 13.0f;   /* the arm's half width, as drawn */
+    const float dark   = 9.0f;    /* the band of card between ring and arm */
+    const float g_in   = ring_gap_deg(25.0f, half_w, dark);
+    const float g_out  = ring_gap_deg(33.0f, half_w, dark);
+    gfx_arc_fade(c, tx, ty, 25, 3, deg + 180.0f + g_in,
+                 deg + 540.0f - g_in, grip, ghost, 78.0f);
+    gfx_arc_fade(c, tx, ty, 33, 2, deg + 180.0f + g_out,
+                 deg + 540.0f - g_out, faint, ghost, 78.0f);
 
     /* The boss and its splines. */
     gfx_fill_circle(c, SHAFT_X, SHAFT_Y, 17, ui_theme_color(UI_C_PANEL_SUNK));
@@ -570,7 +610,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
     /* How far the grip reaches past the arm's tip, and so how much of the
      * card a breath alone has to repaint. */
-    const int grip_r = 30;
+    const int grip_r = 36;
 
     if (s.drawn_ctrl[buf] == s.ctrl_rev) {
         /*
