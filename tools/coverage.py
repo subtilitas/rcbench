@@ -65,6 +65,7 @@ TRACKED = [
     "shared/openyge/openyge_status.c",
     "shared/openyge/openyge_params.c",
     "shared/servo/servo_sim.c",
+    "shared/sbus/sbus.c",
     "shared/can/can_timing.c",
     "shared/can/can_selftest.c",
     "shared/can/mcp2515.c",

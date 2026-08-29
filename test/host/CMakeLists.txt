@@ -25,6 +25,7 @@ add_subdirectory("${SHARED}/safety"   safety)
 add_subdirectory("${SHARED}/servo"    servo)
 add_subdirectory("${SHARED}/openyge"  openyge)
 add_subdirectory("${SHARED}/can"      can)
+add_subdirectory("${SHARED}/sbus"     sbus)
 
 set(UNDER_TEST
     rcbench_gfx
@@ -38,6 +39,7 @@ set(UNDER_TEST
     rcbench_servo
     rcbench_openyge
     rcbench_can
+    rcbench_sbus
 )
 
 # -Wconversion is the one that earns its place: this code does arithmetic on
@@ -59,7 +61,7 @@ set(FAKES "")
 
 enable_testing()
 
-foreach(suite gfx touch_map nav widgets bench motor logview logwriter settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup heartbeat servo_limit servo_sync openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515)
+foreach(suite gfx touch_map nav widgets bench motor logview logwriter settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup heartbeat servo_limit servo_sync openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus)
     add_executable(test_${suite} test_${suite}.c ${FAKES})
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE
