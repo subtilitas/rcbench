@@ -34,6 +34,52 @@ static int count_of(gfx_color_t color)
     return n;
 }
 
+/* ------------------------------------------------------- rotated text */
+
+/*
+ * The watermark is laid over screens that repaint only what changed, so it
+ * meets pixels carrying its own output from previous frames.  A blend would
+ * compound there -- 15% over 15% is 28%, then 39% -- and the warning that a
+ * reading is simulated would quietly go solid while the plot area, which
+ * repaints its background every frame, stayed correct and hid it.
+ *
+ * So the property is not "it looks 15%".  It is that drawing it again
+ * changes nothing.
+ */
+TEST_CASE(rotated_text_is_idempotent)
+{
+    fresh();
+    gfx_text_rotated(&s_c, W / 2, H / 2, "SIM", &gfx_font_8x16,
+                     GFX_WHITE, 1, 38, -30.0f);
+    gfx_color_t once[W * H];
+    memcpy(once, s_pixels, sizeof(once));
+
+    for (int again = 0; again < 20; ++again) {
+        gfx_text_rotated(&s_c, W / 2, H / 2, "SIM", &gfx_font_8x16,
+                         GFX_WHITE, 1, 38, -30.0f);
+    }
+    CHECK_EQ(memcmp(once, s_pixels, sizeof(once)), 0);
+    /* And it actually drew something, so the check above is not vacuous. */
+    CHECK(count_of(GFX_WHITE) > 0);
+}
+
+/* Coverage scales with alpha, which is what alpha now means. */
+TEST_CASE(rotated_text_alpha_sets_coverage)
+{
+    fresh();
+    gfx_text_rotated(&s_c, W / 2, H / 2, "SIM", &gfx_font_8x16,
+                     GFX_WHITE, 1, 38, -30.0f);
+    const int light = count_of(GFX_WHITE);
+
+    fresh();
+    gfx_text_rotated(&s_c, W / 2, H / 2, "SIM", &gfx_font_8x16,
+                     GFX_WHITE, 1, 200, -30.0f);
+    const int heavy = count_of(GFX_WHITE);
+
+    CHECK(heavy > light);
+    CHECK(light > 0);
+}
+
 /* --------------------------------------------------------------- colour */
 
 TEST_CASE(rgb565_packing)
@@ -726,5 +772,7 @@ int main(void)
     RUN(degenerate_canvas_geometry_is_clamped);
     RUN(a_missing_glyph_is_visible);
     RUN(a_line_with_absurd_endpoints_is_bounded_and_stays_in_the_clip);
+    RUN(rotated_text_is_idempotent);
+    RUN(rotated_text_alpha_sets_coverage);
     return test_summary("gfx");
 }

@@ -838,6 +838,20 @@ void gfx_text_in(gfx_canvas_t *c, gfx_rect_t box, const char *s,
 
 /* ------------------------------------------------------------- rotated text */
 
+/*
+ * An 8x8 ordered-dither threshold, used by gfx_text_rotated below.
+ */
+static const uint8_t k_bayer8[64] = {
+     0, 32,  8, 40,  2, 34, 10, 42,
+    48, 16, 56, 24, 50, 18, 58, 26,
+    12, 44,  4, 36, 14, 46,  6, 38,
+    60, 28, 52, 20, 62, 30, 54, 22,
+     3, 35, 11, 43,  1, 33,  9, 41,
+    51, 19, 59, 27, 49, 17, 57, 25,
+    15, 47,  7, 39, 13, 45,  5, 37,
+    63, 31, 55, 23, 61, 29, 53, 21,
+};
+
 void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
                       const gfx_font_t *font, gfx_color_t fg, int scale,
                       uint8_t alpha, float angle_deg)
@@ -851,6 +865,11 @@ void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
 
     const int len = (int)strlen(s);
     if (len <= 0) {
+        return;
+    }
+    /* Rounded, so a caller's alpha maps to the nearest 1/64 of coverage. */
+    const int thresh = ((int)alpha * 64 + 127) / 255;
+    if (thresh <= 0) {
         return;
     }
     const int tw = len * font->width * scale;
@@ -904,8 +923,28 @@ void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
                 continue;
             }
 
-            gfx_pixel(c, dx, dy,
-                      gfx_lerp(gfx_pixel_get(c, dx, dy), fg, alpha));
+            /*
+             * A stencil at full opacity, not a blend -- because this is the
+             * one piece of drawing applied over pixels somebody else may not
+             * have repainted this frame.
+             *
+             * gfx_lerp reads the destination, so laying 15% over a pixel
+             * that already carried last frame's 15% gives 28%, then 39%, and
+             * within a second the watermark was solid.  It looked correct
+             * only over the plot, which is the one region repainting its own
+             * background every frame -- so the bug hid exactly where anyone
+             * would have looked first.
+             *
+             * Writing a fixed colour to a fixed subset of pixels is
+             * idempotent: applying it twice is applying it once, however
+             * many frames go by without the screen beneath it moving.
+             * `alpha` still means what it meant, as the fraction of pixels
+             * covered rather than the weight of a blend.
+             */
+            if (k_bayer8[((dy & 7) << 3) + (dx & 7)] >= thresh) {
+                continue;
+            }
+            gfx_pixel(c, dx, dy, fg);
         }
     }
 }

@@ -235,6 +235,11 @@ int gfx_text_bg(gfx_canvas_t *c, int x, int y, const char *s,
  * This exists for one job: a watermark that says the numbers behind it are not
  * real.  It is not a general text transform, and it is not fast enough to be
  * one.
+ *
+ * `alpha` is coverage, not weight: the glyphs are stencilled at full opacity
+ * onto that fraction of pixels, chosen by an ordered dither.  Drawing this
+ * twice over the same pixels is the same as drawing it once, which is what a
+ * full-screen overlay laid over selectively repainted screens requires.
  */
 void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
                       const gfx_font_t *font, gfx_color_t fg, int scale,

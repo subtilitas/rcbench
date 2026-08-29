@@ -451,10 +451,23 @@ TEST_CASE(the_simulation_mark_covers_the_whole_screen)
     free(plain);
 }
 
-/* It blends rather than overwrites: the numbers underneath stay readable,
- * which is what makes a permanent mark tolerable instead of something people
- * want switched off. */
-TEST_CASE(the_simulation_mark_blends_rather_than_covers)
+/*
+ * The numbers underneath stay readable, which is what makes a permanent mark
+ * tolerable instead of something people want switched off.
+ *
+ * It used to get there by blending, and this case used to assert that almost
+ * no marked pixel reached the ink colour outright.  That contract was wrong:
+ * the mark is laid over screens that repaint only what changed, so it landed
+ * on pixels already carrying its own output from earlier frames and the blend
+ * compounded -- 15% over 15% is 28%, then 39%, until it was solid.  Only the
+ * plot looked right, because it repaints its background every frame.
+ *
+ * So it stencils instead, and readability now comes from sparseness rather
+ * than from weight.  That is what this measures: a marked pixel's neighbours
+ * are mostly unmarked, so the content underneath reads through the gaps.  A
+ * solid fill would score close to eight.
+ */
+TEST_CASE(the_simulation_mark_lets_the_screen_through)
 {
     fresh();
     to_overview();
@@ -473,19 +486,37 @@ TEST_CASE(the_simulation_mark_blends_rather_than_covers)
     ui_router_render(&cv, 0);
 
     const gfx_color_t ink = ui_theme_color(UI_C_TEXT);
-    int changed = 0, opaque = 0;
-    for (int i = 0; i < W * H; ++i) {
-        if (fb[i] != plain[i]) {
+    int changed = 0, not_ink = 0, marked_neighbours = 0;
+    for (int y = 1; y < H - 1; ++y) {
+        for (int x = 1; x < W - 1; ++x) {
+            const size_t at = (size_t)y * W + (size_t)x;
+            if (fb[at] == plain[at]) {
+                continue;
+            }
             ++changed;
-            if (fb[i] == ink) {
-                ++opaque;
+            if (fb[at] != ink) {
+                ++not_ink;
+            }
+            for (int dy = -1; dy <= 1; ++dy) {
+                for (int dx = -1; dx <= 1; ++dx) {
+                    if (dx == 0 && dy == 0) {
+                        continue;
+                    }
+                    const size_t n = (size_t)(y + dy) * W + (size_t)(x + dx);
+                    if (fb[n] != plain[n]) {
+                        ++marked_neighbours;
+                    }
+                }
             }
         }
     }
     CHECK(changed > 2000);
-    /* At 15% almost nothing should reach the ink colour outright. */
-    if (opaque * 20 > changed) {
-        T_FAIL("%d of %d marked pixels are fully opaque", opaque, changed);
+    /* A stencil, so a marked pixel is the ink colour and nothing between. */
+    CHECK_EQ(not_ink, 0);
+    if (marked_neighbours > changed * 4) {
+        T_FAIL("marked pixels average %.1f marked neighbours of 8, which is "
+               "closer to a fill than to a watermark",
+               (double)marked_neighbours / (double)changed);
     }
     free(plain);
 }
@@ -590,7 +621,7 @@ int main(void)
     RUN(a_failed_step_is_drawn_in_its_own_colour);
     RUN(the_alert_band_renders_at_the_bottom);
     RUN(the_simulation_mark_covers_the_whole_screen);
-    RUN(the_simulation_mark_blends_rather_than_covers);
+    RUN(the_simulation_mark_lets_the_screen_through);
     RUN(switching_the_mark_invalidates_the_cached_chrome);
     return test_summary("nav");
 }
