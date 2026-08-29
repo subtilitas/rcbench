@@ -241,6 +241,21 @@ int main(int argc, char **argv)
         motor_screen_set_armed(true);
     }
 
+    if (id == SCREEN_PROGRAMMER
+        && strcmp(view, "programmer-idle") != 0) {
+        /*
+         * Connected, because the parameters are the screen and the empty
+         * state has a golden of its own.  Pressed rather than set, so the
+         * screenshot goes through the same path a finger does -- a mock that
+         * poses its own state can drift from what the buttons actually do.
+         *
+         * CONNECT from programmer_screen.c: if that button moves, this moves
+         * with it.
+         */
+        ui_router_goto(SCREEN_PROGRAMMER);
+        tap(698, UI_BAND_H + 131);
+    }
+
     if (id == SCREEN_ANALYSER) {
         /*
          * Fed through the real decoder frame by frame, with the channels

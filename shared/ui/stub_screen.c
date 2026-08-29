@@ -143,14 +143,6 @@ static const copy_t k_copy[SCREEN_COUNT] = {
           "Where to add mass, and how much" },
         "an analogue accelerometer and an index pickup on the coprocessor",
     },
-    [SCREEN_PROGRAMMER] = {
-        "PROGRAMMER",
-        { "BLHeli_S and AM32 over the one-wire bootloader at 19,200",
-          "ESCape32 over its CLI, and VESC over framed packets",
-          "Hitec D-series servos -- the one protocol published in full",
-          "Programme four ESCs identically, and keep profiles on the card" },
-        "for the rest: borrow the programmer and capture the wire",
-    },
 };
 
 const char *const *stub_copy_lines(ui_screen_id_t id)

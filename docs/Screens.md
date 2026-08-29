@@ -134,11 +134,34 @@ so in words, because a bench that draws invented numbers the same colour as
 measured ones is helping somebody trust them. Four states, not two: silent,
 failsafe, frame lost and live, each with a line saying what it means.
 
+The programmer is not one programmer. BLHeli_S and AM32 speak a one-wire
+bootloader at 19,200; ESCape32 answers a text CLI; VESC wants framed packets; a
+Hitec D-series servo has its own thing entirely. They share a connector and
+nothing else, so the protocol is chosen first and named out loud along with its
+transport, rather than being guessed at from whatever answers.
+
+![Programmer](img/programmer.png)
+
+That costs a tap before every session and buys the thing a bench needs most: at
+no point is there a screen full of parameters whose provenance is ambiguous.
+You picked the protocol, these are its parameters, that is the device that
+answered it. Changing protocol therefore drops the connection -- the device
+that answered a bootloader is not the one that will answer a CLI, and showing
+one identity above the other's parameters is the single lie this screen must
+not tell.
+
+Until something answers, there is nothing to show, and it says so:
+
+![Nothing has answered](img/programmer-idle.png)
+
+Steppers clamp rather than wrap. A parameter that rolls from its last value
+round to its first will one day be set to the wrong end by somebody pressing
+once more than they meant to, and on an ESC the wrong end is a direction.
+
 The rest, each naming its own blocker:
 
 ![Battery](img/battery.png)
 ![Balance](img/balance.png)
-![Programmer](img/programmer.png)
 
 ## When the numbers are not real
 
