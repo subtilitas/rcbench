@@ -117,12 +117,20 @@ void ui_router_set_status(const ui_bench_status_t *status)
     if (status == NULL) {
         return;
     }
-    /* Screens cache their chrome per framebuffer.  The watermark is painted
-     * over the whole canvas, so switching it changes pixels the screens
-     * believe they have already drawn correctly. */
-    const bool was = s.status.simulated;
+    /*
+     * Screens cache their chrome per framebuffer, so anything in the status
+     * that a screen draws has to invalidate them when it moves.
+     *
+     * The watermark is painted over the whole canvas, so switching it changes
+     * pixels the screens believe they have already drawn correctly.  The
+     * capability bitmap is the same problem in a smaller place: the menu's
+     * tiles are chrome, and their badges come out of it -- fit the sensor and
+     * the badge would otherwise stay until something else forced a repaint.
+     */
+    const bool     was  = s.status.simulated;
+    const uint16_t caps = s.status.capabilities;
     s.status = *status;
-    if (was != s.status.simulated) {
+    if (was != s.status.simulated || caps != s.status.capabilities) {
         ui_router_invalidate();
     }
 }

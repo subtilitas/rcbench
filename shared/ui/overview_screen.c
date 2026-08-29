@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "ui_icons.h"
+#include "link_pages.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -25,7 +26,8 @@ typedef struct {
     const char    *name;
     const char    *line;
     ui_icon_fn     icon;
-    bool           live;
+    bool           live;    /**< the screen exists                        */
+    uint16_t       needs;   /**< the hardware it needs, as link_cap_t     */
 } tile_t;
 
 /*
@@ -37,14 +39,22 @@ typedef struct {
 /* iR, not IR: this bench also measures temperature with an infrared part, and
  * the two would sit two tiles apart under the same abbreviation. */
 static const tile_t k_tiles[] = {
-    { SCREEN_MOTOR,      "MOTOR & ESC", "throttle, V/A/W, rpm",    ui_icon_motor,   true  },
-    { SCREEN_SERVO,      "SERVO",       "pulse, travel, current",  ui_icon_servo,   true  },
-    { SCREEN_ANALYSER,   "ANALYSER",    "buses, frames, raw",      ui_icon_chart,    true  },
-    { SCREEN_LOGS,       "LOGS",        "record and read back",    ui_icon_record,     true  },
-    { SCREEN_SETUP,      "SETUP",       "pack, output, theme",     ui_icon_sliders,    true  },
-    { SCREEN_BATTERY,    "BATTERY",     "cells, iR, capacity",     ui_icon_battery, false },
-    { SCREEN_BALANCE,    "BALANCE",     "vibration and phase",     ui_icon_balance, false },
-    { SCREEN_PROGRAMMER, "PROGRAMMER",  "ESC and servo settings",  ui_icon_chip,    false },
+    { SCREEN_MOTOR,      "MOTOR & ESC", "throttle, V/A/W, rpm",    ui_icon_motor,   true,
+      LINK_CAP_ESC_DRIVE | LINK_CAP_PACK_SENSE },
+    { SCREEN_SERVO,      "SERVO",       "pulse, travel, current",  ui_icon_servo,   true,
+      LINK_CAP_SERVO_PWM },
+    { SCREEN_ANALYSER,   "ANALYSER",    "buses, frames, raw",      ui_icon_chart,   true,
+      LINK_CAP_RECEIVER },
+    { SCREEN_LOGS,       "LOGS",        "record and read back",    ui_icon_record,  true,
+      0 },   /* the card is on the panel, so this needs nothing of the far end */
+    { SCREEN_SETUP,      "SETUP",       "pack, output, theme",     ui_icon_sliders, true,
+      0 },
+    { SCREEN_BATTERY,    "BATTERY",     "cells, iR, capacity",     ui_icon_battery, false,
+      LINK_CAP_CELLS },
+    { SCREEN_BALANCE,    "BALANCE",     "vibration and phase",     ui_icon_balance, false,
+      LINK_CAP_VIBRATION },
+    { SCREEN_PROGRAMMER, "PROGRAMMER",  "ESC and servo settings",  ui_icon_chip,    true,
+      LINK_CAP_PROGRAM },
 };
 
 #define TILE_COUNT ((int)(sizeof(k_tiles) / sizeof(k_tiles[0])))
@@ -136,6 +146,8 @@ static void render(gfx_canvas_t *c, int buffer_index)
         gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, 8,
                             ui_theme_color(UI_C_EDGE));
 
+        /* The icon dims for a screen that does not exist.  A screen whose
+         * hardware is missing is fully usable, so it stays lit. */
         t->icon(c, r.x + r.w / 2, r.y + 64, 30,
                 t->live ? ui_theme_color(UI_C_ACCENT)
                         : ui_theme_color(UI_C_TEXT_FAINT));
@@ -149,10 +161,26 @@ static void render(gfx_canvas_t *c, int buffer_index)
         gfx_text_in(c, line, t->line, &gfx_font_8x16,
                     ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_CENTER);
 
-        if (!t->live) {
-            const gfx_rect_t badge = { (int16_t)(r.x + r.w / 2 - 34),
-                                       (int16_t)(r.y + r.h - 30), 68, 20 };
-            ui_pill(c, badge, "SOON", 0, ui_theme_color(UI_C_PANEL_SUNK));
+        /*
+         * Three states, not two.
+         *
+         * SOON is a screen that does not exist.  MODELLED is one that does,
+         * whose hardware is not fitted -- it opens, it works, and everything
+         * in it is invented, which is worth knowing from the menu rather than
+         * after walking into it.  Nothing at all means the part is on and the
+         * numbers are real.
+         *
+         * The second state used to be indistinguishable from the third, so
+         * the menu quietly promised measurements the bench could not take.
+         */
+        const uint16_t have = ui_router_status()->capabilities;
+        const bool fitted = (t->needs == 0)
+                            || ((have & t->needs) == t->needs);
+        if (!t->live || !fitted) {
+            const gfx_rect_t badge = { (int16_t)(r.x + r.w / 2 - 44),
+                                       (int16_t)(r.y + r.h - 30), 88, 20 };
+            ui_pill(c, badge, t->live ? "MODELLED" : "SOON", 0,
+                    ui_theme_color(UI_C_PANEL_SUNK));
         }
     }
 }

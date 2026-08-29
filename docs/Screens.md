@@ -17,6 +17,29 @@ cheap direction on a panel whose frame rate is bandwidth-bound, see
 
 ![The feature menu](img/overview.png)
 
+### The menu says what the bench can do
+
+Three states, not two. **SOON** is a screen that does not exist yet. **MODELLED**
+is one that does, whose hardware is not fitted -- it opens, it works, and every
+number in it is invented. Nothing at all means the part is on and the readings
+are real.
+
+That middle state used to be indistinguishable from the third, so the menu
+quietly promised measurements the bench could not take. It now comes from
+`LINK_ID_CAPABILITIES`, a bitmap the coprocessor fills from what is actually
+soldered on, which today is nothing.
+
+This replaced a page of checkboxes for turning features off, and the reason is
+worth keeping. On a diagnostic instrument a preference that makes the tool
+*not look* is dangerous: untick a receiver bus, plug one in six months later,
+and the analyser reports nothing on the wire with no way to find out why. It
+would also have put "I do not want this" and "this is not fitted" behind one
+widget, and those must never be confused -- the second is a fact, and it
+corrects itself the moment the part goes on.
+
+Absent is not forbidden. A screen whose capability is missing still opens and
+still works from the model, wearing the mark that says so.
+
 Right to left, so no item has to guess another's width: link state, the output
 mode, armed, the run clock, and STOP. **STOP is global and always live** — it
 disarms from any screen, so it never needs explaining.
