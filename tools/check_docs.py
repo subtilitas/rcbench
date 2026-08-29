@@ -62,6 +62,52 @@ def pages() -> list[pathlib.Path]:
     return sorted(DOCS.glob("*.md"))
 
 
+HEADING_RE = re.compile(r"^#{1,6}\s+(.*?)\s*$", re.M)
+
+
+def anchors(text: str) -> set[str]:
+    """The fragment ids GitHub derives from a page's headings.
+
+    Lowercase, punctuation dropped, spaces to hyphens.  Close enough to
+    GitHub's rule for the links this project actually writes.
+    """
+    out = set()
+    for heading in HEADING_RE.findall(text):
+        slug = re.sub(r"[^\w\s-]", "", heading.lower()).strip()
+        out.add(re.sub(r"\s+", "-", slug))
+    return out
+
+
+ANCHOR_RE = re.compile(r"\]\(([^)\s#]*)#([^)\s]+)\)")
+
+
+def check_anchors(problems: list[str]) -> None:
+    """A link to a heading points at a heading that exists.
+
+    Added because a section was deleted and the link to it kept passing: the
+    file still existed, so the link check was happy, and the anchor pointed at
+    nothing.  A dead fragment is invisible until somebody clicks it -- the
+    reader lands at the top of the page and never learns they were meant to be
+    somewhere else.
+    """
+    known = {}
+    for page in pages() + [REPO / "README.md"]:
+        known[page.resolve()] = anchors(read(page))
+
+    for page in pages() + [REPO / "README.md"]:
+        for target, fragment in ANCHOR_RE.findall(read(page)):
+            if "://" in target:
+                continue
+            resolved = (page.parent / target).resolve() if target else page.resolve()
+            if resolved not in known:
+                continue          # a non-markdown target; check_links has it
+            if fragment not in known[resolved]:
+                where = "itself" if resolved == page.resolve() else resolved.name
+                problems.append(
+                    f"{page.name}: #{fragment} points into {where}, "
+                    "which has no such heading")
+
+
 def check_links(problems: list[str]) -> None:
     """Every relative link and image reference resolves to a real file."""
     referenced: set[pathlib.Path] = set()
@@ -203,6 +249,7 @@ def check_shared_modules(problems: list[str]) -> None:
 def main() -> int:
     problems: list[str] = []
     check_links(problems)
+    check_anchors(problems)
     check_sidebar(problems)
     check_suites(problems)
     check_option_lists(problems)
