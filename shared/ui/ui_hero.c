@@ -46,6 +46,13 @@ void ui_hero_render(gfx_canvas_t *c, gfx_rect_t r, const ui_hero_def_t *def,
     gfx_text(c, r.x + 12 + nw + 7, r.y + 46, def->unit, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 
+    /* One rule above the footer.  The peak is a different kind of number from
+     * the live one -- history rather than now -- and a hairline says so more
+     * quietly than another colour would. */
+    gfx_hline(c, r.x + 12, r.y + 62, r.w - 24,
+              gfx_lerp(ui_theme_color(UI_C_PANEL),
+                       ui_theme_color(UI_C_EDGE), 150));
+
     if (isfinite(peak)) {
         char pk[24];
         ui_fmt(pk, sizeof(pk), peak, def->decimals);

@@ -139,6 +139,10 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
     const int rad = s->track.h / 2;
     gfx_fill_round_rect(c, s->track.x, s->track.y, s->track.w, s->track.h,
                         rad, ui_theme_color(UI_C_PANEL_SUNK));
+    /* The trough's own shadow: one line under its top edge, which is what
+     * makes it read as cut into the panel instead of laid on it. */
+    gfx_hline(c, s->track.x + rad, s->track.y + 1, s->track.w - 2 * rad,
+              gfx_lerp(ui_theme_color(UI_C_PANEL_SUNK), GFX_BLACK, 70));
 
     int filled = (int)(frac * (float)s->track.w + 0.5f);
     /* Below one diameter a rounded fill has no straight section left and
@@ -150,6 +154,8 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
     if (filled > 0) {
         gfx_fill_round_rect(c, s->track.x, s->track.y, filled, s->track.h,
                             rad, s->color);
+        gfx_hline(c, s->track.x + rad, s->track.y + 1, filled - 2 * rad,
+                  gfx_lerp(s->color, GFX_WHITE, 70));
     }
 
     /*
@@ -159,7 +165,7 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
      * with alternating framebuffers that reads as flicker rather than as an
      * obviously wrong pixel.
      */
-    const int hr = rad - 3;
+    const int hr = rad - 2;
     int hx = s->track.x + (int)(frac * (float)s->track.w + 0.5f);
     /* Clamped inside the track at both ends, for the same reason. */
     if (hx < s->track.x + rad) {
@@ -168,9 +174,25 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
     if (hx > s->track.x + s->track.w - rad) {
         hx = s->track.x + s->track.w - rad;
     }
-    gfx_fill_circle(c, hx, s->track.y + rad, hr, ui_theme_color(UI_C_TEXT));
-    gfx_draw_circle(c, hx, s->track.y + rad, hr,
-                    gfx_lerp(s->color, GFX_WHITE, 60));
+    const int hy = s->track.y + rad;
+    /* A seat under the knob before the knob: one darker ring, so it sits in
+     * the trough rather than floating over it. */
+    gfx_fill_circle(c, hx, hy + 1, hr,
+                    gfx_lerp(ui_theme_color(UI_C_PANEL_SUNK), GFX_BLACK, 90));
+    gfx_fill_circle(c, hx, hy, hr, ui_theme_color(UI_C_TEXT));
+    gfx_draw_circle(c, hx, hy, hr,
+                    gfx_lerp(ui_theme_color(UI_C_TEXT), GFX_BLACK, 70));
+
+    /*
+     * Two grip lines, not three.  A plain disc reads as a position marker and
+     * a gripped one reads as something to take hold of -- but at this radius
+     * a third line down the middle closes the gaps and the whole knob goes
+     * grey, which is a texture rather than a grip.
+     */
+    const gfx_color_t grip = gfx_lerp(ui_theme_color(UI_C_TEXT),
+                                      GFX_BLACK, 95);
+    gfx_vline(c, hx - 3, hy - 4, 9, grip);
+    gfx_vline(c, hx + 3, hy - 4, 9, grip);
 
     for (int i = 0; i < s->preset_count; ++i) {
         ui_button(c, s->presets[i], s->preset_label[i],

@@ -78,7 +78,12 @@ void ui_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
     }
 
     gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CTL, body);
-    if (!enabled) {
+    if (enabled) {
+        /* The same hairline the cards get, so a button reads as cut from the
+         * same material rather than pasted onto it. */
+        gfx_hline(c, r.x + UI_R_CTL, r.y + 1, r.w - 2 * UI_R_CTL,
+                  gfx_lerp(body, GFX_WHITE, 38));
+    } else {
         gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CTL, UI_EDGE);
     }
     if (label) {
@@ -96,6 +101,16 @@ void ui_card(gfx_canvas_t *c, gfx_rect_t r, gfx_color_t fill)
 {
     gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CARD, fill);
     gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CARD, UI_EDGE);
+    /*
+     * One hairline inside the top edge and one along the bottom.  Light comes
+     * from above, so the top inside edge catches it and the bottom sits in
+     * its own shadow; two lines do what a gradient would, for two rows of
+     * pixels instead of the card's whole height.
+     */
+    gfx_hline(c, r.x + UI_R_CARD, r.y + 1, r.w - 2 * UI_R_CARD,
+              gfx_lerp(fill, GFX_WHITE, 24));
+    gfx_hline(c, r.x + UI_R_CARD, r.y + r.h - 2, r.w - 2 * UI_R_CARD,
+              gfx_lerp(fill, GFX_BLACK, 40));
 }
 
 void ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label,
