@@ -28,7 +28,7 @@ frame-idle          974      122 KiB      3.2      39.0
 sim             11,703     1463 KiB     38.4      19.5
 chrome          30,431     3804 KiB     99.9       9.8
 overview           940      118 KiB      3.1      39.0
-servo           15,454     1932 KiB     50.7      19.5
+servo           15,452     1932 KiB     50.7      19.5
 servo-grip        2,982      373 KiB      9.8      39.0
 clear           12,006     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5

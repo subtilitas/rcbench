@@ -44,16 +44,22 @@
  * The mounting flanges.
  *
  * They run the full width of the case, because that is what they do -- the
- * lug is moulded across the whole end, not tucked into the middle of it.  So
- * the width is the case's, and the hole positions fall out of wanting the
- * same margin of material all the way round rather than being chosen.
+ * lug is moulded across the whole end, not tucked into the middle of it.
+ *
+ * Nothing here is a chosen number except the three clearances.  The flange's
+ * width is whatever it takes to hold a bore with TAB_MARGIN of material
+ * outside it and TAB_INNER between it and the case, and the hole positions
+ * fall out of wanting the same margin top and bottom.  Sized the other way
+ * round -- flange first, holes centred in it -- the bore ends up touching the
+ * case, which is the one place a lug never has a hole.
  */
-#define TAB_HOLE_R  18
-#define TAB_MARGIN  6
-#define TAB_W       (2 * (TAB_HOLE_R + TAB_MARGIN))
+#define TAB_HOLE_R  12
+#define TAB_MARGIN  6                  /* material outside the bore     */
+#define TAB_INNER   8                  /* between the bore and the case */
+#define TAB_OVER    6                  /* how far the case laps over it */
+#define TAB_W       (TAB_MARGIN + 2 * TAB_HOLE_R + TAB_INNER + TAB_OVER)
 #define TAB_H       BODY_H
 #define TAB_HOLE_DY (BODY_H / 2 - TAB_MARGIN - TAB_HOLE_R)
-#define TAB_OVER    6                  /* how far the case laps over it */
 
 /*
  * Screen angle from servo angle.
@@ -364,7 +370,10 @@ static void draw_body(gfx_canvas_t *c)
          * already in, and the open side is the first thing you recognise a
          * servo by from above.
          */
-        const int cxh   = tx + TAB_W / 2;
+        /* Set in from the flange's own outer edge, so the bore keeps its
+         * distance from the case whichever end it is on. */
+        const int cxh   = (i == 0) ? tx + TAB_MARGIN + TAB_HOLE_R
+                                   : tx + TAB_W - TAB_MARGIN - TAB_HOLE_R;
         const int mouth = (i == 0) ? tx : tx + TAB_W;   /* the open edge */
         /*
          * The bore is darker than both the lug and the card behind it.  A
