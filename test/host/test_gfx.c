@@ -80,6 +80,84 @@ TEST_CASE(rotated_text_alpha_sets_coverage)
     CHECK(light > 0);
 }
 
+/* -------------------------------------------------- seven-segment numerals */
+
+static gfx_seg_style_t seg_style(bool ghost)
+{
+    gfx_seg_style_t st = { .digit_w = 14, .digit_h = 22, .thickness = 3,
+                           .gap = 3, .slant = 0, .ghost = ghost };
+    return st;
+}
+
+TEST_CASE(seg_digits_light_the_right_segments)
+{
+    const gfx_seg_style_t st = seg_style(false);
+
+    /* 8 lights all seven, so nothing can cover more; 1 lights two, so
+     * nothing can cover less.  Every other digit falls between. */
+    fresh();
+    gfx_seg_text(&s_c, 1, 1, "8", &st, GFX_RED, GFX_BLUE);
+    const int eight = count_of(GFX_RED);
+    fresh();
+    gfx_seg_text(&s_c, 1, 1, "1", &st, GFX_RED, GFX_BLUE);
+    const int one = count_of(GFX_RED);
+    CHECK(one > 0);
+    CHECK(eight > one);
+
+    for (const char *p = "023456789"; *p; ++p) {
+        const char d[2] = { *p, 0 };
+        fresh();
+        gfx_seg_text(&s_c, 1, 1, d, &st, GFX_RED, GFX_BLUE);
+        const int n = count_of(GFX_RED);
+        if (n < one || n > eight) {
+            T_FAIL("'%c' lit %d pixels, outside 1's %d and 8's %d",
+                   *p, n, one, eight);
+        }
+    }
+
+    /* A space lights nothing but still advances, and an unsupported
+     * character draws nothing rather than drawing something wrong. */
+    fresh();
+    gfx_seg_text(&s_c, 1, 1, " ", &st, GFX_RED, GFX_BLUE);
+    CHECK_EQ(count_of(GFX_RED), 0);
+    fresh();
+    gfx_seg_text(&s_c, 1, 1, "Z", &st, GFX_RED, GFX_BLUE);
+    CHECK_EQ(count_of(GFX_RED), 0);
+}
+
+TEST_CASE(seg_width_matches_what_it_draws)
+{
+    const gfx_seg_style_t st = seg_style(false);
+    /* A dot takes a narrower cell than a digit, so the two must not be
+     * measured the same -- a full cell of whitespace around a decimal point
+     * is what makes a rendered number look accidentally spaced. */
+    CHECK(gfx_seg_width(".", &st) < gfx_seg_width("8", &st));
+    CHECK_EQ(gfx_seg_width("", &st), 0);
+    CHECK_EQ(gfx_seg_text(&s_c, 1, 1, "88", &st, GFX_RED, GFX_BLUE),
+             gfx_seg_width("88", &st));
+
+    fresh();
+    const int drawn = gfx_seg_text(&s_c, 1, 1, "8", &st, GFX_RED, GFX_BLUE);
+    CHECK_EQ(drawn, gfx_seg_width("8", &st));
+    CHECK_EQ(drawn, st.digit_w);
+}
+
+TEST_CASE(the_ghost_shows_the_unlit_segments)
+{
+    fresh();
+    const gfx_seg_style_t plain = seg_style(false);
+    gfx_seg_text(&s_c, 1, 1, "1", &plain, GFX_RED, GFX_BLUE);
+    CHECK_EQ(count_of(GFX_BLUE), 0);
+
+    fresh();
+    const gfx_seg_style_t ghost = seg_style(true);
+    gfx_seg_text(&s_c, 1, 1, "1", &ghost, GFX_RED, GFX_BLUE);
+    /* The five segments a 1 does not use are now visible, and the two it
+     * does are still drawn in the lit colour over them. */
+    CHECK(count_of(GFX_BLUE) > 0);
+    CHECK(count_of(GFX_RED) > 0);
+}
+
 /* --------------------------------------------------------------- colour */
 
 TEST_CASE(rgb565_packing)
@@ -790,6 +868,9 @@ int main(void)
     RUN(degenerate_canvas_geometry_is_clamped);
     RUN(a_missing_glyph_is_visible);
     RUN(a_line_with_absurd_endpoints_is_bounded_and_stays_in_the_clip);
+    RUN(seg_digits_light_the_right_segments);
+    RUN(seg_width_matches_what_it_draws);
+    RUN(the_ghost_shows_the_unlit_segments);
     RUN(rotated_text_is_idempotent);
     RUN(rotated_text_alpha_sets_coverage);
     return test_summary("gfx");

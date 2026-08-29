@@ -394,10 +394,12 @@ static void render(gfx_canvas_t *c, int buffer_index)
      * a reading too -- and the one the operator's hand is on. */
     char pct[16];
     snprintf(pct, sizeof(pct), "%.1f", (double)s.slider.value);
-    const int pw = gfx_text_width(UI_FONT_NUM, pct, 1);
-    const int px = 386 - 20 - pw;
-    gfx_text(c, px, ROW_Y, pct, UI_FONT_NUM,
-             ui_theme_color(UI_C_ACCENT), 1);
+    const gfx_seg_style_t seg = ui_seg_hero();
+    const int pw = gfx_seg_width(pct, &seg);
+    const int px = 386 - 22 - pw;
+    gfx_seg_text(c, px, ROW_Y, pct, &seg, ui_theme_color(UI_C_ACCENT),
+                 gfx_lerp(ui_theme_color(UI_C_BG),
+                          ui_theme_color(UI_C_ACCENT), 34));
     gfx_text(c, 386 - 16, ROW_Y + 14, "%", &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 

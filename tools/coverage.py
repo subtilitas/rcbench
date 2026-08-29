@@ -37,6 +37,7 @@ END = "<!-- coverage:end -->"
 # README table.
 TRACKED = [
     "shared/gfx/gfx.c",
+    "shared/gfx/gfx_seg.c",
     "shared/touch/touch_map.c",
     "shared/ui/ui_theme.c",
     "shared/ui/ui_widgets.c",

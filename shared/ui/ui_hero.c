@@ -50,12 +50,14 @@ void ui_hero_render(gfx_canvas_t *c, gfx_rect_t r, const ui_hero_def_t *def,
     } else {
         snprintf(number, sizeof(number), "---");
     }
-    gfx_text(c, r.x + 12, r.y + 33, number, UI_FONT_NUM, def->color, 1);
+    const gfx_seg_style_t seg = ui_seg_hero();
+    gfx_seg_text(c, r.x + 12, r.y + 29, number, &seg, def->color,
+                 gfx_lerp(ui_theme_color(UI_C_PANEL), def->color, 34));
 
-    /* The unit sits on the numeral's baseline rather than its top, so it
+    /* The unit sits on the numerals' baseline rather than their top, so it
      * reads as part of the same word. */
-    const int nw = gfx_text_width(UI_FONT_NUM, number, 1);
-    gfx_text(c, r.x + 12 + nw + 7, r.y + 47, def->unit, UI_FONT_LABEL,
+    const int nw = gfx_seg_width(number, &seg);
+    gfx_text(c, r.x + 12 + nw + 8, r.y + 45, def->unit, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 
     /* One rule above the footer.  The peak is a different kind of number from
