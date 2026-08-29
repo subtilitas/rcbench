@@ -23,12 +23,24 @@ void ui_hero_render(gfx_canvas_t *c, gfx_rect_t r, const ui_hero_def_t *def,
 
     ui_card(c, r, ui_theme_color(UI_C_PANEL));
 
-    /* The tag, not a border: colour identifies the channel without ringing
-     * the whole card in it, which at four cards would be four competing
-     * outlines and no hierarchy at all. */
-    gfx_fill_round_rect(c, r.x + 12, r.y + 11, 3, 14, 1, def->color);
-    gfx_text(c, r.x + 22, r.y + 10, def->label, UI_FONT_LABEL,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
+    /*
+     * The channel's colour along the card's top edge, and again as a tick
+     * beside the name.
+     *
+     * A single small tag was too quiet to tie a card to its trace at a
+     * glance -- which is the whole job, since the plot above draws four
+     * lines and this is what says which is which.  Ringing the entire card
+     * in it would give four competing outlines and no hierarchy, so it takes
+     * the top edge only: enough to read across the bench, contained enough
+     * that the four still sit as a set.
+     */
+    gfx_hline(c, r.x + UI_R_CARD, r.y + 1, r.w - 2 * UI_R_CARD, def->color);
+    gfx_hline(c, r.x + UI_R_CARD + 2, r.y + 2, r.w - 2 * UI_R_CARD - 4,
+              gfx_lerp(def->color, ui_theme_color(UI_C_PANEL), 120));
+
+    gfx_fill_round_rect(c, r.x + 12, r.y + 13, 3, 12, 1, def->color);
+    gfx_text(c, r.x + 22, r.y + 12, def->label, UI_FONT_LABEL,
+             ui_theme_color(UI_C_TEXT), 1);
 
     char number[24];
     /* A non-finite reading is shown as such rather than printed: "nan" in a
@@ -38,12 +50,12 @@ void ui_hero_render(gfx_canvas_t *c, gfx_rect_t r, const ui_hero_def_t *def,
     } else {
         snprintf(number, sizeof(number), "---");
     }
-    gfx_text(c, r.x + 12, r.y + 32, number, UI_FONT_NUM, def->color, 1);
+    gfx_text(c, r.x + 12, r.y + 33, number, UI_FONT_NUM, def->color, 1);
 
     /* The unit sits on the numeral's baseline rather than its top, so it
      * reads as part of the same word. */
     const int nw = gfx_text_width(UI_FONT_NUM, number, 1);
-    gfx_text(c, r.x + 12 + nw + 7, r.y + 46, def->unit, UI_FONT_LABEL,
+    gfx_text(c, r.x + 12 + nw + 7, r.y + 47, def->unit, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 
     /* One rule above the footer.  The peak is a different kind of number from
