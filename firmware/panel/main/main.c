@@ -115,6 +115,39 @@ static void pump(void)
     }
 }
 
+/*
+ * How long to keep asking who is there.  Three seconds is about three
+ * attempts, because a poll that gets nothing back costs the host timeout.
+ */
+#define IDENTITY_WAIT_MS 3000u
+
+/*
+ * Ask the coprocessor who it is, and keep asking.
+ *
+ * It used to be asked once.  The echo test above retries five times, and that
+ * asymmetry was the whole of the bug: a bus that echoed every frame perfectly
+ * would still show "no answer" here, because the two boards do not finish
+ * booting at the same instant, and the splash step is written once and never
+ * revisited.  A first frame onto a bus whose far end is not yet listening also
+ * goes unacknowledged and is retransmitted in silicon, which costs time a
+ * single attempt had not budgeted for.
+ *
+ * The failure is still bounded, because a bench with no coprocessor attached
+ * must not sit on the splash for ever waiting to be told so.
+ */
+static bool poll_identity(link_host_t *host, link_msg_t *reply)
+{
+    const uint32_t start = now_ms();
+    do {
+        if (poll_page(host, LINK_PAGE_IDENTITY, LINK_ID_COUNT, reply)
+            && reply->op == LINK_OP_DATA) {
+            return true;
+        }
+        pump();
+    } while ((uint32_t)(now_ms() - start) < IDENTITY_WAIT_MS);
+    return false;
+}
+
 static bool bring_up(void)
 {
     bool ok = true;
@@ -186,8 +219,7 @@ static bool bring_up(void)
     link_host_init(&s_host, now_ms());
     if (link_open) {
         link_msg_t reply;
-        if (poll_page(&s_host, LINK_PAGE_IDENTITY, LINK_ID_COUNT,
-                      &reply) && reply.op == LINK_OP_DATA) {
+        if (poll_identity(&s_host, &reply)) {
             /* Wide enough for three 16-bit registers plus the words: the
              * splash truncates its own detail field anyway, but a
              * truncating snprintf is a warning, and warnings are errors. */
@@ -205,8 +237,20 @@ static bool bring_up(void)
                               speaks_ours ? SPLASH_OK : SPLASH_FAIL, detail);
             ok = ok && speaks_ours;
         } else {
-            /* Not a failure: the bench is useful without one, and says so. */
-            splash_screen_set(SPLASH_STEP_COPRO, SPLASH_WARN, "no answer");
+            /*
+             * Not a failure: the bench is useful without one, and says so.
+             * Which kind of silence, though, is worth the two words.  Nothing
+             * arriving and something arriving that we then reject are
+             * different faults wanting different things unplugged, and the
+             * poller has already counted which happened.
+             */
+            const char *why = "no answer";
+            if (s_host.nacks > 0) {
+                why = "refused";
+            } else if (s_host.mismatches > 0) {
+                why = "wrong reply";
+            }
+            splash_screen_set(SPLASH_STEP_COPRO, SPLASH_WARN, why);
         }
     } else {
         splash_screen_set(SPLASH_STEP_COPRO, SPLASH_WARN, "no link");
