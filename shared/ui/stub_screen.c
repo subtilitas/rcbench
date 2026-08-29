@@ -90,14 +90,6 @@ static const copy_t k_copy[SCREEN_COUNT] = {
      * Both want a current sensor per output, which the catalogue costs as
      * medium: one sensor per channel, or a multiplexer.
      */
-    [SCREEN_ANALYSER] = {
-        "ANALYSER",
-        { "Decode a receiver bus and show the channels",
-          "Watch a receiver fail: cut the transmitter, see what comes out",
-          "Link quality and RSSI from the pilot's own system",
-          "A raw view: bytes, gaps, errors, framing" },
-        "one PIO soft UART, and then one parser at a time",
-    },
     /* Reached only if the log viewer is ever unrouted; it is built. */
     [SCREEN_LOGS] = {
         "LOGS",

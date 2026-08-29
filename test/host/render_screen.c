@@ -13,10 +13,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <string.h>
 
 #include "log_viewer_screen.h"
 #include "settings.h"
+#include "analyser_screen.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
 #include "servo_sim.h"
@@ -237,6 +239,64 @@ int main(int argc, char **argv)
         }
         motor_screen_set_throttle(64.0f);
         motor_screen_set_armed(true);
+    }
+
+    if (id == SCREEN_ANALYSER) {
+        /*
+         * Fed through the real decoder frame by frame, with the channels
+         * moving, because a lane view of a still frame shows sixteen
+         * straight lines and proves nothing about what it is for.
+         */
+        sbus_decoder_t dec;
+        sbus_decoder_reset(&dec);
+        uint32_t us = 100000u;
+
+        for (unsigned t = 0; t < 132u; ++t) {
+            uint16_t ch[SBUS_CHANNELS];
+            for (unsigned i = 0; i < SBUS_CHANNELS; ++i) {
+                ch[i] = 1024;                       /* neutral */
+            }
+            /* A stick swept across the window. */
+            ch[1] = (uint16_t)(1024 + (int)(600.0f
+                        * sinf((float)t * 0.06f)));
+            /* A switch thrown once, a third of the way in. */
+            ch[4] = (t > 44u) ? 1811 : 172;
+            /* A knob wound slowly. */
+            ch[7] = (uint16_t)(400 + t * 8u);
+            /* One frame with a spike on it: the glitch a lane is meant to
+             * make findable. */
+            if (t == 96u) {
+                ch[10] = 1811;
+            }
+
+            uint8_t raw[SBUS_FRAME_BYTES];
+            memset(raw, 0, sizeof(raw));
+            raw[0] = SBUS_HEADER;
+            for (unsigned i = 0; i < SBUS_CHANNELS; ++i) {
+                const unsigned bit = i * 11u;
+                for (unsigned b = 0; b < 11u; ++b) {
+                    if (ch[i] & (1u << b)) {
+                        const unsigned at = bit + b;
+                        raw[1u + at / 8u] |= (uint8_t)(1u << (at % 8u));
+                    }
+                }
+            }
+            raw[23] = SBUS_FLAG_CH17;
+
+            sbus_frame_t frame;
+            bool got = false;
+            us += SBUS_GAP_US * 2u;          /* the gap that starts a frame */
+            for (unsigned i = 0; i < SBUS_FRAME_BYTES; ++i) {
+                if (sbus_decode_byte(&dec, raw[i], us, &frame)) {
+                    got = true;
+                }
+                us += 120u;
+            }
+            if (got) {
+                analyser_screen_push(&frame, &dec, raw, SBUS_FRAME_BYTES,
+                                     t * 14u);
+            }
+        }
     }
 
     if (id == SCREEN_SERVO) {
