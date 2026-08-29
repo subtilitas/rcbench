@@ -282,6 +282,15 @@ int main(int argc, char **argv)
                 }
             }
             raw[23] = SBUS_FLAG_CH17;
+            /*
+             * The state this screen exists for gets a golden of its own.  A
+             * receiver in failsafe sends well-formed numbers it was told to
+             * invent, and how that is presented is the thing most worth
+             * holding still between releases.
+             */
+            if (strcmp(view, "analyser-failsafe") == 0) {
+                raw[23] |= SBUS_FLAG_FAILSAFE;
+            }
 
             sbus_frame_t frame;
             bool got = false;

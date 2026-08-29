@@ -67,6 +67,7 @@ SOURCES = [
     "shared/bench/bench_state.c",
     "shared/bench/telemetry_sim.c",
     "shared/servo/servo_sim.c",
+    "shared/sbus/sbus.c",
     "shared/bench/throttle.c",
 ]
 INCLUDES = [
@@ -78,6 +79,7 @@ INCLUDES = [
     "shared/logfile/include",
     "shared/settings/include",
     "shared/servo/include",
+    "shared/sbus/include",
 ]
 
 MODES = ["frame", "frame-idle", "sim", "chrome", "overview", "servo",

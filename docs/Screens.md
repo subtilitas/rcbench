@@ -97,10 +97,45 @@ and hands it a 432 px window, so without the shift the footer ran from 430 to
 472 in a canvas 432 tall and RESCAN, OPEN and PLOT could not be pressed at
 all.
 
-The rest, each naming its own blocker:
+The servo bench is commanded by its horn: drag anywhere on the sweep and the
+arm points there. The case beside it is not the dial, and neither is the middle
+of the boss, which is not a direction.
 
 ![Servo](img/servo.png)
+
+The arm follows the *measured* position and not the commanded one, with no
+easing of its own. Easing towards a measurement would add the bench's lag on
+top of the servo's, and once drawn the two are indistinguishable -- a slow
+servo and a slow screen look identical, and only one of them is under test. So
+the commanded position is drawn faintly behind the measured one, and lag shows
+as two arms rather than as a number disagreeing with a picture.
+
+The analyser is two thirds history and one third now. The question it is asked
+is "I moved that -- which channel was it?", and no arrangement of current
+values can answer it, because the information is in the movement. Each channel
+keeps the last second and a half, so the one that moved is the one with a step
+in it, and the eye finds a step among fifteen flat lines without being told
+where to look. The bar beside each trace answers the other question -- how far
+is it now -- without reading a number.
+
 ![Analyser](img/analyser.png)
+
+It is also the only arrangement that separates the two faults worth catching: a
+glitch is a spike in one lane, a dropout is a notch across all sixteen at the
+same instant.
+
+The state block is the largest thing on that screen, and this is why:
+
+![A receiver in failsafe](img/analyser-failsafe.png)
+
+A receiver in failsafe sends sixteen perfectly well-formed channel values that
+it was told to invent. Every trace and every bar turns red and the screen says
+so in words, because a bench that draws invented numbers the same colour as
+measured ones is helping somebody trust them. Four states, not two: silent,
+failsafe, frame lost and live, each with a line saying what it means.
+
+The rest, each naming its own blocker:
+
 ![Battery](img/battery.png)
 ![Balance](img/balance.png)
 ![Programmer](img/programmer.png)

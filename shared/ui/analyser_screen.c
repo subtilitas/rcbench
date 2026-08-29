@@ -28,9 +28,16 @@
 #define TAB_H   28
 #define BODY_Y  44
 
-#define LCARD_W 556
+/*
+ * The state card is only as wide as the widest thing it must hold: the word
+ * FRAME LOST at 16x28, and the sentence under it at 8x16, both 160 pixels.
+ * Everything it saves goes to the traces, which is the half of this screen
+ * that can use more room.
+ */
+#define RCARD_PREF 190
+#define LCARD_W (W - 2 * PAD - 8 - RCARD_PREF)
 #define RCARD_X (PAD + LCARD_W + 8)
-#define RCARD_W (W - RCARD_X - PAD)
+#define RCARD_W RCARD_PREF
 
 /*
  * Sixteen lanes of recent history, one per channel.
@@ -55,14 +62,21 @@
  * wide makes the eye measure a line's height against a faint centre when all
  * it wants is a length.
  */
-#define HIST      108              /* about a second and a half at S.BUS rate */
-#define LANE_H    23
-#define LANE_TOP  (BODY_Y + 8)
-#define LANE_X    56               /* where a lane's trace starts */
-#define LANE_W    (HIST * 3)
-#define BAR_X     (LANE_X + LANE_W + 14)
-#define BAR_W     104
-#define VAL_X     (BAR_X + BAR_W + 8)
+#define HIST      118             /* one pixel a sample, so about 1.7 s */
+#define PITCH     1
+
+/* Eight rows of two.  Half the history each, twice the height to draw it in. */
+#define COLS      2
+#define ROWS      8
+#define COL_W     ((LCARD_W - 16) / COLS)
+#define LANE_H    46
+#define LANE_TOP  (BODY_Y + 10)
+
+#define LAB_W     40               /* the channel's name              */
+#define TRACE_W   (HIST * PITCH)
+#define BAR_W     58
+#define BAR_GAP   8
+#define VAL_W     40
 
 static const char *const k_tab_labels[] = { "CHANNELS", "RAW" };
 
@@ -175,43 +189,89 @@ static gfx_color_t live(void)
 /* One channel's lane: its name, its trace, and where it is now. */
 static void draw_lane(gfx_canvas_t *c, int ch)
 {
-    const int y   = LANE_TOP + ch * LANE_H;
+    const int col = ch / ROWS;
+    const int row = ch % ROWS;
+    const int x0  = PAD + 8 + col * COL_W;
+    const int y   = LANE_TOP + row * LANE_H;
     const int mid = y + LANE_H / 2;
-    const int half = LANE_H / 2 - 3;
+
+    const int tx = x0 + LAB_W;
+    const int bx = tx + TRACE_W + BAR_GAP;
+    const int vx = bx + BAR_W + 6;
+
+    const int gh   = LANE_H - 14;
+    const int half = gh / 2 - 2;
 
     char lbl[16];
     snprintf(lbl, sizeof(lbl), "CH%02d", (ch + 1) & 0xFF);
-    gfx_text(c, PAD + 8, mid - 8, lbl, UI_FONT_LABEL,
+    gfx_text(c, x0, mid - 8, lbl, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 
-    /* Neutral, drawn the whole width: sixteen of these make a comb the eye
-     * reads a step against without measuring anything. */
-    gfx_hline(c, LANE_X, mid, LANE_W, ui_theme_color(UI_C_GRID));
-
-    const gfx_color_t ink = live();
+    /*
+     * The trace runs in a trough of its own, in the same sunk colour the bar
+     * beside it sits in.  Drawn straight onto the card the two halves of a
+     * lane read as different kinds of thing; on the same ground they read as
+     * one instrument shown two ways.
+     */
+    gfx_fill_round_rect(c, tx, mid - gh / 2, TRACE_W, gh, 4,
+                        ui_theme_color(UI_C_PANEL_SUNK));
 
     /*
-     * Oldest at the left, newest at the right, so a change arrives at the
-     * edge you are already looking at and walks away from it.
+     * Neutral, in the unlit shade of the trace that runs on it rather than in
+     * a neutral grey.  It is the same idea as the segment numerals and the
+     * horn's rings: the line is always there in the glass, and the trace is
+     * that same line lit.
      */
-    const unsigned n = s.filled;
-    if (n > 0u) {
-    int prev_y = 0;
-    for (unsigned i = 0; i < n; ++i) {
-        const unsigned idx = (s.head + HIST - n + i) % HIST;
-        const int v  = s.hist[ch][idx];
-        const int py = mid - (v * half) / 1000;
-        const int px = LANE_X + LANE_W - (int)((n - 1u - i) * 3u);
-        if (i == 0u) {
-            prev_y = py;
-        }
-        /* A span rather than a point, so a step between two samples is a
-         * line and not two dots with nothing between them. */
-        const int top = (py < prev_y) ? py : prev_y;
-        const int bot = (py < prev_y) ? prev_y : py;
-        gfx_fill_rect(c, px, top, 3, bot - top + 2, ink);
-        prev_y = py;
+    gfx_hline(c, tx, mid, TRACE_W,
+              gfx_lerp(ui_theme_color(UI_C_PANEL_SUNK), live(), 56));
+
+    /* A rule under the lane, so a trace that wanders near the edge of its
+     * own row cannot be read as belonging to the next one. */
+    if (row < ROWS - 1) {
+        gfx_hline(c, x0, y + LANE_H - 1, COL_W - 16,
+                  gfx_lerp(ui_theme_color(UI_C_PANEL),
+                           ui_theme_color(UI_C_EDGE), 130));
     }
+
+    const gfx_color_t ink = live();
+    const unsigned n = s.filled;
+
+    if (n > 0u) {
+        /*
+         * Clipped to the trough while the trace is drawn.
+         *
+         * Three things put ink outside it otherwise, and only one of them is
+         * obvious: the newest column began *at* the right edge and is a whole
+         * pitch wide, a span between two samples is drawn a pixel taller than
+         * it measures so a flat run is still visible, and the trough's
+         * corners are rounded while the columns are not.  Clipping answers
+         * all three at once and keeps answering them if any of them change.
+         */
+        const gfx_rect_t trough = { (int16_t)tx, (int16_t)(mid - gh / 2),
+                                    (int16_t)TRACE_W, (int16_t)gh };
+        const gfx_rect_t was = c->clip;
+        if (gfx_clip_set(c, trough)) {
+            /*
+             * Oldest at the left, newest at the right, so a change arrives at
+             * the edge you are already looking at and walks away from it.
+             */
+            int prev_y = 0;
+            for (unsigned i = 0; i < n; ++i) {
+                const unsigned idx = (s.head + HIST - n + i) % HIST;
+                const int v  = s.hist[ch][idx];
+                const int py = mid - (v * half) / 1000;
+                const int px = tx + TRACE_W - PITCH
+                               - (int)((n - 1u - i) * PITCH);
+                if (i == 0u) {
+                    prev_y = py;
+                }
+                const int top = (py < prev_y) ? py : prev_y;
+                const int bot = (py < prev_y) ? prev_y : py;
+                gfx_fill_rect(c, px, top, PITCH, bot - top + 1, ink);
+                prev_y = py;
+            }
+        }
+        c->clip = was;
     }
 
     /*
@@ -219,11 +279,11 @@ static void draw_lane(gfx_canvas_t *c, int ch)
      * quantity is how far it is from neutral and which way, and a bar growing
      * from one end puts that sign in the number rather than in the picture.
      */
-    const int bh = LANE_H - 11;
-    gfx_fill_round_rect(c, BAR_X, mid - bh / 2, BAR_W, bh, bh / 2,
+    const int bh = 12;
+    gfx_fill_round_rect(c, bx, mid - bh / 2, BAR_W, bh, bh / 2,
                         ui_theme_color(UI_C_PANEL_SUNK));
     if (s.have) {
-        const int bmid  = BAR_X + BAR_W / 2;
+        const int bmid  = bx + BAR_W / 2;
         const int reach = BAR_W / 2 - 3;
         const int v     = s.hist[ch][(s.head + HIST - 1u) % HIST];
         int span = (v * reach) / 1000;
@@ -244,8 +304,8 @@ static void draw_lane(gfx_canvas_t *c, int ch)
     } else {
         snprintf(val, sizeof(val), "---");
     }
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)VAL_X, (int16_t)(mid - 8),
-                                 (int16_t)(LCARD_W - VAL_X + PAD - 10), 16 },
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)vx, (int16_t)(mid - 8),
+                                 (int16_t)VAL_W, 16 },
                 val, UI_FONT_LABEL,
                 s.have ? ui_theme_color(UI_C_TEXT)
                        : ui_theme_color(UI_C_TEXT_FAINT), 1,
@@ -370,11 +430,13 @@ static void draw_right(gfx_canvas_t *c)
     gfx_hline(c, x, BODY_Y + 238, w, ui_theme_color(UI_C_EDGE));
     gfx_text(c, x, BODY_Y + 250, "DIGITAL", UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
+    /* Stacked, not side by side.  Two of these across is what set this card's
+     * width, and the width was being spent on a pair of four-character labels
+     * rather than on the traces next door. */
     for (int i = 0; i < 2; ++i) {
         const bool on = s.have && ((i == 0) ? s.frame.ch17 : s.frame.ch18);
-        const gfx_rect_t r = { (int16_t)(x + i * (w / 2)),
-                               (int16_t)(BODY_Y + 272),
-                               (int16_t)(w / 2 - 8), 28 };
+        const gfx_rect_t r = { (int16_t)x, (int16_t)(BODY_Y + 272 + i * 34),
+                               (int16_t)w, 28 };
         ui_button(c, r, (i == 0) ? "CH17" : "CH18",
                   on ? ui_theme_color(UI_C_ACCENT)
                      : ui_theme_color(UI_C_PANEL_HI),
