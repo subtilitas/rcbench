@@ -75,6 +75,7 @@ SCREENS = {
     "programmer-idle": ("programmer-idle.png", "programmer", "dark"),
     "programmer-params": ("programmer-params.png", "programmer", "dark"),
     "programmer-dirty": ("programmer-dirty.png", "programmer", "dark"),
+    "programmer-am32": ("programmer-am32.png", "programmer", "dark"),
     "logs-import":("logs-import.png","logs",       "dark"),
     "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
     "setup":      ("setup.png",      "setup",      "dark"),

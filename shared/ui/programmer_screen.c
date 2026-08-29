@@ -111,6 +111,14 @@ typedef enum { STAGE_CLASS = 0, STAGE_PROTOCOL, STAGE_DEVICE } stage_t;
 /* ------------------------------------------------------- the parameters */
 
 static const char *const k_dir[]    = { "NORMAL", "REVERSED", "BIDIRECTIONAL" };
+/*
+ * BLHeli_S alone puts timing in named steps, because that is what its
+ * configurator does; every firmware after it settled on degrees of advance,
+ * and 0 to 31 is the range they all use.  Two representations of the same
+ * physical quantity, in one list, drawn by the same renderer -- which is the
+ * argument for the definitions carrying their own kind rather than the
+ * screen assuming one.
+ */
 static const char *const k_timing[] = { "LOW", "MEDIUM LOW", "MEDIUM",
                                         "MEDIUM HIGH", "HIGH" };
 static const char *const k_pwm[]    = { "24 kHz", "48 kHz", "96 kHz" };
@@ -149,9 +157,9 @@ static const param_def_t k_am32[] = {
   { "MOTOR", "Motor direction", PARAM_ENUM,
     "Which way it turns, and whether reverse is allowed at all",
     k_dir, 3, 0,0,0,0, NULL, 0 },
-  { NULL, "Timing advance", PARAM_ENUM,
-    "How far ahead of the rotor the drive commutates",
-    k_timing, 5, 0,0,0,0, NULL, 2 },
+  { NULL, "Timing advance", PARAM_NUMBER,
+    "Degrees ahead of the rotor: more rpm and more heat, less is cooler",
+    NULL, 0, 0, 30, 1, 0, "deg", 22 },
   { NULL, "PWM frequency", PARAM_ENUM,
     "Higher is quieter and warmer; lower is efficient and audible",
     k_pwm, 3, 0,0,0,0, NULL, 1 },
@@ -169,13 +177,41 @@ static const param_def_t k_am32[] = {
     NULL, 0, 28, 38, 1, 1, "V", 33 },
 };
 
+static const char *const k_dshot[] = { "OFF", "ON" };
+static const param_def_t k_blheli32[] = {
+  { "MOTOR", "Motor direction", PARAM_ENUM,
+    "Which way it turns, and whether reverse is allowed at all",
+    k_dir, 3, 0,0,0,0, NULL, 0 },
+  { NULL, "Motor timing", PARAM_NUMBER,
+    "Degrees ahead of the rotor: more rpm and more heat, less is cooler",
+    NULL, 0, 0, 31, 1, 0, "deg", 16 },
+  { NULL, "PWM frequency", PARAM_NUMBER,
+    "Higher is quieter and warmer; lower is efficient and audible",
+    NULL, 0, 24, 96, 24, 0, "kHz", 48 },
+  { "STARTUP", "Startup power", PARAM_NUMBER,
+    "How hard it pushes to get moving before it can sense the rotor",
+    NULL, 0, 25, 150, 25, 0, "%", 100 },
+  { NULL, "Demag compensation", PARAM_ENUM,
+    "Backs off when the field collapses late: cures stalls under load",
+    k_demag, 3, 0,0,0,0, NULL, 1 },
+  { "PROTECTION", "Current limit", PARAM_NUMBER,
+    "The most it will draw through the motor, whatever is asked of it",
+    NULL, 0, 0, 200, 10, 0, "A", 0 },
+  { NULL, "Low voltage cut", PARAM_NUMBER,
+    "Per cell, where it starts pulling power back to save the pack",
+    NULL, 0, 28, 38, 1, 1, "V", 32 },
+  { "REPORTING", "Bidirectional DShot", PARAM_BOOL,
+    "Sends rpm back up the signal wire, with no telemetry lead at all",
+    k_dshot, 0, 0,0,0,0, NULL, 1 },
+};
+
 static const param_def_t k_escape32[] = {
   { "MOTOR", "Motor direction", PARAM_ENUM,
     "Which way it turns, and whether reverse is allowed at all",
     k_dir, 3, 0,0,0,0, NULL, 0 },
-  { NULL, "Timing", PARAM_ENUM,
-    "How far ahead of the rotor the drive commutates",
-    k_timing, 5, 0,0,0,0, NULL, 2 },
+  { NULL, "Timing", PARAM_NUMBER,
+    "Degrees ahead of the rotor: more rpm and more heat, less is cooler",
+    NULL, 0, 0, 30, 1, 0, "deg", 18 },
   { NULL, "PWM frequency", PARAM_ENUM,
     "Higher is quieter and warmer; lower is efficient and audible",
     k_pwm, 3, 0,0,0,0, NULL, 2 },
@@ -238,6 +274,8 @@ static const param_def_t k_hitec[] = {
 static const proto_t k_protos[] = {
     { "BLHeli_S", "one-wire bootloader, 19200 baud",
       "BLHeli_S 16.7  on  EFM8BB21", k_blheli,   8, CLASS_ESC },
+    { "BLHeli_32","one-wire bootloader, 19200 baud",
+      "BLHeli_32 32.9  on  STM32F051", k_blheli32, 8, CLASS_ESC },
     { "AM32",     "one-wire bootloader, 19200 baud",
       "AM32 2.15  on  STM32G071",    k_am32,     7, CLASS_ESC },
     { "ESCape32", "text CLI over the signal line",

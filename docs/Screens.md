@@ -170,6 +170,14 @@ nobody has.
 
 ![Connected](img/programmer-params.png)
 
+Timing is the clearest evidence for that. BLHeli_S puts it in named steps
+because that is what its own configurator does; every firmware after it settled
+on degrees of advance, nought to about thirty. Two representations of one
+physical quantity, in one list, drawn by the same code -- the definition says
+which kind it is, and that is the whole of the difference:
+
+![Degrees rather than named steps](img/programmer-am32.png)
+
 That is how the real configurators do it, and the reason they are right is
 worth stating rather than only that they agree: a screen with one widget per
 setting drifts, because the fortieth setting is written by somebody in a hurry.
