@@ -11,6 +11,8 @@
 
 #include "gfx.h"
 
+#include <math.h>
+
 /* a=1 b=2 c=4 d=8 e=16 f=32 g=64, in the conventional order:
  *
  *      aaaa
@@ -47,42 +49,81 @@ static uint8_t mask_for(char ch)
 }
 
 /*
+ * One antialiased scanline.
+ *
+ * The interior goes through gfx_hline unchanged -- it is whole pixels and
+ * there is nothing to blend -- and only the two ends, which are where a
+ * fractional edge lands, read the destination back.  That keeps a segment at
+ * roughly the cost of the runs it was before, with two blends per row.
+ */
+static void span_aa(gfx_canvas_t *c, float x0, float x1, int y,
+                    gfx_color_t col)
+{
+    if (x1 - x0 <= 0.0f) {
+        return;
+    }
+    const int il = (int)ceilf(x0);    /* first wholly covered pixel      */
+    const int ir = (int)floorf(x1);   /* one past the last wholly covered */
+
+    if ((float)il > x0 && il - 1 >= 0) {
+        const float cov = (float)il - x0;
+        gfx_pixel(c, il - 1, y,
+                  gfx_lerp(gfx_pixel_get(c, il - 1, y), col,
+                           (uint8_t)(cov * 255.0f)));
+    }
+    if (ir > il) {
+        gfx_hline(c, il, y, ir - il, col);
+    }
+    if (x1 > (float)ir) {
+        const float cov = x1 - (float)ir;
+        gfx_pixel(c, ir, y,
+                  gfx_lerp(gfx_pixel_get(c, ir, y), col,
+                           (uint8_t)(cov * 255.0f)));
+    }
+}
+
+/* The lean, as a fraction of a pixel rather than a whole one -- an integer
+ * slant is a staircase down the side of every digit, which is exactly the
+ * artefact the tapers below are being smoothed to avoid. */
+static float slant_at(const gfx_seg_style_t *st, float y_from_foot)
+{
+    return (st->digit_h > 0)
+               ? (float)st->slant * y_from_foot / (float)st->digit_h : 0.0f;
+}
+
+/*
  * Both bar shapes are hexagons -- square ends would butt into each other at
  * the corners and read as a rectangle with a notch, which is the look of a
  * segment display drawn by somebody who had not seen one.  The taper is half
  * the thickness at each end, so two meeting at a corner leave a clean
  * diagonal gap.
+ *
+ * The tapers are 45 degrees, so every one of them crosses the pixel grid
+ * diagonally and every one of them staircased before this was carried in
+ * floating point.
  */
-static void bar_h(gfx_canvas_t *c, int x, int y, int w, int t,
-                  int slant_num, int slant_den, int base_y, gfx_color_t col)
+static void bar_h(gfx_canvas_t *c, float x, int y, float w, int t,
+                  const gfx_seg_style_t *st, int foot, gfx_color_t col)
 {
+    const float half = (float)t / 2.0f;
     for (int i = 0; i < t; ++i) {
-        const int d   = (i < t - 1 - i) ? i : (t - 1 - i);
-        const int ins = (t - 1) / 2 - d;
-        const int yy  = y + i;
-        const int sx  = (slant_den > 0)
-                            ? (base_y - yy) * slant_num / slant_den : 0;
-        if (w - 2 * ins > 0) {
-            gfx_hline(c, x + ins + sx, yy, w - 2 * ins, col);
-        }
+        const int   yy = y + i;
+        const float dy = fabsf(((float)i + 0.5f) - half);
+        const float sx = slant_at(st, (float)(foot - yy));
+        span_aa(c, x + dy + sx, x + w - dy + sx, yy, col);
     }
 }
 
-static void bar_v(gfx_canvas_t *c, int x, int y, int h, int t,
-                  int slant_num, int slant_den, int base_y, gfx_color_t col)
+static void bar_v(gfx_canvas_t *c, float x, int y, int h, int t,
+                  const gfx_seg_style_t *st, int foot, gfx_color_t col)
 {
+    const float half = (float)t / 2.0f;
     for (int j = 0; j < h; ++j) {
-        const int d   = (j < h - 1 - j) ? j : (h - 1 - j);
-        int ins = (t - 1) / 2 - d;
-        if (ins < 0) {
-            ins = 0;
-        }
-        const int yy = y + j;
-        const int sx = (slant_den > 0)
-                           ? (base_y - yy) * slant_num / slant_den : 0;
-        if (t - 2 * ins > 0) {
-            gfx_hline(c, x + ins + sx, yy, t - 2 * ins, col);
-        }
+        const int   yy = y + j;
+        const float d  = fminf((float)j + 0.5f, (float)h - ((float)j + 0.5f));
+        const float ins = (half > d) ? half - d : 0.0f;
+        const float sx = slant_at(st, (float)(foot - yy));
+        span_aa(c, x + ins + sx, x + (float)t - ins + sx, yy, col);
     }
 }
 
@@ -97,18 +138,18 @@ static void digit(gfx_canvas_t *c, int x, int y, const gfx_seg_style_t *st,
      * hexagons meet and the corner closes.
      */
     const int vh  = mid - t + 2;
-    const int sn  = st->slant, sd = h;
-    const int by  = y + h;                /* the slant is measured from the foot */
+    const int   by = y + h;               /* the slant is measured from the foot */
     /* The bar between the two verticals, which is what a horizontal spans. */
-    const int hw  = w - 2 * t;
+    const float hw = (float)(w - 2 * t);
+    const float fx = (float)x;
 
-    if (segs & SEG_A) { bar_h(c, x + t, y, hw, t, sn, sd, by, col); }
-    if (segs & SEG_G) { bar_h(c, x + t, y + mid, hw, t, sn, sd, by, col); }
-    if (segs & SEG_D) { bar_h(c, x + t, y + h - t, hw, t, sn, sd, by, col); }
-    if (segs & SEG_F) { bar_v(c, x, y + t - 1, vh, t, sn, sd, by, col); }
-    if (segs & SEG_B) { bar_v(c, x + w - t, y + t - 1, vh, t, sn, sd, by, col); }
-    if (segs & SEG_E) { bar_v(c, x, y + mid + t - 1, vh, t, sn, sd, by, col); }
-    if (segs & SEG_C) { bar_v(c, x + w - t, y + mid + t - 1, vh, t, sn, sd, by, col); }
+    if (segs & SEG_A) { bar_h(c, fx + (float)t, y, hw, t, st, by, col); }
+    if (segs & SEG_G) { bar_h(c, fx + (float)t, y + mid, hw, t, st, by, col); }
+    if (segs & SEG_D) { bar_h(c, fx + (float)t, y + h - t, hw, t, st, by, col); }
+    if (segs & SEG_F) { bar_v(c, fx, y + t - 1, vh, t, st, by, col); }
+    if (segs & SEG_B) { bar_v(c, fx + (float)(w - t), y + t - 1, vh, t, st, by, col); }
+    if (segs & SEG_E) { bar_v(c, fx, y + mid + t - 1, vh, t, st, by, col); }
+    if (segs & SEG_C) { bar_v(c, fx + (float)(w - t), y + mid + t - 1, vh, t, st, by, col); }
 }
 
 /* A dot and a colon are not segments, so they get their own cells and their
@@ -143,11 +184,11 @@ int gfx_seg_text(gfx_canvas_t *c, int x, int y, const char *s,
 
     for (const char *p = s; *p != '\0'; ++p) {
         if (*p == '.' || *p == ':') {
-            const int sx = (st->slant > 0)
-                               ? (t) * st->slant / st->digit_h : 0;
-            gfx_fill_rect(c, x + sx, y + st->digit_h - t, t, t, on);
+            gfx_fill_rect(c, x, y + st->digit_h - t, t, t, on);
             if (*p == ':') {
-                gfx_fill_rect(c, x + sx * 3, y + (st->digit_h - t) / 3, t, t, on);
+                const int cy = y + (st->digit_h - t) / 3;
+                gfx_fill_rect(c, x + (int)(slant_at(st, (float)(y + st->digit_h - cy)) + 0.5f),
+                              cy, t, t, on);
             }
             x += punct_w(st) + st->gap;
             continue;

@@ -26,7 +26,7 @@ mode       lines/frame     traffic   est. ms  est. fps
 frame           10,821     1353 KiB     35.5      19.5
 frame-idle          905      113 KiB      3.0      39.0
 sim             11,628     1454 KiB     38.2      19.5
-chrome          30,302     3788 KiB     99.5       9.8
+chrome          30,306     3788 KiB     99.5       9.8
 overview           884      110 KiB      2.9      39.0
 clear           12,006     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
