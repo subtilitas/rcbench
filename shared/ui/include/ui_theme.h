@@ -122,6 +122,17 @@ int ui_theme_contrast(void);
 #define UI_CHAMFER_SM    4
 
 /* Fonts, by role rather than by size, so a face can be swapped in one place. */
+/*
+ * Corner radii, one scale for the whole interface.
+ *
+ * The chamfered corners this replaces were per-corner and asymmetric, which
+ * gave every panel a direction; consistent rounding gives them a family
+ * instead, and lets a card, a button and a track read as the same material.
+ */
+#define UI_R_CARD  8
+#define UI_R_CTL   6
+#define UI_R_CHIP  4
+
 #define UI_FONT_LABEL    (&gfx_font_8x16)
 #define UI_FONT_HEAD     (&gfx_font_16x28)
 #define UI_FONT_NUM      (&gfx_font_num_24x30)

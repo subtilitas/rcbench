@@ -19,10 +19,10 @@ typedef struct {
 static const ui_rgb_t k_base[UI_THEME_COUNT][UI_C_COUNT] = {
     [UI_THEME_DARK] = {
         [UI_C_BG]            = {   5,   8,  13 },
-        [UI_C_PANEL]         = {  13,  19,  27 },
-        [UI_C_PANEL_HI]      = {  22,  31,  43 },
+        [UI_C_PANEL]         = {  20,  28,  39 },
+        [UI_C_PANEL_HI]      = {  30,  41,  56 },
         [UI_C_PANEL_SUNK]    = {   8,  12,  18 },
-        [UI_C_EDGE]          = {  38,  56,  76 },
+        [UI_C_EDGE]          = {  40,  55,  74 },
         [UI_C_EDGE_HI]       = {  72, 104, 136 },
         [UI_C_GRID]          = {  32,  46,  62 },
         [UI_C_GRID_STRONG]   = {  54,  78, 102 },

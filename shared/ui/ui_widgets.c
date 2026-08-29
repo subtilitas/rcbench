@@ -39,32 +39,69 @@ void ui_panel(gfx_canvas_t *c, gfx_rect_t r, const char *title,
     ui_panel_header(c, r, title, accent);
 }
 
+/*
+ * Rec. 601 luma on the 5-6-5 channels, against the middle of the range.  The
+ * weights matter: pure green at full scale is bright and pure blue at full
+ * scale is not, and averaging the three calls both of them the same.
+ */
+bool ui_is_light(gfx_color_t c)
+{
+    const unsigned r = (c >> 11) & 0x1Fu;
+    const unsigned g = (c >> 5)  & 0x3Fu;
+    const unsigned b = c         & 0x1Fu;
+    /* Each channel scaled to 0-255 before weighting. */
+    const unsigned luma = (299u * (r * 255u / 31u)
+                         + 587u * (g * 255u / 63u)
+                         + 114u * (b * 255u / 31u)) / 1000u;
+    return luma >= 140u;
+}
+
 void ui_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
                gfx_color_t fill, bool pressed, bool enabled)
 {
     gfx_color_t body = enabled ? fill : GFX_RGB(38, 46, 58);
-    gfx_color_t text = enabled ? UI_TEXT_ON_LIGHT : UI_TEXT_FAINT;
+    /*
+     * Contrast picked from the fill, not assumed.
+     *
+     * This used to be near-black on every enabled button, which is right on
+     * an accent-coloured one and invisible on a dark panel-coloured one --
+     * so the throttle presets and RESET PEAKS were charcoal text on charcoal
+     * and had to be found by memory.  Both weights are passed the same way,
+     * so the button has to work out which it got.
+     */
+    gfx_color_t text = enabled ? (ui_is_light(body) ? UI_TEXT_ON_LIGHT
+                                                    : UI_TEXT)
+                               : UI_TEXT_FAINT;
 
     if (pressed && enabled) {
         body = gfx_lerp(body, GFX_WHITE, 110);
     }
 
-    gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h,
-                             UI_CHAMFER_SM, 0, UI_CHAMFER_SM, 0, body);
+    gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CTL, body);
     if (!enabled) {
-        gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h,
-                                 UI_CHAMFER_SM, 0, UI_CHAMFER_SM, 0, UI_EDGE);
+        gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CTL, UI_EDGE);
     }
     if (label) {
         gfx_text_in(c, r, label, UI_FONT_LABEL, text, 1, GFX_ALIGN_CENTER);
     }
 }
 
+/*
+ * The one surface everything else sits on: a raised fill with a hairline
+ * edge.  Containment is what separates a reading from the three beside it --
+ * bare numerals on a flat ground read as one wall of text however carefully
+ * they are spaced.
+ */
+void ui_card(gfx_canvas_t *c, gfx_rect_t r, gfx_color_t fill)
+{
+    gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CARD, fill);
+    gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CARD, UI_EDGE);
+}
+
 void ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label,
              gfx_color_t dot, gfx_color_t fill)
 {
-    gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h,
-                             UI_CHAMFER_SM, 0, UI_CHAMFER_SM, 0, fill);
+    gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, r.h / 2, fill);
     int cy = r.y + r.h / 2;
     gfx_fill_circle(c, r.x + 12, cy, 4, dot);
     gfx_draw_circle(c, r.x + 12, cy, 6, gfx_lerp(dot, fill, 130));
@@ -185,7 +222,5 @@ void ui_wordmark(gfx_canvas_t *c, const char *text, gfx_color_t fill)
 
 void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color)
 {
-    for (int i = 0; i < w; i += 4) {
-        gfx_hline(c, x + i, y, 2, color);
-    }
+    gfx_hline(c, x, y, w, color);
 }

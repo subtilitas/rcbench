@@ -130,32 +130,47 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
     const float span = (s->max - s->min);
     const float frac = (span > 0.0f) ? (s->value - s->min) / span : 0.0f;
 
-    gfx_fill_rect(c, s->track.x, s->track.y, s->track.w, s->track.h,
-                  ui_theme_color(UI_C_PANEL_SUNK));
-    const int filled = (int)(frac * (float)s->track.w + 0.5f);
-    gfx_fill_rect(c, s->track.x, s->track.y, filled, s->track.h, s->color);
+    /*
+     * A track with a handle rather than a bar with a notch.  The rounded
+     * trough reads as something you drag; a square-ended fill reads as a
+     * progress meter, which is the wrong affordance for the one control on
+     * this screen that commands a motor.
+     */
+    const int rad = s->track.h / 2;
+    gfx_fill_round_rect(c, s->track.x, s->track.y, s->track.w, s->track.h,
+                        rad, ui_theme_color(UI_C_PANEL_SUNK));
+
+    int filled = (int)(frac * (float)s->track.w + 0.5f);
+    /* Below one diameter a rounded fill has no straight section left and
+     * draws as a lens narrower than the trough it sits in, which reads as a
+     * rendering fault rather than as a small number. */
+    if (filled > 0 && filled < s->track.h) {
+        filled = s->track.h;
+    }
+    if (filled > 0) {
+        gfx_fill_round_rect(c, s->track.x, s->track.y, filled, s->track.h,
+                            rad, s->color);
+    }
 
     /*
-     * The knob is drawn inside the track's height, not taller than it.  The
-     * predecessor's rode five pixels proud on each side while the clear
-     * covered only the track, which left stale pixels behind on every redraw
-     * -- and with alternating framebuffers that reads as flicker rather than
-     * as an obviously wrong pixel.
+     * The handle is drawn inside the track's height, not proud of it.  The
+     * predecessor's rode five pixels over each side while the clear covered
+     * only the track, which left stale pixels behind on every redraw -- and
+     * with alternating framebuffers that reads as flicker rather than as an
+     * obviously wrong pixel.
      */
-    const int kw = 6;
-    int kx = s->track.x + filled - kw / 2;
-    /* Clamped inside the track at both ends.  Unclamped it overhangs by three
-     * pixels at zero and at full scale -- and a redraw that clears only the
-     * track leaves those three behind, which is the predecessor's throttle-knob
-     * bug in a different direction. */
-    if (kx < s->track.x) {
-        kx = s->track.x;
+    const int hr = rad - 3;
+    int hx = s->track.x + (int)(frac * (float)s->track.w + 0.5f);
+    /* Clamped inside the track at both ends, for the same reason. */
+    if (hx < s->track.x + rad) {
+        hx = s->track.x + rad;
     }
-    if (kx > s->track.x + s->track.w - kw) {
-        kx = s->track.x + s->track.w - kw;
+    if (hx > s->track.x + s->track.w - rad) {
+        hx = s->track.x + s->track.w - rad;
     }
-    gfx_fill_rect(c, kx, s->track.y, kw, s->track.h,
-                  ui_theme_color(UI_C_TEXT));
+    gfx_fill_circle(c, hx, s->track.y + rad, hr, ui_theme_color(UI_C_TEXT));
+    gfx_draw_circle(c, hx, s->track.y + rad, hr,
+                    gfx_lerp(s->color, GFX_WHITE, 60));
 
     for (int i = 0; i < s->preset_count; ++i) {
         ui_button(c, s->presets[i], s->preset_label[i],

@@ -6,6 +6,14 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
+/*
+ * A reading, in a card of its own.
+ *
+ * The four of these used to be bare text on the background, laid out by
+ * spacing alone, and four columns of label-number-unit-footer with nothing
+ * around them read as one wall rather than as four instruments.  The card is
+ * doing the work; the colour tag ties it to its trace on the plot above.
+ */
 void ui_hero_render(gfx_canvas_t *c, gfx_rect_t r, const ui_hero_def_t *def,
                     float value, float peak)
 {
@@ -13,7 +21,13 @@ void ui_hero_render(gfx_canvas_t *c, gfx_rect_t r, const ui_hero_def_t *def,
         return;
     }
 
-    gfx_text(c, r.x, r.y, def->label, &gfx_font_8x16,
+    ui_card(c, r, ui_theme_color(UI_C_PANEL));
+
+    /* The tag, not a border: colour identifies the channel without ringing
+     * the whole card in it, which at four cards would be four competing
+     * outlines and no hierarchy at all. */
+    gfx_fill_round_rect(c, r.x + 12, r.y + 11, 3, 14, 1, def->color);
+    gfx_text(c, r.x + 22, r.y + 10, def->label, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 
     char number[24];
@@ -24,10 +38,12 @@ void ui_hero_render(gfx_canvas_t *c, gfx_rect_t r, const ui_hero_def_t *def,
     } else {
         snprintf(number, sizeof(number), "---");
     }
-    gfx_text(c, r.x, r.y + 18, number, &gfx_font_num_24x30, def->color, 1);
+    gfx_text(c, r.x + 12, r.y + 32, number, UI_FONT_NUM, def->color, 1);
 
-    const int nw = gfx_text_width(&gfx_font_num_24x30, number, 1);
-    gfx_text(c, r.x + nw + 6, r.y + 32, def->unit, &gfx_font_8x16,
+    /* The unit sits on the numeral's baseline rather than its top, so it
+     * reads as part of the same word. */
+    const int nw = gfx_text_width(UI_FONT_NUM, number, 1);
+    gfx_text(c, r.x + 12 + nw + 7, r.y + 46, def->unit, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 
     if (isfinite(peak)) {
@@ -37,7 +53,7 @@ void ui_hero_render(gfx_canvas_t *c, gfx_rect_t r, const ui_hero_def_t *def,
         const char *tag = (def->extreme_label != NULL)
                               ? def->extreme_label : "pk";
         snprintf(line, sizeof(line), "%s %s", tag, pk);
-        gfx_text(c, r.x, r.y + 52, line, &gfx_font_8x16,
+        gfx_text(c, r.x + 12, r.y + 68, line, UI_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
 }
