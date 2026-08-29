@@ -137,22 +137,63 @@ failsafe, frame lost and live, each with a line saying what it means.
 The programmer is not one programmer. BLHeli_S and AM32 speak a one-wire
 bootloader at 19,200; ESCape32 answers a text CLI; VESC wants framed packets; a
 Hitec D-series servo has its own thing entirely. They share a connector and
-nothing else, so the protocol is chosen first and named out loud along with its
-transport, rather than being guessed at from whatever answers.
+nothing else.
 
-![Programmer](img/programmer.png)
+So it asks in order: what are you programming, which of its protocols, and only
+then what answered.
 
-That costs a tap before every session and buys the thing a bench needs most: at
-no point is there a screen full of parameters whose provenance is ambiguous.
-You picked the protocol, these are its parameters, that is the device that
-answered it. Changing protocol therefore drops the connection -- the device
-that answered a bootloader is not the one that will answer a CLI, and showing
-one identity above the other's parameters is the single lie this screen must
-not tell.
+![What are you programming](img/programmer.png)
 
-Until something answers, there is nothing to show, and it says so:
+Flat, the five sat in one row and the screen quietly claimed that a servo
+protocol and four ESC ones were the same kind of choice. They are not. Picking
+the class is picking which lead is in your hand; picking the protocol is
+picking what to say down it, and every row names its own transport because
+that is the whole reason the list exists rather than an autodetect.
+
+![The protocols of a class](img/programmer-protocols.png)
+
+Stepping back up drops the connection. The device that answered a bootloader is
+not the one that will answer a CLI, and leaving the old identity above a new
+list is the single lie this screen must not tell. Back climbs one level rather
+than leaving the screen -- the band's own tag does that.
 
 ![Nothing has answered](img/programmer-idle.png)
+
+## The parameters draw themselves
+
+A definition says what kind of thing it is -- a switch, a choice, a number on a
+range -- and the renderer owns one widget per kind. Nothing in the drawing code
+knows what BLHeli_S is; it knows what a bounded number looks like. Adding a
+firmware is a table, and the only way to need new drawing code would be to
+invent a kind of setting that none of these have, which in twenty years of ESCs
+nobody has.
+
+![Connected](img/programmer-params.png)
+
+That is how the real configurators do it, and the reason they are right is
+worth stating rather than only that they agree: a screen with one widget per
+setting drifts, because the fortieth setting is written by somebody in a hurry.
+A screen with three widgets cannot. BLHeli's configurator has exactly three --
+checkbox, select, number -- and AM32's groups them; both were read before this
+was built.
+
+Two more things came from reading them. VESC Tool gives every parameter a
+button that explains what it does, which is why the selected row's help sits
+under the list: "Demag compensation" is four syllables and no information.
+And Hitec's DPC-11 divides its screen into Connection, File Operations, Testing
+and Programming -- the *Testing* section is the one thing a PC configurator
+sells that this bench could do properly, since it can change a servo's
+endpoints and then exercise the servo. That is not built yet.
+
+## Changed is not written
+
+![Two staged edits](img/programmer-dirty.png)
+
+Every configurator worth using separates what was read, what has been changed,
+and what has been written. A value edited into a row that looks exactly like a
+value read off the hardware is the measured-versus-invented mistake wearing
+other clothes, and this bench has opinions about that. So a staged change wears
+a mark and its own colour, and the button counts them.
 
 Steppers clamp rather than wrap. A parameter that rolls from its last value
 round to its first will one day be set to the wrong end by somebody pressing

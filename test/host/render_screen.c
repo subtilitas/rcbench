@@ -241,19 +241,30 @@ int main(int argc, char **argv)
         motor_screen_set_armed(true);
     }
 
-    if (id == SCREEN_PROGRAMMER
-        && strcmp(view, "programmer-idle") != 0) {
+    if (id == SCREEN_PROGRAMMER && strcmp(view, "programmer") != 0) {
         /*
-         * Connected, because the parameters are the screen and the empty
-         * state has a golden of its own.  Pressed rather than set, so the
-         * screenshot goes through the same path a finger does -- a mock that
-         * poses its own state can drift from what the buttons actually do.
+         * Walked down the hierarchy by pressing, not posed by setting flags,
+         * so each screenshot goes through the same path a finger does -- a
+         * mock that poses its own state can drift from what the buttons
+         * actually do.
          *
-         * CONNECT from programmer_screen.c: if that button moves, this moves
-         * with it.
+         * Geometry from programmer_screen.c: if those move, these move.
          */
         ui_router_goto(SCREEN_PROGRAMMER);
-        tap(698, UI_BAND_H + 131);
+        tap(210, UI_BAND_H + 180);              /* the ESC tile */
+        if (strcmp(view, "programmer-protocols") != 0) {
+            tap(400, UI_BAND_H + 92);           /* BLHeli_S */
+            if (strcmp(view, "programmer-idle") != 0) {
+                tap(698, UI_BAND_H + 70);       /* CONNECT */
+                if (strcmp(view, "programmer-dirty") == 0) {
+                    /* Two staged edits, so the screenshot holds the state
+                     * every configurator distinguishes and this one nearly
+                     * did not: changed, but not yet written. */
+                    tap(765, UI_BAND_H + 132 + 1 * 30 + 10);
+                    tap(765, UI_BAND_H + 132 + 3 * 30 + 10);
+                }
+            }
+        }
     }
 
     if (id == SCREEN_ANALYSER) {
