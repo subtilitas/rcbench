@@ -192,7 +192,8 @@ typedef struct {
     const uint8_t *glyphs;  /**< (last-first+1) * height * bytes_per_row bytes */
     uint8_t width;          /**< cell width in pixels                          */
     uint8_t height;         /**< cell height in pixels                         */
-    uint8_t bytes_per_row;  /**< (width + 7) / 8; MSB of byte 0 is leftmost    */
+    uint8_t bytes_per_row;  /**< 1bpp: (width+7)/8, MSB leftmost.  8bpp: width */
+    uint8_t bpp;            /**< 1 for a bit mask, 8 for coverage 0..255       */
     uint8_t first;          /**< first encoded code point                      */
     uint8_t last;           /**< last encoded code point                       */
 } gfx_font_t;

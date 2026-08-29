@@ -106,7 +106,8 @@ int ui_plot_map_y(const ui_plot_t *p, int series, float value, int y0, int h);
 void ui_plot_render(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r);
 
 /** The rails, drawn left of the body.  One column per series. */
-void ui_plot_render_rails(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r);
+/** A row of swatch + name + full-scale, one entry per series. */
+void ui_plot_render_legend(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r);
 
 #ifdef __cplusplus
 }

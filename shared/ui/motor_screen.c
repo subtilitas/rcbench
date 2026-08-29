@@ -18,20 +18,44 @@
 /* Horizontal bands, not columns.  Seventeen full-height vertical lines cost
  * about eight thousand cache-line fills on this panel and the same pixels
  * drawn horizontally cost none, so the layout stratifies. */
-#define TAB_Y     6
-#define TAB_H     28
-#define PLOT_Y    40
-#define PLOT_H    212
-#define HERO_Y    258
-#define HERO_H    84
-#define CTRL_Y    348
-#define TRACK_H   34
-#define PRESET_H  30
+#define PAD       6                    /* the screen's outer margin */
+#define INNER     10                   /* a card's own padding */
 
-#define RAIL_X    6
-#define RAIL_W    26
-#define PLOT_X    (RAIL_X + RAIL_W)
-#define PLOT_W    (W - PLOT_X - 6)
+#define TAB_Y     8
+#define TAB_H     28
+#define CARD_Y    44
+#define CARD_H    196
+#define HERO_Y    248
+#define HERO_H    88
+/*
+ * The throttle owns the bottom of the screen now.
+ *
+ * A row of 0/25/50/75/100 buttons used to sit under the track, duplicating
+ * the one control beside them and taking a band of screen to do it.  The
+ * quarters they marked are ticks on the track itself, and the band they cost
+ * pays for a track half again as tall and a readout you can see from across
+ * a bench.
+ */
+#define ROW_Y     342                  /* the readout, ARM and RESET share it */
+#define ROW_H     30
+#define CTRL_Y    380
+#define TRACK_H   36
+
+/* The scale rails live inside the plot card now, as its left gutter.  Loose
+ * on the background they were a 26px strip of coloured stripes butted against
+ * the screen edge, which read as an artifact rather than as four axes. */
+/* The legend takes a row at the top of the card and the plot takes the rest,
+ * which is 22px of width back from the rails it replaces. */
+#define LEG_Y     (CARD_Y + 8)
+#define LEG_H     16
+#define PLOT_X    (PAD + INNER)
+#define PLOT_W    (W - PAD - INNER - PLOT_X)
+#define PLOT_Y    (LEG_Y + LEG_H + 6)
+#define PLOT_H    (CARD_Y + CARD_H - 10 - PLOT_Y)
+
+/* Four across the full width, with one gutter between each. */
+#define HERO_GAP  8
+#define HERO_W    ((W - 2 * PAD - 3 * HERO_GAP) / 4)
 
 enum { S_VOLT = 0, S_CURR, S_POWER, S_RPM, S_COUNT };
 
@@ -53,8 +77,6 @@ static const char *const k_extreme[S_COUNT] = { "min", "pk", "pk", "pk" };
  */
 #define SAMPLE_HZ 20.0f
 
-static const float k_presets[] = { 0.0f, 25.0f, 50.0f, 75.0f, 100.0f };
-static const char *const k_preset_labels[] = { "0", "25", "50", "75", "100" };
 static const char *const k_tab_labels[] = { "PLOT", "TABLE" };
 
 static struct {
@@ -110,18 +132,14 @@ static void reset(void)
     ui_plot_init(&s.plot, k_series, S_COUNT,
                  (float)PLOT_W / SAMPLE_HZ);
     ui_tabs_init(&s.tabs, k_tab_labels, MOTOR_PANE_COUNT,
-                 (gfx_rect_t){ 6, TAB_Y, 260, TAB_H });
+                 (gfx_rect_t){ PAD + 3, TAB_Y, 234, TAB_H });
 
-    const gfx_rect_t track = { 6, CTRL_Y, W - 12, TRACK_H };
+    const gfx_rect_t track = { PAD, CTRL_Y, W - 2 * PAD, TRACK_H };
     ui_slider_init(&s.slider, track, 0.0f, 100.0f, 0);
-    ui_slider_set_presets(&s.slider, k_presets, k_preset_labels, 5,
-                          (gfx_rect_t){ 6, CTRL_Y + TRACK_H + 6, 380,
-                                        PRESET_H });
+    ui_slider_set_ticks(&s.slider, 4);   /* the quarters the buttons marked */
 
-    s.arm_rect   = (gfx_rect_t){ 400, (int16_t)(CTRL_Y + TRACK_H + 6), 180,
-                                 PRESET_H };
-    s.reset_rect = (gfx_rect_t){ 594, (int16_t)(CTRL_Y + TRACK_H + 6), 200,
-                                 PRESET_H };
+    s.arm_rect   = (gfx_rect_t){ 400, ROW_Y, 180, (int16_t)(ROW_H - 2) };
+    s.reset_rect = (gfx_rect_t){ 594, ROW_Y, 200, (int16_t)(ROW_H - 2) };
     bind_colours();
 }
 
@@ -289,7 +307,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
      * the difference between 736 fills and 14,687. */
     if ((s.drawn_mask & bit) == 0) {
         gfx_clear(c, ui_theme_color(UI_C_BG));
-        ui_rule(c, 0, CTRL_Y - 8, W, ui_theme_color(UI_C_EDGE));
+        /* The card shell is chrome: it never changes, so it is painted once
+         * per framebuffer and the plot repaints only its own interior. */
+        ui_card(c, (gfx_rect_t){ PAD, CARD_Y, W - 2 * PAD, CARD_H },
+                ui_theme_color(UI_C_PANEL_SUNK));
         s.drawn_mask |= bit;
     }
 
@@ -314,12 +335,18 @@ static void render(gfx_canvas_t *c, int buffer_index)
         s.drawn_push[buf] = s.plot.pushes;
 
         if (s.tabs.selected == MOTOR_PANE_PLOT) {
+            /* Cleared first: the legend prints each channel's full scale,
+             * that scale autoranges, and a shorter number drawn over a
+             * longer one leaves the tail of the old one behind. */
+            gfx_fill_rect(c, PLOT_X, LEG_Y, PLOT_W, LEG_H,
+                          ui_theme_color(UI_C_PANEL_SUNK));
+            ui_plot_render_legend(&s.plot, c,
+                                  (gfx_rect_t){ PLOT_X, LEG_Y, PLOT_W, LEG_H });
             ui_plot_render(&s.plot, c,
                            (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H });
-            ui_plot_render_rails(&s.plot, c,
-                                 (gfx_rect_t){ RAIL_X, PLOT_Y, RAIL_W, PLOT_H });
         } else {
-            gfx_fill_rect(c, 0, PLOT_Y, W, PLOT_H, ui_theme_color(UI_C_BG));
+            gfx_fill_rect(c, PAD + 1, CARD_Y + 1, W - 2 * PAD - 2,
+                          CARD_H - 2, ui_theme_color(UI_C_PANEL_SUNK));
             draw_table(c);
         }
 
@@ -333,8 +360,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
             const ui_hero_def_t def = { k_series[i].name, k_series[i].unit,
                                         s.plot.series[i].color,
                                         k_series[i].decimals, k_extreme[i] };
-            ui_hero_render(c, (gfx_rect_t){ (int16_t)(8 + i * 196),
-                                            HERO_Y, 190, HERO_H },
+            ui_hero_render(c, (gfx_rect_t){
+                               (int16_t)(PAD + i * (HERO_W + HERO_GAP)),
+                               HERO_Y, HERO_W, HERO_H },
                            &def, s.bench.valid ? now[i] : NAN,
                            s.bench.valid ? pk[i] : NAN);
         }
@@ -352,15 +380,28 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
     s.drawn_ctrl[buf] = s.ctrl_rev;
 
-    gfx_fill_rect(c, 0, CTRL_Y, W, H - CTRL_Y, ui_theme_color(UI_C_BG));
-    ui_slider_render(&s.slider, c);
+    gfx_fill_rect(c, 0, ROW_Y, W, H - ROW_Y, ui_theme_color(UI_C_BG));
 
+    /*
+     * The number moves off the track and onto its own line.  Printed over a
+     * full-width bar it sat on whatever colour the fill happened to reach,
+     * and at high throttle that was its own accent.
+     */
+    gfx_text(c, PAD, ROW_Y + 8, "THROTTLE", &gfx_font_8x16,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
+
+    /* Set in the numeral face the readings above use, because the throttle is
+     * a reading too -- and the one the operator's hand is on. */
     char pct[16];
-    snprintf(pct, sizeof(pct), "%.1f %%", (double)s.slider.value);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(W - 200), (int16_t)(CTRL_Y + 8),
-                                 190, 20 },
-                pct, &gfx_font_8x16, ui_theme_color(UI_C_TEXT), 1,
-                GFX_ALIGN_RIGHT);
+    snprintf(pct, sizeof(pct), "%.1f", (double)s.slider.value);
+    const int pw = gfx_text_width(UI_FONT_NUM, pct, 1);
+    const int px = 386 - 20 - pw;
+    gfx_text(c, px, ROW_Y, pct, UI_FONT_NUM,
+             ui_theme_color(UI_C_ACCENT), 1);
+    gfx_text(c, 386 - 16, ROW_Y + 14, "%", &gfx_font_8x16,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
+
+    ui_slider_render(&s.slider, c);
 
     ui_button(c, s.arm_rect, s.armed ? "DISARM" : "ARM",
               s.armed ? ui_theme_color(UI_C_WARN) : ui_theme_color(UI_C_OK),

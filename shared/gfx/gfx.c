@@ -701,6 +701,21 @@ static const uint8_t *glyph_rows(const gfx_font_t *font, unsigned char ch)
     return font->glyphs + (size_t)(ch - font->first) * font->height * stride;
 }
 
+/*
+ * One glyph pixel's coverage, 0 transparent to 255 solid.
+ *
+ * Both formats go through here so the blitters below do not each carry a
+ * branch on the font's depth: a 1bpp face answers 0 or 255 and an 8bpp one
+ * answers what it stored.
+ */
+static uint8_t glyph_cov(const gfx_font_t *font, const uint8_t *line, int col)
+{
+    if (font->bpp == 8) {
+        return line[col];
+    }
+    return (line[col >> 3] & (uint8_t)(0x80u >> (col & 7))) ? 255u : 0u;
+}
+
 int gfx_text_height(const gfx_font_t *font, int scale)
 {
     if (!font) {
@@ -751,17 +766,36 @@ int gfx_char(gfx_canvas_t *c, int x, int y, char ch, const gfx_font_t *font,
     int stride = font->bytes_per_row ? font->bytes_per_row : 1;
     for (int row = 0; row < font->height; ++row) {
         const uint8_t *bits = rows + (size_t)row * stride;
-        /* Runs of set bits become one fill_rect instead of N pixel writes --
-         * worth it for the large faces, where a stem is 3-4 pixels wide. */
         int col = 0;
         while (col < font->width) {
-            if (!(bits[col >> 3] & (0x80u >> (col & 7)))) {
+            const uint8_t cov = glyph_cov(font, bits, col);
+            if (cov == 0u) {
                 ++col;
                 continue;
             }
+            if (cov < 255u) {
+                /*
+                 * An edge pixel, blended against whatever it lands on.  Only
+                 * these read the destination back; the solid interior below
+                 * still writes straight through, which is what keeps
+                 * antialiasing from costing a read per glyph pixel.
+                 */
+                for (int sy = 0; sy < scale; ++sy) {
+                    for (int sx = 0; sx < scale; ++sx) {
+                        const int px = x + col * scale + sx;
+                        const int py = y + row * scale + sy;
+                        gfx_pixel(c, px, py,
+                                  gfx_lerp(gfx_pixel_get(c, px, py), fg, cov));
+                    }
+                }
+                ++col;
+                continue;
+            }
+            /* Runs of solid pixels become one fill instead of N writes --
+             * worth it for the large faces, where a stem is 3-4 pixels wide. */
             int start = col;
-            while (col < font->width &&
-                   (bits[col >> 3] & (0x80u >> (col & 7)))) {
+            while (col < font->width
+                   && glyph_cov(font, bits, col) == 255u) {
                 ++col;
             }
             int run = col - start;
@@ -917,9 +951,11 @@ void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
 
             const uint8_t *glyph = font->glyphs
                 + (size_t)(ch - font->first) * font->height * font->bytes_per_row;
-            const uint8_t byte = glyph[(size_t)row * font->bytes_per_row
-                                       + (size_t)(col >> 3)];
-            if ((byte & (uint8_t)(0x80u >> (col & 7))) == 0) {
+            /* Thresholded, not blended: this draws an idempotent stencil,
+             * and a soft edge would put half-covered pixels into it that a
+             * second pass would darken again. */
+            if (glyph_cov(font, glyph + (size_t)row * font->bytes_per_row,
+                          col) < 128u) {
                 continue;
             }
 

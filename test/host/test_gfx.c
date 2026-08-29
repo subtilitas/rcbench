@@ -561,8 +561,26 @@ TEST_CASE(text_bg_paints_the_cell)
 {
     fresh();
     gfx_text_bg(&s_c, 0, 0, "AB", &gfx_font_8x16, GFX_RED, GFX_BLUE, 1);
-    CHECK_EQ(count_of(GFX_RED) + count_of(GFX_BLUE), 16 * 16);
+    /*
+     * Every pixel of both cells is painted, and none is left as the canvas
+     * was.  It used to demand that each be exactly the ink or exactly the
+     * background, which was the same statement while the font was a bit mask
+     * -- with an antialiased face the glyph edges land between the two, and
+     * that is the point of them.
+     */
+    int painted = 0;
+    for (int y = 0; y < 16; ++y) {
+        for (int x = 0; x < 16; ++x) {
+            if (s_pixels[y * W + x] != 0) {
+                ++painted;
+            }
+        }
+    }
+    CHECK_EQ(painted, 16 * 16);
     CHECK(count_of(GFX_RED) > 0);
+    CHECK(count_of(GFX_BLUE) > 0);
+    /* And the edges really are intermediate, not one or the other. */
+    CHECK(count_of(GFX_RED) + count_of(GFX_BLUE) < 16 * 16);
     CHECK_EQ(gfx_text_bg(&s_c, 0, 0, NULL, &gfx_font_8x16, GFX_RED, GFX_BLUE, 1), 0);
 }
 

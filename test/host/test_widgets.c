@@ -210,7 +210,7 @@ TEST_CASE(the_plot_and_hero_render_without_running_off_the_canvas)
 
     const gfx_rect_t body = { 40, 10, 700, 220 };
     ui_plot_render(&p, &cv, body);
-    ui_plot_render_rails(&p, &cv, (gfx_rect_t){ 8, 10, 24, 220 });
+    ui_plot_render_legend(&p, &cv, (gfx_rect_t){ 8, 10, 700, 16 });
 
     const ui_hero_def_t def = { "VOLT", "V", 0x1234, 2 };
     ui_hero_render(&cv, (gfx_rect_t){ 40, 250, 180, 80 }, &def, 20.71f, 24.32f);

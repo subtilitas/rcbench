@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "ui_theme.h"
+#include "ui_widgets.h"
 
 /* Three seconds at 20 Hz.  Long enough that a spike does not make the plot
  * breathe, short enough that a run which really has settled rescales while
@@ -156,22 +157,43 @@ int ui_plot_map_y(const ui_plot_t *p, int series, float value, int y0, int h)
 #define RAIL_PITCH 10
 #define TICKS      8
 
-void ui_plot_render_rails(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
+/*
+ * The channel legend: a swatch, a name, and the top of that channel's scale.
+ *
+ * This replaces four 2px coloured bars with tick marks, which took 22px out
+ * of the plot's width to say that four series existed and that each had a
+ * scale divided into eighths -- without printing a single number, so there
+ * was nothing on them anybody could read a value off.  Four traces on four
+ * independent scales need their ranges stated, and that is all this does.
+ */
+void ui_plot_render_legend(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
 {
-    if (p == NULL || c == NULL) {
+    if (p == NULL || c == NULL || p->count <= 0) {
         return;
     }
+    const int slot = r.w / p->count;
     for (int k = 0; k < p->count; ++k) {
-        const int x = r.x + k * RAIL_PITCH;
-        const gfx_color_t col = p->hidden[k]
-                                    ? ui_theme_color(UI_C_TEXT_FAINT)
+        const bool off = p->hidden[k];
+        const gfx_color_t col = off ? ui_theme_color(UI_C_TEXT_FAINT)
                                     : p->series[k].color;
-        gfx_fill_rect(c, x, r.y, 2, r.h, col);
-        /* Ticks every 12.5% of this series' own full scale. */
-        for (int t = 0; t <= TICKS; ++t) {
-            const int y = r.y + (r.h - 1) * t / TICKS;
-            gfx_fill_rect(c, x, y, RAIL_W, 1, col);
-        }
+        const int x = r.x + k * slot;
+        const int cy = r.y + r.h / 2;
+
+        gfx_fill_round_rect(c, x, cy - 1, 12, 3, 1, col);
+
+        int tx = x + 18;
+        tx += gfx_text(c, tx, cy - 8, p->series[k].name, UI_FONT_LABEL,
+                       off ? ui_theme_color(UI_C_TEXT_FAINT)
+                           : ui_theme_color(UI_C_TEXT_DIM), 1);
+
+        /* The top of the range, which is what the trace's height is drawn
+         * against and the only number that makes its shape readable. */
+        char top[24];
+        ui_fmt(top, sizeof(top), p->scale[k], p->series[k].decimals);
+        char full[32];
+        snprintf(full, sizeof(full), " %s %s", top, p->series[k].unit);
+        gfx_text(c, tx, cy - 8, full, UI_FONT_LABEL,
+                 ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
 }
 

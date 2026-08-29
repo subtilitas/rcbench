@@ -50,9 +50,9 @@ static void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 
 /* Geometry mirrored from motor_screen.c; if the layout moves these move with
  * it, and the test names say what they were aiming at. */
-#define CTRL_Y   348
-#define TRACK_H  34
-#define ROW_Y    (CTRL_Y + TRACK_H + 6 + 15)
+#define CTRL_Y   380
+#define TRACK_H  36
+#define ROW_Y    (342 + 14)   /* ARM and RESET share the readout row */
 #define ARM_X    490
 #define RESET_X  694
 #define TRACK_Y  (CTRL_Y + TRACK_H / 2)
@@ -190,7 +190,13 @@ TEST_CASE(the_tabs_switch_panes_and_both_render)
     for (int i = 0; i < W * H; ++i) {
         if (fb[i] != plot[i]) { ++differ; }
     }
-    CHECK(differ > 20000);              /* it really is a different pane */
+    /* It really is a different pane.  Both panes now sit in the same card
+     * and on the same sunken ground, so what differs is their content and
+     * not the background behind it -- the number this compares against fell
+     * when the card arrived, and saying it out loud beats rediscovering it. */
+    if (differ < 6000) {
+        T_FAIL("the two panes differ by only %d pixels", differ);
+    }
 
     /* And back again lands on what it started as. */
     tap(60, 20);

@@ -33,6 +33,12 @@ void ui_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
                gfx_color_t fill, bool pressed, bool enabled);
 
 /** Small status pill: a filled dot, then a label. */
+/** A raised surface with a hairline edge: the base of every panel. */
+/** True when @p c is bright enough to need dark text on it. */
+bool ui_is_light(gfx_color_t c);
+
+void ui_card(gfx_canvas_t *c, gfx_rect_t r, gfx_color_t fill);
+
 void ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label,
              gfx_color_t dot, gfx_color_t fill);
 
