@@ -25,6 +25,16 @@ extern "C" {
 
 #define UI_SLIDER_MAX_PRESETS 8
 
+/*
+ * How far ui_slider_render paints outside its track, above and below.
+ *
+ * The thumb stands proud so it reads as a grip rather than as a fill level,
+ * and a caller that clears only the track rectangle before redrawing would
+ * leave that overhang behind.  Clear track.y - UI_SLIDER_OVERHANG through
+ * track.y + track.h + UI_SLIDER_OVERHANG, or more.
+ */
+#define UI_SLIDER_OVERHANG 5
+
 typedef struct {
     gfx_rect_t track;
     gfx_rect_t presets[UI_SLIDER_MAX_PRESETS];

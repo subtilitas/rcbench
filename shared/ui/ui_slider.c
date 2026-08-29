@@ -159,40 +159,49 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
     }
 
     /*
-     * The handle is drawn inside the track's height, not proud of it.  The
-     * predecessor's rode five pixels over each side while the clear covered
-     * only the track, which left stale pixels behind on every redraw -- and
+     * A thumb, standing proud of the track on both sides.
+     *
+     * It used to be a disc drawn strictly inside the track's height, because
+     * an earlier one rode five pixels over each side while the redraw cleared
+     * only the track -- which left the overhang behind on every repaint, and
      * with alternating framebuffers that reads as flicker rather than as an
-     * obviously wrong pixel.
+     * obviously wrong pixel.  The fix then was to shrink the handle.  The fix
+     * now is UI_SLIDER_OVERHANG: the caller is told how far outside the track
+     * this paints and clears that much with it.
      */
-    const int hr = rad - 2;
+    const int tw = 20;
+    const int th = s->track.h + 2 * UI_SLIDER_OVERHANG;
     int hx = s->track.x + (int)(frac * (float)s->track.w + 0.5f);
-    /* Clamped inside the track at both ends, for the same reason. */
-    if (hx < s->track.x + rad) {
-        hx = s->track.x + rad;
+    /* Clamped so the thumb stays over its own track at both ends. */
+    if (hx < s->track.x + tw / 2) {
+        hx = s->track.x + tw / 2;
     }
-    if (hx > s->track.x + s->track.w - rad) {
-        hx = s->track.x + s->track.w - rad;
+    if (hx > s->track.x + s->track.w - tw / 2) {
+        hx = s->track.x + s->track.w - tw / 2;
     }
-    const int hy = s->track.y + rad;
-    /* A seat under the knob before the knob: one darker ring, so it sits in
-     * the trough rather than floating over it. */
-    gfx_fill_circle(c, hx, hy + 1, hr,
-                    gfx_lerp(ui_theme_color(UI_C_PANEL_SUNK), GFX_BLACK, 90));
-    gfx_fill_circle(c, hx, hy, hr, ui_theme_color(UI_C_TEXT));
-    gfx_draw_circle(c, hx, hy, hr,
-                    gfx_lerp(ui_theme_color(UI_C_TEXT), GFX_BLACK, 70));
+    const int tx = hx - tw / 2;
+    const int ty = s->track.y - UI_SLIDER_OVERHANG;
+
+    /* Seated before drawn: one offset shape underneath, so it sits on the
+     * track rather than floating over it. */
+    gfx_fill_round_rect(c, tx, ty + 2, tw, th, 6,
+                        gfx_lerp(ui_theme_color(UI_C_BG), GFX_BLACK, 120));
+    gfx_fill_round_rect(c, tx, ty, tw, th, 6, ui_theme_color(UI_C_TEXT));
+    gfx_draw_round_rect(c, tx, ty, tw, th, 6,
+                        gfx_lerp(ui_theme_color(UI_C_TEXT), GFX_BLACK, 80));
+    gfx_hline(c, tx + 6, ty + 1, tw - 12,
+              gfx_lerp(ui_theme_color(UI_C_TEXT), GFX_WHITE, 120));
 
     /*
-     * Two grip lines, not three.  A plain disc reads as a position marker and
-     * a gripped one reads as something to take hold of -- but at this radius
-     * a third line down the middle closes the gaps and the whole knob goes
-     * grey, which is a texture rather than a grip.
+     * Two grip lines.  A blank slab reads as a position marker and a gripped
+     * one reads as something to take hold of, which is the difference between
+     * a meter and a control.
      */
     const gfx_color_t grip = gfx_lerp(ui_theme_color(UI_C_TEXT),
                                       GFX_BLACK, 95);
-    gfx_vline(c, hx - 3, hy - 4, 9, grip);
-    gfx_vline(c, hx + 3, hy - 4, 9, grip);
+    const int gy = ty + th / 2 - 6;
+    gfx_vline(c, hx - 4, gy, 13, grip);
+    gfx_vline(c, hx + 4, gy, 13, grip);
 
     for (int i = 0; i < s->preset_count; ++i) {
         ui_button(c, s->presets[i], s->preset_label[i],
