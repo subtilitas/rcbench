@@ -886,6 +886,64 @@ static const uint8_t k_bayer8[64] = {
     63, 31, 55, 23, 61, 29, 53, 21,
 };
 
+/*
+ * An arc, walked rather than solved.
+ *
+ * Stepping by one pixel of arc length at the *outer* radius is what stops it
+ * dashing: step by the inner radius instead and the outside of a thick arc
+ * comes out as a row of dots with the gaps growing as the radius does.
+ *
+ * The two radial edges are blended the same way a segment bar's ends are, so
+ * an arc and a numeral on this screen have the same kind of edge.
+ */
+void gfx_arc(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
+             float a0_deg, float a1_deg, gfx_color_t col)
+{
+    if (!canvas_ok(c) || r <= 0 || thickness <= 0) {
+        return;
+    }
+    const float k    = 3.14159265358979f / 180.0f;
+    const float half = (float)thickness / 2.0f;
+    const float r0   = (float)r - half;
+    const float r1   = (float)r + half;
+    if (r0 <= 0.0f) {
+        return;
+    }
+
+    const float sweep = fabsf(a1_deg - a0_deg) * k;
+    int steps = (int)(sweep * r1) + 1;
+    if (steps > 4096) {
+        steps = 4096;      /* a full turn at any radius this panel can hold */
+    }
+
+    for (int i = 0; i <= steps; ++i) {
+        const float a  = (a0_deg + (a1_deg - a0_deg)
+                                       * (float)i / (float)steps) * k;
+        const float ca = cosf(a), sa = sinf(a);
+
+        const int in  = (int)ceilf(r0);
+        const int out = (int)floorf(r1);
+        if ((float)in > r0) {
+            const float cov = (float)in - r0;
+            const int px = cx + (int)((float)(in - 1) * ca + 0.5f);
+            const int py = cy - (int)((float)(in - 1) * sa + 0.5f);
+            gfx_pixel(c, px, py, gfx_lerp(gfx_pixel_get(c, px, py), col,
+                                          (uint8_t)(cov * 255.0f)));
+        }
+        for (int rr = in; rr < out; ++rr) {
+            gfx_pixel(c, cx + (int)((float)rr * ca + 0.5f),
+                         cy - (int)((float)rr * sa + 0.5f), col);
+        }
+        if (r1 > (float)out) {
+            const float cov = r1 - (float)out;
+            const int px = cx + (int)((float)out * ca + 0.5f);
+            const int py = cy - (int)((float)out * sa + 0.5f);
+            gfx_pixel(c, px, py, gfx_lerp(gfx_pixel_get(c, px, py), col,
+                                          (uint8_t)(cov * 255.0f)));
+        }
+    }
+}
+
 void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
                       const gfx_font_t *font, gfx_color_t fg, int scale,
                       uint8_t alpha, float angle_deg)

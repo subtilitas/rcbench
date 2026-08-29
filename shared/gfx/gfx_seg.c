@@ -193,14 +193,22 @@ int gfx_seg_text(gfx_canvas_t *c, int x, int y, const char *s,
             x += punct_w(st) + st->gap;
             continue;
         }
-        if (*p != ' ') {
+        const uint8_t segs = mask_for(*p);
+        if (segs != 0u) {
             /* Every segment first at the unlit level, then the lit ones over
              * them.  Drawn in this order so a lit segment never has to know
-             * what it is covering. */
+             * what it is covering.
+             *
+             * A character that lights nothing gets no ghost either.  A real
+             * display would show one -- the glass has seven bars in every
+             * cell whatever is in it -- but a leading '+' then renders as a
+             * ghosted 8 that reads as a stray digit, and the cell is there to
+             * hold the sign's place so the number does not shift when it
+             * turns negative. */
             if (st->ghost) {
                 digit(c, x, y, st, SEG_ALL, off);
             }
-            digit(c, x, y, st, mask_for(*p), on);
+            digit(c, x, y, st, segs, on);
         }
         x += st->digit_w + st->gap;
     }

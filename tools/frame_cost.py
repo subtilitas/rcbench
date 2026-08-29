@@ -56,6 +56,7 @@ SOURCES = [
     "shared/ui/overview_screen.c",
     "shared/ui/stub_screen.c",
     "shared/ui/motor_screen.c",
+    "shared/ui/servo_screen.c",
     "shared/ui/log_viewer_screen.c",
     "shared/ui/settings_screen.c",
     "shared/settings/settings.c",
@@ -64,6 +65,7 @@ SOURCES = [
     "shared/logfile/log_fields.c",
     "shared/bench/bench_state.c",
     "shared/bench/telemetry_sim.c",
+    "shared/servo/servo_sim.c",
     "shared/bench/throttle.c",
 ]
 INCLUDES = [
@@ -74,6 +76,7 @@ INCLUDES = [
     "shared/link/include",
     "shared/logfile/include",
     "shared/settings/include",
+    "shared/servo/include",
 ]
 
 MODES = ["frame", "frame-idle", "sim", "chrome", "overview", "clear",

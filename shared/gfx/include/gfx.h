@@ -150,6 +150,14 @@ void gfx_thick_line(gfx_canvas_t *c, int x0, int y0, int x1, int y1,
 void gfx_draw_circle(gfx_canvas_t *c, int cx, int cy, int r, gfx_color_t color);
 void gfx_fill_circle(gfx_canvas_t *c, int cx, int cy, int r, gfx_color_t color);
 
+/*
+ * An arc of @p thickness centred on (cx, cy), from @p a0_deg to @p a1_deg.
+ * Angles are degrees counter-clockwise from the +x axis, so 90 is straight up
+ * on screen.  The radial edges are antialiased.
+ */
+void gfx_arc(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
+             float a0_deg, float a1_deg, gfx_color_t col);
+
 void gfx_draw_round_rect(gfx_canvas_t *c, int x, int y, int w, int h,
                          int r, gfx_color_t color);
 void gfx_fill_round_rect(gfx_canvas_t *c, int x, int y, int w, int h,
