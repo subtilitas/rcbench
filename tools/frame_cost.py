@@ -79,7 +79,8 @@ INCLUDES = [
     "shared/servo/include",
 ]
 
-MODES = ["frame", "frame-idle", "sim", "chrome", "overview", "clear",
+MODES = ["frame", "frame-idle", "sim", "chrome", "overview", "servo",
+         "servo-grip", "clear",
          "vlines", "hlines"]
 
 # ESP32-S3 with CONFIG_ESP32S3_DATA_CACHE_64KB + _LINE_64B.

@@ -148,6 +148,17 @@ void gfx_thick_line(gfx_canvas_t *c, int x0, int y0, int x1, int y1,
                     int thickness, gfx_color_t color);
 
 void gfx_draw_circle(gfx_canvas_t *c, int cx, int cy, int r, gfx_color_t color);
+
+/*
+ * Antialiased disc and capsule, filled from the distance to their own centre
+ * or spine.  The capsule is a thick line with round ends, and its sides and
+ * caps come out of one expression -- so there is no seam where they meet,
+ * which a disc drawn over a rectangle cannot avoid.
+ */
+void gfx_fill_circle_aa(gfx_canvas_t *c, int cx, int cy, int r,
+                        gfx_color_t col);
+void gfx_capsule_aa(gfx_canvas_t *c, int ax, int ay, int bx, int by,
+                    int thickness, gfx_color_t col);
 void gfx_fill_circle(gfx_canvas_t *c, int cx, int cy, int r, gfx_color_t color);
 
 /*

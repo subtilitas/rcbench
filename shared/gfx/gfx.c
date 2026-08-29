@@ -887,6 +887,105 @@ static const uint8_t k_bayer8[64] = {
 };
 
 /*
+ * Coverage-filled shapes: a disc and a capsule, both from the distance to
+ * their own skeleton.
+ *
+ * Everything else on the servo card is antialiased -- the segment numerals,
+ * the arcs, the text -- and a hard-edged arm in the middle of it looks like a
+ * different drawing pasted in.  Working from distance rather than from a
+ * scanline span means the round caps and the straight sides come out of one
+ * expression, so there is no seam where a cap meets a side, which is what a
+ * disc drawn over a rectangle gives you: two soft edges blended twice.
+ *
+ * The bounding box is clipped before the loop, not inside it, because the
+ * grip's breathing repaints a 72-pixel box and must not pay for the whole
+ * arm's extent to do it.
+ */
+static void cov_blend(gfx_canvas_t *c, int x, int y, gfx_color_t col, float cov)
+{
+    if (cov <= 0.0f) {
+        return;
+    }
+    if (cov >= 1.0f) {
+        gfx_pixel(c, x, y, col);
+        return;
+    }
+    gfx_pixel(c, x, y,
+              gfx_lerp(gfx_pixel_get(c, x, y), col, (uint8_t)(cov * 255.0f)));
+}
+
+/* The box to walk, already intersected with the clip.  False if nothing of
+ * it survives, so the caller can skip the shape entirely. */
+static bool cov_box(const gfx_canvas_t *c, float cx, float cy, float reach,
+                    int *x0, int *y0, int *x1, int *y1)
+{
+    int lo_x = (int)floorf(cx - reach), hi_x = (int)ceilf(cx + reach);
+    int lo_y = (int)floorf(cy - reach), hi_y = (int)ceilf(cy + reach);
+    if (lo_x < c->clip.x) { lo_x = c->clip.x; }
+    if (lo_y < c->clip.y) { lo_y = c->clip.y; }
+    if (hi_x > c->clip.x + c->clip.w) { hi_x = c->clip.x + c->clip.w; }
+    if (hi_y > c->clip.y + c->clip.h) { hi_y = c->clip.y + c->clip.h; }
+    *x0 = lo_x; *y0 = lo_y; *x1 = hi_x; *y1 = hi_y;
+    return (hi_x > lo_x) && (hi_y > lo_y);
+}
+
+void gfx_fill_circle_aa(gfx_canvas_t *c, int cx, int cy, int r,
+                        gfx_color_t col)
+{
+    if (!canvas_ok(c) || r <= 0) {
+        return;
+    }
+    const float fx = (float)cx, fy = (float)cy, fr = (float)r;
+    int x0, y0, x1, y1;
+    if (!cov_box(c, fx, fy, fr + 1.0f, &x0, &y0, &x1, &y1)) {
+        return;
+    }
+    for (int y = y0; y < y1; ++y) {
+        const float dy = (float)y - fy;
+        for (int x = x0; x < x1; ++x) {
+            const float dx = (float)x - fx;
+            const float d  = sqrtf(dx * dx + dy * dy);
+            cov_blend(c, x, y, col, fr + 0.5f - d);
+        }
+    }
+}
+
+void gfx_capsule_aa(gfx_canvas_t *c, int ax, int ay, int bx, int by,
+                    int thickness, gfx_color_t col)
+{
+    if (!canvas_ok(c) || thickness <= 0) {
+        return;
+    }
+    const float hw = (float)thickness / 2.0f;
+    const float pax = (float)ax, pay = (float)ay;
+    const float ex = (float)(bx - ax), ey = (float)(by - ay);
+    const float len2 = ex * ex + ey * ey;
+
+    const float midx = (float)(ax + bx) / 2.0f;
+    const float midy = (float)(ay + by) / 2.0f;
+    const float reach = sqrtf(len2) / 2.0f + hw + 1.0f;
+    int x0, y0, x1, y1;
+    if (!cov_box(c, midx, midy, reach, &x0, &y0, &x1, &y1)) {
+        return;
+    }
+
+    for (int y = y0; y < y1; ++y) {
+        for (int x = x0; x < x1; ++x) {
+            const float px = (float)x - pax, py = (float)y - pay;
+            /* How far along the segment the nearest point is, clamped to its
+             * ends -- which is what turns the sides and the caps into one
+             * distance. */
+            float t = (len2 > 0.0f) ? (px * ex + py * ey) / len2 : 0.0f;
+            if (t < 0.0f) { t = 0.0f; }
+            if (t > 1.0f) { t = 1.0f; }
+            const float qx = px - t * ex, qy = py - t * ey;
+            const float d  = sqrtf(qx * qx + qy * qy);
+            cov_blend(c, x, y, col, hw + 0.5f - d);
+        }
+    }
+}
+
+/*
  * An arc, walked rather than solved.
  *
  * Stepping by one pixel of arc length at the *outer* radius is what stops it

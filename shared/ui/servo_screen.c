@@ -40,6 +40,20 @@
 #define HORN_L  92
 #define BODY_W  260
 #define BODY_H  88
+/*
+ * The mounting flanges.
+ *
+ * They run the full width of the case, because that is what they do -- the
+ * lug is moulded across the whole end, not tucked into the middle of it.  So
+ * the width is the case's, and the hole positions fall out of wanting the
+ * same margin of material all the way round rather than being chosen.
+ */
+#define TAB_HOLE_R  18
+#define TAB_MARGIN  6
+#define TAB_W       (2 * (TAB_HOLE_R + TAB_MARGIN))
+#define TAB_H       BODY_H
+#define TAB_HOLE_DY (BODY_H / 2 - TAB_MARGIN - TAB_HOLE_R)
+#define TAB_OVER    6                  /* how far the case laps over it */
 
 /*
  * Screen angle from servo angle.
@@ -80,6 +94,8 @@ static struct {
     bool     dragging;
     int      drag_id;
 
+    int      shown_q_deg; /**< the position as drawn, in tenths          */
+    int      shown_q_a;   /**< the current as drawn, in hundredths        */
     bool     driving;     /**< the output is being held somewhere */
     float    pulse;       /**< phase of the grip's breathing      */
     int      drawn_pulse[2];
@@ -154,7 +170,24 @@ bool servo_screen_take(servo_cmd_t *out)
 
 void servo_screen_feedback(uint16_t position_us, float current_a, bool valid)
 {
-    s.measured_deg  = us_to_deg(position_us);
+    const float deg = us_to_deg(position_us);
+
+    /*
+     * A reading only counts as new if it would be drawn differently.
+     *
+     * Feedback arrives at the poll rate whether or not the servo moved, and
+     * bumping the revision on every one of them repainted a 488x418 card
+     * several times a second to redraw numbers that had not changed -- and,
+     * worse, made the grip's clipped repaint unreachable, because the full
+     * path always won.  So compare at the precision actually shown: tenths of
+     * a degree and hundredths of an amp.
+     */
+    const int q_deg = (int)(deg * 10.0f + (deg >= 0.0f ? 0.5f : -0.5f));
+    const int q_a   = (int)(current_a * 100.0f + 0.5f);
+    const bool same = valid && s.have_feedback
+                      && q_deg == s.shown_q_deg && q_a == s.shown_q_a;
+
+    s.measured_deg  = deg;
     s.current_a     = current_a;
     s.have_feedback = valid;
     /*
@@ -163,13 +196,17 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid)
      * Easing towards a measurement would add the bench's own lag on top of
      * the servo's, and the two are indistinguishable once drawn -- a slow
      * servo and a slow screen look identical, and only one of them is the
-     * thing under test.  The smoothing below exists for the case where
+     * thing under test.  The smoothing in tick() exists for the case where
      * nothing is reporting, and only for that.
      */
     if (valid) {
-        s.shown_deg = s.measured_deg;
+        s.shown_deg = deg;
     }
-    ++s.ctrl_rev;
+    if (!same) {
+        s.shown_q_deg = q_deg;
+        s.shown_q_a   = q_a;
+        ++s.ctrl_rev;
+    }
 }
 
 uint16_t servo_screen_commanded(void) { return deg_to_us(s.commanded_deg); }
@@ -312,11 +349,48 @@ static void draw_body(gfx_canvas_t *c)
 
     /* Mounting tabs first, so the case overlaps them. */
     for (int i = 0; i < 2; ++i) {
-        const int tx = (i == 0) ? bx - 30 : bx + BODY_W - 10;
-        gfx_fill_round_rect(c, tx, by + 12, 40, 38, 6, shell);
-        gfx_draw_round_rect(c, tx, by + 12, 40, 38, 6, edge);
-        gfx_fill_circle(c, tx + 20, by + 31, 7, ui_theme_color(UI_C_PANEL));
-        gfx_draw_circle(c, tx + 20, by + 31, 7, edge);
+        /* Two holes, and the flange centred on the case.  A servo's mounting
+         * lugs are symmetric about its centreline -- one hole sitting off to
+         * one side is the sort of wrongness you notice before you can say
+         * what it is. */
+        const int tx = (i == 0) ? bx - TAB_W + TAB_OVER
+                                : bx + BODY_W - TAB_OVER;
+        const int ty = by;
+        gfx_fill_round_rect(c, tx, ty, TAB_W, TAB_H, 5, shell);
+        gfx_draw_round_rect(c, tx, ty, TAB_W, TAB_H, 5, edge);
+        /*
+         * Open slots, not drilled holes: a servo's lugs are cut through to
+         * the outer edge so it can be dropped into a mount whose screws are
+         * already in, and the open side is the first thing you recognise a
+         * servo by from above.
+         */
+        const int cxh   = tx + TAB_W / 2;
+        const int mouth = (i == 0) ? tx : tx + TAB_W;   /* the open edge */
+        /*
+         * The bore is darker than both the lug and the card behind it.  A
+         * hole would strictly show the card, but at these two greys that
+         * reads as a smudge rather than as a hole, and a recess is what the
+         * eye expects anyway.
+         */
+        const gfx_color_t bore = ui_theme_color(UI_C_PANEL_SUNK);
+        for (int h = 0; h < 2; ++h) {
+            const int hy = by + BODY_H / 2
+                           + ((h == 0) ? -TAB_HOLE_DY : TAB_HOLE_DY);
+            for (int pass = 0; pass < 2; ++pass) {
+                const gfx_color_t ink = (pass == 0) ? edge : bore;
+                const int r  = TAB_HOLE_R - pass;
+                /* The throat is a fraction of the bore, not a fixed
+                 * inset off it: subtracting a couple of pixels from a large
+                 * hole leaves a slot with no waist at all. */
+                const int nk = TAB_HOLE_R * 3 / 5 - pass;
+                gfx_fill_circle_aa(c, cxh, hy, r, ink);
+                /* Both passes run flush to the lug's edge, so the mouth is
+                 * open rather than capped by its own outline. */
+                const int x0 = (mouth < cxh) ? mouth : cxh;
+                const int x1 = (mouth < cxh) ? cxh : mouth;
+                gfx_fill_rect(c, x0, hy - nk, x1 - x0, 2 * nk, ink);
+            }
+        }
     }
 
     gfx_fill_round_rect(c, bx, by, BODY_W, BODY_H, 8, shell);
@@ -373,9 +447,8 @@ static void draw_horn(gfx_canvas_t *c, float deg, gfx_color_t col)
     gfx_arc(c, tx, ty, 25, 3, 0.0f, 360.0f, ghost);
     gfx_arc(c, tx, ty, 33, 2, 0.0f, 360.0f, ghost);
 
-    gfx_thick_line(c, SHAFT_X, SHAFT_Y, tx, ty, 26, col);
-    gfx_fill_circle(c, tx, ty, 13, col);
-    gfx_fill_circle(c, SHAFT_X, SHAFT_Y, 25, col);
+    gfx_capsule_aa(c, SHAFT_X, SHAFT_Y, tx, ty, 26, col);
+    gfx_fill_circle_aa(c, SHAFT_X, SHAFT_Y, 25, col);
 
     /* Holes along the arm, which is what tells you it is a horn.  Spaced
      * from the tip inwards rather than from the boss outwards: fixed radii
@@ -384,10 +457,10 @@ static void draw_horn(gfx_canvas_t *c, float deg, gfx_color_t col)
     for (int i = 1; i <= 3; ++i) {
         int hx, hy;
         at(deg, HORN_L - 12 - (3 - i) * 14, &hx, &hy);
-        gfx_fill_circle(c, hx, hy, 5, ui_theme_color(UI_C_PANEL));
+        gfx_fill_circle_aa(c, hx, hy, 5, ui_theme_color(UI_C_PANEL));
     }
     /* And the outermost one, which is the hole the ring is pointing at. */
-    gfx_fill_circle(c, tx, ty, 5, ui_theme_color(UI_C_PANEL));
+    gfx_fill_circle_aa(c, tx, ty, 5, ui_theme_color(UI_C_PANEL));
 
     /*
      * The lit part of each ring, over the top.
@@ -421,9 +494,13 @@ static void draw_horn(gfx_canvas_t *c, float deg, gfx_color_t col)
                  deg + 540.0f - g_out, faint, ghost, 78.0f);
 
     /* The boss and its splines. */
-    gfx_fill_circle(c, SHAFT_X, SHAFT_Y, 17, ui_theme_color(UI_C_PANEL_SUNK));
-    gfx_draw_circle(c, SHAFT_X, SHAFT_Y, 17, gfx_lerp(col, GFX_BLACK, 60));
-    gfx_fill_circle(c, SHAFT_X, SHAFT_Y, 6, col);
+    /* An outline is two discs, not a circle walked round: an arc closed on
+     * itself lays some pixels twice and misses others, and at two pixels wide
+     * that stipples. */
+    gfx_fill_circle_aa(c, SHAFT_X, SHAFT_Y, 17, gfx_lerp(col, GFX_BLACK, 60));
+    gfx_fill_circle_aa(c, SHAFT_X, SHAFT_Y, 15,
+                       ui_theme_color(UI_C_PANEL_SUNK));
+    gfx_fill_circle_aa(c, SHAFT_X, SHAFT_Y, 6, col);
 }
 
 static void draw_dial(gfx_canvas_t *c)
