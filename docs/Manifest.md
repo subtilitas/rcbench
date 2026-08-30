@@ -27,11 +27,11 @@ Julian's, in his words:
 | The pitch | Where it lands | State |
 | --- | --- | --- |
 | **External current sensors over I²C** | the coprocessor's own bus, not the panel's — the panel's is the touch controller's and must never be delayed | interface named, driver not written |
-| **ESC programmer for whatever is reachable** — AM32 and BLHeli certain | one-wire half duplex at 19,200 with a handshake, on a PIO state machine | not started; needs no permission from anybody |
-| **Balancing a whole system** with an accelerometer and a position sensor | the coprocessor holds both, **on one timebase** — which is the entire difficulty of a phase measurement | not started |
-| **Servo tester, fully armed**: SBUS and the other protocols | hardware PWM out, one PIO program per sum-signal protocol | not started |
+| **ESC programmer for whatever is reachable** — AM32 and BLHeli certain | one-wire half duplex at 19,200 with a handshake, on a PIO state machine | screen built and data-driven; no protocol speaks on a wire yet |
+| **Balancing a whole system** with an accelerometer and a position sensor | the coprocessor holds both, **on one timebase** — which is the entire difficulty of a phase measurement | screen and placement guides built; the measurement waits on the sensors |
+| **Servo tester, fully armed**: SBUS and the other protocols | hardware PWM out, one PIO program per sum-signal protocol | screen built and commanding over the link; the output stage itself is next |
 | **Servo programming** where it can be reverse-engineered | Hitec's D-series is the one published in full; the rest wait on a borrowed programmer | held at the owner's request |
-| **Log viewer for various formats** | `shared/logfile` — the locale-tolerant CSV reader is ported and tested | reader built, screen not re-cut yet |
+| **Log viewer for various formats** | `shared/logfile` — the locale-tolerant CSV reader is ported and tested | built: browse, import view, plot — and armed runs are recorded to the card |
 
 ## What not to wait for
 

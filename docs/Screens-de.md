@@ -2,38 +2,37 @@
 
 <sub>[English](Screens.md) · **Deutsch**</sub>
 
-Den Prüfstand bedienen: was immer auf dem Bildschirm ist, was die
-Kennzeichnungen im Menü bedeuten, und wie jeder Bildschirm benutzt wird.
+Den Prüfstand bedienen: was immer auf dem Bildschirm steht, was die Marken im
+Menü bedeuten, und wie die einzelnen Bildschirme benutzt werden.
 
 ## Das Statusband
 
 Der obere Streifen gehört auf jedem Bildschirm dem Prüfstand. Von rechts nach
-links: Linkzustand, Ausgangsmodus, scharf oder nicht, die Laufzeit, und STOP.
+links: Linkzustand, Ausgangsmodus, scharf oder nicht, Laufzeit — und STOP.
 
-**STOP funktioniert immer.** Es entschärft von jedem Bildschirm aus, und es
+**STOP funktioniert immer.** Es entschärft von jedem Bildschirm aus und
 rastet ein: der Prüfstand bleibt gestoppt, bis du bewusst wieder scharf
-schaltest. Nichts anderes löst einen Stopp — nicht wegnavigieren, kein
-ablaufender Hinweis, nicht der zurückkehrende Link.
+schaltest. Nichts anderes hebt einen Stopp auf — kein Bildschirmwechsel, kein
+ablaufender Hinweis, kein zurückkehrender Link.
 
-ARM sitzt unten an einem Prüfstandsbildschirm und STOP oben im Band, einen
-ganzen Bildschirm auseinander, damit der Griff nach dem einen nicht das andere
-findet.
+ARM sitzt unten am Prüfstandsbildschirm, STOP oben im Band — eine volle
+Bildschirmhöhe dazwischen, damit der Griff nach dem einen nicht versehentlich
+das andere trifft.
 
-## Was die Kennzeichnungen im Menü bedeuten
+## Was die Marken im Menü bedeuten
 
 ![Das Funktionsmenü](img/overview.png)
 
-| Kennzeichnung | Bedeutung |
+| Marke | Bedeutung |
 | --- | --- |
 | **SOON** | den Bildschirm gibt es noch nicht |
-| **MODELLED** | den Bildschirm gibt es und er funktioniert, aber seine Hardware ist nicht bestückt — jede Zahl darin ist erfunden, und der Bildschirm sagt das |
-| nichts | das Bauteil ist da und die Messwerte sind echt |
+| **MODELLED** | den Bildschirm gibt es, aber seine Hardware ist nicht bestückt — jede Zahl darin ist erfunden, und der Bildschirm sagt das dazu |
+| keine | das Bauteil ist da, die Messwerte sind echt |
 
-MODELLED korrigiert sich selbst: die Kennzeichnung kommt aus dem, was der
-Koprozessor als tatsächlich bestückt meldet, sie verschwindet also in dem
-Moment, in dem das Bauteil daran ist. Abwesend heißt nicht verboten — ein
-Bildschirm, dessen Hardware fehlt, öffnet weiterhin und funktioniert aus dem
-Modell, mit der Kennzeichnung, die das sagt.
+MODELLED korrigiert sich von selbst: die Marke kommt aus dem, was der
+Koprozessor als tatsächlich bestückt meldet, und verschwindet, sobald das
+Bauteil eingebaut ist. Fehlende Hardware sperrt nichts — der Bildschirm öffnet
+trotzdem und arbeitet aus dem Modell, mit der Marke, die genau das sagt.
 
 Das Menü gibt es auch im hellen Theme:
 
@@ -43,131 +42,129 @@ Das Menü gibt es auch im hellen Theme:
 
 ![Der Splash](img/splash.png)
 
-Jedes Subsystem meldet beim Hochkommen sein eigenes Ergebnis — ein Board ohne
-Karte, ein Touch-Controller, der nicht geantwortet hat, oder ein Koprozessor
-mit der falschen Protokollversion sagt es also hier, statt drei Bildschirme
-später rätselhaft kaputt auszusehen. Ein Fehlschlag wird trotzdem gemeldet und
-ist keine Sackgasse: lesen und weitergehen. Sobald jeder Schritt geantwortet
-hat, hält die Liste kurz und übergibt ans Menü; ein Tippen überspringt das
-Halten.
+Jedes Subsystem meldet beim Hochfahren sein eigenes Ergebnis. Eine fehlende
+Karte, ein stummer Touch-Controller oder ein Koprozessor mit der falschen
+Protokollversion stehen also hier — statt drei Bildschirme später als
+rätselhafter Defekt aufzutauchen. Ein Fehlschlag ist eine Meldung, keine
+Sackgasse: lesen und weiter. Wenn alle Schritte geantwortet haben, wartet die
+Liste kurz und übergibt ans Menü; Tippen überspringt das Warten.
 
 ## Motor & ESC
 
 ![Motor und Regler](img/motor.png)
 
-Vier Traces auf eigenen Skalen, das Gas auf dem Slider, Peak-Werte unter den
-Siebensegment-Anzeigen. Erst ARM lässt den Slider etwas treiben; DISARM und
-STOP halten beide sofort an, ohne Rampe. RESET PEAKS löscht die Peak-Marken
-und lässt die Live-Werte in Ruhe.
+Vier Kurven auf eigenen Skalen, das Gas auf dem Slider, Spitzenwerte unter den
+Siebensegment-Anzeigen. Ohne ARM bewegt der Slider nichts; DISARM und STOP
+halten beide sofort an, ohne Rampe. RESET PEAKS löscht die Spitzenwerte und
+lässt die Live-Anzeigen unberührt.
 
-Solange nichts Echtes angeschlossen ist, läuft der Bildschirm aus dem Modell
-und sagt das — SIMULATION liegt quer über dem Plot. Es verschwindet in dem
-Moment, in dem echte Zahlen ankommen, und dafür braucht es keinen extra
-Sensor: ein ESC mit Telemetrie (KISS, BLHeli_32, OpenYGE) oder Bidirectional
-DShot meldet Spannung, Strom, Verbrauch, RPM und Temperaturen über die
-Signalleitung selbst.
+Solange nichts Echtes angeschlossen ist, läuft der Bildschirm aus dem Modell —
+SIMULATION liegt quer über dem Plot. Das Watermark verschwindet, sobald echte
+Zahlen ankommen, und dafür braucht es keinen zusätzlichen Sensor: ein ESC mit
+Telemetrie (KISS, BLHeli_32, OpenYGE) oder Bidirectional DShot liefert
+Spannung, Strom, Verbrauch, Drehzahl und Temperaturen über die Signalleitung.
 
 ## Servo
 
 ![Servo](img/servo.png)
 
-Irgendwo auf dem Bogen ziehen, und das Horn folgt. Der kräftige Arm ist die
-**gemessene** Stellung; der blasse Arm dahinter ist, was du befohlen hast.
-Wenn die beiden auseinandergehen, ist dieser Abstand der Verzug des Servos
-selbst — der Bildschirm fügt keinen eigenen hinzu, ein langsames Servo zeigt
-sich also als zwei Arme und nicht als träges Bild. Die Ringe um die Spitze
-pulsieren, solange das Servo aktiv getrieben wird.
+Irgendwo auf dem Bogen ziehen — das Horn folgt. Der kräftig gezeichnete Arm
+ist die **gemessene** Stellung, der blasse dahinter die befohlene. Laufen die
+beiden auseinander, ist dieser Abstand die Trägheit des Servos: der Bildschirm
+fügt keine eigene hinzu, ein langsames Servo zeigt sich also als zwei Arme,
+nicht als träges Bild. Die Ringe um die Hornspitze pulsieren, solange das
+Servo aktiv angesteuert wird.
 
 ## Analyser
 
 ![Analyser](img/analyser.png)
 
 Sechzehn Kanäle, jeder mit seinen letzten anderthalb Sekunden Verlauf und
-einem Balken für den Stand jetzt. Beweg ein Bedienelement am Sender, und der
-Kanal, den du bewegt hast, ist der mit der Stufe in seiner Spur — das ist die
-Frage, für die dieser Bildschirm gebaut ist. Die Balken beantworten die
-andere: wie weit, gerade jetzt, ohne eine Zahl zu lesen. CH17 und CH18 sind
-die digitalen Kanäle.
+einem Balken für den Momentanwert. Bewege ein Bedienelement am Sender: der
+Kanal mit der Stufe in der Spur ist der, den du bewegt hast — für diese Frage
+ist der Bildschirm gebaut. Die Balken beantworten die andere: wie weit, jetzt
+gerade, ohne eine Zahl lesen zu müssen. CH17 und CH18 sind die digitalen
+Kanäle.
 
-Ein Glitch zeigt sich als Spitze in einer Spur. Ein Dropout als Kerbe über
-alle sechzehn im selben Augenblick.
+Ein Glitch ist eine Spitze in einer Spur. Ein Dropout ist eine Kerbe durch
+alle sechzehn im selben Moment.
 
-Der Zustandsblock ist das Größte auf dem Bildschirm, weil der Empfänger lügen
-kann:
+Der Zustandsblock ist mit Absicht das Größte auf dem Bildschirm, denn der
+Empfänger kann lügen:
 
 ![Ein Empfänger im Failsafe](img/analyser-failsafe.png)
 
-Ein Empfänger im Failsafe sendet sechzehn einwandfrei geformte Werte, die er
-sich auf Ansage ausgedacht hat. Der Prüfstand färbt jede Spur rot und sagt
-FAILSAFE in Worten. **Failsafe als Stopp behandeln, nie als sechzehn gültige
-Zahlen** — genau danach sehen sie aus. Vier Zustände, jeder mit einer Zeile,
-die sagt, was er bedeutet: SILENT, FAILSAFE, FRAME LOST und LIVE.
+Ein Empfänger im Failsafe sendet sechzehn tadellos geformte Werte, die er frei
+erfindet. Der Prüfstand färbt jede Spur rot und schreibt FAILSAFE aus.
+**Failsafe heißt Stopp — niemals sechzehn gültige Zahlen**, auch wenn sie
+genau so aussehen. Vier Zustände, jeder mit einer erklärenden Zeile: SILENT,
+FAILSAFE, FRAME LOST und LIVE.
 
 ## Programmierer
 
-Programmieren geht der Reihe nach: was du programmierst, welches Protokoll es
-spricht, und erst dann verbinden.
+Programmieren geht in dieser Reihenfolge: was programmierst du, welches
+Protokoll spricht es — und erst dann verbinden.
 
 ![Was programmierst du](img/programmer.png)
 
-Die Klasse zu wählen heißt zu wählen, welches Kabel du in der Hand hast; das
-Protokoll zu wählen heißt zu wählen, was du hineinsprichst. Jede
-Protokollzeile benennt ihren Transport — eine Autoerkennung gibt es nicht:
+Mit der Klasse wählst du, welches Kabel du in der Hand hast; mit dem
+Protokoll, was hineingesprochen wird. Jede Protokollzeile nennt ihren
+Transport — eine automatische Erkennung gibt es nicht:
 
 ![Die Protokolle einer Klasse](img/programmer-protocols.png)
 
-**BLHeli_32 steht nicht in der ESC-Liste.** Seine Einstellungen sind
-verschlüsselt und der Key ist nicht öffentlich — der Prüfstand erkennt und
-treibt diese Regler (Drehrichtung, 3D-Modus, Beacon und Save-Settings laufen
-als DShot Special Commands), kann aber keinen Parameter benennen. [Die ganze
-Antwort](BLHeli32-de.md).
+**BLHeli_32 fehlt in der ESC-Liste.** Seine Einstellungen sind verschlüsselt,
+und der Schlüssel ist nicht öffentlich. Der Prüfstand erkennt diese Regler und
+steuert sie an — Drehrichtung, 3D-Modus, Beacon und Save-Settings laufen als
+DShot Special Commands —, aber er kann keinen einzigen Parameter benennen.
+[Die ganze Antwort](BLHeli32-de.md).
 
-Bis ein Gerät antwortet, ist nichts editierbar:
+Bevor ein Gerät geantwortet hat, lässt sich nichts editieren:
 
 ![Nichts hat geantwortet](img/programmer-idle.png)
 
-Sobald eines geantwortet hat, erscheinen die Parameter gruppiert, und die
-Hilfe der ausgewählten Zeile steht unter der Liste:
+Danach erscheinen die Parameter in Gruppen, und die Hilfe zur ausgewählten
+Zeile steht unter der Liste:
 
 ![Verbunden](img/programmer-params.png)
 
 Jede Firmware zeigt ihre Einstellungen in ihren eigenen Einheiten — BLHeli_S
-legt das Timing in benannte Stufen, alles danach in Grad Vorzündung:
+führt das Timing in benannten Stufen, alles Spätere in Grad Vorzündung:
 
 ![Grad statt benannter Stufen](img/programmer-am32.png)
 
-**Geändert ist nicht geschrieben.** Eine vorgemerkte Änderung trägt eine
-Markierung und eine eigene Farbe, und der WRITE-Knopf zählt, wie viele
-vorgemerkt sind. Ein Wert, den du editiert hast, sieht nie aus wie einer, der
-von der Hardware gelesen wurde:
+**Geändert ist nicht geschrieben.** Eine vorgemerkte Änderung bekommt eine
+Markierung und eine eigene Farbe, und der WRITE-Knopf zählt mit, wie viele
+anstehen. Ein editierter Wert sieht nie aus wie einer, der vom Gerät gelesen
+wurde:
 
 ![Zwei vorgemerkte Änderungen](img/programmer-dirty.png)
 
-Stepper halten an ihren Enden an, statt umzulaufen — an einem Regler ist das
-falsche Ende einer umlaufenden Liste eine Drehrichtung.
+Die Stepper halten an ihren Enden an, statt zum Anfang zurückzuspringen — bei
+einem Regler wäre das falsche Ende einer Liste schnell eine Drehrichtung.
 
-Eine Ebene zurück trennt die Verbindung. Das Gerät, das einen Bootloader
-beantwortet hat, ist nicht das, das eine CLI beantworten wird, und der
-Bildschirm zeigt nicht die eine Identität über den Parametern des anderen.
-Back steigt eine Ebene auf einmal; das Tag im Band verlässt den Bildschirm.
+Eine Ebene zurück trennt die Verbindung: das Gerät, das eben einen Bootloader
+beantwortet hat, ist nicht das, das gleich eine CLI beantworten wird, und die
+Identität des einen bleibt nicht über den Parametern des anderen stehen.
+Zurück geht eine Ebene auf einmal; den Bildschirm verlässt man über das Tag im
+Band.
 
 ## Akku
 
 ![Zellenabweichung](img/battery.png)
 
-Zellen werden als Abweichungen von ihrem eigenen Mittelwert gezeichnet, denn
-die Zahl, auf die es ankommt, ist die **Spreizung** — der größte Abstand
-zwischen zwei beliebigen Zellen. Das Urteil folgt ihr: HEALTHY unter 30 mV,
-WATCH ab 30, REPLACE ab 60.
+Die Zellen werden als Abweichung von ihrem eigenen Mittelwert gezeichnet, denn
+entscheidend ist die **Spreizung** — der größte Abstand zwischen zwei
+beliebigen Zellen. Danach richtet sich das Urteil: HEALTHY unter 30 mV, WATCH
+ab 30, REPLACE ab 60.
 
-Spreizung ist zwischen Zellen, nie gegen einen Nennwert. Ein Akku, der leer
-aber gleichmäßig ist, ist ein entladener Akku; ein Akku, der voll aber
-ungleichmäßig ist, ist ein kaputter — und nur der zweite geht diesen
-Bildschirm etwas an.
+Spreizung heißt: zwischen den Zellen, nie gegen einen Nennwert. Ein leerer,
+aber gleichmäßiger Akku ist entladen; ein voller, aber ungleichmäßiger ist
+defekt — und nur um den zweiten kümmert sich dieser Bildschirm.
 
-Die Skala folgt dem Akku, bis zu einer Untergrenze von 12 mV, und steht neben
-dem Plot — ein Balken, der den Plot füllt, könnte sonst vier Millivolt sein
-oder vierzig.
+Die Skala folgt dem Akku, bis hinunter zu 12 mV, und steht neben dem Plot —
+ein Balken, der den Plot füllt, könnte sonst vier Millivolt bedeuten oder
+vierzig.
 
 **Unter Last messen.** In Ruhe sieht eine müde Zelle aus wie jede andere.
 
@@ -175,15 +172,15 @@ oder vierzig.
 
 ![Der Dateibrowser](img/logs.png)
 
-Die Karte durchsehen, eine Datei öffnen, prüfen, was der Import erkannt hat
-und woran, dann plotten:
+Karte durchsehen, Datei öffnen, prüfen, was der Import erkannt hat und woran —
+dann plotten:
 
 ![Die Importansicht](img/logs-import.png)
 ![Der Plot](img/logs-plot.png)
 
-CSV in mehreren Dialekten wird tolerant gelesen — Dezimalkommas
-eingeschlossen —, und was der Reader entschieden hat, wird gezeigt, bevor du
-dich darauf verlässt.
+CSV wird in mehreren Dialekten gelesen, Dezimalkommas eingeschlossen, und die
+Importansicht zeigt, was der Reader entschieden hat, bevor du dich darauf
+verlässt.
 
 ## Setup
 
@@ -195,13 +192,13 @@ Die Einstellungen liegen hinter der SETUP-Kachel, in beiden Themes:
 
 ## Auswuchten
 
-Auf eine eigene Seite umgezogen: [Auswuchten](Balance-de.md). Die Messung ist
-der leichte Teil — wo die Sensoren hinkommen, entscheidet, ob die Antwort
-etwas bedeutet.
+Hat eine eigene Seite: [Auswuchten](Balance-de.md). Die Messung ist der
+leichte Teil — ob die Antwort etwas taugt, entscheidet die Platzierung der
+Sensoren.
 
-## Ein Bildschirm, der seine Aufgabe noch nicht kann, sagt warum
+## Ein Bildschirm, der noch nicht kann, sagt warum
 
-Eine Kachel, die nicht fertig ist, sagt nicht „demnächst"; sie benennt, was
-sie tun wird, und die eine Entscheidung oder das eine Bauteil, das zuerst
-ankommen muss — das Menü ist damit zugleich die To-do-Liste, und es verspricht
-nie eine Messung, die der Prüfstand nicht machen kann.
+Eine unfertige Kachel sagt nicht „demnächst". Sie nennt, was sie tun wird, und
+das eine Bauteil oder die eine Entscheidung, die vorher fehlt. Das Menü ist
+damit zugleich die Aufgabenliste — und es verspricht keine Messung, die der
+Prüfstand nicht machen kann.

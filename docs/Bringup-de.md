@@ -1,50 +1,49 @@
-# Den Link auf Silizium in Betrieb nehmen
+# Den Link auf echter Hardware in Betrieb nehmen
 
 <sub>[English](Bringup.md) · **Deutsch**</sub>
 
-Der Link hat mehr Arten, halb kaputt zu sein, als das Display, und die meisten
-davon zeigen sich als „geht nicht". Die Firmware sagt, welche es ist — diese
-Seite ist, wie du sie dazu bringst, es dir zu sagen, und was jede Antwort
-bedeutet.
+Der Link hat mehr Möglichkeiten, halb kaputt zu sein, als das Display — und
+fast alle sehen gleich aus: „geht nicht". Die Firmware kann sagen, welche es
+ist. Diese Seite zeigt, wie man sie dazu bringt, und was die einzelnen
+Antworten bedeuten.
 
 ## Hier anfangen: kommt überhaupt etwas über den Bus?
 
-Bevor das Page-Protokoll irgendetwas bedeutet, muss eine Frage für sich
-beantwortet sein: **kommen Frames heil über diesen Bus?** Sie zusammen mit „geht
-der Link" zu beantworten, ist der Weg, aus einer Inbetriebnahme einen Nachmittag
-zu machen — ein leicht falsches Bit Timing, ein fehlender Abschlusswiderstand,
-ein Transceiver im falschen Modus und ein Bug im Dispatcher zeigen sich alle als
-„das Bedienteil zeigt keine Zahlen".
+Bevor das Protokoll eine Rolle spielt, muss eine Frage für sich beantwortet
+sein: **kommen Frames unversehrt über diesen Bus?** Wer sie mit „funktioniert
+der Link?" vermischt, macht aus der Inbetriebnahme einen langen Nachmittag —
+ein leicht falsches Bit Timing, ein fehlender Abschlusswiderstand, ein
+Transceiver im falschen Modus und ein Softwarefehler sehen alle gleich aus:
+das Panel zeigt keine Zahlen.
 
-Es gibt also einen Echotest, der nur das beantwortet. Das Bedienteil sendet einen
-Frame, der Koprozessor schickt ihn direkt zurück, das Bedienteil prüft, dass er
-Byte für Byte zurückkam. Keine Page Map, keine Register, keine State Machine.
-**Wenn das durchläuft und der Link trotzdem nicht geht, liegt der Fehler
-oberhalb der Leitung** — was zu wissen sich lohnt, bevor jemand etwas absteckt.
+Dafür gibt es den Echotest. Das Panel sendet einen Frame, der Koprozessor
+schickt ihn unverändert zurück, das Panel vergleicht Byte für Byte. Keine
+Register, kein Protokoll. **Läuft der Echotest durch und der Link geht
+trotzdem nicht, liegt der Fehler oberhalb der Leitung** — und das weiß man
+dann, bevor irgendjemand ein Kabel zieht.
 
 ### Ausführen
 
-Der Koprozessor braucht nichts: er versucht CAN beim Boot, sagt, ob der
-Controller geantwortet hat, und echot von da an Probes. Das kostet einen
-Registerlesezugriff je Schleifendurchlauf und beantwortet nur eine Page, die die
-Map nicht benutzt, also bleibt es dauerhaft drin — das Inbetriebnahme-Werkzeug,
-das schon geflasht ist, ist das, das benutzt wird.
+Der Koprozessor braucht keine Vorbereitung: er startet CAN beim Boot, meldet,
+ob der Controller geantwortet hat, und beantwortet Echo-Probes von da an
+dauerhaft. Das kostet einen Registerzugriff pro Schleifendurchlauf — deshalb
+ist es fest eingebaut, und das Diagnosewerkzeug ist immer schon geflasht, wenn
+man es braucht.
 
-Die Seite des Bedienteils ist opt-in, weil das Starten von CAN das native USB
-wegnimmt:
+Auf der Panelseite ist der Test opt-in, weil das Starten von CAN das native
+USB wegnimmt:
 
 ```bash
 cd firmware/panel
 idf.py -DRCBENCH_CAN_SELFTEST=1 build flash
 ```
 
-**Auf den UART-Anschluss schauen, nicht auf den USB.** GPIO19 und GPIO20 führen
-sowohl das native USB als auch den CAN-Transceiver, und der Multiplexer muss
-sich entscheiden — siehe [der Link](Link-de.md). Die Konsole liegt genau
-deswegen auf UART0 mit USB-Serial-JTAG als zweitem Weg, damit diese Sitzung
-irgendwo reden kann.
+**Auf die UART-Buchse schauen, nicht auf die USB-Buchse.** GPIO19 und GPIO20
+führen sowohl das native USB als auch den CAN-Transceiver; der Multiplexer
+muss sich für eines entscheiden — siehe [der Link](Link-de.md). Die Konsole
+liegt genau deshalb auf UART0.
 
-Er läuft fünf Sekunden beim Boot und gibt aus:
+Der Test läuft fünf Sekunden beim Boot und gibt aus:
 
     can: 1000000 bit/s: brp 4, tseg1 14, tseg2 5, sjw 4, sample point 75.0%
     panel: CAN self-test: every probe came back intact
@@ -53,65 +52,63 @@ Er läuft fünf Sekunden beim Boot und gibt aus:
       panel  tx_err 0 rx_err 0 bus_err 0
       copro  CAN up, 2024 echoes, 0 overflow(s), tx_err 0 rx_err 0 flags 0x00
 
-**Beide Enden stehen in diesem Bericht**, und die Hälfte des Koprozessors kam
-über den Bus und nicht über ein zweites USB-Kabel. Das wiegt schwerer als die
-Bequemlichkeit: mehrere Fehler sind nur im Vergleich sichtbar. Frames, die der
-Koprozessor beantwortet hat und die das Bedienteil nie gehört hat, sind ein
-Fehler auf dem Rückweg; Frames, die er nie beantwortet hat, einer auf dem
-Hinweg; und ein Koprozessor, der Frames mangels freiem Puffer verworfen hat, ist
-keines von beidem — was kein Buszähler irgendwo festhält.
+**Beide Enden stehen in diesem Bericht**, und die Zeilen des Koprozessors sind
+über den Bus gekommen, nicht über ein zweites USB-Kabel. Das ist mehr als
+Bequemlichkeit: mehrere Fehler zeigen sich nur im Vergleich. Frames, die der
+Koprozessor beantwortet hat und das Panel nie gehört hat, sind ein Fehler auf
+dem Rückweg; Frames, die er nie beantwortet hat, einer auf dem Hinweg. Und ein
+Koprozessor, der Frames mangels freiem Puffer verworfen hat, ist keins von
+beidem — das steht in keinem Buszähler.
 
-Der Statusaustausch wird gepollt, teilt sich die Page mit dem Echotest und läuft
-mit derselben niedrigsten Priorität. Er passiert **auf beiden Seiten** der
-Echophase, nicht nur danach: der Zähler des anderen Endes läuft seit dessen
-eigenem Boot, also bedeutet nur die Differenz über die Messung hinweg etwas —
-ein Wert, der einmal am Ende genommen wird, ist eine Lebenssumme und sagt
-nichts.
+Der Statuszähler des anderen Endes läuft seit dessen Boot. Aussagekräftig ist
+deshalb nur die Differenz über die Messung hinweg — darum wird der Status
+**vor und nach** der Echophase abgefragt. Eine einzelne Ablesung am Ende wäre
+eine Summe seit dem Einschalten und sagt nichts.
 
-| Was er sagt | Was es bedeutet | Wo zu suchen |
+| Meldung | Bedeutung | Wo suchen |
 | --- | --- | --- |
-| `no probe came back` | Es kommt gar nichts durch | CANH/CANL vertauscht? Gegenseite mit Strom? Beide auf derselben Bitrate? Abschlusswiderstände an **beiden** Enden? |
-| `probes come back altered` | Frames kommen durch und kommen falsch an | Sample Point oder Bit Timing; ein fehlender Abschluss reflektiert |
-| `probes cross, and not all of them` | Grenzwertig | Timing, ein Abschlusswiderstand, oder ein Bus, der für die Rate zu lang ist |
-| `probes go missing without a bus error` | Sie kamen heil an, und niemand hat sie gelesen | Ein Empfangspuffer ist übergelaufen. **Kein** Verdrahtungsfehler — im selben Bericht den Overflow-Zähler des Koprozessors prüfen |
-| `every probe came back intact` | Die Leitung ist in Ordnung | Was noch falsch ist, liegt darüber |
+| `no probe came back` | Es kommt gar nichts durch | CANH/CANL vertauscht? Gegenseite versorgt? Beide auf derselben Bitrate? Abschlusswiderstände an **beiden** Enden? |
+| `probes come back altered` | Frames kommen an — verfälscht | Sample Point oder Bit Timing; ein fehlender Abschluss reflektiert |
+| `probes cross, and not all of them` | Grenzwertig | Timing, ein fehlender Abschluss, oder ein zu langer Bus für die Rate |
+| `probes go missing without a bus error` | Sie kamen unversehrt an, und niemand hat sie abgeholt | Ein Empfangspuffer ist übergelaufen. **Kein** Verdrahtungsfehler — im selben Bericht den Overflow-Zähler des Koprozessors ansehen |
+| `every probe came back intact` | Die Leitung ist in Ordnung | Was noch klemmt, liegt darüber |
 
-Korruption schlägt in dieser Tabelle Verlust, und die Reihenfolge ist Absicht:
-ein grenzwertiger Bus tut beides, Verlust ist die lautere Zahl, und sie zeigt auf
-die Kabellänge, während die Korruption sagt, dass das Bit Timing falsch ist.
+Dass verfälschte Frames in der Tabelle vor verlorenen stehen, ist Absicht: ein
+grenzwertiger Bus erzeugt beides, und der Verlust ist die auffälligere Zahl —
+aber die Verfälschung benennt die Ursache (Bit Timing), während der Verlust
+nur auf die Kabellänge zeigt.
 
-Der Verlust selbst teilt sich noch einmal, am eigenen Fehlerzähler des
-Controllers. Frames, die *mit* Busfehlern verloren gingen, wurden auf der
-Leitung beschädigt — Abschluss, Timing, Länge. Frames, die mit **null**
-Busfehlern verloren gingen, kamen einwandfrei an und wurden von etwas verworfen,
-das nicht rechtzeitig weitergelesen hat, und dafür jemanden Abschlusswiderstände
-prüfen zu schicken, verbrennt einen Nachmittag an funktionierender Hardware.
+Der Verlust selbst teilt sich noch einmal, am Fehlerzähler des Controllers.
+Frames, die **mit** Busfehlern verloren gingen, wurden auf der Leitung
+beschädigt — Abschluss, Timing, Länge. Frames, die mit **null** Busfehlern
+verloren gingen, kamen einwandfrei an und wurden von Software verworfen, die
+nicht rechtzeitig gelesen hat. Wer dafür Abschlusswiderstände prüfen geht,
+verliert einen Nachmittag an Hardware, die funktioniert.
 
-Auch die Nutzdaten sind nicht beliebig. CAN stopft nach fünf gleichen Pegeln ein
-komplementäres Bit ein, die Muster, die einen grenzwertigen Bus fordern, sind
-also lange Läufe eines Pegels — die Probes gehen alle durch: durchgehend
-dominant, durchgehend rezessiv und beide alternierenden Muster. Ein Test, der
-nur zählende Ganzzahlen sendet, würde auf einem Bus bestehen, der echten Verkehr
+Auch die Testmuster sind nicht beliebig. CAN fügt nach fünf gleichen Pegeln
+ein Stopfbit ein — was einen grenzwertigen Bus wirklich fordert, sind lange
+Folgen desselben Pegels. Die Probes durchlaufen deshalb nacheinander: nur
+dominant, nur rezessiv, und beide alternierenden Muster. Ein Test, der bloß
+hochzählende Zahlen sendet, würde auf einem Bus bestehen, der echten Verkehr
 verliert.
 
-Wenn der Koprozessor beim Boot `CAN DID NOT ANSWER` ausgibt, liegt der Fehler
-auf **SPI und nicht auf CAN**: das Datenblatt garantiert, dass der Controller im
-Configuration Mode aufwacht, ein CANSTAT, der etwas anderes sagt, bedeutet also,
-dass auf dem SPI-Bus, den der Treiber zu haben glaubt, niemand zuhört. Das
-auseinanderzuhalten lohnt sich, bevor ein Oszilloskop herauskommt.
+Meldet der Koprozessor beim Boot `CAN DID NOT ANSWER`, liegt der Fehler an
+**SPI, nicht an CAN**: das Datenblatt garantiert, dass der Controller im
+Configuration Mode aufwacht. Ein CANSTAT, der etwas anderes sagt, heißt, dass
+auf dem SPI-Bus niemand zuhört. Das lohnt sich zu wissen, bevor das
+Oszilloskop auf den Tisch kommt.
 
 ---
 
 ## Was zurückzumelden ist
 
 Die Umlaufzeit, die Fehlerzähler beider Enden, und ob der Koprozessor
-Empfangs-Overflows gemeldet hat. Diese drei will das Protokoll: das erste legt
-fest, was eine Pollperiode schaffen muss, die anderen beiden sagen, ob der Bus
-oder die Software die Grenze war.
+Empfangs-Overflows gemeldet hat. Die Umlaufzeit legt fest, was eine
+Pollperiode schaffen muss; die anderen beiden sagen, ob der Bus oder die
+Software die Grenze war.
 
-Erwähnenswert ist außerdem, was der *Heartbeat* währenddessen getan hat. Sein
-Monoflop ist nicht bestückt, die Flanken erreichen also einen Header-Pin und ein
-Oszilloskop und sonst nichts — aber dies ist eine Sitzung, in der beide Platinen
-gleichzeitig unter Spannung stehen, und es ist die billigste Gelegenheit zu
-bestätigen, dass die Leitung mit der Rate flankt, die [Sicherheit](Safety-de.md)
-verlangt.
+Und ein Blick auf den *Heartbeat* lohnt sich in derselben Sitzung: sein
+Monoflop ist noch nicht bestückt, die Flanken erreichen also nur einen
+Header-Pin und ein Oszilloskop — aber beide Platinen sind gerade gleichzeitig
+unter Spannung, und das ist die billigste Gelegenheit zu prüfen, dass die
+Flanken mit der Rate kommen, die [Sicherheit](Safety-de.md) verlangt.

@@ -3,8 +3,8 @@
 <sub>[English](Building.md) · **Deutsch**</sub>
 
 Wie man beide Platinen baut und flasht, und wofür jedes Werkzeug in `tools/`
-da ist. Drei Build-Systeme lesen einen Quellbaum: die Host-Suite für die
-Entwicklung, und je ein Firmware-Build pro Prozessor.
+da ist. Drei Build-Systeme lesen denselben Quellbaum: die Host-Suite für die
+Entwicklung, dazu je ein Firmware-Build pro Prozessor.
 
 ## Der Baum
 
@@ -38,8 +38,8 @@ Hardware anfasst, ist es nicht.
 
 ### Wie ein Verzeichnis drei Builds bedient
 
-Jedes Modul unter `shared/` trägt eine zehnzeilige `CMakeLists.txt`, die dem
-antwortet, der gerade fragt:
+Jedes Modul unter `shared/` bringt eine zehnzeilige `CMakeLists.txt` mit, die
+sich nach dem richtet, wer gerade baut:
 
 ```cmake
 if(ESP_PLATFORM)
@@ -50,14 +50,15 @@ else()
 endif()
 ```
 
-Das Bedienteil setzt `EXTRA_COMPONENT_DIRS` und bekommt jedes Modul als
-vollwertige IDF-Komponente; der Koprozessor und die Host-Suite holen sich per
-`add_subdirectory()` die, die sie wollen. Keine Wrapper-Komponenten, und keine
-Quellenliste, die zweimal dasteht.
+Das Panel setzt `EXTRA_COMPONENT_DIRS` und bekommt jedes Modul als
+vollwertige IDF-Komponente; Koprozessor und Host-Suite holen sich per
+`add_subdirectory()` die Module, die sie brauchen. Keine Wrapper-Komponenten,
+und keine Quellliste steht doppelt da.
 
-Es setzt allerdings ein `if(ESP_PLATFORM)` in ein Verzeichnis, das kein
-Hersteller-SDK behauptet. Diese Behauptung gilt dem C, und die Alternative wären
-einundzwanzig Dateien Indirektion, um einer Bedingung aus dem Weg zu gehen.
+Damit steht allerdings ein `if(ESP_PLATFORM)` in einem Verzeichnis, das von
+sich behauptet, ohne Hersteller-SDK auszukommen. Die Behauptung meint den
+C-Code — und die Alternative wären einundzwanzig Dateien Umleitung, nur um
+einer einzigen Bedingung auszuweichen.
 
 Includes sind flach — `#include "gfx.h"`, nicht `"rcbench/gfx.h"`.
 
@@ -69,10 +70,10 @@ Includes sind flach — `#include "gfx.h"`, nicht `"rcbench/gfx.h"`.
 | pico-sdk | **2.0 oder neuer** | RP2350-Support kam in 2.0; gebaut wird gegen 2.3.0 |
 | ARM GNU | 14.2 | irgendein aktuelles `arm-none-eabi` für Cortex-M33 |
 
-`firmware/panel/sdkconfig.defaults` setzt die Optionen für Octal-PSRAM,
-64-Byte-Cache-Lines und die IRAM-sichere LCD-ISR, die das Bedienteil braucht,
-und legt die Konsole auf die eingebaute USB-Serial-JTAG-Bridge — weshalb GPIO43
-und 44 frei sind. Fang damit an und nicht mit einem nackten `menuconfig`.
+`firmware/panel/sdkconfig.defaults` setzt die Optionen, die das Panel braucht
+— Octal-PSRAM, 64-Byte-Cache-Lines, die IRAM-sichere LCD-ISR — und legt die
+Konsole auf die eingebaute USB-Serial-JTAG-Bridge, weshalb GPIO43 und 44 frei
+bleiben. Von dieser Datei ausgehen, nicht von einem leeren `menuconfig`.
 
 ## Befehle
 
@@ -100,26 +101,26 @@ cmake --build firmware/copro/build
 ```
 
 Das `PICO_BOARD` des Koprozessors steht standardmäßig auf
-`pimoroni_pico_plus2_rp2350` und ist eine Vermutung darüber, welches
-RP2350B-Modul ankommt; mit `-DPICO_BOARD=` überschreiben und den Standard
-korrigieren, sobald das feststeht. Es muss ein **RP2350B** sein — der Pinbedarf
-liegt bei etwa 27 bis 32 GPIO, und ein Pico 2 führt 26 heraus.
+`pimoroni_pico_plus2_rp2350` — eine Annahme darüber, welches RP2350B-Modul
+geliefert wird. Mit `-DPICO_BOARD=` lässt es sich überschreiben; sobald das
+Modul feststeht, gehört der Standardwert korrigiert. Ein **RP2350B** muss es
+sein: der Pinbedarf liegt bei 27 bis 32 GPIO, ein Pico 2 führt nur 26 heraus.
 
 ## Werkzeuge
 
 | | |
 | --- | --- |
-| `tools/coverage.py` | misst die Line Coverage der Host-Tests und hält die Tabelle im README ehrlich; `--check` schlägt bei Abweichung fehl |
-| `tools/check_docs.py` | hält diese Seiten an den Baum: Links gehen irgendwohin, die Sidebar ist vollständig, die Suite-Liste ist die, die CMake baut, der Baum oben nennt jedes Modul unter `shared/` |
-| `tools/wiki_links.py` | streicht das `.md` aus Seitenlinks auf dem Weg ins Wiki, wo eine Seite über ihren Titel adressiert wird und ein Link auf eine Datei sie herunterlädt. Das Repository will die Endung, das Wiki nicht — die Quelle behält sie, der Mirror-Schritt übersetzt |
-| `tools/gen_font.py` | erzeugt die drei eingebetteten Fonts neu; `--check` schlägt fehl, wenn das eingecheckte C nicht mehr zu seinem Generator passt |
+| `tools/coverage.py` | misst die Line Coverage der Host-Tests und hält die Tabelle im README aktuell; `--check` schlägt bei Abweichung fehl |
+| `tools/check_docs.py` | prüft diese Seiten gegen den Quellbaum: jeder Link führt irgendwohin, die Sidebar ist vollständig, die Suite-Liste ist die, die CMake baut, und der Baum oben nennt jedes Modul unter `shared/` |
+| `tools/wiki_links.py` | entfernt das `.md` aus Seitenlinks auf dem Weg ins Wiki, denn dort wird eine Seite über ihren Titel angesprochen und ein Link auf die Datei lädt sie nur herunter. Im Repository braucht es die Endung, im Wiki nicht — die Quelle behält sie, der Kopierschritt übersetzt |
+| `tools/gen_font.py` | erzeugt die drei eingebetteten Fonts neu; `--check` schlägt fehl, wenn der eingecheckte C-Code nicht mehr zu seinem Generator passt |
 | `tools/render_ui.py` | rendert jeden Bildschirm in ein PNG; `--check` vergleicht gegen die eingecheckten Goldens |
 | `tools/frame_cost.py` | misst den Cache-Line-Traffic je Frame unter cachegrind, weil die Frame Rate auf diesem Panel bandbreitenbegrenzt ist |
 
-`gen_font.py` braucht eine TTF von DejaVu Sans Mono. Es schaut zuerst in
-`RCBENCH_FONT_DIR`, dann in `~/.local/share/fonts`, dann in die Systempfade — es
-läuft also auch auf einer Maschine, auf der man nicht nach `/usr/share/fonts`
-schreiben darf, was eine fest verdrahtete Liste unmöglich gemacht hat.
+`gen_font.py` braucht DejaVu Sans Mono als TTF. Gesucht wird zuerst in
+`RCBENCH_FONT_DIR`, dann in `~/.local/share/fonts`, dann in den Systempfaden —
+so läuft es auch auf Rechnern ohne Schreibrecht auf `/usr/share/fonts`, woran
+die frühere fest verdrahtete Pfadliste gescheitert war.
 
 `frame_cost.py` braucht `valgrind`; alles andere braucht nur einen C-Compiler
 und Pillow.
@@ -128,13 +129,14 @@ und Pillow.
 
 | Workflow | Auslöser | Was er tut |
 | --- | --- | --- |
-| `ci.yml` | Push / PR / Tag `v*` / manuell | Host-Suite, Coverage `--check`, der Font-Check, der Docs-Check, die ESP-IDF-Matrix (v5.4, v5.5) baut das Bedienteil, der pico-sdk-Build des Koprozessors, Firmware-Artefakte |
+| `ci.yml` | Push / PR / Tag `v*` / manuell | Host-Suite, Coverage `--check`, der Font-Check, der Docs-Check, die ESP-IDF-Matrix (v5.4, v5.5) baut das Panel, der pico-sdk-Build des Koprozessors, Firmware-Artefakte |
 | `docs.yml` | Push auf `main`, der `docs/` berührt | veröffentlicht `docs/` ins GitHub-Wiki |
 | `release.yml` | Tag `v*` | baut beide Images, packt sie, öffnet ein Release |
 
-Die Coverage landet im README, und CI läuft mit `--check`, was bei Abweichung
-fehlschlägt, statt einen Fixup zu committen — eine Datei, die sich selbst
-umschreibt, ist eine, deren Diff niemand liest.
+Die Coverage steht im README, und CI prüft sie mit `--check`: bei Abweichung
+schlägt der Lauf fehl, statt dass ein Bot die Datei nachzieht — denn eine
+Datei, die sich selbst umschreibt, ist eine, deren Diff niemand mehr liest.
 
-**Das Wiki muss vor dem ersten Lauf von `docs.yml` existieren.** Lege eine Seite
-von Hand im Wiki-Tab des Repositories an, sonst läuft der Clone in einen 404.
+**Das Wiki muss vor dem ersten Lauf von `docs.yml` existieren.** Einmal von
+Hand eine Seite im Wiki-Tab des Repositories anlegen, sonst endet der Clone in
+einem 404.
