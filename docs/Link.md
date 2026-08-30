@@ -1,5 +1,7 @@
 # The link
 
+<sub>**English** · [Deutsch](Link-de.md)</sub>
+
 **CAN at 1 Mbit/s** between the panel and the coprocessor. Differential
 signalling beside 100–300 A of switching current is what one would choose
 anyway; arbitration and hardware error handling are what made it the right
