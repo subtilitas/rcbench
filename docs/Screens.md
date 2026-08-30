@@ -240,7 +240,20 @@ mount reads a filtered version of what the bearing did, and an index mark on a
 blade reads one pulse per blade and gives an angle out by a whole blade
 spacing.
 
-![Where the sensors go on a rig](img/balance.png)
+The answer is an angle from the index mark, and an angle is only actionable
+once you know which blade it is near: "0.35 g at 265 degrees" is a number, and
+"between blades two and three" is an instruction. So the blade count is asked
+for, and the screen does that arithmetic.
+
+![The rotor and where the mass goes](img/balance.png)
+
+A ducted fan is a different job and says so. You cannot reach a blade tip
+inside a duct, so the correction is given as an angle on the hub rather than as
+a blade to tape:
+
+![A five-blade fan](img/balance-edf.png)
+
+![Where the sensors go on a rig](img/balance-rig.png)
 
 Two details in there are the ones people get wrong. The index mark goes on the
 motor's **bell**, not on a spinner: a rig often runs without one, and a beam

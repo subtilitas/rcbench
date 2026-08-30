@@ -270,10 +270,20 @@ int main(int argc, char **argv)
         }
     }
 
-    if (id == SCREEN_BALANCE
-        && strcmp(view, "balance-aircraft") == 0) {
+    if (id == SCREEN_BALANCE && strcmp(view, "balance") != 0) {
         ui_router_goto(SCREEN_BALANCE);
-        tap(200, UI_BAND_H + 22);           /* the AIRCRAFT tab */
+        if (strcmp(view, "balance-rig") == 0) {
+            tap(200, UI_BAND_H + 22);
+        } else if (strcmp(view, "balance-aircraft") == 0) {
+            tap(330, UI_BAND_H + 22);
+        } else if (strcmp(view, "balance-edf") == 0) {
+            /* A five-blade fan, to show the duct and a rotor whose blades
+             * you cannot reach. */
+            tap(719, UI_BAND_H + 93);
+            for (int i = 0; i < 3; ++i) {
+                tap(763, UI_BAND_H + 154);
+            }
+        }
     }
 
     if (id == SCREEN_ANALYSER) {
