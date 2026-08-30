@@ -240,7 +240,20 @@ mount reads a filtered version of what the bearing did, and an index mark on a
 blade reads one pulse per blade and gives an angle out by a whole blade
 spacing.
 
-![Where the sensors go on a rig](img/balance.png)
+The answer is an angle from the index mark, and an angle is only actionable
+once you know which blade it is near: "0.35 g at 265 degrees" is a number, and
+"between blades two and three" is an instruction. So the blade count is asked
+for, and the screen does that arithmetic.
+
+![The rotor and where the mass goes](img/balance.png)
+
+A ducted fan is a different job and says so. You cannot reach a blade tip
+inside a duct, so the correction is given as an angle on the hub rather than as
+a blade to tape:
+
+![A five-blade fan](img/balance-edf.png)
+
+![Where the sensors go on a rig](img/balance-rig.png)
 
 Two details in there are the ones people get wrong. The index mark goes on the
 motor's **bell**, not on a spinner: a rig often runs without one, and a beam
@@ -292,65 +305,24 @@ degree at 10,000 rpm; a fused IMU is five milliseconds and neither constant nor
 published, which is three hundred degrees and a mass fitted with great
 precision in the wrong place.
 
-The rest, each naming its own blocker:
+## The pack, arranged as a verdict
 
-![Battery](img/battery.png)
+A column of cell voltages is easy to draw and hard to read: six numbers that
+agree to two decimals, one of which is quietly forty millivolts adrift. The
+quantity that matters is the **spread**, so the cells are drawn as departures
+from their own mean and the number that decides the verdict is the widest gap
+between any two of them.
 
-## When the numbers are not real
+![Cell divergence](img/battery.png)
 
-The bench is useful without hardware: a modelled pack, motor and propeller let
-every screen be built, reviewed and demonstrated before the coprocessor exists.
-The whole danger of that is a simulated reading being screenshotted, quoted or
-remembered as a measured one, and no caption in a corner prevents it.
+Spread is between cells, never from a nominal. A pack that is flat but even is
+a discharged pack; a pack that is full but uneven is a broken one, and only the
+second is this screen's business.
 
-![The motor bench with simulated telemetry](img/motor.png)
+The scale follows the pack, with a floor. A fixed hundred-millivolt scale draws
+a healthy pack as six flat lines and a sick one as five flat lines and a stub,
+which is the same picture -- so the range is the pack's own worst departure
+with a little headroom, and the scale is printed beside it, because a bar that
+fills the plot could otherwise be four millivolts or forty.
 
-So it is written across the whole screen, corner to corner, at 15% — faint
-enough to read straight through and impossible to crop out of a photograph.
-The router draws it last, over the band and over any alert, and **no screen can
-opt out**: every screen would find its own reason to think itself exempt.
-
-It is sized by solving for the largest scale whose *rotated bounding box* fits
-the canvas, not by a fraction of the diagonal — sizing against the diagonal
-alone ignores the text's own height, which is what pushes the first and last
-letters off the corners.
-
-It costs about 1,650 cache-line fills a frame — 15,079 against 13,423 on the
-bench screen — and both sides of that are inside the budget for one frame per
-telemetry sample. See [Performance](Performance.md). It is only paid while the
-numbers are fake.
-
-## What a bench will look like
-
-Numbers and controls stay put; the large area switches pane. Full-width
-horizontal bands rather than columns, because that is what the frame budget
-prefers:
-
-```
-├─ band ─────────────────────────────────────────────────────── 800,48 ┤
-│ [PLOT] [TABLE] [TELEMETRY] [PROGRAMME]                               │
-│ ┌rails┬ four traces, one time base, independent scales ────────────┐ │
-│ └──────────────────────────────────────────── -24s … NOW ──────────┘ │
-├─ 0,300 ────────────────────────────────────────────────────── 800,384┤
-│  VOLT 20.71 V    CURR 32.5 A    PWR 673 W    RPM 11419    46 °C      │
-│  pk 24.32        pk 68.1        pk 1151      pk 13581     184 mAh    │
-├─ 0,384 ────────────────────────────────────────────────────── 800,480┤
-│  THROTTLE ▓▓▓▓▓▓▓▓▓▌░░░░░░ 64.0 %   [-1][0][25][50][75][100][+1]     │
-│  ARM                                                  RESET PEAKS    │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
-## Adding a screen
-
-1. Add an id to `ui_screen_id_t`.
-2. Write it: a `ui_screen_t` with whichever callbacks it needs, and a
-   `..._invalidate()` for its per-framebuffer chrome cache.
-3. Route it in `screen_for()` and invalidate it in `ui_router_invalidate()`.
-4. Add a tile to `k_tiles` in `overview_screen.c`.
-5. Add it to `SCREENS` in `tools/render_ui.py` and commit its screenshot.
-6. List its source in `test/host/CMakeLists.txt` and in `TRACKED` in
-   `tools/coverage.py`.
-
-Steps 5 and 6 are the ones worth not skipping: the golden image is what notices
-when a screen changes appearance, and the coverage check fails loudly if you
-forget it, which is the point.
+And it is measured under load. At rest a tired cell looks like every other one.
