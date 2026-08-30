@@ -107,14 +107,6 @@ static const copy_t k_copy[SCREEN_COUNT] = {
           "Save, compare and restore profiles on the card" },
         NULL,   /* the settings model is ported; the screen is being re-cut */
     },
-    [SCREEN_BATTERY] = {
-        "BATTERY",
-        { "Cell voltages over the balance lead, 1 to 14S",
-          "Internal resistance per cell and pack, under a switched load",
-          "Capacity, sag and cell divergence, arranged as a verdict",
-          "Smart-battery data: cycles, chemistry, error history" },
-        "a cell-monitor part, and the INA228 is back-ordered into 2027",
-    },
 };
 
 const char *const *stub_copy_lines(ui_screen_id_t id)

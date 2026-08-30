@@ -59,6 +59,7 @@ SOURCES = [
     "shared/ui/servo_screen.c",
     "shared/ui/analyser_screen.c",
     "shared/ui/balance_screen.c",
+    "shared/ui/battery_screen.c",
     "shared/ui/programmer_screen.c",
     "shared/ui/log_viewer_screen.c",
     "shared/ui/settings_screen.c",

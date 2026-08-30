@@ -18,6 +18,8 @@
 
 #include "log_viewer_screen.h"
 #include "settings.h"
+#include "balance_screen.h"
+#include "battery_screen.h"
 #include "analyser_screen.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
@@ -268,6 +270,28 @@ int main(int argc, char **argv)
                 }
             }
         }
+    }
+
+    if (id == SCREEN_BATTERY) {
+        /*
+         * A 6S pack with one cell forty millivolts down under load, which is
+         * the case this screen exists to make obvious: at rest those six
+         * numbers would agree to two decimals.
+         */
+        battery_state_t b;
+        memset(&b, 0, sizeof(b));
+        b.cells = 6;
+        static const float v[6]  = { 3.812f, 3.806f, 3.771f, 3.818f,
+                                     3.809f, 3.815f };
+        static const float ir[6] = { 2.1f, 2.2f, 4.8f, 2.0f, 2.2f, 2.1f };
+        for (int i = 0; i < 6; ++i) {
+            b.volts[i] = v[i];
+            b.milliohms[i] = ir[i];
+        }
+        b.capacity_mah = 5000.0f;
+        b.drawn_mah    = 1840.0f;
+        b.valid        = true;
+        battery_screen_set(&b);
     }
 
     if (id == SCREEN_BALANCE && strcmp(view, "balance") != 0) {

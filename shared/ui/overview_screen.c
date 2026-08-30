@@ -49,7 +49,7 @@ static const tile_t k_tiles[] = {
       0 },   /* the card is on the panel, so this needs nothing of the far end */
     { SCREEN_SETUP,      "SETUP",       "pack, output, theme",     ui_icon_sliders, true,
       0 },
-    { SCREEN_BATTERY,    "BATTERY",     "cells, iR, capacity",     ui_icon_battery, false,
+    { SCREEN_BATTERY,    "BATTERY",     "cells, iR, capacity",     ui_icon_battery, true,
       LINK_CAP_CELLS },
     { SCREEN_BALANCE,    "BALANCE",     "vibration and phase",     ui_icon_balance, true,
       LINK_CAP_VIBRATION },
