@@ -1,5 +1,7 @@
 # Receiver buses
 
+<sub>**English** · [Deutsch](Receivers-de.md)</sub>
+
 What comes out of an RC receiver, decoded. One protocol at a time — each is
 about a day's work and each adds something the bench can do.
 

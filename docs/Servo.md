@@ -1,5 +1,7 @@
 # Servo procedures
 
+<sub>**English** · [Deutsch](Servo-de.md)</sub>
+
 Two things this bench can do that a transmitter cannot, both of which come
 from the same measurement and are both about the servo **as installed** rather
 than the servo as sold. Neither is in the catalogue's small set, because both

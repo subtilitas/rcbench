@@ -1,5 +1,7 @@
 # Screens
 
+<sub>**English** · [Deutsch](Screens-de.md)</sub>
+
 The bench is eight tiles behind a menu, plus a splash that tells you what came
 up. This page covers the shell; each bench gets its own page as it is built.
 

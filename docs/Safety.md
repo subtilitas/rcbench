@@ -1,5 +1,7 @@
 # Safety
 
+<sub>**English** · [Deutsch](Safety-de.md)</sub>
+
 A bench that spins propellers needs stopping to be the one thing that cannot
 fail quietly. This page is how that is arranged, and why it is arranged that
 way rather than the obvious way.

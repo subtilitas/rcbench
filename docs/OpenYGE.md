@@ -1,5 +1,7 @@
 # The OpenYGE ESC telemetry and parameter protocol
 
+<sub>**English** · [Deutsch](OpenYGE-de.md)</sub>
+
 A written specification of the protocol: frame format, telemetry payload,
 parameter access, and the status encoding — with the arithmetic needed to
 implement it.

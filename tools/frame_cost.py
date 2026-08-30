@@ -31,7 +31,9 @@ import sys
 import tempfile
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
-DOC = REPO / "docs" / "Performance.md"
+# Every page carrying the marker pair, so the German page cannot quietly keep
+# last month's numbers while the English one is current.
+DOCS = sorted((REPO / "docs").glob("Performance*.md"))
 DOC_START = "<!-- framecost:start -->"
 DOC_END = "<!-- framecost:end -->"
 
@@ -155,14 +157,19 @@ def doc_block(lines: list[str]) -> str:
     return f"{DOC_START}\n```\n$ python3 tools/frame_cost.py\n{body}\n```\n{DOC_END}"
 
 
-def splice_doc(block: str, write: bool) -> int:
-    """Update or verify the block in docs/Performance.md.  0 if it agrees."""
-    with open(DOC, encoding="utf-8", newline="") as fh:
+def splice_docs(block: str, write: bool) -> int:
+    """Update or verify the block in every page that carries it."""
+    return max((splice_doc(doc, block, write) for doc in DOCS), default=0)
+
+
+def splice_doc(doc, block: str, write: bool) -> int:
+    """Update or verify the block in one page.  0 if it agrees."""
+    with open(doc, encoding="utf-8", newline="") as fh:
         text = fh.read()
     start = text.find(DOC_START)
     end = text.find(DOC_END)
     if start < 0 or end < 0:
-        sys.exit(f"{DOC.name} has no {DOC_START} / {DOC_END} pair")
+        sys.exit(f"{doc.name} has no {DOC_START} / {DOC_END} pair")
     current = text[start:end + len(DOC_END)]
     if not write:
         have, want = doc_rows(current), doc_rows(block)
@@ -172,21 +179,21 @@ def splice_doc(block: str, write: bool) -> int:
             if abs(have[m] - want[m]) > max(DOC_FLOOR, want[m] * DOC_TOLERANCE)
         ]
         if not missing and not drifted:
-            print(f"{DOC.name} frame-cost table is up to date")
+            print(f"{doc.name} frame-cost table is up to date")
             return 0
         for m in missing:
-            print(f"{DOC.name} has no row for mode '{m}'", file=sys.stderr)
+            print(f"{doc.name} has no row for mode '{m}'", file=sys.stderr)
         for m, was, now in drifted:
-            print(f"{DOC.name} says {m} costs {was:,} fills; it costs "
+            print(f"{doc.name} says {m} costs {was:,} fills; it costs "
                   f"{now:,}", file=sys.stderr)
         print("run tools/frame_cost.py --update-doc", file=sys.stderr)
         return 1
     if current == block:
-        print(f"{DOC.name} frame-cost table is up to date")
+        print(f"{doc.name} frame-cost table is up to date")
         return 0
-    with open(DOC, "w", encoding="utf-8", newline="") as fh:
+    with open(doc, "w", encoding="utf-8", newline="") as fh:
         fh.write(text[:start] + block + text[end + len(DOC_END):])
-    print(f"updated {DOC.name}")
+    print(f"updated {doc.name}")
     return 0
 
 
@@ -251,7 +258,7 @@ def main() -> int:
           "main.c prints every 300 frames.")
 
     if args.update_doc or args.check_doc:
-        rc = splice_doc(doc_block(printed), write=args.update_doc)
+        rc = splice_docs(doc_block(printed), write=args.update_doc)
         if rc:
             return rc
 

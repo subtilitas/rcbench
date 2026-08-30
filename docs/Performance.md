@@ -1,5 +1,7 @@
 # Performance
 
+<sub>**English** · [Deutsch](Performance-de.md)</sub>
+
 The frame rate on this panel is not decided by the CPU and not by the flip. It
 is decided by **PSRAM bandwidth**.
 
