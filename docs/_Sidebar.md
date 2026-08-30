@@ -7,6 +7,7 @@
 - [Bringing up the link](Bringup.md)
 - [Servo procedures](Servo.md)
 - [The OpenYGE protocol](OpenYGE.md)
+- [The BLHeli_32 protocol](BLHeli32.md)
 - [Receiver buses](Receivers.md)
 - [Performance](Performance.md)
 - [Building](Building.md)

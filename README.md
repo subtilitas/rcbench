@@ -446,7 +446,16 @@ nobody reopens it by accident.
   configuration is "available only for the products of JETI model" and that its
   description is not part of the document. What EX Bus delivers is channel
   values and telemetry.
-- **BLHeli_32**, whose firmware and update servers are gone.
+- **BLHeli_32 parameter editing**, because the settings block is encrypted.
+  The transports are not the difficulty and never were: the bootloader on the
+  signal wire, the 4-way interface and MSP passthrough are all written up in
+  [the specification](docs/BLHeli32.md), and given a BLHeli_S implementation
+  the marginal cost of reaching a BLHeli_32 bootloader is one CRC routine and
+  one command table. What stops a parameter screen is that the 256 bytes it
+  reads are XTEA ciphertext under a key that exists only inside BLHeliSuite32,
+  and shipping that key is not a technical decision. **Identification and the
+  DShot special commands stay on the table** -- naming the ESC, its MCU and its
+  bootloader revision needs none of it, and direction, 3D and beacon are open.
 - **Futaba's S.BUS2 telemetry slots** — answering in the right 325 µs window
   without colliding with the customer's real sensors is the hardest job in the
   survey.
@@ -508,7 +517,8 @@ the servo searches were built in.
 [what this is for](docs/Manifest.md), [the link](docs/Link.md),
 [safety](docs/Safety.md), [bringing up the link](docs/Bringup.md),
 [the servo procedures](docs/Servo.md),
-[the OpenYGE protocol](docs/OpenYGE.md), and [building](docs/Building.md). Pages are written
+[the OpenYGE protocol](docs/OpenYGE.md),
+[the BLHeli_32 protocol](docs/BLHeli32.md), and [building](docs/Building.md). Pages are written
 by the commit that lands the code they describe, so a page that is missing is a
 subsystem that is not here yet.
 
