@@ -35,7 +35,29 @@
 #include "splash_screen.h"
 #include "storage.h"
 #include "telemetry_sim.h"
-#include "throttle.h"
+#include "outputs.h"
+
+/*
+ * The panel's throttle, as a channel.
+ *
+ * The ramp is the one the bench's own throttle model carried, converted: a
+ * slew is a proportion of travel per second here rather than a percentage,
+ * so that the same number means the same speed on an output whose travel is
+ * not measured in percent.
+ */
+#define PANEL_CH_THROTTLE     0u
+#define PANEL_THROTTLE_RAMP   ((uint16_t)(OUT_SPAN * 55u / 100u))   /* 55 %/s */
+
+static uint16_t pct_to_span(float pct)
+{
+    if (!(pct > 0.0f)) {
+        return 0u;
+    }
+    if (pct >= 100.0f) {
+        return (uint16_t)OUT_SPAN;
+    }
+    return (uint16_t)((pct * (float)OUT_SPAN / 100.0f) + 0.5f);
+}
 #include "touch.h"
 #include "touch_map.h"
 #include "ui_screen.h"
@@ -686,10 +708,18 @@ void app_main(void)
      */
     telemetry_sim_t sim;
     bench_state_t   bench;
-    throttle_t      thr;
+    /*
+     * The panel's throttle is a channel in a bank, on the same rules the
+     * coprocessor's outputs run on.  It used to be its own model with its own
+     * copy of arming, slew and staleness, which is how the far end came to
+     * answer the same questions differently.
+     */
+    outputs_t       out;
     memset(&bench, 0, sizeof(bench));
     telemetry_sim_init(&sim, NULL);
-    throttle_init(&thr, NULL, now_ms());
+    outputs_init(&out, now_ms());
+    (void)outputs_set_role(&out, PANEL_CH_THROTTLE, OUT_ROLE_THROTTLE);
+    (void)outputs_set_slew(&out, PANEL_CH_THROTTLE, PANEL_THROTTLE_RAMP);
 
     if (!healthy) {
         ui_router_set_alert("touch did not answer -- the bench will not arm");
@@ -747,8 +777,8 @@ void app_main(void)
          */
         const bool touch_dead =
             (uint32_t)(now_ms() - last_touch_ok) >= 500u;
-        if (touch_dead && thr.armed) {
-            throttle_arm(&thr, false, now_ms());
+        if (touch_dead && outputs_armed(&out)) {
+            outputs_arm(&out, false, now_ms());
             ui_router_set_alert("touch stopped answering -- disarmed");
         }
 
@@ -760,7 +790,7 @@ void app_main(void)
          * deliberate act: disarm and arm again.
          */
         if (ui_router_take_stop()) {
-            throttle_arm(&thr, false, now_ms());
+            outputs_arm(&out, false, now_ms());
             motor_screen_set_armed(false);
             s_stopped = true;
         }
@@ -776,17 +806,20 @@ void app_main(void)
                  * expiring, not the link coming back. */
                 if (!touch_dead) {
                     s_stopped = false;
-                    throttle_arm(&thr, true, now_ms());
+                    outputs_arm(&out, true, now_ms());
                 }
                 break;
-            case MOTOR_CMD_DISARM:   throttle_arm(&thr, false, now_ms()); break;
-            case MOTOR_CMD_THROTTLE: throttle_set(&thr, cmd.value, now_ms()); break;
+            case MOTOR_CMD_DISARM:   outputs_arm(&out, false, now_ms()); break;
+            case MOTOR_CMD_THROTTLE:
+                (void)outputs_set(&out, PANEL_CH_THROTTLE,
+                                  pct_to_span(cmd.value), now_ms());
+                break;
             case MOTOR_CMD_RESET_PEAKS: bench_state_reset_peaks(&bench); break;
             default: break;
             }
         }
-        throttle_keepalive(&thr, now_ms());
-        motor_screen_set_armed(thr.armed);
+        (void)outputs_keepalive(&out, PANEL_CH_THROTTLE, now_ms());
+        motor_screen_set_armed(outputs_armed(&out));
 
         /* --- and what the servo screen asked for -------------------------- */
         servo_cmd_t sv;
@@ -815,13 +848,16 @@ void app_main(void)
         }
 
         const bool was_armed = (s_log_file != NULL);
-        if (thr.armed && !was_armed) {
+        if (outputs_armed(&out) && !was_armed) {
             log_start();
-        } else if (!thr.armed && was_armed) {
+        } else if (!outputs_armed(&out) && was_armed) {
             log_stop();
         }
 
-        const float emitted = throttle_step(&thr, dt_s);
+        outputs_step(&out, now_ms());
+        const float emitted =
+            (float)outputs_actual(&out, PANEL_CH_THROTTLE) * 100.0f
+            / (float)OUT_SPAN;
         /*
          * Deliberately not gated on the link.  The heartbeat says "the
          * processor that owns STOP is still running its loop"; whether the
@@ -864,7 +900,7 @@ void app_main(void)
                     ESP_LOGE(TAG, "coprocessor speaks protocol %u, we speak %u",
                              reply.regs[LINK_ID_PROTOCOL_MAJOR],
                              (unsigned)LINK_PROTOCOL_MAJOR);
-                    throttle_arm(&thr, false, now_ms());
+                    outputs_arm(&out, false, now_ms());
                     ui_router_set_alert("protocol mismatch -- will not arm");
                     answered = false;
                 }
@@ -911,7 +947,7 @@ void app_main(void)
 
         const ui_bench_status_t status = {
             .link_up     = link_up,
-            .armed       = thr.armed,
+            .armed       = outputs_armed(&out),
             .faults      = 0,
             .run_seconds = now_ms() / 1000u,
             .mode        = link_up ? "LINK" : "SIM",

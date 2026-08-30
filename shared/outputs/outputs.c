@@ -190,6 +190,20 @@ bool outputs_set(outputs_t *o, uint8_t ch, uint16_t command, uint32_t now_ms)
     return true;
 }
 
+bool outputs_keepalive(outputs_t *o, uint8_t ch, uint32_t now_ms)
+{
+    if (o == NULL || ch >= OUT_MAX_CHANNELS) {
+        return false;
+    }
+    o->channel[ch].last_command_ms = now_ms;
+    return true;
+}
+
+bool outputs_armed(const outputs_t *o)
+{
+    return o != NULL && o->armed;
+}
+
 void outputs_arm(outputs_t *o, bool armed, uint32_t now_ms)
 {
     if (o == NULL || o->armed == armed) {

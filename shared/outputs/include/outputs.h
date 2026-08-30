@@ -174,6 +174,19 @@ void outputs_arm(outputs_t *o, bool armed, uint32_t now_ms);
  */
 bool outputs_overdue(const outputs_t *o, uint8_t ch, uint32_t now_ms);
 
+/**
+ * Say a channel is still being watched without changing what it was asked.
+ *
+ * A loop that is running and has nothing new to say is not the same as one
+ * that has stopped, and the timeout exists to tell those apart.  Re-sending
+ * the last command would do it too, and would also overwrite a command that
+ * arrived from somewhere else in the same pass.
+ */
+bool outputs_keepalive(outputs_t *o, uint8_t ch, uint32_t now_ms);
+
+/** Whether the bank is armed, for a screen that shows it. */
+bool outputs_armed(const outputs_t *o);
+
 /** Advance slew to @p now_ms, and stop driving if nobody has commanded. */
 void outputs_step(outputs_t *o, uint32_t now_ms);
 
