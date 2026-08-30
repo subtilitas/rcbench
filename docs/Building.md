@@ -2,9 +2,9 @@
 
 <sub>**English** · [Deutsch](Building-de.md)</sub>
 
-Three build systems read one source tree. That is the whole trick, and it is
-what makes the host suite, the coverage numbers and the golden images possible
-across two processors.
+How to build and flash both boards, and what each tool in `tools/` is for.
+Three build systems read one source tree: the host suite for development, and
+one firmware build per processor.
 
 ## The tree
 

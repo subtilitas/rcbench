@@ -2,15 +2,10 @@
 
 <sub>[English](Bringup.md) · **Deutsch**</sub>
 
-Beide Enden sind geschrieben und auf dem Host gegeneinander getestet. Was bleibt,
-ist, sie auf einer Leitung gegeneinander laufen zu lassen — der eine Teil, den
-kein Test ersetzen kann.
-
-Diese Seite gibt es, weil der erste Hardwarestart des Bedienteils drei Symptome
-und zwei Ursachen gekostet hat, hergeleitet aus einer Beschreibung statt von der
-Platine. Der Link hat mehr Arten, halb kaputt zu sein, als das Display, und die
-meisten davon zeigen sich als „geht nicht". Also sagt die Firmware jetzt, welche
-es ist.
+Der Link hat mehr Arten, halb kaputt zu sein, als das Display, und die meisten
+davon zeigen sich als „geht nicht". Die Firmware sagt, welche es ist — diese
+Seite ist, wie du sie dazu bringst, es dir zu sagen, und was jede Antwort
+bedeutet.
 
 ## Hier anfangen: kommt überhaupt etwas über den Bus?
 

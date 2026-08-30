@@ -2,116 +2,10 @@
 
 <sub>**English** · [Deutsch](Safety-de.md)</sub>
 
-A bench that spins propellers needs stopping to be the one thing that cannot
-fail quietly. This page is how that is arranged, and why it is arranged that
-way rather than the obvious way.
+How the bench stops, what you must build for that to work, and the behaviours
+you will notice and should not fight.
 
-## The safety line is a heartbeat, not an enable
-
-The obvious design is a static enable line: the panel holds a pin high while it
-is willing to let the outputs run, and drops it to stop them.
-
-That design fails the most likely failure. Firmware wedges with the pin still
-high and the outputs stay live — the one case where you most want the bench to
-stop is the one case a level cannot express.
-
-So **GPIO6 edges**, driven by the loop that reads touch and draws the STOP
-button, and the coprocessor's output enable and its servo and ESC power path
-are gated from a **retriggerable monostable**.
-
-A crash, a wedged task, a reset, a brown-out and an unplugged cable then present
-identically: no edges, so no output. Fail-safe by absence, in hardware,
-independent of firmware at both ends.
-
-Two refinements. Noise can *fake* a heartbeat, so the monostable is the crude
-backstop and the coprocessor also checks the period in firmware. And the
-heartbeat is driven from the loop whose liveness it asserts — never from a
-timer or its own task, because a heartbeat driven by a timer proves the timer is
-alive, which is not the question.
-
-### What the rate had to become, and why
-
-This page carried **100 Hz to 1 kHz** and a **20–50 ms** monostable window from
-before the panel had a measured frame rate. Those two numbers cannot both stand
-with the paragraph above them, and the paragraph is the part worth keeping.
-
-The heartbeat comes from the render loop, so the render loop sets the rate. That
-loop runs at 39 Hz with nothing changing on screen and **19.5 Hz on the frames a
-telemetry sample lands** — see [Performance](Performance.md) for why 19.5 is the
-design point rather than a shortfall. The fastest honest edge rate is therefore
-about 39 Hz, not 100, and the slowest interval between two edges is about 52 ms.
-A 50 ms monostable would drop the outputs on every second frame of a bench under
-load.
-
-The numbers that follow from the loop, all of them in
-[`shared/safety/heartbeat.h`](../shared/safety/include/heartbeat.h):
-
-| | | |
-| --- | ---: | --- |
-| The panel asks for an edge every | **20 ms** | i.e. every frame, without the generator needing to know the frame rate |
-| The loop actually delivers one every | **26–52 ms** | 39 Hz idle, 19.5 Hz on a sample frame |
-| Firmware accepts an interval of | **4–150 ms** | below the floor it is noise; above the ceiling the panel has stopped drawing |
-| Firmware trusts the line after | **4 good intervals** | a little over a tenth of a second |
-
-> **This changes a part value on a board that is not built yet.** The monostable
-> must hold for longer than the slowest interval the render loop produces, with
-> margin for a frame that runs long — so its window belongs at **roughly 150 ms**,
-> not the 20–50 ms this page used to say. It still fires well inside the
-> coprocessor's own 200 ms link failsafe. Anyone laying out the daughterboard
-> should size the RC for 150 ms and treat the old figure as withdrawn.
-
-### Slow to trust, instant to doubt
-
-The firmware monitor is deliberately asymmetric. It wants four consecutive
-well-spaced intervals before it will call the line alive, and a single bad one —
-too fast, too slow, or a window of silence — takes that away immediately.
-
-The reason is that the two errors are not equally bad. Trusting a line too
-slowly costs a tenth of a second before the bench will arm. Trusting one too
-readily means a burst of noise at power-on can enable an output. A safety
-interlock that enables on a glitch and hesitates to disable is the precise
-inverse of the thing it is named after.
-
-The case the monostable cannot see is the fast one: anything that edges quickly
-enough retriggers it perfectly well, and it would hold the outputs enabled
-throughout. Only something that knows what period to expect can call that what
-it is, which is the whole reason the firmware check exists alongside the
-hardware one rather than instead of it.
-
-## Why the direction line cannot be the heartbeat
-
-> **Moot since the link moved to CAN**, which has no direction line at all. The
-> reasoning is kept because the first argument below is about *what a signal
-> proves*, and that applies to any candidate for this job — including the next
-> one somebody suggests.
-
-It was asked, and it is worth writing down, because the idea is not silly — a
-line that toggles whenever the panel transmits *is* evidence that the panel is
-transmitting.
-
-It fails on four counts.
-
-**It proves the wrong thing is alive.** Driven by the UART peripheral — which is
-what ESP-IDF's RS485 half-duplex mode does — it toggles whenever the peripheral
-has bytes to send. A DMA-fed UART chewing through a queued schedule keeps
-toggling perfectly while the application is wedged. That is precisely the
-failure the heartbeat exists to catch.
-
-**A pressed STOP cannot do both jobs on one wire.** STOP travels as a command
-*and* stops the heartbeat. If the heartbeat is the direction line, stopping it
-means stopping transmission — so you cannot send the command you just stopped
-the wire to send.
-
-**The rates do not meet.** The heartbeat's floor rejects anything faster than
-one edge per 4 ms and its ceiling anything slower than one per 150 ms, which is
-the render loop's range and not the link's. A 20 Hz telemetry schedule sits at
-the very bottom of that, so the poll rate would become safety-critical — and
-[the link](Link.md) has no spare wire to burn at 128 kbaud.
-
-**It collapses the redundancy.** Three independent mechanisms become two,
-sharing one transceiver as a common failure point.
-
-## Three independent ways this bench stops
+## Three independent ways it stops
 
 | | What it catches |
 | --- | --- |
@@ -122,28 +16,74 @@ sharing one transceiver as a common failure point.
 A pressed STOP uses the first two at once: it sends the command **and** stops
 the heartbeat, rather than trusting either alone.
 
-Behind all three sits the panel's own rule, inherited from the predecessor and
-proven on hardware: **the application disarms, and refuses to re-arm, if the
-touch controller stops answering for 500 ms**, because the panel is the only
-place a STOP button exists. A bench you cannot stop is not armed, it is running
-away.
+## What you must build: the monostable
 
-And one more, from the same source: **leaving the tester screen disarms.**
-Navigating away from an armed bench must not leave a propeller spinning behind
-a screen you can no longer see it on.
+The safety line is **GPIO6, carrying edges** — not a level. The coprocessor's
+output enable and the servo/ESC power path belong behind a **retriggerable
+monostable** that only stays energised while edges keep arriving, so a crash,
+a wedged task, a reset, a brown-out and an unplugged cable all present
+identically: no edges, no output. In hardware, independent of firmware at both
+ends.
 
-## The coprocessor does not ask
+> **Size the monostable's window at roughly 150 ms.** The heartbeat comes from
+> the panel's render loop, which delivers an edge every 26–52 ms depending on
+> load — a 50 ms window would drop the outputs on every second frame of a
+> bench under load. 150 ms still fires well inside the coprocessor's own
+> 200 ms link failsafe. (An earlier figure of 20–50 ms circulated before the
+> frame rate was measured; treat it as withdrawn.)
 
-Overcurrent, over-temperature, stall timeout, lost link: the coprocessor acts on
-its own authority and reports what it did at the next poll. It never waits for
-permission to fail safe. That is the whole reason the electrical side moved to a
-processor with nothing else to do.
+The firmware checks the heartbeat too, because a monostable cannot tell a
+heartbeat from noise — anything that edges fast enough retriggers it. The
+numbers, all from
+[`heartbeat.h`](https://github.com/subtilitas/rcbench/blob/main/shared/safety/include/heartbeat.h):
 
-## What this cost, and what it bought
+| | | |
+| --- | ---: | --- |
+| The panel produces an edge every | 26–52 ms | one per frame |
+| Firmware accepts an interval of | **4–150 ms** | faster is noise; slower means the panel stopped drawing |
+| Firmware trusts the line after | **4 good intervals** | ~a tenth of a second |
 
-The panel no longer drives a servo pulse at all. GPIO6 was the throttle output;
-it has one job now, and it is this one. The interlock and the slew limit survive
-as policy that compiles into the coprocessor, which is where the output went.
+That check is deliberately asymmetric — slow to trust, instant to doubt. Four
+good intervals before the line is called alive; one bad interval or one silent
+window takes it away immediately. An interlock that enables on a glitch and
+hesitates to disable would be the inverse of the thing it is named after.
 
-The panel is therefore incapable of spinning a motor by itself — not by
-convention, but because there is no wire from it to anything that can.
+## Behaviours that are deliberate
+
+Things the bench does that can look like faults, and are not:
+
+- **STOP latches.** After a stop, the bench stays disarmed until you arm
+  again. Navigating around, waiting, or the link recovering does not re-arm
+  it.
+- **Leaving a bench screen disarms.** Navigating away from an armed bench
+  must not leave a propeller spinning behind a screen you can no longer see
+  it on.
+- **A dead touch controller disarms, and blocks arming.** If touch stops
+  answering for 500 ms the bench disarms and refuses to arm, because the
+  panel is the only place a STOP button exists. A bench you cannot stop is
+  not armed — it is running away.
+- **After a link failsafe, the bench does not re-arm itself.** Traffic
+  returning proves the link is alive; it does not prove anybody meant to
+  continue. Arm again from the panel once the cause is fixed.
+- **The coprocessor acts without asking.** Overcurrent, over-temperature,
+  stall timeout, lost link: it protects the hardware on its own authority and
+  reports what it did at the next poll. It never waits for permission to fail
+  safe.
+
+## Why a heartbeat and not an enable line
+
+A static enable — pin high while running is allowed — fails the most likely
+failure: firmware wedges with the pin still high, and the outputs stay live.
+The one case where you most want the bench to stop is the one a level cannot
+express. Edges expire on their own.
+
+Two rules keep the heartbeat honest. It is driven **from the loop that reads
+touch and draws STOP** — never from a timer, a DMA-fed peripheral, or its own
+task, because a signal like that proves the wrong thing is alive: a peripheral
+can keep toggling perfectly while the application is wedged. And the firmware
+checks the **period**, not just the presence of edges, because that is the
+check a shorted or ringing line cannot pass.
+
+The panel itself has no wire to any output: it cannot spin a motor by
+convention or by accident, because there is nothing from it to anything that
+can.

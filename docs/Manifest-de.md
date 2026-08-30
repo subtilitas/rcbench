@@ -2,10 +2,11 @@
 
 <sub>[English](Manifest.md) · **Deutsch**</sub>
 
-Den Prüfstand gibt es, um Fragen über einen Antrieb zu beantworten, die man
-sonst durch Raten beantwortet, durch den Kauf von drei getrennten Kisten, oder
-indem man den Motor irgendwohin schickt. Eine Platine, ein Bildschirm, eine
-Karte.
+Der Prüfstand beantwortet Fragen über einen Antrieb, die man sonst durch Raten
+beantwortet, durch den Kauf von drei getrennten Kisten, oder indem man den
+Motor wegschickt. Eine Platine, ein Bildschirm, eine Karte. Diese Seite ist,
+was er heute kann, was jeder Funktion noch fehlt, und was nicht gebaut wird —
+damit du weißt, was dich erwartet und worauf du nicht warten musst.
 
 ## Der Anspruch
 
@@ -32,40 +33,23 @@ Julians, in seinen Worten:
 | **Servoprogrammierung**, wo sie sich reverse-engineeren lässt | Hitecs D-Serie ist die einzige vollständig veröffentlichte; der Rest wartet auf ein geliehenes Programmiergerät | auf Wunsch des Eigentümers zurückgestellt |
 | **Logviewer für diverse Formate** | `shared/logfile` — der locale-tolerante CSV-Reader ist portiert und getestet | Reader gebaut, Bildschirm noch nicht neu geschnitten |
 
-Eine Funktion steht nur implizit im Anspruch, und alles andere braucht sie: der
-ESC-Tester, der die Zahlen erzeugt. Sein Gegenstück, der Logger, der sie auf die
-Karte schreibt, damit der Viewer etwas zu öffnen hat, ist nicht gebaut — und
-nichts blockiert ihn, was eine andere und unbequemere Lage ist als blockiert zu
-sein.
+## Worauf nicht zu warten ist
 
-## Was das über Prioritäten sagt
+Drei Türen sind zu, und das zu wissen erspart dir, sie zu beobachten:
 
-**Nichts hier ist ein Consumer-Gerät.** Jede Zeile ist eine Werkstattaufgabe —
-messen, programmieren, auswuchten, das Log zurücklesen. Deshalb ist die UI dicht
-und kontraststark statt freundlich, und deshalb sagt ein Bildschirm, der etwas
-nicht kann, welche Entscheidung fehlt, statt die Funktion zu verstecken.
+- **Konfiguration über JETIs EX Bus.** Die Spezifikation sagt, Remote
+  Configuration sei „available only for the products of JETI model", und hält
+  ihre Beschreibung aus dem Dokument heraus. EX Bus liefert Kanalwerte und
+  Telemetrie — ein Gerät hindurch zu programmieren kommt nicht.
+- **BLHeli_32-Parameter.** Der Prüfstand erkennt und treibt diese Regler, und
+  Drehrichtung, 3D-Modus, Beacon und Save-Settings funktionieren; die
+  Parametertabelle nicht, und der Grund ist ein Key, kein Aufwand —
+  [die ganze Antwort](BLHeli32-de.md).
+- **Servoprogrammierung für KST** ist auf Wunsch des Eigentümers
+  zurückgestellt.
 
-**Die Protokolle sind der lange Pol, nicht die UI.** SBUS, BLHeli und AM32
-seriell, DShot-Telemetrie: der meiste verbleibende Aufwand besteht darin, mit
-fremder Firmware korrekt zu sprechen. Deshalb sind die Teile, die sich in reinem
-C festnageln *lassen* — der Rasterisierer, das Parsen, das Settings-Modell,
-[der Link](Link-de.md) — genau das, und bis auf wenige Prozent auf einem Laptop
-getestet. Wenn die Protokollarbeit anfängt, soll der Boden darunter nicht
-wackeln.
-
-**„Soweit es geht" ist eine echte Einschränkung, keine Bescheidenheit.** Ein
-Servo-Programmiergerät muss geliehen werden. Reverse Engineering kann
-scheitern. Und eine Tür, auf die sich der Anspruch gestützt hat, ist zu: Remote
-Configuration über JETIs EX Bus ist laut eigener Spezifikation „available only
-for the products of JETI model", und ihre Beschreibung ist nicht Teil dieses
-Dokuments. Was EX Bus liefert, sind Kanalwerte und Telemetrie. Zum
-Programmieren bleiben die Wege, die es immer gab — den Hersteller fragen, ein
-Programmiergerät leihen und mithören, oder reverse-engineeren.
-
-## Eine Lizenzbedingung, die jeden Protokoll-Commit prägt
-
-Nahezu jede offene Umsetzung dieser Protokolle steht unter GPL oder AGPL, gegen
-das MIT dieses Repositories. Die permissiven Ausnahmen sind PX4s
-Empfänger-Decoder (BSD) und MIT-Referenzcode für SRXL2, JETI EX Bus, DShot und
-DroneCAN. Alles andere wird aus der Spezifikation geschrieben, nicht aus
-fremdem Code.
+Und eine Regel, die prägt, was ankommt: jedes Protokoll hier wird aus seiner
+Spezifikation geschrieben, denn nahezu jede offene Umsetzung steht unter GPL
+oder AGPL, gegen das MIT dieses Repositories. Ein Protokoll ohne
+veröffentlichte Spezifikation kommt spät oder gar nicht — das ist der ehrliche
+Preis der Regel.
