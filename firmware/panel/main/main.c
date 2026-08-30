@@ -31,6 +31,7 @@
 #include "link_pages.h"
 #include "log_writer.h"
 #include "motor_screen.h"
+#include "servo_screen.h"
 #include "splash_screen.h"
 #include "storage.h"
 #include "telemetry_sim.h"
@@ -56,6 +57,8 @@ static void can_selftest_run(uint32_t seconds);
 /* Defined below; bring_up() asks who is there before the loop starts. */
 static bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
                       link_msg_t *reply);
+static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
+                       const uint16_t *regs, link_msg_t *reply);
 
 static uint32_t now_ms(void)
 {
@@ -341,15 +344,20 @@ static void log_stop(void)
  * there is never a second frame in flight, and the whole transaction is well
  * under one panel frame at either baud rate.
  */
-static bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
-                      link_msg_t *reply)
+/*
+ * Put a built request on the wire and wait for its answer.
+ *
+ * Reads and writes differ only in how the request was made, so they share
+ * everything after that -- including the two failure modes that are easy to
+ * get wrong: a frame that never reached the wire has nothing to wait for and
+ * must release the outstanding slot, and a reply wider than four registers
+ * arrives in pieces that each say where they belong.
+ */
+static bool exchange(link_host_t *host, const link_msg_t *req,
+                     link_msg_t *reply)
 {
-    link_msg_t req;
-    if (!link_host_read(host, page, 0, count, now_ms(), &req)) {
-        return false;
-    }
     link_can_frame_t out[LINK_CAN_MAX_FRAMES];
-    const size_t n = link_can_encode(&req, out, LINK_CAN_MAX_FRAMES);
+    const size_t n = link_can_encode(req, out, LINK_CAN_MAX_FRAMES);
     if (n == 0) {
         link_host_abandon(host);
         return false;
@@ -365,10 +373,8 @@ static bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
     }
 
     /*
-     * A reply wider than four registers arrives in pieces, each saying where
-     * it belongs, so this keeps feeding them to the poller until the window
-     * it asked for is full.  No sequence to follow and no continuation timer:
-     * the host knows what it asked for, and that is the only state there is.
+     * No sequence to follow and no continuation timer: the host knows what it
+     * asked for, and that is the only state there is.
      */
     for (;;) {
         link_can_frame_t in;
@@ -386,6 +392,26 @@ static bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
             return false;
         }
     }
+}
+
+static bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
+                      link_msg_t *reply)
+{
+    link_msg_t req;
+    if (!link_host_read(host, page, 0, count, now_ms(), &req)) {
+        return false;
+    }
+    return exchange(host, &req, reply);
+}
+
+static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
+                       const uint16_t *regs, link_msg_t *reply)
+{
+    link_msg_t req;
+    if (!link_host_write(host, page, 0, count, regs, now_ms(), &req)) {
+        return false;
+    }
+    return exchange(host, &req, reply);
 }
 
 /* ------------------------------------------------------------ CAN bring-up */
@@ -761,6 +787,32 @@ void app_main(void)
         }
         throttle_keepalive(&thr, now_ms());
         motor_screen_set_armed(thr.armed);
+
+        /* --- and what the servo screen asked for -------------------------- */
+        servo_cmd_t sv;
+        if (servo_screen_take(&sv) && link_up) {
+            /*
+             * Written whole, every time, rather than as one register.
+             *
+             * The coprocessor clamps a pulse against the range it was last
+             * told, so sending a position without the range that goes with it
+             * risks a pulse clamped against somebody else's limits -- a stale
+             * pair left by an earlier session, or by whatever was in memory
+             * after a reset.  Five registers is one frame either way.
+             */
+            uint16_t regs[LINK_SV_COUNT];
+            regs[LINK_SV_ENABLE]   = (sv.kind == SERVO_CMD_RELEASE) ? 0u : 1u;
+            regs[LINK_SV_PULSE_US] = (sv.kind == SERVO_CMD_RELEASE)
+                                         ? servo_screen_commanded()
+                                         : sv.value_us;
+            regs[LINK_SV_MIN_US]   = LINK_SV_DEFAULT_MIN;
+            regs[LINK_SV_MAX_US]   = LINK_SV_DEFAULT_MAX;
+            regs[LINK_SV_SLEW_US]  = 0u;
+
+            link_msg_t reply;
+            (void)write_page(&s_host, LINK_PAGE_SERVO, LINK_SV_COUNT, regs,
+                             &reply);
+        }
 
         const bool was_armed = (s_log_file != NULL);
         if (thr.armed && !was_armed) {
