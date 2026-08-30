@@ -108,7 +108,7 @@ typedef struct {
 enum { CLASS_ESC = 0, CLASS_SERVO, CLASS_COUNT };
 
 static const class_t k_classes[CLASS_COUNT] = {
-    { "ESC",   "four protocols, three transports" },
+    { "ESC",   "bootloader, CLI and framed packets" },
     { "SERVO", "servos with a published protocol" },
 };
 
