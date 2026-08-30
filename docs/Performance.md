@@ -2,6 +2,9 @@
 
 <sub>**English** · [Deutsch](Performance-de.md)</sub>
 
+> For changing the drawing code, not for using the bench. If you are adding or
+> editing a screen, this page is the budget it has to fit.
+
 The frame rate on this panel is not decided by the CPU and not by the flip. It
 is decided by **PSRAM bandwidth**.
 

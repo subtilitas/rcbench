@@ -2,14 +2,9 @@
 
 <sub>**English** · [Deutsch](Bringup-de.md)</sub>
 
-Both ends are written and tested against each other on the host. What is left
-is running them against each other on a wire, which is the one part no test
-can stand in for.
-
-This page exists because the panel's first hardware boot cost three symptoms
-and two root causes, worked out from a description rather than from the board.
 The link has more ways to be half-broken than the display does, and most of
-them present as "it does not work". So the firmware now says which one.
+them present as "it does not work". The firmware says which one — this page is
+how to make it tell you, and what each answer means.
 
 ## Start here: does anything cross the bus?
 

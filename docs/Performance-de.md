@@ -2,6 +2,10 @@
 
 <sub>[English](Performance.md) · **Deutsch**</sub>
 
+> Für die Arbeit am Zeichencode, nicht für die Benutzung des Prüfstands. Wer
+> einen Bildschirm hinzufügt oder ändert, findet hier das Budget, in das er
+> passen muss.
+
 Die Frame Rate dieses Panels entscheidet nicht die CPU und nicht der Flip. Sie
 entscheidet die **PSRAM-Bandbreite**.
 

@@ -2,9 +2,9 @@
 
 <sub>[English](Building.md) · **Deutsch**</sub>
 
-Drei Build-Systeme lesen einen Quellbaum. Das ist der ganze Trick, und er ist
-es, der die Host-Suite, die Coverage-Zahlen und die Golden Images über zwei
-Prozessoren hinweg möglich macht.
+Wie man beide Platinen baut und flasht, und wofür jedes Werkzeug in `tools/`
+da ist. Drei Build-Systeme lesen einen Quellbaum: die Host-Suite für die
+Entwicklung, und je ein Firmware-Build pro Prozessor.
 
 ## Der Baum
 
