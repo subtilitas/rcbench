@@ -27,6 +27,7 @@ typedef enum {
     LINK_PAGE_LIMITS   = 0x11, /**< when to stop without asking  */
     LINK_PAGE_FAILSAFE = 0x12, /**< where to go when nobody asks */
     LINK_PAGE_BENCH    = 0x20, /**< the numbers, read-only       */
+    LINK_PAGE_SERVO    = 0x21, /**< one output, where to hold it */
 } link_page_id_t;
 
 /*
@@ -37,7 +38,37 @@ typedef enum {
  * register is added at the end, which an older host can ignore.
  */
 #define LINK_PROTOCOL_MAJOR 1u
-#define LINK_PROTOCOL_MINOR 0u
+#define LINK_PROTOCOL_MINOR 1u
+
+/* ------------------------------------------------------------------- servo */
+
+/*
+ * One servo output: whether it is driven, where to hold it, and the range
+ * outside which the coprocessor will not go.
+ *
+ * The range lives here rather than only on the panel because the coprocessor
+ * is the end holding the wire.  A host that has been restarted, or reflashed,
+ * or is simply wrong, must not be able to drive a servo into its stops -- so
+ * the limits are written once and every pulse afterwards is clamped against
+ * them at the far end.  The panel clamps too; that is convenience, and this is
+ * the one that counts.
+ */
+enum {
+    LINK_SV_ENABLE   = 0, /**< 0 releases the output, 1 drives it        */
+    LINK_SV_PULSE_US = 1, /**< where to hold it                          */
+    LINK_SV_MIN_US   = 2, /**< the narrowest pulse it will produce       */
+    LINK_SV_MAX_US   = 3, /**< and the widest                            */
+    LINK_SV_SLEW_US  = 4, /**< microseconds a second; 0 means at once    */
+    LINK_SV_COUNT    = 5,
+};
+
+/* What a servo output does when nothing has been written yet, and the widest
+ * range the coprocessor will accept for the limits themselves.  A servo asked
+ * for 400 us does not go to 400 us, it buzzes. */
+#define LINK_SV_DEFAULT_MIN 1000u
+#define LINK_SV_DEFAULT_MAX 2000u
+#define LINK_SV_FLOOR_US     500u
+#define LINK_SV_CEILING_US  2500u
 
 /* ---------------------------------------------------------------- identity */
 enum {

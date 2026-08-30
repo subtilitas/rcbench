@@ -20,6 +20,7 @@
 #include "heartbeat.h"
 #include "link_dev.h"
 #include "link_pages.h"
+#include "link_servo.h"
 #include "telemetry_sim.h"
 #include "xl2515.h"
 
@@ -30,6 +31,7 @@ typedef struct {
     uint16_t control[LINK_CT_COUNT];
     uint16_t status[LINK_ST_COUNT];
     uint16_t bench[LINK_BN_COUNT];
+    uint16_t servo[LINK_SV_COUNT];
 } copro_state_t;
 
 static copro_state_t s_state;
@@ -85,6 +87,29 @@ static void bench_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     }
 }
 
+static void servo_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    const copro_state_t *s = (const copro_state_t *)ctx;
+    for (uint8_t i = 0; i < n; ++i) {
+        out[i] = s->servo[off + i];
+    }
+}
+
+/*
+ * The servo output.
+ *
+ * The rules live in link_servo.c so that this end and the host end cannot
+ * hold different opinions about them; what the coprocessor supplies is the
+ * one thing only it knows -- whether it is safe to drive an output at all.
+ */
+static uint8_t servo_write(void *ctx, uint8_t off, uint8_t n,
+                           const uint16_t *in)
+{
+    copro_state_t *s = (copro_state_t *)ctx;
+    const bool may_drive = !s_dev.failsafe && s_beat.alive;
+    return link_servo_write(s->servo, off, n, in, may_drive);
+}
+
 static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
                              const uint16_t *in)
 {
@@ -125,6 +150,7 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_STATUS,   LINK_ST_COUNT, status_read,   NULL },
     { LINK_PAGE_CONTROL,  LINK_CT_COUNT, control_read,  control_write },
     { LINK_PAGE_BENCH,    LINK_BN_COUNT, bench_read,    NULL },
+    { LINK_PAGE_SERVO,    LINK_SV_COUNT, servo_read,    servo_write },
 };
 
 /* ------------------------------------------------------------ the heartbeat */
@@ -399,6 +425,10 @@ int main(void)
      * one bit goes in here and the whole interface stops apologising for it.
      */
     s_state.identity[LINK_ID_CAPABILITIES]   = 0;
+
+    /* A range before anybody sets one, so the clamp is meaningful from the
+     * first frame rather than from the first configuration. */
+    link_servo_defaults(s_state.servo);
 
     const uint32_t now0 = (uint32_t)to_ms_since_boot(get_absolute_time());
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);

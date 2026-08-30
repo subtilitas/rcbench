@@ -79,6 +79,7 @@ TRACKED = [
     "shared/link/link_can.c",
     "shared/link/link_crc.c",
     "shared/link/link_dev.c",
+    "shared/link/link_servo.c",
     "shared/link/link_host.c",
     "shared/bench/bench_state.c",
     "shared/bench/throttle.c",
