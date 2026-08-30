@@ -2,9 +2,9 @@
 
 <sub>[English](OpenYGE.md) · **Deutsch**</sub>
 
-Eine schriftliche Spezifikation des Protokolls: Frameformat, Telemetrie-Payload,
-Parameterzugriff und die Statuskodierung — mit der Arithmetik, die man zur
-Umsetzung braucht.
+Eine schriftliche Spezifikation des Protokolls: Frameformat,
+Telemetrie-Payload, Parameterzugriff und die Statuskodierung — samt der
+Arithmetik, die man für eine Umsetzung braucht.
 
 > **Maßgeblich ist die englische Seite.** Diese Übersetzung gibt jedes Feld,
 > jeden Namen und jeden Wert unverändert wieder, aber die Spezifikation geht in
@@ -18,11 +18,11 @@ Umsetzung braucht.
 > eigenen Link dieses Projekts geteilt werden. Der Codec unter
 > `shared/openyge/` ruht.
 
-**Mit ° markiert = hergeleitet, nicht angegeben.** Diese Bedeutungen stammen aus
-einem Feldnamen und gewöhnlicher ESC-Praxis und nicht aus etwas Autoritativem,
-und sie sind die Teile, die am meisten eine Korrektur verdienen. Abschnitt 8
-listet auf, was noch eine Messung oder eine Antwort braucht; zusammen sind ° und
-Abschnitt 8 alles, was hier unsicher ist.
+**° bedeutet: erschlossen, nicht belegt.** Diese Bedeutungen stammen aus dem
+Feldnamen und aus üblicher ESC-Praxis, nicht aus einer verbindlichen Quelle —
+und genau sie verdienen am ehesten eine Korrektur. Abschnitt 8 listet auf, was
+noch eine Messung oder eine Antwort braucht; ° und Abschnitt 8 zusammen sind
+alles, was an dieser Seite unsicher ist.
 
 ## 1. Bitübertragungsschicht
 
@@ -33,9 +33,9 @@ Abschnitt 8 alles, was hier unsicher ist.
 | Topologie | Half Duplex, ein Master und bis zu 127 adressierbare ESCs |
 | Rate | ~20 Hz Telemetrie |
 
-Der Master hört seine eigene Sendung — ein Sender verwirft genau so viele
-empfangene Bytes, wie er gerade gesendet hat —, die Verbindung ist also eine
-**einzelne Leitung** mit gemeinsamem TX und RX.
+Der Master hört seine eigene Sendung mit — ein Sender verwirft deshalb genau
+so viele empfangene Bytes, wie er gerade gesendet hat. Die Verbindung ist eine
+**einzelne Leitung**, TX und RX zusammengeführt.
 
 **Das braucht einen eigenen UART.** Der Panel-Link von rcbench ist
 [CAN](Link-de.md) und trägt sonst nichts; OpenYGE ist ein asynchroner Bytestrom
@@ -48,7 +48,7 @@ verbunden und verworfenem Echo, oder ein PIO-Soft-UART. Der Koprozessor plant
 ohnehin PIO-UARTs für den Empfängerbus-Analyser, der zweite Weg kostet also eine
 State Machine von zwölf und gibt sauberere Kontrolle über die Umschaltung.
 
-Timing bei 115200 8N1 — 86,81 µs je Byte:
+Zeitbedarf bei 115200 8N1 — 86,81 µs pro Byte:
 
 | | |
 | --- | ---: |
@@ -56,8 +56,9 @@ Timing bei 115200 8N1 — 86,81 µs je Byte:
 | 12-Byte-Anfrage | 1,04 ms |
 | Ein Poll, beide Richtungen | **3,99 ms** plus die Umschaltzeit des ESC |
 
-8 % der Leitung gegen einen 50-ms-Zyklus. Platz für einen zweiten ESC an einem
-eigenen UART, oder für Parameterverkehr zwischen der Telemetrie.
+Das sind 8 % Leitungsauslastung bei einem 50-ms-Zyklus — Platz genug für einen
+zweiten ESC an einem eigenen UART oder für Parameterverkehr zwischen den
+Telemetrieframes.
 
 ---
 
@@ -79,9 +80,10 @@ Frame, Header und CRC eingeschlossen**.
 
 ### 2.2 Legacy-Header, Version unter 3 — 4 Bytes
 
-Nur `sync`, `version`, `frame_type`, `frame_length`. Ohne Sequenznummer und ohne
-Adresse **kann ein ESC vor v3 weder gepollt noch adressiert werden**: er sendet
-Telemetrie und das war es. Parameterzugriff gibt es unterhalb v3 nicht.
+Nur `sync`, `version`, `frame_type`, `frame_length`. Ohne Sequenznummer und
+ohne Adresse lässt sich ein ESC vor v3 **weder pollen noch adressieren**: er
+sendet Telemetrie, mehr nicht. Parameterzugriff gibt es unterhalb von v3
+nicht.
 
 Eine Umsetzung muss deshalb `version` lesen, bevor sie weiß, wo die Payload
 beginnt.
@@ -121,11 +123,12 @@ Anfragen tragen die 4-Byte-Control-Payload aus Abschnitt 5.2; jeder Frame vom
 ESC zum Master trägt die vollständige Telemetrie-Payload aus Abschnitt 4, die
 Parameterschreib-Quittung eingeschlossen.
 
-Das Material behauptet, Bit 7 von `frame_type` markiere ein Schreiben — 0x81 für
-ein Parameter-Update. **Kein Wert oben benutzt es, und nichts testet es.**
-`frame_type` als schlichte Aufzählung behandeln und alles Ungelistete abweisen.
-Es lohnt sich, YGE zu fragen, ob Bit 7 für etwas noch nicht Genutztes reserviert
-ist — denn ein Decoder, der es heute abweist, weist es auch morgen ab.
+Das Ausgangsmaterial behauptet, Bit 7 von `frame_type` markiere ein Schreiben
+— 0x81 für ein Parameter-Update. **Keiner der Werte oben benutzt es, und
+nichts testet es.** `frame_type` deshalb als schlichte Aufzählung behandeln
+und alles Ungelistete abweisen. YGE zu fragen, ob Bit 7 für etwas Künftiges
+reserviert ist, lohnt sich — ein Decoder, der es heute abweist, weist es auch
+morgen ab.
 
 ---
 
@@ -155,19 +158,19 @@ v3-Telemetrieframe ist **34 Bytes**, ein Legacy-Frame 32.
 | 22 | 28 | u16 | `pidx` | | Parameterindex — Abschnitt 5 |
 | 24 | 30 | u16 | `pdata` | | Parameterwert — Abschnitt 5 |
 
-Jedes 16-Bit-Feld landet zufällig bei beiden Headerlängen auf einem geraden
-Offset, eine gewöhnliche ABI legt das also ohne Padding aus. **Verlass dich
-nicht darauf.** Byte für Byte parsen: einen Puffer auf eine Struktur zu casten
-setzt Little-Endian voraus, setzt kein Padding voraus und führt nicht
-ausgerichtete Zugriffe aus, die auf Zielen mit strikter Ausrichtung Undefined
-Behaviour sind. Der Link-Decoder von rcbench parst bereits byteweise.
+Jedes 16-Bit-Feld landet bei beiden Headerlängen zufällig auf einem geraden
+Offset; eine übliche ABI legt die Struktur also ohne Padding aus. **Darauf
+verlassen darf man sich nicht.** Byte für Byte parsen: einen Puffer auf eine
+Struktur zu casten setzt Little-Endian und fehlendes Padding voraus und führt
+unausgerichtete Zugriffe aus — auf Architekturen mit strikter Ausrichtung ist
+das Undefined Behaviour. Der Link-Decoder von rcbench parst ohnehin byteweise.
 
 ### `rpm` — der eine echte Widerspruch
 
-Das Feld wird als „0.1 eRPM" beschrieben, während der Code mit zehn
-multipliziert. Beides kann nicht stimmen. Multiplizieren ist richtig: es ist
-das, was die meiste ESC-Telemetrie sendet, und 65535 × 10 = 655 350 eRPM ist
-eine plausible Obergrenze, wo 6 553 es nicht wäre.
+Das Feld ist als „0.1 eRPM" beschrieben, der Code multipliziert aber mit zehn.
+Beides zugleich kann nicht stimmen. Multiplizieren ist richtig: so sendet es
+die meiste ESC-Telemetrie, und 65535 × 10 = 655 350 eRPM ist eine plausible
+Obergrenze — 6 553 wäre keine.
 
 **Trotzdem messen** — ein bekannter Motor bei bekannter Drehzahl, ein Messwert.
 Das ist der Unterschied zwischen einem Drehzahlmesser und einer Zierde.
@@ -181,29 +184,30 @@ Mechanische Drehzahl braucht die Polzahl, Parameter 20:
 
 ## 5. Parameter
 
-Die Hälfte dieses Protokolls, die es zu mehr als einem Telemetriestrom macht:
-**es liest und schreibt die Konfiguration des ESC**, und das ist
-ESC-Programmierung über eine dokumentierte, nicht proprietäre Schnittstelle.
+Die Hälfte des Protokolls, die aus ihm mehr macht als einen Telemetriestrom:
+**es liest und schreibt die Konfiguration des ESC** — ESC-Programmierung über
+eine dokumentierte, nicht-proprietäre Schnittstelle.
 
 ### 5.1 Wie sie ankommen: tropfenweise, einer je Frame
 
-Jeder Telemetrieframe trägt **ein** Paar `(pidx, pdata)`; der ESC läuft seine
-eigene Tabelle ab, und der Master sammelt ein. Ein Master baut die Tabelle, indem
-er jedes Paar zwischenspeichert, **Parameter 0, die Parameteranzahl**, liest und
-die Tabelle erst dann als vollständig behandelt, wenn jeder Index `0 … count−1`
-gesehen wurde.
+Jeder Telemetrieframe trägt **ein** Paar `(pidx, pdata)`; der ESC geht seine
+Tabelle selbst der Reihe nach durch, der Master sammelt ein. Aufgebaut wird
+die Tabelle so: jedes Paar zwischenspeichern, **Parameter 0 — die
+Parameteranzahl — lesen**, und die Tabelle erst dann als vollständig
+behandeln, wenn jeder Index von `0` bis `count−1` gesehen wurde.
 
-Bei 20 Hz und 32 Parametern sind das etwa **1,6 Sekunden**. Als Fortschritt
-zeigen; eine halb gelesene Tabelle nie als die Einstellungen des ESC ausgeben.
+Bei 20 Hz und 32 Parametern dauert das etwa **1,6 Sekunden**. Das als
+Fortschritt anzeigen — und eine halb gelesene Tabelle niemals als die
+Einstellungen des ESC ausgeben.
 
 Zwei Regeln, die es zu behalten lohnt:
 
-- **Keine zwischengespeicherten Werte mehr annehmen, solange Schreibvorgänge
-  offen sind** — sonst landet ein bereits unterwegs befindlicher Frame auf einem
+- **Solange Schreibvorgänge offen sind, keine gesammelten Werte mehr
+  übernehmen** — sonst überschreibt ein Frame, der schon unterwegs war, den
   neuen Wert, und der ESC sieht aus, als hätte er das Schreiben ignoriert.
-- **Die ganze Tabelle zurückziehen, sobald ein Schreiben ansteht**, und erst
-  wieder veröffentlichen, wenn jeder Index neu gelesen ist. Teils alt, teils neu
-  ist schlimmer als gar nichts.
+- **Steht ein Schreiben an, die ganze Tabelle zurückziehen** und erst wieder
+  anzeigen, wenn jeder Index neu gelesen ist. Halb alt, halb neu ist schlimmer
+  als gar nichts.
 
 Der Cache ist durch eine 64-Bit-Bitmap auf **64 Parameter** begrenzt. 32 ist die
 heutige Wirklichkeit.
@@ -217,26 +221,25 @@ Getragen von `TELE_REQ` und `WRITE_PARAM_REQ`:
 | 0 | u16 | `index` |
 | 2 | u16 | `param` — zu schreibender Wert |
 
-Eine reine Telemetrieanfrage sendet beides als null. Ein Anfrageframe ist **12
-Bytes**. Schreibvorgänge sind **ein Parameter je Frame**, jeder mit eigener
-Sequenznummer. Es gibt kein seitenweises Schreiben; ein „Speichern" ist eine
+Eine reine Telemetrieanfrage setzt beide Felder auf null. Ein Anfrageframe hat
+**12 Bytes**. Geschrieben wird **ein Parameter pro Frame**, jeder mit eigener
+Sequenznummer. Blockweises Schreiben gibt es nicht; ein „Speichern" ist eine
 Warteschlange einzelner Schreibvorgänge.
 
 ### 5.3 Die Parametertabelle
 
-Nach Funktion gruppiert. Die Indizes sind die, die auf die Leitung gehen, und wie
-beobachtet; **°** markiert eine aus dem Namen hergeleitete Bedeutung statt einer
-angegebenen.
+Nach Funktion gruppiert. Die Indizes sind die, die auf die Leitung gehen, so
+wie beobachtet; **°** markiert eine aus dem Namen erschlossene Bedeutung.
 
-**Diese bestätigen, bevor irgendeiner davon auf einen echten ESC geschrieben
-wird.** Ein falscher Index in die Konfiguration eines ESC ist kein umkehrbares
-Experiment. Lesen ist gefahrlos und beantwortet das meiste von selbst: jeden
-Index lesen, eine Einstellung in YGEs eigenem Werkzeug ändern, erneut lesen —
-und der Index, der sich bewegt hat, ist der, der es bedeutet.
+**Vor dem ersten Schreiben auf einen echten ESC bestätigen.** Ein falscher
+Index in der Konfiguration eines ESC ist kein umkehrbares Experiment. Lesen
+dagegen ist gefahrlos und beantwortet das meiste von allein: alle Indizes
+lesen, eine Einstellung in YGEs eigenem Werkzeug ändern, erneut lesen — der
+Index, der sich bewegt hat, ist der gesuchte.
 
 Die Kommentare der Referenz sind um 26–28 herum falsch nummeriert — drei
-aufeinanderfolgende Einträge alle mit 26 beschriftet —, mindestens einer dieser
-drei steht also falsch auf der Seite, selbst wenn die Werte stimmen.
+aufeinanderfolgende Einträge tragen alle die 26. Mindestens einer der drei ist
+also falsch beschriftet, selbst wenn die Werte stimmen.
 
 #### Identität — nur lesen
 
@@ -316,7 +319,7 @@ erledigen. Die Einheiten sind vermutlich Mikrosekunden ° .
 
 ## 6. `status1`
 
-Ein Byte, das zwei unzusammenhängende Dinge trägt.
+Ein Byte, in dem zwei Dinge stecken, die nichts miteinander zu tun haben.
 
 ### Unteres Nibble — Motorzustand
 
@@ -334,8 +337,8 @@ Ein Byte, das zwei unzusammenhängende Dinge trägt.
 | 0xC | `WINDMILLING` | dreht sich, wird nicht getrieben — Leerlauf |
 | 0xE | `RUNNING_NORM` | läuft normal |
 
-0x3, 0x5, 0xB, 0xD und 0xF sind reserviert. Einen unbekannten Zustand als seine
-Zahl anzeigen; ihn nicht auf einen Nachbarn abbilden.
+0x3, 0x5, 0xB, 0xD und 0xF sind reserviert. Ein unbekannter Zustand wird als
+Zahl angezeigt — nicht auf den nächstliegenden bekannten abgebildet.
 
 ### Oberes Nibble — Warnungen, und die Falle darin
 
@@ -346,18 +349,18 @@ Zahl anzeigen; ihn nicht auf einen Nachbarn abbilden.
 | 0x40 | Überstrom |
 | 0x80 | diese Warnungen beziehen sich auf das **BEC**, nicht auf den ESC |
 
-**Die Kodierung ist überladen.** `0x80 | 0x40` — „BEC-Überstrom" — kann nicht
-auftreten, genau diese Kombination wird also für **Sollwertrauschen**
-wiederverwendet: der ESC meldet, dass sein *Eingangssignal* schmutzig ist. In
-dieser Reihenfolge decodieren:
+**Die Kodierung ist doppelt belegt.** „BEC-Überstrom" — `0x80 | 0x40` — kann
+nicht vorkommen, also wird genau diese Kombination für **Sollwertrauschen**
+wiederverwendet: der ESC meldet damit, dass sein *Eingangssignal* gestört ist.
+In dieser Reihenfolge decodieren:
 
 1. Oberes Nibble genau `0xC0` → **Sollwertrauschen**. Ende.
 2. Sonst wählt Bit 0x80 das Subjekt: gesetzt → BEC, gelöscht → ESC.
 3. Die Bits 0x10 / 0x20 / 0x40 sind die Warnungen dieses Subjekts.
 
-Schritt 1 falsch zu machen heißt, dass eine verrauschte Servoleitung als
-BEC-Überstromfehler gelesen wird und jemand einem Kurzschluss hinterherläuft,
-den es nicht gibt.
+Wer Schritt 1 auslässt, liest eine gestörte Servoleitung als
+BEC-Überstromfehler — und schickt jemanden auf die Suche nach einem
+Kurzschluss, den es nicht gibt.
 
 ### Die Warnungen werden vom Zustand qualifiziert
 
@@ -370,42 +373,41 @@ Ein Warnbit allein ist kein Fehler:
 | Übertemperatur | der Zustand `POWER_CUT` ist |
 | Überstrom | der Zustand `POWER_CUT` ist |
 
-Dasselbe Bit ist im Betrieb eine Vorwarnung und ein Fehler, sobald die Leistung
-abgeschaltet ist — und Überspannung hat gar kein eigenes Bit, sie ist *die
-Abwesenheit* von Warnungen, während die Leistung abgeschaltet ist. Ein Decoder,
-der Bits ohne den Zustand meldet, wird sowohl falschen Alarm schlagen als auch
-die eine Bedingung ohne Flag verpassen.
+Dasselbe Bit ist im Betrieb eine Vorwarnung und wird zum Fehler, sobald die
+Leistung abgeschaltet ist. Und Überspannung hat gar kein eigenes Bit: sie ist
+*das Fehlen* aller Warnbits bei abgeschalteter Leistung. Ein Decoder, der die
+Bits ohne den Zustand meldet, schlägt deshalb falschen Alarm — und übersieht
+zugleich die eine Bedingung, die kein Flag hat.
 
 ---
 
 ## 7. Punkte, die im Referenzcode zu prüfen sind
 
-Sechs Fehler, gefunden beim Lesen der Referenzimplementierung. Jeder ist eine
-Stelle, an der *was der Code tut* und *was das Protokoll bedeutet*
-auseinandergehalten werden müssen — und eine daraus abgeschriebene Umsetzung
-erbte alle sechs.
+Sechs Fehler, gefunden beim Lesen der Referenzimplementierung. An jeder dieser
+Stellen muss man auseinanderhalten, *was der Code tut* und *was das Protokoll
+meint* — eine abgeschriebene Umsetzung würde alle sechs erben.
 
 | | |
 | --- | --- |
-| **1. Der Init-Einsprungpunkt gibt nichts zurück** | deklariert als Rückgabe eines Erfolgs-Flags, fällt dann ohne `return` hinten heraus. Undefined Behaviour: die Initialisierung meldet Erfolg oder Misserfolg zufällig |
-| **2. Eine übergroße Anfrage beschädigt das Senden** | der Builder setzt das Längenfeld und kehrt *danach* vorzeitig zurück, wenn diese Länge den Puffer übersteigt — und lässt eine Länge zurück, die mehr behauptet, als geschrieben wurde. Die nächste Sendung schickt alte Bytes über das Frameende hinaus |
+| **1. Die Init-Funktion gibt nichts zurück** | deklariert mit einem Erfolgs-Flag als Rückgabewert, erreicht dann aber das Ende ohne `return`. Undefined Behaviour: ob die Initialisierung Erfolg meldet, ist Zufall |
+| **2. Eine übergroße Anfrage beschädigt das Senden** | der Builder setzt erst das Längenfeld und bricht *danach* ab, wenn die Länge den Puffer übersteigt — zurück bleibt eine Länge, die mehr verspricht, als geschrieben wurde. Die nächste Sendung schickt alte Bytes über das Frameende hinaus |
 | **3. Timing-Argumente werden ignoriert** | der Builder nimmt eine Frameperiode und einen Timeout entgegen und weist keines von beiden zu; beide Zuweisungen sind auskommentiert. Möglicherweise ein Artefakt davon, ein Protokoll aus einem Treiber herausgezogen zu haben, der ein Dutzend beherrschte |
-| **4. Die Sequenznummer lebt im Sendepuffer** | an Ort und Stelle hochgezählt statt als Zähler gehalten — ein Builder, der vorzeitig zurückkehrt (2), zählt die Sequenz also weiter, ohne dass ein Frame hinausgeht |
-| **5. Struct-Cast über den Empfangspuffer** | setzt Little-Endian voraus, setzt kein Padding voraus, führt nicht ausgerichtete 16-Bit-Zugriffe aus. Es funktioniert zufällig auf den ABIs, auf denen es gelaufen ist |
-| **6. Falsch nummerierte Parameterkommentare** | drei aufeinanderfolgende Einträge mit 26 beschriftet. Ob die *Werte* um eins verschoben sind oder nur die Kommentare, ist genau das, was beantwortet sein muss, bevor auf einen ESC geschrieben wird |
+| **4. Die Sequenznummer wohnt im Sendepuffer** | direkt dort hochgezählt statt als eigener Zähler geführt — bricht der Builder vorzeitig ab (Fehler 2), zählt die Sequenz weiter, ohne dass ein Frame die Leitung erreicht |
+| **5. Struct-Cast über den Empfangspuffer** | setzt Little-Endian und fehlendes Padding voraus und führt unausgerichtete 16-Bit-Zugriffe aus. Dass es funktioniert, ist ein Zufall der ABIs, auf denen es bisher lief |
+| **6. Falsch nummerierte Parameterkommentare** | drei aufeinanderfolgende Einträge tragen die 26. Ob die *Werte* um eins verschoben sind oder nur die Kommentare, muss beantwortet sein, bevor auf einen ESC geschrieben wird |
 
-Ein Unterschied, der kein Defekt ist: jener Code synchronisiert sich neu, indem
-er seinen Puffer byteweise verwirft. **Der Decoder von rcbench prüft bereits
-jeden Sync-Kandidaten und bevorzugt den frühesten vollständigen Frame** — und
-holt so einen guten Frame zurück, der hinter Rauschen ankommt, das einen
-plausiblen Sync enthält, ein Fall, den der byteweise Ansatz fallen lässt. Siehe
-[der Link](Link-de.md); diese Form wiederverwenden.
+Ein Unterschied, der kein Fehler ist: die Referenz synchronisiert sich neu,
+indem sie ihren Puffer Byte für Byte verwirft. **Der Decoder von rcbench prüft
+stattdessen jeden Sync-Kandidaten und nimmt den frühesten vollständigen
+Frame** — so überlebt ein guter Frame auch dann, wenn vor ihm Rauschen liegt,
+das zufällig wie ein Sync aussieht. Der byteweise Ansatz verliert diesen Fall.
+Siehe [der Link](Link-de.md); diese Form übernehmen.
 
 ---
 
 ## 8. Was zu messen ist, bevor man dem hier traut
 
-Jeder Punkt macht aus einer Herleitung eine Tatsache.
+Jeder dieser Punkte macht aus einer Vermutung eine Tatsache.
 
 1. **`rpm`-Skalierung.** Bekannter Motor, bekannte Polzahl, bekannte mechanische
    Drehzahl. Entscheidet ×10 gegen ÷10 (Abschnitt 4).
@@ -416,42 +418,42 @@ Jeder Punkt macht aus einer Herleitung eine Tatsache.
 4. **Legacy-Header.** Bestätigen, dass ein ESC vor v3 `seq` und `device`
    auslässt und dass die Payload bei Offset 4 beginnt.
 5. **Umschaltzeit.** Die Lücke zwischen dem letzten Byte einer Anfrage und dem
-   ersten der Antwort. Sie legt das Timing des Koprozessors fest, wie es
-   `LINK_TURNAROUND_US` für den Panel-Link tat.
+   ersten Byte der Antwort. Sie bestimmt das Timing auf dem Koprozessor — wie
+   es `LINK_TURNAROUND_US` einst für den Panel-Link tat.
 6. **Parameterindizes**, mit YGE oder per Lesen-Ändern-Lesen gegen deren eigenes
    Werkzeug — **vor jedem Schreiben**. Abschnitt 5.3, und die Schrittweite der
    Abschaltspannung mit ihnen.
-7. **`status2` und `reserved1`.** Beide über eine Sitzung mitloggen; wenn
-   `reserved1` ein High-Byte des Verbrauchs ist, bewegt es sich auf einem langen
-   Lauf.
+7. **`status2` und `reserved1`.** Beide über eine ganze Sitzung mitschreiben:
+   ist `reserved1` ein High-Byte des Verbrauchs, bewegt es sich auf einem
+   langen Lauf.
 
 ---
 
 ## 9. Wo das in rcbench landet
 
-**Auf dem Koprozessor.** Eine Anfrage-/Antwortschleife mit 20 Hz, einer
-Umschaltzeit im Mikrosekundenbereich und einem Timeout, der feuern muss, ob
-Bytes ankommen oder nicht — das Bedienteil hat dort nichts zu suchen. Das
-Bedienteil sieht das Ergebnis als `bench_state` über das vorhandene
-Page-Protokoll; **kein OpenYGE-Frame überquert den Panel-Link**, und das ist die
-Regel, auf der [die Zwei-Prozessor-Teilung](Link-de.md) ruht. Es ändert auch
-nichts an der Sicherheitsanordnung: ein Gaskommando reist weiterhin als
-Registerschreiben hinter dem Heartbeat und dem Failsafe des Koprozessors
-([Sicherheit](Safety-de.md)).
+**Auf dem Koprozessor.** Eine Anfrage-Antwort-Schleife mit 20 Hz, eine
+Umschaltzeit im Mikrosekundenbereich und ein Timeout, das feuern muss, ob
+Bytes kommen oder nicht — dort hat das Panel nichts verloren. Das Panel sieht
+das Ergebnis als `bench_state` über das vorhandene Page-Protokoll; **kein
+OpenYGE-Frame überquert den Panel-Link**, und auf dieser Regel ruht
+[die Aufteilung auf zwei Prozessoren](Link-de.md). An der Sicherheit ändert
+sich ebenfalls nichts: ein Gaskommando bleibt ein Registerschreiben hinter dem
+Heartbeat und dem Failsafe des Koprozessors ([Sicherheit](Safety-de.md)).
 
-**Was es ändert.** Das ist Schritt 3 — *die Zahlen echt machen* —, der ohne den
-Sensor ankommt, den Schritt 3 vorausgesetzt hatte. Ein YGE-ESC meldet Spannung,
-Strom, Verbrauch, eRPM und vier Temperaturen selbst, jedes modellierte Feld von
-`bench_state` bekommt also eine echte Quelle, und das SIMULATION-Watermark kann
-weg, bevor der bis 2027 rückbestellte INA228 kommt. Es ersetzt diesen Shunt
-nicht: der ESC meldet, was er über sich selbst glaubt, ein unabhängiger Shunt
-ist, was der Prüfstand weiß, und die Abweichung ist eine eigene Messung.
+**Was sich damit ändert.** Der Schritt „die Zahlen echt machen" kommt so ohne
+den Sensor aus, den er eigentlich voraussetzte. Ein YGE-ESC meldet Spannung,
+Strom, Verbrauch, eRPM und vier Temperaturen selbst — jedes modellierte Feld
+von `bench_state` bekommt eine echte Quelle, und das SIMULATION-Watermark kann
+verschwinden, bevor der bis 2027 rückbestellte INA228 eintrifft. Den Shunt
+ersetzt das nicht: der ESC meldet, was er über sich selbst glaubt; ein
+unabhängiger Shunt ist, was der Prüfstand weiß — und die Differenz der beiden
+ist eine eigene, wertvolle Messung.
 
-**Was es hinzufügt, das nicht geplant war.** ESC-Programmierung über eine
-dokumentierte Schnittstelle mit Unterstützung des Herstellers, was BLHeli_S und
-AM32 auf derselben Liste wohl voraus ist. Kopfdrehzahl umsonst aus den
-Parametern 20–22. Und eine Fehleranzeige mit echtem Inhalt, denn Abschnitt 6 ist
-eine Diagnose und keine Status-LED.
+**Was ungeplant dazukommt.** ESC-Programmierung über eine dokumentierte
+Schnittstelle mit Unterstützung des Herstellers — damit liegt YGE auf
+derselben Liste wohl vor BLHeli_S und AM32. Die Kopfdrehzahl fällt aus den
+Parametern 20–22 ohne Zusatzaufwand ab. Und eine Fehleranzeige mit echtem
+Inhalt, denn Abschnitt 6 ist eine Diagnose, keine Status-LED.
 
 **Was gebaut ist:**
 
@@ -460,37 +462,37 @@ eine Diagnose und keine Status-LED.
       openyge_status.c       status1 -> state, subject, warnings, faults
       openyge_params.c       the drip-fed cache and its completeness rule
 
-Der Decoder hat die Form des Panel-Links: jedes Sync-Byte im Puffer ist ein
-Kandidat, und der früheste vollständige gewinnt — ein echter Frame, der hinter
-Rauschen ankommt, das zufällig einen plausiblen Sync enthält, wird also trotzdem
-zurückgeholt. Er zählt Frames, CRC-Fehler, Resyncs und getrennt davon die
-Frames, deren CRC hielt, deren Form aber unmöglich war — Letzteres ist eine
-Versionsabweichung oder ein Fehler am anderen Ende und keine verrauschte
-Leitung, und die beiden wollen unterschiedlich behandelt werden. Der
+Der Decoder hat dieselbe Form wie der des Panel-Links: jedes Sync-Byte im
+Puffer ist ein Kandidat, der früheste vollständige Frame gewinnt — ein echter
+Frame hinter Rauschen, das zufällig wie ein Sync aussieht, geht also nicht
+verloren. Gezählt werden Frames, CRC-Fehler, Resyncs — und getrennt davon
+Frames, deren CRC stimmte, deren Aufbau aber unmöglich war. Das Letzte ist
+eine Versionsabweichung oder ein Fehler der Gegenseite, keine gestörte
+Leitung, und beides will unterschiedlich behandelt werden. Der
 Analyser-Bildschirm verspricht *„eine Rohansicht: Bytes, Lücken, Fehler,
-Framing"*, und diese Zähler sind das.
+Framing"* — diese Zähler sind genau das.
 
 Zwei Entscheidungen im Codec, die man kennen sollte:
 
-- **Nichts wird über den Empfangspuffer gecastet.** Jedes Feld wird byteweise
-  zusammengesetzt, denn die Leitung ist gepackt little-endian, und ein Host muss
-  weder das eine noch das andere sein.
-- **Eine halb gelesene Parametertabelle lässt sich gar nicht lesen.**
-  `openyge_params_get` gibt false zurück, bis jeder Index angekommen ist, und
-  ein anstehendes Schreiben zieht die ganze Tabelle zurück statt nur der Indizes,
-  die geschrieben werden. Teils alt und teils neu liest sich wie die
-  Einstellungen des ESC und ist es nicht.
+- **Kein Struct-Cast über den Empfangspuffer.** Jedes Feld wird byteweise
+  zusammengesetzt, denn die Leitung ist gepackt und little-endian — und ein
+  Host muss weder das eine noch das andere sein.
+- **Eine halb gelesene Parametertabelle lässt sich gar nicht erst lesen.**
+  `openyge_params_get` gibt false zurück, bis jeder Index eingetroffen ist,
+  und ein anstehendes Schreiben zieht die ganze Tabelle zurück, nicht nur die
+  betroffenen Indizes. Halb alt, halb neu sähe aus wie die Einstellungen des
+  ESC — und wäre es nicht.
 
-**Was nicht gebaut ist:** `openyge_session.c`, die Anfrage-/Antwort-State-Machine
-— Pollen im Frametakt, Abgleich der Sequenznummer, die Lese- und Schreibtimeouts,
-und der Rückfall aufs Zuhören, wenn sich herausstellt, dass der ESC vor v3 ist.
-Sie will die Messung der Umschaltzeit aus Abschnitt 8, bevor ihr Timing etwas
-bedeutet, also ist sie als Nächstes dran und nicht jetzt.
+**Was noch fehlt:** `openyge_session.c`, die Anfrage-Antwort-State-Machine —
+Pollen im Frametakt, Abgleich der Sequenznummer, Lese- und Schreibtimeouts,
+und der Rückfall aufs reine Zuhören, wenn der ESC sich als vor-v3
+herausstellt. Ihr Timing ergibt erst nach der Umschaltzeit-Messung aus
+Abschnitt 8 einen Sinn — deshalb kommt sie als Nächstes, nicht jetzt.
 
-**Eines zuerst entscheiden: welche ESCs unterstützt werden.** OpenYGE gehört
-YGE. Das Material steht neben Hobbywing, Kontronik, Scorpion, OMP, ZTW, APD, FLY,
-Graupner und XDFly — mehrere teilen sich eine State Machine, keiner ein
-Frameformat. Die Session-Schicht so zu bauen, dass ein zweites Protokoll
-dazukommen kann, ist jetzt fast umsonst und später teuer; zwei zu bauen, bevor
-eines davon Hardware gesehen hat, heißt Anforderungen zu erfinden. Ein Protokoll,
-bewiesen, dann das zweite.
+**Vorher ist eine Entscheidung fällig: welche ESCs unterstützt werden.**
+OpenYGE gehört YGE. Das Ausgangsmaterial steht neben Hobbywing, Kontronik,
+Scorpion, OMP, ZTW, APD, FLY, Graupner und XDFly — mehrere teilen sich eine
+State Machine, keines ein Frameformat. Die Session-Schicht so zu bauen, dass
+ein zweites Protokoll dazupasst, ist jetzt fast gratis und später teuer. Aber
+zwei zu bauen, bevor eines davon echte Hardware gesehen hat, hieße
+Anforderungen zu erfinden: erst ein Protokoll beweisen, dann das zweite.

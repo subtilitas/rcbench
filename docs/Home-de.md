@@ -19,9 +19,9 @@ hat.
 | die beiden Platinen verkabeln und die Leitung beweisen | [Den Link in Betrieb nehmen](Bringup-de.md) |
 | die Bildschirme bedienen | [Bildschirme](Screens-de.md) |
 | einen Propeller oder Impeller auswuchten | [Auswuchten](Balance-de.md) |
-| die echte Endlage eines Servos finden, oder zwei Servos abstimmen | [Servoverfahren](Servo-de.md) |
+| die echte Endlage eines Servos finden oder zwei Servos abstimmen | [Servoverfahren](Servo-de.md) |
 | einen Empfänger anschließen und sehen, was er wirklich sendet | [Empfängerbusse](Receivers-de.md) |
-| verstehen, wie der Prüfstand anhält, und was du dafür verdrahten musst | [Sicherheit](Safety-de.md) |
+| verstehen, wie der Prüfstand anhält und was dafür zu verdrahten ist | [Sicherheit](Safety-de.md) |
 | einen BLHeli_32-Regler programmieren | [BLHeli_32-Parameter](BLHeli32-de.md) — erkennen und ansteuern ja, Parameter nein |
 
 ## Referenz
@@ -34,9 +34,9 @@ Für die Arbeit an der Firmware statt am Prüfstand:
 | [Das OpenYGE-Protokoll](OpenYGE-de.md) | ESC-Telemetrie und Parameter, von der Leitung aufwärts spezifiziert |
 | [Performance](Performance-de.md) | Warum Zeichencode in Cache-Line-Fills budgetiert wird |
 
-Diese Seiten sagen dir, wie du benutzt und anschließt, was es gibt. Das
+Diese Seiten erklären, wie man benutzt und anschließt, was es gibt. Das
 [README](https://github.com/subtilitas/rcbench) des Repositories ist das
-laufende Protokoll — Designentscheidungen, ihre Gründe und das noch Offene
+laufende Protokoll — Designentscheidungen, ihre Gründe und die offenen Fragen
 stehen dort.
 
 Jede Seite gibt es auch auf Englisch — der Umschalter steht oben auf jeder.

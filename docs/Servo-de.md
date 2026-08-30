@@ -2,105 +2,102 @@
 
 <sub>[English](Servo.md) · **Deutsch**</sub>
 
-Zwei Messungen über das Servo **wie eingebaut** statt über das Servo wie
-gekauft. Beide brauchen einen Stromsensor je Servoausgang, der noch nicht
-bestückt ist — beide laufen heute also gegen ein modelliertes Servo, und gegen
-das echte an dem Tag, an dem der Sensor daran ist, ohne Änderung dazwischen.
+Zwei Messungen am Servo **wie eingebaut**, nicht wie gekauft. Beide brauchen
+einen Stromsensor je Servoausgang, der noch nicht bestückt ist — heute laufen
+sie deshalb gegen ein modelliertes Servo, und später unverändert gegen das
+echte.
 
 ## Die verbaute mechanische Endlage finden
 
 ### Warum
 
-Endpunkte, die man im Sender nach Augenmaß setzt, sind Schätzungen, und der
-Preis für zu großzügiges Schätzen ist still: ein Servo, das gegen einen
-mechanischen Anschlag gehalten wird, zieht Blockierstrom, solange man es darum
-bittet. Es kocht sich selbst, leert den Akku und verschleißt das Getriebe, und
-niemand merkt es, bis etwas überdreht.
+Endpunkte, die im Sender nach Augenmaß gesetzt werden, sind Schätzungen — und
+wer zu großzügig schätzt, merkt es nicht. Ein Servo, das gegen einen
+mechanischen Anschlag gestellt wird, zieht Blockierstrom, solange es dort
+gehalten wird: es überhitzt, leert den Akku und verschleißt das Getriebe, bis
+irgendwann Zähne fehlen.
 
-Die Endlage lässt sich nicht nachschlagen, denn sie gehört nicht dem Servo.
-Sie gehört dem Gestänge, der Hornstellung und den Anschlägen der Fläche — in
-jedem Einbau anders, und an den beiden Enden des Ausschlags einer Fläche
-verschieden. Beide Enden messen.
+Nachschlagen lässt sich die Endlage nicht, denn sie gehört nicht dem Servo,
+sondern dem Gestänge, der Hornstellung und den Anschlägen der Ruderfläche. Sie
+ist in jedem Einbau anders — und an den beiden Enden desselben Ruderwegs
+verschieden. Deshalb: beide Enden messen.
 
-### Was es tut
+### Was die Suche tut
 
-Die Suche geht ein Viertelgrad auf einmal aus der Mitte heraus, lässt
-beruhigen und beobachtet den Strom. Solange die Fläche frei ist, ist der Strom
-flach und niedrig. In dem Moment, in dem das Gestänge klemmt, steigt er steil
-— das Servo bewegt nichts mehr und drückt nur noch. Die Suche **hält beim
-ersten Anstieg an, statt hindurchzudrücken**, geht um eine Reserve zurück und
-meldet das als Endpunkt.
+Sie tastet sich in Viertelgrad-Schritten aus der Mitte heraus, wartet jeweils
+kurz und beobachtet den Strom. Solange die Fläche frei läuft, bleibt er flach
+und niedrig. Sobald das Gestänge anläuft, steigt er steil — das Servo bewegt
+nichts mehr, es drückt nur noch. Die Suche **hält beim ersten Anstieg an,
+statt weiterzudrücken**, nimmt eine Sicherheitsreserve zurück und meldet das
+als Endpunkt.
 
-Rechne mit knapp **acht Sekunden je Ende** bei den Standardeinstellungen.
-Langsam ist Absicht: die Methode hängt daran, den Anschlag sanft zu *treffen*
-statt mit Schwung jenseits davon anzukommen.
+Mit den Standardeinstellungen dauert das knapp **acht Sekunden pro Ende**.
+Langsam ist Absicht: die Methode lebt davon, den Anschlag sanft zu *treffen*,
+nicht mit Schwung dahinter zu landen.
 
-### Was das Servo währenddessen schützt
+### Was das Servo dabei schützt
 
 | | |
 | --- | --- |
-| eine harte Stromobergrenze | bricht sofort ab, bei jedem Sample geprüft |
-| ein Stall-Timeout | Strom über „arbeitet schwer" darf nicht andauern, wo auch immer |
-| die langsame Annäherung | ein Schritt kann das Horn nicht von frei bis hart gegen den Anschlag tragen |
+| eine harte Stromobergrenze | bricht sofort ab, bei jedem Messwert geprüft |
+| ein Stall-Timeout | Strom über „arbeitet schwer" darf nicht andauern, egal wo |
+| die langsame Annäherung | ein einzelner Schritt kann das Horn nicht von frei bis hart an den Anschlag tragen |
 
 Alle drei laufen auf dem Koprozessor, und keiner fragt vorher um Erlaubnis.
 
 ### Das Ergebnis lesen
 
-- Ein Endpunkt wird bereits um die Reserve zurückgenommen gemeldet — nimm ihn,
-  wie er ist.
-- **„Keine Endlage gefunden"** heißt, die Suche hat den gesamten erlaubten
-  Ausschlag ohne Klemmen durchlaufen. Das ist eine echte Antwort und kein
-  Fehlschlag: die Mechanik hat innerhalb des erlaubten Bereichs keinen
-  Anschlag getroffen.
-- Eine Endlage überraschend nah an der Mitte kann eine echte enge Stelle sein
-  — ein klemmender Umlenkhebel, ein scheuerndes Gestänge — statt des Endes des
-  Ausschlags. Der Test sichert die üblichen Fälle ab, aber ein Gestänge, das
-  eine Messung wert ist, ist auch einen Blick wert.
+- Der gemeldete Endpunkt hat die Reserve schon abgezogen — er kann direkt
+  übernommen werden.
+- **„Keine Endlage gefunden"** heißt: der gesamte erlaubte Weg wurde
+  durchlaufen, ohne dass etwas geklemmt hat. Das ist eine echte Antwort, kein
+  Fehlschlag — im erlaubten Bereich gibt es schlicht keinen Anschlag.
+- Eine Endlage überraschend nah an der Mitte kann eine echte Schwergängigkeit
+  sein — ein klemmender Umlenkhebel, ein streifendes Gestänge — statt des
+  Endes des Ruderwegs. Die Suche sichert die üblichen Fälle ab, aber ein
+  Gestänge, das eine Messung wert ist, ist auch einen Blick wert.
 
-## Zwei Servos auf einer Fläche abstimmen
+## Zwei Servos auf einer Ruderfläche abstimmen
 
 ### Warum
 
-Zwei Servos auf einer Fläche — Doppelquerruder, Höhenruderhälften — arbeiten
-über die Fläche gegeneinander, sobald ihr Ausschlag oder ihre Mitte nicht
-übereinstimmen, und beide ziehen dafür dauerhaft zusätzlichen Strom. Nichts am
-Modell sagt es einem. Die Fläche sitzt einfach da, steif, und zieht das
-Doppelte von dem, was sie sollte.
+Zwei Servos an einer Fläche — Doppelquerruder, geteiltes Höhenruder — arbeiten
+gegeneinander, sobald Ruderweg oder Mittelstellung nicht übereinstimmen, und
+ziehen dafür dauerhaft zusätzlichen Strom. Am Modell sieht man davon nichts:
+die Fläche steht einfach da, steif, und braucht das Doppelte.
 
-### Was es tut
+### Was die Suche tut
 
-Der Punkt, an dem die beiden aufhören zu kämpfen, ist der Punkt des
-**minimalen Gesamtstroms** — die Suche fährt also eine Korrektur nach der
-anderen ab und findet dieses Minimum, ohne Ermessen. Die beiden Fehler trennen
-sich sauber:
+Wo die beiden aufhören, gegeneinander zu arbeiten, ist der Gesamtstrom am
+niedrigsten. Die Suche fährt also eine Korrektur nach der anderen durch und
+sucht dieses **Minimum** — eine physikalische Antwort, keine Einschätzung. Die
+beiden Fehler trennen sich dabei sauber:
 
-- Kämpfen **in der Mitte** ist ein Offsetfehler
-- Kämpfen **an den Enden** ist ein Ausschlagsfehler
+- Kampf **in der Mitte** ist ein Offsetfehler
+- Kampf **an den Enden** ist ein Wegfehler
 
-Gemessen wird in der Mitte und an beiden Enden, und jede Korrektur fällt aus
-ihrer eigenen Messung. Jedes Ende bekommt seine eigene Zahl, denn ein Gestänge
-ist nicht symmetrisch um die Mitte, sobald ein Horn und ein Gestänge im Spiel
-sind.
+Gemessen wird in der Mitte und an beiden Enden, und jede Korrektur ergibt sich
+aus ihrer eigenen Messung. Jedes Ende bekommt seinen eigenen Wert, denn sobald
+Horn und Gestänge im Spiel sind, ist kein Anlenkweg symmetrisch zur Mitte.
 
-Ein Stromsensor **über das Paar** reicht — minimiert wird, was die beiden
-zusammen ziehen.
+Ein einziger Stromsensor **über das Paar** genügt — minimiert wird ja, was
+beide zusammen ziehen.
 
 ### Das Ergebnis lesen
 
-- Ein Paar, das schon abgestimmt war, liefert trotzdem ein sauberes Minimum —
+- Ein Paar, das schon zusammenpasst, liefert trotzdem ein sauberes Minimum —
   bei **null Korrektur**. Das ist der gesunde Befund.
-- **„Kein Minimum"** heißt, der Sensor konnte über den weitesten Scan keinen
-  Kampf auflösen. Die Suche sagt das, statt eine aus Rauschen
-  zusammengesetzte Korrektur zurückzugeben.
-- Was der Strom nicht sehen kann: zwei Servos, die sich einig und *beide*
-  falsch sind. Eine Fläche, die nirgends steif ist, aber fünf Grad daneben
-  sitzt, gibt dem Paar nichts zu streiten — dieser Fall braucht den
-  Beschleunigungssensor oder dein Auge.
+- **„Kein Minimum"** heißt: der Sensor konnte über den breitesten Suchlauf
+  keinen Kampf auflösen. Das wird gemeldet — statt einer Korrektur, die aus
+  Rauschen zusammengesetzt wäre.
+- Was der Strom nicht sehen kann: zwei Servos, die sich einig sind und *beide*
+  falsch stehen. Eine Fläche, die nirgends steif ist, aber fünf Grad daneben
+  hängt, gibt dem Paar nichts, worüber es streiten könnte — dieser Fall
+  braucht den Beschleunigungssensor oder das Auge.
 
 ## Worauf beide warten
 
-Das PWM des Koprozessors und Strommessung an den Servoausgängen — je Ausgang
-für die Endlagensuche, einer über das Paar für die Abstimmung. Siehe
-[das Protokoll](https://github.com/subtilitas/rcbench#readme), wo das in der
-Arbeitsreihenfolge steht.
+Die PWM-Ausgänge des Koprozessors und Strommessung an den Servoausgängen — je
+Ausgang für die Endlagensuche, einer über das Paar für die Abstimmung. Wo das
+in der Reihenfolge der Arbeiten steht, sagt
+[das Protokoll](https://github.com/subtilitas/rcbench#readme).
