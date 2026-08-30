@@ -244,27 +244,34 @@ static void draw_aircraft(gfx_canvas_t *c)
     /*
      * The cowl, drawn as the separate piece it is.  It is a fairing: screwed
      * to a former, often on rubber, and free to move relative to the thing
-     * whose vibration you want.
+     * whose vibration you want.  Drawn short, because on a great many
+     * electric models the outrunner stands proud of it -- which is what makes
+     * the rest of this possible.
      */
-    gfx_fill_round_rect(c, fw, axis - 36, 96, 72, 12,
+    gfx_fill_round_rect(c, fw, axis - 36, 62, 72, 12,
                         ui_theme_color(UI_C_PANEL));
-    gfx_draw_round_rect(c, fw, axis - 36, 96, 72, 12, edge);
-    gfx_fill_round_rect(c, fw + 20, axis - 20, 22, 16, 3,
-                        ui_theme_color(UI_C_BG));
+    gfx_draw_round_rect(c, fw, axis - 36, 62, 72, 12, edge);
 
     /* The firewall behind it: the one rigid face at this end of the model. */
     for (int y = axis - 32; y < axis + 32; y += 8) {
         gfx_vline(c, fw, y, 5, ink);
     }
-    /* The motor inside, shown faintly because you cannot get at it. */
-    gfx_fill_round_rect(c, fw + 16, axis - 17, 50, 34, 6,
-                        gfx_lerp(ui_theme_color(UI_C_PANEL), skin, 90));
 
-    /* Spinner and disc, clear of the cowl. */
-    gfx_capsule_aa(c, fw + 96, axis, prop - 8, axis, 10, skin);
+    /* The bell, ahead of the cowl and turning. */
+    const int bell_x = fw + 58;
+    const int bell_w = 50;
+    gfx_fill_round_rect(c, bell_x, axis - 32, bell_w, 64, 8, skin);
+    gfx_draw_round_rect(c, bell_x, axis - 32, bell_w, 64, 8, edge);
+    for (int i = 0; i < 4; ++i) {
+        gfx_fill_round_rect(c, bell_x + 7 + i * 10, axis - 22, 5, 44, 2,
+                            ui_theme_color(UI_C_GRID_STRONG));
+    }
+
+    /* Spinner and disc. */
+    gfx_capsule_aa(c, bell_x + bell_w, axis, prop - 6, axis, 9, skin);
     gfx_capsule_aa(c, prop, axis - 12, prop, axis - 86, 12, skin);
     gfx_capsule_aa(c, prop, axis + 12, prop, axis + 86, 12, skin);
-    gfx_fill_circle_aa(c, prop, axis, 16, skin);
+    gfx_fill_circle_aa(c, prop, axis, 15, skin);
     gfx_fill_circle_aa(c, prop, axis, 5, ui_theme_color(UI_C_PANEL));
 
     /*
@@ -282,21 +289,22 @@ static void draw_aircraft(gfx_canvas_t *c)
     gfx_capsule_aa(c, ax + 7, axis - 69, ax, axis - 78, 3, ink);
 
     /*
-     * The mark and its sensor.  With a cowl on there is nothing else to look
-     * at, and the spinner will do: an index only has to give one pulse a turn
-     * at a steady phase, and unlike the accelerometer it does not care how
-     * rigidly it is held.
+     * The mark on the bell here too, and for a reason the rig did not have to
+     * care about: a spinner comes off.  Every time it is taken away for
+     * transport it goes back on at a new angle, and the phase reference the
+     * last balance was measured against goes with it.  The bell is part of
+     * the rotor and never moves.
      */
-    gfx_fill_round_rect(c, prop + 8, axis - 5, 10, 10, 2,
+    const int mark_x = bell_x + bell_w / 2;
+    gfx_fill_round_rect(c, mark_x - 9, axis + 24, 18, 10, 2,
                         ui_theme_color(UI_C_BG));
-    gfx_draw_round_rect(c, prop + 8, axis - 5, 10, 10, 2, warn);
-    gfx_fill_round_rect(c, 424, 250, 30, 24, 3, warn);
-    gfx_draw_round_rect(c, 424, 250, 30, 24, 3, edge);
-    gfx_capsule_aa(c, 439, 274, 439, ground, 4, faint);
+    gfx_draw_round_rect(c, mark_x - 9, axis + 24, 18, 10, 2, warn);
+
+    gfx_fill_round_rect(c, mark_x - 15, 300, 30, 24, 3, warn);
+    gfx_draw_round_rect(c, mark_x - 15, 300, 30, 24, 3, edge);
+    gfx_capsule_aa(c, mark_x, 324, mark_x, ground, 4, faint);
     for (int i = 0; i < 4; ++i) {
-        const float t = (float)i / 4.0f;
-        gfx_fill_circle_aa(c, 424 - (int)(16.0f * t),
-                           248 - (int)(26.0f * t), 2, warn);
+        gfx_fill_circle_aa(c, mark_x, 294 - i * 10, 2, warn);
     }
 
     /* Tied down at the tail, because a machine free to rock is a spring
@@ -305,11 +313,11 @@ static void draw_aircraft(gfx_canvas_t *c)
     gfx_capsule_aa(c, 42, ground - 4, 62, ground - 4, 6, warn);
 
     callout(c, ax, axis - 34, 24, 62, "ACCELEROMETER", ink);
-    callout(c, fw, axis + 18, 150, 322, "FIREWALL", ink);
-    /* Out to the right of the disc: any leader that leaves the mark upward
-     * runs the length of a blade. */
-    callout(c, prop + 13, axis, 418, 148, "ONE MARK", warn);
-    callout(c, 52, ground - 12, 132, 288, "TIED DOWN", warn);
+    callout(c, fw, axis + 18, 132, 288, "FIREWALL", ink);
+    /* Down and left: between the bell and the disc there is no gap for a
+     * leader to climb through. */
+    callout(c, mark_x, axis + 30, 236, 344, "ONE MARK", warn);
+    callout(c, 52, ground - 12, 96, 344, "TIED DOWN", warn);
 }
 
 /* The rules, numbered, because each one is a way of getting it wrong. */
@@ -349,9 +357,9 @@ static const rule_t k_air_rules[] = {
     { "NEAR THE BOLTS",
       "Same rule as a rig: joints",
       "between it and the bearing." },
-    { "THE MARK CAN MOVE",
-      "An index only needs one pulse",
-      "a turn, at a steady phase." },
+    { "STILL THE BELL",
+      "A spinner comes off, and goes",
+      "back on at a new angle." },
     { "TIE THE TAIL DOWN",
       "An aircraft free to rock is",
       "a spring you did not want." },

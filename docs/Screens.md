@@ -265,10 +265,13 @@ accelerometer goes flat against it -- which is worth saying, because a
 three-axis part mounted flat puts two of its axes in the firewall's plane,
 across the shaft. Use one of those and ignore the third.
 
-The index mark is the one thing that relaxes. With a cowl on there is nothing
-to look at but the spinner, and the spinner will do: an index only has to give
-one pulse a turn at a steady phase, and unlike the accelerometer it does not
-care how rigidly it is held.
+The mark still goes on the bell, and here there is a second reason for it: **a
+spinner comes off**. Every time it is taken away for transport it goes back on
+at a new angle, and the phase reference the last balance was measured against
+goes with it. The bell is part of the rotor and never moves. On a great many
+electric models the outrunner stands proud of the cowl anyway, which is what
+makes the same arrangement as the rig possible -- sensor underneath, looking
+straight up, crossing nothing.
 
 And the whole aeroplane has to be tied down. A machine free to rock is a spring
 nobody chose, in series with everything you are trying to measure.
