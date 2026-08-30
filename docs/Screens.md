@@ -175,6 +175,13 @@ that is the whole reason the list exists rather than an autodetect.
 
 ![The protocols of a class](img/programmer-protocols.png)
 
+**BLHeli_32 is not in that list, and the reason is not effort.** Its settings
+are a 256-byte XTEA block whose key exists only inside a closed binary, so the
+bench can connect to one of these ESCs, identify it and read the block without
+being able to name a single value in it. Direction, 3D mode, beacon and
+telemetry still work, because those are DShot special commands rather than
+parameters. [The whole reasoning](BLHeli32.md).
+
 Stepping back up drops the connection. The device that answered a bootloader is
 not the one that will answer a CLI, and leaving the old identity above a new
 list is the single lie this screen must not tell. Back climbs one level rather
