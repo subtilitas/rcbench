@@ -116,17 +116,27 @@ static void draw_rig(gfx_canvas_t *c)
     gfx_draw_round_rect(c, POST_X + POST_W, ARM_Y,
                         MOTOR_X - POST_X - POST_W, ARM_H, 4, edge);
 
-    /* The motor: a can, its bell, and the shaft out of the front. */
-    gfx_fill_round_rect(c, MOTOR_X, SHAFT_Y - 36, MOTOR_W, 72, 8,
+    /*
+     * An outrunner: the small static end bolted to the arm, and the bell --
+     * the whole outer can -- turning in front of it.
+     */
+    gfx_fill_round_rect(c, MOTOR_X, SHAFT_Y - 22, 22, 44, 4,
                         ui_theme_color(UI_C_PANEL));
-    gfx_draw_round_rect(c, MOTOR_X, SHAFT_Y - 36, MOTOR_W, 72, 8, edge);
-    for (int i = 0; i < 3; ++i) {
-        gfx_vline(c, MOTOR_X + 14 + i * 16, SHAFT_Y - 26, 52,
-                  ui_theme_color(UI_C_GRID_STRONG));
-    }
-    gfx_capsule_aa(c, MOTOR_X + MOTOR_W, SHAFT_Y, SPIN_X, SHAFT_Y, 10, steel);
+    gfx_draw_round_rect(c, MOTOR_X, SHAFT_Y - 22, 22, 44, 4, edge);
 
-    /* The disc, edge on: two blades and the spinner between them. */
+    const int bell_x = MOTOR_X + 20;
+    const int bell_w = 54;
+    gfx_fill_round_rect(c, bell_x, SHAFT_Y - 38, bell_w, 76, 8, steel);
+    gfx_draw_round_rect(c, bell_x, SHAFT_Y - 38, bell_w, 76, 8, edge);
+    /* Its cooling slots, which are also what tells you it is the part that
+     * turns. */
+    for (int i = 0; i < 4; ++i) {
+        gfx_fill_round_rect(c, bell_x + 8 + i * 11, SHAFT_Y - 26, 5, 52, 2,
+                            ui_theme_color(UI_C_GRID_STRONG));
+    }
+    gfx_capsule_aa(c, bell_x + bell_w, SHAFT_Y, SPIN_X, SHAFT_Y, 10, steel);
+
+    /* The disc, edge on: two blades and the hub between them. */
     gfx_capsule_aa(c, SPIN_X, SHAFT_Y - 14, SPIN_X, SHAFT_Y - BLADE_L, 13,
                    ui_theme_color(UI_C_PANEL_HI));
     gfx_capsule_aa(c, SPIN_X, SHAFT_Y + 14, SPIN_X, SHAFT_Y + BLADE_L, 13,
@@ -156,26 +166,32 @@ static void draw_rig(gfx_canvas_t *c)
     gfx_capsule_aa(c, ax + 7, ARM_Y + 51, ax, ARM_Y + 60, 3, ink);
 
     /*
-     * The optical sensor, looking at the spinner's nose from in front and to
-     * one side -- not across the disc, where it would be looking through the
-     * blades and counting them.
+     * The mark goes on the bell, and the sensor looks straight up at it.
+     *
+     * Not the spinner: a rig often runs without one, and a beam aimed at the
+     * nose has to come from in front, across the disc.  The bell turns with
+     * the shaft, is rigid, is there whichever prop is fitted, and can be
+     * watched from underneath where nothing is in the way.
      */
-    gfx_fill_round_rect(c, 452, 268, 34, 24, 3, warn);
-    gfx_draw_round_rect(c, 452, 268, 34, 24, 3, edge);
-    for (int i = 0; i < 6; ++i) {
-        const float t = (float)i / 6.0f;
-        const int bx = 452 + (int)((float)(SPIN_X + 12 - 452) * t);
-        const int by = 268 + (int)((float)(SHAFT_Y + 8 - 268) * t);
-        gfx_fill_circle_aa(c, bx, by, 2, warn);
+    const int mark_x = bell_x + bell_w / 2;
+    /* Drawn dark with a bright edge, because it is a pen line and not a
+     * flag: anything stuck on the bell is mass, on the one part whose mass
+     * is the thing being measured. */
+    gfx_fill_round_rect(c, mark_x - 9, SHAFT_Y + 30, 18, 10, 2,
+                        ui_theme_color(UI_C_BG));
+    gfx_draw_round_rect(c, mark_x - 9, SHAFT_Y + 30, 18, 10, 2, warn);
+
+    gfx_fill_round_rect(c, mark_x - 17, 296, 34, 24, 3, warn);
+    gfx_draw_round_rect(c, mark_x - 17, 296, 34, 24, 3, edge);
+    for (int i = 0; i < 5; ++i) {
+        gfx_fill_circle_aa(c, mark_x, 292 - i * 10, 2, warn);
     }
-    /* One mark on the spinner, and one only. */
-    gfx_fill_round_rect(c, SPIN_X + 8, SHAFT_Y - 4, 11, 8, 2, warn);
 
     callout(c, MOTOR_X - 25, ARM_Y - 12, 24, 62, "ACCELEROMETER", ink);
-    /* Straight out sideways from the hub: any leader that leaves it upwards
-     * or downwards runs along a blade. */
-    callout(c, SPIN_X + 11, SHAFT_Y, 432, 202, "ONE MARK", warn);
-    callout(c, 469, 280, 300, 330, "OPTICAL", warn);
+    /* Both labels go left, under the arm, which is the one large piece of
+     * empty card that no leader has to cross anything to reach. */
+    callout(c, mark_x, SHAFT_Y + 36, 196, 282, "ONE MARK", warn);
+    callout(c, mark_x, 308, 196, 332, "OPTICAL", warn);
 }
 
 static void draw_aircraft(gfx_canvas_t *c)
@@ -213,11 +229,14 @@ static const rule_t k_rig_rules[] = {
       "Foam eats the frequencies",
       "you came to measure." },
     { "ONE MARK A TURN",
-      "On the spinner. A blade gives",
-      "one pulse for every blade." },
+      "On the motor bell. A blade",
+      "gives one pulse per blade." },
+    { "A PEN, NOT TAPE",
+      "Anything stuck on is mass",
+      "you would then measure." },
     { "OUT OF THE WASH",
-      "A lead that flaps is a second",
-      "accelerometer." },
+      "A lead that flaps is a",
+      "second accelerometer." },
 };
 #define RIG_RULES ((int)(sizeof(k_rig_rules) / sizeof(k_rig_rules[0])))
 
@@ -228,7 +247,7 @@ static void draw_rules(gfx_canvas_t *c)
              ui_theme_color(UI_C_ACCENT), 1);
 
     for (int i = 0; i < RIG_RULES; ++i) {
-        const int y = BODY_Y + 44 + i * 70;
+        const int y = BODY_Y + 32 + i * 58;
         char n[8];
         snprintf(n, sizeof(n), "%d", i + 1);
         gfx_fill_round_rect(c, x, y - 2, 20, 20, 4,

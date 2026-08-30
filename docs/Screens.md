@@ -242,6 +242,17 @@ spacing.
 
 ![Where the sensors go on a rig](img/balance.png)
 
+Two details in there are the ones people get wrong. The index mark goes on the
+motor's **bell**, not on a spinner: a rig often runs without one, and a beam
+aimed at a spinner's nose has to come from in front, across the disc -- the
+same sighting that ends up counting blades. The bell turns with the shaft, is
+rigid, is there whichever prop is fitted, and can be watched from underneath
+where nothing is in the way.
+
+And the mark is a **pen line**, not reflective tape. Anything stuck to the bell
+is mass, on the one part of the machine whose mass is the thing being
+measured -- you would be balancing out your own marker.
+
 The rig is the easy case, because the placement is under your control. On an
 aircraft it is not, and that pane is next.
 
