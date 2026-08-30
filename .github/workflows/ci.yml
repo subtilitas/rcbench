@@ -53,6 +53,18 @@ jobs:
       - name: The docs agree with the tree
         run: python3 tools/check_docs.py
 
+      # The wiki gets these pages with their links translated, and a broken
+      # translator would only show up as a wiki full of downloads.  Run it
+      # against a copy so a mistake fails here rather than there.
+      - name: The wiki link rewrite still works
+        run: |
+          cp -a docs /tmp/wikicheck
+          python3 tools/wiki_links.py /tmp/wikicheck
+          if grep -rnoE '\]\([A-Za-z0-9_-]+\.md[)#]' /tmp/wikicheck; then
+            echo "::error::links to .md files survived the rewrite"
+            exit 1
+          fi
+
       # Frame rate on this panel is bandwidth-bound, so the thing worth
       # guarding against regression is cache-line traffic per frame, not
       # wall-clock on a runner that shares nothing with an ESP32-S3.  The

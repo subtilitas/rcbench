@@ -118,7 +118,8 @@ rcbench/
   README.md  LICENSE  .gitattributes  .gitignore
   .github/workflows/      ci · docs · release
   docs/                   the wiki source
-  tools/                  render_ui · coverage · check_docs · frame_cost · gen_font
+  tools/                  render_ui · coverage · check_docs · frame_cost
+                          gen_font · wiki_links
 
   shared/                 pure C — no ESP-IDF, no pico-sdk, no FreeRTOS types
     gfx/                  rasteriser and three fonts

@@ -55,6 +55,14 @@ jobs:
           find wiki -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           cp -a source/docs/. wiki/
 
+      # A wiki page is addressed by its title with no extension, so a link to
+      # `Screens.md` downloads the file instead of opening the page.  In the
+      # repository the opposite holds, and check_docs.py holds every link to
+      # it.  Neither source is bent to suit the other: the translation happens
+      # here, on the way out, and only to the copy.
+      - name: Point the links at wiki pages rather than at files
+        run: python3 source/tools/wiki_links.py wiki
+
       - name: Commit and push
         working-directory: wiki
         run: |

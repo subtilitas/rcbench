@@ -9,7 +9,8 @@ across two processors.
 ```
 rcbench/
   docs/                   these pages
-  tools/                  render_ui · coverage · check_docs · frame_cost · gen_font
+  tools/                  render_ui · coverage · check_docs · frame_cost
+                          gen_font · wiki_links
   shared/                 pure C — no ESP-IDF, no pico-sdk, no FreeRTOS types
     gfx/                  rasteriser and three fonts
     touch/                coordinate and event mapping
@@ -106,6 +107,7 @@ budget lands around 27 to 32 GPIO and a Pico 2 brings out 26.
 | --- | --- |
 | `tools/coverage.py` | measures host-test line coverage and keeps the README table honest; `--check` fails on drift |
 | `tools/check_docs.py` | holds these pages to the tree: links resolve, the sidebar is complete, the suite list is the list CMake builds, the tree above lists every `shared/` module |
+| `tools/wiki_links.py` | drops the `.md` from page links on the way to the wiki, where a page is addressed by its title and a link to a file downloads it. The repository wants the extension and the wiki does not, so the source keeps it and the mirror step translates |
 | `tools/gen_font.py` | regenerates the three embedded fonts; `--check` fails if the committed C no longer matches its generator |
 | `tools/render_ui.py` | renders every screen to a PNG; `--check` compares against the committed goldens |
 | `tools/frame_cost.py` | measures cache-line traffic per frame under cachegrind, because frame rate on this panel is bandwidth-bound |
