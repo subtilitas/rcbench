@@ -71,7 +71,6 @@ SOURCES = [
     "shared/bench/telemetry_sim.c",
     "shared/servo/servo_sim.c",
     "shared/sbus/sbus.c",
-    "shared/bench/throttle.c",
 ]
 INCLUDES = [
     "shared/gfx/include",

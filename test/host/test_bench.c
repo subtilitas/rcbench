@@ -10,7 +10,6 @@
 #include "bench_state.h"
 #include "link_pages.h"
 #include "telemetry_sim.h"
-#include "throttle.h"
 
 /* ----------------------------------------------------------- the wire form */
 
@@ -131,81 +130,6 @@ TEST_CASE(resetting_peaks_does_not_invent_a_collapsed_pack)
     CHECK_EQ(b.voltage_min, 24.0f);
     CHECK_EQ(b.current_max, 3.0f);
     CHECK_EQ(b.voltage, 24.0f);   /* the live reading is not disturbed */
-}
-
-/* ------------------------------------------------------------- the throttle */
-
-TEST_CASE(throttle_set_while_disarmed_is_remembered_and_not_emitted)
-{
-    throttle_t t;
-    throttle_init(&t, NULL, 0);
-    throttle_set(&t, 60.0f, 0);
-
-    CHECK_EQ(t.command, 60.0f);
-    for (int i = 0; i < 100; ++i) {
-        CHECK_EQ(throttle_step(&t, 0.05f), 0.0f);
-    }
-
-    throttle_arm(&t, true, 0);
-    CHECK(throttle_step(&t, 0.05f) > 0.0f);
-    CHECK_EQ(t.command, 60.0f);   /* arming did not lose the slider */
-}
-
-TEST_CASE(the_ramp_limits_the_way_up_and_not_the_way_down)
-{
-    throttle_t t;
-    throttle_init(&t, NULL, 0);
-    throttle_set_rate(&t, 50.0f);   /* 50 %/s */
-    throttle_arm(&t, true, 0);
-    throttle_set(&t, 100.0f, 0);
-
-    /* One second of ramp gets halfway, not all the way. */
-    const float after_1s = throttle_step(&t, 1.0f);
-    CHECK_NEAR(after_1s, 50.0f, 0.5f);
-
-    /* Down is immediate: a slew limit on stopping helps nobody. */
-    throttle_set(&t, 0.0f, 0);
-    CHECK_EQ(throttle_step(&t, 0.001f), 0.0f);
-}
-
-TEST_CASE(disarming_drops_to_idle_with_no_ramp)
-{
-    throttle_t t;
-    throttle_init(&t, NULL, 0);
-    throttle_arm(&t, true, 0);
-    throttle_set(&t, 80.0f, 0);
-    for (int i = 0; i < 40; ++i) { throttle_step(&t, 0.05f); }
-    CHECK(t.actual > 50.0f);
-
-    throttle_arm(&t, false, 0);
-    CHECK_EQ(t.actual, 0.0f);
-    CHECK_EQ(throttle_step(&t, 1.0f), 0.0f);
-}
-
-/* It refuses to hold a throttle nobody is watching. */
-TEST_CASE(silence_from_the_commander_is_overdue)
-{
-    throttle_t t;
-    throttle_init(&t, NULL, 1000);
-    CHECK(!throttle_overdue(&t, 1000 + 499));
-    CHECK(throttle_overdue(&t, 1000 + 500));
-
-    throttle_keepalive(&t, 2000);
-    CHECK(!throttle_overdue(&t, 2400));
-}
-
-/* Wrap-safe, like both link watchdogs: the deadline is sampled before the
- * turnover, which is where a naive comparison fires a whole interval early. */
-TEST_CASE(the_command_timeout_survives_the_millisecond_wrap)
-{
-    throttle_t t;
-    const uint32_t near_wrap = (uint32_t)0u - 250u;
-    throttle_init(&t, NULL, near_wrap);
-    CHECK(near_wrap + 500u < near_wrap);
-
-    CHECK(!throttle_overdue(&t, near_wrap + 125u));
-    CHECK(!throttle_overdue(&t, near_wrap + 499u));
-    CHECK(throttle_overdue(&t, near_wrap + 500u));
 }
 
 /* ------------------------------------------------------------ the simulator */
@@ -339,11 +263,6 @@ int main(void)
     RUN(an_out_of_range_value_clamps_rather_than_wraps);
     RUN(a_partial_page_leaves_the_rest_alone);
     RUN(resetting_peaks_does_not_invent_a_collapsed_pack);
-    RUN(throttle_set_while_disarmed_is_remembered_and_not_emitted);
-    RUN(the_ramp_limits_the_way_up_and_not_the_way_down);
-    RUN(disarming_drops_to_idle_with_no_ramp);
-    RUN(silence_from_the_commander_is_overdue);
-    RUN(the_command_timeout_survives_the_millisecond_wrap);
     RUN(the_simulator_flags_everything_it_produces);
     RUN(the_model_sags_under_load);
     RUN(current_grows_faster_than_throttle);

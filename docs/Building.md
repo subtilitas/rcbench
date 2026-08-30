@@ -17,7 +17,8 @@ rcbench/
     settings/             typed schema and values
     logfile/              number and CSV parsing
     link/                 framing · CRC-16 · the wire budget
-    bench/                bench_state · throttle policy · the simulator
+    bench/                bench_state · the simulator
+    outputs/              channels · driver table · arming, slew and staleness
     safety/               the heartbeat: the panel generates, the copro judges
     servo/                the limit and sync searches, and servos to run them against
     can/                  bit timing for both controllers, and the MCP2515 registers

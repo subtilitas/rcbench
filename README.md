@@ -127,7 +127,8 @@ rcbench/
     settings/             typed schema and values
     logfile/              number and CSV parsing
     link/                 messages · CAN framing · pages · watchdogs · diagnosis
-    bench/                bench_state · throttle policy · simulator
+    bench/                bench_state · simulator
+    outputs/              channels · driver table · arming, slew and staleness
 
   firmware/panel/         ESP-IDF
     main/                 main.c
@@ -177,6 +178,78 @@ claims no vendor SDK — that claim is about the C, and the alternative is
 twenty-one files of indirection to avoid one conditional.
 
 Includes are flat: `#include "gfx.h"`, not `"rcbench/gfx.h"`.
+
+## Every output goes through one place
+
+There were two sets of output rules and they disagreed.
+
+`throttle.c` had all three of the ones that matter -- a command set while
+disarmed is remembered and not emitted, disarming drops to idle with no ramp,
+and it refuses to hold a throttle nobody is watching -- and it ran on the
+panel, driving the motor task. The servo page was built on the coprocessor,
+answered the same questions again, and answered two of them differently: it
+clamped and it checked arming, and it had no staleness rule at all, so a servo
+held its last pulse for as long as the wire stayed up.
+
+Two processors, two answers, and nothing that could have noticed.
+
+The failsafe path showed the same shape. It cleared the control page and said
+so in a comment -- *"written and reachable now rather than added once there is
+something to forget to add it to"* -- and then the servo page was added and
+nobody added it there. Latent only because nothing yet puts an edge on a pin.
+
+Neither was a bug in either path. Both were one bug: **a rule that has to hold
+for every output, written into one output.**
+
+So `shared/outputs/` owns them once.
+
+A **channel** is a normalised command and a role. Screens and procedures write
+channels and none of them knows what is on the wire. The unit is a thousandth
+of the channel's own travel, because it cannot be the protocol's -- microseconds
+mean nothing to DShot and a DShot code means nothing to a servo, and what both
+have is a proportion.
+
+The **role** is the one thing a command cannot say: where rest is, and which
+direction is safe. A throttle rests stopped and its slew is asymmetric, because
+ramping it down is a slew limit on stopping. A surface rests centred and its
+slew is symmetric, because for a surface neither direction is the safe one.
+
+A **driver** declares what it is shaped like, and the table is what a naive
+version gets wrong:
+
+| | channels | pins | reads back |
+| --- | --- | --- | --- |
+| PWM | 1 | 1 | no |
+| PPM | 1–8 | 1 | no |
+| DShot | 1 | 1 | **yes** |
+
+PPM is eight channels on one pin, so the mapping is not one-to-one and cannot
+be. Bidirectional DShot listens on the pin it just drove, so "how many pins"
+and "is it only an output" are separate questions.
+
+That table also buys two checks nothing else could make. A page per protocol
+sees only its own pins and its own channels, so nothing in that arrangement can
+notice **two drivers on one pin**, or **two rendering the same channel to
+different wires**. Both are refused now, and both are silent until something
+moves that should not.
+
+Arming, clamping, slew and the silence timeout are answered here and nowhere
+else. It is pure logic with no pin in it, so it is host-tested to the edge
+cases before anything toggles. Only turning a command into edges is
+per-protocol, and that is the coprocessor's.
+
+`throttle.c` is gone. The panel's motor task runs on the bank now, with the
+same 55 %/s ramp expressed as a proportion of travel rather than a percentage
+-- so the number means the same thing on an output whose travel is not
+measured in percent. Keeping the old model would have left the second opinion
+in place, which is the thing this exists to prevent.
+
+**Still to come.** The wire is unchanged so far -- the servo and control pages
+became thin adapters onto the bank rather than the place the rules live. Next
+is saying it on the link: `LINK_PAGE_OUTPUTS` for what each slot is (driver,
+pin, first channel, rate) and a channels page for the values, replacing a
+page-per-protocol before there are five of them. Then DShot, which by then is a
+table row.
 
 ## The link
 
@@ -311,12 +384,12 @@ start from it rather than a bare `menuconfig`.
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them, opens a release |
 
-32 binaries, each printing one line per case: `test_gfx`,
+33 binaries, each printing one line per case: `test_gfx`,
 `test_touch_map`, `test_nav`, `test_widgets`, `test_bench`, `test_motor`,
 `test_servo`, `test_analyser`, `test_programmer`, `test_balance`, `test_battery`, `test_settings`,
 `test_logfile`, `test_link_crc`, `test_link_pages`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
-`test_link_can`, `test_link_servo`, `test_can_timing`, `test_can_selftest`,
+`test_link_can`, `test_link_servo`, `test_outputs`, `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`,
 `test_heartbeat`,
 `test_servo_limit`, `test_servo_sync`, `test_sbus`, `test_openyge_frame`,
@@ -333,7 +406,7 @@ screenshots to the current render, and `frame_cost.py` holds a bench frame to
 samples currently costs **740**.
 
 <!-- coverage:start -->
-![coverage](https://img.shields.io/badge/host--test%20coverage-93.2%25-brightgreen)
+![coverage](https://img.shields.io/badge/host--test%20coverage-93.3%25-brightgreen)
 
 | File | Lines | Covered | Coverage |
 | --- | ---: | ---: | ---: |
@@ -383,10 +456,11 @@ samples currently costs **740**.
 | `shared/link/link_servo.c` | 34 | 32 | 94.1% |
 | `shared/link/link_host.c` | 113 | 102 | 90.3% |
 | `shared/bench/bench_state.c` | 61 | 57 | 93.4% |
-| `shared/bench/throttle.c` | 53 | 45 | 84.9% |
+| `shared/outputs/outputs.c` | 153 | 143 | 93.5% |
+| `shared/outputs/outputs_pages.c` | 31 | 30 | 96.8% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
 | `shared/bench/log_writer.c` | 43 | 40 | 93.0% |
-| **total** | **7054** | **6573** | **93.2%** |
+| **total** | **7185** | **6701** | **93.3%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

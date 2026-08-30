@@ -27,6 +27,7 @@ pico_sdk_init()
 # suite builds with plain gcc.  One source list, three build systems.
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/link"  link)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/bench" bench)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/outputs" outputs)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/safety" safety)
 # Not called yet -- it has nothing to drive until there is PWM and a sensor per
 # output -- but built here so the ARM toolchain compiles it alongside the host
@@ -46,6 +47,7 @@ target_link_libraries(rcbench-copro
     hardware_spi
     hardware_gpio
     rcbench_link
+    rcbench_outputs
     rcbench_bench
     rcbench_safety
     rcbench_servo

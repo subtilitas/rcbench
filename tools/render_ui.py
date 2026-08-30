@@ -57,7 +57,8 @@ SOURCES = [
     "shared/bench/telemetry_sim.c",
     "shared/servo/servo_sim.c",
     "shared/sbus/sbus.c",
-    "shared/bench/throttle.c",
+    "shared/outputs/outputs.c",
+    "shared/outputs/outputs_pages.c",
 ]
 
 # Every screen gets a committed screenshot; CI checks them all.
@@ -94,6 +95,7 @@ INCLUDES = [
     "shared/touch/include",
     "shared/ui/include",
     "shared/bench/include",
+    "shared/outputs/include",
     "shared/link/include",
     "shared/logfile/include",
     "shared/settings/include",

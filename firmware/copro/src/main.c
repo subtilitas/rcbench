@@ -21,6 +21,8 @@
 #include "link_dev.h"
 #include "link_pages.h"
 #include "link_servo.h"
+#include "outputs.h"
+#include "outputs_pages.h"
 #include "telemetry_sim.h"
 #include "xl2515.h"
 
@@ -36,6 +38,27 @@ typedef struct {
 
 static copro_state_t s_state;
 static link_dev_t    s_dev;
+
+/*
+ * Every output, behind one set of rules.
+ *
+ * The pages above are still the wire format; what they are no longer is the
+ * place the rules live.  The rules were written once, in the bench's throttle
+ * model, and nothing here used them: the servo page answered the same
+ * questions again and answered two of them differently, and skipped the
+ * silence timeout entirely.  The failsafe below showed the same shape, having
+ * been written before the servo page existed.
+ *
+ * Channel assignment is fixed here for now.  The link learns to say it in the
+ * outputs page; until then it is two constants rather than two conventions
+ * spread across the file.
+ */
+static outputs_t s_outputs;
+
+#define CH_THROTTLE  0u
+#define CH_SERVO     1u
+#define SLOT_SERVO   0u
+#define PIN_SERVO    2u
 
 /* The panel's safety line, as judged in firmware.  Declared here with the
  * other state because the control page consults it before it will arm --
@@ -107,7 +130,14 @@ static uint8_t servo_write(void *ctx, uint8_t off, uint8_t n,
 {
     copro_state_t *s = (copro_state_t *)ctx;
     const bool may_drive = !s_dev.failsafe && s_beat.alive;
-    return link_servo_write(s->servo, off, n, in, may_drive);
+    const uint8_t nack = link_servo_write(s->servo, off, n, in, may_drive);
+    if (nack != 0u) {
+        return nack;
+    }
+    outputs_apply_servo_page(&s_outputs, s->servo, CH_SERVO, SLOT_SERVO,
+                             PIN_SERVO,
+                             (uint32_t)to_ms_since_boot(get_absolute_time()));
+    return 0u;
 }
 
 static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
@@ -142,6 +172,12 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
         }
         s->control[reg] = in[i];
     }
+    /*
+     * Stamped here rather than in the loop, so the silence timeout measures
+     * what it is for: how long since the *host* last said anything.
+     */
+    outputs_apply_control_page(&s_outputs, s->control, CH_THROTTLE,
+                               (uint32_t)to_ms_since_boot(get_absolute_time()));
     return 0;
 }
 
@@ -358,9 +394,15 @@ static bench_state_t   s_bench;
 
 static void sample(float dt_s)
 {
-    const float throttle = (s_state.control[LINK_CT_ARM] != 0)
-                               ? (float)s_state.control[LINK_CT_THROTTLE] / 100.0f
-                               : 0.0f;
+    /*
+     * What the output is doing, not what was asked for.  The bank has already
+     * applied arming, slew and the silence timeout, and a simulation fed the
+     * raw request would show a motor at a speed the outputs are refusing to
+     * produce -- which is the invented-versus-measured mistake with the
+     * simulation's name on it.
+     */
+    const float throttle = (float)outputs_actual(&s_outputs, CH_THROTTLE)
+                           * 100.0f / (float)OUT_SPAN;
     telemetry_sim_step(&s_sim, throttle, dt_s, &s_bench);
     bench_state_to_regs(&s_bench, s_state.bench);
 
@@ -400,13 +442,29 @@ static void sample(float dt_s)
     s_state.status[LINK_ST_RESYNCS]    = tec;
 }
 
+/*
+ * The failsafe edge.
+ *
+ * This is what the intermediary is for.  The old version of this function
+ * cleared the control page and said so in a comment -- "written and reachable
+ * now rather than added once there is something to forget to add it to" -- and
+ * then the servo page was added and nobody added it here.  It was latent only
+ * because nothing yet puts an edge on a pin.
+ *
+ * Disarming the bank is now the whole of it, because there is one bank.  The
+ * pages are cleared afterwards so that what the panel reads back agrees with
+ * what the outputs are doing; a page still saying ENABLE over a servo that
+ * has stopped is the same lie in the other direction.
+ */
 static void outputs_off(void)
 {
-    /* Nothing to switch off yet.  The call exists so the failsafe path is
-     * written and reachable now rather than added once there is something to
-     * forget to add it to. */
+    outputs_arm(&s_outputs,
+                false,
+                (uint32_t)to_ms_since_boot(get_absolute_time()));
+
     s_state.control[LINK_CT_ARM]      = 0;
     s_state.control[LINK_CT_THROTTLE] = 0;
+    s_state.servo[LINK_SV_ENABLE]     = 0;
 }
 
 int main(void)
@@ -431,6 +489,10 @@ int main(void)
     link_servo_defaults(s_state.servo);
 
     const uint32_t now0 = (uint32_t)to_ms_since_boot(get_absolute_time());
+    outputs_init(&s_outputs, now0);
+    (void)outputs_set_role(&s_outputs, CH_THROTTLE, OUT_ROLE_THROTTLE);
+    outputs_apply_servo_page(&s_outputs, s_state.servo, CH_SERVO, SLOT_SERVO,
+                             PIN_SERVO, now0);
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 
     heartbeat_init();
@@ -457,6 +519,25 @@ int main(void)
          * than a frame takes to arrive, and the failsafe has to fire on time
          * whether or not anything is arriving. */
         can_service(now);
+
+        /*
+         * Arming is the coprocessor's judgement -- the panel asks and this
+         * decides -- so it is recomputed every pass from what only this end
+         * knows, rather than remembered from when the write landed.  The call
+         * is idempotent, which is what makes that safe: stamping the clock
+         * here every pass would hold every channel alive and delete the
+         * timeout the pass after it was added.
+         *
+         * Commands are *not* refreshed here, for the same reason.  A channel
+         * is alive because the host wrote it, and re-commanding it out of the
+         * coprocessor's own register would be the coprocessor keeping itself
+         * company.
+         */
+        outputs_arm(&s_outputs,
+                    s_state.control[LINK_CT_ARM] != 0
+                        && !s_dev.failsafe && s_beat.alive,
+                    now);
+        outputs_step(&s_outputs, now);
 
         /* 50 Hz, which is faster than the panel polls, so a poll always finds
          * a fresh sample rather than the one it was already shown. */
