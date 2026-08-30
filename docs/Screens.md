@@ -230,10 +230,40 @@ Steppers clamp rather than wrap. A parameter that rolls from its last value
 round to its first will one day be set to the wrong end by somebody pressing
 once more than they meant to, and on an ESC the wrong end is a direction.
 
+## Balancing starts with where the sensors go
+
+The measurement is easy and the mounting is not. A balance answer is a
+magnitude and an angle -- add this much, there -- and both come out of two
+sensors whose placement decides whether the answer means anything. Neither way
+of getting it wrong looks wrong on screen: a vibration sensor on a compliant
+mount reads a filtered version of what the bearing did, and an index mark on a
+blade reads one pulse per blade and gives an angle out by a whole blade
+spacing.
+
+![Where the sensors go on a rig](img/balance.png)
+
+The rig is the easy case, because the placement is under your control. On an
+aircraft it is not, and that pane is next.
+
+Two things about the delay, since the choice of sensor turns on it. Without an
+index pulse there is no phase reference at all, so balancing is the four-run
+method -- baseline, then one trial mass at nought, a hundred and twenty, and
+two hundred and forty degrees -- which never measures phase and therefore
+cannot be hurt by a constant lag. What it needs instead is *bandwidth*: at
+10,000 rpm the fundamental is 167 Hz, and a packaged IMU streaming fused
+orientation at 100 Hz cannot see it at all. It is not late, it is blind.
+
+With an index pulse the runs halve, and then the lag matters -- but only its
+variability. A constant delay cancels in the influence coefficient, because the
+trial run measures the whole chain including the sensor. An analogue part into
+the coprocessor's own converter is about fifteen microseconds, which is under a
+degree at 10,000 rpm; a fused IMU is five milliseconds and neither constant nor
+published, which is three hundred degrees and a mass fitted with great
+precision in the wrong place.
+
 The rest, each naming its own blocker:
 
 ![Battery](img/battery.png)
-![Balance](img/balance.png)
 
 ## When the numbers are not real
 

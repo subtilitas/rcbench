@@ -6,6 +6,7 @@
 #include "log_viewer_screen.h"
 #include "motor_screen.h"
 #include "analyser_screen.h"
+#include "balance_screen.h"
 #include "programmer_screen.h"
 #include "servo_screen.h"
 #include "settings_screen.h"
@@ -43,6 +44,7 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
     case SCREEN_MOTOR:    return motor_screen();
     case SCREEN_SERVO:    return servo_screen();
     case SCREEN_ANALYSER: return analyser_screen();
+    case SCREEN_BALANCE:  return balance_screen();
     case SCREEN_PROGRAMMER: return programmer_screen();
     case SCREEN_LOGS:     return log_viewer_screen();
     case SCREEN_SETUP:    return settings_screen();

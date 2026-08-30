@@ -51,7 +51,7 @@ static const tile_t k_tiles[] = {
       0 },
     { SCREEN_BATTERY,    "BATTERY",     "cells, iR, capacity",     ui_icon_battery, false,
       LINK_CAP_CELLS },
-    { SCREEN_BALANCE,    "BALANCE",     "vibration and phase",     ui_icon_balance, false,
+    { SCREEN_BALANCE,    "BALANCE",     "vibration and phase",     ui_icon_balance, true,
       LINK_CAP_VIBRATION },
     { SCREEN_PROGRAMMER, "PROGRAMMER",  "ESC and servo settings",  ui_icon_chip,    true,
       LINK_CAP_PROGRAM },

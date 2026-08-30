@@ -21,6 +21,7 @@ set(SRCS
     motor_screen.c
     servo_screen.c
     analyser_screen.c
+    balance_screen.c
     programmer_screen.c
     log_viewer_screen.c
     settings_screen.c
