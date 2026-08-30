@@ -600,6 +600,48 @@ TEST_CASE(no_line_of_stub_copy_runs_off_the_screen)
     }
 }
 
+
+/*
+ * The menu says what the bench can do, not what it has screens for.
+ *
+ * This replaced a page of checkboxes: a preference that hides a feature goes
+ * stale -- untick a receiver bus, plug one in six months later, and the
+ * analyser reports nothing on the wire with no way to find out why.  A
+ * capability corrects itself the moment the part is fitted, and until then it
+ * says the numbers are modelled rather than quietly implying they are not.
+ */
+TEST_CASE(the_menu_marks_what_is_not_fitted)
+{
+    fresh();
+    to_overview();
+
+    ui_bench_status_t st = *ui_router_status();
+    st.capabilities = 0;                 /* nothing soldered on */
+    ui_router_set_status(&st);
+    ui_router_render(&cv, 0);
+    int bare = 0;
+    for (int i = 0; i < W * H; ++i) {
+        if (fb[i] == ui_theme_color(UI_C_PANEL_SUNK)) { ++bare; }
+    }
+
+    /* Everything fitted: the badges that said MODELLED go away, so there is
+     * strictly less of the badge colour on the screen. */
+    st.capabilities = 0xFFFFu;
+    ui_router_set_status(&st);
+    ui_router_render(&cv, 0);
+    int full = 0;
+    for (int i = 0; i < W * H; ++i) {
+        if (fb[i] == ui_theme_color(UI_C_PANEL_SUNK)) { ++full; }
+    }
+
+    if (full >= bare) {
+        T_FAIL("fitting the hardware did not remove any badges: %d then %d",
+               bare, full);
+    }
+    /* But the two that have no screen still say so. */
+    CHECK(full > 0);
+}
+
 int main(void)
 {
     RUN(the_router_starts_on_the_splash);
@@ -623,5 +665,6 @@ int main(void)
     RUN(the_simulation_mark_covers_the_whole_screen);
     RUN(the_simulation_mark_lets_the_screen_through);
     RUN(switching_the_mark_invalidates_the_cached_chrome);
+    RUN(the_menu_marks_what_is_not_fitted);
     return test_summary("nav");
 }

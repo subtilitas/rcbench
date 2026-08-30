@@ -106,6 +106,16 @@ typedef struct {
      * and every screen would have its own reason to think itself exempt.
      */
     bool simulated;
+
+    /*
+     * A link_cap_t bitmap, straight from the coprocessor's identity page.
+     *
+     * Zero means either that nothing is fitted or that nothing answered, and
+     * the two look the same on purpose: in both cases the bench cannot do the
+     * thing, and a menu that distinguished them would be describing the
+     * cable rather than the bench.
+     */
+    uint16_t capabilities;
 } ui_bench_status_t;
 
 void ui_router_set_status(const ui_bench_status_t *status);

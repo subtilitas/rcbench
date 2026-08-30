@@ -51,6 +51,31 @@ enum {
     LINK_ID_COUNT          = 7,
 };
 
+/*
+ * What the coprocessor can actually do, as opposed to what it has screens for.
+ *
+ * This is the honest form of "hide what I do not need": the bench reports what
+ * is fitted and the menu says so, rather than a preference somebody set once
+ * and cannot remember.  A preference goes stale -- untick a receiver bus, plug
+ * one in six months later, and the analyser says nothing is on the wire.  A
+ * capability corrects itself the moment the part is soldered on.
+ *
+ * Absent is not the same as forbidden.  A screen whose capability is missing
+ * still opens and still works from the model; it wears the mark that says its
+ * numbers are invented, which it already had to.
+ */
+typedef enum {
+    LINK_CAP_ESC_DRIVE   = 1u << 0, /**< a signal line out to an ESC       */
+    LINK_CAP_ESC_TELEM   = 1u << 1, /**< telemetry back from one           */
+    LINK_CAP_SERVO_PWM   = 1u << 2, /**< pulses out to a servo             */
+    LINK_CAP_SERVO_SENSE = 1u << 3, /**< current, per output               */
+    LINK_CAP_PACK_SENSE  = 1u << 4, /**< pack volts and amps               */
+    LINK_CAP_RECEIVER    = 1u << 5, /**< a receiver bus decoded in PIO     */
+    LINK_CAP_VIBRATION   = 1u << 6, /**< accelerometer and an index pulse  */
+    LINK_CAP_CELLS       = 1u << 7, /**< a cell monitor on the balance lead*/
+    LINK_CAP_PROGRAM     = 1u << 8, /**< one-wire and CLI programming      */
+} link_cap_t;
+
 /* ------------------------------------------------------------------ status */
 enum {
     LINK_ST_STATE      = 0, /**< a link_dev_state_t                      */

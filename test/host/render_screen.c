@@ -13,10 +13,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <string.h>
 
 #include "log_viewer_screen.h"
 #include "settings.h"
+#include "analyser_screen.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
 #include "servo_sim.h"
@@ -237,6 +239,108 @@ int main(int argc, char **argv)
         }
         motor_screen_set_throttle(64.0f);
         motor_screen_set_armed(true);
+    }
+
+    if (id == SCREEN_PROGRAMMER && strcmp(view, "programmer") != 0) {
+        /*
+         * Walked down the hierarchy by pressing, not posed by setting flags,
+         * so each screenshot goes through the same path a finger does -- a
+         * mock that poses its own state can drift from what the buttons
+         * actually do.
+         *
+         * Geometry from programmer_screen.c: if those move, these move.
+         */
+        ui_router_goto(SCREEN_PROGRAMMER);
+        tap(210, UI_BAND_H + 180);              /* the ESC tile */
+        if (strcmp(view, "programmer-protocols") != 0) {
+            /* Slot two is AM32, whose timing is degrees rather than named
+             * steps -- the same renderer, a different kind. */
+            tap(400, UI_BAND_H + (strcmp(view, "programmer-am32") == 0
+                                  ? 92 + 2 * 68 : 92));
+            if (strcmp(view, "programmer-idle") != 0) {
+                tap(698, UI_BAND_H + 70);       /* CONNECT */
+                if (strcmp(view, "programmer-dirty") == 0) {
+                    /* Two staged edits, so the screenshot holds the state
+                     * every configurator distinguishes and this one nearly
+                     * did not: changed, but not yet written. */
+                    tap(765, UI_BAND_H + 132 + 1 * 30 + 10);
+                    tap(765, UI_BAND_H + 132 + 3 * 30 + 10);
+                }
+            }
+        }
+    }
+
+    if (id == SCREEN_BALANCE
+        && strcmp(view, "balance-aircraft") == 0) {
+        ui_router_goto(SCREEN_BALANCE);
+        tap(200, UI_BAND_H + 22);           /* the AIRCRAFT tab */
+    }
+
+    if (id == SCREEN_ANALYSER) {
+        /*
+         * Fed through the real decoder frame by frame, with the channels
+         * moving, because a lane view of a still frame shows sixteen
+         * straight lines and proves nothing about what it is for.
+         */
+        sbus_decoder_t dec;
+        sbus_decoder_reset(&dec);
+        uint32_t us = 100000u;
+
+        for (unsigned t = 0; t < 132u; ++t) {
+            uint16_t ch[SBUS_CHANNELS];
+            for (unsigned i = 0; i < SBUS_CHANNELS; ++i) {
+                ch[i] = 1024;                       /* neutral */
+            }
+            /* A stick swept across the window. */
+            ch[1] = (uint16_t)(1024 + (int)(600.0f
+                        * sinf((float)t * 0.06f)));
+            /* A switch thrown once, a third of the way in. */
+            ch[4] = (t > 44u) ? 1811 : 172;
+            /* A knob wound slowly. */
+            ch[7] = (uint16_t)(400 + t * 8u);
+            /* One frame with a spike on it: the glitch a lane is meant to
+             * make findable. */
+            if (t == 96u) {
+                ch[10] = 1811;
+            }
+
+            uint8_t raw[SBUS_FRAME_BYTES];
+            memset(raw, 0, sizeof(raw));
+            raw[0] = SBUS_HEADER;
+            for (unsigned i = 0; i < SBUS_CHANNELS; ++i) {
+                const unsigned bit = i * 11u;
+                for (unsigned b = 0; b < 11u; ++b) {
+                    if (ch[i] & (1u << b)) {
+                        const unsigned at = bit + b;
+                        raw[1u + at / 8u] |= (uint8_t)(1u << (at % 8u));
+                    }
+                }
+            }
+            raw[23] = SBUS_FLAG_CH17;
+            /*
+             * The state this screen exists for gets a golden of its own.  A
+             * receiver in failsafe sends well-formed numbers it was told to
+             * invent, and how that is presented is the thing most worth
+             * holding still between releases.
+             */
+            if (strcmp(view, "analyser-failsafe") == 0) {
+                raw[23] |= SBUS_FLAG_FAILSAFE;
+            }
+
+            sbus_frame_t frame;
+            bool got = false;
+            us += SBUS_GAP_US * 2u;          /* the gap that starts a frame */
+            for (unsigned i = 0; i < SBUS_FRAME_BYTES; ++i) {
+                if (sbus_decode_byte(&dec, raw[i], us, &frame)) {
+                    got = true;
+                }
+                us += 120u;
+            }
+            if (got) {
+                analyser_screen_push(&frame, &dec, raw, SBUS_FRAME_BYTES,
+                                     t * 14u);
+            }
+        }
     }
 
     if (id == SCREEN_SERVO) {

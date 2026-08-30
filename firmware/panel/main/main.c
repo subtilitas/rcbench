@@ -44,6 +44,9 @@ static const char *TAG = "rcbench";
 
 /* Used during bring-up as well as in the loop, so file scope. */
 static link_host_t    s_host;
+/* A link_cap_t bitmap from the coprocessor's identity page.  Zero until
+ * something answers, which is also what it stays if nothing is fitted. */
+static uint16_t       s_capabilities;
 static link_bringup_t s_bring;
 
 #ifdef RCBENCH_CAN_SELFTEST
@@ -229,6 +232,13 @@ static bool bring_up(void)
                      reply.regs[LINK_ID_PROTOCOL_MINOR],
                      reply.regs[LINK_ID_HARDWARE]);
             s_bring.have_identity = true;
+            /*
+             * What the far end can actually do.  Kept here rather than read
+             * again later: the identity page is answered once at bring-up,
+             * and a menu that greyed itself only after a poll would flicker
+             * through a state where the bench claimed more than it has.
+             */
+            s_capabilities        = reply.regs[LINK_ID_CAPABILITIES];
             s_bring.proto_major   = reply.regs[LINK_ID_PROTOCOL_MAJOR];
             s_bring.proto_minor   = reply.regs[LINK_ID_PROTOCOL_MINOR];
             const bool speaks_ours =
@@ -854,6 +864,7 @@ void app_main(void)
             .run_seconds = now_ms() / 1000u,
             .mode        = link_up ? "LINK" : "SIM",
             .simulated   = bench_state_simulated(&bench),
+            .capabilities = s_capabilities,
         };
         ui_router_set_status(&status);
 

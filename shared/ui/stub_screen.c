@@ -90,14 +90,6 @@ static const copy_t k_copy[SCREEN_COUNT] = {
      * Both want a current sensor per output, which the catalogue costs as
      * medium: one sensor per channel, or a multiplexer.
      */
-    [SCREEN_ANALYSER] = {
-        "ANALYSER",
-        { "Decode a receiver bus and show the channels",
-          "Watch a receiver fail: cut the transmitter, see what comes out",
-          "Link quality and RSSI from the pilot's own system",
-          "A raw view: bytes, gaps, errors, framing" },
-        "one PIO soft UART, and then one parser at a time",
-    },
     /* Reached only if the log viewer is ever unrouted; it is built. */
     [SCREEN_LOGS] = {
         "LOGS",
@@ -122,42 +114,6 @@ static const copy_t k_copy[SCREEN_COUNT] = {
           "Capacity, sag and cell divergence, arranged as a verdict",
           "Smart-battery data: cycles, chemistry, error history" },
         "a cell-monitor part, and the INA228 is back-ordered into 2027",
-    },
-    /*
-     * Not the same sensor as the servo bench uses, and the reason is worth
-     * writing down because the parts look interchangeable in a catalogue.
-     *
-     * A packaged serial IMU -- 9 axes, onboard fusion, RS232 on a lead -- is
-     * ideal for a surface angle and useless here.  Balancing is a *phase*
-     * measurement: the answer is an angle, "add mass there".  A prop at
-     * 10,000 rpm turns once every 6 ms, and serial framing plus fusion group
-     * delay is easily 5 ms and neither constant nor published.  That is 300
-     * degrees of error.  Even a helicopter head at 2,000 rpm, one turn every
-     * 30 ms, lands 60 degrees out.  The mass goes on with great precision, in
-     * the wrong place.
-     *
-     * So: an analogue accelerometer or piezo on a shielded lead, sampled by
-     * the coprocessor's own converter in lockstep with the index capture.
-     * One timebase because the sampling happens at the instrument rather than
-     * at the sensor.  The converter's 7.5 effective bits are poor for
-     * absolute measurement and ample for relative amplitude and phase
-     * averaged over many revolutions.
-     */
-    [SCREEN_BALANCE] = {
-        "BALANCE",
-        { "Vibration spectrum from an accelerometer on a shielded lead",
-          "Phase against an index pulse on one timebase -- the whole difficulty",
-          "Sampled at the instrument: a serial IMU cannot hold that phase",
-          "Where to add mass, and how much" },
-        "an analogue accelerometer and an index pickup on the coprocessor",
-    },
-    [SCREEN_PROGRAMMER] = {
-        "PROGRAMMER",
-        { "BLHeli_S and AM32 over the one-wire bootloader at 19,200",
-          "ESCape32 over its CLI, and VESC over framed packets",
-          "Hitec D-series servos -- the one protocol published in full",
-          "Programme four ESCs identically, and keep profiles on the card" },
-        "for the rest: borrow the programmer and capture the wire",
     },
 };
 

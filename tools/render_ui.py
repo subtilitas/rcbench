@@ -43,6 +43,9 @@ SOURCES = [
     "shared/ui/stub_screen.c",
     "shared/ui/motor_screen.c",
     "shared/ui/servo_screen.c",
+    "shared/ui/analyser_screen.c",
+    "shared/ui/balance_screen.c",
+    "shared/ui/programmer_screen.c",
     "shared/ui/log_viewer_screen.c",
     "shared/ui/settings_screen.c",
     "shared/settings/settings.c",
@@ -52,6 +55,7 @@ SOURCES = [
     "shared/bench/bench_state.c",
     "shared/bench/telemetry_sim.c",
     "shared/servo/servo_sim.c",
+    "shared/sbus/sbus.c",
     "shared/bench/throttle.c",
 ]
 
@@ -67,12 +71,19 @@ SCREENS = {
     "servo":      ("servo.png",      "servo",      "dark"),
     "analyser":   ("analyser.png",   "analyser",   "dark"),
     "logs":       ("logs.png",       "logs",       "dark"),
+    "analyser-failsafe": ("analyser-failsafe.png", "analyser", "dark"),
+    "programmer-protocols": ("programmer-protocols.png", "programmer", "dark"),
+    "programmer-idle": ("programmer-idle.png", "programmer", "dark"),
+    "programmer-params": ("programmer-params.png", "programmer", "dark"),
+    "programmer-dirty": ("programmer-dirty.png", "programmer", "dark"),
+    "programmer-am32": ("programmer-am32.png", "programmer", "dark"),
     "logs-import":("logs-import.png","logs",       "dark"),
     "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
     "setup":      ("setup.png",      "setup",      "dark"),
     "setup-light":("setup-light.png","setup",      "light"),
     "battery":    ("battery.png",    "battery",    "dark"),
     "balance":    ("balance.png",    "balance",    "dark"),
+    "balance-aircraft": ("balance-aircraft.png", "balance", "dark"),
     "programmer": ("programmer.png", "programmer", "dark"),
 }
 INCLUDES = [
@@ -84,6 +95,7 @@ INCLUDES = [
     "shared/logfile/include",
     "shared/settings/include",
     "shared/servo/include",
+    "shared/sbus/include",
 ]
 
 

@@ -5,6 +5,9 @@
 
 #include "log_viewer_screen.h"
 #include "motor_screen.h"
+#include "analyser_screen.h"
+#include "balance_screen.h"
+#include "programmer_screen.h"
 #include "servo_screen.h"
 #include "settings_screen.h"
 #include "overview_screen.h"
@@ -40,6 +43,9 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
     case SCREEN_OVERVIEW: return overview_screen();
     case SCREEN_MOTOR:    return motor_screen();
     case SCREEN_SERVO:    return servo_screen();
+    case SCREEN_ANALYSER: return analyser_screen();
+    case SCREEN_BALANCE:  return balance_screen();
+    case SCREEN_PROGRAMMER: return programmer_screen();
     case SCREEN_LOGS:     return log_viewer_screen();
     case SCREEN_SETUP:    return settings_screen();
     default:              return stub_screen(id);
@@ -113,12 +119,20 @@ void ui_router_set_status(const ui_bench_status_t *status)
     if (status == NULL) {
         return;
     }
-    /* Screens cache their chrome per framebuffer.  The watermark is painted
-     * over the whole canvas, so switching it changes pixels the screens
-     * believe they have already drawn correctly. */
-    const bool was = s.status.simulated;
+    /*
+     * Screens cache their chrome per framebuffer, so anything in the status
+     * that a screen draws has to invalidate them when it moves.
+     *
+     * The watermark is painted over the whole canvas, so switching it changes
+     * pixels the screens believe they have already drawn correctly.  The
+     * capability bitmap is the same problem in a smaller place: the menu's
+     * tiles are chrome, and their badges come out of it -- fit the sensor and
+     * the badge would otherwise stay until something else forced a repaint.
+     */
+    const bool     was  = s.status.simulated;
+    const uint16_t caps = s.status.capabilities;
     s.status = *status;
-    if (was != s.status.simulated) {
+    if (was != s.status.simulated || caps != s.status.capabilities) {
         ui_router_invalidate();
     }
 }

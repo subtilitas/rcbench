@@ -389,6 +389,15 @@ int main(void)
 
     s_state.identity[LINK_ID_PROTOCOL_MAJOR] = LINK_PROTOCOL_MAJOR;
     s_state.identity[LINK_ID_PROTOCOL_MINOR] = LINK_PROTOCOL_MINOR;
+    /*
+     * Nothing yet, and saying so is the point.
+     *
+     * Every bit here is a thing that has to be soldered on: PWM to a servo
+     * lead, a shunt, a PIO receiver, an accelerometer.  The board has the
+     * pins and the firmware has the code for none of it, so it reports
+     * nothing and the panel greys the menu accordingly.  When a part goes on,
+     * one bit goes in here and the whole interface stops apologising for it.
+     */
     s_state.identity[LINK_ID_CAPABILITIES]   = 0;
 
     const uint32_t now0 = (uint32_t)to_ms_since_boot(get_absolute_time());
