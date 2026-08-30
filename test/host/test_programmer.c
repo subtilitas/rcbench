@@ -87,7 +87,7 @@ TEST_CASE(the_protocol_list_is_pressable_before_it_is_painted)
 {
     fresh();
     tap(TILE_CX(0), TILE_CY);
-    tap(ROW_CX, ROW_CY(1));                 /* BLHeli_32, never rendered */
+    tap(ROW_CX, ROW_CY(1));                 /* AM32, never rendered */
     tap(CONNECT_X, CONNECT_Y);
     CHECK(programmer_screen_connected());
     CHECK_EQ(programmer_screen_protocol(), 1);
@@ -106,7 +106,7 @@ TEST_CASE(a_class_shows_only_its_own_protocols)
     CHECK(!programmer_screen_connected());  /* still on the list */
 
     tap(ROW_CX, ROW_CY(0));                 /* Hitec, the only servo one */
-    CHECK_EQ(programmer_screen_protocol(), 5);
+    CHECK_EQ(programmer_screen_protocol(), 4);
 }
 
 /*
@@ -180,7 +180,7 @@ TEST_CASE(each_protocol_starts_from_its_own_defaults)
     CHECK_EQ(programmer_screen_dirty(), 1);
 
     tap(BACK_X, BACK_Y);
-    tap(ROW_CX, ROW_CY(2));                     /* AM32 */
+    tap(ROW_CX, ROW_CY(1));                     /* AM32 */
     tap(CONNECT_X, CONNECT_Y);
     /* AM32's third row starts at 48 kHz on its own account, not because
      * BLHeli_S was left on index one. */
@@ -261,9 +261,11 @@ TEST_CASE(paging_reaches_the_rows_that_do_not_fit)
 /* Every protocol reaches its parameters and draws them. */
 TEST_CASE(every_protocol_draws_its_parameters)
 {
-    const int klass[6] = { 0, 0, 0, 0, 0, 1 };
-    const int slot[6]  = { 0, 1, 2, 3, 4, 0 };
-    for (int p = 0; p < 6; ++p) {
+    /* Four ESC protocols and one servo; BLHeli_32 is deliberately not one
+     * of them -- see docs/BLHeli32.md. */
+    const int klass[] = { 0, 0, 0, 0, 1 };
+    const int slot[]  = { 0, 1, 2, 3, 0 };
+    for (int p = 0; p < (int)(sizeof(klass) / sizeof(klass[0])); ++p) {
         fresh();
         tap(TILE_CX(klass[p]), TILE_CY);
         tap(ROW_CX, ROW_CY(slot[p]));

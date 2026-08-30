@@ -25,6 +25,12 @@
  * they are right rather than only that they agree: a screen with one widget
  * per setting drifts, because the fortieth setting is written by somebody in
  * a hurry.  A screen with three widgets cannot.
+ *
+ * BLHeli_32 is missing from the ESC list on purpose, and not for want of
+ * protocol.  Its settings are a 256-byte XTEA block whose key exists only
+ * inside a closed binary, so the bench can identify and drive one of these
+ * ESCs but cannot honestly name a single setting in it.  docs/BLHeli32.md
+ * carries the whole reasoning.
  */
 
 #include "programmer_screen.h"
@@ -177,34 +183,6 @@ static const param_def_t k_am32[] = {
     NULL, 0, 28, 38, 1, 1, "V", 33 },
 };
 
-static const char *const k_dshot[] = { "OFF", "ON" };
-static const param_def_t k_blheli32[] = {
-  { "MOTOR", "Motor direction", PARAM_ENUM,
-    "Which way it turns, and whether reverse is allowed at all",
-    k_dir, 3, 0,0,0,0, NULL, 0 },
-  { NULL, "Motor timing", PARAM_NUMBER,
-    "Degrees ahead of the rotor: more rpm and more heat, less is cooler",
-    NULL, 0, 0, 31, 1, 0, "deg", 16 },
-  { NULL, "PWM frequency", PARAM_NUMBER,
-    "Higher is quieter and warmer; lower is efficient and audible",
-    NULL, 0, 24, 96, 24, 0, "kHz", 48 },
-  { "STARTUP", "Startup power", PARAM_NUMBER,
-    "How hard it pushes to get moving before it can sense the rotor",
-    NULL, 0, 25, 150, 25, 0, "%", 100 },
-  { NULL, "Demag compensation", PARAM_ENUM,
-    "Backs off when the field collapses late: cures stalls under load",
-    k_demag, 3, 0,0,0,0, NULL, 1 },
-  { "PROTECTION", "Current limit", PARAM_NUMBER,
-    "The most it will draw through the motor, whatever is asked of it",
-    NULL, 0, 0, 200, 10, 0, "A", 0 },
-  { NULL, "Low voltage cut", PARAM_NUMBER,
-    "Per cell, where it starts pulling power back to save the pack",
-    NULL, 0, 28, 38, 1, 1, "V", 32 },
-  { "REPORTING", "Bidirectional DShot", PARAM_BOOL,
-    "Sends rpm back up the signal wire, with no telemetry lead at all",
-    k_dshot, 0, 0,0,0,0, NULL, 1 },
-};
-
 static const param_def_t k_escape32[] = {
   { "MOTOR", "Motor direction", PARAM_ENUM,
     "Which way it turns, and whether reverse is allowed at all",
@@ -274,8 +252,6 @@ static const param_def_t k_hitec[] = {
 static const proto_t k_protos[] = {
     { "BLHeli_S", "one-wire bootloader, 19200 baud",
       "BLHeli_S 16.7  on  EFM8BB21", k_blheli,   8, CLASS_ESC },
-    { "BLHeli_32","one-wire bootloader, 19200 baud",
-      "BLHeli_32 32.9  on  STM32F051", k_blheli32, 8, CLASS_ESC },
     { "AM32",     "one-wire bootloader, 19200 baud",
       "AM32 2.15  on  STM32G071",    k_am32,     7, CLASS_ESC },
     { "ESCape32", "text CLI over the signal line",

@@ -258,7 +258,7 @@ int main(int argc, char **argv)
             /* Slot two is AM32, whose timing is degrees rather than named
              * steps -- the same renderer, a different kind. */
             tap(400, UI_BAND_H + (strcmp(view, "programmer-am32") == 0
-                                  ? 92 + 2 * 68 : 92));
+                                  ? 92 + 1 * 68 : 92));
             if (strcmp(view, "programmer-idle") != 0) {
                 tap(698, UI_BAND_H + 70);       /* CONNECT */
                 if (strcmp(view, "programmer-dirty") == 0) {
