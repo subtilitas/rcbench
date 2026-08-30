@@ -1,5 +1,7 @@
 # Bringing the link up on silicon
 
+<sub>**English** · [Deutsch](Bringup-de.md)</sub>
+
 Both ends are written and tested against each other on the host. What is left
 is running them against each other on a wire, which is the one part no test
 can stand in for.

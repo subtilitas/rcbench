@@ -1,5 +1,7 @@
 # What this is for
 
+<sub>**English** · [Deutsch](Manifest-de.md)</sub>
+
 The bench exists to answer questions about a drive system that you otherwise
 have to answer by guessing, by buying three separate boxes, or by sending the
 motor somewhere. One board, one screen, one card.

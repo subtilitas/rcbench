@@ -1,5 +1,7 @@
 # Why rcbench does not do BLHeli_32 parameters
 
+<sub>**English** · [Deutsch](BLHeli32-de.md)</sub>
+
 BLHeli_32 stores its settings as a 256-byte block at a fixed flash address, and
 that block is XTEA ciphertext — 64-bit block, 128-bit key, with three plaintext
 bytes packed into every four stored bytes.

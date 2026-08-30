@@ -34,7 +34,18 @@ IMG = DOCS / "img"
 
 # Pages that are navigation rather than content, and so are not expected to be
 # linked from the sidebar like the rest.
-SIDEBAR_EXEMPT = {"_Sidebar.md", "Home.md"}
+SIDEBAR_EXEMPT = {"_Sidebar.md", "Home.md", "Home-de.md"}
+
+# The wiki is bilingual: every English page has a German one beside it, named
+# with a -de suffix because a wiki page is addressed by its title and there is
+# no folder to put a language in.  Checked rather than trusted, because a
+# translation that quietly stops existing is worse than one that was never
+# started -- the sidebar still offers it.
+DE_SUFFIX = "-de.md"
+
+
+def english_pages() -> list[pathlib.Path]:
+    return [p for p in pages() if not p.name.endswith(DE_SUFFIX)]
 
 WORDS = {
     "no": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
@@ -126,6 +137,31 @@ def check_links(problems: list[str]) -> None:
         if image.resolve() not in referenced:
             problems.append(
                 f"docs/img/{image.name} is committed but no page shows it")
+
+
+def check_translations(problems: list[str]) -> None:
+    """Every page exists in both languages, and each says so at the top."""
+    for page in english_pages():
+        if page.name == "_Sidebar.md":
+            continue
+        german = DOCS / (page.stem + DE_SUFFIX)
+        if not german.exists():
+            problems.append(f"{page.name} has no {german.name}")
+            continue
+        # The switch is the only way across, so a page without one is a page
+        # the other language cannot be reached from.
+        if f"]({german.name})" not in read(page):
+            problems.append(f"{page.name} does not link {german.name}")
+        if f"]({page.name})" not in read(german):
+            problems.append(f"{german.name} does not link {page.name}")
+
+    for page in pages():
+        if not page.name.endswith(DE_SUFFIX):
+            continue
+        english = DOCS / (page.name[:-len(DE_SUFFIX)] + ".md")
+        if not english.exists():
+            problems.append(f"{page.name} translates {english.name}, "
+                            "which does not exist")
 
 
 def check_sidebar(problems: list[str]) -> None:
@@ -251,6 +287,7 @@ def main() -> int:
     check_links(problems)
     check_anchors(problems)
     check_sidebar(problems)
+    check_translations(problems)
     check_suites(problems)
     check_option_lists(problems)
     check_shared_modules(problems)

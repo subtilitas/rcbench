@@ -1,5 +1,7 @@
 # rcbench
 
+<sub>**English** · [Deutsch](Home-de.md)</sub>
+
 <sub>These pages are generated from `docs/` in the repository and are
 overwritten on every push to `main` — edit the files, not the wiki.</sub>
 
@@ -26,3 +28,10 @@ subsystem that is not here yet.
 | [Safety](Safety.md) | The heartbeat, and the three independent ways this bench stops |
 | [Performance](Performance.md) | Why the frame rate is what it is, and the two findings that shape every screen |
 | [Building](Building.md) | The tree, the three toolchains, and what CI checks |
+| [Bringing up the link](Bringup.md) | Wiring the two boards together and proving the wire before blaming the code |
+| [Servo procedures](Servo.md) | Finding an installed limit by current, and synchronising two servos on one surface |
+| [Receiver buses](Receivers.md) | S.BUS, iBUS, SUMD, CRSF, SRXL2 and JETI EX Bus, and what each costs to decode |
+| [The OpenYGE protocol](OpenYGE.md) | The ESC telemetry protocol, specified from the wire up |
+| [BLHeli_32 parameters](BLHeli32.md) | Why this bench identifies and drives them but will not name a setting |
+
+Every page is also in German — the switch is at the top of each one.
