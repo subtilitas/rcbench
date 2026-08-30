@@ -83,6 +83,7 @@ SCREENS = {
     "setup-light":("setup-light.png","setup",      "light"),
     "battery":    ("battery.png",    "battery",    "dark"),
     "balance":    ("balance.png",    "balance",    "dark"),
+    "balance-aircraft": ("balance-aircraft.png", "balance", "dark"),
     "programmer": ("programmer.png", "programmer", "dark"),
 }
 INCLUDES = [

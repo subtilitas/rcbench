@@ -254,7 +254,24 @@ is mass, on the one part of the machine whose mass is the thing being
 measured -- you would be balancing out your own marker.
 
 The rig is the easy case, because the placement is under your control. On an
-aircraft it is not, and that pane is next.
+aircraft almost none of it is:
+
+![Where the sensors go on an aircraft](img/balance-aircraft.png)
+
+The **cowl is not the firewall**. It is a fairing, screwed to a former and
+often on rubber, free to move relative to the thing whose vibration you want.
+The firewall is the one rigid face at that end of the model, and the
+accelerometer goes flat against it -- which is worth saying, because a
+three-axis part mounted flat puts two of its axes in the firewall's plane,
+across the shaft. Use one of those and ignore the third.
+
+The index mark is the one thing that relaxes. With a cowl on there is nothing
+to look at but the spinner, and the spinner will do: an index only has to give
+one pulse a turn at a steady phase, and unlike the accelerometer it does not
+care how rigidly it is held.
+
+And the whole aeroplane has to be tied down. A machine free to rock is a spring
+nobody chose, in series with everything you are trying to measure.
 
 Two things about the delay, since the choice of sensor turns on it. Without an
 index pulse there is no phase reference at all, so balancing is the four-run

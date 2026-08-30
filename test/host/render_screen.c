@@ -270,6 +270,12 @@ int main(int argc, char **argv)
         }
     }
 
+    if (id == SCREEN_BALANCE
+        && strcmp(view, "balance-aircraft") == 0) {
+        ui_router_goto(SCREEN_BALANCE);
+        tap(200, UI_BAND_H + 22);           /* the AIRCRAFT tab */
+    }
+
     if (id == SCREEN_ANALYSER) {
         /*
          * Fed through the real decoder frame by frame, with the channels

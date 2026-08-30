@@ -194,24 +194,122 @@ static void draw_rig(gfx_canvas_t *c)
     callout(c, mark_x, 308, 196, 332, "OPTICAL", warn);
 }
 
+/*
+ * The same two sensors on a complete aircraft, where almost nothing is
+ * chosen: the rigid faces are wherever the designer put them, the cowl is in
+ * the way, and the whole machine is free to rock unless you stop it.
+ */
+/*
+ * The same two sensors on a complete aircraft, where almost nothing is
+ * chosen: the rigid faces are wherever the designer put them, the cowl is in
+ * the way, and the whole machine is free to rock unless you stop it.
+ */
 static void draw_aircraft(gfx_canvas_t *c)
 {
-    gfx_text_in(c, (gfx_rect_t){ PAD, (int16_t)(BODY_Y + 120),
-                                 LCARD_W, 16 },
-                "not drawn yet", UI_FONT_HEAD,
-                ui_theme_color(UI_C_TEXT_FAINT), 1, GFX_ALIGN_CENTER);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(PAD + 40),
-                                 (int16_t)(BODY_Y + 156),
-                                 (int16_t)(LCARD_W - 80), 16 },
-                "a firewall has one rigid face and the",
-                UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1,
-                GFX_ALIGN_CENTER);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(PAD + 40),
-                                 (int16_t)(BODY_Y + 176),
-                                 (int16_t)(LCARD_W - 80), 16 },
-                "cowl is not it",
-                UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1,
-                GFX_ALIGN_CENTER);
+    const gfx_color_t skin  = ui_theme_color(UI_C_PANEL_HI);
+    const gfx_color_t edge  = ui_theme_color(UI_C_EDGE);
+    const gfx_color_t ink   = ui_theme_color(UI_C_ACCENT);
+    const gfx_color_t warn  = ui_theme_color(UI_C_WARN);
+    const gfx_color_t faint = ui_theme_color(UI_C_TEXT_FAINT);
+
+    const int ground = 372;
+    const int axis   = 214;              /* the thrust line          */
+    const int fw     = 268;              /* the firewall             */
+    const int prop   = 388;              /* the disc, edge on        */
+
+    gfx_hline(c, 24, ground, 452, faint);
+    for (int x = 28; x < 476; x += 16) {
+        gfx_capsule_aa(c, x, ground + 2, x - 6, ground + 10, 1, faint);
+    }
+
+    /*
+     * The fuselage: a deep nose and a boom that tapers away from it, rather
+     * than one box.  It only has to be recognisable as an aeroplane -- the
+     * subject is where two sensors go, not the model.
+     */
+    gfx_fill_round_rect(c, 28, axis - 16, 120, 34, 12, skin);
+    gfx_draw_round_rect(c, 28, axis - 16, 120, 34, 12, edge);
+    gfx_fill_round_rect(c, 100, axis - 32, fw - 100, 64, 16, skin);
+    gfx_draw_round_rect(c, 100, axis - 32, fw - 100, 64, 16, edge);
+
+    /* Wing at the root, tailplane and fin at the back. */
+    gfx_fill_round_rect(c, 120, axis + 24, 130, 12, 5,
+                        ui_theme_color(UI_C_PANEL));
+    gfx_draw_round_rect(c, 120, axis + 24, 130, 12, 5, edge);
+    gfx_fill_round_rect(c, 24, axis - 4, 56, 10, 4,
+                        ui_theme_color(UI_C_PANEL));
+    gfx_draw_round_rect(c, 24, axis - 4, 56, 10, 4, edge);
+    gfx_capsule_aa(c, 34, axis - 14, 50, axis - 58, 13, skin);
+
+    /*
+     * The cowl, drawn as the separate piece it is.  It is a fairing: screwed
+     * to a former, often on rubber, and free to move relative to the thing
+     * whose vibration you want.
+     */
+    gfx_fill_round_rect(c, fw, axis - 36, 96, 72, 12,
+                        ui_theme_color(UI_C_PANEL));
+    gfx_draw_round_rect(c, fw, axis - 36, 96, 72, 12, edge);
+    gfx_fill_round_rect(c, fw + 20, axis - 20, 22, 16, 3,
+                        ui_theme_color(UI_C_BG));
+
+    /* The firewall behind it: the one rigid face at this end of the model. */
+    for (int y = axis - 32; y < axis + 32; y += 8) {
+        gfx_vline(c, fw, y, 5, ink);
+    }
+    /* The motor inside, shown faintly because you cannot get at it. */
+    gfx_fill_round_rect(c, fw + 16, axis - 17, 50, 34, 6,
+                        gfx_lerp(ui_theme_color(UI_C_PANEL), skin, 90));
+
+    /* Spinner and disc, clear of the cowl. */
+    gfx_capsule_aa(c, fw + 96, axis, prop - 8, axis, 10, skin);
+    gfx_capsule_aa(c, prop, axis - 12, prop, axis - 86, 12, skin);
+    gfx_capsule_aa(c, prop, axis + 12, prop, axis + 86, 12, skin);
+    gfx_fill_circle_aa(c, prop, axis, 16, skin);
+    gfx_fill_circle_aa(c, prop, axis, 5, ui_theme_color(UI_C_PANEL));
+
+    /*
+     * The accelerometer on the firewall, flat.
+     *
+     * Flat is fine and worth saying: the chip has three axes, and mounting it
+     * against the firewall puts two of them in the firewall's plane, which is
+     * across the shaft.  Use one of those and ignore the third.
+     */
+    gfx_fill_round_rect(c, fw - 34, axis - 44, 32, 20, 3, ink);
+    gfx_draw_round_rect(c, fw - 34, axis - 44, 32, 20, 3, edge);
+    const int ax = fw - 18;
+    gfx_capsule_aa(c, ax, axis - 76, ax, axis - 50, 3, ink);
+    gfx_capsule_aa(c, ax - 7, axis - 69, ax, axis - 78, 3, ink);
+    gfx_capsule_aa(c, ax + 7, axis - 69, ax, axis - 78, 3, ink);
+
+    /*
+     * The mark and its sensor.  With a cowl on there is nothing else to look
+     * at, and the spinner will do: an index only has to give one pulse a turn
+     * at a steady phase, and unlike the accelerometer it does not care how
+     * rigidly it is held.
+     */
+    gfx_fill_round_rect(c, prop + 8, axis - 5, 10, 10, 2,
+                        ui_theme_color(UI_C_BG));
+    gfx_draw_round_rect(c, prop + 8, axis - 5, 10, 10, 2, warn);
+    gfx_fill_round_rect(c, 424, 250, 30, 24, 3, warn);
+    gfx_draw_round_rect(c, 424, 250, 30, 24, 3, edge);
+    gfx_capsule_aa(c, 439, 274, 439, ground, 4, faint);
+    for (int i = 0; i < 4; ++i) {
+        const float t = (float)i / 4.0f;
+        gfx_fill_circle_aa(c, 424 - (int)(16.0f * t),
+                           248 - (int)(26.0f * t), 2, warn);
+    }
+
+    /* Tied down at the tail, because a machine free to rock is a spring
+     * nobody chose. */
+    gfx_capsule_aa(c, 60, axis + 16, 52, ground, 3, warn);
+    gfx_capsule_aa(c, 42, ground - 4, 62, ground - 4, 6, warn);
+
+    callout(c, ax, axis - 34, 24, 62, "ACCELEROMETER", ink);
+    callout(c, fw, axis + 18, 150, 322, "FIREWALL", ink);
+    /* Out to the right of the disc: any leader that leaves the mark upward
+     * runs the length of a blade. */
+    callout(c, prop + 13, axis, 418, 148, "ONE MARK", warn);
+    callout(c, 52, ground - 12, 132, 288, "TIED DOWN", warn);
 }
 
 /* The rules, numbered, because each one is a way of getting it wrong. */
@@ -240,26 +338,50 @@ static const rule_t k_rig_rules[] = {
 };
 #define RIG_RULES ((int)(sizeof(k_rig_rules) / sizeof(k_rig_rules[0])))
 
-static void draw_rules(gfx_canvas_t *c)
+#define AIR_RULES 6
+static const rule_t k_air_rules[] = {
+    { "THE FIREWALL, NOT THE COWL",
+      "A cowl is a fairing. It moves",
+      "relative to everything." },
+    { "FLAT IS FINE",
+      "Mount it flat and use an axis",
+      "in the firewall's plane." },
+    { "NEAR THE BOLTS",
+      "Same rule as a rig: joints",
+      "between it and the bearing." },
+    { "THE MARK CAN MOVE",
+      "An index only needs one pulse",
+      "a turn, at a steady phase." },
+    { "TIE THE TAIL DOWN",
+      "An aircraft free to rock is",
+      "a spring you did not want." },
+    { "LEAD OUT OF THE WASH",
+      "And secured. A flapping lead",
+      "is a second accelerometer." },
+};
+
+static void draw_rules(gfx_canvas_t *c, const rule_t *rules, int count)
 {
     const int x = RCARD_X + 14;
     gfx_text(c, x, BODY_Y + 12, "GETTING IT WRONG", UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
 
-    for (int i = 0; i < RIG_RULES; ++i) {
+    for (int i = 0; i < count; ++i) {
         const int y = BODY_Y + 32 + i * 58;
-        char n[8];
-        snprintf(n, sizeof(n), "%d", i + 1);
+        /* Bounded so the compiler can see it: count is small, but the
+         * format is not told so. */
+        char n[16];
+        snprintf(n, sizeof(n), "%d", (i + 1) & 0xFF);
         gfx_fill_round_rect(c, x, y - 2, 20, 20, 4,
                             ui_theme_color(UI_C_PANEL_HI));
         gfx_text_in(c, (gfx_rect_t){ (int16_t)x, (int16_t)(y + 1), 20, 16 },
                     n, UI_FONT_LABEL, ui_theme_color(UI_C_ACCENT), 1,
                     GFX_ALIGN_CENTER);
-        gfx_text(c, x + 28, y, k_rig_rules[i].head, UI_FONT_LABEL,
+        gfx_text(c, x + 28, y, rules[i].head, UI_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT), 1);
-        gfx_text(c, x + 28, y + 20, k_rig_rules[i].line1, UI_FONT_LABEL,
+        gfx_text(c, x + 28, y + 20, rules[i].line1, UI_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
-        gfx_text(c, x + 28, y + 36, k_rig_rules[i].line2, UI_FONT_LABEL,
+        gfx_text(c, x + 28, y + 36, rules[i].line2, UI_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
     }
 }
@@ -289,10 +411,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
     if (s.tabs.selected == BALANCE_PANE_RIG) {
         draw_rig(c);
-        draw_rules(c);
+        draw_rules(c, k_rig_rules, RIG_RULES);
     } else {
         draw_aircraft(c);
-        draw_rules(c);
+        draw_rules(c, k_air_rules, AIR_RULES);
     }
 }
 
