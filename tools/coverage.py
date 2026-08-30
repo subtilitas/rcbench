@@ -82,7 +82,8 @@ TRACKED = [
     "shared/link/link_servo.c",
     "shared/link/link_host.c",
     "shared/bench/bench_state.c",
-    "shared/bench/throttle.c",
+    "shared/outputs/outputs.c",
+    "shared/outputs/outputs_pages.c",
     "shared/bench/telemetry_sim.c",
     "shared/bench/log_writer.c",
 ]
