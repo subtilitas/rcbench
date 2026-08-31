@@ -483,17 +483,12 @@ nobody reopens it by accident.
   configuration is "available only for the products of JETI model" and that its
   description is not part of the document. What EX Bus delivers is channel
   values and telemetry.
-- **BLHeli_32 parameters.** Not for want of protocol: the bootloader, the
-  4-way framing, both CRCs and the signature table are all ordinary and all
-  implemented, and the bench can connect to one of these ESCs, identify it and
-  read its 256-byte settings block. That block is XTEA ciphertext, and the key
-  exists in exactly one place — inside a closed, unlicensed binary from a
-  project whose author has stopped publishing. The blocker is not effort; it is
-  a key we would have to take rather than be given — **and we asked for it in
-  August 2026 and were declined**, so this is settled rather than pending.
-  Identification, direction,
-  3D mode, beacon and telemetry all work regardless, because those are DShot
-  special commands on the signal wire. [The full reasoning](docs/BLHeli32.md).
+- **BLHeli_32 parameters.** The bench identifies and drives these ESCs, and
+  direction, 3D mode, beacon, save-settings and telemetry all work. The
+  parameter list does not: those settings are stored in a form the bench cannot
+  read, and the information needed to read them is not published. We asked the
+  rights holder in August 2026 and were declined, so this is settled rather
+  than pending. [The details](docs/BLHeli32.md).
 - **Futaba's S.BUS2 telemetry slots** — answering in the right 325 µs window
   without colliding with the customer's real sensors is the hardest job in the
   survey.

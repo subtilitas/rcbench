@@ -1,71 +1,35 @@
-# Warum rcbench keine BLHeli_32-Parameter macht
+# BLHeli_32-Parameter
 
 <sub>[English](BLHeli32.md) · **Deutsch**</sub>
 
-BLHeli_32 legt seine Einstellungen als 256-Byte-Block an einer festen
-Flash-Adresse ab, und dieser Block ist XTEA-Chiffrat — 64-Bit-Block,
-128-Bit-Key, mit drei Klartext-Bytes in je vier gespeicherten Bytes.
+Warum BLHeli_32 nicht in der ESC-Liste des Programmierers steht, und was der
+Prüfstand mit so einem Regler stattdessen macht.
 
-Alles darum herum ist gewöhnliches Protokoll und vollständig nach der
-Spezifikation umgesetzt: der Bootloader auf der Signalleitung, das Framing des
-4-Way Interface, MSP Passthrough, beide CRCs, die MCU-Signaturtabelle. Wir
-können uns mit einem BLHeli_32-Regler verbinden, ihn identifizieren und seine
-256 Bytes lesen.
+## Was funktioniert
 
-**Wir können nicht sagen, was auch nur eines davon bedeutet.**
+Ein BLHeli_32-Regler ist an diesem Prüfstand ein erkannter, ansteuerbarer,
+messbarer Regler:
 
-## Der Key
+- er wird **erkannt** — der Prüfstand nennt MCU und Bootloader-Revision;
+- **Drehrichtung, Drehrichtungsumkehr, 3D-Modus, Beacon und Save-Settings**
+  funktionieren, denn das sind DShot Special Commands auf der Signalleitung;
+- die **Telemetrie** ist nicht betroffen.
 
-Der Key existiert an genau einer Stelle: in BLHeliSuite32, einer
-Closed-Source-Binary ohne Lizenz, aus einem Projekt, dessen Autor nicht mehr
-veröffentlicht und dessen Update-Server verschwunden sind. Es gibt keine Lizenz
-zu erwerben, keinen Hersteller zu fragen und keine zweite Quelle.
+## Was nicht funktioniert
 
-Ihn aus der Binary zu ziehen und mitzuliefern kann keine technische
-Entscheidung legal machen: es wäre das Umgehen einer Schutzmaßnahme an einem
-kommerziellen Produkt — in einem Repository, das unter MIT steht und der
-festen Regel folgt, dass jedes Protokoll hier nach einer Spezifikation
-geschrieben wird, nicht nach fremdem Code.
+Die Parameterliste — Timing, PWM-Frequenz, Anlaufleistung, Strombegrenzung und
+der Rest. Diese Einstellungen liegen in einer Form vor, die dieser Prüfstand
+nicht lesen kann, und die dafür nötigen Informationen sind nicht
+veröffentlicht.
 
-Am Aufwand scheitert es also nicht, und daran hat es nie gelegen. Mit der
-fertigen BLHeli_S-Umsetzung kostet der Weg zum BLHeli_32-Bootloader eine
-CRC-Routine und eine Kommandotabelle. Was fehlt, ist ein Schlüssel, den man
-sich nehmen müsste, statt ihn zu bekommen.
+## Wir haben gefragt
 
-## Was wir stattdessen tun
+Im August 2026 wurde der Rechteinhaber gefragt, ob dieses Projekt bekommen
+kann, was es zum Lesen und Schreiben braucht. **Er hat abgelehnt** — damit ist
+die Frage entschieden und nicht offen, und sie steht hier, damit niemand einen
+Abend damit verbringt, sie neu aufzumachen.
 
-Die Identifikation braucht von alledem nichts — der Prüfstand nennt MCU und
-Bootloader-Revision des Reglers anhand der vier Bytes, die
-`cmd_DeviceInitFlash` zurückgibt.
+## Was stattdessen geht
 
-Drehrichtung, Drehrichtungsumkehr, 3D-Modus, Beacon und Save-Settings sind
-DShot Special Commands auf der Signalleitung — offen, standardisiert, und sie
-decken das meiste ab, was man an einem Prüfstand ändert. Die Telemetrie ist
-ohnehin nicht betroffen.
-
-Ein BLHeli_32-Regler ist an diesem Prüfstand also ein erkannter,
-ansteuerbarer, messbarer Regler — mit einer kurzen Parameterliste und einem
-ehrlichen Grund dafür.
-
-## Wir haben gefragt, und die Antwort war nein
-
-Im August 2026 wurde der Rechteinhaber direkt gefragt: ob er diesem Projekt
-erlauben würde, das Nötige zum Lesen und Schreiben dieser Einstellungen
-aufzunehmen — den Schlüssel, oder gleichwertig eine Beschreibung des
-Blockaufbaus, zu Bedingungen seiner Wahl. **Er hat abgelehnt.**
-
-Das ist eine klare Antwort, und damit ist die Frage entschieden. Sie steht hier,
-damit die Tür nicht jedes Mal neu aufgemacht wird, wenn jemandem auffällt, wie
-nah der Rest des Protokolls schon ist: der Grund, warum das fehlt, ist nicht,
-dass niemand gefragt hätte.
-
-## Was das ändern würde
-
-Nur noch eines, und das liegt nicht bei uns:
-
-- **Ein Sinneswandel des Rechteinhabers**, und den kann nur er selbst haben.
-
-Was dagegen in deiner Hand liegt:
-
-- **Ein auf AM32 geflashter Regler.** AM32 ist offen, dieser Prüfstand
-  programmiert ihn vollständig, und damit erledigt sich das ganze Problem.
+Ein auf **AM32** geflashter Regler ist offen, und dieser Prüfstand programmiert
+ihn vollständig.

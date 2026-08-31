@@ -26,11 +26,11 @@
  * per setting drifts, because the fortieth setting is written by somebody in
  * a hurry.  A screen with three widgets cannot.
  *
- * BLHeli_32 is missing from the ESC list on purpose, and not for want of
- * protocol.  Its settings are a 256-byte XTEA block whose key exists only
- * inside a closed binary, so the bench can identify and drive one of these
- * ESCs but cannot honestly name a single setting in it.  docs/BLHeli32.md
- * carries the whole reasoning.
+ * BLHeli_32 is missing from the ESC list on purpose.  The bench identifies and
+ * drives one of these ESCs, and direction, 3D mode, beacon and save-settings
+ * work as DShot special commands -- but its parameters are stored in a form
+ * this bench cannot read, and we were declined the information that would let
+ * it.  docs/BLHeli32.md has the detail.
  *
  * SPDX-License-Identifier: MIT
  */

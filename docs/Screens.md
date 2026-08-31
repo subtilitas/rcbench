@@ -109,10 +109,11 @@ there is no autodetect:
 
 ![The protocols of a class](img/programmer-protocols.png)
 
-**BLHeli_32 is not in the ESC list.** Its settings are encrypted and the key
-is not public, so the bench identifies and drives these ESCs — direction, 3D
-mode, beacon and save-settings work as DShot special commands — but cannot
-name a parameter. [The full answer](BLHeli32.md).
+**BLHeli_32 is not in the ESC list.** The bench identifies and drives these
+ESCs — direction, 3D mode, beacon and save-settings work as DShot special
+commands — but cannot show their parameters, because the information needed to
+read them is not published and we were declined it.
+[The details](BLHeli32.md).
 
 Until a device answers, nothing is editable:
 
