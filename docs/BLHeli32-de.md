@@ -47,9 +47,25 @@ Ein BLHeli_32-Regler ist an diesem Prüfstand also ein erkannter,
 ansteuerbarer, messbarer Regler — mit einer kurzen Parameterliste und einem
 ehrlichen Grund dafür.
 
+## Wir haben gefragt, und die Antwort war nein
+
+Im August 2026 wurde der Rechteinhaber direkt gefragt: ob er diesem Projekt
+erlauben würde, das Nötige zum Lesen und Schreiben dieser Einstellungen
+aufzunehmen — den Schlüssel, oder gleichwertig eine Beschreibung des
+Blockaufbaus, zu Bedingungen seiner Wahl. **Er hat abgelehnt.**
+
+Das ist eine klare Antwort, und damit ist die Frage entschieden. Sie steht hier,
+damit die Tür nicht jedes Mal neu aufgemacht wird, wenn jemandem auffällt, wie
+nah der Rest des Protokolls schon ist: der Grund, warum das fehlt, ist nicht,
+dass niemand gefragt hätte.
+
 ## Was das ändern würde
 
-- Ein veröffentlichter Key oder eine Spezifikation vom Autor.
-- Eine Lizenz von dem, der die Rechte inzwischen hält.
-- Ein Regler, der auf **AM32** geflasht ist — offen, und von diesem Prüfstand
-  vollständig programmierbar.
+Nur noch eines, und das liegt nicht bei uns:
+
+- **Ein Sinneswandel des Rechteinhabers**, und den kann nur er selbst haben.
+
+Was dagegen in deiner Hand liegt:
+
+- **Ein auf AM32 geflashter Regler.** AM32 ist offen, dieser Prüfstand
+  programmiert ihn vollständig, und damit erledigt sich das ganze Problem.

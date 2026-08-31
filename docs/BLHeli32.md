@@ -42,9 +42,24 @@ what a user changes at a bench. Telemetry is unaffected.
 A BLHeli_32 ESC on this bench is a recognised, drivable, measurable ESC with a
 short parameter list and an honest reason for it.
 
+## We asked, and the answer was no
+
+In August 2026 the rights holder was asked directly: would he allow this
+project to include what reading and writing those settings needs — the key, or
+equivalently a description of the block's layout — on whatever terms he wanted
+to set. **He declined.**
+
+That is a clear answer and it settles the question. It is recorded here so the
+door is not reopened every time somebody notices how close the rest of the
+protocol already is: the reason this is missing is not that nobody has asked.
+
 ## What would change this
 
-- A published key or specification from the author.
-- A licence from whoever holds the rights now.
-- An ESC reflashed to **AM32**, which is open and which this bench will
-  programme fully.
+Only one thing now, and it is not ours:
+
+- **A change of mind from the rights holder**, which is his alone to make.
+
+What is in your hands instead:
+
+- **An ESC reflashed to AM32.** It is open, this bench programmes it fully, and
+  it turns the whole problem into a non-problem.

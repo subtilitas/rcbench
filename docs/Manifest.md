@@ -43,7 +43,8 @@ Three doors are closed, and knowing that saves you watching them:
   telemetry — programming a device through it is not coming.
 - **BLHeli_32 parameters.** The bench identifies and drives these ESCs, and
   direction, 3D mode, beacon and save-settings work; the parameter table does
-  not, and the reason is a key, not effort — [the full answer](BLHeli32.md).
+  not. The reason is a key rather than effort, it was asked for, and the answer
+  was no — [the full answer](BLHeli32.md).
 - **Servo programming for KST** is held at the owner's request.
 
 And one rule that shapes what arrives: every protocol here is written from its
