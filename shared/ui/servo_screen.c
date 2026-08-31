@@ -35,6 +35,8 @@
  * to rotate about a point in mid air.
  */
 #define SHAFT_X 300
+/* Integer division on purpose: this is a pixel row, and H is even. */
+/* NOLINTNEXTLINE(bugprone-integer-division) */
 #define SHAFT_Y ((H) / 2)          /* centred in the card, not under it */
 #define ARC_R   140
 #define HORN_L  92

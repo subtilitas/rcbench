@@ -30,7 +30,10 @@ void servo_sim_init(servo_sim_t *s, const servo_sim_cfg_t *cfg)
     memset(s, 0, sizeof(*s));
     s->cfg  = *cfg;
     s->seed = 0x5A17C0DEu;
-    s->position_us = (float)((cfg->stop_lo_us + cfg->stop_hi_us) / 2u);
+    /* Averaged in float: an odd sum of the two stops loses half a
+     * microsecond to integer division, and the midpoint is the one position
+     * this model starts from. */
+    s->position_us = ((float)cfg->stop_lo_us + (float)cfg->stop_hi_us) / 2.0f;
 }
 
 /* Deterministic, so a failing case is a failing case again next time. */

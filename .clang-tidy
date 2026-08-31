@@ -21,6 +21,16 @@
 #   cert-err33-c                     snprintf's return is ignored on purpose
 #                                    where the buffer is sized by construction
 #   *-avoid-magic-numbers            same as above
+#   clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
+#                                    it wants snprintf_s, a C11 Annex K
+#                                    function neither glibc nor newlib
+#                                    implements.  snprintf with a size *is*
+#                                    the bounded call; this fired 189 times
+#                                    and would have buried the 20 findings
+#                                    that were worth reading
+#   clang-analyzer-optin.performance.Padding
+#                                    struct field order for padding is a
+#                                    micro-optimisation, not a defect
 Checks: >
   -*,
   bugprone-*,
@@ -40,7 +50,9 @@ Checks: >
   -misc-include-cleaner,
   -cert-err33-c,
   -*-avoid-magic-numbers,
-  -readability-function-cognitive-complexity
+  -readability-function-cognitive-complexity,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  -clang-analyzer-optin.performance.Padding
 
 WarningsAsErrors: '*'
 HeaderFilterRegex: 'shared/.*\.h$'

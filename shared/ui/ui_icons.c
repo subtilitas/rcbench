@@ -64,7 +64,10 @@ void ui_icon_servo(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
     gfx_fill_circle(c, cx + size / 4, sy - size / 4, size / 14, color);
 
     int ar = size / 2 - 3;
-    for (float a = -2.62f; a < -0.52f; a += 0.10f) {
+    /* Stepped by index rather than by accumulating a float, so the last dot
+     * lands where the arithmetic says and not where the rounding drifted to. */
+    for (int i = 0; i < 21; ++i) {
+        const float a = -2.62f + 0.10f * (float)i;
         int ax = cx + (int)(cosf(a) * (float)ar);
         int ay = sy + (int)(sinf(a) * (float)ar);
         gfx_fill_circle(c, ax, ay, 1, color);

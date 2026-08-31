@@ -301,7 +301,12 @@ static void event(const touch_event_t *evt)
             break;
         }
         if (kind == HIT_CAT && gfx_rect_contains(cat_rect(index), x, y)) {
+            /* HIT_CAT is only ever produced for a category index, and
+             * cat_rect() would not have matched otherwise; the analyser cannot
+             * see that the two are the same enumeration. */
+            /* NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange) */
             if (s.cat != (setting_cat_t)index) {
+                /* NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange) */
                 s.cat = (setting_cat_t)index;
                 s.scroll = 0;
                 clamp_scroll();

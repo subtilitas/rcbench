@@ -37,6 +37,10 @@ static inline void fill_span(gfx_color_t *p, int n, gfx_color_t color)
             return;
         }
     }
+    /* Deliberate: two 16-bit pixels written as one 32-bit store, which is
+     * what makes a fill worth having on a bandwidth-bound panel.  gfx_u32_alias
+     * is declared may_alias for exactly this. */
+    /* NOLINTNEXTLINE(bugprone-casting-through-void) */
     gfx_u32_alias *q = (gfx_u32_alias *)(void *)p;
     uint32_t pair = ((uint32_t)color << 16) | (uint32_t)color;
     int words = n >> 1;
@@ -117,7 +121,7 @@ bool gfx_canvas_sub(const gfx_canvas_t *src, gfx_rect_t window, gfx_canvas_t *ou
         gfx_canvas_init(out, src->pixels, 0, 0, src->stride);
         return false;
     }
-    out->pixels = src->pixels + (int32_t)r.y * src->stride + r.x;
+    out->pixels = src->pixels + (ptrdiff_t)r.y * src->stride + r.x;
     out->width = r.w;
     out->height = r.h;
     out->stride = src->stride;
@@ -160,7 +164,7 @@ void gfx_pixel(gfx_canvas_t *c, int x, int y, gfx_color_t color)
     if (!canvas_ok(c) || !gfx_rect_contains(c->clip, x, y)) {
         return;
     }
-    c->pixels[(int32_t)y * c->stride + x] = color;
+    c->pixels[(ptrdiff_t)y * c->stride + x] = color;
 }
 
 gfx_color_t gfx_pixel_get(const gfx_canvas_t *c, int x, int y)
@@ -168,7 +172,7 @@ gfx_color_t gfx_pixel_get(const gfx_canvas_t *c, int x, int y)
     if (!c || !c->pixels || x < 0 || y < 0 || x >= c->width || y >= c->height) {
         return 0;
     }
-    return c->pixels[(int32_t)y * c->stride + x];
+    return c->pixels[(ptrdiff_t)y * c->stride + x];
 }
 
 void gfx_fill_rect(gfx_canvas_t *c, int x, int y, int w, int h, gfx_color_t color)
@@ -184,13 +188,13 @@ void gfx_fill_rect(gfx_canvas_t *c, int x, int y, int w, int h, gfx_color_t colo
      * which is worth a lot more than it looks: it is the difference between
      * one long burst and h separate ones. */
     if (r.w == c->stride && r.x == 0) {
-        fill_span(c->pixels + (int32_t)r.y * c->stride, (int)((int32_t)r.h * c->stride),
+        fill_span(c->pixels + (ptrdiff_t)r.y * c->stride, (int)((ptrdiff_t)r.h * c->stride),
                   color);
         return;
     }
 
     for (int row = 0; row < r.h; ++row) {
-        fill_span(c->pixels + (int32_t)(r.y + row) * c->stride + r.x, r.w, color);
+        fill_span(c->pixels + (ptrdiff_t)(r.y + row) * c->stride + r.x, r.w, color);
     }
 }
 
@@ -638,8 +642,8 @@ void gfx_blit(gfx_canvas_t *c, int x, int y, const gfx_color_t *src,
     int sx = r.x - x;
     int sy = r.y - y;
     for (int row = 0; row < r.h; ++row) {
-        const gfx_color_t *s = src + (int32_t)(sy + row) * src_stride + sx;
-        gfx_color_t *d = c->pixels + (int32_t)(r.y + row) * c->stride + r.x;
+        const gfx_color_t *s = src + (ptrdiff_t)(sy + row) * src_stride + sx;
+        gfx_color_t *d = c->pixels + (ptrdiff_t)(r.y + row) * c->stride + r.x;
         memcpy(d, s, (size_t)r.w * sizeof(gfx_color_t));
     }
 }
@@ -660,8 +664,8 @@ void gfx_blit_key(gfx_canvas_t *c, int x, int y, const gfx_color_t *src,
     int sx = r.x - x;
     int sy = r.y - y;
     for (int row = 0; row < r.h; ++row) {
-        const gfx_color_t *s = src + (int32_t)(sy + row) * src_stride + sx;
-        gfx_color_t *d = c->pixels + (int32_t)(r.y + row) * c->stride + r.x;
+        const gfx_color_t *s = src + (ptrdiff_t)(sy + row) * src_stride + sx;
+        gfx_color_t *d = c->pixels + (ptrdiff_t)(r.y + row) * c->stride + r.x;
         for (int col = 0; col < r.w; ++col) {
             if (s[col] != key) {
                 d[col] = s[col];

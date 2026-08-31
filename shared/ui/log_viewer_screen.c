@@ -198,6 +198,9 @@ static void set_message(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
+    /* The analyser cannot follow va_start through this wrapper and reports the
+     * list as uninitialised; it is initialised on the line above. */
+    /* NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized) */
     vsnprintf(s.message, sizeof(s.message), fmt, ap);
     va_end(ap);
 }
