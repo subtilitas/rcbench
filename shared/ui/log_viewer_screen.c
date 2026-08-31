@@ -198,6 +198,9 @@ static void set_message(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
+    /* The analyser cannot follow va_start through this wrapper and reports the
+     * list as uninitialised; it is initialised on the line above. */
+    /* NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized) */
     vsnprintf(s.message, sizeof(s.message), fmt, ap);
     va_end(ap);
 }
@@ -566,6 +569,9 @@ static void render_import(gfx_canvas_t *c)
         } rows[6];
         int n = 0;
 
+        /* cppcheck-suppress legacyUninitvar
+         * snprintf writes rows[n].value, it does not read it; the array is
+         * filled here and every field set before it is drawn. */
         snprintf(rows[n].value, sizeof(rows[n].value), "%s",
                  log_csv_delimiter_label(s.an.delimiter));
         rows[n].key = "SEPARATOR";

@@ -154,7 +154,8 @@ def doc_rows(block: str) -> dict[str, int]:
 def doc_block(lines: list[str]) -> str:
     """The fenced block docs/Performance.md shows, exactly as printed."""
     body = "\n".join(lines)
-    return f"{DOC_START}\n```\n$ python3 tools/frame_cost.py\n{body}\n```\n{DOC_END}"
+    return (f"{DOC_START}\n```\n$ python3 tools/frame_cost.py\n"
+            f"{body}\n```\n{DOC_END}")
 
 
 def splice_docs(block: str, write: bool) -> int:

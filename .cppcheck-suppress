@@ -1,0 +1,11 @@
+# cppcheck suppressions, each with the reason it is not a bug here.
+
+# The public API is written for a bench that is still being built: functions
+# land with their tests before the screen that calls them exists.  An unused
+# public function is a to-do, not a defect, and STATUS.md tracks those.
+unusedFunction
+
+# cppcheck cannot see the three build systems, so every header looks like it
+# has an unused include from the one translation unit it is scanning.
+missingIncludeSystem
+unmatchedSuppression

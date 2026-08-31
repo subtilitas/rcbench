@@ -38,7 +38,7 @@ void outputs_chan_cfg_defaults(uint16_t *regs)
         return;
     }
     for (unsigned c = 0; c < LINK_OUT_CHANNELS; ++c) {
-        uint16_t *r = &regs[c * LINK_CC_STRIDE];
+        uint16_t *r = &regs[(size_t)c * LINK_CC_STRIDE];
         r[LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE;
         r[LINK_CC_SLEW]   = 0u;
         r[LINK_CC_MIN_US] = LINK_CC_DEFAULT_MIN;
@@ -81,7 +81,7 @@ void outputs_chan_cfg_apply(outputs_t *o, const uint16_t *regs)
         return;
     }
     for (unsigned c = 0; c < LINK_OUT_CHANNELS; ++c) {
-        const uint16_t *r = &regs[c * LINK_CC_STRIDE];
+        const uint16_t *r = &regs[(size_t)c * LINK_CC_STRIDE];
         const out_role_t role = (r[LINK_CC_ROLE] == LINK_CC_ROLE_THROTTLE)
                                     ? OUT_ROLE_THROTTLE : OUT_ROLE_SURFACE;
         (void)outputs_set_role(o, (uint8_t)c, role);
@@ -148,7 +148,7 @@ void outputs_slots_apply(outputs_t *o, const uint16_t *regs)
         (void)outputs_configure(o, (uint8_t)s, &none);
     }
     for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
-        const uint16_t *r = &regs[s * LINK_OS_STRIDE];
+        const uint16_t *r = &regs[(size_t)s * LINK_OS_STRIDE];
         if (driver_of(r[LINK_OS_DRIVER]) == OUT_DRIVER_NONE) {
             continue;
         }

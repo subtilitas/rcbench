@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Rewrite docs/ links for the GitHub wiki.
 
-A wiki page is addressed by its title with no extension, so `[Screens](Screens.md)`
-on a wiki page does not open the page -- it downloads the file. In the repository
+A wiki page is addressed by its title with no extension, so a link written
+as `[Screens](Screens.md)` does not open the page -- it downloads the file.
+In the repository
 the opposite is true: `docs/Screens.md` is what resolves there, and it is what
 `check_docs.py` holds every link to.
 

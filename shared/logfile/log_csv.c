@@ -589,7 +589,7 @@ log_err_t log_csv_analyse(log_source_t *src, const log_csv_opts_t *opts,
     out->n_columns = s_row.total;
     out->max_fields = s_row.total;
     for (int c = 0; c < s_row.n; ++c) {
-        char *h = trim(s_row.fields[c]);
+        const char *h = trim(s_row.fields[c]);
         copy_str(out->columns[c].raw_header, LOG_NAME_MAX, h);
     }
 

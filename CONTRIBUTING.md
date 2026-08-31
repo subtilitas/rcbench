@@ -55,6 +55,12 @@ python3 tools/check_docs.py           # links, translations, SPDX, the suite lis
 python3 tools/render_ui.py --check    # the committed screenshots still match
 python3 tools/frame_cost.py --check-doc
 python3 tools/gen_font.py --check
+
+# static analysis and lint, as CI runs them
+cppcheck --error-exitcode=1 --std=c11 --enable=warning,style,performance,portability \
+         --suppressions-list=.cppcheck-suppress $(git ls-files 'shared/**/*.c')
+clang-tidy -p test/host/build $(git ls-files 'shared/**/*.c')
+ruff check tools/
 ```
 
 Specifically, a change fails if:
@@ -72,9 +78,20 @@ Specifically, a change fails if:
 - **the suite list or the module tree in `STATUS.md` disagrees with what CMake
   builds.**
 
-The suite also runs under AddressSanitizer and UBSan in CI
+The suite also runs under **AddressSanitizer and UBSan** in CI
 (`-DENABLE_SANITIZERS=ON`). If you touch a parser, run it that way first; the
-code here is fed hostile bytes by design.
+code here is fed hostile bytes by design, and both have already caught real
+bugs the ordinary build did not.
+
+**clang-tidy and cppcheck** run over `shared/` on every push, and both are
+errors rather than warnings. The check lists are curated — `.clang-tidy` says
+which checks are off and why, because a disabled check with no reason is
+indistinguishable from one nobody understood. If a finding is a false positive,
+suppress it *inline with the reason*, not by widening the list.
+
+**Formatting is not enforced.** There is no `clang-format` gate: the comment
+blocks in this tree are wrapped by hand around prose, and a formatter would
+reflow them into something nobody reads. Match the file you are in.
 
 ## Where code goes
 

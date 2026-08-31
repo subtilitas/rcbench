@@ -178,7 +178,8 @@ def main() -> int:
                     continue
                 committed = Image.open(out).convert("RGB")
                 if committed.size != rendered.size:
-                    print(f"{out} is {committed.size}, render is {rendered.size}",
+                    print(f"{out} is {committed.size}, "
+                      f"render is {rendered.size}",
                           file=sys.stderr)
                     failed = True
                     continue

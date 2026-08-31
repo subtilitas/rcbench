@@ -126,7 +126,7 @@ def emit(spec, glyphs) -> str:
 
 
 def preview(spec, glyphs, chars) -> None:
-    name, w, h = spec[0], spec[1], spec[2]
+    name, w = spec[0], spec[1]
     for ch in chars:
         code = ord(ch)
         if code not in glyphs:

@@ -109,11 +109,13 @@ def check_anchors(problems: list[str]) -> None:
         for target, fragment in ANCHOR_RE.findall(read(page)):
             if "://" in target:
                 continue
-            resolved = (page.parent / target).resolve() if target else page.resolve()
+            resolved = ((page.parent / target).resolve() if target
+                        else page.resolve())
             if resolved not in known:
                 continue          # a non-markdown target; check_links has it
             if fragment not in known[resolved]:
-                where = "itself" if resolved == page.resolve() else resolved.name
+                where = ("itself" if resolved == page.resolve()
+                         else resolved.name)
                 problems.append(
                     f"{page.name}: #{fragment} points into {where}, "
                     "which has no such heading")

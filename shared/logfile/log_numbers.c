@@ -190,6 +190,9 @@ bool log_split_value(const char *raw, log_value_t *out)
             last_digit = ++p;
         } else if (*p == '.' || *p == ',') {
             ++p;
+        /* Assigning in the condition is the point: the length is wanted only
+         * when it is positive, and naming it twice invites the two to drift. */
+        /* NOLINTNEXTLINE(bugprone-assignment-in-if-condition) */
         } else if ((g = grouping_len(p)) > 0) {
             p += g;
         } else {
@@ -604,6 +607,10 @@ void log_unit_dominant(const log_unit_tally_t *t, char *out, size_t out_size,
 static const char *const k_bare_units[] = {
     "m", "km", "cm", "mm", "s", "ms", "us", "min", "h", "A", "mA", "V", "mV",
     "W", "kW", "Wh", "mAh", "Hz", "kHz", "rpm", "g", "kg", "N", "Pa", "hPa",
+    /* The split in "\xC2\xB0" "C" is required, not a missing comma: written
+     * as "\xC2\xB0C" the compiler reads \xB0C as one hex escape and the
+     * degree sign swallows the C. */
+    /* NOLINTNEXTLINE(bugprone-suspicious-missing-comma) */
     "bar", "%", "\xC2\xB0" "C", "\xC2\xB0" "F", "deg", "rad", "m/s", "km/h",
     "deg/s",
 };
