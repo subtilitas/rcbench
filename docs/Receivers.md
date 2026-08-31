@@ -54,4 +54,4 @@ something better than a magic byte** where the protocol gives you one, and
 **decode the failsafe flag before the channels**, because a protocol that can
 lie convincingly will. Every decoder is written from its specification, not
 from somebody else's code — the licence reasoning is in
-[the record](https://github.com/subtilitas/rcbench#readme).
+[the record](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).

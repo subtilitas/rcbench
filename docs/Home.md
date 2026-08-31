@@ -34,7 +34,8 @@ For working on the firmware rather than using the bench:
 | [Performance](Performance.md) | Why drawing code is budgeted in cache-line fills |
 
 These pages tell you how to use and connect what exists. The repository's
-[README](https://github.com/subtilitas/rcbench) is the running record — design
-decisions, their reasons, and what is still unsettled live there.
+[STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md) is the
+running record — design decisions, their reasons, and what is still unsettled
+live there.
 
 Every page is also in German — the switch is at the top of each one.

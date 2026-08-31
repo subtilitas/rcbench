@@ -1,0 +1,60 @@
+rcbench — third-party notices
+=============================
+
+rcbench itself is licensed under the MIT License; see LICENSE.
+
+This file records the material in this repository that originates elsewhere.
+
+
+DejaVu Sans Mono (and Liberation Mono as a fallback)
+----------------------------------------------------
+
+The three generated font tables
+
+    shared/gfx/gfx_font8x16.c
+    shared/gfx/gfx_font16x28.c
+    shared/gfx/gfx_font_num24x30.c
+
+contain glyph bitmaps rasterised from DejaVu Sans Mono by tools/gen_font.py.
+They are therefore derived from that font's outlines, and its terms travel with
+them.
+
+  DejaVu fonts are based on the Bitstream Vera fonts:
+    Bitstream Vera Fonts Copyright (c) 2003 by Bitstream, Inc.
+    All Rights Reserved.  Bitstream Vera is a trademark of Bitstream, Inc.
+  Changes made by the DejaVu project are released into the public domain.
+  Additional Arev fonts changes are Copyright (c) 2006 by Tavmjong Bah.
+
+  The full Bitstream Vera Fonts Copyright, which is the licence these bitmaps
+  are used under, is distributed with the font itself and is published at
+  https://dejavu-fonts.github.io/License.html
+
+If tools/gen_font.py falls back to Liberation Mono, the resulting tables are
+derived from that font instead, which is licensed under the SIL Open Font
+License 1.1.
+
+**No font file is redistributed by this repository.** The generator reads a
+font from the machine it runs on; only the rendered bitmaps are committed.
+Anyone redistributing a build that embeds these tables should ship the full
+licence text of whichever font produced them alongside it.
+
+
+Design and protocol references
+------------------------------
+
+No third-party source code is vendored in this tree. The following informed the
+design and were read as documentation rather than copied:
+
+  ArduPilot IOMCU     the two-processor split and the watchdog ratio
+  YGE                 the OpenYGE material the specification here is written
+                      from
+  BLHeli / BLHeli_S, AM32, ESCape32, VESC, Hitec
+                      published protocol descriptions and configurator
+                      behaviour
+
+Every protocol implementation here is written from a published specification
+rather than from another implementation, because nearly every open
+implementation of these protocols is GPL or AGPL against this repository's MIT.
+
+test/host/greatest.h is a 108-line test harness written for this project. It is
+not the `greatest` library of the same name.
