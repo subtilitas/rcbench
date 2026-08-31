@@ -7,6 +7,10 @@ and talks to everything with a deadline.
 > The rule that settles arguments: **the coprocessor owns anything with a
 > deadline, the panel owns anything with an opinion.**
 
+The coprocessor's firmware lives in `firmware/iomcu/`, after the ArduPilot
+arrangement this copies: a small processor owning the I/O with deadlines while
+the main one does everything else.
+
 <!-- coverage:badge:start -->
 ![coverage](https://img.shields.io/badge/host--test%20coverage-94.5%25-brightgreen)
 <!-- coverage:badge:end -->

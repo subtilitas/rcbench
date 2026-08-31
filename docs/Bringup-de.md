@@ -50,7 +50,7 @@ Der Test läuft fünf Sekunden beim Boot und gibt aus:
       sent 2024 echoed 2024 corrupt 0 lost 0 stale 0  (transmit queue full 0 times)
       round trip min 334 max 1356 us
       panel  tx_err 0 rx_err 0 bus_err 0
-      copro  CAN up, 2024 echoes, 0 overflow(s), tx_err 0 rx_err 0 flags 0x00
+      iomcu  CAN up, 2024 echoes, 0 overflow(s), tx_err 0 rx_err 0 flags 0x00
 
 **Beide Enden stehen in diesem Bericht**, und die Zeilen des Koprozessors sind
 über den Bus gekommen, nicht über ein zweites USB-Kabel. Das ist mehr als

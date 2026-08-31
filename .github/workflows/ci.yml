@@ -170,7 +170,7 @@ jobs:
             firmware/panel/build/flash_args
           if-no-files-found: error
 
-  copro:
+  iomcu:
     # The env context is not available in a job name -- only github,
     # needs, strategy, matrix, vars and inputs are -- so the pin is spelled
     # out here and lives for real in env.PICO_SDK_TAG below.
@@ -210,15 +210,15 @@ jobs:
         env:
           PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
         run: |
-          cmake -S firmware/copro -B firmware/copro/build -G Ninja
-          cmake --build firmware/copro/build -j"$(nproc)"
-          ls -l firmware/copro/build/rcbench-copro.uf2
-          sha256sum firmware/copro/build/rcbench-copro.uf2
+          cmake -S firmware/iomcu -B firmware/iomcu/build -G Ninja
+          cmake --build firmware/iomcu/build -j"$(nproc)"
+          ls -l firmware/iomcu/build/rcbench-iomcu.uf2
+          sha256sum firmware/iomcu/build/rcbench-iomcu.uf2
 
       - uses: actions/upload-artifact@v7
         with:
-          name: copro
+          name: iomcu
           path: |
-            firmware/copro/build/rcbench-copro.uf2
-            firmware/copro/build/rcbench-copro.elf
+            firmware/iomcu/build/rcbench-iomcu.uf2
+            firmware/iomcu/build/rcbench-iomcu.elf
           if-no-files-found: error

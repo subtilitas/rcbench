@@ -198,7 +198,7 @@ static void pose_splash(void)
     splash_screen_set(SPLASH_STEP_STORAGE,  SPLASH_WARN, "no card");
     splash_screen_set(SPLASH_STEP_SETTINGS, SPLASH_OK,   "NVS");
     splash_screen_set(SPLASH_STEP_LINK,     SPLASH_OK,   "256k 8N1");
-    splash_screen_set(SPLASH_STEP_COPRO,    SPLASH_OK,   "proto 1.0 hw 0");
+    splash_screen_set(SPLASH_STEP_IOMCU,    SPLASH_OK,   "proto 1.0 hw 0");
 }
 
 int main(int argc, char **argv)

@@ -11,18 +11,18 @@
 #include "pico/stdlib.h"
 
 #include "can_timing.h"
-#include "copro_pins.h"
+#include "iomcu_pins.h"
 #include "mcp2515.h"
 
-static inline void cs_low(void)  { gpio_put(COPRO_CAN_PIN_CS, 0); }
-static inline void cs_high(void) { gpio_put(COPRO_CAN_PIN_CS, 1); }
+static inline void cs_low(void)  { gpio_put(IOMCU_CAN_PIN_CS, 0); }
+static inline void cs_high(void) { gpio_put(IOMCU_CAN_PIN_CS, 1); }
 
 static void write_regs(uint8_t addr, const uint8_t *data, size_t n)
 {
     const uint8_t hdr[2] = { MCP2515_CMD_WRITE, addr };
     cs_low();
-    spi_write_blocking(COPRO_CAN_SPI, hdr, 2);
-    spi_write_blocking(COPRO_CAN_SPI, data, n);
+    spi_write_blocking(IOMCU_CAN_SPI, hdr, 2);
+    spi_write_blocking(IOMCU_CAN_SPI, data, n);
     cs_high();
 }
 
@@ -35,8 +35,8 @@ static void read_regs(uint8_t addr, uint8_t *out, size_t n)
 {
     const uint8_t hdr[2] = { MCP2515_CMD_READ, addr };
     cs_low();
-    spi_write_blocking(COPRO_CAN_SPI, hdr, 2);
-    spi_read_blocking(COPRO_CAN_SPI, 0x00, out, n);
+    spi_write_blocking(IOMCU_CAN_SPI, hdr, 2);
+    spi_read_blocking(IOMCU_CAN_SPI, 0x00, out, n);
     cs_high();
 }
 
@@ -54,29 +54,29 @@ static void bit_modify(uint8_t addr, uint8_t mask, uint8_t value)
 {
     const uint8_t msg[4] = { MCP2515_CMD_BIT_MODIFY, addr, mask, value };
     cs_low();
-    spi_write_blocking(COPRO_CAN_SPI, msg, 4);
+    spi_write_blocking(IOMCU_CAN_SPI, msg, 4);
     cs_high();
 }
 
 bool xl2515_init(uint32_t bitrate)
 {
-    spi_init(COPRO_CAN_SPI, COPRO_CAN_SPI_HZ);
-    spi_set_format(COPRO_CAN_SPI, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
-    gpio_set_function(COPRO_CAN_PIN_SCK, GPIO_FUNC_SPI);
-    gpio_set_function(COPRO_CAN_PIN_MOSI, GPIO_FUNC_SPI);
-    gpio_set_function(COPRO_CAN_PIN_MISO, GPIO_FUNC_SPI);
+    spi_init(IOMCU_CAN_SPI, IOMCU_CAN_SPI_HZ);
+    spi_set_format(IOMCU_CAN_SPI, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+    gpio_set_function(IOMCU_CAN_PIN_SCK, GPIO_FUNC_SPI);
+    gpio_set_function(IOMCU_CAN_PIN_MOSI, GPIO_FUNC_SPI);
+    gpio_set_function(IOMCU_CAN_PIN_MISO, GPIO_FUNC_SPI);
 
-    gpio_init(COPRO_CAN_PIN_CS);
-    gpio_set_dir(COPRO_CAN_PIN_CS, GPIO_OUT);
+    gpio_init(IOMCU_CAN_PIN_CS);
+    gpio_set_dir(IOMCU_CAN_PIN_CS, GPIO_OUT);
     cs_high();
-    gpio_init(COPRO_CAN_PIN_INT);
-    gpio_set_dir(COPRO_CAN_PIN_INT, GPIO_IN);
-    gpio_pull_up(COPRO_CAN_PIN_INT);
+    gpio_init(IOMCU_CAN_PIN_INT);
+    gpio_set_dir(IOMCU_CAN_PIN_INT, GPIO_IN);
+    gpio_pull_up(IOMCU_CAN_PIN_INT);
 
     /* Reset, then let the oscillator settle. */
     const uint8_t reset = MCP2515_CMD_RESET;
     cs_low();
-    spi_write_blocking(COPRO_CAN_SPI, &reset, 1);
+    spi_write_blocking(IOMCU_CAN_SPI, &reset, 1);
     cs_high();
     sleep_ms(10);
 
@@ -91,7 +91,7 @@ bool xl2515_init(uint32_t bitrate)
     }
 
     can_timing_limits_t lim;
-    can_timing_limits_mcp2515(&lim, COPRO_CAN_CRYSTAL_HZ);
+    can_timing_limits_mcp2515(&lim, IOMCU_CAN_CRYSTAL_HZ);
     can_timing_t t;
     uint8_t cnf[3];
     if (!can_timing_solve(&lim, bitrate, CAN_SAMPLE_POINT_LINK, &t)
@@ -140,7 +140,7 @@ bool xl2515_send(const link_can_frame_t *f)
 
     const uint8_t rts = MCP2515_CMD_RTS_TXB0;
     cs_low();
-    spi_write_blocking(COPRO_CAN_SPI, &rts, 1);
+    spi_write_blocking(IOMCU_CAN_SPI, &rts, 1);
     cs_high();
     return true;
 }

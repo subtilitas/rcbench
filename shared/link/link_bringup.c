@@ -123,7 +123,7 @@ const char *link_diag_hint(link_diag_t d)
     switch (d) {
     case LINK_DIAG_SILENT:
         /* In the order that costs least to check. */
-        return "copro powered? CANH/CANL swapped? same bit rate? terminators?";
+        return "iomcu powered? CANH/CANL swapped? same bit rate? terminators?";
     case LINK_DIAG_PROTOCOL_MISMATCH:
         return "flash both ends from the same tree";
     case LINK_DIAG_REPLIES_LOST:

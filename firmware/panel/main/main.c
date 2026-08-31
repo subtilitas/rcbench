@@ -291,7 +291,7 @@ static bool bring_up(void)
             s_bring.proto_minor   = reply.regs[LINK_ID_PROTOCOL_MINOR];
             const bool speaks_ours =
                 reply.regs[LINK_ID_PROTOCOL_MAJOR] == LINK_PROTOCOL_MAJOR;
-            splash_screen_set(SPLASH_STEP_COPRO,
+            splash_screen_set(SPLASH_STEP_IOMCU,
                               speaks_ours ? SPLASH_OK : SPLASH_FAIL, detail);
             ok = ok && speaks_ours;
         } else {
@@ -308,10 +308,10 @@ static bool bring_up(void)
             } else if (s_host.mismatches > 0) {
                 why = "wrong reply";
             }
-            splash_screen_set(SPLASH_STEP_COPRO, SPLASH_WARN, why);
+            splash_screen_set(SPLASH_STEP_IOMCU, SPLASH_WARN, why);
         }
     } else {
-        splash_screen_set(SPLASH_STEP_COPRO, SPLASH_WARN, "no link");
+        splash_screen_set(SPLASH_STEP_IOMCU, SPLASH_WARN, "no link");
     }
     pump();
 
@@ -499,12 +499,12 @@ static void link_report(void)
              (unsigned long)s_bring.rx_crc_errors,
              (unsigned long)s_bring.rx_resyncs);
     if (s_bring.have_status) {
-        ESP_LOGI(TAG, "  copro  frames %lu crc %lu resync %lu",
+        ESP_LOGI(TAG, "  iomcu  frames %lu crc %lu resync %lu",
                  (unsigned long)s_bring.dev_frames,
                  (unsigned long)s_bring.dev_crc_errors,
                  (unsigned long)s_bring.dev_resyncs);
     } else {
-        ESP_LOGI(TAG, "  copro  never answered a status read");
+        ESP_LOGI(TAG, "  iomcu  never answered a status read");
     }
     if (s_bring.rt_samples > 0) {
         /*
