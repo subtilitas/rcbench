@@ -48,6 +48,30 @@
 #define PANEL_CH_THROTTLE     0u
 #define PANEL_THROTTLE_RAMP   ((uint16_t)(OUT_SPAN * 55u / 100u))   /* 55 %/s */
 
+/*
+ * The servo bench's output: bank/wire channel 0, slot 0, on GP2.  The panel
+ * owns these now -- the driver, the pin and the range travel on the outputs
+ * page, so the coprocessor holds no servo-specific constant of its own.
+ */
+#define SERVO_CH        0u
+#define SERVO_SLOT      0u
+#define SERVO_PIN       2u
+#define SERVO_MIN_US    1000u
+#define SERVO_MAX_US    2000u
+
+/* A pulse in microseconds as a proportion of this servo's own travel, which is
+ * what the channels page carries.  Clamped rather than wrapped below the
+ * range, the way the coprocessor's own conversion is. */
+static uint16_t us_to_span(uint16_t us, uint16_t min_us, uint16_t max_us)
+{
+    if (max_us <= min_us || us <= min_us) {
+        return 0u;
+    }
+    const uint32_t span = (uint32_t)(us - min_us) * LINK_CH_SPAN
+                          / (uint32_t)(max_us - min_us);
+    return (span > LINK_CH_SPAN) ? (uint16_t)LINK_CH_SPAN : (uint16_t)span;
+}
+
 static uint16_t pct_to_span(float pct)
 {
     if (!(pct > 0.0f)) {
@@ -824,27 +848,42 @@ void app_main(void)
         /* --- and what the servo screen asked for -------------------------- */
         servo_cmd_t sv;
         if (servo_screen_take(&sv) && link_up) {
-            /*
-             * Written whole, every time, rather than as one register.
-             *
-             * The coprocessor clamps a pulse against the range it was last
-             * told, so sending a position without the range that goes with it
-             * risks a pulse clamped against somebody else's limits -- a stale
-             * pair left by an earlier session, or by whatever was in memory
-             * after a reset.  Five registers is one frame either way.
-             */
-            uint16_t regs[LINK_SV_COUNT];
-            regs[LINK_SV_ENABLE]   = (sv.kind == SERVO_CMD_RELEASE) ? 0u : 1u;
-            regs[LINK_SV_PULSE_US] = (sv.kind == SERVO_CMD_RELEASE)
-                                         ? servo_screen_commanded()
-                                         : sv.value_us;
-            regs[LINK_SV_MIN_US]   = LINK_SV_DEFAULT_MIN;
-            regs[LINK_SV_MAX_US]   = LINK_SV_DEFAULT_MAX;
-            regs[LINK_SV_SLEW_US]  = 0u;
-
             link_msg_t reply;
-            (void)write_page(&s_host, LINK_PAGE_SERVO, LINK_SV_COUNT, regs,
-                             &reply);
+            if (sv.kind == SERVO_CMD_RELEASE) {
+                /* Stop driving: clear the slot.  The channel keeps its last
+                 * command, but with nothing rendering it that is inert. */
+                uint16_t slot[LINK_OS_STRIDE] = { LINK_DRIVER_NONE, 0, 0, 0 };
+                (void)write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE,
+                                 slot, &reply);
+            } else {
+                /*
+                 * Config and command, sent whole every time rather than once.
+                 * The coprocessor may have reset since the last write, so the
+                 * range the pulse is clamped against and the driver that
+                 * renders it are re-stated with the pulse -- a stale range
+                 * left in memory is the bug this avoids.
+                 */
+                const uint16_t us = sv.value_us;
+                uint16_t cfg[LINK_CC_STRIDE] = {
+                    [LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE,
+                    [LINK_CC_SLEW]   = 0u,
+                    [LINK_CC_MIN_US] = SERVO_MIN_US,
+                    [LINK_CC_MAX_US] = SERVO_MAX_US,
+                };
+                uint16_t slot[LINK_OS_STRIDE] = {
+                    [LINK_OS_DRIVER]  = LINK_DRIVER_PWM,
+                    [LINK_OS_PIN]     = SERVO_PIN,
+                    [LINK_OS_RANGE]   = LINK_OS_RANGE_OF(SERVO_CH, 1),
+                    [LINK_OS_RATE_HZ] = 50u,
+                };
+                uint16_t cmd = us_to_span(us, SERVO_MIN_US, SERVO_MAX_US);
+                (void)write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_STRIDE,
+                                 cfg, &reply);
+                (void)write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE,
+                                 slot, &reply);
+                (void)write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &cmd,
+                                 &reply);
+            }
         }
 
         const bool was_armed = (s_log_file != NULL);

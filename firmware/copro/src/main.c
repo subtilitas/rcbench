@@ -20,7 +20,6 @@
 #include "heartbeat.h"
 #include "link_dev.h"
 #include "link_pages.h"
-#include "link_servo.h"
 #include "outputs.h"
 #include "outputs_pages.h"
 #include "telemetry_sim.h"
@@ -33,7 +32,9 @@ typedef struct {
     uint16_t control[LINK_CT_COUNT];
     uint16_t status[LINK_ST_COUNT];
     uint16_t bench[LINK_BN_COUNT];
-    uint16_t servo[LINK_SV_COUNT];
+    uint16_t channels[LINK_CH_COUNT];   /* what each output is asked for   */
+    uint16_t chan_cfg[LINK_CC_COUNT];   /* what each channel is            */
+    uint16_t slots[LINK_OS_COUNT];      /* which driver drives what        */
 } copro_state_t;
 
 static copro_state_t s_state;
@@ -49,16 +50,14 @@ static link_dev_t    s_dev;
  * silence timeout entirely.  The failsafe below showed the same shape, having
  * been written before the servo page existed.
  *
- * Channel assignment is fixed here for now.  The link learns to say it in the
- * outputs page; until then it is two constants rather than two conventions
- * spread across the file.
+ * The output pages address bank channels 0..LINK_OUT_CHANNELS-1 directly.
+ * The throttle is not one of them: it lives above that range so the control
+ * page can command it without colliding with a channels-page write, and so a
+ * motor keeps the control page's priority on the wire.
  */
 static outputs_t s_outputs;
 
-#define CH_THROTTLE  0u
-#define CH_SERVO     1u
-#define SLOT_SERVO   0u
-#define PIN_SERVO    2u
+#define CH_THROTTLE  LINK_OUT_CHANNELS   /* bank channel 8, off the page */
 
 /* The panel's safety line, as judged in firmware.  Declared here with the
  * other state because the control page consults it before it will arm --
@@ -110,33 +109,76 @@ static void bench_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     }
 }
 
-static void servo_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+/*
+ * The output pages.
+ *
+ * Three pages, one bank.  The rules -- clamp, arm, slew, refuse an impossible
+ * range, refuse an unknown driver -- live in shared/outputs so this end and
+ * the host end cannot hold different opinions; what the coprocessor supplies
+ * is the one thing only it knows, which is when it is safe to drive at all,
+ * and it supplies that by arming the bank rather than by gating each write.
+ *
+ * A read returns the stored register array; a write validates and stores,
+ * then re-derives the bank from the whole page so a partial write composes.
+ */
+static void channels_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     const copro_state_t *s = (const copro_state_t *)ctx;
     for (uint8_t i = 0; i < n; ++i) {
-        out[i] = s->servo[off + i];
+        out[i] = s->channels[off + i];
     }
 }
 
-/*
- * The servo output.
- *
- * The rules live in link_servo.c so that this end and the host end cannot
- * hold different opinions about them; what the coprocessor supplies is the
- * one thing only it knows -- whether it is safe to drive an output at all.
- */
-static uint8_t servo_write(void *ctx, uint8_t off, uint8_t n,
-                           const uint16_t *in)
+static uint8_t channels_write(void *ctx, uint8_t off, uint8_t n,
+                              const uint16_t *in)
 {
     copro_state_t *s = (copro_state_t *)ctx;
-    const bool may_drive = !s_dev.failsafe && s_beat.alive;
-    const uint8_t nack = link_servo_write(s->servo, off, n, in, may_drive);
+    const uint8_t nack = outputs_channels_write(s->channels, off, n, in);
     if (nack != 0u) {
         return nack;
     }
-    outputs_apply_servo_page(&s_outputs, s->servo, CH_SERVO, SLOT_SERVO,
-                             PIN_SERVO,
-                             (uint32_t)to_ms_since_boot(get_absolute_time()));
+    outputs_channels_apply(&s_outputs, s->channels,
+                           (uint32_t)to_ms_since_boot(get_absolute_time()));
+    return 0u;
+}
+
+static void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    const copro_state_t *s = (const copro_state_t *)ctx;
+    for (uint8_t i = 0; i < n; ++i) {
+        out[i] = s->chan_cfg[off + i];
+    }
+}
+
+static uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
+                              const uint16_t *in)
+{
+    copro_state_t *s = (copro_state_t *)ctx;
+    const uint8_t nack = outputs_chan_cfg_write(s->chan_cfg, off, n, in);
+    if (nack != 0u) {
+        return nack;
+    }
+    outputs_chan_cfg_apply(&s_outputs, s->chan_cfg);
+    return 0u;
+}
+
+static void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    const copro_state_t *s = (const copro_state_t *)ctx;
+    for (uint8_t i = 0; i < n; ++i) {
+        out[i] = s->slots[off + i];
+    }
+}
+
+static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
+                           const uint16_t *in)
+{
+    copro_state_t *s = (copro_state_t *)ctx;
+    const uint8_t nack = outputs_slots_write(s->slots, off, n, in);
+    if (nack != 0u) {
+        return nack;
+    }
+    outputs_slots_apply(&s_outputs, s->slots);
     return 0u;
 }
 
@@ -176,8 +218,15 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
      * Stamped here rather than in the loop, so the silence timeout measures
      * what it is for: how long since the *host* last said anything.
      */
-    outputs_apply_control_page(&s_outputs, s->control, CH_THROTTLE,
-                               (uint32_t)to_ms_since_boot(get_absolute_time()));
+    /*
+     * The throttle rides the control page rather than the channels page, so
+     * a motor command keeps control priority on the wire -- but it is the same
+     * bank underneath, so it is set here the same way a channel is.
+     */
+    (void)outputs_set(&s_outputs, CH_THROTTLE,
+                      (uint16_t)(((uint32_t)s->control[LINK_CT_THROTTLE]
+                                  * OUT_SPAN) / LINK_THROTTLE_MAX),
+                      (uint32_t)to_ms_since_boot(get_absolute_time()));
     return 0;
 }
 
@@ -185,8 +234,10 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_IDENTITY, LINK_ID_COUNT, identity_read, NULL },
     { LINK_PAGE_STATUS,   LINK_ST_COUNT, status_read,   NULL },
     { LINK_PAGE_CONTROL,  LINK_CT_COUNT, control_read,  control_write },
+    { LINK_PAGE_CHANNELS, LINK_CH_COUNT, channels_read, channels_write },
     { LINK_PAGE_BENCH,    LINK_BN_COUNT, bench_read,    NULL },
-    { LINK_PAGE_SERVO,    LINK_SV_COUNT, servo_read,    servo_write },
+    { LINK_PAGE_OUTPUTS,  LINK_OS_COUNT, slots_read,    slots_write },
+    { LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, chan_cfg_read, chan_cfg_write },
 };
 
 /* ------------------------------------------------------------ the heartbeat */
@@ -464,7 +515,9 @@ static void outputs_off(void)
 
     s_state.control[LINK_CT_ARM]      = 0;
     s_state.control[LINK_CT_THROTTLE] = 0;
-    s_state.servo[LINK_SV_ENABLE]     = 0;
+    /* The channels page is what a read shows the panel; the bank is already at
+     * rest from the disarm above, so the two agree only if this agrees too. */
+    outputs_channels_defaults(s_state.channels);
 }
 
 int main(void)
@@ -486,13 +539,16 @@ int main(void)
 
     /* A range before anybody sets one, so the clamp is meaningful from the
      * first frame rather than from the first configuration. */
-    link_servo_defaults(s_state.servo);
+    outputs_channels_defaults(s_state.channels);
+    outputs_chan_cfg_defaults(s_state.chan_cfg);
+    outputs_slots_defaults(s_state.slots);
 
     const uint32_t now0 = (uint32_t)to_ms_since_boot(get_absolute_time());
     outputs_init(&s_outputs, now0);
     (void)outputs_set_role(&s_outputs, CH_THROTTLE, OUT_ROLE_THROTTLE);
-    outputs_apply_servo_page(&s_outputs, s_state.servo, CH_SERVO, SLOT_SERVO,
-                             PIN_SERVO, now0);
+    outputs_chan_cfg_apply(&s_outputs, s_state.chan_cfg);
+    outputs_slots_apply(&s_outputs, s_state.slots);
+    outputs_channels_apply(&s_outputs, s_state.channels, now0);
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 
     heartbeat_init();

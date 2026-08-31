@@ -26,8 +26,18 @@ typedef enum {
     LINK_PAGE_CONTROL  = 0x10, /**< what to do                   */
     LINK_PAGE_LIMITS   = 0x11, /**< when to stop without asking  */
     LINK_PAGE_FAILSAFE = 0x12, /**< where to go when nobody asks */
+    LINK_PAGE_CHANNELS = 0x13, /**< what every output is asked for */
     LINK_PAGE_BENCH    = 0x20, /**< the numbers, read-only       */
-    LINK_PAGE_SERVO    = 0x21, /**< one output, where to hold it */
+    /*
+     * 0x21 was the servo page: one output, its range, and where to hold it.
+     * It is retired rather than reused.  A page number is part of the
+     * contract between two firmwares flashed separately, and a number that
+     * comes back meaning something else is the one mistake the numbering
+     * scheme exists to prevent -- an old panel would write a pulse into a
+     * driver table and be acknowledged.
+     */
+    LINK_PAGE_OUTPUTS  = 0x22, /**< which driver drives what, on which pin */
+    LINK_PAGE_CHAN_CFG = 0x23, /**< what each channel is and how it moves  */
 } link_page_id_t;
 
 /*
@@ -37,38 +47,108 @@ typedef enum {
  * changes meaning or a page is renumbered; bump the minor when a page or a
  * register is added at the end, which an older host can ignore.
  */
-#define LINK_PROTOCOL_MAJOR 1u
-#define LINK_PROTOCOL_MINOR 1u
+#define LINK_PROTOCOL_MAJOR 2u
+#define LINK_PROTOCOL_MINOR 0u
 
-/* ------------------------------------------------------------------- servo */
+/* ----------------------------------------------------------------- outputs */
 
 /*
- * One servo output: whether it is driven, where to hold it, and the range
- * outside which the coprocessor will not go.
+ * Three pages where there was one, because there was going to be one per
+ * protocol otherwise.
  *
- * The range lives here rather than only on the panel because the coprocessor
- * is the end holding the wire.  A host that has been restarted, or reflashed,
- * or is simply wrong, must not be able to drive a servo into its stops -- so
- * the limits are written once and every pulse afterwards is clamped against
- * them at the far end.  The panel clamps too; that is convenience, and this is
- * the one that counts.
+ * The servo page said "this output, this pulse, these limits" -- which is a
+ * PWM servo described in PWM's own units, and there is no honest way to say
+ * DShot in them.  What every protocol does have is a proportion of travel and
+ * something that renders it, so that is what the wire carries now:
+ *
+ *   CHANNELS  what each output is asked for, and nothing else.  Hot: written
+ *             many times a second, and the only page in the group that is.
+ *   CHAN_CFG  what a channel is -- throttle or surface, how fast it may move,
+ *             and the pulse widths its ends correspond to.
+ *   OUTPUTS   which driver renders which channels, on which pin, how often.
+ *
+ * Eight of each.  A page is at most LINK_MAX_REGS registers and these are
+ * four registers a slot, so eight is what fits without splitting a page in
+ * half or addressing it through an index register -- and it is also the
+ * number of servo outputs this bench is for, and the number of channels PPM
+ * carries.  A ninth would be a minor version and a second block, which is
+ * exactly the case the version rule was written for.
  */
-enum {
-    LINK_SV_ENABLE   = 0, /**< 0 releases the output, 1 drives it        */
-    LINK_SV_PULSE_US = 1, /**< where to hold it                          */
-    LINK_SV_MIN_US   = 2, /**< the narrowest pulse it will produce       */
-    LINK_SV_MAX_US   = 3, /**< and the widest                            */
-    LINK_SV_SLEW_US  = 4, /**< microseconds a second; 0 means at once    */
-    LINK_SV_COUNT    = 5,
-};
 
-/* What a servo output does when nothing has been written yet, and the widest
- * range the coprocessor will accept for the limits themselves.  A servo asked
- * for 400 us does not go to 400 us, it buzzes. */
-#define LINK_SV_DEFAULT_MIN 1000u
-#define LINK_SV_DEFAULT_MAX 2000u
-#define LINK_SV_FLOOR_US     500u
-#define LINK_SV_CEILING_US  2500u
+#define LINK_OUT_SLOTS     8u
+#define LINK_OUT_CHANNELS  8u
+
+/** A command runs 0..LINK_CH_SPAN across the channel's own travel. */
+#define LINK_CH_SPAN    1000u
+
+/* --- what each output is asked for */
+#define LINK_CH_COUNT   LINK_OUT_CHANNELS
+
+/* --- what a channel is.  Four registers each, and a channel must be written
+ *     whole: min and max are a pair, and a range half-applied is a range
+ *     nothing is clamped against. */
+enum {
+    LINK_CC_ROLE    = 0, /**< 0 throttle, 1 surface                     */
+    LINK_CC_SLEW    = 1, /**< span a second; 0 means at once            */
+    LINK_CC_MIN_US  = 2, /**< the pulse a command of 0 renders as       */
+    LINK_CC_MAX_US  = 3, /**< and of LINK_CH_SPAN                       */
+    LINK_CC_STRIDE  = 4,
+};
+#define LINK_CC_COUNT  (LINK_OUT_CHANNELS * LINK_CC_STRIDE)
+
+#define LINK_CC_ROLE_THROTTLE 0u
+#define LINK_CC_ROLE_SURFACE  1u
+
+/*
+ * What a channel does before anything is written, and the widest range the
+ * coprocessor will accept for the limits themselves.  A servo asked for
+ * 400 us does not go to 400 us, it buzzes.
+ *
+ * The limits live at the far end rather than only on the panel because that
+ * is the end holding the wire.  A host that has been restarted, or reflashed,
+ * or is simply wrong, must not be able to drive a servo into its stops.
+ */
+#define LINK_CC_DEFAULT_MIN 1000u
+#define LINK_CC_DEFAULT_MAX 2000u
+#define LINK_CC_FLOOR_US     500u
+#define LINK_CC_CEILING_US  2500u
+
+/* --- which driver drives what.  Four registers a slot, written whole for the
+ *     same reason: a driver claimed on a pin the rest of the write has not
+ *     arrived to name yet is a driver on the wrong pin. */
+enum {
+    LINK_OS_DRIVER  = 0, /**< link_out_driver_t                          */
+    LINK_OS_PIN     = 1, /**< which pin it drives                        */
+    /*
+     * First channel and count in one register, because they are one fact:
+     * the run of channels this slot renders.  PPM is the reason the count is
+     * on the wire at all -- it is eight channels on one pin, so a slot cannot
+     * be assumed to be worth one channel.
+     */
+    LINK_OS_RANGE   = 2, /**< (first << 8) | count                       */
+    LINK_OS_RATE_HZ = 3, /**< frames a second, or kbit/s for DShot       */
+    LINK_OS_STRIDE  = 4,
+};
+#define LINK_OS_COUNT  (LINK_OUT_SLOTS * LINK_OS_STRIDE)
+
+#define LINK_OS_RANGE_OF(first, count) \
+    ((uint16_t)((((unsigned)(first) & 0xFFu) << 8) | ((unsigned)(count) & 0xFFu)))
+#define LINK_OS_FIRST(range) ((uint8_t)((range) >> 8))
+#define LINK_OS_CHANNELS(range) ((uint8_t)((range) & 0xFFu))
+
+/*
+ * The drivers, numbered on the wire.
+ *
+ * These are a contract like a page number is, so they are written down here
+ * rather than being whatever an enum in the coprocessor happens to compile
+ * to.  Nothing is renumbered; a new protocol appends.
+ */
+typedef enum {
+    LINK_DRIVER_NONE  = 0,
+    LINK_DRIVER_PWM   = 1,
+    LINK_DRIVER_PPM   = 2,
+    LINK_DRIVER_DSHOT = 3,
+} link_out_driver_t;
 
 /* ---------------------------------------------------------------- identity */
 enum {
