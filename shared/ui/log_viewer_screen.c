@@ -569,6 +569,9 @@ static void render_import(gfx_canvas_t *c)
         } rows[6];
         int n = 0;
 
+        /* cppcheck-suppress legacyUninitvar
+         * snprintf writes rows[n].value, it does not read it; the array is
+         * filled here and every field set before it is drawn. */
         snprintf(rows[n].value, sizeof(rows[n].value), "%s",
                  log_csv_delimiter_label(s.an.delimiter));
         rows[n].key = "SEPARATOR";

@@ -27,6 +27,9 @@ float ui_plot_nice_ceil(float v)
     static const float steps[] = {
         1.0f, 1.2f, 1.5f, 2.0f, 2.5f, 3.0f, 4.0f, 5.0f, 6.0f, 8.0f, 10.0f
     };
+    /* cppcheck-suppress invalidFunctionArg
+     * v is positive here: the guard above returns for anything that is not,
+     * NaN included, which is why it is written !(v > 0) and not (v <= 0). */
     const float mag = powf(10.0f, floorf(log10f(v)));
     const float n = v / mag;
     for (size_t i = 0; i < sizeof(steps) / sizeof(steps[0]); ++i) {

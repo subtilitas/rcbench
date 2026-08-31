@@ -395,7 +395,8 @@ static void draw_state(gfx_canvas_t *c)
                 GFX_ALIGN_CENTER);
 }
 
-static void row(gfx_canvas_t *c, int y, const char *label, const char *value)
+static void stat_row(gfx_canvas_t *c, int y, const char *label,
+                     const char *value)
 {
     const int x = RCARD_X + 12;
     gfx_text(c, x, y, label, UI_FONT_LABEL,
@@ -417,15 +418,15 @@ static void draw_right(gfx_canvas_t *c)
     gfx_hline(c, x, BODY_Y + 100, w, ui_theme_color(UI_C_EDGE));
 
     char buf[24];
-    row(c, BODY_Y + 114, "BUS", "S.BUS");
+    stat_row(c, BODY_Y + 114, "BUS", "S.BUS");
     snprintf(buf, sizeof(buf), "%u Hz", s.rate_hz);
-    row(c, BODY_Y + 138, "RATE", s.have ? buf : "---");
+    stat_row(c, BODY_Y + 138, "RATE", s.have ? buf : "---");
     snprintf(buf, sizeof(buf), "%u", (unsigned)s.dec.frames);
-    row(c, BODY_Y + 162, "FRAMES", s.have ? buf : "---");
+    stat_row(c, BODY_Y + 162, "FRAMES", s.have ? buf : "---");
     snprintf(buf, sizeof(buf), "%u", (unsigned)s.dec.resyncs);
-    row(c, BODY_Y + 186, "RESYNC", s.have ? buf : "---");
+    stat_row(c, BODY_Y + 186, "RESYNC", s.have ? buf : "---");
     snprintf(buf, sizeof(buf), "%u", (unsigned)s.dec.bad_footer);
-    row(c, BODY_Y + 210, "BAD TAIL", s.have ? buf : "---");
+    stat_row(c, BODY_Y + 210, "BAD TAIL", s.have ? buf : "---");
 
     gfx_hline(c, x, BODY_Y + 238, w, ui_theme_color(UI_C_EDGE));
     gfx_text(c, x, BODY_Y + 250, "DIGITAL", UI_FONT_LABEL,
