@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS "main.c"
+    SRCS "main.c" "selftest.c"
     REQUIRES board display gt911 storage link can can_twai bench outputs safety ui gfx touch
              esp_driver_gpio esp_driver_uart esp_timer
 )
