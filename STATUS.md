@@ -340,7 +340,7 @@ throttle output; it has one job now.
 
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
-| `ci.yml` | push / PR / tag `v*` / manual | host suite, coverage `--check`, the font, frame-cost, golden-image and documentation checks, the ESP-IDF matrix (v5.4, v5.5) building the panel, the pico-sdk build of the coprocessor, and firmware artifacts including a merged panel image that flashes to `0x0` on its own |
+| `ci.yml` | push / PR / tag `v*` / manual | host suite; the same suite again under ASan and UBSan; coverage `--check` and the Codecov upload; the font, frame-cost, golden-image and documentation checks; clang-tidy, cppcheck and ruff; the ESP-IDF matrix (v5.4, v5.5) building the panel; the pico-sdk build of the coprocessor; and firmware artifacts including a merged panel image that flashes to `0x0` on its own |
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them, opens a release |
 
