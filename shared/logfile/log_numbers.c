@@ -1,4 +1,23 @@
 /*
+ * Turning a text cell into a number, when "1,024" might be either.
+ *
+ * The hard problem in a locale-blind log reader is not splitting rows, it is
+ * the decimal point: "1,024" is a thousand-and-twenty-four to an English
+ * writer and one-point-oh-two-four to a German one, and the cell itself cannot
+ * say which.  So this does not decide per cell.  log_evidence_of() classifies
+ * a cell as evidence *for* a convention, evidence *against*, or genuinely
+ * ambiguous, and the caller votes across the whole column -- one unambiguous
+ * "1.5" settles a file that is otherwise all thousands-shaped values.
+ *
+ * The care is in what counts as no evidence.  A repeated separator is usually
+ * grouping, but "192.168.0.1", "15.01.2024" and "1.2.3" are an address, a date
+ * and a version -- numbers to nobody -- and voting on them hands the file to
+ * the wrong convention.  A three-digit tail is the ambiguous shape, except
+ * when the integer part cannot be a thousands group (a leading zero, or more
+ * than three digits), which is exactly the millisecond-timestamp case that
+ * would otherwise read an English log as German.  Each of those exceptions is
+ * a real file that was read wrong before the rule existed.
+ *
  * SPDX-License-Identifier: MIT
  */
 

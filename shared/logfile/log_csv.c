@@ -1,4 +1,20 @@
 /*
+ * Reading a CSV log without knowing, in advance, what wrote it.
+ *
+ * A bench log can come from a transmitter, a charger, a datalogger or a
+ * spreadsheet, and they disagree about nearly everything: comma, semicolon or
+ * tab between fields, comma or dot for the decimal point, CRLF or LF between
+ * rows, a byte-order mark or not, quoted fields with doubled quotes inside
+ * them.  So nothing here is assumed -- the delimiter and the decimal
+ * convention are *found* by reading the file (see log_numbers.c for the
+ * evidence they are found from), and the row splitter handles the quoting and
+ * line-ending cases rather than trusting the file to be simple.
+ *
+ * The source is behind read/rewind function pointers so the same reader runs
+ * against a file on the card and against a string in a test, and the allocator
+ * is injectable for the same reason -- the parser can be held to an exact
+ * allocation count without a real heap under it.
+ *
  * SPDX-License-Identifier: MIT
  */
 

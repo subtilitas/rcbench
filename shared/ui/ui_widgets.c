@@ -1,4 +1,12 @@
 /*
+ * The shared widgets every screen draws with: panels, cards, buttons, pills.
+ *
+ * One place for the chrome so the bench looks like one instrument rather than
+ * a dozen screens that each drew their own button.  The one piece of logic
+ * here rather than drawing is ui_is_light(): a button picks its label colour
+ * from the luma of its fill, so text stays legible whether the caller handed
+ * it a dark panel or a bright accent, instead of every caller guessing.
+ *
  * SPDX-License-Identifier: MIT
  */
 

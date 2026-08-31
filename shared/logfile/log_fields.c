@@ -1,4 +1,12 @@
 /*
+ * What a column means, from what it is called.
+ *
+ * A log names its columns but not their roles: "Time(ms)", "t", "timestamp"
+ * and "Zeit" are all the x-axis, and "V", "Volt" and "Spannung" are all a
+ * voltage.  This maps a header name to a role and a unit by matching the names
+ * that actually appear in the field, case-folded, so the plot knows which
+ * column is time and what each trace is measured in without being told.
+ *
  * SPDX-License-Identifier: MIT
  */
 

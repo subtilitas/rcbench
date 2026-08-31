@@ -1,4 +1,12 @@
 /*
+ * The menu icons, drawn rather than stored.
+ *
+ * Each tile's icon is a handful of primitives -- a ring, a capsule, a couple
+ * of strokes -- scaled to the size it is asked for, not a bitmap.  Drawing
+ * them keeps them crisp at any size and costs no flash for an image the panel
+ * would otherwise carry, which on a bandwidth-bound panel with a fixed budget
+ * is the trade worth making for something this small.
+ *
  * SPDX-License-Identifier: MIT
  */
 

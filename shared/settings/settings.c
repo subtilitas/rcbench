@@ -1,4 +1,19 @@
 /*
+ * The settings, as a schema the screen draws rather than a screen per setting.
+ *
+ * Every setting is one row in a table -- its type, its range, its step, its
+ * default -- and the settings screen renders whatever the table says, so
+ * adding a setting is a row and never new UI code.  The values live behind an
+ * injectable store (NVS on the panel, memory in a test) and every change goes
+ * through one observer, which is the single place a changed value reaches the
+ * rest of the bench.
+ *
+ * A stored value is never trusted to match the schema.  A word read back from
+ * flash can be off the declared grid or outside the range -- an older build
+ * wrote it, or it is stale, or corrupt -- so a value is coerced onto the step
+ * and clamped into range on the way out, rather than cycling round or being
+ * handed to a screen that assumes it is valid.
+ *
  * SPDX-License-Identifier: MIT
  */
 

@@ -9,6 +9,24 @@
  * Pixel format is RGB565 in the CPU's native byte order, which is what the
  * ESP32-S3 RGB peripheral expects for a 16-bit data bus.
  *
+ * Three contracts hold across everything below, so each primitive does not
+ * repeat them:
+ *
+ *   Everything clips to canvas->clip.  A draw off the edge, or outside a
+ *   clip a screen has set, is dropped rather than wrapped -- a wrapped write
+ *   would land somewhere else on the panel, which is worse than not drawing.
+ *
+ *   The _aa variants antialias their edges from coverage; the plain ones are
+ *   hard-edged.  Reach for _aa on anything that is not axis-aligned -- a disc,
+ *   a capsule, a rotated glyph -- and the plain rect/line primitives, which
+ *   are already exact, for everything that is.
+ *
+ *   Alpha and coverage are per-call, not stored: a colour is opaque RGB565,
+ *   and a blend happens where a primitive is told a coverage.  Drawing the
+ *   same translucent thing twice therefore darkens it twice, so overlays that
+ *   land on pixels a screen does not repaint use an ordered (Bayer) stencil
+ *   instead, which is idempotent -- see gfx_text_rotated.
+ *
  * SPDX-License-Identifier: MIT
  */
 

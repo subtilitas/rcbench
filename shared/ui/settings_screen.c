@@ -1,4 +1,14 @@
 /*
+ * The settings screen: one renderer over the whole schema.
+ *
+ * There is no code here that knows what any particular setting is.  It walks
+ * the categories and rows shared/settings declares and draws each by its type
+ * -- a stepper for a number, a toggle for a bool, a choice for an enum -- so a
+ * new setting appears by adding a row to the schema and nothing here changes.
+ * That is the same data-driven move the programmer screen makes, for the same
+ * reason: a screen with one control per type cannot drift the way a screen
+ * with one control per setting does.
+ *
  * SPDX-License-Identifier: MIT
  */
 
