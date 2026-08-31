@@ -16,7 +16,7 @@ if(NOT DEFINED PICO_PLATFORM)
 endif()
 
 include(pico_sdk_import.cmake)
-project(rcbench-copro C CXX ASM)
+project(rcbench-iomcu C CXX ASM)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -36,11 +36,11 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/servo"  servo)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/openyge" openyge)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/can"     can)
 
-add_executable(rcbench-copro
+add_executable(rcbench-iomcu
     src/main.c
     src/xl2515.c
 )
-target_include_directories(rcbench-copro PRIVATE include src)
+target_include_directories(rcbench-iomcu PRIVATE include src)
 
 # The coprocessor's own two files are held to the same warnings as everything
 # else, which they were not before: the pico-sdk build set none, so a wedged
@@ -49,9 +49,9 @@ target_include_directories(rcbench-copro PRIVATE include src)
 # -Wconversion is left off here alone -- the SDK's register macros trip it
 # everywhere -- and the shared maths that needs it is already held to it by
 # the host suite.
-target_compile_options(rcbench-copro PRIVATE
+target_compile_options(rcbench-iomcu PRIVATE
     -Wall -Wextra -Werror -Wshadow)
-target_link_libraries(rcbench-copro
+target_link_libraries(rcbench-iomcu
     pico_stdlib
     hardware_pio
     hardware_spi
@@ -73,7 +73,7 @@ target_link_libraries(rcbench-copro
 # to CAN, which frees those pins.  Both lines are still stated explicitly,
 # because relying on a default is what caused it the first time.
 #
-pico_enable_stdio_usb(rcbench-copro 1)
-pico_enable_stdio_uart(rcbench-copro 0)
+pico_enable_stdio_usb(rcbench-iomcu 1)
+pico_enable_stdio_uart(rcbench-iomcu 0)
 
-pico_add_extra_outputs(rcbench-copro)
+pico_add_extra_outputs(rcbench-iomcu)

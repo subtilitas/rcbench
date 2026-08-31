@@ -47,7 +47,7 @@ It runs for five seconds at boot and prints:
       sent 2024 echoed 2024 corrupt 0 lost 0 stale 0  (transmit queue full 0 times)
       round trip min 334 max 1356 us
       panel  tx_err 0 rx_err 0 bus_err 0
-      copro  CAN up, 2024 echoes, 0 overflow(s), tx_err 0 rx_err 0 flags 0x00
+      iomcu  CAN up, 2024 echoes, 0 overflow(s), tx_err 0 rx_err 0 flags 0x00
 
 **Both ends are in that report**, and the coprocessor's half arrived over the
 bus rather than over a second USB cable. That matters more than the

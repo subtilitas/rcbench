@@ -110,10 +110,10 @@ rcbench/
     components/           board · display · gt911 · storage · can_twai
     sdkconfig.defaults  partitions.csv
 
-  firmware/copro/         pico-sdk
+  firmware/iomcu/         pico-sdk — the coprocessor
     src/                  main · link_uart · heartbeat_in · safety · pages/
     pio/                  dshot.pio
-    include/copro_pins.h
+    include/iomcu_pins.h
 
   test/host/              one suite over shared/ and its fakes
     fakes/                transport · clock · filesystem
@@ -127,7 +127,7 @@ processors.
 
 ### Who compiles what
 
-| Module | panel | copro | host |
+| Module | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` | ✔ | | ✔ |
 | `link` | ✔ | ✔ | ✔ |

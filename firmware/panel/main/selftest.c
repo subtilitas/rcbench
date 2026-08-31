@@ -134,7 +134,7 @@ void can_selftest_run(uint32_t seconds)
              (unsigned long)tx_err, (unsigned long)rx_err,
              (unsigned long)bus_err, bus_off ? "  BUS OFF" : "");
     if (have_remote) {
-        ESP_LOGI(TAG, "  copro  %s, %u echoes, %u overflow(s), "
+        ESP_LOGI(TAG, "  iomcu  %s, %u echoes, %u overflow(s), "
                       "tx_err %u rx_err %u flags 0x%02X",
                  remote.up ? "CAN up" : "CAN DOWN",
                  remote.echoes, remote.overflows, remote.tx_errors,
@@ -174,7 +174,7 @@ void can_selftest_run(uint32_t seconds)
                           "is a lifetime total and not comparable)");
         }
     } else {
-        ESP_LOGW(TAG, "  copro  did not answer a status request");
+        ESP_LOGW(TAG, "  iomcu  did not answer a status request");
     }
 }
 

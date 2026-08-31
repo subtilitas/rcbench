@@ -22,14 +22,14 @@ rcbench/
     link/                 framing · CRC-16 · the wire budget
     bench/                bench_state · the simulator
     outputs/              channels · driver table · arming, slew and staleness
-    safety/               the heartbeat: the panel generates, the copro judges
+    safety/               the heartbeat: the panel generates, the iomcu judges
     servo/                the limit and sync searches, and servos to run them against
     can/                  bit timing for both controllers, and the MCP2515 registers
     sbus/                 sixteen channels in twenty-five bytes, framed on the gap
     openyge/              the ESC protocol: framing, status, parameters
   firmware/
     panel/                ESP-IDF project
-    copro/                pico-sdk project
+    iomcu/                pico-sdk project — the coprocessor
   test/host/              one suite over shared/ and its fakes
 ```
 
@@ -94,8 +94,8 @@ esptool.py -p /dev/ttyACM0 write_flash 0x0 \
 
 # the coprocessor
 export PICO_SDK_PATH=/path/to/pico-sdk
-cmake -S firmware/copro -B firmware/copro/build
-cmake --build firmware/copro/build
+cmake -S firmware/iomcu -B firmware/iomcu/build
+cmake --build firmware/iomcu/build
 ```
 
 The coprocessor's `PICO_BOARD` defaults to `pimoroni_pico_plus2_rp2350` and is

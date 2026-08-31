@@ -13,8 +13,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#ifndef RCBENCH_COPRO_PINS_H
-#define RCBENCH_COPRO_PINS_H
+#ifndef RCBENCH_IOMCU_PINS_H
+#define RCBENCH_IOMCU_PINS_H
 
 /*
  * The safety heartbeat from the panel's J8, through the retriggerable
@@ -23,7 +23,7 @@
  * heartbeat and the monostable is the crude backstop rather than the whole
  * mechanism.
  */
-#define COPRO_HEARTBEAT_PIN  3
+#define IOMCU_HEARTBEAT_PIN  3
 
 /*
  * The CAN controller: a Waveshare RP2350-CAN, carrying an XL2515
@@ -40,21 +40,21 @@
  * into divisor and quanta gives the advertised rate at 16 MHz and at no other
  * crystal.  test_can_timing pins it.
  */
-#define COPRO_CAN_SPI        spi1
-#define COPRO_CAN_PIN_SCK    10
-#define COPRO_CAN_PIN_MOSI   11
-#define COPRO_CAN_PIN_MISO   12
-#define COPRO_CAN_PIN_CS     9
-#define COPRO_CAN_PIN_INT    8   /**< active low, wants a pull-up */
-#define COPRO_CAN_CRYSTAL_HZ 16000000u
+#define IOMCU_CAN_SPI        spi1
+#define IOMCU_CAN_PIN_SCK    10
+#define IOMCU_CAN_PIN_MOSI   11
+#define IOMCU_CAN_PIN_MISO   12
+#define IOMCU_CAN_PIN_CS     9
+#define IOMCU_CAN_PIN_INT    8   /**< active low, wants a pull-up */
+#define IOMCU_CAN_CRYSTAL_HZ 16000000u
 /* The vendor's driver clocks the bus at 10 MHz; the part is rated to 10. */
-#define COPRO_CAN_SPI_HZ     10000000u
+#define IOMCU_CAN_SPI_HZ     10000000u
 
 /*
  * The bit rate both ends must agree on.  1 Mbit/s is what the 16 MHz crystal
  * reaches exactly; see docs/Link.md for what the budget looks like at it, and
  * test_can_timing for why nothing slower is forced on us.
  */
-#define COPRO_CAN_BITRATE    1000000u
+#define IOMCU_CAN_BITRATE    1000000u
 
-#endif /* RCBENCH_COPRO_PINS_H */
+#endif /* RCBENCH_IOMCU_PINS_H */

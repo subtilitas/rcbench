@@ -132,12 +132,12 @@ TEST_CASE(the_module_reaches_every_standard_rate_on_its_16_mhz_crystal)
  */
 TEST_CASE(both_ends_sample_the_bit_in_the_same_place)
 {
-    can_timing_limits_t copro, panel;
-    can_timing_limits_mcp2515(&copro, 16000000u);
+    can_timing_limits_t iomcu, panel;
+    can_timing_limits_mcp2515(&iomcu, 16000000u);
     can_timing_limits_twai(&panel);
 
     can_timing_t a, b;
-    CHECK(can_timing_solve(&copro, 1000000u, CAN_SAMPLE_POINT_LINK, &a));
+    CHECK(can_timing_solve(&iomcu, 1000000u, CAN_SAMPLE_POINT_LINK, &a));
     CHECK(can_timing_solve(&panel, 1000000u, CAN_SAMPLE_POINT_LINK, &b));
 
     CHECK_EQ(a.sample_permille, CAN_SAMPLE_POINT_LINK);

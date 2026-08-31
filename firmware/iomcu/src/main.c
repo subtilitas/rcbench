@@ -17,7 +17,7 @@
 #include "hardware/pio.h"
 #include "pico/stdlib.h"
 
-#include "copro_pins.h"
+#include "iomcu_pins.h"
 #include "can_selftest.h"
 #include "heartbeat.h"
 #include "link_dev.h"
@@ -37,9 +37,9 @@ typedef struct {
     uint16_t channels[LINK_CH_COUNT];   /* what each output is asked for   */
     uint16_t chan_cfg[LINK_CC_COUNT];   /* what each channel is            */
     uint16_t slots[LINK_OS_COUNT];      /* which driver drives what        */
-} copro_state_t;
+} iomcu_state_t;
 
-static copro_state_t s_state;
+static iomcu_state_t s_state;
 static link_dev_t    s_dev;
 
 /*
@@ -76,7 +76,7 @@ static uint32_t s_frames;
 
 static void identity_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    const copro_state_t *s = (const copro_state_t *)ctx;
+    const iomcu_state_t *s = (const iomcu_state_t *)ctx;
     for (uint8_t i = 0; i < n; ++i) {
         out[i] = s->identity[off + i];
     }
@@ -84,7 +84,7 @@ static void identity_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 
 static void control_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    const copro_state_t *s = (const copro_state_t *)ctx;
+    const iomcu_state_t *s = (const iomcu_state_t *)ctx;
     for (uint8_t i = 0; i < n; ++i) {
         out[i] = s->control[off + i];
     }
@@ -92,7 +92,7 @@ static void control_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 
 static void status_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    const copro_state_t *s = (const copro_state_t *)ctx;
+    const iomcu_state_t *s = (const iomcu_state_t *)ctx;
     for (uint8_t i = 0; i < n; ++i) {
         out[i] = s->status[off + i];
     }
@@ -105,7 +105,7 @@ static void status_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
  */
 static void bench_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    const copro_state_t *s = (const copro_state_t *)ctx;
+    const iomcu_state_t *s = (const iomcu_state_t *)ctx;
     for (uint8_t i = 0; i < n; ++i) {
         out[i] = s->bench[off + i];
     }
@@ -125,7 +125,7 @@ static void bench_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
  */
 static void channels_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    const copro_state_t *s = (const copro_state_t *)ctx;
+    const iomcu_state_t *s = (const iomcu_state_t *)ctx;
     for (uint8_t i = 0; i < n; ++i) {
         out[i] = s->channels[off + i];
     }
@@ -134,7 +134,7 @@ static void channels_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 static uint8_t channels_write(void *ctx, uint8_t off, uint8_t n,
                               const uint16_t *in)
 {
-    copro_state_t *s = (copro_state_t *)ctx;
+    iomcu_state_t *s = (iomcu_state_t *)ctx;
     const uint8_t nack = outputs_channels_write(s->channels, off, n, in);
     if (nack != 0u) {
         return nack;
@@ -146,7 +146,7 @@ static uint8_t channels_write(void *ctx, uint8_t off, uint8_t n,
 
 static void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    const copro_state_t *s = (const copro_state_t *)ctx;
+    const iomcu_state_t *s = (const iomcu_state_t *)ctx;
     for (uint8_t i = 0; i < n; ++i) {
         out[i] = s->chan_cfg[off + i];
     }
@@ -155,7 +155,7 @@ static void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 static uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
                               const uint16_t *in)
 {
-    copro_state_t *s = (copro_state_t *)ctx;
+    iomcu_state_t *s = (iomcu_state_t *)ctx;
     const uint8_t nack = outputs_chan_cfg_write(s->chan_cfg, off, n, in);
     if (nack != 0u) {
         return nack;
@@ -166,7 +166,7 @@ static uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
 
 static void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    const copro_state_t *s = (const copro_state_t *)ctx;
+    const iomcu_state_t *s = (const iomcu_state_t *)ctx;
     for (uint8_t i = 0; i < n; ++i) {
         out[i] = s->slots[off + i];
     }
@@ -175,7 +175,7 @@ static void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
                            const uint16_t *in)
 {
-    copro_state_t *s = (copro_state_t *)ctx;
+    iomcu_state_t *s = (iomcu_state_t *)ctx;
     const uint8_t nack = outputs_slots_write(s->slots, off, n, in);
     if (nack != 0u) {
         return nack;
@@ -187,7 +187,7 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
 static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
                              const uint16_t *in)
 {
-    copro_state_t *s = (copro_state_t *)ctx;
+    iomcu_state_t *s = (iomcu_state_t *)ctx;
     for (uint8_t i = 0; i < n; ++i) {
         const uint8_t reg = (uint8_t)(off + i);
         if (reg == LINK_CT_THROTTLE && in[i] > LINK_THROTTLE_MAX) {
@@ -270,19 +270,19 @@ static bool s_beat_level;
 
 static void heartbeat_init(void)
 {
-    gpio_init(COPRO_HEARTBEAT_PIN);
-    gpio_set_dir(COPRO_HEARTBEAT_PIN, GPIO_IN);
+    gpio_init(IOMCU_HEARTBEAT_PIN);
+    gpio_set_dir(IOMCU_HEARTBEAT_PIN, GPIO_IN);
     /* Pulled down, so an unplugged or unpowered panel reads as a line that is
      * not edging rather than as one held high. */
-    gpio_pull_down(COPRO_HEARTBEAT_PIN);
+    gpio_pull_down(IOMCU_HEARTBEAT_PIN);
     heartbeat_mon_init(&s_beat);
-    s_beat_level = gpio_get(COPRO_HEARTBEAT_PIN);
+    s_beat_level = gpio_get(IOMCU_HEARTBEAT_PIN);
 }
 
 /** Sample the line; returns whether it may currently be believed. */
 static bool heartbeat_poll(uint32_t now)
 {
-    const bool level = gpio_get(COPRO_HEARTBEAT_PIN);
+    const bool level = gpio_get(IOMCU_HEARTBEAT_PIN);
     if (level != s_beat_level) {
         s_beat_level = level;
         heartbeat_mon_edge(&s_beat, now);
@@ -312,10 +312,10 @@ static uint32_t s_can_overflows;
 
 static void can_start(void)
 {
-    s_can_up = xl2515_init(COPRO_CAN_BITRATE);
-    printf("rcbench-copro: CAN %s at %u bit/s\n",
+    s_can_up = xl2515_init(IOMCU_CAN_BITRATE);
+    printf("rcbench-iomcu: CAN %s at %u bit/s\n",
            s_can_up ? "up" : "DID NOT ANSWER (module fitted? SPI wiring?)",
-           (unsigned)COPRO_CAN_BITRATE);
+           (unsigned)IOMCU_CAN_BITRATE);
 }
 
 /*
@@ -407,15 +407,15 @@ static void can_report(uint32_t now)
     last = now;
 
     if (!s_can_up) {
-        printf("rcbench-copro: CAN did not answer on SPI -- module fitted? "
+        printf("rcbench-iomcu: CAN did not answer on SPI -- module fitted? "
                "wiring on GP9-12?\n");
         return;
     }
     uint8_t tec = 0, rec = 0, eflg = 0;
     xl2515_errors(&tec, &rec, &eflg);
-    printf("rcbench-copro: CAN up, %u bit/s, %lu echoes served, "
+    printf("rcbench-iomcu: CAN up, %u bit/s, %lu echoes served, "
            "tx_err %u rx_err %u eflg 0x%02X\n",
-           (unsigned)COPRO_CAN_BITRATE, (unsigned long)s_can_echoes,
+           (unsigned)IOMCU_CAN_BITRATE, (unsigned long)s_can_echoes,
            tec, rec, eflg);
     /*
      * Said in words rather than left in a hex code, because it is the one
@@ -426,7 +426,7 @@ static void can_report(uint32_t now)
      * exactly such a thing.
      */
     if (s_can_overflows > 0u) {
-        printf("rcbench-copro: CAN receive buffers overran %lu time(s) -- "
+        printf("rcbench-iomcu: CAN receive buffers overran %lu time(s) -- "
                "frames arrived with nowhere to put them; not a bus fault\n",
                (unsigned long)s_can_overflows);
     }

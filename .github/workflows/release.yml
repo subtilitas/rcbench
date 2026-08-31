@@ -53,7 +53,7 @@ jobs:
             firmware/panel/build/flash_args
           if-no-files-found: error
 
-  copro:
+  iomcu:
     name: Coprocessor image
     runs-on: ubuntu-latest
     steps:
@@ -88,20 +88,20 @@ jobs:
         env:
           PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
         run: |
-          cmake -S firmware/copro -B firmware/copro/build -G Ninja
-          cmake --build firmware/copro/build -j"$(nproc)"
+          cmake -S firmware/iomcu -B firmware/iomcu/build -G Ninja
+          cmake --build firmware/iomcu/build -j"$(nproc)"
 
       - uses: actions/upload-artifact@v7
         with:
-          name: copro
+          name: iomcu
           path: |
-            firmware/copro/build/rcbench-copro.uf2
-            firmware/copro/build/rcbench-copro.elf
+            firmware/iomcu/build/rcbench-iomcu.uf2
+            firmware/iomcu/build/rcbench-iomcu.elf
           if-no-files-found: error
 
   publish:
     name: Package and publish
-    needs: [panel, copro]
+    needs: [panel, iomcu]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -121,7 +121,7 @@ jobs:
           # goes to 0x0 on its own, and the three parts for anyone who wants
           # to flash them separately.
           (cd artifacts/panel && zip -r "../../dist/rcbench-panel-$TAG.zip" .)
-          (cd artifacts/copro && zip -r "../../dist/rcbench-copro-$TAG.zip" .)
+          (cd artifacts/iomcu && zip -r "../../dist/rcbench-iomcu-$TAG.zip" .)
           (cd dist && sha256sum ./*.zip > SHA256SUMS)
           ls -l dist
 
