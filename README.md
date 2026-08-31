@@ -124,8 +124,8 @@ reference code for SRXL2, JETI EX Bus, DShot and DroneCAN.
   here is written from their material, and is going to them to be checked.
 - **BLHeli, AM32, ESCape32, VESC and Hitec** — their published protocols and
   their configurators, read before the programmer screen was drawn.
-  [BLHeli_32's parameters are deliberately absent](https://github.com/subtilitas/rcbench/wiki/BLHeli32),
-  and the reason is a key we asked for and were not given.
+  [BLHeli_32's parameters are absent](https://github.com/subtilitas/rcbench/wiki/BLHeli32):
+  we asked for what reading them needs, and were declined.
 
 **Third-party code in the tree: none.** `test/host/greatest.h` is a 108-line
 harness written for this project — it is not the `greatest` library it is named

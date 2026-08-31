@@ -69,8 +69,6 @@ no maintained release branches, and fixes land at the head.
   wiring are yours; see the safety notice in the README and
   [the Safety page](docs/Safety.md) for what the design assumes you have built,
   particularly the monostable that gates the outputs.
-- **Requests to circumvent another product's protection.** This project does
-  not accept code or keys extracted from closed firmware or binaries, for any
-  device, however convenient. See
-  [BLHeli_32](docs/BLHeli32.md) for the one time this came up and how it was
-  answered.
+- **Another vendor's device firmware.** Bugs in an ESC, a servo or a receiver
+  belong to whoever made it. What is in scope here is how this bench behaves
+  when one of them sends something unexpected.

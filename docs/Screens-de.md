@@ -113,11 +113,11 @@ Transport — eine automatische Erkennung gibt es nicht:
 
 ![Die Protokolle einer Klasse](img/programmer-protocols.png)
 
-**BLHeli_32 fehlt in der ESC-Liste.** Seine Einstellungen sind verschlüsselt,
-und der Schlüssel ist nicht öffentlich. Der Prüfstand erkennt diese Regler und
+**BLHeli_32 fehlt in der ESC-Liste.** Der Prüfstand erkennt diese Regler und
 steuert sie an — Drehrichtung, 3D-Modus, Beacon und Save-Settings laufen als
-DShot Special Commands —, aber er kann keinen einzigen Parameter benennen.
-[Die ganze Antwort](BLHeli32-de.md).
+DShot Special Commands —, aber er kann ihre Parameter nicht anzeigen: die dafür
+nötigen Informationen sind nicht veröffentlicht, und sie wurden uns auf Anfrage
+verweigert. [Die Details](BLHeli32-de.md).
 
 Bevor ein Gerät geantwortet hat, lässt sich nichts editieren:
 
