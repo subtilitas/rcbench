@@ -99,7 +99,21 @@ UNTRACKED_OK = {
 
 # Below this, CI fails.  Raise it when the suite gets better; never lower it
 # to make a red build go green.
-MIN_TOTAL_COVERAGE = 93.0
+MIN_TOTAL_COVERAGE = 94.0
+
+# And no single file may fall far below the whole.  A healthy total can hide a
+# file that is barely tested -- balance_screen sat at 73% under a 93% badge --
+# so each tracked file carries its own floor.  It is lower than the total on
+# purpose: the point is to catch a hole, not to demand every file match the
+# best.  Raise it as the suite improves.
+MIN_FILE_COVERAGE = 85.0
+
+# Files that are meant to be thin.  A stub exists to be replaced; testing it to
+# the floor would be testing a placeholder, so it is exempt by name rather than
+# left to drag the badge down or silently pass.
+FILE_FLOOR_EXEMPT = {
+    "shared/ui/stub_screen.c",
+}
 
 LINES_RE = re.compile(r"Lines executed:([0-9.]+)% of (\d+)")
 
@@ -266,6 +280,15 @@ def main() -> int:
     if total_pct < MIN_TOTAL_COVERAGE:
         print("coverage below the floor", file=sys.stderr)
         failed = True
+
+    for rel in TRACKED:
+        if rel in FILE_FLOOR_EXEMPT:
+            continue
+        pct = results[rel]["percent"]
+        if pct < MIN_FILE_COVERAGE:
+            print(f"{rel} at {pct:.1f}% is below the per-file floor "
+                  f"of {MIN_FILE_COVERAGE:.1f}%", file=sys.stderr)
+            failed = True
 
     return 1 if failed else 0
 

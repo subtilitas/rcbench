@@ -515,14 +515,16 @@ static const rule_t k_air_rules[] = {
 };
 
 /* Which blades the correction falls between, which is the whole reason the
- * count is asked for. */
-static void nearest_blades(float ang, int *lo, int *hi)
+ * count is asked for.  The arithmetic is public and takes the count as an
+ * argument so it can be checked on its own, away from the screen's state. */
+void balance_nearest_blades(float angle, int blades, int *lo, int *hi)
 {
-    const float step = 360.0f / (float)s.blades;
-    int before = (int)(ang / step);
+    if (blades < 1) { blades = 1; }
+    const float step = 360.0f / (float)blades;
+    int before = (int)(angle / step);
     if (before < 0) { before = 0; }
-    *lo = (before % s.blades) + 1;
-    *hi = ((before + 1) % s.blades) + 1;
+    *lo = (before % blades) + 1;
+    *hi = ((before + 1) % blades) + 1;
 }
 
 static void draw_readings(gfx_canvas_t *c)
@@ -560,7 +562,7 @@ static void draw_readings(gfx_canvas_t *c)
     snprintf(v_ang,  sizeof(v_ang),  "%d deg", (int)ang);
     snprintf(v_mass, sizeof(v_mass), "0.35 g");
     int lo, hi;
-    nearest_blades(ang, &lo, &hi);
+    balance_nearest_blades(ang, s.blades, &lo, &hi);
     if (s.rotor == ROTOR_EDF) {
         /* You cannot reach a blade tip inside a duct, so the answer is an
          * angle on the hub rather than a blade to tape. */

@@ -237,6 +237,33 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
     CHECK(link_diag_hint((link_diag_t)99)[0] == '\0');
 }
 
+/*
+ * Every diagnosis has words and a hint, so the panel never shows a fault it
+ * cannot describe.  The logic tests above prove which code comes out; this
+ * proves each code can be turned into something a person reads.
+ */
+TEST_CASE(every_diagnosis_has_text_and_a_hint)
+{
+    const link_diag_t all[] = {
+        LINK_DIAG_OK, LINK_DIAG_SILENT, LINK_DIAG_PROTOCOL_MISMATCH,
+        LINK_DIAG_REPLIES_LOST, LINK_DIAG_CORRUPT, LINK_DIAG_STALE,
+        LINK_DIAG_INTERMITTENT,
+    };
+    for (unsigned i = 0; i < sizeof(all) / sizeof(all[0]); ++i) {
+        const char *text = link_diag_text(all[i]);
+        const char *hint = link_diag_hint(all[i]);
+        CHECK(text != NULL && text[0] != '\0');   /* every code says something */
+        CHECK(hint != NULL);                        /* healthy has no hint, "" */
+        if (all[i] != LINK_DIAG_OK) {
+            CHECK(hint[0] != '\0');                /* every fault points somewhere */
+        }
+    }
+    /* An out-of-range value falls to the healthy default rather than reading
+     * off the end of the table. */
+    CHECK(link_diag_text((link_diag_t)99)[0] != '\0');
+    CHECK(link_diag_hint((link_diag_t)99) != NULL);
+}
+
 int main(void)
 {
     RUN(a_working_link_is_reported_as_working);
@@ -253,5 +280,6 @@ int main(void)
     RUN(the_first_sample_is_the_min_the_max_and_the_mean);
     RUN(the_mean_survives_a_session_longer_than_a_sum_would);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
+    RUN(every_diagnosis_has_text_and_a_hint);
     return test_summary("link_bringup");
 }
