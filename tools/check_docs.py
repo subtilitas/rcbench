@@ -292,9 +292,10 @@ def check_spdx(problems: list[str]) -> None:
     """
     import os
     for base in ("shared", "firmware", "test"):
-        for dp, _dn, fn in os.walk(REPO / base):
-            if "build" in dp.split(os.sep):
-                continue
+        for dp, dn, fn in os.walk(REPO / base):
+            # Prune build trees in place -- build, build-san, build-cov -- so
+            # the walk never reaches a toolchain's own probe files.
+            dn[:] = [d for d in dn if not d.startswith("build")]
             for f in fn:
                 if not f.endswith((".c", ".h")):
                     continue
