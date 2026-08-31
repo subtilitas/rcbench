@@ -25,3 +25,11 @@ int  balance_screen_blades(void);
 int  balance_screen_rotor(void);
 /** Where the correction goes, in degrees from the index mark. */
 float balance_screen_angle(void);
+
+/**
+ * The two blades a correction at @p angle (degrees from the index mark) falls
+ * between, on a rotor of @p blades blades.  Both come back 1..blades and they
+ * wrap, so a correction past the last blade reads "between N and 1" -- which
+ * is the instruction the whole screen exists to turn an angle into.
+ */
+void balance_nearest_blades(float angle, int blades, int *lo, int *hi);
