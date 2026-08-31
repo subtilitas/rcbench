@@ -4,6 +4,8 @@
  * The peak is beside the value rather than under it, because on a bench the
  * question is nearly always "how far did it go" and reading it should not need
  * a second glance.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #pragma once
 

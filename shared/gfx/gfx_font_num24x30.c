@@ -3,6 +3,8 @@
  *
  * gfx_font_num_24x30: 24x30 cell, code points 0x20..0x3a.
  * 24 bytes per scanline, one byte of coverage per pixel; 30 per glyph.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "gfx.h"

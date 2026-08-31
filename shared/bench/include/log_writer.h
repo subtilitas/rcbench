@@ -8,6 +8,8 @@
  *
  * The sink is injected, so the host suite writes into memory and the panel
  * writes into a FILE.  Nothing here knows what a card is.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #pragma once
 

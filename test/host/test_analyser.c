@@ -1,6 +1,8 @@
 /*
  * What the analyser decides: which state word it shows, and that a failsafe
  * frame is never presented as if it were live.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <stdlib.h>
 #include <string.h>

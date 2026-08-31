@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 #include "ui_band.h"
 
 #include <stdio.h>

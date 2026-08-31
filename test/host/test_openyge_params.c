@@ -1,6 +1,8 @@
 /*
  * The parameter cache: one value arrives per telemetry frame, and the table is
  * either whole or it is not the ESC's settings.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <string.h>
 

@@ -7,6 +7,8 @@
  * It was written when a CRC was the only thing between a noisy pair and a register
  * write nobody asked for, so it is tested against the published check value
  * rather than against itself.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <string.h>
 

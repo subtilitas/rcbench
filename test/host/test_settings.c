@@ -5,6 +5,8 @@
  * layout they address moved up 40 px -- the router owns the band and the home
  * tag now -- so the geometry below follows it, and the taps are in panel
  * coordinates because ui_router_event strips the band on the way in.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include "greatest.h"
 

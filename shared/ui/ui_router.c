@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 #include "ui_screen.h"
 
 #include <stdio.h>

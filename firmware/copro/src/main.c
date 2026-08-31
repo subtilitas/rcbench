@@ -8,6 +8,8 @@
  * The measurement front end, the PIO programs and the power path land on top
  * of this.  What is here is the part that has to be right before any of them
  * can be trusted: the wire, the failsafe, and the refusal to invent traffic.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <stdio.h>
 #include <string.h>

@@ -1,6 +1,8 @@
 /*
  * What the battery screen decides: the verdict, and that the spread it is
  * based on is the widest gap rather than a distance from some nominal.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <stdlib.h>
 #include <string.h>

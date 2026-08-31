@@ -5,6 +5,8 @@
  * One request outstanding at a time, which is not a simplification but the
  * protocol: the coprocessor never speaks unsolicited, so there is exactly one
  * frame in flight and nothing to arbitrate.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #ifndef RCBENCH_LINK_HOST_H
 #define RCBENCH_LINK_HOST_H

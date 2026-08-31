@@ -31,6 +31,8 @@
  * inside a closed binary, so the bench can identify and drive one of these
  * ESCs but cannot honestly name a single setting in it.  docs/BLHeli32.md
  * carries the whole reasoning.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "programmer_screen.h"

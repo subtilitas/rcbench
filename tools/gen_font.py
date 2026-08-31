@@ -56,6 +56,8 @@ HEADER = """/*
  *
  * {name}: {w}x{h} cell, code points 0x{first:02x}..0x{last:02x}.
  * {bpr} bytes per scanline, one byte of coverage per pixel; {h} per glyph.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "gfx.h"

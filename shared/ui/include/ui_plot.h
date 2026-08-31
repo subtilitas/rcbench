@@ -18,6 +18,8 @@
  * State lives in the caller's struct rather than in file statics, because the
  * motor bench, the servo bench and the analyser each want one and the
  * predecessor's single global was what made its plot un-reusable.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #pragma once
 

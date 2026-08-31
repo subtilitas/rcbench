@@ -7,6 +7,8 @@
  * Everything this file does is glue.  What the screens decide, what the link
  * says, what the numbers mean and when the bench fails safe are all pure C in
  * shared/, tested on a laptop; this is the part that cannot be.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <inttypes.h>
 #include <math.h>

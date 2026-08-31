@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 #include "telemetry_sim.h"
 
 #include <math.h>

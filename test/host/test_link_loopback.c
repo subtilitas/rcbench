@@ -9,6 +9,8 @@
  * refusal that leaves the poller waiting for ever.
  *
  * The bus here can drop, delay and reorder, because a real one does.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <string.h>
 

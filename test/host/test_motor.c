@@ -3,6 +3,8 @@
  * the two rules that keep a tap from spinning something.
  *
  * Not what it looks like -- that is the golden image's job.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <math.h>
 #include <stdlib.h>

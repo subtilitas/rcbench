@@ -10,6 +10,8 @@
  *
  * Only the link and the safety line are settled here.  Everything with a
  * deadline lands when its PIO program does.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #ifndef RCBENCH_COPRO_PINS_H
 #define RCBENCH_COPRO_PINS_H

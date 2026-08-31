@@ -5,6 +5,8 @@
  * events, and read commands back out -- which is what lets the identical code
  * render to a PNG on a laptop and be tested for what it *decides* rather than
  * only for what it looks like.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #pragma once
 

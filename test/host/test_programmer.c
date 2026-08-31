@@ -2,6 +2,8 @@
  * What the programmer decides: that you say what you are programming before
  * anything is read, that stepping up a level cannot leave a stale connection
  * behind, and that a stepper stops rather than wraps.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <stdlib.h>
 #include <string.h>

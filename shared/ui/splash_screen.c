@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 #include "splash_screen.h"
 
 #include <stdio.h>

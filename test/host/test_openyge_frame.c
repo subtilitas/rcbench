@@ -6,6 +6,8 @@
  * Frames are built here from raw bytes rather than with openyge_encode(), so
  * the decoder is held to the specification rather than to its own encoder --
  * two halves of one mistake agree with each other perfectly.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <string.h>
 

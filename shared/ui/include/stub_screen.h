@@ -6,6 +6,8 @@
  * do, and the one decision or part that has to arrive first, is a to-do list
  * somebody can answer -- and the note turns green when nothing is blocking it,
  * which is a different and less comfortable position than being blocked.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #pragma once
 
