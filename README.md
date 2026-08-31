@@ -85,6 +85,18 @@ not the wiki.
 | [Safety](https://github.com/subtilitas/rcbench/wiki/Safety) | how it stops, and what you must build |
 | [The link](https://github.com/subtilitas/rcbench/wiki/Link) · [OpenYGE](https://github.com/subtilitas/rcbench/wiki/OpenYGE) · [Performance](https://github.com/subtilitas/rcbench/wiki/Performance) | reference, for working on the firmware |
 
+## Contributing
+
+[CONTRIBUTING.md](CONTRIBUTING.md) has the conventions, and two of them will
+surprise you if you meet them by accident: **protocols are written from
+specifications rather than from other implementations** (a licensing rule that
+cannot be fixed after the fact), and **coverage has a per-file floor as well as
+a total**. Both are enforced by CI.
+
+Security and safety reports: [SECURITY.md](SECURITY.md). A bug that could make
+the bench drive an output when it should not is the most serious kind this
+project can have, and is handled the same way.
+
 ## Attributions and licences
 
 **This project is MIT licensed** — see [LICENSE](LICENSE). What follows is
@@ -113,7 +125,7 @@ reference code for SRXL2, JETI EX Bus, DShot and DroneCAN.
 - **BLHeli, AM32, ESCape32, VESC and Hitec** — their published protocols and
   their configurators, read before the programmer screen was drawn.
   [BLHeli_32's parameters are deliberately absent](https://github.com/subtilitas/rcbench/wiki/BLHeli32),
-  and the reason is a key we were not given.
+  and the reason is a key we asked for and were not given.
 
 **Third-party code in the tree: none.** `test/host/greatest.h` is a 108-line
 harness written for this project — it is not the `greatest` library it is named

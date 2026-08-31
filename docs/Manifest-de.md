@@ -43,8 +43,9 @@ Drei Türen sind zu, und das zu wissen erspart es, sie im Auge zu behalten:
   Telemetrie — Geräte darüber zu programmieren wird nicht kommen.
 - **BLHeli_32-Parameter.** Der Prüfstand erkennt diese Regler und steuert sie
   an; Drehrichtung, 3D-Modus, Beacon und Save-Settings funktionieren. Die
-  Parametertabelle nicht — und es liegt an einem Schlüssel, nicht am Aufwand:
-  [die ganze Antwort](BLHeli32-de.md).
+  Parametertabelle nicht. Es liegt an einem Schlüssel und nicht am Aufwand, es
+  wurde danach gefragt, und die Antwort war nein — [die ganze
+  Antwort](BLHeli32-de.md).
 - **Servoprogrammierung für KST** ist auf Wunsch des Eigentümers
   zurückgestellt.
 

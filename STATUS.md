@@ -489,7 +489,9 @@ nobody reopens it by accident.
   read its 256-byte settings block. That block is XTEA ciphertext, and the key
   exists in exactly one place — inside a closed, unlicensed binary from a
   project whose author has stopped publishing. The blocker is not effort; it is
-  a key we would have to take rather than be given. Identification, direction,
+  a key we would have to take rather than be given — **and we asked for it in
+  August 2026 and were declined**, so this is settled rather than pending.
+  Identification, direction,
   3D mode, beacon and telemetry all work regardless, because those are DShot
   special commands on the signal wire. [The full reasoning](docs/BLHeli32.md).
 - **Futaba's S.BUS2 telemetry slots** — answering in the right 325 µs window
