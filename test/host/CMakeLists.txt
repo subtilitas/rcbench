@@ -48,6 +48,23 @@ set(UNDER_TEST
 # pixel coordinates and register widths, and a silent narrowing there is a
 # wrong number rather than a crash.
 set(STRICT -Wall -Wextra -Werror -Wshadow -Wconversion -Wno-sign-conversion)
+
+# ASan + UBSan, for the runtime faults -Werror cannot see: a parser fed a
+# hostile frame reading off the end of a buffer, a signed shift overflowing, an
+# unaligned access.  This is a separate CI job from the -Werror one, and it
+# drops -Werror on purpose: UBSan's instrumentation makes GCC re-issue
+# -Wconversion on shift expressions whose casts are already correct, and those
+# false positives would fail the build before a single test ran.  The warnings
+# still print; the enforcing -Werror lives in the ordinary job.
+option(ENABLE_SANITIZERS "Build the suite under AddressSanitizer + UBSan" OFF)
+if(ENABLE_SANITIZERS)
+    list(REMOVE_ITEM STRICT -Werror)
+    set(SAN -fsanitize=address,undefined -fno-sanitize-recover=all
+            -fno-omit-frame-pointer -g)
+    add_compile_options(${SAN})
+    add_link_options(${SAN})
+endif()
+
 foreach(lib ${UNDER_TEST})
     target_compile_options(${lib} PRIVATE ${STRICT})
     if(ENABLE_COVERAGE)

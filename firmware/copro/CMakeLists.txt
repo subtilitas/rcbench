@@ -41,6 +41,16 @@ add_executable(rcbench-copro
     src/xl2515.c
 )
 target_include_directories(rcbench-copro PRIVATE include src)
+
+# The coprocessor's own two files are held to the same warnings as everything
+# else, which they were not before: the pico-sdk build set none, so a wedged
+# return or a shadowed name would have compiled where the host build rejects
+# it.  Scoped to this target so the SDK's own headers are not judged by it.
+# -Wconversion is left off here alone -- the SDK's register macros trip it
+# everywhere -- and the shared maths that needs it is already held to it by
+# the host suite.
+target_compile_options(rcbench-copro PRIVATE
+    -Wall -Wextra -Werror -Wshadow)
 target_link_libraries(rcbench-copro
     pico_stdlib
     hardware_pio
