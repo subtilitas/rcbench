@@ -13,7 +13,6 @@
 #include "outputs.h"
 #include "outputs_pages.h"
 #include "link_pages.h"
-#include "link_servo.h"
 
 static outputs_t o;
 
@@ -379,136 +378,166 @@ TEST_CASE(the_timeout_survives_the_wrap)
 }
 
 
+
 /* ------------------------------------------------- the pages as outputs */
 
-static uint16_t servo_page[LINK_SV_COUNT];
+static uint16_t chan_cfg[LINK_CC_COUNT];
+static uint16_t slots[LINK_OS_COUNT];
+static uint16_t chans[LINK_CH_COUNT];
 
-static void fresh_page(void)
+static void fresh_pages(void)
 {
     fresh();
-    link_servo_defaults(servo_page);
+    outputs_chan_cfg_defaults(chan_cfg);
+    outputs_slots_defaults(slots);
+    outputs_channels_defaults(chans);
 }
 
-/* Enable configures a slot and clearing it takes the pin back, because "not
- * driving" has to mean there is no pin before there is a pin to stop. */
-TEST_CASE(enable_is_a_slot_rather_than_an_arm)
+/* A whole servo, set up the way the panel sets one up: configure the channel,
+ * claim a slot, then command it -- and the pulse comes back as microseconds. */
+TEST_CASE(a_servo_is_configured_then_commanded)
 {
-    fresh_page();
-    outputs_apply_servo_page(&o, servo_page, 1, 0, 9, 1000u);
-    CHECK_EQ(o.slot[0].driver, OUT_DRIVER_NONE);
-    CHECK(!o.armed);            /* enabling a servo did not arm anything */
+    fresh_pages();
+    /* channel 0: surface, no slew, 1000..2000 */
+    chan_cfg[LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE;
+    chan_cfg[LINK_CC_MIN_US] = 1000u;
+    chan_cfg[LINK_CC_MAX_US] = 2000u;
+    CHECK_EQ(outputs_chan_cfg_write(chan_cfg, 0, LINK_CC_STRIDE, chan_cfg), 0);
+    outputs_chan_cfg_apply(&o, chan_cfg);
 
-    servo_page[LINK_SV_ENABLE] = 1u;
-    outputs_apply_servo_page(&o, servo_page, 1, 0, 9, 1000u);
+    /* slot 0: PWM on pin 9, rendering channel 0 */
+    slots[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
+    slots[LINK_OS_PIN]     = 9u;
+    slots[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(0, 1);
+    slots[LINK_OS_RATE_HZ] = 50u;
+    CHECK_EQ(outputs_slots_write(slots, 0, LINK_OS_STRIDE, slots), 0);
+    outputs_slots_apply(&o, slots);
     CHECK_EQ(o.slot[0].driver, OUT_DRIVER_PWM);
     CHECK_EQ(o.slot[0].pin, 9);
-    CHECK_EQ(o.slot[0].first_channel, 1);
-    CHECK(!o.armed);
 
-    servo_page[LINK_SV_ENABLE] = 0u;
-    outputs_apply_servo_page(&o, servo_page, 1, 0, 9, 1000u);
-    CHECK_EQ(o.slot[0].driver, OUT_DRIVER_NONE);
-}
-
-/* A pulse in microseconds becomes a proportion of travel, and comes back out
- * as the microseconds it went in as. */
-TEST_CASE(a_pulse_survives_the_round_trip)
-{
-    fresh_page();
-    servo_page[LINK_SV_ENABLE] = 1u;
     outputs_arm(&o, true, 1000u);
-
-    const uint16_t probe[] = { 1000u, 1250u, 1500u, 1750u, 2000u };
-    for (unsigned i = 0; i < sizeof(probe) / sizeof(probe[0]); ++i) {
-        servo_page[LINK_SV_PULSE_US] = probe[i];
-        outputs_apply_servo_page(&o, servo_page, 1, 0, 9, 1000u);
-        outputs_step(&o, 1000u);
-        CHECK_EQ(outputs_pulse_us(&o, 1), probe[i]);
+    const uint16_t probe[] = { 0u, 250u, 500u, 750u, LINK_CH_SPAN };
+    const uint16_t want[]  = { 1000u, 1250u, 1500u, 1750u, 2000u };
+    for (unsigned i = 0; i < 5; ++i) {
+        chans[0] = probe[i];
+        CHECK_EQ(outputs_channels_write(chans, 0, 1, chans), 0);
+        outputs_channels_apply(&o, chans, 1000u);
+        outputs_step(&o, 1010u);
+        CHECK_EQ(outputs_pulse_us(&o, 0), want[i]);
     }
 }
 
-/* Narrow endpoints still span the whole command range, so the same command
- * means the same fraction of travel whatever the servo's range is. */
-TEST_CASE(narrow_endpoints_still_span_the_command)
+/* Clearing the slot stops the output; the channel keeps its command but with
+ * nothing rendering it that is inert. */
+TEST_CASE(clearing_the_slot_stops_the_output)
 {
-    fresh_page();
-    servo_page[LINK_SV_ENABLE]  = 1u;
-    servo_page[LINK_SV_MIN_US]  = 1200u;
-    servo_page[LINK_SV_MAX_US]  = 1800u;
-    servo_page[LINK_SV_PULSE_US]= 1800u;
-    outputs_arm(&o, true, 1000u);
-    outputs_apply_servo_page(&o, servo_page, 1, 0, 9, 1000u);
-    outputs_step(&o, 1000u);
-    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN);
-    CHECK_EQ(outputs_pulse_us(&o, 1), 1800u);
-}
+    fresh_pages();
+    slots[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
+    slots[LINK_OS_PIN]     = 9u;
+    slots[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(0, 1);
+    slots[LINK_OS_RATE_HZ] = 50u;
+    outputs_slots_apply(&o, slots);
+    CHECK_EQ(o.slot[0].driver, OUT_DRIVER_PWM);
 
-/*
- * The slew converts too.  A page asking for its whole travel in one second
- * has to mean that on a narrow servo as much as a wide one -- a slew limit
- * that changes meaning with the endpoints is not a limit.
- */
-TEST_CASE(the_slew_converts_with_the_endpoints)
-{
-    fresh_page();
-    servo_page[LINK_SV_ENABLE] = 1u;
-    servo_page[LINK_SV_MIN_US] = 1200u;
-    servo_page[LINK_SV_MAX_US] = 1800u;   /* 600 us of travel */
-    servo_page[LINK_SV_SLEW_US]= 600u;    /* all of it per second */
-    outputs_apply_servo_page(&o, servo_page, 1, 0, 9, 1000u);
-    CHECK_EQ(o.channel[1].slew_per_s, OUT_SPAN);
-}
-
-/* A degenerate range divides by zero if nothing catches it.  The page's own
- * rules straighten inverted pairs, but nothing here may lean on that. */
-TEST_CASE(a_zero_width_range_is_survivable)
-{
-    fresh_page();
-    servo_page[LINK_SV_ENABLE]   = 1u;
-    servo_page[LINK_SV_MIN_US]   = 1500u;
-    servo_page[LINK_SV_MAX_US]   = 1500u;
-    servo_page[LINK_SV_PULSE_US] = 1500u;
-    servo_page[LINK_SV_SLEW_US]  = 400u;
-    outputs_apply_servo_page(&o, servo_page, 1, 0, 9, 1000u);
-    CHECK_EQ(o.channel[1].slew_per_s, 0u);
-    CHECK_EQ(o.channel[1].command, OUT_SPAN / 2u);
-    CHECK_EQ(outputs_pulse_us(&o, 1), 1500u);
-}
-
-/* The throttle page scales from its own maximum, and arriving at rest is what
- * a zero throttle has to mean. */
-TEST_CASE(the_control_page_scales_the_throttle)
-{
-    fresh();
-    uint16_t control[LINK_CT_COUNT] = { 0 };
-    outputs_arm(&o, true, 1000u);
-
-    control[LINK_CT_THROTTLE] = LINK_THROTTLE_MAX;
-    outputs_apply_control_page(&o, control, 0, 1000u);
-    outputs_step(&o, 1000u);
-    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN);
-    CHECK_EQ(o.channel[0].role, OUT_ROLE_THROTTLE);
-
-    control[LINK_CT_THROTTLE] = LINK_THROTTLE_MAX / 2u;
-    outputs_apply_control_page(&o, control, 0, 1000u);
-    outputs_step(&o, 1000u);
-    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
-
-    control[LINK_CT_THROTTLE] = 0u;
-    outputs_apply_control_page(&o, control, 0, 1000u);
-    outputs_step(&o, 1000u);
-    CHECK_EQ(outputs_actual(&o, 0), 0u);
-}
-
-/* Neither adapter follows a null. */
-TEST_CASE(the_adapters_refuse_nothing_at_all)
-{
-    fresh_page();
-    outputs_apply_servo_page(NULL, servo_page, 1, 0, 9, 0);
-    outputs_apply_servo_page(&o, NULL, 1, 0, 9, 0);
-    outputs_apply_control_page(NULL, servo_page, 0, 0);
-    outputs_apply_control_page(&o, NULL, 0, 0);
+    slots[LINK_OS_DRIVER] = LINK_DRIVER_NONE;
+    outputs_slots_apply(&o, slots);
     CHECK_EQ(o.slot[0].driver, OUT_DRIVER_NONE);
+}
+
+/* A channel config with an impossible endpoint is refused, and the refusal
+ * changes nothing -- the same rule the servo page had. */
+TEST_CASE(an_impossible_endpoint_is_refused_atomically)
+{
+    fresh_pages();
+    uint16_t in[LINK_CC_STRIDE] = {
+        [LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE,
+        [LINK_CC_SLEW]   = 0u,
+        [LINK_CC_MIN_US] = 100u,      /* below the floor */
+        [LINK_CC_MAX_US] = 2000u,
+    };
+    CHECK_EQ(outputs_chan_cfg_write(chan_cfg, 0, LINK_CC_STRIDE, in),
+             LINK_NACK_BAD_VALUE);
+    /* untouched: still the default range */
+    CHECK_EQ(chan_cfg[LINK_CC_MIN_US], LINK_CC_DEFAULT_MIN);
+
+    in[LINK_CC_MIN_US] = 9000u;       /* above the ceiling */
+    CHECK_EQ(outputs_chan_cfg_write(chan_cfg, 0, LINK_CC_STRIDE, in),
+             LINK_NACK_BAD_VALUE);
+    /* an unknown role is refused too */
+    in[LINK_CC_MIN_US] = 1000u;
+    in[LINK_CC_ROLE]   = 7u;
+    CHECK_EQ(outputs_chan_cfg_write(chan_cfg, 0, LINK_CC_STRIDE, in),
+             LINK_NACK_BAD_VALUE);
+}
+
+/* An unknown driver number is refused before it reaches the table. */
+TEST_CASE(an_unknown_driver_is_refused)
+{
+    fresh_pages();
+    uint16_t in[LINK_OS_STRIDE] = {
+        [LINK_OS_DRIVER]  = 99u,
+        [LINK_OS_PIN]     = 9u,
+        [LINK_OS_RANGE]   = LINK_OS_RANGE_OF(0, 1),
+        [LINK_OS_RATE_HZ] = 50u,
+    };
+    CHECK_EQ(outputs_slots_write(slots, 0, LINK_OS_STRIDE, in),
+             LINK_NACK_BAD_VALUE);
+    /* and DShot is a known driver, so it stores */
+    in[LINK_OS_DRIVER] = LINK_DRIVER_DSHOT;
+    CHECK_EQ(outputs_slots_write(slots, 0, LINK_OS_STRIDE, in), 0);
+}
+
+/* The slew on the channel-config page is already in span units, so a whole
+ * span in a second is what the bank slews at -- no conversion, unlike the old
+ * microseconds-a-second servo page. */
+TEST_CASE(the_slew_is_span_units)
+{
+    fresh_pages();
+    chan_cfg[LINK_CC_SLEW] = 500u;    /* half a span per second */
+    outputs_chan_cfg_apply(&o, chan_cfg);
+    CHECK_EQ(o.channel[0].slew_per_s, 500u);
+}
+
+/* PPM claims eight channels on one pin, and the range register carries that. */
+TEST_CASE(the_range_register_packs_first_and_count)
+{
+    fresh_pages();
+    slots[LINK_OS_DRIVER]  = LINK_DRIVER_PPM;
+    slots[LINK_OS_PIN]     = 5u;
+    slots[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(0, 8);
+    slots[LINK_OS_RATE_HZ] = 22u;
+    CHECK_EQ(LINK_OS_FIRST(slots[LINK_OS_RANGE]), 0);
+    CHECK_EQ(LINK_OS_CHANNELS(slots[LINK_OS_RANGE]), 8);
+    outputs_slots_apply(&o, slots);
+    CHECK_EQ(o.slot[0].driver, OUT_DRIVER_PPM);
+    CHECK_EQ(o.slot[0].channels, 8);
+}
+
+/* A command past the span is clamped in the store, so a read-back is honest. */
+TEST_CASE(a_channel_command_is_clamped_in_place)
+{
+    fresh_pages();
+    uint16_t in[1] = { 5000u };
+    CHECK_EQ(outputs_channels_write(chans, 0, 1, in), 0);
+    CHECK_EQ(chans[0], LINK_CH_SPAN);
+}
+
+/* Writing off the end of any page is refused. */
+TEST_CASE(writing_off_a_page_end_is_refused)
+{
+    fresh_pages();
+    uint16_t z[4] = { 0, 0, 0, 0 };
+    CHECK_EQ(outputs_chan_cfg_write(chan_cfg, LINK_CC_COUNT, 1, z),
+             LINK_NACK_BAD_RANGE);
+    CHECK_EQ(outputs_slots_write(slots, LINK_OS_COUNT, 1, z),
+             LINK_NACK_BAD_RANGE);
+    CHECK_EQ(outputs_channels_write(chans, LINK_CH_COUNT, 1, z),
+             LINK_NACK_BAD_RANGE);
+    /* and nulls are refused rather than followed */
+    CHECK_EQ(outputs_chan_cfg_write(NULL, 0, 1, z), LINK_NACK_BAD_RANGE);
+    outputs_chan_cfg_apply(NULL, chan_cfg);
+    outputs_slots_apply(&o, NULL);
+    outputs_channels_apply(NULL, chans, 0);
 }
 
 int main(void)
@@ -532,12 +561,13 @@ int main(void)
     RUN(out_of_range_is_refused_everywhere);
     RUN(clearing_a_slot_frees_what_it_held);
     RUN(the_timeout_survives_the_wrap);
-    RUN(enable_is_a_slot_rather_than_an_arm);
-    RUN(a_pulse_survives_the_round_trip);
-    RUN(narrow_endpoints_still_span_the_command);
-    RUN(the_slew_converts_with_the_endpoints);
-    RUN(a_zero_width_range_is_survivable);
-    RUN(the_control_page_scales_the_throttle);
-    RUN(the_adapters_refuse_nothing_at_all);
+    RUN(a_servo_is_configured_then_commanded);
+    RUN(clearing_the_slot_stops_the_output);
+    RUN(an_impossible_endpoint_is_refused_atomically);
+    RUN(an_unknown_driver_is_refused);
+    RUN(the_slew_is_span_units);
+    RUN(the_range_register_packs_first_and_count);
+    RUN(a_channel_command_is_clamped_in_place);
+    RUN(writing_off_a_page_end_is_refused);
     return test_summary("outputs");
 }

@@ -96,7 +96,7 @@ heading for. [The link](#the-link) has that arithmetic.
 | The other two benches and three scaffolds | re-cut | routed and rendered; each says what it will do and what is blocking it |
 | Instrument widgets — plot, rails, hero, slider, tabs | re-cut | **built** and tested: the scale ladder, the shrink hysteresis, and the press-ownership contracts |
 | The simulation watermark | new | **built**: SIMULATION across the whole screen at 15% whenever the numbers are modelled, and no screen can opt out |
-| Coprocessor firmware | new | answers identity, status, control, bench and servo pages over CAN, fails safe at 200 ms. **Run on silicon**: the bus is up at 1 Mbit/s with zero errors at either end |
+| Coprocessor firmware | new | answers identity, status, control, bench and the three output pages over CAN, fails safe at 200 ms. **Run on silicon**: the bus is up at 1 Mbit/s with zero errors at either end |
 | Panel link transport | new | TWAI on GPIO19/20 through the board's multiplexer, poll loop with the one-second escalation and fragment reassembly. **Run on silicon** |
 | **The link moves to CAN** | new | **drivers at both ends, and a bring-up self-test that runs on silicon**: an echo across the bus that answers only "do frames cross intact", separately from whether the link works. The coprocessor echoes permanently; the panel side is opt-in because it costs native USB. [The procedure](docs/Bringup.md). The mapping and the bit timing are tested on the host, the coprocessor's pins came from the vendor's own driver rather than a guess,
 while the panel's TWAI pins are inferred from the multiplexer and still want
@@ -106,7 +106,7 @@ tracing on the schematic; the drivers are not. A coprocessor module with an XL25
 | Throttle output on the panel | **removed** | GPIO6 is the heartbeat; the panel emits no servo pulse |
 | **S.BUS** | new | **decoded and tested**: sixteen channels of eleven bits, the two digital ones, and both flags. Framed on the inter-frame gap rather than on a header byte that is also an ordinary channel value — see [the receiver buses](docs/Receivers.md). The inverted 8E2 receiver that produces the bytes is a PIO program and is not written |
 | **The OpenYGE ESC protocol** | **elsewhere** | the implementation is being carried in a separate repository, so nothing further is done here. [The specification](docs/OpenYGE.md) stays: it is the document of record, it is going to YGE to be checked, and the CRC seed and decoder shape it settles are the panel link's too. The codec in `shared/openyge/` is **dormant** — built, tested, wired into nothing |
-| **A servo page on the link** | new | **built and tested**: one output, where to hold it, and the range outside which the coprocessor will not go. The limits live at the far end because that is the end holding the wire — a host that has been restarted, reflashed or is simply wrong must not be able to drive a servo into its stops. A pulse outside the range is *clamped* and a limit outside what a servo can take is *refused*, which are different answers to different mistakes: pulses arrive many times a second from a host that may be mid-drag, and refusing one gives a servo that stops following rather than one that stops at its stop. `LINK_PROTOCOL_MINOR` goes to 1, which an older host ignores. What is still missing is the PWM at the far end: the page is answered, and nothing yet turns it into an edge |
+| **Output pages on the link** | new | **built and tested**: the servo page is gone, replaced by three that carry a proportion of travel rather than a servo's own microseconds — `CHANNELS` (what each output is asked for), `CHAN_CFG` (what a channel is: throttle or surface, its slew, its pulse endpoints) and `OUTPUTS` (which driver renders which channels, on which pin). A pulse outside its range is *clamped* and an endpoint a servo cannot take is *refused*, the same two answers the servo page gave. This is the wire catching up with the [output intermediary](#every-output-goes-through-one-place): a protocol is now a driver in a table, not a page of its own, so DShot is a row rather than a rewrite. `LINK_PROTOCOL_MAJOR` goes to 2 — the servo page's number is retired rather than reused, so an old panel cannot write a pulse into a driver table and be acknowledged. Still missing is the PWM at the far end: the pages are answered, and nothing yet turns a command into an edge |
 | **Finding a servo's installed limit** | new | **the search is built and tested** against a modelled servo — the knee in current against position, with three protections. It has nothing to drive until the coprocessor has PWM and a sensor per output |
 | **Synchronising two servos on one surface** | new | **built and tested**: total current minimised at centre and at each end, which separates an offset error from a travel error. Waiting on the same sensor |
 | Servo programmer | **held** | the KST work stays in the predecessor until asked for |
@@ -245,12 +245,21 @@ same 55 %/s ramp expressed as a proportion of travel rather than a percentage
 measured in percent. Keeping the old model would have left the second opinion
 in place, which is the thing this exists to prevent.
 
-**Still to come.** The wire is unchanged so far -- the servo and control pages
-became thin adapters onto the bank rather than the place the rules live. Next
-is saying it on the link: `LINK_PAGE_OUTPUTS` for what each slot is (driver,
-pin, first channel, rate) and a channels page for the values, replacing a
-page-per-protocol before there are five of them. Then DShot, which by then is a
-table row.
+**On the wire.** The link now says it too. The servo page is retired and three
+took its place: `CHAN_CFG` (a channel's role, slew and pulse endpoints),
+`OUTPUTS` (per slot: driver, pin, the run of channels it renders, rate) and the
+hot `CHANNELS` page (a command per output, in thousandths of travel). A protocol
+is a driver number in the `OUTPUTS` table, so **DShot is a row rather than a
+page** -- which was the whole point. The mapping and its validation live in
+`shared/outputs/outputs_pages.c`, host-tested, so the arithmetic that turns a
+microsecond pulse into a proportion of travel is checked on a laptop rather than
+only where CI compiles the coprocessor. `LINK_PROTOCOL_MAJOR` is 2: the servo
+page's number is retired, not reused, so an old panel cannot write a pulse into
+a driver table and be told it worked.
+
+**Still to come.** The last step -- a command becoming an edge on a pin. The
+pages are answered and the bank is driven; no driver yet toggles a GPIO. DShot
+is first, because by now it costs a table row and a PIO program.
 
 ## The link
 
@@ -385,12 +394,12 @@ start from it rather than a bare `menuconfig`.
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them, opens a release |
 
-33 binaries, each printing one line per case: `test_gfx`,
+32 binaries, each printing one line per case: `test_gfx`,
 `test_touch_map`, `test_nav`, `test_widgets`, `test_bench`, `test_motor`,
 `test_servo`, `test_analyser`, `test_programmer`, `test_balance`, `test_battery`, `test_settings`,
 `test_logfile`, `test_link_crc`, `test_link_pages`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
-`test_link_can`, `test_link_servo`, `test_outputs`, `test_can_timing`, `test_can_selftest`,
+`test_link_can`, `test_outputs`, `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`,
 `test_heartbeat`,
 `test_servo_limit`, `test_servo_sync`, `test_sbus`, `test_openyge_frame`,
@@ -454,14 +463,13 @@ samples currently costs **740**.
 | `shared/link/link_can.c` | 94 | 92 | 97.9% |
 | `shared/link/link_crc.c` | 7 | 7 | 100.0% |
 | `shared/link/link_dev.c` | 74 | 71 | 96.0% |
-| `shared/link/link_servo.c` | 34 | 32 | 94.1% |
 | `shared/link/link_host.c` | 113 | 102 | 90.3% |
 | `shared/bench/bench_state.c` | 61 | 57 | 93.4% |
 | `shared/outputs/outputs.c` | 153 | 143 | 93.5% |
-| `shared/outputs/outputs_pages.c` | 31 | 30 | 96.8% |
+| `shared/outputs/outputs_pages.c` | 96 | 90 | 93.8% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
 | `shared/bench/log_writer.c` | 43 | 40 | 93.0% |
-| **total** | **7185** | **6701** | **93.3%** |
+| **total** | **7216** | **6729** | **93.3%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

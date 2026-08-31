@@ -1,12 +1,24 @@
 /*
- * The link's pages, expressed as outputs.
+ * The link's output pages, expressed as bank operations.
  *
- * This is the same move link_servo.c made, for the same reason: the mapping
- * has arithmetic in it -- a pulse in microseconds becoming a proportion of
- * travel, a slew in microseconds per second becoming a proportion per second
- * -- and arithmetic that only exists inside the coprocessor is arithmetic
- * nothing on a desk can check.  Here it is host-tested, and the coprocessor
- * is wiring.
+ * The wire carries three pages where the servo page used to be one, because
+ * one page per protocol was the alternative.  The mapping between them and the
+ * bank has arithmetic and validation in it -- a driver number that must be one
+ * this build knows, an endpoint that must be a pulse a servo can take, a range
+ * of channels that must fit -- and arithmetic that lives only inside the
+ * coprocessor is arithmetic nothing on a desk can check.  So it lives here,
+ * host-tested, and the coprocessor is wiring.
+ *
+ * Each page has three entry points, in the shape link_servo.c had before it:
+ *   _defaults  puts the register array into the state a coprocessor holds
+ *              before anybody has configured it.
+ *   _write     validates a register window and stores it, refusing atomically
+ *              -- a rejected write leaves the page as it was.
+ *   _apply     derives the bank from the whole stored page.
+ *
+ * The split matters because the register array is also what a read returns:
+ * the panel reads back what it wrote, so the page and the bank are two views
+ * that have to be kept from disagreeing.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,17 +29,22 @@
 
 #include "outputs.h"
 
-/**
- * Apply the servo page to a channel and its slot.
- *
- * Enable is not arming.  Arming belongs to the bank and the holder of the
- * wire decides it; what enable says is whether this output exists at all, so
- * it configures the slot or clears it.
- */
-void outputs_apply_servo_page(outputs_t *o, const uint16_t *page,
-                              uint8_t ch, uint8_t slot, uint8_t pin,
-                              uint32_t now_ms);
+/* --- CHAN_CFG: what each channel is -- role, slew, and its pulse endpoints */
+void    outputs_chan_cfg_defaults(uint16_t *regs);
+uint8_t outputs_chan_cfg_write(uint16_t *regs, uint8_t off, uint8_t n,
+                               const uint16_t *in);
+void    outputs_chan_cfg_apply(outputs_t *o, const uint16_t *regs);
 
-/** Apply the control page's throttle to a channel. */
-void outputs_apply_control_page(outputs_t *o, const uint16_t *page,
-                                uint8_t ch, uint32_t now_ms);
+/* --- OUTPUTS: which driver renders which channels, on which pin, how often */
+void    outputs_slots_defaults(uint16_t *regs);
+uint8_t outputs_slots_write(uint16_t *regs, uint8_t off, uint8_t n,
+                            const uint16_t *in);
+void    outputs_slots_apply(outputs_t *o, const uint16_t *regs);
+
+/* --- CHANNELS: what each output is asked for.  Clamped, not refused, because
+ *     a command arrives many times a second from a host that may be mid-drag. */
+void    outputs_channels_defaults(uint16_t *regs);
+uint8_t outputs_channels_write(uint16_t *regs, uint8_t off, uint8_t n,
+                               const uint16_t *in);
+void    outputs_channels_apply(outputs_t *o, const uint16_t *regs,
+                               uint32_t now_ms);
