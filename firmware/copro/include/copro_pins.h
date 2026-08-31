@@ -15,7 +15,6 @@
 #define RCBENCH_COPRO_PINS_H
 
 /*
-/*
  * The safety heartbeat from the panel's J8, through the retriggerable
  * monostable.  An input here: the coprocessor gates its own outputs from it
  * and checks the period in firmware as well, because noise can fake a
