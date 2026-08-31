@@ -1,6 +1,8 @@
 /*
  * What the balance screen has to get right so far: both panes draw, the tabs
  * switch them, and no line of the guidance runs off the card it is in.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <stdlib.h>
 #include <string.h>

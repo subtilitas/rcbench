@@ -3,6 +3,8 @@
  *
  * Numbers and controls stay put while the large area switches, so a change of
  * view never moves the thing you were about to press.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #pragma once
 

@@ -9,6 +9,8 @@
  *
  * So it is written across the whole screen, corner to corner, faint enough to
  * read straight through and impossible to crop out of a photograph.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #pragma once
 

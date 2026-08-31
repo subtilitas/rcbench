@@ -9,6 +9,8 @@
  * Floats here and fixed-point on the wire, deliberately.  Sixteen bits with a
  * documented scale is a contract two firmwares can hold to; a float is four
  * bytes of endianness and rounding that nobody wrote down.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #pragma once
 

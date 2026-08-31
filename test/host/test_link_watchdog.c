@@ -4,6 +4,8 @@
  * The ratio is the design: the coprocessor gives up at 200 ms and the host at
  * a second, so the end holding the outputs is always the more suspicious of
  * the two.  These cases exist to make that a property rather than a comment.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <string.h>
 

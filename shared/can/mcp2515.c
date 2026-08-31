@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 #include "mcp2515.h"
 
 #include <stddef.h>

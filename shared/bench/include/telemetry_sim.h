@@ -11,6 +11,8 @@
  * bus sags under load, current grows faster than throttle, and rpm follows a
  * sagging bus rather than the stick.  A simulator that produced tidy numbers
  * would hide the misreadings a real bench exists to show.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #pragma once
 

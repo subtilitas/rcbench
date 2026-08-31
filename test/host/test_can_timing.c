@@ -7,6 +7,8 @@
  * number below is checkable by hand from the datasheet, which is the point --
  * these are the values that would otherwise be copied from an application note
  * and believed.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <string.h>
 

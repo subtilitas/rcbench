@@ -1,6 +1,8 @@
 /*
  * The status band: what is true about the bench, and the one control that has
  * to work from anywhere.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #pragma once
 

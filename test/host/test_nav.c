@@ -6,6 +6,8 @@
  * and no screen may draw over it.  The second is enforced by handing screens a
  * sub-canvas rather than by asking them nicely, and this file checks the
  * enforcement rather than the manners.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <stdlib.h>
 #include <string.h>

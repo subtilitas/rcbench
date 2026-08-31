@@ -5,6 +5,8 @@
  * what follows is a difference the old arrangement could not have expressed:
  * a role deciding what rest is and which direction is safe, and a table
  * catching two drivers reaching for one pin.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <string.h>
 

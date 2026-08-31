@@ -5,6 +5,8 @@
  * so a board with no card, a touch controller that did not answer, or a
  * coprocessor speaking a protocol version this panel does not, says so on the
  * way past -- rather than looking mysteriously broken three screens later.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #pragma once
 

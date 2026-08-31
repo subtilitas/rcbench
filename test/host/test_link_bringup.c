@@ -6,6 +6,8 @@
  * symptoms at once -- a silent one also times out on every poll -- and the
  * value of this module is naming the cause rather than the loudest
  * consequence.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <string.h>
 

@@ -11,6 +11,8 @@
  *
  *   and a press that starts anywhere else never becomes a drag, however far it
  *   travels across the track on its way somewhere.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #pragma once
 

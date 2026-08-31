@@ -1,6 +1,8 @@
 /*
  * The reusable instrument widgets: the plot's scales, and the two press
  * contracts that decide whether a finger can spin a motor by accident.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <math.h>
 #include <stdlib.h>

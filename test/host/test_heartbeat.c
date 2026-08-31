@@ -5,6 +5,8 @@
  * things the monostable downstream cannot do: refuse a line that edges too
  * fast to be a panel, refuse one that has gone quiet, and refuse to believe
  * either of them again on the strength of a single edge.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <string.h>
 

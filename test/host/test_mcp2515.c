@@ -7,6 +7,8 @@
  * that means the wrong thing wins. So every bit position is checked
  * individually rather than by round-tripping a handful of values -- a
  * round trip agrees with itself even when both halves share a mistake.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <string.h>
 

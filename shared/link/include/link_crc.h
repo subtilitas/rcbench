@@ -18,6 +18,8 @@
  * (0x29B1 over the ASCII string "123456789"), which means an implementation on
  * the other end of the wire -- written by somebody else, in another language,
  * years from now -- can be verified against one number before it is trusted.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #ifndef RCBENCH_LINK_CRC_H
 #define RCBENCH_LINK_CRC_H

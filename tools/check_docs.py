@@ -282,6 +282,29 @@ def check_shared_modules(problems: list[str]) -> None:
             problems.append(f"{doc.name}: the tree omits shared/{module}/")
 
 
+def check_spdx(problems: list[str]) -> None:
+    """Every source file carries an SPDX licence line.
+
+    The header travelled by copy-paste before this, so about half the tree had
+    it and half did not -- and which half was an accident of where a file was
+    started from.  A machine holds the whole tree to it now, so a new file
+    without one fails the build rather than the pattern eroding further.
+    """
+    import os
+    for base in ("shared", "firmware", "test"):
+        for dp, dn, fn in os.walk(REPO / base):
+            # Prune build trees in place -- build, build-san, build-cov -- so
+            # the walk never reaches a toolchain's own probe files.
+            dn[:] = [d for d in dn if not d.startswith("build")]
+            for f in fn:
+                if not f.endswith((".c", ".h")):
+                    continue
+                path = pathlib.Path(dp) / f
+                if "SPDX-License-Identifier" not in read(path):
+                    rel = path.relative_to(REPO)
+                    problems.append(f"{rel} has no SPDX-License-Identifier")
+
+
 def main() -> int:
     problems: list[str] = []
     check_links(problems)
@@ -291,6 +314,7 @@ def main() -> int:
     check_suites(problems)
     check_option_lists(problems)
     check_shared_modules(problems)
+    check_spdx(problems)
 
     for problem in problems:
         print(problem, file=sys.stderr)

@@ -5,6 +5,8 @@
  * The two rules worth holding: 0xC0 is setpoint noise rather than a BEC
  * over-current that cannot happen, and a warning bit is a caution until the
  * state says otherwise.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <string.h>
 

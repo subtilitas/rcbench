@@ -1,6 +1,8 @@
 /*
  * The bench's model: what the numbers mean on the wire, the rules for asking
  * a motor to spin, and a simulator that has to be honest about being one.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <math.h>
 #include <string.h>

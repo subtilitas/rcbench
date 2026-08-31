@@ -6,6 +6,8 @@
  * file's decimal convention from every value in it and rejects what does not
  * conform.  So every case here writes a run and parses it, and the assertion
  * is on what came out.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <math.h>
 #include <string.h>

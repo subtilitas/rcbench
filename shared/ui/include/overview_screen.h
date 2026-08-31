@@ -6,6 +6,8 @@
  * menu of capabilities would be a filing system, and a workshop tool is not
  * one.  A tile is a physical object you have in front of you and something you
  * want to know about it.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #pragma once
 

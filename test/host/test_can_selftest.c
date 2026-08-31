@@ -4,6 +4,8 @@
  *
  * Both ends are here, talking to each other through a bus this file controls,
  * so every fault a bring-up can meet is constructed rather than waited for.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <string.h>
 

@@ -10,6 +10,8 @@
  * and can disagree about their versions, so renumbering an existing page is a
  * breaking change; leaving gaps means a new one never has to be squeezed in
  * beside an unrelated neighbour.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #ifndef RCBENCH_LINK_PAGES_H
 #define RCBENCH_LINK_PAGES_H

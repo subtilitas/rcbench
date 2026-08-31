@@ -111,7 +111,7 @@ sein: der Pinbedarf liegt bei 27 bis 32 GPIO, ein Pico 2 führt nur 26 heraus.
 | | |
 | --- | --- |
 | `tools/coverage.py` | misst die Line Coverage der Host-Tests und hält die Tabelle im README aktuell; `--check` schlägt bei Abweichung fehl |
-| `tools/check_docs.py` | prüft diese Seiten gegen den Quellbaum: jeder Link führt irgendwohin, die Sidebar ist vollständig, die Suite-Liste ist die, die CMake baut, und der Baum oben nennt jedes Modul unter `shared/` |
+| `tools/check_docs.py` | prüft diese Seiten gegen den Quellbaum: jeder Link führt irgendwohin, die Sidebar ist vollständig, die Suite-Liste ist die, die CMake baut, der Baum oben nennt jedes Modul unter `shared/`, und jede Quelldatei trägt eine SPDX-Lizenzzeile |
 | `tools/wiki_links.py` | entfernt das `.md` aus Seitenlinks auf dem Weg ins Wiki, denn dort wird eine Seite über ihren Titel angesprochen und ein Link auf die Datei lädt sie nur herunter. Im Repository braucht es die Endung, im Wiki nicht — die Quelle behält sie, der Kopierschritt übersetzt |
 | `tools/gen_font.py` | erzeugt die drei eingebetteten Fonts neu; `--check` schlägt fehl, wenn der eingecheckte C-Code nicht mehr zu seinem Generator passt |
 | `tools/render_ui.py` | rendert jeden Bildschirm in ein PNG; `--check` vergleicht gegen die eingecheckten Goldens |

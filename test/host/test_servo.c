@@ -3,6 +3,8 @@
  * what the travel limit refuses, and the commands it produces.
  *
  * Not what it looks like -- that is the golden image's job.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <math.h>
 #include <stdlib.h>

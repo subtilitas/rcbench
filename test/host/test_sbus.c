@@ -6,6 +6,8 @@
  * middle of a frame, staying locked, and reporting sixteen plausible channels
  * that are all wrong. Plausible-and-wrong is the failure worth testing,
  * because nothing downstream can detect it.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <string.h>
 

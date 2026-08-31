@@ -6,6 +6,8 @@
  * there is nothing to find, and that every one of the three protections
  * actually stops it -- because this is the one routine in the project that
  * deliberately drives a servo toward something solid.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <stdio.h>
 #include <string.h>

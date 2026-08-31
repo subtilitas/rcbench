@@ -5,6 +5,8 @@
  * a question that fits entirely in its address, frames that describe
  * themselves so nothing has to be reassembled, and an arbitration order that
  * puts stopping the bench ahead of reading it.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <string.h>
 

@@ -6,6 +6,8 @@
  * FreeRTOS, no pico-sdk -- which is what lets both watchdogs be driven through
  * their transitions on a laptop, including across the 32-bit wrap that a real
  * one reaches after 49 days and a test reaches in a microsecond.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #ifndef RCBENCH_LINK_DEV_H
 #define RCBENCH_LINK_DEV_H

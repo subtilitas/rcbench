@@ -7,6 +7,8 @@
  * of an 8 behind every digit is most of why it looks like hardware.  So the
  * digits are rasterised from their segment masks, which also means one
  * routine serves every size the bench asks for instead of a table per size.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "gfx.h"

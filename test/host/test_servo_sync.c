@@ -5,6 +5,8 @@
  * installation errors -- a centre that is off and a throw that is long -- can
  * be told apart by measuring current at three positions, and that the routine
  * says so rather than inventing a correction when there is nothing to find.
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <stdio.h>
 #include <string.h>

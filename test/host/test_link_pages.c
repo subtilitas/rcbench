@@ -4,6 +4,8 @@
  * The refusals are the interesting half.  Every one of them has to produce a
  * frame, because silence on this link already means "the coprocessor is not
  * there" and must never also mean "I heard you and declined".
+ *
+ * SPDX-License-Identifier: MIT
  */
 #include <string.h>
 
