@@ -55,4 +55,4 @@ etwas Besserem als einem Magic Byte erkennen**, wo das Protokoll etwas
 hergibt, und **das Failsafe-Flag vor den Kanälen decodieren** — ein Protokoll,
 das überzeugend lügen kann, wird es tun. Jeder Decoder wird aus seiner
 Spezifikation geschrieben, nicht aus fremdem Code; die Lizenzgründe stehen in
-[dem Protokoll](https://github.com/subtilitas/rcbench#readme).
+[dem Protokoll](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).

@@ -100,4 +100,4 @@ beide zusammen ziehen.
 Die PWM-Ausgänge des Koprozessors und Strommessung an den Servoausgängen — je
 Ausgang für die Endlagensuche, einer über das Paar für die Abstimmung. Wo das
 in der Reihenfolge der Arbeiten steht, sagt
-[das Protokoll](https://github.com/subtilitas/rcbench#readme).
+[das Protokoll](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).

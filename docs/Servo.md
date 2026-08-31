@@ -96,5 +96,5 @@ what the two draw together.
 
 The coprocessor's PWM output and current sensing on the servo outputs — per
 output for the limit search, one across the pair for the synchroniser. See
-[the record](https://github.com/subtilitas/rcbench#readme) for where those sit
+[the record](https://github.com/subtilitas/rcbench/blob/main/STATUS.md) for where those sit
 in the order of work.

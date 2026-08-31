@@ -102,10 +102,10 @@ def check_anchors(problems: list[str]) -> None:
     somewhere else.
     """
     known = {}
-    for page in pages() + [REPO / "README.md"]:
+    for page in pages() + [REPO / "README.md", REPO / "STATUS.md"]:
         known[page.resolve()] = anchors(read(page))
 
-    for page in pages() + [REPO / "README.md"]:
+    for page in pages() + [REPO / "README.md", REPO / "STATUS.md"]:
         for target, fragment in ANCHOR_RE.findall(read(page)):
             if "://" in target:
                 continue
@@ -122,7 +122,7 @@ def check_anchors(problems: list[str]) -> None:
 def check_links(problems: list[str]) -> None:
     """Every relative link and image reference resolves to a real file."""
     referenced: set[pathlib.Path] = set()
-    for page in pages() + [REPO / "README.md"]:
+    for page in pages() + [REPO / "README.md", REPO / "STATUS.md"]:
         base = page.parent
         for target in LINK_RE.findall(read(page)):
             if "://" in target or target.startswith("mailto:"):
@@ -186,13 +186,13 @@ def suites() -> list[str]:
 
 
 def check_suites(problems: list[str]) -> None:
-    """The README names every binary, and counts them correctly.
+    """STATUS.md names every binary, and counts them correctly.
 
-    This lived on Testing-and-CI.md in the predecessor.  Here the README is
-    the running record, so the claim it makes about the suite is the one worth
-    holding to the tree; the page gets the check back when it is written.
+    This lived on Testing-and-CI.md in the predecessor and then in the README,
+    which was the running record until the record moved to STATUS.md to leave
+    the README a short front page.  The claim travels with the record.
     """
-    doc = REPO / "README.md"
+    doc = REPO / "STATUS.md"
     text = read(doc)
     built = set(suites())
     named = set(re.findall(r"`test_(\w+)`", text))
@@ -249,7 +249,7 @@ def check_option_lists(problems: list[str]) -> None:
     than a deliberate aside.
     """
     lists = option_lists()
-    for page in pages() + [REPO / "README.md"]:
+    for page in pages() + [REPO / "README.md", REPO / "STATUS.md"]:
         # Paragraphs, not lines: prose wraps, and a list that happens to break
         # across two lines is still one enumeration.
         line_no = 1

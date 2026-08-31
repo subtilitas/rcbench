@@ -34,9 +34,8 @@ Für die Arbeit an der Firmware statt am Prüfstand:
 | [Das OpenYGE-Protokoll](OpenYGE-de.md) | ESC-Telemetrie und Parameter, von der Leitung aufwärts spezifiziert |
 | [Performance](Performance-de.md) | Warum Zeichencode in Cache-Line-Fills budgetiert wird |
 
-Diese Seiten erklären, wie man benutzt und anschließt, was es gibt. Das
-[README](https://github.com/subtilitas/rcbench) des Repositories ist das
-laufende Protokoll — Designentscheidungen, ihre Gründe und die offenen Fragen
-stehen dort.
+Diese Seiten erklären, wie man benutzt und anschließt, was es gibt. [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md) im
+Repository ist das laufende Protokoll — Designentscheidungen, ihre Gründe und
+die offenen Fragen stehen dort.
 
 Jede Seite gibt es auch auf Englisch — der Umschalter steht oben auf jeder.
