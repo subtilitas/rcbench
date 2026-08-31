@@ -40,6 +40,19 @@ jobs:
           cmake --build test/host/build -j"$(nproc)"
           ctest --test-dir test/host/build --output-on-failure
 
+      # The same suite under AddressSanitizer + UBSan, for the runtime faults
+      # the -Werror build above cannot see: a parser reading off the end of a
+      # frame, a signed shift overflowing, an unaligned access.  This code is
+      # fed hostile bytes by design -- CSV, CAN, OpenYGE, S.BUS -- so a
+      # buffer that a valid frame never reaches is exactly what a malformed
+      # one will.  A separate build directory because the flags differ.
+      - name: Unit tests under sanitizers
+        run: |
+          cmake -S test/host -B test/host/build-san -DCMAKE_BUILD_TYPE=Debug \
+            -DENABLE_SANITIZERS=ON
+          cmake --build test/host/build-san -j"$(nproc)"
+          ctest --test-dir test/host/build-san --output-on-failure
+
       # Fails when the table in README.md no longer matches reality, rather
       # than committing a fixup nobody reads the diff of.
       - name: Coverage is current

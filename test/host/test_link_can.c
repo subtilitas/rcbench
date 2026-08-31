@@ -18,7 +18,10 @@ static link_msg_t msg(uint8_t op, uint8_t page, uint8_t offset, uint8_t count)
     link_msg_t m;
     memset(&m, 0, sizeof(m));
     m.op = op; m.page = page; m.offset = offset; m.count = count;
-    for (uint8_t i = 0; i < count; ++i) {
+    /* Bounded by the array, not by count: some cases pass an over-large count
+     * on purpose to prove the encoder rejects it, and filling regs to that
+     * count would run off the end before the encoder ever saw the message. */
+    for (uint8_t i = 0; i < count && i < LINK_MAX_REGS; ++i) {
         m.regs[i] = (uint16_t)(0x1000 + i);
     }
     return m;
