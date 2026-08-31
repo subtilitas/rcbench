@@ -1,4 +1,18 @@
 /*
+ * The log viewer: browse the card, see what the import decided, then plot.
+ *
+ * The screen is three views behind one tile -- a file browser, an import view
+ * that shows what the CSV reader made of the file before anything is drawn,
+ * and the plot.  The import view exists on purpose: the reader guesses the
+ * delimiter, the decimal convention and which column is time (see
+ * shared/logfile), and a guess shown before it is trusted is a guess the user
+ * can overrule, where a guess drawn straight onto a plot is a wrong trace
+ * nobody can explain.
+ *
+ * compute_spans() turns the chosen columns into scaled traces once, so the
+ * plot render walks prepared spans rather than reparsing on every frame -- the
+ * panel is bandwidth-bound and the plot is one of the heavier screens.
+ *
  * SPDX-License-Identifier: MIT
  */
 

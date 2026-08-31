@@ -1,4 +1,14 @@
 /*
+ * Turning frames of touch points into down/up events.
+ *
+ * The controller reports which contacts are present each frame; a screen wants
+ * to know when one arrived and when one left.  This diffs consecutive frames
+ * by track id to produce those edges, and the order it emits them in is a
+ * safety decision: releases first, so a caller that reads only the first event
+ * still sees a finger lift before any new press -- the STOP-then-arm order can
+ * never invert.  A duplicate id in one frame is the controller misbehaving,
+ * and keeping only the first copy stops one finger becoming two events.
+ *
  * SPDX-License-Identifier: MIT
  */
 

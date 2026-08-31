@@ -1,4 +1,13 @@
 /*
+ * The theme: named colours, and the contrast and brightness they pass through.
+ *
+ * Screens ask for a colour by role -- background, text, accent, danger --
+ * never by value, so a palette change is one table and every screen follows.
+ * The dark and light palettes are the two the panel ships, and the user's
+ * contrast and brightness are applied once when the theme is (re)built rather
+ * than at every pixel, because the render path is bandwidth-bound and a
+ * per-pixel adjust would cost more than the colours it produces.
+ *
  * SPDX-License-Identifier: MIT
  */
 
