@@ -58,6 +58,22 @@ jobs:
       - name: Coverage is current
         run: python3 tools/coverage.py --check --json coverage.json
 
+      # The floors above are the gate and run offline; this is the report.
+      # Codecov annotates the diff in a pull request, so a change can be seen
+      # to be tested rather than only measured in aggregate afterwards.
+      # coverage.py leaves an instrumented build behind, so nothing is rebuilt.
+      - name: Coverage report for Codecov
+        run: |
+          pipx install gcovr || python3 -m pip install --quiet gcovr
+          gcovr --root . --filter 'shared/' --exclude '.*font.*' \
+                --cobertura coverage.xml --print-summary
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
+
       - name: The checked-in fonts match their generator
         run: python3 tools/gen_font.py --check
 
@@ -122,6 +138,49 @@ jobs:
           name: coverage
           path: coverage.json
           if-no-files-found: warn
+
+  analysis:
+    name: Lint and static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install the analysers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build cppcheck clang-tidy
+          python3 -m pip install --upgrade --quiet ruff
+
+      # clang-tidy needs to know how each file is compiled, and CMake can say.
+      - name: Describe the build
+        run: |
+          cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      # The analyser and the bug-shaped checks over the pure-C core, which is
+      # everything that decides something.  Configuration and the reasoning for
+      # each disabled check are in .clang-tidy.
+      - name: clang-tidy
+        run: |
+          clang-tidy -p test/host/build --quiet \
+            $(git ls-files 'shared/**/*.c' | grep -v 'gfx_font')
+
+      # cppcheck sees different things: it is weaker on flow and better at
+      # arithmetic and at the shapes that look wrong on their own.
+      - name: cppcheck
+        run: |
+          cppcheck --error-exitcode=1 --std=c11 --quiet \
+            --enable=warning,style,performance,portability \
+            --inline-suppr --suppressions-list=.cppcheck-suppress \
+            --check-level=exhaustive \
+            $(git ls-files 'shared/**/include' | sed 's|^|-I|' | sort -u) \
+            $(git ls-files 'shared/**/*.c' | grep -v 'gfx_font')
+
+      # The six tools in tools/ are held to the same standard as the C: every
+      # one of them can fail a build, so a bug in one is a bug in the gate.
+      - name: ruff
+        run: ruff check tools/
 
   panel:
     name: Panel (ESP-IDF ${{ matrix.idf }})

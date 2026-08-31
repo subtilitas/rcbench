@@ -366,8 +366,6 @@ screenshots to the current render, and `frame_cost.py` holds a bench frame to
 samples currently costs **740**.
 
 <!-- coverage:start -->
-![coverage](https://img.shields.io/badge/host--test%20coverage-94.5%25-brightgreen)
-
 | File | Lines | Covered | Coverage |
 | --- | ---: | ---: | ---: |
 | `shared/gfx/gfx.c` | 629 | 604 | 96.0% |

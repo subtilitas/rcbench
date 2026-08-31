@@ -113,6 +113,7 @@ budget lands around 27 to 32 GPIO and a Pico 2 brings out 26.
 | `tools/gen_font.py` | regenerates the three embedded fonts; `--check` fails if the committed C no longer matches its generator |
 | `tools/render_ui.py` | renders every screen to a PNG; `--check` compares against the committed goldens |
 | `tools/frame_cost.py` | measures cache-line traffic per frame under cachegrind, because frame rate on this panel is bandwidth-bound |
+| `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | the static-analysis and lint gates CI runs over `shared/` and `tools/`. Both C analysers are errors, not warnings; the disabled checks carry their reasons |
 
 `gen_font.py` needs a DejaVu Sans Mono TTF. It looks at `RCBENCH_FONT_DIR`
 first, then `~/.local/share/fonts`, then the system paths — so it runs on a

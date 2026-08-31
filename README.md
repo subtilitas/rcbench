@@ -11,9 +11,8 @@ The coprocessor's firmware lives in `firmware/iomcu/`, after the ArduPilot
 arrangement this copies: a small processor owning the I/O with deadlines while
 the main one does everything else.
 
-<!-- coverage:badge:start -->
-![coverage](https://img.shields.io/badge/host--test%20coverage-94.5%25-brightgreen)
-<!-- coverage:badge:end -->
+[![CI](https://github.com/subtilitas/rcbench/actions/workflows/ci.yml/badge.svg)](https://github.com/subtilitas/rcbench/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/subtilitas/rcbench/branch/main/graph/badge.svg)](https://codecov.io/gh/subtilitas/rcbench)
 
 **Status — under construction.** The panel boots, every screen is built, and
 the CAN link between the boards runs on silicon at 1 Mbit/s with zero errors at

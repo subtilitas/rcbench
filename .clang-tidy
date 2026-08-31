@@ -1,0 +1,47 @@
+# Static analysis for shared/ -- the pure-C core that decides things.
+#
+# The check list is curated rather than "everything", because a linter that
+# reports two hundred things reports nothing.  What is on: the analyser, the
+# bug-shaped checks, and the portability ones that matter to code compiled by
+# three different toolchains for two architectures.
+#
+# What is deliberately off, and why, because a disabled check with no reason is
+# indistinguishable from one nobody understood:
+#
+#   readability-magic-numbers        this is a rasteriser and a register map;
+#                                    the numbers are the specification
+#   readability-identifier-length    i, x, y, c are the right names here
+#   readability-braces-around-*      the house style already always braces
+#   readability-function-cognitive-complexity
+#                                    render paths are long and flat by nature;
+#                                    frame_cost.py is the real budget
+#   bugprone-easily-swappable-parameters
+#                                    fires on every (x, y) and (w, h) pair
+#   misc-no-recursion                the decoders are deliberately recursive
+#   cert-err33-c                     snprintf's return is ignored on purpose
+#                                    where the buffer is sized by construction
+#   *-avoid-magic-numbers            same as above
+Checks: >
+  -*,
+  bugprone-*,
+  clang-analyzer-*,
+  portability-*,
+  performance-*,
+  misc-*,
+  readability-const-return-type,
+  readability-inconsistent-declaration-parameter-name,
+  readability-misleading-indentation,
+  readability-non-const-parameter,
+  readability-redundant-control-flow,
+  readability-redundant-declaration,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  -misc-no-recursion,
+  -misc-include-cleaner,
+  -cert-err33-c,
+  -*-avoid-magic-numbers,
+  -readability-function-cognitive-complexity
+
+WarningsAsErrors: '*'
+HeaderFilterRegex: 'shared/.*\.h$'
+FormatStyle: none

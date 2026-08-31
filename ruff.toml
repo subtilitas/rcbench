@@ -1,0 +1,28 @@
+# The tools/ directory: six small single-purpose scripts, each with a --check
+# mode CI runs.  They are held to the same standard as the C, which mostly
+# means: no unused imports, no shadowed builtins, no bare excepts, and a line
+# length that matches the rest of the tree.
+line-length = 79
+target-version = "py310"
+
+[lint]
+select = [
+    "E",    # pycodestyle
+    "F",    # pyflakes -- the ones that are actual bugs
+    "B",    # bugbear
+    "UP",   # pyupgrade
+    "SIM",  # simplify
+    "RUF",
+]
+ignore = [
+    # sys.exit(message) is how these tools report a fatal condition, and it is
+    # the clearest thing at that call site.
+    "B904",
+    # subprocess with a constructed argument list is the entire job of
+    # frame_cost.py and coverage.py.
+    "S603", "S607",
+]
+
+[lint.per-file-ignores]
+# gen_font.py carries the glyph tables it emits as long literal strings.
+"tools/gen_font.py" = ["E501"]

@@ -116,6 +116,7 @@ sein: der Pinbedarf liegt bei 27 bis 32 GPIO, ein Pico 2 führt nur 26 heraus.
 | `tools/gen_font.py` | erzeugt die drei eingebetteten Fonts neu; `--check` schlägt fehl, wenn der eingecheckte C-Code nicht mehr zu seinem Generator passt |
 | `tools/render_ui.py` | rendert jeden Bildschirm in ein PNG; `--check` vergleicht gegen die eingecheckten Goldens |
 | `tools/frame_cost.py` | misst den Cache-Line-Traffic je Frame unter cachegrind, weil die Frame Rate auf diesem Panel bandbreitenbegrenzt ist |
+| `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | die Gates für statische Analyse und Lint, die CI über `shared/` und `tools/` laufen lässt. Beide C-Analysatoren sind Fehler, keine Warnungen; die abgeschalteten Checks tragen ihre Begründung |
 
 `gen_font.py` braucht DejaVu Sans Mono als TTF. Gesucht wird zuerst in
 `RCBENCH_FONT_DIR`, dann in `~/.local/share/fonts`, dann in den Systempfaden —
