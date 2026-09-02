@@ -36,14 +36,15 @@ esp_err_t can_twai_start(uint32_t bitrate)
              t.sample_permille / 10u, t.sample_permille % 10u);
 
     /*
-     * The multiplexer, and the cost of it: GPIO19 and GPIO20 are the native
-     * USB pins, so from here until can_twai_stop() there is no USB. The
-     * console is on UART because of this.
-     */
-    /*
-     * Reported, not asserted.  Every other failure here returns esp_err_t and
-     * leaves the caller to decide; aborting the whole panel because one I2C
-     * transaction to the expander glitched would take the STOP button with it.
+     * The multiplexer, and its cost: GPIO19 and GPIO20 (general-purpose
+     * input/output) are the native USB (Universal Serial Bus) pins, so from
+     * here until can_twai_stop() there is no USB.  The console is on UART0
+     * (universal asynchronous receiver-transmitter) for that reason.
+     *
+     * Reported, not asserted: every failure here returns esp_err_t and leaves
+     * the caller to decide.  Aborting the panel because one I2C
+     * (Inter-Integrated Circuit) transaction to the expander failed would
+     * take the STOP button with it.
      */
     esp_err_t sel = board_select_can(true);
     if (sel != ESP_OK) {

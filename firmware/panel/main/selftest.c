@@ -1,5 +1,6 @@
 /*
- * The CAN bring-up self-test.  See selftest.h for why it is its own file.
+ * The CAN (Controller Area Network) bring-up self-test; selftest.h says what
+ * it answers.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -65,9 +66,8 @@ void can_selftest_run(uint32_t seconds)
             const int64_t sent_us = esp_timer_get_time();
             if (!can_twai_send(&probe, 10)) {
                 /*
-                 * Counted, not printed.  A bus with nobody on it fills the
-                 * queue and then says this on every pass, and ninety copies
-                 * of a symptom buries the one line that names the cause.
+                 * Counted, not printed: a bus with nobody on it fills the
+                 * queue on every pass, and the count goes into the report.
                  */
                 ++queue_full;
             }
@@ -80,13 +80,11 @@ void can_selftest_run(uint32_t seconds)
         can_selftest_tick(&st, now_ms());
 
         /*
-         * The definitive signal, said once and early.  A CAN transmitter needs
-         * one other node to pull the acknowledge slot dominant; without one,
-         * every frame fails and is retried, and the error counter climbs by
-         * eight each time.  Reaching 128 is error-passive, and it means the
-         * far end is not on the bus at all -- which is a different fault from
-         * a bus that garbles what crosses it, and worth saying before five
-         * seconds of silence have gone by.
+         * Said one time, as early as possible.  A CAN transmitter needs one
+         * other node to pull the acknowledge slot dominant; without one every
+         * frame fails and is retried, and the transmit error counter climbs
+         * by 8 each time.  128 is error-passive and means no other node is
+         * on the bus, a different fault from a bus that corrupts frames.
          */
         uint32_t tec = 0;
         can_twai_errors(&tec, NULL, NULL, NULL);
@@ -102,11 +100,10 @@ void can_selftest_run(uint32_t seconds)
     }
 
     /*
-     * The controller's error count decides between two faults this module
+     * The controller's bus error count separates two faults the verdict
      * cannot tell apart on its own: frames corrupted on the wire, and frames
-     * that arrived intact and were dropped because nobody read them.  Fill it
-     * in before asking, or the answer sends somebody to check terminators
-     * that are fine.
+     * that arrived intact and were dropped unread.  It is filled in before
+     * the verdict is computed.
      */
     uint32_t tx_err = 0, rx_err = 0, bus_err = 0;
     bool bus_off = false;
@@ -140,11 +137,11 @@ void can_selftest_run(uint32_t seconds)
                  remote.echoes, remote.overflows, remote.tx_errors,
                  remote.rx_errors, remote.flags);
         /*
-         * The comparison only both ends together can make.  Frames the
-         * coprocessor answered but the panel never heard are a return-path
-         * fault; frames it never answered are an outbound one; and overflows
-         * are neither -- they are a buffer that filled while its owner was
-         * busy, which no bus counter records anywhere.
+         * The comparison both ends make together.  Frames the coprocessor
+         * answered but the panel never received are a return-path fault;
+         * frames it never answered are an outbound fault; overflows are a
+         * receive buffer that filled while its owner was busy, which no bus
+         * counter records.
          */
         if (remote.overflows > 0u) {
             ESP_LOGW(TAG, "  the coprocessor dropped %u frame(s) for want of "
@@ -154,9 +151,7 @@ void can_selftest_run(uint32_t seconds)
         if (have_before) {
             /*
              * Everything that came back, not only what was accepted: a late
-             * or altered echo still crossed the return path, and counting
-             * only the good ones would blame the return path for frames that
-             * arrived perfectly well.
+             * or altered echo still crossed the return path.
              */
             const uint32_t received = st.echoed + st.stale + st.corrupt;
             const uint16_t lost = can_selftest_return_loss(before.echoes,
@@ -167,9 +162,8 @@ void can_selftest_run(uint32_t seconds)
                               "return path is losing frames", lost);
             }
         } else {
-            /* Without a reading from before the run there is only a total,
-             * and a total says nothing.  Better to say so than to subtract
-             * two numbers that do not belong to the same window. */
+            /* Without a reading from before the run there is only a lifetime
+             * total, which is not comparable with this run's count. */
             ESP_LOGI(TAG, "  (no baseline from the far end, so its echo count "
                           "is a lifetime total and not comparable)");
         }

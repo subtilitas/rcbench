@@ -1,11 +1,8 @@
 /*
- * The screens that are routed, rendered and navigable but do not do their job
- * yet -- and say exactly what is missing.
+ * The placeholder for a routed screen id that has no screen of its own.
  *
- * A "coming soon" panel teaches nobody anything.  One that names what it will
- * do, and the one decision or part that has to arrive first, is a to-do list
- * somebody can answer -- and the note turns green when nothing is blocking it,
- * which is a different and less comfortable position than being blocked.
+ * It lists what the screen will do and the one part or decision that blocks
+ * it; the note turns green when nothing blocks it.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -22,10 +19,8 @@ void stub_invalidate(void);
 /**
  * The widest a line of stub copy may be, in pixels.
  *
- * The copy is drawn with gfx_text, which clips at the canvas edge rather than
- * wrapping -- so a line that is too long is silently cut mid-word and looks
- * like a rendering fault rather than an over-long string.  test_nav holds
- * every line to this.
+ * gfx_text clips at the canvas edge rather than wrapping, so a longer line is
+ * cut mid-word.  test_nav holds every line to this.
  */
 #define STUB_COPY_MAX_W 732
 

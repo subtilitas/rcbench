@@ -81,10 +81,10 @@ bool xl2515_init(uint32_t bitrate)
     sleep_ms(10);
 
     /*
-     * The datasheet guarantees configuration mode after a reset, so this is a
-     * real test of the SPI wiring and not a formality.  Failing here means
-     * nothing is listening on the bus this driver thinks it has -- which is
-     * worth telling apart from a CAN fault before anybody reaches for a scope.
+     * The datasheet guarantees configuration mode after a reset, so this
+     * tests the SPI (Serial Peripheral Interface) wiring: a failure here
+     * means nothing is listening on the SPI bus, which is a different fault
+     * from a CAN (Controller Area Network) bus fault.
      */
     if ((read_reg(MCP2515_CANSTAT) & MCP2515_MODE_MASK) != MCP2515_MODE_CONFIG) {
         return false;
@@ -124,8 +124,8 @@ bool xl2515_send(const link_can_frame_t *f)
     if (f == NULL || f->dlc > 8) {
         return false;
     }
-    /* TXREQ still set means the previous frame has not won arbitration yet.
-     * Overwriting it would silently drop it. */
+    /* TXREQ still set means the previous frame has not won arbitration.
+     * Overwriting it would drop it. */
     if ((read_reg(MCP2515_TXB0CTRL) & 0x08u) != 0u) {
         return false;
     }
@@ -171,11 +171,12 @@ bool xl2515_recv(link_can_frame_t *f)
         return false;   /* an 11-bit identifier; nothing here sends those */
     }
     /*
-     * Bit 6 of the DLC register is RTR: a remote frame, which carries a length
-     * but no data.  Its data registers hold whatever the last real frame left
+     * Bit 6 of the DLC (data length code) register is RTR (remote
+     * transmission request): a remote frame, which carries a length but no
+     * data.  Its data registers hold whatever the last data frame left
      * there, so accepting one would deliver stale bytes under a fresh
-     * identifier -- and nothing on this bus sends remote frames, so anything
-     * that does is somebody else's traffic or a fault.
+     * identifier.  Nothing on this bus sends remote frames, so one is
+     * foreign traffic or a fault.
      */
     if ((buf[4] & 0x40u) != 0u) {
         return false;

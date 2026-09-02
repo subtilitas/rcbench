@@ -2,97 +2,83 @@
 
 <sub>[English](Safety.md) · **Deutsch**</sub>
 
-Wie der Prüfstand anhält, was dafür gebaut werden muss, und welche
-Verhaltensweisen Absicht sind — damit niemand gegen sie ankämpft.
+Wie der Prüfstand anhält, welche externe Schaltung der Entwurf voraussetzt,
+und welche Verhaltensweisen Absicht sind.
 
-## Drei unabhängige Wege, auf denen er anhält
+## Stoppmechanismen
 
-| | Was damit abgedeckt ist |
-| --- | --- |
-| **Das STOP-Kommando** über den Link | ein bewusster Stopp, quittiert und gemeldet |
-| **Der Heartbeat bleibt aus** | das Panel hängt, wurde resettet, hatte einen Brown-out oder ist abgesteckt |
-| **Der Stille-Watchdog des Koprozessors** | der Link ist in einer Richtung tot |
+| Mechanismus | Deckt ab | Stand |
+| --- | --- | --- |
+| Der Heartbeat bleibt aus | das Panel hängt, ist resettet, hat einen Brown-out oder ist abgesteckt; ein gedrücktes STOP | an beiden Enden erzeugt und überwacht; das Monoflop, das er steuert, ist nicht bestückt |
+| Stille-Watchdog des Koprozessors, 200 ms | der Link ist in einer der beiden Richtungen tot | gebaut und getestet |
+| STOP-Kommando über den Link | ein bewusster Stopp, quittiert und gemeldet | geschrieben; nicht auf Hardware gelaufen |
 
-Ein gedrücktes STOP nutzt die ersten beiden gleichzeitig: es sendet das
-Kommando **und** stoppt den Heartbeat, statt sich auf einen Weg allein zu
-verlassen.
+Ein gedrücktes STOP stoppt den Heartbeat, entschärft das eigene
+Ausgangsmodell des Panels und schreibt ARM = 0 auf die Control-Page. Bei
+stehendem Link schreibt das Panel ARM und THROTTLE mit jedem Poll alle 50 ms;
+ein bewusstes Schärfen schreibt zuerst CLEAR (0x5AFE), und ein NACK des
+Koprozessors lässt das Panel entschärft.
 
-## Was gebaut werden muss: das Monoflop
+## Vorausgesetzte externe Schaltung: das Monoflop
 
-Die Sicherheitsleitung ist **GPIO6, und sie trägt Flanken** — keinen Pegel.
-Das Output Enable des Koprozessors und der Leistungspfad für Servos und ESC
-gehören hinter ein **retriggerbares Monoflop**, das nur angezogen bleibt,
-solange Flanken eintreffen. Absturz, hängender Task, Reset, Brown-out und
-abgestecktes Kabel sehen dann alle gleich aus: keine Flanken, kein Ausgang.
-In Hardware, unabhängig von der Firmware an beiden Enden.
+Die Sicherheitsleitung ist GPIO6 (General-Purpose Input/Output) des Panels
+auf dem Header J8 (3V3, GND, GPIO6). Sie trägt Flanken, keinen Pegel. Das
+Output Enable des Koprozessors und der Leistungspfad für Servos und ESC
+(Electronic Speed Controller, Motorregler) müssen hinter einem retriggerbaren
+Monoflop liegen, das nur angezogen bleibt, solange Flanken eintreffen.
+Absturz, hängender Task, Reset, Brown-out und abgestecktes Kabel führen dann
+zum selben Ergebnis: keine Flanken, kein Ausgang, unabhängig von der Firmware
+an beiden Enden.
 
-> **Das Fenster des Monoflops auf etwa 150 ms auslegen.** Der Heartbeat kommt
-> aus der Render-Schleife des Panels, und die liefert je nach Last alle
-> 26–52 ms eine Flanke — ein 50-ms-Fenster würde die Ausgänge bei jedem
-> zweiten Frame eines belasteten Prüfstands abwerfen. 150 ms liegt trotzdem
-> deutlich innerhalb des 200-ms-Link-Failsafes des Koprozessors. (Ein früher
-> genannter Wert von 20–50 ms stammt aus der Zeit vor der gemessenen Frame
-> Rate und gilt als zurückgezogen.)
+Fenster des Monoflops: etwa 150 ms. Der Heartbeat kommt aus der
+Render-Schleife des Panels, die je nach Last alle 26 bis 52 ms eine Flanke
+liefert; ein Fenster von 50 ms würde die Ausgänge unter Last abwerfen. 150 ms
+liegt innerhalb des 200-ms-Link-Failsafes des Koprozessors.
 
-Die Firmware prüft den Heartbeat zusätzlich, denn ein Monoflop kann Heartbeat
-und Rauschen nicht unterscheiden — alles, was schnell genug flankt, triggert
-es nach. Die Zahlen, alle aus
+Das Monoflop ist auf keiner Platine. Die Flanken erreichen J8 und sonst
+nichts.
+
+## Heartbeat-Überwachung
+
+Der Koprozessor prüft den Heartbeat zusätzlich in der Firmware, weil ein
+Monoflop Heartbeat und Rauschen nicht unterscheiden kann. Die Konstanten aus
 [`heartbeat.h`](https://github.com/subtilitas/rcbench/blob/main/shared/safety/include/heartbeat.h):
 
-| | | |
+| | Wert | |
 | --- | ---: | --- |
-| Das Panel erzeugt eine Flanke alle | 26–52 ms | eine pro Frame |
-| Die Firmware akzeptiert Abstände von | **4–150 ms** | schneller ist Rauschen; langsamer heißt, das Panel zeichnet nicht mehr |
-| Die Firmware vertraut der Leitung nach | **4 guten Abständen** | rund einer Zehntelsekunde |
+| Flankenabstand des Panels | 26–52 ms | eine Flanke je gerendertem Frame |
+| Akzeptierter Abstand | 4–150 ms | kürzer ist Rauschen; länger heißt, das Panel rendert nicht mehr |
+| Gute Abstände, bevor der Leitung vertraut wird | 4 | etwa 0,1 s bei der Rate des Panels |
 
-Diese Prüfung ist mit Absicht asymmetrisch — langsam beim Vertrauen, sofort
-beim Zweifeln. Vier gute Abstände, bevor die Leitung als lebendig gilt; ein
-einziger schlechter, oder ein Fenster Stille, und das Vertrauen ist sofort
-weg. Eine Verriegelung, die auf einen Glitch hin freigibt und beim Sperren
-zögert, wäre das Gegenteil ihres Namens.
+Die Prüfung ist asymmetrisch: vier gute Abstände, bevor der Leitung vertraut
+wird; ein schlechter Abstand oder ein stilles Fenster, und das Vertrauen ist
+weg. Der Koprozessor verweigert das Schärfen, solange der Leitung nicht
+vertraut wird, und entschärft seine Ausgänge, sobald sie ausbleibt.
+
+Der Heartbeat wird in der Schleife erzeugt, die den Touch liest und STOP
+zeichnet, nicht von einem Timer oder einer Peripherie. Der Eingang des
+Koprozessors hat einen Pull-down, sodass ein unversorgtes oder abgestecktes
+Panel als Leitung ohne Flanken gelesen wird.
 
 ## Verhaltensweisen, die Absicht sind
 
-Dinge, die der Prüfstand tut und die nach Fehlern aussehen können — es sind
-keine:
+- STOP rastet ein. Der Prüfstand bleibt entschärft, bis er erneut scharf
+  geschaltet wird.
+- Das Verlassen eines Prüfstandsbildschirms entschärft.
+- Antwortet der Touch-Controller 500 ms lang nicht, entschärft der Prüfstand
+  und verweigert das Schärfen. Das Panel ist der einzige Ort mit einem
+  STOP-Knopf.
+- Nach einem Link-Failsafe schaltet der Koprozessor nicht wieder scharf, wenn
+  Verkehr zurückkehrt. Das Failsafe wird durch das Schreiben eines definierten
+  Werts (0x5AFE) auf die Control-Page verlassen.
+- Bei Überstrom, Übertemperatur, Stall-Timeout und totem Link handelt der
+  Koprozessor aus eigener Befugnis und meldet den Fehler beim nächsten Poll.
 
-- **STOP rastet ein.** Nach einem Stopp bleibt der Prüfstand entschärft, bis
-  bewusst wieder scharf geschaltet wird. Bildschirmwechsel, Warten oder ein
-  zurückkehrender Link ändern daran nichts.
-- **Den Prüfstandsbildschirm zu verlassen entschärft.** Wer von einem scharfen
-  Prüfstand wegnavigiert, darf keinen drehenden Propeller hinter einem
-  Bildschirm zurücklassen, auf dem er nicht mehr zu sehen ist.
-- **Ein stummer Touch-Controller entschärft und blockiert das Schärfen.**
-  Antwortet der Touch 500 ms lang nicht, wird entschärft und das Schärfen
-  verweigert — das Panel ist der einzige Ort mit einem STOP-Knopf. Ein
-  Prüfstand, der sich nicht anhalten lässt, ist nicht scharf: er ist
-  durchgegangen.
-- **Nach einem Link-Failsafe schaltet sich der Prüfstand nicht von selbst
-  wieder scharf.** Zurückkehrender Verkehr beweist, dass der Link lebt — nicht,
-  dass jemand weitermachen wollte. Nach behobener Ursache am Panel neu
-  schärfen.
-- **Der Koprozessor fragt nicht.** Überstrom, Übertemperatur, Stall-Timeout,
-  toter Link: er schützt die Hardware aus eigener Befugnis und meldet beim
-  nächsten Poll, was er getan hat. Auf die Erlaubnis, sicher auszufallen,
-  wartet er nie.
+## Heartbeat statt Enable-Pegel
 
-## Warum ein Heartbeat und keine Enable-Leitung
+Ein statischer Enable-Pegel versagt, wenn die Firmware mit gesetztem Pin
+hängen bleibt. Flanken laufen von selbst ab. Die Periodenprüfung in der
+Firmware weist eine kurzgeschlossene oder klingelnde Leitung ab, die ein
+Monoflop allein annehmen würde.
 
-Ein statisches Enable — Pin high, solange laufen erlaubt ist — versagt genau
-beim wahrscheinlichsten Fehler: die Firmware bleibt hängen, der Pin bleibt
-high, die Ausgänge bleiben scharf. Ausgerechnet der Fall, in dem der
-Prüfstand am dringendsten anhalten soll, ist der, den ein Pegel nicht
-ausdrücken kann. Flanken dagegen müssen immer wieder neu erzeugt werden —
-bleiben sie aus, fällt der Ausgang von selbst ab.
-
-Zwei Regeln halten den Heartbeat ehrlich. Er wird **von der Schleife erzeugt,
-die den Touch liest und STOP zeichnet** — nie von einem Timer, einer
-DMA-gespeisten Peripherie oder einem eigenen Task. So ein Signal bewiese
-nämlich, dass das Falsche lebt: eine Peripherie kann tadellos weitertakten,
-während die Anwendung längst hängt. Und die Firmware prüft die **Periode**,
-nicht nur, dass Flanken da sind — das ist die Prüfung, die eine
-kurzgeschlossene oder klingelnde Leitung nicht bestehen kann.
-
-Das Panel selbst hat keine Leitung zu irgendeinem Ausgang. Es kann keinen
-Motor drehen — nicht per Vereinbarung, sondern weil es an nichts angeschlossen
-ist, was das könnte.
+Das Panel hat keine Leitung zu irgendeinem Ausgang.

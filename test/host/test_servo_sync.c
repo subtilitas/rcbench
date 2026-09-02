@@ -1,10 +1,10 @@
 /*
  * Synchronising two servos on one surface, run against a modelled pair.
  *
- * The claim under test is not "it returns three numbers". It is that the two
- * installation errors -- a centre that is off and a throw that is long -- can
- * be told apart by measuring current at three positions, and that the routine
- * says so rather than inventing a correction when there is nothing to find.
+ * Under test: the two installation errors (a centre that is off and a throw
+ * that is long) are told apart by measuring current at three positions, and
+ * the routine says so rather than inventing a correction when there is
+ * nothing to find.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -64,8 +64,7 @@ static void setup(servo_sync_t *sy, servo_pair_t *pair)
 }
 
 /*
- * The whole point, stated as the thing an operator would care about: after
- * the search, the two servos are no longer fighting.
+ * After the search, the two servos do not work against each other.
  */
 TEST_CASE(after_the_search_the_pair_barely_disagree_anywhere)
 {
@@ -99,8 +98,8 @@ TEST_CASE(after_the_search_the_pair_barely_disagree_anywhere)
  * Why the search settles before it measures.
  *
  * The scan sweeps servo B across its window in one direction, so a servo that
- * has not arrived is always a step behind where it was told -- and a bias in
- * one direction does not average out, it moves the minimum. On a slow pair
+ * has not arrived is always a step behind where it was told, and a bias in
+ * one direction does not average out: it moves the minimum.  On a slow pair
  * that is most of a step, which is most of the correction the search exists
  * to find.
  */
@@ -131,8 +130,7 @@ TEST_CASE(a_slow_pair_is_measured_after_it_arrives_not_while_it_travels)
     }
 }
 
-/* And it is an improvement, not a coincidence: before the search, the same
- * pair driven with no correction fights hard. */
+/* Without the correction the same pair fights hard. */
 TEST_CASE(the_uncorrected_pair_really_was_fighting)
 {
     servo_pair_cfg_t pc;
@@ -147,8 +145,8 @@ TEST_CASE(the_uncorrected_pair_really_was_fighting)
 }
 
 /*
- * The claim that saves this from being a two-variable search: an offset error
- * shows at centre and a travel error does not.
+ * An offset error shows at centre and a travel error does not, which is what
+ * keeps this from being a two-variable search.
  */
 TEST_CASE(a_pure_offset_error_is_found_at_centre_and_leaves_travel_alone)
 {
@@ -174,9 +172,9 @@ TEST_CASE(a_pure_offset_error_is_found_at_centre_and_leaves_travel_alone)
 }
 
 /*
- * And the other way round. A servo whose centre is right but whose throw is
- * long agrees perfectly at centre -- so the centre stage must find nothing to
- * correct, and say so, rather than moving the trim to chase a travel error.
+ * And the other way round.  A servo whose centre is right but whose throw is
+ * long agrees at centre, so the centre stage must find nothing to correct,
+ * and say so, rather than moving the trim to chase a travel error.
  */
 TEST_CASE(a_pure_travel_error_leaves_the_centre_alone)
 {
@@ -196,10 +194,9 @@ TEST_CASE(a_pure_travel_error_leaves_the_centre_alone)
     /*
      * The centre scan is not flat even though the centre is right: moving B
      * away from agreement is what the scan does, so a correct centre shows as
-     * a clean minimum *at zero correction* rather than as no minimum at all.
-     * That distinction matters -- it is the difference between "measured, and
-     * nothing to change" and "could not measure", and only the second is a
-     * fault.
+     * a clean minimum at zero correction rather than as no minimum at all.
+     * That is the difference between "measured, and nothing to change" and
+     * "could not measure", and only the second is a fault.
      */
     CHECK_EQ(sy.state, SERVO_SYNC_DONE);
     CHECK(sy.trim_us > -3 && sy.trim_us < 3);
@@ -303,9 +300,8 @@ TEST_CASE(the_search_takes_a_workable_amount_of_time)
     setup(&sy, &pair);
     const uint32_t took = run(&sy, &pair, 300000);
     CHECK_EQ(sy.state, SERVO_SYNC_DONE);
-    /* Three stages of three rounds of seven points at 250 ms is about
-     * sixteen seconds. Longer than the limit search, and for the same reason
-     * worth pinning. */
+    /* Three stages of three rounds of seven points at 250 ms is about 16 s.
+     * The bound holds the procedure to that. */
     CHECK(took < 20000);
 }
 

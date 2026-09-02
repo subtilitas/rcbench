@@ -2,7 +2,7 @@
  * What the bench screen decides: hit regions, the commands it produces, and
  * the two rules that keep a tap from spinning something.
  *
- * Not what it looks like -- that is the golden image's job.
+ * Not what it looks like; that is the golden image's job.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -51,7 +51,7 @@ static void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
                                 ev(x, y, TOUCH_EVENT_UP, 1); }
 
 /* Geometry mirrored from motor_screen.c; if the layout moves these move with
- * it, and the test names say what they were aiming at. */
+ * it, and the test names say what they aim at. */
 #define CTRL_Y   380
 #define TRACK_H  36
 #define ROW_Y    (342 + 14)   /* ARM and RESET share the readout row */
@@ -101,9 +101,8 @@ TEST_CASE(a_second_contact_cannot_steal_the_arm_release)
 }
 
 /*
- * The one that matters.  Two taps inside a single drain is barely possible
- * and exactly the case that must not go wrong: an ARM landing on top of a
- * DISARM would re-arm a bench the operator has just watched stop.
+ * Two taps inside a single drain: an ARM landing on top of a DISARM must not
+ * re-arm a bench the operator has just watched stop.
  */
 TEST_CASE(a_pending_disarm_cannot_be_overwritten_by_an_arm)
 {
@@ -151,9 +150,9 @@ TEST_CASE(reset_peaks_posts_its_own_command)
 
 /*
  * Leaving disarms.  Navigating away from an armed bench must not leave a
- * propeller spinning behind a screen you can no longer see it on -- and the
- * command carries the disarm rather than the application inferring it from
- * the navigation.
+ * propeller spinning behind a screen that does not show it, and the command
+ * carries the disarm rather than the application inferring it from the
+ * navigation.
  */
 TEST_CASE(leaving_the_screen_disarms)
 {
@@ -176,10 +175,9 @@ TEST_CASE(the_tabs_switch_panes_and_both_render)
     }
 
     /*
-     * Compared pixel for pixel, not by counting lit pixels.  An earlier
-     * version counted `fb[i] != 0`, and gfx_clear fills with the background
-     * colour rather than with zero -- so both panes counted the whole canvas,
-     * 384,000 either way, and the assertion measured nothing at all.
+     * Compared pixel for pixel, not by counting non-zero pixels: gfx_clear
+     * fills with the background colour rather than with zero, so a non-zero
+     * count is the whole canvas (384,000) for any pane.
      */
     scr->render(&cv, 0);
     gfx_color_t *plot = malloc((size_t)W * H * sizeof(gfx_color_t));
@@ -192,10 +190,9 @@ TEST_CASE(the_tabs_switch_panes_and_both_render)
     for (int i = 0; i < W * H; ++i) {
         if (fb[i] != plot[i]) { ++differ; }
     }
-    /* It really is a different pane.  Both panes now sit in the same card
-     * and on the same sunken ground, so what differs is their content and
-     * not the background behind it -- the number this compares against fell
-     * when the card arrived, and saying it out loud beats rediscovering it. */
+    /* Both panes sit in the same card on the same sunken ground, so the
+     * difference is their content and not the background; 6000 pixels is
+     * sized to that. */
     if (differ < 6000) {
         T_FAIL("the two panes differ by only %d pixels", differ);
     }
@@ -208,13 +205,14 @@ TEST_CASE(the_tabs_switch_panes_and_both_render)
 }
 
 /*
- * The screen skips painting what has not changed, which is what keeps it off
- * the PSRAM bus the LCD is scanning out of.  The failure mode that buys is a
- * stale framebuffer: the panel alternates between two, so a buffer whose last
- * paint was a sample ago still needs one even when the other is current.
+ * The screen skips painting what has not changed, which keeps it off the
+ * PSRAM (pseudo-static random-access memory) bus the LCD (liquid-crystal
+ * display) is scanning out of.  The failure mode that buys is a stale
+ * framebuffer: the panel alternates between two, so a buffer whose last paint
+ * was a sample ago still needs one even when the other is current.
  *
- * Both counters are checked, because they are bumped by different things --
- * new numbers and a touch -- and either one forgetting which buffer it drew
+ * Both counters are checked, because they are bumped by different things
+ * (new numbers and a touch), and either one forgetting which buffer it drew
  * into leaves half the frames showing the previous value.
  */
 TEST_CASE(each_framebuffer_is_updated_independently)
@@ -238,7 +236,7 @@ TEST_CASE(each_framebuffer_is_updated_independently)
     scr->render(&cv1, 1);
     CHECK_EQ(memcmp(fb, other, (size_t)W * H * sizeof(gfx_color_t)), 0);
 
-    /* New numbers, painted into buffer 1 only.  Buffer 0 is now a sample
+    /* New numbers, painted into buffer 1 only.  Buffer 0 is then a sample
      * behind, and the next render into it has to notice. */
     for (int i = 0; i < 200; ++i) {
         telemetry_sim_step(&sim, 95.0f, 0.05f, &b);
@@ -254,9 +252,9 @@ TEST_CASE(each_framebuffer_is_updated_independently)
     scr->render(&cv, 0);
     CHECK_EQ(memcmp(fb, other, (size_t)W * H * sizeof(gfx_color_t)), 0);
 
-    /* And a frame with nothing new must still leave a correct buffer alone
-     * rather than merely leaving it untouched -- checked by rendering twice
-     * and requiring the second to be a no-op on already-correct pixels. */
+    /* And a frame with nothing new must leave a correct buffer alone: checked
+     * by rendering twice and requiring the second to be a no-op on
+     * already-correct pixels. */
     scr->render(&cv, 0);
     CHECK_EQ(memcmp(fb, other, (size_t)W * H * sizeof(gfx_color_t)), 0);
     free(other);
@@ -265,8 +263,8 @@ TEST_CASE(each_framebuffer_is_updated_independently)
 /*
  * Redrawing state B on top of state A must give the same pixels as drawing B
  * onto a buffer that never saw A.  Anything drawn outside the region it
- * clears violates that -- and with alternating framebuffers the leftovers
- * show up as flicker rather than as an obviously stale pixel.
+ * clears violates that, and with alternating framebuffers the leftovers show
+ * up as flicker rather than as an obviously stale pixel.
  */
 TEST_CASE(a_redraw_leaves_no_stale_pixels)
 {
@@ -306,9 +304,9 @@ TEST_CASE(a_redraw_leaves_no_stale_pixels)
 }
 
 /*
- * Before a single poll has answered there is nothing to show, and a confident
- * 0.00 V would be worse than nothing -- so the heroes print a placeholder and
- * the screen looks visibly different from one holding real numbers.
+ * Before a single poll has answered there is nothing to show, and 0.00 V is
+ * a wrong reading; the heroes print a placeholder, so the screen differs
+ * visibly from one holding real numbers.
  */
 TEST_CASE(an_unanswered_bench_does_not_show_numbers)
 {

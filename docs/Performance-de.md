@@ -2,26 +2,24 @@
 
 <sub>[English](Performance.md) · **Deutsch**</sub>
 
-> Für die Arbeit am Zeichencode, nicht für die Benutzung des Prüfstands. Wer
-> einen Bildschirm hinzufügt oder ändert, findet hier das Budget, in das er
-> passen muss.
+Das Zeichenbudget für alle, die einen Bildschirm hinzufügen oder ändern.
 
-Die Frame Rate dieses Panels bestimmt weder die CPU noch der Buffer-Wechsel,
-sondern die **PSRAM-Bandbreite**.
+## Die Randbedingung
 
-Die LCD-Einheit liest den Framebuffer ununterbrochen mit rund 30 MB/s aus dem
-PSRAM, und der Framebuffer liegt hinter einem Write-Back-,
-Write-Allocate-Cache. Jedes Pixel, das die CPU schreibt, kostet deshalb
-128 Byte Busverkehr — außer die zugehörige 64-Byte-Cache-Line ist schon
-geladen. Die Kosten eines Frames sind damit eine Anzahl von Cache-Line-Fills,
-keine Stoppuhr-Messung — und genau deshalb exakt messbar statt ungefähr
-stoppbar.
+Die Frame Rate dieses Panels begrenzt die Bandbreite des PSRAM (Pseudo-Static
+Random-Access Memory), nicht die CPU (Central Processing Unit). Die
+LCD-Einheit (Liquid-Crystal Display) liest ununterbrochen einen Framebuffer
+mit etwa 30 MB/s aus dem PSRAM, und die Framebuffer liegen hinter einem
+Write-Back-, Write-Allocate-Datencache (64 KB, 8-fach assoziativ,
+64-Byte-Lines). Jedes Pixel, das die CPU schreibt, kostet einen
+64-Byte-Line-Fill und ein 64-Byte-Write-Back, sofern die Line nicht schon
+geladen ist. Die Kosten eines Frames sind deshalb eine Anzahl von
+Cache-Line-Fills, und die lässt sich auf dem Host exakt messen.
 
-`tools/frame_cost.py` misst das: es baut die echten Bildschirme für den Host
-und lässt sie unter cachegrind laufen, mit dem Datencache des ESP32-S3 als
-Modell (64 KiB, 8-fach assoziativ, 64-Byte-Lines). Gemessen wird die
-*Differenz* zwischen null gerenderten Frames und vielen — Prozessstart, das
-erste Füllen der Buffer und der Overhead von cachegrind kürzen sich so heraus.
+`tools/frame_cost.py` baut die echten Bildschirme für den Host und lässt sie
+unter cachegrind mit der Cache-Geometrie des ESP32-S3 laufen. Es meldet die
+Differenz zwischen einem und elf gerenderten Frames, sodass Prozessstart und
+das erste Füllen jedes Buffers herausfallen.
 
 <!-- framecost:start -->
 ```
@@ -43,72 +41,68 @@ hlines               0        0 KiB      0.0      39.0
 ```
 <!-- framecost:end -->
 
-## Die zwei Befunde, die jeden Bildschirm prägen
+| Modus | Was er misst |
+| --- | --- |
+| `frame` | der Motorprüfstand auf einem Frame, in dem ein Telemetriesample eintrifft |
+| `frame-idle` | der Motorprüfstand auf einem Frame zwischen zwei Samples, ohne Berührung |
+| `sim` | wie `frame`, mit dem SIMULATION-Watermark |
+| `chrome` | der Motorprüfstand ohne Cache, vollständig neu gezeichnet |
+| `overview` | das Menü, Chrome gecacht |
+| `servo` | der Servobildschirm mit neu gezeichnetem Arm |
+| `servo-grip` | der Servobildschirm, nur der Griff neu gezeichnet |
+| `clear` | ein Löschen des ganzen Bildschirms |
+| `vlines` | siebzehn senkrechte Linien über die volle Höhe |
+| `hlines` | dieselbe Pixelzahl als waagerechte Linien |
+
+Die absoluten Zahlen verschieben sich zwischen Maschinen um einige Fills, weil
+argv und die Umgebungsvariablen denselben Cache belegen wie der Framebuffer.
+`frame_cost.py --check-doc` prüft die Tabelle deshalb mit einer Toleranz von
+1 %.
+
+## Regeln
 
 **Zeilenweise zeichnen.** Siebzehn senkrechte Linien über die volle Höhe
-kosten 8 160 Cache-Line-Fills. Dieselben Pixel als waagerechte Linien kosten
-**null** — jede Line ist vom Pixel davor noch geladen. Deshalb gliedert sich
-die Oberfläche in waagerechte Bänder statt in Spalten, und deshalb ist eine
-senkrechte Trennlinie eine bewusste Ausgabe, kein kostenloser Schmuck.
+kosten 8 160 Fills; dieselbe Pixelzahl als waagerechte Linien kostet null,
+weil jede Line vom vorigen Pixel noch geladen ist. Die Oberfläche ist in
+waagerechte Bänder gegliedert, und eine senkrechte Trennlinie ist eine
+bewusste Ausgabe.
 
-**Das Chrome cachen.** Jeden Frame alles neu zu zeichnen kostet 24 896 Fills;
-der eingeschwungene Zustand kostet **740**. Das Dreißigfache — für Pixel, die
-sich gar nicht geändert haben. Jeder Bildschirm führt deshalb je Framebuffer
-eine Bitmaske dessen, was schon gezeichnet ist; dafür gibt es das Argument
-`buffer_index` von `render()`. Das Panel wechselt zwischen zwei Buffern — wer
-nur den gerade gezeichneten invalidiert, lässt den anderen einen Frame
-zurückhängen, und bei wechselnden Buffern sieht das nach *Flackern* aus, nicht
-nach einem veralteten Pixel.
+**Das Chrome cachen.** Alles neu zu zeichnen kostet etwa das Dreißigfache des
+eingeschwungenen Zustands. Jeder Bildschirm führt je Framebuffer eine
+Bitmaske dessen, was er schon gezeichnet hat; dafür ist das Argument
+`buffer_index` von `render()` da. Das Panel wechselt zwischen zwei Buffern;
+ein Bildschirm, der nur den gerade gezeichneten Buffer invalidiert, lässt den
+anderen einen Frame zurück, was als Flackern erscheint.
 
-## Was der Prüfstand kostet, und warum 19,5 fps das Ziel sind
-
-| | Fills/Frame | fps |
-| --- | ---: | ---: |
-| Das Menü, und jeder Bildschirm mit gecachtem Chrome | **821** | 39,0 |
-| Der Motorprüfstand, zwischen zwei Samples | **740** | 39,0 |
-| Der Motorprüfstand, wenn ein Sample eintrifft | **10 264** | 19,5 |
-| Derselbe, mit dem Simulations-Watermark | **11 825** | 19,5 |
-| Nichts gecacht | 24 896 | 9,8 |
-
-Der Prüfstandsbildschirm läuft mit der halben Panelrate — und das ist der
-Auslegungspunkt, kein Mangel. Das Panel bewegt 976 KiB pro Frame bei 39 Hz;
-ein Frame, der das Doppelte kostet, landet bei **19,5 fps: genau ein Frame pro
-20-Hz-Telemetriesample**. Schneller zu zeichnen, als Zahlen ankommen, hieße
-identische Pixel neu malen; langsamer hieße Samples verlieren.
-
-Die Obergrenze für die Prüfstandsmodi ist deshalb **15 600 Fills** — diese
-Schwelle, keine Geschmacksfrage: darüber schafft das Panel kein Frame pro
-Sample mehr, und genau diese Regression soll auffallen. Bildschirme mit
-gecachtem Chrome sind auf **2 000** festgelegt; das fängt ein Menü, das
-aufgehört hat zu cachen.
-
-**Nur zeichnen, wenn es etwas zu zeichnen gibt.** Samples kommen mit 20 Hz,
-das Panel zeichnet mit 39 — ungefähr jeder zweite Frame hat nichts Neues. Der
-Prüfstandsbildschirm führt deshalb den Push-Zähler des Plots und eine
+**Nur auf Frames zeichnen, die etwas zu zeichnen haben.** Samples kommen mit
+20 Hz, das Panel zeichnet mit 39 Hz, also hat etwa jeder zweite Frame nichts
+Neues. Der Prüfstandsbildschirm führt den Push-Zähler des Plots und eine
 Revisionsnummer der Bedienelemente, jeweils je Framebuffer, und zeichnet Plot,
 Anzeigen und Bedienelemente nur neu, wenn der zugehörige Zähler sich bewegt
-hat. Ein Frame zwischen zwei Samples, ohne Berührung, kostet **740 Fills** —
-das gecachte Chrome und sonst nichts.
+hat. `each_framebuffer_is_updated_independently` in `test_motor` hält die
+Zähler je Buffer fest.
 
-Dieser Umbau hat den Spielraum geschaffen, den die Tabelle zeigt: der
-schlimmste Frame in der Simulation fiel von 15 603 auf 11 825 gegen die Grenze
-von 15 600, der typische von 14 042 auf 740. Das zählt mehr, als die
-Mittelwerte vermuten lassen, denn der vermiedene Verkehr ist nicht bloß
-Verschwendung — er konkurriert mit dem Scan-out des LCD um dasselbe PSRAM, und
-genau daran ist beim ersten Hardwarestart das Bild zerrissen (Tearing).
+## Obergrenzen
 
-Die Zähler laufen je Framebuffer, aus dem oben genannten Grund: das Panel
-wechselt zwischen zweien, und ein Buffer, der zuletzt vor einem Sample
-gezeichnet wurde, braucht ein Update — auch wenn der andere aktuell ist.
-`each_framebuffer_is_updated_independently` in `test_motor` hält das fest;
-wer einen der Zähler auf einen einzigen Platz zusammenlegt, sieht den Test
-umfallen.
+Das Panel bewegt 976 KiB je Frame bei 39 Hz. Ein Frame, der das Doppelte
+kostet, landet bei 19,5 fps (Frames pro Sekunde), also einem Frame je
+20-Hz-Telemetriesample; schneller zu zeichnen würde identische Pixel neu
+malen, langsamer würde Samples verlieren. CI (Continuous Integration) hält
+jeden Modus an eine Obergrenze:
 
-Braucht ein künftiger Bereich noch mehr Platz, sind die verbleibenden Hebel,
-vom gröbsten zum feinsten: die Höhe des Plots, seine Breite, und das
-Simulations-Watermark auf den tatsächlich neu gezeichneten Bereich zu clippen.
+| Modi | Obergrenze (Fills) | Fängt |
+| --- | ---: | --- |
+| `frame`, `sim` | 15 600 | einen Prüfstandsframe, der ein Telemetriesample überschreitet |
+| `overview` | 2 000 | einen Bildschirm mit gecachtem Chrome, der neu zu zeichnen begonnen hat |
+| `servo` | 17 000 | ein Wachsen der Arm- und Griffzeichnung |
+| `servo-grip` | 4 000 | ein Atmen, das die ganze Karte neu zeichnet |
 
-Die Tabelle oben prüft `frame_cost.py --check-doc` — mit Toleranz statt Byte
-für Byte, denn die absoluten Fills verschieben sich zwischen Maschinen um ein
-paar: argv und Umgebungsvariablen landen im selben Cache, um den auch der
-Framebuffer konkurriert.
+Braucht ein künftiger Bereich mehr Platz, sind die verbleibenden Hebel vom
+gröbsten zum feinsten: die Höhe des Plots, seine Breite, und das
+Simulations-Watermark auf den tatsächlich neu gezeichneten Bereich zu
+clippen.
+
+Die Logzeile `DRAW … WAIT …` des ESP32-S3, alle 300 Frames ausgegeben, ist
+die Prüfung auf der Hardware: DRAW ist die Zeichenzeit, WAIT die Zeit, die
+der Buffer-Wechsel blockiert hat. Ein gesunder Frame besteht überwiegend aus
+WAIT.

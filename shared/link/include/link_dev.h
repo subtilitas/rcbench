@@ -3,9 +3,8 @@
  * stop.
  *
  * Pure C with the clock passed in as a millisecond count.  No timers, no
- * FreeRTOS, no pico-sdk -- which is what lets both watchdogs be driven through
- * their transitions on a laptop, including across the 32-bit wrap that a real
- * one reaches after 49 days and a test reaches in a microsecond.
+ * FreeRTOS, no pico-sdk, so both watchdogs are driven through their
+ * transitions on the host, including across the 32-bit wrap at 49.7 days.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -25,9 +24,9 @@ extern "C" {
 
 /**
  * Silence after which the coprocessor fills failsafe values on its own
- * authority.  IOMCU's ratio is worth copying: the far end gives up in 200 ms
- * and the host escalates at a second, so the processor holding the outputs is
- * always the more suspicious of the two.
+ * authority.  The ratio follows ArduPilot's IOMCU (I/O microcontroller): the
+ * coprocessor gives up after 200 ms and the host escalates after 1 s, so the
+ * processor holding the outputs is the more suspicious of the two.
  */
 #define LINK_DEV_SILENCE_MS 200u
 
@@ -62,24 +61,13 @@ void link_dev_init(link_dev_t *d, const link_page_t *pages, uint8_t page_count,
                    void *ctx, uint32_t now_ms);
 
 /**
- * Answer one decoded request.  Writes the reply frame into @p out and returns
- * its length, or 0 if there is nothing to send.
+ * Decide what to answer, without deciding how to carry it: which page,
+ * whether the range fits, whether the write is accepted, and what a NACK
+ * (negative acknowledge) says.  No transport is visible from here.
  *
- * Every request gets exactly one reply, including the refusals -- silence is
- * reserved for a coprocessor that is not there, so it must never also mean
- * "I heard you and declined".
- */
-/**
- * Decide what to answer, without deciding how to carry it.
- *
- * The whole of the dispatcher's judgement -- which page, whether the range
- * fits, whether the write was accepted, what a NACK should say -- with no
- * transport in it. Two of them exist now: bytes over a UART, and identifiers
- * over CAN. Neither is visible from here, which is what let CAN be added
- * without touching a line of this file's reasoning.
- *
- * False only on a null argument; every real request produces a reply, because
- * a request that gets no answer is indistinguishable from a dead link.
+ * False only on a null argument.  Every request produces exactly one reply,
+ * refusals included: silence means a coprocessor that is not there, and must
+ * not also mean a declined request.
  */
 bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
                        link_msg_t *reply, uint32_t now_ms);

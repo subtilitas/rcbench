@@ -1,12 +1,10 @@
 /*
- * Nothing in the panel link uses this any more: CAN carries a CRC, an
- * acknowledge slot and retransmission in silicon.  It stays for OpenYGE,
- * which needs the same polynomial with a different seed -- and the check
- * values below are what tell those two apart.
- *
- * It was written when a CRC was the only thing between a noisy pair and a register
- * write nobody asked for, so it is tested against the published check value
- * rather than against itself.
+ * The CRC-16 (cyclic redundancy check) the OpenYGE codec uses.  The panel
+ * link itself carries no CRC: CAN (Controller Area Network) has a CRC, an
+ * acknowledge slot and retransmission in silicon.  OpenYGE needs the same
+ * polynomial with a different seed, and the check values tell the two apart.
+ * The routine is tested against the published check value rather than
+ * against itself.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -43,8 +41,7 @@ TEST_CASE(folding_in_pieces_equals_folding_at_once)
     }
 }
 
-/* Every single-bit error in a 64-byte frame -- the size the link caps at --
- * must change the residue.  This is the property the wire actually needs. */
+/* Every single-bit error in a 64-byte frame changes the residue. */
 TEST_CASE(every_single_bit_flip_is_caught)
 {
     uint8_t frame[64];
@@ -62,11 +59,9 @@ TEST_CASE(every_single_bit_flip_is_caught)
     }
 }
 
-/* A frame that arrives one byte short must not verify as the frame it was.
- * Truncation is what a byte stream that loses its tail produces -- OpenYGE
- * frames arrive on a UART with no framing beneath them.  (It was also what a
- * mid-frame turnaround on an auto-direction transceiver
- * actually looks like, so it is not a hypothetical. */
+/* A frame that arrives short does not verify as the frame it was.  OpenYGE
+ * frames arrive on a UART (universal asynchronous receiver-transmitter) with
+ * no framing beneath them, so a lost tail is a truncated frame. */
 TEST_CASE(truncation_changes_the_residue)
 {
     static const uint8_t frame[] = { 0xA5, 0x10, 0x00, 0x01, 0x02, 0x03, 0x04 };
@@ -77,8 +72,8 @@ TEST_CASE(truncation_changes_the_residue)
     }
 }
 
-/* Leading zero bytes are the classic way a CRC with a zero init fools itself.
- * CCITT-FALSE starts at 0xFFFF precisely so they do not. */
+/* A CRC with a zero seed cannot see leading zero bytes; CCITT-FALSE seeds
+ * 0xFFFF so it can. */
 TEST_CASE(leading_zeroes_are_not_transparent)
 {
     static const uint8_t one[]  = { 0x00, 0x2A };

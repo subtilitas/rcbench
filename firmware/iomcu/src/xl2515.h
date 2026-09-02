@@ -1,11 +1,11 @@
 /*
- * The XL2515 over SPI: the part of the CAN driver that touches hardware.
+ * The XL2515 over SPI (Serial Peripheral Interface): the part of the CAN
+ * (Controller Area Network) driver that touches hardware.
  *
- * Deliberately thin.  Everything that can be computed rather than poked --
- * the bit timing, the identifier's layout across four registers, the register
- * map itself -- lives in shared/can with tests, so what is left here is
- * chip-select edges and a handful of register writes in the order the
- * datasheet gives them.
+ * Everything that can be computed rather than poked (the bit timing, the
+ * identifier's layout across four registers, the register map) lives in
+ * shared/can with tests.  This file holds chip-select edges and the register
+ * writes in the order the datasheet gives them.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,12 +21,9 @@
 /**
  * Reset, set the bit timing for @p bitrate, and enter normal mode.
  *
- * False if the part does not answer, which on a fresh board almost always
- * means the SPI wiring rather than the CAN wiring -- and the two are worth
- * telling apart before anything is scoped. The check is real: the datasheet
- * guarantees the part is in configuration mode after a reset, so a CANSTAT
- * that says otherwise means nothing is listening on the bus this driver
- * thinks it has.
+ * False if the part does not answer.  The datasheet guarantees configuration
+ * mode after a reset, so a CANSTAT that says otherwise means nothing is
+ * listening on the SPI bus: an SPI wiring fault, not a CAN wiring fault.
  */
 bool xl2515_init(uint32_t bitrate);
 
@@ -44,10 +41,10 @@ void xl2515_errors(uint8_t *tx_errors, uint8_t *rx_errors, uint8_t *flags);
 /**
  * True if a frame arrived with both receive buffers full since the last call.
  *
- * The flags are sticky and the MCU has to clear them, which makes this the
- * one record of a frame lost with nothing wrong on the wire: it arrived, it
- * was correct, and there was nowhere to put it. Reading clears them, so the
- * answer is "since you last asked" rather than "ever".
+ * The flags are sticky and the MCU (microcontroller unit) clears them, which
+ * makes this the one record of a frame lost with nothing wrong on the wire:
+ * it arrived, it was correct, and there was nowhere to put it.  Reading
+ * clears them, so the answer covers the time since the last call.
  */
 bool xl2515_take_overflow(void);
 

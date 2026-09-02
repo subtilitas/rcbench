@@ -1,21 +1,14 @@
 /*
  * Screen router.
  *
- * The predecessor gave every screen its whole 800x480 and shared nothing but
- * a home tag, on the argument that a log viewer, a settings list and a live
- * plot want very different things from their top edge.  That argument still
- * holds for the *body* of a screen and is why the bands below are as shallow
- * as they are.
+ * The router owns the top 48 px of the panel, the status band with STOP, and
+ * hands each screen a sub-canvas of the remaining 800x432 px through
+ * gfx_canvas_sub, so a screen cannot draw over STOP.  The band is horizontal
+ * because horizontal spans are the cheap direction on a panel whose frame
+ * rate is bound by PSRAM (pseudo-static random-access memory) bandwidth.
  *
- * What overturned the rest of it: more than one screen can now arm something.
- * STOP has to be in the same place everywhere, and a status band is horizontal
- * -- the cheap direction on a panel whose frame rate is bandwidth-bound.
- *
- * So the router owns the top 48 px and hands each screen a sub-canvas of what
- * is left.  Not by convention: physically, via gfx_canvas_sub, so a screen
- * cannot draw over STOP even by mistake.
- *
- * Pure C, no ESP-IDF -- the whole navigation model renders on the host.
+ * Pure C with no ESP-IDF (Espressif Internet-of-Things Development
+ * Framework), so the whole navigation model renders on the host.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -34,15 +27,11 @@ extern "C" {
 typedef enum {
     SCREEN_SPLASH = 0,
     SCREEN_OVERVIEW,
-    /* The five that hold the 44 small features. */
     SCREEN_MOTOR,
     SCREEN_SERVO,
     SCREEN_ANALYSER,
     SCREEN_LOGS,
     SCREEN_SETUP,
-    /* Named, routed and honest about what is missing.  A stub that says
-     * "coming soon" teaches nobody anything; one that says what is blocking it
-     * is a to-do list somebody can answer. */
     SCREEN_BATTERY,
     SCREEN_BALANCE,
     SCREEN_PROGRAMMER,
@@ -52,13 +41,12 @@ typedef enum {
 typedef struct {
     const char *title;   /**< shown in the band                            */
     /**
-     * Put the screen back to how it starts.  ui_router_init() calls this on
-     * every screen, because a screen's selection and scroll position are
-     * static state and "initialise the UI" has to mean it.
+     * Return the screen to its initial state.  ui_router_init() calls this on
+     * every screen, because selection and scroll position are static state.
      */
     void (*reset)(void);
     void (*enter)(void);
-    void (*leave)(void); /**< a bench disarms here; do the safe thing       */
+    void (*leave)(void); /**< a bench screen disarms here                  */
     void (*tick)(float dt_s);
     /** Coordinates are relative to the screen's own area, not the panel. */
     void (*event)(const touch_event_t *evt);
@@ -86,34 +74,28 @@ void ui_router_invalidate(void);
 /* ------------------------------------------------------------ bench state */
 
 /**
- * What the band shows.  The router does not compute any of it -- the
- * application fills this in from the link and hands it over, because the band
- * is a view of the *bench*, not of the panel.
+ * What the band shows.  The application fills it in from the link and hands
+ * it over; the router computes none of it.
  */
 typedef struct {
     bool     link_up;
     bool     armed;
     uint16_t faults;        /**< a link_fault_t bitmap; 0 is quiet          */
     uint32_t run_seconds;
-    const char *mode;       /**< "DSHOT600", "SBUS", ... or NULL            */
+    const char *mode;       /**< output mode text, or NULL                  */
     /**
      * The numbers are modelled, not measured.
      *
-     * Set whenever telemetry comes from anywhere but the coprocessor.  The
-     * router writes SIMULATION across the whole screen when it is set, and
-     * that is deliberately not something a screen can opt out of: the risk is
-     * a simulated reading being screenshotted and quoted as a measured one,
-     * and every screen would have its own reason to think itself exempt.
+     * Set when the bench numbers come from the panel's own simulator or from
+     * a coprocessor without a measurement front end (LINK_BN_SIMULATED).  The
+     * router draws SIMULATION across the whole screen while it is set; no
+     * screen can opt out.
      */
     bool simulated;
 
     /*
-     * A link_cap_t bitmap, straight from the coprocessor's identity page.
-     *
-     * Zero means either that nothing is fitted or that nothing answered, and
-     * the two look the same on purpose: in both cases the bench cannot do the
-     * thing, and a menu that distinguished them would be describing the
-     * cable rather than the bench.
+     * A link_cap_t bitmap from the coprocessor's identity page.  Zero means
+     * nothing is fitted or nothing answered; the menu treats both the same.
      */
     uint16_t capabilities;
 } ui_bench_status_t;
@@ -122,11 +104,10 @@ void ui_router_set_status(const ui_bench_status_t *status);
 const ui_bench_status_t *ui_router_status(void);
 
 /**
- * True on the frame where STOP was pressed, and clears when read.
+ * True once after STOP was released, then clears when read.
  *
- * A latch rather than a callback: the application drains it in the same loop
- * that toggles the heartbeat, so a stop travels as a command *and* stops the
- * line, and neither depends on the UI calling into hardware.
+ * A latch rather than a callback: the application drains it in the loop that
+ * drives the heartbeat, so the UI (user interface) never calls into hardware.
  */
 bool ui_router_take_stop(void);
 
@@ -136,13 +117,12 @@ bool ui_router_take_stop(void);
 #define UI_ALERT_MAX 48
 
 /**
- * A band across the bottom of every screen, or NULL to clear it.
+ * Show @p text in a 34 px band across the bottom of every screen, or NULL to
+ * clear it.
  *
- * For faults the operator cannot discover from the screen itself -- the panel
- * has stopped answering, so nothing responds and the last frame still looks
- * perfectly healthy.  Bottom, not middle: it covers controls that are not
- * working anyway rather than the numbers, which may be the only thing still
- * worth reading.
+ * For faults the screen itself does not show, such as a touch controller that
+ * has stopped answering.  At the bottom, it covers controls rather than
+ * readings.
  */
 void ui_router_set_alert(const char *text);
 const char *ui_router_alert(void);

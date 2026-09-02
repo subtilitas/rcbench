@@ -1,6 +1,5 @@
-# The widget layer: theme, primitives-drawn icons, and the controls the
-# screens are assembled from.  The router and the screens themselves land
-# here as they are re-cut against the two-processor model.
+# The widget layer, the router and the screens: theme, primitives-drawn
+# icons, and the controls the screens are assembled from.
 #
 # Icons are drawn from primitives rather than stored as bitmaps: a few hundred
 # bytes of code each, scalable, and no second asset to keep in sync.

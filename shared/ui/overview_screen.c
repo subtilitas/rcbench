@@ -15,9 +15,8 @@
 #define H (480 - UI_BAND_H)   /* the router owns the band */
 
 /*
- * Four columns by two rows.  Four because eight tiles is what the feature set
- * needs today and three columns would leave two orphans on a second row; two
- * rows because 193 px tiles do not fit three deep under a 48 px band.
+ * Four columns by two rows: eight 190 x 204 px tiles with 8 px margins under
+ * the 48 px band.
  */
 #define COLS 4
 #define ROWS 2
@@ -35,13 +34,10 @@ typedef struct {
 } tile_t;
 
 /*
- * Order is by how often a bench gets used, not by how much of it is built.
- * The three that are not live still appear, and say why on the screen they
- * lead to: a stub that says "coming soon" teaches nobody anything; one that
- * names its blocker is a to-do list somebody can answer.
+ * Tiles in order of expected use.  A tile whose screen does not exist leads
+ * to a stub that names what blocks it.  "iR" (internal resistance) rather
+ * than "IR", which reads as infrared.
  */
-/* iR, not IR: this bench also measures temperature with an infrared part, and
- * the two would sit two tiles apart under the same abbreviation. */
 static const tile_t k_tiles[] = {
     { SCREEN_MOTOR,      "MOTOR & ESC", "throttle, V/A/W, rpm",    ui_icon_motor,   true,
       LINK_CAP_ESC_DRIVE | LINK_CAP_PACK_SENSE },
@@ -50,7 +46,7 @@ static const tile_t k_tiles[] = {
     { SCREEN_ANALYSER,   "ANALYSER",    "buses, frames, raw",      ui_icon_chart,   true,
       LINK_CAP_RECEIVER },
     { SCREEN_LOGS,       "LOGS",        "record and read back",    ui_icon_record,  true,
-      0 },   /* the card is on the panel, so this needs nothing of the far end */
+      0 },   /* the card is on the panel; nothing needed from the coprocessor */
     { SCREEN_SETUP,      "SETUP",       "pack, output, theme",     ui_icon_sliders, true,
       0 },
     { SCREEN_BATTERY,    "BATTERY",     "cells, iR, capacity",     ui_icon_battery, true,
@@ -166,16 +162,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
                     ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_CENTER);
 
         /*
-         * Three states, not two.
-         *
-         * SOON is a screen that does not exist.  MODELLED is one that does,
-         * whose hardware is not fitted -- it opens, it works, and everything
-         * in it is invented, which is worth knowing from the menu rather than
-         * after walking into it.  Nothing at all means the part is on and the
-         * numbers are real.
-         *
-         * The second state used to be indistinguishable from the third, so
-         * the menu quietly promised measurements the bench could not take.
+         * Three states.  SOON: the screen does not exist.  MODELLED: the
+         * screen exists and its hardware is not fitted, so its values are
+         * modelled.  No badge: the hardware is fitted.
          */
         const uint16_t have = ui_router_status()->capabilities;
         const bool fitted = (t->needs == 0)

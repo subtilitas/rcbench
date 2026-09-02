@@ -1,10 +1,9 @@
 /*
- * Small, stateless drawing helpers shared by the tester screen.
+ * Stateless drawing helpers shared by every screen.
  *
- * Everything takes explicit geometry and draws immediately -- there is no
- * retained widget tree, because on this hardware the expensive thing is
- * touching framebuffer pixels, and a retained tree mostly helps you touch
- * them more often than you meant to.
+ * Every call takes explicit geometry and draws immediately.  There is no
+ * retained widget tree: on this hardware the cost is in touching framebuffer
+ * pixels, and a retained tree touches them more often.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -28,17 +27,18 @@ void ui_panel(gfx_canvas_t *c, gfx_rect_t r, const char *title,
 void ui_panel_header(gfx_canvas_t *c, gfx_rect_t r, const char *title,
                      gfx_color_t accent);
 
-/** Filled chamfered button.  @p pressed inverts, @p enabled dims. */
+/** Filled rounded button.  @p pressed lightens the fill; @p enabled false
+ *  dims it. */
 void ui_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
                gfx_color_t fill, bool pressed, bool enabled);
 
-/** Small status pill: a filled dot, then a label. */
-/** A raised surface with a hairline edge: the base of every panel. */
 /** True when @p c is bright enough to need dark text on it. */
 bool ui_is_light(gfx_color_t c);
 
+/** A raised surface with a hairline edge: the base of every panel. */
 void ui_card(gfx_canvas_t *c, gfx_rect_t r, gfx_color_t fill);
 
+/** Small status pill: a filled dot, then a label. */
 void ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label,
              gfx_color_t dot, gfx_color_t fill);
 
@@ -50,21 +50,20 @@ void ui_bar(gfx_canvas_t *c, gfx_rect_t r, float frac, float peak_frac,
 void ui_value(gfx_canvas_t *c, gfx_rect_t box, const char *number,
               const char *unit, gfx_color_t color);
 
-/** Format a float with a sensible number of decimals for its magnitude. */
+/** Format @p value with @p decimals decimal places (0 to 3); a non-finite
+ *  value prints as "--". */
 void ui_fmt(char *out, size_t n, float value, int decimals);
 
 /**
  * Run clock as H:MM:SS, or MM:SS below an hour.
  *
- * Shared so the overview and the bench cannot print the same number two
- * different ways -- the overview used to drop the hours and wrap to 00:00.
+ * Shared so every screen prints the same number the same way.
  */
 void ui_clock(char *out, size_t n, uint32_t seconds);
 
 /*
- * The home tag: every screen puts one in the same place at the top left, so
- * "back to the menu" is muscle memory rather than a hunt.  The router
- * hit-tests it before the screen sees the event.
+ * The home tag, at the same place at the top left of every screen that has
+ * one.  The router hit-tests it before the screen sees the event.
  */
 #define UI_TAG_X 6
 #define UI_TAG_Y 5
@@ -79,7 +78,7 @@ void ui_wordmark(gfx_canvas_t *c, const char *text, gfx_color_t fill);
 /** Left-pointing solid triangle, apex at (x, cy). */
 void ui_chevron_left(gfx_canvas_t *c, int x, int cy, int size, gfx_color_t color);
 
-/** Dotted/dashed horizontal rule, used to separate rows without a hard line. */
+/** A 1 px horizontal rule. */
 void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color);
 
 #ifdef __cplusplus

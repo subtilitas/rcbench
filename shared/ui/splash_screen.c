@@ -13,9 +13,8 @@
 #define W 800
 #define H 480
 
-/* Long enough to read seven lines, short enough not to be in the way.  A tap
- * skips it -- but a failure still has to be *reported*, not survived: you must
- * be able to read it and move on, rather than be stranded here. */
+/* Hold after the last step has answered, before the menu: 1.6 s to read
+ * seven lines.  A tap skips it; a failed step stays reported on screen. */
 #define HOLD_S 1.6f
 
 static const char *const k_labels[SPLASH_STEP_COUNT] = {
@@ -108,17 +107,15 @@ static void render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
 
-    /* The frame and the wordmark never change; the rows do.  Painting only
-     * what moved is the whole reason render() is handed a buffer index. */
+    /* The frame and the wordmark are painted once per framebuffer; the rows
+     * are repainted every frame. */
     if ((s.drawn_mask & bit) == 0) {
         gfx_clear(c, ui_theme_color(UI_C_BG));
         ui_wordmark(c, "rcbench", ui_theme_color(UI_C_ACCENT));
         gfx_text_in(c, (gfx_rect_t){ 0, 108, W, 24 },
                     "motor, ESC and servo test bench", &gfx_font_8x16,
                     ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_CENTER);
-        /* One credit, in one place, at the bottom of the one screen nobody
-         * is working on when they read it.  Not on every commit, not in the
-         * docs, not in a header banner. */
+        /* The one credit line, at the bottom of the splash only. */
         gfx_text_in(c, (gfx_rect_t){ 0, H - 34, W, 20 },
                     "built with Claude Code", &gfx_font_8x16,
                     ui_theme_color(UI_C_TEXT_FAINT), 1, GFX_ALIGN_CENTER);

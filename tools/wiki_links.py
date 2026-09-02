@@ -2,17 +2,16 @@
 """Rewrite docs/ links for the GitHub wiki.
 
 A wiki page is addressed by its title with no extension, so a link written
-as `[Screens](Screens.md)` does not open the page -- it downloads the file.
-In the repository
-the opposite is true: `docs/Screens.md` is what resolves there, and it is what
-`check_docs.py` holds every link to.
+as `[Screens](Screens.md)` downloads the file instead of opening the page.
+In the repository `docs/Screens.md` is what resolves, and `check_docs.py`
+holds every link to it.
 
-Both are right, so neither source is edited to suit the other. The mirror step
-translates on the way out, and this is that step, in a file rather than in a
-line of YAML so it can be read and run.
+Neither source is edited to suit the other.  The mirror step translates on
+the way out, and this is that step, in a file rather than in a workflow step
+so it can be read and run.
 
-Only relative links to a markdown page are touched. A URL, an absolute path and
-an image reference are all left exactly alone.
+Only relative links to a markdown page are touched.  A URL (uniform resource
+locator), an absolute path and an image reference are left as they are.
 
     tools/wiki_links.py <dir>          rewrite in place
     tools/wiki_links.py --check <dir>  report what would change, change nothing

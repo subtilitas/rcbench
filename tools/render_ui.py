@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Render the tester screen on the host and save it as a PNG.
+"""Render every screen on the host and save it as a PNG (Portable Network
+Graphics) image.
 
-The UI code has no ESP-IDF dependency, so the host build links the same
-rasteriser, the same fonts and the same layout code the panel runs.  What
-comes out is what the display shows -- which is how this screen was designed
-without a board attached.
+The UI (user interface) code has no ESP-IDF (Espressif Internet-of-Things
+Development Framework) dependency, so the host build links the rasteriser,
+the fonts and the layout code the panel runs.  The output is what the display
+shows.
 
-    python3 tools/render_ui.py                   # docs/img/screen.png
+    python3 tools/render_ui.py                   # every screen into docs/img/
     python3 tools/render_ui.py overview -o /tmp/overview.png
 """
 
@@ -61,13 +62,14 @@ SOURCES = [
     "shared/outputs/outputs_pages.c",
 ]
 
-# Every screen gets a committed screenshot; CI checks them all.
+# Every screen gets a committed screenshot; CI (continuous integration)
+# checks them all.
 # name -> (committed file, screen the renderer knows, theme)
 SCREENS = {
     "splash":     ("splash.png",     "splash",     "dark"),
     "overview":   ("overview.png",   "overview",   "dark"),
-    # The same menu in the other theme.  Committed because a palette change
-    # that only breaks one theme is the kind that ships.
+    # The same menu in the other theme, committed so a palette change that
+    # breaks one theme is caught.
     "overview-light": ("overview-light.png", "overview", "light"),
     "motor":      ("motor.png",      "motor",      "dark"),
     "servo":      ("servo.png",      "servo",      "dark"),
@@ -166,11 +168,9 @@ def main() -> int:
             rendered = render_one(exe, tmp, name, screen, theme)
 
             if args.check:
-                # A golden image is the right regression test for a renderer:
-                # the unit tests cover what a screen decides, this covers what
-                # it looks like.  Compare pixels rather than encoded bytes --
-                # PNG encoders differ between versions, and that is not a UI
-                # change.
+                # The unit tests cover what a screen decides; the golden image
+                # covers what it looks like.  Compare pixels rather than
+                # encoded bytes: PNG encoders differ between versions.
                 if not out.exists():
                     print(f"{out} does not exist; run tools/render_ui.py",
                           file=sys.stderr)

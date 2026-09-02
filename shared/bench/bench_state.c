@@ -6,8 +6,8 @@
 
 #include <string.h>
 
-/* The scales, in one place.  A number that disagrees with the wire is a wrong
- * reading rather than a crash, which is the kind that ships. */
+/* The scales of the BENCH page registers, matching link_pages.h.  A scale
+ * that disagrees with the wire produces a wrong reading, not a crash. */
 #define CV_PER_V   100.0f   /* 10 mV steps  */
 #define CA_PER_A   100.0f   /* 10 mA steps  */
 #define DC_PER_C    10.0f   /* 0.1 C steps  */
@@ -96,8 +96,8 @@ void bench_state_reset_peaks(bench_state_t *b)
     if (b == NULL) {
         return;
     }
-    /* The minimum resets to the reading rather than to zero: a sag floor of
-     * zero volts would read as a pack that had collapsed. */
+    /* The minimum resets to the current reading, not to zero: a sag floor
+     * of 0 V reads as a collapsed pack. */
     b->voltage_min = b->voltage;
     b->current_max = b->current;
     b->power_max   = b->power;

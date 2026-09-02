@@ -1,12 +1,11 @@
 /*
  * Seven-segment numerals, drawn rather than stored.
  *
- * A bitmap face cannot do the one thing that makes a segment display read as
- * an instrument: showing the segments that are *off*.  A real panel has all
- * seven there in the glass whether they are lit or not, and the faint ghost
- * of an 8 behind every digit is most of why it looks like hardware.  So the
- * digits are rasterised from their segment masks, which also means one
- * routine serves every size the bench asks for instead of a table per size.
+ * A bitmap face cannot show the segments that are off, and a segment display
+ * has all seven in the glass whether they are lit or not; the faint ghost of
+ * an 8 behind every digit is what makes it read as an instrument.  The digits
+ * are rasterised from their segment masks, so one routine serves every size
+ * the bench asks for instead of a table per size.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -53,10 +52,9 @@ static uint8_t mask_for(char ch)
 /*
  * One antialiased scanline.
  *
- * The interior goes through gfx_hline unchanged -- it is whole pixels and
- * there is nothing to blend -- and only the two ends, which are where a
- * fractional edge lands, read the destination back.  That keeps a segment at
- * roughly the cost of the runs it was before, with two blends per row.
+ * The interior goes through gfx_hline unchanged (whole pixels, nothing to
+ * blend) and only the two ends, where a fractional edge lands, read the
+ * destination back.  A segment costs one hline plus two blends per row.
  */
 static void span_aa(gfx_canvas_t *c, float x0, float x1, int y,
                     gfx_color_t col)
@@ -94,15 +92,14 @@ static float slant_at(const gfx_seg_style_t *st, float y_from_foot)
 }
 
 /*
- * Both bar shapes are hexagons -- square ends would butt into each other at
- * the corners and read as a rectangle with a notch, which is the look of a
- * segment display drawn by somebody who had not seen one.  The taper is half
- * the thickness at each end, so two meeting at a corner leave a clean
+ * Both bar shapes are hexagons: square ends would butt into each other at the
+ * corners and read as a rectangle with a notch.  The taper is half the
+ * thickness at each end, so two bars meeting at a corner leave a clean
  * diagonal gap.
  *
- * The tapers are 45 degrees, so every one of them crosses the pixel grid
- * diagonally and every one of them staircased before this was carried in
- * floating point.
+ * The tapers are 45 degrees and cross the pixel grid diagonally, so their
+ * edges are carried in floating point and blended per row; integer steps
+ * staircase.
  */
 static void bar_h(gfx_canvas_t *c, float x, int y, float w, int t,
                   const gfx_seg_style_t *st, int foot, gfx_color_t col)
@@ -198,15 +195,12 @@ int gfx_seg_text(gfx_canvas_t *c, int x, int y, const char *s,
         const uint8_t segs = mask_for(*p);
         if (segs != 0u) {
             /* Every segment first at the unlit level, then the lit ones over
-             * them.  Drawn in this order so a lit segment never has to know
-             * what it is covering.
+             * them, so a lit segment never has to know what it covers.
              *
-             * A character that lights nothing gets no ghost either.  A real
-             * display would show one -- the glass has seven bars in every
-             * cell whatever is in it -- but a leading '+' then renders as a
-             * ghosted 8 that reads as a stray digit, and the cell is there to
-             * hold the sign's place so the number does not shift when it
-             * turns negative. */
+             * A character that lights nothing gets no ghost either: a leading
+             * '+' would render as a ghosted 8 that reads as a stray digit,
+             * and the cell holds the sign's place so the number does not
+             * shift when it turns negative. */
             if (st->ghost) {
                 digit(c, x, y, st, SEG_ALL, off);
             }

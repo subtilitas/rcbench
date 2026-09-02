@@ -1,14 +1,10 @@
 /*
- * The pack.
+ * The battery screen: each cell's departure from the pack's mean.
  *
- * A column of cell voltages is easy to draw and hard to read: six numbers
- * that agree to two decimals, one of which is quietly forty millivolts adrift.
- * The quantity that matters is the *spread*, so the cells are drawn as
- * departures from their own mean and the number that decides the verdict is
- * the widest gap between any two of them.
- *
- * Absolute voltage is still there, under each bar, because at some point you
- * do want to know whether the pack is charged.
+ * Six cell voltages that agree to two decimals hide a cell 40 mV adrift, so
+ * the cells are drawn as departures from their own mean, and the verdict
+ * follows the spread: the widest gap between any two cells.  The absolute
+ * voltage of each cell is printed under its bar.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -37,16 +33,16 @@
 /*
  * The scale floor, in millivolts at full deflection.
  *
- * The range autoscales to the pack, because a fixed hundred-millivolt scale
- * draws a healthy pack as six flat lines and a sick one as five flat lines
- * and a stub -- which is the same picture.  The floor stops a pack that
- * agrees to a millivolt from being drawn as though it were falling apart.
+ * The range autoscales to the pack: a fixed 100 mV scale draws a healthy
+ * pack and a pack with one weak cell as the same six near-flat bars.  The
+ * floor stops a pack that agrees to 1 mV from being drawn as if it were
+ * diverging.
  */
 #define SCALE_FLOOR_MV 12.0f
 
 /* Where a pack stops being fine.  Under load, cells that differ by more than
- * this are not a pack that needs balancing, they are a pack with a weak cell
- * in it -- balancing hides that for one more cycle. */
+ * this are a pack with a weak cell, not a pack that needs balancing;
+ * balancing hides the weak cell for one more cycle. */
 #define SPREAD_WATCH_MV 30.0f
 #define SPREAD_BAD_MV   60.0f
 
@@ -136,7 +132,7 @@ static void draw_cells(gfx_canvas_t *c)
     }
 
     /* Autoscaled, so the scale has to be on the picture: without it a bar
-     * that fills the plot could be four millivolts or forty. */
+     * that fills the plot could be 4 mV or 40 mV. */
     char sc[24];
     snprintf(sc, sizeof(sc), "+%d mV", (int)(full + 0.5f));
     gfx_text_in(c, (gfx_rect_t){ (int16_t)(PLOT_X + PLOT_W - 120),

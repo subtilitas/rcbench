@@ -1,30 +1,24 @@
 /*
- * The first thing to run when two CAN nodes are wired together.
+ * The CAN (Controller Area Network) echo self-test: the first check when two
+ * nodes are wired together.
  *
- * Before the page protocol means anything, one question has to be answered:
- * do frames cross this bus intact?  That is not the same question as "does
- * the link work", and answering them together is how a bring-up turns into an
- * afternoon.  A bit timing that is slightly wrong, a missing terminator, a
- * transceiver in the wrong mode and a dispatcher bug all present as "the panel
- * shows no numbers".
+ * It answers one question: do frames cross this bus intact?  The initiator
+ * sends a frame with a sequence number and a payload, the responder sends it
+ * back unchanged, and the initiator compares it byte for byte.  No page map,
+ * no registers, no state machine above it.  A passing test with a link that
+ * does not work places the fault above the wire.  A wrong bit timing, a
+ * missing terminator, a transceiver in the wrong mode and a dispatcher bug
+ * all present as a panel that shows no numbers; this test separates the
+ * first three from the fourth.
  *
- * So this is an echo test and nothing else.  The initiator sends a frame with
- * a sequence number and a payload; the responder sends it straight back; the
- * initiator checks it came back byte for byte.  No page map, no registers, no
- * state machine above it.  If this passes and the link still does not work,
- * the fault is above the wire -- which is worth knowing in itself.
+ * The payloads exercise bit stuffing.  CAN stuffs a complementary bit after
+ * five bits of the same polarity, so a marginal bus fails on long runs of one
+ * level.  The first two payload bytes carry the sequence number; the other
+ * six carry one of four patterns selected by it (0x00, 0xFF, 0x55, 0xAA),
+ * and the echo is checked against the pattern it was sent with.
  *
- * THE PAYLOADS ARE NOT ARBITRARY.  CAN stuffs a complementary bit after five
- * of the same polarity, so the patterns that stress a marginal bus are long
- * runs of one level and the transitions either side of them.  A test that only
- * ever sent counting integers would pass on a bus that fails on real traffic,
- * so the patterns cycle through all-dominant, all-recessive, alternating and
- * counting, and the sequence number is checked against the pattern it was sent
- * with.
- *
- * It runs at the lowest arbitration priority there is, on a page the map does
- * not use, so it can be left running while other things happen and can never
- * delay them.
+ * The test runs at the lowest arbitration priority on a page the map does
+ * not use, so it can run beside normal traffic without delaying it.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -59,16 +53,12 @@ typedef enum {
      *  they went missing. Electrical: timing, termination, length. */
     CAN_SELFTEST_LOSSY,
     /**
-     * Frames went missing with **no bus error at all**.
+     * Frames went missing with no bus error.
      *
-     * A different fault entirely, and one that is easy to misread as the one
-     * above. If a frame had been corrupted on the wire, some controller would
-     * have seen a bit, stuff, form or CRC error and counted it. None did. So
-     * the frame arrived intact and something stopped reading in time -- a
-     * receive buffer that overran while its owner was busy elsewhere.
-     *
-     * Sending somebody to check terminators for this wastes an afternoon on
-     * hardware that is working.
+     * A frame corrupted on the wire produces a bit, stuff, form or CRC
+     * (cyclic redundancy check) error at some controller.  None did, so the
+     * frames arrived intact and a receive buffer overran because its owner
+     * did not read in time.  Not a wiring fault.
      */
     CAN_SELFTEST_DROPPED,
 } can_selftest_verdict_t;
@@ -78,7 +68,7 @@ typedef struct {
     uint32_t echoed;      /**< came back, and correct */
     uint32_t timed_out;
     uint32_t corrupt;     /**< came back wrong: the worst of the three */
-    uint32_t stale;       /**< an echo of something no longer outstanding */
+    uint32_t stale;       /**< an echo of something not outstanding */
 
     uint16_t seq;         /**< next sequence number to send */
     uint16_t outstanding; /**< the one being waited for */
@@ -90,15 +80,10 @@ typedef struct {
     uint32_t rtt_max_us;
 
     /**
-     * Bus errors the local controller counted, filled in by the caller before
-     * asking for a verdict.
-     *
-     * The transport knows things this module cannot infer, and this is the
-     * one that separates a wire fault from a software one. Left at zero it
-     * simply reads as "no errors reported", which is the safe default only
-     * because a caller that has no counter to offer has no evidence either
-     * way -- and the verdict then says DROPPED, which is the diagnosis that
-     * does not send anybody to the wrong end of the problem.
+     * Bus errors counted by the local controller, filled in by the caller
+     * before asking for a verdict.  This is what separates a wire fault
+     * (LOSSY) from a software one (DROPPED).  Left at zero, loss is reported
+     * as DROPPED.
      */
     uint32_t bus_errors;
 } can_selftest_t;
@@ -133,27 +118,23 @@ const char *can_selftest_hint(can_selftest_verdict_t v);
 /* ----------------------------------------------- the far end's own numbers */
 
 /*
- * The coprocessor's view of the bus, carried across the bus.
+ * The coprocessor's view of the bus, carried across the bus in one 8-byte
+ * frame on the self-test page at the lowest priority, so one console shows
+ * both ends of a fault.
  *
- * Two consoles for two boards means swapping a USB cable to see the other
- * half of a fault, and a fault you can only see half of at a time is one you
- * argue about.  Eight bytes is enough for everything the far end knows, so it
- * travels on the same page as the echo test at the same lowest priority.
- *
- * It is *polled*, not volunteered.  The coprocessor never speaks unless
- * spoken to -- that rule predates CAN and is worth keeping even though
- * arbitration would now make an unsolicited frame harmless.
+ * It is polled: the coprocessor transmits only in answer to a request.
  */
 typedef struct {
-    bool     up;          /**< the controller answered on SPI at boot */
-    uint8_t  tx_errors;   /**< TEC: 128 is error-passive */
-    uint8_t  rx_errors;   /**< REC */
-    uint8_t  flags;       /**< EFLG, whatever the far end's part calls it */
+    bool     up;          /**< the controller answered on SPI (Serial
+                               Peripheral Interface) at boot */
+    uint8_t  tx_errors;   /**< transmit error counter; 128 is error-passive */
+    uint8_t  rx_errors;   /**< receive error counter */
+    uint8_t  flags;       /**< the controller's error flag register */
     uint16_t echoes;      /**< probes it has answered, wrapping */
     uint16_t overflows;   /**< frames that arrived with nowhere to put them */
 } can_remote_status_t;
 
-/** Build the request. One frame, no payload, like every other question here. */
+/** Build the request: one frame, no payload. */
 bool can_selftest_status_request(link_can_frame_t *out);
 
 /** The far end's answer. True if @p in was a status request. */
@@ -169,24 +150,16 @@ bool can_selftest_status_parse(const link_can_frame_t *in,
  * Frames the far end answered that this end never heard.
  *
  * @p before and @p after are the far end's echo counter sampled either side
- * of the measurement, and @p heard is everything this end *received* in
- * between -- not only what it accepted. An echo that arrived late or altered
- * still crossed the return path, and counting only the good ones would report
- * a return-path fault for frames that got here perfectly well and were merely
- * too late to be wanted.
+ * of the measurement; @p heard is everything this end received in between,
+ * late and altered echoes included, since those crossed the return path too.
  *
- * **It is the difference that means anything.** The far end's counter runs
- * from its own boot, not from the start of this test, and a coprocessor left
- * powered through several panel reboots will be tens of thousands ahead of
- * anything the panel counted. Comparing the two absolutes reported a
- * return-path fault on a run where 2144 of 2144 probes came back -- a
- * diagnostic crying wolf on a perfect result, which is worse than no
- * diagnostic at all.
+ * Only the difference of the two samples is meaningful.  The far end's
+ * counter runs from its own boot, and a coprocessor powered through several
+ * panel reboots is tens of thousands ahead of the panel's count.  The counter
+ * is 16 bits and wraps; unsigned subtraction handles that.
  *
- * The counter is sixteen bits and wraps; unsigned subtraction handles that.
- *
- * Returns how many went missing, or 0. A probe in flight across either
- * boundary is not a fault, so a small difference is not reported.
+ * Returns how many went missing, or 0.  A probe in flight across either
+ * boundary is not a fault, so a difference of up to 2 is not reported.
  */
 uint16_t can_selftest_return_loss(uint16_t before, uint16_t after,
                                   uint32_t heard);
@@ -194,11 +167,9 @@ uint16_t can_selftest_return_loss(uint16_t before, uint16_t after,
 /* ------------------------------------------------------------- responder */
 
 /**
- * The far end's whole job: if this frame is a probe, fill @p out with the
- * echo. True when it did.
- *
- * Stateless on purpose. A responder that counted anything could disagree with
- * the initiator about what happened, and then the bring-up has two stories.
+ * The responder: if @p in is a probe, fill @p out with the echo.  True when
+ * it did.  Stateless, so the responder cannot disagree with the initiator
+ * about what happened.
  */
 bool can_selftest_echo(const link_can_frame_t *in, link_can_frame_t *out);
 

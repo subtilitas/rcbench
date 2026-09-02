@@ -1,11 +1,9 @@
 /*
- * The receiver-bus analyser.
+ * The receiver-bus analyser screen.
  *
- * The point of this screen is not the sixteen numbers.  It is the two flags
- * beside them: a receiver in failsafe sends sixteen perfectly well-formed
- * channel values that mean nothing, and a bench that shows the numbers
- * without shouting about the flag is helping somebody trust invented data.
- * So the state block is the largest thing here and the channels are small.
+ * A receiver in failsafe sends sixteen well-formed channel values, so the
+ * state block (SILENT, FAILSAFE, FRAME LOST, LIVE) is the largest element on
+ * the screen and the channels are small.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -42,25 +40,12 @@
 /*
  * Sixteen lanes of recent history, one per channel.
  *
- * The question this screen is asked is "I moved that -- which channel was
- * it?", and neither a bar nor a dial can answer it: the information is in
- * the movement and both of those show only where a thing is now.  A lane
- * keeps the last few seconds, so the channel that just moved is the one with
- * a step in it, and the eye finds a step among flat lines without being told
- * where to look.
+ * A lane keeps the last 118 samples, so the channel that moved is the one
+ * with a step in its trace.  A glitch is a spike in one lane; a dropout is a
+ * notch across all sixteen at the same instant.
  *
- * It is also the only arrangement that shows the two faults the stub
- * promised -- a glitch is a spike in one lane, a dropout is a notch across
- * all sixteen at the same instant.
- */
-/*
- * A lane is two thirds history and one third now.
- *
- * The trace answers "which channel moved"; the bar answers "how far is it,
- * right now" without reading a number.  Neither alone was enough -- a bar
- * cannot show the step that identifies a channel, and a trace two seconds
- * wide makes the eye measure a line's height against a faint centre when all
- * it wants is a length.
+ * A lane is two thirds history and one third current value: the trace
+ * answers which channel moved, the bar answers how far it is from neutral.
  */
 #define HIST      118             /* one pixel a sample, so about 1.7 s */
 #define PITCH     1
@@ -186,7 +171,7 @@ static gfx_color_t live(void)
                                         : ui_theme_color(UI_C_ACCENT);
 }
 
-/* One channel's lane: its name, its trace, and where it is now. */
+/* One channel's lane: its name, its trace, and its current value. */
 static void draw_lane(gfx_canvas_t *c, int ch)
 {
     const int col = ch / ROWS;
@@ -208,19 +193,16 @@ static void draw_lane(gfx_canvas_t *c, int ch)
              ui_theme_color(UI_C_TEXT_DIM), 1);
 
     /*
-     * The trace runs in a trough of its own, in the same sunk colour the bar
-     * beside it sits in.  Drawn straight onto the card the two halves of a
-     * lane read as different kinds of thing; on the same ground they read as
-     * one instrument shown two ways.
+     * The trace runs in a trough of the same sunk colour the bar sits in, so
+     * the two halves of a lane read as one instrument.
      */
     gfx_fill_round_rect(c, tx, mid - gh / 2, TRACE_W, gh, 4,
                         ui_theme_color(UI_C_PANEL_SUNK));
 
     /*
-     * Neutral, in the unlit shade of the trace that runs on it rather than in
-     * a neutral grey.  It is the same idea as the segment numerals and the
-     * horn's rings: the line is always there in the glass, and the trace is
-     * that same line lit.
+     * The neutral line is the trace colour at 56/255 over the sunk panel
+     * colour: the unlit-segment convention the numerals and the servo rings
+     * use.
      */
     gfx_hline(c, tx, mid, TRACE_W,
               gfx_lerp(ui_theme_color(UI_C_PANEL_SUNK), live(), 56));
@@ -238,14 +220,11 @@ static void draw_lane(gfx_canvas_t *c, int ch)
 
     if (n > 0u) {
         /*
-         * Clipped to the trough while the trace is drawn.
-         *
-         * Three things put ink outside it otherwise, and only one of them is
-         * obvious: the newest column began *at* the right edge and is a whole
-         * pitch wide, a span between two samples is drawn a pixel taller than
-         * it measures so a flat run is still visible, and the trough's
-         * corners are rounded while the columns are not.  Clipping answers
-         * all three at once and keeps answering them if any of them change.
+         * Clipped to the trough while the trace is drawn.  Three things put
+         * ink outside it otherwise: the newest column starts at the right
+         * edge and is a whole pitch wide, a span between two samples is drawn
+         * 1 px taller than it measures so a flat run stays visible, and the
+         * trough's corners are rounded while the columns are not.
          */
         const gfx_rect_t trough = { (int16_t)tx, (int16_t)(mid - gh / 2),
                                     (int16_t)TRACE_W, (int16_t)gh };
@@ -381,9 +360,8 @@ static void draw_state(gfx_canvas_t *c)
                 word, UI_FONT_HEAD, tone, 1, GFX_ALIGN_CENTER);
 
     /*
-     * Spelled out, because the difference is the whole reason this screen
-     * exists: a receiver in failsafe is still sending sixteen well-formed
-     * numbers, and they are the ones it was told to invent.
+     * One line per state.  A receiver in failsafe is still sending sixteen
+     * well-formed numbers, and the line says they are its failsafe values.
      */
     const char *why = s.silent           ? "nothing on the wire"
                     : s.frame.failsafe   ? "numbers are invented"
@@ -431,9 +409,8 @@ static void draw_right(gfx_canvas_t *c)
     gfx_hline(c, x, BODY_Y + 238, w, ui_theme_color(UI_C_EDGE));
     gfx_text(c, x, BODY_Y + 250, "DIGITAL", UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
-    /* Stacked, not side by side.  Two of these across is what set this card's
-     * width, and the width was being spent on a pair of four-character labels
-     * rather than on the traces next door. */
+    /* Stacked, so the card stays 190 px wide and the width goes to the
+     * traces. */
     for (int i = 0; i < 2; ++i) {
         const bool on = s.have && ((i == 0) ? s.frame.ch17 : s.frame.ch18);
         const gfx_rect_t r = { (int16_t)x, (int16_t)(BODY_Y + 272 + i * 34),

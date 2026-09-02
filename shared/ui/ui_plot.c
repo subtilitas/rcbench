@@ -11,9 +11,8 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-/* Three seconds at 20 Hz.  Long enough that a spike does not make the plot
- * breathe, short enough that a run which really has settled rescales while
- * you are still looking at it. */
+/* Samples a scale stays above its target before it shrinks: 3 s at 20 Hz.
+ * A shorter hold makes a single spike rescale the plot twice. */
 #define SHRINK_HOLD 60
 
 /* Headroom above the peak, so the trace does not ride the top edge. */
@@ -29,7 +28,8 @@ float ui_plot_nice_ceil(float v)
     };
     /* cppcheck-suppress invalidFunctionArg
      * v is positive here: the guard above returns for anything that is not,
-     * NaN included, which is why it is written !(v > 0) and not (v <= 0). */
+     * NaN (not a number) included, which is why it is written !(v > 0) and
+     * not (v <= 0). */
     const float mag = powf(10.0f, floorf(log10f(v)));
     const float n = v / mag;
     for (size_t i = 0; i < sizeof(steps) / sizeof(steps[0]); ++i) {
@@ -66,9 +66,8 @@ void ui_plot_push(ui_plot_t *p, const float *values)
         return;
     }
     for (int k = 0; k < p->count; ++k) {
-        /* A non-finite reading must not poison the scale or freeze the loop
-         * that owns STOP: it is recorded as zero and the trace shows a gap
-         * rather than the plot showing nothing ever again. */
+        /* A non-finite reading is stored as zero, so it cannot poison the
+         * scale; the trace dips to zero at that sample. */
         const float v = values[k];
         p->ring[k][p->head] = isfinite(v) ? v : 0.0f;
     }
@@ -119,7 +118,7 @@ void ui_plot_update_scales(ui_plot_t *p, int visible_samples)
             p->shrink_hold[k] = SHRINK_HOLD;
         } else if (target < p->scale[k]) {
             if (--p->shrink_hold[k] <= 0) {
-                p->scale[k] = target;             /* shrink on patience */
+                p->scale[k] = target;             /* shrink after the hold */
                 p->shrink_hold[k] = SHRINK_HOLD;
             }
         } else {
@@ -165,13 +164,9 @@ int ui_plot_map_y(const ui_plot_t *p, int series, float value, int y0, int h)
 #define TICKS      8
 
 /*
- * The channel legend: a swatch, a name, and the top of that channel's scale.
- *
- * This replaces four 2px coloured bars with tick marks, which took 22px out
- * of the plot's width to say that four series existed and that each had a
- * scale divided into eighths -- without printing a single number, so there
- * was nothing on them anybody could read a value off.  Four traces on four
- * independent scales need their ranges stated, and that is all this does.
+ * The channel legend: a swatch, a name, and the full scale of that channel.
+ * Each series has its own scale, so the legend is where the range of each
+ * trace is stated.
  */
 void ui_plot_render_legend(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
 {
@@ -193,8 +188,7 @@ void ui_plot_render_legend(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
                        off ? ui_theme_color(UI_C_TEXT_FAINT)
                            : ui_theme_color(UI_C_TEXT_DIM), 1);
 
-        /* The top of the range, which is what the trace's height is drawn
-         * against and the only number that makes its shape readable. */
+        /* The full scale, which the trace's height is drawn against. */
         char top[24];
         ui_fmt(top, sizeof(top), p->scale[k], p->series[k].decimals);
         char full[32];
@@ -212,9 +206,10 @@ void ui_plot_render(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
 
     gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL_SUNK));
 
-    /* Horizontal grid only.  Vertical lines cost about six thousand
-     * cache-line fills on this panel and the same pixels drawn horizontally
-     * cost none -- so the time axis is labelled rather than ruled. */
+    /* Horizontal grid lines only.  A full-height vertical line costs about
+     * 480 cache-line fills on this panel (17 lines measure 8,160) and the
+     * same pixels drawn horizontally cost none, so the time axis is labelled
+     * rather than ruled. */
     for (int t = 1; t < TICKS; ++t) {
         const int y = r.y + (r.h - 1) * t / TICKS;
         gfx_fill_rect(c, r.x, y, r.w, 1, ui_theme_color(UI_C_GRID));
@@ -262,8 +257,8 @@ void ui_plot_render(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
                  (double)p->scale[p->focus], p->series[p->focus].unit);
         gfx_text(c, r.x + 4, r.y + 3, top, &gfx_font_8x16,
                  p->series[p->focus].color, 1);
-        /* Above the axis row, not on it: both were at r.h - 19 first, which
-         * drew the zero and the time base on top of each other. */
+        /* Above the axis row at r.h - 19, so the zero label and the time
+         * base do not overlap. */
         gfx_text(c, r.x + 4, r.y + r.h - 38, "0", &gfx_font_8x16,
                  p->series[p->focus].color, 1);
     }

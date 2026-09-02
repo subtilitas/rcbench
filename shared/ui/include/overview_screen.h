@@ -1,11 +1,8 @@
 /*
- * The feature menu: eight tiles, five of them live.
- *
- * You pick the thing on the bench, not the capability.  The catalogue has
- * sixty-odd entries across measure, drive, listen, program and compute -- a
- * menu of capabilities would be a filing system, and a workshop tool is not
- * one.  A tile is a physical object you have in front of you and something you
- * want to know about it.
+ * The feature menu: eight tiles, one per object on the bench (motor and ESC
+ * (electronic speed controller), servo, receiver, logs, setup, battery,
+ * balance, programmer).  A tile carries a SOON badge when its screen does not
+ * exist and a MODELLED badge when its hardware is not fitted.
  *
  * SPDX-License-Identifier: MIT
  */

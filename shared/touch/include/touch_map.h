@@ -1,6 +1,6 @@
 /*
- * Coordinate mapping and press/move/release tracking.  Pure C -- see
- * test/host for the unit tests.
+ * Coordinate mapping and press/move/release tracking.  Pure C; the unit tests
+ * are in test/host.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -54,14 +54,14 @@ void touch_tracker_reset(touch_tracker_t *t);
  */
 /**
  * A contact that moves further than this between two frames is treated as a
- * lift and a new press rather than as one enormous drag.
+ * lift and a new press rather than as one drag.
  *
- * The GT911 reuses track ids.  If a release frame is ever missed -- a poll that
- * lands between the lift and the next press, an I2C read that failed -- the
- * reused id looks like the same finger teleporting across the panel, and the
- * consumer gets a MOVE where it was waiting for an UP.  On the bench that left
- * the throttle drag latched.  A finger cannot cross 120 px in one 10 ms poll;
- * a reused id can.
+ * The GT911 reuses track ids.  When a release frame is missed (a poll that
+ * lands between the lift and the next press, or a failed I²C (Inter-Integrated
+ * Circuit) read), the reused id looks like the same finger moving across the
+ * panel, and the consumer gets a MOVE where it waits for an UP, which leaves
+ * a drag latched.  A finger cannot cross 120 px in one 10 ms poll; a reused
+ * id can.
  */
 #define TOUCH_JUMP_PX 120
 

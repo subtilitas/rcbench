@@ -137,7 +137,7 @@ int touch_tracker_update(touch_tracker_t *t,
     for (int i = 0; i < cur_count; ++i) {
         /* Two contacts sharing a track id in one frame is the controller
          * misbehaving; keep the first and drop the rest, so the pair cannot
-         * become two DOWNs now and two UPs later for one finger. */
+         * become two DOWNs in this frame and two UPs later for one finger. */
         if (find_by_id(cur, i, cur[i].id) != NULL) {
             continue;
         }

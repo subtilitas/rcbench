@@ -172,12 +172,10 @@ bool link_host_tick(link_host_t *h, uint32_t now_ms)
     bool acted = false;
 
     /*
-     * Abandon a request that has been outstanding too long -- every time, not
-     * only the first.  This used to be gated on `escalated`, which is set once
-     * and never cleared without a reply, so the second unanswered request
-     * stayed pending for ever: the poller could never ask again, and the
-     * panel's poll loop -- whose only exit is this function returning true --
-     * spun with no render, no touch and no heartbeat.
+     * Abandon a request that has been outstanding too long, every time and
+     * not only the first: a request that stays pending refuses every later
+     * one, and a caller whose only loop exit is this function returning true
+     * never leaves it.
      */
     if (h->pending && elapsed(now_ms, h->sent_ms, LINK_HOST_TIMEOUT_MS)) {
         h->pending = false;
@@ -186,9 +184,9 @@ bool link_host_tick(link_host_t *h, uint32_t now_ms)
     }
 
     /*
-     * And say the link is down, once.  That is a different fact on a different
-     * clock: a request times out from when it was sent, the link is reported
-     * down when nothing has been answered for a second.
+     * And say the link is down, once.  A different fact on a different clock:
+     * a request times out from when it was sent, the link is reported down
+     * when nothing has been answered for 1 s.
      */
     if (!h->escalated
         && elapsed(now_ms, h->last_reply_ms, LINK_HOST_TIMEOUT_MS)) {

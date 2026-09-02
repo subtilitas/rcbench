@@ -2,9 +2,9 @@
  * The panel's half of the link: poll, match the reply to the question, and
  * escalate when the answers stop.
  *
- * One request outstanding at a time, which is not a simplification but the
- * protocol: the coprocessor never speaks unsolicited, so there is exactly one
- * frame in flight and nothing to arbitrate.
+ * One request outstanding at a time, which is the protocol: the coprocessor
+ * transmits only when asked, so there is one request in flight and nothing
+ * to arbitrate.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,9 +23,8 @@ extern "C" {
 #endif
 
 /**
- * How long the panel tolerates silence before it escalates.  Five times the
- * coprocessor's own limit, deliberately: by the time the host gives up, the
- * end holding the outputs has already given up four times over.
+ * How long the panel tolerates silence before it escalates: five times the
+ * coprocessor's 200 ms, so the end holding the outputs gives up first.
  */
 #define LINK_HOST_TIMEOUT_MS 1000u
 
@@ -49,11 +48,11 @@ typedef struct {
     uint32_t timeouts;   /**< requests abandoned at the escalation           */
 
     /*
-     * Reassembly.  A CAN frame carries four registers, so a reply to a
-     * thirteen-register read arrives as four messages, each describing itself
-     * -- its own offset and its own count.  There is no sequence to follow and
-     * no continuation to wait for; the window asked for is known here, and a
-     * bit is set as each part of it lands.
+     * Reassembly.  A CAN (Controller Area Network) frame carries four
+     * registers, so a reply to a 13-register read arrives as four messages,
+     * each with its own offset and count.  There is no sequence to follow
+     * and no continuation to wait for: the window asked for is known here,
+     * and a bit is set as each part of it lands.
      */
     uint16_t acc[LINK_MAX_REGS];
     uint32_t acc_seen;   /**< bit per register within the request's window */
@@ -62,8 +61,8 @@ typedef struct {
 void link_host_init(link_host_t *h, uint32_t now_ms);
 
 /**
- * Build a request.  Returns false if one is already outstanding if it would not fit
- * or a request is already outstanding -- the caller does not get to have two.
+ * Build a request.  Returns false if the window does not fit a page or a
+ * request is already outstanding: one at a time.
  */
 bool link_host_read(link_host_t *h, uint8_t page, uint8_t offset,
                     uint8_t count, uint32_t now_ms, link_msg_t *out);
@@ -72,53 +71,38 @@ bool link_host_write(link_host_t *h, uint8_t page, uint8_t offset,
                      link_msg_t *out);
 
 /**
- * Offer a decoded frame as the answer.  Returns true only if it answers the
- * outstanding request; anything else increments `mismatches` and is dropped.
- *
- * That check is not pedantry.  A reply delayed past a timeout arrives after
- * the host has moved on, and accepting it would attribute one page's registers
- * to another -- silently, and with the CRC entirely happy.
- */
-/**
  * Offer one received message against the outstanding request.
  *
- * True when the request is *answered*, which for a read may take several
- * messages: @p whole then holds the reassembled reply. Parts that land
- * without completing it return false and are not a fault -- the caller keeps
+ * True when the request is answered, which for a read may take several
+ * messages: @p whole then holds the reassembled reply.  Parts that land
+ * without completing it return false and are not a fault; the caller keeps
  * feeding until it gets true or the request times out.
  *
  * Anything that does not answer the question in flight is counted as a
- * mismatch and refused. An answer to a question nobody is still asking is the
- * failure this exists to catch: on a bus where a late reply can arrive after
- * the panel has moved on, accepting it would attach one page's numbers to
- * another page's request.
+ * mismatch and refused.  A late reply can arrive after the panel has moved
+ * on, and accepting it would attach one page's registers to another page's
+ * request.
  */
 bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
                       link_msg_t *whole);
 
-/** True on the edge where the host escalates, so it is reported once. */
 /**
  * Time out the outstanding request, and report the link down once.
  *
- * Those are two clocks and used to be one. A request is abandoned when *it*
- * has been outstanding too long, which happens every time one is; the link is
- * reported down after a second with nothing answered, which happens once.
- * Conflating them meant only the first timeout ever released a request, so the
- * second unanswered one stayed pending for ever -- and a caller whose only
- * loop exit is this function never left it.
+ * Two clocks: a request is abandoned when it has been outstanding for
+ * LINK_HOST_TIMEOUT_MS, every time; the link is reported down when nothing
+ * has been answered for LINK_HOST_TIMEOUT_MS, once until the next reply.
  *
- * True if it abandoned a request or escalated. A caller waiting for a reply
- * should treat that as "stop waiting".
+ * True if it abandoned a request or escalated; a caller waiting for a reply
+ * stops waiting.
  */
 bool link_host_tick(link_host_t *h, uint32_t now_ms);
 
 /**
- * Give up on the outstanding request now.
+ * Give up on the outstanding request.
  *
- * For a caller that has just failed to *transmit* it: there is nothing on the
- * wire to wait for, and leaving it outstanding would refuse every later
- * request until its timeout -- or for ever, if the caller returns before it
- * ever ticks again.
+ * For a caller that failed to transmit it: nothing is on the wire to wait
+ * for, and an outstanding request refuses every later one until its timeout.
  */
 void link_host_abandon(link_host_t *h);
 

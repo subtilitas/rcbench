@@ -1,22 +1,23 @@
 /*
- * The OpenYGE ESC protocol: framing, telemetry, status and parameters.
+ * The OpenYGE ESC (electronic speed controller) protocol: framing,
+ * telemetry, status and parameters.
  *
- * Written from docs/OpenYGE.md, which is the specification of record for this
- * project.  Anything that page marks as inferred is inferred here too, and the
- * places where that matters are commented rather than smoothed over.
+ * Written from docs/OpenYGE.md, the specification of record.  Anything that
+ * page marks as inferred is inferred here too, and each such place carries a
+ * comment.
  *
- * Three things this deliberately does not do:
+ * Boundaries of this module:
  *
- *   - It does not touch a UART.  Bytes in, decoded frames out, the way the
- *     panel link's codec works, so the host suite can feed it truncated and
- *     corrupted frames long before there is an ESC on the bench.
- *   - It does not cast the receive buffer to a struct.  The wire is
- *     little-endian and packed; a host need be neither, and the reference
- *     implementation's unaligned 16-bit reads are undefined behaviour on a
- *     target that cares.  Everything here is assembled byte by byte.
- *   - It does not write parameters.  Reading is safe and writing is not, and
- *     until the indices are confirmed the write path has no business existing.
- *     Building a request is here; deciding to send one is not.
+ *   - No UART (universal asynchronous receiver-transmitter) access.  Bytes
+ *     in, decoded frames out, so the host suite feeds it truncated and
+ *     corrupted frames without an ESC on the bench.
+ *   - No struct cast over the receive buffer.  The wire is little-endian and
+ *     packed; a host need be neither, and an unaligned 16-bit read is
+ *     undefined behaviour on a strict-alignment target.  Every field is
+ *     assembled byte by byte.
+ *   - No parameter writes.  Reading is safe; writing is not until the
+ *     parameter indices are confirmed.  Building a write request is here;
+ *     deciding to send one is not.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -44,16 +45,16 @@ extern "C" {
 #define OPENYGE_TELEMETRY_BYTES 26u
 #define OPENYGE_CONTROL_BYTES   4u
 
-/** The shortest thing that could be a frame: legacy header plus CRC. */
+/** The shortest possible frame: legacy header plus CRC (cyclic redundancy
+ *  check). */
 #define OPENYGE_MIN_FRAME       (OPENYGE_HDR_LEGACY + OPENYGE_CRC_BYTES)
 #define OPENYGE_MAX_FRAME       140u
 
 /*
- * CRC-16/XMODEM.  Same polynomial as the panel link's CCITT-FALSE and a
- * different seed, which is the whole difference -- so link_crc() serves both
- * and only the seed changes.  The check value is over "123456789" and is what
- * an implementation at the far end can be verified against before it is
- * trusted.
+ * CRC-16/XMODEM: the panel link's CCITT-FALSE polynomial with a different
+ * seed, so link_crc() serves both with only the seed changed.  The check
+ * value is over "123456789"; an implementation at the far end is verified
+ * against it before it is trusted.
  */
 #define OPENYGE_CRC_INIT        0x0000u
 #define OPENYGE_CRC_CHECK       0x31C3u
@@ -93,9 +94,8 @@ typedef struct {
 typedef struct {
     uint8_t  buf[OPENYGE_MAX_FRAME];
     uint8_t  len;
-    /* Counters worth showing on the analyser screen: the difference between a
-     * quiet line, a noisy one and a wrong baud rate is visible here and
-     * nowhere else. */
+    /* Counters for the analyser screen: a quiet line, a noisy one and a
+     * wrong baud rate are distinguished here. */
     uint32_t frames;
     uint32_t crc_errors;
     uint32_t resyncs;
@@ -107,10 +107,9 @@ void openyge_decoder_reset(openyge_decoder_t *d);
 /**
  * Feed one received byte; returns true when @p out holds a whole good frame.
  *
- * Resynchronising, and for the reason the panel link's decoder is: noise
- * carrying a plausible sync in front of a real frame must not swallow the real
- * one. Every sync byte in the buffer is a candidate and the earliest complete
- * candidate wins.
+ * Resynchronising: noise carrying a plausible sync byte in front of a real
+ * frame must not swallow the real one.  Every sync byte in the buffer is a
+ * candidate and the earliest complete candidate wins.
  */
 bool openyge_decode_byte(openyge_decoder_t *d, uint8_t byte,
                          openyge_frame_t *out);
@@ -150,12 +149,11 @@ bool openyge_control_parse(const openyge_frame_t *f, uint16_t *index,
 /* ------------------------------------------------------------- encoding */
 
 /**
- * Build a frame. Returns its length, or 0 if it would not fit or the type is
+ * Build a frame.  Returns its length, or 0 if it would not fit or the type is
  * not one this speaks.
  *
- * Length is written once, at the end, from what was actually assembled --
- * never set before a bounds check that might still fail. The reference gets
- * that wrong and transmits a length claiming more than it wrote.
+ * The length byte is written from what was assembled, after the bounds
+ * check, so a frame that does not fit leaves the buffer untouched.
  */
 size_t openyge_encode(uint8_t *out, size_t cap, uint8_t type, uint8_t device,
                       uint8_t seq, const void *payload, size_t payload_len);
@@ -164,7 +162,8 @@ size_t openyge_encode(uint8_t *out, size_t cap, uint8_t type, uint8_t device,
 size_t openyge_build_telemetry_request(uint8_t *out, size_t cap,
                                        uint8_t device, uint8_t seq);
 
-/** A single parameter write. One parameter per frame; there is no page write. */
+/** A single parameter write.  One parameter per frame; there is no page
+ *  write. */
 size_t openyge_build_param_write(uint8_t *out, size_t cap, uint8_t device,
                                  uint8_t seq, uint16_t index, uint16_t value);
 
@@ -197,10 +196,10 @@ typedef struct {
     bool    state_known;        /**< false for a reserved value */
 
     /*
-     * The overloaded case.  0x80|0x40 reads as "BEC over-current", which
-     * cannot happen, so that exact combination means the ESC is reporting a
-     * dirty *input signal* instead.  When this is set the warning flags below
-     * and the subject are meaningless.
+     * The overloaded combination.  0x80|0x40 would read as a BEC (battery
+     * eliminator circuit) over-current, which cannot occur, so that exact
+     * value means the ESC reports a dirty input signal instead.  While this
+     * is set, the subject and the warning flags below carry no meaning.
      */
     bool    setpoint_noise;
 
@@ -211,10 +210,9 @@ typedef struct {
 
     /*
      * A warning bit alone is a caution; it is a fault only in combination
-     * with the state.  Over-voltage has no bit of its own at all -- it is the
-     * *absence* of warnings while the power is cut -- so a decoder that
-     * reports flags without the state both cries wolf and misses the one
-     * condition that has no flag.
+     * with the state.  Over-voltage has no bit of its own: it is the absence
+     * of warnings while the power is cut.  A decoder that reports flags
+     * without the state misses that condition.
      */
     bool    fault_overvoltage;
     bool    fault_undervoltage;
@@ -233,8 +231,9 @@ const char *openyge_state_name(uint8_t state);
 /** The bitmap that tracks which indices have been seen is 64 bits wide. */
 #define OPENYGE_MAX_PARAMS 64
 
-/** Indices this project relies on.  Everything else is carried, not used --
- *  and even these want confirming before anything is written. */
+/** Indices this project relies on.  Every other index is carried, not
+ *  used.  These are unconfirmed too; confirm them before anything is
+ *  written. */
 #define OPENYGE_P_COUNT        0
 #define OPENYGE_P_MOTOR_POLES  20
 #define OPENYGE_P_PINION_TEETH 21
@@ -243,8 +242,8 @@ const char *openyge_state_name(uint8_t state);
 typedef struct {
     uint16_t value[OPENYGE_MAX_PARAMS];
     uint64_t seen;            /**< bit per index */
-    /* Parameter 0, once it has arrived.  Zero means "not yet": a count of
-     * zero is not a table anyone could have, so it needs no separate flag. */
+    /* Parameter 0.  Zero means the count has not arrived: a table of zero
+     * parameters cannot exist, so no separate flag is needed. */
     uint16_t count;
     bool     writes_pending;  /**< table withdrawn until every index re-read */
 } openyge_params_t;
@@ -254,9 +253,8 @@ void openyge_params_reset(openyge_params_t *p);
 /**
  * Record one (index, value) pair from a telemetry frame.
  *
- * Ignored entirely while writes are outstanding: a frame already in flight
- * from before a write would otherwise land on top of the new value and the
- * ESC would look like it had ignored the write.
+ * Ignored while writes are outstanding: a frame already in flight from
+ * before a write carries the old value and would overwrite the new one.
  */
 void openyge_params_observe(openyge_params_t *p, uint16_t index,
                             uint16_t value);
@@ -268,20 +266,22 @@ void openyge_params_end_writes(openyge_params_t *p);
 /** True once every index 0..count-1 has been seen and no write is pending. */
 bool openyge_params_complete(const openyge_params_t *p);
 
-/** Read one. False unless the whole table is complete: a half-read table is
- *  not the ESC's settings, and presenting it as such is the trap. */
+/** Read one.  False unless the whole table is complete: a half-read table
+ *  is not the ESC's settings. */
 bool openyge_params_get(const openyge_params_t *p, uint16_t index,
                         uint16_t *out);
 
-/** 0..1, for a progress bar during the ~1.6 s it takes to fill. */
+/** 0..1, for a progress bar.  The table fills in about 1.6 s at 20 Hz and
+ *  32 parameters. */
 float openyge_params_progress(const openyge_params_t *p);
 
 /**
- * Mechanical and head RPM from eRPM and the gear train.
+ * Mechanical and head RPM (revolutions per minute) from eRPM (electrical
+ * RPM) and the gear train.
  *
- * False unless the table is complete and the pole count is sane. Head speed
- * needs the pinion and main gear too; when those are absent or zero the head
- * figure is left alone and only the motor figure is written.
+ * False unless the table is complete and the pole count is at least 2.  Head
+ * speed needs the pinion and main gear teeth too; when either is zero the
+ * head figure is not written.
  */
 bool openyge_motor_rpm(const openyge_params_t *p, uint32_t erpm,
                        float *motor_rpm);

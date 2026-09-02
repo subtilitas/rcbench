@@ -1,6 +1,6 @@
 /*
  * Settings: categories on the left, the entries of the selected one on the
- * right.  The rows are rendered from the schema in components/settings, so
+ * right.  The rows are rendered from the schema in shared/settings, so
  * adding a setting is a table row and not a screen change.
  *
  * SPDX-License-Identifier: MIT
@@ -16,7 +16,7 @@ extern "C" {
 
 /**
  * Push the display-related settings into the theme and repaint.
- * Call once at startup, and whenever an application setting changes.
+ * Call at startup, and whenever an application setting changes.
  */
 void settings_apply_ui(void);
 

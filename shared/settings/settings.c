@@ -4,15 +4,15 @@
  * Every setting is one row in a table -- its type, its range, its step, its
  * default -- and the settings screen renders whatever the table says, so
  * adding a setting is a row and never new UI code.  The values live behind an
- * injectable store (NVS on the panel, memory in a test) and every change goes
- * through one observer, which is the single place a changed value reaches the
- * rest of the bench.
+ * injectable store (NVS, non-volatile storage, on the panel; memory in a
+ * test) and every change goes through one observer, which is the single
+ * place a changed value reaches the rest of the bench.
  *
  * A stored value is never trusted to match the schema.  A word read back from
- * flash can be off the declared grid or outside the range -- an older build
- * wrote it, or it is stale, or corrupt -- so a value is coerced onto the step
- * and clamped into range on the way out, rather than cycling round or being
- * handed to a screen that assumes it is valid.
+ * flash can be off the declared grid or outside the range (written by another
+ * build, stale, or corrupt), so a value is coerced onto the step and clamped
+ * into range on the way out, rather than cycling round or being handed to a
+ * screen that assumes it is valid.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -35,9 +35,9 @@ static const char *const k_ina_addr[]  = { "0x40", "0x41", "0x44", "0x45" };
 #define ENUM_OPTS(a) .options = (a), .option_count = (uint8_t)(sizeof(a) / sizeof((a)[0]))
 
 /*
- * One row per setting.  Ranges are the real ones: a pack cannot have zero
- * cells, a servo pulse below 800 us is not a pulse, and an ESC that ramps
- * faster than 300 %/s is not ramping.
+ * One row per setting.  Ranges are the physical ones: a pack cannot have zero
+ * cells, a servo pulse below 800 us is not a pulse, and an ESC (electronic
+ * speed controller) that ramps faster than 300 %/s is not ramping.
  */
 static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_PACK_CELLS] = {
@@ -151,8 +151,8 @@ const char *settings_category_name(setting_cat_t cat)
     return (cat >= 0 && cat < SET_CAT_COUNT) ? k_cat_names[cat] : "";
 }
 
-/* A value that arrives off the declared grid (a stale NVS word, a schema whose
- * step changed) otherwise stays off it for life: settings_adjust() adds step to
+/* A value that arrives off the declared grid (a stale NVS word, a schema
+ * whose step differs) otherwise stays off it: settings_adjust() adds step to
  * whatever is already there. */
 static float snap_to_step(const setting_def_t *d, float v)
 {
@@ -170,9 +170,10 @@ static float coerce(const setting_def_t *d, float v)
     case SET_TYPE_ENUM: {
         int n = d->option_count ? d->option_count : 1;
         int i = (int)lrintf(v);
-        /* Out of range means a corrupt or stale stored word, not "cycle round"
-         * -- wrapping turns it into a different option that looks deliberate.
-         * settings_adjust() does its own modulo, so cycling still works. */
+        /* Out of range means a corrupt or stale stored word, not "cycle
+         * round": wrapping turns it into a different option that looks
+         * deliberate.  settings_adjust() does its own modulo, so cycling
+         * works there. */
         return (i >= 0 && i < n) ? (float)i : d->def;
     }
     case SET_TYPE_INT:
@@ -187,7 +188,7 @@ static float coerce(const setting_def_t *d, float v)
  * Resetting changes values, and the observer is the only path a changed value
  * has to the hardware.  Without the notification RESET CATEGORY restores the
  * pulse range and ramp limit on screen while the ESC keeps receiving the old
- * ones -- the screen and the output disagreeing with nothing to say so.
+ * ones: the screen and the output disagree with nothing to say so.
  */
 static void notify_changed(int id, float before)
 {

@@ -7,16 +7,15 @@
 #include <stddef.h>
 
 /*
- * The extended identifier's layout, which is the whole reason this file is
- * testable code rather than four lines inside the driver:
+ * The extended identifier's layout across the four registers:
  *
  *     SIDH  bits 28..21
  *     SIDL  bits 20..18 in its top three, then EXIDE, then bits 17..16
  *     EID8  bits 15..8
  *     EID0  bits  7..0
  *
- * The three-bit gap in SIDL is where the standard-identifier layout ended;
- * extended identifiers were fitted around it rather than replacing it.
+ * The three-bit gap in SIDL is the end of the standard 11-bit layout; the
+ * extended bits are fitted around it.
  */
 #define ID_MAX 0x1FFFFFFFu
 

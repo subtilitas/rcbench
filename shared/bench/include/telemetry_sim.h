@@ -1,16 +1,14 @@
 /*
- * A pack, a motor and a propeller, modelled.
+ * A pack, a motor and a propeller, modelled, so every screen runs without a
+ * measurement front end.
  *
- * This exists so that every screen can be built, reviewed and demonstrated
- * before the coprocessor does, and it is dangerous for exactly one reason: a
- * modelled number that gets read as a measured one.  So it sets
- * LINK_BN_SIMULATED on everything it produces, and the router writes
- * SIMULATION across the whole screen whenever that bit is up.
+ * Every value it produces carries LINK_BN_SIMULATED, and the router draws
+ * SIMULATION across the screen while that bit is set: a modelled number must
+ * not read as a measured one.
  *
- * The physics is deliberately crude and deliberately *not* flattering: the
- * bus sags under load, current grows faster than throttle, and rpm follows a
- * sagging bus rather than the stick.  A simulator that produced tidy numbers
- * would hide the misreadings a real bench exists to show.
+ * The model is crude: the bus sags under load, current grows faster than
+ * throttle (exponent 2.5), and rpm (revolutions per minute) follows the
+ * sagging bus rather than the stick.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -59,9 +57,8 @@ void telemetry_sim_init(telemetry_sim_t *s, const telemetry_sim_cfg_t *cfg);
 /**
  * Advance by @p dt_s at @p throttle_pct and fill @p out.
  *
- * Peaks are accumulated into @p out the way the coprocessor would accumulate
- * them, rather than being left for the panel: the seam has to behave the same
- * from both sides or the screen finds out which one it is talking to.
+ * Peaks are accumulated into @p out as the coprocessor accumulates them for
+ * the BENCH page, so the screen sees the same behaviour from both sources.
  */
 void telemetry_sim_step(telemetry_sim_t *s, float throttle_pct, float dt_s,
                         bench_state_t *out);

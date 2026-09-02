@@ -1,135 +1,146 @@
 # Contributing to rcbench
 
-This is a hobby project with strong opinions, and most of them are written down
-so you do not have to guess. Read this before a large change — several of the
-rules below will fail your build if you meet them by surprise, and one of them
-is a licensing rule that cannot be fixed after the fact.
+The rules below are enforced by CI (continuous integration) where a machine can
+enforce them. Read this before a large change.
 
-## The one rule that cannot be undone
+## Licensing rule
 
 **Protocols are implemented from published specifications, never from another
 implementation.**
 
-Nearly every open implementation of the protocols this bench speaks — ESC
-serial, receiver buses, telemetry — is GPL or AGPL, and this repository is MIT.
-A decoder written by reading GPL source cannot be relicensed by rewording it,
-and the damage is not visible in a diff. So:
+Nearly every open implementation of the protocols this bench speaks (ESC
+(electronic speed controller) serial, receiver buses, telemetry) is GPL (GNU
+General Public License) or AGPL (GNU Affero General Public License), and this
+repository is MIT (Massachusetts Institute of Technology). A decoder written by
+reading GPL source cannot be relicensed by rewording it.
 
-- work from the specification, a datasheet, or a capture of the wire;
-- if you have read a GPL implementation of the thing you are writing, say so in
-  the pull request, and expect the answer to be that somebody else writes it;
-- permissive references may be read for confirmation — PX4's decoders (BSD) and
-  the MIT reference code for SRXL2, JETI EX Bus, DShot and DroneCAN — and even
-  then the code here is written independently.
+- Work from the specification, a datasheet, or a capture of the wire.
+- If you have read a GPL implementation of the thing you are writing, say so in
+  the pull request; somebody else writes it.
+- Permissive references may be read for confirmation: PX4's decoders (BSD,
+  Berkeley Software Distribution licence) and the MIT reference code for
+  SRXL2, JETI EX Bus, DShot and DroneCAN. The code here is written
+  independently of them.
 
-If a protocol has no published description, it does not get implemented. That
-has already cost this project BLHeli_32's parameters and JETI's remote
-configuration, and both are recorded rather than quietly worked around.
+A protocol with no published description is not implemented. BLHeli_32's
+parameters and JETI's remote configuration are recorded as not planned for this
+reason.
 
 ## Safety-relevant code
 
-Anything that can make an output move is held to a higher standard than the
-rest, and the reasoning is in [the Safety page](docs/Safety.md).
+Anything that can make an output move is held to these rules; the reasoning is
+in [Safety](docs/Safety.md).
 
-- **Fail safe by absence.** The correct behaviour when a signal stops is to
-  stop driving. Never require a message to arrive in order to be safe.
-- **Refuse and clamp are different answers.** A configuration mistake — an
-  endpoint no servo can take — is *refused*, atomically, leaving the previous
-  value. A command outside its range is *clamped*, because commands arrive many
-  times a second and refusing one gives an output that stops following.
+- **Fail safe by absence.** When a signal stops, stop driving. Never require a
+  message to arrive in order to be safe.
+- **Refuse and clamp are different answers.** A configuration mistake (an
+  endpoint no servo can take) is refused, atomically, leaving the previous
+  value. A command outside its range is clamped.
 - **A stop latches.** Nothing re-arms on its own, including the link coming
   back.
 - **The coprocessor does not ask permission** to protect hardware. It acts and
   reports afterwards.
 
-## What CI will check
+## What CI checks
 
-All of it runs locally, and all of it is fast.
+All of it runs locally:
 
 ```bash
 cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug
 cmake --build test/host/build && ctest --test-dir test/host/build --output-on-failure
 
+cmake -S test/host -B test/host/build-san -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=ON
+cmake --build test/host/build-san && ctest --test-dir test/host/build-san --output-on-failure
+
 python3 tools/coverage.py --check     # coverage floors, and the STATUS.md table
 python3 tools/check_docs.py           # links, translations, SPDX, the suite list
-python3 tools/render_ui.py --check    # the committed screenshots still match
+python3 tools/render_ui.py --check    # the committed screenshots match
 python3 tools/frame_cost.py --check-doc
 python3 tools/gen_font.py --check
 
-# static analysis and lint, as CI runs them
 cppcheck --error-exitcode=1 --std=c11 --enable=warning,style,performance,portability \
-         --suppressions-list=.cppcheck-suppress $(git ls-files 'shared/**/*.c')
-clang-tidy -p test/host/build $(git ls-files 'shared/**/*.c')
+         --inline-suppr --suppressions-list=.cppcheck-suppress --check-level=exhaustive \
+         $(git ls-files 'shared/**/include' | sed 's|^|-I|' | sort -u) \
+         $(git ls-files 'shared/**/*.c' | grep -v gfx_font)
+cmake -S test/host -B test/host/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+clang-tidy -p test/host/build $(git ls-files 'shared/**/*.c' | grep -v gfx_font)
 ruff check tools/
 ```
 
-Specifically, a change fails if:
+A change fails if:
 
-- **coverage drops below 94% overall, or any single file below 85%.** The
-  per-file floor exists because a healthy total once hid a screen at 73%.
-- **a screen's render changes** and the committed golden images were not
-  regenerated (`tools/render_ui.py`). Review the new images; do not just commit
-  them.
-- **drawing code exceeds its cache-line budget.** The panel is bandwidth-bound,
-  not CPU-bound — see [Performance](docs/Performance.md). Draw row-major:
-  horizontal lines are free, vertical ones are not.
-- **a source file has no SPDX line**, or a documentation page has no German
-  counterpart, or a link goes nowhere.
-- **the suite list or the module tree in `STATUS.md` disagrees with what CMake
-  builds.**
+- coverage drops below 94% overall, or any single file below 85%
+  (`stub_screen.c` is exempt by name);
+- a screen's render changes and the committed images in `docs/img/` were not
+  regenerated with `tools/render_ui.py`. Review the new images before
+  committing them;
+- drawing code exceeds its cache-line ceiling
+  ([Performance](docs/Performance.md));
+- a source file has no SPDX (Software Package Data Exchange) line, a wiki page
+  has no German counterpart, or a link goes nowhere;
+- the suite list or the module tree in `STATUS.md` or `docs/Building.md`
+  disagrees with what CMake builds;
+- clang-tidy, cppcheck or ruff report anything. Every finding is an error. The
+  disabled checks are listed with their reasons in `.clang-tidy` and
+  `.cppcheck-suppress`; suppress a false positive inline with the reason, not
+  by widening the list.
 
-The suite also runs under **AddressSanitizer and UBSan** in CI
-(`-DENABLE_SANITIZERS=ON`). If you touch a parser, run it that way first; the
-code here is fed hostile bytes by design, and both have already caught real
-bugs the ordinary build did not.
+The suite also runs under AddressSanitizer and UBSan
+(UndefinedBehaviorSanitizer). Run a parser change that way before pushing; the
+parsers are fed malformed input by design.
 
-**clang-tidy and cppcheck** run over `shared/` on every push, and both are
-errors rather than warnings. The check lists are curated — `.clang-tidy` says
-which checks are off and why, because a disabled check with no reason is
-indistinguishable from one nobody understood. If a finding is a false positive,
-suppress it *inline with the reason*, not by widening the list.
-
-**Formatting is not enforced.** There is no `clang-format` gate: the comment
-blocks in this tree are wrapped by hand around prose, and a formatter would
-reflow them into something nobody reads. Match the file you are in.
+Formatting is not enforced. Match the file you are in.
 
 ## Where code goes
 
-**`shared/` is pure C with no vendor SDK** — no ESP-IDF, no pico-sdk, no
-FreeRTOS types. It compiles into the panel firmware, the coprocessor firmware
-and the host suite from one directory. Everything that *decides* something
-belongs there, because that is what makes it testable on a laptop.
-
-**`firmware/` is wiring.** If you find yourself writing a rule in a firmware
-file, it probably belongs in `shared/` with a test.
+- `shared/` is pure C with no vendor SDK (software development kit): no ESP-IDF
+  (Espressif Internet-of-Things Development Framework), no pico-sdk, no
+  FreeRTOS types. It compiles into the panel firmware, the coprocessor firmware
+  and the host suite from one directory. Everything that decides something
+  belongs there, so it is tested on the host.
+- `firmware/` is hardware access and wiring. A rule in a firmware file belongs
+  in `shared/` with a test.
 
 ## Style
 
-- **Comments say why, not what.** Every file opens with the decision behind its
-  shape — the failure it prevents, the alternative that was tried. A comment
-  restating the code is noise; a comment naming the bug that shaped it is the
-  most valuable line in the file.
-- **Tests are sentences.** `a_refused_write_changes_nothing`, not `test_write_3`.
-  Where a test encodes a specific bug, say so in a comment above it.
-- **Commit messages explain the change**, at whatever length that takes. The
-  history is the project's memory.
 - Four spaces, no tabs. Match the file you are in.
+- Test names are sentences: `a_refused_write_changes_nothing`.
+- Comments state the constraint or decision the code depends on, in present
+  tense. No history of how the code came to be.
+
+## Writing
+
+Applies to the wiki, the READMEs, `STATUS.md`, code comments, commit messages,
+pull requests and issues.
+
+- Describe the system as it is, in present tense. No development history, no
+  "we", no "previously" or "now". Version history is in `CHANGELOG.md` and git.
+- No self-assessment. A defect that affects a user is documented as a current
+  limitation with the condition that triggers it.
+- No marketing words (powerful, seamless, robust, comprehensive, simply, just,
+  easy). No exclamation marks, no emoji.
+- Facts carry numbers and units: pin numbers, voltage ranges, timings, buffer
+  sizes, error codes. An adjective that could be a number is a missing number.
+- Short sentences, one idea each. Expand every acronym on first use in each
+  document.
+- Lead with what a thing does and its constraints, then how to use it. A
+  command or a code block beats a paragraph describing one.
+- Unknowns are stated as unknown ("not measured", "untested above 40 V"), never
+  asserted and never omitted.
+- Commit messages and pull request bodies: the change and its effect, in the
+  imperative mood, without the debugging path.
 
 ## Documentation
 
-`docs/` is published to the wiki on every push to `main`, in **English and
-German**. Every page needs both, linked by the switch at the top — the check
+`docs/` is published to the wiki on every push to `main`, in English and
+German. Every page needs both, linked by the switch at the top; the check
 enforces it. Write German as German rather than translating sentence by
-sentence, and leave technical vocabulary in English: protocol names, mode
-names, register and field names, `framed packets`, `One-Wire-Bootloader`,
-`DShot Special Commands`.
+sentence, and keep technical vocabulary in English: protocol names, mode names,
+register and field names.
 
-The wiki is a manual for someone using the bench. `STATUS.md` is the running
-record of what is built and why — design arguments go there, not into the
-manual.
+The wiki is the manual. `STATUS.md` is the record of what is built, what is
+open and what is settled. `CHANGELOG.md` is the version history.
 
 ## Pull requests
 
-One slice per pull request, with CI green. Say what changed and why; if you
-found something surprising on the way, that belongs in the description too —
-several of the best comments in this codebase started as a sentence in a PR.
+One change per pull request, with CI green. State the change and its effect.

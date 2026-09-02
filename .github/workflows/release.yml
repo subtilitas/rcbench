@@ -1,8 +1,7 @@
 name: Release
 
-# A tag ships both processors.  The coprocessor image is not optional baggage:
-# the panel refuses to arm when the versions disagree, so a release that
-# carried only one half would be a release nobody could run.
+# A tag ships both processors.  The panel refuses to arm when the protocol
+# versions disagree, so a release with one image is not runnable.
 
 on:
   push:
@@ -59,11 +58,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # Ubuntu's packaged toolchain rather than ARM's tarball, because it is
-      # one line and the RP2350's Cortex-M33 is not exotic.  This is the one
-      # step in this file that was not reproduced locally -- no sudo on the
-      # machine it was written on -- so if it fails, the verified fallback is
-      # ARM's own 14.2 release, unpacked and put on PATH.
+      # Ubuntu's packaged toolchain rather than ARM's tarball: one line, and
+      # the RP2350's Cortex-M33 needs nothing newer.  Fallback if the package
+      # fails: ARM's 14.2 release, unpacked and put on PATH.
       - name: Install the ARM toolchain
         run: |
           sudo apt-get update
@@ -114,12 +111,12 @@ jobs:
         run: |
           TAG="${GITHUB_REF_NAME:-${{ inputs.tag }}}"
           mkdir -p dist
-          # One archive per processor rather than one for both: they are
-          # flashed by different tools over different cables, and a person
-          # holding a UF2 should not have to unpack an ESP-IDF binary to
-          # find it.  The panel archive carries both the merged image, which
-          # goes to 0x0 on its own, and the three parts for anyone who wants
-          # to flash them separately.
+          # One archive per processor: they are flashed by different tools
+          # over different cables, and the UF2 (USB flashing format) image
+          # does not belong inside an ESP-IDF (Espressif Internet-of-Things
+          # Development Framework) archive.  The panel archive carries the
+          # merged image, which goes to 0x0 on its own, and the three parts
+          # for flashing them separately.
           (cd artifacts/panel && zip -r "../../dist/rcbench-panel-$TAG.zip" .)
           (cd artifacts/iomcu && zip -r "../../dist/rcbench-iomcu-$TAG.zip" .)
           (cd dist && sha256sum ./*.zip > SHA256SUMS)

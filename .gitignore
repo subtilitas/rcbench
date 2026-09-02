@@ -1,6 +1,9 @@
 # Build trees -------------------------------------------------------------
+# build-san and build-tidy are the sanitizer and analysis trees the CI
+# commands in CONTRIBUTING.md create.
 build/
 */build/
+build-*/
 sdkconfig
 sdkconfig.old
 managed_components/

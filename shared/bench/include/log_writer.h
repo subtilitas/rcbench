@@ -1,13 +1,10 @@
 /*
- * Writing a run to the card, in the format this project's own reader expects.
+ * Writes a run as CSV (comma-separated values) in the format shared/logfile
+ * reads.
  *
- * The point of this file existing separately from the card is that the whole
- * of it can be tested against the reader: write a run, parse it back, and
- * assert the numbers survived.  A logger tested only by looking at the file it
- * produced is a logger nobody has checked.
- *
- * The sink is injected, so the host suite writes into memory and the panel
- * writes into a FILE.  Nothing here knows what a card is.
+ * The sink is injected: the host suite writes into memory and the panel
+ * writes into a FILE.  Nothing here depends on the card, so the writer is
+ * tested against the reader by writing a run and parsing it back.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -37,21 +34,20 @@ typedef struct {
 } log_writer_t;
 
 /**
- * Semicolon-separated with a full stop for decimals.
+ * Semicolon as the separator, full stop as the decimal point.
  *
- * The reader decides a file's convention from every value in it and rejects
- * what does not conform, so an unambiguous pairing is the one thing a writer
- * owes it: with ';' as the separator, '.' can only be a decimal point. Writing
- * ',' for both -- which a German locale would -- produces a file that is
- * genuinely ambiguous, and the reader is right to say so rather than guess.
+ * The reader infers a file's number convention from every value in it and
+ * rejects values that do not conform.  With ';' as the separator, '.' is
+ * unambiguously a decimal point.  A file using ',' for both, as a German
+ * locale writes, is ambiguous and the reader refuses it.
  */
 #define LOG_WRITER_SEP ';'
 
 void log_writer_init(log_writer_t *w, const log_sink_t *sink);
 
 /**
- * Write the header row.  Called by log_writer_row if it has not been, so a
- * caller cannot produce a headerless file by forgetting.
+ * Write the header row.  log_writer_row calls it if it has not been called,
+ * so a file cannot lack a header.
  */
 bool log_writer_header(log_writer_t *w);
 

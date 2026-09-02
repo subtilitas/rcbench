@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """Generate the embedded bitmap fonts used by the gfx component.
 
-Renders a monospaced TrueType face into a fixed cell, one *byte* of coverage
+Renders a monospaced TrueType face into a fixed cell, one byte of coverage
 per pixel, so glyph edges arrive antialiased.  Emits one C file per font.
 
-The face is rendered antialiased and was then thrown away by a threshold; the
-threshold is kept as the midpoint of a contrast ramp instead, so each font
-keeps the weight it was tuned to and gains a soft edge either side of it.
+The face is rendered antialiased; each font's threshold is the midpoint of a
+contrast ramp, so the font keeps its tuned weight and has a soft edge either
+side of it.
 
     python3 tools/gen_font.py              # regenerate all fonts
     python3 tools/gen_font.py --check      # fail if the checked-in files differ
     python3 tools/gen_font.py --preview 16x28
 
 The generated files are checked in, so the firmware build needs no Python and
-no font files.  CI runs --check so the two cannot drift apart.
+no font files.  CI (continuous integration) runs --check so the two cannot
+drift apart.
 """
 
 from __future__ import annotations
@@ -26,10 +27,8 @@ import sys
 from PIL import Image, ImageDraw, ImageFont
 
 # RCBENCH_FONT_DIR first, then the user's own font directory, then the system
-# paths.  The environment variable is not a convenience: on a machine without
-# root the system directories cannot be written, so a hardcoded list makes this
-# tool unrunnable rather than merely inconvenient -- and a --check that cannot
-# run is a check nobody notices has stopped working.
+# paths.  On a machine without root the system directories cannot be written,
+# so the environment variable is what makes the tool runnable there.
 FONT_CANDIDATES = [
     p for p in (
         os.path.join(os.environ["RCBENCH_FONT_DIR"], "DejaVuSansMono-Bold.ttf")
@@ -90,9 +89,9 @@ def render(spec) -> dict:
     name, w, h, first, last, size, dx, dy, thr, out = spec
     font = ImageFont.truetype(pick_font(), size)
     glyphs = {}
-    # How wide the ramp is either side of the old threshold.  Narrow enough
-    # that a stem stays a stem, wide enough that a diagonal stops being a
-    # staircase -- about one pixel of softness at these cell sizes.
+    # How wide the ramp is either side of the threshold: narrow enough that a
+    # stem stays a stem, wide enough that a diagonal is not a staircase, about
+    # 1 px of softness at these cell sizes.
     ramp = 62
     lo, hi = thr - ramp, thr + ramp
     for code in range(first, last + 1):
@@ -103,8 +102,8 @@ def render(spec) -> dict:
             row = bytearray(w)
             for x in range(w):
                 v = img.getpixel((x, y))
-                # Remapped around the threshold this font was tuned with, so
-                # its weight does not change -- only its edges.
+                # Remapped around the font's threshold, so its weight is
+                # unchanged and only its edges soften.
                 cov = int(round((v - lo) * 255.0 / (hi - lo)))
                 row[x] = 0 if cov < 0 else (255 if cov > 255 else cov)
             rows.append(bytes(row))

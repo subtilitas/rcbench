@@ -42,7 +42,7 @@ static int count_of(gfx_color_t c)
 }
 
 /* A pack of @p cells, all at @p base except the last, which is @p sag volts
- * lower.  A weak cell is the case this screen exists for. */
+ * lower.  A weak cell is the case the screen exists for. */
 static void pack(int cells, float base, float sag)
 {
     battery_state_t b;
@@ -111,9 +111,8 @@ TEST_CASE(no_pack_is_not_a_flat_pack)
 }
 
 /*
- * The scale follows the pack.  A fixed one draws a healthy pack as flat lines
- * and a sick one as flat lines with a stub, which is the same picture -- so a
- * small spread and a large one must not render alike.
+ * The scale follows the pack.  A fixed scale draws a 10 mV spread and a
+ * 20 mV spread as the same picture, so the two renders differ.
  */
 TEST_CASE(the_scale_follows_the_pack)
 {
@@ -139,10 +138,10 @@ TEST_CASE(the_scale_follows_the_pack)
 
 
 /*
- * One to fourteen cells was the promise, and the bar geometry is derived from
- * the count: a 14S pack has a third of the width per cell that a 4S does, and
- * the clamps that keep a bar drawable are the kind of arithmetic that is fine
- * at six and wrong at fourteen.
+ * Every cell count from 1 to BATTERY_CELLS_MAX draws.  The bar geometry is
+ * derived from the count (a 14S pack has less than a third of the width per
+ * cell of a 4S), and the clamps that keep a bar drawable are checked at
+ * every count.
  */
 TEST_CASE(every_cell_count_draws)
 {
@@ -159,10 +158,9 @@ TEST_CASE(every_cell_count_draws)
             T_FAIL("%dS drew only %d pixels", n, lit);
         }
         /*
-         * And nothing escapes the card it is drawn in.  The gutter is only
-         * the eight pixels between the two cards -- 501 to 507 -- and not a
-         * pixel more: the right card starts at 508 and is entitled to be
-         * there, which is what this check first accused it of.
+         * Nothing escapes the card it is drawn in.  The gutter is the seven
+         * columns 501 to 507 between the cards; the right card starts at
+         * 508.
          */
         int stray = 0;
         for (int y = 0; y < H; ++y) {

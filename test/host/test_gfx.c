@@ -39,12 +39,9 @@ static int count_of(gfx_color_t color)
 /*
  * The watermark is laid over screens that repaint only what changed, so it
  * meets pixels carrying its own output from previous frames.  A blend would
- * compound there -- 15% over 15% is 28%, then 39% -- and the warning that a
- * reading is simulated would quietly go solid while the plot area, which
- * repaints its background every frame, stayed correct and hid it.
- *
- * So the property is not "it looks 15%".  It is that drawing it again
- * changes nothing.
+ * compound there: 15% over 15% is 28%, then 39%, until the warning is solid
+ * everywhere except the plot area, which repaints its background every
+ * frame.  Pins: drawing the watermark again changes nothing.
  */
 TEST_CASE(rotated_text_is_idempotent)
 {
@@ -63,7 +60,7 @@ TEST_CASE(rotated_text_is_idempotent)
     CHECK(count_of(GFX_WHITE) > 0);
 }
 
-/* Coverage scales with alpha, which is what alpha now means. */
+/* Coverage scales with alpha. */
 TEST_CASE(rotated_text_alpha_sets_coverage)
 {
     fresh();
@@ -152,8 +149,8 @@ TEST_CASE(the_ghost_shows_the_unlit_segments)
     fresh();
     const gfx_seg_style_t ghost = seg_style(true);
     gfx_seg_text(&s_c, 1, 1, "1", &ghost, GFX_RED, GFX_BLUE);
-    /* The five segments a 1 does not use are now visible, and the two it
-     * does are still drawn in the lit colour over them. */
+    /* The five segments a 1 does not use are visible, and the two it does
+     * are drawn in the lit colour over them. */
     CHECK(count_of(GFX_BLUE) > 0);
     CHECK(count_of(GFX_RED) > 0);
 }
@@ -476,7 +473,7 @@ TEST_CASE(round_rect_rounds_the_corners)
     CHECK_EQ(gfx_pixel_get(&s_c, 1, 8), GFX_BLACK);
     CHECK_EQ(gfx_pixel_get(&s_c, 18, 8), GFX_BLACK);
 
-    /* radius 0 is just a rectangle; oversized radius clamps to a stadium. */
+    /* radius 0 is a plain rectangle; oversized radius clamps to a stadium. */
     fresh();
     gfx_fill_round_rect(&s_c, 0, 0, 6, 4, 0, GFX_RED);
     CHECK_EQ(count_of(GFX_RED), 24);
@@ -511,7 +508,7 @@ TEST_CASE(gradient_runs_from_a_to_b)
     CHECK_EQ(gfx_pixel_get(&s_c, 3, 7), GFX_WHITE);
     CHECK(gfx_pixel_get(&s_c, 0, 4) != GFX_BLACK);
 
-    /* Single-row gradient is just colour a. */
+    /* A single-row gradient is colour a only. */
     fresh();
     gfx_fill_rect_gradient(&s_c, 0, 0, 4, 1, GFX_RED, GFX_WHITE);
     CHECK_EQ(gfx_pixel_get(&s_c, 0, 0), GFX_RED);
@@ -640,11 +637,9 @@ TEST_CASE(text_bg_paints_the_cell)
     fresh();
     gfx_text_bg(&s_c, 0, 0, "AB", &gfx_font_8x16, GFX_RED, GFX_BLUE, 1);
     /*
-     * Every pixel of both cells is painted, and none is left as the canvas
-     * was.  It used to demand that each be exactly the ink or exactly the
-     * background, which was the same statement while the font was a bit mask
-     * -- with an antialiased face the glyph edges land between the two, and
-     * that is the point of them.
+     * Every pixel of both cells is painted; none is left as the canvas was.
+     * With an antialiased face the glyph edges land between ink and
+     * background, so the check is "painted", not "ink or background".
      */
     int painted = 0;
     for (int y = 0; y < 16; ++y) {
@@ -738,9 +733,9 @@ TEST_CASE(null_canvas_is_survivable)
 
 /*
  * The far edges of the coordinate system.  Every primitive takes int and every
- * rect field is int16_t, so a plain cast used to draw an entirely off-screen
- * shape back onto the panel at a wrapped position -- and gave gfx_blit a
- * source offset far outside the caller's buffer.
+ * rect field is int16_t; a plain cast would draw an off-screen shape at a
+ * wrapped position and give gfx_blit a source offset outside the caller's
+ * buffer, so coordinates saturate instead.
  */
 TEST_CASE(out_of_range_geometry_saturates_instead_of_wrapping)
 {
@@ -791,8 +786,8 @@ TEST_CASE(degenerate_canvas_geometry_is_clamped)
     CHECK_EQ(count_of(GFX_RED), 64);
 }
 
-/* The numeric face has no '?', so an out-of-range code point used to consume
- * its advance and draw nothing at all -- a fault that reads as a gap. */
+/* The numeric face has no '?'.  An out-of-range code point draws something
+ * visible rather than consuming its advance and leaving a gap. */
 TEST_CASE(a_missing_glyph_is_visible)
 {
     fresh();
@@ -802,10 +797,10 @@ TEST_CASE(a_missing_glyph_is_visible)
 }
 
 /*
- * Every pixel is clipped on the way out, so an absurd endpoint was always
- * safe -- but Bresenham still walks one step per pixel, and a coordinate near
- * INT_MIN is billions of iterations inside the render loop.  A test that hangs
- * is a test that failed.
+ * Every pixel is clipped on the way out, so an absurd endpoint is safe for
+ * memory, but Bresenham walks one step per pixel and a coordinate near
+ * INT_MIN is billions of iterations.  The line is bounded to the clip before
+ * it is walked.
  */
 TEST_CASE(a_line_with_absurd_endpoints_is_bounded_and_stays_in_the_clip)
 {

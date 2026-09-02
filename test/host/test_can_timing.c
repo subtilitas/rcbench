@@ -1,12 +1,12 @@
 /*
- * Bit timing, for the two controllers this link has.
+ * CAN (Controller Area Network) bit timing for the two controllers on the
+ * link: the MCP2515-compatible XL2515 on the coprocessor and the ESP32-S3's
+ * TWAI (Two-Wire Automotive Interface) controller on the panel.
  *
- * The value of testing this is that wrong timing does not fail cleanly: a node
- * a fraction of a percent off works on a short bench cable with one other node
- * and starts logging errors when the bus gets longer, colder or busier. Every
- * number below is checkable by hand from the datasheet, which is the point --
- * these are the values that would otherwise be copied from an application note
- * and believed.
+ * Wrong timing does not fail cleanly: a node a fraction of a percent off
+ * works on a short bench cable with one other node and logs errors when the
+ * bus is longer, colder or busier.  Every number below is checkable by hand
+ * against the datasheet.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -31,7 +31,7 @@ TEST_CASE(a_16_mhz_mcp2515_reaches_one_megabit)
     CHECK(can_timing_solve(&lim, 1000000u, CAN_SAMPLE_POINT_DEFAULT, &t));
 
     /* 16 MHz / (2 x 8) = 1 Mbit/s: the smallest divisor and the fewest quanta
-     * the part allows, which is exactly why 8 MHz cannot do it. */
+     * the part allows, which is why an 8 MHz crystal cannot reach it. */
     CHECK_EQ(t.div, 2);
     CHECK_EQ(t.tq, 8);
     CHECK_EQ(1u + t.tseg1 + t.tseg2, t.tq);
@@ -40,10 +40,9 @@ TEST_CASE(a_16_mhz_mcp2515_reaches_one_megabit)
 }
 
 /*
- * The finding worth having before anything is soldered.  MCP2515 divides its
- * crystal by two before the prescaler even starts, and a bit needs at least
- * eight quanta -- so an 8 MHz part tops out at 500 kbit/s and no register
- * value will change that.
+ * The MCP2515 divides its crystal by two before the prescaler, and a bit needs
+ * at least eight quanta, so an 8 MHz part tops out at 500 kbit/s whatever the
+ * register values.
  */
 TEST_CASE(an_8_mhz_mcp2515_cannot_do_one_megabit_at_all)
 {
@@ -68,16 +67,11 @@ TEST_CASE(an_8_mhz_mcp2515_cannot_do_one_megabit_at_all)
 }
 
 /*
- * The module's crystal, pinned as a test because it is the number the whole
- * bandwidth budget rests on.
- *
- * It is 16 MHz, and that was not taken on trust: the vendor's shipping driver
- * carries a table of CNF triples for ten standard rates, and decoding those
- * back into divisor and quanta gives the advertised rate at 16 MHz and at no
- * other crystal. Ten independent confirmations of one number.
- *
- * If a future module arrives with 8 MHz, this case fails and says so, which is
- * the right moment to find out rather than after the bus is wired.
+ * The module's crystal is 16 MHz, and the bandwidth budget rests on it.  The
+ * vendor's driver carries CNF (bit timing configuration register) triples for
+ * ten standard rates; decoding those into divisor and quanta gives the
+ * advertised rate at 16 MHz and at no other crystal.  A module with an 8 MHz
+ * crystal fails this case.
  */
 TEST_CASE(the_module_reaches_every_standard_rate_on_its_16_mhz_crystal)
 {
@@ -101,7 +95,7 @@ TEST_CASE(the_module_reaches_every_standard_rate_on_its_16_mhz_crystal)
         }
     }
 
-    /* And the one the link will actually use, in full. */
+    /* And the rate the link uses, in full. */
     can_timing_t t;
     CHECK(can_timing_solve(&lim, 1000000u, CAN_SAMPLE_POINT_DEFAULT, &t));
     CHECK_EQ(t.div, 2);
@@ -109,26 +103,20 @@ TEST_CASE(the_module_reaches_every_standard_rate_on_its_16_mhz_crystal)
     CHECK_EQ(t.tseg1, 5);
     CHECK_EQ(t.tseg2, 2);
     /*
-     * 75%, not the 87.5% asked for: eight quanta is the fewest a bit may have,
-     * so one quantum is an eighth of the bit and nothing lands closer. The
-     * vendor's own table puts this bit at 62.5% -- also legal, and a whole
-     * quantum earlier than it needs to be.
+     * 75%, not the 87.5% asked for: at eight quanta one quantum is an eighth
+     * of the bit and nothing lands closer.  The vendor's table puts this bit
+     * at 62.5%, also legal and one quantum earlier.
      */
     CHECK_EQ(t.sample_permille, 750);
 }
 
 /*
- * The two ends must agree about where the bit is sampled.
- *
- * They are not free to decide that separately.  The coprocessor has exactly
- * one way to make 1 Mbit/s from 16 MHz -- eight quanta, the fewest a bit may
- * have -- so its sample point is fixed at 75% and the panel, which has slack,
- * has to come to it.
- *
- * Both ends did solve independently once, at 87.5% and 75%, with the panel
- * additionally taking a phase 2 of one quantum and therefore a jump width of
- * one.  That is a node that can absorb an eighth of a bit of drift and no
- * more, talking to one whose quantum is an eighth of a bit.
+ * Both ends sample the bit in the same place.  The coprocessor has one way to
+ * make 1 Mbit/s from 16 MHz, eight quanta, so its sample point is fixed at
+ * 75% and the panel, which has slack, is solved to match.  Solved
+ * independently, the panel lands at 87.5% with a phase 2 of one quantum and a
+ * jump width of one: a node that absorbs an eighth of a bit of drift and no
+ * more.
  */
 TEST_CASE(both_ends_sample_the_bit_in_the_same_place)
 {
@@ -192,10 +180,9 @@ TEST_CASE(the_panels_twai_reaches_every_rate_the_coprocessor_can)
 }
 
 /*
- * Exact, not close.  A rate that cannot be hit on the nose is reported as
- * impossible rather than approximated, because two nodes that disagree by a
- * percent agree on short frames and fall out on long ones -- which is a fault
- * that appears only once the bus is busy.
+ * Exact, not close.  A rate that cannot be hit exactly is refused rather than
+ * approximated: two nodes that disagree by 1% agree on short frames and lose
+ * sync on long ones.
  */
 TEST_CASE(a_rate_that_cannot_be_hit_exactly_is_refused)
 {
@@ -241,9 +228,8 @@ TEST_CASE(the_sample_point_lands_near_the_target_and_the_segments_are_legal)
             CHECK(t.tseg2 >= lim.tseg2_min && t.tseg2 <= lim.tseg2_max);
             CHECK(t.tq >= lim.tq_min && t.tq <= lim.tq_max);
             /*
-             * Within a tenth of the bit. At eight quanta one quantum IS 125
-             * permille, so nothing closer is available and demanding it would
-             * be demanding the impossible rather than the correct.
+             * Within 130 permille of the target.  At eight quanta one quantum
+             * is 125 permille, so nothing closer exists.
              */
             const int32_t err = (int32_t)t.sample_permille - (int32_t)targets[s];
             if (err > 130 || err < -130) {
@@ -255,15 +241,11 @@ TEST_CASE(the_sample_point_lands_near_the_target_and_the_segments_are_legal)
 }
 
 /*
- * The solver claims the *closest* achievable sample point, so assert exactly
- * that: no other legal split of the same quanta is nearer the target.
- *
- * Checking the reported value against a tolerance does not test this. An
- * earlier version did, and an error function that measured the sample point
- * from the wrong end of the sync quantum survived it -- because the reported
- * figure was computed separately and stayed right while the *choice* it drove
- * quietly went wrong. Only a mid-range target moves the winner, which is why
- * this sweeps them.
+ * The solver claims the closest achievable sample point, so the assertion is
+ * exactly that: no other legal split of the same quanta is nearer the target.
+ * A tolerance on the reported value does not test the choice, because the
+ * reported figure is computed separately from the split it drives; only a
+ * mid-range target moves the winner, so the sweep covers 400 to 900 permille.
  */
 TEST_CASE(no_legal_split_sits_closer_to_the_target)
 {
@@ -332,7 +314,9 @@ TEST_CASE(the_jump_width_never_exceeds_phase_two)
 
 /*
  * The one worked example, checkable by hand against the datasheet: 16 MHz,
- * 500 kbit/s, sixteen quanta a bit.
+ * 500 kbit/s, sixteen quanta a bit.  SJW is the synchronisation jump width,
+ * BRP the baud rate prescaler, PRSEG the propagation segment, PS1 and PS2 the
+ * phase segments, and BTLMODE the bit that makes PS2 programmable.
  *
  *   div 2  -> BRP 0
  *   tq 16, tseg1 13, tseg2 2  -> sample point 14/16 = 875 permille

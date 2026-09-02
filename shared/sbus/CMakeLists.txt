@@ -1,6 +1,7 @@
-# S.BUS: sixteen channels in twenty-five bytes, with no checksum and a header
-# byte that is also an ordinary channel value.  Pure C -- the coprocessor's PIO
-# produces the bytes, and everything about what they mean is tested here.
+# S.BUS: 16 channels in 25 bytes, with no checksum and a header byte that is
+# also an ordinary channel value.  Pure C: the coprocessor's PIO (programmable
+# input/output) receiver produces the bytes (that program is not written), and
+# everything about what they mean is tested here.
 set(SRCS sbus.c)
 
 if(ESP_PLATFORM)

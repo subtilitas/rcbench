@@ -1,11 +1,11 @@
 /*
  * Host unit tests for the log viewer screen.
  *
- * The screen is handed an I/O vtable, so the whole browse -> import -> plot
- * path runs here against strings in memory: no card, no filesystem, no board.
- * What is tested is what the screen decides -- which file, which columns,
- * which convention, where the cursor lands -- and one property about pixels:
- * that a redraw over an older frame leaves nothing of it behind.
+ * The screen is handed an I/O (input/output) vtable, so the whole browse ->
+ * import -> plot path runs here against strings in memory: no card, no
+ * filesystem, no board.  Tested is what the screen decides (which file, which
+ * columns, which convention, where the cursor lands) and one property about
+ * pixels: a redraw over an older frame leaves nothing of it behind.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -39,13 +39,11 @@ static const char k_de[] =
 static const char k_prose[] = "note\nnothing numeric here\nnor here\n";
 
 /*
- * Both conventions proven in one file: the screen has to say so rather than
- * pick a winner behind the user's back.
+ * Both conventions proven in one file: the screen reports the conflict rather
+ * than picking a winner.
  *
- * Semicolon-delimited on purpose.  The comma-delimited version of this fixture
- * did not contain a single comma-decimal cell -- "10,23" was split into two
- * fields by the delimiter -- so it proved nothing, and the assertion that used
- * it was carried entirely by its raggedness.
+ * Semicolon-delimited, so that "10,23" is one cell.  With a comma delimiter it
+ * splits into two fields and the fixture holds no comma-decimal cell at all.
  */
 static const char k_mixed[] = "t;a;b\n0;10.23;1\n1;10,23;2\n2;11.5;3\n";
 
@@ -186,9 +184,8 @@ static void draw(void)
     screen()->render(&s_c, 0);
 }
 
-/* Geometry mirrored from the screen; if it moves, these move with it. */
-/* The layout moved up 40 px when the router took the band and the home
- * tag; these follow it. */
+/* Geometry mirrored from the screen; if it moves, these move with it.  Panel
+ * coordinates: the band is UI_BAND_H rows tall and the screen starts below. */
 #define BR_ROW_Y(i) (36 + 30 + (i) * 44 + 18)
 #define IM_ROW_Y(i) (36 + 30 + (i) * 36 + 14)
 #define IM_BTN_CY   (368 + 23)
@@ -294,20 +291,18 @@ TEST_CASE(a_file_that_proves_both_conventions_is_flagged)
     CHECK(a->convention_conflict);
     CHECK_EQ(a->ragged_rows, 0);
 
-    /* And the banner that reports it is actually painted -- the plumbing from
-     * log_votes_result() to the screen was covered by nothing. */
+    /* And the banner that reports it is painted. */
     CHECK(pixels_of(UI_DANGER) > 0);
 }
 
-/* Raggedness is the other branch of the same banner, and it has to be
- * reachable without a convention conflict or neither is really tested. */
+/* Raggedness is the other branch of the same banner, reached here without a
+ * convention conflict so the two branches are tested apart. */
 TEST_CASE(a_ragged_file_is_flagged_without_a_convention_conflict)
 {
     fresh();
-    /* Eight cards, seven visible rows: scroll to the bottom first, where the
-     * last file lands on the last visible row.  That the row has to be
-     * scrolled to is part of the point -- the browse list had an eighth row
-     * that was drawn but could not be touched. */
+    /* Eight files, seven visible rows: scroll to the bottom first, so the last
+     * file lands on the last visible row.  Pins: a row reached by scrolling
+     * accepts a touch. */
     send(TOUCH_EVENT_DOWN, 400, BR_ROW_Y(4));
     send(TOUCH_EVENT_MOVE, 400, BR_ROW_Y(4) - 400);
     send(TOUCH_EVENT_UP, 400, BR_ROW_Y(4) - 400);
@@ -420,7 +415,8 @@ TEST_CASE(a_german_file_is_read_as_german)
         T_FAIL("no data");
         return;
     }
-    /* The rpm column is written 1.234 there and must not become 1.234. */
+    /* The rpm column is written 1.234 there, a grouped 1234, and must not
+     * read as 1.234. */
     for (int k = 0; k < d->n_fields; ++k) {
         if (strcmp(d->field[k].name, "Drehzahl") == 0) {
             CHECK_NEAR(d->value[k][0], 1234.0, 1e-3);
@@ -496,12 +492,10 @@ TEST_CASE(tapping_a_column_toggles_it_and_the_time_axis_is_not_offered)
 }
 
 /* storage_list applies the suffix filter only to files, so subdirectories are
- * listed -- and opening one used to run the whole analysis against something
- * that is not a log.  There is no directory navigation yet, so it has to say
- * so rather than fail obscurely three steps later. */
-/* Both override buttons re-run the analysis, so rebuilding the picked set
- * from scratch each time meant the two controls the import view exists to
- * provide silently destroyed the third one's state. */
+ * listed.  There is no directory navigation; opening a directory is reported
+ * as such rather than analysed as a log. */
+/* Both override buttons re-run the analysis.  Pins: re-running the analysis
+ * keeps the operator's column selection. */
 TEST_CASE(an_override_does_not_discard_the_column_selection)
 {
     fresh();
@@ -521,12 +515,12 @@ TEST_CASE(an_override_does_not_discard_the_column_selection)
     }
     tap(600, IM_ROW_Y(row));
 
-    /* Cycle the decimal-convention override all the way round -- AUTO, DE, EN,
-     * AUTO -- so the file ends up analysed exactly as it started.  Each press
-     * re-runs the analysis, which used to rebuild the picked set from scratch
-     * and silently undo the tap above.  Going round the loop matters: stopping
-     * on DE makes voltage and current unparseable, so both a preserved
-     * selection and a rebuilt one would agree by accident. */
+    /* Cycle the decimal-convention override all the way round (AUTO, DE, EN,
+     * AUTO) so the file ends up analysed as it started.  Each press re-runs
+     * the analysis, which must keep the selection made above.  Going round
+     * the whole loop matters: stopping on DE makes voltage and current
+     * unparseable, and then a preserved selection and a rebuilt one agree by
+     * accident. */
     tap(NUM_X, IM_BTN_CY);
     tap(NUM_X, IM_BTN_CY);
     tap(NUM_X, IM_BTN_CY);

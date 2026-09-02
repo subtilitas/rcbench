@@ -1,24 +1,20 @@
 /*
- * The link's output pages, expressed as bank operations.
+ * The link's three output pages (CHAN_CFG, OUTPUTS, CHANNELS), expressed as
+ * bank operations.
  *
- * The wire carries three pages where the servo page used to be one, because
- * one page per protocol was the alternative.  The mapping between them and the
- * bank has arithmetic and validation in it -- a driver number that must be one
- * this build knows, an endpoint that must be a pulse a servo can take, a range
- * of channels that must fit -- and arithmetic that lives only inside the
- * coprocessor is arithmetic nothing on a desk can check.  So it lives here,
- * host-tested, and the coprocessor is wiring.
+ * The mapping validates a driver number this build knows, an endpoint a
+ * servo can take and a channel range that fits.  It is host-tested, and the
+ * coprocessor is wiring.
  *
- * Each page has three entry points, in the shape link_servo.c had before it:
+ * Each page has three entry points:
  *   _defaults  puts the register array into the state a coprocessor holds
  *              before anybody has configured it.
- *   _write     validates a register window and stores it, refusing atomically
- *              -- a rejected write leaves the page as it was.
+ *   _write     validates a register window and stores it, refusing
+ *              atomically: a rejected write leaves the page as it was.
  *   _apply     derives the bank from the whole stored page.
  *
- * The split matters because the register array is also what a read returns:
- * the panel reads back what it wrote, so the page and the bank are two views
- * that have to be kept from disagreeing.
+ * The register array is also what a read returns, so the page and the bank
+ * are two views kept from disagreeing.
  *
  * SPDX-License-Identifier: MIT
  */

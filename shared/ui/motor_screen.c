@@ -1,4 +1,6 @@
 /*
+ * The motor and ESC (electronic speed controller) bench screen.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -19,9 +21,9 @@
 #define W 800
 #define H (480 - UI_BAND_H)   /* the router owns the band */
 
-/* Horizontal bands, not columns.  Seventeen full-height vertical lines cost
- * about eight thousand cache-line fills on this panel and the same pixels
- * drawn horizontally cost none, so the layout stratifies. */
+/* Horizontal bands, not columns: seventeen full-height vertical lines cost
+ * about 8,160 cache-line fills on this panel, and the same pixels drawn as
+ * horizontal lines cost none. */
 #define PAD       6                    /* the screen's outer margin */
 #define INNER     10                   /* a card's own padding */
 
@@ -32,24 +34,16 @@
 #define HERO_Y    248
 #define HERO_H    88
 /*
- * The throttle owns the bottom of the screen now.
- *
- * A row of 0/25/50/75/100 buttons used to sit under the track, duplicating
- * the one control beside them and taking a band of screen to do it.  The
- * quarters they marked are ticks on the track itself, and the band they cost
- * pays for a track half again as tall and a readout you can see from across
- * a bench.
+ * The throttle owns the bottom of the screen: the track carries tick marks
+ * at the quarters, and the readout, ARM and RESET share the row above it.
  */
 #define ROW_Y     342                  /* the readout, ARM and RESET share it */
 #define ROW_H     30
 #define CTRL_Y    380
 #define TRACK_H   36
 
-/* The scale rails live inside the plot card now, as its left gutter.  Loose
- * on the background they were a 26px strip of coloured stripes butted against
- * the screen edge, which read as an artifact rather than as four axes. */
-/* The legend takes a row at the top of the card and the plot takes the rest,
- * which is 22px of width back from the rails it replaces. */
+/* The legend takes a row at the top of the card and the plot takes the rest
+ * of it. */
 #define LEG_Y     (CARD_Y + 8)
 #define LEG_H     16
 #define PLOT_X    (PAD + INNER)
@@ -76,8 +70,7 @@ static const char *const k_extreme[S_COUNT] = { "min", "pk", "pk", "pk" };
 
 /*
  * The panel polls at 20 Hz, one sample per plot column, so the time base is
- * the width rather than a round number chosen independently of it.  Fixing
- * the span at 24 s left a third of a 762-column plot permanently empty.
+ * the plot width in samples: PLOT_W / 20 s.
  */
 #define SAMPLE_HZ 20.0f
 
@@ -92,7 +85,7 @@ static struct {
     motor_cmd_t   pending;
     unsigned      drawn_mask;
     /* The push count last painted into each framebuffer; UINT32_MAX
-     * means "nothing yet", which is not a count push can reach. */
+     * means "no paint recorded", which is not a count push can reach. */
     uint32_t      drawn_push[2];
     /* Bumped by anything that changes a control's appearance. */
     uint32_t      ctrl_rev;
@@ -140,7 +133,7 @@ static void reset(void)
 
     const gfx_rect_t track = { PAD, CTRL_Y, W - 2 * PAD, TRACK_H };
     ui_slider_init(&s.slider, track, 0.0f, 100.0f, 0);
-    ui_slider_set_ticks(&s.slider, 4);   /* the quarters the buttons marked */
+    ui_slider_set_ticks(&s.slider, 4);   /* tick marks at the quarters */
 
     s.arm_rect   = (gfx_rect_t){ 400, ROW_Y, 180, (int16_t)(ROW_H - 2) };
     s.reset_rect = (gfx_rect_t){ 594, ROW_Y, 200, (int16_t)(ROW_H - 2) };
@@ -149,13 +142,12 @@ static void reset(void)
 
 /*
  * One slot, coalescing.  The pending command is overwritten rather than
- * queued, because the application drains it every frame and a backlog of
- * throttle positions is worse than the latest one.
+ * queued: the application drains it every frame, and the latest throttle
+ * position is the one that matters.
  *
- * With one exception: a pending DISARM survives everything.  Two taps inside
- * one drain is barely possible and exactly the case that must not go wrong --
- * an ARM landing on top of a DISARM would re-arm a bench that had just been
- * stopped, and the operator would have watched it stop.
+ * Exception: a pending DISARM survives everything.  Two taps inside one
+ * drain must not let an ARM land on top of a DISARM and re-arm a bench that
+ * was stopped a moment before.
  */
 static void post(motor_cmd_kind_t kind, float value)
 {
@@ -218,12 +210,10 @@ static void event(const touch_event_t *evt)
         return;
     }
     /*
-     * Any touch at all invalidates the controls.  Enumerating which events
-     * move a pixel -- a preset going down, a press sliding off, a drag that
-     * lands on the value it already had -- is a list that gets one case wrong
-     * and leaves a button stuck looking pressed.  Touches arrive at a few per
-     * second against 39 frames, so repainting on all of them costs nothing
-     * measurable and cannot be incomplete.
+     * Any touch invalidates the controls.  Touches arrive at a few per
+     * second against 39 frames/s, so repainting the controls on every one
+     * costs little, and it cannot miss a case: a preset going down, a press
+     * sliding off, a drag landing on the value it already had.
      */
     ++s.ctrl_rev;
 
@@ -307,12 +297,13 @@ static void render(gfx_canvas_t *c, int buffer_index)
     const unsigned bit = 1u << (buffer_index & 1);
     bind_colours();
 
-    /* Chrome once per framebuffer; everything below it every frame.  That is
-     * the difference between 736 fills and 14,687. */
+    /* Chrome per framebuffer, not per frame; the rest only when its counter
+     * moves.  tools/frame_cost.py measures the two cases as the `chrome` and
+     * `frame-idle` modes. */
     if ((s.drawn_mask & bit) == 0) {
         gfx_clear(c, ui_theme_color(UI_C_BG));
-        /* The card shell is chrome: it never changes, so it is painted once
-         * per framebuffer and the plot repaints only its own interior. */
+        /* The card shell is chrome: it never changes, so it is painted per
+         * framebuffer and the plot repaints only its own interior. */
         ui_card(c, (gfx_rect_t){ PAD, CARD_Y, W - 2 * PAD, CARD_H },
                 ui_theme_color(UI_C_PANEL_SUNK));
         s.drawn_mask |= bit;
@@ -325,10 +316,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
     /*
      * Everything that comes from the numbers is painted only when there are
-     * new numbers.  The panel refreshes at 39 Hz and samples arrive at 20, so
-     * about half of all frames would otherwise repaint an identical plot and
-     * an identical set of readouts into the very PSRAM the LCD is scanning
-     * out of -- which is the traffic that starved the first hardware boot.
+     * new numbers.  The panel refreshes at 39 Hz and samples arrive at 20 Hz,
+     * so about half of all frames would otherwise repaint an identical plot
+     * and identical readouts into the PSRAM (pseudo-static random-access
+     * memory) the LCD (liquid-crystal display) is scanning out of.
      *
      * Per framebuffer, because the panel alternates between two: a buffer
      * whose last paint was two samples ago still needs one even when the
@@ -375,9 +366,8 @@ static void render(gfx_canvas_t *c, int buffer_index)
     /*
      * The controls change when somebody touches them, not when a sample
      * arrives, so they get their own revision counter.  On a frame where
-     * neither the numbers nor a control moved, this screen paints nothing at
-     * all -- which on a panel whose refresh outruns its sample rate is most
-     * frames.
+     * neither the numbers nor a control moved, this screen paints nothing,
+     * which on a panel whose refresh outruns its sample rate is most frames.
      */
     if (s.drawn_ctrl[buf] == s.ctrl_rev) {
         return;
@@ -387,15 +377,15 @@ static void render(gfx_canvas_t *c, int buffer_index)
     gfx_fill_rect(c, 0, ROW_Y, W, H - ROW_Y, ui_theme_color(UI_C_BG));
 
     /*
-     * The number moves off the track and onto its own line.  Printed over a
-     * full-width bar it sat on whatever colour the fill happened to reach,
-     * and at high throttle that was its own accent.
+     * The readout has its own line above the track.  Printed over the bar it
+     * would sit on whatever colour the fill reaches, at high throttle its own
+     * accent.
      */
     gfx_text(c, PAD, ROW_Y + 8, "THROTTLE", &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 
-    /* Set in the numeral face the readings above use, because the throttle is
-     * a reading too -- and the one the operator's hand is on. */
+    /* Set in the numeral face the readings above use: the throttle is a
+     * reading too, and the one the operator's hand is on. */
     char pct[16];
     snprintf(pct, sizeof(pct), "%.1f", (double)s.slider.value);
     const gfx_seg_style_t seg = ui_seg_hero();
@@ -418,9 +408,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
 /*
  * Leaving disarms.  Navigating away from an armed bench must not leave a
- * propeller spinning behind a screen you can no longer see it on -- and the
- * command carries the disarm rather than relying on the application to infer
- * it from the navigation.
+ * propeller spinning behind a screen that is not visible, and the command
+ * carries the disarm rather than relying on the application to infer it
+ * from the navigation.
  */
 static void leave(void)
 {

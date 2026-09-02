@@ -1,8 +1,8 @@
 /*
  * The pane selector: one bench, several views of it.
  *
- * Numbers and controls stay put while the large area switches, so a change of
- * view never moves the thing you were about to press.
+ * Readings and controls stay in place while the pane switches, so a change of
+ * view never moves a control that is about to be pressed.
  *
  * SPDX-License-Identifier: MIT
  */

@@ -1,7 +1,7 @@
 # The settings model: a typed schema, the values behind it, and the rules for
-# clamping and defaulting them.  Persistence is a separate file that lives
-# with the panel, because NVS is hardware -- which is what lets every rule in
-# here be tested without a chip.
+# clamping and defaulting them.  Persistence is a separate file with the
+# panel, because NVS (non-volatile storage) is hardware; every rule here is
+# tested without a chip.
 set(SRCS settings.c)
 
 if(ESP_PLATFORM)

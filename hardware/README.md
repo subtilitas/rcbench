@@ -1,45 +1,32 @@
 # rcbench hardware
 
-The boards, and the parts that go on them.
+The boards and the parts on them. No board exists; the firmware runs on modules
+and development boards. This directory records the part decisions the firmware
+depends on.
 
-Nothing here is built yet. This half of the project exists on paper while the
-firmware runs on modules and dev boards, and the paper is worth keeping because
-**the parts decide what the firmware can honestly display.** A screen that
-plots battery current is a screen that invents numbers until a sense resistor
-and a monitor IC are fitted, and [rcbench's running
-record](../STATUS.md) marks every one of those screens as inventing.
-
-> The rule that settles arguments here: **a part is not chosen until it is
-> chosen at a vendor.** A part right on merit and unbuyable is not a choice, it
-> is a wish — see [Sourcing](docs/Sourcing.md) for what that cost the INA228.
-
-## What is in here
-
-| | |
+| Page | Content |
 | --- | --- |
-| [Power](docs/Power.md) | the four ICs the power path needs, why each, and what each vendor had |
-| [Sourcing](docs/Sourcing.md) | how to get a truthful stock figure, and the two ways of getting a false one |
-| [Where things stand](STATUS.md) | what is decided, what is open, what is deliberately not going to be |
+| [Power](docs/Power.md) | the four ICs (integrated circuits) of the power path, with the alternatives and the stock at two vendors |
+| [Sourcing](docs/Sourcing.md) | how to obtain a stock figure from a vendor's own API (application programming interface), and which sources are not reliable |
+| [Where things stand](STATUS.md) | decided, open, not planned, and the order of work |
 
-## This is destined to leave
+## Rules
 
-`hardware/` is expected to become its own repository. It is laid out that way
-already — its own README, its own running record, its own `docs/` — so that the
-split is a `git mv` and a remote rather than a reorganisation.
+- A part is not chosen until it is available at a vendor. Availability is
+  checked at the vendor's own API or page, not at a mirror.
+- A footprint is not committed on one vendor's stock. Either the part is
+  available at both vendors or the board tolerates the alternative.
 
-Two consequences while it still lives here:
+## Layout
 
-- **It is not wired into rcbench's CI.** The wiki workflow mirrors the
-  top-level `docs/` only, and `tools/check_docs.py` audits that same directory
-  plus the two root pages. Pages under `hardware/docs/` are checked by nobody,
-  so their links and their numbers are on the author.
-- **It is not bilingual yet.** The wiki is English and German because it is the
-  manual and a manual has readers. This is a design record with one reader, and
-  translating it now would double the cost of every edit during the period it
-  changes most. When the boards exist and this becomes a manual, it gets the
-  same treatment as `docs/`.
+`hardware/` is laid out as a repository of its own (README, STATUS, `docs/`) so
+it can be split out later with a `git mv`. While it lives here:
+
+- `tools/check_docs.py` checks its links and anchors, and nothing else.
+- The pages are English only. The wiki is bilingual because it is a manual;
+  this is a design record and is translated when the boards exist.
 
 ## Licence
 
-MIT, the same as the rest of the tree — see [LICENSE](../LICENSE). Whatever
-this becomes when it is split out inherits that, hardware designs included.
+MIT (Massachusetts Institute of Technology), as the rest of the tree:
+[LICENSE](../LICENSE).

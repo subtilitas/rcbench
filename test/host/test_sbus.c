@@ -2,10 +2,9 @@
  * S.BUS, fed the byte streams a receiver and a noisy line produce.
  *
  * The protocol has no checksum and its header byte is an ordinary channel
- * value, so the interesting failures are all about framing: locking onto the
+ * value, so the failures under test are all about framing: locking onto the
  * middle of a frame, staying locked, and reporting sixteen plausible channels
- * that are all wrong. Plausible-and-wrong is the failure worth testing,
- * because nothing downstream can detect it.
+ * that are all wrong.  Nothing downstream can detect plausible-and-wrong.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -168,12 +167,11 @@ TEST_CASE(the_flags_come_through_and_failsafe_is_not_just_another_channel)
 }
 
 /*
- * The failure this protocol invites. 0x0F is an ordinary channel value, so a
- * decoder that frames on the header alone will start mid-frame -- and once it
- * has, the next 0x0F it sees is in the same wrong place, so it stays wrong
- * for ever while reporting sixteen plausible numbers.
+ * 0x0F is an ordinary channel value, so a decoder that frames on the header
+ * alone starts mid-frame, and once it has, the next 0x0F it sees is in the
+ * same wrong place: it stays wrong while reporting sixteen plausible numbers.
  *
- * The gap is what breaks it, and this test starts the stream deliberately
+ * The inter-frame gap is what resets it, and this test starts the stream
  * mid-frame to prove the gap and not the header is doing the work.
  */
 TEST_CASE(a_stream_joined_mid_frame_resynchronises_on_the_gap)
@@ -182,7 +180,7 @@ TEST_CASE(a_stream_joined_mid_frame_resynchronises_on_the_gap)
     for (unsigned c = 0; c < SBUS_CHANNELS; ++c) {
         ch[c] = (uint16_t)(1000 + c);
     }
-    /* Channel 0 = 0x0F so the payload really does contain a false header. */
+    /* Channel 0 = 0x0F, so the payload contains a false header. */
     ch[0] = SBUS_HEADER;
 
     uint8_t frame[SBUS_FRAME_BYTES];
@@ -196,9 +194,9 @@ TEST_CASE(a_stream_joined_mid_frame_resynchronises_on_the_gap)
     gap(&now);
 
     /*
-     * Ten bytes of a frame and then the transmitter stops -- a receiver
+     * Ten bytes of a frame and then the transmitter stops: a receiver
      * powered off mid-frame, or a cable pulled.  Those ten sit in the buffer
-     * looking like the start of something.
+     * looking like the start of a frame.
      */
     feed(&d, frame, 10, &now, &f);
 
@@ -209,9 +207,8 @@ TEST_CASE(a_stream_joined_mid_frame_resynchronises_on_the_gap)
     /*
      * Exactly one frame, and it is the right one.  Without the gap resetting
      * the buffer, the ten stale bytes plus the first fifteen of this frame
-     * would have made a twenty-five byte "frame" of nonsense, and the real
-     * frame's last ten bytes would have started the next one -- misaligned
-     * for ever after.
+     * make a twenty-five byte "frame" of nonsense, and the real frame's last
+     * ten bytes start the next one, misaligned from then on.
      */
     CHECK_EQ(got, 1);
     CHECK_EQ(d.frames, 1);
@@ -219,8 +216,7 @@ TEST_CASE(a_stream_joined_mid_frame_resynchronises_on_the_gap)
         CHECK_EQ(f.channel[c], ch[c]);
     }
 
-    /* And the misalignment really would have happened: the same stream with
-     * the gaps removed does not produce this frame. */
+    /* The same stream with the gaps removed does not produce this frame. */
     sbus_decoder_reset(&d);
     uint32_t t = 0;
     feed(&d, frame, 10, &t, &f);
@@ -315,9 +311,8 @@ TEST_CASE(noise_before_a_frame_does_not_eat_it)
 /*
  * A byte gap must not be mistaken for a frame gap.  At 100 kbaud 8E2 the bytes
  * of one frame are 120 microseconds apart and frames are at least 4 ms apart,
- * so the threshold has to sit between -- and a threshold below the byte
- * spacing would restart the frame on every byte, which is the same as having
- * no framing at all.
+ * so the threshold has to sit between; a threshold below the byte spacing
+ * restarts the frame on every byte, which is no framing at all.
  */
 TEST_CASE(the_gap_threshold_sits_between_a_byte_and_a_frame)
 {
@@ -345,10 +340,9 @@ TEST_CASE(the_microsecond_mapping_hits_its_two_fixed_points)
     CHECK_EQ(sbus_to_us(SBUS_RAW_2000US), 2000);
 
     /*
-     * The clamp is unreachable from the decoder -- eleven bits map to
-     * 895..2144 us, comfortably inside it -- so it is only there for a caller
-     * passing something the decoder would never produce.  Tested directly,
-     * because an untested guard is a guess.
+     * The clamp is unreachable from the decoder (eleven bits map to
+     * 895..2144 us, inside it), so it only guards a caller passing a value
+     * the decoder never produces.  Tested directly.
      */
     CHECK_EQ(sbus_to_us(60000u), 2200);
     /* Halfway between them is halfway between the pulses. */

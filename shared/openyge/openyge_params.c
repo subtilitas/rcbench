@@ -19,7 +19,8 @@ void openyge_params_observe(openyge_params_t *p, uint16_t index, uint16_t value)
         return;
     }
     /* Nothing is believed while a write is outstanding.  A frame already in
-     * flight carries the old value and would look like the ESC refusing. */
+     * flight carries the old value and would look like the ESC (electronic
+     * speed controller) refusing the write. */
     if (p->writes_pending) {
         return;
     }
@@ -38,9 +39,9 @@ void openyge_params_begin_writes(openyge_params_t *p)
         return;
     }
     /*
-     * The whole table is withdrawn, not just the indices being written.  A
-     * table that is partly old and partly new is worse than no table: it reads
-     * as the ESC's settings and is not.
+     * The whole table is withdrawn, not only the indices being written.  A
+     * table that is partly old and partly new reads as the ESC's settings and
+     * is not.
      */
     p->writes_pending = true;
     p->seen           = 0;
@@ -59,15 +60,15 @@ bool openyge_params_complete(const openyge_params_t *p)
     if (p == NULL || p->writes_pending) {
         return false;
     }
-    /* Zero is "the count has not arrived"; above the bitmap's width is an ESC
-     * with more parameters than this cache can hold, and reporting that table
-     * complete would report 64 of them as though they were all of them. */
+    /* Zero means the count has not arrived.  Above the bitmap's width means
+     * an ESC with more parameters than this cache holds, and reporting that
+     * table complete would present 64 of them as all of them. */
     if (p->count == 0 || p->count > OPENYGE_MAX_PARAMS) {
         return false;
     }
     /* Every index below the count, and the count itself, seen at least once.
      * Built by shifting rather than by (1 << count) - 1, which overflows at
-     * exactly the width this bitmap is. */
+     * exactly the bitmap's width. */
     uint64_t want = ~0ull;
     if (p->count < OPENYGE_MAX_PARAMS) {
         want = ((uint64_t)1u << p->count) - 1u;

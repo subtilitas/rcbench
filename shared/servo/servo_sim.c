@@ -18,7 +18,7 @@ void servo_sim_defaults(servo_sim_cfg_t *cfg)
     cfg->stall_a        = 2.4f;
     cfg->bind_us        = 45;
     cfg->travel_a       = 0.95f;  /* about 40% of stall, while moving */
-    cfg->slew_us_per_ms = 1.2f;   /* ~0.17 s for 60 degrees */
+    cfg->slew_us_per_ms = 1.2f;   /* 0.17 s for 60 degrees */
     cfg->noise_a        = 0.02f;
 }
 
@@ -36,7 +36,7 @@ void servo_sim_init(servo_sim_t *s, const servo_sim_cfg_t *cfg)
     s->position_us = ((float)cfg->stop_lo_us + (float)cfg->stop_hi_us) / 2.0f;
 }
 
-/* Deterministic, so a failing case is a failing case again next time. */
+/* Deterministic, so a failing case reproduces. */
 static float noise(servo_sim_t *s)
 {
     s->seed = s->seed * 1664525u + 1013904223u;
@@ -58,12 +58,10 @@ float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms)
     s->last_ms = now_ms;
 
     /*
-     * The horn travels toward the command at a finite rate, and it cannot go
-     * past the stop however hard it is asked to -- so the target it actually
-     * tracks is the command clamped to the linkage's range.  Clamping here
-     * rather than leaving the horn to chase an impossible number is what
-     * separates "still travelling" from "arrived and pushing", and those two
-     * draw very different currents.
+     * The horn travels toward the command at a finite rate and cannot go past
+     * the stop, so the target it tracks is the command clamped to the
+     * linkage's range.  Clamping here separates "still travelling" from
+     * "arrived and pushing", which draw different currents.
      */
     float target = (float)cmd_us;
     if (target > (float)s->cfg.stop_hi_us) {
@@ -85,11 +83,9 @@ float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms)
     }
 
     /*
-     * How far past its stop the servo is being asked to go.  The horn cannot
-     * actually get there -- it is against something -- but the *command* is
-     * what sets how hard it pushes, which is why this is measured from cmd_us
-     * and not from position_us.  A servo told to go somewhere it cannot reach
-     * keeps trying, and that is the whole phenomenon being searched for.
+     * How far past its stop the servo is commanded.  The horn cannot get
+     * there, but the command sets how hard it pushes, so this is measured
+     * from cmd_us rather than position_us.
      */
     float over = 0.0f;
     if (cmd_us > s->cfg.stop_hi_us) {
@@ -103,9 +99,8 @@ float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms)
     float amps;
     if (!arrived) {
         /*
-         * Still moving, so it is not pushing on anything yet whatever it has
-         * been told.  A finder that reads here reads travel current and calls
-         * it a baseline -- or calls it a bind.
+         * Still moving, so not pushing on anything.  A reading taken here is
+         * travel current, which a search would take for a baseline or a bind.
          */
         amps = s->cfg.travel_a;
     } else if (over > 0.0f) {
@@ -137,8 +132,8 @@ void servo_pair_defaults(servo_pair_cfg_t *cfg, uint16_t centre_us)
     }
     memset(cfg, 0, sizeof(*cfg));
     cfg->centre_us      = centre_us;
-    cfg->offset_us      = 18;     /* B's centre about half a degree out */
-    cfg->travel         = 1.06f;  /* and its throw six per cent long */
+    cfg->offset_us      = 18;     /* B's centre out by about 1.6 degrees */
+    cfg->travel         = 1.06f;  /* and its throw 6% long */
     cfg->free_a         = 0.24f;  /* two servos, free */
     cfg->fight_a_per_us = 0.011f;
     cfg->travel_a       = 1.10f;
@@ -166,10 +161,9 @@ float servo_pair_disagreement(const servo_pair_t *p, uint16_t cmd_a_us,
     }
     const float centre = (float)p->cfg.centre_us;
     /*
-     * Where each servo is really holding the surface.  A is taken as the
-     * reference -- not because it is right, but because there is nothing to
-     * be right against: what matters is only the difference between them,
-     * which is what the surface has to absorb.
+     * Where each servo holds the surface.  A is the reference only because
+     * there is nothing else to be right against: what matters is the
+     * difference, which the surface absorbs.
      */
     const float a = (float)cmd_a_us;
     const float b = centre + (float)p->cfg.offset_us
@@ -218,8 +212,7 @@ float servo_pair_step(servo_pair_t *p, uint16_t cmd_a_us, uint16_t cmd_b_us,
 
     float amps;
     if (!a_in || !b_in) {
-        /* In transit.  Whatever they will disagree about, they are not
-         * disagreeing about it yet. */
+        /* In transit: no disagreement is applied to the surface. */
         amps = p->cfg.travel_a + n;
     } else {
         const float fight = servo_pair_disagreement(

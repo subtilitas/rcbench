@@ -11,12 +11,9 @@
 #include "ui_widgets.h"
 
 /*
- * A reading, in a card of its own.
- *
- * The four of these used to be bare text on the background, laid out by
- * spacing alone, and four columns of label-number-unit-footer with nothing
- * around them read as one wall rather than as four instruments.  The card is
- * doing the work; the colour tag ties it to its trace on the plot above.
+ * One reading in a card of its own.  The card separates it from the readings
+ * beside it; the colour tag along the top edge ties it to its trace on the
+ * plot above.
  */
 void ui_hero_render(gfx_canvas_t *c, gfx_rect_t r, const ui_hero_def_t *def,
                     float value, float peak)
@@ -29,14 +26,9 @@ void ui_hero_render(gfx_canvas_t *c, gfx_rect_t r, const ui_hero_def_t *def,
 
     /*
      * The channel's colour along the card's top edge, and again as a tick
-     * beside the name.
-     *
-     * A single small tag was too quiet to tie a card to its trace at a
-     * glance -- which is the whole job, since the plot above draws four
-     * lines and this is what says which is which.  Ringing the entire card
-     * in it would give four competing outlines and no hierarchy, so it takes
-     * the top edge only: enough to read across the bench, contained enough
-     * that the four still sit as a set.
+     * beside the name.  The top edge only: a full outline in the channel
+     * colour would give four competing outlines and no hierarchy between the
+     * cards.
      */
     gfx_hline(c, r.x + UI_R_CARD, r.y + 1, r.w - 2 * UI_R_CARD, def->color);
     gfx_hline(c, r.x + UI_R_CARD + 2, r.y + 2, r.w - 2 * UI_R_CARD - 4,
@@ -47,8 +39,8 @@ void ui_hero_render(gfx_canvas_t *c, gfx_rect_t r, const ui_hero_def_t *def,
              ui_theme_color(UI_C_TEXT), 1);
 
     char number[24];
-    /* A non-finite reading is shown as such rather than printed: "nan" in a
-     * hero numeral is a reading, and "---" is the absence of one. */
+    /* A non-finite reading prints as "---"; "nan" in a hero numeral would
+     * read as a value. */
     if (isfinite(value)) {
         ui_fmt(number, sizeof(number), value, def->decimals);
     } else {
@@ -64,9 +56,8 @@ void ui_hero_render(gfx_canvas_t *c, gfx_rect_t r, const ui_hero_def_t *def,
     gfx_text(c, r.x + 12 + nw + 8, r.y + 45, def->unit, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 
-    /* One rule above the footer.  The peak is a different kind of number from
-     * the live one -- history rather than now -- and a hairline says so more
-     * quietly than another colour would. */
+    /* One hairline above the footer separates the peak, a value from the
+     * past, from the live value. */
     gfx_hline(c, r.x + 12, r.y + 62, r.w - 24,
               gfx_lerp(ui_theme_color(UI_C_PANEL),
                        ui_theme_color(UI_C_EDGE), 150));

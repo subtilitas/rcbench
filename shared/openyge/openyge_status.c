@@ -47,9 +47,9 @@ void openyge_status_decode(uint8_t status1, openyge_status_t *out)
     out->state_known = (openyge_state_name(state)[0] != '?');
 
     /*
-     * The overloaded combination is tested first and returns.  Getting this
-     * order wrong reads a noisy servo lead as a BEC over-current fault, which
-     * sends somebody looking for a short that is not there.
+     * The overloaded combination is tested first.  Tested after the subject
+     * split, a noisy servo lead reads as a BEC (battery eliminator circuit)
+     * over-current fault.
      */
     if (warn == WARN_SETPOINT) {
         out->setpoint_noise = true;
@@ -62,8 +62,8 @@ void openyge_status_decode(uint8_t status1, openyge_status_t *out)
     out->warn_overtemp     = (warn & WARN_OVERTEMP) != 0;
     out->warn_overcurrent  = (warn & WARN_OVERCURR) != 0;
 
-    /* Now qualify them by the state.  A caution while running is a fault once
-     * the power has been cut, and over-voltage is the case with no flag. */
+    /* Qualified by the state: a caution while running is a fault once the
+     * power is cut, and over-voltage is the case with no flag. */
     const bool cut     = (state == OPENYGE_ST_POWER_CUT);
     const bool no_warn = (warn & (WARN_UNDERVOLT | WARN_OVERTEMP
                                   | WARN_OVERCURR)) == 0;

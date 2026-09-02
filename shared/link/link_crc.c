@@ -5,11 +5,10 @@
 #include "link_crc.h"
 
 /*
- * Bitwise rather than table-driven, deliberately.  A frame caps at 64 bytes --
- * 512 iterations, a few microseconds on either processor -- against a 512-byte
- * table that would have to be identical in two firmwares and a test binary.
- * The only place the size argument would bite is a firmware image, and that
- * transfer is bounded by the wire, not by this loop.
+ * Bitwise rather than table-driven: 8 iterations per byte, a few
+ * microseconds for a 64-byte frame on either processor, against a 512-byte
+ * table that would have to be identical in two firmwares and the test
+ * binary.
  */
 uint16_t link_crc(uint16_t crc, const void *data, size_t len)
 {

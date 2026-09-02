@@ -1,16 +1,9 @@
 /*
- * What crosses the link, with no opinion about how.
+ * What crosses the link, independent of the transport: an op, a page, an
+ * offset, a count and up to a page of registers.
  *
- * An op, a page, an offset, a count and up to a page of registers.  That is
- * the whole vocabulary, and it was carried by a byte stream over RS485 before
- * it was carried by CAN identifiers -- the dispatcher above it never knew the
- * difference, which is what made changing the wire a matter of adding a
- * transport rather than rewriting the protocol.
- *
- * This file exists because those two things used to live together: the
- * message and the byte framing were one header, so anything that wanted a
- * link_msg_t also got a sync byte and a CRC it had no use for.  Splitting them
- * is what let the byte transport be deleted.
+ * The dispatcher and the poller work on this struct; link_can.h maps it onto
+ * CAN (Controller Area Network) frames.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -35,7 +28,7 @@ typedef enum {
     LINK_OP_NACK  = 0x05, /**< coprocessor refused it; regs[0] says why      */
 } link_op_t;
 
-/** Reasons a NACK carries.  The coprocessor reports; it does not ask. */
+/** Reasons a NACK (negative acknowledge) carries. */
 typedef enum {
     LINK_NACK_BAD_PAGE   = 1,
     LINK_NACK_BAD_RANGE  = 2, /**< offset + count runs off the end of a page */

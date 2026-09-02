@@ -1,11 +1,10 @@
 /*
  * The shared widgets every screen draws with: panels, cards, buttons, pills.
  *
- * One place for the chrome so the bench looks like one instrument rather than
- * a dozen screens that each drew their own button.  The one piece of logic
- * here rather than drawing is ui_is_light(): a button picks its label colour
- * from the luma of its fill, so text stays legible whether the caller handed
- * it a dark panel or a bright accent, instead of every caller guessing.
+ * One place for the chrome, so every screen draws the same button.  The one
+ * piece of logic here is ui_is_light(): a button picks its label colour from
+ * the luma of its fill, so the text is legible on a dark panel and on a
+ * bright accent alike.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -40,8 +39,8 @@ void ui_panel(gfx_canvas_t *c, gfx_rect_t r, const char *title,
                              UI_CHAMFER, 0, UI_CHAMFER, 0, UI_PANEL);
     gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h,
                              UI_CHAMFER, 0, UI_CHAMFER, 0, UI_EDGE);
-    /* A short accent stroke on the top-right corner: cheap, and it stops a
-     * grid of identical panels reading as a spreadsheet. */
+    /* A short accent stroke on the top-right corner, so a grid of identical
+     * panels does not read as a spreadsheet. */
     gfx_hline(c, r.x + r.w - 34, r.y, 34, accent);
     gfx_vline(c, r.x + r.w - 1, r.y, 10, accent);
     ui_panel_header(c, r, title, accent);
@@ -68,15 +67,8 @@ void ui_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
                gfx_color_t fill, bool pressed, bool enabled)
 {
     gfx_color_t body = enabled ? fill : GFX_RGB(38, 46, 58);
-    /*
-     * Contrast picked from the fill, not assumed.
-     *
-     * This used to be near-black on every enabled button, which is right on
-     * an accent-coloured one and invisible on a dark panel-coloured one --
-     * so the throttle presets and RESET PEAKS were charcoal text on charcoal
-     * and had to be found by memory.  Both weights are passed the same way,
-     * so the button has to work out which it got.
-     */
+    /* The label colour follows the luma of the fill: near-black on an
+     * accent-coloured button, light on a panel-coloured one. */
     gfx_color_t text = enabled ? (ui_is_light(body) ? UI_TEXT_ON_LIGHT
                                                     : UI_TEXT)
                                : UI_TEXT_FAINT;
@@ -100,10 +92,7 @@ void ui_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
 }
 
 /*
- * The one surface everything else sits on: a raised fill with a hairline
- * edge.  Containment is what separates a reading from the three beside it --
- * bare numerals on a flat ground read as one wall of text however carefully
- * they are spaced.
+ * The surface everything else sits on: a raised fill with a hairline edge.
  */
 void ui_card(gfx_canvas_t *c, gfx_rect_t r, gfx_color_t fill)
 {

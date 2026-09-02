@@ -14,9 +14,10 @@ void can_timing_limits_mcp2515(can_timing_limits_t *out, uint32_t crystal_hz)
     memset(out, 0, sizeof(*out));
     out->clock_hz = crystal_hz;
     /*
-     * TQ = 2 x (BRP + 1) / Fosc, so the divisor is even and runs 2..128 --
-     * the factor of two is in the silicon and is the reason an 8 MHz part
-     * runs out of quanta so early.
+     * The time quantum is TQ = 2 x (BRP + 1) / Fosc, with BRP the baud rate
+     * prescaler and Fosc the crystal, so the divisor is even and runs
+     * 2..128.  The factor of two is in the silicon; it is why an 8 MHz
+     * crystal reaches 500 kbit/s and no more.
      */
     out->div_min   = 2;
     out->div_max   = 128;
@@ -38,19 +39,18 @@ void can_timing_limits_twai(can_timing_limits_t *out)
         return;
     }
     memset(out, 0, sizeof(*out));
-    out->clock_hz  = 80000000u;   /* APB */
+    out->clock_hz  = 80000000u;   /* the APB (advanced peripheral bus) clock */
     out->div_min   = 2;
     out->div_max   = 16384;
     out->div_step  = 2;
     out->tseg1_min = 1;
     out->tseg1_max = 16;
     /*
-     * Two, not the one the peripheral would accept.  Phase 2 bounds the
-     * resynchronisation jump width, so a phase 2 of one quantum forces SJW to
-     * one -- a node that can absorb a single quantum of drift and no more.
-     * The controller at the other end of this bus runs eight quanta to the
-     * bit, where one quantum is an eighth of it.  Nothing is gained by
-     * allowing it and a margin is lost.
+     * 2, not the 1 the peripheral accepts.  Phase 2 bounds the SJW
+     * (synchronisation jump width), so a phase 2 of one quantum forces an SJW
+     * of one: a node that absorbs one quantum of drift and no more.  The
+     * other node on this bus runs 8 quanta per bit, so one quantum is an
+     * eighth of the bit.
      */
     out->tseg2_min = 2;
     out->tseg2_max = 8;
@@ -82,15 +82,13 @@ bool can_timing_solve(const can_timing_limits_t *lim, uint32_t bitrate,
     for (uint32_t div = lim->div_min; div <= lim->div_max;
          div += lim->div_step) {
         /*
-         * Exact only.  clock = div x tq x bitrate has to hold in integers, and
-         * anything else is a bit rate that is nearly right -- which two nodes
-         * will agree about on short frames and disagree about on long ones.
-         */
-        /*
-         * Sixty-four bits, because div * bitrate overflows thirty-two for the
-         * larger divisors at megabit rates -- and a wrapped product can be an
-         * exact divisor of the clock, which would let the one rule this module
-         * has (the rate comes out exact) pass on a rate that does not.
+         * Exact only: clock = div x tq x bitrate has to hold in integers.  A
+         * bit rate that is nearly right lets two nodes agree on short frames
+         * and disagree on long ones.
+         *
+         * 64-bit arithmetic: div x bitrate overflows 32 bits for the larger
+         * divisors at megabit rates, and a wrapped product can divide the
+         * clock exactly for a rate that does not.
          */
         const uint64_t denom = (uint64_t)div * (uint64_t)bitrate;
         if (denom == 0 || (uint64_t)lim->clock_hz % denom != 0) {
@@ -112,10 +110,9 @@ bool can_timing_solve(const can_timing_limits_t *lim, uint32_t bitrate,
             const uint32_t err = sp_error((uint8_t)t1, (uint8_t)tq,
                                           target_permille);
             /*
-             * The closest sample point wins.  Ties go to the first candidate
-             * found, and divisors ascend, so that is the *smallest* prescaler
-             * and therefore the most quanta per bit -- a finer
-             * resynchronisation step, which is the better of the two.
+             * The closest sample point wins.  Ties go to the first candidate,
+             * and divisors ascend, so a tie takes the smallest prescaler and
+             * the most quanta per bit: the finer resynchronisation step.
              */
             if (!found || err < best_err) {
                 found    = true;
@@ -146,11 +143,10 @@ uint32_t can_timing_max_bitrate(const can_timing_limits_t *lim)
         return 0;
     }
     /*
-     * The obvious candidate -- smallest divisor, fewest quanta -- need not be
-     * solvable: it can be a rate that divides the clock only with a segment
-     * split the controller will not accept.  Probing just that one reported a
-     * controller reaching many rates as reaching none, so every combination is
-     * tried and the highest that actually solves is returned.
+     * The smallest divisor with the fewest quanta need not be solvable: the
+     * rate can divide the clock only with a segment split the controller does
+     * not accept.  Every combination is tried and the highest rate that
+     * solves is returned.
      */
     uint32_t best = 0;
     for (uint32_t tq = lim->tq_min; tq <= lim->tq_max; ++tq) {

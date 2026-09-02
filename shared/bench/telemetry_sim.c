@@ -33,25 +33,25 @@ void telemetry_sim_step(telemetry_sim_t *s, float throttle_pct, float dt_s,
     const telemetry_sim_cfg_t *c = &s->cfg;
     const float duty = throttle_pct / 100.0f;
 
-    /* State of charge droops the open-circuit voltage a little as the pack
-     * empties, so a long run does not look like a fresh one. */
+    /* The open-circuit voltage droops by up to 0.35 V per cell as the pack
+     * empties. */
     const float used = (c->pack_mah > 0.0f) ? (s->drawn_mah / c->pack_mah) : 0.0f;
     const float soc  = (used > 1.0f) ? 1.0f : used;
     const float open_v = c->cells * (c->cell_nominal_v - 0.35f * soc);
 
     /*
-     * Current grows faster than throttle: a propeller is a cube law on rpm,
-     * and rpm is roughly linear in duty, so the exponent lands near two and a
-     * half once the motor's own losses are in.
+     * Current grows faster than throttle: propeller load is a cube law on
+     * rpm (revolutions per minute) and rpm is about linear in duty; with the
+     * motor's losses the exponent is 2.5.
      */
     const float load = powf(duty, 2.5f);
     const float current = c->no_load_amps * duty + c->stall_amps * load;
 
-    /* The bus sags under its own internal resistance, which is the whole
-     * reason a bench measures at the pack rather than trusting a label. */
+    /* The bus sags with the pack's internal resistance. */
     const float voltage = open_v - current * c->internal_ohms * c->cells;
 
-    /* And rpm follows the *sagging* bus, not the stick. */
+    /* rpm follows the sagging bus, not the stick, with time constant
+     * rpm_tau_s. */
     const float target_rpm = c->kv * voltage * duty;
     const float tau = (c->rpm_tau_s > 0.0f) ? c->rpm_tau_s : 0.2f;
     const float alpha = 1.0f - expf(-dt_s / tau);
@@ -61,7 +61,8 @@ void telemetry_sim_step(telemetry_sim_t *s, float throttle_pct, float dt_s,
     s->drawn_mah += current * dt_s * (1000.0f / 3600.0f);
     s->drawn_wh  += power   * dt_s * (1.0f / 3600.0f);
 
-    /* Heating with a slow leak back to ambient; the ESC runs hotter. */
+    /* Heating with a leak back to 24 C ambient; the ESC (electronic speed
+     * controller) heats faster than the motor. */
     s->temp_esc   += (power * 0.0016f - (s->temp_esc - 24.0f) * 0.08f) * dt_s;
     s->temp_motor += (power * 0.0011f - (s->temp_motor - 24.0f) * 0.05f) * dt_s;
 

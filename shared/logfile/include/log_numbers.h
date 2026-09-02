@@ -1,13 +1,12 @@
 /*
  * Locale-tolerant numeric parsing with unit suffixes.
  *
- * A port of logwiju's numbers.js.  The hard part is that "1,234" is genuinely
- * ambiguous: German reads 1.234, English reads 1234.  Guessing per value is
- * unsafe, because the same column would then parse inconsistently -- "1,234"
- * as 1234 on one row and "10,23" as 10.23 on the next implies two different
- * conventions in one column, which no real exporter produces.
+ * "1,234" is ambiguous: German reads 1.234, English reads 1234.  Guessing per
+ * value is unsafe, because the same column would then parse inconsistently:
+ * "1,234" as 1234 on one row and "10,23" as 10.23 on the next implies two
+ * conventions in one column, which no exporter produces.
  *
- * So the convention is decided per *file*, from every value in it.  Most files
+ * So the convention is decided per file, from every value in it.  Most files
  * contain at least one value that settles it:
  *
  *   "1.234,56"  both separators  -> the last one is the decimal   (German)
@@ -19,9 +18,9 @@
  *
  * Only when every value is ambiguous does the fallback apply.
  *
- * The evidence gatherer is a streaming accumulator rather than a function over
- * an array, because the firmware reads logs off a card and never holds the
- * whole file: values arrive once, are voted on, and are forgotten.
+ * The evidence gatherer is a streaming accumulator rather than a function
+ * over an array: the firmware reads logs off a card and never holds the whole
+ * file.  Values arrive once, are voted on, and are forgotten.
  *
  * Pure C, no ESP-IDF.
  *
@@ -37,7 +36,7 @@
 extern "C" {
 #endif
 
-/** Longest numeric body and unit suffix we will look at in one cell. */
+/** Longest numeric body and unit suffix the parser reads in one cell. */
 #define LOG_DIGITS_MAX 40
 #define LOG_UNIT_MAX   12
 
@@ -102,7 +101,7 @@ void log_votes_add(log_votes_t *v, const char *raw);
  * @param confident  set false when nothing proved anything and the fallback
  *                   had to decide.
  * @param conflict   set true when both conventions were proven, which means
- *                   the file itself is inconsistent -- worth telling the user
+ *                   the file itself is inconsistent; the caller reports it
  *                   rather than silently picking the winner.
  */
 log_conv_t log_votes_result(const log_votes_t *v, log_ambig_t fallback,
@@ -111,10 +110,9 @@ log_conv_t log_votes_result(const log_votes_t *v, log_ambig_t fallback,
 /**
  * Is @p digits well formed under @p convention?
  *
- * Strict on purpose.  Merely stripping the grouping separator and hoping the
- * result parses will happily turn the German "1.234,56" into 1.23456 when told
- * to read it as English -- a silently wrong number, which is worse than no
- * number at all.  Rejecting lets the caller surface the mismatch.
+ * Strict on purpose.  Stripping the grouping separator and parsing what is
+ * left turns the German "1.234,56" into 1.23456 when read as English: a
+ * silently wrong number.  Rejecting lets the caller surface the mismatch.
  */
 bool log_is_well_formed(const char *digits, log_conv_t convention);
 

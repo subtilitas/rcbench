@@ -2,102 +2,94 @@
 
 <sub>[English](Servo.md) · **Deutsch**</sub>
 
-Zwei Messungen am Servo **wie eingebaut**, nicht wie gekauft. Beide brauchen
-einen Stromsensor je Servoausgang, der noch nicht bestückt ist — heute laufen
-sie deshalb gegen ein modelliertes Servo, und später unverändert gegen das
-echte.
+Zwei Messungen am Servo im eingebauten Zustand. Beide brauchen einen
+Stromsensor am Servoausgang, der nicht bestückt ist; beide laufen gegen ein
+modelliertes Servo. Die Vorgabewerte unten stammen aus
+`servo_limit_defaults()` und `servo_sync_defaults()` in `shared/servo/`.
 
-## Die verbaute mechanische Endlage finden
+## Eingebaute mechanische Endlage
 
-### Warum
+### Zweck
 
-Endpunkte, die im Sender nach Augenmaß gesetzt werden, sind Schätzungen — und
-wer zu großzügig schätzt, merkt es nicht. Ein Servo, das gegen einen
-mechanischen Anschlag gestellt wird, zieht Blockierstrom, solange es dort
-gehalten wird: es überhitzt, leert den Akku und verschleißt das Getriebe, bis
-irgendwann Zähne fehlen.
+Im Sender gesetzte Endpunkte sind Schätzungen. Ein Servo, das gegen einen
+mechanischen Anschlag gehalten wird, zieht Blockierstrom, solange es dorthin
+befohlen wird, und der Einbau, nicht das Servo, bestimmt, wo der Anschlag
+liegt. Die beiden Enden des Ruderwegs unterscheiden sich; beide messen.
 
-Nachschlagen lässt sich die Endlage nicht, denn sie gehört nicht dem Servo,
-sondern dem Gestänge, der Hornstellung und den Anschlägen der Ruderfläche. Sie
-ist in jedem Einbau anders — und an den beiden Enden desselben Ruderwegs
-verschieden. Deshalb: beide Enden messen.
+### Verfahren
 
-### Was die Suche tut
+Die Suche schreitet von der Mitte nach außen, in Schritten von 10 µs Pulsweite
+(etwa 0,9° bei einem Servo mit 11 µs je Grad Weg), bis 600 µs von der Mitte.
+Nach jedem Schritt wartet sie 120 ms, bis das Servo steht, und mittelt den
+Strom über 80 ms. Solange die Fläche frei läuft, ist der Strom flach und
+niedrig. Das Gestänge gilt als angelaufen, wenn der Strom das 1,8-Fache des
+Grundstroms im freien Lauf übersteigt und mindestens 0,15 A darüber liegt. Die
+Suche hält beim ersten solchen Schritt an, nimmt 25 µs zurück und meldet diese
+Pulsweite als Endpunkt.
 
-Sie tastet sich in Viertelgrad-Schritten aus der Mitte heraus, wartet jeweils
-kurz und beobachtet den Strom. Solange die Fläche frei läuft, bleibt er flach
-und niedrig. Sobald das Gestänge anläuft, steigt er steil — das Servo bewegt
-nichts mehr, es drückt nur noch. Die Suche **hält beim ersten Anstieg an,
-statt weiterzudrücken**, nimmt eine Sicherheitsreserve zurück und meldet das
-als Endpunkt.
+Dauer: der Host-Test begrenzt eine vollständige Suche gegen das modellierte
+Servo auf unter 12 s. Auf Hardware nicht gemessen.
 
-Mit den Standardeinstellungen dauert das knapp **acht Sekunden pro Ende**.
-Langsam ist Absicht: die Methode lebt davon, den Anschlag sanft zu *treffen*,
-nicht mit Schwung dahinter zu landen.
+### Schutzmechanismen
 
-### Was das Servo dabei schützt
+| Schutz | Wert | Wirkung |
+| --- | ---: | --- |
+| Stromobergrenze | 3,0 A | sofortiger Abbruch, bei jedem Messwert geprüft |
+| Stall-Timeout | über 1,0 A für 400 ms | Abbruch |
+| Schrittweite | 10 µs | ein Schritt kann das Horn nicht von frei bis hart an den Anschlag bewegen |
 
-| | |
-| --- | --- |
-| eine harte Stromobergrenze | bricht sofort ab, bei jedem Messwert geprüft |
-| ein Stall-Timeout | Strom über „arbeitet schwer" darf nicht andauern, egal wo |
-| die langsame Annäherung | ein einzelner Schritt kann das Horn nicht von frei bis hart an den Anschlag tragen |
+Alle drei laufen auf dem Koprozessor.
 
-Alle drei laufen auf dem Koprozessor, und keiner fragt vorher um Erlaubnis.
+### Ergebnisse
 
-### Das Ergebnis lesen
+- Ein Endpunkt wird bereits um 25 µs zurückgenommen gemeldet.
+- „Keine Endlage gefunden" heißt: die Suche hat 600 µs von der Mitte erreicht,
+  ohne dass das Gestänge angelaufen ist.
+- Eine Endlage nahe der Mitte kann eine Schwergängigkeit im Gestänge sein,
+  etwa ein klemmender Umlenkhebel oder eine streifende Schubstange, statt des
+  Endes des Ruderwegs.
 
-- Der gemeldete Endpunkt hat die Reserve schon abgezogen — er kann direkt
-  übernommen werden.
-- **„Keine Endlage gefunden"** heißt: der gesamte erlaubte Weg wurde
-  durchlaufen, ohne dass etwas geklemmt hat. Das ist eine echte Antwort, kein
-  Fehlschlag — im erlaubten Bereich gibt es schlicht keinen Anschlag.
-- Eine Endlage überraschend nah an der Mitte kann eine echte Schwergängigkeit
-  sein — ein klemmender Umlenkhebel, ein streifendes Gestänge — statt des
-  Endes des Ruderwegs. Die Suche sichert die üblichen Fälle ab, aber ein
-  Gestänge, das eine Messung wert ist, ist auch einen Blick wert.
+## Zwei Servos auf einer Ruderfläche abgleichen
 
-## Zwei Servos auf einer Ruderfläche abstimmen
+### Zweck
 
-### Warum
+Zwei Servos an einer Fläche (Doppelquerruder, geteiltes Höhenruder) arbeiten
+gegeneinander, sobald ihr Weg oder ihre Mitte nicht übereinstimmen, und ziehen
+dafür dauerhaft zusätzlichen Strom. Die Fläche zeigt kein sichtbares Zeichen.
 
-Zwei Servos an einer Fläche — Doppelquerruder, geteiltes Höhenruder — arbeiten
-gegeneinander, sobald Ruderweg oder Mittelstellung nicht übereinstimmen, und
-ziehen dafür dauerhaft zusätzlichen Strom. Am Modell sieht man davon nichts:
-die Fläche steht einfach da, steif, und braucht das Doppelte.
+### Verfahren
 
-### Was die Suche tut
+Die beiden hören am Punkt des kleinsten Gesamtstroms auf, gegeneinander zu
+arbeiten. Die Suche hält Servo A fest und fährt eine Korrektur an Servo B
+durch, in der Mitte und bei ±300 µs Ausschlag:
 
-Wo die beiden aufhören, gegeneinander zu arbeiten, ist der Gesamtstrom am
-niedrigsten. Die Suche fährt also eine Korrektur nach der anderen durch und
-sucht dieses **Minimum** — eine physikalische Antwort, keine Einschätzung. Die
-beiden Fehler trennen sich dabei sauber:
+- ein Unterschied in der Mitte ist ein Offsetfehler (Trimmung);
+- ein Unterschied an einem Ende ist ein Wegfehler für dieses Ende.
 
-- Kampf **in der Mitte** ist ein Offsetfehler
-- Kampf **an den Enden** ist ein Wegfehler
+Jeder Suchlauf deckt ±40 µs um den aktuell besten Punkt in 7 Schritten ab und
+engt dreimal ein. Jeder Punkt wartet 120 ms plus die Fahrzeit bei angenommenen
+0,8 µs/ms und mittelt den Strom dann über 100 ms. Ein Minimum gilt, wenn der
+Strom über den Suchlauf um mindestens 0,08 A schwankt. Die Stromobergrenze
+für das Paar liegt bei 4,0 A.
 
-Gemessen wird in der Mitte und an beiden Enden, und jede Korrektur ergibt sich
-aus ihrer eigenen Messung. Jedes Ende bekommt seinen eigenen Wert, denn sobald
-Horn und Gestänge im Spiel sind, ist kein Anlenkweg symmetrisch zur Mitte.
+Jedes Ende bekommt seine eigene Korrektur; ein Gestänge mit Horn und
+Schubstange ist nicht symmetrisch zur Mitte. Ein Stromsensor über das Paar
+genügt.
 
-Ein einziger Stromsensor **über das Paar** genügt — minimiert wird ja, was
-beide zusammen ziehen.
+### Ergebnisse
 
-### Das Ergebnis lesen
+- Ein Paar, das bereits abgeglichen ist, liefert ein Minimum bei Korrektur
+  null.
+- „Kein Minimum" heißt: der Strom schwankt über den breitesten Suchlauf um
+  weniger als 0,08 A.
+- Zwei Servos, die sich einig sind und beide falsch stehen, erzeugen keinen
+  Stromunterschied. Dieser Fall braucht den Beschleunigungssensor oder eine
+  Sichtprüfung.
 
-- Ein Paar, das schon zusammenpasst, liefert trotzdem ein sauberes Minimum —
-  bei **null Korrektur**. Das ist der gesunde Befund.
-- **„Kein Minimum"** heißt: der Sensor konnte über den breitesten Suchlauf
-  keinen Kampf auflösen. Das wird gemeldet — statt einer Korrektur, die aus
-  Rauschen zusammengesetzt wäre.
-- Was der Strom nicht sehen kann: zwei Servos, die sich einig sind und *beide*
-  falsch stehen. Eine Fläche, die nirgends steif ist, aber fünf Grad daneben
-  hängt, gibt dem Paar nichts, worüber es streiten könnte — dieser Fall
-  braucht den Beschleunigungssensor oder das Auge.
+## Voraussetzungen
 
-## Worauf beide warten
-
-Die PWM-Ausgänge des Koprozessors und Strommessung an den Servoausgängen — je
-Ausgang für die Endlagensuche, einer über das Paar für die Abstimmung. Wo das
-in der Reihenfolge der Arbeiten steht, sagt
-[das Protokoll](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).
+Der Ausgang für PWM (Pulsweitenmodulation) am Koprozessor und die
+Strommessung an den Servoausgängen: ein Sensor je Ausgang für die
+Endlagensuche, einer über das Paar für den Abgleich. Die Reihenfolge der
+Arbeiten steht in
+[STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).

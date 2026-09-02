@@ -1,11 +1,9 @@
 /*
- * The logger, checked against this project's own reader.
- *
- * Writing a file and looking at it proves nothing: the question is whether the
- * reader gets the numbers back, and the reader is the one that decides a
- * file's decimal convention from every value in it and rejects what does not
- * conform.  So every case here writes a run and parses it, and the assertion
- * is on what came out.
+ * The logger, checked against this project's own reader: every case writes a
+ * run, parses it with the CSV (comma-separated values) reader, and asserts on
+ * what comes out.  The reader decides a file's decimal convention from every
+ * value in it and rejects cells that do not conform, so a round trip proves
+ * the format.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -79,8 +77,8 @@ static int write_run(log_writer_t *w, int rows)
 /* -------------------------------------------------------- the round trip */
 
 /*
- * The case the whole file exists for: a run written by the logger is a run the
- * reader understands, without being told anything about it.
+ * A run written by the logger is a run the reader understands without being
+ * told anything about it.
  */
 TEST_CASE(a_written_run_reads_back)
 {
@@ -158,8 +156,8 @@ TEST_CASE(the_values_survive_the_round_trip)
 
     /*
      * A fresh source for the build.  analyse consumes the one it is given,
-     * and the log viewer opens the file again for exactly this reason --
-     * reusing it walks off the end of what has already been read.
+     * and the log viewer opens the file again for the same reason: reusing
+     * the source walks off the end of what is already read.
      */
     log_source_t src2;
     log_mem_ctx_t ctx2;
@@ -168,8 +166,8 @@ TEST_CASE(the_values_survive_the_round_trip)
     /*
      * Column 0 is the time axis and becomes data.time; the reader plots at
      * most LOG_MAX_SERIES at once, which is four, so four value columns are
-     * asked for rather than all eight.  That is the reader's design -- four
-     * traces on one time base -- not a limit of the file.
+     * asked for rather than all eight.  That is the reader's design (four
+     * traces on one time base), not a limit of the file.
      */
     int cols[LOG_MAX_SERIES];
     for (int i = 0; i < LOG_MAX_SERIES; ++i) { cols[i] = i + 1; }
@@ -223,7 +221,7 @@ TEST_CASE(the_header_is_written_once_and_without_being_asked)
 
     CHECK(log_writer_row(&w, 0.0f, &b));   /* never called the header */
     CHECK(log_writer_row(&w, 0.05f, &b));
-    CHECK(log_writer_header(&w));          /* asking now changes nothing */
+    CHECK(log_writer_header(&w));          /* a later call changes nothing */
 
     int seen = 0;
     for (const char *p = g_mem.buf; (p = strstr(p, "time (s)")) != NULL; ++p) {

@@ -1,369 +1,157 @@
 # Where rcbench stands
 
-The running record: what is true today, not what is intended. Every table here
-is updated by the commit that changes the answer, and several of them are held
-to the tree by `tools/check_docs.py` and `tools/coverage.py` so they cannot
-quietly rot.
+The running record: what exists, what is open, what is settled. The suite list,
+the module tree, the coverage table and every link are held to the tree by
+`tools/check_docs.py` and `tools/coverage.py`.
 
-[The README](README.md) is the short version; the
-[wiki](https://github.com/subtilitas/rcbench/wiki) is how to use what exists.
+[README.md](README.md) is the front page; the
+[wiki](https://github.com/subtilitas/rcbench/wiki) is the manual.
 
-## The split, and why there is one
+## Architecture
 
-The predecessor put all of it on the panel processor and ran into the same wall
-from four directions: one free fast GPIO, USB and CAN sharing a multiplexer, an
-ADC not accurate enough to quote a number from, and timing-critical work
-competing with a 39 Hz panel, PSRAM contention and an LCD interrupt.
-
-**An RP2350 daughterboard takes the whole electrical side.** Twelve PIO state
-machines — cycle-exact, DMA-fed, freely programmable — turn every awkward
-protocol into a program rather than a driver mode: S.BUS's inverted 8E2 at
-100 kbaud, one-wire half duplex at any rate, bidirectional DShot's 30 µs
-turnaround. Hardware PWM has RISE, FALL and LEVEL capture in silicon, so rpm and
-pulse measurement leave PIO entirely.
-
-The rule of thumb, and the one to settle arguments with:
-
-> **The daughterboard owns anything with a deadline. The panel owns anything
-> with an opinion.**
-
-And the constraint that follows it: **nothing raw crosses the link.** DShot bit
-timing, GCR decoding, S.BUS framing and pulse capture all die on the
-coprocessor; only results travel. Live telemetry, four channels of current and
-voltage batched to 100 Hz, decoded ESC frames and an accelerometer burst come to
-12–30 kB/s together — comfortably inside what the link carries, though the
-margin is about two-fold on CAN rather than the five-to-twelve RS485 was
-heading for. [The link](#the-link) has that arithmetic.
+Two processors. The coprocessor (RP2350) owns everything with a deadline; the
+panel (ESP32-S3) owns everything else. Nothing raw crosses the link: bit
+timing, GCR (group-coded recording) decoding, receiver framing and pulse
+capture stay on the coprocessor, and only results travel.
 
 | | Panel | Coprocessor |
 | --- | :---: | :---: |
-| UI, touch, screens, settings, card, network | ✔ | |
-| **Stop** | asserts the line **and** sends the command | honours the line unconditionally |
-| Servo outputs, PPM, narrow band | | ✔ |
-| S.BUS, iBUS, SUMD, CRSF, EX Bus, SRXL2 | | ✔ |
-| DShot, bidirectional DShot, telemetry decode | | ✔, results only |
-| One-wire programming, every baud rate | | ✔ |
-| Current, voltage, cells, internal resistance, rpm, temperature | | ✔ |
-| Accelerometer and index pulse | | ✔ — **one timebase**, which is what a phase measurement needs |
-| The balancing arithmetic, the plot, the verdict | ✔ | |
+| UI, touch, screens, settings, SD card | ✔ | |
+| Stop | drives the heartbeat line; sends the STOP command | honours the line; times out the link |
+| Servo outputs, PPM (pulse-position modulation), DShot, bidirectional DShot | | ✔ |
+| Receiver buses: S.BUS, iBUS, SUMD, CRSF, EX Bus, SRXL2 | | ✔ |
+| One-wire programming | | ✔ |
+| Current, voltage, cells, rpm (revolutions per minute), temperature | | ✔ |
+| Accelerometer and index pulse, one timebase | | ✔ |
+| Balancing arithmetic, plots, verdicts | ✔ | |
 | Power path, current limiting, protection | | ✔ |
-| CAN | | ✔ |
+| CAN | TWAI (Two-Wire Automotive Interface, the ESP32-S3's CAN controller) controller | XL2515 over SPI (Serial Peripheral Interface) |
 
-## Where things stand
+**Link.** Classic CAN at 1 Mbit/s. A 29-bit identifier carries priority, op,
+page, offset and count; a frame carries up to four registers; the transport
+does no reassembly; the coprocessor transmits only when asked. Worst-case
+payload 52 kB/s against 12 to 30 kB/s of expected traffic. Protocol version
+2.0. [Reference](docs/Link.md).
 
-| | Source | State |
-| --- | --- | --- |
-| Rasteriser and fonts, touch mapping | inherited | **ported**, with their suites green |
-| Theme, widgets, icons | inherited | **ported** |
-| Router | inherited | waits for the screens — it includes every one of them |
-| Settings model and screen | inherited | **ported**, with the whole of its suite |
-| Locale-tolerant CSV and number parsing | inherited | **ported**, with its fixtures |
-| Board, display, GT911, SD storage | inherited | **ported**: the panel boots, reports each step to the splash, and runs the shell |
-| Golden-image renderer, coverage, doc and frame-cost checks | inherited | to port as-is |
-| **The link codec** | new | framing, the page map, the dispatcher, both watchdogs and both transports — and a bench page that crosses the wire and reads back as the same `bench_state` |
-| **The safety heartbeat** | new | **built and driven at both ends**: the panel edges from the loop that owns STOP, the coprocessor judges the period in firmware and refuses to arm without it |
-| The shell — band, router, splash, menu | re-cut | **built**: STOP on every screen, screens handed a sub-canvas so they cannot draw over it |
-| **Motor & ESC bench** | re-cut | **built**: four traces on independent scales, hero readouts, throttle with presets, arm and reset — reading a `bench_state` the link or the simulator fills |
-| **Log viewer** | re-cut | **built**: browse, import with its evidence, plot with cursors |
-| **The logger** | new | **built**: a run is written while armed, in the format the viewer reads — checked by writing one and parsing it back |
-| **Setup** | re-cut | **built**, and the seven screen cases held back with it are restored |
-| The other two benches and three scaffolds | re-cut | routed and rendered; each says what it will do and what is blocking it |
-| Instrument widgets — plot, rails, hero, slider, tabs | re-cut | **built** and tested: the scale ladder, the shrink hysteresis, and the press-ownership contracts |
-| The simulation watermark | new | **built**: SIMULATION across the whole screen at 15% whenever the numbers are modelled, and no screen can opt out |
-| Coprocessor firmware | new | answers identity, status, control, bench and the three output pages over CAN, fails safe at 200 ms. **Run on silicon**: the bus is up at 1 Mbit/s with zero errors at either end |
-| Panel link transport | new | TWAI on GPIO19/20 through the board's multiplexer, poll loop with the one-second escalation and fragment reassembly. **Run on silicon** |
-| **The link moves to CAN** | new | **drivers at both ends, and a bring-up self-test that runs on silicon**: an echo across the bus that answers only "do frames cross intact", separately from whether the link works. The coprocessor echoes permanently; the panel side is opt-in because it costs native USB. [The procedure](docs/Bringup.md). The mapping and the bit timing are tested on the host, the coprocessor's pins came from the vendor's own driver rather than a guess,
-while the panel's TWAI pins are inferred from the multiplexer and still want
-tracing on the schematic; the drivers are not. A coprocessor module with an XL2515 controller and a SIT65HVD230 transceiver, against the panel's own CAN path — which the board already has, multiplexed with USB. `link_msg_t` never knew what carried it, so the dispatcher is unchanged and this is an added transport rather than a rewrite. [What it buys and costs](docs/Link.md) |
-| **Bring-up diagnosis** | new | **built**: both ends' counters compared and the most fundamental fault named rather than the loudest — a return path that never releases looks nothing like a dead coprocessor once the far end's own frame count is in the room. The coprocessor now fills the three STATUS registers it had always declared and never written. [The procedure](docs/Bringup.md) |
-| **The heartbeat** | new | **driven**: edges from the render loop, dropped the instant STOP latches or touch stops answering. The monostable it gates is not fitted, so today the edges reach a header pin and a scope |
-| Throttle output on the panel | **removed** | GPIO6 is the heartbeat; the panel emits no servo pulse |
-| **S.BUS** | new | **decoded and tested**: sixteen channels of eleven bits, the two digital ones, and both flags. Framed on the inter-frame gap rather than on a header byte that is also an ordinary channel value — see [the receiver buses](docs/Receivers.md). The inverted 8E2 receiver that produces the bytes is a PIO program and is not written |
-| **The OpenYGE ESC protocol** | **elsewhere** | the implementation is being carried in a separate repository, so nothing further is done here. [The specification](docs/OpenYGE.md) stays: it is the document of record, it is going to YGE to be checked, and the CRC seed and decoder shape it settles are the panel link's too. The codec in `shared/openyge/` is **dormant** — built, tested, wired into nothing |
-| **Output pages on the link** | new | **built and tested**: the servo page is gone, replaced by three that carry a proportion of travel rather than a servo's own microseconds — `CHANNELS` (what each output is asked for), `CHAN_CFG` (what a channel is: throttle or surface, its slew, its pulse endpoints) and `OUTPUTS` (which driver renders which channels, on which pin). A pulse outside its range is *clamped* and an endpoint a servo cannot take is *refused*, the same two answers the servo page gave. This is the wire catching up with the [output intermediary](#every-output-goes-through-one-place): a protocol is now a driver in a table, not a page of its own, so DShot is a row rather than a rewrite. `LINK_PROTOCOL_MAJOR` goes to 2 — the servo page's number is retired rather than reused, so an old panel cannot write a pulse into a driver table and be acknowledged. Still missing is the PWM at the far end: the pages are answered, and nothing yet turns a command into an edge |
-| **Finding a servo's installed limit** | new | **the search is built and tested** against a modelled servo — the knee in current against position, with three protections. It has nothing to drive until the coprocessor has PWM and a sensor per output |
-| **Synchronising two servos on one surface** | new | **built and tested**: total current minimised at centre and at each end, which separates an offset error from a travel error. Waiting on the same sensor |
-| Servo programmer | **held** | the KST work stays in the predecessor until asked for |
+**Safety.** The panel's render loop toggles GPIO6 (J8). The coprocessor's
+outputs are to be gated by a retriggerable monostable with a window of about
+150 ms, and the line is checked in firmware (4 to 150 ms between edges, four
+good intervals before it is trusted). The coprocessor fails safe after 200 ms
+of link silence; the panel escalates after 1 s. [Reference](docs/Safety.md).
+
+**Outputs.** Every output is a channel (0 to 1000 of its own travel) with a
+role (throttle or surface) rendered by a driver from a table (PWM (pulse-width
+modulation), PPM, DShot). Arming, clamping, slew and the silence timeout are
+implemented once, in `shared/outputs/`, and used by both processors. On the
+wire: the `CHANNELS`, `CHAN_CFG` and `OUTPUTS` pages.
+
+## State
+
+| Subsystem | State |
+| --- | --- |
+| Rasteriser, fonts, touch mapping, theme, widgets, icons, router | built and tested |
+| Settings model and screen | built and tested on the host. The panel loads and saves the values in NVS (non-volatile storage) through `firmware/panel/components/settings_nvs/`; not run on hardware |
+| CSV (comma-separated values) and number parsing, log viewer | built and tested against the fixture corpus |
+| Logger | built: a run is written while armed, in the format the viewer reads |
+| Board, display, GT911, SD card | built; the panel boots and reports each step on the splash |
+| Shell: band, router, splash, menu, simulation watermark | built |
+| Motor & ESC (electronic speed controller) screen | built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the throttle are written to the coprocessor's control page at every 50 ms poll while the link is up; an arm writes CLEAR first and a NACK leaves the panel disarmed. Not run on hardware |
+| Servo screen | built; writes `CHAN_CFG`, `OUTPUTS` and `CHANNELS` over the link |
+| Analyser, programmer, balance, battery screens | built, rendered from models |
+| Link codec, page map, dispatcher, both watchdogs, CAN framing | built and tested on the host |
+| CAN drivers (TWAI on the panel, XL2515 on the coprocessor) and the echo self-test | built; run on hardware at 1 Mbit/s with zero errors at either end |
+| Bring-up diagnosis, both ends' counters compared | built |
+| Heartbeat generator and monitor | built and driven at both ends; the monostable is not fitted |
+| Coprocessor firmware | answers the identity, status, control, bench and three output pages; fails safe at 200 ms; the numbers are simulated |
+| Output drivers (PWM, PPM, DShot) | not started; no driver produces an edge on a pin |
+| S.BUS decoder | built and tested; the PIO (programmable input/output) receiver is not written |
+| Other receiver buses | not started |
+| Servo limit search, servo synchronisation | built and tested against a modelled servo |
+| OpenYGE codec | built and tested; not wired in. The implementation is pursued in a separate repository |
+| Measurement front end | parts selected, nothing fitted: [hardware](hardware/STATUS.md) |
+| Servo programmer | Hitec table in the programmer screen; KST (a servo manufacturer) held at the owner's request |
 
 ## The tree
 
 ```
 rcbench/
-  README.md  LICENSE  .gitattributes  .gitignore
+  README.md  README-de.md  STATUS.md  CONTRIBUTING.md  SECURITY.md
+  LICENSE  NOTICE  .gitattributes  .gitignore
   .github/workflows/      ci · docs · release
-  docs/                   the wiki source
+  .clang-tidy  .cppcheck-suppress  ruff.toml  codecov.yml
+  docs/                   the wiki source, English and German
   tools/                  render_ui · coverage · check_docs · frame_cost
                           gen_font · wiki_links
+  hardware/               board design record: README, STATUS, docs/
 
-  shared/                 pure C — no ESP-IDF, no pico-sdk, no FreeRTOS types
+  shared/                 pure C: no ESP-IDF, no pico-sdk, no FreeRTOS types
     gfx/                  rasteriser and three fonts
     touch/                coordinate and event mapping
     ui/                   theme · widgets · icons · router · screens
     settings/             typed schema and values
     logfile/              number and CSV parsing
-    link/                 messages · CAN framing · pages · watchdogs · diagnosis
-    bench/                bench_state · simulator
+    link/                 page protocol · CAN framing · watchdogs · diagnosis
+    bench/                bench_state · telemetry simulator · log writer
     outputs/              channels · driver table · arming, slew and staleness
+    safety/               heartbeat generator and monitor
+    servo/                limit and synchronisation searches · servo model
+    can/                  bit timing · MCP2515 registers · echo self-test
+    sbus/                 S.BUS decoder
+    openyge/              OpenYGE framing, status and parameter cache
 
   firmware/panel/         ESP-IDF
-    main/                 main.c
+    main/                 main.c · selftest.c
     components/           board · display · gt911 · storage · can_twai
     sdkconfig.defaults  partitions.csv
 
-  firmware/iomcu/         pico-sdk — the coprocessor
-    src/                  main · link_uart · heartbeat_in · safety · pages/
-    pio/                  dshot.pio
+  firmware/iomcu/         pico-sdk
+    src/                  main.c · xl2515.c
     include/iomcu_pins.h
 
-  test/host/              one suite over shared/ and its fakes
-    fakes/                transport · clock · filesystem
+  test/host/              one suite over shared/
     fixtures/             the CSV corpus the parser is held to
 ```
-
-Everything that decides something is pure C with no vendor SDK; everything that
-touches hardware is not. That split is what makes the host suite, the coverage
-numbers and the golden-image check possible — and here it runs across two
-processors.
 
 ### Who compiles what
 
 | Module | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
-| `gfx` · `touch` · `ui` · `settings` · `logfile` | ✔ | | ✔ |
-| `link` | ✔ | ✔ | ✔ |
-| `bench` | ✔ | ✔ | ✔ |
+| `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
+| `link` · `bench` · `outputs` · `safety` · `can` | ✔ | ✔ | ✔ |
+| `servo` · `openyge` | | ✔ | ✔ |
 
-`link` is the only module all three compile, and that is the point of it.
-`bench` splits by header rather than by directory: `bench_state.h` is the model
-the panel renders, `throttle.c` is the arm interlock and the slew limit, which
-compile into the coprocessor — because that is where the output is now.
-
-Screens stay in `shared/ui/` rather than under `firmware/panel/`. They are pure
-C over a canvas and own no hardware, which is what lets the identical code
-render to a PNG on a laptop, and what lets the navigation and hit-region tests
-exist at all.
-
-Each module carries one ten-line `CMakeLists.txt` that answers to whichever
-build system is asking — `idf_component_register()` under `ESP_PLATFORM`, a
-plain `add_library()` otherwise. The panel sets `EXTRA_COMPONENT_DIRS` and gets
-every module as a first-class component; the coprocessor and the host suite
-`add_subdirectory()` the ones they want. No wrapper components, and no source
-list written down twice. It puts one `if(ESP_PLATFORM)` in a directory that
-claims no vendor SDK — that claim is about the C, and the alternative is
-twenty-one files of indirection to avoid one conditional.
-
-Includes are flat: `#include "gfx.h"`, not `"rcbench/gfx.h"`.
-
-## Every output goes through one place
-
-There were two sets of output rules and they disagreed.
-
-`throttle.c` had all three of the ones that matter -- a command set while
-disarmed is remembered and not emitted, disarming drops to idle with no ramp,
-and it refuses to hold a throttle nobody is watching -- and it ran on the
-panel, driving the motor task. The servo page was built on the coprocessor,
-answered the same questions again, and answered two of them differently: it
-clamped and it checked arming, and it had no staleness rule at all, so a servo
-held its last pulse for as long as the wire stayed up.
-
-Two processors, two answers, and nothing that could have noticed.
-
-The failsafe path showed the same shape. It cleared the control page and said
-so in a comment -- *"written and reachable now rather than added once there is
-something to forget to add it to"* -- and then the servo page was added and
-nobody added it there. Latent only because nothing yet puts an edge on a pin.
-
-Neither was a bug in either path. Both were one bug: **a rule that has to hold
-for every output, written into one output.**
-
-So `shared/outputs/` owns them once.
-
-A **channel** is a normalised command and a role. Screens and procedures write
-channels and none of them knows what is on the wire. The unit is a thousandth
-of the channel's own travel, because it cannot be the protocol's -- microseconds
-mean nothing to DShot and a DShot code means nothing to a servo, and what both
-have is a proportion.
-
-The **role** is the one thing a command cannot say: where rest is, and which
-direction is safe. A throttle rests stopped and its slew is asymmetric, because
-ramping it down is a slew limit on stopping. A surface rests centred and its
-slew is symmetric, because for a surface neither direction is the safe one.
-
-A **driver** declares what it is shaped like, and the table is what a naive
-version gets wrong:
-
-| | channels | pins | reads back |
-| --- | --- | --- | --- |
-| PWM | 1 | 1 | no |
-| PPM | 1–8 | 1 | no |
-| DShot | 1 | 1 | **yes** |
-
-PPM is eight channels on one pin, so the mapping is not one-to-one and cannot
-be. Bidirectional DShot listens on the pin it just drove, so "how many pins"
-and "is it only an output" are separate questions.
-
-That table also buys two checks nothing else could make. A page per protocol
-sees only its own pins and its own channels, so nothing in that arrangement can
-notice **two drivers on one pin**, or **two rendering the same channel to
-different wires**. Both are refused now, and both are silent until something
-moves that should not.
-
-Arming, clamping, slew and the silence timeout are answered here and nowhere
-else. It is pure logic with no pin in it, so it is host-tested to the edge
-cases before anything toggles. Only turning a command into edges is
-per-protocol, and that is the coprocessor's.
-
-`throttle.c` is gone. The panel's motor task runs on the bank now, with the
-same 55 %/s ramp expressed as a proportion of travel rather than a percentage
--- so the number means the same thing on an output whose travel is not
-measured in percent. Keeping the old model would have left the second opinion
-in place, which is the thing this exists to prevent.
-
-**On the wire.** The link now says it too. The servo page is retired and three
-took its place: `CHAN_CFG` (a channel's role, slew and pulse endpoints),
-`OUTPUTS` (per slot: driver, pin, the run of channels it renders, rate) and the
-hot `CHANNELS` page (a command per output, in thousandths of travel). A protocol
-is a driver number in the `OUTPUTS` table, so **DShot is a row rather than a
-page** -- which was the whole point. The mapping and its validation live in
-`shared/outputs/outputs_pages.c`, host-tested, so the arithmetic that turns a
-microsecond pulse into a proportion of travel is checked on a laptop rather than
-only where CI compiles the coprocessor. `LINK_PROTOCOL_MAJOR` is 2: the servo
-page's number is retired, not reused, so an old panel cannot write a pulse into
-a driver table and be told it worked.
-
-**Still to come.** The last step -- a command becoming an edge on a pin. The
-pages are answered and the bank is driven; no driver yet toggles a GPIO. DShot
-is first, because by now it costs a table row and a PIO program.
-
-## The link
-
-**CAN, 1 Mbit/s**, between the panel's TWAI controller and an XL2515 on the
-coprocessor. It began as half-duplex RS485 because that is what the panel
-brought out; the board turned out to have a CAN path already, multiplexed
-against USB, and the coprocessor module arrived with a controller on it.
-
-The protocol above it did not change, and that is the point. It copies
-ArduPilot's **IOMCU**, which has flown the same problem for a decade:
-
-- **A page and register model.** Every transaction is a page, an offset and a
-  count over up to 32 sixteen-bit registers. A new feature adds a page, not a
-  message type.
-- **Strictly host-polled. The coprocessor never speaks unsolicited.** That rule
-  predates CAN and is kept even though arbitration would now make an
-  unsolicited frame harmless.
-- **Two watchdogs, the tighter on the coprocessor.** It fills failsafe values
-  after 200 ms of silence on its own authority; the host escalates after a
-  second. **Traffic returning does not lift the failsafe** — a link that
-  recovers is not consent to spin a propeller, so leaving it takes a deliberate
-  write of a known value to the control page.
-- **The coprocessor protects hardware without asking** — overcurrent,
-  over-temperature, stall timeout, lost link — and reports what it did at the
-  next poll. It never waits for permission to fail safe.
-
-`link_msg_t` never knew what carried it, and `link_dev_dispatch` — which
-decides what to answer — has no transport in it at all. That is what let the
-byte transport be **deleted** rather than adapted when the wire changed:
-the dispatcher, the page map, both watchdogs and their tests were untouched.
-
-### What CAN changed, and what it cost
-
-Arbitration replaces taking turns, so there is no direction line. With it went
-the RC one-shot, the turnaround wait, the ~125 kbaud floor, an unmeasured FET
-threshold and a 5 V transceiver hazard — two open questions in this record
-closed by ceasing to be askable. The controller also brings a 15-bit CRC, an
-acknowledge slot, automatic retransmission and bus-off confinement, none of
-which had to be written.
-
-**Priority became a property of the address.** CAN arbitrates by identifier,
-lowest wins, so a write to the control page outranks every telemetry read *on
-the wire*, against traffic already in flight, with no software involved at
-either end. RS485 could not promise that at any baud rate.
-
-The cost is bandwidth. TWAI is classic CAN only — 1 Mbit/s, eight data bytes a
-frame:
-
-| | payload |
-| --- | ---: |
-| Classic CAN, 1 Mbit/s, 29-bit IDs, worst-case stuffing | **52 kB/s** |
-| RS485 at the 1.5 Mbaud it was heading for | 133 kB/s |
-
-Against the 12–30 kB/s that actually crosses, the margin fell from five-to-
-twelve times to about two. A `bench_state` poll is thirteen registers, five
-frames, **1.55% of the bus at 20 Hz**, and a 60 kB coprocessor image takes
-1.2 s. Two is enough — but this record said twelve, and now says two.
-
-The 29-bit identifier holds exactly the fields the message already had:
-priority, op, page, offset, count. Three things fall out of that. A read has
-**no payload**, because the whole question is its address. **Nothing is
-reassembled at the transport**: each frame carries its own offset and count, so
-a thirteen-register reply is four independent messages and a dropped one costs
-one register range rather than a transfer. And the **frame CRC is gone**,
-because carrying another two bytes would spend a quarter of an eight-byte
-payload duplicating what the controller already did.
-
-[The link](docs/Link.md) has the identifier layout, the bit timing and the
-arithmetic; [bringing it up](docs/Bringup.md) has the procedure.
-
-## The safety line is a heartbeat, not an enable
-
-A static enable-high line fails the most likely failure — firmware wedges with
-the pin still high and the outputs stay live. So the loop that draws the STOP
-button and reads touch edges **GPIO6**, and the coprocessor's output enable and
-its servo and ESC power path are gated from a retriggerable monostable.
-
-The rate follows that loop, because that is the loop whose liveness is being
-asserted: it asks for an edge every 20 ms and gets one every 26–52 ms — 39 Hz
-with nothing changing, 19.5 Hz on the frames a telemetry sample lands. The
-coprocessor accepts intervals from 4 to 150 ms and wants four consecutive good
-ones before it will believe the line. **This supersedes the 100 Hz–1 kHz and
-20–50 ms figures this record used to carry**, which predate the panel having a
-measured frame rate; a 50 ms monostable would drop the outputs on every second
-frame of a bench under load. The window belongs at roughly 150 ms, which is
-still well inside the coprocessor's 200 ms link failsafe —
-[Safety](docs/Safety.md) has the arithmetic.
-
-A crash, a wedged task, a reset, a brown-out and an unplugged cable then present
-identically: no edges, so no output. Fail-safe by absence, in hardware,
-independent of firmware at both ends. Noise can fake a heartbeat, so the
-monostable is the crude backstop and the coprocessor checks the period as well.
-
-Three independent mechanisms result: a pressed stop travels as a command **and**
-stops the heartbeat, a hung host stops the heartbeat, and a dead link trips the
-coprocessor's silence watchdog. The panel's own rule sits behind all three — it
-disarms, and refuses to re-arm, if the touch controller stops answering for
-500 ms, since the panel is the only place a STOP button exists.
-
-This is why the panel no longer drives a servo pulse at all. GPIO6 was the
-throttle output; it has one job now.
+Each module carries one `CMakeLists.txt` that registers an IDF component under
+`ESP_PLATFORM` and a static library otherwise. The panel sets
+`EXTRA_COMPONENT_DIRS`; the coprocessor and the host suite use
+`add_subdirectory()`. Includes are flat: `#include "gfx.h"`.
 
 ## Tests and CI
 
+CI (continuous integration) runs the workflows below on GitHub Actions.
+
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
-| `ci.yml` | push / PR / tag `v*` / manual | host suite; the same suite again under ASan and UBSan; coverage `--check` and the Codecov upload; the font, frame-cost, golden-image and documentation checks; clang-tidy, cppcheck and ruff; the ESP-IDF matrix (v5.4, v5.5) building the panel; the pico-sdk build of the coprocessor; and firmware artifacts including a merged panel image that flashes to `0x0` on its own |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload; the font, frame-cost, screenshot, docs and wiki-link checks; clang-tidy, cppcheck and ruff; the ESP-IDF (Espressif Internet-of-Things Development Framework) matrix (v5.4, v5.5) building the panel; the pico-sdk build of the coprocessor; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
-| `release.yml` | tag `v*` | builds both images, packages them, opens a release |
+| `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release |
 
-32 binaries, each printing one line per case: `test_gfx`,
-`test_touch_map`, `test_nav`, `test_widgets`, `test_bench`, `test_motor`,
-`test_servo`, `test_analyser`, `test_programmer`, `test_balance`, `test_battery`, `test_settings`,
-`test_logfile`, `test_link_crc`, `test_link_pages`,
+The host suite is 32 binaries, one line per case: `test_gfx`, `test_touch_map`,
+`test_nav`, `test_widgets`, `test_bench`, `test_motor`, `test_servo`,
+`test_analyser`, `test_programmer`, `test_balance`, `test_battery`,
+`test_settings`, `test_logfile`, `test_link_crc`, `test_link_pages`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
 `test_link_can`, `test_outputs`, `test_can_timing`, `test_can_selftest`,
-`test_mcp2515`,
-`test_heartbeat`,
-`test_servo_limit`, `test_servo_sync`, `test_sbus`, `test_openyge_frame`,
-`test_openyge_status`, `test_openyge_params`, `test_logview` and
-`test_logwriter`. The
-harness is `test/host/greatest.h`, about a hundred lines, with nothing
-vendored. `tools/check_docs.py` holds that list to this file — a page in the
-predecessor said *seven* for two releases after it was ten, and nobody reads a
-doc looking for that.
+`test_mcp2515`, `test_heartbeat`, `test_servo_limit`, `test_servo_sync`,
+`test_sbus`, `test_openyge_frame`, `test_openyge_status`,
+`test_openyge_params`, `test_logview` and `test_logwriter`. The harness is
+`test/host/greatest.h`, written for this project. `tools/check_docs.py` holds
+this list to `test/host/CMakeLists.txt`.
 
-All five tools run in CI again: `render_ui.py --check` holds fourteen committed
-screenshots to the current render, and `frame_cost.py` holds a bench frame to
-15,600 cache-line fills and a chrome-cached one to 2,000. A frame between
-samples currently costs **740**.
+Coverage floors: 94% overall, 85% for every file except `stub_screen.c`, which
+is exempt by name. `tools/coverage.py --check` fails on drift of the table
+below. `render_ui.py --check` holds 23 committed screenshots to the current
+render; `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
+chrome-cached screen to 2,000.
 
 <!-- coverage:start -->
 | File | Lines | Covered | Coverage |
@@ -422,136 +210,81 @@ samples currently costs **740**.
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
 
-`docs/` starts nearly empty on purpose — Home, the manifest, the link, the
-safety line and building. Every other page is written by the commit that lands
-the code it describes, rather than ported ahead of it. Accurate prose about a
-subsystem that is not here yet is still a page nothing references, and
-`check_docs.py` holds the prose to the tree precisely so that cannot drift.
+## Open items
 
-Coverage lands in this file and CI runs `--check`, which fails on drift rather
-than committing a fixup — a file that rewrites itself is one nobody reads the
-diff of. There are two floors, not one: the whole must clear 94%, and **no
-single file may fall below 85%** — because a healthy total hides a starved file,
-which it did, with a balance screen at 73% under a green badge. The per-file
-floor is what makes an untested new screen fail the build rather than dilute the
-number. What the screens *look like* is a separate question, answered by golden
-images the same renderer produces on a laptop.
+| Item | State | Needs |
+| --- | --- | --- |
+| Control page and settings persistence on hardware | both written after the last hardware session; the coprocessor's NOT_ARMED refusal, the failsafe clear and the NVS round trip are host-tested at the shared/ level only | a session with both boards: arm, stop, unplug the link, arm again |
+| Output drivers | no PWM, PPM or DShot driver produces an edge | PWM on the RP2350's hardware PWM first; DShot as a PIO program |
+| Coprocessor board file | the build uses `pimoroni_pico_plus2_rp2350` (RP2350B, 16 MB flash); the bring-up module is a Waveshare RP2350-CAN (RP2350A, 4 MB flash) | a board header for the module, or a `-DPICO_BOARD` in CI; the final board is an RP2350B for the 27 to 32 GPIO (general-purpose input/output) the pin budget needs |
+| Panel TWAI pins | GPIO19 (RX) and GPIO20 (TX) inferred from the multiplexer; confirmed empirically by the bring-up | trace on the schematic |
+| UART (universal asynchronous receiver-transmitter) socket GPIOs | UART0's default pins assumed for the bridged USB-C socket; the secondary USB-Serial-JTAG (the ESP32-S3's built-in USB (Universal Serial Bus) serial and debug bridge) console covers a mismatch | read off the schematic |
+| S.BUS receiver | decoder built; the inverted 8E2 receiver at 100 kbaud is a PIO program that is not written | PIO program |
+| Measurement front end | INA238 (motor), INA745A (servo rail), BQ25887 (pack) and TPS55288 (servo supply) selected; no schematic | [hardware record](hardware/STATUS.md) |
+| Monostable | not on any board | hardware |
+| OpenYGE wire facts | seven items want a capture: rpm scale, CRC (cyclic redundancy check) seed, frame length, legacy header, turnaround, parameter indices, `status2` | an ESC and a logic analyser; [list](docs/OpenYGE.md#8-what-to-measure-before-trusting-this-page) |
+| The bench in a browser | serving the interface to a browser on another machine is open; a browser on the panel is not planned. There is no network stack in the tree: no Wi-Fi bring-up, no sockets, no HTTP (Hypertext Transfer Protocol), and Wi-Fi costs internal RAM and CPU time on a board whose frame budget is spent. The safety line is a heartbeat, and a remote client cannot hold one: a browser that stops answering is indistinguishable from one whose user is idle | a read-only client (numbers, plots and logs out; arming, throttle and STOP stay at the panel), and before any code, a written answer to how a remote session proves it is still present |
+| Interface language | about 430 user-visible strings are literals in ten screens, 168 of them the programmer's parameter names and help | an X-macro string table with one ID per string, a table per language, and a fallback to English; deferred until the screens stop changing |
 
-What the link has to survive on that laptop, before it ever sees a wire: every
-bit position of the extended identifier checked against the datasheet, a reply
-wider than a frame reassembled from pieces that arrive back to front, a lost
-piece leaving a request unanswered rather than half-answered, a reply to an
-abandoned question refused, both watchdogs against a mock clock including two
-timeouts in a row, and register round-trips at both ends of every range.
+## Constraints
 
-The CRC lives on for [OpenYGE](docs/OpenYGE.md), which needs the same
-polynomial with a different seed. The link itself no longer has one: CAN
-carries a CRC, an acknowledge slot and retransmission in silicon.
+- The XL2515 module's crystal is 16 MHz; `test_can_timing` pins it. An 8 MHz
+  part caps the bus at 500 kbit/s.
+- No 5 V transceiver is in the path: the SIT65HVD230 is a 3.3 V part. A 5 V
+  transceiver on RP2350 bank 0 needs a 2.2 kΩ series resistor on RO, because
+  the 3.3 V rail comes up after the 5 V rail on a module build.
+- Native USB and CAN are exclusive on GPIO19/20. The console is UART0 with
+  USB-Serial-JTAG as secondary.
+- The motor monitor is the INA238. The INA228 has no stock at either vendor
+  (checked 2026-09-01); one footprint takes either, and DEVICE_ID says which is
+  fitted.
+- The monostable window is 150 ms.
+- The link is CAN only. There is no RS485 transceiver, direction circuit or
+  turnaround in the design.
+- Every stop latches; nothing re-arms on its own.
 
-## What is still unsettled
+## Not planned
 
-Of the six this list started with, three were closed by reading the board
-schematic — the link's pins, whether GPIO6 reaches a connector, and the
-direction circuit's turnaround. A fourth was closed by being answered wrongly:
-the question was which end set a baud *ceiling*, and there was no ceiling. The
-last two were closed by the move to CAN, which is a stronger kind of closed:
-the direction circuit they were about no longer exists.
+- **Configuration over JETI EX Bus.** The specification restricts remote
+  configuration to JETI products and does not document it.
+- **BLHeli_32 parameters.** The information is not published; the rights holder
+  declined in August 2026. [Details](docs/BLHeli32.md).
+- **Futaba S.BUS2 telemetry slots.** Answering in the 325 µs slot without
+  colliding with the receiver's own sensors is out of scope.
+- **A USB oscilloscope.** The ESP32-S3's USB is full speed only.
+- **A web browser on the panel.** The leanest headless Chromium build is
+  over 100 MB against a 3 MB app partition; one blank tab needs more memory
+  than the board's PSRAM, of which 1.5 MB is the two framebuffers; and the
+  multi-process sandbox and the JIT (just-in-time compiler) need processes,
+  an MMU (memory management unit) and a POSIX layer, none of which exist
+  here. A cut-down HTML renderer would compete with the screens for the
+  976 KiB per frame of PSRAM traffic in [the budget](docs/Performance.md).
+  The other direction, a browser elsewhere reading this interface, is in the
+  [open items](#open-items).
+- **KST servo programming.** Held at the owner's request.
 
-Four are open. Two more were closed by the move to CAN — and closed in the
-strong sense: the questions stop being asked rather than being answered, which
-is what replacing a mechanism does that fixing one does not. They are kept
-below because the reasoning applies again to anybody who fits RS485.
+Every protocol is implemented from its published specification. Nearly every
+open implementation of these protocols is GPL (GNU General Public License) or
+AGPL (GNU Affero General Public License) against this repository's MIT
+(Massachusetts Institute of Technology) licence; the permissive exceptions
+(PX4's receiver decoders under BSD (Berkeley Software Distribution), MIT
+reference code for SRXL2, JETI EX Bus, DShot and DroneCAN) are read for
+confirmation only. OpenYGE's source material was supplied as GPL code and is
+kept outside the repository; the specification in
+[docs/OpenYGE.md](docs/OpenYGE.md) is what any implementation is written from.
 
-| | Where it stands |
+## Order of work
+
+| Step | State |
 | --- | --- |
-| ~~**The XL2515's crystal**~~ | **Closed: it is 16 MHz**, so 1 Mbit/s is reachable exactly and the budget stands at 51.6 kB/s against the 12–30 that crosses. Determined rather than assumed — the vendor's driver carries CNF triples for ten standard rates, and each decodes to its advertised rate at 16 MHz and at no other crystal. `test_can_timing` pins it, so a module with a different can fails a test rather than a bus. An 8 MHz part would have capped the link at 500 kbit/s and 25.8 kB/s, short at the top of the range. |
-| **INA228** is the sensing part | **It is not, because it cannot be bought.** Right on merit — 85 V, twenty bits, charge and energy accumulated in hardware — and on 2026-09-01 both vendors held none, with a 16-week manufacturer lead. The half of this entry that was wrong: the substitute that stops at 36 V is the INA226. **The INA238 is 85 V**, the same two shunt ranges, the same accumulators, the same VSSOP-10 and the same pin order, for sixteen bits instead of twenty — which at 300 A is 25 mA of resolution against noise the measurement already has. One footprint takes either, and DEVICE_ID says which arrived. What stays open is the servo rail beside it: [the power path](hardware/docs/Power.md) has the parts and [Sourcing](hardware/docs/Sourcing.md) has why a stock figure from a mirror is not one. |
-| ~~**A 5 V transceiver against the RP2350's power-up order**~~ | **Closed by CAN.** The coprocessor module's SIT65HVD230 is a 3.3 V part, so there is no 5 V anywhere in the path. The original concern, kept because it returns with any 5 V transceiver: Bank 0 is 5 V tolerant only while the 3.3 V rail is up, and on a module build the 5 V rail comes up first — so at every power-on the transceiver can drive 5 V into an unpowered input. A 2.2 kΩ series resistor on RO bounds the clamp current for eleven nanoseconds of edge. |
-| **The interface is in English, in place** | About 430 user-visible strings sit as literals in ten screens, 168 of them the programmer's parameter names and help. Moving them out is mechanical and the verification is unusually strong -- the golden images must come out byte-identical, same text from a different source -- but it is a large single change and it is deferred rather than half-done. The shape when it happens: an X-macro list so each string's ID and its English text are declared on one line and cannot drift apart, a table per language, and a lookup that falls back to English on any missing entry so a partial translation shows text rather than blanks. The programmer's tables would carry string ids instead of literals, which suits them, since they already carry everything else about a parameter. |
-| **Seven OpenYGE numbers want a logic analyser** | The protocol came from YGE's developer as code rather than as a document, and code answers "what does this do" rather than "what does the wire guarantee". The RPM scale is the one that actually contradicts itself — the field is described as 0.1 eRPM and multiplied by ten — and a wrong answer there is a tachometer that reads a hundredfold out. [The spec](docs/OpenYGE.md) lists all seven; each is one measurement, and the parameter indices want confirming before anything is *written* to an ESC. |
-| ~~**Q1's threshold voltage is not on the schematic**~~ | **Closed by CAN.** The direction circuit's hold time set the baud floor, and CAN has no direction circuit. The schematic names R76, C51, D7 and R79 but not the FET, so the floor was quoted from the pessimistic end of a plausible range (1.0 V → 72 µs → 125 kbaud); one scope capture would still settle it if RS485 is ever fitted again. |
-| ~~**The panel's console shares a multiplexer with CAN**~~ | **Closed.** Native USB — USB-Serial-JTAG and USB-OTG both — is on GPIO19/20, dedicated analog pins the matrix cannot move, and those are what the FSUSB42UMX switches against CAN. So selecting CAN costs the native console whichever way the mux is wired. The board has a second USB-C socket behind a USB-UART bridge, which shares nothing with CAN, so the console is now **UART0 primary with USB-Serial-JTAG as secondary** — output goes to both and whichever socket is plugged in shows it. One thing left to confirm from the schematic: which GPIOs the bridged socket lands on. UART0's defaults are assumed, and the assumption fails soft, because the secondary still works whenever USB is selected. |
-| **The bench in a browser** | The question arrives as "could Chromium run on the panel", and that half is [settled below](#what-is-deliberately-not-built). The inversion is open, and it is the useful half: serve the interface over the network and let the browser run on the machine that already has one. Two things stand in the way and only one of them is work. **The work:** there is no network stack in this tree at all — no Wi-Fi bring-up, no sockets, no HTTP — so the panel's ✔ for *network* in [the split](#the-split-and-why-there-is-one) is ownership rather than code, and Wi-Fi wants internal RAM and CPU on a board whose frame is already spent before it starts. **The question:** the safety line is a heartbeat, not an enable, and *a remote client cannot hold one*. A browser that stopped answering looks exactly like a browser whose user is thinking, and a STOP that has to cross Wi-Fi is not a stop. So the shape, if it happens, is a read-only client — numbers, plots and logs go out; arming, throttle and STOP stay at the panel, where the hand and the heartbeat are. Anything further needs an answer to how a remote session proves it is still there, and that answer wants writing before any code. |
+| 1. Foundation: tree, ported modules with tests, tools and CI, link codec, heartbeat, coprocessor skeleton, screens | done |
+| 2. The link on hardware | done 2026-08-28: 1 Mbit/s, zero errors at either end |
+| 3. Measured numbers: ESC telemetry or bidirectional DShot, and the current sensor | open. Parts selected, nothing fitted. OpenYGE is pursued in a separate repository; what returns is a source that fills `bench_state` |
+| 4. Recording: the logger, and the viewer reads what the bench wrote | done |
+| 5. Outputs: the control page from the panel, then PWM, then the sum-signal protocols | open. The pages and the output bank exist; no driver and no control-page write |
+| 6. Receiver buses, one decoder at a time | S.BUS decoded; the PIO receiver and the other buses open |
+| 7. Programming: BLHeli_S and AM32, Hitec on the servo side | screen built; no protocol on a wire |
 
-## What is deliberately not built
-
-Each of these was investigated and closed, and the reason is worth keeping so
-nobody reopens it by accident.
-
-- **Configuration over JETI's EX Bus.** The specification says remote
-  configuration is "available only for the products of JETI model" and that its
-  description is not part of the document. What EX Bus delivers is channel
-  values and telemetry.
-- **BLHeli_32 parameters.** The bench identifies and drives these ESCs, and
-  direction, 3D mode, beacon, save-settings and telemetry all work. The
-  parameter list does not: those settings are stored in a form the bench cannot
-  read, and the information needed to read them is not published. We asked the
-  rights holder in August 2026 and were declined, so this is settled rather
-  than pending. [The details](docs/BLHeli32.md).
-- **Futaba's S.BUS2 telemetry slots** — answering in the right 325 µs window
-  without colliding with the customer's real sensors is the hardest job in the
-  survey.
-- **A USB oscilloscope.** This chip's USB is Full-Speed only and about twenty
-  times too slow for one.
-- **A web browser on the panel.** Chromium is the one that gets asked for, and
-  the distance is not a porting job. The leanest headless build of it is over
-  100 MB against a 3 MB app partition; one blank tab wants more memory than
-  this board has PSRAM, and 1.5 MB of that PSRAM is already the two
-  framebuffers; and the multi-process sandbox and the JIT underneath it need
-  processes, an MMU and a POSIX to be a port *to*, none of which exist here.
-  Chromium is written against operating systems, not against chips. A cut-down
-  HTML renderer is possible and is a hobby inside a hobby — a frame on this
-  panel may spend 976 KiB of PSRAM traffic and the screens already spend more
-  than that before anything has to lay out a page, which is
-  [the budget](docs/Performance.md) every screen here is held to. What is open
-  is the other direction, serving this interface to a browser elsewhere, and it
-  is [one question above](#what-is-still-unsettled).
-- **Servo programming for KST**, held at the owner's request.
-
-And one rule that constrains every protocol commit: **nearly every open
-implementation of these protocols is GPL or AGPL against this repository's MIT.**
-The permissive exceptions are PX4's receiver decoders (BSD) and MIT reference
-code for SRXL2, JETI EX Bus, DShot and DroneCAN. Everything else is written from
-the specification, not from somebody's line.
-
-**OpenYGE is the first time that rule was actually exercised**, and it is worth
-recording how, because the same shape will recur. YGE's own developer supplied
-the protocol — there is no published document — but supplied it as code
-carrying a GPL header. The code is kept outside this repository entirely: not
-in the tree, not in the history. What came across is what cannot be owned, a
-byte offset and a scale factor and a polynomial, written up from scratch as
-[the OpenYGE specification](docs/OpenYGE.md), and that page is what any
-implementation here is written from. Six defects in the supplied code are
-recorded on it rather than inherited.
-
-## The order of work
-
-1. **The foundation** — the tree, the ported floor with its tests green, the
-   tools and CI, the link codec, the heartbeat, the coprocessor skeleton, the
-   re-cut screens.
-2. ~~**The link, on silicon**~~ — **done.** The module landed, the bus came up
-   at 1 Mbit/s, and an echo test ran 2144 probes with zero errors at either
-   end. [Bringing it up](docs/Bringup.md) is the procedure and what it found.
-3. **Make the numbers real** — a KISS frame or bidirectional DShot, and the
-   current sensor. The bench stops simulating. ESC telemetry is the shortest
-   path through this and [OpenYGE](docs/OpenYGE.md) is the worked example, but
-   that one is being pursued in a separate repository; what returns here is
-   whichever protocol is proven there, as a source filling `bench_state`.
-4. **Make them keep** — the logger, then the viewer reads what the bench wrote.
-5. **Make it drive** — servo outputs, then the sum-signal protocols, then the
-   servo tester as it is described on the box.
-6. **Make it listen** — one bus decoder at a time; each is a day and each adds a
-   product feature. **S.BUS is decoded**; what it still needs is the PIO
-   program that turns an inverted 8E2 line into bytes.
-7. **Make it programme** — BLHeli_S and AM32 first, because they need nobody's
-   permission; Hitec first on the servo side, for the same reason.
-
-**Step 2 is the exception, and it is the only one.** Both ends of the link are
-written and tested against each other on the host; what is left is running them
-against each other on real silicon, and that waits on the RP2350 module rather
-than on anybody's time. Step 5 waits on the same board for its PWM.
-
-Steps 3, 4 and 6 are not blocked. Step 6 in particular is pure parsing — a bus
-decoder is bytes in and channels out, host-testable to the last edge case
-before any receiver is plugged in, which is the same shape the link codec and
-the servo searches were built in.
+Next: the two panel items at the top of the open list (settings initialisation,
+control page), then the first PWM driver. None of them needs a part that is not
+on the desk.

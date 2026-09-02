@@ -1,11 +1,9 @@
 /*
- * The servo bench.
+ * The servo bench screen.
  *
- * The horn is the control.  A servo is a thing whose output arm you point
- * somewhere, so pointing the drawn arm is the honest gesture for commanding
- * it -- and because the drawn arm follows the *measured* position rather than
- * the commanded one, a servo that is slow, stuck or fighting a linkage shows
- * that by lagging your finger.  A slider could not say that.
+ * The horn is the control: dragging the drawn arm commands the servo, and
+ * the arm is drawn at the measured position, so a servo that is slow, stuck
+ * or fighting a linkage lags the finger by that much.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -28,12 +26,8 @@
 #define RCARD_X (PAD + LCARD_W + 8)
 #define RCARD_W (W - RCARD_X - PAD)
 
-/* The output shaft, which everything on the left is drawn around. */
-/*
- * The shaft sits on the top face of the case, which is where a servo's output
- * actually is -- drawn with the case below and clear of it, the arm appeared
- * to rotate about a point in mid air.
- */
+/* The output shaft, which everything on the left is drawn around.  It sits
+ * on the top face of the case, where a servo's output is. */
 #define SHAFT_X 300
 /* Integer division on purpose: this is a pixel row, and H is even. */
 /* NOLINTNEXTLINE(bugprone-integer-division) */
@@ -43,17 +37,12 @@
 #define BODY_W  260
 #define BODY_H  88
 /*
- * The mounting flanges.
+ * The mounting flanges run the full width of the case end, as on a servo.
  *
- * They run the full width of the case, because that is what they do -- the
- * lug is moulded across the whole end, not tucked into the middle of it.
- *
- * Nothing here is a chosen number except the three clearances.  The flange's
- * width is whatever it takes to hold a bore with TAB_MARGIN of material
- * outside it and TAB_INNER between it and the case, and the hole positions
- * fall out of wanting the same margin top and bottom.  Sized the other way
- * round -- flange first, holes centred in it -- the bore ends up touching the
- * case, which is the one place a lug never has a hole.
+ * The three clearances are the chosen numbers.  The flange width is what
+ * holds a bore with TAB_MARGIN of material outside it and TAB_INNER between
+ * it and the case, and the hole positions follow from the same margin top
+ * and bottom.
  */
 #define TAB_HOLE_R  12
 #define TAB_MARGIN  6                  /* material outside the bore     */
@@ -66,11 +55,9 @@
 /*
  * Screen angle from servo angle.
  *
- * The case lies along the card with its output at the right-hand end, so the
- * horn sweeps the space to the right of it and zero is the arm pointing
- * straight out.  Positive is counter-clockwise, which is the convention every
- * other angle in this trade uses; nobody has to hold a second one for this
- * screen.
+ * The case lies along the card with its output at the right-hand end; zero
+ * is the arm pointing straight out, and positive is counter-clockwise, the
+ * convention every other angle on the bench uses.
  */
 #define PHI(a) (a)
 
@@ -181,14 +168,11 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid)
     const float deg = us_to_deg(position_us);
 
     /*
-     * A reading only counts as new if it would be drawn differently.
-     *
+     * A reading counts as new only if it is drawn differently: compare at
+     * the precision shown, tenths of a degree and hundredths of an amp.
      * Feedback arrives at the poll rate whether or not the servo moved, and
-     * bumping the revision on every one of them repainted a 488x418 card
-     * several times a second to redraw numbers that had not changed -- and,
-     * worse, made the grip's clipped repaint unreachable, because the full
-     * path always won.  So compare at the precision actually shown: tenths of
-     * a degree and hundredths of an amp.
+     * a revision bump per reading would repaint the 488x418 card at that
+     * rate and never reach the grip's clipped repaint.
      */
     const int q_deg = (int)(deg * 10.0f + (deg >= 0.0f ? 0.5f : -0.5f));
     const int q_a   = (int)(current_a * 100.0f + 0.5f);
@@ -199,13 +183,10 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid)
     s.current_a     = current_a;
     s.have_feedback = valid;
     /*
-     * The arm is drawn exactly where the servo says it is, with no easing.
-     *
-     * Easing towards a measurement would add the bench's own lag on top of
-     * the servo's, and the two are indistinguishable once drawn -- a slow
-     * servo and a slow screen look identical, and only one of them is the
-     * thing under test.  The smoothing in tick() exists for the case where
-     * nothing is reporting, and only for that.
+     * The arm is drawn where the servo reports it, with no easing: easing
+     * would add the screen's lag to the servo's, and the two are
+     * indistinguishable when drawn.  The smoothing in tick() applies only
+     * while nothing is reporting.
      */
     if (valid) {
         s.shown_deg = deg;
@@ -346,7 +327,7 @@ static void at(float deg, int r, int *x, int *y)
     *y = SHAFT_Y - (int)((float)r * sinf(phi) + 0.5f);
 }
 
-/* The case, its tabs and its boss.  Drawn once per framebuffer: the only
+/* The case, its tabs and its boss.  Drawn per framebuffer, not per frame:
  * thing on this card that moves is the horn. */
 static void draw_body(gfx_canvas_t *c)
 {
@@ -357,10 +338,8 @@ static void draw_body(gfx_canvas_t *c)
 
     /* Mounting tabs first, so the case overlaps them. */
     for (int i = 0; i < 2; ++i) {
-        /* Two holes, and the flange centred on the case.  A servo's mounting
-         * lugs are symmetric about its centreline -- one hole sitting off to
-         * one side is the sort of wrongness you notice before you can say
-         * what it is. */
+        /* Two holes, and the flange centred on the case: a servo's mounting
+         * lugs are symmetric about its centreline. */
         const int tx = (i == 0) ? bx - TAB_W + TAB_OVER
                                 : bx + BODY_W - TAB_OVER;
         const int ty = by;
@@ -368,9 +347,8 @@ static void draw_body(gfx_canvas_t *c)
         gfx_draw_round_rect(c, tx, ty, TAB_W, TAB_H, 5, edge);
         /*
          * Open slots, not drilled holes: a servo's lugs are cut through to
-         * the outer edge so it can be dropped into a mount whose screws are
-         * already in, and the open side is the first thing you recognise a
-         * servo by from above.
+         * the outer edge so it drops into a mount whose screws are already
+         * in.
          */
         /* Set in from the flange's own outer edge, so the bore keeps its
          * distance from the case whichever end it is on. */
@@ -378,10 +356,9 @@ static void draw_body(gfx_canvas_t *c)
                                    : tx + TAB_W - TAB_MARGIN - TAB_HOLE_R;
         const int mouth = (i == 0) ? tx : tx + TAB_W;   /* the open edge */
         /*
-         * The bore is darker than both the lug and the card behind it.  A
-         * hole would strictly show the card, but at these two greys that
-         * reads as a smudge rather than as a hole, and a recess is what the
-         * eye expects anyway.
+         * The bore is darker than both the lug and the card behind it: at
+         * these two greys a hole showing the card reads as a smudge, and a
+         * recess reads as a hole.
          */
         const gfx_color_t bore = ui_theme_color(UI_C_PANEL_SUNK);
         for (int h = 0; h < 2; ++h) {
@@ -425,10 +402,9 @@ static void draw_body(gfx_canvas_t *c)
  * Where a ring of radius @p r has to stop so that a constant band of dark
  * card shows between its end and the arm.
  *
- * A fixed angle will not do it.  The arm is the same width at every radius,
- * so it subtends less angle the further out you go, and two rings sharing one
- * angular gap end up with the outer one standing much further clear of the
- * arm than the inner -- which reads as a mistake rather than as a pair.  The
+ * A fixed angle does not do it: the arm is the same width at every radius,
+ * so it subtends less angle further out, and two rings sharing one angular
+ * gap leave the outer one further clear of the arm than the inner.  The
  * outer ring is therefore the longer of the two.
  */
 static float ring_gap_deg(float r, float half_w, float dark_px)
@@ -447,11 +423,8 @@ static void draw_horn(gfx_canvas_t *c, float deg, gfx_color_t col)
     at(deg, HORN_L, &tx, &ty);
 
     /*
-     * The unlit rings go down first and whole, so the arm is drawn over them
-     * and they pass behind it.  A ring that stopped at the arm on both sides
-     * would be two dark arcs that happen to line up; one that disappears
-     * under the metal and comes out the far side is a ring with an arm across
-     * it, which is what this is.
+     * The unlit rings are drawn first and whole, so the arm is drawn over
+     * them and they pass behind it.
      */
     const gfx_color_t ghost =
         gfx_lerp(ui_theme_color(UI_C_PANEL), col, 46);
@@ -461,10 +434,9 @@ static void draw_horn(gfx_canvas_t *c, float deg, gfx_color_t col)
     gfx_capsule_aa(c, SHAFT_X, SHAFT_Y, tx, ty, 26, col);
     gfx_fill_circle_aa(c, SHAFT_X, SHAFT_Y, 25, col);
 
-    /* Holes along the arm, which is what tells you it is a horn.  Spaced
-     * from the tip inwards rather than from the boss outwards: fixed radii
-     * put the outermost ones past the end when the arm was shortened, and a
-     * hole drawn on the card behind the arm reads as a bite out of it. */
+    /* Holes along the arm, spaced from the tip inwards so the outermost stays
+     * on the arm whatever HORN_L is; a hole drawn past the tip reads as a
+     * bite out of the card. */
     for (int i = 1; i <= 3; ++i) {
         int hx, hy;
         at(deg, HORN_L - 12 - (3 - i) * 14, &hx, &hy);
@@ -474,18 +446,13 @@ static void draw_horn(gfx_canvas_t *c, float deg, gfx_color_t col)
     gfx_fill_circle_aa(c, tx, ty, 5, ui_theme_color(UI_C_PANEL));
 
     /*
-     * The lit part of each ring, over the top.
+     * The lit part of each ring, over the top.  It is split on the side the
+     * arm comes in from, with a constant 9 px band of card either side of
+     * the metal (ring_gap_deg), and each end fades into the unlit ring
+     * beneath.
      *
-     * It is split on the side the arm comes in from, with a constant band of
-     * dark either side of the metal -- a fixed angle will not do that, since
-     * the arm subtends less of a circle the further out you go, so the outer
-     * ring is the longer of the two.  Each end dissolves into the unlit ring
-     * beneath rather than stopping, the way a segment goes dark without the
-     * bar leaving the glass.
-     *
-     * They breathe while the output is being held.  A servo under command is
-     * a servo that will move if the linkage lets it, and that is worth saying
-     * on the picture rather than only in a status line.
+     * The rings breathe while the output is being held: the on-picture sign
+     * that the servo is under command.
      */
     const float breath = s.driving
                              ? 0.42f + 0.58f * (0.5f + 0.5f * sinf(s.pulse))
@@ -702,11 +669,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
     if (s.drawn_ctrl[buf] == s.ctrl_rev) {
         /*
-         * Nothing moved, so only the grip needs repainting -- and only while
-         * it is breathing.  Clipped to the tip, because the alternative is
-         * repainting a 488x418 card at the frame rate to animate a ring
-         * thirty pixels across, which is most of this panel's bandwidth spent
-         * on a decoration.
+         * Nothing moved, so only the grip is repainted, and only while it
+         * breathes.  Clipped to the tip: repainting the 488x418 card at the
+         * frame rate to animate a ring of 36 px radius would cost most of
+         * the panel's bandwidth.
          */
         const int step = (int)(s.pulse * 8.0f);
         if (!s.driving || s.drawn_pulse[buf] == step) {
@@ -733,9 +699,8 @@ static void render(gfx_canvas_t *c, int buffer_index)
 }
 
 /*
- * Leaving releases the output.  A screen you can no longer see the horn on
- * must not be holding it somewhere, for the same reason the motor bench
- * disarms on the way out.
+ * Leaving releases the output: a screen that is not visible must not hold
+ * the servo somewhere, the same rule as the motor bench's disarm on leave.
  */
 static void leave(void)
 {

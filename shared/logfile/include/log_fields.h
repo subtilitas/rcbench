@@ -2,14 +2,13 @@
  * Blackbox field naming: which group a channel belongs to, and what it is
  * measured in.
  *
- * Upstream matches these with regular expressions.  Every one of those
- * patterns is an anchored prefix or an exact name, so this is a table of
- * prefixes instead -- a regex engine on the board would earn its size in no
- * other place.
+ * Every pattern is an anchored prefix or an exact name, so a table of
+ * prefixes is sufficient and no regular-expression engine is needed on the
+ * board.
  *
- * A CSV exported from a blackbox tool has exactly these column names, so the
- * grouping carries over for free; anything else falls back to grouping by
- * unit, which keeps related channels together anyway.
+ * A CSV (comma-separated values) file exported from a blackbox tool carries
+ * exactly these column names, so the grouping applies to it directly;
+ * anything else is grouped by unit, which keeps related channels together.
  *
  * SPDX-License-Identifier: MIT
  */

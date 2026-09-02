@@ -1,5 +1,6 @@
 /*
- * The link's output pages, expressed as bank operations.  See the header.
+ * The link's output pages, expressed as bank operations.  See
+ * outputs_pages.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -12,8 +13,8 @@
 #include "link_pages.h"
 
 /*
- * The wire's driver numbers are a contract, so they are mapped through rather
- * than cast: the day the bank's enum is reordered, this stays correct.
+ * The wire's driver numbers are a contract, so they are mapped rather than
+ * cast: a reordered bank enum leaves this correct.
  */
 static out_driver_t driver_of(uint16_t wire)
 {
@@ -115,7 +116,7 @@ uint8_t outputs_slots_write(uint16_t *regs, uint8_t off, uint8_t n,
     if ((unsigned)off + (unsigned)n > (unsigned)LINK_OS_COUNT) {
         return LINK_NACK_BAD_RANGE;
     }
-    /* Only the driver number is checkable without the bank -- a pin conflict
+    /* Only the driver number is checkable without the bank.  A pin conflict
      * or a rate a driver cannot make is a question for outputs_configure at
      * apply, because it needs the other slots to answer.  An unknown driver
      * is refused here so it never reaches the table lookup. */
@@ -138,7 +139,7 @@ void outputs_slots_apply(outputs_t *o, const uint16_t *regs)
     }
     /*
      * Cleared before rebuilt, and rebuilt from the whole page rather than from
-     * the window just written.  outputs_configure checks a slot against the
+     * the window written.  outputs_configure checks a slot against the
      * others already set, so a slot half-applied against a half-cleared bank
      * would see conflicts that are not there, or miss ones that are.  Clearing
      * first makes the page the single source of truth every time.
@@ -159,9 +160,9 @@ void outputs_slots_apply(outputs_t *o, const uint16_t *regs)
             .pin           = (uint8_t)r[LINK_OS_PIN],
             .rate_hz       = r[LINK_OS_RATE_HZ],
         };
-        /* A slot the panel double-books is refused and left cleared; the
-         * read-back still shows what was asked, and the bank shows what drives
-         * -- the disagreement is the panel's to notice. */
+        /* A slot the panel double-books is refused and left cleared.  The
+         * read-back shows what was asked and the bank shows what drives; the
+         * disagreement is the panel's to notice. */
         (void)outputs_configure(o, (uint8_t)s, &cfg);
     }
 }

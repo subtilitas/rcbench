@@ -1,108 +1,119 @@
-# Bringing the link up on silicon
+# Bringing up the link
 
 <sub>**English** · [Deutsch](Bringup-de.md)</sub>
 
-The link has more ways to be half-broken than the display does, and most of
-them present as "it does not work". The firmware says which one — this page is
-how to make it tell you, and what each answer means.
+How to verify that frames cross the CAN (Controller Area Network) bus between
+the two boards, and how to read the report. The wiring is in [The
+link](Link.md).
 
-## Start here: does anything cross the bus?
+## Echo self-test
 
-Before the page protocol means anything, one question has to be answered on
-its own: **do frames cross this bus intact?** Answering it together with "does
-the link work" is how a bring-up turns into an afternoon — a bit timing that is
-slightly wrong, a missing terminator, a transceiver in the wrong mode and a
-dispatcher bug all present as "the panel shows no numbers".
+The self-test answers one question: do frames cross the bus intact? It uses no
+page protocol. The panel sends a probe frame, the coprocessor sends it back,
+and the panel compares it byte for byte. If the test passes and the link does
+not work, the fault is above the wire.
 
-So there is an echo test that answers only that. The panel sends a frame, the
-coprocessor sends it straight back, the panel checks it came back byte for
-byte. No page map, no registers, no state machine. **If this passes and the
-link still does not work, the fault is above the wire** — which is worth
-knowing before anybody unplugs anything.
+### Coprocessor
 
-### Running it
+Nothing to configure. The coprocessor starts CAN at boot, prints whether the
+controller answered, and echoes probes permanently. The echo costs one register
+read per loop and answers only frames addressed to a page the map does not use.
 
-The coprocessor needs nothing: it tries CAN at boot, says whether the
-controller answered, and echoes probes from then on. That costs one register
-read per loop and answers only a page the map does not use, so it is left in
-permanently — the bring-up tool that is already flashed is the one that gets
-used.
+Boot output on the coprocessor's USB (Universal Serial Bus) console, repeated
+every 3 s:
 
-The panel side is opt-in, because starting CAN takes native USB away:
+    rcbench-iomcu: CAN up, 1000000 bit/s, 0 echoes served, tx_err 0 rx_err 0 eflg 0x00
+
+`CAN did not answer on SPI` means the controller did not report configuration
+mode after reset. The fault is on SPI (module not fitted, wiring on GP8 to
+GP12), not on the CAN bus.
+
+### Panel
+
+The test is opt-in, because starting CAN removes the panel's native USB:
 
 ```bash
 cd firmware/panel
 idf.py -DRCBENCH_CAN_SELFTEST=1 build flash
 ```
 
-**Watch the UART socket, not the USB one.** GPIO19 and GPIO20 carry both the
-native USB and the CAN transceiver, and the multiplexer has to choose — see
-[the link](Link.md). The console is on UART0 with USB-Serial-JTAG as a
-secondary precisely so this session has somewhere to talk.
+Watch the UART (universal asynchronous receiver-transmitter) socket, not the
+native USB socket. GPIO19 and GPIO20 (general-purpose input/output pins 19 and 20) carry both native USB and the CAN
+transceiver, and the multiplexer selects one; the console is on UART0 with
+USB-Serial-JTAG (the ESP32-S3's built-in USB serial and debug bridge) as
+secondary.
 
-It runs for five seconds at boot and prints:
+The test runs for 5 s at boot, before the identity poll, and prints:
 
-    can: 1000000 bit/s: brp 4, tseg1 14, tseg2 5, sjw 4, sample point 75.0%
-    panel: CAN self-test: every probe came back intact
-      sent 2024 echoed 2024 corrupt 0 lost 0 stale 0  (transmit queue full 0 times)
-      round trip min 334 max 1356 us
-      panel  tx_err 0 rx_err 0 bus_err 0
-      iomcu  CAN up, 2024 echoes, 0 overflow(s), tx_err 0 rx_err 0 flags 0x00
+    I (…) can: 1000000 bit/s: brp 4, tseg1 14, tseg2 5, sjw 4, sample point 75.0%
+    I (…) rcbench: CAN self-test: every probe came back intact
+    I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0  (transmit queue full 0 times)
+    I (…) rcbench:   round trip min 334 max 1356 us
+    I (…) rcbench:   panel  tx_err 0 rx_err 0 bus_err 0
+    I (…) rcbench:   iomcu  CAN up, 2024 echoes, 0 overflow(s), tx_err 0 rx_err 0 flags 0x00
 
-**Both ends are in that report**, and the coprocessor's half arrived over the
-bus rather than over a second USB cable. That matters more than the
-convenience: several faults are only visible in the comparison. Frames the
-coprocessor answered but the panel never heard are a return-path fault; frames
-it never answered are an outbound one; and a coprocessor that dropped frames
-for want of a free buffer is neither, which no bus counter anywhere records.
+The last line is the coprocessor's own status, requested over the bus before
+and after the echo phase. The difference between the two readings is the number
+of echoes it sent during the test; the panel compares that with the number it
+received.
 
-The status exchange is polled, shares the echo test's page and runs at the same
-lowest priority. It happens **either side** of the echo phase, not only after:
-the far end's counter runs from its own boot, so only the difference across the
-measurement means anything — a reading taken once at the end is a lifetime
-total and says nothing.
+### Verdicts
 
-| What it says | What it means | Where to look |
+| Verdict | Meaning | Check |
 | --- | --- | --- |
-| `no probe came back` | Nothing crosses at all | CANH/CANL swapped? Far end powered? Both at the same bit rate? Terminators at **both** ends? |
-| `probes come back altered` | Frames cross and arrive wrong | Sample point or bit timing; a missing terminator reflects |
-| `probes cross, and not all of them` | Marginal | Timing, one terminator, or a bus longer than the rate |
-| `probes go missing without a bus error` | They arrived intact and nobody read them | A receive buffer overran. **Not** a wiring fault — check the coprocessor's overflow count in the same report |
-| `every probe came back intact` | The wire is fine | Anything still wrong is above it |
+| `no probe came back` | nothing crosses | CANH/CANL swapped; far end powered; same bit rate at both ends; terminators at both ends |
+| `probes come back altered` | frames cross and arrive wrong | sample point or bit timing; a missing terminator reflects |
+| `probes cross, and not all of them` | marginal bus | timing, one terminator, or a bus too long for the rate |
+| `probes go missing without a bus error` | frames arrived intact and were not read in time | a receive buffer overran; not a wiring fault. Compare with the coprocessor's overflow count |
+| `every probe came back intact` | the wire is fine | a remaining fault is above the wire |
 
-Corruption outranks loss in that table, and the ordering is deliberate: a
-marginal bus does both, loss is the louder number, and it points at cable
-length while the corruption says the bit timing is wrong.
+Corruption is reported before loss when both occur, because a marginal bus
+produces both and the corruption identifies the cause.
 
-Loss itself splits in two, on the controller's own error count. Frames lost
-*with* bus errors were corrupted on the wire — termination, timing, length.
-Frames lost with **zero** bus errors arrived perfectly and were dropped by
-something that stopped reading in time, and sending somebody to check
-terminators for that wastes an afternoon on hardware that is working.
+Loss is split by the controller's bus error count. Frames lost with bus errors
+were corrupted on the wire (termination, timing, length). Frames lost with zero
+bus errors arrived intact and were dropped by a receiver that did not read in
+time.
 
-The payloads are not arbitrary either. CAN stuffs a complementary bit after
-five of the same polarity, so the patterns that stress a marginal bus are long
-runs of one level — the probes cycle through all-dominant, all-recessive and
-both alternating patterns, and a test sending only counting integers would pass
-on a bus that drops real traffic.
+If the transmit error counter reaches 128 during the test, no other node is
+acknowledging: the coprocessor is not on the bus at all. The test reports this
+once, before the five seconds are over.
 
-If the coprocessor prints `CAN DID NOT ANSWER` at boot, the fault is on **SPI
-and not on CAN**: the datasheet guarantees the controller wakes in
-configuration mode, so a CANSTAT that says otherwise means nothing is listening
-on the SPI bus the driver thinks it has. That is worth telling apart before a
-scope comes out.
+The probe payloads cycle through all-dominant, all-recessive and both
+alternating patterns, because CAN stuffs a complementary bit after five equal
+bits and long runs of one level are what a marginal bus fails on.
 
----
+## Link report
 
-## What to write back
+After bring-up the panel polls the coprocessor's identity page every second
+until it answers, then polls the bench page at 20 Hz and the status page at 1
+Hz. Every 5 s while the link is down, and once a minute while it is up, the
+panel prints a diagnosis:
 
-The round trip, both ends' error counters, and whether the coprocessor
-reported any receive overflows. Those three are what the record wants: the
-first sets what a poll period has to clear, and the other two say whether the
-bus or the software was the limit.
+    I (…) rcbench: LINK works, and not every time
+    W (…) rcbench:   check: marginal timing, or a poll period tighter than the round trip
+    I (…) rcbench:   panel  polls 1200 replies 1187 timeouts 13 stale 0 nack 0 crc 0 resync 0
+    I (…) rcbench:   iomcu  frames 1187 crc 0 resync 0
+    I (…) rcbench:   round trip min 620 avg 700 max 1400 us
 
-Also worth noting is what the *heartbeat* did while all this was happening. Its
-monostable is not fitted, so the edges reach a header pin and a scope and
-nothing else — but this is a session where both boards are powered at once, and
-it is the cheapest opportunity to confirm the line is edging at the rate
-[safety](Safety.md) says it should.
+| Diagnosis | Meaning |
+| --- | --- |
+| `no reply to any poll` | coprocessor powered; CANH/CANL; bit rate; terminators |
+| `answering, wrong protocol` | flash both ends from the same tree |
+| `requests land, answers do not` | the far end hears the panel and the panel does not hear it: its transmit path |
+| `frames arrive corrupt` | bit timing or sample point disagreeing between the two ends |
+| `answers arrive too late` | a reply slower than the poll timeout, or a stalled far end |
+| `works, and not every time` | marginal timing, or a poll period tighter than the round trip |
+
+The `crc` and `resync` columns of the coprocessor line carry the XL2515's
+receive and transmit error counters (status registers `LINK_ST_CRC_ERRORS` and
+`LINK_ST_RESYNCS`).
+
+## What to record
+
+The round trip, both ends' error counters, and the coprocessor's overflow
+count. The round trip sets what a poll period has to clear; the counters say
+whether the bus or the software was the limit.
+
+With both boards powered, also confirm on a scope that GPIO6 on J8 edges at the
+rate [Safety](Safety.md) specifies.

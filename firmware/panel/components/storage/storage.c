@@ -240,8 +240,8 @@ int storage_list(const char *dir, const char *suffixes, storage_entry_t *out,
         }
         size_t len = strlen(e->d_name);
         if (len >= STORAGE_NAME_MAX) {
-            /* A name that will not fit is a name that cannot be reopened, so
-             * showing a truncated version of it would be a lie. */
+            /* A name that does not fit cannot be reopened, so a truncated
+             * version is not shown. */
             ESP_LOGW(TAG, "skipping over-long name (%u chars)", (unsigned)len);
             continue;
         }

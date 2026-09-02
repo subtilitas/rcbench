@@ -210,7 +210,7 @@ TEST_CASE(tracker_clamps_and_survives_small_buffers)
     }
 
     /* More contacts than the controller can produce are truncated, and only
-     * as many events as fit are written -- but state still advances. */
+     * as many events as fit are written, but state advances regardless. */
     CHECK_EQ(touch_tracker_update(&t, pts, TOUCH_MAX_POINTS + 3, ev, 1), 1);
     CHECK_EQ(t.prev_count, TOUCH_MAX_POINTS);
 
@@ -228,10 +228,10 @@ TEST_CASE(tracker_clamps_and_survives_small_buffers)
 }
 
 /*
- * The GT911 reuses track ids, and the tracker matched on id alone.  A missed
- * release frame therefore looked like the same finger crossing the panel in
- * one poll: the consumer got a MOVE where it was waiting for an UP, and on the
- * bench that left the throttle drag latched to whatever moved next.
+ * The GT911 reuses track ids.  A missed release frame followed by a new
+ * contact with the same id must not read as one finger crossing the panel in
+ * one poll: a consumer waiting for an UP that gets a MOVE instead leaves the
+ * throttle drag latched to whatever moves next.
  */
 TEST_CASE(a_contact_that_teleports_is_a_release_and_a_new_press)
 {
@@ -257,15 +257,15 @@ TEST_CASE(a_contact_that_teleports_is_a_release_and_a_new_press)
     CHECK_EQ(ev[1].type, TOUCH_EVENT_DOWN);
     CHECK_EQ(ev[1].point.x, 700);
 
-    /* And the new position is now the tracked one. */
+    /* And the new position is the tracked one. */
     touch_point_t after = { .id = 0, .x = 705, .y = 62 };
     CHECK_EQ(touch_tracker_update(&t, &after, 1, ev, 8), 1);
     CHECK_EQ(ev[0].type, TOUCH_EVENT_MOVE);
 }
 
 /* Two contacts with the same track id in one frame is the controller
- * misbehaving, and it produced two DOWNs now and two UPs later for one
- * finger. */
+ * misbehaving; the tracker reports one finger, not two DOWNs and later two
+ * UPs. */
 TEST_CASE(a_duplicate_track_id_in_one_frame_is_counted_once)
 {
     touch_tracker_t t;

@@ -1,10 +1,8 @@
 /*
  * The settings model and the screen that edits it.
  *
- * The screen cases were held back while it was re-cut and are here again.  The
- * layout they address moved up 40 px -- the router owns the band and the home
- * tag now -- so the geometry below follows it, and the taps are in panel
- * coordinates because ui_router_event strips the band on the way in.
+ * Taps are in panel coordinates, because ui_router_event strips the band on
+ * the way in; the geometry below adds UI_BAND_H to the screen's own rows.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,7 +21,7 @@
 #define H 480
 
 /* Geometry mirrored from settings_screen.c; if the layout moves these move
- * with it, and the test names say what they were aiming at. */
+ * with it, and the test names say what they aim at. */
 #define CAT_X    16
 #define CAT_Y    (16 + UI_BAND_H)
 #define CAT_H    64
@@ -41,24 +39,6 @@ static gfx_color_t *s_fb;
 static gfx_canvas_t s_c;
 
 
-#define H 480
-
-/* Geometry mirrored from settings_screen.c; if the layout moves these move
- * with it, and the test names say what they were aiming at. */
-#define CAT_X    16
-#define CAT_Y    56
-#define CAT_H    64
-#define CAT_GAP  8
-#define LIST_X   236
-#define LIST_Y   56
-#define ROW_PITCH 58
-#define ROW_H    54
-#define PLUS_X   726
-#define MINUS_X  556
-#define BTN_W    44
-
-static gfx_color_t *s_fb;
-static gfx_canvas_t s_c;
 
 /* --------------------------------------------------------- memory store */
 
@@ -126,11 +106,9 @@ TEST_CASE(defaults_come_from_the_schema)
 }
 
 /*
- * The table is the contract, and a bad row in it is the most likely way this
- * subsystem breaks: a default outside its own range, a step of zero that makes
- * the +/- keys inert, an enum with no options.  The suite asserted the keys and
- * the clamping but never the rows themselves, so any of those would have
- * shipped and shown up as a control that quietly does nothing.
+ * The table is the contract.  Every row is checked: a default inside its own
+ * range, a non-zero step so the +/- keys move, and at least one option for an
+ * enum.  A bad row shows up as a control that does nothing.
  */
 TEST_CASE(every_schema_row_is_internally_consistent)
 {
@@ -194,8 +172,8 @@ TEST_CASE(every_schema_row_is_internally_consistent)
 
 TEST_CASE(nvs_keys_are_unique_and_short_enough)
 {
-    /* NVS keys are capped at 15 characters, and a collision would silently
-     * make two settings the same one. */
+    /* NVS (non-volatile storage) keys are capped at 15 characters, and a
+     * collision makes two settings the same one. */
     for (int i = 0; i < SETTING_COUNT; ++i) {
         const char *a = settings_def((setting_id_t)i)->key;
         if (strlen(a) > 15) {
@@ -372,8 +350,8 @@ TEST_CASE(reset_restores_one_category_only)
     settings_set(SET_BRIGHTNESS, 40);
 
     /* A reset that does not notify leaves the hardware on the old value while
-     * the screen shows the new one -- the observer is the only path a setting
-     * has to motor_out and the backlight. */
+     * the screen shows the new one; the observer is the only path a setting
+     * has to the outputs and the backlight. */
     settings_set_observer(observer);
     s_observed = 0;
 
@@ -470,8 +448,8 @@ static void fresh_screen(void)
     memset(s_fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     gfx_canvas_init(&s_c, s_fb, W, H, W);
     fresh_model();
-    /* The predecessor initialised its bench screen here; ours is set up by
-     * ui_router_init, which reset()s every screen. */
+    /* The bench screen is set up by ui_router_init, which reset()s every
+     * screen. */
     ui_router_init();
     ui_router_goto(SCREEN_SETUP);
 }

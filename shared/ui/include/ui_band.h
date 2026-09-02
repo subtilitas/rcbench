@@ -1,6 +1,6 @@
 /*
- * The status band: what is true about the bench, and the one control that has
- * to work from anywhere.
+ * The status band: the bench state on every screen, and the STOP control that
+ * works from every screen.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -19,8 +19,8 @@ extern "C" {
 gfx_rect_t ui_band_stop_rect(void);
 
 /**
- * Draw the band.  @p title is the current screen's, or NULL on the splash,
- * where there is nothing to go back to and nothing armed yet.
+ * Draw the band.  @p title is the current screen's title, or NULL on the
+ * splash, which has no home tag and no bench status.
  */
 void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
                     const ui_bench_status_t *st, bool stop_pressed,

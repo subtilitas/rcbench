@@ -1,6 +1,7 @@
-# The rasteriser and its three fonts.  Pure C over a block of RGB565 pixels,
-# with no vendor SDK in it -- which is what lets the identical code render to
-# the panel, to a PNG on a laptop, and into the test suite.
+# The rasteriser and its three fonts.  Pure C over a block of RGB565 pixels
+# with no vendor SDK (software development kit), so the identical code renders
+# to the panel, to a PNG (Portable Network Graphics) image on a laptop, and
+# into the test suite.
 set(SRCS
     gfx.c
     gfx_seg.c

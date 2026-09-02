@@ -27,13 +27,12 @@ void sbus_decoder_reset(sbus_decoder_t *d)
 
 /*
  * Sixteen channels of eleven bits, packed little-endian end to end across the
- * twenty-two payload bytes with no alignment to anything.  Channel n starts at
- * bit 11n, which lands mid-byte for all but the first, so each value is read
- * as a three-byte window shifted down and masked.
+ * twenty-two payload bytes with no alignment.  Channel n starts at bit 11n,
+ * which lands mid-byte for all but the first, so each value is read as a
+ * three-byte window shifted down and masked.
  *
- * Written as arithmetic rather than as sixteen hand-expanded expressions.  The
- * expanded form is what most implementations carry and it is sixteen chances
- * to transpose a shift -- each of which produces a channel that looks
+ * Written as arithmetic rather than as sixteen expanded expressions: a
+ * transposed shift in an expanded form produces a channel that looks
  * plausible and moves the wrong surface.
  */
 static void unpack(const uint8_t *p, uint16_t *out)
@@ -59,9 +58,9 @@ bool sbus_decode_byte(sbus_decoder_t *d, uint8_t byte, uint32_t now_us,
     /*
      * The gap is the frame boundary, and it outranks everything else.  S.BUS
      * has no checksum and 0x0F is an ordinary channel value, so a decoder that
-     * framed on the header alone would lock onto the middle of a frame and
-     * report sixteen plausible channels that are all wrong -- and stay locked,
-     * because the next header it finds is in the same wrong place.
+     * frames on the header alone locks onto the middle of a frame, reports
+     * sixteen plausible channels that are all wrong, and stays locked because
+     * the next header it finds is in the same wrong place.
      */
     if (d->have_time && (uint32_t)(now_us - d->last_byte_us) >= SBUS_GAP_US) {
         if (d->len != 0u) {
@@ -108,11 +107,11 @@ bool sbus_decode_byte(sbus_decoder_t *d, uint8_t byte, uint32_t now_us,
 uint16_t sbus_to_us(uint16_t raw)
 {
     /*
-     * Linear through the two points the protocol settled on, in integers.  A
-     * receiver may send outside them -- 172 and 1811 are where a transmitter
-     * at its endpoints lands, not the limits of the field -- so the result is
-     * clamped to a pulse width nothing will be damaged by rather than to the
-     * raw range.
+     * Linear through the two points the protocol defines, in integers.  A
+     * receiver may send outside them (172 and 1811 are where a transmitter at
+     * its endpoints lands, not the limits of the field), so the result is
+     * clamped to 800..2200 us, a pulse width no servo is damaged by, rather
+     * than to the raw range.
      */
     const int32_t span_raw = (int32_t)SBUS_RAW_2000US - (int32_t)SBUS_RAW_1000US;
     int32_t us = 1000 + (((int32_t)raw - (int32_t)SBUS_RAW_1000US) * 1000

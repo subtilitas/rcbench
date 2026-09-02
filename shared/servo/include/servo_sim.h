@@ -1,17 +1,15 @@
 /*
- * A servo on a control surface, modelled well enough to be searched.
+ * A servo on a control surface, modelled for the limit search.
  *
- * Not a general servo model and not trying to be.  What the limit finder
- * needs is one thing rendered honestly: the shape of current against
- * commanded position as the linkage goes from free to bound. Everything else
- * here exists to stop the search succeeding for the wrong reason -- travel
- * takes time, readings are noisy, and a preloaded surface does not draw zero
- * when it is doing nothing.
+ * Not a general servo model.  What the limit finder needs is the shape of
+ * current against commanded position as the linkage goes from free to
+ * bound.  The rest exists so the search cannot succeed for the wrong reason:
+ * travel takes time, readings are noisy, and a preloaded surface does not
+ * draw zero at rest.
  *
- * It shares its purpose with telemetry_sim: a bench with no hardware fitted
- * must still be able to run its procedures end to end, and everything they
- * produce must be marked as invented. Nothing here is used to decide anything
- * on real hardware.
+ * As with telemetry_sim: a bench with no hardware fitted runs its procedures
+ * end to end, and everything the model produces is marked as simulated.
+ * Nothing here decides anything on real hardware.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -22,10 +20,10 @@
 #include <stdint.h>
 
 typedef struct {
-    /** Where the linkage binds, as a pulse width. Two of them, because a
-     *  surface's stops are not symmetric about the servo's centre once a horn
-     *  and a pushrod are in the way -- which is the entire reason the limit
-     *  has to be measured per installation. */
+    /** Where the linkage binds, as a pulse width.  Two values: a surface's
+     *  stops are not symmetric about the servo's centre once a horn and a
+     *  pushrod are involved, which is why the limit is measured per
+     *  installation. */
     uint16_t stop_lo_us;
     uint16_t stop_hi_us;
 
@@ -38,24 +36,21 @@ typedef struct {
     /**
      * What the servo draws while it is slewing.
      *
-     * Not a detail. A servo accelerating a surface draws real current -- a
-     * large fraction of stall on the first part of a step -- and it is
-     * indistinguishable from a bind to anything that reads the sensor before
-     * the horn has arrived. That is the entire reason the search settles
-     * before it measures, so the model has to be capable of the mistake.
+     * A servo accelerating a surface draws a large fraction of stall current
+     * on the first part of a step, indistinguishable from a bind to a reading
+     * taken before the horn has arrived.  The search settles before it
+     * measures for this reason, so the model reproduces it.
      */
     float    travel_a;
     /**
      * A stiff patch: a band of travel that costs more to hold than the rest
-     * of it without being the end of anything.
+     * without being the end of anything, such as a bellcrank binding at one
+     * angle, a pushrod rubbing through a former, or a tight hinge mid-range.
      *
-     * Real installations have these -- a bellcrank that binds slightly at one
-     * angle, a pushrod rubbing where it passes through a former, a hinge
-     * that is a little tight in the middle of its range. They are the reason
-     * the knee test carries an absolute margin as well as a ratio: on a
-     * lightly loaded surface a tight spot is a large *multiple* of almost
-     * nothing, and a search that stopped at every one of them would report a
-     * limit a long way short of the real one.
+     * The knee test carries an absolute margin as well as a ratio because of
+     * these: on a lightly loaded surface a tight spot is a large multiple of
+     * almost nothing, and a search that stops at one reports a limit short
+     * of the real one.
      */
     uint16_t stiff_lo_us;
     uint16_t stiff_hi_us;
@@ -89,13 +84,11 @@ float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms);
 /*
  * A pair, coupled through the surface they both drive.
  *
- * The only thing this has to render honestly is that disagreement costs
- * current and agreement does not, and that the disagreement is settled
- * mechanically rather than reported by anything. The second servo's centre
- * and its throw are each wrong by a configurable amount -- which is the
- * installation error the synchroniser exists to measure, and the two errors
- * are given separately because the routine's whole claim is that they can be
- * told apart.
+ * The model renders two facts: disagreement costs current and agreement does
+ * not, and the disagreement is settled mechanically rather than reported.
+ * Servo B's centre and its throw are each wrong by a configurable amount,
+ * the installation error the synchroniser measures.  The two errors are
+ * separate parameters because the synchroniser separates them.
  */
 typedef struct {
     uint16_t centre_us;
@@ -107,8 +100,8 @@ typedef struct {
     float    free_a;
     /** Extra *total* current per microsecond of disagreement. */
     float    fight_a_per_us;
-    /** What the pair draws while either of them is still travelling. As with
-     *  the single servo, this is what a reading taken too early sees. */
+    /** What the pair draws while either of them is still travelling.  As
+     *  with the single servo, a reading taken too early sees this. */
     float    travel_a;
     float    slew_us_per_ms;
     float    noise_a;
@@ -130,16 +123,14 @@ void servo_pair_init(servo_pair_t *p, const servo_pair_cfg_t *cfg);
  * Advance both servos to @p now_ms with the commands given, and return the
  * total current the pair draws.
  *
- * Both servos take time to get where they are told, which is why this needs a
- * clock: a reading taken before they have arrived is a reading of two servos
- * in transit rather than of two servos disagreeing, and telling those apart
- * is the entire job of the settle time.
+ * Both servos take time to arrive, which is why this takes a clock: a
+ * reading taken before they have arrived is a reading of two servos in
+ * transit, not of two servos disagreeing.  The settle time separates the two.
  */
 float servo_pair_step(servo_pair_t *p, uint16_t cmd_a_us, uint16_t cmd_b_us,
                       uint32_t now_ms);
 
-/** How far apart the two are actually holding the surface, in microseconds.
- *  Not something hardware can report -- it is what the search is blind to and
- *  what a test is allowed to look at. */
+/** How far apart the two hold the surface, in microseconds.  Hardware
+ *  cannot report this; the search is blind to it and a test may read it. */
 float servo_pair_disagreement(const servo_pair_t *p, uint16_t cmd_a_us,
                               uint16_t cmd_b_us);

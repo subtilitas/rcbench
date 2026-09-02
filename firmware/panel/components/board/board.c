@@ -147,7 +147,8 @@ esp_err_t board_touch_reset_sequence(void)
     ESP_RETURN_ON_ERROR(board_init(), TAG, "board_init");
 
     /* Drive INT low first: the GT911 samples it on the rising edge of RST to
-     * pick between I2C address 0x5D (low) and 0x14 (high). */
+     * pick between I2C (Inter-Integrated Circuit) address 0x5D (low) and
+     * 0x14 (high). */
     const gpio_config_t int_out = {
         .pin_bit_mask = 1ULL << BOARD_TOUCH_PIN_INT,
         .mode = GPIO_MODE_OUTPUT,
@@ -163,8 +164,8 @@ esp_err_t board_touch_reset_sequence(void)
     vTaskDelay(pdMS_TO_TICKS(20));
     ESP_RETURN_ON_ERROR(board_exio_set(BOARD_EXIO_TOUCH_RST, true), TAG,
                         "release touch reset");
-    /* GT911 needs >5 ms with INT still held before it samples the address, and
-     * ~50 ms in total before it answers on the bus. */
+    /* The GT911 needs more than 5 ms with INT held before it samples the
+     * address, and about 50 ms in total before it answers on the bus. */
     vTaskDelay(pdMS_TO_TICKS(10));
 
     const gpio_config_t int_in = {

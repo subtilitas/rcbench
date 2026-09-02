@@ -9,9 +9,9 @@
 #include "link_pages.h"
 
 /*
- * How much of a shortfall counts as a fault rather than as one dropped frame.
- * A tenth: below that a link is working and occasionally missing, which is
- * INTERMITTENT and a different thing to say.
+ * The shortfall that counts as a fault: fewer replies than 9/10 of the polls.
+ * Below that shortfall a link is working and occasionally missing, which is
+ * INTERMITTENT.
  */
 #define SHORTFALL_NUM 9
 #define SHORTFALL_DEN 10
@@ -44,11 +44,9 @@ void link_bringup_add_rtt(link_bringup_t *b, uint32_t us)
         b->rt_max_us = us;
     }
     /*
-     * A running mean rather than a sum: this runs for as long as the bench is
-     * powered, and a microsecond sum overflows 32 bits in about an hour of
-     * polling.  Integer, and biased low by at most one microsecond a sample,
-     * which does not matter for a number that exists to be compared against a
-     * transceiver's hold time.
+     * A running mean rather than a sum: a microsecond sum overflows 32 bits
+     * after about 1 hour of polling.  Integer, biased low by at most 1 us per
+     * sample.
      */
     ++b->rt_samples;
     b->rt_mean_us += ((int32_t)us - (int32_t)b->rt_mean_us)
@@ -63,8 +61,8 @@ link_diag_t link_bringup_diagnose(const link_bringup_t *b)
 
     /*
      * Silence first.  Everything else in this list assumes something came
-     * back, and a silent link also shows a hundred timeouts -- reporting
-     * those is reporting a consequence of the fault rather than the fault.
+     * back, and a silent link also shows a timeout per poll; reporting those
+     * is reporting a consequence of the fault rather than the fault.
      */
     if (b->replies == 0) {
         return LINK_DIAG_SILENT;
@@ -79,8 +77,8 @@ link_diag_t link_bringup_diagnose(const link_bringup_t *b)
     /*
      * The comparison only both ends together can make: the coprocessor
      * decoded the requests and the panel did not hear the answers.  That is
-     * the return path -- a direction line that never releases, or a receiver
-     * still disabled -- and nothing in the panel's own numbers says so.
+     * the return path (the coprocessor's transmit path or the panel's
+     * receiver), which the panel's own numbers cannot show.
      */
     if (b->have_status && !well_short(b->dev_frames, b->polls)
         && well_short(b->replies, b->polls)) {

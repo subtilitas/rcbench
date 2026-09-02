@@ -7,12 +7,10 @@
 #include <string.h>
 
 /*
- * Every comparison here is written as an unsigned difference against a
- * timeout rather than as a comparison of two timestamps.  A 32-bit
- * millisecond counter wraps after 49.7 days, and `now < then` is true for
- * about a millisecond either side of that -- which on a bench that runs for
- * weeks is a heartbeat that fails once, silently, at an unrepeatable moment.
- * The subtraction wraps with the counter and stays correct.
+ * Every comparison is an unsigned difference against a timeout, never a
+ * comparison of two timestamps.  A 32-bit millisecond counter wraps after
+ * 49.7 days, and `now < then` is wrong for about 1 ms either side of the
+ * wrap; the subtraction wraps with the counter and stays correct.
  */
 static inline bool elapsed_at_least(uint32_t now, uint32_t then, uint32_t ms)
 {
@@ -36,13 +34,12 @@ bool heartbeat_gen_step(heartbeat_gen_t *g, uint32_t now_ms, bool alive)
 
     if (!alive) {
         /*
-         * Low at once, and back to not-started.  Not-started is what makes
-         * recovery wait a full period rather than emitting whatever fragment
-         * of one was left over from before the stop -- a short first interval
-         * would be rejected by the monitor's floor, correctly and
-         * confusingly.  The clock is re-taken on the first step after
-         * recovery rather than here, because `alive` may be withdrawn for a
-         * long time and it is the moment of recovery the period runs from.
+         * Low at once, and back to not-started.  Not-started makes recovery
+         * wait a full period rather than emit the fragment of one left over
+         * from before the stop; a short first interval is rejected by the
+         * monitor's floor.  The clock is taken on the first step after
+         * recovery, because `alive` may be withdrawn for a long time and the
+         * period runs from the moment of recovery.
          */
         g->level   = false;
         g->started = false;
@@ -78,8 +75,8 @@ void heartbeat_mon_edge(heartbeat_mon_t *m, uint32_t now_ms)
     }
 
     if (!m->have_edge) {
-        /* One edge is not an interval, and it is an interval that is being
-         * judged.  Take the timestamp and wait for the next. */
+        /* One edge is not an interval, and intervals are what is judged.
+         * Take the timestamp and wait for the next. */
         m->have_edge    = true;
         m->last_edge_ms = now_ms;
         return;
@@ -90,13 +87,13 @@ void heartbeat_mon_edge(heartbeat_mon_t *m, uint32_t now_ms)
 
     if (gap < HEARTBEAT_MIN_GAP_MS) {
         /*
-         * Too fast to be a render loop.  This is the case the monostable
-         * cannot see: it is being retriggered perfectly well by whatever is
-         * doing this, and would hold the outputs enabled throughout.
+         * Too fast to be a render loop: the case the monostable cannot see,
+         * because whatever does this retriggers it and it holds the outputs
+         * enabled throughout.
          *
          * The run is reset rather than decremented, and the line is dropped
-         * immediately if it was up.  Noise does not get to keep credit it
-         * earned before it started.
+         * immediately if it was up.  Noise keeps no credit earned before it
+         * started.
          */
         ++m->rejected_fast;
         m->good_run = 0;
@@ -125,9 +122,9 @@ bool heartbeat_mon_alive(heartbeat_mon_t *m, uint32_t now_ms)
     }
 
     /*
-     * Silence is checked here rather than in the edge handler for the obvious
-     * reason that a line that has gone quiet raises no edges to handle.  This
-     * is the path that catches an unplugged cable, and it is the only one.
+     * Silence is checked here rather than in the edge handler: a quiet line
+     * raises no edges to handle.  This is the only path that catches an
+     * unplugged cable.
      */
     if (!m->have_edge
         || elapsed_at_least(now_ms, m->last_edge_ms, HEARTBEAT_MAX_GAP_MS)) {

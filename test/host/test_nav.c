@@ -1,11 +1,9 @@
 /*
- * The shell: the band, the router, and the two things about them that are
- * safety properties rather than conveniences.
+ * The shell: the band, the router, and the two safety properties they carry.
  *
  * STOP has to work from every screen that can have something armed behind it,
  * and no screen may draw over it.  The second is enforced by handing screens a
- * sub-canvas rather than by asking them nicely, and this file checks the
- * enforcement rather than the manners.
+ * sub-canvas, and this file checks the enforcement.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -103,15 +101,12 @@ TEST_CASE(the_splash_has_no_band_and_everything_else_does)
 
 /*
  * The property the sub-canvas exists for: after a full render, the band is
- * still there.  Every screen begins by clearing its canvas, so if it were
- * handed the panel instead of a window into it, STOP would be erased on the
- * way past -- silently, and looking like a cosmetic glitch rather than the
- * safety problem it is.
+ * still there.  Every screen begins by clearing its canvas, so a screen handed
+ * the panel instead of a window into it erases STOP.
  *
- * An earlier version of this case rendered twice and compared the two band
- * regions.  Both were wiped identically when the sub-canvas was removed, so it
- * passed against exactly the bug it was written for.  It now looks for the
- * band's own pixels rather than for agreement between two renders.
+ * The check looks for the band's own pixels.  Comparing two renders of the
+ * band region is not sufficient: without the sub-canvas both are wiped
+ * identically.
  */
 TEST_CASE(no_screen_can_draw_over_the_band)
 {
@@ -141,7 +136,7 @@ TEST_CASE(no_screen_can_draw_over_the_band)
 }
 
 /* STOP is latched rather than dispatched, so the loop that owns the heartbeat
- * drains it -- a stop stops the line as well as sending the command. */
+ * drains it: a stop stops the line as well as sending the command. */
 TEST_CASE(stop_latches_and_clears_when_read)
 {
     fresh();
@@ -171,8 +166,8 @@ TEST_CASE(stop_works_from_every_screen_that_has_a_band)
     }
 }
 
-/* A press that begins on STOP and slides off is not a stop -- but neither is
- * it a tap on whatever it slid onto. */
+/* A press that begins on STOP and slides off is not a stop, and neither is it
+ * a tap on whatever it slid onto. */
 TEST_CASE(a_press_that_slides_off_stop_does_nothing)
 {
     fresh();
@@ -208,8 +203,7 @@ TEST_CASE(the_overview_has_no_home_tag)
 }
 
 /* A second finger, or a palm, must not steal the release the first is waiting
- * for.  On the bench screen that used to leave the throttle drag latched to
- * whatever moved next. */
+ * for; otherwise the throttle drag latches to whatever moves next. */
 TEST_CASE(a_second_contact_cannot_steal_the_release)
 {
     fresh();
@@ -280,9 +274,8 @@ TEST_CASE(an_alert_survives_navigation)
     CHECK(ui_router_alert() == NULL);
 }
 
-/* The band's other states.  A fault badge that has never been rendered is a
- * fault badge nobody has seen, and this is the one place it can be looked at
- * without breaking something on a bench first. */
+/* The band's other states: armed, and a fault badge.  Rendered here rather
+ * than only on a faulted bench. */
 TEST_CASE(the_band_shows_what_is_wrong)
 {
     fresh();
@@ -314,7 +307,7 @@ TEST_CASE(the_band_shows_what_is_wrong)
 }
 
 /* The splash holds until every step has answered, then hands over.  A tap
- * skips the hold -- but only once there is something to have read. */
+ * skips the hold, but only once there is something to have read. */
 TEST_CASE(the_splash_holds_then_hands_over)
 {
     fresh();
@@ -388,9 +381,9 @@ TEST_CASE(the_alert_band_renders_at_the_bottom)
 /* ------------------------------------------------------- the simulation mark */
 
 /*
- * The bench is useful without hardware, and the whole danger is a modelled
- * number being screenshotted and quoted as a measured one.  So the mark is
- * drawn over everything, on every screen, and no screen can opt out.
+ * The bench runs without hardware, and the risk is a modelled number being
+ * photographed and quoted as a measured one.  The mark is drawn over
+ * everything, on every screen, and no screen can opt out.
  */
 TEST_CASE(the_simulation_mark_covers_the_whole_screen)
 {
@@ -411,19 +404,17 @@ TEST_CASE(the_simulation_mark_covers_the_whole_screen)
     ui_router_render(&cv, 0);
 
     /*
-     * The property that matters is anti-crop: no horizontal strip and no
-     * vertical strip of the screen is free of the mark, so no crop of a
-     * photograph loses it.
+     * The property is anti-crop: no horizontal strip and no vertical strip
+     * of the screen is free of the mark, so no crop of a photograph loses
+     * it.
      *
-     * Not quadrants.  An earlier version of this case demanded 200 marked
-     * pixels in each of the four, which a single diagonal word does not
-     * produce -- the top-left had 51 -- and the assertion described a mark
-     * nobody had built rather than the one that was asked for.
+     * Quadrant counts are not asserted: a single diagonal word leaves a
+     * corner quadrant with about 51 marked pixels.
      *
-     * Also not asserted: ink inside the status band. The router draws the
-     * mark last, over the whole canvas, clipped to nothing; but the top 48
-     * rows are corner, and measuring zero there says something about the
-     * shape of the letters rather than about the policy.
+     * Ink inside the status band is not asserted either.  The router draws
+     * the mark last, over the whole canvas, clipped to nothing; but the top
+     * 48 rows are a corner of the diagonal, and their count depends on the
+     * shape of the letters rather than on the policy.
      */
     const int strips = 5;
     for (int i = 0; i < strips; ++i) {
@@ -454,20 +445,14 @@ TEST_CASE(the_simulation_mark_covers_the_whole_screen)
 }
 
 /*
- * The numbers underneath stay readable, which is what makes a permanent mark
- * tolerable instead of something people want switched off.
+ * The numbers underneath stay readable.
  *
- * It used to get there by blending, and this case used to assert that almost
- * no marked pixel reached the ink colour outright.  That contract was wrong:
- * the mark is laid over screens that repaint only what changed, so it landed
- * on pixels already carrying its own output from earlier frames and the blend
- * compounded -- 15% over 15% is 28%, then 39%, until it was solid.  Only the
- * plot looked right, because it repaints its background every frame.
- *
- * So it stencils instead, and readability now comes from sparseness rather
- * than from weight.  That is what this measures: a marked pixel's neighbours
+ * The mark is a stencil, not a blend.  It is laid over screens that repaint
+ * only what changed, and a blend applied to pixels already carrying the mark
+ * compounds: 15% over 15% is 28%, then 39%, until solid.  Readability comes
+ * from sparseness, which is what this measures: a marked pixel's neighbours
  * are mostly unmarked, so the content underneath reads through the gaps.  A
- * solid fill would score close to eight.
+ * solid fill scores close to eight.
  */
 TEST_CASE(the_simulation_mark_lets_the_screen_through)
 {
@@ -526,14 +511,12 @@ TEST_CASE(the_simulation_mark_lets_the_screen_through)
 /*
  * Screens cache their chrome per framebuffer.  Switching the mark changes
  * pixels they believe they have already drawn correctly, so the router has to
- * invalidate them -- otherwise the mark appears on one buffer and not the
- * other, and on a panel that alternates between two that is a flicker rather
- * than a watermark.
+ * invalidate them; otherwise the mark appears on one buffer and not the
+ * other, which on a panel that alternates between two is flicker.
  *
- * The setup matters more than the assertion: both buffers are painted *before*
- * the flag flips. An earlier version flipped it first, so each buffer was
- * being drawn for the first time anyway and the case passed with the
- * invalidation deleted.
+ * Both buffers are painted before the flag flips.  Flipping first draws each
+ * buffer for the first time anyway, and the case then passes without the
+ * invalidation.
  */
 TEST_CASE(switching_the_mark_invalidates_the_cached_chrome)
 {
@@ -544,7 +527,7 @@ TEST_CASE(switching_the_mark_invalidates_the_cached_chrome)
     st.simulated = false;
     ui_router_set_status(&st);
     ui_router_render(&cv, 0);
-    ui_router_render(&cv, 1);   /* both caches now warm and unmarked */
+    ui_router_render(&cv, 1);   /* both caches warm and unmarked */
 
     st.simulated = true;
     ui_router_set_status(&st);
@@ -571,10 +554,8 @@ TEST_CASE(switching_the_mark_invalidates_the_cached_chrome)
 
 /*
  * The stub copy is drawn with gfx_text, which clips at the canvas edge rather
- * than wrapping.  A line that is too long is silently cut mid-word and reads
- * as a rendering fault rather than as an over-long string -- which is exactly
- * how it was found: a line about balancing ran off the right edge and the
- * golden image looked broken.
+ * than wrapping.  A line that is too long is cut mid-word, so every line is
+ * held to the width.
  */
 TEST_CASE(no_line_of_stub_copy_runs_off_the_screen)
 {
@@ -604,13 +585,10 @@ TEST_CASE(no_line_of_stub_copy_runs_off_the_screen)
 
 
 /*
- * The menu says what the bench can do, not what it has screens for.
- *
- * This replaced a page of checkboxes: a preference that hides a feature goes
- * stale -- untick a receiver bus, plug one in six months later, and the
- * analyser reports nothing on the wire with no way to find out why.  A
- * capability corrects itself the moment the part is fitted, and until then it
- * says the numbers are modelled rather than quietly implying they are not.
+ * The menu says what the bench can do, not what it has screens for.  The
+ * marks derive from the capability bits the coprocessor reports, not from a
+ * preference: a capability corrects itself when the part is fitted, and until
+ * then the screen says its numbers are modelled.
  */
 TEST_CASE(the_menu_marks_what_is_not_fitted)
 {

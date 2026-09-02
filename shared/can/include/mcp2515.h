@@ -1,16 +1,16 @@
 /*
- * The MCP2515's register map and frame layout, as facts from the datasheet.
+ * The MCP2515's register map and frame layout, from the datasheet.
  *
- * Everything here is arithmetic or a constant -- no SPI, no pins, no delays --
- * so the awkward half of the driver is testable and the half that touches
- * hardware is thin enough to read in one go.
+ * Everything here is arithmetic or a constant: no SPI (Serial Peripheral
+ * Interface), no pins, no delays.  It is host-tested, and the driver that
+ * touches hardware stays thin.
  *
- * The awkward half is the identifier.  A 29-bit extended identifier is spread
- * across four registers with a three-bit gap in the middle of the second,
- * because the layout was designed for 11-bit identifiers and extended ones
- * were fitted around them.  Getting it wrong does not fail loudly: the frame
- * goes out with a different identifier from the one intended, which on a bus
- * that arbitrates by identifier means the wrong thing wins.
+ * The identifier is the part that needs the tests.  A 29-bit extended
+ * identifier is spread across four registers with a three-bit gap in the
+ * second: the register layout is the 11-bit one, with the extended bits
+ * fitted around it.  A wrong packing puts the frame on the bus under a
+ * different identifier, and on a bus that arbitrates by identifier the wrong
+ * frame wins.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -66,10 +66,10 @@ extern "C" {
 #define MCP2515_INTF_TX0  0x04u
 #define MCP2515_INTF_ERR  0x20u
 
-/* EFLG.  The two overflow bits are the ones worth naming: they are set when a
- * frame arrives with both receive buffers still full, they are sticky, and the
- * MCU has to clear them -- so they are the record of a frame that was lost
- * without anything going wrong on the wire. */
+/* EFLG.  The two overflow bits are set when a frame arrives with both receive
+ * buffers full; they are sticky and the MCU (microcontroller unit) clears
+ * them.  They are the record of a frame lost with nothing wrong on the
+ * wire. */
 #define MCP2515_EFLG_RX0OVR 0x40u
 #define MCP2515_EFLG_RX1OVR 0x80u
 #define MCP2515_EFLG_TXBO   0x20u
@@ -87,9 +87,8 @@ extern "C" {
 /**
  * Pack a 29-bit extended identifier into SIDH, SIDL, EID8, EID0.
  *
- * False if the identifier does not fit in 29 bits, which is a caller bug --
- * silently truncating it would put a frame on the bus under an identifier
- * nobody chose.
+ * False if the identifier does not fit in 29 bits: a caller bug, and
+ * truncating it would put a frame on the bus under an unintended identifier.
  */
 bool mcp2515_pack_id(uint32_t id, uint8_t out[4]);
 

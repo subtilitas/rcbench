@@ -1,6 +1,6 @@
 /*
- * The bench's model: what the numbers mean on the wire, the rules for asking
- * a motor to spin, and a simulator that has to be honest about being one.
+ * The bench model: the fixed-point wire form of bench_state, and a simulator
+ * that declares its output as simulated.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -15,9 +15,8 @@
 
 /* ----------------------------------------------------------- the wire form */
 
-/* Every field, at both ends of its range, through the fixed point and back.
- * A scale that disagrees with the wire is a wrong reading rather than a
- * crash, which is the kind that ships. */
+/* Every field through the fixed-point form and back.  A scale that disagrees
+ * with the wire is a wrong reading rather than a crash. */
 TEST_CASE(every_field_survives_the_round_trip)
 {
     bench_state_t in;
@@ -75,8 +74,8 @@ TEST_CASE(temperature_survives_going_below_zero)
     CHECK_NEAR(out.temp_motor, -0.1f, 0.1f);
 }
 
-/* A value past what sixteen bits hold has to clamp, not wrap: a 700 A reading
- * that wrapped to 44 A is a reading somebody would believe. */
+/* A value past what 16 bits hold clamps rather than wraps: 700 A wrapped
+ * would read as about 44 A. */
 TEST_CASE(an_out_of_range_value_clamps_rather_than_wraps)
 {
     bench_state_t in;
@@ -136,8 +135,7 @@ TEST_CASE(resetting_peaks_does_not_invent_a_collapsed_pack)
 
 /* ------------------------------------------------------------ the simulator */
 
-/* It must declare itself.  A modelled number that does not is the entire
- * risk of having a simulator at all. */
+/* Every value the simulator produces carries LINK_BN_SIMULATED. */
 TEST_CASE(the_simulator_flags_everything_it_produces)
 {
     telemetry_sim_t s;
@@ -159,9 +157,9 @@ TEST_CASE(the_simulator_flags_everything_it_produces)
 }
 
 /*
- * The three behaviours a bench exists to show, which a flattering simulator
- * would hide: the bus sags under load, current grows faster than throttle,
- * and rpm follows the sagging bus rather than the stick.
+ * Three behaviours of the model: the bus sags under load, current grows
+ * faster than throttle, and rpm (revolutions per minute) lags a throttle
+ * step.
  */
 TEST_CASE(the_model_sags_under_load)
 {
@@ -229,13 +227,12 @@ TEST_CASE(the_simulator_accumulates_peaks_like_the_coprocessor_would)
     CHECK(peak_a > 40.0f);
 
     /*
-     * The sag is compared after the load comes off, not during it.  Under
-     * load the floor *is* the present reading, so an earlier version of this
-     * case asserted sag_v < voltage while they were necessarily equal.
+     * The sag is compared after the load comes off.  Under load the floor
+     * equals the present reading, so sag_v < voltage holds only afterwards.
      */
     for (int i = 0; i < 40; ++i) { telemetry_sim_step(&s, 0.0f, 0.05f, &b); }
     CHECK(b.current < 5.0f);
-    CHECK(sag_v < b.voltage);          /* it went lower than it sits now */
+    CHECK(sag_v < b.voltage);          /* lower than the present reading */
     CHECK_EQ(b.current_max, peak_a);   /* and both are held */
     CHECK_EQ(b.voltage_min, sag_v);
 }

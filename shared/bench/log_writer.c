@@ -9,10 +9,9 @@
 #include <string.h>
 
 /*
- * Units in the header rather than on a row of their own.  A separate units row
- * is read for its units *and* counted as data by the reader, so a file in that
- * shape reports its first row as unreadable cells -- which is exactly what the
- * first synthetic file for the golden images did.
+ * Units in the header row, not on a row of their own.  The reader counts a
+ * separate units row as data, so a file in that shape reports its first row
+ * as unreadable cells.
  */
 static const char *const k_header =
     "time (s);voltage (V);current (A);power (W);rpm (rpm);"
@@ -47,13 +46,13 @@ bool log_writer_header(log_writer_t *w)
     if (w == NULL || w->header_done) {
         return w != NULL && !w->failed;
     }
-    w->header_done = true;   /* set first: a failed header is still attempted */
+    w->header_done = true;   /* set before the write: one attempt per file */
     return put(w, k_header, strlen(k_header));
 }
 
-/* A reading that is not finite is written as an empty cell rather than as
- * "nan" or as a zero.  The reader counts an empty cell as absent, which is
- * what it was; "nan" is a word and 0 is a lie. */
+/* A reading that is not finite is written as an empty cell, which the reader
+ * counts as absent.  "nan" is not a number to the reader, and 0 is a wrong
+ * value. */
 static int fmt(char *out, size_t cap, float v, int decimals)
 {
     if (!isfinite(v)) {

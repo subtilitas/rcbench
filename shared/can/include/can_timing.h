@@ -1,25 +1,24 @@
 /*
- * CAN bit timing: turning a wanted bit rate into segment counts.
+ * CAN (Controller Area Network) bit timing: a wanted bit rate turned into
+ * segment counts.
  *
- * Every CAN controller divides a source clock into time quanta and then splits
- * each bit into a fixed sync quantum plus two programmable segments.  Getting
- * that wrong does not fail cleanly.  A node whose bit rate is a fraction of a
- * percent off, or whose sample point sits in the wrong place, works on a short
- * bench cable with one other node and then starts logging errors when the bus
- * gets longer, colder or busier -- which is the worst possible time to find out.
+ * A CAN controller divides its source clock into time quanta and splits each
+ * bit into one sync quantum plus two programmable segments.  A bit rate that
+ * is a fraction of a percent off, or a sample point in the wrong place, works
+ * on a short cable with one other node and logs errors when the bus is
+ * longer, colder or busier.
  *
- * So the arithmetic lives here, in pure C with tests, rather than in a table of
- * magic register values copied from an application note.  Two controllers use
- * it: the panel's TWAI and the coprocessor's XL2515.  They have different
- * clocks and different segment limits and exactly the same arithmetic.
+ * The arithmetic is here, in pure C with tests, rather than in a table of
+ * register values.  Two controllers use it: the panel's TWAI (Two-Wire
+ * Automotive Interface, the ESP32-S3's CAN controller) and the coprocessor's
+ * XL2515.  They have different clocks and segment limits and the same
+ * arithmetic.
  *
- * THE ONE RULE THIS ENFORCES: the bit rate must come out **exact**.  Not close.
- * CAN has no framing to resynchronise against beyond its own bit stuffing, and
- * two nodes that disagree by a percent will agree on short frames and fall out
- * on long ones.  A rate that cannot be hit exactly is reported as impossible,
- * which is a far better answer than one that is nearly right -- and it is how
- * you find out that an 8 MHz crystal cannot do 1 Mbit/s before you have soldered
- * anything.
+ * The rule this module enforces: the bit rate comes out exact.  CAN has no
+ * framing to resynchronise against beyond its own bit stuffing, and two nodes
+ * that disagree by 1% agree on short frames and fail on long ones.  A rate
+ * that cannot be hit exactly is reported as impossible; an 8 MHz crystal
+ * cannot make 1 Mbit/s.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -38,7 +37,7 @@ extern "C" {
  * What a particular controller can be asked for.
  *
  * Segment counts are in time quanta and exclude the sync quantum, which is
- * always exactly one and is not programmable on any controller worth using.
+ * always one.
  */
 typedef struct {
     uint32_t clock_hz;   /**< the clock the prescaler divides */
@@ -65,27 +64,19 @@ typedef struct {
 } can_timing_t;
 
 /**
- * The CiA-recommended sample point for rates above 800 kbit/s, in permille.
- *
- * Later is better for propagation delay and worse for oscillator tolerance.
- * 87.5% is the usual compromise and what most tools default to.
+ * The sample point CiA (CAN in Automation) recommends for rates above
+ * 800 kbit/s, in permille.  Later is better for propagation delay and worse
+ * for oscillator tolerance; 87.5% is the usual compromise.
  */
 #define CAN_SAMPLE_POINT_DEFAULT 875
 
 /**
- * The sample point *this link* uses, at both ends.
+ * The sample point this link uses, at both ends.
  *
- * Not 87.5%, and not a preference: the coprocessor's XL2515 has exactly one
- * way to make 1 Mbit/s from a 16 MHz crystal -- the smallest divisor and the
- * eight quanta that are the fewest a bit may have -- and eight quanta put the
- * sample at 75%. Nothing closer to 87.5 exists on that end.
- *
- * The panel has slack and the coprocessor has none, so the panel matches the
- * coprocessor rather than each optimising alone. They did optimise alone once,
- * and landed on 87.5% and 75% with the panel additionally taking a phase 2 of
- * one quantum -- a jump width of one, on a bus where the other node's quantum
- * is an eighth of a bit. Two nodes disagreeing about where the bit is is not
- * something to leave to whichever constant each end happened to pass.
+ * The coprocessor's XL2515 has one way to make 1 Mbit/s from a 16 MHz
+ * crystal: the smallest divisor and 8 quanta per bit, the fewest a bit may
+ * have, which puts the sample point at 75%.  The panel has slack and matches
+ * the coprocessor, so both ends sample the bit in the same place.
  */
 #define CAN_SAMPLE_POINT_LINK 750
 
@@ -93,8 +84,8 @@ typedef struct {
  * Solve for the segmentation closest to @p target_permille that hits
  * @p bitrate exactly.
  *
- * False when no combination does. That is a real answer and usually means the
- * source clock is wrong for the rate rather than that the arguments were.
+ * False when no combination does, which means the source clock cannot make
+ * the rate.
  */
 bool can_timing_solve(const can_timing_limits_t *lim, uint32_t bitrate,
                       uint16_t target_permille, can_timing_t *out);
@@ -107,7 +98,7 @@ uint32_t can_timing_max_bitrate(const can_timing_limits_t *lim);
 /** The coprocessor's XL2515 (MCP2515-compatible), given its crystal. */
 void can_timing_limits_mcp2515(can_timing_limits_t *out, uint32_t crystal_hz);
 
-/** The panel's TWAI, off the 80 MHz APB clock. */
+/** The panel's TWAI, off the 80 MHz APB (advanced peripheral bus) clock. */
 void can_timing_limits_twai(can_timing_limits_t *out);
 
 /* --------------------------------------------------- MCP2515 registers */
@@ -121,11 +112,10 @@ void can_timing_limits_twai(can_timing_limits_t *out);
  *
  * @p cnf receives three bytes in register order CNF1, CNF2, CNF3.
  *
- * The split of tseg1 into propagation and phase-1 segments happens here
- * because it is the MCP2515's business and not the arithmetic's: both are
- * 1..8 quanta, the bus does not care where the boundary falls, and only this
- * controller has to be told. Returns false if the solution cannot be
- * expressed -- a tseg1 of 17 or more has no legal split.
+ * tseg1 is split into propagation and phase-1 segments here, because that
+ * split is the MCP2515's business: both are 1..8 quanta, and the bus does
+ * not care where the boundary falls.  Returns false if the solution cannot
+ * be expressed; a tseg1 of 17 or more has no legal split.
  */
 bool mcp2515_encode_timing(const can_timing_t *t, uint8_t cnf[3]);
 

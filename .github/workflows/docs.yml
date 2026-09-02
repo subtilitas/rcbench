@@ -1,11 +1,11 @@
 name: Docs
 
 # Publishes docs/ to the repository's GitHub wiki.  The wiki is an ordinary
-# git repo (<repo>.wiki.git), so this is a checkout, a mirror of the files and
-# a push -- no third-party action involved.
+# git repository (<repo>.wiki.git), so this is a checkout, a mirror of the
+# files and a push, with no third-party action.
 #
 # The wiki must exist before the first run: create one page by hand in the
-# repository's Wiki tab, otherwise the clone below 404s.
+# repository's Wiki tab, otherwise the clone below fails with 404.
 
 on:
   push:
@@ -31,10 +31,10 @@ jobs:
         with:
           path: source
 
-      # A wiki that has never had a page does not exist as a git repository,
-      # and cannot be created over the API -- only by adding one page in the
-      # Wiki tab.  Without this the job fails with a bare "Repository not
-      # found", which is a true statement that explains nothing.
+      # A wiki with no page does not exist as a git repository and cannot be
+      # created over the API (application programming interface), only by
+      # adding one page in the Wiki tab.  Without this message the job fails
+      # with a bare "Repository not found".
       - name: Clone the wiki
         run: |
           if ! git clone \
@@ -50,16 +50,16 @@ jobs:
 
       - name: Mirror docs/ into the wiki
         run: |
-          # Drop the previously published pages so deletions propagate, but
-          # keep the wiki's own .git directory.
+          # Remove the pages the wiki holds so deletions propagate; keep its
+          # .git directory.
           find wiki -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           cp -a source/docs/. wiki/
 
       # A wiki page is addressed by its title with no extension, so a link to
       # `Screens.md` downloads the file instead of opening the page.  In the
       # repository the opposite holds, and check_docs.py holds every link to
-      # it.  Neither source is bent to suit the other: the translation happens
-      # here, on the way out, and only to the copy.
+      # it.  The translation happens here, on the way out, and only to the
+      # copy.
       - name: Point the links at wiki pages rather than at files
         run: python3 source/tools/wiki_links.py wiki
 
@@ -74,7 +74,7 @@ jobs:
             exit 0
           fi
           git commit -m "docs: sync from ${{ github.sha }}"
-          # Somebody editing a page in the wiki UI while this runs would
-          # otherwise fail the push outright.
+          # A page edited in the wiki UI (user interface) while this runs
+          # would otherwise fail the push.
           git pull --rebase
           git push

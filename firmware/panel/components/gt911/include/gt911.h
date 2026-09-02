@@ -1,9 +1,10 @@
 /*
- * Minimal GT911 capacitive touch controller driver (I2C).
+ * GT911 capacitive touch controller driver over I2C (Inter-Integrated
+ * Circuit).
  *
  * The GT911 uses 16-bit big-endian register addresses.  Coordinates live in a
- * "buffer" whose ready flag must be cleared by the host after each read --
- * forget that and the controller stops updating.
+ * buffer whose ready flag the host clears after each read; while the flag is
+ * set the controller does not update the buffer.
  *
  * SPDX-License-Identifier: MIT
  */

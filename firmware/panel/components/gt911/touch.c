@@ -37,14 +37,13 @@ typedef struct {
     touch_tracker_t tracker;
 
     /*
-     * When the controller last answered.  Milliseconds, and deliberately 32
-     * bits: an aligned 32-bit load is atomic on the S3, so the application can
-     * read this from its own task without taking the lock, and unsigned
-     * subtraction stays correct across the ~49-day wrap.
+     * When the controller last answered, in milliseconds.  32 bits because
+     * an aligned 32-bit load is atomic on the ESP32-S3, so the application
+     * reads it from its own task without the lock, and unsigned subtraction
+     * stays correct across the 49-day wrap.
      *
-     * "Answered" means the I2C read succeeded, not that a finger was down --
-     * an untouched panel is healthy, and the two used to be indistinguishable
-     * from outside this file.
+     * "Answered" means the I2C (Inter-Integrated Circuit) read succeeded,
+     * not that a finger was down; an untouched panel is healthy.
      */
     volatile uint32_t last_ok_ms;
 } touch_state_t;
@@ -82,7 +81,7 @@ static void publish(const touch_point_t *pts, int count)
     if (s_touch.events) {
         for (int i = 0; i < n; ++i) {
             if (xQueueSend(s_touch.events, &evts[i], 0) != pdTRUE) {
-                /* Consumer is behind: drop the oldest so the newest survives. */
+                /* The consumer is behind: drop the oldest, keep the newest. */
                 touch_event_t dropped;
                 (void)xQueueReceive(s_touch.events, &dropped, 0);
                 (void)xQueueSend(s_touch.events, &evts[i], 0);

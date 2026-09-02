@@ -171,8 +171,8 @@ esp_err_t gt911_read(gt911_handle_t h, touch_point_t *out, int max,
         }
     }
 
-    /* Acknowledge before parsing so the controller can start on the next
-     * sample while we work. */
+    /* Acknowledge before parsing, so the controller starts on the next sample
+     * during the parse. */
     ESP_RETURN_ON_ERROR(reg_write8(h, GT911_REG_STATUS, 0), TAG, "ack");
 
     int written = (n < max) ? n : max;

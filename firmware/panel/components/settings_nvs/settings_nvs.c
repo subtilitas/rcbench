@@ -1,9 +1,9 @@
 /*
- * NVS backing for the settings model.
+ * NVS (non-volatile storage) backing for the settings model.
  *
  * Values are stored one key at a time rather than as a blob, so a schema that
- * gains or loses an entry does not invalidate everything else: an unknown key
- * is ignored on load and a missing one keeps its default.
+ * gains or loses an entry does not invalidate the rest: an unknown key is
+ * ignored on load and a missing one keeps its default.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -70,10 +70,9 @@ static void nvs_save(const float *values, int count)
 static const settings_store_t s_store = { nvs_load, nvs_save };
 
 /*
- * A preferences store that cannot be brought up must not stop a motor bench
- * from booting: settings_init() already runs on the schema defaults when the
- * store is NULL, which is a working bench with unsaved settings rather than a
- * reboot loop with no panel at all.
+ * A store that cannot be brought up must not stop the bench from booting:
+ * settings_init() runs on the schema defaults when the store is NULL, which
+ * is a working bench with unsaved settings.
  */
 const settings_store_t *settings_nvs_store(void)
 {
