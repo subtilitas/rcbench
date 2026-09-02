@@ -79,6 +79,11 @@ mit USB-Serial-JTAG (die eingebaute serielle und Debug-Bridge des ESP32-S3
 über USB, Universal Serial Bus) als Zweitkonsole. Von dieser Datei ausgehen,
 nicht von `menuconfig`.
 
+ESP-IDF liest `sdkconfig.defaults` nur, wenn es `sdkconfig` erzeugt. Ein Baum,
+der schon einmal gebaut wurde, hat bereits `firmware/panel/sdkconfig`, und
+diese Datei gewinnt: nach einer Änderung der Defaults löschen, sonst wirkt die
+Änderung nicht auf das Image.
+
 ## Befehle
 
 ```bash

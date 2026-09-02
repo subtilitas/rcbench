@@ -22,13 +22,16 @@ CONFIG_SPIRAM_SPEED_80M=y
 #
 # Code and constants stay in flash; only the framebuffers live in PSRAM.
 #
-# Code in PSRAM frees internal RAM (random-access memory), but the LCD scans
-# 30 MB/s out of the same PSRAM continuously, and every instruction fetch or
-# font lookup that misses the cache is taken out of that budget.  With a
-# 415 KB image in PSRAM the RGB (red, green, blue) panel flickers, shows torn
-# glyphs and drifts 2 to 3 scanlines, which is a starved DMA.  Flash XIP
-# (execute in place) has its own cache and its own bus, so the fonts and the
-# screen code do not compete with the scan-out.
+# The LCD (liquid-crystal display) scans about 30 MB/s out of PSRAM
+# continuously, and every instruction fetch or font lookup that misses the
+# 32 KB instruction cache is taken out of that budget.  Flash XIP (execute in
+# place) has its own cache and its own bus, so the fonts and the screen code
+# do not compete with the scan-out.
+#
+# CONFIG_SPIRAM_XIP_FROM_PSRAM=y, which selects SPIRAM_FETCH_INSTRUCTIONS and
+# SPIRAM_RODATA, puts about 460 KB of code and constants into PSRAM and holds
+# the cache open across a main-flash write.  Its effect on the frame rate here
+# is not measured.
 CONFIG_SPIRAM_XIP_FROM_PSRAM=n
 CONFIG_SPIRAM_RODATA=n
 CONFIG_SPIRAM_FETCH_INSTRUCTIONS=n
@@ -44,7 +47,27 @@ CONFIG_ESP32S3_DATA_CACHE_LINE_64B=y
 # random-access memory): it refills the bounce buffers, and a cache miss
 # there shows as a torn or shifted frame.
 CONFIG_LCD_RGB_ISR_IRAM_SAFE=y
-CONFIG_LCD_RGB_RESTART_IN_VSYNC=y
+#
+# The DMA (direct memory access) is restarted when a desync is detected, not
+# on every VBlank (vertical blanking interval).
+# CONFIG_LCD_RGB_RESTART_IN_VSYNC=y restarts unconditionally, and every
+# restart empties the LCD FIFO (first-in, first-out buffer) and then resumes
+# from a DMA link that skips LCD_LL_FIFO_DEPTH + 1 = 17 pixels, on the
+# assumption that the FIFO still holds them.  It does not, so each frame
+# starts 17 px late: the image sits 17 px to the left and the tail of every
+# line wraps one line down.
+CONFIG_LCD_RGB_RESTART_IN_VSYNC=n
+#
+# The panel cannot scan while the main flash is busy.  The interrupt handler
+# refills the bounce buffer (10 lines, 16 KB, one every 512 us at a 16 MHz
+# pixel clock) from PSRAM through the data cache, and a flash read, write or
+# erase closes that cache for the length of the operation.  ESP-IDF documents
+# the restriction for the mode, and the panic is `Cache disabled but cached
+# memory region accessed`.
+#
+# Flash work therefore happens where the panel is not scanning: the panel
+# loads its settings before display_init().  A save from the settings screen
+# runs against a live panel and is an open item.
 
 # Performance --------------------------------------------------------------
 # ESP-IDF (Espressif Internet-of-Things Development Framework) defaults to

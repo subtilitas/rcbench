@@ -58,10 +58,11 @@ static IRAM_ATTR bool on_vsync(esp_lcd_panel_handle_t panel,
     return high_prio_woken == pdTRUE;
 }
 
-/* Fires when a whole framebuffer has been handed to the panel.  In bounce
- * mode that is the instant the driver latches the requested buffer
- * (`bb_fb_index = cur_fb_index`), a tighter signal than VSYNC (vertical
- * sync): from then on nothing reads the buffer about to be reclaimed. */
+/* Fires when a whole framebuffer has been handed to the panel: the DMA
+ * (direct memory access) end-of-frame without bounce buffers, and the instant
+ * the driver latches the requested buffer (`bb_fb_index = cur_fb_index`) with
+ * them.  Either is a tighter signal than VSYNC (vertical sync): from then on
+ * nothing reads the buffer about to be reclaimed. */
 static IRAM_ATTR bool on_frame_buf_complete(esp_lcd_panel_handle_t panel,
                                             const esp_lcd_rgb_panel_event_data_t *edata,
                                             void *user_ctx)

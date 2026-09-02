@@ -42,10 +42,17 @@ extern "C" {
 typedef struct {
     uint32_t pclk_hz;             /**< 0 -> BOARD_LCD_PCLK_HZ (16 MHz)        */
     uint16_t bounce_buffer_lines; /**< internal-RAM (random-access memory)
-                                   *   bounce buffer height; 0 disables bounce
-                                   *   mode.  Bouncing costs CPU (central
-                                   *   processing unit) time but survives
-                                   *   PSRAM bandwidth dips. */
+                                   *   bounce buffer height.  Bouncing costs
+                                   *   CPU (central processing unit) time and
+                                   *   stops the panel for the length of any
+                                   *   main-flash operation, because the
+                                   *   refill runs in an interrupt handler and
+                                   *   reads PSRAM through the data cache.
+                                   *   0 disables it and the EDMA (external
+                                   *   direct memory access) fetches each
+                                   *   frame from PSRAM directly, bypassing
+                                   *   that cache.  Whether the EDMA keeps up
+                                   *   at this pixel clock is not measured. */
     bool double_buffer;           /**< false -> single framebuffer, no flip   */
     bool backlight_on;            /**< turn the backlight on after init       */
 } display_config_t;
