@@ -457,7 +457,7 @@ the question was which end set a baud *ceiling*, and there was no ceiling. The
 last two were closed by the move to CAN, which is a stronger kind of closed:
 the direction circuit they were about no longer exists.
 
-Two are open. Two more were closed by the move to CAN — and closed in the
+Four are open. Two more were closed by the move to CAN — and closed in the
 strong sense: the questions stop being asked rather than being answered, which
 is what replacing a mechanism does that fixing one does not. They are kept
 below because the reasoning applies again to anybody who fits RS485.
@@ -471,6 +471,7 @@ below because the reasoning applies again to anybody who fits RS485.
 | **Seven OpenYGE numbers want a logic analyser** | The protocol came from YGE's developer as code rather than as a document, and code answers "what does this do" rather than "what does the wire guarantee". The RPM scale is the one that actually contradicts itself — the field is described as 0.1 eRPM and multiplied by ten — and a wrong answer there is a tachometer that reads a hundredfold out. [The spec](docs/OpenYGE.md) lists all seven; each is one measurement, and the parameter indices want confirming before anything is *written* to an ESC. |
 | ~~**Q1's threshold voltage is not on the schematic**~~ | **Closed by CAN.** The direction circuit's hold time set the baud floor, and CAN has no direction circuit. The schematic names R76, C51, D7 and R79 but not the FET, so the floor was quoted from the pessimistic end of a plausible range (1.0 V → 72 µs → 125 kbaud); one scope capture would still settle it if RS485 is ever fitted again. |
 | ~~**The panel's console shares a multiplexer with CAN**~~ | **Closed.** Native USB — USB-Serial-JTAG and USB-OTG both — is on GPIO19/20, dedicated analog pins the matrix cannot move, and those are what the FSUSB42UMX switches against CAN. So selecting CAN costs the native console whichever way the mux is wired. The board has a second USB-C socket behind a USB-UART bridge, which shares nothing with CAN, so the console is now **UART0 primary with USB-Serial-JTAG as secondary** — output goes to both and whichever socket is plugged in shows it. One thing left to confirm from the schematic: which GPIOs the bridged socket lands on. UART0's defaults are assumed, and the assumption fails soft, because the secondary still works whenever USB is selected. |
+| **The bench in a browser** | The question arrives as "could Chromium run on the panel", and that half is [settled below](#what-is-deliberately-not-built). The inversion is open, and it is the useful half: serve the interface over the network and let the browser run on the machine that already has one. Two things stand in the way and only one of them is work. **The work:** there is no network stack in this tree at all — no Wi-Fi bring-up, no sockets, no HTTP — so the panel's ✔ for *network* in [the split](#the-split-and-why-there-is-one) is ownership rather than code, and Wi-Fi wants internal RAM and CPU on a board whose frame is already spent before it starts. **The question:** the safety line is a heartbeat, not an enable, and *a remote client cannot hold one*. A browser that stopped answering looks exactly like a browser whose user is thinking, and a STOP that has to cross Wi-Fi is not a stop. So the shape, if it happens, is a read-only client — numbers, plots and logs go out; arming, throttle and STOP stay at the panel, where the hand and the heartbeat are. Anything further needs an answer to how a remote session proves it is still there, and that answer wants writing before any code. |
 
 ## What is deliberately not built
 
@@ -492,6 +493,19 @@ nobody reopens it by accident.
   survey.
 - **A USB oscilloscope.** This chip's USB is Full-Speed only and about twenty
   times too slow for one.
+- **A web browser on the panel.** Chromium is the one that gets asked for, and
+  the distance is not a porting job. The leanest headless build of it is over
+  100 MB against a 3 MB app partition; one blank tab wants more memory than
+  this board has PSRAM, and 1.5 MB of that PSRAM is already the two
+  framebuffers; and the multi-process sandbox and the JIT underneath it need
+  processes, an MMU and a POSIX to be a port *to*, none of which exist here.
+  Chromium is written against operating systems, not against chips. A cut-down
+  HTML renderer is possible and is a hobby inside a hobby — a frame on this
+  panel may spend 976 KiB of PSRAM traffic and the screens already spend more
+  than that before anything has to lay out a page, which is
+  [the budget](docs/Performance.md) every screen here is held to. What is open
+  is the other direction, serving this interface to a browser elsewhere, and it
+  is [one question above](#what-is-still-unsettled).
 - **Servo programming for KST**, held at the owner's request.
 
 And one rule that constrains every protocol commit: **nearly every open
