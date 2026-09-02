@@ -71,10 +71,15 @@ flat: `#include "gfx.h"`.
 
 `firmware/panel/sdkconfig.defaults` sets octal PSRAM (pseudo-static
 random-access memory) at 80 MHz, the 64 KB data cache with 64-byte lines, code
-and constants in flash rather than PSRAM, the IRAM-safe RGB LCD (liquid-crystal
-display) interrupt, `-O2`, and the console on UART0 with USB-Serial-JTAG (the
-ESP32-S3's built-in USB (Universal Serial Bus) serial and debug bridge) as
-secondary. Start from it rather than from `menuconfig`.
+and constants in flash rather than PSRAM, the IRAM-safe RGB LCD
+(liquid-crystal display) interrupt, `-O2`, and the console on UART0 with USB-Serial-JTAG (the ESP32-S3's built-in USB (Universal Serial Bus)
+serial and debug bridge) as secondary. Start from it rather than from
+`menuconfig`.
+
+ESP-IDF reads `sdkconfig.defaults` only when it generates `sdkconfig`. A tree
+that has been built before already has `firmware/panel/sdkconfig`, and that
+file wins: delete it after changing the defaults, or the change has no effect
+on the image.
 
 ## Commands
 

@@ -200,6 +200,25 @@ static bool bring_up(void)
 
     splash_screen_set(SPLASH_STEP_BOARD, SPLASH_OK, "CH422G");
 
+    /*
+     * Schema defaults, then the values the NVS (non-volatile storage) store
+     * holds on top of them.  A store that cannot be opened leaves the
+     * defaults in place: a working bench with unsaved settings.
+     *
+     * Done before the panel starts scanning, and reported at its place in the
+     * list below.  Two reasons.  The stored theme is in force for the first
+     * frame drawn rather than from the second onwards.  And the main flash is
+     * quiet while the RGB (red, green, blue) panel scans: the panel's
+     * interrupt handler copies the framebuffer out of PSRAM (pseudo-static
+     * random-access memory) through the external memory cache, and a flash
+     * operation closes that cache.  The handler then faults on PSRAM and the
+     * core panics with `Cache disabled but cached memory region accessed`.
+     */
+    const settings_store_t *store = settings_nvs_store();
+    settings_set_store(store);
+    settings_init();
+    settings_apply_ui();
+
     display_config_t dcfg = DISPLAY_CONFIG_DEFAULT();
     if (display_init(&dcfg) == ESP_OK) {
         splash_screen_set(SPLASH_STEP_DISPLAY, SPLASH_OK, "800x480 39Hz");
@@ -229,15 +248,7 @@ static bool bring_up(void)
                       storage_status());
     pump();
 
-    /*
-     * Schema defaults, then the values the NVS (non-volatile storage) store
-     * holds on top of them.  A store that cannot be opened leaves the
-     * defaults in place: a working bench with unsaved settings.
-     */
-    const settings_store_t *store = settings_nvs_store();
-    settings_set_store(store);
-    settings_init();
-    settings_apply_ui();
+    /* Loaded above, before the panel started scanning. */
     splash_screen_set(SPLASH_STEP_SETTINGS,
                       store != NULL ? SPLASH_OK : SPLASH_WARN,
                       store != NULL ? "NVS" : "NVS unavailable");
