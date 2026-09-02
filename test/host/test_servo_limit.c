@@ -1,11 +1,10 @@
 /*
  * The limit search, run against a modelled servo on a modelled surface.
  *
- * What is worth testing is not that it finds a number.  It is that it finds
- * one on the free side of the stop, that it says so rather than guessing when
- * there is nothing to find, and that every one of the three protections
- * actually stops it -- because this is the one routine in the project that
- * deliberately drives a servo toward something solid.
+ * Under test: the search finds an endpoint on the free side of the stop, it
+ * says so rather than guessing when there is nothing to find, and each of the
+ * three protections stops it.  This is the one routine in the project that
+ * drives a servo toward something solid.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -54,11 +53,9 @@ TEST_CASE(it_finds_the_upper_stop_and_stops_short_of_it)
     CHECK_EQ(lf.state, SERVO_LIMIT_FOUND);
 
     /*
-     * The exact number, not a window, because the model is deterministic and
-     * a window wide enough to be comfortable is wide enough to accept a wrong
-     * answer.  Every earlier version of this assertion passed with the
-     * endpoint taken from the position that bound instead of the last one
-     * that did not, and with the backoff removed entirely.
+     * The exact number, not a window: the model is deterministic, and a
+     * window wide enough to be comfortable also accepts the position that
+     * bound instead of the last free one, or a missing backoff.
      *
      *   baseline          0.12 A free
      *   knee needs        > 0.12 x 1.8 = 0.216 and > 0.12 + 0.15 = 0.27
@@ -86,10 +83,8 @@ TEST_CASE(it_finds_the_lower_stop_the_same_way)
 }
 
 /*
- * The asymmetry is the point of measuring in place: the two stops are not
- * mirror images about the servo's centre once a horn and a pushrod are
- * involved, and a finder that reported them as one number would be inventing
- * the difference away.
+ * The two stops are not mirror images about the servo's centre once a horn
+ * and a pushrod are involved, so each end is reported as its own number.
  */
 TEST_CASE(the_two_ends_are_found_independently_and_are_not_symmetric)
 {
@@ -109,7 +104,7 @@ TEST_CASE(the_two_ends_are_found_independently_and_are_not_symmetric)
     CHECK(out != in);
 }
 
-/* A surface that really is free over the whole permitted travel is reported
+/* A surface that is free over the whole permitted travel is reported
  * as that, not as a limit that happens to equal the travel ceiling. */
 TEST_CASE(a_surface_that_never_binds_is_reported_rather_than_guessed_at)
 {
@@ -131,9 +126,8 @@ TEST_CASE(a_surface_that_never_binds_is_reported_rather_than_guessed_at)
 }
 
 /*
- * Protection one.  A servo whose stall current is above the ceiling must trip
- * it, and must trip it wherever it happens rather than at the end of a
- * measurement window.
+ * Protection one: a servo whose stall current is above the ceiling trips it,
+ * wherever that happens rather than at the end of a measurement window.
  */
 TEST_CASE(the_hard_ceiling_aborts_wherever_it_is_crossed)
 {
@@ -158,10 +152,10 @@ TEST_CASE(the_hard_ceiling_aborts_wherever_it_is_crossed)
 }
 
 /*
- * Protection two.  Elevated current that is under the hard ceiling would
- * otherwise be held indefinitely -- it is not dramatic enough to abort and not
- * a knee the search will act on if the knee test has been set too high. That
- * combination is the one that quietly cooks a servo, so it has its own timer.
+ * Protection two: elevated current under the hard ceiling is not enough to
+ * abort and not a knee the search acts on if the knee test is set too high,
+ * so without its own timer it is held indefinitely.  The stall timer covers
+ * that combination.
  */
 TEST_CASE(elevated_current_under_the_ceiling_still_times_out)
 {
@@ -180,10 +174,9 @@ TEST_CASE(elevated_current_under_the_ceiling_still_times_out)
     servo_limit_init(&lf, &lc);
 
     /*
-     * With the knee blind, nothing stops the search walking into the stop and
-     * staying there -- and that is precisely the configuration the stall timer
-     * exists to catch, so it must fire rather than letting the search run its
-     * travel out with the servo pushing the whole way.
+     * With the knee blind, nothing else stops the search walking into the
+     * stop and staying there.  The stall timer must fire rather than let the
+     * search run its travel out with the servo pushing the whole way.
      */
     lc.stall_above_a = 0.5f;   /* the sim stalls at 1.0 A */
     servo_limit_init(&lf, &lc);
@@ -231,20 +224,19 @@ TEST_CASE(a_step_too_coarse_to_meet_the_knee_is_caught_by_the_ceiling)
 }
 
 /*
- * The baseline is taken from more than one position on purpose.  A surface
- * with preload draws more at centre than a few degrees out, and a baseline
- * taken from that single reading sits high enough to hide a real knee.
+ * The baseline is taken from more than one position.  A surface with preload
+ * draws more at centre than a few degrees out, and a baseline taken from that
+ * single reading sits high enough to hide a real knee.
  */
 TEST_CASE(a_preloaded_centre_does_not_blind_the_search)
 {
     servo_sim_cfg_t sc;
     servo_sim_defaults(&sc);
     /*
-     * The low stop is *above* the centre the search starts from, so the servo
-     * is already pushing at its first position and stops as soon as it steps
-     * away.  An earlier version of this test put the stop at 1495 -- just
-     * below centre -- which loads nothing at all, and so tested the ordinary
-     * case under a name that claimed otherwise.
+     * The low stop is above the centre the search starts from, so the servo
+     * is already pushing at its first position and unloads as soon as it
+     * steps away.  A stop just below centre (1495) loads nothing and tests
+     * the ordinary case.
      */
     sc.stop_lo_us = 1505;
     servo_sim_t sim;
@@ -258,12 +250,12 @@ TEST_CASE(a_preloaded_centre_does_not_blind_the_search)
     search(&lf, &sim, 60000);
     CHECK_EQ(lf.state, SERVO_LIMIT_FOUND);
     /*
-     * The same 1855 as the unloaded case, which is the point: averaging the
-     * loaded centre with the two free positions after it puts the baseline at
-     * 0.20 A, and the knee still lands on the step past 1880.  Taking the
-     * baseline from the centre alone puts it at 0.37 A, which needs 0.67 A to
-     * beat -- and the first bound step only reaches 0.63, so the search walks
-     * one step further into the stop and answers 1865.
+     * The same 1855 as the unloaded case: averaging the loaded centre with
+     * the two free positions after it puts the baseline at 0.20 A, and the
+     * knee still lands on the step past 1880.  Taking the baseline from the
+     * centre alone puts it at 0.37 A, which needs 0.67 A to beat; the first
+     * bound step only reaches 0.63, so the search walks one step further
+     * into the stop and answers 1865.
      */
     CHECK_EQ(lf.limit_us, 1855);
 }
@@ -293,11 +285,10 @@ TEST_CASE(sensor_noise_alone_does_not_read_as_a_limit)
 }
 
 /*
- * The knee test needs the ratio as well as the margin, and this is the case
- * that says why: a large servo's free current is already several times the
- * margin, so a margin alone is met by ordinary sensor scatter. The ratio is
- * what scales the test to the servo instead of to a number chosen for a small
- * one.
+ * The knee test needs the ratio as well as the margin: a large servo's free
+ * current is already several times the margin, so a margin alone is met by
+ * ordinary sensor scatter.  The ratio scales the test to the servo instead of
+ * to a number chosen for a small one.
  */
 TEST_CASE(a_large_servos_own_noise_does_not_clear_the_margin_test)
 {
@@ -325,14 +316,14 @@ TEST_CASE(a_large_servos_own_noise_does_not_clear_the_margin_test)
 }
 
 /*
- * The mirror of the case above, and why the knee test carries an absolute
- * margin as well as a ratio.
+ * The mirror of the case above: why the knee test carries an absolute margin
+ * as well as a ratio.
  *
- * A tight spot in a linkage is not the end of its travel. On a lightly loaded
- * surface -- 20 mA to hold it -- an extra 50 mA from a bellcrank that binds
- * slightly is nearly four times the baseline, so a ratio alone stops dead
- * there and reports it as the mechanical limit. It is 50 mA. The margin is
- * what says so.
+ * A tight spot in a linkage is not the end of its travel.  On a lightly
+ * loaded surface (20 mA to hold it) an extra 50 mA from a bellcrank that
+ * binds slightly is nearly four times the baseline, so a ratio alone stops
+ * there and reports it as the mechanical limit.  The 0.15 A margin is what
+ * rules 50 mA out.
  */
 TEST_CASE(a_tight_spot_in_the_linkage_is_not_the_end_of_the_travel)
 {
@@ -367,14 +358,11 @@ TEST_CASE(a_tight_spot_in_the_linkage_is_not_the_end_of_the_travel)
  * Why the search settles before it measures.
  *
  * A slow servo under load has not arrived when the step is issued, and a
- * servo that is travelling draws travel current -- which is far above its
- * free current and has nothing to do with binding. Read it as a baseline and
- * every threshold derived from it is too high, so the first genuinely bound
- * step slips under the knee test and the search walks further into the stop
- * before it notices.
- *
- * Here that costs the surface: the answer comes back on the wrong side of
- * where the linkage actually binds.
+ * servo that is travelling draws travel current, which is far above its free
+ * current and has nothing to do with binding.  Read as a baseline it puts
+ * every derived threshold too high, so the first bound step slips under the
+ * knee test and the search walks further into the stop before it notices,
+ * and the answer comes back on the wrong side of where the linkage binds.
  */
 TEST_CASE(a_slow_servo_is_measured_after_it_arrives_not_while_it_travels)
 {
@@ -406,9 +394,8 @@ TEST_CASE(the_search_takes_a_workable_amount_of_time)
 
     CHECK_EQ(lf.state, SERVO_LIMIT_FOUND);
     /*
-     * 380 us of travel in 10 us steps at 200 ms a step is about eight
-     * seconds. Slow is the point -- but a procedure nobody will sit through
-     * is a procedure nobody runs, so the number is worth pinning.
+     * 380 us of travel in 10 us steps at 200 ms a step is about 8 s.  The
+     * bound holds the procedure to a length an operator sits through.
      */
     CHECK(took < 12000);
 }

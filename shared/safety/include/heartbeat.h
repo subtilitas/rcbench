@@ -1,21 +1,21 @@
 /*
- * The safety heartbeat: the panel's promise that it is still running, and the
+ * The safety heartbeat: the panel's signal that it is running, and the
  * coprocessor's judgement of whether to believe it.
  *
- * A level cannot say this.  A GPIO held high means "high", which is also what
- * a crashed processor, a shorted pin and an unpowered board all mean.  What
- * distinguishes a running panel from a stuck one is that it *changes*, so the
- * safety line carries edges and the coprocessor's outputs live behind a
- * retriggerable monostable that only stays energised while edges keep arriving.
+ * A level cannot carry this.  A GPIO (general-purpose input/output) held
+ * high is also what a crashed processor, a shorted pin and an unpowered
+ * board produce.  A running panel is one whose output changes, so the safety
+ * line carries edges and the coprocessor's outputs sit behind a
+ * retriggerable monostable that stays energised only while edges keep
+ * arriving.
  *
- * The monostable is a backstop, not the mechanism.  It cannot tell a heartbeat
- * from noise -- anything that edges fast enough retriggers it, and a shorted
- * or ringing line edges very fast indeed.  So the coprocessor checks the
- * period in firmware too, and this is where that judgement lives.  Both ends
- * of the same idea sit in one file because they have to agree about the
- * numbers, and two files agreeing by comment is two files that will not.
+ * The monostable is a backstop, not the mechanism.  It cannot tell a
+ * heartbeat from noise: anything that edges fast enough retriggers it, and a
+ * shorted or ringing line edges fast.  So the coprocessor checks the period
+ * in firmware too.  Both ends live in one file because they share the
+ * numbers.
  *
- * The rule the monitor is built around is asymmetric on purpose:
+ * The monitor is asymmetric:
  *
  *     slow to trust    -- several consecutive well-spaced edges before the
  *                         line is called alive, so a burst of noise or a
@@ -23,8 +23,8 @@
  *     instant to doubt -- one bad interval, or one silent window, and it is
  *                         dead again immediately
  *
- * Getting that backwards gives a line that enables on a glitch and hesitates
- * to disable, which is the precise inverse of what a safety interlock is for.
+ * The inverse, a line that enables on a glitch and hesitates to disable, is
+ * not a safety interlock.
  *
  * SPDX-License-Identifier: MIT
  */

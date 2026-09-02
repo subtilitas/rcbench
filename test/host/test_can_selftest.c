@@ -1,6 +1,6 @@
 /*
- * The echo test, run against a simulated bus that can lose, delay, corrupt
- * and reorder.
+ * The CAN (Controller Area Network) echo self-test, run against a simulated
+ * bus that can lose, delay, corrupt and reorder.
  *
  * Both ends are here, talking to each other through a bus this file controls,
  * so every fault a bring-up can meet is constructed rather than waited for.
@@ -78,8 +78,8 @@ TEST_CASE(a_good_bus_echoes_everything_and_says_so)
                  "every probe came back intact");
 }
 
-/* No verdict before there is evidence for one: a bring-up report that cries
- * fault on its first frame is one nobody reads. */
+/* No verdict before there is evidence for one: the first
+ * CAN_SELFTEST_MIN_PROBES - 1 probes report RUNNING. */
 TEST_CASE(no_verdict_before_enough_probes)
 {
     can_selftest_t st;
@@ -100,9 +100,8 @@ TEST_CASE(no_verdict_before_enough_probes)
 }
 
 /*
- * Silence, reported as silence.  A dead bus also times out on every probe, so
- * the timeouts are the loudest number and the least useful one -- the same
- * ordering trap the link's own diagnosis has.
+ * Silence is reported as silence.  A dead bus also times out on every probe,
+ * so the timeout count is the largest number and not the verdict.
  */
 TEST_CASE(a_silent_bus_is_reported_as_silent_not_as_timeouts)
 {
@@ -119,9 +118,8 @@ TEST_CASE(a_silent_bus_is_reported_as_silent_not_as_timeouts)
 }
 
 /*
- * A single altered bit outranks everything else, however few.  Corruption on
- * CAN means the bit timing or the termination is wrong, and a bus that mostly
- * works is not a defence -- it will stop mostly working when it warms up.
+ * One altered bit outranks any number of good frames.  Corruption on CAN
+ * means the bit timing or the termination is wrong, whatever the ratio.
  */
 TEST_CASE(one_altered_bit_outranks_a_hundred_good_frames)
 {
@@ -143,11 +141,9 @@ TEST_CASE(one_altered_bit_outranks_a_hundred_good_frames)
 }
 
 /*
- * A marginal bus does both at once -- it drops some frames and alters others --
- * and that is the case where the ordering earns its keep. Loss is the louder
- * number and the less useful one: it points at cable length and terminators,
- * while the corruption says the bit timing is wrong. Report the loss and
- * somebody spends the afternoon at the wrong end of the problem.
+ * A marginal bus drops some frames and alters others.  Loss is the larger
+ * count and points at cable length and terminators; corruption points at the
+ * bit timing, so corruption is the verdict.
  */
 TEST_CASE(corruption_outranks_loss_when_a_bus_does_both)
 {
@@ -171,19 +167,13 @@ TEST_CASE(corruption_outranks_loss_when_a_bus_does_both)
 }
 
 /*
- * Loss with bus errors and loss without them are different faults, and they
- * send you to opposite ends of the bench.
+ * Loss with bus errors and loss without them are different faults.
  *
- * A frame corrupted on the wire is counted by whichever controller saw it go
- * wrong.  A frame dropped because nobody read it in time arrives perfectly and
- * is counted by nothing at all.  The first is termination, timing or cable
- * length; the second is a receive buffer that overran while its owner was busy
- * elsewhere, and telling somebody to check terminators for it wastes an
- * afternoon on hardware that is working.
- *
- * The real bring-up produced exactly this: 2019 of 2024 echoed, and the
- * controller reporting tx_err 0, rx_err 0, bus_err 0 two lines under a hint
- * about terminators.
+ * A frame corrupted on the wire is counted by the controller that saw it.  A
+ * frame dropped because nobody read it in time arrives intact and is counted
+ * by nothing.  The first is termination, timing or cable length; the second
+ * is a receive buffer that overran.  The verdicts differ, and the hint for
+ * the second does not mention the wire.
  */
 TEST_CASE(loss_with_bus_errors_and_loss_without_are_different_faults)
 {
@@ -223,8 +213,8 @@ TEST_CASE(loss_with_bus_errors_and_loss_without_are_different_faults)
     CHECK(strstr(h, "not a wiring fault") != NULL);
 }
 
-/* Corruption still outranks both, because a frame that arrives altered is a
- * wire fault whatever the counters say about the ones that did not. */
+/* Corruption outranks both: a frame that arrives altered is a wire fault
+ * whatever the counters say about the ones that did not. */
 TEST_CASE(corruption_outranks_a_clean_bus_losing_frames)
 {
     can_selftest_t st;
@@ -243,15 +233,9 @@ TEST_CASE(corruption_outranks_a_clean_bus_losing_frames)
 }
 
 /*
- * An echo of a probe already given up on.  A bus slower than the timeout
- * produces these, and they are not corruption -- calling them corruption would
- * send somebody to check terminators when the answer is a longer timeout.
- */
-/*
- * A bus whose every echo arrives just past the timeout is not a silent bus.
- * It answers every probe; the timeout is simply too tight for it. Reporting
- * "no probe came back" sends somebody to check whether the far end is even
- * powered, while it is answering perfectly.
+ * A bus whose every echo arrives past the timeout is not a silent bus: it
+ * answers every probe, and the timeout is too tight for it.  The verdict is
+ * not SILENT.
  */
 TEST_CASE(a_bus_that_is_merely_late_is_not_reported_as_silent)
 {
@@ -263,7 +247,7 @@ TEST_CASE(a_bus_that_is_merely_late_is_not_reported_as_silent)
         link_can_frame_t probe, echo;
         CHECK(can_selftest_probe(&st, now, &probe));
         CHECK(can_selftest_echo(&probe, &echo));
-        now += st.timeout_ms + 10u;      /* it answers, just too late */
+        now += st.timeout_ms + 10u;      /* it answers, but too late */
         can_selftest_tick(&st, now);
         can_selftest_rx(&st, &echo, 60000);
     }
@@ -275,6 +259,11 @@ TEST_CASE(a_bus_that_is_merely_late_is_not_reported_as_silent)
     }
 }
 
+/*
+ * An echo of a probe already given up on is stale, not corrupt.  A bus slower
+ * than the timeout produces these; the remedy is a longer timeout, not the
+ * terminators.
+ */
 TEST_CASE(a_late_echo_is_stale_rather_than_corrupt)
 {
     can_selftest_t st;
@@ -295,10 +284,8 @@ TEST_CASE(a_late_echo_is_stale_rather_than_corrupt)
 }
 
 /*
- * The payload has to be checked, not just the sequence number.  An echo
- * carrying the right sequence and the wrong body is exactly what a bus with a
- * marginal sample point produces, and a test that only compared sequence
- * numbers would pass on it.
+ * The payload is checked, not only the sequence number.  An echo with the
+ * right sequence and the wrong body is what a marginal sample point produces.
  */
 TEST_CASE(the_whole_payload_is_checked_and_not_just_the_sequence)
 {
@@ -323,9 +310,9 @@ TEST_CASE(the_whole_payload_is_checked_and_not_just_the_sequence)
 }
 
 /*
- * The patterns exist to stress bit stuffing, so the test must actually send
- * the ones that do.  A bus that fails only on long runs of one polarity would
- * pass a test that sent counting integers for ever.
+ * The probes cycle through 0x00, 0xFF, 0x55 and 0xAA bodies.  CAN stuffs a
+ * bit after five equal bits, so long runs of one polarity are what a marginal
+ * bus fails on.
  */
 TEST_CASE(the_probes_cycle_through_the_patterns_that_stress_stuffing)
 {
@@ -370,14 +357,13 @@ TEST_CASE(only_one_probe_is_in_flight_at_a_time)
     CHECK_EQ(can_selftest_probe(&st, 1000, &b), false);
     CHECK_EQ(can_selftest_probe(&st, 1040, &b), false);   /* still waiting */
     CHECK(can_selftest_tick(&st, 1050));
-    CHECK(can_selftest_probe(&st, 1050, &b));             /* now it may */
+    CHECK(can_selftest_probe(&st, 1050, &b));   /* released by the timeout */
     CHECK(b.data[0] != a.data[0] || b.data[1] != a.data[1]);
 }
 
 /*
- * It runs at the lowest priority on the bus and on a page the map does not
- * use, so it can be left running beside real traffic and can never delay a
- * control write.
+ * Probes and echoes carry the lowest priority on the bus and a page the map
+ * does not use, so they never delay a control write.
  */
 TEST_CASE(the_probes_never_outrank_real_traffic)
 {
@@ -406,8 +392,7 @@ TEST_CASE(the_probes_never_outrank_real_traffic)
           && page != LINK_PAGE_LIMITS && page != LINK_PAGE_FAILSAFE);
 }
 
-/* Somebody else's traffic is not this test's business and must not be counted
- * as anything at all. */
+/* Unrelated traffic is not counted as anything. */
 TEST_CASE(unrelated_traffic_is_ignored_rather_than_miscounted)
 {
     can_selftest_t st;
@@ -449,8 +434,8 @@ TEST_CASE(the_round_trip_keeps_its_extremes)
 }
 
 /*
- * The far end's numbers, carried across the bus so that one console shows both
- * halves of a fault instead of a USB cable being swapped to see the other.
+ * The far end's counters cross the bus, so one console shows both halves of a
+ * fault.
  */
 TEST_CASE(the_far_ends_counters_survive_the_round_trip)
 {
@@ -483,10 +468,8 @@ TEST_CASE(the_far_ends_counters_survive_the_round_trip)
 }
 
 /*
- * The status exchange shares a page with the echo test, so the two must not be
- * mistaken for each other in either direction -- an echo counted as a status
- * would be read as counters, and a status counted as an echo would be a lost
- * probe that never was.
+ * The status exchange shares a page with the echo test.  Neither responder
+ * answers the other's frames, and a status reply is not counted as an echo.
  */
 TEST_CASE(status_and_echo_traffic_do_not_answer_each_other)
 {
@@ -539,21 +522,16 @@ TEST_CASE(the_status_exchange_never_outranks_real_traffic)
 
 /*
  * The far end's counter runs from its own boot, so only the difference across
- * the measurement means anything.
- *
- * This exists because comparing the absolutes reported "the return path is
- * losing frames" on a run where 2144 of 2144 probes came back: the
- * coprocessor had been powered through several panel reboots and was 12182
- * ahead. A diagnostic that cries wolf on a perfect result is worse than none,
- * because the next real warning is the one nobody believes.
+ * the measurement is compared.  A far end powered through several panel
+ * reboots is thousands of echoes ahead on a run where every probe came back.
  */
 TEST_CASE(the_far_ends_counter_is_read_as_a_difference_not_a_total)
 {
-    /* The run that produced the false alarm: 2144 answered, 2144 heard, and a
-     * counter that started at 10038 because the far end had been up longer. */
+    /* 2144 answered, 2144 heard, and a counter that started at 10038 because
+     * the far end had been up longer: no loss. */
     CHECK_EQ(can_selftest_return_loss(10038, 12182, 2144), 0);
 
-    /* Compared as absolutes it would have claimed ten thousand lost. */
+    /* Compared as absolutes, the same numbers claim over 9000 lost. */
     CHECK(12182u - 2144u > 9000u);
 
     /* A real return-path fault is still caught: answered a hundred, heard

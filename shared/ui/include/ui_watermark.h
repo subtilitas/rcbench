@@ -1,14 +1,9 @@
 /*
- * The mark that says the numbers behind it are not real.
+ * The SIMULATION watermark: the mark that the numbers behind it are modelled.
  *
- * The bench is useful without hardware -- a modelled pack, motor and
- * propeller let every screen be built, reviewed and demonstrated before the
- * coprocessor exists.  The danger is entirely that a simulated number gets
- * read, screenshotted or quoted as a measured one, and no caption in a corner
- * prevents that.
- *
- * So it is written across the whole screen, corner to corner, faint enough to
- * read straight through and impossible to crop out of a photograph.
+ * It is written across the whole screen, corner to corner, at 15 % opacity:
+ * readable through, and not croppable out of a photograph.  A caption in a
+ * corner would not stop a simulated reading being quoted as a measured one.
  *
  * SPDX-License-Identifier: MIT
  */

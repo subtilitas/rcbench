@@ -20,16 +20,17 @@ void servo_sync_defaults(servo_sync_cfg_t *cfg, uint16_t centre_us)
     cfg->centre_us     = centre_us;
     cfg->deflection_us = 300;
     /*
-     * Forty microseconds each way is about a degree, which is far more
-     * disagreement than an installation anybody would fly -- and the scan
-     * narrows fast, so a window wider than it needs to be costs one round
-     * rather than proportional time.
+     * 40 us each way is about 3.6 degrees at 11 us per degree, more
+     * disagreement than a flown installation has.  The scan narrows fast, so
+     * a window wider than needed costs one round rather than proportional
+     * time.
      */
     cfg->window_us     = 40;
     cfg->points        = 7;
     cfg->rounds        = 3;
     cfg->settle_ms     = 120;
-    /* A standard servo is about 1.2 us/ms unloaded; assume rather less. */
+    /* A standard servo slews about 1.2 us/ms unloaded; 0.8 leaves margin
+     * for load. */
     cfg->slew_us_per_ms = 0.8f;
     cfg->measure_ms    = 100;
     cfg->min_depth_a   = 0.08f;
@@ -66,10 +67,8 @@ static void aim(servo_sync_t *sy)
         break;
     case SERVO_SYNC_STAGE_HIGH:
         sy->cmd_a_us = (uint16_t)(centre + defl);
-        /* The trim found at centre is already applied; what is being searched
-         * here is the throw on top of it, which is what a travel adjustment
-         * is. Searching the two together would be searching a plane for a
-         * point that two lines already give. */
+        /* The trim found at centre is applied; the search here is for the
+         * throw on top of it, which is what a travel adjustment is. */
         sy->cmd_b_us = (uint16_t)(centre + sy->trim_us + under);
         break;
     case SERVO_SYNC_STAGE_LOW:
@@ -169,10 +168,9 @@ static void close_round(servo_sync_t *sy)
     }
 
     /*
-     * The depth test is applied on the *first* round only, where the window
-     * is widest and a real disagreement therefore shows its largest spread.
-     * Later rounds are narrow by construction and would fail a depth test for
-     * the good reason that they are already near the bottom.
+     * The depth test applies to the first round only, where the window is
+     * widest and a real disagreement shows its largest spread.  Later rounds
+     * are narrow by construction and sit near the bottom of the curve.
      */
     if (sy->round == 0) {
         sy->best_a[sy->stage]  = lo;
@@ -200,9 +198,8 @@ static void close_round(servo_sync_t *sy)
 
     /*
      * Narrow around the best point.  The new half-window is one step of the
-     * round just finished, so the next round covers the interval between the
-     * winner's neighbours -- which is exactly the region the minimum can be
-     * in, and no more.
+     * finished round, so the next round covers the interval between the
+     * winner's neighbours, the only region the minimum can be in.
      */
     sy->win_centre_us = at;
     sy->win_half_us   = (sy->win_half_us * 2) / (int32_t)(sy->cfg.points - 1);
@@ -226,9 +223,9 @@ void servo_sync_step(servo_sync_t *sy, float total_a, uint32_t now_ms,
             sy->measuring      = false;
         }
 
-        /* Two servos fighting is exactly the condition that draws a lot of
-         * current, so the ceiling is checked every sample here for the same
-         * reason it is in the limit search. */
+        /* Two servos working against each other is the condition that draws
+         * the most current, so the ceiling is checked on every sample, as in
+         * the limit search. */
         if (total_a >= sy->cfg.hard_limit_a) {
             finish(sy, SERVO_SYNC_FAULT, SERVO_SYNC_FAULT_OVERCURRENT);
         } else if (!sy->measuring) {

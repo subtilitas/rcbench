@@ -1,10 +1,9 @@
 /*
- * The splash, which is the self-test.
+ * The splash: the self-test report.
  *
- * Not decoration.  Each subsystem reports its own result as it initialises,
- * so a board with no card, a touch controller that did not answer, or a
- * coprocessor speaking a protocol version this panel does not, says so on the
- * way past -- rather than looking mysteriously broken three screens later.
+ * Each subsystem reports its result as it initialises: board, display, touch,
+ * storage, settings, link, coprocessor.  A missing card or a coprocessor with
+ * another protocol version is reported here.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -22,8 +21,8 @@ typedef enum {
     SPLASH_STEP_TOUCH,
     SPLASH_STEP_STORAGE,
     SPLASH_STEP_SETTINGS,
-    SPLASH_STEP_LINK,     /**< the CAN bus                                   */
-    SPLASH_STEP_IOMCU,    /**< who answered, and whether we speak its dialect */
+    SPLASH_STEP_LINK,     /**< the CAN (Controller Area Network) bus */
+    SPLASH_STEP_IOMCU,    /**< coprocessor identity and protocol version */
     SPLASH_STEP_COUNT
 } splash_step_t;
 

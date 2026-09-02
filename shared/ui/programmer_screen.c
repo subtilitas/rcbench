@@ -1,36 +1,22 @@
 /*
- * The programmer.
+ * The programmer screen: one renderer for several protocols.
  *
- * Not one programmer: a family of them.  BLHeli_S and AM32 speak a one-wire
- * bootloader at 19,200; ESCape32 answers a text CLI; VESC wants framed
- * packets; a Hitec D-series servo has its own thing entirely.  They share a
- * connector and nothing else.
+ * BLHeli_S and AM32 speak a one-wire bootloader at 19,200 baud; ESCape32
+ * answers a text CLI (command-line interface); VESC uses framed packets at
+ * 115,200 baud; a Hitec D-series servo has its own protocol.  They share a
+ * connector and nothing else, so the screen asks in order: the device class,
+ * the protocol, and only then what answered.
  *
- * So it asks, in order: what are you programming, which of its protocols, and
- * only then what answered.  Picking the class is picking which lead is in
- * your hand; picking the protocol is picking what to say down it.
+ * The parameters draw themselves.  A definition says what kind of setting
+ * it is (a switch, a choice, a bounded number) and the renderer owns one
+ * widget per kind.  Nothing here knows what BLHeli_S is.  Adding a firmware
+ * is a table; new drawing code is needed only for a kind of setting none of
+ * these firmwares has.
  *
- * ---------------------------------------------------------------------------
- *
- * The parameters draw themselves.
- *
- * A definition says what kind of thing it is -- a switch, a choice, a number
- * on a range -- and the renderer owns one widget per kind.  Nothing here
- * knows what BLHeli_S is; it knows what a bounded number looks like.  Adding
- * a firmware is a table, and the only way to need new drawing code is to
- * invent a kind of setting that none of these have, which in twenty years of
- * ESCs nobody has.
- *
- * That is also how the real configurators do it, and it is worth saying why
- * they are right rather than only that they agree: a screen with one widget
- * per setting drifts, because the fortieth setting is written by somebody in
- * a hurry.  A screen with three widgets cannot.
- *
- * BLHeli_32 is missing from the ESC list on purpose.  The bench identifies and
- * drives one of these ESCs, and direction, 3D mode, beacon and save-settings
- * work as DShot special commands -- but its parameters are stored in a form
- * this bench cannot read, and we were declined the information that would let
- * it.  docs/BLHeli32.md has the detail.
+ * BLHeli_32 is absent from the ESC (electronic speed controller) list.  The
+ * bench identifies and drives these ESCs, and direction, 3D mode, beacon and
+ * save-settings work as DShot special commands, but the parameters are
+ * stored in a form the bench cannot read.  docs/BLHeli32.md has the detail.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -120,12 +106,9 @@ typedef enum { STAGE_CLASS = 0, STAGE_PROTOCOL, STAGE_DEVICE } stage_t;
 
 static const char *const k_dir[]    = { "NORMAL", "REVERSED", "BIDIRECTIONAL" };
 /*
- * BLHeli_S alone puts timing in named steps, because that is what its
- * configurator does; every firmware after it settled on degrees of advance,
- * and 0 to 31 is the range they all use.  Two representations of the same
- * physical quantity, in one list, drawn by the same renderer -- which is the
- * argument for the definitions carrying their own kind rather than the
- * screen assuming one.
+ * BLHeli_S puts timing in named steps, as its configurator does; the other
+ * firmwares use degrees of advance, 0 to 31.  Two representations of one
+ * quantity in one list is why each definition carries its own kind.
  */
 static const char *const k_timing[] = { "LOW", "MEDIUM LOW", "MEDIUM",
                                         "MEDIUM HIGH", "HIGH" };
@@ -274,11 +257,9 @@ static struct {
     bool connected;
 
     /*
-     * What the device said, and what it has been told since.  Two arrays
-     * rather than one, because "changed but not written" is a state the
-     * screen must be able to show -- a value edited into a box that looks
-     * exactly like a value read off the hardware is the same mistake as a
-     * simulated reading that looks measured.
+     * What the device reported, and what has been staged since.  Two arrays,
+     * because "changed but not written" is a state the screen shows: a
+     * staged value must not look like a value read off the hardware.
      */
     int  device[MAX_PARAMS];
     int  value[MAX_PARAMS];
@@ -405,10 +386,8 @@ static void step(int row, int by)
     case PARAM_NUMBER: v += by * d->step;                break;
     }
 
-    /* Clamped, not wrapped.  A parameter that rolls from its last value round
-     * to its first will one day be set to the wrong end by somebody pressing
-     * once more than they meant to, and on an ESC the wrong end is a
-     * direction. */
+    /* Clamped, not wrapped: one press too many on a wrapped list lands on the
+     * other end, and on an ESC the other end of a list can be a direction. */
     const int lo = (d->kind == PARAM_NUMBER) ? d->lo : 0;
     const int hi = (d->kind == PARAM_NUMBER) ? d->hi
                  : (d->kind == PARAM_BOOL)   ? 1 : d->count - 1;
@@ -429,9 +408,7 @@ static void event(const touch_event_t *evt)
     }
     const int px = evt->point.x, py = evt->point.y;
 
-    /* Back climbs one level, rather than leaving the screen -- the band's own
-     * tag does that, and conflating the two is how people end up on the menu
-     * when they wanted the protocol list. */
+    /* Back climbs one level; the band's home tag leaves the screen. */
     if (s.stage != STAGE_CLASS && gfx_rect_contains(s.back, px, py)) {
         s.stage = (s.stage == STAGE_DEVICE) ? STAGE_PROTOCOL : STAGE_CLASS;
         if (s.stage == STAGE_PROTOCOL) {
@@ -480,8 +457,7 @@ static void event(const touch_event_t *evt)
         return;
     }
 
-    /* Reading takes what the device says, which throws away staged edits --
-     * that is what reading means, and the button says READ. */
+    /* READ takes what the device says and discards staged edits. */
     if (gfx_rect_contains(s.read_btn, px, py)) {
         for (int i = 0; i < proto()->count; ++i) {
             s.value[i] = s.device[i];
@@ -587,9 +563,8 @@ static void draw_protocol_list(gfx_canvas_t *c)
         ui_card(c, r, ui_theme_color(UI_C_PANEL));
         gfx_text(c, r.x + 20, r.y + 12, k_protos[i].name, UI_FONT_HEAD,
                  ui_theme_color(UI_C_TEXT), 1);
-        /* The transport, on every row.  This is the whole reason the list
-         * exists rather than an autodetect: they are not variations of one
-         * thing, they are different conversations. */
+        /* The transport, on every row: the protocols are different
+         * conversations, not variants of one, so there is no autodetect. */
         gfx_text(c, r.x + 20, r.y + 38, k_protos[i].transport,
                  UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
         gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 60),
@@ -643,9 +618,8 @@ static void widget_number(gfx_canvas_t *c, int y, const param_def_t *d,
 {
     gfx_text_in(c, (gfx_rect_t){ CTRL_X, (int16_t)y, CTRL_W, 16 },
                 text, UI_FONT_LABEL, ink, 1, GFX_ALIGN_RIGHT);
-    /* A hairline of range under the number.  An enum is a list and a number
-     * is a continuum, and the difference is worth one row of pixels: it says
-     * how much of the travel is left without spending a line on it. */
+    /* A hairline under the number showing where in its range the value
+     * sits. */
     const int bw = CTRL_W;
     const int span = (d->hi > d->lo) ? d->hi - d->lo : 1;
     const int fill = (v - d->lo) * bw / span;
@@ -698,10 +672,8 @@ static void draw_params(gfx_canvas_t *c)
                      ui_theme_color(UI_C_TEXT_FAINT), 1);
         }
         /*
-         * A staged change wears a mark and its own colour.  Everything on
-         * this screen otherwise looks the same whether it came off the device
-         * or was typed at it a second ago, which is the measured-versus-
-         * invented mistake wearing different clothes.
+         * A staged change carries a mark and its own colour, so a value typed
+         * at the screen is distinguishable from one read off the device.
          */
         if (dirty) {
             /* Beside the name, not at the card's edge, where the group
@@ -734,9 +706,7 @@ static void draw_params(gfx_canvas_t *c)
     }
 
     /*
-     * What the selected parameter does.  Without it a parameter list is a
-     * quiz: "Demag compensation" is four syllables and no information, and
-     * every configurator worth using answers that question somewhere.
+     * The selected parameter's help line.
      */
     const param_def_t *p = &proto()->params[s.picked];
     gfx_text(c, PAD + 12, HELP_Y, p->name, UI_FONT_LABEL,

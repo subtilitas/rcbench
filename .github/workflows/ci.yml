@@ -3,9 +3,8 @@ name: CI
 on:
   push:
     branches: [main]
-    # Tags too: a release is built from whatever commit was tagged, which is
-    # not necessarily one that ever landed on main.  Publishing firmware no
-    # host test has run against is the one gap worth closing here.
+    # Tags too: a release builds from the tagged commit, which need not be on
+    # main, and the host suite runs against it before firmware is published.
     tags: ['v*']
   pull_request:
   workflow_dispatch:
@@ -40,12 +39,13 @@ jobs:
           cmake --build test/host/build -j"$(nproc)"
           ctest --test-dir test/host/build --output-on-failure
 
-      # The same suite under AddressSanitizer + UBSan, for the runtime faults
-      # the -Werror build above cannot see: a parser reading off the end of a
-      # frame, a signed shift overflowing, an unaligned access.  This code is
-      # fed hostile bytes by design -- CSV, CAN, OpenYGE, S.BUS -- so a
-      # buffer that a valid frame never reaches is exactly what a malformed
-      # one will.  A separate build directory because the flags differ.
+      # The same suite under AddressSanitizer and UBSan
+      # (UndefinedBehaviorSanitizer), for the runtime faults the -Werror build
+      # above cannot see: a parser reading off the end of a frame, a signed
+      # shift overflowing, an unaligned access.  The parsers for CSV
+      # (comma-separated values), CAN (Controller Area Network), OpenYGE and
+      # S.BUS are fed malformed input by design.  A separate build directory
+      # because the flags differ.
       - name: Unit tests under sanitizers
         run: |
           cmake -S test/host -B test/host/build-san -DCMAKE_BUILD_TYPE=Debug \
@@ -53,15 +53,15 @@ jobs:
           cmake --build test/host/build-san -j"$(nproc)"
           ctest --test-dir test/host/build-san --output-on-failure
 
-      # Fails when the table in README.md no longer matches reality, rather
-      # than committing a fixup nobody reads the diff of.
+      # Fails when the table in STATUS.md does not match the measurement,
+      # rather than committing a fixup.
       - name: Coverage is current
         run: python3 tools/coverage.py --check --json coverage.json
 
       # The floors above are the gate and run offline; this is the report.
       # Codecov annotates the diff in a pull request, so a change can be seen
-      # to be tested rather than only measured in aggregate afterwards.
-      # coverage.py leaves an instrumented build behind, so nothing is rebuilt.
+      # to be tested rather than only measured in aggregate.  coverage.py
+      # leaves an instrumented build behind, so nothing is rebuilt.
       - name: Coverage report for Codecov
         run: |
           pipx install gcovr || python3 -m pip install --quiet gcovr
@@ -77,14 +77,14 @@ jobs:
       - name: The checked-in fonts match their generator
         run: python3 tools/gen_font.py --check
 
-      # Links, the sidebar, the list of test binaries, and the tree that
-      # Building.md prints.  None of these are claims a reader would check.
+      # Links, anchors, the sidebar, the translations, the list of test
+      # binaries, the module tree and the compile table.
       - name: The docs agree with the tree
         run: python3 tools/check_docs.py
 
       # The wiki gets these pages with their links translated, and a broken
-      # translator would only show up as a wiki full of downloads.  Run it
-      # against a copy so a mistake fails here rather than there.
+      # translator shows up only as a wiki full of downloads.  Run it against
+      # a copy so a mistake fails here rather than there.
       - name: The wiki link rewrite still works
         run: |
           cp -a docs /tmp/wikicheck
@@ -94,31 +94,25 @@ jobs:
             exit 1
           fi
 
-      # Frame rate on this panel is bandwidth-bound, so the thing worth
-      # guarding against regression is cache-line traffic per frame, not
-      # wall-clock on a runner that shares nothing with an ESP32-S3.  The
-      # ceiling is near the cost of a full-screen clear: a screen that exceeds
-      # it is repainting everything, which is the mistake worth catching here
-      # rather than on hardware.
-      # Two ceilings, because a chrome-cached screen and a live plot have
-      # nothing to do with each other and one number would guard neither.
+      # Frame rate on this panel is bandwidth-bound, so the regression guard
+      # is cache-line traffic per frame, not wall-clock on a runner that
+      # shares nothing with an ESP32-S3.  Two ceilings, because a
+      # chrome-cached screen and a live plot are unrelated.
       #
-      # 15,600 is not a preference: the panel moves 976 KiB per frame at
-      # 39 Hz, and a render costing twice that lands at 19.5 fps -- exactly
-      # one frame per 20 Hz telemetry sample.  Above it the panel can no
-      # longer deliver a frame per sample, which is the regression worth
-      # catching.  2,000 catches a menu that has stopped caching its chrome.
+      # 15,600: the panel moves 976 KiB per frame at 39 Hz, and a render
+      # costing twice that lands at 19.5 fps, one frame per 20 Hz telemetry
+      # sample.  Above it the panel cannot deliver a frame per sample.
+      # 2,000 catches a menu that has stopped caching its chrome.
       - name: The bench frame still fits one telemetry sample
         run: python3 tools/frame_cost.py frame sim --max-lines 15600
 
       - name: The chrome-cached screens have not started repainting
         run: python3 tools/frame_cost.py overview --max-lines 2000
 
-      # The servo card draws its arm and grip from coverage, which is not
-      # cheap; 17,000 catches that growing.  The grip figure is the one that
-      # matters most: a breath repaints a clipped box and nothing else, and
-      # 4,000 catches the day something bumps the revision on every poll and
-      # quietly puts the whole card back in the frame.
+      # The servo card draws its arm and grip from coverage; 17,000 catches
+      # that growing.  A breath repaints a clipped box and nothing else, and
+      # 4,000 catches a revision bump on every poll that puts the whole card
+      # back in the frame.
       - name: The servo card is drawn, and its grip is only breathed on
         run: python3 tools/frame_cost.py servo --max-lines 17000
              && python3 tools/frame_cost.py servo-grip --max-lines 4000
@@ -126,9 +120,8 @@ jobs:
       - name: The frame-cost table in the docs is current
         run: python3 tools/frame_cost.py --check-doc
 
-      # The screens are rendered by the same code the panel runs, so a golden
-      # image is a real check on what they look like -- not a substitute for
-      # the unit tests, which cover what they decide.
+      # The screens are rendered by the code the panel runs, so a golden image
+      # checks what they look like; the unit tests cover what they decide.
       - name: The committed screenshots match the current render
         run: python3 tools/render_ui.py --check
 
@@ -158,9 +151,9 @@ jobs:
           cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
-      # The analyser and the bug-shaped checks over the pure-C core, which is
-      # everything that decides something.  Configuration and the reasoning for
-      # each disabled check are in .clang-tidy.
+      # The analyser and the bug-shaped checks over the pure-C core.
+      # Configuration and the reason for each disabled check are in
+      # .clang-tidy.
       - name: clang-tidy
         run: |
           clang-tidy -p test/host/build --quiet \
@@ -177,8 +170,8 @@ jobs:
             $(git ls-files 'shared/**/include' | sed 's|^|-I|' | sort -u) \
             $(git ls-files 'shared/**/*.c' | grep -v 'gfx_font')
 
-      # The six tools in tools/ are held to the same standard as the C: every
-      # one of them can fail a build, so a bug in one is a bug in the gate.
+      # The six tools in tools/ are held to the same standard as the C: each
+      # of them can fail a build, so a bug in one is a bug in the gate.
       - name: ruff
         run: ruff check tools/
 
@@ -188,19 +181,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # v5.4 is the floor -- the RGB panel's on_frame_buf_complete event
-        # landed there -- and it is built on purpose rather than only building
-        # the newest.  The predecessor's components compile against a later
-        # v5.4.x point release but not against v5.4.0, because they include
-        # esp_timer.h without requiring it; that is precisely the class of
-        # mistake a floor build catches.
+        # v5.4 is the floor: the RGB (parallel red-green-blue) panel's
+        # on_frame_buf_complete event exists from v5.4.  The floor is built as
+        # well as the newest release, because a component that includes
+        # esp_timer.h without requiring it compiles on a later v5.4.x point
+        # release and not on v5.4.0.
         idf: [v5.4, v5.5]
     steps:
       - uses: actions/checkout@v6
 
       # No cache step: the build runs inside the espressif/idf container, so
-      # ~/.espressif on the runner is never written or read and the cache was
-      # a guaranteed miss on every run.
+      # ~/.espressif on the runner is never written or read and a cache would
+      # never hit.
       - name: Build
         uses: espressif/esp-idf-ci-action@v1
         with:
@@ -230,19 +222,17 @@ jobs:
           if-no-files-found: error
 
   iomcu:
-    # The env context is not available in a job name -- only github,
-    # needs, strategy, matrix, vars and inputs are -- so the pin is spelled
-    # out here and lives for real in env.PICO_SDK_TAG below.
+    # The env context is not available in a job name (only github, needs,
+    # strategy, matrix, vars and inputs are), so the pin is spelled out here
+    # and lives in env.PICO_SDK_TAG below.
     name: Coprocessor (pico-sdk 2.3.0)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      # Ubuntu's packaged toolchain rather than ARM's tarball, because it is
-      # one line and the RP2350's Cortex-M33 is not exotic.  This is the one
-      # step in this file that was not reproduced locally -- no sudo on the
-      # machine it was written on -- so if it fails, the verified fallback is
-      # ARM's own 14.2 release, unpacked and put on PATH.
+      # Ubuntu's packaged toolchain rather than ARM's tarball: one line, and
+      # the RP2350's Cortex-M33 needs nothing newer.  Fallback if the package
+      # fails: ARM's 14.2 release, unpacked and put on PATH.
       - name: Install the ARM toolchain
         run: |
           sudo apt-get update
@@ -250,8 +240,9 @@ jobs:
             cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi \
             libstdc++-arm-none-eabi-newlib libusb-1.0-0-dev
 
-      # Pinned, and cached on the tag: the SDK is 400 MB of checkout and it
-      # does not change between runs unless this pin does.
+      # Pinned, and cached on the tag: the SDK (software development kit) is
+      # 400 MB of checkout and does not change between runs unless this pin
+      # does.
       - name: Cache the pico-sdk
         id: sdk-cache
         uses: actions/cache@v6

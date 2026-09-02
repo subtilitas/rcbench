@@ -9,14 +9,13 @@
  * ambiguous, and the caller votes across the whole column -- one unambiguous
  * "1.5" settles a file that is otherwise all thousands-shaped values.
  *
- * The care is in what counts as no evidence.  A repeated separator is usually
- * grouping, but "192.168.0.1", "15.01.2024" and "1.2.3" are an address, a date
- * and a version -- numbers to nobody -- and voting on them hands the file to
- * the wrong convention.  A three-digit tail is the ambiguous shape, except
- * when the integer part cannot be a thousands group (a leading zero, or more
- * than three digits), which is exactly the millisecond-timestamp case that
- * would otherwise read an English log as German.  Each of those exceptions is
- * a real file that was read wrong before the rule existed.
+ * The care is in what counts as no evidence.  A repeated separator is
+ * usually grouping, but "192.168.0.1", "15.01.2024" and "1.2.3" are an
+ * address, a date and a version, not numbers, and voting on them hands the
+ * file to the wrong convention.  A three-digit tail is the ambiguous shape,
+ * except when the integer part cannot be a thousands group (a leading zero,
+ * or more than three digits), which is the millisecond-timestamp case that
+ * would otherwise read an English log as German.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -102,13 +101,13 @@ static bool copy_digits(const char *begin, const char *end, char *out,
     return n > 0;
 }
 
-/* Truncate without splitting a UTF-8 sequence -- a half ° is worse than none. */
+/* Truncate without splitting a UTF-8 sequence: half a ° is worse than none. */
 /*
  * What is left after the numeric body, read as a unit.  A trailing decimal
- * separator belongs to the number ("1500," is 1500), and a residual carrying a
- * ':' or a signed number is the tail of something the scan stopped inside --
- * a clock time, an ISO date, a hyphenated part number.  Those are not numbers
- * with units, and accepting them makes a whole column look numeric.
+ * separator belongs to the number ("1500," is 1500), and a residual carrying
+ * a ':' or a signed number is the tail of something the scan stopped inside:
+ * a clock time, an ISO 8601 date, a hyphenated part number.  Those are not
+ * numbers with units, and accepting them makes a whole column look numeric.
  */
 static const char *unit_begin(const char *p)
 {
@@ -217,7 +216,7 @@ bool log_split_value(const char *raw, log_value_t *out)
             int exp = 0;
             while (isdigit((unsigned char)*q)) {
                 if (exp >= 10000) {
-                    return false;   /* not a number we can represent */
+                    return false;   /* not representable as a double */
                 }
                 exp = exp * 10 + (*q - '0');
                 ++q;
@@ -227,11 +226,11 @@ bool log_split_value(const char *raw, log_value_t *out)
         }
     }
 
-    /* Whatever is left is the unit -- but only if it can be one.  A residual
+    /* Whatever is left is the unit, but only if it can be one.  A residual
      * carrying digits or a ':' is the tail of something the numeric scan
      * stopped in the middle of: "2024-01-15T10:00:00" reads as 2024 with the
-     * unit "-01-15T10:0", and a whole timestamp column then reports itself as
-     * numeric, constant, and fit to be the time axis. */
+     * unit "-01-15T10:0", and a whole timestamp column then reports itself
+     * as numeric, constant, and fit to be the time axis. */
     p = unit_begin(p);
     if (!unit_is_plausible(p)) {
         return false;
@@ -319,13 +318,13 @@ log_evidence_t log_evidence_of(const char *digits)
         return (sep == ',') ? LOG_EV_DE : LOG_EV_EN;
     }
 
-    /* Three trailing digits are the ambiguous shape -- "1,024" is a legal
+    /* Three trailing digits are the ambiguous shape: "1,024" is a legal
      * thousands group and a legal three-decimal value.  Unless the integer
      * part cannot be a leading group at all: a thousands group is 1-3 digits
      * and never has a leading zero, so "0.000" and "12345,678" are decimal
-     * readings and nothing else.  Millisecond timestamps are the common case,
-     * and treating them as no evidence is what lets a whole English log be
-     * read as German. */
+     * readings and nothing else.  Millisecond timestamps are the common
+     * case; treated as no evidence they let a whole English log be read as
+     * German. */
     if (!leading_group_is_legal(digits, sep)) {
         return (sep == ',') ? LOG_EV_DE : LOG_EV_EN;
     }
@@ -601,15 +600,15 @@ void log_unit_dominant(const log_unit_tally_t *t, char *out, size_t out_size,
     }
 }
 
-/* Units we will believe when they follow a space, e.g. "altitude m".  A
- * whitelist rather than a shape test, because "power output" also has the
- * shape of a name followed by a short word. */
+/* Units accepted after a space, e.g. "altitude m".  A list rather than a
+ * shape test, because "power output" also has the shape of a name followed by
+ * a short word. */
 static const char *const k_bare_units[] = {
     "m", "km", "cm", "mm", "s", "ms", "us", "min", "h", "A", "mA", "V", "mV",
     "W", "kW", "Wh", "mAh", "Hz", "kHz", "rpm", "g", "kg", "N", "Pa", "hPa",
-    /* The split in "\xC2\xB0" "C" is required, not a missing comma: written
-     * as "\xC2\xB0C" the compiler reads \xB0C as one hex escape and the
-     * degree sign swallows the C. */
+    /* The split in "\xC2\xB0" "C" is required: written as "\xC2\xB0C" the
+     * compiler reads \xB0C as one hex escape and the degree sign swallows
+     * the C. */
     /* NOLINTNEXTLINE(bugprone-suspicious-missing-comma) */
     "bar", "%", "\xC2\xB0" "C", "\xC2\xB0" "F", "deg", "rad", "m/s", "km/h",
     "deg/s",
@@ -682,7 +681,7 @@ void log_unit_from_header(const char *header, char *name, size_t name_size,
         }
     }
 
-    /* "voltage (V)" / "current [A]" -- but not "gyroADC[0]" or "motor[3]",
+    /* "voltage (V)" / "current [A]", but not "gyroADC[0]" or "motor[3]",
      * where the brackets hold an axis index that belongs to the name. */
     if (e > s) {
         char close = e[-1];

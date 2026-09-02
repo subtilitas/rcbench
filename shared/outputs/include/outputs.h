@@ -1,40 +1,30 @@
 /*
- * The intermediary every output goes through.
- *
- * Before this existed there were two output paths that did not know about
- * each other.  The throttle disarmed itself after half a second of silence;
- * the servo page held its last pulse forever.  The throttle went to zero on a
- * link failsafe; the servo stayed enabled, because the failsafe path was
- * written before the servo page and nobody added it.  Neither was a bug in
- * either path.  Both were the same bug: a rule that has to hold for every
- * output living in one output.
- *
- * So the rules live here once, and a protocol is a driver behind them.
+ * The intermediary every output goes through: one set of rules for arming,
+ * clamping, slew and the silence timeout, with a protocol as a driver behind
+ * them.
  *
  *   A channel is a normalised command and a role.  Screens and procedures
- *   write channels, and none of them knows what is on the wire.
+ *   write channels and do not know what is on the wire.
  *
- *   A driver says what shape it is -- how many channels one of it consumes,
- *   how many pins, whether the pin is also an input.  That is the part a
- *   naive version gets wrong, because PPM is eight channels on one pin and
- *   bidirectional DShot listens on the pin it drives.
+ *   A driver declares its shape: how many channels one of it consumes, how
+ *   many pins, and whether the pin is also an input.  PPM (pulse-position
+ *   modulation) is eight channels on one pin, and bidirectional DShot listens
+ *   on the pin it drives.
  *
- *   Arming, clamping, slew and where to go when the link goes quiet are the
- *   same question whatever carries them, so they are answered here.  Only
- *   turning a command into edges is per-protocol, and that is the coprocessor.
+ *   Arming, clamping, slew and where to go when the link goes quiet are
+ *   answered here for every output.  Only turning a command into edges is
+ *   per-protocol, on the coprocessor.
  *
- * The unit is a thousandth of the channel's own span.  It has to be some unit
- * and it cannot be the protocol's: microseconds mean nothing to DShot and a
- * DShot code means nothing to a servo.  What both have is a proportion of
- * travel, and a thousand steps is finer than any of these protocols resolve.
+ * The unit is a thousandth of the channel's own span.  Microseconds mean
+ * nothing to DShot and a DShot code means nothing to a PWM (pulse-width
+ * modulation) servo; both have a proportion of travel, and 1000 steps is
+ * finer than any of these protocols resolve.
  *
- * Refused and clamped are different, and the difference is the whole of the
- * safety argument.  An endpoint outside what the hardware can take is
- * *refused*: it is a configuration mistake, and accepting it quietly leaves
+ * Refused and clamped are different answers.  An endpoint outside 500 to
+ * 2500 us is refused: it is a configuration mistake, and accepting it leaves
  * the range looking set when it is not.  A command outside its span is
- * *clamped*, because commands arrive many times a second from a host that may
- * be mid-drag -- refusing one gives an output that stops following, where
- * clamping gives one that stops at its stop, which is what a stop is for.
+ * clamped: commands arrive many times a second from a host that may be
+ * mid-drag, and an output that stops at its stop is what a stop is for.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -62,11 +52,10 @@ extern "C" {
 /**
  * What rest means for a channel, which is the one thing a command cannot say.
  *
- * A throttle at rest is stopped, and its slew is asymmetric on purpose: going
- * up is ramped and coming down is immediate, because reducing throttle is the
- * safe direction and making it slow helps nobody.  A surface at rest is
- * centred, and its slew is symmetric, because for a surface neither direction
- * is the safe one -- they are just directions.
+ * A throttle at rest is stopped, and its slew is asymmetric: going up is
+ * ramped and coming down is immediate, because reducing throttle is the safe
+ * direction.  A surface at rest is centred, and its slew is symmetric,
+ * because for a surface neither direction is the safe one.
  */
 typedef enum {
     OUT_ROLE_THROTTLE = 0,
@@ -85,8 +74,7 @@ typedef enum {
  * What a driver is shaped like.
  *
  * The channel count is a range rather than a number because PPM's is chosen
- * when it is configured, and a table that could only say "one" would have to
- * special-case the one protocol that is the reason for having a table.
+ * when it is configured.
  */
 typedef struct {
     const char *name;
@@ -129,7 +117,7 @@ typedef struct {
     uint32_t      last_step_ms;
 } outputs_t;
 
-/** Silence after which an output stops driving, matching the throttle's. */
+/** Silence after which an output stops driving. */
 #define OUT_DEFAULT_TIMEOUT_MS  500u
 
 void outputs_init(outputs_t *o, uint32_t now_ms);
@@ -138,9 +126,9 @@ void outputs_init(outputs_t *o, uint32_t now_ms);
  * Configure one slot, or clear it with OUT_DRIVER_NONE.
  *
  * Refuses a driver it does not know, a channel count the driver cannot take,
- * a channel range that runs off the end, a rate the driver cannot produce,
- * and -- the two a page per protocol cannot check at all -- a pin another
- * slot is already driving, or a channel another slot is already rendering.
+ * a channel range that runs off the end, a rate the driver cannot produce, a
+ * pin another slot is already driving, and a channel another slot is already
+ * rendering.
  */
 bool outputs_configure(outputs_t *o, uint8_t slot, const out_slot_t *cfg);
 
@@ -155,14 +143,13 @@ bool outputs_set_slew(outputs_t *o, uint8_t ch, uint16_t per_s);
 /** Command a channel.  Clamped, and remembered even while disarmed. */
 bool outputs_set(outputs_t *o, uint8_t ch, uint16_t command, uint32_t now_ms);
 
-/** Arming is the holder of the wire's decision, not the asker's.  Disarming
- *  goes to rest with no ramp: the reason a stop exists is that somebody wants
- *  it to have happened already.
+/** Arming is decided by the end holding the wire, not by the asker.
+ *  Disarming goes to rest with no ramp.
  *
- *  Re-asserting the state it is already in is not an event and does nothing.
- *  It has to be safe to call every pass from a loop that recomputes whether
- *  driving is allowed -- and a version that stamped the clock each time would
- *  hold every channel alive forever and quietly delete the timeout. */
+ *  Re-asserting the current state is not an event and does nothing, so the
+ *  call is safe every pass from a loop that recomputes whether driving is
+ *  allowed.  Stamping the clock on every call would hold every channel alive
+ *  and defeat the timeout. */
 void outputs_arm(outputs_t *o, bool armed, uint32_t now_ms);
 
 /**
@@ -177,10 +164,10 @@ bool outputs_overdue(const outputs_t *o, uint8_t ch, uint32_t now_ms);
 /**
  * Say a channel is still being watched without changing what it was asked.
  *
- * A loop that is running and has nothing new to say is not the same as one
- * that has stopped, and the timeout exists to tell those apart.  Re-sending
- * the last command would do it too, and would also overwrite a command that
- * arrived from somewhere else in the same pass.
+ * A loop that is running with nothing new to say differs from one that has
+ * stopped, and the timeout exists to tell those apart.  Re-sending the last
+ * command would also overwrite a command that arrived from elsewhere in the
+ * same pass.
  */
 bool outputs_keepalive(outputs_t *o, uint8_t ch, uint32_t now_ms);
 
@@ -191,7 +178,7 @@ bool outputs_armed(const outputs_t *o);
 void outputs_step(outputs_t *o, uint32_t now_ms);
 
 /** Everything to rest, immediately.  The failsafe edge calls this, and it
- *  reaches every output because there is only one place outputs are. */
+ *  reaches every output because every output is in this bank. */
 void outputs_all_off(outputs_t *o);
 
 uint16_t outputs_actual(const outputs_t *o, uint8_t ch);
@@ -199,7 +186,7 @@ uint16_t outputs_actual(const outputs_t *o, uint8_t ch);
 /** What a pulse driver should emit for @p ch, in microseconds. */
 uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
 
-/** True while the bank is armed and being commanded -- what a driver asks
+/** True while the bank is armed and being commanded: what a driver asks
  *  before it puts an edge on a pin. */
 bool outputs_driving(const outputs_t *o);
 

@@ -2,15 +2,14 @@
 
 <sub>[English](Manifest.md) · **Deutsch**</sub>
 
-Der Prüfstand beantwortet Fragen über einen Antrieb, die man sonst nur durch
-Raten beantwortet, mit drei getrennten Messgeräten, oder indem man den Motor
-einschickt. Eine Platine, ein Bildschirm, eine Speicherkarte. Auf dieser Seite
-steht, was heute funktioniert, was den einzelnen Funktionen noch fehlt — und
-was nicht gebaut wird, damit niemand darauf wartet.
+Der Prüfstand misst und treibt die Teile eines RC-Antriebs (RC: Radio
+Control, Funkfernsteuerung): Motor und ESC (Electronic Speed Controller,
+Motorregler), Servos, Empfängerbusse, Propellerwucht und Akkuzustand. Diese
+Seite listet die ursprünglichen Anforderungen und den Stand jeder einzelnen.
 
-## Die Vorgabe
+## Anforderungen
 
-Julians, in seinen Worten:
+Die ursprüngliche Anforderungsliste:
 
 > - Eingang für externe Stromsensoren (I²C)
 > - ESC-Programmierer für das, was geht — im Moment AM32 und BLHeli garantiert,
@@ -22,35 +21,32 @@ Julians, in seinen Worten:
 >   Reverse Engineering klappt, respektive über EX-Bus
 > - Logviewer für diverse Formate
 
-## Was jede Zeile bedeutet und wo sie steht
+## Stand jeder Anforderung
 
-| Die Vorgabe | Wo es umgesetzt wird | Stand |
+| Anforderung | Umsetzung | Stand |
 | --- | --- | --- |
-| **Externe Stromsensoren über I²C** | am I²C des Koprozessors, nicht am Panel — dessen Bus gehört dem Touch-Controller und darf nicht warten | Schnittstelle festgelegt, Treiber fehlt |
-| **ESC-Programmierer für das, was geht** — AM32 und BLHeli sicher | One-Wire Half Duplex mit 19 200 Baud und Handshake, auf einer PIO State Machine | Bildschirm gebaut und datengetrieben; auf der Leitung spricht noch kein Protokoll |
-| **Wuchten eines ganzen Systems** über Beschleunigungs- und Positionssensor | beide Sensoren am Koprozessor, **auf einer gemeinsamen Zeitbasis** — genau darin steckt die Schwierigkeit einer Phasenmessung | Bildschirm und Platzierungsanleitungen gebaut; die Messung wartet auf die Sensoren |
-| **Servotester, scharf und mit allem**: SBUS und weitere Protokolle | PWM-Ausgänge in Hardware, je Summensignal ein PIO-Programm | Bildschirm gebaut und über den Link angebunden; die Ausgangsstufe selbst kommt als Nächstes |
-| **Servoprogrammierung**, soweit sie sich reverse-engineeren lässt | Hitecs D-Serie ist als einzige vollständig veröffentlicht; der Rest braucht ein geliehenes Programmiergerät | auf Wunsch des Eigentümers zurückgestellt |
-| **Logviewer für diverse Formate** | `shared/logfile` — der CSV-Reader verkraftet auch Dezimalkommas und andere Dialekte | gebaut: Durchsehen, Importansicht, Plot — und scharfe Läufe werden auf die Karte geschrieben |
+| Externe Stromsensoren über I²C (Inter-Integrated Circuit) | Am I²C-Bus des Koprozessors. Der I²C-Bus des Panels ist für den Touch-Controller und den I/O-Expander reserviert. | Schnittstelle festgelegt; kein Treiber. Bauteile gewählt: INA238 (Motor), INA745A (Servoschiene). |
+| ESC-Programmierer (AM32 und BLHeli_S gefordert) | One-Wire-Bootloader-Protokoll, Half Duplex, 19 200 Baud, auf einer PIO-State-Machine (PIO: Programmable Input/Output) | Bildschirm gebaut und tabellengesteuert für BLHeli_S, AM32, ESCape32 und VESC; kein Protokoll wird gesendet. BLHeli_32-Parameter werden nicht unterstützt: [BLHeli_32](BLHeli32-de.md). |
+| Auswuchten mit Beschleunigungs- und Indexsensor | Beide Sensoren am Koprozessor, auf einer gemeinsamen Zeitbasis abgetastet | Bildschirm und Platzierungsanleitungen gebaut; die Messung wartet auf die Sensoren |
+| Servotester mit S.BUS und weiteren Protokollen | PWM-Ausgänge (PWM: Pulsweitenmodulation) in Hardware; ein PIO-Programm je serielles Protokoll | Bildschirm gebaut und steuert über den Link; kein Ausgangstreiber erzeugt Pulse |
+| Servoprogrammierung | Das Protokoll der Hitec-D-Serie ist veröffentlicht; andere Hersteller brauchen ein Programmiergerät zum Mitschneiden | Hitec-Tabelle im Programmierer-Bildschirm; KST (ein Servohersteller) auf Wunsch des Eigentümers zurückgestellt |
+| Logviewer für mehrere Formate | `shared/logfile`: ein CSV-Reader (CSV: Comma-Separated Values), der Dezimalkomma und Dezimalpunkt, eine Einheitenzeile und unvollständige Zeilen akzeptiert | Gebaut: Durchsehen, Importansicht, Plot. Läufe werden auf die Karte geschrieben, solange der Prüfstand scharf ist. |
 
-## Worauf nicht zu warten ist
+## Nicht geplant
 
-Drei Türen sind zu, und das zu wissen erspart es, sie im Auge zu behalten:
+- **Konfiguration über JETI EX Bus.** Die EX-Bus-Spezifikation beschränkt
+  Remote Configuration auf JETI-Produkte und dokumentiert sie nicht. Die
+  EX-Bus-Unterstützung umfasst Kanalwerte und Telemetrie.
+- **BLHeli_32-Parameter.** Die zum Lesen nötigen Informationen sind nicht
+  veröffentlicht; eine Anfrage an den Rechteinhaber wurde im August 2026
+  abgelehnt. [Details](BLHeli32-de.md).
+- **KST-Servoprogrammierung.** Auf Wunsch des Eigentümers zurückgestellt.
 
-- **Konfiguration über JETIs EX Bus.** Die Spezifikation erklärt Remote
-  Configuration für „available only for the products of JETI model" und lässt
-  die Beschreibung aus dem Dokument heraus. EX Bus liefert Kanalwerte und
-  Telemetrie — Geräte darüber zu programmieren wird nicht kommen.
-- **BLHeli_32-Parameter.** Der Prüfstand erkennt diese Regler und steuert sie
-  an; Drehrichtung, 3D-Modus, Beacon und Save-Settings funktionieren. Die
-  Parametertabelle nicht. Es liegt an einem Schlüssel und nicht am Aufwand, es
-  wurde danach gefragt, und die Antwort war nein — [die ganze
-  Antwort](BLHeli32-de.md).
-- **Servoprogrammierung für KST** ist auf Wunsch des Eigentümers
-  zurückgestellt.
+## Lizenzregel
 
-Und eine Regel prägt, was ankommt: jedes Protokoll hier wird aus seiner
-Spezifikation geschrieben, denn fast jede offene Implementierung steht unter
-GPL oder AGPL — unvereinbar mit dem MIT dieses Repositories. Ein Protokoll
-ohne veröffentlichte Spezifikation kommt deshalb spät oder gar nicht. Das ist
-der ehrliche Preis der Regel.
+Jedes Protokoll wird aus seiner veröffentlichten Spezifikation implementiert.
+Die meisten offenen Implementierungen dieser Protokolle stehen unter GPL (GNU
+General Public License) oder AGPL (GNU Affero General Public License), was mit
+der MIT-Lizenz (MIT: Massachusetts Institute of Technology) dieses
+Repositories unvereinbar ist. Ein Protokoll ohne veröffentlichte Spezifikation
+wird nicht implementiert.

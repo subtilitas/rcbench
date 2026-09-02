@@ -1,6 +1,6 @@
 /*
- * A ~100 line test harness.  Enough for asserts, named cases and a summary,
- * and small enough that nobody has to vendor a framework to run the suite.
+ * A test harness of about 100 lines: asserts, named cases, a crash handler
+ * and a summary.  No framework is vendored.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,9 +17,8 @@ static int t_failures;
 static int t_case_failed;
 static const char *t_case_name = "";
 
-/* A crash prints no "ok" line, so without this the case that died is
- * identified by position in the log -- which is exactly wrong when the crash
- * is what moved everything. */
+/* A crash prints no "ok" line.  The handler names the case that died, so it
+ * is not identified by its position in the log. */
 static void t_crash(int sig)
 {
     fprintf(stderr, "\nCRASH %s (signal %d)\n", t_case_name, sig);

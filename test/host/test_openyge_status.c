@@ -2,9 +2,9 @@
  * The status byte, which carries two unrelated things in one octet and
  * overloads one of them.
  *
- * The two rules worth holding: 0xC0 is setpoint noise rather than a BEC
- * over-current that cannot happen, and a warning bit is a caution until the
- * state says otherwise.
+ * The two rules held: 0xC0 is setpoint noise rather than a BEC (battery
+ * eliminator circuit) over-current that cannot happen, and a warning bit is a
+ * caution until the state says otherwise.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -47,9 +47,9 @@ TEST_CASE(reserved_states_are_reported_as_unknown)
 }
 
 /*
- * The trap.  0x80|0x40 would read as "BEC over-current", which cannot happen,
- * so it means the ESC's *input signal* is dirty.  Decoding it as a BEC fault
- * sends somebody after a short that is not there.
+ * 0x80|0x40 reads as "BEC over-current", which cannot happen, so it means the
+ * input signal of the ESC (electronic speed controller) is dirty.  Decoding
+ * it as a BEC fault sends somebody after a short that is not there.
  */
 TEST_CASE(the_overloaded_warning_nibble_is_setpoint_noise)
 {
@@ -101,7 +101,7 @@ TEST_CASE(power_cut_with_no_warnings_is_an_overvoltage_fault)
 TEST_CASE(a_warning_becomes_a_fault_only_with_the_state)
 {
     /* Both of the bits qualified by POWER_CUT, because they are qualified
-     * separately and an earlier version of this case checked only one. */
+     * separately. */
     const uint8_t bits[] = { 0x20, 0x40 };
     for (size_t i = 0; i < sizeof(bits); ++i) {
         const openyge_status_t running =

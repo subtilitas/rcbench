@@ -1,12 +1,14 @@
 /*
- * The SD card: mounting it, and listing what is on it.
+ * The SD (Secure Digital) card: mounting it, and listing what is on it.
  *
- * The card is the only thing on SPI2, and its chip select lives on the I/O
- * expander rather than on a GPIO, so the SPI driver is configured with no CS
- * pin and board_sd_cs() holds the line asserted while the card is mounted.
+ * The card is alone on SPI2 (Serial Peripheral Interface), and its chip
+ * select is on the I/O (input/output) expander rather than on a GPIO
+ * (general-purpose input/output), so the SPI driver is configured with no
+ * CS (chip select) pin and board_sd_cs() holds the line asserted while the
+ * card is mounted.
  *
- * Everything above this file works in terms of names and sizes, not paths and
- * FILE*s, so a screen can be driven from a fake list on a laptop.
+ * Everything above this file works in names and sizes, not paths and FILE
+ * pointers, so a screen can be driven from a fake list on the host.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -35,8 +37,8 @@ typedef struct {
 /**
  * Bring up SPI2 and mount the card at /sdcard.
  *
- * @return ESP_ERR_NOT_FOUND when no card answers, which is a normal state and
- *         not a failure -- the bench runs perfectly well without one.
+ * @return ESP_ERR_NOT_FOUND when no card answers, which is a normal state:
+ *         the bench runs without a card.
  */
 esp_err_t storage_init(void);
 

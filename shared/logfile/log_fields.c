@@ -30,7 +30,7 @@ typedef struct {
     const char *unit;
 } rule_t;
 
-/* Order matters: the first match wins, exactly as the regex list does. */
+/* Order matters: the first match wins. */
 static const rule_t k_rules[] = {
     { M_EXACT,  "loopIteration",  "Meta",  ""      },
     { M_EXACT,  "time",           "Meta",  "s"     },

@@ -8,7 +8,7 @@
 
 #include "link_crc.h"
 
-/* Little-endian, assembled rather than cast.  See the note in the header. */
+/* Little-endian, assembled byte by byte rather than cast; see the header. */
 static inline uint16_t rd16(const uint8_t *p)
 {
     return (uint16_t)((uint16_t)p[0] | (uint16_t)((uint16_t)p[1] << 8));
@@ -34,9 +34,9 @@ static bool type_is_known(uint8_t t)
     }
 }
 
-/* A frame from the ESC carries telemetry; one from the master carries the
- * 4-byte control payload.  The parameter-write acknowledgement is an ESC
- * frame and carries telemetry too. */
+/* A frame from the ESC (electronic speed controller) carries telemetry; one
+ * from the master carries the 4-byte control payload.  The parameter-write
+ * acknowledgement is an ESC frame and carries telemetry too. */
 static bool type_carries_telemetry(uint8_t t)
 {
     return t == OPENYGE_FT_TELE_AUTO || t == OPENYGE_FT_TELE_RESP
@@ -65,8 +65,7 @@ typedef enum {
 
 /*
  * Examine the candidate frame starting at @p at without modifying the
- * decoder.  Leaving the decoder alone is what makes it possible to weigh
- * several candidates before committing to one.
+ * decoder, so several candidates can be weighed before one is committed to.
  */
 static parse_result_t parse_at(const openyge_decoder_t *d, size_t at,
                                openyge_frame_t *out, size_t *total_out,
@@ -89,7 +88,7 @@ static parse_result_t parse_at(const openyge_decoder_t *d, size_t at,
     const uint8_t hdr     = header_bytes(version);
 
     if (!type_is_known(type)) {
-        return PARSE_INVALID;   /* a false sync, most likely */
+        return PARSE_INVALID;   /* a false sync */
     }
     if (total < OPENYGE_MIN_FRAME || total > OPENYGE_MAX_FRAME
         || total < (size_t)hdr + OPENYGE_CRC_BYTES) {
@@ -106,11 +105,10 @@ static parse_result_t parse_at(const openyge_decoder_t *d, size_t at,
     }
 
     /*
-     * The CRC held, so these are the bytes that were sent.  What is left is
-     * whether they mean anything, and a frame that verifies but claims an
-     * impossible shape is a version mismatch or a bug at the far end rather
-     * than line noise -- counted separately, because the two want different
-     * things done about them.
+     * The CRC (cyclic redundancy check) held, so these are the bytes that
+     * were sent.  A frame that verifies but has an impossible shape is a
+     * version mismatch or a fault at the far end, not line noise, and is
+     * counted separately from CRC errors.
      */
     const size_t payload = total - hdr - OPENYGE_CRC_BYTES;
     const size_t expect  = type_carries_telemetry(type) ? OPENYGE_TELEMETRY_BYTES
@@ -164,15 +162,14 @@ bool openyge_decode_byte(openyge_decoder_t *d, uint8_t byte,
     d->buf[d->len++] = byte;
 
     /*
-     * Every sync byte is a candidate, examined in order.  The case that breaks
-     * the obvious decoder is noise containing a byte that looks like a sync
-     * and a length that happens to be plausible, sitting in front of a genuine
-     * frame: commit to that first candidate and the decoder waits for bytes
-     * that will never make sense while a whole real frame goes unreported.
+     * Every sync byte is a candidate, examined in order.  Noise that contains
+     * a sync byte and a plausible length in front of a genuine frame must not
+     * capture the decoder: committing to that first candidate would wait for
+     * bytes that never arrive while the real frame goes unreported.
      *
-     * Preferring the earliest *complete* candidate over an earlier incomplete
-     * one is safe, because for a later candidate to verify inside a genuine
-     * frame its own CRC would have to hold by accident.
+     * Preferring the earliest complete candidate over an earlier incomplete
+     * one is safe: for a later candidate to verify inside a genuine frame its
+     * own CRC would have to hold by accident.
      */
     size_t first_incomplete = (size_t)-1;
 
@@ -200,9 +197,9 @@ bool openyge_decode_byte(openyge_decoder_t *d, uint8_t byte,
             }
             continue;
         }
-        /* Invalid, and counted only at the front -- that is the candidate
-         * about to be discarded.  A speculative one further in would be
-         * counted again on every byte that arrived after it. */
+        /* Invalid, counted only at the front: that candidate is about to be
+         * discarded.  One further in would be counted again on every byte
+         * that arrives after it. */
         if (i == 0) {
             if (crc_failed) {
                 ++d->crc_errors;
@@ -243,12 +240,11 @@ bool openyge_telemetry_parse(const openyge_frame_t *f, openyge_telemetry_t *out)
     out->amps            = (float)rd16(p + 4) / 100.0f;   /* 10 mA */
     out->consumption_mah = rd16(p + 6);
     /*
-     * The field is described as "0.1 eRPM" and the reference multiplies by
-     * ten.  Both cannot be true; multiplying is right, because 65535 x 10 is a
-     * plausible ceiling where 6553 is not, and because it is what most ESC
-     * telemetry sends.  It is the first thing on the measurement list all the
-     * same -- getting this backwards is a tachometer reading a hundredfold
-     * out, and it will look plausible on a small motor.
+     * The field is described as "0.1 eRPM" (electrical revolutions per
+     * minute) and the reference code multiplies by ten.  Multiplying is the
+     * assumption here: 65535 x 10 = 655350 eRPM is a plausible ceiling, 6553
+     * is not.  Unconfirmed: it is item 1 of the measurement list in
+     * docs/OpenYGE.md, because the wrong choice reads a hundredfold out.
      */
     out->erpm            = (uint32_t)rd16(p + 8) * 10u;
     out->pwm_pct         = (int8_t)p[10];

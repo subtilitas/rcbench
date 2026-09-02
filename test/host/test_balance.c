@@ -1,6 +1,6 @@
 /*
- * What the balance screen has to get right so far: both panes draw, the tabs
- * switch them, and no line of the guidance runs off the card it is in.
+ * What the balance screen decides: both panes draw, the tabs switch them,
+ * the blade arithmetic, and no line of guidance runs off its card.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -68,14 +68,10 @@ static int lit(void)
 }
 
 /*
- * The guidance is prose in a fixed-width font in a card of known width, which
- * is a combination that silently truncates.  It did: three of these lines ran
- * off the right-hand edge on the first draw, and nothing said so -- the text
- * renderer clips and returns.
- *
- * So look at the two columns just inside the card's edge.  Anything of the
- * text colours there means a line reached the wall, and the next word after
- * it was never seen.
+ * The guidance is prose in a fixed-width font in a card of known width, and
+ * the text renderer clips silently.  Pins: the two columns inside the card's
+ * right edge hold no pixel of either text colour, so no line reaches the
+ * wall.
  */
 TEST_CASE(no_guidance_runs_off_its_card)
 {
@@ -128,9 +124,9 @@ TEST_CASE(both_panes_draw_and_differ)
 }
 
 /*
- * The rig diagram has to stay inside its own card.  A callout leader placed
- * by hand is exactly the sort of thing that ends up under the neighbouring
- * panel after a layout change.
+ * Pins: the rig diagram stays inside its own card, with no pixel in the
+ * gutter between the cards.  Hand-placed callout leaders are what a layout
+ * change moves.
  */
 TEST_CASE(the_diagram_stays_in_its_card)
 {
@@ -148,9 +144,8 @@ TEST_CASE(the_diagram_stays_in_its_card)
 }
 
 /*
- * The blade stepper is the control the whole screen turns on, and it clamps
- * like every other stepper on this bench: two to six, and pressing past
- * either end is a no-op rather than a wrap onto the wrong count.
+ * The blade stepper clamps to 2..6: pressing past either end is a no-op, not
+ * a wrap.
  */
 TEST_CASE(the_blade_count_clamps_two_to_six)
 {
@@ -181,9 +176,9 @@ TEST_CASE(the_rotor_toggles)
 }
 
 /*
- * The arithmetic the screen exists for: an angle from the index mark named as
- * the blades it falls between.  Checked directly, across the whole range of
- * counts, because a golden can pin where the text lands but not what it says.
+ * An angle from the index mark is named as the two blades it falls between.
+ * Checked directly across every blade count; a golden image pins where the
+ * text lands, not what it says.
  */
 TEST_CASE(an_angle_names_the_blades_it_falls_between)
 {
@@ -201,7 +196,7 @@ TEST_CASE(an_angle_names_the_blades_it_falls_between)
     CHECK_EQ(lo, 3);
     CHECK_EQ(hi, 1);
 
-    /* A correction just past the last blade wraps to "between N and 1". */
+    /* A correction past the last blade wraps to "between N and 1". */
     balance_nearest_blades(359.0f, 4, &lo, &hi);
     CHECK_EQ(lo, 4);
     CHECK_EQ(hi, 1);
@@ -211,14 +206,14 @@ TEST_CASE(an_angle_names_the_blades_it_falls_between)
     CHECK_EQ(lo, 1);
     CHECK_EQ(hi, 2);
 
-    /* Both are always a real blade, 1..count, for every count and a spread of
-     * angles -- no zero, no off-by-one past the end. */
+    /* Both are always a real blade, 1..count, for every count and a spread
+     * of angles: no zero, no off-by-one past the end. */
     for (int blades = 2; blades <= 6; ++blades) {
         for (int a = 0; a < 360; a += 7) {
             balance_nearest_blades((float)a, blades, &lo, &hi);
             CHECK(lo >= 1 && lo <= blades);
             CHECK(hi >= 1 && hi <= blades);
-            CHECK(lo != hi);              /* two distinct blades to sit between */
+            CHECK(lo != hi);              /* two distinct blades */
         }
     }
 }
@@ -241,10 +236,8 @@ TEST_CASE(a_negative_angle_does_not_index_before_the_first_blade)
 #define TAB_CY   22
 
 /*
- * All three panes draw, each its own thing.  The aircraft pane in particular
- * -- the firewall-not-cowl diagram with its callouts -- is the most drawing
- * code on the screen and the easiest to leave unrendered: the tab that reaches
- * it is the third, not the second.
+ * All three panes draw, each a different picture.  The aircraft pane is the
+ * third tab, not the second, and holds the most drawing code on the screen.
  */
 TEST_CASE(each_pane_draws_its_own_diagram)
 {
@@ -264,10 +257,9 @@ TEST_CASE(each_pane_draws_its_own_diagram)
 }
 
 /*
- * The measure pane draws the rotor face-on, and a ducted fan is a different
- * picture from a propeller: a duct and a hub angle rather than a blade to
- * tape.  Both have to render, because both are reachable and the EDF branch is
- * its own code.
+ * The measure pane draws the rotor face-on.  A ducted fan is a different
+ * picture from a propeller (a duct and a hub angle rather than a blade), and
+ * the EDF (electric ducted fan) branch is separate code, so both render.
  */
 TEST_CASE(both_rotor_types_draw_on_the_measure_pane)
 {
@@ -293,9 +285,9 @@ TEST_CASE(both_rotor_types_draw_on_the_measure_pane)
 }
 
 /*
- * Every blade count from two to six draws its own rotor.  The blade loop is
- * count-driven, so a rotor with more blades has more ink -- and running the
- * whole range walks the arithmetic that places them.
+ * Every blade count from 2 to 6 draws a rotor.  The blade loop is
+ * count-driven, so running the whole range exercises the placement
+ * arithmetic.
  */
 TEST_CASE(every_blade_count_draws)
 {

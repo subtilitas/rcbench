@@ -22,9 +22,8 @@ typedef struct {
 } copy_t;
 
 /*
- * The blocker line is the point of this screen.  Where it is NULL the note
- * turns green and says so -- "nothing is blocking this" is a claim worth
- * making loudly, because it is a claim somebody can act on this afternoon.
+ * Each entry lists what the screen will do and the one thing that blocks it.
+ * With a NULL blocker the note turns green.
  */
 static const copy_t k_copy[SCREEN_COUNT] = {
     [SCREEN_MOTOR] = {
@@ -36,72 +35,20 @@ static const copy_t k_copy[SCREEN_COUNT] = {
         "the bench page is not defined yet; the link that carries it is",
     },
     /*
-     * The surface-angle line is measured with an accelerometer stuck to the
-     * control surface, not an encoder on the servo's output shaft.  The
-     * encoder tells you what the horn did; the accelerometer tells you what
-     * the aeroplane got, linkage slop, horn geometry and pushrod flex
-     * included.  Sub-0.1 degrees, limited by how repeatably it is mounted
-     * rather than by the part.
-     *
-     * The gyro in the same package covers what the accelerometer cannot: it
-     * gives rate through the transit, where the accelerometer is contaminated
-     * by the very motion it is trying to measure.
-     *
-     * One thing to know before mounting one, because it costs an afternoon:
-     * gravity gives two observable axes and never three.  Rotation *about*
-     * the gravity vector is invisible, so a rudder on an upright model --
-     * vertical hinge line -- reads exactly zero across its whole throw.  Lay
-     * the model on its side and it reads like anything else.  Ailerons and
-     * elevators on a level model are fine as they are.
-     *
-     * ------------------------------------------------------- the last two
-     *
-     * Both come from current, and both are about the servo *as installed*
-     * rather than the servo as sold.
-     *
-     * FINDING THE LIMIT.  Endpoints set by eye in a transmitter are guesses,
-     * and a servo held against a mechanical stop draws stall current for as
-     * long as it is asked to: it cooks itself, empties the pack and wears the
-     * gears, and nobody finds out until something strips.  The stop has a
-     * signature -- current against commanded position is flat and low while
-     * the surface is free, and climbs steeply the moment it binds.  Walk up
-     * to the knee slowly, stop at the first rise rather than pushing through
-     * it, back off by a margin, and programme *that* as the endpoint.
-     *
-     * It has to be measured in place: the limit belongs to the linkage, the
-     * horn position and the surface stops, not to the servo, so it is
-     * different in every installation and cannot be looked up.
-     *
-     * This one deliberately drives toward a stop, so it is the clearest case
-     * for the coprocessor's rule of protecting hardware without asking:
-     * current limit, stall timeout, and a slow approach.
-     *
-     * SYNCHRONISING TWO.  Two servos on one surface -- dual ailerons, elevator
-     * halves -- fight each other through the surface whenever their travel or
-     * centre disagree, and both draw extra current continuously to do it.  So
-     * the objective is not a position at all: **the minimum of total current
-     * is the point where they stop fighting**, which is a one-dimensional
-     * search with a physical answer rather than a judgement.
-     *
-     * And the two errors separate cleanly, which saves searching blindly:
-     * fighting at centre is an offset error, fighting at the extremes is a
-     * travel error.  Measure at the centre and at both ends and each
-     * correction falls out of its own measurement.
-     *
-     * The accelerometer adds the one thing current cannot say -- whether they
-     * agree and are *both* wrong, or disagree.
-     *
-     * Both want a current sensor per output, which the catalogue costs as
-     * medium: one sensor per channel, or a multiplexer.
+     * The servo limit and synchronisation procedures are in shared/servo/ and
+     * documented in docs/Servo.md.  A surface angle measured with an
+     * accelerometer on the control surface has two observable axes: rotation
+     * about the gravity vector is not observable, so a vertical hinge line (a
+     * rudder on an upright model) reads zero across its whole throw.
      */
-    /* Reached only if the log viewer is ever unrouted; it is built. */
+    /* Reached only if the log viewer is unrouted. */
     [SCREEN_LOGS] = {
         "LOGS",
         { "Record every channel to the card at up to 1 kHz",
           "Read it back with cursors and comparison",
           "Export a run as CSV or a report",
           NULL },
-        NULL,   /* the card mounts and the CSV reader is ported and tested */
+        NULL,   /* nothing blocks it */
     },
     [SCREEN_SETUP] = {
         "SETUP",
@@ -109,7 +56,7 @@ static const copy_t k_copy[SCREEN_COUNT] = {
           "Socket ceilings: low and high voltage, each set in hardware",
           "Signal-only mode per socket, supply pin disconnected",
           "Save, compare and restore profiles on the card" },
-        NULL,   /* the settings model is ported; the screen is being re-cut */
+        NULL,   /* nothing blocks it */
     },
 };
 
@@ -188,8 +135,7 @@ static const ui_screen_t k_screen = {
     .render = render,
 };
 
-/* One instance, re-pointed on the way in.  Eight near-identical screens would
- * be eight places for the same redraw bug. */
+/* One instance, re-pointed at the selected copy on the way in. */
 static ui_screen_t s_instance;
 
 const ui_screen_t *stub_screen(ui_screen_id_t id)

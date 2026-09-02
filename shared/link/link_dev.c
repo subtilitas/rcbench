@@ -7,9 +7,8 @@
 #include <string.h>
 
 /*
- * Wrap-safe throughout: `(uint32_t)(now - then) >= timeout` is correct across
- * the 32-bit millisecond wrap, and `now >= then + timeout` is not.  A bench
- * that fails to fail safe after 49 days of uptime would be a memorable bug.
+ * Wrap-safe: `(uint32_t)(now - then) >= timeout` holds across the 32-bit
+ * millisecond wrap at 49.7 days; `now >= then + timeout` does not.
  */
 static bool elapsed(uint32_t now, uint32_t then, uint32_t ms)
 {
@@ -67,9 +66,9 @@ bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
     }
 
     /*
-     * A request that arrives is proof the host is alive, so it stops the
-     * silence counter -- but it does not lift the latch.  Those are different
-     * facts and conflating them is how a bench re-arms itself.
+     * A request that arrives proves the host is alive, so it stops the
+     * silence counter.  It does not lift the failsafe latch: leaving failsafe
+     * takes an explicit clear, or a bench re-arms itself.
      */
     d->last_request_ms = now_ms;
     d->silent          = false;
@@ -119,8 +118,9 @@ bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
         return true;
     }
 
-    /* DATA, ACK and NACK are the coprocessor's own vocabulary.  Receiving one
-     * means something is talking that should be listening. */
+    /* DATA, ACK (acknowledge) and NACK (negative acknowledge) are the
+     * coprocessor's own vocabulary; one arriving here means another node is
+     * transmitting on the coprocessor's behalf. */
     refuse(reply, req, LINK_NACK_BAD_VALUE);
     return true;
 }
@@ -136,5 +136,5 @@ bool link_dev_tick(link_dev_t *d, uint32_t now_ms)
     }
     d->silent   = true;
     d->failsafe = true;
-    return true;   /* the edge, once -- not every tick after it */
+    return true;   /* the edge, once, not every tick after it */
 }

@@ -1,15 +1,12 @@
 /*
- * Balancing, starting with where the sensors go.
+ * The balance screen: sensor placement guides and the correction readout.
  *
- * The measurement is easy and the mounting is not.  A balance answer is a
- * magnitude and an angle -- "add this much, there" -- and every part of that
- * comes out of two sensors whose placement decides whether the answer is
- * worth anything.  A vibration sensor on a compliant mount reads a filtered
- * version of what the bearing did; an index mark on a blade instead of the
- * spinner reads N pulses a turn and gives an angle that is wrong by a whole
- * blade spacing.  Neither failure looks like a failure on screen.
- *
- * So this screen starts as a diagram, and the numbers come later.
+ * A balance answer is a magnitude and an angle, both derived from two
+ * sensors whose placement decides whether the answer is valid.  A vibration
+ * sensor on a compliant mount reads a filtered version of the bearing's
+ * motion; an index mark on a blade instead of the bell gives one pulse per
+ * blade and an angle wrong by a blade spacing.  Neither error is visible on
+ * screen, so the screen carries the placement diagrams.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -53,12 +50,9 @@ static const char *const k_tabs[] = { "BALANCE", "TEST RIG", "AIRCRAFT" };
 /*
  * The rotor, drawn face on.
  *
- * Blade count is not decoration here.  The answer a balance produces is an
- * angle from the index mark, and an angle is only actionable once you know
- * which blade it is near -- "add 0.4 g at 265 degrees" is a number, and
- * "between blades two and three" is an instruction.  So the count sets where
- * the blades are drawn and the screen names the ones the correction falls
- * between.
+ * The blade count sets where the blades are drawn, and the screen names the
+ * two blades the correction falls between: an angle from the index mark is
+ * actionable only relative to a blade.
  */
 #define DISC_CX  238
 #define DISC_CY  238
@@ -103,11 +97,10 @@ int  balance_screen_blades(void) { return s.blades; }
 int  balance_screen_rotor(void)  { return s.rotor; }
 
 /*
- * Where the correction goes, modelled until there is a sensor.
+ * Where the correction goes, modelled until a sensor is fitted.
  *
- * Deliberately not on a blade: a correction that lands between two of them is
- * the case the screen has to be able to say out loud, and one that lands on a
- * blade would let that go untested.
+ * 265 degrees lies between two blades at every count from 2 to 6, so the
+ * between-blades wording is exercised.
  */
 float balance_screen_angle(void) { return 265.0f; }
 
@@ -138,13 +131,11 @@ static void event(const touch_event_t *evt)
 
 /* ----------------------------------------------------------------- drawing */
 
-/* A callout: a dot on the thing, a line away from it, and a word. */
 /*
  * A dot on the part, a leader to a stated place, and the word there.
  *
- * The label's position is given rather than worked out: placed automatically
- * from the leader's direction, two of these ran their leaders straight across
- * the propeller they were naming.
+ * The label position is a parameter rather than derived from the leader
+ * direction, so a leader can be routed clear of the propeller.
  */
 static void callout(gfx_canvas_t *c, int px, int py, int lx, int ly,
                     const char *text, gfx_color_t ink)
@@ -164,8 +155,8 @@ static void draw_rig(gfx_canvas_t *c)
     const gfx_color_t ink   = ui_theme_color(UI_C_ACCENT);
     const gfx_color_t warn  = ui_theme_color(UI_C_WARN);
 
-    /* The bench itself, drawn quietly: it is the thing everything else is
-     * bolted to and nothing here is about it. */
+    /* The bench itself, in the faint colour: everything else is bolted to
+     * it and nothing here is about it. */
     gfx_fill_round_rect(c, 60, BASE_Y, 380, 18, 4, steel);
     gfx_draw_round_rect(c, 60, BASE_Y, 380, 18, 4, edge);
     for (int x = 70; x < 440; x += 22) {
@@ -205,17 +196,15 @@ static void draw_rig(gfx_canvas_t *c)
                    ui_theme_color(UI_C_PANEL_HI));
     gfx_capsule_aa(c, SPIN_X, SHAFT_Y + 14, SPIN_X, SHAFT_Y + BLADE_L, 13,
                    ui_theme_color(UI_C_PANEL_HI));
-    /* A hub, not a hole: filled light with a dark centre.  Drawn the other
-     * way round it read as a gap in the blades. */
+    /* A hub, not a hole: filled light with a dark centre.  A dark disc with a
+     * light centre reads as a gap in the blades. */
     gfx_fill_circle_aa(c, SPIN_X, SHAFT_Y, 18, steel);
     gfx_fill_circle_aa(c, SPIN_X, SHAFT_Y, 6, ui_theme_color(UI_C_PANEL));
 
     /*
-     * The accelerometer, on the arm and hard against the motor.
-     *
-     * Everything between the bearing and the sensor is a spring, and a spring
-     * is a filter you did not choose.  On the arm by the motor is the last
-     * place that is still rigid; on the post it would be reading the post.
+     * The accelerometer, on the arm and hard against the motor: everything
+     * between the bearing and the sensor is a spring, and the arm by the
+     * motor is the last rigid place.
      */
     gfx_fill_round_rect(c, MOTOR_X - 42, ARM_Y - 22, 34, 22, 3, ink);
     gfx_draw_round_rect(c, MOTOR_X - 42, ARM_Y - 22, 34, 22, 3, edge);
@@ -234,7 +223,7 @@ static void draw_rig(gfx_canvas_t *c)
      *
      * Not the spinner: a rig often runs without one, and a beam aimed at the
      * nose has to come from in front, across the disc.  The bell turns with
-     * the shaft, is rigid, is there whichever prop is fitted, and can be
+     * the shaft, is rigid, is present whichever prop is fitted, and can be
      * watched from underneath where nothing is in the way.
      */
     const int mark_x = bell_x + bell_w / 2;
@@ -259,14 +248,9 @@ static void draw_rig(gfx_canvas_t *c)
 }
 
 /*
- * The same two sensors on a complete aircraft, where almost nothing is
- * chosen: the rigid faces are wherever the designer put them, the cowl is in
- * the way, and the whole machine is free to rock unless you stop it.
- */
-/*
- * The same two sensors on a complete aircraft, where almost nothing is
- * chosen: the rigid faces are wherever the designer put them, the cowl is in
- * the way, and the whole machine is free to rock unless you stop it.
+ * The same two sensors on a complete aircraft, where the rigid faces are
+ * wherever the designer put them, the cowl is in the way, and the airframe
+ * rocks unless it is tied down.
  */
 static void draw_aircraft(gfx_canvas_t *c)
 {
@@ -287,9 +271,8 @@ static void draw_aircraft(gfx_canvas_t *c)
     }
 
     /*
-     * The fuselage: a deep nose and a boom that tapers away from it, rather
-     * than one box.  It only has to be recognisable as an aeroplane -- the
-     * subject is where two sensors go, not the model.
+     * The fuselage: a deep nose and a tapering boom, recognisable as an
+     * aeroplane.  The subject is the sensor placement.
      */
     gfx_fill_round_rect(c, 28, axis - 16, 120, 34, 12, skin);
     gfx_draw_round_rect(c, 28, axis - 16, 120, 34, 12, edge);
@@ -306,11 +289,10 @@ static void draw_aircraft(gfx_canvas_t *c)
     gfx_capsule_aa(c, 34, axis - 14, 50, axis - 58, 13, skin);
 
     /*
-     * The cowl, drawn as the separate piece it is.  It is a fairing: screwed
-     * to a former, often on rubber, and free to move relative to the thing
-     * whose vibration you want.  Drawn short, because on a great many
-     * electric models the outrunner stands proud of it -- which is what makes
-     * the rest of this possible.
+     * The cowl, drawn as a separate piece: a fairing screwed to a former,
+     * often on rubber, and free to move relative to the motor mount.  Drawn
+     * short, because on most electric models the outrunner stands proud of
+     * it.
      */
     gfx_fill_round_rect(c, fw, axis - 36, 62, 72, 12,
                         ui_theme_color(UI_C_PANEL));
@@ -353,11 +335,9 @@ static void draw_aircraft(gfx_canvas_t *c)
     gfx_capsule_aa(c, ax + 7, axis - 69, ax, axis - 78, 3, ink);
 
     /*
-     * The mark on the bell here too, and for a reason the rig did not have to
-     * care about: a spinner comes off.  Every time it is taken away for
-     * transport it goes back on at a new angle, and the phase reference the
-     * last balance was measured against goes with it.  The bell is part of
-     * the rotor and never moves.
+     * The mark on the bell here too: a spinner comes off, and every time it
+     * is refitted it lands at a new angle, taking the phase reference of the
+     * previous balance with it.  The bell is part of the rotor.
      */
     const int mark_x = bell_x + bell_w / 2;
     gfx_fill_round_rect(c, mark_x - 9, axis + 24, 18, 10, 2,
@@ -371,8 +351,8 @@ static void draw_aircraft(gfx_canvas_t *c)
         gfx_fill_circle_aa(c, mark_x, 294 - i * 10, 2, warn);
     }
 
-    /* Tied down at the tail, because a machine free to rock is a spring
-     * nobody chose. */
+    /* Tied down at the tail: a free-standing airframe is a spring in series
+     * with the measurement. */
     gfx_capsule_aa(c, 60, axis + 16, 52, ground, 3, warn);
     gfx_capsule_aa(c, 42, ground - 4, 62, ground - 4, 6, warn);
 
@@ -406,9 +386,9 @@ static void draw_measure(gfx_canvas_t *c)
      * you cannot reach a blade tip, so the correction goes on the hub. */
     /*
      * The rings are pairs of filled discs, not thin arcs.  An arc closed on
-     * itself lays some pixels twice and misses others, and at one or two
-     * pixels wide that stipples -- the same lesson the servo boss taught.
-     * They are safe to fill because they are drawn before the blades.
+     * itself lays some pixels twice and misses others, and at 1 or 2 px wide
+     * that stipples.  They are safe to fill because they are drawn before
+     * the blades.
      */
     const gfx_color_t card = ui_theme_color(UI_C_PANEL);
     if (s.rotor == ROTOR_EDF) {
@@ -466,7 +446,7 @@ static void draw_measure(gfx_canvas_t *c)
     gfx_fill_circle_aa(c, bx, by, 4, ui_theme_color(UI_C_PANEL));
 }
 
-/* The rules, numbered, because each one is a way of getting it wrong. */
+/* The placement rules, numbered. */
 typedef struct { const char *head; const char *line1; const char *line2; }
     rule_t;
 
@@ -564,7 +544,7 @@ static void draw_readings(gfx_canvas_t *c)
     int lo, hi;
     balance_nearest_blades(ang, s.blades, &lo, &hi);
     if (s.rotor == ROTOR_EDF) {
-        /* You cannot reach a blade tip inside a duct, so the answer is an
+        /* A blade tip inside a duct is not reachable, so the answer is an
          * angle on the hub rather than a blade to tape. */
         snprintf(v_where, sizeof(v_where), "hub, %d deg",
                  (int)ang & 0x1FF);

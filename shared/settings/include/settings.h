@@ -6,7 +6,8 @@
  * control per option.  Adding a setting is one table row.
  *
  * Pure C.  Persistence is a pair of function pointers, so the host tests use
- * memory and the firmware uses NVS without the model knowing the difference.
+ * memory and the firmware uses NVS (non-volatile storage) without the model
+ * knowing the difference.
  *
  * SPDX-License-Identifier: MIT
  */

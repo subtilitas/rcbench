@@ -2,10 +2,9 @@
  * The bring-up diagnosis: each fault is constructed here rather than waited
  * for on a bench.
  *
- * The property that matters is the *order*. A broken link shows several
- * symptoms at once -- a silent one also times out on every poll -- and the
- * value of this module is naming the cause rather than the loudest
- * consequence.
+ * The property that matters is the order.  A broken link shows several
+ * symptoms at the same time (a silent one also times out on every poll), and
+ * the module names the cause rather than the loudest consequence.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -39,8 +38,7 @@ TEST_CASE(a_working_link_is_reported_as_working)
     CHECK_STR_EQ(link_diag_text(LINK_DIAG_OK), "link healthy");
 }
 
-/* Before anything has been asked there is nothing to conclude, and a bring-up
- * report that cries fault on its first frame is one nobody reads. */
+/* No verdict before 4 polls have been made. */
 TEST_CASE(nothing_is_concluded_before_enough_has_been_asked)
 {
     link_bringup_t b;
@@ -88,9 +86,8 @@ TEST_CASE(requests_landing_without_answers_is_the_return_path)
     CHECK_EQ(link_bringup_diagnose(&b), LINK_DIAG_REPLIES_LOST);
     CHECK(link_diag_hint(LINK_DIAG_REPLIES_LOST)[0] != '\0');
 
-    /* And without the coprocessor's side of the story it must NOT claim this:
-     * the same panel counters with no status read are just an intermittent
-     * link, and guessing further would be inventing the evidence. */
+    /* Without the coprocessor's status the same panel counters are an
+     * intermittent link, not a return-path fault. */
     b.have_status = false;
     CHECK(link_bringup_diagnose(&b) != LINK_DIAG_REPLIES_LOST);
 }
@@ -106,12 +103,9 @@ TEST_CASE(neither_end_hearing_anything_is_not_a_return_path_fault)
 }
 
 /*
- * And the partial version of the same thing, which is what makes the
- * dev_frames half of the test load-bearing: if the coprocessor is missing
- * requests too, the outbound direction is failing and the return path is
- * innocent. Reported as intermittent -- both directions working sometimes --
- * rather than as a direction line that is not releasing, which would send
- * somebody to the wrong end of the cable with a scope.
+ * The partial case: when the coprocessor misses requests too, the outbound
+ * direction is failing and the return path is not the fault.  Reported as
+ * intermittent (both directions working sometimes).
  */
 TEST_CASE(both_directions_falling_short_is_not_the_return_path)
 {
@@ -214,9 +208,8 @@ TEST_CASE(the_first_sample_is_the_min_the_max_and_the_mean)
 }
 
 /*
- * A bench runs for days.  A microsecond sum overflows 32 bits in about an
- * hour of polling, so the mean is kept incrementally -- and this is the test
- * that would have caught a sum.
+ * A bench runs for days.  A 32-bit microsecond sum overflows in about an hour
+ * of polling, so the mean is kept incrementally.
  */
 TEST_CASE(the_mean_survives_a_session_longer_than_a_sum_would)
 {
@@ -254,10 +247,10 @@ TEST_CASE(every_diagnosis_has_text_and_a_hint)
     for (unsigned i = 0; i < sizeof(all) / sizeof(all[0]); ++i) {
         const char *text = link_diag_text(all[i]);
         const char *hint = link_diag_hint(all[i]);
-        CHECK(text != NULL && text[0] != '\0');   /* every code says something */
-        CHECK(hint != NULL);                        /* healthy has no hint, "" */
+        CHECK(text != NULL && text[0] != '\0');   /* every code has text */
+        CHECK(hint != NULL);                        /* OK has the hint "" */
         if (all[i] != LINK_DIAG_OK) {
-            CHECK(hint[0] != '\0');                /* every fault points somewhere */
+            CHECK(hint[0] != '\0');                /* every fault has a hint */
         }
     }
     /* An out-of-range value falls to the healthy default rather than reading

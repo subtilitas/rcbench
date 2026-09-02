@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 """Measure host-test line coverage, enforce the floors, and keep the table.
 
-The firmware's pure-C core (the gfx rasteriser and the touch coordinate/event
-logic) builds and runs on the host, so its coverage is a real number rather
-than a guess.  This script builds that suite with gcov instrumentation, runs
-it, and renders the result into the block between the ``coverage:start`` and
-``coverage:end`` markers in STATUS.md.  The README badge comes from Codecov,
-which measures the same build from CI.
+The pure-C core under shared/ builds and runs on the host.  This script
+builds the suite with gcov instrumentation, runs it, and renders the result
+into the block between the ``coverage:start`` and ``coverage:end`` markers in
+STATUS.md.  The README badge comes from Codecov, which measures the same
+build in CI (continuous integration).
 
     python3 tools/coverage.py            # update the STATUS.md table
     python3 tools/coverage.py --check    # fail if the table is out of date
     python3 tools/coverage.py --json coverage.json
 
-``--check`` is what CI runs: a file that rewrites itself is one nobody reads
-the diff of, so drift fails the build instead of being papered over.
+``--check`` is what CI runs: drift fails the build rather than being
+committed by a bot.
 """
 
 from __future__ import annotations
@@ -31,9 +30,9 @@ TEST_DIR = REPO / "test" / "host"
 BUILD_DIR = TEST_DIR / "build"
 STATUS = REPO / "STATUS.md"
 
-# The table lives in the running record.  The README's badge comes from
-# Codecov, which reports the same measurement from CI; this tool's job is the
-# offline gate -- the floors below -- and the breakdown that goes with it.
+# The table lives in the running record.  This tool is the offline gate (the
+# floors below) and the per-file breakdown; Codecov reports the same
+# measurement in CI.
 START = "<!-- coverage:start -->"
 END = "<!-- coverage:end -->"
 
@@ -96,8 +95,7 @@ TRACKED = [
 # not a decision -- see check_tracked_is_complete().
 UNTRACKED_OK = {
     "greatest.h",
-    # Test scaffolding, not code under test.  A fake wire at 100% would say
-    # nothing about the firmware and would dilute the number that does.
+    # Test scaffolding, not code under test.
     "fake_wire.c",
 }
 
@@ -105,16 +103,14 @@ UNTRACKED_OK = {
 # to make a red build go green.
 MIN_TOTAL_COVERAGE = 94.0
 
-# And no single file may fall far below the whole.  A healthy total can hide a
-# file that is barely tested -- balance_screen sat at 73% under a 93% badge --
-# so each tracked file carries its own floor.  It is lower than the total on
-# purpose: the point is to catch a hole, not to demand every file match the
-# best.  Raise it as the suite improves.
+# No single file may fall far below the whole: a healthy total can hide a file
+# that is barely tested, so each tracked file carries its own floor.  It is
+# lower than the total because its purpose is to catch a hole, not to demand
+# every file match the best.  Raise it as the suite improves.
 MIN_FILE_COVERAGE = 85.0
 
-# Files that are meant to be thin.  A stub exists to be replaced; testing it to
-# the floor would be testing a placeholder, so it is exempt by name rather than
-# left to drag the badge down or silently pass.
+# Files that are meant to be thin.  A stub exists to be replaced, so it is
+# exempt from the per-file floor by name.
 FILE_FLOOR_EXEMPT = {
     "shared/ui/stub_screen.c",
 }
@@ -158,11 +154,8 @@ def find_gcda(source: pathlib.Path) -> pathlib.Path:
 def check_tracked_is_complete() -> None:
     """Every instrumented source must be in TRACKED.
 
-    docs/Testing-and-CI.md and docs/Screens.md both promise that forgetting to
-    list a new source fails the coverage check.  It could not: measure() only
-    ever looked at TRACKED, so an unlisted file was simply absent from the
-    numerator and the denominator both, and the badge stayed green over a
-    shrinking fraction of the code.
+    measure() looks only at TRACKED, so an unlisted file would be absent from
+    both the numerator and the denominator.
     """
     instrumented = {p.name[: -len(".gcda")] for p in BUILD_DIR.rglob("*.gcda")}
     tracked = {pathlib.Path(rel).name for rel in TRACKED}
@@ -186,7 +179,7 @@ def measure() -> dict[str, dict[str, float]]:
             cwd=gcda.parent, capture_output=True, text=True,
         )
         # gcov prints one "File '...'" / "Lines executed:..." pair per source
-        # it touched; pick out the one we asked about.
+        # it touched; pick out the requested one.
         blocks = proc.stdout.split("File '")
         for block in blocks[1:]:
             name, _, rest = block.partition("'")

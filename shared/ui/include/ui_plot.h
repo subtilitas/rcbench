@@ -1,23 +1,14 @@
 /*
  * A multi-series plot on one time base, with a scale per series.
  *
- * Voltage, current, power and rpm differ by three orders of magnitude, so they
- * cannot share a Y axis.  Drawing four sets of tick labels down the left edge
- * would eat a third of the plot and still be unreadable at this size, so the
- * scales are disclosed three ways instead:
+ * Voltage, current, power and rpm (revolutions per minute) differ by three
+ * orders of magnitude and cannot share a Y axis.  Tick labels for four scales
+ * would take a third of the plot width, so the scales are shown two ways: the
+ * legend prints each series' full scale beside its name, and the focused
+ * series prints its full scale and zero inside the plot in its own colour.
  *
- *   a coloured rail per series, ticked every 12.5% of *its own* full scale,
- *   which makes the multi-scale nature visible without costing plot width;
- *
- *   the legend chip, which carries the series' own range under its value --
- *   that is where the actual numbers are read;
- *
- *   and the focused series, which prints its full scale and zero inside the
- *   plot, in its own colour.
- *
- * State lives in the caller's struct rather than in file statics, because the
- * motor bench, the servo bench and the analyser each want one and the
- * predecessor's single global was what made its plot un-reusable.
+ * State lives in the caller's struct rather than in file statics, so the
+ * motor bench, the servo bench and the analyser each own a plot.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -40,8 +31,8 @@ typedef struct {
     const char *unit;
     gfx_color_t color;
     int         decimals;
-    /** Never autorange below this: a 0-0.4 A scale on an idle bench is noise
-     *  drawn at full height, which reads as a fault that is not there. */
+    /** Lower bound of the autorange: a 0 to 0.4 A scale on an idle bench
+     *  draws noise at full height. */
     float       floor;
 } ui_plot_series_t;
 
@@ -61,13 +52,13 @@ typedef struct {
     float span_s;    /**< the width of the time base, for the axis label   */
 
     /**
-     * How many samples have ever been pushed.
+     * Samples pushed since init.
      *
-     * A screen keeps the value it last drew into each framebuffer and skips
+     * A screen keeps the count it last drew into each framebuffer and skips
      * the plot when it has not moved.  The panel refreshes at 39 Hz and
-     * samples arrive at 20, so about half of all frames would otherwise
-     * repaint an identical 762 x 212 region into the very PSRAM the LCD is
-     * scanning out of -- which is the traffic that starves it.
+     * samples arrive at 20 Hz, so about half of all frames would otherwise
+     * repaint an identical 762 x 212 px region into the PSRAM (pseudo-static
+     * random-access memory) the LCD (liquid-crystal display) scans out of.
      */
     uint32_t pushes;
 } ui_plot_t;
@@ -76,8 +67,8 @@ typedef struct {
  * Round @p v up to 1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8 or 10 times a power of
  * ten.
  *
- * The finer steps matter and are not decoration: a coarse 1/2/5 ladder puts a
- * 6S pack on a 0-50 V scale and wastes half the plot.
+ * The finer steps keep a 6S pack (25.2 V) on a 0 to 30 V scale rather than
+ * the 0 to 50 V a 1/2/5 ladder gives.
  */
 float ui_plot_nice_ceil(float v);
 
@@ -93,8 +84,8 @@ float ui_plot_sample(const ui_plot_t *p, int series, int back);
 /**
  * Recompute the scales.
  *
- * Grows immediately and shrinks only after about three seconds of headroom,
- * so a brief spike does not make the whole plot breathe.
+ * A scale grows immediately and shrinks only after 60 consecutive samples
+ * (3 s at 20 Hz) below it, so a brief spike does not rescale the plot twice.
  */
 void ui_plot_update_scales(ui_plot_t *p, int visible_samples);
 
@@ -107,8 +98,7 @@ int ui_plot_map_y(const ui_plot_t *p, int series, float value, int y0, int h);
 /** The plot body: grid, traces, the focused series' scale. */
 void ui_plot_render(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r);
 
-/** The rails, drawn left of the body.  One column per series. */
-/** A row of swatch + name + full-scale, one entry per series. */
+/** A row of swatch + name + full scale, one entry per series. */
 void ui_plot_render_legend(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r);
 
 #ifdef __cplusplus

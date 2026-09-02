@@ -1,17 +1,19 @@
 idf_component_register(
     SRCS "main.c" "selftest.c"
     REQUIRES board display gt911 storage link can can_twai bench outputs safety ui gfx touch
+             settings settings_nvs
              esp_driver_gpio esp_driver_uart esp_timer
 )
 
-# The CAN bring-up self-test is opt-in, because starting it takes native USB
-# away -- GPIO19/20 carry both and the multiplexer has to choose.
+# The CAN (Controller Area Network) bring-up self-test is opt-in, because
+# starting it takes native USB (Universal Serial Bus) away: GPIO19 and GPIO20
+# carry both, and the multiplexer selects one.
 #
 #     idf.py -DRCBENCH_CAN_SELFTEST=1 build
 #
-# Without this the flag would set a CMake variable that never reaches the
-# compiler, and the build would succeed while changing nothing -- which it did
-# once, and the identical binary size is what gave it away.
+# The CMake variable is forwarded as a compile definition.  Without that, the
+# flag would set a variable that never reaches the compiler and the build
+# would succeed unchanged.
 if(RCBENCH_CAN_SELFTEST)
     target_compile_definitions(${COMPONENT_LIB} PRIVATE RCBENCH_CAN_SELFTEST=1)
     message(STATUS "rcbench: CAN self-test built in; USB is unavailable while "

@@ -1,11 +1,10 @@
-# The GT911 and the driver around it.
+# The GT911 and the task around it.
 #
-# Named for the part rather than for "touch", because shared/touch already
-# registers a component of that name and ESP-IDF has one flat namespace: two
-# components called touch is a configure-time collision, and the pure half is
-# the one whose name should not have to move.  The coordinate mapping and the
-# press/move/release state machine are not here -- they are pure C in
-# shared/touch, which is what lets the navigation tests exist.
+# Named for the part because shared/touch registers a component called touch
+# and ESP-IDF (Espressif Internet-of-Things Development Framework) has one
+# flat component namespace.  The coordinate mapping and the press, move and
+# release state machine are pure C in shared/touch, where the host suite
+# tests them.
 idf_component_register(
     SRCS "gt911.c" "touch.c"
     INCLUDE_DIRS "include"

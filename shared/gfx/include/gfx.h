@@ -1,31 +1,30 @@
 /*
- * gfx -- a small, dependency-free RGB565 rasteriser.
+ * gfx: an RGB565 (16-bit red, green, blue) rasteriser with no dependencies.
  *
  * Nothing in this header touches ESP-IDF, FreeRTOS or any hardware.  It draws
- * into a plain block of 16-bit pixels described by a gfx_canvas_t, which makes
- * it (a) reusable for off-screen sprites and (b) unit-testable on the host.
- * The display component is what binds a canvas to an actual framebuffer.
+ * into a plain block of 16-bit pixels described by a gfx_canvas_t, so the
+ * same code renders off-screen sprites and runs in the host test suite.  The
+ * display component binds a canvas to the framebuffer.
  *
- * Pixel format is RGB565 in the CPU's native byte order, which is what the
- * ESP32-S3 RGB peripheral expects for a 16-bit data bus.
+ * The pixel format is RGB565 in the processor's native byte order, which is
+ * what the ESP32-S3 RGB peripheral expects on a 16-bit data bus.
  *
- * Three contracts hold across everything below, so each primitive does not
- * repeat them:
+ * Three contracts hold for every primitive below:
  *
- *   Everything clips to canvas->clip.  A draw off the edge, or outside a
- *   clip a screen has set, is dropped rather than wrapped -- a wrapped write
- *   would land somewhere else on the panel, which is worse than not drawing.
+ *   Everything clips to canvas->clip.  A draw off the edge, or outside a clip
+ *   a screen has set, is dropped rather than wrapped: a wrapped write lands
+ *   somewhere else on the panel.
  *
  *   The _aa variants antialias their edges from coverage; the plain ones are
- *   hard-edged.  Reach for _aa on anything that is not axis-aligned -- a disc,
- *   a capsule, a rotated glyph -- and the plain rect/line primitives, which
- *   are already exact, for everything that is.
+ *   hard-edged.  Use _aa for anything that is not axis-aligned (a disc, a
+ *   capsule, a rotated glyph) and the plain rect and line primitives, which
+ *   are exact, for everything that is.
  *
- *   Alpha and coverage are per-call, not stored: a colour is opaque RGB565,
- *   and a blend happens where a primitive is told a coverage.  Drawing the
- *   same translucent thing twice therefore darkens it twice, so overlays that
- *   land on pixels a screen does not repaint use an ordered (Bayer) stencil
- *   instead, which is idempotent -- see gfx_text_rotated.
+ *   Alpha and coverage are per call, not stored: a colour is opaque RGB565,
+ *   and a blend happens where a primitive is given a coverage.  Drawing the
+ *   same translucent shape twice darkens it twice, so an overlay that lands
+ *   on pixels a screen does not repaint uses an ordered (Bayer) stencil,
+ *   which is idempotent; see gfx_text_rotated.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -203,10 +202,10 @@ void gfx_fill_round_rect(gfx_canvas_t *c, int x, int y, int w, int h,
                          int r, gfx_color_t color);
 
 /*
- * Chamfered ("cut corner") rectangles.  The cut is a 45-degree bevel of the
- * given size; per-corner control is what makes the HUD look -- cutting only
- * the top-left and bottom-right of a panel reads very differently from
- * cutting all four.  A cut of 0 leaves that corner square.
+ * Chamfered (cut-corner) rectangles.  The cut is a 45-degree bevel of the
+ * given size, controlled per corner: cutting only the top-left and
+ * bottom-right of a panel gives a different look from cutting all four.  A
+ * cut of 0 leaves that corner square.
  */
 void gfx_fill_chamfer_rect(gfx_canvas_t *c, int x, int y, int w, int h,
                            int cut, gfx_color_t color);
@@ -229,7 +228,8 @@ void gfx_blit(gfx_canvas_t *c, int x, int y, const gfx_color_t *src,
 /** As gfx_blit(), but pixels equal to @p key are left untouched. */
 void gfx_blit_key(gfx_canvas_t *c, int x, int y, const gfx_color_t *src,
                   int w, int h, int32_t src_stride, gfx_color_t key);
-/** Expand a 1-bit-per-pixel mask (MSB first, rows padded to whole bytes). */
+/** Expand a 1-bit-per-pixel mask (most significant bit first, rows padded
+ *  to whole bytes). */
 void gfx_blit_1bpp(gfx_canvas_t *c, int x, int y, const uint8_t *bits,
                    int w, int h, gfx_color_t fg);
 
@@ -239,13 +239,14 @@ typedef struct {
     const uint8_t *glyphs;  /**< (last-first+1) * height * bytes_per_row bytes */
     uint8_t width;          /**< cell width in pixels                          */
     uint8_t height;         /**< cell height in pixels                         */
-    uint8_t bytes_per_row;  /**< 1bpp: (width+7)/8, MSB leftmost.  8bpp: width */
+    uint8_t bytes_per_row;  /**< 1bpp: (width+7)/8, top bit left. 8bpp: width */
     uint8_t bpp;            /**< 1 for a bit mask, 8 for coverage 0..255       */
     uint8_t first;          /**< first encoded code point                      */
     uint8_t last;           /**< last encoded code point                       */
 } gfx_font_t;
 
-/** 8x16 monospaced, ASCII 0x20..0x7E.  Labels, units, dense text. */
+/** 8x16 monospaced, code points 0x20..0x7E (printable ASCII, the American
+ *  Standard Code for Information Interchange).  Labels, units, dense text. */
 extern const gfx_font_t gfx_font_8x16;
 /** 16x28 monospaced, ASCII 0x20..0x7E.  Headings and medium readouts. */
 extern const gfx_font_t gfx_font_16x28;
@@ -290,26 +291,24 @@ int gfx_text_bg(gfx_canvas_t *c, int x, int y, const char *s,
                 const gfx_font_t *font, gfx_color_t fg, gfx_color_t bg, int scale);
 
 /**
- * Draw @p s rotated about (@p cx, @p cy) and blended into what is already
- * there, at @p alpha out of 255.
+ * Draw @p s rotated about (@p cx, @p cy) as a stencil over what is already
+ * there, covering @p alpha out of 255 of the glyph pixels.
  *
  * Inverse-mapped: every destination pixel in the rotated bounding box asks
- * which glyph pixel it came from, rather than every source pixel being scaled
- * and thrown at a destination.  Forward mapping leaves holes at any angle that
- * is not a multiple of 90 degrees, and they show badly on large text.
+ * which glyph pixel it comes from.  Forward mapping leaves holes at any angle
+ * that is not a multiple of 90 degrees.
  *
- * Only pixels the glyph actually sets are touched, so the cost is the ink
- * rather than the box -- which matters on a panel whose frame rate is decided
- * by how many cache lines a frame dirties.
+ * Only pixels the glyph sets are touched, so the cost is the ink rather than
+ * the box; on this panel the frame rate is decided by how many cache lines a
+ * frame dirties.
  *
- * This exists for one job: a watermark that says the numbers behind it are not
- * real.  It is not a general text transform, and it is not fast enough to be
- * one.
+ * Built for the simulation watermark.  It is not a general text transform and
+ * is not fast enough for one.
  *
  * `alpha` is coverage, not weight: the glyphs are stencilled at full opacity
  * onto that fraction of pixels, chosen by an ordered dither.  Drawing this
- * twice over the same pixels is the same as drawing it once, which is what a
- * full-screen overlay laid over selectively repainted screens requires.
+ * twice over the same pixels equals drawing it once, which a full-screen
+ * overlay over selectively repainted screens requires.
  */
 void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
                       const gfx_font_t *font, gfx_color_t fg, int scale,

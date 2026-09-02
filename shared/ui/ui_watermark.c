@@ -12,10 +12,8 @@
 #define TEXT "SIMULATION"
 
 /*
- * 15% -- the middle of what was asked for.  Below about 10% it disappears
- * against the plot's own grid on a bright bench photo; above about 20% it
- * starts competing with the numbers it is warning you about, which would make
- * people want it switched off.
+ * 15 % opacity.  Below about 10 % the mark disappears against the plot grid
+ * in a photograph; above about 20 % it competes with the readings.
  */
 #define ALPHA 38   /* 0.15 * 255 */
 
@@ -36,11 +34,9 @@ void ui_watermark(gfx_canvas_t *c)
                              + (float)c->height * (float)c->height);
 
     /*
-     * The largest whole scale whose *rotated bounding box* still fits the
-     * canvas -- solved rather than fudged.  Sizing against the diagonal alone
-     * ignores the text's own height, which is what pushes the first and last
-     * letters off the corners: at 5:3 the box overflowed vertically by 26 px
-     * while fitting horizontally with room to spare.
+     * The largest whole scale whose rotated bounding box fits the canvas.
+     * Sizing against the diagonal alone ignores the text's height; at 5:3
+     * that overflows the canvas vertically by 26 px.
      */
     const int len = (int)strlen(TEXT);
     const float fw = (float)(len * gfx_font_16x28.width);

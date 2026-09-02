@@ -1,7 +1,7 @@
 # Host build of everything in shared/ that the panel and the coprocessor also
-# compile.  Nothing here links a vendor SDK, so it runs anywhere gcc does --
-# which is what makes the coverage number in the README mean something, and
-# what lets the link codec be fed corrupt frames long before there is a wire.
+# compile.  Nothing here links a vendor SDK (software development kit), so it
+# runs anywhere gcc does, which is what gives the coverage number in STATUS.md
+# its meaning and lets the link codec be fed corrupt frames without a wire.
 cmake_minimum_required(VERSION 3.16)
 project(rcbench_host_tests C)
 
@@ -49,13 +49,14 @@ set(UNDER_TEST
 # wrong number rather than a crash.
 set(STRICT -Wall -Wextra -Werror -Wshadow -Wconversion -Wno-sign-conversion)
 
-# ASan + UBSan, for the runtime faults -Werror cannot see: a parser fed a
-# hostile frame reading off the end of a buffer, a signed shift overflowing, an
-# unaligned access.  This is a separate CI job from the -Werror one, and it
-# drops -Werror on purpose: UBSan's instrumentation makes GCC re-issue
-# -Wconversion on shift expressions whose casts are already correct, and those
-# false positives would fail the build before a single test ran.  The warnings
-# still print; the enforcing -Werror lives in the ordinary job.
+# ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer), for the
+# runtime faults -Werror cannot see: a parser fed a hostile frame reading off
+# the end of a buffer, a signed shift overflowing, an unaligned access.  This
+# is a separate CI (continuous integration) job from the -Werror one, and it
+# drops -Werror: UBSan's instrumentation makes GCC re-issue -Wconversion on
+# shift expressions whose casts are correct, and those false positives would
+# fail the build before a single test ran.  The warnings print; the enforcing
+# -Werror lives in the ordinary job.
 option(ENABLE_SANITIZERS "Build the suite under AddressSanitizer + UBSan" OFF)
 if(ENABLE_SANITIZERS)
     list(REMOVE_ITEM STRICT -Werror)
@@ -73,9 +74,8 @@ foreach(lib ${UNDER_TEST})
     endif()
 endforeach()
 
-# No fakes left.  The one that existed simulated a byte wire between the two
-# ends; the CAN loopback puts the real host and the real device against each
-# other over a bus this suite controls, which needs nothing pretended.
+# No fakes: the CAN (Controller Area Network) loopback test runs the real host
+# and the real device against each other over a bus this suite controls.
 set(FAKES "")
 
 enable_testing()
@@ -86,8 +86,9 @@ foreach(suite gfx touch_map nav widgets bench motor logview logwriter settings l
     target_include_directories(test_${suite} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}")
     add_test(NAME ${suite} COMMAND test_${suite})
-    # The CSV fixtures are the ones logwiju is held to; the suite finds them
-    # relative to its own source directory, not the build tree.
+    # The CSV (comma-separated values) fixtures are the corpus the log parser
+    # is held to; the suite finds them relative to its own source directory,
+    # not the build tree.
     set_tests_properties(${suite} PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 endforeach()

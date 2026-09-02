@@ -1,14 +1,11 @@
 /*
  * Host unit tests for the log file parsing core.
  *
- * The expectations are logwiju's own: this suite is a port of that project's
+ * The number and CSV (comma-separated values) cases follow logwiju's
  * test/verify-numbers.mjs and test/verify-csv.mjs, run against the same four
- * fixtures, which are checked in under fixtures/.  Porting a parser without
- * porting its tests would just be rewriting it.
- *
- * On top of those there are cases for the things this version does and the
- * browser one does not: streaming a file it cannot hold, a row cap, and quoted
- * fields that straddle a read boundary.
+ * fixtures under fixtures/.  Further cases cover what this reader does that
+ * the browser one does not: streaming a file it cannot hold, a row cap, and
+ * quoted fields that straddle a read boundary.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -151,8 +148,8 @@ TEST_CASE(parse_with_a_known_convention)
 
 TEST_CASE(the_wrong_convention_is_rejected_not_guessed)
 {
-    /* The whole point: stripping "." out of the German 1.234,56 and reading it
-     * as English gives 1.23456 -- a silently wrong number.  Reject instead. */
+    /* Stripping "." out of the German 1.234,56 and reading it as English gives
+     * 1.23456, a wrong number.  The cell is rejected instead. */
     double v = 0.0;
     CHECK(!log_parse_with("1.234,56", LOG_CONV_EN, &v, NULL, 0));
     CHECK(!log_parse_with("1,234.56", LOG_CONV_DE, &v, NULL, 0));
@@ -279,7 +276,8 @@ TEST_CASE(rows_honour_quotes_and_doubled_quotes)
     static const char *const esc[] = { "a", "say \"hi\"", "c" };
     split_check("a,\"say \"\"hi\"\"\",c", ',', 0, esc, 3);
 
-    /* CRLF, and a last line with no newline at all. */
+    /* CRLF (carriage return, line feed) line ends, and a last line with no
+     * newline at all. */
     static const char *const crlf[] = { "x", "y" };
     split_check("x,y\r\nz,w", ',', 0, crlf, 2);
     static const char *const tail[] = { "z", "w" };
@@ -288,9 +286,9 @@ TEST_CASE(rows_honour_quotes_and_doubled_quotes)
 
 TEST_CASE(a_quoted_field_may_straddle_a_read_boundary)
 {
-    /* The reader refills in 256-byte chunks.  A field that crosses one, and a
-     * doubled quote whose halves land in different chunks, are exactly the
-     * cases a chunked reader gets wrong. */
+    /* The reader refills in 256-byte chunks.  A field that crosses a chunk
+     * boundary, and a doubled quote whose halves land in different chunks,
+     * must read the same as inside one chunk. */
     char text[900];
     size_t n = 0;
     n += (size_t)snprintf(text + n, sizeof(text) - n, "a,b\n\"");
@@ -531,9 +529,8 @@ TEST_CASE(ragged_rows_are_reported_not_absorbed)
 
 TEST_CASE(the_row_cap_is_reported_rather_than_silent)
 {
-    /* The board cannot hold an arbitrarily long log, so it stops -- and says
-     * so.  A viewer that quietly showed the first N rows would be lying about
-     * the run. */
+    /* The row cap stops the read and reports it.  A viewer that shows the
+     * first N rows without saying so misrepresents the run. */
     static char text[4096];
     size_t n = (size_t)snprintf(text, sizeof(text), "t,v\n");
     for (int i = 0; i < 200; ++i) {
@@ -601,9 +598,9 @@ TEST_CASE(without_a_time_column_the_x_axis_is_the_row_index)
 
 TEST_CASE(an_unreadable_cell_holds_the_trace_instead_of_breaking_it)
 {
-    /* One bad cell in five keeps the column above the 80 % bar that decides
-     * whether it is numeric at all -- below that the file, not the cell, is
-     * the problem, and the analysis says so instead. */
+    /* One bad cell in five keeps the column above the 80 % threshold that
+     * decides whether it is numeric.  Below that threshold the column is
+     * reported as non-numeric rather than the cell as bad. */
     static const char text[] = "t,v\n0,1.5\n1,n/a\n2,3.5\n3,4.0\n4,4.5\n";
     log_source_t src;
     log_mem_ctx_t ctx;
@@ -769,8 +766,8 @@ TEST_CASE(the_error_paths_name_themselves)
     CHECK_EQ(analyse_text("", NULL, &a), LOG_ERR_NO_HEADER);
     CHECK_EQ(analyse_text("t,v\n", NULL, &a), LOG_ERR_NO_ROWS);
 
-    /* One column per byte of the alphabet is more than this screen can plot,
-     * and saying so beats quietly dropping the rest. */
+    /* 26 columns is more than the screen can plot, so the excess is reported
+     * rather than dropped. */
     static char wide[1024];
     size_t n = 0;
     for (int i = 0; i < LOG_MAX_COLUMNS + 4; ++i) {
@@ -954,8 +951,9 @@ static void *stingy_alloc(size_t n)
 
 TEST_CASE(running_out_of_memory_is_reported_not_crashed_into)
 {
-    /* On the board the sample arrays come out of PSRAM, and a long enough log
-     * will exhaust it.  That has to come back as an error the screen can show. */
+    /* On the board the sample arrays come out of PSRAM (pseudo-static
+     * random-access memory), and a long enough log exhausts it.  That comes
+     * back as an error the screen can show. */
     static const char text[] = "t,a,b\n0,1,2\n1,3,4\n2,5,6\n";
     static log_source_t src;
     static log_mem_ctx_t ctx;
@@ -1032,11 +1030,11 @@ TEST_CASE(an_over_long_row_is_truncated_without_running_off_the_end)
 /* ------------------------------------------------- convention evidence --- */
 
 /*
- * Three trailing digits are the ambiguous shape only when the integer part
- * could be a leading thousands group.  "0.000" and "12345,678" cannot be
- * grouped, so they are decimal points and nothing else -- millisecond
- * timestamps are the common case, and calling them "no evidence" is what let
- * an ordinary English log be read as German at 1000x.
+ * Three trailing digits are ambiguous only when the integer part could be a
+ * leading thousands group.  "0.000" and "12345,678" cannot be grouped, so
+ * they are decimal points and count as evidence.  Millisecond timestamps are
+ * the common case; treating them as "no evidence" lets an English log be
+ * read as German at 1000x.
  */
 TEST_CASE(an_integer_part_that_cannot_be_a_group_settles_the_convention)
 {
@@ -1070,9 +1068,9 @@ TEST_CASE(an_integer_part_that_cannot_be_a_group_settles_the_convention)
 
 /*
  * A repeated separator is only grouping when the groups are groups.  A
- * version, an IP address and a dotted date all have the shape and none of
- * them is a number -- and one such column used to hand the whole file to the
- * wrong convention.
+ * version, an IP (Internet Protocol) address and a dotted date all have the
+ * shape and none of them is a number; treating one as grouping evidence hands
+ * the whole file to the wrong convention.
  */
 TEST_CASE(a_version_or_an_address_casts_no_vote)
 {
@@ -1085,9 +1083,9 @@ TEST_CASE(a_version_or_an_address_casts_no_vote)
 
 /*
  * The residual after the digits is a unit only if it can be one.  A clock time
- * or an ISO date otherwise reads as its leading number with the rest as a
- * "unit", which makes the column report itself numeric, constant, and fit to
- * be the time axis.
+ * or an ISO 8601 date otherwise reads as its leading number with the rest as
+ * a "unit", which makes the column report itself numeric, constant, and fit
+ * to be the time axis.
  */
 TEST_CASE(a_timestamp_is_not_a_number_with_a_unit)
 {
@@ -1130,9 +1128,8 @@ TEST_CASE(an_exponent_that_overflows_is_rejected)
 /*
  * A source that stops part way, the way a bad sector or a pulled card does.
  * Without an error channel this is indistinguishable from a clean end of file,
- * and a truncated log is then presented as a complete short one -- with a
- * confident row count, duration and sample rate computed from the part that
- * happened to be readable.
+ * and a truncated log is then presented as a complete short one, with a row
+ * count, duration and sample rate computed from the readable part.
  */
 typedef struct {
     const char *text;
@@ -1192,7 +1189,7 @@ TEST_CASE(a_read_error_is_not_a_clean_end_of_file)
     CHECK_EQ(log_csv_analyse(&src, NULL, &a), LOG_OK);
     CHECK_EQ(a.row_count, 400);
 
-    /* Now the card gives up a quarter of the way in. */
+    /* Then the card gives up a quarter of the way in. */
     ctx.fail_after = 1000;
     CHECK(failing_rewind(&ctx));
     CHECK_EQ(log_csv_analyse(&src, NULL, &a), LOG_ERR_READ);

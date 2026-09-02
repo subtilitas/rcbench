@@ -1,23 +1,13 @@
 /*
- * CRC-16/CCITT-FALSE.
+ * CRC-16 (cyclic redundancy check): polynomial 0x1021, no reflection, no
+ * final XOR, seed passed by the caller.
  *
- * Nothing in the panel link uses this any more -- CAN carries a CRC, an
- * acknowledge slot and retransmission in silicon.  It stays because OpenYGE
- * needs the same polynomial with a different seed, and because the two check
- * values below are what tell those variants apart.  The reasoning it was
- * written with follows, and still applies to any byte stream that needs one.
+ * With the seed 0xFFFF this is CRC-16/CCITT-FALSE, whose published check
+ * value is 0x29B1 over the ASCII string "123456789".  With the seed 0x0000 it
+ * is CRC-16/XMODEM, which the OpenYGE protocol uses (check value 0x31C3).
  *
- * Originally: CRC-16/CCITT-FALSE for the panel-to-coprocessor link.
- *
- * Why sixteen bits and not IOMCU's eight: this link carries coprocessor
- * firmware images as well as register traffic, and an eight-bit residue over a
- * multi-kilobyte image is not a check, it is a formality.
- *
- * Why CCITT-FALSE specifically: poly 0x1021, init 0xFFFF, no reflection, no
- * final xor.  It is the variant with an unambiguous published check value
- * (0x29B1 over the ASCII string "123456789"), which means an implementation on
- * the other end of the wire -- written by somebody else, in another language,
- * years from now -- can be verified against one number before it is trusted.
+ * The panel link carries no CRC of its own: CAN (Controller Area Network)
+ * provides a 15-bit CRC, an acknowledge slot and retransmission in silicon.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -38,10 +28,8 @@ extern "C" {
 #define LINK_CRC_CHECK 0x29B1u
 
 /*
- * Fold `len` bytes into `crc` and return the new accumulator.  Incremental by
- * construction, so a receiver can check a frame as it arrives rather than
- * buffering it first -- which is what lets the coprocessor drop a corrupt
- * frame without ever having had room for it.
+ * Fold `len` bytes into `crc` and return the new accumulator.  Incremental,
+ * so a receiver can check a frame as it arrives without buffering it first.
  */
 uint16_t link_crc(uint16_t crc, const void *data, size_t len);
 

@@ -1,22 +1,17 @@
 /*
- * Visual language for the bench, resolved at runtime.
+ * The visual language of the bench, resolved at runtime.
  *
- * Dark, high contrast, hard edges.  The background is near-black so the four
- * telemetry colours can run at full chroma without fighting each other, and
- * every text colour sits well clear of its background rather than merely
- * "looking dark mode".  Corners are chamfered rather than rounded: a
- * 45-degree cut reads as instrument panel, a radius reads as consumer app.
+ * Two palettes, dark and light.  In the dark palette the background is
+ * near-black so the four telemetry colours run at full chroma; in both, every
+ * text colour sits well clear of its background.
  *
- * Colours are an array lookup rather than a compile-time constant, because
- * theme, brightness and contrast are settings.  The names below are unchanged
- * from when they were #defines, so drawing code did not have to move; what
- * changed is that a palette can be swapped and every screen repainted.
+ * Colours are an array lookup rather than compile-time constants, because
+ * theme, brightness and contrast are settings.  Brightness and contrast are
+ * applied to the 8-bit palette before packing to RGB565 (16-bit red, green,
+ * blue), so they do not quantise the way scaling packed colours would.
  *
- * Brightness scales the whole palette in 8-bit space before packing to
- * RGB565, so it does not quantise the way scaling packed colours would.
- *
- * No ESP-IDF here -- the whole UI renders on the host too, which is how it
- * gets designed without a board in front of you.
+ * No ESP-IDF (Espressif Internet-of-Things Development Framework): the whole
+ * UI (user interface) renders on the host.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -73,7 +68,7 @@ static inline gfx_color_t ui_theme_color(ui_color_id_t id)
 
 /** Recompute the palette.  Call ui_router_invalidate() after. */
 void ui_theme_set(ui_theme_id_t theme);
-/** 20..100 %.  Scales the palette; see the note about this board's backlight. */
+/** 20..100 %.  Scales the whole palette. */
 void ui_theme_set_brightness(int percent);
 /** 60..140 %.  Pushes colours away from mid-grey, or pulls them toward it. */
 void ui_theme_set_contrast(int percent);
@@ -121,13 +116,10 @@ int ui_theme_contrast(void);
 #define UI_CHAMFER       8
 #define UI_CHAMFER_SM    4
 
-/* Fonts, by role rather than by size, so a face can be swapped in one place. */
 /*
- * Corner radii, one scale for the whole interface.
- *
- * The chamfered corners this replaces were per-corner and asymmetric, which
- * gave every panel a direction; consistent rounding gives them a family
- * instead, and lets a card, a button and a track read as the same material.
+ * Corner radii, one scale for the whole interface, so a card, a button and a
+ * track read as the same material.  UI_CHAMFER is the 45-degree cut ui_panel
+ * and the home tag use.
  */
 #define UI_R_CARD  8
 #define UI_R_CTL   6
@@ -135,11 +127,9 @@ int ui_theme_contrast(void);
 
 /*
  * The bench's numeral style, in one place: the four readings and the throttle
- * are the same instrument and must not drift apart.  Thickness is about a
- * eighth of the height: any fatter and the horizontals, which only span the
- * gap between the two verticals, come out shorter than they are thick and
- * every segment collapses into a lens.  The lean is the couple of degrees a
- * panel meter has.
+ * share it.  Thickness is an eighth of the height; a fatter segment makes the
+ * horizontals, which only span the gap between the two verticals, shorter
+ * than they are thick.  The slant of 3 px is the lean of a panel meter.
  */
 static inline gfx_seg_style_t ui_seg_hero(void)
 {
@@ -148,6 +138,7 @@ static inline gfx_seg_style_t ui_seg_hero(void)
     return s;
 }
 
+/* Fonts by role rather than by size, so a face can be swapped in one place. */
 #define UI_FONT_LABEL    (&gfx_font_8x16)
 #define UI_FONT_HEAD     (&gfx_font_16x28)
 #define UI_FONT_NUM      (&gfx_font_num_24x30)

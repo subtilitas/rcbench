@@ -1,17 +1,17 @@
 /*
- * CSV / TSV import: a port of logwiju's csv-parser.js, reshaped for a board
- * that cannot hold the file it is reading.
+ * CSV (comma-separated values) and TSV (tab-separated values) import for a
+ * board that cannot hold the file it is reading.
  *
- * Upstream loads the whole text into memory and slices it.  Here the source is
- * a card, a log can be tens of megabytes, and there are 8 MB of PSRAM with two
- * framebuffers already in them.  So this reads through a callback and never
- * keeps more than one row: analysis is two streaming passes, and only the
- * columns the user actually plots are ever materialised as arrays.
+ * The source is a card, a log can be tens of megabytes, and the 8 MB of PSRAM
+ * (pseudo-static random-access memory) already hold two framebuffers.  So the
+ * reader works through a callback and never keeps more than one row: analysis
+ * is two streaming passes, and only the columns the user plots are
+ * materialised as arrays.
  *
- * Two-phase, like upstream and for the same reason: `log_csv_analyse` reports
- * what it detected without committing to it, so the import screen can show the
- * user a preview and let them override the delimiter, the decimal convention
- * and the time column before `log_csv_build` runs.
+ * Two-phase: `log_csv_analyse` reports what it detected without committing to
+ * it, so the import screen can show a preview and let the user override the
+ * delimiter, the decimal convention and the time column before
+ * `log_csv_build` runs.
  *
  * Pure C, no ESP-IDF.
  *
@@ -29,8 +29,8 @@
 extern "C" {
 #endif
 
-/* Ceilings.  A bench log with more than 24 channels is not something this
- * screen could usefully draw anyway, and saying so beats a silent truncation. */
+/* Ceilings.  The screen cannot draw more than 24 channels, and reporting the
+ * limit beats a silent truncation. */
 #define LOG_MAX_COLUMNS 24
 #define LOG_MAX_SERIES  4
 #define LOG_NAME_MAX    28
@@ -43,18 +43,19 @@ extern "C" {
 /**
  * A byte source that can be read from the top more than once.
  *
- * Deliberately not a FILE*: the host tests feed strings, the firmware feeds a
- * file on the card, and neither should know about the other.
+ * Not a FILE*: the host tests feed strings, the firmware feeds a file on the
+ * card, and neither knows about the other.
  */
 typedef struct {
-    size_t (*read)(void *ctx, char *buf, size_t max); /**< 0 means EOF */
+    size_t (*read)(void *ctx, char *buf, size_t max); /**< 0: end of input */
     bool (*rewind)(void *ctx);
     /**
      * Did the last read fail, as opposed to reaching the end?
      *
-     * Optional -- NULL means "reads never fail", which is true of a block of
-     * memory and false of an SD card.  Without it a bad sector is a clean EOF,
-     * and a truncated log is presented as a complete short one.
+     * Optional: NULL means "reads never fail", which is true of a block of
+     * memory and false of an SD card.  Without it a bad sector reads as a
+     * clean end of file, and a truncated log is presented as a complete short
+     * one.
      */
     bool (*error)(void *ctx);
     void *ctx;
@@ -95,7 +96,7 @@ void log_reader_init(log_reader_t *r, log_source_t *src);
  * @param store        scratch for the field text; fields point into it
  * @param fields       receives one pointer per field, up to @p max_fields
  * @param total_fields receives the true field count, which may exceed
- *                     @p max_fields -- that is how a ragged row is spotted
+ *                     @p max_fields; that is how a ragged row is spotted
  * @return the number of fields stored, or -1 at end of input
  */
 int log_reader_row(log_reader_t *r, char delimiter, char *store,

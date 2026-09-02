@@ -126,14 +126,10 @@ void ui_router_set_status(const ui_bench_status_t *status)
         return;
     }
     /*
-     * Screens cache their chrome per framebuffer, so anything in the status
-     * that a screen draws has to invalidate them when it moves.
-     *
-     * The watermark is painted over the whole canvas, so switching it changes
-     * pixels the screens believe they have already drawn correctly.  The
-     * capability bitmap is the same problem in a smaller place: the menu's
-     * tiles are chrome, and their badges come out of it -- fit the sensor and
-     * the badge would otherwise stay until something else forced a repaint.
+     * Screens cache their chrome per framebuffer, so a status change that a
+     * screen draws has to invalidate them.  The watermark covers the whole
+     * canvas, and the menu's tile badges come from the capability bitmap, so
+     * a change of either repaints everything.
      */
     const bool     was  = s.status.simulated;
     const uint16_t caps = s.status.capabilities;
@@ -153,10 +149,9 @@ bool ui_router_take_stop(void)
 }
 
 /*
- * The splash has nowhere to go back to and nothing to stop; everything else
- * carries the band.  The overview does too, because something can be armed
- * while you are standing at the menu -- which is exactly when you most want
- * STOP to be where it always is.
+ * Every screen except the splash carries the band, the overview included: the
+ * bench can be armed while the menu is showing.  The home tag is on every
+ * screen except the splash and the overview.
  */
 static bool has_band(ui_screen_id_t id) { return id != SCREEN_SPLASH; }
 static bool has_home(ui_screen_id_t id)
@@ -190,9 +185,9 @@ void ui_router_event(const touch_event_t *evt)
             if (evt->type == TOUCH_EVENT_UP) {
                 s.band_press = false;
                 if (s.on_stop && in_stop) {
-                    /* Latched, not dispatched: the loop that owns the
-                     * heartbeat drains it, so a stop stops the line as well as
-                     * sending the command. */
+                    /* Latched rather than dispatched: the application loop
+                     * that drives the heartbeat drains it, so a stop also
+                     * stops the line. */
                     s.stop_latched = true;
                 } else if (!s.on_stop && in_home) {
                     ui_router_goto(SCREEN_OVERVIEW);
@@ -201,21 +196,15 @@ void ui_router_event(const touch_event_t *evt)
             return;
         }
         if (evt->point.y < UI_BAND_H) {
-            /*
-             * The band swallows anything else that lands on it.  Nothing
-             * observable depends on this today -- every screen requires a
-             * press to begin inside one of its own targets, so a band press
-             * arriving with a negative y hits nothing anyway.  It is here for
-             * the screen that tracks a drag without an owning press, which is
-             * a shape the bench screen already wants.
-             */
+            /* Any other event on the band is consumed here, so no screen
+             * receives an event with a negative y. */
             return;
         }
     }
 
     if (scr != NULL && scr->event != NULL) {
-        /* Screens work in their own coordinates, so the offset is removed
-         * here rather than remembered in nine places. */
+        /* Screens work in their own coordinates; the band's height is
+         * removed here. */
         touch_event_t local = *evt;
         if (has_band(s.current)) {
             local.point.y = (int16_t)(local.point.y - UI_BAND_H);
@@ -269,9 +258,8 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
                    s.band_press && !s.on_stop);
 
     /*
-     * A sub-canvas, not an agreement.  A screen that miscalculates an offset
-     * would otherwise draw over STOP, and the failure would look like a
-     * cosmetic glitch rather than the safety problem it is.
+     * A sub-canvas clipped to the body, so a screen cannot draw over the band
+     * or STOP whatever offsets it uses.
      */
     const gfx_rect_t body = { 0, UI_BAND_H, PANEL_W,
                               (int16_t)(PANEL_H - UI_BAND_H) };
@@ -285,8 +273,8 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
     }
 
     /*
-     * Last, over everything including the band and the alert.  A watermark a
-     * screen can paint over is one that will eventually be painted over.
+     * Last, over the band and the alert, so no screen can paint over the
+     * watermark.
      */
     if (s.status.simulated) {
         ui_watermark(c);

@@ -142,23 +142,20 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
     const float frac = (span > 0.0f) ? (s->value - s->min) / span : 0.0f;
 
     /*
-     * A track with a handle rather than a bar with a notch.  The rounded
-     * trough reads as something you drag; a square-ended fill reads as a
-     * progress meter, which is the wrong affordance for the one control on
-     * this screen that commands a motor.
+     * A rounded trough with a handle, so the control reads as a slider
+     * rather than as a progress meter.
      */
     const int rad = s->track.h / 2;
     gfx_fill_round_rect(c, s->track.x, s->track.y, s->track.w, s->track.h,
                         rad, ui_theme_color(UI_C_PANEL_SUNK));
-    /* The trough's own shadow: one line under its top edge, which is what
-     * makes it read as cut into the panel instead of laid on it. */
+    /* One darker line under the trough's top edge, so it reads as cut into
+     * the panel. */
     gfx_hline(c, s->track.x + rad, s->track.y + 1, s->track.w - 2 * rad,
               gfx_lerp(ui_theme_color(UI_C_PANEL_SUNK), GFX_BLACK, 70));
 
     int filled = (int)(frac * (float)s->track.w + 0.5f);
-    /* Below one diameter a rounded fill has no straight section left and
-     * draws as a lens narrower than the trough it sits in, which reads as a
-     * rendering fault rather than as a small number. */
+    /* A rounded fill narrower than its own height has no straight section
+     * and draws as a lens, so the fill is at least one diameter wide. */
     if (filled > 0 && filled < s->track.h) {
         filled = s->track.h;
     }
@@ -169,19 +166,13 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
                   gfx_lerp(s->color, GFX_WHITE, 70));
     }
 
-    /*
-     * Scale divisions, cut into both edges rather than ruled across.
-     *
-     * These carry what the row of preset buttons underneath used to: where a
-     * quarter, a half and three quarters are.  As marks they cost no tap
-     * target and no row of screen, and they stay readable while the throttle
-     * is moving, which five buttons never did.
-     */
+    /* Scale divisions, cut 5 px into both edges rather than ruled across the
+     * track, so they stay readable while the fill moves. */
     for (int t = 1; s->ticks > 0 && t < s->ticks; ++t) {
         const int tx = s->track.x + (int)((float)s->track.w
                                           * (float)t / (float)s->ticks + 0.5f);
-        /* Over the fill it has to darken and over the trough it has to
-         * lighten, or half the scale disappears at every throttle setting. */
+        /* A tick darkens over the fill and lightens over the trough, so
+         * every tick is visible at every setting. */
         const gfx_color_t tc = (tx < s->track.x + filled)
             ? gfx_lerp(s->color, GFX_BLACK, 105)
             : gfx_lerp(ui_theme_color(UI_C_PANEL_SUNK),
@@ -191,15 +182,10 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
     }
 
     /*
-     * A thumb, standing proud of the track on both sides.
-     *
-     * It used to be a disc drawn strictly inside the track's height, because
-     * an earlier one rode five pixels over each side while the redraw cleared
-     * only the track -- which left the overhang behind on every repaint, and
-     * with alternating framebuffers that reads as flicker rather than as an
-     * obviously wrong pixel.  The fix then was to shrink the handle.  The fix
-     * now is UI_SLIDER_OVERHANG: the caller is told how far outside the track
-     * this paints and clears that much with it.
+     * The thumb stands UI_SLIDER_OVERHANG px proud of the track on both
+     * sides.  A caller that clears only the track before redrawing leaves the
+     * overhang behind, which with alternating framebuffers shows as flicker;
+     * the caller clears the overhang as well.
      */
     const int tw = 20;
     const int th = s->track.h + 2 * UI_SLIDER_OVERHANG;
@@ -214,8 +200,7 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
     const int tx = hx - tw / 2;
     const int ty = s->track.y - UI_SLIDER_OVERHANG;
 
-    /* Seated before drawn: one offset shape underneath, so it sits on the
-     * track rather than floating over it. */
+    /* One shape offset 2 px below the thumb, drawn first, as its shadow. */
     gfx_fill_round_rect(c, tx, ty + 2, tw, th, 6,
                         gfx_lerp(ui_theme_color(UI_C_BG), GFX_BLACK, 120));
     gfx_fill_round_rect(c, tx, ty, tw, th, 6, ui_theme_color(UI_C_TEXT));
@@ -224,11 +209,8 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
     gfx_hline(c, tx + 6, ty + 1, tw - 12,
               gfx_lerp(ui_theme_color(UI_C_TEXT), GFX_WHITE, 120));
 
-    /*
-     * Two grip lines.  A blank slab reads as a position marker and a gripped
-     * one reads as something to take hold of, which is the difference between
-     * a meter and a control.
-     */
+    /* Two grip lines, so the thumb reads as a control rather than as a
+     * marker. */
     const gfx_color_t grip = gfx_lerp(ui_theme_color(UI_C_TEXT),
                                       GFX_BLACK, 95);
     const int gy = ty + th / 2 - 6;

@@ -1,17 +1,15 @@
 /*
- * The log viewer: browse the card, see what the import decided, then plot.
+ * The log viewer: browse the card, review the import, plot the file.
  *
- * The screen is three views behind one tile -- a file browser, an import view
- * that shows what the CSV reader made of the file before anything is drawn,
- * and the plot.  The import view exists on purpose: the reader guesses the
- * delimiter, the decimal convention and which column is time (see
- * shared/logfile), and a guess shown before it is trusted is a guess the user
- * can overrule, where a guess drawn straight onto a plot is a wrong trace
- * nobody can explain.
+ * Three views behind one tile: a file browser, an import view that shows
+ * what the CSV (comma-separated values) reader made of the file, and the
+ * plot.  The reader detects the delimiter, the decimal convention and the
+ * time column (see shared/logfile); the import view shows the detection and
+ * its evidence before anything is plotted, and offers overrides.
  *
- * compute_spans() turns the chosen columns into scaled traces once, so the
- * plot render walks prepared spans rather than reparsing on every frame -- the
- * panel is bandwidth-bound and the plot is one of the heavier screens.
+ * compute_spans() turns the chosen columns into scaled traces when the data
+ * changes, so the plot render walks prepared spans rather than reparsing on
+ * every frame.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -34,19 +32,14 @@
 /* ------------------------------------------------------------- browse ---- */
 
 /*
- * Every panel here sits 40 px higher than it did.
- *
- * The layout was drawn for a screen that owned all 480 px and painted its own
- * home tag in the top 40.  The router owns the band and the tag now, and hands
- * this screen a 432 px window -- so without the shift the footer ran from 430
- * to 472 in a canvas 432 tall, and RESCAN, OPEN and PLOT could not be pressed
- * at all.  40 is exactly what the home tag gave back.
+ * Layout in the 432 px body the router hands this screen (480 minus the
+ * 48 px band).  The footer has to stay inside it for RESCAN, OPEN and PLOT
+ * to be reachable.
  */
 #define BR_LIST   gfx_rect_make(16, 36, 768, 352)
 #define BR_ROW_H  44
-/* (352 - 30) / 44 = 7.  Eight rows need 382 px and the eighth was drawn
- * through the panel border into the footer, where the buttons overpaint its
- * ends and the hit test disagrees with what you can see. */
+/* (352 - 30) / 44 = 7 rows fit the list.  An eighth needs 382 px and would
+ * cross the panel border into the footer. */
 #define BR_ROWS   7
 
 /* ------------------------------------------------------------- import ---- */
@@ -90,7 +83,7 @@ static struct {
 
     log_viewer_file_t files[LOG_VIEWER_MAX_FILES];
     int n_files;
-    int listed;   /* -1 no volume, 0 not read yet, 1 read */
+    int listed;   /* -1 no volume, 0 not read, 1 read     */
     int sel;      /* highlighted file                     */
     int scroll;
 
@@ -121,8 +114,8 @@ static struct {
 } s;
 
 /* Column spans, in screen y, one pair per pixel column per series.  Computed
- * once when the data changes: recomputing them per redraw would make the
- * cursor lag, and recomputing them per band would make it crawl. */
+ * when the data changes: recomputing them per redraw would make the cursor
+ * lag, and recomputing them per band would make it crawl. */
 static int16_t s_span[LOG_MAX_SERIES][PV_W][2];
 static gfx_color_t s_band[PV_W * PV_BAND];
 static float s_lo[LOG_MAX_SERIES];
@@ -208,12 +201,10 @@ static void set_message(const char *fmt, ...)
 static void run_analysis(void)
 {
     /*
-     * Take the names of the picked columns before the analysis overwrites
-     * them.  The selection is stored as indices, and both override buttons
-     * re-run this -- so rebuilding it from scratch each time meant the two
-     * controls the import view exists to provide silently destroyed the third
-     * one's state.  Names rather than indices, because a delimiter change
-     * renumbers the columns and a name survives that.
+     * Keep the names of the picked columns before the analysis overwrites
+     * them.  The selection is stored as indices; both override buttons
+     * re-run the analysis, and a delimiter change renumbers the columns, so
+     * the selection is carried across by name.
      */
     char kept[LOG_MAX_SERIES][LOG_NAME_MAX];
     int n_kept = 0;
@@ -263,14 +254,10 @@ static void run_analysis(void)
     s.message[0] = '\0';
 
     /*
-     * Keep what the operator already chose.  run_analysis() runs again from
-     * both override buttons, so rebuilding the selection unconditionally meant
-     * the two controls the import view exists to provide destroyed the third
-     * one's state -- change the separator and your columns are gone, with
-     * nothing to say so beyond the PLOT n/4 counter.
-     *
-     * Re-resolve by name rather than by index: a delimiter change renumbers
-     * the columns, and a name survives that where an index does not.
+     * Keep what the operator chose: run_analysis() runs again from both
+     * override buttons, and the selection has to survive it.  Re-resolve by
+     * name rather than by index, because a delimiter change renumbers the
+     * columns.
      */
     s.n_picked = 0;
     for (int k = 0; k < n_kept; ++k) {
@@ -283,9 +270,9 @@ static void run_analysis(void)
         }
     }
 
-    /* Nothing survived -- a different file, or a re-read that renamed
-     * everything -- so fall back to the default: the first numeric columns
-     * that are not the time axis, which is what was wanted often enough. */
+    /* Nothing survived (a different file, or a re-read that renamed every
+     * column): fall back to the first numeric columns that are not the time
+     * axis. */
     if (s.n_picked == 0) {
         s.col_scroll = 0;
         for (int c = 0; c < s.an.n_columns && s.n_picked < LOG_MAX_SERIES; ++c) {
@@ -448,10 +435,9 @@ static void open_selected(void)
         return;
     }
     if (s.files[s.sel].is_dir) {
-        /* Subdirectories are listed -- storage_list only applies the suffix
-         * filter to files -- and opening one used to run the whole analysis
-         * against something that is not a log.  There is no directory
-         * navigation yet; say so rather than fail obscurely. */
+        /* Subdirectories are listed (storage_list applies the suffix filter
+         * to files only).  There is no directory navigation, so opening one
+         * reports a message rather than running the analysis on it. */
         set_message("%s is a folder", s.files[s.sel].name);
         return;
     }
@@ -629,7 +615,7 @@ static void render_import(gfx_canvas_t *c)
         ui_rule(c, IM_LEFT.x + 16, y + 2, IM_LEFT.w - 32, UI_EDGE);
         y += 14;
 
-        /* The evidence, so the decision above is arguable rather than magic. */
+        /* The evidence behind the detection. */
         snprintf(line, sizeof(line), "EVIDENCE  de %d  en %d  amb %d",
                  s.an.votes.de, s.an.votes.en, s.an.votes.ambiguous);
         gfx_text(c, IM_LEFT.x + 16, y, line, UI_FONT_LABEL, UI_TEXT_FAINT, 1);
@@ -652,8 +638,7 @@ static void render_import(gfx_canvas_t *c)
                      UI_FONT_LABEL, UI_WARN, 1);
         }
 
-        /* Two lines that turn the panel above into something actionable: the
-         * whole point of showing detection is being able to disagree with it. */
+        /* The override controls for the two detections above. */
         int hy = IM_LEFT.y + IM_LEFT.h - 60;
         ui_rule(c, IM_LEFT.x + 16, hy - 10, IM_LEFT.w - 32, UI_EDGE);
         gfx_text(c, IM_LEFT.x + 16, hy, "VALUES LOOK WRONG?  CHANGE NUM",

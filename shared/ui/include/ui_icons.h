@@ -1,9 +1,9 @@
 /*
  * Icons drawn with primitives rather than stored as bitmaps.
  *
- * Six glyphs at any size, a few hundred bytes of code each, and they scale
- * without a second asset.  Every one is built from filled spans and discs so
- * it stays cheap to draw over PSRAM.
+ * Eight glyphs at any size, a few hundred bytes of code each, built from
+ * filled spans and discs, which are cheap to draw into PSRAM (pseudo-static
+ * random-access memory).
  *
  * SPDX-License-Identifier: MIT
  */

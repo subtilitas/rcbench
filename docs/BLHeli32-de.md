@@ -2,34 +2,30 @@
 
 <sub>[English](BLHeli32.md) · **Deutsch**</sub>
 
-Warum BLHeli_32 nicht in der ESC-Liste des Programmierers steht, und was der
-Prüfstand mit so einem Regler stattdessen macht.
+BLHeli_32 steht nicht in der ESC-Liste (ESC: Electronic Speed Controller,
+Motorregler) des Programmierers. Diese Seite legt fest, was der Prüfstand mit
+einem BLHeli_32-ESC macht und was nicht.
 
-## Was funktioniert
+## Unterstützt
 
-Ein BLHeli_32-Regler ist an diesem Prüfstand ein erkannter, ansteuerbarer,
-messbarer Regler:
+- Erkennung: MCU (Microcontroller Unit) und Bootloader-Revision.
+- Drehrichtung, Drehrichtungsumkehr, 3D-Modus, Beacon und Save-Settings, als
+  DShot Special Commands auf der Signalleitung.
+- Telemetrie.
 
-- er wird **erkannt** — der Prüfstand nennt MCU und Bootloader-Revision;
-- **Drehrichtung, Drehrichtungsumkehr, 3D-Modus, Beacon und Save-Settings**
-  funktionieren, denn das sind DShot Special Commands auf der Signalleitung;
-- die **Telemetrie** ist nicht betroffen.
+## Nicht unterstützt
 
-## Was nicht funktioniert
+Lesen oder Schreiben der Parameterliste: Timing, PWM-Frequenz (PWM:
+Pulsweitenmodulation), Anlaufleistung, Strombegrenzung und die übrigen. Die
+Einstellungen liegen in einer Form vor, die der Prüfstand nicht lesen kann,
+und die zum Lesen nötigen Informationen sind nicht veröffentlicht.
 
-Die Parameterliste — Timing, PWM-Frequenz, Anlaufleistung, Strombegrenzung und
-der Rest. Diese Einstellungen liegen in einer Form vor, die dieser Prüfstand
-nicht lesen kann, und die dafür nötigen Informationen sind nicht
-veröffentlicht.
+## Stand
 
-## Wir haben gefragt
+Der Rechteinhaber wurde im August 2026 gefragt, ob das Projekt erhalten kann,
+was Lesen und Schreiben der Parameter voraussetzt. Die Anfrage wurde
+abgelehnt. Der Punkt ist abgeschlossen.
 
-Im August 2026 wurde der Rechteinhaber gefragt, ob dieses Projekt bekommen
-kann, was es zum Lesen und Schreiben braucht. **Er hat abgelehnt** — damit ist
-die Frage entschieden und nicht offen, und sie steht hier, damit niemand einen
-Abend damit verbringt, sie neu aufzumachen.
+## Alternative
 
-## Was stattdessen geht
-
-Ein auf **AM32** geflashter Regler ist offen, und dieser Prüfstand programmiert
-ihn vollständig.
+Ein auf AM32 geflashter ESC wird vom Programmierer vollständig unterstützt.

@@ -2,23 +2,23 @@
  * Renders real frames on the host so cachegrind can model the ESP32-S3's data
  * cache (64 KiB, 8-way, 64-byte lines).
  *
- * On the board the framebuffer lives in PSRAM behind that cache, so every D1
- * miss is a 64-byte fetch and every dirty eviction a 64-byte write back.
- * Counting misses counts the bus traffic a frame costs -- the quantity that
- * actually decides the frame rate, and an awkward one to measure on-device.
+ * On the board the framebuffer lives in PSRAM (pseudo-static random-access
+ * memory) behind that cache, so every D1 (level-1 data cache) miss is a
+ * 64-byte fetch and every dirty eviction a 64-byte write back.  The miss
+ * count is the bus traffic a frame costs, which is what sets the frame rate.
  *
  * Driven by tools/frame_cost.py.  Modes:
  *   frame     steady state: the band redrawn, screen chrome cached
- *   chrome    everything repainted every frame, i.e. what not caching costs
- *   overview  the menu, whose tiles are chrome and must never be in a frame
+ *   chrome    everything repainted every frame, i.e. the cost of not caching
+ *   overview  the menu, whose tiles are chrome and are never in a frame
  *   servo     the servo card, whose arm and grip are drawn from coverage
  *   servo-grip  the same, repainting only the breathing grip
  *   sim       the same steady state with the SIMULATION watermark over it,
- *             which is the only thing here that blends rather than writes
+ *             the only mode that blends rather than writes
  *   frame-idle the bench between samples: the panel refreshes at 39 Hz and
- *             samples arrive at 20, so about half of all frames have nothing
- *             new to plot.  `frame` keeps pushing one per frame and so stays
- *             the worst case, which is what the ceiling should guard.
+ *             samples arrive at 20 Hz, so about half of all frames have
+ *             nothing new to plot.  `frame` pushes one sample per frame and
+ *             is the worst case, which is what the ceiling guards.
  *   clear     a full-screen clear, for reference
  *   vlines    17 full-height vertical lines, the pathological case
  *   hlines    the same pixel count as horizontal lines
@@ -51,12 +51,10 @@ static const ui_bench_status_t k_status = {
 };
 
 /*
- * argv is (frames, mode), and the frame count matters: frame_cost.py measures
- * the *difference* between rendering zero frames and rendering N, so that the
- * process start-up, the first paint into each buffer and the cachegrind
- * harness itself all cancel out.  A harness that ignored the count would
- * report zero for everything -- which is exactly what the first version of
- * this file did.
+ * argv is (frames, mode).  frame_cost.py measures the difference between a
+ * 1-frame run and an 11-frame run, so process start-up, the first paint into
+ * each buffer and the cachegrind harness cancel out.  The frame count is
+ * therefore honoured exactly.
  */
 int main(int argc, char **argv)
 {
@@ -84,8 +82,8 @@ int main(int argc, char **argv)
         return 0;
     }
     if (strcmp(mode, "hlines") == 0) {
-        /* The same pixel count, drawn the other way.  The difference between
-         * this and vlines is the whole argument for drawing row-major. */
+        /* The same pixel count as vlines, drawn as rows.  The difference is
+         * the cost of column-major drawing. */
         for (int f = 0; f < frames; ++f) {
             for (int i = 0; i < 17; ++i) {
                 gfx_fill_rect(&c, 0, i * 28, H, 1, (gfx_color_t)(0x4321 + f));
@@ -122,10 +120,9 @@ int main(int argc, char **argv)
 
     for (int i = 0; i < frames; ++i) {
         if (servo) {
-            /* "servo" moves the arm every frame, which is the drag case and
-             * the worst one.  "servo-grip" holds it still, so only the grip
-             * breathes -- and that is the frame the clipped repaint exists
-             * for, so it is the one worth guarding. */
+            /* "servo" moves the arm every frame: the drag case, and the
+             * worst one.  "servo-grip" holds it still, so only the grip
+             * breathes, which is the frame the clipped repaint exists for. */
             if (strcmp(mode, "servo") == 0) {
                 servo_screen_set_commanded(38.0f + (float)((i % 20) - 10));
             }

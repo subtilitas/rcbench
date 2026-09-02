@@ -1,10 +1,9 @@
 /*
- * The intermediary.
+ * The output intermediary: one set of rules for every output.
  *
- * These are the rules that used to be in two places and disagreed, so most of
- * what follows is a difference the old arrangement could not have expressed:
- * a role deciding what rest is and which direction is safe, and a table
- * catching two drivers reaching for one pin.
+ * A role decides where rest is and which direction is safe; a driver table
+ * refuses two drivers on one pin and two slots rendering one channel; arming,
+ * clamping, slew and the silence timeout are answered here for every output.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -36,12 +35,8 @@ static bool put_pwm(uint8_t slot, uint8_t first, uint8_t pin)
 }
 
 /*
- * The bug that motivated all of this.
- *
- * The failsafe path cleared the throttle and left the servo page enabled,
- * because it was written before the servo page existed and nobody added the
- * second one to it.  With one place to switch off, there is no second one to
- * forget.
+ * Disarming the bank switches every output off in one call, so a failsafe
+ * path cannot clear one output and leave another driving.
  */
 TEST_CASE(everything_goes_to_rest_together)
 {
@@ -63,9 +58,8 @@ TEST_CASE(everything_goes_to_rest_together)
 }
 
 /*
- * The other half of that bug: the throttle disarmed itself after silence and
- * the servo page held its last pulse forever.  One timeout now, and it
- * reaches a surface as surely as a throttle.
+ * One silence timeout for every channel: a surface stops driving after
+ * silence the same as a throttle does.
  */
 TEST_CASE(silence_stops_every_role)
 {
@@ -108,9 +102,9 @@ TEST_CASE(one_quiet_channel_does_not_stop_the_others)
 }
 
 /*
- * Arming is idempotent, and it has to be: the coprocessor recomputes whether
- * driving is allowed every pass, and a version that stamped the clock each
- * time would hold every channel alive forever and delete the timeout.
+ * Arming is idempotent: the coprocessor recomputes whether driving is allowed
+ * every pass, and an arm call that stamped the clock would hold every channel
+ * alive and defeat the timeout.
  */
 TEST_CASE(re_arming_is_not_activity)
 {
@@ -150,7 +144,7 @@ TEST_CASE(the_role_decides_which_direction_is_safe)
     CHECK_EQ(outputs_actual(&o, 0), 500u);  /* both ramp up alike */
     CHECK_EQ(outputs_actual(&o, 1), 1000u); /* from centre, so it arrived */
 
-    /* Now down.  The throttle goes at once; the surface is ramped. */
+    /* Then down.  The throttle goes at once; the surface is ramped. */
     outputs_set(&o, 0, 0u, 2000u);
     outputs_set(&o, 1, 0u, 2000u);
     outputs_step(&o, 2100u);                /* a tenth of a second */
@@ -172,9 +166,8 @@ TEST_CASE(a_slow_slew_still_moves)
 }
 
 /*
- * Two drivers on one pin, and two rendering the same channel.  Neither is
- * expressible when each protocol owns its own page, because nothing in that
- * arrangement can see the other protocol's pins.
+ * Two drivers on one pin, and two slots rendering the same channel: the table
+ * refuses both.
  */
 TEST_CASE(a_pin_belongs_to_one_driver)
 {
@@ -192,9 +185,8 @@ TEST_CASE(a_pin_belongs_to_one_driver)
 }
 
 /*
- * PPM is eight channels on one pin, which is the case a one-value-per-pin
- * design cannot hold at all.  The table says so, and the range it claims is
- * the range the conflict check defends.
+ * PPM (pulse-position modulation) is eight channels on one pin.  The table
+ * says so, and the range it claims is the range the conflict check defends.
  */
 TEST_CASE(ppm_claims_a_range_of_channels)
 {
@@ -239,8 +231,7 @@ TEST_CASE(a_rate_outside_the_driver_is_refused)
 }
 
 /*
- * Endpoints are refused and commands are clamped, and keeping those apart is
- * the same distinction the servo page had.  It survives the move.
+ * Endpoints are refused and commands are clamped.
  */
 TEST_CASE(endpoints_are_refused_and_commands_are_clamped)
 {
@@ -315,7 +306,7 @@ TEST_CASE(disarming_does_not_ramp)
     CHECK_EQ(outputs_actual(&o, 0), 0u);
 }
 
-/* Changing a role moves where rest is, and an idle channel follows it -- a
+/* Changing a role moves where rest is, and an idle channel follows it: a
  * channel left at a throttle's zero after becoming a surface reads as a
  * surface hard over. */
 TEST_CASE(a_role_change_moves_rest)
@@ -396,7 +387,7 @@ static void fresh_pages(void)
 }
 
 /* A whole servo, set up the way the panel sets one up: configure the channel,
- * claim a slot, then command it -- and the pulse comes back as microseconds. */
+ * claim a slot, then command it, and the pulse comes back as microseconds. */
 TEST_CASE(a_servo_is_configured_then_commanded)
 {
     fresh_pages();
@@ -407,7 +398,7 @@ TEST_CASE(a_servo_is_configured_then_commanded)
     CHECK_EQ(outputs_chan_cfg_write(chan_cfg, 0, LINK_CC_STRIDE, chan_cfg), 0);
     outputs_chan_cfg_apply(&o, chan_cfg);
 
-    /* slot 0: PWM on pin 9, rendering channel 0 */
+    /* slot 0: PWM (pulse-width modulation) on pin 9, channel 0 */
     slots[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
     slots[LINK_OS_PIN]     = 9u;
     slots[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(0, 1);
@@ -447,7 +438,7 @@ TEST_CASE(clearing_the_slot_stops_the_output)
 }
 
 /* A channel config with an impossible endpoint is refused, and the refusal
- * changes nothing -- the same rule the servo page had. */
+ * changes nothing. */
 TEST_CASE(an_impossible_endpoint_is_refused_atomically)
 {
     fresh_pages();
@@ -489,9 +480,8 @@ TEST_CASE(an_unknown_driver_is_refused)
     CHECK_EQ(outputs_slots_write(slots, 0, LINK_OS_STRIDE, in), 0);
 }
 
-/* The slew on the channel-config page is already in span units, so a whole
- * span in a second is what the bank slews at -- no conversion, unlike the old
- * microseconds-a-second servo page. */
+/* The slew on the channel-config page is in span units per second, so it
+ * reaches the bank without conversion. */
 TEST_CASE(the_slew_is_span_units)
 {
     fresh_pages();

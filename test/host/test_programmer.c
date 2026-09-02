@@ -71,7 +71,8 @@ static int lit(void)
     return n;
 }
 
-/* ESC then BLHeli_S then CONNECT: the whole descent. */
+/* ESC (electronic speed controller) then BLHeli_S then CONNECT: the whole
+ * descent. */
 static void descend_to_blheli(void)
 {
     tap(TILE_CX(0), TILE_CY);
@@ -80,10 +81,9 @@ static void descend_to_blheli(void)
 }
 
 /*
- * The bug this replaced: the protocol rows' hit rectangles were filled in as
- * the list was drawn, so nothing on that page could be pressed until it had
- * been painted once.  A paint almost always comes first, which is exactly
- * what would have let it survive -- so press without rendering at all.
+ * Pins: the protocol rows accept a press before the page is rendered.  Hit
+ * rectangles are laid out independently of drawing, so the press here comes
+ * with no render at all.
  */
 TEST_CASE(the_protocol_list_is_pressable_before_it_is_painted)
 {
@@ -113,9 +113,9 @@ TEST_CASE(a_class_shows_only_its_own_protocols)
 
 /*
  * The reason for the hierarchy: the device that answered a one-wire
- * bootloader is not the device that will answer a CLI, and a screen showing
- * one identity above the other's parameters is the single lie this must
- * never tell.  So stepping back up drops the connection.
+ * bootloader is not the device that answers a CLI (command-line interface),
+ * and the screen must never show one identity above the other's parameters.
+ * Stepping back up drops the connection.
  */
 TEST_CASE(stepping_back_up_drops_the_connection)
 {
@@ -131,8 +131,8 @@ TEST_CASE(stepping_back_up_drops_the_connection)
     CHECK(!programmer_screen_connected());
 }
 
-/* Back is a step up the hierarchy, not out of the screen -- two presses
- * reach the class picker rather than doing nothing the second time. */
+/* Back is a step up the hierarchy, not out of the screen: two presses reach
+ * the class picker rather than doing nothing the second time. */
 TEST_CASE(back_climbs_one_level_at_a_time)
 {
     fresh();
@@ -159,9 +159,9 @@ TEST_CASE(back_climbs_one_level_at_a_time)
      * And from the top it does nothing rather than leaving the screen.
      *
      * Asserted by descending again rather than by comparing pixels: pressing
-     * BACK at the class picker changes nothing, so the redraw gate correctly
-     * paints nothing, and a test that cleared the buffer first would be
-     * measuring its own memset.
+     * BACK at the class picker changes nothing, so the redraw gate paints
+     * nothing, and a test that cleared the buffer first measures its own
+     * memset.
      */
     tap(BACK_X, BACK_Y);
     tap(TILE_CX(0), TILE_CY);
@@ -193,8 +193,8 @@ TEST_CASE(each_protocol_starts_from_its_own_defaults)
 
 /*
  * Clamped, not wrapped.  A parameter that rolls from its last value round to
- * its first will one day be set to the wrong end by somebody pressing once
- * more than they meant to, and on an ESC the wrong end is a direction.
+ * its first is set to the wrong end by one press too many, and on an ESC the
+ * wrong end is a direction.
  */
 TEST_CASE(a_stepper_stops_at_its_ends)
 {
@@ -263,8 +263,8 @@ TEST_CASE(paging_reaches_the_rows_that_do_not_fit)
 /* Every protocol reaches its parameters and draws them. */
 TEST_CASE(every_protocol_draws_its_parameters)
 {
-    /* Four ESC protocols and one servo; BLHeli_32 is deliberately not one
-     * of them -- see docs/BLHeli32.md. */
+    /* Four ESC protocols and one servo; BLHeli_32 is not one of them, see
+     * docs/BLHeli32.md. */
     const int klass[] = { 0, 0, 0, 0, 1 };
     const int slot[]  = { 0, 1, 2, 3, 0 };
     for (int p = 0; p < (int)(sizeof(klass) / sizeof(klass[0])); ++p) {
@@ -283,10 +283,9 @@ TEST_CASE(every_protocol_draws_its_parameters)
 
 
 /*
- * Read and write are the two directions of one fact, and until one of them
- * happens the screen and the device disagree.  Showing that is the point:
- * a value edited into a row that looks exactly like a value read off the
- * hardware is the measured-versus-invented mistake wearing other clothes.
+ * Until a read or a write happens, a staged edit and the device's value
+ * disagree, and the screen shows the difference: an edited value must not
+ * look like a value read off the hardware.
  */
 TEST_CASE(a_change_is_unwritten_until_it_is_written)
 {

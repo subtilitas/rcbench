@@ -1,10 +1,8 @@
 /*
- * The page protocol carried on CAN identifiers.
- *
- * The properties worth holding are the ones the byte transport did not have:
- * a question that fits entirely in its address, frames that describe
- * themselves so nothing has to be reassembled, and an arbitration order that
- * puts stopping the bench ahead of reading it.
+ * The page protocol carried on CAN (Controller Area Network) identifiers.
+ * Three properties: a read fits entirely in its identifier, frames describe
+ * themselves so nothing is reassembled, and the arbitration order puts
+ * stopping the bench ahead of reading it.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -79,8 +77,8 @@ TEST_CASE(stopping_the_bench_wins_arbitration_against_reading_it)
     /* Lower identifier wins, so this comparison IS the guarantee. */
     CHECK(s[0].id < p[0].id);
 
-    /* And so does the news that the bench refused: a NACK of a control write
-     * is as urgent as the write, being the report that it did not happen. */
+    /* And so does the news that the bench refused: a NACK (negative
+     * acknowledge) of a control write is as urgent as the write. */
     const link_msg_t nack = msg(LINK_OP_NACK, LINK_PAGE_CONTROL, 0, 1);
     link_can_frame_t n[LINK_CAN_MAX_FRAMES];
     CHECK_EQ(link_can_encode(&nack, n, LINK_CAN_MAX_FRAMES), 1);
@@ -209,7 +207,7 @@ TEST_CASE(a_frame_whose_payload_disagrees_with_its_address_is_refused)
     f.dlc = 0;
     CHECK_EQ(link_can_decode(&f, &out), false);
 
-    /* A DLC no CAN controller can produce. */
+    /* A DLC (data length code) no CAN controller can produce. */
     f.id = link_can_id(LINK_CAN_PRIO_NORMAL, LINK_OP_DATA, LINK_PAGE_BENCH,
                        0, 4);
     f.dlc = 9;
@@ -237,8 +235,7 @@ TEST_CASE(an_ack_is_one_empty_frame_and_a_nack_carries_its_reason)
     CHECK_EQ(out.regs[0], LINK_NACK_BAD_VALUE);
 }
 
-/* Registers cross the wire little-endian, the same way they do on the byte
- * transport, so a capture from one is readable against the other. */
+/* Registers cross the wire little-endian. */
 TEST_CASE(registers_are_little_endian_on_the_wire)
 {
     link_msg_t m = msg(LINK_OP_DATA, LINK_PAGE_BENCH, 0, 1);

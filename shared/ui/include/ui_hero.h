@@ -1,9 +1,6 @@
 /*
- * A hero numeral: the live value, its peak, and its unit.
- *
- * The peak is beside the value rather than under it, because on a bench the
- * question is nearly always "how far did it go" and reading it should not need
- * a second glance.
+ * A hero numeral: the live value, its unit, and the peak (or minimum) in a
+ * footer under it.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,10 +18,8 @@ typedef struct {
     gfx_color_t color;
     int         decimals;
     /**
-     * What the second number is called: "pk" for most channels, "min" for
-     * voltage.  A pack's interesting extreme is how far *down* it went, and
-     * printing the sag floor under a "pk" label is a misreading waiting to
-     * happen -- it was one, in the first render of this screen.
+     * Label of the second number: "pk" for most channels, "min" for voltage,
+     * whose extreme is the sag floor rather than a peak.  NULL selects "pk".
      */
     const char *extreme_label;
 } ui_hero_def_t;

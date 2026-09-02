@@ -1,6 +1,7 @@
 /*
  * The parameter cache: one value arrives per telemetry frame, and the table is
- * either whole or it is not the ESC's settings.
+ * either whole or it is not the settings of the ESC (electronic speed
+ * controller).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -113,9 +114,9 @@ TEST_CASE(a_pending_write_withdraws_the_whole_table)
      * a frame already in flight carries the old value, and accepting it makes
      * the ESC look like it refused the write.
      *
-     * A *whole* table is fed here, not one or two values -- otherwise the
-     * table stays incomplete for want of entries rather than because the
-     * entries were refused, and the assertion measures nothing.
+     * A whole table is fed here, not one or two values; otherwise the table
+     * stays incomplete for want of entries rather than because the entries
+     * were refused, and the assertion measures nothing.
      */
     fill(&p, 16);
     CHECK_EQ(openyge_params_complete(&p), false);
@@ -173,8 +174,8 @@ TEST_CASE(a_table_at_the_bitmaps_own_width_still_completes)
     /*
      * And a count the cache cannot hold is refused rather than truncated.
      * Fed a full 64 entries as well, because that is the state where the
-     * bitmap is entirely set and a missing width check would call the table
-     * complete -- reporting 64 parameters as though they were all 65.
+     * bitmap is entirely set and a missing width check calls the table
+     * complete, reporting 64 parameters as though they were all 65.
      */
     openyge_params_reset(&p);
     openyge_params_observe(&p, 0, OPENYGE_MAX_PARAMS + 1);
@@ -187,8 +188,9 @@ TEST_CASE(a_table_at_the_bitmaps_own_width_still_completes)
 }
 
 /*
- * The gear train comes free with the table, so a bench that reads it reports
- * head speed without being told anything about the model.
+ * The gear train comes with the table, so a bench that reads it reports head
+ * speed in rpm (revolutions per minute) without being told anything about
+ * the model.
  */
 TEST_CASE(motor_and_head_rpm_come_out_of_the_gear_train)
 {

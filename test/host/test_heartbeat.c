@@ -1,10 +1,8 @@
 /*
- * The safety line, both ends.
- *
- * What is worth testing here is not that a toggle toggles.  It is the three
- * things the monostable downstream cannot do: refuse a line that edges too
- * fast to be a panel, refuse one that has gone quiet, and refuse to believe
- * either of them again on the strength of a single edge.
+ * The safety line, both ends: the generator on the panel and the monitor on
+ * the coprocessor.  The monitor does three things a monostable cannot: refuse
+ * a line that edges too fast to be a panel, refuse one that has gone quiet,
+ * and refuse to trust either again on the strength of a single edge.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -60,7 +58,7 @@ TEST_CASE(the_generator_starts_low_and_edges_at_the_asked_rate)
 
 /*
  * The property that makes it a heartbeat rather than an enable: not alive
- * means low now, not low eventually.
+ * means low in the same call, not low eventually.
  */
 TEST_CASE(withdrawing_alive_drops_the_line_in_the_same_call)
 {
@@ -78,10 +76,10 @@ TEST_CASE(withdrawing_alive_drops_the_line_in_the_same_call)
 }
 
 /*
- * And coming back is a fresh start, not a resumption.  If the generator kept
- * the pre-stop timestamp, the first edge after recovery would be however much
- * of a period was left -- possibly under the monitor's floor, which would get
- * the recovery rejected as noise.
+ * Coming back is a fresh start, not a resumption.  A generator that kept the
+ * pre-stop timestamp would emit its first edge after whatever remained of
+ * the period, possibly under the monitor's 4 ms floor, and the recovery
+ * would be rejected as noise.
  */
 TEST_CASE(recovery_waits_a_full_period_before_the_first_edge)
 {
@@ -160,7 +158,7 @@ TEST_CASE(a_line_that_goes_quiet_dies_without_anything_arriving_to_say_so)
     uint32_t t = feed(&m, 0, 20, 10);
     CHECK(heartbeat_mon_alive(&m, t));
 
-    /* Still alive just inside the window ... */
+    /* Still alive 1 ms inside the window ... */
     CHECK(heartbeat_mon_alive(&m, t + HEARTBEAT_MAX_GAP_MS - 1));
     /* ... and dead at it, with no edge having been delivered either way. */
     CHECK_EQ(heartbeat_mon_alive(&m, t + HEARTBEAT_MAX_GAP_MS), false);
@@ -180,7 +178,7 @@ TEST_CASE(recovering_from_silence_earns_trust_again_from_scratch)
 
     heartbeat_mon_edge(&m, t);
     heartbeat_mon_edge(&m, t + 20);
-    CHECK_EQ(heartbeat_mon_alive(&m, t + 20), false);   /* not yet */
+    CHECK_EQ(heartbeat_mon_alive(&m, t + 20), false);   /* one interval only */
 
     const uint32_t end = feed(&m, t + 40, 20, (int)HEARTBEAT_GOOD_RUN);
     CHECK(heartbeat_mon_alive(&m, end));
@@ -188,9 +186,8 @@ TEST_CASE(recovering_from_silence_earns_trust_again_from_scratch)
 
 /*
  * The real rate, not the requested one.  The generator asks for 20 ms and the
- * render loop delivers 26 to 52, so the monitor has to accept what the panel
- * actually produces -- including the slow frames, which are the ones a bench
- * under load spends most of its time in.
+ * render loop delivers 26 to 52 ms, so the monitor accepts what the panel
+ * produces, including the slow frames of a bench under load.
  */
 TEST_CASE(the_monitor_accepts_the_rate_the_render_loop_really_delivers)
 {
@@ -206,12 +203,9 @@ TEST_CASE(the_monitor_accepts_the_rate_the_render_loop_really_delivers)
 }
 
 /*
- * Sampled *before* the turnover as well as after it.  Two earlier wrap tests
- * in this project passed while testing nothing: one started far enough from
- * the top that it never wrapped, and the other crossed the wrap but only
- * looked at the far side, where a naive comparison and a correct one agree.
- * The moment that separates them is the one just before the counter turns
- * over, with the deadline on the other side of it.
+ * Sampled before the turnover as well as after it.  A naive comparison and a
+ * correct one agree on the far side of the wrap; they differ immediately
+ * before the counter turns over, with the deadline on the other side of it.
  */
 TEST_CASE(both_ends_survive_the_millisecond_counter_wrapping)
 {
@@ -225,7 +219,7 @@ TEST_CASE(both_ends_survive_the_millisecond_counter_wrapping)
     /* Before the wrap: inside the window, and a naive `now - last > max` with
      * signed arithmetic would already be reading a negative age here. */
     CHECK(heartbeat_mon_alive(&m, (uint32_t)(t + 10u)));
-    /* Across it: still inside the window, now with now < last. */
+    /* Across it: inside the window, with the clock below the last edge. */
     CHECK(heartbeat_mon_alive(&m, (uint32_t)(t + 40u)));
     /* And past it, the timeout still fires. */
     CHECK_EQ(heartbeat_mon_alive(&m, (uint32_t)(t + HEARTBEAT_MAX_GAP_MS)),

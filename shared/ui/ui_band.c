@@ -13,10 +13,9 @@
 #define PANEL_W 800
 
 /*
- * STOP is 132 px wide at the right edge, which is wider than it needs to be
- * for its label and exactly as wide as it needs to be for a thumb arriving in
- * a hurry.  It is the only control in the band, so nothing can be hit by
- * mistake on the way to it.
+ * STOP is 132 px wide at the right edge of the band, sized for a thumb rather
+ * than for its label.  It is the only control in the band, so no other control
+ * can be hit on the way to it.
  */
 #define STOP_W 132
 #define STOP_M 6
@@ -32,9 +31,9 @@ gfx_rect_t ui_band_stop_rect(void)
     return r;
 }
 
-/* Right to left, so no item has to guess another's width.  An earlier version
- * of this idea laid out left to right and put the clock underneath the ARMED
- * badge the first time a mode string got long. */
+/* Chips are laid out right to left from STOP, each placed at the right edge
+ * the previous one returns, so no chip needs another's width in advance and a
+ * long mode string cannot push the clock under the ARMED badge. */
 static int chip(gfx_canvas_t *c, int right, const char *label,
                 gfx_color_t dot, gfx_color_t fill)
 {
@@ -58,8 +57,8 @@ void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
         ui_wordmark(c, title, ui_theme_color(UI_C_TEXT));
     }
 
-    /* STOP is drawn on every screen and is always live.  A control that is
-     * sometimes there and sometimes not is one nobody trusts under load. */
+    /* STOP is drawn on every screen that carries the band and is always
+     * live. */
     ui_button(c, ui_band_stop_rect(), "STOP", ui_theme_color(UI_C_DANGER),
               stop_pressed, true);
 
@@ -75,8 +74,8 @@ void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
         right = chip(c, right, clock, 0, ui_theme_color(UI_C_PANEL_SUNK));
     }
 
-    /* ARMED is a filled badge rather than a dot: at arm's length across a
-     * bench, colour alone is not a signal you can bet a propeller on. */
+    /* ARMED is a filled badge rather than a coloured dot, so the armed state
+     * is readable by shape at arm's length, not by colour alone. */
     right = chip(c, right, st->armed ? "ARMED" : "SAFE", 0,
                  st->armed ? ui_theme_color(UI_C_DANGER)
                            : ui_theme_color(UI_C_PANEL_SUNK));

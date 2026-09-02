@@ -1,9 +1,7 @@
 /*
  * Both watchdogs, driven through their transitions against a mock clock.
- *
- * The ratio is the design: the coprocessor gives up at 200 ms and the host at
- * a second, so the end holding the outputs is always the more suspicious of
- * the two.  These cases exist to make that a property rather than a comment.
+ * The coprocessor fails safe at 200 ms and the host escalates at 1000 ms, so
+ * the end holding the outputs is the more suspicious of the two.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -63,7 +61,7 @@ static void poll_at(uint32_t now)
     link_dev_dispatch(&dev, &req, &reply, now);
 }
 
-/* -------------------------------------------------- the coprocessor's 200 ms */
+/* ------------------------------------------------- the coprocessor's 200 ms */
 
 TEST_CASE(the_coprocessor_fails_safe_after_two_hundred_milliseconds)
 {
@@ -104,9 +102,8 @@ TEST_CASE(polling_keeps_the_coprocessor_alive)
 }
 
 /*
- * The one that matters most.  A link that comes back is not consent to spin a
- * propeller: traffic clears the silence, and only a deliberate write clears
- * the latch.
+ * A link that comes back is not consent to spin a propeller: traffic clears
+ * the silence, and only a write of LINK_CLEAR_MAGIC clears the latch.
  */
 TEST_CASE(traffic_returning_does_not_lift_the_failsafe)
 {
@@ -131,7 +128,7 @@ TEST_CASE(only_the_magic_value_clears_the_failsafe)
     link_msg_t w = { 0 }, reply;
     w.op = LINK_OP_WRITE; w.page = LINK_PAGE_CONTROL;
     w.offset = LINK_CT_CLEAR; w.count = 1;
-    w.regs[0] = 1;                     /* any old truthy value */
+    w.regs[0] = 1;                     /* a non-magic value */
     CHECK(link_dev_dispatch(&dev, &w, &reply, 300));
     CHECK(dev.failsafe);
 
@@ -141,22 +138,14 @@ TEST_CASE(only_the_magic_value_clears_the_failsafe)
 }
 
 /*
- * A real millisecond counter wraps after 49 days.
+ * A millisecond counter wraps after 49.7 days.
  *
- * The failure mode is not the obvious one.  `now >= then + timeout` is
- * evaluated in uint32 arithmetic, so the deadline wraps along with the clock
- * and the two agree perfectly *after* the turnover.  They differ **before**
- * it: while `now` is still large and the deadline has already wrapped small,
- * the naive form says the timeout expired the moment the deadline wrapped --
- * firing early by up to a whole interval, on a bench, with the outputs live.
- *
- * So the sample that matters is taken between the start and the wrap, and it
- * asserts that nothing has fired.  Two earlier versions of this case did not:
- * the first started 255 ms short of the top, where adding 200 never
- * overflowed at all; the second crossed the wrap correctly but only sampled
- * on the far side, where a broken implementation looks identical to a working
- * one.  Both were found by making the comparison naive on purpose and
- * noticing that nothing went red.
+ * With `now >= then + timeout` in uint32 arithmetic the deadline wraps with
+ * the clock, so the two agree after the turnover and differ before it: while
+ * `now` is still large and the deadline has wrapped small, the naive form
+ * reports the timeout expired the moment the deadline wrapped, up to a whole
+ * interval early with the outputs live.  The decisive sample is therefore
+ * taken between the start and the wrap, and asserts that nothing has fired.
  */
 TEST_CASE(the_coprocessor_watchdog_survives_the_millisecond_wrap)
 {
@@ -178,7 +167,7 @@ TEST_CASE(the_coprocessor_watchdog_survives_the_millisecond_wrap)
     CHECK(dev.failsafe);
 }
 
-/* ----------------------------------------------------- the host's one second */
+/* ---------------------------------------------------- the host's one second */
 
 static link_host_t host;
 
@@ -193,9 +182,8 @@ TEST_CASE(the_host_escalates_after_one_second)
 
 TEST_CASE(the_host_is_the_more_patient_of_the_two)
 {
-    /* Not a restatement of the constants: the ordering is the design, and a
-     * later edit that made the host stricter would invert the argument for
-     * having two watchdogs at all. */
+    /* The ordering is the design: a host stricter than the coprocessor would
+     * invert the argument for two watchdogs. */
     CHECK(LINK_DEV_SILENCE_MS < LINK_HOST_TIMEOUT_MS);
     CHECK_EQ(LINK_HOST_TIMEOUT_MS / LINK_DEV_SILENCE_MS, 5);
 }
@@ -221,18 +209,12 @@ TEST_CASE(a_reply_resets_the_host_and_its_escalation)
 }
 
 /*
- * Two unanswered requests in a row.
- *
- * Every case here escalated once and then fed a reply, so nothing ever took a
- * second timeout -- and a second timeout was where the poller died. The
- * abandonment used to be gated on the escalation latch, which is set once and
- * cleared only by a reply, so the second request stayed pending for ever: the
- * host could never ask again, and the panel's poll loop -- whose only exit is
- * link_host_tick returning true -- spun with no render, no touch and no
- * heartbeat until somebody pulled the power.
- *
- * A request times out from when it was sent; the link is reported down when
- * nothing has answered for a second. Two clocks, and they were one.
+ * Two unanswered requests in a row.  A request times out from when it was
+ * sent; the link is reported down when nothing has answered for a second.
+ * Two clocks: the escalation latch is set once and cleared only by a reply,
+ * and it does not gate the abandonment of a request.  A latch that did would
+ * leave the second request pending for ever, and the panel's poll loop, whose
+ * only exit is link_host_tick returning true, would never return.
  */
 TEST_CASE(every_timeout_releases_its_request_not_only_the_first)
 {
@@ -295,8 +277,8 @@ TEST_CASE(only_one_request_is_outstanding_at_a_time)
 
 /*
  * A reply delayed past a timeout arrives after the host has moved on.
- * Accepting it would attribute one page's registers to another -- silently,
- * and with the CRC entirely happy.
+ * Accepting it would attribute one page's registers to another, silently and
+ * with a valid frame.
  */
 TEST_CASE(a_stale_reply_cannot_answer_the_current_question)
 {
@@ -308,10 +290,7 @@ TEST_CASE(a_stale_reply_cannot_answer_the_current_question)
 
     /*
      * Each of these differs from the outstanding request in exactly one
-     * field, so each can only be rejected by the check for that field.  An
-     * earlier version sent a reply that differed in page *and* width, which
-     * the width check caught -- leaving the page check untested and a
-     * deliberate break of it invisible.
+     * field, so each can only be rejected by the check for that field.
      */
     link_msg_t wrong_page = { 0 };
     wrong_page.op = LINK_OP_DATA; wrong_page.page = LINK_PAGE_CONTROL;
@@ -325,7 +304,7 @@ TEST_CASE(a_stale_reply_cannot_answer_the_current_question)
 
     link_msg_t past_end = { 0 };
     past_end.op = LINK_OP_DATA; past_end.page = LINK_PAGE_BENCH;
-    past_end.offset = 5; past_end.count = 2;   /* runs off the window's end */
+    past_end.offset = 5; past_end.count = 2;   /* runs off the window */
     CHECK(!link_host_accept(&host, &past_end, 1100, &got));
 
     CHECK_EQ(host.mismatches, 3u);
@@ -340,7 +319,7 @@ TEST_CASE(a_stale_reply_cannot_answer_the_current_question)
     part.op = LINK_OP_DATA; part.page = LINK_PAGE_BENCH;
     part.offset = 4; part.count = 1; part.regs[0] = 0x1111;
     CHECK(!link_host_accept(&host, &part, 1150, &got));
-    CHECK_EQ(host.mismatches, 3u);   /* still three; a fragment is not a fault */
+    CHECK_EQ(host.mismatches, 3u);   /* a fragment is not a fault */
     CHECK(host.pending);
 
     link_msg_t rest = { 0 };
@@ -359,8 +338,8 @@ TEST_CASE(a_reply_of_the_wrong_shape_is_not_an_answer)
 {
     link_host_init(&host, 0);
     link_msg_t req, got;
-    /* An ACK does not answer a READ, and a DATA of the wrong width does not
-     * answer the window that was asked for. */
+    /* An ACK (acknowledge) does not answer a READ, and a DATA of the wrong
+     * width does not answer the window that was asked for. */
     link_host_read(&host, LINK_PAGE_CONTROL, 0, 2, 0, &req);
     link_msg_t ack = { 0 };
     ack.op = LINK_OP_ACK; ack.page = LINK_PAGE_CONTROL;
@@ -378,8 +357,9 @@ TEST_CASE(a_reply_of_the_wrong_shape_is_not_an_answer)
     CHECK(link_host_accept(&host, &right, 10, &got));
 }
 
-/* A refusal is an answer.  The host must stop waiting on a NACK, or a page it
- * is not allowed to write would look identical to a dead link. */
+/* A refusal is an answer.  The host stops waiting on a NACK (negative
+ * acknowledge); a page it is not allowed to write would otherwise look
+ * identical to a dead link. */
 TEST_CASE(a_nack_answers_the_request_it_refuses)
 {
     link_host_init(&host, 0);
@@ -417,8 +397,8 @@ TEST_CASE(the_host_watchdog_survives_the_millisecond_wrap)
 /* ------------------------------------------------------------ both together */
 
 /*
- * The whole point of the ratio, end to end: when the wire dies, the
- * coprocessor has already failed safe long before the panel has even noticed.
+ * End to end: when the wire dies, the coprocessor fails safe at 200 ms,
+ * 800 ms before the panel escalates.
  */
 TEST_CASE(the_coprocessor_gives_up_long_before_the_panel_does)
 {

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Measure what a rendered frame costs in PSRAM traffic.
 
-Frame rate on this board is decided by memory bandwidth, not by the CPU and
-not by the panel: the framebuffer is in PSRAM behind a 64 KiB write-back,
-write-allocate cache with 64-byte lines, and the LCD's own scan-out is already
-reading ~30 MB/s of that bus continuously.
+Frame rate on this board is decided by memory bandwidth, not by the CPU
+(central processing unit) and not by the panel: the framebuffer is in PSRAM
+(pseudo-static random-access memory) behind a 64 KiB write-back,
+write-allocate cache with 64-byte lines, and the LCD (liquid-crystal display)
+scan-out reads about 30 MB/s of that bus continuously.
 
 Every cache-line fill is 64 bytes fetched from PSRAM, and every dirty line
 evicted is 64 bytes written back -- so a frame's traffic is roughly
@@ -31,8 +32,7 @@ import sys
 import tempfile
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
-# Every page carrying the marker pair, so the German page cannot quietly keep
-# last month's numbers while the English one is current.
+# Every page carrying the marker pair, so both language versions are checked.
 DOCS = sorted((REPO / "docs").glob("Performance*.md"))
 DOC_START = "<!-- framecost:start -->"
 DOC_END = "<!-- framecost:end -->"
@@ -115,11 +115,9 @@ def build(tmp: pathlib.Path) -> pathlib.Path:
 
 
 def misses(exe: pathlib.Path, frames: int, mode: str) -> int:
-    # Invoked as ./bench_frame from its own directory, not by absolute path.
-    # argv[0] lands on the stack, so its length shifts what the first cache
-    # lines hold -- building under a fresh mkdtemp() name moved the totals by
-    # a handful of fills between runs, which is small but is exactly the kind
-    # of wobble that makes people stop believing a benchmark.
+    # Invoked as ./bench_frame from its own directory rather than by absolute
+    # path: argv[0] lands on the stack, so its length shifts what the first
+    # cache lines hold, and a temporary directory name changes between runs.
     proc = subprocess.run(
         ["valgrind", "--tool=cachegrind", "--cache-sim=yes",
          f"--D1={D1}", f"--LL={LL}", "--cachegrind-out-file=/dev/null",
@@ -133,11 +131,11 @@ def misses(exe: pathlib.Path, frames: int, mode: str) -> int:
 
 
 ROW_RE = re.compile(r"^(\w+)\s+([\d,]+)\s")
-# Absolute fills depend on the machine -- argv, environment and stack layout
-# all land in the same cache -- so the doc table is checked to a tolerance
-# rather than byte for byte.  1 % of the steady-state frame is about a hundred
-# fills, two orders of magnitude above the wobble and two orders below any
-# change worth writing a paragraph about.
+# Absolute fills depend on the machine (argv, environment and stack layout
+# land in the same cache), so the doc table is checked to a tolerance rather
+# than byte for byte.  1 % of the steady-state frame is about 100 fills: two
+# orders of magnitude above the run-to-run variation and two below a change
+# worth documenting.
 DOC_TOLERANCE = 0.01
 DOC_FLOOR = 100
 
@@ -212,8 +210,7 @@ def main() -> int:
                          "measured table")
     args = ap.parse_args()
     modes = args.modes or MODES
-    # The doc shows every mode, so touching it means measuring every mode --
-    # a partial table is worse than none.
+    # The doc shows every mode, so touching it means measuring every mode.
     if (args.update_doc or args.check_doc) and args.modes:
         sys.exit("--update-doc/--check-doc measure every mode; drop the "
                  "mode arguments")

@@ -36,9 +36,9 @@ static void canvas(void)
 /* --------------------------------------------------------------- the ladder */
 
 /*
- * The finer steps are the whole point.  A coarse 1/2/5 ladder puts a 6S pack
- * -- about 25 V, so 28 with headroom -- on a 0-50 V scale and wastes half the
- * plot; this ladder puts it on 0-30.
+ * The ladder has finer steps than 1/2/5: a 6S pack (about 25 V, 28 V with
+ * headroom) lands on a 0-30 V scale rather than on 0-50 V, which wastes half
+ * the plot.
  */
 TEST_CASE(the_scale_ladder_has_its_fine_steps)
 {
@@ -298,9 +298,8 @@ TEST_CASE(a_preset_sets_its_value_and_a_slip_does_not)
 
     /*
      * Down on one preset, up somewhere else: nothing.  The preset pressed
-     * here is the 0, not the 50 -- an earlier version pressed the one whose
-     * value the slider already held, so it passed just as happily against a
-     * slider that fired its preset wherever the release landed.
+     * here is the 0, not the 50 the slider already holds, so a preset that
+     * fires wherever the release lands is detected.
      */
     const gfx_rect_t zero = sl.presets[0];
     (void)ev(zero.x + zero.w / 2, zero.y + zero.h / 2, TOUCH_EVENT_DOWN, 1);
@@ -360,9 +359,9 @@ TEST_CASE(tabs_select_and_a_slip_does_not)
  * Every drawing primitive the benches are assembled from, rendered once into a
  * canvas that is bigger than the boxes they are given.
  *
- * Not a golden image -- that is render_ui.py's job on whole screens.  This is
- * the cheaper question a golden cannot answer: does any of them write outside
- * the rectangle it was handed?  A widget that overruns its box by a few pixels
+ * Not a golden image; that is render_ui.py's job on whole screens.  This
+ * answers the question a golden cannot: does any of them write outside the
+ * rectangle it was handed?  A widget that overruns its box by a few pixels
  * leaves stale pixels behind on redraw, and with two alternating framebuffers
  * that presents as flicker rather than as an obviously wrong pixel.
  */

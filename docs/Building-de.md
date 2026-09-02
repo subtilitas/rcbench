@@ -2,44 +2,46 @@
 
 <sub>[English](Building.md) · **Deutsch**</sub>
 
-Wie man beide Platinen baut und flasht, und wofür jedes Werkzeug in `tools/`
-da ist. Drei Build-Systeme lesen denselben Quellbaum: die Host-Suite für die
-Entwicklung, dazu je ein Firmware-Build pro Prozessor.
+Drei Builds lesen einen Quellbaum: die Host-Testsuite, die Panel-Firmware
+(ESP-IDF, Espressif Internet-of-Things Development Framework) und die
+Koprozessor-Firmware (pico-sdk).
 
 ## Der Baum
 
 ```
 rcbench/
-  docs/                   these pages
+  docs/                   Wiki-Quelle, Englisch und Deutsch
   tools/                  render_ui · coverage · check_docs · frame_cost
                           gen_font · wiki_links
-  shared/                 pure C — no ESP-IDF, no pico-sdk, no FreeRTOS types
-    gfx/                  rasteriser and three fonts
-    touch/                coordinate and event mapping
-    ui/                   theme · widgets · icons
-    settings/             typed schema and values
-    logfile/              number and CSV parsing
-    link/                 framing · CRC-16 · the wire budget
-    bench/                bench_state · the simulator
-    outputs/              channels · driver table · arming, slew and staleness
-    safety/               the heartbeat: the panel generates, the iomcu judges
-    servo/                the limit and sync searches, and servos to run them against
-    can/                  bit timing for both controllers, and the MCP2515 registers
-    sbus/                 sixteen channels in twenty-five bytes, framed on the gap
-    openyge/              the ESC protocol: framing, status, parameters
+  shared/                 reines C: kein ESP-IDF, kein pico-sdk, keine FreeRTOS-Typen
+    gfx/                  Rasterizer und drei Fonts
+    touch/                Koordinaten- und Event-Mapping
+    ui/                   Theme · Widgets · Icons · Router · Bildschirme
+    settings/             typisiertes Schema und Werte
+    logfile/              Zahlen- und CSV-Parsing
+    link/                 Page-Protokoll · CAN-Framing · Watchdogs · Diagnose
+    bench/                bench_state · Telemetriesimulator · Log-Writer
+    outputs/              Kanäle · Treibertabelle · Arming, Slew und Staleness
+    safety/               Heartbeat-Generator (Panel) und -Monitor (Koprozessor)
+    servo/                Endlagen- und Abgleichsuche · Servomodell
+    can/                  Bit Timing für beide Controller · MCP2515-Register · Echo-Selbsttest
+    sbus/                 S.BUS-Decoder
+    openyge/              OpenYGE-Framing, Status und Parameter-Cache
   firmware/
-    panel/                ESP-IDF project
-    iomcu/                pico-sdk project — the coprocessor
-  test/host/              one suite over shared/ and its fakes
+    panel/                ESP-IDF-Projekt (ESP32-S3)
+    iomcu/                pico-sdk-Projekt (RP2350)
+  test/host/              die Host-Suite, eine Binary je Modul oder Bildschirm
+  hardware/               Platinen-Designprotokoll; keine Platine existiert
 ```
 
-Alles, was etwas entscheidet, ist reines C ohne Hersteller-SDK; alles, was
-Hardware anfasst, ist es nicht.
+Module unter `shared/` enthalten die Logik und haben keine
+Hardwareabhängigkeit. Alles, was Hardware anfasst, liegt unter `firmware/`.
 
-### Wie ein Verzeichnis drei Builds bedient
+### Ein Verzeichnis, drei Builds
 
-Jedes Modul unter `shared/` bringt eine zehnzeilige `CMakeLists.txt` mit, die
-sich nach dem richtet, wer gerade baut:
+Jedes Modul unter `shared/` bringt eine `CMakeLists.txt` mit, die unter
+`ESP_PLATFORM` eine IDF-Komponente registriert und sonst eine statische
+Bibliothek:
 
 ```cmake
 if(ESP_PLATFORM)
@@ -50,94 +52,98 @@ else()
 endif()
 ```
 
-Das Panel setzt `EXTRA_COMPONENT_DIRS` und bekommt jedes Modul als
-vollwertige IDF-Komponente; Koprozessor und Host-Suite holen sich per
-`add_subdirectory()` die Module, die sie brauchen. Keine Wrapper-Komponenten,
-und keine Quellliste steht doppelt da.
+Das Panel setzt `EXTRA_COMPONENT_DIRS` auf `shared/`; Koprozessor und
+Host-Suite holen die Module, die sie brauchen, per `add_subdirectory()`.
+Includes sind flach: `#include "gfx.h"`.
 
-Damit steht allerdings ein `if(ESP_PLATFORM)` in einem Verzeichnis, das von
-sich behauptet, ohne Hersteller-SDK auszukommen. Die Behauptung meint den
-C-Code — und die Alternative wären einundzwanzig Dateien Umleitung, nur um
-einer einzigen Bedingung auszuweichen.
+| Modul | panel | iomcu | host |
+| --- | :-: | :-: | :-: |
+| `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
+| `link` · `bench` · `outputs` · `safety` · `can` | ✔ | ✔ | ✔ |
+| `servo` · `openyge` | | ✔ | ✔ |
 
-Includes sind flach — `#include "gfx.h"`, nicht `"rcbench/gfx.h"`.
+## Toolchains
 
-## Die drei Toolchains
-
-| | Version | Warum diese |
+| | Version | Hinweise |
 | --- | --- | --- |
-| ESP-IDF | **v5.4 oder neuer** | das Event `on_frame_buf_complete` des RGB-Panels, auf das der Framebuffer-Swap wartet, kam in v5.4 |
-| pico-sdk | **2.0 oder neuer** | RP2350-Support kam in 2.0; gebaut wird gegen 2.3.0 |
-| ARM GNU | 14.2 | irgendein aktuelles `arm-none-eabi` für Cortex-M33 |
+| ESP-IDF | v5.4 oder neuer | das Event `on_frame_buf_complete` des RGB-Panels (RGB: paralleles Rot-Grün-Blau-Interface), auf das der Framebuffer-Wechsel wartet, existiert ab v5.4. CI (Continuous Integration) baut v5.4 und v5.5 |
+| pico-sdk | 2.0 oder neuer | RP2350-Unterstützung; CI baut 2.3.0 |
+| ARM GNU Toolchain | 14.2 | jede `arm-none-eabi`-Version für Cortex-M33 |
 
-`firmware/panel/sdkconfig.defaults` setzt die Optionen, die das Panel braucht
-— Octal-PSRAM, 64-Byte-Cache-Lines, die IRAM-sichere LCD-ISR — und legt die
-Konsole auf die eingebaute USB-Serial-JTAG-Bridge, weshalb GPIO43 und 44 frei
-bleiben. Von dieser Datei ausgehen, nicht von einem leeren `menuconfig`.
+`firmware/panel/sdkconfig.defaults` setzt Octal-PSRAM (PSRAM: Pseudo-Static
+Random-Access Memory) mit 80 MHz, den 64-KB-Datencache mit 64-Byte-Lines, Code
+und Konstanten im Flash statt im PSRAM, den IRAM-sicheren RGB-LCD-Interrupt
+(IRAM: Instruction Random-Access Memory; LCD: Liquid-Crystal Display), `-O2`
+und die Konsole auf UART0 (UART: Universal Asynchronous Receiver-Transmitter)
+mit USB-Serial-JTAG (die eingebaute serielle und Debug-Bridge des ESP32-S3
+über USB, Universal Serial Bus) als Zweitkonsole. Von dieser Datei ausgehen,
+nicht von `menuconfig`.
 
 ## Befehle
 
 ```bash
-# the parts that are pure C, on any laptop
+# host suite
 cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug
 cmake --build test/host/build
 ctest --test-dir test/host/build --output-on-failure
 
-# the panel
+# panel
 . $IDF_PATH/export.sh
 idf.py -C firmware/panel set-target esp32s3
 idf.py -C firmware/panel build
 idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor    # COMx on Windows
 
-# or one image, to one offset
+# panel, as one image at offset 0
 idf.py -C firmware/panel merge-bin -o rcbench-panel-merged.bin
 esptool.py -p /dev/ttyACM0 write_flash 0x0 \
     firmware/panel/build/rcbench-panel-merged.bin
 
-# the coprocessor
+# coprocessor
 export PICO_SDK_PATH=/path/to/pico-sdk
 cmake -S firmware/iomcu -B firmware/iomcu/build
 cmake --build firmware/iomcu/build
 ```
 
-Das `PICO_BOARD` des Koprozessors steht standardmäßig auf
-`pimoroni_pico_plus2_rp2350` — eine Annahme darüber, welches RP2350B-Modul
-geliefert wird. Mit `-DPICO_BOARD=` lässt es sich überschreiben; sobald das
-Modul feststeht, gehört der Standardwert korrigiert. Ein **RP2350B** muss es
-sein: der Pinbedarf liegt bei 27 bis 32 GPIO, ein Pico 2 führt nur 26 heraus.
+Der Koprozessor-Build erzeugt `rcbench-iomcu.uf2`. Die Datei auf das
+Massenspeicherlaufwerk des Moduls kopieren, während das Modul in BOOTSEL
+gehalten wird.
+
+`PICO_BOARD` steht standardmäßig auf `pimoroni_pico_plus2_rp2350`. Das für die
+Inbetriebnahme verwendete Modul ist ein Waveshare RP2350-CAN (RP2350A, 4 MB
+Flash), für das das SDK (Software Development Kit) keine Board-Datei hat; der
+Standardwert baut und läuft darauf. Überschreiben mit `-DPICO_BOARD=`. Die
+endgültige Platine braucht einen RP2350B: der geplante Pinbedarf liegt bei 27
+bis 32 GPIO (General-Purpose Input/Output).
 
 ## Werkzeuge
 
-| | |
+| Werkzeug | Zweck |
 | --- | --- |
-| `tools/coverage.py` | misst die Line Coverage der Host-Tests und hält die Tabelle im README aktuell; `--check` schlägt bei Abweichung fehl |
-| `tools/check_docs.py` | prüft diese Seiten gegen den Quellbaum: jeder Link führt irgendwohin, die Sidebar ist vollständig, die Suite-Liste ist die, die CMake baut, der Baum oben nennt jedes Modul unter `shared/`, und jede Quelldatei trägt eine SPDX-Lizenzzeile |
-| `tools/wiki_links.py` | entfernt das `.md` aus Seitenlinks auf dem Weg ins Wiki, denn dort wird eine Seite über ihren Titel angesprochen und ein Link auf die Datei lädt sie nur herunter. Im Repository braucht es die Endung, im Wiki nicht — die Quelle behält sie, der Kopierschritt übersetzt |
-| `tools/gen_font.py` | erzeugt die drei eingebetteten Fonts neu; `--check` schlägt fehl, wenn der eingecheckte C-Code nicht mehr zu seinem Generator passt |
-| `tools/render_ui.py` | rendert jeden Bildschirm in ein PNG; `--check` vergleicht gegen die eingecheckten Goldens |
-| `tools/frame_cost.py` | misst den Cache-Line-Traffic je Frame unter cachegrind, weil die Frame Rate auf diesem Panel bandbreitenbegrenzt ist |
-| `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | die Gates für statische Analyse und Lint, die CI über `shared/` und `tools/` laufen lässt. Beide C-Analysatoren sind Fehler, keine Warnungen; die abgeschalteten Checks tragen ihre Begründung |
+| `tools/coverage.py` | misst die Line Coverage der Host-Suite, erzwingt die Untergrenzen (94 % gesamt, 85 % je Datei) und schreibt die Tabelle in `STATUS.md`; `--check` schlägt bei Abweichung fehl |
+| `tools/check_docs.py` | hält die Seiten am Quellbaum: Links und Anker führen irgendwohin, jedes Bild wird benutzt, die Sidebar ist vollständig, jede Seite hat ein deutsches Gegenstück, die Suite-Liste in `STATUS.md` stimmt mit CMake überein, der Baum oben nennt jedes Modul unter `shared/`, jede Quelldatei trägt eine SPDX-Zeile (SPDX: Software Package Data Exchange) |
+| `tools/wiki_links.py` | schreibt `Page.md`-Links zu `Page` um, für das Wiki, das Seiten über ihren Titel adressiert |
+| `tools/gen_font.py` | erzeugt die drei eingebetteten Fonts aus DejaVu Sans Mono neu; `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
+| `tools/render_ui.py` | rendert jeden Bildschirm mit dem Code, den das Panel ausführt, als PNG (Portable Network Graphics); `--check` vergleicht mit den eingecheckten Bildern in `docs/img/` |
+| `tools/frame_cost.py` | misst Cache-Line-Fills je Frame unter cachegrind; `--check-doc` hält die Tabelle in [Performance](Performance-de.md) |
+| `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | Konfiguration für statische Analyse und Lint; jeder Befund ist ein Fehler |
 
-`gen_font.py` braucht DejaVu Sans Mono als TTF. Gesucht wird zuerst in
-`RCBENCH_FONT_DIR`, dann in `~/.local/share/fonts`, dann in den Systempfaden —
-so läuft es auch auf Rechnern ohne Schreibrecht auf `/usr/share/fonts`, woran
-die frühere fest verdrahtete Pfadliste gescheitert war.
+`gen_font.py` sucht den Font in `RCBENCH_FONT_DIR`, dann in
+`~/.local/share/fonts`, dann in den Systemfontverzeichnissen. `frame_cost.py`
+braucht `valgrind`; die übrigen Werkzeuge brauchen einen C-Compiler und
+Pillow.
 
-`frame_cost.py` braucht `valgrind`; alles andere braucht nur einen C-Compiler
-und Pillow.
+## CI
 
-## Was CI prüft
-
-| Workflow | Auslöser | Was er tut |
+| Workflow | Auslöser | Jobs |
 | --- | --- | --- |
-| `ci.yml` | Push / PR / Tag `v*` / manuell | Host-Suite, Coverage `--check`, der Font-Check, der Docs-Check, die ESP-IDF-Matrix (v5.4, v5.5) baut das Panel, der pico-sdk-Build des Koprozessors, Firmware-Artefakte |
-| `docs.yml` | Push auf `main`, der `docs/` berührt | veröffentlicht `docs/` ins GitHub-Wiki |
-| `release.yml` | Tag `v*` | baut beide Images, packt sie, öffnet ein Release |
+| `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload; Font-, Docs-, Wiki-Link-, Frame-Cost- und Screenshot-Prüfungen; clang-tidy, cppcheck und ruff; Panel-Build mit ESP-IDF v5.4 und v5.5; Koprozessor-Build mit pico-sdk 2.3.0; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
+| `docs.yml` | Push auf `main`, der `docs/` berührt | spiegelt `docs/` ins GitHub-Wiki |
+| `release.yml` | Tag `v*` | baut beide Images, packt sie mit Prüfsummen, erstellt ein Release |
 
-Die Coverage steht im README, und CI prüft sie mit `--check`: bei Abweichung
-schlägt der Lauf fehl, statt dass ein Bot die Datei nachzieht — denn eine
-Datei, die sich selbst umschreibt, ist eine, deren Diff niemand mehr liest.
+Jede Prüfung läuft lokal;
+[CONTRIBUTING.md](https://github.com/subtilitas/rcbench/blob/main/CONTRIBUTING.md)
+listet die Befehle.
 
-**Das Wiki muss vor dem ersten Lauf von `docs.yml` existieren.** Einmal von
-Hand eine Seite im Wiki-Tab des Repositories anlegen, sonst endet der Clone in
-einem 404.
+Das Wiki muss vor dem ersten Lauf von `docs.yml` mindestens eine Seite
+enthalten; sonst existiert das Wiki-Repository nicht und der Clone schlägt
+fehl.

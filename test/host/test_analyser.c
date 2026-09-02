@@ -69,9 +69,8 @@ static void push(bool failsafe, bool frame_lost)
 }
 
 /*
- * The whole reason this screen exists.  A receiver in failsafe sends sixteen
- * well-formed values that it made up, and a bench that draws them the same
- * colour as live ones is helping somebody trust invented data.
+ * Pins: a receiver in failsafe sends sixteen well-formed values it generates
+ * itself, and the screen draws them in the danger colour, not the live one.
  */
 TEST_CASE(a_failsafe_frame_is_not_drawn_like_a_live_one)
 {
@@ -88,7 +87,7 @@ TEST_CASE(a_failsafe_frame_is_not_drawn_like_a_live_one)
 
     CHECK(live_accent > 0);
     CHECK(fs_danger > live_danger);
-    /* And the bars themselves change colour, not merely a badge somewhere. */
+    /* The bars themselves change colour, not only a badge. */
     if (fs_danger < 400) {
         T_FAIL("failsafe painted only %d danger pixels; the channels are "
                "still drawn as though they meant something", fs_danger);
@@ -151,11 +150,8 @@ TEST_CASE(both_panes_render_and_differ)
 }
 
 /*
- * The question the screen is built to answer -- "I moved that, which channel
- * was it?" -- lives in the history.  Push a run of flat frames, then one where
- * a single channel has stepped, and the trace has to change: a screen that
- * showed only the present value could not tell the moved channel from the
- * still ones.
+ * Pins: the history trace changes when one channel steps.  A run of flat
+ * frames, then frames with channel 5 stepped, and the rendered trace differs.
  */
 TEST_CASE(a_moved_channel_changes_the_trace)
 {
@@ -185,8 +181,8 @@ TEST_CASE(a_moved_channel_changes_the_trace)
     }
 }
 
-/* A live frame after silence returns to live -- the state is current, not
- * sticky. */
+/* A live frame after silence returns the state to live: the state is
+ * current, not sticky. */
 TEST_CASE(a_frame_after_silence_is_live_again)
 {
     fresh();

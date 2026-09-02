@@ -1,10 +1,10 @@
 /*
- * Renders any screen to a PPM on the host.
+ * Renders any screen to a PPM (portable pixmap) on the host.
  *
- * The UI is pure C over a gfx canvas, so the pixels this produces are the
- * pixels the panel shows -- same rasteriser, same fonts, same layout code,
- * same router and the same band.  That makes it possible to design and review
- * screens without a board, and it doubles as a golden-image check.
+ * The UI (user interface) is pure C over a gfx canvas, so the pixels produced
+ * here are the pixels the panel shows: the same rasteriser, fonts, layout
+ * code, router and band.  Screens can be reviewed without a board, and the
+ * output is the golden image tools/render_ui.py --check compares against.
  *
  * Driven by tools/render_ui.py.
  *
@@ -36,25 +36,20 @@
 
 static gfx_color_t fb[W * H];
 
-/*
- * A fixed bench state, so the band shows the same thing every time.  Not all
- * zeroes: a band with nothing in it would make the golden image agree with a
- * band that had stopped working.
- */
-/* A card that does not exist, so the log screenshots are of states the UI
- * can actually reach rather than of an empty browser. */
+/* A simulated card, so the log screenshots show states the UI can reach
+ * rather than an empty browser. */
 static char g_csv[32768];
 static log_mem_ctx_t g_csv_ctx;
 
 static void make_log_csv(void)
 {
     /*
-     * A run written the way the logger will write one: units in the header,
-     * which is the shape the fixtures use.
+     * A run in the logger's format: units in the header row, the shape the
+     * fixtures use.
      *
-     * Worth a look later -- a *separate* units row is read for its units and
-     * then counted as a data row as well, so a file in that shape reports its
-     * first row as unreadable cells.  Both cannot be right.
+     * Known limitation of the reader: a separate units row is read for its
+     * units and also counted as a data row, so a file in that shape reports
+     * its first row as unreadable cells.
      */
     telemetry_sim_t sim;
     bench_state_t   b;
@@ -126,6 +121,11 @@ static const log_viewer_io_t k_io = {
 };
 
 
+/*
+ * A fixed bench state, so the band shows the same thing every time.  Not all
+ * zeroes: a band with nothing in it would make the golden image agree with a
+ * band that had stopped working.
+ */
 static const ui_bench_status_t k_status = {
     .link_up     = true,
     .armed       = false,
@@ -151,8 +151,8 @@ static void write_ppm(const char *path, const gfx_color_t *pixels)
     fclose(f);
 }
 
-/* IM_BTN_Y from log_viewer_screen.c: if the layout moves this moves
- * with it, and render_ui --check is what notices. */
+/* IM_BTN_Y from log_viewer_screen.c.  If the layout moves, this moves with
+ * it; render_ui --check reports the drift. */
 #define IM_BTN_Y_LOCAL 368
 
 static void tap(int x, int y)
@@ -189,7 +189,7 @@ static ui_screen_id_t id_of(const char *name)
 }
 
 /* The splash is a sequence, not a state, so it is posed rather than ticked:
- * every step answered, one of them warning, which is the interesting case. */
+ * every step answered, one of them with a warning. */
 static void pose_splash(void)
 {
     splash_screen_set(SPLASH_STEP_BOARD,    SPLASH_OK,   "CH422G");
@@ -218,9 +218,9 @@ int main(int argc, char **argv)
     ui_router_init();
     pose_splash();
     /*
-     * A scripted run, so the bench screenshot always shows the same
-     * interesting moment: spin up, hold, a burst, then settle.  Pushed one
-     * sample per plot column at the rate the panel polls.
+     * A scripted run, so the bench screenshot shows the same moment every
+     * time: spin up, hold, a burst, then settle.  One sample per plot column
+     * at the panel's poll rate, 20 Hz.
      */
     if (id == SCREEN_MOTOR) {
         telemetry_sim_t sim;
@@ -246,25 +246,22 @@ int main(int argc, char **argv)
     if (id == SCREEN_PROGRAMMER && strcmp(view, "programmer") != 0) {
         /*
          * Walked down the hierarchy by pressing, not posed by setting flags,
-         * so each screenshot goes through the same path a finger does -- a
-         * mock that poses its own state can drift from what the buttons
-         * actually do.
-         *
-         * Geometry from programmer_screen.c: if those move, these move.
+         * so each screenshot takes the path a finger takes.  The first tap
+         * selects the ESC (electronic speed controller) class.  Geometry
+         * from programmer_screen.c: if those values move, these move.
          */
         ui_router_goto(SCREEN_PROGRAMMER);
         tap(210, UI_BAND_H + 180);              /* the ESC tile */
         if (strcmp(view, "programmer-protocols") != 0) {
-            /* Slot two is AM32, whose timing is degrees rather than named
-             * steps -- the same renderer, a different kind. */
+            /* Slot two is AM32, whose timing is in degrees rather than
+             * named steps: the same renderer, a different kind. */
             tap(400, UI_BAND_H + (strcmp(view, "programmer-am32") == 0
                                   ? 92 + 1 * 68 : 92));
             if (strcmp(view, "programmer-idle") != 0) {
                 tap(698, UI_BAND_H + 70);       /* CONNECT */
                 if (strcmp(view, "programmer-dirty") == 0) {
-                    /* Two staged edits, so the screenshot holds the state
-                     * every configurator distinguishes and this one nearly
-                     * did not: changed, but not yet written. */
+                    /* Two staged edits, so the screenshot holds the
+                     * changed-but-not-written state. */
                     tap(765, UI_BAND_H + 132 + 1 * 30 + 10);
                     tap(765, UI_BAND_H + 132 + 3 * 30 + 10);
                 }
@@ -274,9 +271,8 @@ int main(int argc, char **argv)
 
     if (id == SCREEN_BATTERY) {
         /*
-         * A 6S pack with one cell forty millivolts down under load, which is
-         * the case this screen exists to make obvious: at rest those six
-         * numbers would agree to two decimals.
+         * A 6S pack with one cell 40 mV down under load, the case the screen
+         * exists to show.  At rest the six voltages agree to two decimals.
          */
         battery_state_t b;
         memset(&b, 0, sizeof(b));
@@ -301,8 +297,8 @@ int main(int argc, char **argv)
         } else if (strcmp(view, "balance-aircraft") == 0) {
             tap(330, UI_BAND_H + 22);
         } else if (strcmp(view, "balance-edf") == 0) {
-            /* A five-blade fan, to show the duct and a rotor whose blades
-             * you cannot reach. */
+            /* A five-blade ducted fan: the duct, and a rotor whose blades
+             * are not reachable. */
             tap(719, UI_BAND_H + 93);
             for (int i = 0; i < 3; ++i) {
                 tap(763, UI_BAND_H + 154);
@@ -312,9 +308,8 @@ int main(int argc, char **argv)
 
     if (id == SCREEN_ANALYSER) {
         /*
-         * Fed through the real decoder frame by frame, with the channels
-         * moving, because a lane view of a still frame shows sixteen
-         * straight lines and proves nothing about what it is for.
+         * Fed through the real S.BUS decoder frame by frame with the channels
+         * moving; a still frame shows sixteen straight lines.
          */
         sbus_decoder_t dec;
         sbus_decoder_reset(&dec);
@@ -328,12 +323,11 @@ int main(int argc, char **argv)
             /* A stick swept across the window. */
             ch[1] = (uint16_t)(1024 + (int)(600.0f
                         * sinf((float)t * 0.06f)));
-            /* A switch thrown once, a third of the way in. */
+            /* A switch thrown a third of the way in. */
             ch[4] = (t > 44u) ? 1811 : 172;
             /* A knob wound slowly. */
             ch[7] = (uint16_t)(400 + t * 8u);
-            /* One frame with a spike on it: the glitch a lane is meant to
-             * make findable. */
+            /* One frame with a spike: the glitch a lane makes findable. */
             if (t == 96u) {
                 ch[10] = 1811;
             }
@@ -352,10 +346,9 @@ int main(int argc, char **argv)
             }
             raw[23] = SBUS_FLAG_CH17;
             /*
-             * The state this screen exists for gets a golden of its own.  A
-             * receiver in failsafe sends well-formed numbers it was told to
-             * invent, and how that is presented is the thing most worth
-             * holding still between releases.
+             * The failsafe state has a golden of its own.  A receiver in
+             * failsafe sends well-formed values it generates itself, and
+             * the presentation of that state is held between releases.
              */
             if (strcmp(view, "analyser-failsafe") == 0) {
                 raw[23] |= SBUS_FLAG_FAILSAFE;
@@ -378,9 +371,9 @@ int main(int argc, char **argv)
     }
 
     if (id == SCREEN_SERVO) {
-        /* Driven by the same model the limit finder is tested against, so
+        /* Driven by the servo model the limit search is tested against, so
          * the screenshot shows a servo that lags its command and draws
-         * current for doing so, rather than four dashes. */
+         * current. */
         servo_sim_t ss;
         servo_sim_cfg_t cfg;
         servo_sim_defaults(&cfg);
@@ -401,21 +394,20 @@ int main(int argc, char **argv)
     ui_router_goto(id);
 
     if (id == SCREEN_LOGS) {
-        /* Driven the way a person would, so the shots are of reachable
-         * states.  Taps are in panel coordinates; the router removes the
-         * band before the screen sees them. */
+        /* Driven by taps, so the shots are of reachable states.  Taps are
+         * in panel coordinates; the router removes the band before the
+         * screen sees them. */
         make_log_csv();
         log_viewer_set_io(&k_io);
         log_viewer_refresh();
         /*
-         * BR_LIST starts at y = 76 in screen coordinates and rows are 44 px,
-         * so the first row's middle is 76 + 22.  The band offset is added
-         * here because ui_router_event takes panel coordinates and strips it
-         * again on the way in.
+         * BR_LIST starts at y = 36 in screen coordinates, its rows begin
+         * 30 px below that header, and a row is 44 px, so the first row's
+         * middle is 36 + 30 + 22.  The band offset is added because
+         * ui_router_event takes panel coordinates and strips it on the way
+         * in.
          */
         if (strcmp(view, "logs") != 0) {
-            /* Rows begin at BR_LIST.y + 30, not at BR_LIST.y: the panel
-             * has a header. */
             tap(400, UI_BAND_H + 36 + 30 + 22);   /* select */
             tap(400, UI_BAND_H + 36 + 30 + 22);   /* open   */
         }

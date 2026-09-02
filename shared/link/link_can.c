@@ -23,9 +23,8 @@ static bool op_is_known(uint8_t op)
 }
 
 /* A READ says how many registers it wants and carries none of them; every
- * other op carries what it is talking about.  The same rule the byte
- * transport uses, because it is a property of the protocol and not of a
- * wire. */
+ * other op carries the registers it is about.  A property of the protocol,
+ * not of the transport. */
 static bool op_carries_payload(uint8_t op)
 {
     return op != (uint8_t)LINK_OP_READ;
@@ -35,9 +34,9 @@ link_can_prio_t link_can_priority(uint8_t page, uint8_t op)
 {
     (void)op;
     /*
-     * By page, not by op.  A NACK of a control write is as urgent as the
-     * write -- it is the news that the bench did not do what it was told, and
-     * queueing that behind telemetry would be exactly backwards.
+     * By page, not by op.  A NACK (negative acknowledge) of a control write
+     * is as urgent as the write: it is the news that the bench did not do
+     * what it was told, and must not queue behind telemetry.
      */
     if (page == LINK_PAGE_CONTROL || page == LINK_PAGE_FAILSAFE
         || page == LINK_PAGE_LIMITS) {
@@ -107,8 +106,8 @@ size_t link_can_encode(const link_msg_t *msg, link_can_frame_t *out, size_t cap)
         return 1;
     }
 
-    /* An ACK carries nothing; a NACK carries its reason in regs[0]. Both are
-     * one frame, and neither is special-cased here -- count says so. */
+    /* An ACK (acknowledge) carries nothing; a NACK carries its reason in
+     * regs[0].  Both are one frame, and count says so. */
     const size_t frames = (msg->count == 0)
                               ? 1u
                               : (((size_t)msg->count
@@ -156,10 +155,10 @@ bool link_can_decode(const link_can_frame_t *f, link_msg_t *out)
     }
 
     if (op_carries_payload(op)) {
-        /* One frame carries at most four registers, and the payload has to be
-         * exactly the length the identifier claims -- a frame whose DLC and
-         * count disagree is a version mismatch or a bug at the far end, and
-         * is not something to act on either way. */
+        /* One frame carries at most four registers, and the payload has to
+         * be exactly the length the identifier claims.  A frame whose DLC
+         * (data length code) and count disagree is a version mismatch or a
+         * bug at the far end, and is not acted on. */
         if (count > LINK_CAN_REGS_PER_FRAME
             || f->dlc != (uint8_t)(count * 2u)) {
             return false;

@@ -1,6 +1,7 @@
-# The OpenYGE ESC protocol, written from docs/OpenYGE.md.  Pure C: the panel
-# never speaks it, the coprocessor will, and the host suite feeds it corrupt
-# frames long before there is an ESC on the bench.
+# The OpenYGE ESC (electronic speed controller) protocol, written from
+# docs/OpenYGE.md.  Pure C: the panel never speaks it, the coprocessor is
+# where it runs (not wired in), and the host suite feeds it corrupt frames
+# without an ESC on the bench.
 set(SRCS openyge_frame.c openyge_status.c openyge_params.c)
 
 if(ESP_PLATFORM)

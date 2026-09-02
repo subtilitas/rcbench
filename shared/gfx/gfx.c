@@ -1,5 +1,5 @@
 /*
- * gfx -- RGB565 rasteriser.  See include/gfx.h.
+ * gfx: the RGB565 (16-bit red, green, blue) rasteriser.  See include/gfx.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -13,11 +13,12 @@
 #define GFX_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define GFX_MAX(a, b) ((a) > (b) ? (a) : (b))
 
-/* The framebuffer is in PSRAM behind a write-back, write-allocate cache with
- * 64-byte lines, so every byte written costs two bytes on the bus: the line is
- * fetched before it is overwritten, then written back.  Filling a span 32 bits
- * at a time halves the store count and lets the write buffer coalesce.
- * may_alias keeps this legal without disabling strict aliasing globally. */
+/* The framebuffer is in PSRAM (pseudo-static random-access memory) behind a
+ * write-back, write-allocate cache with 64-byte lines, so every byte written
+ * costs two bytes on the bus: the line is fetched before it is overwritten,
+ * then written back.  Filling a span 32 bits at a time halves the store count
+ * and lets the write buffer coalesce.  may_alias keeps this legal without
+ * disabling strict aliasing globally. */
 typedef uint32_t gfx_u32_alias __attribute__((may_alias));
 
 static inline void fill_span(gfx_color_t *p, int n, gfx_color_t color)
@@ -114,7 +115,7 @@ bool gfx_canvas_sub(const gfx_canvas_t *src, gfx_rect_t window, gfx_canvas_t *ou
         return false;
     }
     gfx_rect_t r;
-    /* Against the parent's clip, not just its bounds: a window carved from a
+    /* Against the parent's clip, not only its bounds: a window carved from a
      * narrowed canvas otherwise gets write access the parent had given up. */
     if (!gfx_rect_intersect(window, src->clip, &r) ||
         !gfx_rect_intersect(r, gfx_rect_make(0, 0, src->width, src->height), &r)) {
@@ -256,26 +257,18 @@ void gfx_line(gfx_canvas_t *c, int x0, int y0, int x1, int y1, gfx_color_t color
 
     /*
      * Bound the walk before starting it.  Every pixel is clipped on the way
-     * out, so a wildly out-of-range endpoint is safe -- but Bresenham still
-     * steps once per pixel along the whole span, and an endpoint near INT_MIN
-     * means billions of iterations inside the render loop.  A caller that
-     * produces such a coordinate has a bug; the rasteriser should not turn it
-     * into a hang.  Clamping the endpoints changes the slope slightly, which
-     * only affects lines that were never going to be visible anyway.
+     * out, so an out-of-range endpoint is safe, but Bresenham steps once per
+     * pixel along the whole span, and an endpoint near INT_MIN is billions of
+     * iterations inside the render loop.
      */
     if (!canvas_ok(c)) {
         return;
     }
-    /* Two bounds on the walk, neither of which moves a line you can see.
-     *
-     * A line entirely off one side of the clip draws nothing, so do not walk
-     * it at all.  And a coordinate outside the int16 range cannot belong to a
-     * line on an 800x480 panel, so saturate it: every pixel is clipped on the
-     * way out anyway, but Bresenham still steps once per pixel along the whole
-     * span, and an endpoint near INT_MIN is billions of iterations inside the
-     * render loop.  Clamping to the clip instead would be tighter and would
-     * also change the slope of lines that really are drawn -- 47 pixels of the
-     * bench screen, as the golden images pointed out. */
+    /* Two bounds, neither of which moves a visible line: a line entirely off
+     * one side of the clip is not walked at all, and a coordinate outside the
+     * int16 range cannot belong to a line on an 800x480 panel, so it is
+     * saturated.  Clamping to the clip instead would change the slope of
+     * lines that are drawn. */
     if ((x0 < c->clip.x && x1 < c->clip.x) ||
         (y0 < c->clip.y && y1 < c->clip.y) ||
         (x0 >= c->clip.x + c->clip.w && x1 >= c->clip.x + c->clip.w) ||
@@ -318,26 +311,18 @@ void gfx_thick_line(gfx_canvas_t *c, int x0, int y0, int x1, int y1,
     int r = thickness / 2;
     /*
      * Bound the walk before starting it.  Every pixel is clipped on the way
-     * out, so a wildly out-of-range endpoint is safe -- but Bresenham still
-     * steps once per pixel along the whole span, and an endpoint near INT_MIN
-     * means billions of iterations inside the render loop.  A caller that
-     * produces such a coordinate has a bug; the rasteriser should not turn it
-     * into a hang.  Clamping the endpoints changes the slope slightly, which
-     * only affects lines that were never going to be visible anyway.
+     * out, so an out-of-range endpoint is safe, but Bresenham steps once per
+     * pixel along the whole span, and an endpoint near INT_MIN is billions of
+     * iterations inside the render loop.
      */
     if (!canvas_ok(c)) {
         return;
     }
-    /* Two bounds on the walk, neither of which moves a line you can see.
-     *
-     * A line entirely off one side of the clip draws nothing, so do not walk
-     * it at all.  And a coordinate outside the int16 range cannot belong to a
-     * line on an 800x480 panel, so saturate it: every pixel is clipped on the
-     * way out anyway, but Bresenham still steps once per pixel along the whole
-     * span, and an endpoint near INT_MIN is billions of iterations inside the
-     * render loop.  Clamping to the clip instead would be tighter and would
-     * also change the slope of lines that really are drawn -- 47 pixels of the
-     * bench screen, as the golden images pointed out. */
+    /* Two bounds, neither of which moves a visible line: a line entirely off
+     * one side of the clip is not walked at all, and a coordinate outside the
+     * int16 range cannot belong to a line on an 800x480 panel, so it is
+     * saturated.  Clamping to the clip instead would change the slope of
+     * lines that are drawn. */
     if ((x0 < c->clip.x && x1 < c->clip.x) ||
         (y0 < c->clip.y && y1 < c->clip.y) ||
         (x0 >= c->clip.x + c->clip.w && x1 >= c->clip.x + c->clip.w) ||
@@ -899,7 +884,7 @@ static const uint8_t k_bayer8[64] = {
  * different drawing pasted in.  Working from distance rather than from a
  * scanline span means the round caps and the straight sides come out of one
  * expression, so there is no seam where a cap meets a side, which is what a
- * disc drawn over a rectangle gives you: two soft edges blended twice.
+ * disc drawn over a rectangle produces: two soft edges blended twice.
  *
  * The bounding box is clipped before the loop, not inside it, because the
  * grip's breathing repaints a 72-pixel box and must not pay for the whole
@@ -1151,22 +1136,20 @@ void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
             }
 
             /*
-             * A stencil at full opacity, not a blend -- because this is the
-             * one piece of drawing applied over pixels somebody else may not
+             * A stencil at full opacity, not a blend, because this is the one
+             * piece of drawing applied over pixels the screen beneath may not
              * have repainted this frame.
              *
-             * gfx_lerp reads the destination, so laying 15% over a pixel
-             * that already carried last frame's 15% gives 28%, then 39%, and
-             * within a second the watermark was solid.  It looked correct
-             * only over the plot, which is the one region repainting its own
-             * background every frame -- so the bug hid exactly where anyone
-             * would have looked first.
+             * gfx_lerp reads the destination, so a 15% blend laid over a
+             * pixel that already carries last frame's 15% gives 28%, then
+             * 39%, and the watermark is solid within a second wherever the
+             * background is not repainted every frame.
              *
              * Writing a fixed colour to a fixed subset of pixels is
              * idempotent: applying it twice is applying it once, however
-             * many frames go by without the screen beneath it moving.
-             * `alpha` still means what it meant, as the fraction of pixels
-             * covered rather than the weight of a blend.
+             * many frames pass without the screen beneath it changing.
+             * `alpha` is the fraction of pixels covered rather than the
+             * weight of a blend.
              */
             if (k_bayer8[((dy & 7) << 3) + (dx & 7)] >= thresh) {
                 continue;

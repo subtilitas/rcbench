@@ -1,15 +1,14 @@
 /*
  * The page map: what the panel can ask the coprocessor for, and set.
  *
- * A page is a window of up to LINK_MAX_REGS sixteen-bit registers with one
- * function.  Adding a capability adds a page, not a message type -- which is
- * the property that keeps the wire format frozen while the bench grows.
+ * A page is a window of up to LINK_MAX_REGS 16-bit registers with one
+ * function.  Adding a capability adds a page, not a message type, which
+ * keeps the wire format stable while the bench grows.
  *
- * Pages are numbered with room between the groups on purpose.  A page number
- * is part of the contract between two firmwares that are flashed separately
- * and can disagree about their versions, so renumbering an existing page is a
- * breaking change; leaving gaps means a new one never has to be squeezed in
- * beside an unrelated neighbour.
+ * Pages are numbered with room between the groups.  A page number is part of
+ * the contract between two firmwares that are flashed separately and can
+ * disagree about their versions, so renumbering an existing page is a
+ * breaking change; the gaps let a new page land beside related ones.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -31,23 +30,21 @@ typedef enum {
     LINK_PAGE_CHANNELS = 0x13, /**< what every output is asked for */
     LINK_PAGE_BENCH    = 0x20, /**< the numbers, read-only       */
     /*
-     * 0x21 was the servo page: one output, its range, and where to hold it.
-     * It is retired rather than reused.  A page number is part of the
-     * contract between two firmwares flashed separately, and a number that
-     * comes back meaning something else is the one mistake the numbering
-     * scheme exists to prevent -- an old panel would write a pulse into a
-     * driver table and be acknowledged.
+     * 0x21 is reserved and not assigned.  A page number is part of the
+     * contract between two firmwares flashed separately; a number that
+     * changes meaning lets an old panel write into a page the coprocessor
+     * interprets differently, and be acknowledged.
      */
     LINK_PAGE_OUTPUTS  = 0x22, /**< which driver drives what, on which pin */
     LINK_PAGE_CHAN_CFG = 0x23, /**< what each channel is and how it moves  */
 } link_page_id_t;
 
 /*
- * The protocol version is the first register of the first page for a reason:
- * it is the one thing a host must be able to read from a coprocessor whose
- * every other page it might not understand.  Bump the major when a register
- * changes meaning or a page is renumbered; bump the minor when a page or a
- * register is added at the end, which an older host can ignore.
+ * The protocol version is register 0 of page 0: the one thing a host must be
+ * able to read from a coprocessor whose other pages it might not understand.
+ * Bump the major when a register changes meaning or a page is renumbered;
+ * bump the minor when a page or a register is added at the end, which an
+ * older host can ignore.
  */
 #define LINK_PROTOCOL_MAJOR 2u
 #define LINK_PROTOCOL_MINOR 0u
@@ -55,26 +52,19 @@ typedef enum {
 /* ----------------------------------------------------------------- outputs */
 
 /*
- * Three pages where there was one, because there was going to be one per
- * protocol otherwise.
- *
- * The servo page said "this output, this pulse, these limits" -- which is a
- * PWM servo described in PWM's own units, and there is no honest way to say
- * DShot in them.  What every protocol does have is a proportion of travel and
- * something that renders it, so that is what the wire carries now:
+ * The three output pages.  Every output protocol has a proportion of travel
+ * and a driver that renders it, so that is what the wire carries:
  *
  *   CHANNELS  what each output is asked for, and nothing else.  Hot: written
  *             many times a second, and the only page in the group that is.
- *   CHAN_CFG  what a channel is -- throttle or surface, how fast it may move,
+ *   CHAN_CFG  what a channel is (throttle or surface), how fast it may move,
  *             and the pulse widths its ends correspond to.
  *   OUTPUTS   which driver renders which channels, on which pin, how often.
  *
- * Eight of each.  A page is at most LINK_MAX_REGS registers and these are
- * four registers a slot, so eight is what fits without splitting a page in
- * half or addressing it through an index register -- and it is also the
- * number of servo outputs this bench is for, and the number of channels PPM
- * carries.  A ninth would be a minor version and a second block, which is
- * exactly the case the version rule was written for.
+ * Eight of each.  At four registers per slot, eight slots fit a page of
+ * LINK_MAX_REGS registers; eight is also the number of servo outputs the
+ * bench has and the number of channels PPM (pulse-position modulation)
+ * carries.  A ninth slot needs a minor version and a second page.
  */
 
 #define LINK_OUT_SLOTS     8u
@@ -102,13 +92,12 @@ enum {
 #define LINK_CC_ROLE_SURFACE  1u
 
 /*
- * What a channel does before anything is written, and the widest range the
- * coprocessor will accept for the limits themselves.  A servo asked for
- * 400 us does not go to 400 us, it buzzes.
+ * A channel's range before anything is written, and the widest range the
+ * coprocessor accepts for the limits themselves: a servo asked for 400 us
+ * buzzes rather than moves.
  *
- * The limits live at the far end rather than only on the panel because that
- * is the end holding the wire.  A host that has been restarted, or reflashed,
- * or is simply wrong, must not be able to drive a servo into its stops.
+ * The limits are enforced at the coprocessor, the end holding the wire, so a
+ * restarted, reflashed or wrong host cannot drive a servo into its stops.
  */
 #define LINK_CC_DEFAULT_MIN 1000u
 #define LINK_CC_DEFAULT_MAX 2000u
@@ -122,10 +111,9 @@ enum {
     LINK_OS_DRIVER  = 0, /**< link_out_driver_t                          */
     LINK_OS_PIN     = 1, /**< which pin it drives                        */
     /*
-     * First channel and count in one register, because they are one fact:
-     * the run of channels this slot renders.  PPM is the reason the count is
-     * on the wire at all -- it is eight channels on one pin, so a slot cannot
-     * be assumed to be worth one channel.
+     * First channel and count in one register: the run of channels this slot
+     * renders.  PPM is eight channels on one pin, so a slot cannot be assumed
+     * to be one channel.
      */
     LINK_OS_RANGE   = 2, /**< (first << 8) | count                       */
     LINK_OS_RATE_HZ = 3, /**< frames a second, or kbit/s for DShot       */
@@ -139,11 +127,8 @@ enum {
 #define LINK_OS_CHANNELS(range) ((uint8_t)((range) & 0xFFu))
 
 /*
- * The drivers, numbered on the wire.
- *
- * These are a contract like a page number is, so they are written down here
- * rather than being whatever an enum in the coprocessor happens to compile
- * to.  Nothing is renumbered; a new protocol appends.
+ * The drivers, numbered on the wire.  A contract like a page number: nothing
+ * is renumbered, and a new protocol appends.
  */
 typedef enum {
     LINK_DRIVER_NONE  = 0,
@@ -165,17 +150,12 @@ enum {
 };
 
 /*
- * What the coprocessor can actually do, as opposed to what it has screens for.
+ * What the coprocessor has fitted, as opposed to what the panel has screens
+ * for.  The menu marks derive from this bitmap, so a mark disappears when the
+ * part is fitted.
  *
- * This is the honest form of "hide what I do not need": the bench reports what
- * is fitted and the menu says so, rather than a preference somebody set once
- * and cannot remember.  A preference goes stale -- untick a receiver bus, plug
- * one in six months later, and the analyser says nothing is on the wire.  A
- * capability corrects itself the moment the part is soldered on.
- *
- * Absent is not the same as forbidden.  A screen whose capability is missing
- * still opens and still works from the model; it wears the mark that says its
- * numbers are invented, which it already had to.
+ * Absent is not forbidden.  A screen whose capability is missing opens and
+ * runs from the model, marked MODELLED.
  */
 typedef enum {
     LINK_CAP_ESC_DRIVE   = 1u << 0, /**< a signal line out to an ESC       */
@@ -186,7 +166,7 @@ typedef enum {
     LINK_CAP_RECEIVER    = 1u << 5, /**< a receiver bus decoded in PIO     */
     LINK_CAP_VIBRATION   = 1u << 6, /**< accelerometer and an index pulse  */
     LINK_CAP_CELLS       = 1u << 7, /**< a cell monitor on the balance lead*/
-    LINK_CAP_PROGRAM     = 1u << 8, /**< one-wire and CLI programming      */
+    LINK_CAP_PROGRAM     = 1u << 8, /**< one-wire and text-CLI programming */
 } link_cap_t;
 
 /* ------------------------------------------------------------------ status */
@@ -204,8 +184,8 @@ enum {
 
 /**
  * What the coprocessor did on its own authority.  Sticky until read and
- * explicitly cleared, because a fault that lasted four milliseconds is still
- * the reason the motor stopped and the operator is owed the explanation.
+ * explicitly cleared: a fault that lasted 4 ms is still the reason the motor
+ * stopped.
  */
 typedef enum {
     LINK_FAULT_NONE          = 0,
@@ -227,14 +207,11 @@ typedef enum {
 /*
  * The numbers, read-only.
  *
- * Fixed-point rather than floats, because a register is sixteen bits and a
- * float is not, and because the scale is then part of the contract rather
- * than a convention two firmwares have to agree on by accident.
+ * Fixed-point rather than floats: a register is 16 bits, and the scale is
+ * part of the contract between the two firmwares.
  *
- * The peaks are here rather than computed on the panel: the coprocessor has
- * the fast samples and the panel sees one poll in fifty of them.  A peak
- * derived from what crossed the wire is not a peak, it is the largest thing
- * that happened to be polled.
+ * The peaks are tracked here rather than on the panel: the coprocessor has
+ * the fast samples and the panel sees one poll in fifty of them.
  */
 enum {
     LINK_BN_VOLTAGE_CV   = 0,  /**< 10 mV steps, 0..655.35 V              */
@@ -243,7 +220,7 @@ enum {
     LINK_BN_RPM          = 3,
     LINK_BN_TEMP_ESC_DC  = 4,  /**< 0.1 C, signed -- read as int16_t       */
     LINK_BN_TEMP_MOT_DC  = 5,  /**< 0.1 C, signed                          */
-    LINK_BN_CHARGE_MAH   = 6,  /**< accumulated in the INA228, not here    */
+    LINK_BN_CHARGE_MAH   = 6,  /**< accumulated by the current monitor     */
     LINK_BN_ENERGY_DWH   = 7,  /**< 0.1 Wh                                 */
     LINK_BN_VOLT_MIN_CV  = 8,  /**< sag: the lowest the bus went           */
     LINK_BN_CURR_MAX_CA  = 9,
@@ -261,9 +238,8 @@ typedef enum {
     LINK_BN_TEMP_OK    = 1u << 3,
     /**
      * The numbers are modelled, not measured.  Set by a coprocessor running
-     * without a front end, and by the panel's own simulator -- the panel
-     * writes SIMULATION across the screen either way, and this is how a
-     * *remote* fake declares itself rather than being assumed honest.
+     * without a front end and by the panel's own simulator; the panel draws
+     * SIMULATION across the screen either way.
      */
     LINK_BN_SIMULATED  = 1u << 7,
 } link_bench_flag_t;
@@ -277,9 +253,9 @@ enum {
 };
 
 /**
- * Leaving failsafe takes a deliberate value, not any write and not merely the
- * link coming back.  A link that recovers and re-arms itself is a bench that
- * spins up while nobody is looking at it -- the operator has to ask.
+ * Leaving failsafe takes this value written to LINK_CT_CLEAR, not any write
+ * and not the link coming back: a link that recovers must not re-arm a bench
+ * on its own.
  */
 #define LINK_CLEAR_MAGIC 0x5AFEu
 

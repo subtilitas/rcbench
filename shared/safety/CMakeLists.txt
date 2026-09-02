@@ -1,5 +1,5 @@
-# The safety heartbeat.  Both ends of it: the panel generates, the coprocessor
-# judges, and they share a file because they have to share the numbers.
+# The safety heartbeat, both ends: the panel generates, the coprocessor
+# judges, and they share a file so they share the numbers.
 set(SRCS heartbeat.c)
 
 if(ESP_PLATFORM)

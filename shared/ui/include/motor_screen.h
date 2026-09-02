@@ -1,10 +1,10 @@
 /*
- * The motor and ESC bench: the first real instrument.
+ * The motor and ESC (electronic speed controller) bench screen.
  *
- * Owns no hardware and performs no I/O.  You hand it a bench_state_t and touch
- * events, and read commands back out -- which is what lets the identical code
- * render to a PNG on a laptop and be tested for what it *decides* rather than
- * only for what it looks like.
+ * Owns no hardware and performs no I/O (input/output).  It is handed a
+ * bench_state_t and touch events, and commands are read back out, so the
+ * same code renders to a PNG (Portable Network Graphics) file on the host
+ * and is tested for what it decides as well as for what it draws.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -40,7 +40,7 @@ typedef struct {
 } motor_cmd_t;
 
 void motor_screen_set(const bench_state_t *b);
-/** Called once per sample, so the plot's time base is the sample rate. */
+/** Called per sample, so the plot's time base is the sample rate. */
 void motor_screen_push(const bench_state_t *b);
 void motor_screen_set_armed(bool armed);
 float motor_screen_throttle(void);

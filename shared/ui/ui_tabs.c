@@ -69,11 +69,9 @@ void ui_tabs_render(const ui_tabs_t *t, gfx_canvas_t *c)
         return;
     }
     /*
-     * A segmented control, not a row of buttons.  Filling the selected tab
-     * with the accent made it the loudest thing on a screen whose job is to
-     * show four live numbers -- the tab strip says where you are, and should
-     * not outrank what you came to read.  So the group gets one sunken
-     * trough, and selection is a raised segment inside it.
+     * A segmented control: one sunken trough for the group, and the selected
+     * tab as a raised segment inside it.  The strip stays quieter than the
+     * readings the screen exists to show.
      */
     const gfx_rect_t first = t->rect[0];
     const gfx_rect_t last  = t->rect[t->count - 1];

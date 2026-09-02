@@ -1,6 +1,7 @@
-# CAN bit timing, shared by two controllers with different clocks and the same
-# arithmetic.  Pure C: the host suite proves the segmentation before either
-# controller is asked to accept it.
+# CAN (Controller Area Network) bit timing, shared by two controllers with
+# different clocks and the same arithmetic, the MCP2515 register map, and the
+# echo self-test.  Pure C: the host suite proves the segmentation before
+# either controller is asked to accept it.
 set(SRCS can_timing.c can_selftest.c mcp2515.c)
 
 if(ESP_PLATFORM)

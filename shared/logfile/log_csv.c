@@ -5,15 +5,15 @@
  * spreadsheet, and they disagree about nearly everything: comma, semicolon or
  * tab between fields, comma or dot for the decimal point, CRLF or LF between
  * rows, a byte-order mark or not, quoted fields with doubled quotes inside
- * them.  So nothing here is assumed -- the delimiter and the decimal
- * convention are *found* by reading the file (see log_numbers.c for the
- * evidence they are found from), and the row splitter handles the quoting and
- * line-ending cases rather than trusting the file to be simple.
+ * them.  So nothing here is assumed: the delimiter and the decimal convention
+ * are found by reading the file (see log_numbers.c for the evidence they are
+ * found from), and the row splitter handles the quoting and line-ending cases
+ * rather than trusting the file to be simple.
  *
  * The source is behind read/rewind function pointers so the same reader runs
- * against a file on the card and against a string in a test, and the allocator
- * is injectable for the same reason -- the parser can be held to an exact
- * allocation count without a real heap under it.
+ * against a file on the card and against a string in a test, and the
+ * allocator is injectable for the same reason: the parser can be held to an
+ * exact allocation count without a heap under it.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -445,9 +445,9 @@ typedef struct {
 
 /*
  * Scratch, file-static rather than on the stack: a row buffer and a unit
- * tally per column come to about 3 kB, which is a lot to ask of a UI task's
+ * tally per column come to about 3 kB, which is too much for a UI task's
  * stack on this chip.  Analysis and build are called from one task, one file
- * at a time -- they are not reentrant, and neither is the screen that drives
+ * at a time; they are not reentrant, and neither is the screen that drives
  * them.
  */
 static row_buf_t s_row;
@@ -515,12 +515,11 @@ static void guess_time_unit(const log_column_t *col, char *out, size_t out_size)
     /* Fall back on magnitude: a bench run is minutes long, so a span in the
      * millions is microseconds and one over a few thousand is milliseconds.
      *
-     * The cost of that second threshold is a real one and worth naming: a run
-     * longer than 83 minutes whose time column is plain seconds under a bare
-     * header is read as milliseconds and divided by a thousand.  Magnitude
-     * alone cannot separate it from an 8-second log in ms, so the fix is a
-     * better signal (the median sample interval separates them cleanly), not a
-     * different constant.  A unit in the header always wins over this guess. */
+     * Limitation: a run longer than 83 minutes whose time column is plain
+     * seconds under a bare header is read as milliseconds and divided by a
+     * thousand.  Magnitude alone cannot separate it from an 8-second log in
+     * milliseconds.  A unit in the header always takes precedence over this
+     * guess. */
     if (col->parsed < 2) {
         copy_str(out, out_size, "s");
         return;
@@ -605,9 +604,9 @@ log_err_t log_csv_analyse(log_source_t *src, const log_csv_opts_t *opts,
         }
         if (reader.overflow) {
             /* The row did not fit the field store, so everything after the
-             * overflow was emitted as an empty cell.  Those look exactly like
-             * legitimately blank cells downstream -- count them here so the
-             * screen can say so instead of plotting invented samples. */
+             * overflow is emitted as an empty cell.  Those look like
+             * legitimately blank cells downstream; counted here so the screen
+             * can say so instead of plotting invented samples. */
             out->long_rows++;
         }
         if (s_row.total > out->max_fields) {
@@ -1008,8 +1007,8 @@ log_err_t log_csv_build(log_source_t *src, const log_analysis_t *a,
             out->median_dt_s = (double)dts[(count - 1) >> 1];
             s_free(dts);
         } else {
-            /* Without room to sort, the mean is the honest answer -- and the
-             * screen says which one it is showing. */
+            /* Without room to sort, the mean is reported, and the screen says
+             * which statistic it shows. */
             out->median_dt_s = sum / (double)(count - 1);
         }
         out->rate_hz = (out->median_dt_s > 0.0) ? 1.0 / out->median_dt_s : 0.0;

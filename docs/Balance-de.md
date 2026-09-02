@@ -2,100 +2,80 @@
 
 <sub>[English](Balance.md) · **Deutsch**</sub>
 
-Was der Auswucht-Bildschirm wissen will, wohin die Sensoren gehören — und
-warum Auswuchten an der Platzierung scheitert, nicht an der Messung.
+Den Auswucht-Bildschirm einrichten, wohin die beiden Sensoren gehören und
+welche Sensoren funktionieren.
 
-Das Ergebnis einer Auswuchtung ist ein Betrag und ein Winkel: *so viel Masse,
-dorthin.* Beides stammt aus zwei Sensoren, und beide lassen sich so anbringen,
-dass die Antwort wertlos ist, ohne dass man es dem Bildschirm ansieht. Ein
-Vibrationssensor auf weicher Unterlage misst eine gefilterte Fassung dessen,
-was am Lager passiert; eine Indexmarke auf einem Blatt liefert einen Impuls
-pro Blatt — und damit einen Winkel, der um einen ganzen Blattabstand daneben
-liegt. Diese Seite zeigt, wie man beides vermeidet.
+Ein Auswuchtergebnis ist ein Betrag und ein Winkel. Beides stammt aus zwei
+Sensoren: einem Vibrationssensor und optional einem Indexsensor mit einem
+Impuls pro Umdrehung. Zwei Platzierungsfehler erzeugen ein falsches Ergebnis
+ohne sichtbares Zeichen auf dem Bildschirm: ein Vibrationssensor auf einer
+nachgiebigen Befestigung misst eine gefilterte Fassung der Lagerbewegung, und
+eine Indexmarke auf einem Blatt liefert einen Impuls pro Blatt statt einen pro
+Umdrehung.
 
 ## Den Bildschirm einrichten
 
 ![Der Rotor und wohin die Masse kommt](img/balance.png)
 
-**Blattzahl** (2–6) und Rotortyp einstellen. Der Bildschirm übersetzt den
-gemessenen Winkel in eine Anweisung: „0,35 g bei 265°" ist eine Zahl —
-„zwischen Blatt zwei und drei" kann man umsetzen.
+Blattzahl (2 bis 6) und Rotortyp einstellen. Der Bildschirm rechnet den
+gemessenen Winkel zusätzlich in eine Blattangabe um („zwischen Blatt zwei und
+drei").
 
-Ein **Impeller** ist ein eigener Fall, und der Bildschirm behandelt ihn auch
-so: an ein Blattende im Kanal kommt niemand heran, also wird die Korrektur als
-Winkel auf der Nabe angegeben statt als Blatt, das beklebt wird:
+Bei einem Impeller wird die Korrektur als Winkel auf der Nabe angegeben, weil
+eine Blattspitze im Kanal nicht erreichbar ist:
 
 ![Ein fünfblättriger Impeller](img/balance-edf.png)
 
-## Am Prüfstand
+## Sensorplatzierung am Prüfstand
 
 ![Wohin die Sensoren am Prüfstand kommen](img/balance-rig.png)
 
-Die zwei Fehler, die am häufigsten passieren:
+- Die Indexmarke gehört auf die Motorglocke, nicht auf einen Spinner. Die
+  Glocke dreht mit der Welle, ist starr, ist bei jedem Propeller vorhanden und
+  lässt sich von unten beobachten, wo nichts die Sichtlinie des Sensors
+  kreuzt. Ein Sensor, der von vorn auf einen Spinner zielt, blickt durch die
+  Propellerebene und zählt Blätter.
+- Die Marke ist ein Stiftstrich, kein Reflexband. Alles, was auf die Glocke
+  geklebt wird, ist Masse auf dem Teil, das ausgewuchtet wird.
+- Der Vibrationssensor gehört auf ein starres Teil, so nah am Lager wie
+  möglich. Eine nachgiebige Befestigung ist ein Tiefpassfilter.
 
-**Die Indexmarke gehört auf die Motorglocke, nicht auf den Spinner.** Ein
-Prüfstand läuft oft ganz ohne Spinner — und ein Sensor, der auf die
-Spinnernase zielt, muss von vorn durch die Propellerebene schauen und zählt am
-Ende Blätter statt Umdrehungen. Die Glocke dreht mit der Welle, ist starr, ist
-immer da, und lässt sich von unten beobachten, wo nichts im Weg ist.
-
-**Die Marke ist ein Filzstiftstrich, kein Reflexband.** Alles, was auf die
-Glocke geklebt wird, ist zusätzliche Masse — ausgerechnet an dem Teil, dessen
-Unwucht gemessen werden soll. Mit Klebeband wuchtet man am Ende die eigene
-Markierung aus.
-
-Und die Grundregel hinter jedem Messwert: der Vibrationssensor gehört auf
-etwas **Starres**, so nah am Lager wie möglich. Eine weiche Befestigung ist
-ein Filter, den niemand bestellt hat.
-
-## Am fertigen Modell
+## Sensorplatzierung am fertigen Modell
 
 ![Wohin die Sensoren am Modell kommen](img/balance-aircraft.png)
 
-Hier hat man die Platzierung kaum in der Hand, also zählen die Regeln umso
-mehr:
-
-- **Die Motorhaube ist nicht der Motorspant.** Sie ist eine Verkleidung — an
-  einen Spant geschraubt, oft gummigelagert, und gegenüber dem, dessen
-  Vibration gemessen werden soll, frei beweglich. Der Beschleunigungssensor
-  gehört flach auf den **Motorspant**, die eine starre Fläche an diesem Ende
-  des Rumpfs.
+- Der Beschleunigungssensor gehört flach auf den Motorspant, nicht auf die
+  Motorhaube. Die Haube ist eine Verkleidung, oft gummigelagert, und bewegt
+  sich gegenüber dem Motorträger.
 - Ein flach montierter Dreiachssensor hat zwei Achsen in der Spantebene, quer
-  zur Welle. **Eine davon verwenden, die dritte ignorieren.**
-- **Die Marke gehört auch hier auf die Glocke** — am Modell aus einem zweiten
-  Grund: ein Spinner wird abgenommen. Nach jedem Transport sitzt er in einem
-  anderen Winkel, und die Phasenreferenz der letzten Auswuchtung ist dahin.
-  Die Glocke ist Teil des Rotors und sitzt immer gleich. Bei den meisten
-  Elektromodellen steht der Außenläufer ohnehin frei vor der Haube — Sensor
-  darunter, Blick senkrecht nach oben, und der Strahl kreuzt nichts.
-- **Das Flugzeug festzurren.** Eine Maschine, die frei wippen kann, ist ein
-  ungewolltes Federelement in Reihe mit allem, was gemessen werden soll.
+  zur Welle. Eine davon verwenden, die dritte ignorieren.
+- Die Indexmarke gehört auf die Glocke. Ein Spinner wird für den Transport
+  abgenommen und in einem anderen Winkel wieder aufgesetzt, was die
+  Phasenreferenz der vorherigen Auswuchtung ungültig macht.
+- Das Flugzeug festzurren. Eine frei stehende Zelle ist eine Feder in Reihe
+  mit der Messung.
 
-## Welcher Sensor: eine Frage der Verzögerung
+## Sensorauswahl
 
-Ob überhaupt ein Indexsensor nötig ist — und welcher Vibrationssensor
-funktioniert — hängt an zwei Tatsachen:
+Ohne Indeximpuls gibt es keine Phasenreferenz, und gewuchtet wird nach der
+Vier-Lauf-Methode: ein Grundlauf, danach eine Probemasse bei 0°, 120° und
+240°. Die Methode misst keine Phase, eine konstante Sensorverzögerung wirkt
+sich also nicht aus. Sie braucht Bandbreite: bei 10 000 rpm (revolutions per
+minute, Umdrehungen pro Minute) liegt die Grundfrequenz bei 167 Hz, die eine
+IMU (Inertial Measurement Unit, Trägheitssensor), die fusionierte Lagedaten
+mit 100 Hz liefert, nicht auflösen kann. Einen analogen Sensor (Piezo oder
+analoger Beschleunigungssensor) an den ADC (Analog-Digital-Wandler) des
+Koprozessors anschließen.
 
-**Ohne Indeximpuls** gibt es keine Phasenreferenz. Gewuchtet wird dann nach
-der Vier-Lauf-Methode: ein Grundlauf, danach dieselbe Probemasse bei 0°, 120°
-und 240°. Sie misst nie eine Phase, eine konstante Sensorverzögerung schadet
-ihr also nicht. Was sie braucht, ist **Bandbreite**: bei 10 000 min⁻¹ liegt
-die Grundfrequenz bei 167 Hz — eine fertige IMU, die fusionierte Lagedaten mit
-100 Hz liefert, sieht davon schlicht nichts. Sie ist nicht zu langsam, sie ist
-blind. Richtig ist ein analoges Bauteil — ein Piezo oder ein analoger
-Beschleunigungssensor — direkt an den A/D-Wandler des Koprozessors.
+Mit Indeximpuls halbiert sich die Zahl der Läufe, und nur die Schwankung der
+Sensorverzögerung zählt; ein konstanter Anteil kürzt sich heraus, weil der
+Probelauf die ganze Kette mitmisst. Ein analoger Sensor hat etwa 15 µs
+Verzögerung, unter 1° bei 10 000 rpm. Eine fusionierte IMU hat etwa 5 ms
+Verzögerung, weder konstant noch spezifiziert, das sind 300° bei 10 000 rpm.
 
-**Mit Indeximpuls** halbiert sich die Zahl der Läufe, und jetzt zählt die
-Verzögerung — aber nur ihre *Schwankung*. Ein konstanter Anteil kürzt sich
-heraus, weil der Probelauf die ganze Kette mitsamt Sensor mitmisst. Ein
-analoges Bauteil liegt bei etwa fünfzehn Mikrosekunden — weniger als ein Grad
-bei 10 000 min⁻¹. Eine fusionierte IMU liegt bei fünf Millisekunden, weder
-konstant noch dokumentiert — das sind dreihundert Grad, also eine Masse, die
-mit großer Sorgfalt an der falschen Stelle angebracht wird.
+## Was die Messung braucht
 
-## Was zum Messen noch fehlt
-
-Ein Beschleunigungssensor und optional ein Indexsensor am Koprozessor. Beides
-ist noch nicht bestückt — der Bildschirm arbeitet deshalb aus dem Modell und
-trägt die MODELLED-Marke. Einrichtung, Blattumrechnung und die beiden
-Platzierungsanleitungen oben funktionieren schon heute.
+Einen Beschleunigungssensor und optional einen Indexsensor am Koprozessor.
+Keiner von beiden ist bestückt; der Bildschirm arbeitet deshalb aus dem Modell
+und trägt die Marke MODELLED. Einrichtung, Blattumrechnung und beide
+Platzierungsanleitungen funktionieren ohne die Sensoren.

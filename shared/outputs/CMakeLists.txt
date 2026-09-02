@@ -1,7 +1,6 @@
 # The intermediary every output goes through: arming, clamping, slew and
-# staleness in one place, with a table saying what each protocol is shaped
-# like.  Pure logic and no pin, so it is host-testable to the last edge case
-# before anything toggles.
+# staleness in one place, with a table of what each protocol is shaped like.
+# Pure logic with no pin, so it is host-tested before anything toggles.
 set(SRCS outputs.c outputs_pages.c)
 
 if(ESP_PLATFORM)

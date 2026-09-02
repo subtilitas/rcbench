@@ -1,20 +1,14 @@
 /*
- * Turning both ends' counters into a diagnosis.
+ * Both ends' link counters turned into one diagnosis.
  *
- * The first hardware boot of the panel cost three symptoms and two root
- * causes, worked out from a description over a wire rather than from the
- * board.  The link has more ways to be half-broken than the display does --
- * wrong pins, a bit rate that does not match, a missing terminator, a turnaround
- * shorter than the transceiver's, a firmware skew -- and most of them present
- * as "it does not work", which is the least useful sentence in engineering.
+ * Wrong pins, a mismatched bit rate, a missing terminator and a firmware skew
+ * all present as a link that does not work.  The counters read from both
+ * ends and compared tell them apart: a coprocessor that decoded 100 requests
+ * while the panel heard no answers is a return-path fault, which the panel's
+ * own numbers cannot show.
  *
- * So the counters are read from *both* ends and compared.  That comparison is
- * what separates the faults: a coprocessor that decoded a hundred requests
- * while the panel heard no answers is a return path fault and nothing else,
- * and no amount of staring at the panel's own numbers says so.
- *
- * Pure arithmetic over two structs, so every diagnosis below has a test that
- * constructs the fault rather than waiting to meet one.
+ * Pure arithmetic over two structs, so every diagnosis has a host test that
+ * constructs the fault.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -36,7 +30,7 @@ typedef struct {
     uint32_t timeouts;
     uint32_t mismatches;    /**< answers to questions nobody is still asking */
     uint32_t nacks;
-    uint32_t rx_crc_errors; /**< the panel's own decoder */
+    uint32_t rx_crc_errors; /**< frames this end received corrupt; 0 on CAN */
     uint32_t rx_resyncs;
 
     /* The coprocessor's view of itself, read from the STATUS page.  Absent
@@ -66,7 +60,7 @@ typedef enum {
     LINK_DIAG_PROTOCOL_MISMATCH,
     /** Requests arrive and answers do not: the return path, not the link. */
     LINK_DIAG_REPLIES_LOST,
-    /** Frames arrive corrupt. Baud, noise, or a transceiver clipping edges. */
+    /** Frames arrive corrupt. Bit timing, noise, or termination. */
     LINK_DIAG_CORRUPT,
     /** Answers arrive too late to be wanted. A slow far end, or a
      *  timeout tighter than the round trip. */

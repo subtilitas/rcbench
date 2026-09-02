@@ -1,11 +1,8 @@
 /*
- * The CAN bring-up self-test, lifted out of the main loop.
- *
- * It is a lot of code -- the echo run, the both-ends comparison, the
- * error-counter reading -- and it runs only when the firmware is built with
- * -DRCBENCH_CAN_SELFTEST, so it was dead weight in main.c on every ordinary
- * build.  Here it is its own translation unit, called from one place under the
- * same flag; the loop it left is shorter for it.
+ * The CAN (Controller Area Network) bring-up self-test: the echo run, the
+ * comparison of both ends' counters and the error-counter reading.  It is
+ * compiled only with -DRCBENCH_CAN_SELFTEST and called from one place in
+ * main.c under the same flag, so an ordinary build carries none of it.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,7 +14,7 @@
 /**
  * Echo probes across the bus for @p seconds and report both ends' counters.
  *
- * The one question it answers, and deliberately not two: do frames cross this
- * bus intact?  Nothing above the wire is involved.  See docs/Bringup.md.
+ * It answers one question: do frames cross this bus intact?  Nothing above
+ * the wire is involved.  See docs/Bringup.md.
  */
 void can_selftest_run(uint32_t seconds);

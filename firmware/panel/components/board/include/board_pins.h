@@ -1,10 +1,13 @@
 /*
- * Pin map for the Waveshare ESP32-S3-Touch-LCD-7 (800x480 RGB IPS + GT911).
+ * Pin map for the Waveshare ESP32-S3-Touch-LCD-7: an 800x480 RGB (red,
+ * green, blue) IPS (in-plane switching) LCD (liquid-crystal display) with a
+ * GT911 touch controller.
  *
- * Values are taken from the board schematic (hardware/ESP32-S3-Touch-LCD-7-Sch.pdf
- * in waveshareteam/ESP32-S3-Touch-LCD-7) and cross-checked against Waveshare's
- * own ESP-IDF demo.  The RGB bus is 16 data lines driven as RGB565: the panel
- * is an 18-bit part, but R0..R2/G0..G1/B0..B2 are tied off on the board.
+ * Values are from the board schematic (hardware/ESP32-S3-Touch-LCD-7-Sch.pdf
+ * in waveshareteam/ESP32-S3-Touch-LCD-7), cross-checked against Waveshare's
+ * ESP-IDF (Espressif Internet-of-Things Development Framework) demo.  The
+ * RGB bus is 16 data lines driven as RGB565: the panel is an 18-bit part,
+ * and R0..R2, G0..G1 and B0..B2 are tied off on the board.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -22,9 +25,9 @@ extern "C" {
 #define BOARD_LCD_H_RES             800
 #define BOARD_LCD_V_RES             480
 
-/* Panel timing.  16 MHz is Waveshare's shipped value and leaves comfortable
- * PSRAM headroom; ~60 Hz would need ~25 MHz, which this board cannot feed
- * reliably from PSRAM.  At 16 MHz the refresh rate is 39 Hz. */
+/* Panel timing.  16 MHz is Waveshare's shipped pixel clock and gives a 39 Hz
+ * refresh.  60 Hz would need about 25 MHz, which the PSRAM (pseudo-static
+ * random-access memory) scan-out bandwidth does not support. */
 #define BOARD_LCD_PCLK_HZ           (16 * 1000 * 1000)
 #define BOARD_LCD_HSYNC_PULSE_WIDTH 4
 #define BOARD_LCD_HSYNC_BACK_PORCH  8
@@ -73,15 +76,15 @@ extern "C" {
 /* -------------------------------------------------------------- SD card --- */
 
 /*
- * The card is on SPI, and its chip select is not a GPIO: the CH422G holds it
- * (EXIO4), so the SPI driver is told there is no CS pin and the expander keeps
- * the line asserted for as long as the card is mounted.  That is safe only
- * because the card is alone on this bus.
+ * The card is on SPI (Serial Peripheral Interface), and its chip select is
+ * not a GPIO (general-purpose input/output): the CH422G holds it (EXIO4), so
+ * the SPI driver is told there is no CS (chip select) pin and the expander
+ * keeps the line asserted while the card is mounted.  That is safe because
+ * the card is alone on this bus.
  *
- * Note for anyone comparing with the vendor demo: it asserts CS by writing
- * 0x0A straight to expander address 0x38, which also clears EXIO2 and turns
- * the backlight off.  Use board_sd_cs(), which is a read-modify-write against
- * the cached output byte.
+ * The vendor demo asserts CS by writing 0x0A to expander address 0x38, which
+ * also clears EXIO2 and turns the backlight off.  board_sd_cs() is a
+ * read-modify-write against the cached output byte.
  */
 #define BOARD_SD_SPI_HOST           SPI2_HOST
 #define BOARD_SD_PIN_MOSI           GPIO_NUM_11
@@ -91,9 +94,9 @@ extern "C" {
 
 /* ------------------------------------------------------------------ touch */
 
-/* GT911 INT.  Its level while RST is released selects the I2C address:
- * low -> 0x5D, high -> 0x14.  The board has no direct RST line; that goes
- * through the CH422G (EXIO1). */
+/* GT911 INT.  Its level while RST is released selects the I2C
+ * (Inter-Integrated Circuit) address: low -> 0x5D, high -> 0x14.  The board
+ * has no direct RST line; that goes through the CH422G (EXIO1). */
 #define BOARD_TOUCH_PIN_INT         GPIO_NUM_4
 #define BOARD_TOUCH_I2C_ADDR        0x5D
 #define BOARD_TOUCH_I2C_ADDR_ALT    0x14
@@ -119,21 +122,22 @@ extern "C" {
 #define BOARD_EXIO_LCD_RST          3  /* LCD_RST,    active low  */
 #define BOARD_EXIO_SD_CS            4  /* SDCS,       active low  */
 /*
- * The USB/CAN multiplexer, and the reason the console is not on native USB.
+ * The USB (Universal Serial Bus) / CAN (Controller Area Network) multiplexer.
  *
- * The board has two USB-C sockets: one behind a USB-UART bridge, and one
- * carrying the ESP32-S3's own USB.  Native USB -- USB-Serial-JTAG and USB-OTG
- * both -- is on GPIO19 and GPIO20, dedicated analog pins that cannot be routed
- * elsewhere, and the FSUSB42UMX switches that pair against CAN.  So CAN and
- * native USB are mutually exclusive whichever way round the mux is wired, and
- * selecting CAN costs the native console exactly when a bring-up wants one.
+ * The board has two USB-C sockets: one behind a USB-UART (universal
+ * asynchronous receiver-transmitter) bridge, and one carrying the ESP32-S3's
+ * native USB.  Native USB, USB-Serial-JTAG (the built-in serial and debug
+ * bridge) and USB-OTG (On-The-Go) alike, is on GPIO19 and GPIO20, dedicated
+ * analogue pins that cannot be routed elsewhere, and the FSUSB42UMX switches
+ * that pair against CAN.  CAN and native USB are therefore mutually
+ * exclusive, and selecting CAN removes the native console.
  *
- * The bridged socket shares nothing with CAN, which is why sdkconfig.defaults
- * makes UART0 the primary console and leaves USB-Serial-JTAG as a secondary.
+ * The bridged socket shares nothing with CAN, so sdkconfig.defaults makes
+ * UART0 the primary console and USB-Serial-JTAG the secondary.
  *
- * NOT YET CONFIRMED FROM THE SCHEMATIC: which GPIOs the bridged socket lands
- * on.  UART0's defaults are assumed; if the board disagrees the secondary
- * console still works whenever USB is selected, so the assumption fails soft.
+ * Not traced on the schematic: which GPIOs the bridged socket lands on.
+ * UART0's default pins are assumed; if the board differs, the secondary
+ * console works whenever USB is selected.
  */
 #define BOARD_EXIO_USB_SEL          5  /* 0 = USB, 1 = CAN        */
 #define BOARD_EXIO_LCD_VDD_EN       6
@@ -146,18 +150,17 @@ extern "C" {
 
 /* -------------------------------------------------------------------- CAN */
 /*
- * TWAI, on the pins the multiplexer switches.
+ * TWAI (Two-Wire Automotive Interface, the ESP32-S3's CAN controller), on
+ * the pins the multiplexer switches.
  *
- * These are the ESP32-S3's native USB pins.  That is not a coincidence and it
- * is the whole reason USB and CAN are mutually exclusive here: GPIO19 and
- * GPIO20 are dedicated analog pins that cannot be routed through the matrix,
- * so a board wanting both has to switch them, which is what the FSUSB42UMX
- * does under BOARD_EXIO_USB_SEL.
+ * These are the ESP32-S3's native USB pins: GPIO19 and GPIO20 are dedicated
+ * analogue pins that cannot be routed through the matrix, so a board wanting
+ * both switches them, which the FSUSB42UMX does under BOARD_EXIO_USB_SEL.
  *
- * INFERRED, NOT READ OFF THE SCHEMATIC.  The mux, the "0 = USB, 1 = CAN"
- * comment and the pins' fixed function agree, but nobody has traced it.  Two
- * minutes with the schematic settles it, and getting it wrong presents as a
- * bus that never asserts -- the first line the bring-up report prints.
+ * Inferred from the multiplexer and the pins' fixed function, not traced on
+ * the schematic.  The bring-up runs at 1 Mbit/s with zero errors on these
+ * pins.  A wrong assignment presents as a bus that never asserts, the first
+ * line the bring-up report prints.
  */
 #define PANEL_CAN_PIN_TX   GPIO_NUM_20
 #define PANEL_CAN_PIN_RX   GPIO_NUM_19
@@ -169,13 +172,12 @@ extern "C" {
 
 /* ----------------------------------------------------------------- safety */
 /*
- * The heartbeat.  GPIO6 is on **J8**, a three-pin header carrying 3V3, GND
- * and GPIO6 and nothing else -- so it reaches a connector, which was the open
- * question, and it arrives with a rail and a ground beside it, which is what a
- * retriggerable monostable on a small daughterboard wants.
+ * The heartbeat.  GPIO6 is on J8, a three-pin header carrying 3V3, GND and
+ * GPIO6, which gives a retriggerable monostable on a daughterboard its rail
+ * and ground.
  *
- * The schematic's pin table lists GPIO6 against no peripheral at all: the one
- * genuinely uncommitted fast pin on the board.
+ * The schematic's pin table lists GPIO6 against no peripheral: the one
+ * uncommitted fast pin on the board.
  */
 #define PANEL_HEARTBEAT_PIN   GPIO_NUM_6
 

@@ -1,14 +1,14 @@
 /*
- * Both ends of the link, talking to each other over a simulated CAN bus.
+ * Both ends of the link, talking to each other over a simulated CAN
+ * (Controller Area Network) bus.
  *
- * Every other link suite tests one half: the dispatcher's judgement, the
- * poller's matching, the identifier layout.  This one puts them together and
- * runs real questions through real answers, because the interesting failures
- * live in the seam -- a reply that reassembles into the wrong window, a
- * fragment attributed to a request that has already been given up on, a
- * refusal that leaves the poller waiting for ever.
+ * The other link suites test one half each: the dispatcher's judgement, the
+ * poller's matching, the identifier layout.  This one runs real requests
+ * through real answers, where the failures live in the seam: a reply that
+ * assembles into the wrong window, a fragment attributed to an abandoned
+ * request, a refusal that leaves the poller waiting.
  *
- * The bus here can drop, delay and reorder, because a real one does.
+ * The bus can drop, delay and reorder frames.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -137,10 +137,8 @@ static void fresh(void)
 /* ----------------------------------------------------------------- cases */
 
 /*
- * The whole bench page in one question.  Thirteen registers is four frames
- * back, which is the case the byte transport never had and the one most worth
- * proving: the answer is assembled from pieces and comes out as the window
- * that was asked for.
+ * The whole bench page in one request: 13 registers come back as four frames
+ * and are assembled into the window that was asked for.
  */
 TEST_CASE(a_page_wider_than_a_frame_comes_back_whole)
 {
@@ -207,8 +205,9 @@ TEST_CASE(a_write_is_acknowledged_with_what_was_stored)
 }
 
 /*
- * A refusal is an answer.  A host that kept waiting on a NACK could not tell a
- * page it may not write from a link that has died.
+ * A refusal is an answer.  A host that kept waiting on a NACK (negative
+ * acknowledge) could not tell a page it may not write from a link that has
+ * died.
  */
 TEST_CASE(a_refusal_answers_and_says_why)
 {
@@ -274,7 +273,7 @@ TEST_CASE(a_reply_to_an_abandoned_question_is_refused)
     CHECK(link_host_tick(&host, LINK_HOST_TIMEOUT_MS));
     CHECK(link_host_read(&host, LINK_PAGE_IDENTITY, 0, 2, 0, &req));
 
-    /* Now the old answer turns up. */
+    /* The old answer turns up. */
     for (size_t i = 0; i < n; ++i) {
         link_msg_t part;
         CHECK(link_can_decode(&stale[i], &part));

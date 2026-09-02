@@ -194,8 +194,9 @@ TEST_CASE(a_value_the_page_rejects_is_refused_with_a_reason)
     CHECK_EQ(g.control[LINK_CT_THROTTLE], 0);
 }
 
-/* DATA, ACK and NACK are the coprocessor's own vocabulary.  Receiving one
- * means something is talking that should be listening. */
+/* DATA, ACK (acknowledge) and NACK (negative acknowledge) are the
+ * coprocessor's own vocabulary.  Receiving one means something is talking
+ * that should be listening. */
 TEST_CASE(the_coprocessor_refuses_to_be_spoken_to_in_its_own_voice)
 {
     fresh();

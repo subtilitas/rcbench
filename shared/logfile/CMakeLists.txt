@@ -1,11 +1,11 @@
 # Reading logs off the card.  The number parser decides a file's decimal
-# convention from every value in it and then *rejects* values that do not
-# conform, rather than guessing -- stripping the dot out of German 1.234,56
-# and reading it as English gives 1.23456, which is worse than no number.
+# convention from every value in it and rejects values that do not conform:
+# stripping the dot out of German 1.234,56 and reading it as English gives
+# 1.23456.
 #
-# The CSV reader never holds the file: the source is a read/rewind callback,
-# analysis is two streaming passes, and only the columns being plotted become
-# arrays.
+# The CSV (comma-separated values) reader never holds the file: the source is
+# a read/rewind callback, analysis is two streaming passes, and only the
+# columns being plotted become arrays.
 set(SRCS
     log_numbers.c
     log_csv.c

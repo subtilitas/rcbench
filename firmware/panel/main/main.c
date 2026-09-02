@@ -1,12 +1,12 @@
 /*
  * The panel application.
  *
- * Bring the board up, report each step to the splash as it happens, then run
- * the router at the panel's own refresh rate.
+ * Brings the board up, reports each step to the splash as it happens, then
+ * runs the router at the panel's refresh rate.
  *
- * Everything this file does is glue.  What the screens decide, what the link
- * says, what the numbers mean and when the bench fails safe are all pure C in
- * shared/, tested on a laptop; this is the part that cannot be.
+ * This file is glue.  What the screens decide, what the link carries, what
+ * the numbers mean and when the bench fails safe are pure C in shared/,
+ * tested on the host; this file holds the parts that need the hardware.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -34,26 +34,27 @@
 #include "log_writer.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
+#include "settings.h"
+#include "settings_screen.h"
 #include "splash_screen.h"
 #include "storage.h"
 #include "telemetry_sim.h"
 #include "outputs.h"
 
 /*
- * The panel's throttle, as a channel.
+ * The panel's throttle, as a channel in an output bank.
  *
- * The ramp is the one the bench's own throttle model carried, converted: a
- * slew is a proportion of travel per second here rather than a percentage,
- * so that the same number means the same speed on an output whose travel is
- * not measured in percent.
+ * The ramp is a proportion of travel per second rather than a percentage, so
+ * the same number means the same speed on an output whose travel is not
+ * measured in percent.
  */
 #define PANEL_CH_THROTTLE     0u
 #define PANEL_THROTTLE_RAMP   ((uint16_t)(OUT_SPAN * 55u / 100u))   /* 55 %/s */
 
 /*
- * The servo bench's output: bank/wire channel 0, slot 0, on GP2.  The panel
- * owns these now -- the driver, the pin and the range travel on the outputs
- * page, so the coprocessor holds no servo-specific constant of its own.
+ * The servo bench's output: bank and wire channel 0, slot 0, on GP2.  The
+ * panel owns these: the driver, the pin and the range travel on the OUTPUTS
+ * and CHAN_CFG pages, and the coprocessor holds no servo-specific constant.
  */
 #define SERVO_CH        0u
 #define SERVO_SLOT      0u
@@ -61,9 +62,9 @@
 #define SERVO_MIN_US    1000u
 #define SERVO_MAX_US    2000u
 
-/* A pulse in microseconds as a proportion of this servo's own travel, which is
- * what the channels page carries.  Clamped rather than wrapped below the
- * range, the way the coprocessor's own conversion is. */
+/* A pulse in microseconds as a proportion of the servo's own travel, which is
+ * what the CHANNELS page carries.  Clamped, not wrapped, below the range, as
+ * the coprocessor's conversion is. */
 static uint16_t us_to_span(uint16_t us, uint16_t min_us, uint16_t max_us)
 {
     if (max_us <= min_us || us <= min_us) {
@@ -96,6 +97,8 @@ static link_host_t    s_host;
 /* A link_cap_t bitmap from the coprocessor's identity page.  Zero until
  * something answers, which is also what it stays if nothing is fitted. */
 static uint16_t       s_capabilities;
+/* LINK_ST_FAULTS from the coprocessor's last status poll, shown in the band. */
+static uint16_t       s_dev_faults;
 static link_bringup_t s_bring;
 
 
@@ -110,20 +113,17 @@ static uint32_t now_ms(void)
     return (uint32_t)(esp_timer_get_time() / 1000);
 }
 
-/* ------------------------------------------------------------- the heartbeat */
+/* ------------------------------------------------------------ the heartbeat */
 
 /*
- * Driven from the loop that reads touch and draws STOP, which is the whole
- * reason it is a heartbeat rather than a level: what it asserts is not "the
- * operator permits this" but "the processor that owns the STOP button is
- * still going round its loop".  A level cannot say that, and neither can a
- * crashed panel.
+ * Driven from the loop that reads touch and draws STOP.  The line asserts
+ * that the processor owning the STOP button is running its loop, which a
+ * level cannot assert and a crashed panel cannot fake.
  *
- * The monostable it is meant to gate is not fitted yet, so today these edges
- * reach a header pin and nothing else.  They are emitted anyway.  The
- * alternative -- holding the line low until the daughterboard exists -- means
- * the first time this code runs for real is the first time it matters, and it
- * costs one GPIO write per frame to have it already running and scopeable.
+ * The monostable the line gates is on no board: the edges reach the J8
+ * header pin and nothing else.  They are emitted regardless, at one GPIO
+ * (general-purpose input/output) write per frame, so the line is running and
+ * can be scoped before the daughterboard exists.
  */
 static heartbeat_gen_t s_beat;
 
@@ -143,7 +143,7 @@ static void heartbeat_init(void)
     ESP_ERROR_CHECK(gpio_set_level(PANEL_HEARTBEAT_PIN, 0));
     heartbeat_gen_init(&s_beat);
     ESP_LOGI(TAG, "heartbeat on GPIO%d (J8) every %u ms; the monostable it "
-                  "gates is not fitted, so nothing is listening yet",
+                  "gates is on no board",
              (int)PANEL_HEARTBEAT_PIN, (unsigned)HEARTBEAT_PERIOD_MS);
 }
 
@@ -167,24 +167,19 @@ static void pump(void)
 }
 
 /*
- * How long to keep asking who is there.  Three seconds is about three
- * attempts, because a poll that gets nothing back costs the host timeout.
+ * How long to keep asking who is there: 3000 ms is about three attempts,
+ * because a poll with no answer costs the 1000 ms host timeout.
  */
 #define IDENTITY_WAIT_MS 3000u
 
 /*
- * Ask the coprocessor who it is, and keep asking.
+ * Ask the coprocessor who it is, repeatedly, for IDENTITY_WAIT_MS.
  *
- * It used to be asked once.  The echo test above retries five times, and that
- * asymmetry was the whole of the bug: a bus that echoed every frame perfectly
- * would still show "no answer" here, because the two boards do not finish
- * booting at the same instant, and the splash step is written once and never
- * revisited.  A first frame onto a bus whose far end is not yet listening also
- * goes unacknowledged and is retransmitted in silicon, which costs time a
- * single attempt had not budgeted for.
- *
- * The failure is still bounded, because a bench with no coprocessor attached
- * must not sit on the splash for ever waiting to be told so.
+ * The two boards do not finish booting at the same instant, and a first frame
+ * onto a bus whose far end is not listening is retransmitted in silicon until
+ * it is acknowledged, so a single attempt can miss a working coprocessor.
+ * The wait is bounded: a bench with no coprocessor attached must not sit on
+ * the splash for ever.
  */
 static bool poll_identity(link_host_t *host, link_msg_t *reply)
 {
@@ -234,12 +229,25 @@ static bool bring_up(void)
                       storage_status());
     pump();
 
-    splash_screen_set(SPLASH_STEP_SETTINGS, SPLASH_OK, "defaults");
+    /*
+     * Schema defaults, then the values the NVS (non-volatile storage) store
+     * holds on top of them.  A store that cannot be opened leaves the
+     * defaults in place: a working bench with unsaved settings.
+     */
+    const settings_store_t *store = settings_nvs_store();
+    settings_set_store(store);
+    settings_init();
+    settings_apply_ui();
+    splash_screen_set(SPLASH_STEP_SETTINGS,
+                      store != NULL ? SPLASH_OK : SPLASH_WARN,
+                      store != NULL ? "NVS" : "NVS unavailable");
     pump();
 
     /*
-     * CAN, and from here on there is no USB: GPIO19 and GPIO20 carry both and
-     * the multiplexer has to choose.  That is why the console is on UART.
+     * CAN (Controller Area Network), and from here on there is no native USB
+     * (Universal Serial Bus): GPIO19 and GPIO20 carry both, and the
+     * multiplexer selects one.  The console is on UART0 (universal
+     * asynchronous receiver-transmitter 0) for that reason.
      */
     const bool link_open = (can_twai_start(PANEL_CAN_BITRATE) == ESP_OK);
     splash_screen_set(SPLASH_STEP_LINK,
@@ -247,11 +255,10 @@ static bool bring_up(void)
                       link_open ? "CAN 1 Mbit/s" : "not opened");
 #ifdef RCBENCH_CAN_SELFTEST
     /*
-     * Here, and not before: the bus has to be up for an echo test to mean
-     * anything.  Run earlier it reported "nothing came back" whatever the
-     * hardware was doing, which is the most confident way to be useless.
-     * Before the identity poll, so a broken bus is diagnosed rather than
-     * showing up as an identity that never answers.
+     * After the bus is up, so the echo test measures the bus rather than
+     * reporting "nothing came back" regardless of the hardware, and before
+     * the identity poll, so a broken bus is diagnosed as such rather than as
+     * an identity that never answers.
      */
     if (link_open) {
         can_selftest_run(5);
@@ -260,20 +267,17 @@ static bool bring_up(void)
     pump();
 
     /*
-     * And ask who is there.
-     *
-     * This step existed and was never answered, so all_answered() was never
-     * true, so the splash never handed over -- the panel sat on its own boot
-     * screen for ever.  A step that is declared and never set is worse than
-     * one that does not exist: the list looks complete and the machine waits.
+     * Ask who is there.  The IOMCU step is set to a result on every path: a
+     * splash step that is declared and never set keeps all_answered() false,
+     * and the splash never hands over.
      */
     link_host_init(&s_host, now_ms());
     if (link_open) {
         link_msg_t reply;
         if (poll_identity(&s_host, &reply)) {
-            /* Wide enough for three 16-bit registers plus the words: the
-             * splash truncates its own detail field anyway, but a
-             * truncating snprintf is a warning, and warnings are errors. */
+            /* 40 bytes holds three 16-bit registers plus the words.  The
+             * splash truncates its detail field anyway, but a truncating
+             * snprintf is a compiler warning, and warnings are errors. */
             char detail[40];
             snprintf(detail, sizeof(detail), "proto %u.%u hw %u",
                      reply.regs[LINK_ID_PROTOCOL_MAJOR],
@@ -281,10 +285,9 @@ static bool bring_up(void)
                      reply.regs[LINK_ID_HARDWARE]);
             s_bring.have_identity = true;
             /*
-             * What the far end can actually do.  Kept here rather than read
-             * again later: the identity page is answered once at bring-up,
-             * and a menu that greyed itself only after a poll would flicker
-             * through a state where the bench claimed more than it has.
+             * What the far end can do.  Read here, at bring-up, rather than
+             * at a later poll: a menu that greys itself only after a poll
+             * shows a state in which the bench claims more than it has.
              */
             s_capabilities        = reply.regs[LINK_ID_CAPABILITIES];
             s_bring.proto_major   = reply.regs[LINK_ID_PROTOCOL_MAJOR];
@@ -296,11 +299,10 @@ static bool bring_up(void)
             ok = ok && speaks_ours;
         } else {
             /*
-             * Not a failure: the bench is useful without one, and says so.
-             * Which kind of silence, though, is worth the two words.  Nothing
-             * arriving and something arriving that we then reject are
-             * different faults wanting different things unplugged, and the
-             * poller has already counted which happened.
+             * Not a failure: the bench runs without a coprocessor.  The two
+             * words name the kind of silence: nothing arriving and a reply
+             * that is rejected are different faults, and the poller counts
+             * which happened.
              */
             const char *why = "no answer";
             if (s_host.nacks > 0) {
@@ -321,10 +323,9 @@ static bool bring_up(void)
 /* ------------------------------------------------------------- the logger */
 
 /*
- * A run is written while the bench is armed and closed when it disarms, which
- * is the only definition of "a run" the bench has.  The file is the one the
- * log viewer reads, and there is a host test that writes one and parses it
- * back rather than trusting that.
+ * A run is written while the bench is armed and closed when it disarms; that
+ * is the bench's definition of a run.  The file format is the one the log
+ * viewer reads, and a host test writes a run and parses it back.
  */
 static FILE       *s_log_file;
 static log_writer_t s_log;
@@ -341,9 +342,8 @@ static void log_start(void)
     if (s_log_file != NULL || !storage_mounted()) {
         return;
     }
-    /* Numbered rather than timestamped: there is no clock on this board that
-     * survives a power cycle, and a file called 1970-01-01 every time is
-     * worse than one called 3. */
+    /* Numbered, not timestamped: no clock on this board survives a power
+     * cycle, so every file would be dated 1970-01-01. */
     for (int i = 1; i < 1000 && s_log_file == NULL; ++i) {
         char path[64];
         snprintf(path, sizeof(path), "/sdcard/BENCH%03d.CSV", i);
@@ -382,21 +382,15 @@ static void log_stop(void)
 
 /* ---------------------------------------------------- asking the far end */
 
-/**
- * One poll.  Returns true when the coprocessor answered.
- *
- * Deliberately blocking and deliberately short: the link is host-polled, so
- * there is never a second frame in flight, and the whole transaction is well
- * under one panel frame at either baud rate.
- */
 /*
- * Put a built request on the wire and wait for its answer.
+ * Put a built request on the wire and wait for its answer.  Blocking, and
+ * short: the link is host-polled, so there is never a second request in
+ * flight, and a transaction is well under one panel frame.
  *
- * Reads and writes differ only in how the request was made, so they share
- * everything after that -- including the two failure modes that are easy to
- * get wrong: a frame that never reached the wire has nothing to wait for and
- * must release the outstanding slot, and a reply wider than four registers
- * arrives in pieces that each say where they belong.
+ * Reads and writes share everything after the request is built, including
+ * two failure modes: a frame that never reached the wire has nothing to wait
+ * for and must release the outstanding slot, and a reply wider than four
+ * registers arrives in pieces that each carry their own offset.
  */
 static bool exchange(link_host_t *host, const link_msg_t *req,
                      link_msg_t *reply)
@@ -449,21 +443,66 @@ static bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
     return exchange(host, &req, reply);
 }
 
-static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
-                       const uint16_t *regs, link_msg_t *reply)
+static bool write_regs(link_host_t *host, uint8_t page, uint8_t offset,
+                       uint8_t count, const uint16_t *regs, link_msg_t *reply)
 {
     link_msg_t req;
-    if (!link_host_write(host, page, 0, count, regs, now_ms(), &req)) {
+    if (!link_host_write(host, page, offset, count, regs, now_ms(), &req)) {
         return false;
     }
     return exchange(host, &req, reply);
 }
 
+static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
+                       const uint16_t *regs, link_msg_t *reply)
+{
+    return write_regs(host, page, 0, count, regs, reply);
+}
+
+/* ------------------------------------------------------- the control page */
 
 /*
- * One block, naming the most fundamental thing that is wrong rather than the
- * loudest.  Printed while the link is unhealthy and once a minute when it is,
- * because a bring-up wants it constantly and a working bench does not.
+ * ARM and THROTTLE travel together, offset 0 and count 2, at every poll while
+ * the link is up: the coprocessor's throttle channel stops driving after
+ * OUT_DEFAULT_TIMEOUT_MS (500 ms) without a write, so the panel keeps writing
+ * while armed.  CLEAR (register 2) is written on its own and only on an
+ * explicit arm: a write that touches it must carry LINK_CLEAR_MAGIC, and it
+ * lifts a latched failsafe, which no other write may do.
+ */
+static uint16_t s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
+
+static uint16_t pct_to_hundredths(float pct)
+{
+    if (!(pct > 0.0f)) {
+        return 0u;
+    }
+    if (pct >= 100.0f) {
+        return (uint16_t)LINK_THROTTLE_MAX;
+    }
+    return (uint16_t)((pct * 100.0f) + 0.5f);
+}
+
+/* True when the coprocessor acknowledged; a NACK (negative acknowledge) or
+ * no answer is false. */
+static bool control_write(bool armed, link_msg_t *reply)
+{
+    const uint16_t regs[2] = { armed ? 1u : 0u, s_throttle_hundredths };
+    return write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_ARM, 2u, regs, reply)
+           && reply->op == LINK_OP_ACK;
+}
+
+static bool control_clear_failsafe(link_msg_t *reply)
+{
+    const uint16_t magic = LINK_CLEAR_MAGIC;
+    return write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_CLEAR, 1u, &magic,
+                      reply)
+           && reply->op == LINK_OP_ACK;
+}
+
+
+/*
+ * One block naming the most fundamental fault rather than the loudest.
+ * Printed every 5 s while the link is down and every 60 s while it is up.
  */
 static void link_report(void)
 {
@@ -473,15 +512,13 @@ static void link_report(void)
     s_bring.mismatches    = s_host.mismatches;
     s_bring.nacks         = s_host.nacks;
     /*
-     * Deliberately left at zero rather than filled with something close.
-     *
-     * link_bringup reads rx_crc_errors as "frames this end received and found
-     * corrupt", and TWAI has no counter for that: bus_error_count is
-     * cumulative for the life of the driver and counts transmit-side
-     * acknowledge errors too, so a single missing ACK at power-on would pin
-     * the diagnosis at "frames arrive corrupt" for the rest of the session and
-     * outrank every other verdict.  The controller's real counters are printed
-     * below, where they are labelled as what they are.
+     * Left at zero.  link_bringup reads rx_crc_errors as "frames this end
+     * received and found corrupt", and TWAI (Two-Wire Automotive Interface,
+     * the ESP32-S3's CAN controller) has no such counter: bus_error_count is
+     * cumulative for the life of the driver and includes transmit-side
+     * acknowledge errors, so one missing ACK (acknowledge) at power-on would
+     * pin the diagnosis at "frames arrive corrupt" for the whole session.
+     * The controller's own counters are printed below under their own names.
      */
     s_bring.rx_crc_errors = 0;
     s_bring.rx_resyncs    = 0;
@@ -508,9 +545,8 @@ static void link_report(void)
     }
     if (s_bring.rt_samples > 0) {
         /*
-         * There is no turnaround allowance to compare against any more: CAN
-         * arbitrates rather than taking turns, so nothing is waiting out a
-         * direction circuit.  What is left is the honest round trip.
+         * The round trip as measured.  CAN arbitrates rather than taking
+         * turns, so there is no turnaround allowance to compare it against.
          */
         ESP_LOGI(TAG, "  round trip min %lu avg %lu max %lu us",
                  (unsigned long)s_bring.rt_min_us,
@@ -520,12 +556,10 @@ static void link_report(void)
 }
 
 /*
- * The seam.
- *
- * When the coprocessor answers, its numbers are the numbers -- measured or
- * modelled, it says which and the flag travels with them.  When it does not,
- * the panel models locally and says so the same way.  Nothing above this
- * function knows the difference, which is the whole point of bench_state.
+ * The seam between measured and modelled numbers.  When the coprocessor
+ * answers, its numbers are used, and the LINK_BN_SIMULATED flag travels with
+ * them.  When it does not, the panel models locally and sets the same flag.
+ * Nothing above this function knows the difference.
  */
 static bool read_bench(link_host_t *host, bench_state_t *out)
 {
@@ -553,18 +587,17 @@ void app_main(void)
     const bool healthy = bring_up();
 
     /*
-     * No coprocessor answers yet, so the numbers come from the model -- and
-     * every one of them carries LINK_BN_SIMULATED, which is what puts
-     * SIMULATION across the screen.  When the far end starts answering, the
-     * only line that changes is which of these two fills bench.
+     * While no coprocessor answers, the numbers come from the model, and
+     * every one of them carries LINK_BN_SIMULATED, which puts SIMULATION
+     * across the screen.  When the far end answers, read_bench() fills bench
+     * instead.
      */
     telemetry_sim_t sim;
     bench_state_t   bench;
     /*
-     * The panel's throttle is a channel in a bank, on the same rules the
-     * coprocessor's outputs run on.  It used to be its own model with its own
-     * copy of arming, slew and staleness, which is how the far end came to
-     * answer the same questions differently.
+     * The panel's throttle is a channel in an output bank, under the same
+     * arming, slew and staleness rules as the coprocessor's outputs, so the
+     * two ends cannot answer those questions differently.
      */
     outputs_t       out;
     memset(&bench, 0, sizeof(bench));
@@ -592,20 +625,9 @@ void app_main(void)
 
         /* --- touch, and the rule that outlives every screen --------------- */
         /*
-         * touch_wait_event returns bool, not esp_err_t.  This was written as
-         * `== ESP_OK` for a year, and ESP_OK is zero -- so the loop ran while
-         * there was *no* event and stopped the moment one arrived.  Three
-         * things followed from that one comparison:
-         *
-         *   - it never terminated, because the queue is empty most of the
-         *     time, so the loop below it never ran and nothing was drawn
-         *     after the first frame;
-         *   - ui_router_event was handed uninitialised stack on every spin;
-         *   - saw_touch was set on every spin, so last_touch_ok never aged
-         *     and the disarm-on-dead-touch rule could not fire.
-         *
-         * The function has a timeout argument, which is what made it look
-         * like an esp_err_t call.  It is not one.
+         * touch_wait_event() returns bool, not esp_err_t, although its
+         * timeout argument makes it look like one.  Comparing the result
+         * against ESP_OK (zero) inverts the loop.
          */
         touch_event_t evt;
         bool saw_touch = false;
@@ -614,37 +636,45 @@ void app_main(void)
             ui_router_event(&evt);
         }
         /*
-         * touch_age_ms is how long since the controller last answered a poll,
-         * which is the question -- not how long since somebody touched it.
-         * A panel nobody is touching is fine; a controller that has stopped
-         * answering is not.
+         * touch_age_ms() is the time since the controller last answered a
+         * poll, not since the last touch.  An untouched panel is healthy; a
+         * controller that has stopped answering is not.
          */
         if (saw_touch || touch_age_ms() < 200u) {
             last_touch_ok = now_ms();
         }
         /*
          * The panel is the only place a STOP button exists, so a touch
-         * controller that has stopped answering means the bench cannot be
-         * stopped -- and a bench that cannot be stopped must not be armed.
+         * controller that has stopped answering for 500 ms means the bench
+         * cannot be stopped, and a bench that cannot be stopped is not armed.
          */
         const bool touch_dead =
             (uint32_t)(now_ms() - last_touch_ok) >= 500u;
         if (touch_dead && outputs_armed(&out)) {
             outputs_arm(&out, false, now_ms());
             ui_router_set_alert("touch stopped answering -- disarmed");
+            if (link_up) {
+                link_msg_t ack = { 0 };
+                (void)control_write(false, &ack);
+            }
         }
 
         /*
-         * STOP latches here rather than clearing on the next frame.  The
-         * button's job is to stop the bench, and a stop that lasts one frame
-         * is a stop the coprocessor may never have seen -- its monostable
-         * holds for longer than a frame either way.  Clearing it is a
-         * deliberate act: disarm and arm again.
+         * STOP latches rather than clearing on the next frame: a stop that
+         * lasts one frame is one the coprocessor may never see, and its
+         * monostable holds for longer than a frame.  Only an explicit arm
+         * clears it.
          */
         if (ui_router_take_stop()) {
             outputs_arm(&out, false, now_ms());
             motor_screen_set_armed(false);
             s_stopped = true;
+            /* The command as well as the heartbeat: a control-page write
+             * wins arbitration against every telemetry frame in flight. */
+            if (link_up) {
+                link_msg_t ack = { 0 };
+                (void)control_write(false, &ack);
+            }
         }
 
 
@@ -655,14 +685,31 @@ void app_main(void)
             case MOTOR_CMD_ARM:
                 /* Arming is the deliberate act that clears a latched stop.
                  * Nothing else does: not navigating away, not the alert
-                 * expiring, not the link coming back. */
+                 * expiring, not the link coming back.  Over the link it is
+                 * a CLEAR then an ARM, and the coprocessor decides: it
+                 * refuses with NOT_ARMED while the heartbeat is not trusted
+                 * or a failsafe is latched. */
                 if (!touch_dead) {
+                    link_msg_t ack = { 0 };
+                    if (link_up
+                        && !(control_clear_failsafe(&ack)
+                             && control_write(true, &ack))) {
+                        ui_router_set_alert("coprocessor refused to arm");
+                        break;
+                    }
                     s_stopped = false;
                     outputs_arm(&out, true, now_ms());
                 }
                 break;
-            case MOTOR_CMD_DISARM:   outputs_arm(&out, false, now_ms()); break;
+            case MOTOR_CMD_DISARM:
+                outputs_arm(&out, false, now_ms());
+                if (link_up) {
+                    link_msg_t ack = { 0 };
+                    (void)control_write(false, &ack);
+                }
+                break;
             case MOTOR_CMD_THROTTLE:
+                s_throttle_hundredths = pct_to_hundredths(cmd.value);
                 (void)outputs_set(&out, PANEL_CH_THROTTLE,
                                   pct_to_span(cmd.value), now_ms());
                 break;
@@ -685,13 +732,12 @@ void app_main(void)
                                  slot, &reply);
             } else {
                 /*
-                 * Config and command, sent whole every time rather than once.
-                 * The coprocessor may have reset since the last write, so the
+                 * Configuration and command, sent whole every time.  The
+                 * coprocessor may have reset since the last write, so the
                  * range the pulse is clamped against and the driver that
-                 * renders it are re-stated with the pulse -- a stale range
-                 * left in memory is the bug this avoids.
+                 * renders it are restated with each pulse.
                  */
-                const uint16_t us = sv.value_us;
+                const uint16_t pulse_us = sv.value_us;
                 uint16_t cfg[LINK_CC_STRIDE] = {
                     [LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE,
                     [LINK_CC_SLEW]   = 0u,
@@ -704,12 +750,13 @@ void app_main(void)
                     [LINK_OS_RANGE]   = LINK_OS_RANGE_OF(SERVO_CH, 1),
                     [LINK_OS_RATE_HZ] = 50u,
                 };
-                uint16_t cmd = us_to_span(us, SERVO_MIN_US, SERVO_MAX_US);
+                uint16_t span = us_to_span(pulse_us, SERVO_MIN_US,
+                                           SERVO_MAX_US);
                 (void)write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_STRIDE,
                                  cfg, &reply);
                 (void)write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE,
                                  slot, &reply);
-                (void)write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &cmd,
+                (void)write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &span,
                                  &reply);
             }
         }
@@ -726,12 +773,10 @@ void app_main(void)
             (float)outputs_actual(&out, PANEL_CH_THROTTLE) * 100.0f
             / (float)OUT_SPAN;
         /*
-         * Deliberately not gated on the link.  The heartbeat says "the
-         * processor that owns STOP is still running its loop"; whether the
-         * two boards can still talk is a separate question with its own
-         * watchdog at each end.  Folding them together would mean a dropped
-         * frame of UART traffic cutting the safety line, and a safety line
-         * that cries wolf is one people bypass.
+         * Not gated on the link.  The heartbeat asserts that the processor
+         * owning STOP is running its loop; whether the two boards can talk
+         * is a separate question with its own watchdog at each end.  Gating
+         * on both would let a dropped CAN frame cut the safety line.
          */
         beat(!touch_dead && !s_stopped);
 
@@ -753,17 +798,30 @@ void app_main(void)
             link_msg_t reply;
             bool answered;
             if (link_up) {
-                /* Ask for what is wanted every frame; identity is asked once
-                 * and then only to notice the far end coming back. */
+                /* While the far end answers, the bench page is what is asked
+                 * for; identity is asked only while the far end is silent. */
                 answered = read_bench(&s_host, &bench);
+                if (answered) {
+                    link_msg_t ack = { 0 };
+                    const bool armed = outputs_armed(&out);
+                    if (!control_write(armed, &ack) && armed
+                        && ack.op == LINK_OP_NACK) {
+                        /* The coprocessor is in failsafe or has lost the
+                         * heartbeat.  A stop latches at this end too. */
+                        outputs_arm(&out, false, now_ms());
+                        s_stopped = true;
+                        ui_router_set_alert("coprocessor disarmed -- arm again");
+                    }
+                }
             } else {
                 answered = poll_page(&s_host, LINK_PAGE_IDENTITY,
                                      LINK_ID_COUNT, &reply);
                 if (answered
                     && reply.regs[LINK_ID_PROTOCOL_MAJOR]
                            != LINK_PROTOCOL_MAJOR) {
-                    /* Refusing to arm when the versions disagree is one
-                     * register and some spine.  This is the register. */
+                    /* A protocol major that differs from LINK_PROTOCOL_MAJOR
+                     * refuses arming; the register is the first one of the
+                     * identity page. */
                     ESP_LOGE(TAG, "coprocessor speaks protocol %u, we speak %u",
                              reply.regs[LINK_ID_PROTOCOL_MAJOR],
                              (unsigned)LINK_PROTOCOL_MAJOR);
@@ -779,10 +837,9 @@ void app_main(void)
             link_up = answered;
 
             /*
-             * The far end's own view, once a second.  Not every poll: it
-             * costs a whole transaction and the numbers it carries move
-             * slowly.  Without it the panel can see that something is wrong
-             * and not which end of the cable it is at.
+             * The far end's own counters, every 1000 ms rather than every
+             * poll: a status read costs a whole transaction and its numbers
+             * move slowly.  They tell which end of the cable a fault is at.
              */
             if (link_up
                 && (uint32_t)(now_ms() - last_status) >= 1000u) {
@@ -797,15 +854,12 @@ void app_main(void)
                         | ((uint32_t)st.regs[LINK_ST_FRAMES_HI] << 16);
                     s_bring.dev_crc_errors = st.regs[LINK_ST_CRC_ERRORS];
                     s_bring.dev_resyncs    = st.regs[LINK_ST_RESYNCS];
+                    s_dev_faults           = st.regs[LINK_ST_FAULTS];
                 }
             }
         }
 
-        /*
-         * Every five seconds while it is unhealthy, once a minute when it is
-         * not.  A bring-up wants this constantly; a bench that has been
-         * running for an hour wants its log readable.
-         */
+        /* Every 5 s while the link is down, every 60 s while it is up. */
         if ((uint32_t)(now_ms() - last_report)
             >= (link_up ? 60000u : 5000u)) {
             last_report = now_ms();
@@ -815,7 +869,7 @@ void app_main(void)
         const ui_bench_status_t status = {
             .link_up     = link_up,
             .armed       = outputs_armed(&out),
-            .faults      = 0,
+            .faults      = link_up ? s_dev_faults : (uint16_t)0,
             .run_seconds = now_ms() / 1000u,
             .mode        = link_up ? "LINK" : "SIM",
             .simulated   = bench_state_simulated(&bench),
@@ -835,12 +889,10 @@ void app_main(void)
         display_flip();   /* blocks until the swap has taken effect */
 
         /*
-         * DRAW is how long the frame took to paint; WAIT is how long the flip
-         * then blocked.  A healthy frame is mostly WAIT -- the loop paced by
-         * the panel.  DRAW climbing until WAIT reaches zero is the frame
-         * budget being spent, and it is the number to look at before
-         * believing anything about the frame rate.  The driver has counted
-         * this since the beginning and nothing ever printed it.
+         * DRAW is the paint time of the frame; WAIT is how long the flip
+         * blocked afterwards.  A healthy frame is mostly WAIT, the loop
+         * paced by the panel.  DRAW climbing until WAIT reaches zero is the
+         * frame budget being spent.  Printed every 300 frames.
          */
         if (++frames % 300u == 0u) {
             ESP_LOGI(TAG, "%.1f fps  DRAW %u us  WAIT %u us",

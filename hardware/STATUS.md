@@ -1,56 +1,45 @@
 # Where the hardware stands
 
-The running record for `hardware/`. Same job as [the project's
-STATUS.md](../STATUS.md) and the same rule: **what it asserts is a claim to
-verify, not a fact to inherit.** Stock figures in particular have a date on
-them and rot from it.
+The running record for `hardware/`. Stock figures carry the date they were
+taken and are not valid after it.
 
-**Status — nothing exists.** No schematic, no layout, no board, no part bought.
-What exists is a settled opinion about four ICs and a documented reason for
-each, which is enough to stop the firmware from being designed against parts
-that cannot be had.
+**Status: nothing exists.** No schematic, no layout, no board, no part bought.
+Four ICs (integrated circuits) are decided, with the reason for each.
 
-## What is decided
+## Decided
 
-| | |
-| --- | --- |
-| The servo supply is a **TPS55288** | Its I²C current limit sets a sense voltage across an external shunt rather than a current, so the ceiling moves with the resistor. The alternatives cap at 6.35 A in silicon. [Power](docs/Power.md) |
-| The motor monitor is an **INA238** | 85 V and sixteen bits, in the same VSSOP-10 and the same pin order as the INA228 that cannot be bought. Twenty bits was never needed at 300 A. [Power](docs/Power.md) |
-| **One footprint takes both** monitors | INA228 and INA238 are pin-identical and distinguishable at run time by DEVICE_ID, so the board survives either being the one in stock. [Sourcing](docs/Sourcing.md) |
-| Stock comes from **the vendor's own API** | A mirror said 1046 of a part the vendor said 29 of, oversold. [Sourcing](docs/Sourcing.md) |
+| | Part | Reason |
+| --- | --- | --- |
+| Servo supply | TPS55288 | its I²C (Inter-Integrated Circuit) current limit sets a sense voltage across an external shunt, so the ceiling scales with the resistor; the alternatives stop at 6.35 A in silicon. [Power](docs/Power.md) |
+| Motor monitor | INA238 | 85 V, 16 bit, the same VSSOP-10 and pin order as the INA228, which cannot be bought. 20 bits are not needed at 300 A. [Power](docs/Power.md) |
+| Monitor footprint | one for both | INA228 and INA238 are pin-identical and distinguishable at run time by DEVICE_ID (0x3F: 0x2281 or 0x2381) |
+| Servo rail | two output settings | up to 5.5 V for LV (low-voltage) servos and up to 8.4 V for HV (high-voltage) servos, 4 to 8 A. The converter input is a design choice, not part of the requirement: 12 V or more delivers the full 8 A at 8.4 V; a 5 V input delivers about 4 A. [Power](docs/Power.md) |
+| Charge current | 2 A, one BQ25887 | 3 A is the top of the requirement's range, not a requirement; 2 A with 400 mA per-cell balancing stands. [Power](docs/Power.md) |
+| Stock source | the vendor's own API (application programming interface) | a mirror reported 1046 of a part the vendor reported 29 of, oversold. [Sourcing](docs/Sourcing.md) |
 
-## What is open
+## Open
 
-| | Where it stands |
-| --- | --- |
-| **Which supply feeds the servo rail** | The requirement reads "up to 5.5 V and up to 8.4 V, 4–8 A", and there are two readings: two output settings, or an input and an output. The TPS55288 survives both. The *bench* does not — 8.4 V at 8 A is 67 W, which off a 5 V input is nearly 15 A on the primary side, at the part's inductor limit and thermally unpleasant. If the input really is ≤5.5 V then the deliverable is about 4 A, and the requirement wants restating rather than the part wants changing. **This is the one that should be settled first**, because it decides an input connector and a heatsink, not a part number. |
-| **Whether 2 A of charging is enough** | No single die charges 2S above 2 A and balances it. At 2 A it is one BQ25887. At 3 A it is a BQ25798 plus a balancer, three parts instead of one, and balancing drops from 400 mA to 50 mA per cell — from inside one charge to overnight. Nobody has said whether 3 A was a requirement or a range. |
-| **INA745A against a second INA238** | The INA745A has its shunt inside it, which removes the whole class of Kelvin-sense mistakes from the servo rail. A second INA238 instead would mean one driver and one footprint across both monitors, which on a tree with a per-file coverage floor is worth more than it looks. Not a parts question — a firmware-surface question. |
-| **The shunt for 300 A** | Only the class is settled: busbar-style, 50–100 µΩ, 4.5–9 W at 300 A. The largest four-terminal SMD parts stop at 0.2 mΩ and would burn 18 W. No part number, no footprint, no supplier. |
-| **Everything about layout** | Isolation, how a 300 A path and a 3.3 V I²C bus share a board, connector choice, thermal. Not started, and not startable before the two questions above. |
+| Item | State | Needs |
+| --- | --- | --- |
+| Servo rail monitor | INA745A (integrated shunt, no Kelvin layout) against a second INA238 (one driver, one footprint for both monitors, plus an external shunt). | a firmware-surface decision, not a parts one |
+| 300 A shunt | Class settled: busbar type, 50 to 100 µΩ, 4.5 to 9 W at 300 A. The largest four-terminal SMD (surface-mount device) parts stop at 0.2 mΩ and would dissipate 18 W. | part number, footprint, supplier |
+| Converter input | 12 V or more for 8 A at 8.4 V. Connector and heatsink follow from it. | input connector, heatsink |
+| Layout | Isolation, a 300 A path and a 3.3 V I²C bus on one board, connectors, thermal. | the shunt first |
 
-## What is deliberately not going to be
+## Not planned
 
-- **A hall-effect sensor for the 300 A path.** It would avoid a 9 W shunt and
-  the layout problem that comes with it, and it would put a gain and an offset
-  drift between the bench and its headline number. The bench's whole claim is
-  that its numbers are measured rather than estimated; a shunt is the honest
-  instrument and the dissipation is the price.
-- **A twenty-bit motor monitor.** Not from principle — the INA228 is the better
-  part and would be the choice if it could be bought. But 25 mA of resolution
-  on a 300 A measurement is already far under the noise a running ESC puts on
-  the wire, so the four extra bits buy precision the measurement cannot use.
-- **Bilingual pages, for now.** See [the README](README.md).
+- **A hall-effect sensor for the 300 A path.** It avoids the shunt's 9 W and
+  its layout, at the cost of gain and offset drift on the bench's primary
+  measurement. The shunt is the measurement.
+- **A 20-bit motor monitor.** The INA228 cannot be bought, and 25 mA of
+  resolution on 300 A is below the noise on the wire.
+- **Bilingual pages** while no board exists. See [the README](README.md).
 
-## The order of work
+## Order of work
 
-1. **Settle the servo rail's input.** One sentence from the person who wrote
-   the requirement, and it decides a connector, a heatsink and 4 A against 8 A.
-2. **Settle 2 A against 3 A** on the pack, which decides one part against three.
-3. **Pick the 300 A shunt**, which is the only remaining component with no
-   candidate at all.
-4. **Schematic**, once nothing above is a guess.
-5. **Buy the long-lead parts early.** TI was at a 16-week manufacturer lead time
-   on every part on the list, and 26 weeks on two of them. That is longer than
-   this project's remaining firmware work, so the parts are the critical path
-   the moment the schematic is real.
+1. Pick the 300 A shunt: the only component with no candidate.
+2. Choose the converter's input connector and heatsink for 12 V or more.
+3. Schematic.
+4. Buy the long-lead parts early. TI quoted a 16-week manufacturer lead time on
+   every part on the list on 2026-09-01, and 26 weeks on the INA745x and
+   INA260. The parts are the critical path once the schematic exists.

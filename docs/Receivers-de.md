@@ -2,57 +2,51 @@
 
 <sub>[English](Receivers.md) · **Deutsch**</sub>
 
-Einen Empfänger an den Prüfstand anschließen und sehen, was er wirklich sendet
-— auch das, was an einem angeschlossenen Servo nie sichtbar würde.
+Einen Empfänger an den Prüfstand anschließen und seine Ausgabe auf dem
+Analyser-Bildschirm lesen.
 
-## Was unterstützt wird
+## Unterstützung
 
 | Bus | Leitung | Stand |
 | --- | --- | --- |
-| **S.BUS** | invertierter 8E2-UART, 100 kBaud, ein Pin | Decoder fertig und getestet; das PIO-Programm, das die invertierte Leitung in Bytes verwandelt, fehlt noch |
-| iBUS, SUMD, CRSF, SRXL2, JETI EX Bus | normaler oder invertierter UART, je ein Pin | geplant — jeder etwa ein Tag Decoderarbeit, sobald Hardware zum Testen auf dem Tisch liegt |
+| S.BUS | invertierter 8E2-UART (UART: Universal Asynchronous Receiver-Transmitter), 100 kBaud, ein Pin | Decoder gebaut und getestet; das PIO-Programm (PIO: Programmable Input/Output), das die invertierte Leitung in Bytes umsetzt, ist nicht geschrieben |
+| iBUS, SUMD, CRSF, SRXL2, JETI EX Bus | UART, normal oder invertiert, je ein Pin | geplant |
 
-Jeder Bus ist eine Signalleitung plus Masse an einen freien Pin des
-Koprozessors. Zusätzliche Bauteile braucht keiner.
+Jeder Bus ist eine Signalleitung plus Masse an einen Pin des Koprozessors.
+Externe Bauteile sind nicht nötig.
 
-## Was der Analyser zeigt
+## Zustände
 
-Sechzehn Kanäle mit Verlauf, die zwei digitalen Kanäle, die Frame Rate und die
-Zähler — Frames, Resyncs, Bad Tails. Wie die Anzeige selbst zu lesen ist,
-steht unter [Bildschirme](Screens-de.md). Hier geht es darum, was die
-Zustände bedeuten:
+Der Analyser zeigt sechzehn Kanäle mit Verlauf, die zwei Digitalkanäle, die
+Frame Rate und die Zähler (Frames, Resyncs, Bad Footers). Der Zustandsblock
+zeigt einen von:
 
-| Zustand | Bedeutung | Was tun |
+| Zustand | Bedeutung | Maßnahme |
 | --- | --- | --- |
-| **LIVE** | Frames kommen an, der Sender wird gehört | den Zahlen trauen |
-| **FRAME LOST** | dieser Frame kam nicht unversehrt an | in großer Entfernung vereinzelt normal; direkt am Prüfstand deutet Häufung auf Verdrahtung oder Decoder |
-| **FAILSAFE** | der Empfänger hat **den Sender verloren** und erfindet alle sechzehn Werte | als *Stopp* behandeln — die Zahlen sind tadellos geformt und bedeuten nichts |
-| **SILENT** | nichts auf der Leitung | Empfängerversorgung, Verdrahtung, oder der falsche Pin |
+| LIVE | Frames kommen an, der Sender wird empfangen | die Werte sind gültig |
+| FRAME LOST | dieser Frame kam nicht unversehrt an | in großer Entfernung vereinzelt; gehäuft am Prüfstand weist auf Verdrahtung oder Decoder |
+| FAILSAFE | der Empfänger hat den Sender verloren und sendet seine Failsafe-Werte | als Stopp behandeln; die Werte sind wohlgeformt und bedeutungslos |
+| SILENT | nichts auf der Leitung | Empfängerversorgung, Verdrahtung, Pin |
 
-Der Failsafe-Zustand ist der Grund für diesen Bildschirm. Sechzehn plausible,
-weich laufende Kanalwerte sind genau das, was ein Empfänger im Failsafe
-sendet — und nichts dahinter kann das erkennen. Prüfe am Prüfstand, was
-**dein** Empfänger im Failsafe wirklich tut: Sender ausschalten und zusehen.
-Genau dieses Verhalten zeigt dein Modell im dümmsten Moment, und bei den
-meisten Empfängern lässt es sich einstellen.
+Ein Empfänger im Failsafe sendet sechzehn plausible, gleichmäßig laufende
+Kanalwerte. Zum Prüfen des Failsafe-Verhaltens eines Empfängers den Sender
+ausschalten und den Zustandsblock beobachten. Bei den meisten Empfängern ist
+das Failsafe-Verhalten einstellbar.
 
-## Wissenswertes zu S.BUS
+## S.BUS
 
-- Das Protokoll hat **keine Prüfsumme**. Der Decoder erkennt Framegrenzen an
-  der Sendepause zwischen den Frames, statt dem Header-Byte zu trauen — er
-  kann also nicht mitten in einem Frame einrasten und sechzehn plausible, aber
-  falsche Kanäle melden.
-- Laut Futabas Spezifikation ist der Footer `0x00`; Empfänger im Feld senden
-  auch `0x04`, `0x14`, `0x24` und `0x34`. Der Prüfstand akzeptiert das — sonst
-  würde er Hardware ablehnen, die funktioniert.
-- Die Kanäle sind sechzehn 11-Bit-Werte, lückenlos gepackt; die zwei digitalen
-  Kanäle und die Failsafe-/Frame-lost-Flags stecken im Flags-Byte.
+- Keine Prüfsumme. Der Decoder erkennt Framegrenzen an der Lücke zwischen den
+  Frames, nicht am Header-Byte, das auch ein gültiger Kanalwert ist.
+- Frame: 25 Bytes. Header 0x0F, sechzehn 11-Bit-Kanäle lückenlos gepackt, ein
+  Flags-Byte mit den zwei Digitalkanälen, Frame-lost und Failsafe, und ein
+  Footer.
+- Footer: laut Spezifikation 0x00; Empfänger senden auch 0x04, 0x14, 0x24 und
+  0x34. Der Decoder akzeptiert ein unteres Nibble von 0x0 oder 0x4.
 
-## Für Implementierer
+## Decoder-Regeln
 
-Zwei Regeln gehen von S.BUS auf jeden weiteren Decoder über: **Framegrenzen an
-etwas Besserem als einem Magic Byte erkennen**, wo das Protokoll etwas
-hergibt, und **das Failsafe-Flag vor den Kanälen decodieren** — ein Protokoll,
-das überzeugend lügen kann, wird es tun. Jeder Decoder wird aus seiner
-Spezifikation geschrieben, nicht aus fremdem Code; die Lizenzgründe stehen in
-[dem Protokoll](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).
+Für jeden Decoder: Framegrenzen an etwas Stärkerem als einem Header-Byte
+erkennen, wo das Protokoll es hergibt, und das Failsafe-Flag vor den Kanälen
+decodieren. Jeder Decoder wird aus seiner Spezifikation geschrieben; die
+Lizenzregel steht in
+[STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).

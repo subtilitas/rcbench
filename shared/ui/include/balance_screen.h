@@ -1,5 +1,5 @@
 /*
- * Balancing: where to put the two sensors, and later what they say.
+ * The balance screen: sensor placement guides and the correction readout.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -28,8 +28,7 @@ float balance_screen_angle(void);
 
 /**
  * The two blades a correction at @p angle (degrees from the index mark) falls
- * between, on a rotor of @p blades blades.  Both come back 1..blades and they
- * wrap, so a correction past the last blade reads "between N and 1" -- which
- * is the instruction the whole screen exists to turn an angle into.
+ * between, on a rotor of @p blades blades.  Both are 1..blades and wrap, so a
+ * correction past the last blade reads "between N and 1".
  */
 void balance_nearest_blades(float angle, int blades, int *lo, int *hi);

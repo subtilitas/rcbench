@@ -1,11 +1,8 @@
 /*
- * The menu icons, drawn rather than stored.
+ * The menu icons, drawn from primitives rather than stored as bitmaps.
  *
- * Each tile's icon is a handful of primitives -- a ring, a capsule, a couple
- * of strokes -- scaled to the size it is asked for, not a bitmap.  Drawing
- * them keeps them crisp at any size and costs no flash for an image the panel
- * would otherwise carry, which on a bandwidth-bound panel with a fixed budget
- * is the trade worth making for something this small.
+ * Each icon is a few rings, capsules and strokes scaled to the requested
+ * size.  A drawn icon is sharp at any size and needs no image data in flash.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -49,8 +46,8 @@ void ui_icon_servo(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
     int by = y + size - bh - 1;
     int ear = size / 7;
 
-    /* Case as an outline, so the shaft and horn on top stay readable rather
-     * than merging into one blob. */
+    /* The case is an outline, so the shaft and horn on top stay separate
+     * from it. */
     gfx_fill_rect(c, cx - bw / 2 - ear, by + 4, bw + 2 * ear, 5, color);
     gfx_fill_chamfer_rect(c, cx - bw / 2, by, bw, bh, 5, color);
     gfx_fill_chamfer_rect(c, cx - bw / 2 + 3, by + 3, bw - 6, bh - 6, 4, UI_PANEL);
@@ -64,8 +61,8 @@ void ui_icon_servo(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
     gfx_fill_circle(c, cx + size / 4, sy - size / 4, size / 14, color);
 
     int ar = size / 2 - 3;
-    /* Stepped by index rather than by accumulating a float, so the last dot
-     * lands where the arithmetic says and not where the rounding drifted to. */
+    /* The angle is computed from the index rather than accumulated, so
+     * rounding does not drift across the 21 dots. */
     for (int i = 0; i < 21; ++i) {
         const float a = -2.62f + 0.10f * (float)i;
         int ax = cx + (int)(cosf(a) * (float)ar);
@@ -171,8 +168,7 @@ void ui_icon_battery(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
 }
 
 /*
- * A disc with an out-of-balance mass and the arc it sweeps: the imbalance is
- * the point, so it is drawn off-centre rather than as a tidy wheel.
+ * A disc with an off-centre mass, and two correction ticks opposite it.
  */
 void ui_icon_balance(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
 {

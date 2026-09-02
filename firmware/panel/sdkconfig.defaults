@@ -3,10 +3,8 @@ CONFIG_IDF_TARGET="esp32s3"
 CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
 
 # Flash --------------------------------------------------------------------
-# 8 MB is the safe common denominator: the board ships as either
-# ESP32-S3-WROOM-1-N8R8 or -N16R8 and an 8 MB image boots on both.
-# Note: with XIP-from-PSRAM enabled below, IDF resolves the effective mode to
-# "dio" regardless of this choice.  That is expected, not a misconfiguration.
+# 8 MB boots on both module variants the board ships with,
+# ESP32-S3-WROOM-1-N8R8 and -N16R8.
 CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
 CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
 CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
@@ -14,24 +12,23 @@ CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 
 # PSRAM --------------------------------------------------------------------
-# Both framebuffers (2 x 750 KiB) live here, and the LCD DMA reads straight
-# out of it, so the octal bus and the 64-byte cache line matter.
+# Both framebuffers (2 x 750 KiB) live in PSRAM (pseudo-static random-access
+# memory), and the LCD (liquid-crystal display) DMA (direct memory access)
+# reads straight out of it, so the octal bus and the 64-byte cache line
+# matter.
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_OCT=y
 CONFIG_SPIRAM_SPEED_80M=y
 #
-# Code and constants stay in flash, and only the framebuffers live in PSRAM.
+# Code and constants stay in flash; only the framebuffers live in PSRAM.
 #
-# Putting them in PSRAM frees internal RAM, which is why it was on -- but the
-# LCD scans 30 MB/s out of that same PSRAM continuously, and every instruction
-# fetch or font lookup that misses the cache is taken out of the panel's
-# budget.  It survived a 193 KB image and did not survive a 415 KB one: the
-# first hardware boot flickered, showed torn glyphs, and drifted two or three
-# scanlines with the top wrapping to the bottom, which is what an RGB panel
-# does when its DMA is starved.
-#
-# Flash XIP has its own cache and its own bus, so the fonts and the screen code
-# no longer compete with the scan-out.
+# Code in PSRAM frees internal RAM (random-access memory), but the LCD scans
+# 30 MB/s out of the same PSRAM continuously, and every instruction fetch or
+# font lookup that misses the cache is taken out of that budget.  With a
+# 415 KB image in PSRAM the RGB (red, green, blue) panel flickers, shows torn
+# glyphs and drifts 2 to 3 scanlines, which is a starved DMA.  Flash XIP
+# (execute in place) has its own cache and its own bus, so the fonts and the
+# screen code do not compete with the scan-out.
 CONFIG_SPIRAM_XIP_FROM_PSRAM=n
 CONFIG_SPIRAM_RODATA=n
 CONFIG_SPIRAM_FETCH_INSTRUCTIONS=n
@@ -43,45 +40,47 @@ CONFIG_ESP32S3_DATA_CACHE_64KB=y
 CONFIG_ESP32S3_DATA_CACHE_LINE_64B=y
 
 # LCD ----------------------------------------------------------------------
-# Keep the RGB ISR in IRAM: it refills the bounce buffers, and a cache miss
-# there shows up as a torn or shifted frame.
+# The RGB ISR (interrupt service routine) stays in IRAM (instruction
+# random-access memory): it refills the bounce buffers, and a cache miss
+# there shows as a torn or shifted frame.
 CONFIG_LCD_RGB_ISR_IRAM_SAFE=y
 CONFIG_LCD_RGB_RESTART_IN_VSYNC=y
 
 # Performance --------------------------------------------------------------
-# ESP-IDF defaults to -Og. The rasteriser is a pile of tight pixel loops, so
-# -O2 is worth real frames here.
+# ESP-IDF (Espressif Internet-of-Things Development Framework) defaults to
+# -Og.  The rasteriser is tight pixel loops; -O2 raises the frame rate.
 CONFIG_COMPILER_OPTIMIZATION_PERF=y
 
 # The frame rate on this board is decided by PSRAM bandwidth: the LCD scans
-# ~30 MB/s out of PSRAM continuously, and every pixel the CPU writes costs two
-# bytes of bus (write-allocate fetches the 64-byte line before overwriting it,
-# then writes it back).  If you need more headroom than -O2 and fewer redrawn
-# pixels can buy, the next lever is 120 MHz PSRAM:
+# about 30 MB/s out of PSRAM continuously, and every pixel the CPU (central
+# processing unit) writes costs 128 bytes of bus (write-allocate fetches the
+# 64-byte line before overwriting it, then writes it back).  For more headroom
+# than -O2 and fewer repainted pixels give, the next lever is 120 MHz PSRAM:
 #
 #   CONFIG_SPIRAM_SPEED_120M=y
 #
-# It is ~50% more bandwidth and marked experimental: it needs the flash at
-# 80 MHz or below, and Espressif documents temperature-related instability
-# outside 0-80 C.  Measure with tools/frame_cost.py before and after.
+# It is about 50% more bandwidth and marked experimental: it needs the flash
+# at 80 MHz or below, and Espressif documents temperature-related instability
+# outside 0 to 80 C.  Measure with tools/frame_cost.py before and after.
 
 # Scheduler ----------------------------------------------------------------
 CONFIG_FREERTOS_HZ=1000
 
-# Console on BOTH sockets ---------------------------------------------------
+# Console on both sockets ---------------------------------------------------
 #
-# The board has two USB-C sockets: one through a USB-UART bridge to UART0, and
-# one carrying the ESP32-S3's native USB.  Native USB -- USB-Serial-JTAG and
-# USB-OTG alike -- lives on GPIO19/20, which are dedicated analog pins that
-# cannot be moved through the GPIO matrix, and those are what the FSUSB42UMX
-# multiplexes against CAN.  So the moment BOARD_EXIO_USB_SEL selects CAN, the
-# native USB console goes away -- which is precisely the session that most
-# wants a console.
+# The board has two USB-C (Universal Serial Bus) sockets: one through a
+# USB-UART (universal asynchronous receiver-transmitter) bridge to UART0, and
+# one carrying the ESP32-S3's native USB.  Native USB, USB-Serial-JTAG (the
+# built-in serial and debug bridge) and USB-OTG (On-The-Go) alike, lives on
+# GPIO19 and GPIO20 (general-purpose input/output), dedicated analogue pins
+# that the GPIO matrix cannot move, and those are what the FSUSB42UMX
+# multiplexes against CAN (Controller Area Network).  When BOARD_EXIO_USB_SEL
+# selects CAN, the native USB console is gone.
 #
-# The bridged socket does not share anything with CAN, so it is the primary.
-# The native one stays as the secondary: it costs nothing while USB is
-# selected, and it means an existing setup does not lose its console if the
-# UART socket turns out to be wired somewhere other than UART0's default pins.
-# Output goes to both; whichever is plugged in shows it.
+# The bridged socket shares nothing with CAN, so it is the primary console.
+# The native one is the secondary: it costs nothing while USB is selected, and
+# it is the working console if the UART socket is wired to pins other than
+# UART0's defaults, which are not traced on the schematic.  Output goes to
+# both.
 CONFIG_ESP_CONSOLE_UART_DEFAULT=y
 CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG=y

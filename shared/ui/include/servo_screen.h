@@ -32,11 +32,9 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
 uint16_t servo_screen_commanded(void);
 
 /**
- * Point the horn without anybody touching it.
+ * Set the commanded angle without a touch event.
  *
- * The bench restores where it was left when it comes back up: a servo screen
- * that centred itself on every boot would move a surface the operator had
- * deliberately set, which is exactly what the trim they just dialled in was
- * for.
+ * Restores the position at start-up, so a boot does not centre a surface the
+ * operator has set.
  */
 void servo_screen_set_commanded(float deg);

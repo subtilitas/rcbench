@@ -41,8 +41,9 @@ typedef struct {
 
 static display_state_t s_disp;
 
-/* Runs in ISR context.  Keep it in IRAM so it also works with
- * CONFIG_LCD_RGB_ISR_IRAM_SAFE and while flash is busy. */
+/* Runs in ISR (interrupt service routine) context.  In IRAM (instruction
+ * random-access memory) so it also works with CONFIG_LCD_RGB_ISR_IRAM_SAFE
+ * and while flash is busy. */
 static IRAM_ATTR bool on_vsync(esp_lcd_panel_handle_t panel,
                                const esp_lcd_rgb_panel_event_data_t *edata,
                                void *user_ctx)
@@ -57,10 +58,10 @@ static IRAM_ATTR bool on_vsync(esp_lcd_panel_handle_t panel,
     return high_prio_woken == pdTRUE;
 }
 
-/* Fires once a whole framebuffer has been handed to the panel.  In bounce
- * mode that is exactly the instant the driver latches the buffer we asked for
- * (`bb_fb_index = cur_fb_index`), which is a tighter signal than VSYNC: from
- * here on nothing reads the buffer we are about to reclaim. */
+/* Fires when a whole framebuffer has been handed to the panel.  In bounce
+ * mode that is the instant the driver latches the requested buffer
+ * (`bb_fb_index = cur_fb_index`), a tighter signal than VSYNC (vertical
+ * sync): from then on nothing reads the buffer about to be reclaimed. */
 static IRAM_ATTR bool on_frame_buf_complete(esp_lcd_panel_handle_t panel,
                                             const esp_lcd_rgb_panel_event_data_t *edata,
                                             void *user_ctx)
@@ -97,8 +98,8 @@ esp_err_t display_init(const display_config_t *cfg)
 
     ESP_RETURN_ON_ERROR(board_init(), TAG, "board init");
 
-    /* The RGB peripheral wants fb_size % bounce_size == 0; whole scanlines
-     * always satisfy that. */
+    /* The RGB (red, green, blue) peripheral wants fb_size % bounce_size == 0;
+     * whole scanlines satisfy that. */
     size_t bounce_px = (size_t)c.bounce_buffer_lines * BOARD_LCD_H_RES;
 
     const esp_lcd_rgb_panel_config_t panel_cfg = {
@@ -187,8 +188,8 @@ esp_err_t display_init(const display_config_t *cfg)
         memset(s_disp.fb[1], 0, s_disp.fb_bytes);
     }
 
-    /* fb[0] is the one the driver scans out first, so the CPU starts on fb[1]
-     * (or on fb[0] itself when single-buffered). */
+    /* fb[0] is the one the driver scans out first, so the CPU (central
+     * processing unit) starts on fb[1], or on fb[0] when single-buffered. */
     s_disp.back = (s_disp.num_fbs == 2) ? 1 : 0;
     rebind_canvas();
 
@@ -233,10 +234,10 @@ esp_err_t display_wait_vsync(uint32_t timeout_ms)
     ESP_RETURN_ON_FALSE(s_disp.initialised, ESP_ERR_INVALID_STATE, TAG,
                         "display_init() first");
     TickType_t ticks = (timeout_ms == 0) ? portMAX_DELAY : pdMS_TO_TICKS(timeout_ms);
-    /* Drain first, exactly as display_flip() does for swap_sem.  Nothing else
-     * takes this semaphore in the double-buffered path, so it is saturated
-     * within a frame of init and a bare take returns immediately on a token
-     * from some earlier frame -- which is not "at a frame boundary". */
+    /* Drain first, as display_flip() does for swap_sem.  Nothing else takes
+     * this semaphore in the double-buffered path, so it is saturated within a
+     * frame of init, and a bare take would return immediately on a token
+     * from an earlier frame rather than at a frame boundary. */
     xSemaphoreTake(s_disp.vsync_sem, 0);
     return (xSemaphoreTake(s_disp.vsync_sem, ticks) == pdTRUE) ? ESP_OK : ESP_ERR_TIMEOUT;
 }
@@ -268,8 +269,8 @@ esp_err_t display_flip(void)
         return err;
     }
 
-    /* Drop any completion that fired while we were drawing, so the wait below
-     * is for the swap we are about to request and not for a stale one. */
+    /* Drop any completion that fired during drawing, so the wait below is for
+     * the swap requested next and not for a stale one. */
     xSemaphoreTake(s_disp.swap_sem, 0);
 
     ESP_RETURN_ON_ERROR(
@@ -279,8 +280,8 @@ esp_err_t display_flip(void)
         TAG, "present");
 
     /* The peripheral latches the new buffer at the end of the frame in flight.
-     * Once it signals "framebuffer complete", nothing is reading the other
-     * buffer any more and it is ours to draw into. */
+     * When it signals "framebuffer complete", nothing reads the other buffer
+     * and it is free to draw into. */
     esp_err_t err = (xSemaphoreTake(s_disp.swap_sem,
                                     pdMS_TO_TICKS(VSYNC_WAIT_DEFAULT_MS)) == pdTRUE)
                         ? ESP_OK : ESP_ERR_TIMEOUT;

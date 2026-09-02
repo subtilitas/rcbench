@@ -1,40 +1,32 @@
 /*
- * Synchronising two servos driving one control surface.
+ * Synchronising two servos that drive one control surface.
  *
- * Dual ailerons, elevator halves, a big rudder on two horns: whenever two
- * servos are bolted to the same surface, any disagreement between them is
- * settled through the surface. They do not fail, they do not buzz, and
- * nothing about the model tells you. The surface simply sits there, stiff,
- * with both servos pushing against each other continuously and drawing extra
- * current to do it -- until something wears out or a hot day makes a gearbox
- * give up.
+ * Dual ailerons, elevator halves, a rudder on two horns: two servos on one
+ * surface settle any disagreement between them through the surface.  Nothing
+ * fails and nothing reports it; both servos push against each other and draw
+ * extra current continuously.
  *
- * The important consequence for a bench: **the objective is not a position.**
- * There is no reference to compare against and no angle that is known to be
- * right. What there is, is a physical minimum -- the total current the pair
- * draws is smallest exactly where they stop fighting -- and that turns the
- * whole problem into a one-dimensional search with an answer rather than a
- * judgement.
+ * The objective is not a position.  There is no reference angle.  The total
+ * current the pair draws is smallest where they stop working against each
+ * other, which makes the problem a one-dimensional search per stage.
  *
- * The two errors separate cleanly, which is what saves this from being a
- * blind search over two variables at once:
+ * The two errors separate:
  *
- *     fighting at centre      is an offset error   -> trim one servo's centre
- *     fighting at the extremes is a travel error   -> scale one servo's throw
+ *     a difference at centre   is an offset error  -> trim one servo's centre
+ *     a difference at the ends is a travel error   -> scale one servo's throw
  *
- * Measure at the centre and then at each end, and each correction falls out of
- * its own measurement. Each end gets its own number, because a linkage is not
- * symmetric about centre once a horn and a pushrod are involved -- the same
- * reason the limit search measures both ends separately.
+ * Measured at the centre and then at each end, each correction comes from
+ * its own measurement.  Each end gets its own number: a linkage is not
+ * symmetric about centre once a horn and a pushrod are involved, the same
+ * reason the limit search measures both ends.
  *
- * What current cannot say is whether the two servos agree with each other and
- * are *both* wrong -- a surface that is stiff nowhere but sits five degrees
- * off. That needs the accelerometer on the surface, and it is a separate
- * measurement rather than a refinement of this one.
+ * Current cannot show two servos that agree with each other and are both
+ * wrong: a surface that is stiff nowhere and sits 5 degrees off.  That is a
+ * separate measurement with the accelerometer on the surface.
  *
- * Fed measurements and returning commands, for the same reason as
- * servo_limit: the host suite runs it against a modelled pair and the
- * coprocessor will run it against a real one unchanged.
+ * Fed measurements and returning commands, as servo_limit is: the host suite
+ * runs it against a modelled pair and the coprocessor runs it against a real
+ * one unchanged.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -55,15 +47,12 @@ typedef enum {
     /** Current crossed the hard ceiling. Stops where it stands. */
     SERVO_SYNC_FAULT_OVERCURRENT,
     /**
-     * The scan found no minimum it could tell apart from the noise.
+     * The scan found no minimum distinguishable from the noise.
      *
-     * Note what this does *not* mean. A pair that is already synchronised
-     * still produces a clean minimum, because moving one servo away from
-     * agreement is exactly what the scan does -- a correct installation shows
-     * as a minimum at zero correction, not as an absent one. So the only
-     * honest reading left is that the sensor cannot resolve the fight, and
-     * saying so beats returning a correction assembled out of noise, which
-     * would have the shape of an answer without being one.
+     * A pair that is already synchronised still produces a minimum, at zero
+     * correction, because the scan moves one servo away from agreement.  So
+     * this fault means the sensor cannot resolve the difference, and it is
+     * reported rather than a correction derived from noise.
      */
     SERVO_SYNC_FAULT_NO_MINIMUM,
 } servo_sync_fault_t;
@@ -88,20 +77,19 @@ typedef struct {
     uint8_t  rounds;        /**< how many times the window narrows */
 
     /**
-     * How long to wait after a move before the reading means anything.
+     * How long to wait after a move before a reading counts.
      *
-     * Two parts, because the moves are not all the same size. Stepping to the
-     * next point of a scan is a few microseconds; changing stage swings a
-     * servo across its whole deflection, which on a slow servo is well over a
-     * second. A single fixed wait either has to be sized for the big move --
-     * and then two thirds of the search is spent waiting for small ones -- or
-     * it is sized for the small move and the first reading of every stage is
-     * taken of two servos still travelling.
+     * Two parts, because the moves differ in size.  Stepping to the next scan
+     * point is a few microseconds of pulse width; changing stage swings a
+     * servo across its whole deflection, over 1 s on a slow servo.  One fixed
+     * wait is either sized for the large move and wastes two thirds of the
+     * search, or sized for the small move and reads two servos still
+     * travelling at the start of every stage.
      *
-     * So the wait is @c settle_ms plus however long the move just commanded
-     * ought to take at @c slew_us_per_ms. That figure is an estimate of the
-     * servos under test and wants to be on the pessimistic side; getting it
-     * wrong slow costs time, and getting it wrong fast costs the answer.
+     * The wait is @c settle_ms plus the time the commanded move takes at
+     * @c slew_us_per_ms.  That rate is an estimate of the servos under test
+     * and belongs on the pessimistic side: too slow costs time, too fast
+     * costs the answer.
      */
     uint16_t settle_ms;
     float    slew_us_per_ms;
@@ -109,13 +97,11 @@ typedef struct {
 
     /**
      * How far the best reading of a scan must sit below the worst before the
-     * minimum is believed.
+     * minimum counts.
      *
      * Two servos that are already synchronised produce a flat scan, and the
-     * argmin of a flat scan is wherever the noise happened to dip. Without
-     * this the routine would confidently return a correction derived from
-     * nothing, which is worse than returning no correction at all -- it looks
-     * like an answer.
+     * argmin of a flat scan is wherever the noise dips.  Without this test
+     * the routine returns a correction derived from noise.
      */
     float    min_depth_a;
 
@@ -133,8 +119,8 @@ typedef struct {
     int16_t  travel_hi_us;  /**< B's throw when A is at +deflection */
     int16_t  travel_lo_us;  /**< B's throw when A is at -deflection */
 
-    /** What the pair drew at the best point of each stage, and at the worst.
-     *  The difference is what the operator actually gained. */
+    /** What the pair draws at the best and the worst point of each stage.
+     *  The difference is the gain from the correction. */
     float    best_a[SERVO_SYNC_STAGE_COUNT];
     float    worst_a[SERVO_SYNC_STAGE_COUNT];
 
@@ -160,12 +146,10 @@ void servo_sync_defaults(servo_sync_cfg_t *cfg, uint16_t centre_us);
 void servo_sync_init(servo_sync_t *sy, const servo_sync_cfg_t *cfg);
 
 /**
- * Advance the search with one reading of the pair's *total* current.
+ * Advance the search with one reading of the pair's total current.
  *
- * Total, not per-servo: what is being minimised is what the two of them draw
- * together, and a per-servo split is not needed to find it. One sensor across
- * both outputs is enough, which matters because sensors are what this whole
- * family of measurements is short of.
+ * Total, not per servo: the quantity minimised is what the two draw
+ * together, so one sensor across both outputs is enough.
  *
  * Writes the two pulse widths to command through @p cmd_a and @p cmd_b.
  */

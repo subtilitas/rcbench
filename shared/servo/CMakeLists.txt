@@ -1,7 +1,7 @@
-# Servo procedures: what a servo does when it is installed, rather than what it
-# does on a desk.  Pure state machines fed measurements, so the host suite runs
-# them against a modelled servo and the coprocessor runs them against a real
-# one with no difference between the two.
+# Servo procedures: what a servo does when it is installed, rather than on a
+# desk.  Pure state machines fed measurements, so the host suite runs them
+# against a modelled servo and the coprocessor runs the same code against a
+# real one (not wired in).
 set(SRCS servo_limit.c servo_sync.c servo_sim.c)
 
 if(ESP_PLATFORM)

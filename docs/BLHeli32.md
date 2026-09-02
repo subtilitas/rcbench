@@ -2,31 +2,29 @@
 
 <sub>**English** · [Deutsch](BLHeli32-de.md)</sub>
 
-Why the programmer's ESC list does not include BLHeli_32, and what the bench
-does with one instead.
+BLHeli_32 is not in the programmer's ESC (electronic speed controller) list.
+This page states what the bench does with a BLHeli_32 ESC and what it does not.
 
-## What works
+## Supported
 
-A BLHeli_32 ESC is a recognised, drivable, measurable ESC on this bench:
+- Identification: MCU (microcontroller unit) and bootloader revision.
+- Direction, direction reversal, 3D mode, beacon and save-settings, as DShot
+  special commands on the signal line.
+- Telemetry.
 
-- it is **identified** — the bench names its MCU and bootloader revision;
-- **direction, direction reversal, 3D mode, beacon and save-settings** work,
-  because those are DShot special commands on the signal wire;
-- **telemetry** is unaffected.
+## Not supported
 
-## What does not
+Reading or writing the parameter list: timing, PWM (pulse-width modulation)
+frequency, startup power, current limit and the rest. The settings are stored
+in a form the bench cannot read, and the information needed to read them is not
+published.
 
-The parameter list — timing, PWM frequency, startup power, current limit and
-the rest. Those settings are stored in a form this bench cannot read, and the
-information needed to read them is not published.
+## Status
 
-## We asked
+The rights holder was asked in August 2026 whether the project could obtain
+what reading and writing the parameters requires. The request was declined. The
+item is closed.
 
-In August 2026 the rights holder was asked whether this project could have what
-it needs to read and write them. **He declined**, and that settles it: the
-question is closed rather than pending, and it is written down here so nobody
-spends an evening reopening it.
+## Alternative
 
-## What to do instead
-
-An ESC reflashed to **AM32** is open, and this bench programmes it fully.
+An ESC reflashed to AM32 is fully supported by the programmer.

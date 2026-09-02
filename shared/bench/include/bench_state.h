@@ -1,14 +1,13 @@
 /*
- * What the bench is doing, in the units a person reads.
+ * The bench readings, in the units a person reads: V, A, W, rpm (revolutions
+ * per minute), degrees Celsius, mAh and Wh.
  *
- * The screens see this and never a register.  That is the seam the whole
- * two-processor split turns on: fill it from the link's BENCH page and the
- * numbers are measured; fill it from the simulator and they are modelled; the
- * bench screen cannot tell and does not need to.
+ * Screens read this struct and never a register.  Filled from the link's
+ * BENCH page the numbers are measured; filled from the simulator they are
+ * modelled; the screen does not distinguish the two.
  *
- * Floats here and fixed-point on the wire, deliberately.  Sixteen bits with a
- * documented scale is a contract two firmwares can hold to; a float is four
- * bytes of endianness and rounding that nobody wrote down.
+ * Floats here, fixed-point on the wire: 16 bits with a documented scale is
+ * the contract between the two firmwares.  The scales are in link_pages.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -34,7 +33,7 @@ typedef struct {
     float charge_mah;
     float energy_wh;
 
-    /* Peaks and sag, tracked where the fast samples are. */
+    /* Peaks and sag, tracked by the end that has the fast samples. */
     float voltage_min;
     float current_max;
     float power_max;
@@ -60,7 +59,7 @@ static inline bool bench_state_simulated(const bench_state_t *b)
 void bench_state_from_regs(bench_state_t *b, const uint16_t *regs,
                            uint8_t offset, uint8_t count);
 
-/** The other direction, for the coprocessor and for round-trip tests. */
+/** Encode into a BENCH page, for the coprocessor and for round-trip tests. */
 void bench_state_to_regs(const bench_state_t *b, uint16_t *regs);
 
 /** Clear the peaks without disturbing the live readings. */

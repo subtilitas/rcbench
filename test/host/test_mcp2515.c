@@ -2,11 +2,11 @@
  * The extended identifier, spread across four registers with a three-bit gap
  * in the middle of the second.
  *
- * This fails silently when it is wrong: the frame goes out under a different
- * identifier from the one intended, and on a bus that arbitrates by identifier
- * that means the wrong thing wins. So every bit position is checked
- * individually rather than by round-tripping a handful of values -- a
- * round trip agrees with itself even when both halves share a mistake.
+ * A wrong layout fails silently: the frame goes out under a different
+ * identifier, and on a bus that arbitrates by identifier the wrong frame
+ * wins.  Every bit position is therefore checked individually against the
+ * datasheet layout rather than by round-tripping values, because a round trip
+ * agrees with itself when both halves share a mistake.
  *
  * SPDX-License-Identifier: MIT
  */

@@ -1,13 +1,12 @@
 /*
- * The panel's CAN, on the ESP32-S3's TWAI controller.
+ * The panel's CAN (Controller Area Network) driver, on the ESP32-S3's TWAI
+ * (Two-Wire Automotive Interface) controller.  The bit timing comes from
+ * shared/can, which is host-tested; this file holds the peripheral's
+ * configuration and the send and receive calls.
  *
- * Thin for the same reason the coprocessor's driver is: the bit timing comes
- * from shared/can, which is tested, so what is here is the peripheral's own
- * configuration and two calls.
- *
- * One thing this does that a plain wrapper would not: selecting CAN on the
- * board's multiplexer takes native USB away, because both live on GPIO19/20.
- * That is why it is a deliberate call rather than something board_init does.
+ * Starting CAN routes the board's multiplexer away from native USB
+ * (Universal Serial Bus), because both live on GPIO19 and GPIO20.  That is
+ * why it is an explicit call rather than part of board_init().
  *
  * SPDX-License-Identifier: MIT
  */
@@ -24,8 +23,8 @@
 /**
  * Route the board's multiplexer to CAN, then start TWAI at @p bitrate.
  *
- * Costs native USB for as long as it is running -- see board_pins.h. The
- * console is on UART for exactly this reason.
+ * Native USB is unavailable while it runs (board_pins.h); the console is on
+ * UART0 (universal asynchronous receiver-transmitter) for that reason.
  */
 esp_err_t can_twai_start(uint32_t bitrate);
 

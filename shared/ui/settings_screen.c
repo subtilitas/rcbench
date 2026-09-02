@@ -1,13 +1,9 @@
 /*
  * The settings screen: one renderer over the whole schema.
  *
- * There is no code here that knows what any particular setting is.  It walks
- * the categories and rows shared/settings declares and draws each by its type
- * -- a stepper for a number, a toggle for a bool, a choice for an enum -- so a
- * new setting appears by adding a row to the schema and nothing here changes.
- * That is the same data-driven move the programmer screen makes, for the same
- * reason: a screen with one control per type cannot drift the way a screen
- * with one control per setting does.
+ * It walks the categories and rows shared/settings declares and draws each
+ * row by its type: a stepper for a number, a toggle for a bool, a choice for
+ * an enum.  A new setting is a schema row; nothing here changes.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -28,9 +24,8 @@
 #define CAT_X    16
 #define CAT_W    208
 /*
- * Everything sits 40 px higher than it did: the layout was drawn for a screen
- * that owned all 480 and painted its own home tag in the top 40.  Without the
- * shift the list ran from 56 to 458 in a canvas 432 tall.
+ * Coordinates are in the 432 px body the router hands this screen; the band
+ * and the home tag are above it.
  */
 #define CAT_Y    16
 #define CAT_H    64
@@ -53,7 +48,7 @@
 #define RESET_Y  358
 #define MAX_ROWS 32
 
-/* Held +/- repeats, or a 0..30000 mAh range would be three hundred taps. */
+/* Held +/- repeats: a 0 to 30,000 mAh range is 300 taps otherwise. */
 #define REPEAT_DELAY_S 0.45f
 #define REPEAT_SLOW_HZ 8.0f
 #define REPEAT_FAST_S  1.8f
@@ -104,10 +99,9 @@ static int row_count(void)
 
 static void clamp_scroll(void)
 {
-    /* n rows are n*ROW_H plus the n-1 gaps *between* them.  Counting a
-     * trailing gap gave the 7-row categories a 4 px scroll range, which drew
-     * a scroll indicator beside a list that already fits and let a drag push
-     * the last row off the bottom. */
+    /* n rows are n*ROW_H plus the n-1 gaps between them.  A trailing gap
+     * would give a 7-row category a 4 px scroll range, and a scroll indicator
+     * beside a list that fits. */
     int n = row_count();
     int content = (n > 0) ? (n * ROW_H + (n - 1) * ROW_GAP) : 0;
     s.scroll_max = (content > LIST_H) ? (content - LIST_H) : 0;

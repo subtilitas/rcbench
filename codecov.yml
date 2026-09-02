@@ -1,12 +1,12 @@
 # Codecov configuration.
 #
 # The hard floors live in tools/coverage.py, which runs offline and fails the
-# build: 94% overall and 85% for any single file.  Codecov's job is different
-# and complementary -- it annotates the diff in a pull request, so a change can
-# be seen to be tested rather than only measured in aggregate afterwards.
+# build: 94% overall and 85% for any single file.  Codecov annotates the diff
+# in a pull request, so a change can be seen to be tested rather than only
+# measured in aggregate.
 #
-# The targets here are therefore set to match, not to compete.  If they ever
-# disagree, tools/coverage.py is the one that decides.
+# The targets here match the floors.  Where they disagree, tools/coverage.py
+# decides.
 
 codecov:
   require_ci_to_pass: true
@@ -24,9 +24,7 @@ coverage:
         threshold: 0.5%
     patch:
       default:
-        # New code is held higher than the tree average, which is the whole
-        # point of a patch target: the average is a legacy, the diff is a
-        # choice.
+        # New code is held to 90%, above the tree average.
         target: 90%
         threshold: 0%
 
@@ -36,8 +34,7 @@ comment:
   require_changes: true
 
 ignore:
-  # Generated glyph tables: thousands of lines of data with no branches, which
-  # would drown every real number on the page.
+  # Generated glyph tables: thousands of lines of data with no branches.
   - "shared/gfx/gfx_font*.c"
   # Firmware is not built by the host suite and cannot be covered by it.
   - "firmware/**"

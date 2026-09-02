@@ -1,27 +1,25 @@
 /*
  * Futaba S.BUS: sixteen channels in twenty-five bytes.
  *
- * The wire is an inverted 8E2 UART at 100 kbaud, which the coprocessor's PIO
- * produces; this file is what to do with the bytes once they arrive.
+ * The wire is an inverted 8E2 UART (universal asynchronous
+ * receiver-transmitter) at 100 kbaud, produced by the coprocessor's PIO
+ * (programmable input/output); this file decodes the bytes.
  *
- * THE THING THAT MAKES S.BUS AWKWARD, and the reason this is not just a
- * memcpy: **it has no checksum and no escaping.** A frame is a header byte, a
- * bit-packed payload and a footer, and 0x0F -- the header -- is an ordinary
- * value inside channel data. So the header alone cannot tell you where a frame
- * starts, and a decoder that trusts it will happily lock onto the middle of
- * one and report sixteen plausible-looking channels that are all wrong.
+ * S.BUS has no checksum and no escaping.  A frame is a header byte, a
+ * bit-packed payload and a footer, and the header value 0x0F is an ordinary
+ * value inside channel data, so the header alone cannot locate a frame start:
+ * a decoder that trusts it locks onto the middle of a frame and reports
+ * sixteen plausible channels that are all wrong.
  *
- * What actually delimits an S.BUS frame is the *gap*. Frames arrive every 7 ms
- * or 14 ms and take 3 ms to send, so there is at least 4 ms of silence between
- * them, against 120 microseconds between bytes within one. Feed this decoder a
- * timestamp and it uses that gap; the header and footer then confirm rather
- * than have to carry the whole job alone.
+ * The frame boundary is the gap.  Frames arrive every 7 ms or 14 ms and take
+ * 3 ms to send, so there are at least 4 ms of silence between them, against
+ * 120 microseconds between bytes within one.  The decoder is fed a timestamp
+ * per byte and frames on that gap; the header and footer confirm.
  *
- * Two flags matter more than the channels. **failsafe** means the receiver has
- * lost the transmitter and is inventing the numbers it is sending; **frame
- * lost** means this particular frame did not arrive intact. A bench that
- * drives anything from S.BUS input has to treat the first as "stop", not as
- * sixteen valid channels -- which is exactly what they look like.
+ * Two flags outrank the channels.  failsafe means the receiver has lost the
+ * transmitter and is generating the values it sends; frame lost means this
+ * frame did not arrive intact.  Anything driven from S.BUS input treats
+ * failsafe as a stop, not as sixteen valid channels.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -73,7 +71,7 @@ typedef struct {
     bool     ch18;
     /** This frame did not arrive intact at the receiver. */
     bool     frame_lost;
-    /** The receiver has lost the transmitter and is inventing these numbers. */
+    /** The receiver has lost the transmitter and is generating these values. */
     bool     failsafe;
 } sbus_frame_t;
 
@@ -94,8 +92,8 @@ void sbus_decoder_reset(sbus_decoder_t *d);
 /**
  * Feed one byte with the time it arrived; true when @p out holds a frame.
  *
- * @p now_us paces the framing. A gap of SBUS_GAP_US or more starts a new
- * frame, whatever was half-collected before it -- which is the only reliable
+ * @p now_us paces the framing.  A gap of SBUS_GAP_US or more starts a new
+ * frame, whatever was half-collected before it; the gap is the only reliable
  * boundary this protocol has.
  */
 bool sbus_decode_byte(sbus_decoder_t *d, uint8_t byte, uint32_t now_us,

@@ -1,11 +1,11 @@
 /*
  * The OpenYGE codec, fed the frames a real line produces: good ones, short
- * ones, bit-flipped ones, and good ones sitting behind noise that happens to
- * look like a sync byte.
+ * ones, bit-flipped ones, and good ones sitting behind noise that looks like
+ * a sync byte.
  *
  * Frames are built here from raw bytes rather than with openyge_encode(), so
- * the decoder is held to the specification rather than to its own encoder --
- * two halves of one mistake agree with each other perfectly.
+ * the decoder is held to the specification rather than to its own encoder;
+ * two halves of one mistake agree with each other.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,8 +16,8 @@
 #include "link_crc.h"
 #include "openyge.h"
 
-/* Build an ESC-to-master frame by hand.  `version` chooses the header length,
- * which is the thing a legacy ESC changes. */
+/* Build an ESC (electronic speed controller) to master frame by hand.
+ * `version` chooses the header length, which is what a legacy ESC changes. */
 static size_t make_tele(uint8_t *out, uint8_t version, uint8_t type,
                         uint8_t seq, uint8_t device, const uint8_t *payload)
 {
@@ -44,7 +44,9 @@ static void put16(uint8_t *p, uint16_t v)
     p[1] = (uint8_t)(v >> 8);
 }
 
-/* A payload with every field set to something distinguishable. */
+/* A payload with every field set to something distinguishable.  BEC is the
+ * battery eliminator circuit; eRPM is electrical rpm (revolutions per
+ * minute). */
 static void sample_payload(uint8_t *p)
 {
     memset(p, 0, OPENYGE_TELEMETRY_BYTES);
@@ -79,9 +81,10 @@ static bool feed(openyge_decoder_t *d, const uint8_t *b, size_t n,
 }
 
 /*
- * The seed, pinned to its published check value.  This is the one number that
- * distinguishes OpenYGE's CRC from the panel link's, and getting it wrong
- * rejects every frame -- which looks exactly like a wrong baud rate.
+ * The seed, pinned to its published check value.  It is the one number that
+ * distinguishes OpenYGE's CRC (cyclic redundancy check) from the panel
+ * link's, and a wrong seed rejects every frame, which looks like a wrong baud
+ * rate.
  */
 TEST_CASE(the_crc_seed_is_xmodem_and_not_the_links_own)
 {
@@ -150,7 +153,7 @@ TEST_CASE(temperatures_below_zero_decode_as_negative)
     CHECK_EQ(t.cap_temp_c, 215);
 }
 
-/* pwm and throttle are signed, and a regenerating ESC really does report a
+/* pwm and throttle are signed, and a regenerating ESC reports a
  * negative duty. */
 TEST_CASE(negative_duty_and_throttle_survive_the_decode)
 {
@@ -170,8 +173,8 @@ TEST_CASE(negative_duty_and_throttle_survive_the_decode)
 
 /*
  * A pre-v3 ESC uses a four-byte header, so the payload starts two bytes
- * earlier.  Read it with the v3 offsets and every field is shifted -- which
- * would show up as plausible-looking nonsense rather than as a failure.
+ * earlier.  Read with the v3 offsets every field is shifted, which shows up
+ * as plausible values rather than as a failure.
  */
 TEST_CASE(a_legacy_frame_has_a_shorter_header_and_still_parses)
 {
@@ -255,8 +258,8 @@ TEST_CASE(a_real_frame_behind_a_false_sync_is_still_found)
 }
 
 /* A frame whose CRC holds but whose length disagrees with its type is a
- * version mismatch or a bug at the far end, not line noise -- and it is
- * counted apart from noise so the two can be told apart on the analyser. */
+ * version mismatch or a bug at the far end, not line noise, and it is counted
+ * apart from noise so the two can be told apart on the analyser. */
 /*
  * The harder version of the same case: the false candidate claims a length
  * longer than anything that has arrived, so it stays *incomplete* rather than
@@ -270,7 +273,7 @@ TEST_CASE(a_hungry_false_candidate_does_not_swallow_the_frame_behind_it)
     sample_payload(pay);
     const size_t n = make_tele(real, 3, OPENYGE_FT_TELE_RESP, 11, 1, pay);
 
-    /* A sync, a valid type, and a length of 140 -- the maximum, so it cannot
+    /* A sync, a valid type, and a length of 140, the maximum, so it cannot
      * complete until far more has arrived than ever will. */
     const uint8_t noise[] = { OPENYGE_SYNC, 3, OPENYGE_FT_TELE_RESP, 140,
                               0x00, 0x00 };
@@ -369,10 +372,10 @@ TEST_CASE(a_telemetry_request_sends_both_words_zero)
 }
 
 /*
- * The reference sets its length field and only then checks whether the frame
- * fits, so a request that does not fit leaves a length claiming more than was
- * written and the next transmission sends whatever follows it.  Here the
- * bounds check happens before anything is written at all.
+ * The reference implementation sets its length field and only then checks
+ * whether the frame fits, so a request that does not fit leaves a length
+ * claiming more than was written and the next transmission sends whatever
+ * follows it.  Here the bounds check happens before anything is written.
  */
 TEST_CASE(a_frame_that_does_not_fit_writes_nothing_at_all)
 {

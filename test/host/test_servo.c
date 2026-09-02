@@ -2,7 +2,7 @@
  * What the servo screen decides: where a touch on the dial points the horn,
  * what the travel limit refuses, and the commands it produces.
  *
- * Not what it looks like -- that is the golden image's job.
+ * Not what it looks like; that is the golden image's job.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -71,9 +71,8 @@ static servo_cmd_t last_cmd(void)
 /* -------------------------------------------------------------------- */
 
 /*
- * The gesture is the whole point of this screen: you put the arm where you
- * want it.  A touch at forty-five degrees on the dial has to mean forty-five
- * degrees and not the pulse width that happens to be under your finger.
+ * The gesture: a touch at 45° on the dial commands 45°, not the pulse width
+ * under the finger.
  */
 TEST_CASE(a_touch_on_the_dial_points_the_horn_there)
 {
@@ -132,8 +131,8 @@ TEST_CASE(the_case_is_not_the_dial)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
-/* The travel limit is a limit, not a suggestion: dragging past it stops at
- * it rather than being ignored, which is what a mechanical stop does. */
+/* Dragging past the travel limit stops at the limit rather than being
+ * ignored, which is what a mechanical stop does. */
 TEST_CASE(the_travel_limit_clamps_rather_than_refuses)
 {
     fresh();
@@ -177,7 +176,7 @@ TEST_CASE(centre_and_release_post_their_own_commands)
 
 /*
  * Leaving releases the output, for the reason the motor bench disarms on the
- * way out: a screen you can no longer see the horn on must not be holding it
+ * way out: a screen that does not show the horn must not be holding it
  * somewhere.
  */
 TEST_CASE(leaving_releases_the_output)
@@ -188,9 +187,8 @@ TEST_CASE(leaving_releases_the_output)
 }
 
 /*
- * The trim moves the pulse the same angle maps to, which is what a trim is;
- * the angle itself does not change, because the horn has not moved -- the
- * linkage under it has.
+ * The trim moves the pulse the same angle maps to; the angle itself does not
+ * change, because the horn has not moved, the linkage under it has.
  */
 TEST_CASE(trim_shifts_the_pulse_and_not_the_angle)
 {
@@ -205,9 +203,8 @@ TEST_CASE(trim_shifts_the_pulse_and_not_the_angle)
     CHECK_EQ(servo_screen_commanded(), 1505);
 }
 
-/* Feedback places the arm rather than being animated towards: a servo already
- * at forty degrees was never at zero, and a sweep that did not happen is
- * worse than no sweep on a bench that reports what hardware did. */
+/* Feedback places the arm rather than animating towards it: a servo already
+ * at 40° was never at zero, and the screen reports what the hardware did. */
 TEST_CASE(feedback_is_shown_rather_than_travelled_to)
 {
     fresh();

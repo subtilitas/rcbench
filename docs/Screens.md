@@ -2,192 +2,166 @@
 
 <sub>**English** · [Deutsch](Screens-de.md)</sub>
 
-How to operate the bench: what is always on screen, what the menu marks mean,
-and how each screen is used.
+What is on every screen, what the menu marks mean, and how each screen is
+operated.
 
 ## The status band
 
-The top strip belongs to the bench on every screen. Right to left: link state,
-the output mode, the armed state, the run clock, and STOP.
+The top band is shared by every screen. From the right: STOP, the run clock
+(while armed or after a run), ARMED or SAFE, a FAULT code when one is reported,
+the output mode (LINK or SIM), and LINK or NO LINK.
 
-**STOP always works.** It disarms from any screen, and it latches: the bench
-stays stopped until you arm again, deliberately. Nothing else clears a stop —
-not navigating away, not an alert expiring, not the link coming back.
+STOP works on every screen. It disarms and latches: the bench stays disarmed
+until it is armed again. Navigating away, an alert expiring or the link
+recovering does not clear a stop.
 
-ARM sits at the bottom of a bench screen and STOP at the top of the band, a
-full screen apart, so reaching for one cannot find the other.
+ARM is at the bottom of a bench screen; STOP is at the top of the band.
 
-## What the menu marks mean
+## Menu marks
 
 ![The feature menu](img/overview.png)
 
 | Mark | Meaning |
 | --- | --- |
-| **SOON** | The screen does not exist yet |
-| **MODELLED** | The screen exists and works, but its hardware is not fitted — every number in it is invented, and the screen says so |
-| nothing | The part is fitted and the readings are real |
+| SOON | the screen does not exist; the tile lists what it will do and what it waits on |
+| MODELLED | the screen exists and works, but its hardware is not fitted; every value is simulated and the screen says so |
+| none | the hardware is fitted and the readings are measured |
 
-MODELLED corrects itself: the mark comes from what the coprocessor reports as
-actually fitted, so it disappears the moment the part goes on. Absent is not
-forbidden — a screen whose hardware is missing still opens and still works
-from the model, wearing the mark that says so.
+The mark is derived from the capability bits the coprocessor reports at
+bring-up. A screen whose hardware is missing opens and runs from the model.
 
-The menu is also drawn in the light theme:
+The menu in the light theme:
 
 ![The menu in the light theme](img/overview-light.png)
 
-## The splash is the self-test
+## Splash
 
 ![The splash](img/splash.png)
 
-Each subsystem reports its own result as it comes up, so a board with no card,
-a touch controller that did not answer, or a coprocessor speaking the wrong
-protocol version says so here — rather than looking mysteriously broken three
-screens later. A failure is still reported, not a dead end: read it and move
-on. Once every step has answered, the list holds briefly and hands over to the
-menu; a tap skips the hold.
+Each subsystem reports its result as it comes up: board, display, touch, SD
+card, settings, link, coprocessor. A missing card or an unusable NVS
+(non-volatile storage) is a warning. A touch
+controller that does not answer, or a coprocessor with a different protocol
+major version, is a failure and the bench will not arm. When every step has
+answered, the splash hands over to the menu after a hold of 1.6 s; a tap skips
+the hold.
 
 ## Motor & ESC
 
 ![Motor and ESC](img/motor.png)
 
-Four traces on their own scales, the throttle on the slider, peak values under
-the seven-segment readouts. ARM before the slider drives anything; DISARM and
-STOP both stop it at once, with no ramp. RESET PEAKS clears the peak markers
-and leaves the live readings alone.
+Four traces on independent scales, the throttle slider, and peak values under
+the seven-segment readouts. ARM enables the slider; DISARM and STOP stop the
+output immediately, with no ramp. RESET PEAKS clears the peak markers and
+leaves the live readings.
 
-While nothing real is connected the screen runs from the model and says so —
-SIMULATION sits across the plot. It comes off the moment real numbers arrive,
-and that needs no extra sensor: an ESC with telemetry (KISS, BLHeli_32,
-OpenYGE) or bidirectional DShot reports voltage, current, consumption, RPM and
-temperatures over the signal wire itself.
+While the values are simulated, SIMULATION is drawn across the screen. The
+watermark is removed when measured values arrive: from an ESC (electronic speed
+controller) with telemetry (KISS, BLHeli_32, OpenYGE), from bidirectional
+DShot, or from the coprocessor's own sensors.
 
 ## Servo
 
 ![Servo](img/servo.png)
 
-Drag anywhere on the sweep and the horn follows. The solid arm is the
-**measured** position; the faint arm behind it is what you commanded. When the
-two separate, that gap is the servo's own lag — the screen adds none of its
-own, so a slow servo shows as two arms rather than as a sluggish picture. The
-rings around the tip pulse while the servo is being actively driven.
+Drag anywhere on the sweep to command a position. The solid arm is the measured
+position; the faint arm is the commanded position. The gap between them is the
+servo's own lag. The rings around the tip pulse while the servo is being
+driven. Releasing the sweep clears the output slot.
 
 ## Analyser
 
 ![Analyser](img/analyser.png)
 
-Sixteen channels, each with its last second and a half of history and a bar
-for where it stands now. Move a control on the transmitter and the channel you
-moved is the one with a step in its trace — that is the question this screen
-is built to answer. The bars answer the other one: how far, right now, without
-reading a number. CH17 and CH18 are the digital channels.
+Sixteen channels, each with 1.5 s of history and a bar for its current value.
+CH17 and CH18 are the two digital channels. A glitch is a spike in one lane; a
+dropout is a notch across all sixteen at the same instant.
 
-A glitch shows as a spike in one lane. A dropout shows as a notch across all
-sixteen at the same instant.
-
-The state block is the biggest thing on the screen because the receiver can
-lie:
+The state block shows one of SILENT, FAILSAFE, FRAME LOST and LIVE, with one
+line of explanation:
 
 ![A receiver in failsafe](img/analyser-failsafe.png)
 
-A receiver in failsafe sends sixteen perfectly well-formed values that it was
-told to invent. The bench turns every trace red and says FAILSAFE in words.
-**Treat failsafe as stop, never as sixteen valid numbers** — that is exactly
-what they look like. Four states, each with a line saying what it means:
-SILENT, FAILSAFE, FRAME LOST and LIVE.
+In FAILSAFE the receiver is sending well-formed values it has generated itself;
+every trace is drawn red. Treat FAILSAFE as a stop, not as sixteen valid
+channels. [Receiver buses](Receivers.md) describes the states.
 
 ## Programmer
 
-Programming goes in order: what you are programming, which protocol it
-speaks, and only then connect.
+The sequence is: device class, protocol, connect.
 
-![What are you programming](img/programmer.png)
+![Device class](img/programmer.png)
 
-Picking the class is picking which lead is in your hand; picking the protocol
-is picking what to say down it. Every protocol row names its transport —
-there is no autodetect:
+Every protocol row names its transport. There is no autodetection:
 
 ![The protocols of a class](img/programmer-protocols.png)
 
-**BLHeli_32 is not in the ESC list.** The bench identifies and drives these
-ESCs — direction, 3D mode, beacon and save-settings work as DShot special
-commands — but cannot show their parameters, because the information needed to
-read them is not published and we were declined it.
-[The details](BLHeli32.md).
+BLHeli_32 is not in the ESC list. The bench identifies and drives these ESCs
+and sends the DShot special commands, but cannot read their parameters:
+[BLHeli_32 parameters](BLHeli32.md).
 
-Until a device answers, nothing is editable:
+Nothing is editable until a device has answered:
 
 ![Nothing has answered](img/programmer-idle.png)
 
-Once one has, the parameters appear grouped, and the selected row's help sits
-under the list:
+After a device answers, the parameters are shown in groups with the selected
+row's help under the list:
 
 ![Connected](img/programmer-params.png)
 
-Each firmware shows its settings in its own units — BLHeli_S puts timing in
-named steps, everything after it in degrees of advance:
+Each firmware shows its settings in its own units. BLHeli_S shows timing as
+named steps; the others show degrees of advance:
 
 ![Degrees rather than named steps](img/programmer-am32.png)
 
-**Changed is not written.** A staged change wears a mark and its own colour,
-and the WRITE button counts how many are staged. A value you edited never
-looks like a value read off the hardware:
+A changed value is not written until WRITE is pressed. Staged changes carry a
+mark and their own colour, and the WRITE button shows how many are staged:
 
 ![Two staged edits](img/programmer-dirty.png)
 
-Steppers stop at their ends rather than wrapping around — on an ESC, the
-wrong end of a wrapped list is a direction.
+Steppers stop at the ends of a list; they do not wrap.
 
-Going back up a level drops the connection. The device that answered a
-bootloader is not the one that will answer a CLI, and the screen will not show
-one identity above the other's parameters. Back climbs one level at a time;
-the band's tag leaves the screen.
+Going back one level drops the connection. Back climbs one level at a time; the
+band's home tag leaves the screen.
 
 ## Battery
 
 ![Cell divergence](img/battery.png)
 
-Cells are drawn as departures from their own mean, because the number that
-matters is the **spread** — the widest gap between any two cells. The verdict
-follows it: HEALTHY below 30 mV, WATCH from 30, REPLACE from 60.
+Cells are drawn as their departure from the pack's mean. The verdict follows
+the spread, the widest gap between any two cells: HEALTHY below 30 mV, WATCH
+from 30 mV, REPLACE from 60 mV. The scale follows the pack down to a floor of
+12 mV and is printed beside the plot.
 
-Spread is between cells, never against a nominal. A pack that is flat but even
-is a discharged pack; a pack that is full but uneven is a broken one, and only
-the second is this screen's business.
-
-The scale follows the pack, down to a 12 mV floor, and is printed beside the
-plot — a bar that fills the plot could otherwise be four millivolts or forty.
-
-**Measure under load.** At rest, a tired cell looks like every other.
+Measure under load. At rest a weak cell reads like the others.
 
 ## Logs
 
 ![The file browser](img/logs.png)
 
-Browse the card, open a file, check what the import detected and the evidence
-behind it, then plot:
+Browse the card, open a file, check what the import detected, then plot:
 
 ![The import view](img/logs-import.png)
 ![The plot](img/logs-plot.png)
 
-CSV in several dialects is read tolerantly — decimal commas included — and
-what the reader decided is shown before you commit to it.
+The CSV (comma-separated values) reader accepts decimal comma and decimal
+point, a units row and ragged rows; the import view shows what it decided
+before the file is plotted. Runs recorded by the bench are written as
+`BENCHnnn.CSV` in the card's root directory.
 
 ## Setup
 
 ![Setup](img/setup.png)
 
-Settings live behind the SETUP tile, in both themes:
+Settings are behind the SETUP tile, in both themes:
 
 ![Setup in the light theme](img/setup-light.png)
 
 ## Balancing
 
-Moved to its own page: [Balancing](Balance.md). The measurement is the easy
-part — where the sensors go decides whether the answer means anything.
+Described on its own page: [Balancing](Balance.md).
 
-## A screen that cannot do its job yet says why
+## Screens that are not ready
 
-A tile that is not ready does not say "coming soon"; it names what it will do
-and the single decision or part that has to arrive first — so the menu is also
-the to-do list, and it never promises a measurement the bench cannot take.
+A tile marked SOON names what the screen will do and the part or decision it
+waits on.

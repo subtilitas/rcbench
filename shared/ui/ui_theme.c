@@ -1,12 +1,10 @@
 /*
- * The theme: named colours, and the contrast and brightness they pass through.
+ * The theme: named colours, and the contrast and brightness applied to them.
  *
- * Screens ask for a colour by role -- background, text, accent, danger --
- * never by value, so a palette change is one table and every screen follows.
- * The dark and light palettes are the two the panel ships, and the user's
- * contrast and brightness are applied once when the theme is (re)built rather
- * than at every pixel, because the render path is bandwidth-bound and a
- * per-pixel adjust would cost more than the colours it produces.
+ * Screens ask for a colour by role (background, text, accent, danger), never
+ * by value, so a palette change is one table.  Contrast and brightness are
+ * applied once when the palette is rebuilt rather than per pixel, because the
+ * render path is bound by memory bandwidth.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -18,12 +16,12 @@ typedef struct {
 } ui_rgb_t;
 
 /*
- * Base palettes in 8-bit RGB, so brightness and contrast are applied before
- * the 5/6/5 quantisation rather than after it.
+ * Base palettes in 8-bit RGB (red, green, blue), so brightness and contrast
+ * are applied before the 5/6/5 quantisation rather than after it.
  *
- * The light theme is not the dark one inverted.  Series colours have to be
- * darkened to stay readable on white, while the accent blocks stay bright
- * because near-black ink is drawn on them in both themes.
+ * The light theme is not the dark one inverted.  Series colours are darker
+ * to stay readable on white; the accent blocks stay bright because near-black
+ * text is drawn on them in both themes.
  */
 static const ui_rgb_t k_base[UI_THEME_COUNT][UI_C_COUNT] = {
     [UI_THEME_DARK] = {

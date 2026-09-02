@@ -1,22 +1,22 @@
 /*
- * Log viewer: browse the card, see what the file actually is, then plot it.
+ * Log viewer: browse the card, review the import, plot the file.
  *
- * The screen owns no filesystem.  It is handed an I/O vtable -- list, open,
- * close -- so the firmware can point it at the SD card while the host tests
- * and the screenshot renderer point it at a string in memory.  That is what
- * makes an import dialog testable at all.
+ * The screen owns no filesystem.  It is handed an I/O (input/output) vtable
+ * (list, open, close), so the firmware points it at the SD card while the
+ * host tests and the screenshot renderer point it at a string in memory.
  *
- * Three views, in the order a person uses them:
+ * Three views, in the order they are used:
  *
- *   BROWSE  what is on the card
- *   IMPORT  what was detected, and every knob to disagree with it
+ *   BROWSE  the files on the card
+ *   IMPORT  what the CSV (comma-separated values) reader detected, and the
+ *           controls to override it
  *   PLOT    the traces, on one time base with a scale each
  *
- * The middle one is not decoration.  A German CSV read as English turns
- * 22,34 V into 2234 V without complaining, so the detection is shown before
- * anything is drawn, along with the evidence it rests on.
+ * The import view shows the detected delimiter and decimal convention before
+ * anything is plotted: a decimal-comma file read as decimal-point turns
+ * 22,34 V into 2234 V.
  *
- * Pure C, no ESP-IDF.
+ * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -44,7 +44,7 @@ typedef struct {
 typedef struct {
     /** Fill @p out; return the count, or -1 when there is no volume at all. */
     int (*list)(log_viewer_file_t *out, int max_entries, void *ctx);
-    /** Open a listed name as a rewindable source.  false if it will not open. */
+    /** Open a listed name as a rewindable source; false if it fails to open. */
     bool (*open)(const char *name, log_source_t *src, void *ctx);
     /** Release whatever open() acquired. */
     void (*close)(void *ctx);
