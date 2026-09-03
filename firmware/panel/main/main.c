@@ -31,6 +31,7 @@
 #include "selftest.h"
 #include "display.h"
 #include "gfx.h"
+#include "arming.h"
 #include "heartbeat.h"
 #include "link_bringup.h"
 #include "link_host.h"
@@ -131,8 +132,6 @@ static uint32_t now_ms(void)
  */
 static heartbeat_gen_t s_beat;
 
-/* Latched by STOP; cleared only by an explicit arm.  See the loop. */
-static bool s_stopped;
 
 static void heartbeat_init(void)
 {
@@ -272,8 +271,11 @@ static void control_alert(const char *text)
  * it from inside a link exchange as well as from the top of the control task.
  */
 static outputs_t s_out;
-static uint32_t  s_last_touch_ok;
-static bool      s_touch_dead;
+/*
+ * When the bench may be armed.  The policy lives in shared/safety/arming.c so
+ * the host suite can hold it; this file drives it and acts on what it says.
+ */
+static arming_t  s_arm;
 static bool      s_stop_press;
 static uint8_t   s_stop_id;
 /* Set by app_main: false on the splash, which draws no STOP to press. */
@@ -328,9 +330,8 @@ static void control_pump(void)
      * that has stopped answering is not.
      */
     if (saw_touch || touch_age_ms() < 200u) {
-        s_last_touch_ok = now_ms();
+        arming_touch_seen(&s_arm, now_ms());
     }
-    s_touch_dead = (uint32_t)(now_ms() - s_last_touch_ok) >= 500u;
 
     outputs_step(&s_out, now_ms());
     /*
@@ -339,7 +340,7 @@ static void control_pump(void)
      * question with its own watchdog at each end.  Gating on both would let a
      * dropped CAN frame cut the safety line.
      */
-    beat(!s_touch_dead && !s_stopped);
+    beat(arming_heartbeat(&s_arm, now_ms()));
 }
 
 /* ------------------------------------------------------------------- boot */
@@ -813,8 +814,9 @@ static void control_task(void *arg)
     outputs_init(&s_out, now_ms());
     (void)outputs_set_role(&s_out, PANEL_CH_THROTTLE, OUT_ROLE_THROTTLE);
     (void)outputs_set_slew(&s_out, PANEL_CH_THROTTLE, PANEL_THROTTLE_RAMP);
-    s_last_touch_ok = now_ms();
-    s_pump_live     = true;
+    arming_init(&s_arm, now_ms(),
+                HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS + HEARTBEAT_PERIOD_MS);
+    s_pump_live = true;
 
     uint32_t last_poll     = 0;
     uint32_t last_status   = 0;
@@ -823,8 +825,6 @@ static void control_task(void *arg)
     bool     link_up       = false;
 
     uint32_t last_sample = now_ms();
-    uint32_t run_start   = 0u;   /* 0 = not in a run */
-    uint32_t run_seconds = 0u;
 
     for (;;) {
         control_pump();
@@ -837,29 +837,46 @@ static void control_task(void *arg)
          */
         if (s_stop_request) {
             s_stop_request = false;
-            s_stopped      = true;
+            arming_stop(&s_arm);
         }
-        if (s_touch_dead && outputs_armed(&s_out)) {
+
+        /*
+         * One place decides, and it is the one under test.  A disarm here is
+         * the policy's, not this loop's: a latched stop, dead touch, or an
+         * arm that finished settling.
+         */
+        const bool was_touch_dead = arming_touch_dead(&s_arm, now_ms());
+        switch (arming_step(&s_arm, now_ms())) {
+        case ARMING_ACT_DISARM:
             outputs_arm(&s_out, false, now_ms());
-            control_alert("touch stopped answering -- disarmed");
+            if (was_touch_dead) {
+                control_alert("touch stopped answering -- disarmed");
+            }
             if (link_up) {
                 link_msg_t ack = { 0 };
                 (void)control_write(false, &ack);
             }
-        }
-        if (s_stopped && outputs_armed(&s_out)) {
-            outputs_arm(&s_out, false, now_ms());
-            if (link_up) {
-                link_msg_t ack = { 0 };
-                (void)control_write(false, &ack);
+            break;
+        case ARMING_ACT_ARM: {
+            link_msg_t ack = { 0 };
+            if (link_up
+                && !(control_clear_failsafe(&ack) && control_write(true, &ack))) {
+                arming_refused(&s_arm);
+                control_alert("coprocessor refused to arm");
+            } else {
+                outputs_arm(&s_out, true, now_ms());
             }
+            break;
+        }
+        default:
+            break;
         }
 
         /* --- what the screens asked for ---------------------------------- */
         panel_cmd_t pc;
         while (xQueueReceive(s_cmd_q, &pc, 0) == pdTRUE) {
             if (pc.kind == PANEL_CMD_STOP) {
-                s_stopped = true;
+                arming_stop(&s_arm);
                 outputs_arm(&s_out, false, now_ms());
                 if (link_up) {
                     link_msg_t ack = { 0 };
@@ -913,56 +930,16 @@ static void control_task(void *arg)
 
             switch (pc.motor.kind) {
             case MOTOR_CMD_ARM:
-                /* Arming is the deliberate act that clears a latched stop.
-                 * Nothing else does: not navigating away, not the alert
-                 * expiring, not the link coming back.  Over the link it is
-                 * a CLEAR then an ARM, and the coprocessor decides: it
-                 * refuses with NOT_ARMED while the heartbeat is not trusted
-                 * or a failsafe is latched. */
-                if (!s_touch_dead) {
-                    /*
-                     * The latch is cleared BEFORE the write, and the line is
-                     * given time to edge.
-                     *
-                     * A latched stop suppresses the heartbeat, and the
-                     * coprocessor refuses to arm while the heartbeat is not
-                     * trusted -- it wants HEARTBEAT_GOOD_RUN intervals of it.
-                     * Clearing the latch only after a successful write was
-                     * therefore a deadlock: the write could not succeed until
-                     * the line was edging, and the line could not edge until
-                     * the write succeeded.  A stop with a coprocessor
-                     * attached could not be cleared without a reboot.
-                     *
-                     * Pumping rather than sleeping keeps the heartbeat, touch
-                     * and STOP serviced across the wait, so a second STOP
-                     * during it still lands.
-                     */
-                    s_stopped = false;
-                    const uint32_t settle =
-                        now_ms() + HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS
-                        + HEARTBEAT_PERIOD_MS;
-                    while ((int32_t)(settle - now_ms()) > 0 && !s_stopped) {
-                        control_pump();
-                        vTaskDelay(pdMS_TO_TICKS(CONTROL_PERIOD_MS));
-                    }
-                    if (s_stopped) {
-                        break;   /* stopped again while the line settled */
-                    }
-
-                    link_msg_t ack = { 0 };
-                    if (link_up
-                        && !(control_clear_failsafe(&ack)
-                             && control_write(true, &ack))) {
-                        /* Left unlatched and disarmed: the operator can ask
-                         * again, and a heartbeat that is running is the truth
-                         * about a loop that is running. */
-                        control_alert("coprocessor refused to arm");
-                        break;
-                    }
-                    outputs_arm(&s_out, true, now_ms());
-                }
+                /*
+                 * Arming is the deliberate act that clears a latched stop.
+                 * The policy clears it, gives the heartbeat time to be
+                 * believed and only then asks for the write; see
+                 * shared/safety/arming.c.
+                 */
+                arming_request_arm(&s_arm, now_ms());
                 break;
             case MOTOR_CMD_DISARM:
+                arming_request_disarm(&s_arm);
                 outputs_arm(&s_out, false, now_ms());
                 if (link_up) {
                     link_msg_t ack = { 0 };
@@ -980,21 +957,7 @@ static void control_task(void *arg)
         }
         (void)outputs_keepalive(&s_out, PANEL_CH_THROTTLE, now_ms());
 
-        /*
-         * The band's clock times the run, not the panel.  It starts when the
-         * bench arms and holds the length of the last run after it disarms;
-         * uptime is not what an operator is timing.
-         */
         const bool armed_now = outputs_armed(&s_out);
-        if (armed_now) {
-            if (run_start == 0u) {
-                run_start = now_ms();
-            }
-            run_seconds = (now_ms() - run_start) / 1000u;
-        } else {
-            run_start = 0u;
-        }
-
         const bool was_armed = (s_log_file != NULL);
         if (armed_now && !was_armed) {
             log_start();
@@ -1024,7 +987,7 @@ static void control_task(void *arg)
                         /* The coprocessor is in failsafe or has lost the
                          * heartbeat.  A stop latches at this end too. */
                         outputs_arm(&s_out, false, now_ms());
-                        s_stopped = true;
+                        arming_stop_from_far_end(&s_arm);
                         control_alert("coprocessor disarmed -- arm again");
                     }
                 }
@@ -1119,11 +1082,11 @@ static void control_task(void *arg)
         s_snap.bench       = bench;
         s_snap.link_up     = link_up;
         s_snap.armed       = outputs_armed(&s_out);
-        s_snap.stopped     = s_stopped;
+        s_snap.stopped     = s_arm.stopped;
         s_snap.faults      = link_up ? s_dev_faults : (uint16_t)0;
         s_snap.link_errors = (uint32_t)s_bring.dev_crc_errors
                              + (uint32_t)s_bring.dev_resyncs;
-        s_snap.run_seconds = run_seconds;
+        s_snap.run_seconds = arming_run_seconds(&s_arm);
         s_snap.mcu_temp_c  = s_mcu_c;
         snap_unlock();
 
