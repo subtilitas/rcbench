@@ -456,8 +456,6 @@ TEST_CASE(the_arm_button_fades_while_held_and_flashes_on_arming)
     }
 
     /* And the fade does not run once armed: DISARM is not about to arm. */
-    const float before = 0.0f;
-    (void)before;
     for (int i = 0; i < 20; ++i) {
         scr->tick(0.05f);
     }
