@@ -76,9 +76,9 @@ multi-agent review of the result found twenty more.
   that lost one arriving between the two.
 - A drag whose release never arrived stayed latched, and a later contact
   applied its distance to a stale origin.
-- The simulator and the log advanced twenty times slow while the link was
-  down, and a timed-out poll republished stale readings as a fresh plot
-  column and a log row.
+- The simulator and the log ran twenty times slower than the wall clock while
+  the link was down, and a timed-out poll republished stale readings as a
+  fresh plot column and a log row.
 - The plot advanced at the frame rate rather than the sample rate.
 - `s_bring.have_status` was never set, disabling two link diagnoses.
 - `ui_router_invalidate()` reached six screens of ten.
