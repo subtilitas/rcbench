@@ -224,12 +224,31 @@ TEST_CASE(the_rated_kv_prefers_the_esc_over_the_entered_value)
     scr->render(&cv, 0);
     CHECK(memcmp(shot, fb, bytes) != 0);
 
-    /* Zero from the ESC is "it did not say", not "zero". */
-    memcpy(shot, fb, bytes);
-    motor_screen_set_esc_kv(0);
-    motor_invalidate();
-    scr->render(&cv, 0);
-    CHECK(memcmp(shot, fb, bytes) != 0);
+    /*
+     * Zero from the ESC is "it did not say", not "zero": the field must fall
+     * back to the entered value, which means the frame has to become the one
+     * the entered value drew and not merely a different frame.
+     */
+    gfx_color_t *entered = malloc(bytes);
+    CHECK(entered != NULL);
+    if (entered != NULL) {
+        settings_set(SET_MOTOR_KV, 1000.0f);
+        motor_screen_set_esc_kv(0);
+        motor_invalidate();
+        scr->render(&cv, 0);
+        memcpy(entered, fb, bytes);
+
+        motor_screen_set_esc_kv(2000);
+        motor_invalidate();
+        scr->render(&cv, 0);
+        CHECK(memcmp(entered, fb, bytes) != 0);
+
+        motor_screen_set_esc_kv(0);
+        motor_invalidate();
+        scr->render(&cv, 0);
+        CHECK_EQ(memcmp(entered, fb, bytes), 0);
+        free(entered);
+    }
 
     settings_reset_all();
     free(shot);
@@ -489,12 +508,26 @@ TEST_CASE(the_arm_button_fades_while_held_and_flashes_on_arming)
                flash, settled);
     }
 
-    /* And the fade does not run once armed: DISARM is not about to arm. */
+    /*
+     * And the fade does not run once armed: DISARM is not about to arm, so
+     * holding it must not walk the colour towards the danger red the way
+     * holding ARM does.  Pressing it and holding past a full fade has to
+     * leave the fill where it was.
+     */
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 20; ++i) {
         scr->tick(0.05f);
     }
     scr->render(&cv, 0);
-    CHECK_EQ(arm_px(), settled);
+    const gfx_color_t held_armed = arm_px();
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    /* ui_button lightens a pressed fill, so compare the hue rather than the
+     * value: red must not have gained on green the way the arming fade does. */
+    if (red_of(held_armed) - green_of(held_armed)
+        > red_of(settled) - green_of(settled) + 24) {
+        T_FAIL("holding DISARM went %04x -> %04x, which is a fade it should "
+               "not run", settled, held_armed);
+    }
 }
 
 /*

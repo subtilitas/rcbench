@@ -237,6 +237,9 @@ static void reset(void)
                    10.0f, 100.0f, 0);
     s.speed.value = 100.0f;
     ui_slider_set_ticks(&s.speed, 0);
+    /* A sweep speed commands nothing on its own, and the track is 22 px: a
+     * tap is how it is used.  The throttle's rule is the throttle's. */
+    ui_slider_set_tap_to_set(&s.speed, true);
 
     s.centre_btn  = (gfx_rect_t){ (int16_t)x, 350, (int16_t)(w / 2 - 5), 32 };
     s.release_btn = (gfx_rect_t){ (int16_t)(x + w / 2 + 5), 350,

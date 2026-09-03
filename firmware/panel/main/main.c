@@ -277,6 +277,21 @@ static outputs_t s_out;
  * the host suite can hold it; this file drives it and acts on what it says.
  */
 static arming_t  s_arm;
+static uint16_t  s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
+
+/*
+ * A disarm returns the command to zero, here and in the output bank.
+ *
+ * The throttle used to survive a disarm, so the next arm wrote the previous
+ * position to the control page in the same transaction that armed: the bench
+ * went from stopped to whatever it was last set to, with the ramp on the far
+ * side of the arm rather than in front of it.  An arm starts from nothing.
+ */
+static void throttle_to_zero(void)
+{
+    s_throttle_hundredths = 0u;
+    (void)outputs_set(&s_out, PANEL_CH_THROTTLE, 0u, now_ms());
+}
 static bool      s_stop_press;
 static uint8_t   s_stop_id;
 /*
@@ -687,7 +702,6 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
  * explicit arm: a write that touches it must carry LINK_CLEAR_MAGIC, and it
  * lifts a latched failsafe, which no other write may do.
  */
-static uint16_t s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
 
 static uint16_t pct_to_hundredths(float pct)
 {
@@ -855,6 +869,7 @@ static void control_task(void *arg)
         switch (arming_step(&s_arm, now_ms())) {
         case ARMING_ACT_DISARM:
             outputs_arm(&s_out, false, now_ms());
+            throttle_to_zero();
             if (was_touch_dead) {
                 control_alert("touch stopped answering -- disarmed");
             }
@@ -884,6 +899,7 @@ static void control_task(void *arg)
             if (pc.kind == PANEL_CMD_STOP) {
                 arming_stop(&s_arm);
                 outputs_arm(&s_out, false, now_ms());
+                throttle_to_zero();
                 if (link_up) {
                     link_msg_t ack = { 0 };
                     (void)control_write(false, &ack);
@@ -947,6 +963,7 @@ static void control_task(void *arg)
             case MOTOR_CMD_DISARM:
                 arming_request_disarm(&s_arm);
                 outputs_arm(&s_out, false, now_ms());
+                throttle_to_zero();
                 if (link_up) {
                     link_msg_t ack = { 0 };
                     (void)control_write(false, &ack);
@@ -1163,6 +1180,7 @@ void app_main(void)
 
     uint32_t frames  = 0;
     uint32_t last_us = (uint32_t)esp_timer_get_time();
+    bool     was_armed = false;
 
     for (;;) {
         const uint32_t us = (uint32_t)esp_timer_get_time();
@@ -1234,6 +1252,13 @@ void app_main(void)
         if (have_alert) {
             ui_router_set_alert(alert);
         }
+        /* The slider follows the bench: a disarm returns the command to
+         * zero, so the control the operator picks up next is at zero too. */
+        if (was_armed && !armed) {
+            motor_screen_set_throttle(0.0f);
+            (void)motor_screen_poll_cmd(&mc);   /* not a command, a follow */
+        }
+        was_armed = armed;
         motor_screen_set_armed(armed);
         /* One sample, one plot column, however many frames it took to get
          * here: the queue holds what this loop was too busy to draw. */

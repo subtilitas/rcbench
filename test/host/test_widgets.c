@@ -277,6 +277,40 @@ TEST_CASE(a_press_on_the_track_commands_nothing)
 }
 
 /*
+ * Tap-to-set is per slider, and off unless asked for.  The throttle must not
+ * take a value from one contact; a sweep speed on a 22 px track commands
+ * nothing on its own and is used by tapping.
+ */
+TEST_CASE(tap_to_set_is_off_unless_a_slider_asks_for_it)
+{
+    fresh_slider();
+    ui_slider_set(&sl, 0.0f);
+    CHECK(!ev(300, 120, TOUCH_EVENT_DOWN, 1));
+    CHECK_EQ(sl.value, 0.0f);
+    (void)ev(300, 120, TOUCH_EVENT_UP, 1);
+
+    ui_slider_set_tap_to_set(&sl, true);
+    ui_slider_set(&sl, 0.0f);
+    CHECK(ev(300, 120, TOUCH_EVENT_DOWN, 1));
+    CHECK(sl.value > 49.0f && sl.value < 51.0f);
+    /* And the drag that follows still measures from where it landed. */
+    CHECK(ev(350, 120, TOUCH_EVENT_MOVE, 1));
+    CHECK(sl.value > 61.0f && sl.value < 64.0f);
+    (void)ev(350, 120, TOUCH_EVENT_UP, 1);
+
+    /* A track with no width to read has no position to take, and must not
+     * divide by its own width minus one. */
+    ui_slider_t narrow;
+    ui_slider_init(&narrow, (gfx_rect_t){ 10, 10, 1, 20 }, 0.0f, 100.0f, 0);
+    ui_slider_set_tap_to_set(&narrow, true);
+    const touch_event_t down = {
+        .type = TOUCH_EVENT_DOWN,
+        .point = { .id = 1, .x = 10, .y = 15, .strength = 40 } };
+    CHECK(!ui_slider_event(&narrow, &down));
+    CHECK_EQ(narrow.value, 0.0f);
+}
+
+/*
  * A release can go missing: a contact lost, an event dropped by a bounded
  * queue, a screen changed under the finger.  The delta model measures from
  * where the press landed, so a drag still latched from an earlier gesture
@@ -544,6 +578,7 @@ int main(void)
     RUN(the_plot_and_hero_render_without_running_off_the_canvas);
     RUN(a_press_on_the_track_commands_nothing);
     RUN(a_drag_moves_by_how_far_it_travelled);
+    RUN(tap_to_set_is_off_unless_a_slider_asks_for_it);
     RUN(a_drag_without_a_release_cannot_be_resumed_by_a_later_touch);
     RUN(setting_the_value_during_a_drag_re_anchors_it);
     RUN(a_drag_that_leaves_the_track_keeps_the_value);

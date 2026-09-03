@@ -82,6 +82,13 @@ void ui_slider_set(ui_slider_t *s, float value)
  * the one under the finger; the latch would otherwise survive into the next
  * gesture.
  */
+void ui_slider_set_tap_to_set(ui_slider_t *s, bool on)
+{
+    if (s != NULL) {
+        s->tap_to_set = on;
+    }
+}
+
 void ui_slider_release(ui_slider_t *s)
 {
     if (s != NULL) {
@@ -139,7 +146,21 @@ bool ui_slider_event(ui_slider_t *s, const touch_event_t *evt)
             s->drag_id    = evt->point.id;
             s->drag_x     = (int16_t)x;
             s->drag_value = s->value;
-            return false;   /* a press on its own commands nothing */
+            if (!s->tap_to_set || s->track.w <= 1) {
+                /* A press on its own commands nothing -- and a track one
+                 * pixel wide has no position to read, which by_delta()
+                 * refuses for the same reason. */
+                return false;
+            }
+            /* Where the finger landed, and the drag measures from there. */
+            const float span = s->max - s->min;
+            const float frac =
+                clampf((float)(x - s->track.x) / (float)(s->track.w - 1),
+                       0.0f, 1.0f);
+            const float was = s->value;
+            s->value      = s->min + frac * span;
+            s->drag_value = s->value;
+            return s->value != was;
         }
         for (int i = 0; i < s->preset_count; ++i) {
             if (gfx_rect_contains(s->presets[i], x, y)) {
@@ -274,9 +295,15 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
     const int tx = hx - tw / 2;
     const int ty = s->track.y - UI_SLIDER_OVERHANG;
 
-    /* One shape offset 2 px below the thumb, drawn first, as its shadow. */
+    /*
+     * One shape offset 2 px below the thumb, drawn first, as its shadow.
+     * Darkened from the trough rather than from the screen's background: the
+     * shadow falls on the track, and a caller may have cleared the region to
+     * a panel colour rather than to the background.
+     */
     gfx_fill_round_rect(c, tx, ty + SLIDER_SHADOW_DROP, tw, th, 6,
-                        gfx_lerp(ui_theme_color(UI_C_BG), GFX_BLACK, 120));
+                        gfx_lerp(ui_theme_color(UI_C_PANEL_SUNK), GFX_BLACK,
+                                 120));
     gfx_fill_round_rect(c, tx, ty, tw, th, 6, ui_theme_color(UI_C_TEXT));
     gfx_draw_round_rect(c, tx, ty, tw, th, 6,
                         gfx_lerp(ui_theme_color(UI_C_TEXT), GFX_BLACK, 80));
