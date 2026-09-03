@@ -153,7 +153,7 @@ static struct {
     gfx_rect_t    reset_rect;
     gfx_rect_t    down_rect;    /**< one percentage point down */
     gfx_rect_t    up_rect;      /**< and one up                */
-    int           pressed;      /**< 0 none, 1 arm, 2 reset */
+    int           pressed;      /**< 0 none, 1 arm, 2 reset, 3 -1, 4 +1 */
     uint8_t       press_id;
     bool          have_press;
 } s;
