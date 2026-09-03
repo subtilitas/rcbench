@@ -207,6 +207,16 @@ void servo_screen_set_commanded(float deg)
 
 /* ------------------------------------------------------------------ layout */
 
+void servo_invalidate(void)
+{
+    s.drawn_mask = 0;
+    s.drawn_ctrl[0] = UINT32_MAX;
+    s.drawn_ctrl[1] = UINT32_MAX;
+    /* No step the arm can be drawn at, so the next frame draws it. */
+    s.drawn_pulse[0] = -1;
+    s.drawn_pulse[1] = -1;
+}
+
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));

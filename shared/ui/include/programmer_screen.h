@@ -8,6 +8,9 @@
 
 #include "ui_screen.h"
 
+/** Drop the cached chrome, so the next frame repaints it. */
+void programmer_invalidate(void);
+
 const ui_screen_t *programmer_screen(void);
 
 /** Which protocol is selected, for the application and for tests. */

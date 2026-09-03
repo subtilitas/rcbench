@@ -15,6 +15,9 @@ typedef enum {
     ANALYSER_PANE_COUNT,
 } analyser_pane_t;
 
+/** Drop the cached chrome, so the next frame repaints it. */
+void analyser_invalidate(void);
+
 const ui_screen_t *analyser_screen(void);
 
 /**

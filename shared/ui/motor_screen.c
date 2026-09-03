@@ -41,6 +41,9 @@
 #define ROW_H     30
 #define CTRL_Y    380
 #define TRACK_H   36
+/* The readout's own width: the label at PAD, the numerals right-aligned on
+ * 386 - 22, and the per-cent sign that follows them.  ARM starts at 400. */
+#define READOUT_W 396
 
 /* The legend takes a row at the top of the card and the plot takes the rest
  * of it. */
@@ -87,9 +90,14 @@ static struct {
     /* The push count last painted into each framebuffer; UINT32_MAX
      * means "no paint recorded", which is not a count push can reach. */
     uint32_t      drawn_push[2];
-    /* Bumped by anything that changes a control's appearance. */
+    /* Bumped by anything that changes a button's or the tab row's
+     * appearance.  The throttle carries its own, because a drag moves it on
+     * every frame and repainting the buttons with it costs the row's full
+     * 800 x 90 px rather than the readout's 396 x 30. */
     uint32_t      ctrl_rev;
     uint32_t      drawn_ctrl[2];
+    uint32_t      thr_rev;
+    uint32_t      drawn_thr[2];
     gfx_rect_t    arm_rect;
     gfx_rect_t    reset_rect;
     int           pressed;      /**< 0 none, 1 arm, 2 reset */
@@ -104,6 +112,8 @@ void motor_invalidate(void)
     s.drawn_push[1] = UINT32_MAX;
     s.drawn_ctrl[0] = UINT32_MAX;
     s.drawn_ctrl[1] = UINT32_MAX;
+    s.drawn_thr[0]  = UINT32_MAX;
+    s.drawn_thr[1]  = UINT32_MAX;
 }
 
 /* The palette is not a compile-time constant -- it changes with the theme --
@@ -126,6 +136,8 @@ static void reset(void)
     s.drawn_push[1] = UINT32_MAX;
     s.drawn_ctrl[0] = UINT32_MAX;
     s.drawn_ctrl[1] = UINT32_MAX;
+    s.drawn_thr[0]  = UINT32_MAX;
+    s.drawn_thr[1]  = UINT32_MAX;
     ui_plot_init(&s.plot, k_series, S_COUNT,
                  (float)PLOT_W / SAMPLE_HZ);
     ui_tabs_init(&s.tabs, k_tab_labels, MOTOR_PANE_COUNT,
@@ -199,7 +211,7 @@ float motor_screen_throttle(void) { return s.slider.value; }
 void motor_screen_set_throttle(float pct)
 {
     ui_slider_set(&s.slider, pct);
-    ++s.ctrl_rev;
+    ++s.thr_rev;
 }
 
 /* ------------------------------------------------------------------ events */
@@ -210,13 +222,10 @@ static void event(const touch_event_t *evt)
         return;
     }
     /*
-     * Any touch invalidates the controls.  Touches arrive at a few per
-     * second against 39 frames/s, so repainting the controls on every one
-     * costs little, and it cannot miss a case: a preset going down, a press
-     * sliding off, a drag landing on the value it already had.
+     * Each control bumps its own counter, rather than every touch bumping
+     * one.  A drag delivers a move per frame, and repainting the buttons
+     * with the throttle is what put the drag over two panel frames.
      */
-    ++s.ctrl_rev;
-
     if (ui_tabs_event(&s.tabs, evt)) {
         /* The other pane paints over this one's region, so the record of
          * what was drawn there is void -- not merely the chrome's. */
@@ -224,14 +233,17 @@ static void event(const touch_event_t *evt)
     }
     if (ui_slider_event(&s.slider, evt)) {
         post(MOTOR_CMD_THROTTLE, s.slider.value);
+        ++s.thr_rev;
     }
 
     const int x = evt->point.x, y = evt->point.y;
     if (evt->type == TOUCH_EVENT_DOWN) {
         if (gfx_rect_contains(s.arm_rect, x, y)) {
             s.have_press = true; s.press_id = evt->point.id; s.pressed = 1;
+            ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.reset_rect, x, y)) {
             s.have_press = true; s.press_id = evt->point.id; s.pressed = 2;
+            ++s.ctrl_rev;
         }
         return;
     }
@@ -242,6 +254,9 @@ static void event(const touch_event_t *evt)
         const int was = s.pressed;
         s.have_press = false;
         s.pressed = 0;
+        if (was != 0) {
+            ++s.ctrl_rev;   /* the button comes back up */
+        }
         if (was == 1 && gfx_rect_contains(s.arm_rect, x, y)) {
             post(s.armed ? MOTOR_CMD_DISARM : MOTOR_CMD_ARM, 0.0f);
         } else if (was == 2 && gfx_rect_contains(s.reset_rect, x, y)) {
@@ -314,6 +329,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         ui_tabs_render(&s.tabs, c);
     }
 
+
     /*
      * Everything that comes from the numbers is painted only when there are
      * new numbers.  The panel refreshes at 39 Hz and samples arrive at 20 Hz,
@@ -369,12 +385,26 @@ static void render(gfx_canvas_t *c, int buffer_index)
      * neither the numbers nor a control moved, this screen paints nothing,
      * which on a panel whose refresh outruns its sample rate is most frames.
      */
-    if (s.drawn_ctrl[buf] == s.ctrl_rev) {
+    const bool ctrl_moved = (s.drawn_ctrl[buf] != s.ctrl_rev);
+    const bool thr_moved  = (s.drawn_thr[buf] != s.thr_rev);
+    if (!ctrl_moved && !thr_moved) {
         return;
     }
     s.drawn_ctrl[buf] = s.ctrl_rev;
+    s.drawn_thr[buf]  = s.thr_rev;
 
-    gfx_fill_rect(c, 0, ROW_Y, W, H - ROW_Y, ui_theme_color(UI_C_BG));
+    /*
+     * A throttle that moved on its own repaints the readout and the track,
+     * not the buttons beside them: the row is 800 x 90 px against the
+     * readout's 396 x 30, and a drag asks for it on every frame.  The track
+     * needs no clear either, because the trough is painted opaque over it.
+     */
+    if (ctrl_moved) {
+        gfx_fill_rect(c, 0, ROW_Y, W, H - ROW_Y, ui_theme_color(UI_C_BG));
+    } else {
+        gfx_fill_rect(c, 0, ROW_Y, READOUT_W, ROW_H,
+                      ui_theme_color(UI_C_BG));
+    }
 
     /*
      * The readout has its own line above the track.  Printed over the bar it
@@ -398,6 +428,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
              ui_theme_color(UI_C_TEXT_DIM), 1);
 
     ui_slider_render(&s.slider, c);
+
+    if (!ctrl_moved) {
+        return;
+    }
 
     ui_button(c, s.arm_rect, s.armed ? "DISARM" : "ARM",
               s.armed ? ui_theme_color(UI_C_WARN) : ui_theme_color(UI_C_OK),

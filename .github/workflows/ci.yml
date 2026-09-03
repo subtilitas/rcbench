@@ -128,6 +128,13 @@ jobs:
         run: python3 tools/frame_cost.py balance-sim settings-sim battery-sim
              --max-lines 2800
 
+      # A theme change or a change of the SIMULATED flag invalidates every
+      # screen, which costs one full repaint.  45,000 catches that growing.
+      - name: A full repaint of every screen stays bounded
+        run: python3 tools/frame_cost.py analyser-chrome balance-chrome
+             battery-chrome programmer-chrome logs-chrome settings-chrome
+             --max-lines 45000
+
       - name: The frame-cost table in the docs is current
         run: python3 tools/frame_cost.py --check-doc
 

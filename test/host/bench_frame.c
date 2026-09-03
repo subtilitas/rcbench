@@ -183,6 +183,11 @@ int main(int argc, char **argv)
             telemetry_sim_step(&sim, 60.0f, 0.05f, &bench);
             motor_screen_push(&bench);
         }
+        if (strcmp(mode, "throttle") == 0) {
+            /* A finger on the throttle: the control revision moves on every
+             * frame, which is the drag case and the screen's worst one. */
+            motor_screen_set_throttle((float)(i % 100));
+        }
         if (strcmp(mode, "chrome") == 0) {
             /* Nothing cached: what repainting the chrome every frame costs. */
             ui_router_invalidate();
