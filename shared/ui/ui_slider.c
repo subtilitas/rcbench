@@ -129,11 +129,11 @@ bool ui_slider_event(ui_slider_t *s, const touch_event_t *evt)
          * which is a jump: the exact behaviour the delta model exists to
          * prevent.  An absolute model was bounded by where the finger was;
          * this one is not, so the latch has to be cleared rather than
-         * trusted.
+         * trusted.  The preset latch goes with it: a press that lost its
+         * release would otherwise leave a button held and mis-handle a later
+         * release carrying the same identifier.
          */
-        if (s->dragging) {
-            s->dragging = false;
-        }
+        ui_slider_release(s);
         if (gfx_rect_contains(s->track, x, y)) {
             s->dragging   = true;
             s->drag_id    = evt->point.id;

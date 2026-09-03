@@ -714,6 +714,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
  */
 static void leave(void)
 {
+    /* No release arrives for a finger on the speed slider as the screen
+     * changes, and a latched drag outlives the gesture. */
+    ui_slider_release(&s.speed);
     post(SERVO_CMD_RELEASE, 0);
 }
 

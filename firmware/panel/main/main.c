@@ -11,6 +11,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include <inttypes.h>
+#include <stdatomic.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -278,10 +279,16 @@ static outputs_t s_out;
 static arming_t  s_arm;
 static bool      s_stop_press;
 static uint8_t   s_stop_id;
-/* Set by app_main: false on the splash, which draws no STOP to press. */
-static volatile bool s_stop_live;
-/* A stop that must not be lost to a full queue. */
-static volatile bool s_stop_request;
+/*
+ * Both cross the two cores, so both are atomic rather than volatile: volatile
+ * orders nothing between processors and promises no atomicity.
+ *
+ * s_stop_request is taken with an exchange rather than a test and a clear.
+ * A stop arriving between those two would have been dropped -- the read said
+ * "none", the write then said "none" over the top of it.
+ */
+static atomic_bool s_stop_live;
+static atomic_bool s_stop_request;
 /* False until the control task owns the safety state; bring-up polls the
  * link before that, with nothing to service. */
 static bool s_pump_live;
@@ -308,7 +315,7 @@ static void control_pump(void)
          * STOP is drawn: on the splash a tap in that corner presses nothing.
          */
         const bool in_stop =
-            s_stop_live
+            atomic_load(&s_stop_live)
             && gfx_rect_contains(ui_band_stop_rect(), evt.point.x,
                                  evt.point.y);
         if (evt.type == TOUCH_EVENT_DOWN && in_stop) {
@@ -318,7 +325,7 @@ static void control_pump(void)
                    && evt.type == TOUCH_EVENT_UP) {
             s_stop_press = false;
             if (in_stop) {
-                s_stop_request = true;
+                atomic_store(&s_stop_request, true);
             }
         }
         /* The screen still sees every event: it draws the press. */
@@ -835,8 +842,7 @@ static void control_task(void *arg)
          * monostable holds for longer than a frame.  Only an explicit arm
          * clears it.
          */
-        if (s_stop_request) {
-            s_stop_request = false;
+        if (atomic_exchange(&s_stop_request, false)) {
             arming_stop(&s_arm);
         }
 
@@ -1191,14 +1197,14 @@ void app_main(void)
          * Whether a STOP is on screen to press.  The control task hit-tests
          * the band's rectangle and cannot see which screen is up.
          */
-        s_stop_live = ui_router_stop_live();
+        atomic_store(&s_stop_live, ui_router_stop_live());
         /*
          * The control task hit-tests STOP itself; this is the backstop for a
          * press it did not see.  It sets the flag rather than queueing,
          * because a full queue must not be able to discard a stop.
          */
         if (ui_router_take_stop()) {
-            s_stop_request = true;
+            atomic_store(&s_stop_request, true);
         }
 
         bench_state_t bench;
