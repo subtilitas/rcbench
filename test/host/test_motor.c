@@ -77,6 +77,33 @@ static void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 #define TRACK_X  72
 #define TRACK_W  414
 
+/* Mirrored from motor_screen.c: arming is a hold, not a press. */
+#define ARM_HOLD_S 2.0f
+
+/* Hold ARM long enough to arm, and let go. */
+static void hold_arm(void)
+{
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 45; ++i) {   /* 2.25 s at 20 steps a second */
+        scr->tick(0.05f);
+    }
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+}
+
+/*
+ * RGB565 components, for comparing a button's fill without pinning it.
+ * Scaled to 8 bits, because red carries 5 bits and green 6 and the raw
+ * fields are not comparable with each other.
+ */
+static int red_of(gfx_color_t c)   { return (int)(((c >> 11) & 0x1f) << 3); }
+static int green_of(gfx_color_t c) { return (int)(((c >> 5) & 0x3f) << 2); }
+static gfx_color_t arm_px(void)
+{
+    /* Inside the ARM button, clear of its rounded corner, its hairline and
+     * the centred label. */
+    return fb[(size_t)(ARM_Y + 8) * W + (ARM_X - 90)];
+}
+
 static motor_cmd_t last_cmd(void)
 {
     motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f };
@@ -88,9 +115,10 @@ TEST_CASE(arming_and_disarming_come_from_the_same_button)
 {
     fresh();
     motor_screen_set_armed(false);
-    tap(ARM_X, ARM_Y);
+    hold_arm();
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
 
+    /* Disarming stays a press: stopping must not need a hold. */
     motor_screen_set_armed(true);
     tap(ARM_X, ARM_Y);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_DISARM);
@@ -107,15 +135,86 @@ TEST_CASE(a_press_that_slides_off_arm_does_nothing)
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 }
 
-TEST_CASE(a_second_contact_cannot_steal_the_arm_release)
+TEST_CASE(a_second_contact_cannot_steal_the_disarm_release)
 {
     fresh();
-    motor_screen_set_armed(false);
+    motor_screen_set_armed(true);
     ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
     ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 2);        /* not ours */
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
     ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);        /* ours */
-    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_DISARM);
+}
+
+/*
+ * Arming takes ARM_HOLD_S of contact. A press that lets go early arms
+ * nothing, and it does not arm later either: a bench that spins a propeller
+ * should not do it on a touch that could have been an elbow.
+ */
+TEST_CASE(a_short_press_on_arm_does_nothing)
+{
+    fresh();
+    motor_screen_set_armed(false);
+
+    tap(ARM_X, ARM_Y);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    /* Half of the hold, then let go. */
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 20; ++i) {
+        scr->tick(0.05f);
+    }
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    /* Time passing afterwards does not complete it. */
+    for (int i = 0; i < 60; ++i) {
+        scr->tick(0.05f);
+    }
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    /* And the hold arms exactly once, however long it is held. */
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 200; ++i) {
+        scr->tick(0.05f);
+    }
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f };
+    int arms = 0;
+    while (motor_screen_poll_cmd(&c)) {
+        if (c.kind == MOTOR_CMD_ARM) {
+            ++arms;
+        }
+    }
+    CHECK_EQ(arms, 1);
+}
+
+/*
+ * Arming flashes the whole button: white, black, then the danger red, one
+ * drawn frame each. A fill that merely decayed towards the settled colour
+ * would not read as a flash.
+ */
+TEST_CASE(arming_flashes_the_whole_button)
+{
+    fresh();
+    scr->render(&cv, 0);
+    motor_screen_set_armed(true);
+
+    scr->render(&cv, 0);
+    const gfx_color_t f1 = arm_px();
+    scr->render(&cv, 0);
+    const gfx_color_t f2 = arm_px();
+    scr->render(&cv, 0);
+    const gfx_color_t f3 = arm_px();
+    scr->render(&cv, 0);
+    const gfx_color_t settled = arm_px();
+
+    CHECK_EQ(f1, GFX_WHITE);
+    CHECK_EQ(f2, GFX_BLACK);
+    CHECK_EQ(f3, settled);
+    CHECK(f3 != GFX_WHITE && f3 != GFX_BLACK);
+    /* Settled is the danger red: more red than green. */
+    CHECK(red_of(settled) > green_of(settled));
 }
 
 /*
@@ -144,7 +243,7 @@ TEST_CASE(the_disarm_latch_clears_when_it_is_read)
     (void)last_cmd();
 
     motor_screen_set_armed(false);
-    tap(ARM_X, ARM_Y);
+    hold_arm();
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
 }
 
@@ -180,6 +279,62 @@ TEST_CASE(the_nudges_step_the_throttle_by_one_point)
     (void)last_cmd();
     tap(UP_X, TRACK_Y);
     CHECK_NEAR(motor_screen_throttle(), 100.0f, 0.01f);
+}
+
+/*
+ * A drag moves the throttle and nothing else, which is its own repaint path:
+ * the readout's box and the slider, without the row's buttons.  The thumb
+ * and its shadow stand proud of the track, so a path that clears the track
+ * and not ui_slider_painted_rect() leaves a thumb behind at every position
+ * the finger passed through.  The other stale-pixel case changes the armed
+ * state, which takes the whole row and never exercises this.
+ */
+TEST_CASE(dragging_the_throttle_leaves_no_stale_pixels)
+{
+    const size_t bytes = (size_t)W * H * sizeof(gfx_color_t);
+    fresh();
+    bench_state_t b;
+    telemetry_sim_t sim;
+    memset(&b, 0, sizeof(b));
+    telemetry_sim_init(&sim, NULL);
+    for (int i = 0; i < 60; ++i) {
+        telemetry_sim_step(&sim, 40.0f, 0.05f, &b);
+        motor_screen_push(&b);
+    }
+
+    /* Both framebuffers settled, the way the panel leaves them. */
+    motor_screen_set_throttle(0.0f);
+    scr->render(&cv, 0);
+    scr->render(&cv, 1);
+
+    /* The finger travels the whole track, a frame per step. */
+    for (int v = 0; v <= 100; v += 5) {
+        motor_screen_set_throttle((float)v);
+        scr->render(&cv, (v / 5) & 1);
+    }
+    const int last_buf = (100 / 5) & 1;
+    gfx_color_t *dragged = malloc(bytes);
+    CHECK(dragged != NULL);
+    if (dragged == NULL) {
+        return;
+    }
+    memcpy(dragged, fb, bytes);
+
+    /* The same value, onto a buffer that never saw the drag. */
+    memset(fb, 0, bytes);
+    motor_invalidate();
+    scr->render(&cv, last_buf);
+
+    if (memcmp(dragged, fb, bytes) != 0) {
+        long differ = 0;
+        for (long i = 0; i < (long)W * H; ++i) {
+            if (dragged[i] != fb[i]) {
+                ++differ;
+            }
+        }
+        T_FAIL("a drag left %ld px that a fresh render does not draw", differ);
+    }
+    free(dragged);
 }
 
 /*
@@ -391,8 +546,14 @@ TEST_CASE(each_framebuffer_is_updated_independently)
     scr->render(&cv, 0);
     CHECK_EQ(memcmp(fb, other, (size_t)W * H * sizeof(gfx_color_t)), 0);
 
-    /* Same again for a control: the ARM button changes with no new sample. */
+    /* Same again for a control: the ARM button changes with no new sample.
+     * The arm flashes for three drawn frames, so it is run out first: a
+     * buffer caught mid-flash differs from one that is not. */
     motor_screen_set_armed(true);
+    for (int i = 0; i < 4; ++i) {
+        scr->render(&cv1, 1);
+        scr->render(&cv, 0);
+    }
     scr->render(&cv1, 1);
     scr->render(&cv, 0);
     CHECK_EQ(memcmp(fb, other, (size_t)W * H * sizeof(gfx_color_t)), 0);
@@ -435,7 +596,11 @@ TEST_CASE(a_redraw_leaves_no_stale_pixels)
     }
     motor_screen_set_armed(false);
     motor_screen_set_throttle(5.0f);
-    scr->render(&cv, 0);
+    /* Arming flashed for three drawn frames; run it out so the comparison is
+     * against a settled button. */
+    for (int i = 0; i < 4; ++i) {
+        scr->render(&cv, 0);
+    }
     gfx_color_t *over = malloc((size_t)W * H * sizeof(gfx_color_t));
     memcpy(over, fb, (size_t)W * H * sizeof(gfx_color_t));
 
@@ -448,142 +613,64 @@ TEST_CASE(a_redraw_leaves_no_stale_pixels)
     free(over);
 }
 
-/*
- * RGB565 components, for comparing a button's fill without pinning it.
- * Scaled to 8 bits, because red carries 5 bits and green 6 and the raw
- * fields are not comparable with each other.
- */
-static int red_of(gfx_color_t c)   { return (int)(((c >> 11) & 0x1f) << 3); }
-static int green_of(gfx_color_t c) { return (int)(((c >> 5) & 0x3f) << 2); }
-static gfx_color_t arm_px(void)
-{
-    /* Inside the ARM button, clear of its rounded corner, its hairline and
-     * the centred label. */
-    return fb[(size_t)(ARM_Y + 8) * W + (ARM_X - 90)];
-}
 
 /*
- * ARM says what the release will do: green while it will arm, fading to the
- * danger red over ARM_FADE_S while the finger stays down, and one flash as
- * the arm takes effect.  Each is its own animation, and the button carries
- * its own revision so a frame of either repaints 180 x 28 px rather than the
- * 800 x 90 control row.
+ * ARM fades from the OK green to the danger red across the whole hold, so the
+ * colour says how much of the two seconds is left. Disarming is a press and
+ * does not fade: DISARM is not about to arm.
  */
-TEST_CASE(the_arm_button_fades_while_held_and_flashes_on_arming)
+TEST_CASE(the_arm_button_fades_across_the_hold)
 {
     fresh();
     scr->render(&cv, 0);
     const gfx_color_t idle = arm_px();
     CHECK(green_of(idle) > red_of(idle));   /* the OK green */
 
-    /* Down on ARM, before the fade has run. */
     ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
     scr->render(&cv, 0);
     const gfx_color_t held0 = arm_px();
 
-    /* Held for the whole fade. */
+    /* Half way: on the way to red, not there yet. */
     for (int i = 0; i < 20; ++i) {
         scr->tick(0.05f);
     }
     scr->render(&cv, 0);
-    const gfx_color_t held1 = arm_px();
-    if (!(red_of(held1) > red_of(held0) && red_of(held1) > green_of(held1))) {
-        T_FAIL("held ARM went %04x -> %04x, which is not a fade to red",
-               held0, held1);
-    }
+    const gfx_color_t half = arm_px();
+    CHECK(red_of(half) > red_of(held0));
 
-    /* Arming flashes it, and the flash decays. */
+    /* The rest of the hold takes it to red, and arms. */
+    for (int i = 0; i < 25; ++i) {
+        scr->tick(0.05f);
+    }
+    scr->render(&cv, 0);
+    const gfx_color_t full = arm_px();
+    if (!(red_of(full) > red_of(half) && red_of(full) > green_of(full))) {
+        T_FAIL("the hold went %04x -> %04x -> %04x, which is not a fade to "
+               "red", held0, half, full);
+    }
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
     ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
-    motor_screen_set_armed(true);
-    scr->render(&cv, 0);
-    const gfx_color_t flash = arm_px();
-    for (int i = 0; i < 10; ++i) {
-        scr->tick(0.05f);
-    }
-    scr->render(&cv, 0);
-    const gfx_color_t settled = arm_px();
-    if (!(red_of(flash) >= red_of(settled)
-          && green_of(flash) > green_of(settled))) {
-        T_FAIL("arming went %04x -> %04x, which is not a flash that decays",
-               flash, settled);
-    }
 
-    /*
-     * And the fade does not run once armed: DISARM is not about to arm, so
-     * holding it must not walk the colour towards the danger red the way
-     * holding ARM does.  Pressing it and holding past a full fade has to
-     * leave the fill where it was.
-     */
+    /* Armed, and past the flash: holding DISARM must not fade. */
+    motor_screen_set_armed(true);
+    for (int i = 0; i < 5; ++i) {
+        scr->render(&cv, 0);
+    }
+    const gfx_color_t settled = arm_px();
     ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 20; ++i) {
+    for (int i = 0; i < 45; ++i) {
         scr->tick(0.05f);
     }
     scr->render(&cv, 0);
     const gfx_color_t held_armed = arm_px();
     ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
     /* ui_button lightens a pressed fill, so compare the hue rather than the
-     * value: red must not have gained on green the way the arming fade does. */
+     * value: red must not have gained on green the way the hold does. */
     if (red_of(held_armed) - green_of(held_armed)
         > red_of(settled) - green_of(settled) + 24) {
         T_FAIL("holding DISARM went %04x -> %04x, which is a fade it should "
                "not run", settled, held_armed);
     }
-}
-
-/*
- * A drag moves the throttle and nothing else, which is its own repaint path:
- * the readout's box and the slider, without the row's buttons.  The thumb
- * and its shadow stand proud of the track, so a path that clears the track
- * and not ui_slider_painted_rect() leaves a thumb behind at every position
- * the finger passed through.  The other stale-pixel case changes the armed
- * state, which takes the whole row and never exercises this.
- */
-TEST_CASE(dragging_the_throttle_leaves_no_stale_pixels)
-{
-    const size_t bytes = (size_t)W * H * sizeof(gfx_color_t);
-    fresh();
-    bench_state_t b;
-    telemetry_sim_t sim;
-    memset(&b, 0, sizeof(b));
-    telemetry_sim_init(&sim, NULL);
-    for (int i = 0; i < 60; ++i) {
-        telemetry_sim_step(&sim, 40.0f, 0.05f, &b);
-        motor_screen_push(&b);
-    }
-
-    /* Both framebuffers settled, the way the panel leaves them. */
-    motor_screen_set_throttle(0.0f);
-    scr->render(&cv, 0);
-    scr->render(&cv, 1);
-
-    /* The finger travels the whole track, a frame per step. */
-    for (int v = 0; v <= 100; v += 5) {
-        motor_screen_set_throttle((float)v);
-        scr->render(&cv, (v / 5) & 1);
-    }
-    const int last_buf = (100 / 5) & 1;
-    gfx_color_t *dragged = malloc(bytes);
-    CHECK(dragged != NULL);
-    if (dragged == NULL) {
-        return;
-    }
-    memcpy(dragged, fb, bytes);
-
-    /* The same value, onto a buffer that never saw the drag. */
-    memset(fb, 0, bytes);
-    motor_invalidate();
-    scr->render(&cv, last_buf);
-
-    if (memcmp(dragged, fb, bytes) != 0) {
-        long differ = 0;
-        for (long i = 0; i < (long)W * H; ++i) {
-            if (dragged[i] != fb[i]) {
-                ++differ;
-            }
-        }
-        T_FAIL("a drag left %ld px that a fresh render does not draw", differ);
-    }
-    free(dragged);
 }
 
 /*
@@ -618,7 +705,9 @@ int main(void)
 {
     RUN(arming_and_disarming_come_from_the_same_button);
     RUN(a_press_that_slides_off_arm_does_nothing);
-    RUN(a_second_contact_cannot_steal_the_arm_release);
+    RUN(a_second_contact_cannot_steal_the_disarm_release);
+    RUN(a_short_press_on_arm_does_nothing);
+    RUN(arming_flashes_the_whole_button);
     RUN(a_pending_disarm_cannot_be_overwritten_by_an_arm);
     RUN(the_disarm_latch_clears_when_it_is_read);
     RUN(the_nudges_step_the_throttle_by_one_point);
@@ -630,7 +719,7 @@ int main(void)
     RUN(each_framebuffer_is_updated_independently);
     RUN(a_redraw_leaves_no_stale_pixels);
     RUN(dragging_the_throttle_leaves_no_stale_pixels);
-    RUN(the_arm_button_fades_while_held_and_flashes_on_arming);
+    RUN(the_arm_button_fades_across_the_hold);
     RUN(an_unanswered_bench_does_not_show_numbers);
     return test_summary("motor");
 }

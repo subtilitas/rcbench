@@ -68,6 +68,9 @@ Panel als Leitung ohne Flanken gelesen wird.
 
 - STOP rastet ein. Der Prüfstand bleibt entschärft, bis er erneut scharf
   geschaltet wird.
+- Das Scharfschalten ist ein zwei Sekunden langes Halten auf ARM, und das
+  Kommando geht ab, wenn das Halten durchgelaufen ist, nicht wenn der Finger
+  abhebt. Das Entschärfen ist ein Druck.
 - Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
   Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, sodass
   eine Berührung am Ende nicht mit einem Kontakt den vollen Weg anfordern kann.

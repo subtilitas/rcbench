@@ -66,9 +66,15 @@ Displayplatine, nicht die des Koprozessors.
 Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
 Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, sodass
 eine Berührung am Ende nicht mit einem Kontakt den vollen Weg anfordern kann.
-`-1` und `+1` an den Enden des Tracks schalten um einen Prozentpunkt. ARM
-blendet beim Halten von Grün nach Rot und blitzt einmal auf, sobald scharf
-geschaltet ist; ein scharfer Prüfstand trägt das Gefahrenrot. DISARM und STOP
+`-1` und `+1` an den Enden des Tracks schalten um einen Prozentpunkt.
+
+ARM wird gehalten. Die Füllung blendet über zwei Sekunden von Grün ins
+Gefahrenrot, und der Prüfstand schaltet scharf, wenn die Blende
+durchgelaufen ist; früher loszulassen schaltet nichts scharf, und das
+Loslassen selbst ebenfalls nicht. Das Scharfschalten lässt den ganzen Button
+aufblitzen: weiss, schwarz, rot, je ein gezeichneter Frame. Ein scharfer
+Prüfstand trägt das Gefahrenrot, und DISARM ist ein Druck und kein Halten:
+Anhalten braucht nie ein Halten. DISARM und STOP
 halten den Ausgang sofort an, ohne Rampe. RESET PEAKS löscht die
 Spitzenwertmarken und lässt die Live-Anzeigen unverändert.
 

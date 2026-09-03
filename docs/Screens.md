@@ -63,8 +63,14 @@ not the coprocessor's.
 The throttle moves by how far a finger travels, not to where it lands. A press
 on the track commands nothing, so a touch at the far end cannot ask for full
 travel in one contact. `-1` and `+1` at the ends of the track step one
-percentage point. ARM fades from green to red while it is held and flashes
-once as the arm takes effect; an armed bench carries the danger red. DISARM
+percentage point.
+
+ARM is a hold. The fill fades from green to the danger red across two
+seconds, and the bench arms when the fade completes; letting go before then
+arms nothing, and the release itself arms nothing either. Arming flashes the
+whole button white, black, then red, one drawn frame each. An armed bench
+carries the danger red, and DISARM is a press rather than a hold: stopping
+never needs a hold. DISARM
 and STOP stop the output immediately, with no ramp. RESET PEAKS clears the
 peak markers and leaves the live readings.
 

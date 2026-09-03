@@ -61,6 +61,8 @@ unpowered or unplugged panel reads as a line that is not edging.
 ## Deliberate behaviours
 
 - STOP latches. The bench stays disarmed until it is armed again.
+- Arming is a two-second hold on ARM, and the command goes when the hold
+  completes rather than when the finger lifts. Disarming is a press.
 - The throttle moves by how far a finger travels, not to where it lands. A
   press on the track commands nothing, so a touch at the far end cannot ask
   for full travel in one contact. Sliders that command nothing dangerous, such
