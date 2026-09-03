@@ -444,9 +444,30 @@ static bench_state_t s_bench;
  */
 #define RPM_STALE_MS  200u
 
+/*
+ * The peaks belong to a run, and a run starts when the bank arms.
+ *
+ * They are kept on this end because it has the fast samples and the panel
+ * sees one poll in fifty of them, so only this end can see the peak at all.
+ * Holding them since boot instead would report a maximum from a motor that
+ * was taken off the bench two runs ago.
+ */
+static bool s_was_driving;
+
 static void sample(void)
 {
-    memset(&s_bench, 0, sizeof(s_bench));
+    /*
+     * The live readings and their valid bits are rebuilt every sample; the
+     * peaks are not, because a peak that is recomputed from one sample is
+     * the current reading wearing a different name.
+     */
+    s_bench.voltage     = 0.0f;
+    s_bench.current     = 0.0f;
+    s_bench.power       = 0.0f;
+    s_bench.rpm         = 0.0f;
+    s_bench.temp_esc    = 0.0f;
+    s_bench.temp_motor  = 0.0f;
+    s_bench.flags       = 0u;
 
     uint32_t erpm = 0u;
     uint32_t age  = 0u;
@@ -454,10 +475,20 @@ static void sample(void)
     if (poles != 0u && outputs_hw_erpm(&erpm, &age) && age <= RPM_STALE_MS) {
         /* Pole pairs, not poles: one electrical revolution per pair. */
         s_bench.rpm = (float)dshot_rpm(erpm, (uint8_t)(poles / 2u));
-        if (s_bench.rpm > s_bench.rpm_max) {
-            s_bench.rpm_max = s_bench.rpm;
-        }
         s_bench.flags |= (uint16_t)LINK_BN_RPM_OK;
+    }
+
+    /* On the edge into driving, so a run's peaks are that run's.  The reset
+     * takes the current reading rather than zero, which is what stops a sag
+     * floor of 0 V reading as a collapsed pack. */
+    const bool driving = outputs_driving(&s_outputs);
+    if (driving && !s_was_driving) {
+        bench_state_reset_peaks(&s_bench);
+    }
+    s_was_driving = driving;
+
+    if (s_bench.rpm > s_bench.rpm_max) {
+        s_bench.rpm_max = s_bench.rpm;
     }
     bench_state_to_regs(&s_bench, s_state.bench);
 

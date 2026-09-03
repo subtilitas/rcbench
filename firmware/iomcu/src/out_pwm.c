@@ -28,6 +28,7 @@ typedef struct {
     bool     used;
     uint8_t  pin;
     uint16_t rate_hz;
+    uint16_t wrap;      /**< the last count of the frame                  */
 } binding_t;
 
 static binding_t s_bound[OUT_MAX_SLOTS];
@@ -100,6 +101,7 @@ bool out_pwm_bind(uint8_t pin, uint16_t rate_hz)
     free_slot->used    = true;
     free_slot->pin     = pin;
     free_slot->rate_hz = rate_hz;
+    free_slot->wrap    = wrap;
     return true;
 }
 
@@ -133,8 +135,20 @@ void out_pwm_release(uint8_t pin)
 
 void out_pwm_write(uint8_t pin, uint16_t pulse_us)
 {
-    if (find(pin) == NULL) {
+    const binding_t *b = find(pin);
+    if (b == NULL) {
         return;
     }
-    pwm_set_gpio_level(pin, pulse_us);
+    /*
+     * A pulse cannot be longer than the frame that carries it.  400 Hz is a
+     * 2500 us period and 2500 us is a legal endpoint, and a level above the
+     * wrap makes the counter never reach it: the pin sits high for ever,
+     * which is not a long pulse but no pulse at all.  Clamped to the wrap,
+     * so there is always a tick of low and the output stays a pulse train.
+     *
+     * The combination is refused nowhere, because the endpoint is on the
+     * CHAN_CFG page and the rate is on the OUTPUTS page and either may be
+     * written after the other.  This is where both are known.
+     */
+    pwm_set_gpio_level(pin, (pulse_us > b->wrap) ? b->wrap : pulse_us);
 }
