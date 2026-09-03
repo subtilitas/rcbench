@@ -23,11 +23,17 @@ was nicht geplant ist.
 Dieser Prüfstand treibt Motoren und Servos. Bei scharfem Prüfstand außerhalb
 der Propellerebene bleiben.
 
+Das Scharfschalten ist bewusst: ein zwei Sekunden langes Halten auf ARM, wobei
+das Kommando abgeht, wenn das Halten durchgelaufen ist, und nicht wenn der
+Finger abhebt. Entschärfen und STOP sind ein einzelner Druck.
+
 Drei Stoppmechanismen sind vorgesehen: ein Heartbeat, dessen Ausbleiben die
 Ausgänge abschaltet, der Link-Watchdog des Koprozessors und ein STOP-Kommando
 über den Link. Der Heartbeat braucht ein retriggerbares Monoflop, das auf
-keiner Platine vorhanden ist; das STOP-Kommando über den Link ist geschrieben
-und nicht auf Hardware gelaufen.
+keiner Platine vorhanden ist, und auch die Leitung zwischen J8 des Panels und
+GP3 des Koprozessors ist nicht bestückt: ein angeschlossener Koprozessor
+verweigert deshalb jedes Scharfschalten. Das STOP-Kommando über den Link ist
+geschrieben und nicht auf Hardware gelaufen.
 [Sicherheit](https://github.com/subtilitas/rcbench/wiki/Safety-de) spezifiziert
 alle drei.
 
@@ -45,7 +51,7 @@ warranty of any kind" der MIT-Lizenz gilt.
 | Auswuchten | Blattzahl, Korrekturmasse und -winkel, Anleitungen zur Sensorplatzierung | Bildschirm gebaut; Sensoren nicht bestückt |
 | Akku | Zellenspreizung und Bewertung | Bildschirm gebaut; Zellenmonitor nicht bestückt |
 | Logs | CSV (Comma-Separated Values) von der Karte durchsehen, importieren und plotten; Läufe werden im scharfen Zustand aufgezeichnet | gebaut |
-| Setup | Einstellungen in beiden Themes, gespeichert im NVS | gebaut; Speicherung nicht auf Hardware gelaufen |
+| Setup | Einstellungen in beiden Themes, gespeichert im NVS | gebaut; Speicherung auf Hardware bestätigt |
 
 ## Bauen
 

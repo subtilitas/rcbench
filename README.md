@@ -24,10 +24,16 @@ planned.
 This bench drives motors and servos. Keep clear of the propeller plane whenever
 the bench is armed.
 
+Arming is deliberate: a two-second hold on ARM, with the command sent when the
+hold completes rather than when the finger lifts. Disarming and STOP are a
+single press.
+
 Three stop mechanisms are designed in: a heartbeat whose absence removes the
 outputs, the coprocessor's own link watchdog, and a STOP command over the link.
-The heartbeat requires a retriggerable monostable that is on no board; the
-STOP command over the link is written and not run on hardware.
+The heartbeat requires a retriggerable monostable that is on no board, and the
+line between the panel's J8 and the coprocessor's GP3 is not fitted either, so
+a coprocessor that is connected refuses every arm. The STOP command over the
+link is written and not run on hardware.
 [Safety](https://github.com/subtilitas/rcbench/wiki/Safety) specifies all
 three.
 
@@ -45,7 +51,7 @@ Institute of Technology) licence's "without warranty of any kind" applies.
 | Balance | blade count, correction mass and angle, sensor placement guides | screen built; sensors not fitted |
 | Battery | per-cell spread and verdict | screen built; cell monitor not fitted |
 | Logs | browse, import and plot CSV (comma-separated values) from the card; runs are recorded while armed | built |
-| Setup | settings in both themes, stored in NVS | built; persistence not run on hardware |
+| Setup | settings in both themes, stored in NVS | built; persistence confirmed on hardware |
 
 ## Building
 
