@@ -68,6 +68,7 @@ TRACKED = [
     "shared/logfile/log_csv.c",
     "shared/logfile/log_fields.c",
     "shared/safety/heartbeat.c",
+    "shared/safety/arming.c",
     "shared/servo/servo_limit.c",
     "shared/servo/servo_sync.c",
     "shared/openyge/openyge_frame.c",

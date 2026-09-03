@@ -276,6 +276,51 @@ TEST_CASE(a_press_on_the_track_commands_nothing)
     CHECK_EQ(sl.value, 0.0f);
 }
 
+/*
+ * A release can go missing: a contact lost, an event dropped by a bounded
+ * queue, a screen changed under the finger.  The delta model measures from
+ * where the press landed, so a drag still latched from an earlier gesture
+ * would apply a new finger's distance to a stale origin — a jump, which is
+ * the whole thing the delta model removes.
+ */
+TEST_CASE(a_drag_without_a_release_cannot_be_resumed_by_a_later_touch)
+{
+    fresh_slider();
+    ui_slider_set(&sl, 10.0f);
+    (void)ev(120, 120, TOUCH_EVENT_DOWN, 1);   /* a drag begins... */
+    (void)ev(160, 120, TOUCH_EVENT_MOVE, 1);
+    const float mid = sl.value;
+    /* ...and its release never arrives. A later press lands elsewhere. */
+    (void)ev(700, 400, TOUCH_EVENT_DOWN, 1);
+    CHECK(!sl.dragging);
+    /* That press is off the track, so nothing it does may move the value. */
+    CHECK(!ev(480, 120, TOUCH_EVENT_MOVE, 1));
+    CHECK_EQ(sl.value, mid);
+
+    /* And ui_slider_release() ends one explicitly. */
+    fresh_slider();
+    (void)ev(120, 120, TOUCH_EVENT_DOWN, 1);
+    CHECK(sl.dragging);
+    ui_slider_release(&sl);
+    CHECK(!sl.dragging);
+    CHECK(!ev(480, 120, TOUCH_EVENT_MOVE, 1));
+}
+
+/*
+ * A value set from outside during a drag has to move the drag's origin with
+ * it, or the next move measures from the value the press started on and undoes
+ * it.  The throttle's own nudge buttons do exactly this.
+ */
+TEST_CASE(setting_the_value_during_a_drag_re_anchors_it)
+{
+    fresh_slider();
+    ui_slider_set(&sl, 10.0f);
+    (void)ev(200, 120, TOUCH_EVENT_DOWN, 1);
+    ui_slider_set(&sl, 40.0f);              /* a nudge, mid-drag */
+    (void)ev(220, 120, TOUCH_EVENT_MOVE, 1); /* 20 px on, ~5 points */
+    CHECK(sl.value > 42.0f && sl.value < 48.0f);
+}
+
 /* A quarter of the track's width of travel is a quarter of the range,
  * wherever on the track the finger went down. */
 TEST_CASE(a_drag_moves_by_how_far_it_travelled)
@@ -499,6 +544,8 @@ int main(void)
     RUN(the_plot_and_hero_render_without_running_off_the_canvas);
     RUN(a_press_on_the_track_commands_nothing);
     RUN(a_drag_moves_by_how_far_it_travelled);
+    RUN(a_drag_without_a_release_cannot_be_resumed_by_a_later_touch);
+    RUN(setting_the_value_during_a_drag_re_anchors_it);
     RUN(a_drag_that_leaves_the_track_keeps_the_value);
     RUN(a_press_from_outside_never_becomes_a_drag);
     RUN(the_painted_rect_covers_the_presets_too);

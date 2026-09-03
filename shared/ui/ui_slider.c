@@ -65,6 +65,28 @@ void ui_slider_set(ui_slider_t *s, float value)
 {
     if (s != NULL) {
         s->value = clampf(value, s->min, s->max);
+        /*
+         * Re-anchor a drag in progress on the new value.  The delta model
+         * measures from where the press landed, so a value set from outside
+         * during a drag -- a preset, a nudge button, the application -- would
+         * be undone by the very next move.
+         */
+        if (s->dragging) {
+            s->drag_value = s->value;
+        }
+    }
+}
+
+/*
+ * Abandon a drag without a release.  A screen calls this when it is no longer
+ * the one under the finger; the latch would otherwise survive into the next
+ * gesture.
+ */
+void ui_slider_release(ui_slider_t *s)
+{
+    if (s != NULL) {
+        s->dragging       = false;
+        s->pressed_preset = -1;
     }
 }
 
@@ -98,6 +120,20 @@ bool ui_slider_event(ui_slider_t *s, const touch_event_t *evt)
     const int y = evt->point.y;
 
     if (evt->type == TOUCH_EVENT_DOWN) {
+        /*
+         * Any press ends a drag that is still latched.  A release can go
+         * missing -- a contact lost, an event dropped, a screen changed
+         * under the finger -- and a latched drag holds an origin and a value
+         * from that gesture.  Under the delta model a later contact reusing
+         * the identifier would then apply its distance to a stale origin,
+         * which is a jump: the exact behaviour the delta model exists to
+         * prevent.  An absolute model was bounded by where the finger was;
+         * this one is not, so the latch has to be cleared rather than
+         * trusted.  The preset latch goes with it: a press that lost its
+         * release would otherwise leave a button held and mis-handle a later
+         * release carrying the same identifier.
+         */
+        ui_slider_release(s);
         if (gfx_rect_contains(s->track, x, y)) {
             s->dragging   = true;
             s->drag_id    = evt->point.id;

@@ -149,6 +149,40 @@ TEST_CASE(the_disarm_latch_clears_when_it_is_read)
 }
 
 /*
+ * The percentage point at each end of the track.  They step the throttle and
+ * post it, and they are the reason ui_slider_set() has to re-anchor a drag:
+ * they move the value while a finger may be on the track.
+ */
+TEST_CASE(the_nudges_step_the_throttle_by_one_point)
+{
+    fresh();
+    motor_screen_set_throttle(50.0f);
+    (void)last_cmd();
+
+    tap(UP_X, TRACK_Y);
+    CHECK_NEAR(motor_screen_throttle(), 51.0f, 0.01f);
+    motor_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
+    CHECK_NEAR(c.value, 51.0f, 0.01f);
+
+    tap(DOWN_X, TRACK_Y);
+    CHECK_NEAR(motor_screen_throttle(), 50.0f, 0.01f);
+    c = last_cmd();
+    CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
+    CHECK_NEAR(c.value, 50.0f, 0.01f);
+
+    /* They clamp rather than wrap at the ends of travel. */
+    motor_screen_set_throttle(0.0f);
+    (void)last_cmd();
+    tap(DOWN_X, TRACK_Y);
+    CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
+    motor_screen_set_throttle(100.0f);
+    (void)last_cmd();
+    tap(UP_X, TRACK_Y);
+    CHECK_NEAR(motor_screen_throttle(), 100.0f, 0.01f);
+}
+
+/*
  * The rated kV comes from the connected ESC when it reports one, and from the
  * setting when it does not.  Neither leaves the field empty: a guessed kV
  * gives a plausible-looking efficiency that is wrong, and the schema
@@ -554,6 +588,7 @@ int main(void)
     RUN(a_second_contact_cannot_steal_the_arm_release);
     RUN(a_pending_disarm_cannot_be_overwritten_by_an_arm);
     RUN(the_disarm_latch_clears_when_it_is_read);
+    RUN(the_nudges_step_the_throttle_by_one_point);
     RUN(the_rated_kv_prefers_the_esc_over_the_entered_value);
     RUN(the_throttle_track_moves_by_how_far_it_is_dragged);
     RUN(reset_peaks_posts_its_own_command);

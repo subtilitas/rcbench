@@ -45,9 +45,9 @@ cannot distinguish a heartbeat from noise. Constants from
 
 | | Value | |
 | --- | ---: | --- |
-| Panel edge interval | 26–52 ms | one edge per rendered frame |
-| Accepted interval | 4–150 ms | shorter is noise; longer means the panel has stopped rendering |
-| Good intervals before the line is trusted | 4 | about 0.1 s at the panel's rate |
+| Panel edge interval | 20 ms | `HEARTBEAT_PERIOD_MS`, one edge per control-task period, not per frame |
+| Accepted interval | 4–150 ms | shorter is noise; longer means the loop that owns STOP has stopped |
+| Good intervals before the line is trusted | 4 | 80 ms at the panel's rate |
 
 The check is asymmetric: four good intervals before the line is trusted, one
 bad interval or one silent window to distrust it. The coprocessor refuses to

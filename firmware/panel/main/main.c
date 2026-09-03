@@ -11,6 +11,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include <inttypes.h>
+#include <stdatomic.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -31,6 +32,7 @@
 #include "selftest.h"
 #include "display.h"
 #include "gfx.h"
+#include "arming.h"
 #include "heartbeat.h"
 #include "link_bringup.h"
 #include "link_host.h"
@@ -131,8 +133,6 @@ static uint32_t now_ms(void)
  */
 static heartbeat_gen_t s_beat;
 
-/* Latched by STOP; cleared only by an explicit arm.  See the loop. */
-static bool s_stopped;
 
 static void heartbeat_init(void)
 {
@@ -250,6 +250,7 @@ static struct {
     bool          stopped;
     uint16_t      faults;
     uint32_t      link_errors;
+    uint32_t      run_seconds;
     char          alert[ALERT_MAX];
     bool          alert_pending;
 } s_snap;
@@ -264,6 +265,89 @@ static void control_alert(const char *text)
     snprintf(s_snap.alert, sizeof(s_snap.alert), "%s", text);
     s_snap.alert_pending = true;
     snap_unlock();
+}
+
+/*
+ * The safety loop's own state, at file scope because control_pump() services
+ * it from inside a link exchange as well as from the top of the control task.
+ */
+static outputs_t s_out;
+/*
+ * When the bench may be armed.  The policy lives in shared/safety/arming.c so
+ * the host suite can hold it; this file drives it and acts on what it says.
+ */
+static arming_t  s_arm;
+static bool      s_stop_press;
+static uint8_t   s_stop_id;
+/*
+ * Both cross the two cores, so both are atomic rather than volatile: volatile
+ * orders nothing between processors and promises no atomicity.
+ *
+ * s_stop_request is taken with an exchange rather than a test and a clear.
+ * A stop arriving between those two would have been dropped -- the read said
+ * "none", the write then said "none" over the top of it.
+ */
+static atomic_bool s_stop_live;
+static atomic_bool s_stop_request;
+/* False until the control task owns the safety state; bring-up polls the
+ * link before that, with nothing to service. */
+static bool s_pump_live;
+
+/*
+ * Touch, STOP, the outputs and the heartbeat -- everything with a deadline,
+ * and nothing that talks to the link.
+ *
+ * Called from the top of the control task and again from inside the wait in
+ * exchange(), because that wait runs for up to LINK_HOST_TIMEOUT_MS (1000 ms)
+ * and the heartbeat's ceiling is HEARTBEAT_MAX_GAP_MS (150 ms).  Without this
+ * a single unanswered CAN reply drops the coprocessor's outputs and latches
+ * its failsafe.  The loop that owns STOP really is still running during that
+ * wait; this is what makes the line say so.
+ */
+static void control_pump(void)
+{
+    touch_event_t evt;
+    bool saw_touch = false;
+    while (touch_wait_event(&evt, 0)) {
+        saw_touch = true;
+        /*
+         * The band's rectangle is a constant, so it has to be asked whether a
+         * STOP is drawn: on the splash a tap in that corner presses nothing.
+         */
+        const bool in_stop =
+            atomic_load(&s_stop_live)
+            && gfx_rect_contains(ui_band_stop_rect(), evt.point.x,
+                                 evt.point.y);
+        if (evt.type == TOUCH_EVENT_DOWN && in_stop) {
+            s_stop_press = true;
+            s_stop_id    = evt.point.id;
+        } else if (s_stop_press && evt.point.id == s_stop_id
+                   && evt.type == TOUCH_EVENT_UP) {
+            s_stop_press = false;
+            if (in_stop) {
+                atomic_store(&s_stop_request, true);
+            }
+        }
+        /* The screen still sees every event: it draws the press. */
+        (void)xQueueSend(s_touch_q, &evt, 0);
+    }
+    /*
+     * touch_age_ms() is the time since the controller last answered a poll,
+     * not since the last touch.  An untouched panel is healthy; a controller
+     * that has stopped answering is not.
+     */
+    if (saw_touch || touch_age_ms() < 200u) {
+        arming_touch_seen(&s_arm, now_ms());
+    }
+
+    outputs_step(&s_out, now_ms());
+    /*
+     * Not gated on the link.  The heartbeat asserts that the processor owning
+     * STOP is running its loop; whether the two boards can talk is a separate
+     * question with its own watchdog at each end.  Gating on both would let a
+     * dropped CAN frame cut the safety line.
+     */
+    beat(arming_heartbeat(&s_arm, now_ms()));
 }
 
 /* ------------------------------------------------------------------- boot */
@@ -551,6 +635,16 @@ static bool exchange(link_host_t *host, const link_msg_t *req,
                 return true;
             }
         }
+        /*
+         * This wait runs to LINK_HOST_TIMEOUT_MS.  The safety loop cannot
+         * stop for that long, so it runs here too: one pump per 5 ms receive
+         * window keeps the heartbeat inside its 150 ms ceiling and STOP
+         * inside a frame of the press.  Only during bring-up, before the
+         * control task exists, is there nothing to pump.
+         */
+        if (s_pump_live) {
+            control_pump();
+        }
         if (link_host_tick(host, now_ms())) {
             return false;
         }
@@ -717,7 +811,6 @@ static void control_task(void *arg)
 
     telemetry_sim_t sim;
     bench_state_t   bench;
-    outputs_t       out;
     memset(&bench, 0, sizeof(bench));
     telemetry_sim_init(&sim, NULL);
     /*
@@ -725,69 +818,23 @@ static void control_task(void *arg)
      * arming, slew and staleness rules as the coprocessor's outputs, so the
      * two ends cannot answer those questions differently.
      */
-    outputs_init(&out, now_ms());
-    (void)outputs_set_role(&out, PANEL_CH_THROTTLE, OUT_ROLE_THROTTLE);
-    (void)outputs_set_slew(&out, PANEL_CH_THROTTLE, PANEL_THROTTLE_RAMP);
+    outputs_init(&s_out, now_ms());
+    (void)outputs_set_role(&s_out, PANEL_CH_THROTTLE, OUT_ROLE_THROTTLE);
+    (void)outputs_set_slew(&s_out, PANEL_CH_THROTTLE, PANEL_THROTTLE_RAMP);
+    arming_init(&s_arm, now_ms(),
+                HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS + HEARTBEAT_PERIOD_MS);
+    s_pump_live = true;
 
     uint32_t last_poll     = 0;
     uint32_t last_status   = 0;
     uint32_t last_report   = 0;
     uint32_t last_temp     = 0;
-    uint32_t last_touch_ok = now_ms();
     bool     link_up       = false;
-    bool     stop_press    = false;
-    uint8_t  stop_id       = 0;
+
+    uint32_t last_sample = now_ms();
 
     for (;;) {
-        /* --- touch, and the rule that outlives every screen --------------- */
-        /*
-         * touch_wait_event() returns bool, not esp_err_t, although its
-         * timeout argument makes it look like one.  Comparing the result
-         * against ESP_OK (zero) inverts the loop.
-         */
-        touch_event_t evt;
-        bool saw_touch = false;
-        while (touch_wait_event(&evt, 0)) {
-            saw_touch = true;
-            const gfx_rect_t stop = ui_band_stop_rect();
-            const bool in_stop =
-                gfx_rect_contains(stop, evt.point.x, evt.point.y);
-            if (evt.type == TOUCH_EVENT_DOWN && in_stop) {
-                stop_press = true;
-                stop_id    = evt.point.id;
-            } else if (stop_press && evt.point.id == stop_id
-                       && evt.type == TOUCH_EVENT_UP) {
-                stop_press = false;
-                if (in_stop) {
-                    s_stopped = true;
-                }
-            }
-            /* The screen still sees every event: it draws the press. */
-            (void)xQueueSend(s_touch_q, &evt, 0);
-        }
-        /*
-         * touch_age_ms() is the time since the controller last answered a
-         * poll, not since the last touch.  An untouched panel is healthy; a
-         * controller that has stopped answering is not.
-         */
-        if (saw_touch || touch_age_ms() < 200u) {
-            last_touch_ok = now_ms();
-        }
-        /*
-         * The panel is the only place a STOP button exists, so a touch
-         * controller that has stopped answering for 500 ms means the bench
-         * cannot be stopped, and a bench that cannot be stopped is not armed.
-         */
-        const bool touch_dead =
-            (uint32_t)(now_ms() - last_touch_ok) >= 500u;
-        if (touch_dead && outputs_armed(&out)) {
-            outputs_arm(&out, false, now_ms());
-            control_alert("touch stopped answering -- disarmed");
-            if (link_up) {
-                link_msg_t ack = { 0 };
-                (void)control_write(false, &ack);
-            }
-        }
+        control_pump();
 
         /*
          * STOP latches rather than clearing on the next frame: a stop that
@@ -795,22 +842,48 @@ static void control_task(void *arg)
          * monostable holds for longer than a frame.  Only an explicit arm
          * clears it.
          */
-        if (s_stopped && outputs_armed(&out)) {
-            outputs_arm(&out, false, now_ms());
-            /* The command as well as the heartbeat: a control-page write
-             * wins arbitration against every telemetry frame in flight. */
+        if (atomic_exchange(&s_stop_request, false)) {
+            arming_stop(&s_arm);
+        }
+
+        /*
+         * One place decides, and it is the one under test.  A disarm here is
+         * the policy's, not this loop's: a latched stop, dead touch, or an
+         * arm that finished settling.
+         */
+        const bool was_touch_dead = arming_touch_dead(&s_arm, now_ms());
+        switch (arming_step(&s_arm, now_ms())) {
+        case ARMING_ACT_DISARM:
+            outputs_arm(&s_out, false, now_ms());
+            if (was_touch_dead) {
+                control_alert("touch stopped answering -- disarmed");
+            }
             if (link_up) {
                 link_msg_t ack = { 0 };
                 (void)control_write(false, &ack);
             }
+            break;
+        case ARMING_ACT_ARM: {
+            link_msg_t ack = { 0 };
+            if (link_up
+                && !(control_clear_failsafe(&ack) && control_write(true, &ack))) {
+                arming_refused(&s_arm);
+                control_alert("coprocessor refused to arm");
+            } else {
+                outputs_arm(&s_out, true, now_ms());
+            }
+            break;
+        }
+        default:
+            break;
         }
 
         /* --- what the screens asked for ---------------------------------- */
         panel_cmd_t pc;
         while (xQueueReceive(s_cmd_q, &pc, 0) == pdTRUE) {
             if (pc.kind == PANEL_CMD_STOP) {
-                s_stopped = true;
-                outputs_arm(&out, false, now_ms());
+                arming_stop(&s_arm);
+                outputs_arm(&s_out, false, now_ms());
                 if (link_up) {
                     link_msg_t ack = { 0 };
                     (void)control_write(false, &ack);
@@ -863,26 +936,17 @@ static void control_task(void *arg)
 
             switch (pc.motor.kind) {
             case MOTOR_CMD_ARM:
-                /* Arming is the deliberate act that clears a latched stop.
-                 * Nothing else does: not navigating away, not the alert
-                 * expiring, not the link coming back.  Over the link it is
-                 * a CLEAR then an ARM, and the coprocessor decides: it
-                 * refuses with NOT_ARMED while the heartbeat is not trusted
-                 * or a failsafe is latched. */
-                if (!touch_dead) {
-                    link_msg_t ack = { 0 };
-                    if (link_up
-                        && !(control_clear_failsafe(&ack)
-                             && control_write(true, &ack))) {
-                        control_alert("coprocessor refused to arm");
-                        break;
-                    }
-                    s_stopped = false;
-                    outputs_arm(&out, true, now_ms());
-                }
+                /*
+                 * Arming is the deliberate act that clears a latched stop.
+                 * The policy clears it, gives the heartbeat time to be
+                 * believed and only then asks for the write; see
+                 * shared/safety/arming.c.
+                 */
+                arming_request_arm(&s_arm, now_ms());
                 break;
             case MOTOR_CMD_DISARM:
-                outputs_arm(&out, false, now_ms());
+                arming_request_disarm(&s_arm);
+                outputs_arm(&s_out, false, now_ms());
                 if (link_up) {
                     link_msg_t ack = { 0 };
                     (void)control_write(false, &ack);
@@ -890,33 +954,26 @@ static void control_task(void *arg)
                 break;
             case MOTOR_CMD_THROTTLE:
                 s_throttle_hundredths = pct_to_hundredths(pc.motor.value);
-                (void)outputs_set(&out, PANEL_CH_THROTTLE,
+                (void)outputs_set(&s_out, PANEL_CH_THROTTLE,
                                   pct_to_span(pc.motor.value), now_ms());
                 break;
             case MOTOR_CMD_RESET_PEAKS: bench_state_reset_peaks(&bench); break;
             default: break;
             }
         }
-        (void)outputs_keepalive(&out, PANEL_CH_THROTTLE, now_ms());
+        (void)outputs_keepalive(&s_out, PANEL_CH_THROTTLE, now_ms());
 
+        const bool armed_now = outputs_armed(&s_out);
         const bool was_armed = (s_log_file != NULL);
-        if (outputs_armed(&out) && !was_armed) {
+        if (armed_now && !was_armed) {
             log_start();
-        } else if (!outputs_armed(&out) && was_armed) {
+        } else if (!armed_now && was_armed) {
             log_stop();
         }
 
-        outputs_step(&out, now_ms());
         const float emitted =
-            (float)outputs_actual(&out, PANEL_CH_THROTTLE) * 100.0f
+            (float)outputs_actual(&s_out, PANEL_CH_THROTTLE) * 100.0f
             / (float)OUT_SPAN;
-        /*
-         * Not gated on the link.  The heartbeat asserts that the processor
-         * owning STOP is running its loop; whether the two boards can talk
-         * is a separate question with its own watchdog at each end.  Gating
-         * on both would let a dropped CAN frame cut the safety line.
-         */
-        beat(!touch_dead && !s_stopped);
 
         /* --- the far end, at 1 Hz until it answers ----------------------- */
         bool new_sample = false;
@@ -930,13 +987,13 @@ static void control_task(void *arg)
                 answered = read_bench(&s_host, &bench);
                 if (answered) {
                     link_msg_t ack = { 0 };
-                    const bool armed = outputs_armed(&out);
+                    const bool armed = outputs_armed(&s_out);
                     if (!control_write(armed, &ack) && armed
                         && ack.op == LINK_OP_NACK) {
                         /* The coprocessor is in failsafe or has lost the
                          * heartbeat.  A stop latches at this end too. */
-                        outputs_arm(&out, false, now_ms());
-                        s_stopped = true;
+                        outputs_arm(&s_out, false, now_ms());
+                        arming_stop_from_far_end(&s_arm);
                         control_alert("coprocessor disarmed -- arm again");
                     }
                 }
@@ -963,19 +1020,12 @@ static void control_task(void *arg)
             link_up = answered;
 
             /*
-             * The numbers advance at the poll rate, not the frame rate: the
-             * plot's time axis is calibrated at SAMPLE_HZ, and pushing a
-             * sample per frame both stretches it and repaints the plot on
-             * every frame.
+             * A sample exists only if the far end answered.  A poll that
+             * timed out republishes nothing: counting it would put a stale
+             * reading on the plot as a fresh column and stamp a log row for
+             * a measurement that never arrived.
              */
-            if (!link_up) {
-                telemetry_sim_step(&sim, emitted, 1.0f / PANEL_SAMPLE_HZ, &bench);
-            }
-            new_sample = true;
-            if (s_log_file != NULL) {
-                s_log_t += 1.0f / PANEL_SAMPLE_HZ;
-                (void)log_writer_row(&s_log, s_log_t, &bench);
-            }
+            new_sample = link_up && answered;
 
             /*
              * The status page is read a tenth as often as the bench page: a
@@ -994,7 +1044,30 @@ static void control_task(void *arg)
                     s_bring.dev_crc_errors = st.regs[LINK_ST_CRC_ERRORS];
                     s_bring.dev_resyncs    = st.regs[LINK_ST_RESYNCS];
                     s_dev_faults           = st.regs[LINK_ST_FAULTS];
+                    /* Two of link_bringup's diagnoses are gated on this; it
+                     * was lost in the move and left every one of them dead. */
+                    s_bring.have_status    = true;
                 }
+            }
+        }
+
+        /*
+         * The model and the log advance on their own 50 ms cadence.  Tying
+         * them to the poll gate ran them at the identity-poll rate while the
+         * link was down -- one step of 50 ms per 1000 ms of wall clock, so
+         * the plot's axis and every CSV timestamp were twenty times slow.
+         */
+        if ((uint32_t)(now_ms() - last_sample)
+            >= (uint32_t)(1000.0f / PANEL_SAMPLE_HZ)) {
+            last_sample = now_ms();
+            if (!link_up) {
+                telemetry_sim_step(&sim, emitted, 1.0f / PANEL_SAMPLE_HZ,
+                                   &bench);
+                new_sample = true;
+            }
+            if (new_sample && s_log_file != NULL) {
+                s_log_t += 1.0f / PANEL_SAMPLE_HZ;
+                (void)log_writer_row(&s_log, s_log_t, &bench);
             }
         }
 
@@ -1014,11 +1087,12 @@ static void control_task(void *arg)
         snap_lock();
         s_snap.bench       = bench;
         s_snap.link_up     = link_up;
-        s_snap.armed       = outputs_armed(&out);
-        s_snap.stopped     = s_stopped;
+        s_snap.armed       = outputs_armed(&s_out);
+        s_snap.stopped     = s_arm.stopped;
         s_snap.faults      = link_up ? s_dev_faults : (uint16_t)0;
         s_snap.link_errors = (uint32_t)s_bring.dev_crc_errors
                              + (uint32_t)s_bring.dev_resyncs;
+        s_snap.run_seconds = arming_run_seconds(&s_arm);
         s_snap.mcu_temp_c  = s_mcu_c;
         snap_unlock();
 
@@ -1031,6 +1105,23 @@ static void control_task(void *arg)
         }
 
         vTaskDelay(pdMS_TO_TICKS(CONTROL_PERIOD_MS));
+    }
+}
+
+/*
+ * Queue a command, and do not lose it.  Every command is already taken from
+ * its screen by the time it gets here, so a refused send is a discarded
+ * disarm or a throttle that never arrives.
+ */
+static void send_cmd(const panel_cmd_t *pc)
+{
+    if (xQueueSend(s_cmd_q, pc, pdMS_TO_TICKS(5)) == pdTRUE) {
+        return;
+    }
+    panel_cmd_t stale;
+    (void)xQueueReceive(s_cmd_q, &stale, 0);
+    if (xQueueSend(s_cmd_q, pc, 0) != pdTRUE) {
+        ESP_LOGW(TAG, "control queue full; a command was lost");
     }
 }
 
@@ -1085,21 +1176,35 @@ void app_main(void)
         }
 
         /* What the screens decided, back to the control task. */
+        /*
+         * A command is taken from its screen before it is queued, so a queue
+         * that refused it would drop it for good -- a disarm among them.  The
+         * send waits briefly and, if the queue is still full, drops the
+         * OLDEST entry rather than this one: the newest throttle position and
+         * a disarm both matter more than a stale step.
+         */
         motor_cmd_t mc;
         while (motor_screen_poll_cmd(&mc)) {
             panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc };
-            (void)xQueueSend(s_cmd_q, &pc, 0);
+            send_cmd(&pc);
         }
         servo_cmd_t sv;
         if (servo_screen_take(&sv)) {
             panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv };
-            (void)xQueueSend(s_cmd_q, &pc, 0);
+            send_cmd(&pc);
         }
-        /* The control task hit-tests STOP itself; this is the backstop for a
-         * press it did not see, and it costs one queue entry. */
+        /*
+         * Whether a STOP is on screen to press.  The control task hit-tests
+         * the band's rectangle and cannot see which screen is up.
+         */
+        atomic_store(&s_stop_live, ui_router_stop_live());
+        /*
+         * The control task hit-tests STOP itself; this is the backstop for a
+         * press it did not see.  It sets the flag rather than queueing,
+         * because a full queue must not be able to discard a stop.
+         */
         if (ui_router_take_stop()) {
-            panel_cmd_t pc = { .kind = PANEL_CMD_STOP };
-            (void)xQueueSend(s_cmd_q, &pc, 0);
+            atomic_store(&s_stop_request, true);
         }
 
         bench_state_t bench;
@@ -1108,6 +1213,7 @@ void app_main(void)
         uint16_t faults;
         uint32_t link_errors;
         float    mcu_temp_c;
+        uint32_t run_seconds;
         char     alert[ALERT_MAX];
         bool     have_alert;
         snap_lock();
@@ -1117,6 +1223,7 @@ void app_main(void)
         faults      = s_snap.faults;
         link_errors = s_snap.link_errors;
         mcu_temp_c  = s_snap.mcu_temp_c;
+        run_seconds = s_snap.run_seconds;
         have_alert  = s_snap.alert_pending;
         if (have_alert) {
             snprintf(alert, sizeof(alert), "%s", s_snap.alert);
@@ -1139,7 +1246,7 @@ void app_main(void)
             .link_up     = link_up,
             .armed       = armed,
             .faults      = faults,
-            .run_seconds = now_ms() / 1000u,
+            .run_seconds = run_seconds,
             .mode        = link_up ? "LINK" : "SIM",
             .simulated   = bench_state_simulated(&bench),
             .capabilities = s_capabilities,

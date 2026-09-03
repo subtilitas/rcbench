@@ -115,7 +115,7 @@ Zähler.** Ein Drag liefert eine Berührung je Frame. Die Buttons und das Gas
 des Motorbildschirms teilten eine Revision, weshalb ein Drag jedes
 Bedienelement daneben neu zeichnete. Das Gas hat jetzt seinen eigenen
 und zeichnet die Box der Anzeige und die bemalte Region des Sliders neu:
-`throttle` kostet 10 356 Fills, 34,0 ms, gegen 9 586 für einen Sample-Frame.
+Der Modus `throttle` in der Tabelle oben misst das gegen einen Sample-Frame.
 Der Flip quantisiert auf ganze Panel-Frames: ein Drag liegt entweder
 innerhalb von zwei davon oder wartet auf einen dritten, also 19,5 fps oder
 13,0. Auf der Hardware mit 50,5 ms gemessen, nahm der alte Drag den dritten.

@@ -48,9 +48,9 @@ Monoflop Heartbeat und Rauschen nicht unterscheiden kann. Die Konstanten aus
 
 | | Wert | |
 | --- | ---: | --- |
-| Flankenabstand des Panels | 26–52 ms | eine Flanke je gerendertem Frame |
-| Akzeptierter Abstand | 4–150 ms | kürzer ist Rauschen; länger heißt, das Panel rendert nicht mehr |
-| Gute Abstände, bevor der Leitung vertraut wird | 4 | etwa 0,1 s bei der Rate des Panels |
+| Flankenabstand des Panels | 20 ms | `HEARTBEAT_PERIOD_MS`, eine Flanke je Periode des Control-Tasks, nicht je Frame |
+| Akzeptierter Abstand | 4–150 ms | kürzer ist Rauschen; länger heisst, die Schleife, die STOP besitzt, steht |
+| Gute Abstände, bevor der Leitung vertraut wird | 4 | 80 ms bei der Rate des Panels |
 
 Die Prüfung ist asymmetrisch: vier gute Abstände, bevor der Leitung vertraut
 wird; ein schlechter Abstand oder ein stilles Fenster, und das Vertrauen ist

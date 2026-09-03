@@ -115,6 +115,9 @@ typedef struct {
 } ui_bench_status_t;
 
 void ui_router_set_status(const ui_bench_status_t *status);
+
+/** True while a STOP button is drawn; false on the splash, which has none. */
+bool ui_router_stop_live(void);
 const ui_bench_status_t *ui_router_status(void);
 
 /**
