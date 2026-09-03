@@ -13,6 +13,7 @@
 
 #include "ui_hero.h"
 #include "ui_plot.h"
+#include "link_pages.h"
 #include "settings.h"
 #include "ui_slider.h"
 #include "ui_tabs.h"
@@ -462,9 +463,16 @@ static void draw_header(gfx_canvas_t *c)
     gfx_text(c, x0, HDR_Y + 1, line, &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 
+    /*
+     * The protocol carries a flag per channel for exactly this: a bench whose
+     * coprocessor has no temperature sensor sends zero, and "ESC 0C" is a
+     * reading rather than a gap.
+     */
+    const bool temp_ok = s.bench.valid
+                         && (s.bench.flags & LINK_BN_TEMP_OK) != 0u;
     char esc[16], mot[16], mcu[16], temps[52];
-    temp_text(esc, sizeof(esc), "ESC", s.bench.temp_esc, s.bench.valid);
-    temp_text(mot, sizeof(mot), "MOT", s.bench.temp_motor, s.bench.valid);
+    temp_text(esc, sizeof(esc), "ESC", s.bench.temp_esc, temp_ok);
+    temp_text(mot, sizeof(mot), "MOT", s.bench.temp_motor, temp_ok);
     temp_text(mcu, sizeof(mcu), "MCU", st->mcu_temp_c,
               isfinite(st->mcu_temp_c));
     snprintf(temps, sizeof(temps), "%s  %s  %s", esc, mot, mcu);
@@ -507,7 +515,10 @@ static void draw_derived(gfx_canvas_t *c)
     const int rated = (s.esc_kv > 0) ? s.esc_kv
                                      : settings_get_int(SET_MOTOR_KV);
     const bool measurable =
-        s.bench.valid && s.bench.voltage > 0.5f && s.bench.rpm > 1.0f;
+        s.bench.valid
+        && (s.bench.flags & LINK_BN_VOLTAGE_OK) != 0u
+        && (s.bench.flags & LINK_BN_RPM_OK) != 0u
+        && s.bench.voltage > 0.5f && s.bench.rpm > 1.0f;
     const float per_volt = measurable ? (s.bench.rpm / s.bench.voltage) : 0.0f;
 
     char kv[24], rv[24], eff[24];
@@ -639,8 +650,15 @@ static void draw_heroes(gfx_canvas_t *c)
         const ui_hero_def_t def = { k_series[i].name, k_series[i].unit,
                                     s.plot.series[i].color,
                                     k_series[i].decimals, k_extreme[i] };
-        draw_rail_card(c, r, &def, s.bench.valid ? now[i] : NAN,
-                       s.bench.valid ? pk[i] : NAN);
+        /* Power has no flag of its own: it is voltage times current, and it
+         * is worth no more than the weaker of the two. */
+        static const uint16_t k_ok[S_COUNT] = {
+            LINK_BN_VOLTAGE_OK, LINK_BN_CURRENT_OK,
+            LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK, LINK_BN_RPM_OK,
+        };
+        const bool ok = s.bench.valid
+                        && (s.bench.flags & k_ok[i]) == k_ok[i];
+        draw_rail_card(c, r, &def, ok ? now[i] : NAN, ok ? pk[i] : NAN);
     }
 }
 
@@ -709,7 +727,11 @@ static void render(gfx_canvas_t *c, int buffer_index)
                            (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H });
         } else {
             gfx_fill_rect(c, LEFT_X + 1, UP_Y + TITLE_H, LEFT_W - 2,
-                          UP_H - TITLE_H - 1, ui_theme_color(UI_C_PANEL));
+                          UP_H - TITLE_H - 1 - UI_CHAMFER,
+                          ui_theme_color(UI_C_PANEL));
+            gfx_fill_rect(c, LEFT_X + 1, UP_Y + UP_H - 1 - UI_CHAMFER,
+                          LEFT_W - 2 - UI_CHAMFER, UI_CHAMFER,
+                          ui_theme_color(UI_C_PANEL));
             draw_table(c);
         }
         draw_derived(c);
@@ -747,8 +769,18 @@ static void render(gfx_canvas_t *c, int buffer_index)
      * track, because the thumb and its shadow stand proud of the track.
      */
     if (ctrl_moved) {
+        /*
+         * Inside the chamfer, not inside the border.  ui_panel cuts the
+         * bottom-right corner by UI_CHAMFER and draws it once per
+         * framebuffer, so a clear that reached the corner would square it off
+         * for the life of that buffer with nothing to repaint it.
+         */
         gfx_fill_rect(c, LEFT_X + 1, LO_Y + TITLE_H, LEFT_W - 2,
-                      LO_H - TITLE_H - 1, ui_theme_color(UI_C_PANEL));
+                      LO_H - TITLE_H - 1 - UI_CHAMFER,
+                      ui_theme_color(UI_C_PANEL));
+        gfx_fill_rect(c, LEFT_X + 1, LO_Y + LO_H - 1 - UI_CHAMFER,
+                      LEFT_W - 2 - UI_CHAMFER, UI_CHAMFER,
+                      ui_theme_color(UI_C_PANEL));
     } else {
         gfx_fill_rect(c, LEFT_X + INNER, ROW_Y, READOUT_W, READOUT_H,
                       ui_theme_color(UI_C_PANEL));
@@ -763,8 +795,11 @@ static void render(gfx_canvas_t *c, int buffer_index)
     const gfx_seg_style_t seg = ui_seg_hero();
     const int pw = gfx_seg_width(pct, &seg);
     const int px = LEFT_X + LEFT_W - INNER - 20 - pw;
+    /* The unlit segments are a ghost of the lit ones against whatever they
+     * sit on.  That is the panel now, not the screen's background; against
+     * the wrong base they read as a dark block behind the digits. */
     gfx_seg_text(c, px, ROW_Y, pct, &seg, ui_theme_color(UI_C_ACCENT),
-                 gfx_lerp(ui_theme_color(UI_C_BG),
+                 gfx_lerp(ui_theme_color(UI_C_PANEL),
                           ui_theme_color(UI_C_ACCENT), 34));
     gfx_text(c, LEFT_X + LEFT_W - INNER - 14, ROW_Y + 14, "%",
              &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);

@@ -71,6 +71,10 @@ Panel als Leitung ohne Flanken gelesen wird.
 - Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
   Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, sodass
   eine Berührung am Ende nicht mit einem Kontakt den vollen Weg anfordern kann.
+  Slider, die nichts Gefährliches kommandieren, etwa die Sweep-Geschwindigkeit
+  des Servobildschirms, behalten Tap-to-set.
+- Ein Entschärfen setzt das Gas auf null, damit ein Scharfschalten bei null
+  beginnt und nicht dort, wo der letzte Lauf aufgehört hat.
 - Das Verlassen eines Prüfstandsbildschirms entschärft.
 - Antwortet der Touch-Controller 500 ms lang nicht, entschärft der Prüfstand
   und verweigert das Schärfen. Das Panel ist der einzige Ort mit einem

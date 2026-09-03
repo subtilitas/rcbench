@@ -50,6 +50,14 @@ typedef struct {
     float value;
     gfx_color_t color;
 
+    /*
+     * Whether a press sets the value under it.  Off by default, because the
+     * control this widget was written for is a throttle: a touch at the far
+     * end of the track would command full travel in one contact.  A slider
+     * that commands nothing dangerous can turn it on and keep the tap.
+     */
+    bool    tap_to_set;
+
     bool    dragging;
     uint8_t drag_id;
     int16_t drag_x;       /**< where the finger went down                 */
@@ -69,6 +77,12 @@ void ui_slider_set_presets(ui_slider_t *s, const float *values,
                            gfx_rect_t row);
 
 void ui_slider_set(ui_slider_t *s, float value);
+
+/**
+ * Let a press set the value under it. Off by default; a throttle must not
+ * take a value from one contact.
+ */
+void ui_slider_set_tap_to_set(ui_slider_t *s, bool on);
 
 /** Abandon a drag that will get no release, on leaving a screen. */
 void ui_slider_release(ui_slider_t *s);

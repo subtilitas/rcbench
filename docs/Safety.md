@@ -63,7 +63,10 @@ unpowered or unplugged panel reads as a line that is not edging.
 - STOP latches. The bench stays disarmed until it is armed again.
 - The throttle moves by how far a finger travels, not to where it lands. A
   press on the track commands nothing, so a touch at the far end cannot ask
-  for full travel in one contact.
+  for full travel in one contact. Sliders that command nothing dangerous, such
+  as the servo screen's sweep speed, keep tap-to-set.
+- A disarm returns the throttle to zero, so an arm starts from nothing rather
+  than from where the last run left it.
 - Leaving a bench screen disarms.
 - If the touch controller stops answering for 500 ms, the bench disarms and
   refuses to arm. The panel is the only place a STOP button exists.
