@@ -304,6 +304,132 @@ TEST_CASE(a_redraw_leaves_no_stale_pixels)
 }
 
 /*
+ * RGB565 components, for comparing a button's fill without pinning it.
+ * Scaled to 8 bits, because red carries 5 bits and green 6 and the raw
+ * fields are not comparable with each other.
+ */
+static int red_of(gfx_color_t c)   { return (int)(((c >> 11) & 0x1f) << 3); }
+static int green_of(gfx_color_t c) { return (int)(((c >> 5) & 0x3f) << 2); }
+static gfx_color_t arm_px(void)
+{
+    /* Inside the ARM button, clear of its rounded corner, its hairline and
+     * the centred label. */
+    return fb[(size_t)356 * W + 415];
+}
+
+/*
+ * ARM says what the release will do: green while it will arm, fading to the
+ * danger red over ARM_FADE_S while the finger stays down, and one flash as
+ * the arm takes effect.  Each is its own animation, and the button carries
+ * its own revision so a frame of either repaints 180 x 28 px rather than the
+ * 800 x 90 control row.
+ */
+TEST_CASE(the_arm_button_fades_while_held_and_flashes_on_arming)
+{
+    fresh();
+    scr->render(&cv, 0);
+    const gfx_color_t idle = arm_px();
+    CHECK(green_of(idle) > red_of(idle));   /* the OK green */
+
+    /* Down on ARM, before the fade has run. */
+    ev(415, 356, TOUCH_EVENT_DOWN, 1);
+    scr->render(&cv, 0);
+    const gfx_color_t held0 = arm_px();
+
+    /* Held for the whole fade. */
+    for (int i = 0; i < 20; ++i) {
+        scr->tick(0.05f);
+    }
+    scr->render(&cv, 0);
+    const gfx_color_t held1 = arm_px();
+    if (!(red_of(held1) > red_of(held0) && red_of(held1) > green_of(held1))) {
+        T_FAIL("held ARM went %04x -> %04x, which is not a fade to red",
+               held0, held1);
+    }
+
+    /* Arming flashes it, and the flash decays. */
+    ev(415, 356, TOUCH_EVENT_UP, 1);
+    motor_screen_set_armed(true);
+    scr->render(&cv, 0);
+    const gfx_color_t flash = arm_px();
+    for (int i = 0; i < 10; ++i) {
+        scr->tick(0.05f);
+    }
+    scr->render(&cv, 0);
+    const gfx_color_t settled = arm_px();
+    if (!(red_of(flash) >= red_of(settled)
+          && green_of(flash) > green_of(settled))) {
+        T_FAIL("arming went %04x -> %04x, which is not a flash that decays",
+               flash, settled);
+    }
+
+    /* And the fade does not run once armed: DISARM is not about to arm. */
+    const float before = 0.0f;
+    (void)before;
+    for (int i = 0; i < 20; ++i) {
+        scr->tick(0.05f);
+    }
+    scr->render(&cv, 0);
+    CHECK_EQ(arm_px(), settled);
+}
+
+/*
+ * A drag moves the throttle and nothing else, which is its own repaint path:
+ * the readout's box and the slider, without the row's buttons.  The thumb
+ * and its shadow stand proud of the track, so a path that clears the track
+ * and not ui_slider_painted_rect() leaves a thumb behind at every position
+ * the finger passed through.  The other stale-pixel case changes the armed
+ * state, which takes the whole row and never exercises this.
+ */
+TEST_CASE(dragging_the_throttle_leaves_no_stale_pixels)
+{
+    const size_t bytes = (size_t)W * H * sizeof(gfx_color_t);
+    fresh();
+    bench_state_t b;
+    telemetry_sim_t sim;
+    memset(&b, 0, sizeof(b));
+    telemetry_sim_init(&sim, NULL);
+    for (int i = 0; i < 60; ++i) {
+        telemetry_sim_step(&sim, 40.0f, 0.05f, &b);
+        motor_screen_push(&b);
+    }
+
+    /* Both framebuffers settled, the way the panel leaves them. */
+    motor_screen_set_throttle(0.0f);
+    scr->render(&cv, 0);
+    scr->render(&cv, 1);
+
+    /* The finger travels the whole track, a frame per step. */
+    for (int v = 0; v <= 100; v += 5) {
+        motor_screen_set_throttle((float)v);
+        scr->render(&cv, (v / 5) & 1);
+    }
+    const int last_buf = (100 / 5) & 1;
+    gfx_color_t *dragged = malloc(bytes);
+    CHECK(dragged != NULL);
+    if (dragged == NULL) {
+        return;
+    }
+    memcpy(dragged, fb, bytes);
+
+    /* The same value, onto a buffer that never saw the drag. */
+    memset(fb, 0, bytes);
+    motor_invalidate();
+    scr->render(&cv, last_buf);
+
+    if (memcmp(dragged, fb, bytes) != 0) {
+        long differ = 0;
+        for (long i = 0; i < (long)W * H; ++i) {
+            if (dragged[i] != fb[i]) {
+                ++differ;
+            }
+        }
+        T_FAIL("a drag left %ld px that a fresh render does not draw", differ);
+    }
+    free(dragged);
+}
+
+/*
  * Before a single poll has answered there is nothing to show, and 0.00 V is
  * a wrong reading; the heroes print a placeholder, so the screen differs
  * visibly from one holding real numbers.
@@ -344,6 +470,8 @@ int main(void)
     RUN(the_tabs_switch_panes_and_both_render);
     RUN(each_framebuffer_is_updated_independently);
     RUN(a_redraw_leaves_no_stale_pixels);
+    RUN(dragging_the_throttle_leaves_no_stale_pixels);
+    RUN(the_arm_button_fades_while_held_and_flashes_on_arming);
     RUN(an_unanswered_bench_does_not_show_numbers);
     return test_summary("motor");
 }

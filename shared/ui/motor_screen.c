@@ -41,9 +41,28 @@
 #define ROW_H     30
 #define CTRL_Y    380
 #define TRACK_H   36
-/* The readout's own width: the label at PAD, the numerals right-aligned on
- * 386 - 22, and the per-cent sign that follows them.  ARM starts at 400. */
+/*
+ * The readout's own box: the label at PAD, the numerals right-aligned on
+ * 386 - 22, and the per-cent sign that follows them, with ARM starting at
+ * 400.  It runs from ROW_Y to the track, because the hero numerals are 32 px
+ * tall on a 30 px row and their slant adds 3 more, so a box of ROW_H leaves
+ * their feet behind.
+ */
 #define READOUT_W 396
+#define READOUT_H (CTRL_Y - ROW_Y)
+
+/*
+ * ARM says what it is about to do while the finger is on it: 350 ms from the
+ * OK green to the danger red, held there while the press continues.  The
+ * command still goes on release, so the fade is a warning and not a
+ * hold-to-arm; a release before it completes arms the bench just the same.
+ *
+ * Arming then flashes the button once, for 180 ms, because the label and the
+ * colour both settle into a steady state that says "armed" and neither marks
+ * the instant it became true.
+ */
+#define ARM_FADE_S  0.35f
+#define ARM_FLASH_S 0.18f
 
 /* The legend takes a row at the top of the card and the plot takes the rest
  * of it. */
@@ -98,6 +117,11 @@ static struct {
     uint32_t      drawn_ctrl[2];
     uint32_t      thr_rev;
     uint32_t      drawn_thr[2];
+    /* ARM animates, so it gets a third counter and repaints its own rect. */
+    uint32_t      arm_rev;
+    uint32_t      drawn_arm[2];
+    float         arm_held_s;    /**< how long the ARM press has been held */
+    float         arm_flash_s;   /**< what is left of the flash on arming  */
     gfx_rect_t    arm_rect;
     gfx_rect_t    reset_rect;
     int           pressed;      /**< 0 none, 1 arm, 2 reset */
@@ -114,6 +138,8 @@ void motor_invalidate(void)
     s.drawn_ctrl[1] = UINT32_MAX;
     s.drawn_thr[0]  = UINT32_MAX;
     s.drawn_thr[1]  = UINT32_MAX;
+    s.drawn_arm[0]  = UINT32_MAX;
+    s.drawn_arm[1]  = UINT32_MAX;
 }
 
 /* The palette is not a compile-time constant -- it changes with the theme --
@@ -138,6 +164,8 @@ static void reset(void)
     s.drawn_ctrl[1] = UINT32_MAX;
     s.drawn_thr[0]  = UINT32_MAX;
     s.drawn_thr[1]  = UINT32_MAX;
+    s.drawn_arm[0]  = UINT32_MAX;
+    s.drawn_arm[1]  = UINT32_MAX;
     ui_plot_init(&s.plot, k_series, S_COUNT,
                  (float)PLOT_W / SAMPLE_HZ);
     ui_tabs_init(&s.tabs, k_tab_labels, MOTOR_PANE_COUNT,
@@ -204,6 +232,11 @@ void motor_screen_set_armed(bool armed)
 {
     if (s.armed != armed) {
         s.armed = armed;
+        if (armed) {
+            s.arm_flash_s = ARM_FLASH_S;
+        }
+        s.arm_held_s = 0.0f;
+        ++s.arm_rev;
         ++s.ctrl_rev;
     }
 }
@@ -240,6 +273,8 @@ static void event(const touch_event_t *evt)
     if (evt->type == TOUCH_EVENT_DOWN) {
         if (gfx_rect_contains(s.arm_rect, x, y)) {
             s.have_press = true; s.press_id = evt->point.id; s.pressed = 1;
+            s.arm_held_s = 0.0f;
+            ++s.arm_rev;
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.reset_rect, x, y)) {
             s.have_press = true; s.press_id = evt->point.id; s.pressed = 2;
@@ -257,6 +292,10 @@ static void event(const touch_event_t *evt)
         if (was != 0) {
             ++s.ctrl_rev;   /* the button comes back up */
         }
+        if (was == 1) {
+            s.arm_held_s = 0.0f;   /* and the fade goes back to green */
+            ++s.arm_rev;
+        }
         if (was == 1 && gfx_rect_contains(s.arm_rect, x, y)) {
             post(s.armed ? MOTOR_CMD_DISARM : MOTOR_CMD_ARM, 0.0f);
         } else if (was == 2 && gfx_rect_contains(s.reset_rect, x, y)) {
@@ -265,7 +304,53 @@ static void event(const touch_event_t *evt)
     }
 }
 
+/*
+ * The two animations ARM carries.  Each advances its own counter, so a frame
+ * of either repaints the button's 180 x 28 px and nothing else: the control
+ * row is 800 x 90, and an animation that asked for the row would put the
+ * screen back where the throttle drag was.
+ */
+static void tick(float dt_s)
+{
+    if (s.pressed == 1 && !s.armed && s.arm_held_s < ARM_FADE_S) {
+        s.arm_held_s += dt_s;
+        if (s.arm_held_s > ARM_FADE_S) {
+            s.arm_held_s = ARM_FADE_S;
+        }
+        ++s.arm_rev;
+    }
+    if (s.arm_flash_s > 0.0f) {
+        s.arm_flash_s -= dt_s;
+        if (s.arm_flash_s < 0.0f) {
+            s.arm_flash_s = 0.0f;
+        }
+        ++s.arm_rev;
+    }
+}
+
 /* ----------------------------------------------------------------- drawing */
+
+/*
+ * Green while it will arm, red by the time the fade completes, and white for
+ * the flash as the arm takes effect.  With nothing held and nothing flashing
+ * this is the plain OK or WARN the button has always carried.
+ */
+static gfx_color_t arm_fill(void)
+{
+    gfx_color_t fill = s.armed ? ui_theme_color(UI_C_WARN)
+                               : ui_theme_color(UI_C_OK);
+    if (!s.armed && s.arm_held_s > 0.0f) {
+        const uint8_t t =
+            (uint8_t)(s.arm_held_s / ARM_FADE_S * 255.0f + 0.5f);
+        fill = gfx_lerp(fill, ui_theme_color(UI_C_DANGER), t);
+    }
+    if (s.arm_flash_s > 0.0f) {
+        const uint8_t t =
+            (uint8_t)(s.arm_flash_s / ARM_FLASH_S * 255.0f + 0.5f);
+        fill = gfx_lerp(fill, GFX_WHITE, t);
+    }
+    return fill;
+}
 
 static void draw_table(gfx_canvas_t *c)
 {
@@ -387,23 +472,36 @@ static void render(gfx_canvas_t *c, int buffer_index)
      */
     const bool ctrl_moved = (s.drawn_ctrl[buf] != s.ctrl_rev);
     const bool thr_moved  = (s.drawn_thr[buf] != s.thr_rev);
-    if (!ctrl_moved && !thr_moved) {
+    const bool arm_moved  = (s.drawn_arm[buf] != s.arm_rev);
+    if (!ctrl_moved && !thr_moved && !arm_moved) {
         return;
     }
     s.drawn_ctrl[buf] = s.ctrl_rev;
     s.drawn_thr[buf]  = s.thr_rev;
+    s.drawn_arm[buf]  = s.arm_rev;
+
+    /* ARM animating on its own repaints its 180 x 28 px and nothing else. */
+    if (arm_moved && !ctrl_moved && !thr_moved) {
+        ui_button(c, s.arm_rect, s.armed ? "DISARM" : "ARM", arm_fill(),
+                  s.pressed == 1, true);
+        return;
+    }
 
     /*
-     * A throttle that moved on its own repaints the readout and the track,
-     * not the buttons beside them: the row is 800 x 90 px against the
-     * readout's 396 x 30, and a drag asks for it on every frame.  The track
-     * needs no clear either, because the trough is painted opaque over it.
+     * A throttle that moved on its own clears the readout's own box and the
+     * slider's painted region, not the whole row: the row is 800 x 90 px
+     * against 396 x 30 plus the slider's band, and a drag asks for it on
+     * every frame.  The slider's region is what the widget reports rather
+     * than its track, because the thumb and its shadow stand proud of the
+     * track and a clear that stops at the track leaves them behind.
      */
     if (ctrl_moved) {
         gfx_fill_rect(c, 0, ROW_Y, W, H - ROW_Y, ui_theme_color(UI_C_BG));
     } else {
-        gfx_fill_rect(c, 0, ROW_Y, READOUT_W, ROW_H,
+        gfx_fill_rect(c, 0, ROW_Y, READOUT_W, READOUT_H,
                       ui_theme_color(UI_C_BG));
+        const gfx_rect_t sl = ui_slider_painted_rect(&s.slider);
+        gfx_fill_rect(c, sl.x, sl.y, sl.w, sl.h, ui_theme_color(UI_C_BG));
     }
 
     /*
@@ -429,13 +527,15 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
     ui_slider_render(&s.slider, c);
 
-    if (!ctrl_moved) {
+    if (!ctrl_moved && !arm_moved) {
         return;
     }
 
-    ui_button(c, s.arm_rect, s.armed ? "DISARM" : "ARM",
-              s.armed ? ui_theme_color(UI_C_WARN) : ui_theme_color(UI_C_OK),
+    ui_button(c, s.arm_rect, s.armed ? "DISARM" : "ARM", arm_fill(),
               s.pressed == 1, true);
+    if (!ctrl_moved) {
+        return;   /* the ARM animation repaints its own button and no more */
+    }
     ui_button(c, s.reset_rect, "RESET PEAKS", ui_theme_color(UI_C_PANEL),
               s.pressed == 2, true);
 }
@@ -450,6 +550,10 @@ static void leave(void)
 {
     post(MOTOR_CMD_DISARM, 0.0f);
     s.armed = false;
+    /* Neither animation should still be running when the screen comes back. */
+    s.arm_held_s  = 0.0f;
+    s.arm_flash_s = 0.0f;
+    ++s.arm_rev;
 }
 
 static const ui_screen_t k_screen = {
@@ -457,7 +561,7 @@ static const ui_screen_t k_screen = {
     .reset  = reset,
     .enter  = NULL,
     .leave  = leave,
-    .tick   = NULL,
+    .tick   = tick,
     .event  = event,
     .render = render,
 };
