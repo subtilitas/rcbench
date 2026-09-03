@@ -78,15 +78,24 @@ static void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 #define TRACK_W  414
 
 /* Mirrored from motor_screen.c: arming is a hold, not a press. */
-#define ARM_HOLD_S 2.0f
+#define ARM_HOLD_S  2.0f
+#define TICK_S      0.05f
+/* Enough steps to pass the hold, derived rather than counted, so changing
+ * either constant does not silently stop these tests from arming. */
+#define HOLD_TICKS  ((int)(ARM_HOLD_S / TICK_S) + 5)
+
+static void tick_for(int steps)
+{
+    for (int i = 0; i < steps; ++i) {
+        scr->tick(TICK_S);
+    }
+}
 
 /* Hold ARM long enough to arm, and let go. */
 static void hold_arm(void)
 {
     ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 45; ++i) {   /* 2.25 s at 20 steps a second */
-        scr->tick(0.05f);
-    }
+    tick_for(HOLD_TICKS);
     ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
 }
 
@@ -161,23 +170,17 @@ TEST_CASE(a_short_press_on_arm_does_nothing)
 
     /* Half of the hold, then let go. */
     ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 20; ++i) {
-        scr->tick(0.05f);
-    }
+    tick_for(HOLD_TICKS / 2);
     ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 
     /* Time passing afterwards does not complete it. */
-    for (int i = 0; i < 60; ++i) {
-        scr->tick(0.05f);
-    }
+    tick_for(HOLD_TICKS * 2);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 
     /* And the hold arms exactly once, however long it is held. */
     ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 200; ++i) {
-        scr->tick(0.05f);
-    }
+    tick_for(HOLD_TICKS * 4);
     ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
     motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f };
     int arms = 0;
@@ -627,9 +630,7 @@ TEST_CASE(the_release_after_a_hold_does_not_disarm)
     motor_screen_set_armed(false);
 
     ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 45; ++i) {
-        scr->tick(0.05f);
-    }
+    tick_for(HOLD_TICKS);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
 
     /* What app_main does once the control task reports the bench armed. */
@@ -660,17 +661,13 @@ TEST_CASE(the_arm_button_fades_across_the_hold)
     const gfx_color_t held0 = arm_px();
 
     /* Half way: on the way to red, not there yet. */
-    for (int i = 0; i < 20; ++i) {
-        scr->tick(0.05f);
-    }
+    tick_for(HOLD_TICKS / 2);
     scr->render(&cv, 0);
     const gfx_color_t half = arm_px();
     CHECK(red_of(half) > red_of(held0));
 
     /* The rest of the hold takes it to red, and arms. */
-    for (int i = 0; i < 25; ++i) {
-        scr->tick(0.05f);
-    }
+    tick_for(HOLD_TICKS);
     scr->render(&cv, 0);
     const gfx_color_t full = arm_px();
     if (!(red_of(full) > red_of(half) && red_of(full) > green_of(full))) {
@@ -687,9 +684,7 @@ TEST_CASE(the_arm_button_fades_across_the_hold)
     }
     const gfx_color_t settled = arm_px();
     ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
-    for (int i = 0; i < 45; ++i) {
-        scr->tick(0.05f);
-    }
+    tick_for(HOLD_TICKS);
     scr->render(&cv, 0);
     const gfx_color_t held_armed = arm_px();
     ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
