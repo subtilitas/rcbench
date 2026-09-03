@@ -49,9 +49,11 @@ typedef struct {
                                    *   refill runs in an interrupt handler and
                                    *   reads PSRAM through the data cache.
                                    *   It stops rather than faulting only
-                                   *   because that handler is not IRAM-safe
-                                   *   and is masked; left IRAM-safe it runs
-                                   *   with the cache disabled and panics.
+                                   *   because CONFIG_LCD_RGB_ISR_IRAM_SAFE
+                                   *   is off, so ESP-IDF masks that handler
+                                   *   while the cache is disabled.  With it
+                                   *   on, the handler runs anyway, reads
+                                   *   PSRAM without a cache and panics.
                                    *   0 disables it and the EDMA (external
                                    *   direct memory access) fetches each
                                    *   frame from PSRAM directly, bypassing

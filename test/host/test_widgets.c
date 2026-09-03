@@ -327,9 +327,10 @@ TEST_CASE(the_painted_rect_covers_the_presets_too)
 {
     fresh_slider();
     const gfx_rect_t r = ui_slider_painted_rect(&sl);
-    for (int i = 0; i < 4; ++i) {
+    CHECK(sl.preset_count > 0);
+    for (int i = 0; i < sl.preset_count; ++i) {
         const gfx_rect_t p = sl.presets[i];
-        CHECK(p.w > 0);
+        CHECK(p.w > 0 && p.h > 0);
         if (p.x < r.x || p.y < r.y
             || p.x + p.w > r.x + r.w || p.y + p.h > r.y + r.h) {
             T_FAIL("preset %d at %d,%d %dx%d is outside the painted rect "
