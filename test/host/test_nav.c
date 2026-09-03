@@ -509,6 +509,66 @@ TEST_CASE(the_simulation_mark_lets_the_screen_through)
 }
 
 /*
+ * The mark's stencil is cached, so a canvas whose geometry or ink differs
+ * from the cached one has to rebuild it rather than replay the wrong points,
+ * and a canvas covering more points than the table holds falls back to
+ * scanning.  A 1600x960 canvas covers about four times the panel's 3,439.
+ */
+TEST_CASE(the_simulation_mark_follows_the_canvas_it_is_given)
+{
+    enum { BW = 1600, BH = 960 };
+    gfx_color_t *big = calloc((size_t)BW * BH, sizeof(gfx_color_t));
+    CHECK(big != NULL);
+    if (big == NULL) {
+        return;
+    }
+    gfx_canvas_t bc;
+    gfx_canvas_init(&bc, big, BW, BH, 0);
+
+    ui_watermark_invalidate();
+    ui_watermark(&bc);
+    int wide = 0;
+    for (long i = 0; i < (long)BW * BH; ++i) {
+        if (big[i] != 0) {
+            ++wide;
+        }
+    }
+    CHECK(wide > 3439);
+
+    /* Back to a panel-sized canvas: the cache rebuilds rather than replaying
+     * points from the larger one, which would land outside this canvas. */
+    gfx_color_t *small = calloc((size_t)W * H, sizeof(gfx_color_t));
+    CHECK(small != NULL);
+    if (small == NULL) {
+        free(big);
+        return;
+    }
+    gfx_canvas_t sc;
+    gfx_canvas_init(&sc, small, W, H, 0);
+    ui_watermark(&sc);
+    int narrow = 0;
+    for (long i = 0; i < (long)W * H; ++i) {
+        if (small[i] != 0) {
+            ++narrow;
+        }
+    }
+    CHECK(narrow > 0);
+    CHECK(narrow < wide);
+
+    /* And drawing it again is still idempotent through the cache. */
+    gfx_color_t *once = malloc((size_t)W * H * sizeof(gfx_color_t));
+    if (once != NULL) {
+        memcpy(once, small, (size_t)W * H * sizeof(gfx_color_t));
+        ui_watermark(&sc);
+        CHECK_EQ(memcmp(once, small,
+                        (size_t)W * H * sizeof(gfx_color_t)), 0);
+        free(once);
+    }
+    free(small);
+    free(big);
+}
+
+/*
  * Screens cache their chrome per framebuffer.  Switching the mark changes
  * pixels they believe they have already drawn correctly, so the router has to
  * invalidate them; otherwise the mark appears on one buffer and not the
@@ -644,6 +704,7 @@ int main(void)
     RUN(the_alert_band_renders_at_the_bottom);
     RUN(the_simulation_mark_covers_the_whole_screen);
     RUN(the_simulation_mark_lets_the_screen_through);
+    RUN(the_simulation_mark_follows_the_canvas_it_is_given);
     RUN(switching_the_mark_invalidates_the_cached_chrome);
     RUN(the_menu_marks_what_is_not_fitted);
     return test_summary("nav");

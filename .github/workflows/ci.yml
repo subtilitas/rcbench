@@ -126,7 +126,7 @@ jobs:
 
       - name: The SIMULATION watermark has not grown
         run: python3 tools/frame_cost.py balance-sim settings-sim battery-sim
-             --max-lines 2500
+             --max-lines 2800
 
       - name: The frame-cost table in the docs is current
         run: python3 tools/frame_cost.py --check-doc
