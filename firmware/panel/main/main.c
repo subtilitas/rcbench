@@ -160,6 +160,8 @@ static void heartbeat_init(void)
  * nothing on the screen changes faster.
  */
 static temperature_sensor_handle_t s_tsens;
+/* Read and published by the control task; app_main takes it from the
+ * snapshot with everything else that crosses between the two. */
 static float                       s_mcu_c = NAN;
 
 static void tsens_init(void)
@@ -207,6 +209,7 @@ static void beat(bool alive)
 #define CONTROL_PERIOD_MS 5u
 #define TOUCH_Q_LEN       32
 #define CMD_Q_LEN         16
+#define SAMPLE_Q_LEN      8
 #define ALERT_MAX         64
 
 /*
@@ -227,6 +230,15 @@ typedef struct {
 
 static QueueHandle_t     s_touch_q;   /**< control task -> app_main */
 static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
+/*
+ * One entry per bench sample, not a count of them.  A counter would lose the
+ * samples a stalled renderer did not come back for, and the plot's time axis
+ * would compress by exactly the frames it missed, which is the frame-rate
+ * coupling this task exists to remove.  Full means the renderer is more than
+ * SAMPLE_Q_LEN samples behind; the oldest is dropped, because a plot that is
+ * 400 ms out of date is worth less than one that is current.
+ */
+static QueueHandle_t     s_sample_q;  /**< control task -> app_main */
 static SemaphoreHandle_t s_snap_lock;
 
 /* What the screen reads.  Written by the control task, copied by app_main. */
@@ -234,10 +246,10 @@ static struct {
     bench_state_t bench;
     bool          link_up;
     bool          armed;
+    float         mcu_temp_c;
     bool          stopped;
     uint16_t      faults;
     uint32_t      link_errors;
-    uint32_t      seq;    /**< bench samples produced, for the plot */
     char          alert[ALERT_MAX];
     bool          alert_pending;
 } s_snap;
@@ -1007,10 +1019,16 @@ static void control_task(void *arg)
         s_snap.faults      = link_up ? s_dev_faults : (uint16_t)0;
         s_snap.link_errors = (uint32_t)s_bring.dev_crc_errors
                              + (uint32_t)s_bring.dev_resyncs;
-        if (new_sample) {
-            ++s_snap.seq;
-        }
+        s_snap.mcu_temp_c  = s_mcu_c;
         snap_unlock();
+
+        /* One queue entry per sample, so none of the plot's time base is lost
+         * to a renderer that was busy. */
+        if (new_sample && xQueueSend(s_sample_q, &bench, 0) != pdTRUE) {
+            bench_state_t stale;
+            (void)xQueueReceive(s_sample_q, &stale, 0);
+            (void)xQueueSend(s_sample_q, &bench, 0);
+        }
 
         vTaskDelay(pdMS_TO_TICKS(CONTROL_PERIOD_MS));
     }
@@ -1031,9 +1049,11 @@ void app_main(void)
 
     s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_event_t));
     s_cmd_q     = xQueueCreate(CMD_Q_LEN, sizeof(panel_cmd_t));
+    s_sample_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(bench_state_t));
     s_snap_lock = xSemaphoreCreateMutex();
     ESP_ERROR_CHECK((s_touch_q != NULL && s_cmd_q != NULL
-                     && s_snap_lock != NULL) ? ESP_OK : ESP_ERR_NO_MEM);
+                     && s_sample_q != NULL && s_snap_lock != NULL)
+                    ? ESP_OK : ESP_ERR_NO_MEM);
 
     if (!healthy) {
         ui_router_set_alert("touch did not answer -- the bench will not arm");
@@ -1049,7 +1069,6 @@ void app_main(void)
 
     uint32_t frames  = 0;
     uint32_t last_us = (uint32_t)esp_timer_get_time();
-    uint32_t drawn_seq = 0;
 
     for (;;) {
         const uint32_t us = (uint32_t)esp_timer_get_time();
@@ -1085,7 +1104,7 @@ void app_main(void)
         bool     armed;
         uint16_t faults;
         uint32_t link_errors;
-        uint32_t seq;
+        float    mcu_temp_c;
         char     alert[ALERT_MAX];
         bool     have_alert;
         snap_lock();
@@ -1094,7 +1113,7 @@ void app_main(void)
         armed       = s_snap.armed;
         faults      = s_snap.faults;
         link_errors = s_snap.link_errors;
-        seq         = s_snap.seq;
+        mcu_temp_c  = s_snap.mcu_temp_c;
         have_alert  = s_snap.alert_pending;
         if (have_alert) {
             snprintf(alert, sizeof(alert), "%s", s_snap.alert);
@@ -1106,10 +1125,11 @@ void app_main(void)
             ui_router_set_alert(alert);
         }
         motor_screen_set_armed(armed);
-        /* One sample, one plot column: the control task counts them. */
-        if (seq != drawn_seq) {
-            drawn_seq = seq;
-            motor_screen_push(&bench);
+        /* One sample, one plot column, however many frames it took to get
+         * here: the queue holds what this loop was too busy to draw. */
+        bench_state_t sample;
+        while (xQueueReceive(s_sample_q, &sample, 0) == pdTRUE) {
+            motor_screen_push(&sample);
         }
 
         const ui_bench_status_t status = {
@@ -1121,7 +1141,7 @@ void app_main(void)
             .simulated   = bench_state_simulated(&bench),
             .capabilities = s_capabilities,
             .link_errors = link_errors,
-            .mcu_temp_c  = s_mcu_c,
+            .mcu_temp_c  = mcu_temp_c,
         };
         ui_router_set_status(&status);
 
