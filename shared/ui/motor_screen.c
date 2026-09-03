@@ -13,6 +13,7 @@
 
 #include "ui_hero.h"
 #include "ui_plot.h"
+#include "settings.h"
 #include "ui_slider.h"
 #include "ui_tabs.h"
 #include "ui_theme.h"
@@ -145,6 +146,7 @@ static struct {
     /* ARM animates, so it gets a third counter and repaints its own rect. */
     uint32_t      arm_rev;
     uint32_t      drawn_arm[2];
+    int           esc_kv;        /**< as reported by the ESC, 0 if it does not */
     float         arm_held_s;    /**< how long the ARM press has been held */
     float         arm_flash_s;   /**< what is left of the flash on arming  */
     gfx_rect_t    arm_rect;
@@ -279,6 +281,26 @@ void motor_screen_set_armed(bool armed)
         ++s.ctrl_rev;
     }
 }
+/*
+ * The kV the connected ESC reports, or 0 when it reports none.  Preferred
+ * over SET_MOTOR_KV: the part under test knows its own rating and a value
+ * typed in months ago may belong to a different motor.
+ *
+ * Nothing calls this yet.  No ESC parameter set is wired to the link: the
+ * OpenYGE cache is built and unconnected, and BLHeli_32's parameters are not
+ * published.  Until one is, the field is whatever the operator entered.
+ */
+void motor_screen_set_esc_kv(int kv)
+{
+    if (kv < 0) {
+        kv = 0;
+    }
+    if (s.esc_kv != kv) {
+        s.esc_kv = kv;
+        ++s.ctrl_rev;
+    }
+}
+
 float motor_screen_throttle(void) { return s.slider.value; }
 void motor_screen_set_throttle(float pct)
 {
@@ -450,9 +472,25 @@ static void draw_header(gfx_canvas_t *c)
 }
 
 /*
- * Two numbers the operator works in that the bench does not send: the motor
- * constant, and how much shaft speed a watt is buying.  Both are undefined
- * until there is something to divide by.
+ * The rated kV, what the motor is actually turning per volt, and what the
+ * ratio of the two says about the drivetrain.
+ *
+ * Terminal voltage splits into the resistive drop and the back-EMF, so
+ * rpm/V under load is the rated kV scaled by the fraction of the voltage
+ * that reaches the back-EMF -- and that fraction is what becomes mechanical
+ * power.  The ratio is therefore a conversion efficiency, not a rule of
+ * thumb.
+ *
+ * It counts copper loss only: iron loss, friction and windage fall on the
+ * mechanical side of that split, so it is an upper bound on shaft
+ * efficiency.  And the bench measures pack voltage rather than the motor's
+ * terminals, so the ESC's own losses are inside the figure: it describes the
+ * drivetrain, which is what the bench is turning.
+ *
+ * The rated value comes from the connected ESC when it reports one, and from
+ * SET_MOTOR_KV when it does not.  Nothing is assumed: with neither, the field
+ * is drawn empty and no efficiency is shown, because a guessed kV produces a
+ * plausible-looking percentage that is wrong.
  */
 static void draw_derived(gfx_canvas_t *c)
 {
@@ -460,14 +498,43 @@ static void draw_derived(gfx_canvas_t *c)
                              (int16_t)(LEFT_W - 156), 16 };
     gfx_fill_rect(c, box.x, box.y, box.w, box.h, ui_theme_color(UI_C_PANEL));
 
-    char line[64];
-    if (s.bench.valid && s.bench.voltage > 0.5f && s.bench.power > 1.0f) {
-        snprintf(line, sizeof(line), "kV %d   %.1f RPM/W",
-                 (int)(s.bench.rpm / s.bench.voltage + 0.5f),
-                 (double)(s.bench.rpm / s.bench.power));
+    /* What the ESC says, or failing that what somebody typed in. */
+    const int rated = (s.esc_kv > 0) ? s.esc_kv
+                                     : settings_get_int(SET_MOTOR_KV);
+    const bool measurable =
+        s.bench.valid && s.bench.voltage > 0.5f && s.bench.rpm > 1.0f;
+    const float per_volt = measurable ? (s.bench.rpm / s.bench.voltage) : 0.0f;
+
+    char kv[24], rv[24], eff[24];
+    if (rated > 0) {
+        snprintf(kv, sizeof(kv), "kV %d", rated);
     } else {
-        snprintf(line, sizeof(line), "kV --   -- RPM/W");
+        snprintf(kv, sizeof(kv), "kV ----");
     }
+    if (measurable) {
+        int shown = (int)(per_volt + 0.5f);
+        if (shown > 99999) {
+            shown = 99999;   /* the field has a width; a reading this high
+                              * is a broken sensor, not a motor */
+        }
+        snprintf(rv, sizeof(rv), "rpm/V %d", shown);
+    } else {
+        snprintf(rv, sizeof(rv), "rpm/V --");
+    }
+    if (rated > 0 && measurable) {
+        int pct = (int)(per_volt * 100.0f / (float)rated + 0.5f);
+        /* Over 100 % means the rated value is wrong, which is worth seeing;
+         * it is capped only so the field cannot grow without bound. */
+        if (pct > 199) {
+            pct = 199;
+        }
+        snprintf(eff, sizeof(eff), "EFF %d%%", pct);
+    } else {
+        snprintf(eff, sizeof(eff), "EFF --");
+    }
+
+    char line[96];
+    snprintf(line, sizeof(line), "%s  %s  %s", kv, rv, eff);
     gfx_text_in(c, box, line, &gfx_font_8x16,
                 ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_RIGHT);
 }

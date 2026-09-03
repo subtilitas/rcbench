@@ -13,6 +13,7 @@
 #include "greatest.h"
 
 #include "motor_screen.h"
+#include "settings.h"
 #include "telemetry_sim.h"
 #include "ui_screen.h"
 #include "ui_theme.h"
@@ -145,6 +146,59 @@ TEST_CASE(the_disarm_latch_clears_when_it_is_read)
     motor_screen_set_armed(false);
     tap(ARM_X, ARM_Y);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+}
+
+/*
+ * The rated kV comes from the connected ESC when it reports one, and from the
+ * setting when it does not.  Neither leaves the field empty: a guessed kV
+ * gives a plausible-looking efficiency that is wrong, and the schema
+ * therefore defaults to zero rather than to a typical motor.
+ */
+TEST_CASE(the_rated_kv_prefers_the_esc_over_the_entered_value)
+{
+    const size_t bytes = (size_t)W * H * sizeof(gfx_color_t);
+    gfx_color_t *shot = malloc(bytes);
+    CHECK(shot != NULL);
+    if (shot == NULL) {
+        return;
+    }
+
+    fresh();
+    settings_reset_all();
+    bench_state_t b;
+    telemetry_sim_t sim;
+    memset(&b, 0, sizeof(b));
+    telemetry_sim_init(&sim, NULL);
+    for (int i = 0; i < 60; ++i) {
+        telemetry_sim_step(&sim, 60.0f, 0.05f, &b);
+        motor_screen_push(&b);
+    }
+    CHECK_EQ(settings_get_int(SET_MOTOR_KV), 0);   /* nothing assumed */
+    scr->render(&cv, 0);
+    memcpy(shot, fb, bytes);
+
+    /* A value the operator entered fills the field. */
+    settings_set(SET_MOTOR_KV, 1000.0f);
+    motor_invalidate();
+    scr->render(&cv, 0);
+    CHECK(memcmp(shot, fb, bytes) != 0);
+    memcpy(shot, fb, bytes);
+
+    /* And what the ESC reports takes it back off them. */
+    motor_screen_set_esc_kv(2000);
+    motor_invalidate();
+    scr->render(&cv, 0);
+    CHECK(memcmp(shot, fb, bytes) != 0);
+
+    /* Zero from the ESC is "it did not say", not "zero". */
+    memcpy(shot, fb, bytes);
+    motor_screen_set_esc_kv(0);
+    motor_invalidate();
+    scr->render(&cv, 0);
+    CHECK(memcmp(shot, fb, bytes) != 0);
+
+    settings_reset_all();
+    free(shot);
 }
 
 /*
@@ -502,6 +556,7 @@ int main(void)
     RUN(a_second_contact_cannot_steal_the_arm_release);
     RUN(a_pending_disarm_cannot_be_overwritten_by_an_arm);
     RUN(the_disarm_latch_clears_when_it_is_read);
+    RUN(the_rated_kv_prefers_the_esc_over_the_entered_value);
     RUN(the_throttle_track_moves_by_how_far_it_is_dragged);
     RUN(reset_peaks_posts_its_own_command);
     RUN(leaving_the_screen_disarms);

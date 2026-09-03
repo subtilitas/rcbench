@@ -53,8 +53,9 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "motor_poles", "Motor poles", "eRPM divided by poles/2 gives RPM", "",
         SET_CAT_ESC, SET_TYPE_INT, 2, 42, 2, 14, NULL, 0 },
     [SET_MOTOR_KV] = {
-        "motor_kv", "Rated kV", "Nameplate value, for comparison", "rpm/V",
-        SET_CAT_ESC, SET_TYPE_INT, 0, 10000, 10, 920, NULL, 0 },
+        "motor_kv", "Rated kV",
+        "Used when the ESC reports none; 0 shows the field empty", "rpm/V",
+        SET_CAT_ESC, SET_TYPE_INT, 0, 10000, 10, 0, NULL, 0 },
     [SET_TELEM_SRC] = {
         "telem_src", "Telemetry", "Where V, A and RPM come from", "",
         SET_CAT_ESC, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_telem_src) },
