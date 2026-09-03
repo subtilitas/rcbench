@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include "driver/gpio.h"
+#include "driver/temperature_sensor.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -145,6 +146,35 @@ static void heartbeat_init(void)
     ESP_LOGI(TAG, "heartbeat on GPIO%d (J8) every %u ms; the monostable it "
                   "gates is on no board",
              (int)PANEL_HEARTBEAT_PIN, (unsigned)HEARTBEAT_PERIOD_MS);
+}
+
+/* ------------------------------------------------------------ die temperature */
+
+/*
+ * The panel's own die, not the coprocessor's.  The two boards sit in
+ * different air and run different loads, and this is the one the ESP32-S3
+ * can measure without a wire.  Read once a second; the sensor is slow and
+ * nothing on the screen changes faster.
+ */
+static temperature_sensor_handle_t s_tsens;
+static float                       s_mcu_c = NAN;
+
+static void tsens_init(void)
+{
+    temperature_sensor_config_t cfg = TEMPERATURE_SENSOR_CONFIG_DEFAULT(-10, 80);
+    if (temperature_sensor_install(&cfg, &s_tsens) != ESP_OK
+        || temperature_sensor_enable(s_tsens) != ESP_OK) {
+        s_tsens = NULL;
+        ESP_LOGW(TAG, "no die temperature; the strip shows --");
+    }
+}
+
+static void tsens_read(void)
+{
+    float c = 0.0f;
+    if (s_tsens != NULL && temperature_sensor_get_celsius(s_tsens, &c) == ESP_OK) {
+        s_mcu_c = c;
+    }
 }
 
 static void beat(bool alive)
@@ -591,6 +621,7 @@ void app_main(void)
 {
     ESP_ERROR_CHECK(board_init());
     heartbeat_init();
+    tsens_init();
 
     ui_theme_set(UI_THEME_DARK);
     ui_router_init();
@@ -626,6 +657,7 @@ void app_main(void)
     uint32_t last_poll = 0;
     uint32_t last_status = 0;
     uint32_t last_report = 0;
+    uint32_t last_temp   = 0;
     uint32_t last_touch_ok = now_ms();
     bool     link_up = false;
 
@@ -871,6 +903,11 @@ void app_main(void)
         }
 
         /* Every 5 s while the link is down, every 60 s while it is up. */
+        if ((uint32_t)(now_ms() - last_temp) >= 1000u) {
+            last_temp = now_ms();
+            tsens_read();
+        }
+
         if ((uint32_t)(now_ms() - last_report)
             >= (link_up ? 60000u : 5000u)) {
             last_report = now_ms();
@@ -885,6 +922,11 @@ void app_main(void)
             .mode        = link_up ? "LINK" : "SIM",
             .simulated   = bench_state_simulated(&bench),
             .capabilities = s_capabilities,
+            /* CRC failures and resyncs together: both mean the bus dropped
+             * something, and one number is what fits beside the rate. */
+            .link_errors  = (uint32_t)s_bring.dev_crc_errors
+                            + (uint32_t)s_bring.dev_resyncs,
+            .mcu_temp_c   = s_mcu_c,
         };
         ui_router_set_status(&status);
 

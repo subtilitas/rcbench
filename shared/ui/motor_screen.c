@@ -25,31 +25,63 @@
  * about 8,160 cache-line fills on this panel, and the same pixels drawn as
  * horizontal lines cost none. */
 #define PAD       6                    /* the screen's outer margin */
-#define INNER     10                   /* a card's own padding */
+#define INNER     6                    /* a panel's own padding */
 
-#define TAB_Y     8
-#define TAB_H     28
-#define CARD_Y    44
-#define CARD_H    196
-#define HERO_Y    248
-#define HERO_H    88
 /*
- * The throttle owns the bottom of the screen: the track carries tick marks
- * at the quarters, and the readout, ARM and RESET share the row above it.
+ * Two columns.  The plot and the throttle take the left, the readouts and
+ * the controls take a rail on the right, so a glance at the numbers and a
+ * hand on the throttle do not compete for the same part of the screen.
  */
-#define ROW_Y     342                  /* the readout, ARM and RESET share it */
-#define ROW_H     30
-#define CTRL_Y    380
-#define TRACK_H   36
-/*
- * The readout's own box: the label at PAD, the numerals right-aligned on
- * 386 - 22, and the per-cent sign that follows them, with ARM starting at
- * 400.  It runs from ROW_Y to the track, because the hero numerals are 32 px
- * tall on a 30 px row and their slant adds 3 more, so a box of ROW_H leaves
- * their feet behind.
- */
-#define READOUT_W 396
-#define READOUT_H (CTRL_Y - ROW_Y)
+#define COL_GAP   6
+#define LEFT_X    PAD
+#define LEFT_W    546
+#define RIGHT_X   (LEFT_X + LEFT_W + COL_GAP)
+#define RIGHT_W   (W - PAD - RIGHT_X)
+
+/* The strip above both columns: what is driving the outputs, and how hot. */
+#define HDR_Y     2
+#define HDR_H     18
+
+/* Upper row: the plot on the left, the four readouts stacked on the right. */
+#define UP_Y      24
+#define UP_H      242
+#define HERO_H    ((UP_H - 3 * HERO_GAP) / 4)
+#define HERO_GAP  4
+
+/* Lower row: the throttle on the left, arming and the totals on the right. */
+#define LO_Y      (UP_Y + UP_H + 6)
+#define LO_H      (H - LO_Y - PAD)
+
+/* Inside the telemetry panel: its title strip, the legend, then the plot. */
+#define TITLE_H   20
+#define LEG_Y     (UP_Y + TITLE_H + 4)
+#define LEG_H     30
+#define PLOT_X    (LEFT_X + INNER)
+#define PLOT_W    (LEFT_W - 2 * INNER)
+#define PLOT_Y    (LEG_Y + LEG_H + 4)
+#define PLOT_H    (UP_Y + UP_H - INNER - PLOT_Y)
+
+/* Inside the throttle panel: the readout shares the title strip, then the
+ * track with a fine adjustment at each end. */
+#define ROW_Y     (LO_Y + TITLE_H + 2)
+#define ROW_H     34
+#define NUDGE_W   54
+#define CTRL_Y    (ROW_Y + 42)
+#define TRACK_H   40
+#define TRACK_X   (LEFT_X + INNER + NUDGE_W + 6)
+#define TRACK_W   (LEFT_W - 2 * INNER - 2 * (NUDGE_W + 6))
+#define HINT_Y    (CTRL_Y + TRACK_H + 14)
+
+/* The readout's box: from the panel's left edge to where the numerals end.
+ * The hero numerals are 32 px tall with 3 px of slant on a 34 px row. */
+#define READOUT_W (LEFT_W - 2 * INNER)
+#define READOUT_H (CTRL_Y - ROW_Y - 4)
+
+/* Inside the control panel. */
+#define BTN_H     36
+#define ARM_Y     (LO_Y + TITLE_H + 8)
+#define TOTALS_Y  (ARM_Y + BTN_H + 10)
+#define RESET_Y   (LO_H + LO_Y - PAD - BTN_H)
 
 /*
  * ARM says what it is about to do while the finger is on it: 350 ms from the
@@ -64,18 +96,11 @@
 #define ARM_FADE_S  0.35f
 #define ARM_FLASH_S 0.18f
 
-/* The legend takes a row at the top of the card and the plot takes the rest
- * of it. */
-#define LEG_Y     (CARD_Y + 8)
-#define LEG_H     16
-#define PLOT_X    (PAD + INNER)
-#define PLOT_W    (W - PAD - INNER - PLOT_X)
-#define PLOT_Y    (LEG_Y + LEG_H + 6)
-#define PLOT_H    (CARD_Y + CARD_H - 10 - PLOT_Y)
-
-/* Four across the full width, with one gutter between each. */
-#define HERO_GAP  8
-#define HERO_W    ((W - 2 * PAD - 3 * HERO_GAP) / 4)
+/* The tabs move into the header strip: the mockup has no tab row, and the
+ * table pane is not worth deleting to match it. */
+#define TAB_Y     HDR_Y
+#define TAB_H     HDR_H
+#define TAB_W     124
 
 enum { S_VOLT = 0, S_CURR, S_POWER, S_RPM, S_COUNT };
 
@@ -124,6 +149,8 @@ static struct {
     float         arm_flash_s;   /**< what is left of the flash on arming  */
     gfx_rect_t    arm_rect;
     gfx_rect_t    reset_rect;
+    gfx_rect_t    down_rect;    /**< one percentage point down */
+    gfx_rect_t    up_rect;      /**< and one up                */
     int           pressed;      /**< 0 none, 1 arm, 2 reset */
     uint8_t       press_id;
     bool          have_press;
@@ -169,14 +196,26 @@ static void reset(void)
     ui_plot_init(&s.plot, k_series, S_COUNT,
                  (float)PLOT_W / SAMPLE_HZ);
     ui_tabs_init(&s.tabs, k_tab_labels, MOTOR_PANE_COUNT,
-                 (gfx_rect_t){ PAD + 3, TAB_Y, 234, TAB_H });
+                 (gfx_rect_t){ LEFT_X, TAB_Y, TAB_W, TAB_H });
 
-    const gfx_rect_t track = { PAD, CTRL_Y, W - 2 * PAD, TRACK_H };
+    const gfx_rect_t track = { TRACK_X, CTRL_Y, TRACK_W, TRACK_H };
     ui_slider_init(&s.slider, track, 0.0f, 100.0f, 0);
     ui_slider_set_ticks(&s.slider, 4);   /* tick marks at the quarters */
 
-    s.arm_rect   = (gfx_rect_t){ 400, ROW_Y, 180, (int16_t)(ROW_H - 2) };
-    s.reset_rect = (gfx_rect_t){ 594, ROW_Y, 200, (int16_t)(ROW_H - 2) };
+    /*
+     * A percentage point at each end of the track.  The presets the widget
+     * can draw are not used: a row of them under the throttle is one more
+     * thing to hit by accident on a bench that is about to spin something.
+     */
+    s.down_rect = (gfx_rect_t){ (int16_t)(LEFT_X + INNER), CTRL_Y,
+                                NUDGE_W, TRACK_H };
+    s.up_rect   = (gfx_rect_t){ (int16_t)(TRACK_X + TRACK_W + 6), CTRL_Y,
+                                NUDGE_W, TRACK_H };
+
+    s.arm_rect   = (gfx_rect_t){ (int16_t)(RIGHT_X + INNER), ARM_Y,
+                                 (int16_t)(RIGHT_W - 2 * INNER), BTN_H };
+    s.reset_rect = (gfx_rect_t){ (int16_t)(RIGHT_X + INNER), RESET_Y,
+                                 (int16_t)(RIGHT_W - 2 * INNER), BTN_H };
     bind_colours();
 }
 
@@ -271,6 +310,19 @@ static void event(const touch_event_t *evt)
 
     const int x = evt->point.x, y = evt->point.y;
     if (evt->type == TOUCH_EVENT_DOWN) {
+        /* One percentage point, on the press rather than the release: this
+         * is a fine adjustment and it should feel immediate. */
+        if (gfx_rect_contains(s.down_rect, x, y)
+            || gfx_rect_contains(s.up_rect, x, y)) {
+            const bool up = gfx_rect_contains(s.up_rect, x, y);
+            motor_screen_set_throttle(s.slider.value + (up ? 1.0f : -1.0f));
+            post(MOTOR_CMD_THROTTLE, s.slider.value);
+            s.have_press = true;
+            s.press_id   = evt->point.id;
+            s.pressed    = up ? 4 : 3;
+            ++s.ctrl_rev;
+            return;
+        }
         if (gfx_rect_contains(s.arm_rect, x, y)) {
             s.have_press = true; s.press_id = evt->point.id; s.pressed = 1;
             s.arm_held_s = 0.0f;
@@ -352,6 +404,72 @@ static gfx_color_t arm_fill(void)
     return fill;
 }
 
+/* "44C", or "--" when nothing has answered. */
+static void temp_text(char *out, size_t n, const char *label, float v,
+                      bool ok)
+{
+    if (ok && isfinite(v)) {
+        snprintf(out, n, "%s %dC", label, (int)(v + 0.5f));
+    } else {
+        snprintf(out, n, "%s --", label);
+    }
+}
+
+/*
+ * The strip above both columns: what is driving the outputs on the left of
+ * it, and how hot the three things that get hot on the right.  MCU is the
+ * panel's own die, not the coprocessor's.
+ */
+static void draw_header(gfx_canvas_t *c)
+{
+    const ui_bench_status_t *st = ui_router_status();
+    const int x0 = LEFT_X + TAB_W + 10;
+    gfx_fill_rect(c, x0, HDR_Y, W - PAD - x0, HDR_H,
+                  ui_theme_color(UI_C_BG));
+
+    /* The band already carries the output mode, so this strip does not
+     * repeat it: what it adds is the poll rate and the link's error count. */
+    char line[64];
+    snprintf(line, sizeof(line), "%d Hz   ERR %lu", (int)SAMPLE_HZ,
+             (unsigned long)st->link_errors);
+    gfx_text(c, x0, HDR_Y + 1, line, &gfx_font_8x16,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
+
+    char esc[16], mot[16], mcu[16], temps[52];
+    temp_text(esc, sizeof(esc), "ESC", s.bench.temp_esc, s.bench.valid);
+    temp_text(mot, sizeof(mot), "MOT", s.bench.temp_motor, s.bench.valid);
+    temp_text(mcu, sizeof(mcu), "MCU", st->mcu_temp_c,
+              isfinite(st->mcu_temp_c));
+    snprintf(temps, sizeof(temps), "%s  %s  %s", esc, mot, mcu);
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)x0, HDR_Y + 1,
+                                 (int16_t)(W - PAD - x0), 16 },
+                temps, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1,
+                GFX_ALIGN_RIGHT);
+}
+
+/*
+ * Two numbers the operator works in that the bench does not send: the motor
+ * constant, and how much shaft speed a watt is buying.  Both are undefined
+ * until there is something to divide by.
+ */
+static void draw_derived(gfx_canvas_t *c)
+{
+    const gfx_rect_t box = { (int16_t)(LEFT_X + 150), UP_Y + 2,
+                             (int16_t)(LEFT_W - 156), 16 };
+    gfx_fill_rect(c, box.x, box.y, box.w, box.h, ui_theme_color(UI_C_PANEL));
+
+    char line[64];
+    if (s.bench.valid && s.bench.voltage > 0.5f && s.bench.power > 1.0f) {
+        snprintf(line, sizeof(line), "kV %d   %.1f RPM/W",
+                 (int)(s.bench.rpm / s.bench.voltage + 0.5f),
+                 (double)(s.bench.rpm / s.bench.power));
+    } else {
+        snprintf(line, sizeof(line), "kV --   -- RPM/W");
+    }
+    gfx_text_in(c, box, line, &gfx_font_8x16,
+                ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_RIGHT);
+}
+
 static void draw_table(gfx_canvas_t *c)
 {
     static const char *const rows[S_COUNT] = { "VOLTAGE", "CURRENT",
@@ -365,36 +483,110 @@ static void draw_table(gfx_canvas_t *c)
     static const char *const pk_label[S_COUNT] = { "min", "max", "max", "max" };
     (void)k_extreme;
 
-    gfx_text(c, 12, PLOT_Y + 6, "CHANNEL        NOW            PEAK",
+    gfx_text(c, PLOT_X, LEG_Y + 4, "CHANNEL        NOW            PEAK",
              &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
-    ui_rule(c, 12, PLOT_Y + 26, W - 24, ui_theme_color(UI_C_EDGE));
+    ui_rule(c, PLOT_X, LEG_Y + 24, PLOT_W, ui_theme_color(UI_C_EDGE));
 
     for (int i = 0; i < S_COUNT; ++i) {
-        const int y = PLOT_Y + 38 + i * 34;
+        const int y = LEG_Y + 34 + i * 30;
         char v[24], p[24];
         ui_fmt(v, sizeof(v), now[i], k_series[i].decimals);
         ui_fmt(p, sizeof(p), pk[i], k_series[i].decimals);
-        gfx_text(c, 12, y, rows[i], &gfx_font_8x16,
+        gfx_text(c, PLOT_X, y, rows[i], &gfx_font_8x16,
                  s.plot.series[i].color, 1);
-        gfx_text(c, 140, y, v, &gfx_font_8x16, ui_theme_color(UI_C_TEXT), 1);
-        gfx_text(c, 260, y, k_series[i].unit, &gfx_font_8x16,
+        gfx_text(c, PLOT_X + 128, y, v, &gfx_font_8x16,
+                 ui_theme_color(UI_C_TEXT), 1);
+        gfx_text(c, PLOT_X + 248, y, k_series[i].unit, &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
         char line[40];
         snprintf(line, sizeof(line), "%s %s", pk_label[i], p);
-        gfx_text(c, 360, y, line, &gfx_font_8x16,
+        gfx_text(c, PLOT_X + 348, y, line, &gfx_font_8x16,
+                 ui_theme_color(UI_C_TEXT_FAINT), 1);
+    }
+}
+
+/*
+ * One card of the right rail.  ui_hero_render lays its numerals out for an
+ * 88 px card and the rail gives 57, so this is the same information in the
+ * rail's proportions: the name and the extreme stacked on the left, the live
+ * value in a numeral face that fits, right-aligned with its unit.
+ */
+static void draw_rail_card(gfx_canvas_t *c, gfx_rect_t r,
+                           const ui_hero_def_t *def, float value, float peak)
+{
+    ui_card(c, r, ui_theme_color(UI_C_PANEL));
+    gfx_hline(c, r.x + UI_R_CARD, r.y + 1, r.w - 2 * UI_R_CARD, def->color);
+
+    gfx_fill_round_rect(c, r.x + 8, r.y + 7, 3, 10, 1, def->color);
+    gfx_text(c, r.x + 16, r.y + 6, def->label, &gfx_font_8x16,
+             ui_theme_color(UI_C_TEXT), 1);
+
+    if (isfinite(peak)) {
+        char pk[24], line[32];
+        ui_fmt(pk, sizeof(pk), peak, def->decimals);
+        snprintf(line, sizeof(line), "%s %s",
+                 (def->extreme_label != NULL) ? def->extreme_label : "PK", pk);
+        gfx_text(c, r.x + 8, r.y + 26, line, &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
 
-    char energy[48];
-    snprintf(energy, sizeof(energy), "%.0f mAh    %.1f Wh",
+    char number[24];
+    if (isfinite(value)) {
+        ui_fmt(number, sizeof(number), value, def->decimals);
+    } else {
+        snprintf(number, sizeof(number), "---");
+    }
+    /* Narrower and shorter than the hero face, so four of these stack in the
+     * height one hero card wants. */
+    const gfx_seg_style_t seg = { .digit_w = 15, .digit_h = 24,
+                                  .thickness = 3, .gap = 4, .slant = 2,
+                                  .ghost = true };
+    const int uw = gfx_text_width(&gfx_font_8x16, def->unit, 1);
+    const int nw = gfx_seg_width(number, &seg);
+    const int nx = r.x + r.w - 8 - uw - 6 - nw;
+    gfx_seg_text(c, nx, r.y + 16, number, &seg, def->color,
+                 gfx_lerp(ui_theme_color(UI_C_PANEL), def->color, 34));
+    gfx_text(c, nx + nw + 6, r.y + 30, def->unit, &gfx_font_8x16,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
+}
+
+/* The right rail: one card per channel, live value over its extreme. */
+static void draw_heroes(gfx_canvas_t *c)
+{
+    const float now[S_COUNT] = { s.bench.voltage, s.bench.current,
+                                 s.bench.power, s.bench.rpm };
+    const float pk[S_COUNT]  = { s.bench.voltage_min, s.bench.current_max,
+                                 s.bench.power_max, s.bench.rpm_max };
+    for (int i = 0; i < S_COUNT; ++i) {
+        const gfx_rect_t r = { RIGHT_X,
+                               (int16_t)(UP_Y + i * (HERO_H + HERO_GAP)),
+                               RIGHT_W, HERO_H };
+        gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_BG));
+        const ui_hero_def_t def = { k_series[i].name, k_series[i].unit,
+                                    s.plot.series[i].color,
+                                    k_series[i].decimals, k_extreme[i] };
+        draw_rail_card(c, r, &def, s.bench.valid ? now[i] : NAN,
+                       s.bench.valid ? pk[i] : NAN);
+    }
+}
+
+/* What the run has taken out of the pack, under the arming button. */
+static void draw_totals(gfx_canvas_t *c)
+{
+    const gfx_rect_t box = { (int16_t)(RIGHT_X + INNER), TOTALS_Y,
+                             (int16_t)(RIGHT_W - 2 * INNER), 16 };
+    gfx_fill_rect(c, box.x, box.y, box.w, box.h, ui_theme_color(UI_C_PANEL));
+    char line[48];
+    snprintf(line, sizeof(line), "%.0f mAh   %.2f Wh",
              (double)s.bench.charge_mah, (double)s.bench.energy_wh);
-    gfx_text(c, 12, PLOT_Y + 38 + S_COUNT * 34 + 8, energy, &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT), 1);
+    gfx_text_in(c, box, line, &gfx_font_8x16, ui_theme_color(UI_C_TEXT), 1,
+                GFX_ALIGN_RIGHT);
 }
 
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
+    const int buf = buffer_index & 1;
     bind_colours();
 
     /* Chrome per framebuffer, not per frame; the rest only when its counter
@@ -402,18 +594,20 @@ static void render(gfx_canvas_t *c, int buffer_index)
      * `frame-idle` modes. */
     if ((s.drawn_mask & bit) == 0) {
         gfx_clear(c, ui_theme_color(UI_C_BG));
-        /* The card shell is chrome: it never changes, so it is painted per
-         * framebuffer and the plot repaints only its own interior. */
-        ui_card(c, (gfx_rect_t){ PAD, CARD_Y, W - 2 * PAD, CARD_H },
-                ui_theme_color(UI_C_PANEL_SUNK));
+        ui_panel(c, (gfx_rect_t){ LEFT_X, UP_Y, LEFT_W, UP_H },
+                 "LIVE TELEMETRY", ui_theme_color(UI_C_ACCENT));
+        ui_panel(c, (gfx_rect_t){ LEFT_X, LO_Y, LEFT_W, LO_H },
+                 "THROTTLE", ui_theme_color(UI_C_ACCENT));
+        ui_panel(c, (gfx_rect_t){ RIGHT_X, LO_Y, RIGHT_W, LO_H },
+                 "CONTROL", ui_theme_color(UI_C_ACCENT));
         s.drawn_mask |= bit;
     }
 
-    if (s.drawn_ctrl[buffer_index & 1] != s.ctrl_rev
-        || s.drawn_push[buffer_index & 1] != s.plot.pushes) {
+    if (s.drawn_ctrl[buf] != s.ctrl_rev
+        || s.drawn_push[buf] != s.plot.pushes) {
         ui_tabs_render(&s.tabs, c);
+        draw_header(c);
     }
-
 
     /*
      * Everything that comes from the numbers is painted only when there are
@@ -426,7 +620,6 @@ static void render(gfx_canvas_t *c, int buffer_index)
      * whose last paint was two samples ago still needs one even when the
      * other is current.
      */
-    const int buf = buffer_index & 1;
     if (s.drawn_push[buf] != s.plot.pushes) {
         s.drawn_push[buf] = s.plot.pushes;
 
@@ -435,33 +628,19 @@ static void render(gfx_canvas_t *c, int buffer_index)
              * that scale autoranges, and a shorter number drawn over a
              * longer one leaves the tail of the old one behind. */
             gfx_fill_rect(c, PLOT_X, LEG_Y, PLOT_W, LEG_H,
-                          ui_theme_color(UI_C_PANEL_SUNK));
+                          ui_theme_color(UI_C_PANEL));
             ui_plot_render_legend(&s.plot, c,
                                   (gfx_rect_t){ PLOT_X, LEG_Y, PLOT_W, LEG_H });
             ui_plot_render(&s.plot, c,
                            (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H });
         } else {
-            gfx_fill_rect(c, PAD + 1, CARD_Y + 1, W - 2 * PAD - 2,
-                          CARD_H - 2, ui_theme_color(UI_C_PANEL_SUNK));
+            gfx_fill_rect(c, LEFT_X + 1, UP_Y + TITLE_H, LEFT_W - 2,
+                          UP_H - TITLE_H - 1, ui_theme_color(UI_C_PANEL));
             draw_table(c);
         }
-
-        /* The heroes: live value, its extreme, its unit. */
-        gfx_fill_rect(c, 0, HERO_Y, W, HERO_H, ui_theme_color(UI_C_BG));
-        const float now[S_COUNT] = { s.bench.voltage, s.bench.current,
-                                     s.bench.power, s.bench.rpm };
-        const float pk[S_COUNT]  = { s.bench.voltage_min, s.bench.current_max,
-                                     s.bench.power_max, s.bench.rpm_max };
-        for (int i = 0; i < S_COUNT; ++i) {
-            const ui_hero_def_t def = { k_series[i].name, k_series[i].unit,
-                                        s.plot.series[i].color,
-                                        k_series[i].decimals, k_extreme[i] };
-            ui_hero_render(c, (gfx_rect_t){
-                               (int16_t)(PAD + i * (HERO_W + HERO_GAP)),
-                               HERO_Y, HERO_W, HERO_H },
-                           &def, s.bench.valid ? now[i] : NAN,
-                           s.bench.valid ? pk[i] : NAN);
-        }
+        draw_derived(c);
+        draw_heroes(c);
+        draw_totals(c);
     }
 
     /*
@@ -480,7 +659,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
     s.drawn_thr[buf]  = s.thr_rev;
     s.drawn_arm[buf]  = s.arm_rev;
 
-    /* ARM animating on its own repaints its 180 x 28 px and nothing else. */
+    /* ARM animating on its own repaints its own button and nothing else. */
     if (arm_moved && !ctrl_moved && !thr_moved) {
         ui_button(c, s.arm_rect, s.armed ? "DISARM" : "ARM", arm_fill(),
                   s.pressed == 1, true);
@@ -489,54 +668,52 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
     /*
      * A throttle that moved on its own clears the readout's own box and the
-     * slider's painted region, not the whole row: the row is 800 x 90 px
-     * against 396 x 30 plus the slider's band, and a drag asks for it on
-     * every frame.  The slider's region is what the widget reports rather
-     * than its track, because the thumb and its shadow stand proud of the
-     * track and a clear that stops at the track leaves them behind.
+     * slider's painted region, not both panels: a drag asks for it on every
+     * frame.  The slider's region is what the widget reports rather than its
+     * track, because the thumb and its shadow stand proud of the track.
      */
     if (ctrl_moved) {
-        gfx_fill_rect(c, 0, ROW_Y, W, H - ROW_Y, ui_theme_color(UI_C_BG));
+        gfx_fill_rect(c, LEFT_X + 1, LO_Y + TITLE_H, LEFT_W - 2,
+                      LO_H - TITLE_H - 1, ui_theme_color(UI_C_PANEL));
     } else {
-        gfx_fill_rect(c, 0, ROW_Y, READOUT_W, READOUT_H,
-                      ui_theme_color(UI_C_BG));
+        gfx_fill_rect(c, LEFT_X + INNER, ROW_Y, READOUT_W, READOUT_H,
+                      ui_theme_color(UI_C_PANEL));
         const gfx_rect_t sl = ui_slider_painted_rect(&s.slider);
-        gfx_fill_rect(c, sl.x, sl.y, sl.w, sl.h, ui_theme_color(UI_C_BG));
+        gfx_fill_rect(c, sl.x, sl.y, sl.w, sl.h, ui_theme_color(UI_C_PANEL));
     }
 
-    /*
-     * The readout has its own line above the track.  Printed over the bar it
-     * would sit on whatever colour the fill reaches, at high throttle its own
-     * accent.
-     */
-    gfx_text(c, PAD, ROW_Y + 8, "THROTTLE", &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
-
-    /* Set in the numeral face the readings above use: the throttle is a
-     * reading too, and the one the operator's hand is on. */
+    /* The throttle in the numeral face the readings use: it is a reading
+     * too, and the one the operator's hand is on. */
     char pct[16];
     snprintf(pct, sizeof(pct), "%.1f", (double)s.slider.value);
     const gfx_seg_style_t seg = ui_seg_hero();
     const int pw = gfx_seg_width(pct, &seg);
-    const int px = 386 - 22 - pw;
+    const int px = LEFT_X + LEFT_W - INNER - 20 - pw;
     gfx_seg_text(c, px, ROW_Y, pct, &seg, ui_theme_color(UI_C_ACCENT),
                  gfx_lerp(ui_theme_color(UI_C_BG),
                           ui_theme_color(UI_C_ACCENT), 34));
-    gfx_text(c, 386 - 16, ROW_Y + 14, "%", &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
+    gfx_text(c, LEFT_X + LEFT_W - INNER - 14, ROW_Y + 14, "%",
+             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
 
+    ui_button(c, s.down_rect, "-1", ui_theme_color(UI_C_PANEL_SUNK),
+              s.pressed == 3, true);
     ui_slider_render(&s.slider, c);
+    ui_button(c, s.up_rect, "+1", ui_theme_color(UI_C_PANEL_SUNK),
+              s.pressed == 4, true);
 
     if (!ctrl_moved && !arm_moved) {
         return;
     }
-
     ui_button(c, s.arm_rect, s.armed ? "DISARM" : "ARM", arm_fill(),
               s.pressed == 1, true);
     if (!ctrl_moved) {
-        return;   /* the ARM animation repaints its own button and no more */
+        return;
     }
-    ui_button(c, s.reset_rect, "RESET PEAKS", ui_theme_color(UI_C_PANEL),
+    gfx_text(c, LEFT_X + INNER, HINT_Y,
+             "DRAG THE BAR, OR STEP IT BY ONE POINT AT EITHER END",
+             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT), 1);
+    draw_totals(c);
+    ui_button(c, s.reset_rect, "RESET PEAKS", ui_theme_color(UI_C_PANEL_SUNK),
               s.pressed == 2, true);
 }
 

@@ -50,14 +50,28 @@ static void ev(int x, int y, touch_event_type_t t, uint8_t id)
 static void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
                                 ev(x, y, TOUCH_EVENT_UP, 1); }
 
-/* Geometry mirrored from motor_screen.c; if the layout moves these move with
- * it, and the test names say what they aim at. */
-#define CTRL_Y   380
-#define TRACK_H  36
-#define ROW_Y    (342 + 14)   /* ARM and RESET share the readout row */
-#define ARM_X    490
-#define RESET_X  694
+/*
+ * Geometry mirrored from motor_screen.c; if the layout moves these move with
+ * it, and the test names say what they aim at.  Screen-local coordinates:
+ * the router strips the band before a screen sees an event.
+ */
+#define UP_Y     24
+#define UP_H     242
+#define LO_Y     (UP_Y + UP_H + 6)        /* 272 */
+#define TITLE_H  20
+#define BTN_H    36
+#define TRACK_H  40
+#define ROW_Y    (LO_Y + TITLE_H + 2)
+#define CTRL_Y   (ROW_Y + 42)             /* the throttle track */
 #define TRACK_Y  (CTRL_Y + TRACK_H / 2)
+/* ARM and RESET PEAKS live in the control panel on the right rail. */
+#define ARM_X    676
+#define ARM_Y    (LO_Y + TITLE_H + 8 + BTN_H / 2)
+#define RESET_X  676
+#define RESET_Y  (LO_Y + 154 - 6 - BTN_H / 2)
+/* One percentage point at each end of the track. */
+#define DOWN_X   33
+#define UP_X     519
 
 static motor_cmd_t last_cmd(void)
 {
@@ -70,11 +84,11 @@ TEST_CASE(arming_and_disarming_come_from_the_same_button)
 {
     fresh();
     motor_screen_set_armed(false);
-    tap(ARM_X, ROW_Y);
+    tap(ARM_X, ARM_Y);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
 
     motor_screen_set_armed(true);
-    tap(ARM_X, ROW_Y);
+    tap(ARM_X, ARM_Y);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_DISARM);
 }
 
@@ -83,7 +97,7 @@ TEST_CASE(a_press_that_slides_off_arm_does_nothing)
 {
     fresh();
     motor_screen_set_armed(false);
-    ev(ARM_X, ROW_Y, TOUCH_EVENT_DOWN, 1);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
     ev(60, 120, TOUCH_EVENT_MOVE, 1);
     ev(60, 120, TOUCH_EVENT_UP, 1);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
@@ -93,10 +107,10 @@ TEST_CASE(a_second_contact_cannot_steal_the_arm_release)
 {
     fresh();
     motor_screen_set_armed(false);
-    ev(ARM_X, ROW_Y, TOUCH_EVENT_DOWN, 1);
-    ev(ARM_X, ROW_Y, TOUCH_EVENT_UP, 2);        /* not ours */
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 2);        /* not ours */
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
-    ev(ARM_X, ROW_Y, TOUCH_EVENT_UP, 1);        /* ours */
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);        /* ours */
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
 }
 
@@ -108,9 +122,9 @@ TEST_CASE(a_pending_disarm_cannot_be_overwritten_by_an_arm)
 {
     fresh();
     motor_screen_set_armed(true);
-    tap(ARM_X, ROW_Y);                 /* posts DISARM */
+    tap(ARM_X, ARM_Y);                 /* posts DISARM */
     motor_screen_set_armed(false);
-    tap(ARM_X, ROW_Y);                 /* would post ARM */
+    tap(ARM_X, ARM_Y);                 /* would post ARM */
 
     motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f };
     CHECK(motor_screen_poll_cmd(&c));
@@ -122,18 +136,18 @@ TEST_CASE(the_disarm_latch_clears_when_it_is_read)
 {
     fresh();
     motor_screen_set_armed(true);
-    tap(ARM_X, ROW_Y);
+    tap(ARM_X, ARM_Y);
     (void)last_cmd();
 
     motor_screen_set_armed(false);
-    tap(ARM_X, ROW_Y);
+    tap(ARM_X, ARM_Y);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
 }
 
 TEST_CASE(the_throttle_track_posts_what_it_was_dragged_to)
 {
     fresh();
-    ev(6 + (800 - 12) / 2, TRACK_Y, TOUCH_EVENT_DOWN, 1);
+    ev(276, TRACK_Y, TOUCH_EVENT_DOWN, 1);
     const motor_cmd_t c = last_cmd();
     CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
     CHECK(c.value > 45.0f && c.value < 55.0f);
@@ -144,7 +158,7 @@ TEST_CASE(the_throttle_track_posts_what_it_was_dragged_to)
 TEST_CASE(reset_peaks_posts_its_own_command)
 {
     fresh();
-    tap(RESET_X, ROW_Y);
+    tap(RESET_X, RESET_Y);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_RESET_PEAKS);
 }
 
@@ -183,7 +197,7 @@ TEST_CASE(the_tabs_switch_panes_and_both_render)
     gfx_color_t *plot = malloc((size_t)W * H * sizeof(gfx_color_t));
     memcpy(plot, fb, (size_t)W * H * sizeof(gfx_color_t));
 
-    tap(200, 20);                       /* the TABLE tab */
+    tap(99, 11);                        /* the TABLE tab */
     scr->render(&cv, 0);
 
     int differ = 0;
@@ -198,7 +212,7 @@ TEST_CASE(the_tabs_switch_panes_and_both_render)
     }
 
     /* And back again lands on what it started as. */
-    tap(60, 20);
+    tap(37, 11);
     scr->render(&cv, 0);
     CHECK_EQ(memcmp(plot, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
     free(plot);
@@ -314,7 +328,7 @@ static gfx_color_t arm_px(void)
 {
     /* Inside the ARM button, clear of its rounded corner, its hairline and
      * the centred label. */
-    return fb[(size_t)356 * W + 415];
+    return fb[(size_t)(ARM_Y + 8) * W + (ARM_X - 90)];
 }
 
 /*
@@ -332,7 +346,7 @@ TEST_CASE(the_arm_button_fades_while_held_and_flashes_on_arming)
     CHECK(green_of(idle) > red_of(idle));   /* the OK green */
 
     /* Down on ARM, before the fade has run. */
-    ev(415, 356, TOUCH_EVENT_DOWN, 1);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
     scr->render(&cv, 0);
     const gfx_color_t held0 = arm_px();
 
@@ -348,7 +362,7 @@ TEST_CASE(the_arm_button_fades_while_held_and_flashes_on_arming)
     }
 
     /* Arming flashes it, and the flash decays. */
-    ev(415, 356, TOUCH_EVENT_UP, 1);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
     motor_screen_set_armed(true);
     scr->render(&cv, 0);
     const gfx_color_t flash = arm_px();
