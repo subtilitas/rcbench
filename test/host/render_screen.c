@@ -393,6 +393,13 @@ int main(int argc, char **argv)
     ui_router_set_status(&st);
     ui_router_goto(id);
 
+    if (id == SCREEN_MOTOR) {
+        /* Arming flashes the ARM button once.  The reference image is of the
+         * settled screen, so the flash is run out before anything is drawn
+         * rather than caught part way through. */
+        ui_router_tick(0.25f);
+    }
+
     if (id == SCREEN_LOGS) {
         /* Driven by taps, so the shots are of reachable states.  Taps are
          * in panel coordinates; the router removes the band before the

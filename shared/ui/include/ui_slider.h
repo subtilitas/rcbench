@@ -32,9 +32,9 @@ extern "C" {
  * pixels.
  *
  * The thumb stands proud of the track, and a caller that clears only the
- * track rectangle before redrawing leaves that overhang behind.  Clear
- * track.y - UI_SLIDER_OVERHANG through track.y + track.h + UI_SLIDER_OVERHANG,
- * or more.
+ * track rectangle before redrawing leaves that overhang behind.  The thumb's
+ * shadow is offset 2 px below it, so the painted region is not symmetric and
+ * this constant alone does not describe it: use ui_slider_painted_rect().
  */
 #define UI_SLIDER_OVERHANG 5
 
@@ -72,6 +72,14 @@ void ui_slider_set(ui_slider_t *s, float value);
 bool ui_slider_event(ui_slider_t *s, const touch_event_t *evt);
 
 void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c);
+
+/**
+ * Every pixel ui_slider_render may touch, the thumb's overhang and its
+ * shadow included.  A caller that repaints the slider without repainting
+ * everything around it clears this and not the track, or the thumb's old
+ * positions stay on the screen.
+ */
+gfx_rect_t ui_slider_painted_rect(const ui_slider_t *s);
 
 #ifdef __cplusplus
 }

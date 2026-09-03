@@ -133,6 +133,21 @@ bool ui_slider_event(ui_slider_t *s, const touch_event_t *evt)
     return false;
 }
 
+/* The shadow sits 2 px below the thumb, so the bottom reaches further than
+ * the top.  Kept beside the drawing it describes. */
+#define SLIDER_SHADOW_DROP 2
+
+gfx_rect_t ui_slider_painted_rect(const ui_slider_t *s)
+{
+    if (s == NULL) {
+        return gfx_rect_make(0, 0, 0, 0);
+    }
+    return gfx_rect_make(s->track.x, s->track.y - UI_SLIDER_OVERHANG,
+                         s->track.w,
+                         s->track.h + 2 * UI_SLIDER_OVERHANG
+                             + SLIDER_SHADOW_DROP);
+}
+
 void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
 {
     if (s == NULL || c == NULL) {
@@ -201,7 +216,7 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
     const int ty = s->track.y - UI_SLIDER_OVERHANG;
 
     /* One shape offset 2 px below the thumb, drawn first, as its shadow. */
-    gfx_fill_round_rect(c, tx, ty + 2, tw, th, 6,
+    gfx_fill_round_rect(c, tx, ty + SLIDER_SHADOW_DROP, tw, th, 6,
                         gfx_lerp(ui_theme_color(UI_C_BG), GFX_BLACK, 120));
     gfx_fill_round_rect(c, tx, ty, tw, th, 6, ui_theme_color(UI_C_TEXT));
     gfx_draw_round_rect(c, tx, ty, tw, th, 6,

@@ -28,29 +28,29 @@ panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
 
 mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
-frame           10,846     1356 KiB     35.6      19.5
-frame-idle          927      116 KiB      3.0      39.0
-sim             11,808     1476 KiB     38.8      19.5
-throttle        12,177     1522 KiB     40.0      19.5
-chrome          30,371     3796 KiB     99.7       9.8
-overview           913      114 KiB      3.0      39.0
-servo           15,424     1928 KiB     50.6      19.5
-servo-grip        2,962      370 KiB      9.7      39.0
+frame           10,852     1356 KiB     35.6      19.5
+frame-idle          931      116 KiB      3.1      39.0
+sim             11,814     1477 KiB     38.8      19.5
+throttle        13,154     1644 KiB     43.2      19.5
+chrome          30,377     3797 KiB     99.7       9.8
+overview           915      114 KiB      3.0      39.0
+servo           15,419     1927 KiB     50.6      19.5
+servo-grip        2,958      370 KiB      9.7      39.0
 analyser           843      105 KiB      2.8      39.0
 logs               894      112 KiB      2.9      39.0
 settings           836      104 KiB      2.7      39.0
 battery            827      103 KiB      2.7      39.0
 balance            842      105 KiB      2.8      39.0
-programmer          854      107 KiB      2.8      39.0
+programmer          857      107 KiB      2.8      39.0
 balance-sim        2,375      297 KiB      7.8      39.0
 settings-sim        2,386      298 KiB      7.8      39.0
 battery-sim        2,371      296 KiB      7.8      39.0
-analyser-chrome       39,173     4897 KiB    128.6       6.5
+analyser-chrome       39,174     4897 KiB    128.6       6.5
 logs-chrome       16,013     2002 KiB     52.6      13.0
-settings-chrome       22,691     2836 KiB     74.5      13.0
-battery-chrome       36,923     4615 KiB    121.2       7.8
-balance-chrome       40,644     5080 KiB    133.4       6.5
-programmer-chrome       28,408     3551 KiB     93.2       9.8
+settings-chrome       22,689     2836 KiB     74.5      13.0
+battery-chrome       36,924     4616 KiB    121.2       7.8
+balance-chrome       40,641     5080 KiB    133.4       6.5
+programmer-chrome       28,410     3551 KiB     93.2       9.8
 clear           12,006     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
@@ -113,11 +113,19 @@ Schätzung trauen.
 **Ein Bedienelement, das sich jeden Frame bewegt, bekommt seinen eigenen
 Zähler.** Ein Drag liefert eine Berührung je Frame. Die Buttons und das Gas
 des Motorbildschirms teilten eine Revision, weshalb ein Drag die ganze
-800 x 90 grosse Bedienzeile neu zeichnete: 14 454 Fills gegen 12 177 für die
-396 x 30 grosse Box der Anzeige und den Track, den der Trog deckend und ohne
-Clear malt. Bei 39 Hz sind das 47,4 ms gegen 40,0 ms, und der Flip
-quantisiert auf ganze Panel-Frames: der Drag liegt entweder innerhalb von
-zwei davon oder wartet auf einen dritten, also 19,5 fps oder 13,0.
+800 x 90 grosse Bedienzeile neu zeichnete: 14 454 Fills gegen 13 154 für die
+Box der Anzeige und die bemalte Region des Sliders. Bei 39 Hz sind das
+47,4 ms gegen 43,2 ms, und der Flip quantisiert auf ganze Panel-Frames: der
+Drag liegt entweder innerhalb von zwei davon oder wartet auf einen dritten,
+also 19,5 fps oder 13,0.
+
+Zu löschen ist, was ein Widget bemalt, nicht was es einnimmt. Der Daumen des
+Sliders und sein Schatten stehen 5 px oben und 7 px unten über den Track
+hinaus, und die Hero-Ziffern sind 32 px hoch mit 3 px Schräge auf einer 30 px
+hohen Zeile. Ein Clear in der Grösse des Tracks oder der Zeile lässt daher an
+jeder Position, die der Finger passiert hat, einen Daumen und die Füsse der
+Ziffern stehen. `ui_slider_painted_rect()` liefert die Region, statt sie den
+Aufrufer herleiten zu lassen.
 
 **Nur auf Frames zeichnen, die etwas zu zeichnen haben.** Samples kommen mit
 20 Hz, das Panel zeichnet mit 39 Hz, also hat etwa jeder zweite Frame nichts
