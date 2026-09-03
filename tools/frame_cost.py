@@ -133,7 +133,10 @@ def misses(exe: pathlib.Path, frames: int, mode: str) -> int:
     return int(m.group(1).replace(",", ""))
 
 
-ROW_RE = re.compile(r"^(\w+)\s+([\d,]+)\s")
+# The hyphen matters: \w+ silently skipped frame-idle, servo-grip and every
+# -sim and -chrome mode, so they were absent from both sides of the
+# comparison and the check passed without looking at them.
+ROW_RE = re.compile(r"^([\w-]+)\s+([\d,]+)\s")
 # Absolute fills depend on the machine (argv, environment and stack layout
 # land in the same cache), so the doc table is checked to a tolerance rather
 # than byte for byte.  1 % of the steady-state frame is about 100 fills: two

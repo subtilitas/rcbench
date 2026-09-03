@@ -159,6 +159,13 @@ bool ui_router_take_stop(void)
  * screen except the splash and the overview.
  */
 static bool has_band(ui_screen_id_t id) { return id != SCREEN_SPLASH; }
+
+/*
+ * Whether a STOP button is on the screen at all.  The splash carries no band
+ * and therefore no STOP, and anything hit-testing the band's rectangle
+ * without asking would latch a stop on a tap that pressed nothing.
+ */
+bool ui_router_stop_live(void) { return has_band(s.current); }
 static bool has_home(ui_screen_id_t id)
 {
     return id != SCREEN_SPLASH && id != SCREEN_OVERVIEW;

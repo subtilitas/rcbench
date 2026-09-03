@@ -70,6 +70,9 @@ void ui_slider_set_presets(ui_slider_t *s, const float *values,
 
 void ui_slider_set(ui_slider_t *s, float value);
 
+/** Abandon a drag that will get no release, on leaving a screen. */
+void ui_slider_release(ui_slider_t *s);
+
 /** Returns true when the value changed as a result of this event. */
 bool ui_slider_event(ui_slider_t *s, const touch_event_t *evt);
 

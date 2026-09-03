@@ -108,7 +108,7 @@ predict, count instructions before trusting the estimate.
 touch per frame. The motor screen's buttons and its throttle shared one
 revision, so dragging repainted every control beside it. The throttle now
 carries its own, and repaints the readout's box and the slider's painted
-region: `throttle` costs 10,356 fills, 34.0 ms, against 9,586 for a sample
+region: the `throttle` mode in the table above measures it against a sample
 frame. The flip quantises to whole panel frames, so a drag either lands
 inside two of them or waits for a third: 19.5 fps or 13.0. Measured on
 hardware at 50.5 ms, the old drag took the third.

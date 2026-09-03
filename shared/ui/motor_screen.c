@@ -342,7 +342,10 @@ static void event(const touch_event_t *evt)
             s.have_press = true;
             s.press_id   = evt->point.id;
             s.pressed    = up ? 4 : 3;
+            /* The button's own fill changes, so the row repaints; the value
+             * it moved is on the throttle's counter. */
             ++s.ctrl_rev;
+            ++s.thr_rev;
             return;
         }
         if (gfx_rect_contains(s.arm_rect, x, y)) {
@@ -796,6 +799,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
  */
 static void leave(void)
 {
+    /* No release will arrive for a finger that is on the track as the screen
+     * changes, and a latched drag outlives the gesture. */
+    ui_slider_release(&s.slider);
     post(MOTOR_CMD_DISARM, 0.0f);
     s.armed = false;
     /* Neither animation should still be running when the screen comes back. */
