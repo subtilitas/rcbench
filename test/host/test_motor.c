@@ -190,9 +190,9 @@ TEST_CASE(a_short_press_on_arm_does_nothing)
 }
 
 /*
- * Arming flashes the whole button: white, black, then the danger red, one
- * drawn frame each. A fill that merely decayed towards the settled colour
- * would not read as a flash.
+ * Arming flashes the whole button twice: white, black, the danger red, and
+ * again, one drawn frame each. A fill that merely decayed towards the settled
+ * colour would not read as a flash.
  */
 TEST_CASE(arming_flashes_the_whole_button)
 {
@@ -200,19 +200,21 @@ TEST_CASE(arming_flashes_the_whole_button)
     scr->render(&cv, 0);
     motor_screen_set_armed(true);
 
-    scr->render(&cv, 0);
-    const gfx_color_t f1 = arm_px();
-    scr->render(&cv, 0);
-    const gfx_color_t f2 = arm_px();
-    scr->render(&cv, 0);
-    const gfx_color_t f3 = arm_px();
-    scr->render(&cv, 0);
-    const gfx_color_t settled = arm_px();
+    gfx_color_t seen[7];
+    for (int i = 0; i < 7; ++i) {
+        scr->render(&cv, 0);
+        seen[i] = arm_px();
+    }
 
-    CHECK_EQ(f1, GFX_WHITE);
-    CHECK_EQ(f2, GFX_BLACK);
-    CHECK_EQ(f3, settled);
-    CHECK(f3 != GFX_WHITE && f3 != GFX_BLACK);
+    /* Twice through white, black, red, and then it stays on the red. */
+    for (int cycle = 0; cycle < 2; ++cycle) {
+        CHECK_EQ(seen[cycle * 3 + 0], GFX_WHITE);
+        CHECK_EQ(seen[cycle * 3 + 1], GFX_BLACK);
+        CHECK(red_of(seen[cycle * 3 + 2]) > green_of(seen[cycle * 3 + 2]));
+    }
+    const gfx_color_t settled = seen[6];
+    CHECK_EQ(settled, seen[5]);
+    CHECK(settled != GFX_WHITE && settled != GFX_BLACK);
     /* Settled is the danger red: more red than green. */
     CHECK(red_of(settled) > green_of(settled));
 }
@@ -596,9 +598,9 @@ TEST_CASE(a_redraw_leaves_no_stale_pixels)
     }
     motor_screen_set_armed(false);
     motor_screen_set_throttle(5.0f);
-    /* Arming flashed for three drawn frames; run it out so the comparison is
-     * against a settled button. */
-    for (int i = 0; i < 4; ++i) {
+    /* Arming flashes for a few drawn frames; run it out so the comparison is
+     * against a settled button.  Generously, so the count can change. */
+    for (int i = 0; i < 10; ++i) {
         scr->render(&cv, 0);
     }
     gfx_color_t *over = malloc((size_t)W * H * sizeof(gfx_color_t));
@@ -613,6 +615,33 @@ TEST_CASE(a_redraw_leaves_no_stale_pixels)
     free(over);
 }
 
+
+/*
+ * The sequence the bench actually runs: the hold arms, the application is
+ * told the bench is armed while the finger is still down, and then the
+ * finger lifts. That release must not disarm what the same press just armed.
+ */
+TEST_CASE(the_release_after_a_hold_does_not_disarm)
+{
+    fresh();
+    motor_screen_set_armed(false);
+
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 45; ++i) {
+        scr->tick(0.05f);
+    }
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+
+    /* What app_main does once the control task reports the bench armed. */
+    motor_screen_set_armed(true);
+
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    /* And a fresh press still disarms: armed until touched again. */
+    tap(ARM_X, ARM_Y);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_DISARM);
+}
 
 /*
  * ARM fades from the OK green to the danger red across the whole hold, so the
@@ -653,7 +682,7 @@ TEST_CASE(the_arm_button_fades_across_the_hold)
 
     /* Armed, and past the flash: holding DISARM must not fade. */
     motor_screen_set_armed(true);
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 10; ++i) {
         scr->render(&cv, 0);
     }
     const gfx_color_t settled = arm_px();
@@ -719,6 +748,7 @@ int main(void)
     RUN(each_framebuffer_is_updated_independently);
     RUN(a_redraw_leaves_no_stale_pixels);
     RUN(dragging_the_throttle_leaves_no_stale_pixels);
+    RUN(the_release_after_a_hold_does_not_disarm);
     RUN(the_arm_button_fades_across_the_hold);
     RUN(an_unanswered_bench_does_not_show_numbers);
     return test_summary("motor");

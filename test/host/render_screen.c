@@ -442,7 +442,7 @@ int main(int argc, char **argv)
      * everything else, so these repaint the button and nothing more.
      */
     if (id == SCREEN_MOTOR) {
-        for (int f = 0; f < 6; ++f) {
+        for (int f = 0; f < 10; ++f) {
             ui_router_render(&c, 0);
         }
     }

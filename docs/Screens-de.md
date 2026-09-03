@@ -72,7 +72,8 @@ ARM wird gehalten. Die Füllung blendet über zwei Sekunden von Grün ins
 Gefahrenrot, und der Prüfstand schaltet scharf, wenn die Blende
 durchgelaufen ist; früher loszulassen schaltet nichts scharf, und das
 Loslassen selbst ebenfalls nicht. Das Scharfschalten lässt den ganzen Button
-aufblitzen: weiss, schwarz, rot, je ein gezeichneter Frame. Ein scharfer
+zweimal aufblitzen: weiss, schwarz, rot, und noch einmal, je ein
+gezeichneter Frame. Ein scharfer
 Prüfstand trägt das Gefahrenrot, und DISARM ist ein Druck und kein Halten:
 Anhalten braucht nie ein Halten. DISARM und STOP
 halten den Ausgang sofort an, ohne Rampe. RESET PEAKS löscht die

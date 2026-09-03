@@ -94,12 +94,14 @@
 #define ARM_HOLD_S  2.0f
 
 /*
- * And the arm itself is a flash of the whole button: white, black, then the
- * danger red it settles on, one drawn frame each.  At 39 Hz that is about
- * 77 ms -- short enough to read as a flash rather than an animation, and
- * hard to miss because it inverts twice.
+ * And the arm itself flashes the whole button twice: white, black, the danger
+ * red it settles on, and again, one drawn frame each.  At 39 Hz that is about
+ * 154 ms -- short enough to read as a flash rather than an animation, and two
+ * of them are harder to miss than one.
  */
-#define ARM_FLASH_FRAMES 3
+#define ARM_FLASH_CYCLE  3
+#define ARM_FLASH_TIMES  2
+#define ARM_FLASH_FRAMES (ARM_FLASH_CYCLE * ARM_FLASH_TIMES)
 
 /* The tabs move into the header strip: the mockup has no tab row, and the
  * table pane is not worth deleting to match it. */
@@ -282,7 +284,14 @@ void motor_screen_set_armed(bool armed)
             s.arm_flash_left = ARM_FLASH_FRAMES;
         }
         s.arm_held_s = 0.0f;
-        s.arm_fired  = false;
+        /*
+         * arm_fired is NOT cleared here.  It remembers that the press still
+         * under the finger is the one that armed, and the application calls
+         * this between the hold completing and the finger lifting: clearing
+         * it made that release look like a fresh press on DISARM, so the
+         * bench armed, flashed and disarmed itself on the way up.  The
+         * release consumes it.
+         */
         ++s.arm_rev;
         ++s.ctrl_rev;
     }
@@ -450,9 +459,9 @@ static gfx_color_t arm_fill(void)
     /* The flash is the whole button, one colour per drawn frame, and it
      * overrides everything else while it runs. */
     if (s.arm_flash_left > 0) {
-        switch (s.arm_flash_left) {
-        case 3:  return GFX_WHITE;
-        case 2:  return GFX_BLACK;
+        switch ((s.arm_flash_left - 1) % ARM_FLASH_CYCLE) {
+        case 2:  return GFX_WHITE;
+        case 1:  return GFX_BLACK;
         default: return ui_theme_color(UI_C_DANGER);
         }
     }

@@ -68,7 +68,7 @@ percentage point.
 ARM is a hold. The fill fades from green to the danger red across two
 seconds, and the bench arms when the fade completes; letting go before then
 arms nothing, and the release itself arms nothing either. Arming flashes the
-whole button white, black, then red, one drawn frame each. An armed bench
+whole button twice: white, black, red, and again, one drawn frame each. An armed bench
 carries the danger red, and DISARM is a press rather than a hold: stopping
 never needs a hold. DISARM
 and STOP stop the output immediately, with no ramp. RESET PEAKS clears the
