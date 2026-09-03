@@ -92,7 +92,11 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    if (strcmp(mode, "sim") == 0) {
+    const size_t mode_len = strlen(mode);
+    const bool want_sim =
+        (strcmp(mode, "sim") == 0)
+        || (mode_len > 4 && strcmp(mode + mode_len - 4, "-sim") == 0);
+    if (want_sim) {
         ui_bench_status_t sim = k_status;
         sim.simulated = true;
         ui_router_set_status(&sim);
@@ -105,6 +109,42 @@ int main(int argc, char **argv)
     } else if (servo) {
         start = SCREEN_SERVO;
         servo_screen_set_commanded(38.0f);
+    }
+    /* The screens that carry no mode of their own: what one steady frame of
+     * each costs once both framebuffers hold its chrome. */
+    static const struct { const char *name; ui_screen_id_t id; } k_plain[] = {
+        { "analyser",   SCREEN_ANALYSER },
+        { "logs",       SCREEN_LOGS },
+        { "settings",   SCREEN_SETUP },
+        { "battery",    SCREEN_BATTERY },
+        { "balance",    SCREEN_BALANCE },
+        { "programmer", SCREEN_PROGRAMMER },
+    };
+    bool plain = false;
+    bool plain_chrome = false;
+    for (size_t k = 0; k < sizeof(k_plain) / sizeof(k_plain[0]); ++k) {
+        const char *n = k_plain[k].name;
+        const size_t len = strlen(n);
+        if (strcmp(mode, n) == 0) {
+            start = k_plain[k].id;
+            plain = true;
+            break;
+        }
+        /* "<screen>-chrome": the same screen repainting in full every frame,
+         * which is what an invalidation on every frame costs. */
+        if (strncmp(mode, n, len) == 0 && strcmp(mode + len, "-chrome") == 0) {
+            start = k_plain[k].id;
+            plain = true;
+            plain_chrome = true;
+            break;
+        }
+        /* "<screen>-sim": the same screen with the SIMULATION watermark, which
+         * the panel paints over the whole canvas on every frame. */
+        if (strncmp(mode, n, len) == 0 && strcmp(mode + len, "-sim") == 0) {
+            start = k_plain[k].id;
+            plain = true;
+            break;
+        }
     }
     ui_router_goto(start);
 
@@ -119,6 +159,14 @@ int main(int argc, char **argv)
     const bool feed = (strcmp(mode, "frame-idle") != 0);
 
     for (int i = 0; i < frames; ++i) {
+        if (plain) {
+            if (plain_chrome) {
+                ui_router_invalidate();
+            }
+            ui_router_tick(0.026f);
+            ui_router_render(&c, i & 1);
+            continue;
+        }
         if (servo) {
             /* "servo" moves the arm every frame: the drag case, and the
              * worst one.  "servo-grip" holds it still, so only the grip

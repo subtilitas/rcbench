@@ -28,13 +28,28 @@ panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
 
 mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
-frame           10,904     1363 KiB     35.8      19.5
-frame-idle          944      118 KiB      3.1      39.0
-sim             11,716     1464 KiB     38.5      19.5
-chrome          30,426     3803 KiB     99.9       9.8
-overview           915      114 KiB      3.0      39.0
-servo           15,448     1931 KiB     50.7      19.5
-servo-grip        2,978      372 KiB      9.8      39.0
+frame           10,837     1355 KiB     35.6      19.5
+frame-idle          904      113 KiB      3.0      39.0
+sim             11,645     1456 KiB     38.2      19.5
+chrome          30,338     3792 KiB     99.6       9.8
+overview           896      112 KiB      2.9      39.0
+servo           15,417     1927 KiB     50.6      19.5
+servo-grip        2,956      370 KiB      9.7      39.0
+analyser           839      105 KiB      2.8      39.0
+logs               880      110 KiB      2.9      39.0
+settings           839      105 KiB      2.8      39.0
+battery            830      104 KiB      2.7      39.0
+balance            833      104 KiB      2.7      39.0
+programmer          850      106 KiB      2.8      39.0
+balance-sim        2,188      274 KiB      7.2      39.0
+settings-sim        2,202      275 KiB      7.2      39.0
+battery-sim        2,196      274 KiB      7.2      39.0
+analyser-chrome          851      106 KiB      2.8      39.0
+logs-chrome       16,000     2000 KiB     52.5      13.0
+settings-chrome       22,668     2834 KiB     74.4      13.0
+battery-chrome          842      105 KiB      2.8      39.0
+balance-chrome          850      106 KiB      2.8      39.0
+programmer-chrome          869      109 KiB      2.9      39.0
 clear           12,006     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
@@ -50,6 +65,9 @@ hlines               0        0 KiB      0.0      39.0
 | `overview` | das Menü, Chrome gecacht |
 | `servo` | der Servobildschirm mit neu gezeichnetem Arm |
 | `servo-grip` | der Servobildschirm, nur der Griff neu gezeichnet |
+| `analyser`, `logs`, `settings`, `battery`, `balance`, `programmer` | ein ruhiger Frame dieses Bildschirms, Chrome gecacht |
+| `<screen>-sim` | derselbe Bildschirm mit dem SIMULATION-Watermark |
+| `<screen>-chrome` | derselbe Bildschirm, auf jedem Frame invalidiert |
 | `clear` | ein Löschen des ganzen Bildschirms |
 | `vlines` | siebzehn senkrechte Linien über die volle Höhe |
 | `hlines` | dieselbe Pixelzahl als waagerechte Linien |
@@ -74,6 +92,13 @@ Bitmaske dessen, was er schon gezeichnet hat; dafür ist das Argument
 ein Bildschirm, der nur den gerade gezeichneten Buffer invalidiert, lässt den
 anderen einen Frame zurück, was als Flackern erscheint.
 
+**Das Watermark wird auf jedem Frame bezahlt.** SIMULATION blendet über die
+ganze Canvas, statt zu schreiben, und kostet daher 1 355 Fills, 169 KiB und
+etwa 4,4 ms, unabhängig davon, was der Frame sonst tut: ein ruhiger Bildschirm
+geht von 2,8 ms auf 7,2 ms. Es wird gezeichnet, sobald die Prüfstandswerte
+`LINK_BN_SIMULATED` tragen, also auch bei einem Coprozessor, der mit
+simulierten Werten antwortet.
+
 **Nur auf Frames zeichnen, die etwas zu zeichnen haben.** Samples kommen mit
 20 Hz, das Panel zeichnet mit 39 Hz, also hat etwa jeder zweite Frame nichts
 Neues. Der Prüfstandsbildschirm führt den Push-Zähler des Plots und eine
@@ -96,6 +121,8 @@ jeden Modus an eine Obergrenze:
 | `overview` | 2 000 | einen Bildschirm mit gecachtem Chrome, der neu zu zeichnen begonnen hat |
 | `servo` | 17 000 | ein Wachsen der Arm- und Griffzeichnung |
 | `servo-grip` | 4 000 | ein Atmen, das die ganze Karte neu zeichnet |
+| die sechs Bildschirmmodi | 1 200 | einen Bildschirm, der neu zu zeichnen begonnen hat |
+| die drei `-sim`-Modi | 2 500 | ein Watermark, das über die volle Canvas hinauswächst |
 
 Braucht ein künftiger Bereich mehr Platz, sind die verbleibenden Hebel vom
 gröbsten zum feinsten: die Höhe des Plots, seine Breite, und das

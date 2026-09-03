@@ -87,7 +87,10 @@ INCLUDES = [
 ]
 
 MODES = ["frame", "frame-idle", "sim", "chrome", "overview", "servo",
-         "servo-grip", "clear",
+         "servo-grip", "analyser", "logs", "settings", "battery", "balance",
+         "programmer", "balance-sim", "settings-sim", "battery-sim",
+         "analyser-chrome", "logs-chrome", "settings-chrome",
+         "battery-chrome", "balance-chrome", "programmer-chrome", "clear",
          "vlines", "hlines"]
 
 # ESP32-S3 with CONFIG_ESP32S3_DATA_CACHE_64KB + _LINE_64B.
