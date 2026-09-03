@@ -31,7 +31,7 @@ capture stay on the coprocessor, and only results travel.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the coprocessor transmits only when asked. Worst-case
 payload 52 kB/s against 12 to 30 kB/s of expected traffic. Protocol version
-2.0. [Reference](docs/Link.md).
+2.1. [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO6 (J8) from the core that does
 not draw. The task runs every 5 ms; the line edges every 20 ms
@@ -43,9 +43,17 @@ of link silence; the panel escalates after 1 s. [Reference](docs/Safety.md).
 
 **Outputs.** Every output is a channel (0 to 1000 of its own travel) with a
 role (throttle or surface) rendered by a driver from a table (PWM (pulse-width
-modulation), PPM, DShot). Arming, clamping, slew and the silence timeout are
-implemented once, in `shared/outputs/`, and used by both processors. On the
-wire: the `CHANNELS`, `CHAN_CFG` and `OUTPUTS` pages.
+modulation), PPM, DShot, bidirectional DShot). Arming, clamping, slew and the
+silence timeout are implemented once, in `shared/outputs/`, and used by both
+processors. On the wire: the `CHANNELS`, `CHAN_CFG` and `OUTPUTS` pages. The
+pin is in the slot, not in the firmware: the coprocessor refuses the pins it
+must not drive and binds the rest as they arrive.
+[Reference](docs/DShot.md).
+
+**Measured or modelled.** A coprocessor that answers reports only what it
+measures, with a valid bit per quantity and no `SIMULATED` flag. The panel
+models the whole bench when nothing answers, and marks that with the
+watermark. The two never appear on one screen.
 
 ## State
 
@@ -64,9 +72,10 @@ wire: the `CHANNELS`, `CHAN_CFG` and `OUTPUTS` pages.
 | CAN drivers (TWAI on the panel, XL2515 on the coprocessor) and the echo self-test | built; run on hardware at 1 Mbit/s with zero errors at either end |
 | Bring-up diagnosis, both ends' counters compared | built |
 | Heartbeat generator and monitor | built and driven at both ends; the monostable is not fitted |
-| Coprocessor firmware | answers the identity, status, control, bench and three output pages; fails safe at 200 ms; the numbers are simulated |
-| Output drivers (PWM, PPM, DShot) | not started; no driver produces an edge on a pin |
+| Coprocessor firmware | answers the identity, status, control, bench and three output pages; fails safe at 200 ms. It publishes only what it measures, which is rpm from a bidirectional DShot ESC and nothing else until a front end is fitted |
+| Output drivers (PWM, PPM, DShot, bidirectional DShot) | built; the frame arithmetic, the group code and the reply sampler are host-tested, the PIO programs and the backends compile and are not run on hardware. [Reference](docs/DShot.md) |
 | S.BUS decoder | built and tested; the PIO (programmable input/output) receiver is not written |
+| Motor pole count over the link | the panel sends `Motor poles` on the CONTROL page when the coprocessor answers; with none sent the coprocessor reports no speed rather than one derived from a guess |
 | Other receiver buses | not started |
 | Servo limit search, servo synchronisation | built and tested against a modelled servo |
 | OpenYGE codec | built and tested; not wired in. The implementation is pursued in a separate repository |
@@ -99,6 +108,8 @@ rcbench/
     servo/                limit and synchronisation searches · servo model
     can/                  bit timing · MCP2515 registers · echo self-test
     sbus/                 S.BUS decoder
+    dshot/                frames · GCR · eRPM and extended telemetry
+    ppm/                  frame layout
     openyge/              OpenYGE framing, status and parameter cache
 
   firmware/panel/         ESP-IDF
@@ -108,6 +119,8 @@ rcbench/
 
   firmware/iomcu/         pico-sdk
     src/                  main.c · xl2515.c
+                          out_pwm · out_ppm · out_dshot · outputs_hw
+                          ppm.pio · dshot.pio
     include/iomcu_pins.h
 
   test/host/              one suite over shared/
@@ -120,7 +133,7 @@ rcbench/
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `safety` · `can` | ✔ | ✔ | ✔ |
-| `servo` · `openyge` | | ✔ | ✔ |
+| `servo` · `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -137,14 +150,15 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release |
 
-The host suite is 33 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 36 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_bench`, `test_motor`, `test_servo`,
 `test_analyser`, `test_programmer`, `test_balance`, `test_battery`,
 `test_settings`, `test_logfile`, `test_link_crc`, `test_link_pages`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
 `test_link_can`, `test_outputs`, `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_servo_limit`,
-`test_servo_sync`, `test_sbus`, `test_openyge_frame`, `test_openyge_status`,
+`test_servo_sync`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`,
+`test_ppm`, `test_openyge_frame`, `test_openyge_status`,
 `test_openyge_params`, `test_logview` and `test_logwriter`. The harness is
 `test/host/greatest.h`, written for this project. `tools/check_docs.py` holds
 this list to `test/host/CMakeLists.txt`.
@@ -195,6 +209,9 @@ chrome-cached screen to 2,000.
 | `shared/openyge/openyge_params.c` | 66 | 66 | 100.0% |
 | `shared/servo/servo_sim.c` | 122 | 122 | 100.0% |
 | `shared/sbus/sbus.c` | 54 | 53 | 98.2% |
+| `shared/dshot/dshot_frame.c` | 23 | 23 | 100.0% |
+| `shared/dshot/dshot_telem.c` | 126 | 122 | 96.8% |
+| `shared/ppm/ppm.c` | 42 | 42 | 100.0% |
 | `shared/can/can_timing.c` | 105 | 103 | 98.1% |
 | `shared/can/can_selftest.c` | 145 | 134 | 92.4% |
 | `shared/can/mcp2515.c` | 20 | 20 | 100.0% |
@@ -204,11 +221,11 @@ chrome-cached screen to 2,000.
 | `shared/link/link_dev.c` | 74 | 71 | 96.0% |
 | `shared/link/link_host.c` | 113 | 102 | 90.3% |
 | `shared/bench/bench_state.c` | 61 | 57 | 93.4% |
-| `shared/outputs/outputs.c` | 153 | 143 | 93.5% |
-| `shared/outputs/outputs_pages.c` | 96 | 90 | 93.8% |
+| `shared/outputs/outputs.c` | 163 | 152 | 93.2% |
+| `shared/outputs/outputs_pages.c` | 99 | 92 | 92.9% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
 | `shared/bench/log_writer.c` | 43 | 40 | 93.0% |
-| **total** | **7587** | **7186** | **94.7%** |
+| **total** | **7791** | **7384** | **94.8%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -218,7 +235,8 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | Item | State | Needs |
 | --- | --- | --- |
 | The control page on hardware | the NVS round trip has run: a save writes and the next boot reports what it loaded. The control page has not. The coprocessor's NOT_ARMED refusal has been seen, but as the answer to an arm it refused for want of the heartbeat line, so the failsafe clear and an accepted ARM are still host-tested at the shared/ level only | the heartbeat line above, then a session with both boards: arm, stop, unplug the link, arm again |
-| Output drivers | no PWM, PPM or DShot driver produces an edge | PWM on the RP2350's hardware PWM first; DShot as a PIO program |
+| Output drivers on hardware | all four are written and none has been seen on a pin. What a host test cannot reach: every bit timing, the DMA ring that plays a PPM frame, the PIO turnaround from a bidirectional DShot frame to its reply, and whether an ESC answers at all | an oscilloscope, a servo, and an ESC that does bidirectional DShot. [What is unconfirmed](docs/DShot.md#what-has-not-been-confirmed-on-a-wire) |
+| The panel's output settings are not wired | `Output`, `Output pin`, `Idle pulse` and `Full pulse` exist in the settings and nothing writes them to the `OUTPUTS` and `CHAN_CFG` pages, so a slot has to be configured by hand to drive anything | the settings screen writing the pages the way the servo screen already does |
 | Coprocessor board file | the build uses `pimoroni_pico_plus2_rp2350` (RP2350B, 16 MB flash); the bring-up module is a Waveshare RP2350-CAN (RP2350A, 4 MB flash) | a board header for the module, or a `-DPICO_BOARD` in CI; the final board is an RP2350B for the 27 to 32 GPIO (general-purpose input/output) the pin budget needs |
 | Panel TWAI pins | GPIO19 (RX) and GPIO20 (TX) inferred from the multiplexer; confirmed empirically by the bring-up | trace on the schematic |
 | UART (universal asynchronous receiver-transmitter) socket GPIOs | UART0's default pins assumed for the bridged USB-C socket; the secondary USB-Serial-JTAG (the ESP32-S3's built-in USB (Universal Serial Bus) serial and debug bridge) console covers a mismatch | read off the schematic |
@@ -300,10 +318,11 @@ kept outside the repository; the specification in
 | 2. The link on hardware | done 2026-08-28: 1 Mbit/s, zero errors at either end |
 | 3. Measured numbers: ESC telemetry or bidirectional DShot, and the current sensor | open. Parts selected, nothing fitted. OpenYGE is pursued in a separate repository; what returns is a source that fills `bench_state` |
 | 4. Recording: the logger, and the viewer reads what the bench wrote | done |
-| 5. Outputs: the control page from the panel, then PWM, then the sum-signal protocols | open. The pages and the output bank exist; no driver and no control-page write |
+| 5. Outputs: the control page from the panel, then PWM, then the sum-signal protocols | drivers built and host-tested, not run on hardware. The panel's settings do not yet configure a slot |
 | 6. Receiver buses, one decoder at a time | S.BUS decoded; the PIO receiver and the other buses open |
 | 7. Programming: BLHeli_S and AM32, Hitec on the servo side | screen built; no protocol on a wire |
 
-Next: the two panel items at the top of the open list (settings initialisation,
-control page), then the first PWM driver. None of them needs a part that is not
-on the desk.
+Next: the heartbeat wire, then a session with both boards and a servo on a pin
+-- the control page, an arm, a stop, and a pulse on a scope. After that the
+settings screen writing the output pages, so a slot can be configured without
+a hand-built frame.

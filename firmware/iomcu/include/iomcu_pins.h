@@ -9,8 +9,11 @@
  * cannot serve a pin below 16 and one above 31 at the same time, so the map
  * is partitioned by block before a schematic is drawn.
  *
- * Only the CAN controller and the safety line are assigned.  Everything with
- * a deadline gets its pin when its PIO program is written.
+ * Only the CAN controller and the safety line are assigned.  Every output pin
+ * arrives from the panel over the OUTPUTS page instead, because which lead is
+ * on which pin is a property of the bench in front of the operator rather
+ * than of the firmware.  What is fixed here is the other half of that: the
+ * pins an output may never be given.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -53,5 +56,34 @@
  * reaches exactly; docs/Link.md has the bus budget at that rate.
  */
 #define IOMCU_CAN_BITRATE    1000000u
+
+/*
+ * The pins no output may be bound to, one bit per pin, handed to the output
+ * bank at boot.
+ *
+ * The pin in an OUTPUTS-page slot is whatever an operator typed into the
+ * panel's settings, so something has to hold the list of pins that are
+ * already spoken for.  Getting this wrong is quiet: an output on GP3 drives
+ * the safety line from inside, and the interlock stops meaning anything with
+ * nothing on any screen to say so.
+ */
+#define IOMCU_RESERVED_PINS                     \
+    ((1ull << IOMCU_HEARTBEAT_PIN)              \
+     | (1ull << IOMCU_CAN_PIN_SCK)              \
+     | (1ull << IOMCU_CAN_PIN_MOSI)             \
+     | (1ull << IOMCU_CAN_PIN_MISO)             \
+     | (1ull << IOMCU_CAN_PIN_CS)               \
+     | (1ull << IOMCU_CAN_PIN_INT))
+
+/*
+ * And the pin numbers this part does not have.  NUM_BANK0_GPIOS is 30 on the
+ * RP2350A the bring-up module carries and 48 on the RP2350B the final board
+ * needs, so the same firmware refuses a different set on each.  Without this
+ * a pin above the top would be bound, drive nothing, and read back from the
+ * page as though it were working.
+ */
+#define IOMCU_ABSENT_PINS                                       \
+    ((NUM_BANK0_GPIOS >= 64) ? 0ull                             \
+                             : ~((1ull << NUM_BANK0_GPIOS) - 1ull))
 
 #endif /* RCBENCH_IOMCU_PINS_H */

@@ -32,10 +32,12 @@ pico_sdk_init()
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/link"  link)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/bench" bench)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/outputs" outputs)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/dshot"  dshot)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/ppm"    ppm)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/safety" safety)
-# Not called: there is no PWM (pulse-width modulation) output and no current
-# sensor per output.  Built so the ARM toolchain compiles it as the host suite
-# does; --gc-sections drops it from the image.
+# Not called: the servo procedures need a current sensor per output, and none
+# is fitted.  Built so the ARM toolchain compiles it as the host suite does;
+# --gc-sections drops it from the image.
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/servo"  servo)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/openyge" openyge)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/can"     can)
@@ -43,8 +45,20 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/can"     can)
 add_executable(rcbench-iomcu
     src/main.c
     src/xl2515.c
+    src/out_pwm.c
+    src/out_ppm.c
+    src/out_dshot.c
+    src/outputs_hw.c
 )
 target_include_directories(rcbench-iomcu PRIVATE include src)
+
+# The PIO (programmable input/output) programs are assembled into headers at
+# build time, so the .pio file is the only copy of a program and nothing can
+# drift from it.  The generated headers land in the build tree.
+pico_generate_pio_header(rcbench-iomcu
+    "${CMAKE_CURRENT_LIST_DIR}/src/ppm.pio")
+pico_generate_pio_header(rcbench-iomcu
+    "${CMAKE_CURRENT_LIST_DIR}/src/dshot.pio")
 
 # The coprocessor's own sources are held to the same warnings as the host
 # build, scoped to this target so the SDK's headers are not judged by them.
@@ -55,10 +69,14 @@ target_compile_options(rcbench-iomcu PRIVATE
 target_link_libraries(rcbench-iomcu
     pico_stdlib
     hardware_pio
+    hardware_pwm
+    hardware_dma
     hardware_spi
     hardware_gpio
     rcbench_link
     rcbench_outputs
+    rcbench_dshot
+    rcbench_ppm
     rcbench_bench
     rcbench_safety
     rcbench_servo

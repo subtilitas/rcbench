@@ -17,6 +17,7 @@ Using the bench
 Reference
 
 - [The link](Link.md)
+- [DShot and the output drivers](DShot.md)
 - [The OpenYGE protocol](OpenYGE.md)
 - [Performance](Performance.md)
 
@@ -37,5 +38,6 @@ Den Prüfstand benutzen
 Referenz
 
 - [Der Link](Link-de.md)
+- [DShot und die Output-Treiber](DShot-de.md)
 - [Das OpenYGE-Protokoll](OpenYGE-de.md)
 - [Performance](Performance-de.md)

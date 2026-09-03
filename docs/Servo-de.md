@@ -88,8 +88,12 @@ genügt.
 
 ## Voraussetzungen
 
-Der Ausgang für PWM (Pulsweitenmodulation) am Koprozessor und die
-Strommessung an den Servoausgängen: ein Sensor je Ausgang für die
-Endlagensuche, einer über das Paar für den Abgleich. Die Reihenfolge der
-Arbeiten steht in
+Die Strommessung an den Servoausgängen: ein Sensor je Ausgang für die
+Endlagensuche, einer über das Paar für den Abgleich. Keiner ist bestückt, und
+beide Verfahren sind der Grund, warum sie gebraucht werden — jede Zahl hier
+ist ein Strom.
+
+Die Pulse selbst gibt es: der PWM-Treiber (Pulsweitenmodulation) des
+Koprozessors ist geschrieben, [DShot und die Output-Treiber](DShot-de.md)
+beschreibt ihn. Die Reihenfolge der Arbeiten steht in
 [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).

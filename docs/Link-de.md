@@ -37,7 +37,7 @@ Control-Page.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der Koprozessor sendet nur als Antwort auf eine Anfrage.
-Protokollversion 2.0. Die Major-Version ist Register 0 der Page 0; das Panel
+Protokollversion 2.1. Die Major-Version ist Register 0 der Page 0; das Panel
 verweigert das Schärfen, wenn sie von seiner eigenen abweicht.
 
 ### Identifier
@@ -83,13 +83,13 @@ Ein NACK trägt seinen Grund in Register 0:
 | ---: | --- | --- | --- |
 | 0x00 | IDENTITY | lesen | Protokoll major, Protokoll minor, Firmware major, minor, patch, Hardware-Revision, Capabilities-Bitmap |
 | 0x01 | STATUS | lesen | Zustand (0 idle, 1 armed, 2 failsafe), Fault-Bitmap, Uptime in ms (zwei Register), angenommene Anfragen (zwei Register), Empfangsfehlerzähler des XL2515, Sendefehlerzähler des XL2515 |
-| 0x10 | CONTROL | lesen, schreiben | ARM (ungleich null schärft), THROTTLE (0..10000, Hundertstel Prozent), CLEAR (0x5AFE schreiben, um das Failsafe zu verlassen) |
+| 0x10 | CONTROL | lesen, schreiben | ARM (ungleich null schärft), THROTTLE (0..10000, Hundertstel Prozent), CLEAR (0x5AFE schreiben, um das Failsafe zu verlassen), MOTOR_POLES |
 | 0x11 | LIMITS | | deklariert, nicht bedient |
 | 0x12 | FAILSAFE | | deklariert, nicht bedient |
 | 0x13 | CHANNELS | lesen, schreiben | ein Kommando je Ausgangskanal, 0..1000 des Kanalwegs; acht Kanäle |
 | 0x20 | BENCH | lesen | Spannung (10 mV), Strom (10 mA), Leistung (W), Drehzahl (min⁻¹), Temperatur des ESC (Electronic Speed Controller, Motorregler) und des Motors (0,1 °C, vorzeichenbehaftet), Ladung (mAh), Energie (0,1 Wh), Minimalspannung, Maximalstrom, Maximalleistung, Maximaldrehzahl, Flags |
 | 0x21 | reserviert | | nicht vergeben; nicht wiederzuverwenden |
-| 0x22 | OUTPUTS | lesen, schreiben | je Slot: Treiber (0 keiner, 1 PWM (Pulsweitenmodulation), 2 PPM (Pulspositionsmodulation), 3 DShot), Pin, erster Kanal und Kanalzahl in einem Register, Rate in Hz (kbit/s für DShot); acht Slots zu vier Registern |
+| 0x22 | OUTPUTS | lesen, schreiben | je Slot: Treiber (0 keiner, 1 PWM (Pulsweitenmodulation), 2 PPM (Pulspositionsmodulation), 3 DShot, 4 bidirektionales DShot), Pin, erster Kanal und Kanalzahl in einem Register, Rate in Hz (kbit/s für beide DShot-Treiber); acht Slots zu vier Registern |
 | 0x23 | CHAN_CFG | lesen, schreiben | je Kanal: Rolle (0 throttle, 1 surface), Slew (Spanne je Sekunde, 0 = sofort), minimaler und maximaler Puls in µs; acht Kanäle zu vier Registern |
 
 Fault-Bitmap: Bit 0 Link still, Bit 1 Überstrom, Bit 2 Übertemperatur, Bit 3
@@ -105,6 +105,20 @@ BENCH-Flags: Bit 0 Spannung gültig, Bit 1 Strom gültig, Bit 2 Drehzahl
 gültig, Bit 3 Temperatur gültig, Bit 7 simuliert. Ein Koprozessor ohne
 Mess-Frontend setzt Bit 7, und das Panel zeichnet SIMULATION über den
 Bildschirm.
+
+MOTOR_POLES ist die Magnetzahl des geprüften Motors, gerade und zwischen 2 und
+42, oder null: dann hat es niemand gesagt. Ein bidirektionaler DShot-ESC meldet
+elektrische Perioden und weiß nicht, woran er angeschraubt ist; das ist also die
+eine Zahl, die die Leitung tragen muss, damit der Coprozessor eine mechanische
+Drehzahl melden kann. Bei null meldet er keine Drehzahl statt einer aus einer
+Schätzung abgeleiteten. Das Panel sendet sie aus der Einstellung `Motor poles`,
+sobald der Coprozessor antwortet.
+
+Der Coprozessor verweigert einen Pin, den er nicht treiben darf — die
+Safety-Leitung, die Pins des CAN-Controllers und jede Nummer über dem letzten
+GPIO des Bauteils. Ein verweigerter Slot bleibt ungebunden, während die Page
+weiterhin zurückliest, was gefordert wurde. [DShot und die
+Output-Treiber](DShot-de.md) hat den Rest.
 
 Einträge in CHAN_CFG und OUTPUTS werden ganz geschrieben, vier Register auf
 einmal. Der Pulsbereich eines Kanals ist standardmäßig 1000..2000 µs;

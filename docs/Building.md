@@ -26,6 +26,8 @@ rcbench/
     servo/                limit and synchronisation searches · servo model
     can/                  bit timing for both controllers · MCP2515 registers · echo self-test
     sbus/                 S.BUS decoder
+    dshot/                DShot frames · GCR decode · eRPM
+    ppm/                  PPM frame layout
     openyge/              OpenYGE framing, status and parameter cache
   firmware/
     panel/                ESP-IDF project (ESP32-S3)
@@ -59,7 +61,7 @@ flat: `#include "gfx.h"`.
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `safety` · `can` | ✔ | ✔ | ✔ |
-| `servo` · `openyge` | | ✔ | ✔ |
+| `servo` · `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
 
 ## Toolchains
 

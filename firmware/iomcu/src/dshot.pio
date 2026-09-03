@@ -1,0 +1,184 @@
+;
+; DShot out, and the bidirectional variant's turnaround and capture.
+;
+; A DShot bit is eight cycles here, because the protocol's two high times are
+; three eighths and six eighths of the bit and eight is the smallest count
+; that makes both whole.  The state machine clock is therefore eight times the
+; bit rate: 4.8 MHz for DShot600.
+;
+; Two transmit programs rather than one with a flag.  Plain DShot holds the
+; line low between frames and never listens; the bidirectional one releases
+; the line after every frame so the ESC (electronic speed controller) can
+; answer on it, and raises a PIO (programmable input/output) interrupt so the
+; receiver starts at the right moment.  The turnaround is about 30 us after a
+; frame that is itself 27 us long, which is why it is here and not in a loop
+; on the processor.
+;
+; The inversion bidirectional DShot needs is a pad override on the GPIO
+; (general-purpose input/output), not a different program: the pad inverter
+; applies to the output driver only, so the same pin reads its true level back
+; when the program releases it.
+;
+; SPDX-License-Identifier: MIT
+;
+
+; --------------------------------------------------------------- plain DShot
+;
+; Free-running: the processor pushes a frame and the program renders it.  With
+; nothing in the FIFO (first in first out) the `out` stalls with the side-set
+; low, which is the idle DShot asks for.
+;
+.program dshot_tx
+.side_set 1
+
+.define public T1 3         ; high for every bit
+.define public T2 3         ; still high, for a one only
+.define public T3 2         ; low tail
+
+.wrap_target
+bitloop:
+    out x, 1        side 0 [T3 - 1]
+    jmp !x do_zero  side 1 [T1 - 1]
+do_one:
+    jmp bitloop     side 1 [T2 - 1]
+do_zero:
+    nop             side 0 [T2 - 1]
+.wrap
+
+; ------------------------------------------------------- bidirectional DShot
+;
+; Counted rather than free-running, because the end of the frame is an event:
+; the line has to be released and the receiver started.  Sixteen bits, then
+; the pin goes back to being an input and interrupt 0 says so.
+;
+.program dshot_bidir_tx
+.side_set 1
+
+.define public T1 3
+.define public T2 3
+.define public T3 2
+
+public entry:
+    pull block      side 0          ; a frame, or wait for one
+    set pindirs, 1  side 0          ; take the line
+    set x, 15       side 0
+bitloop:
+    out y, 1        side 0
+    jmp !y do_zero  side 1 [T1 - 1]
+do_one:
+    jmp cont        side 1 [T2 - 1]
+do_zero:
+    nop             side 0 [T2 - 1]
+cont:
+    jmp x-- bitloop side 0
+    set pindirs, 0  side 0          ; let go: the ESC answers on this wire
+    ; The flag is relative to this state machine's own number, so two ESCs
+    ; driven from one PIO block do not hand each other's receivers a start.
+    irq set 0 rel   side 0          ; tell the receiver the frame is done
+    jmp entry       side 0
+
+; ----------------------------------------------------------- the reply back
+;
+; Sampled at a fixed rate rather than timed edge to edge, because the ESC's
+; bit rate is its own crystal's and the decoder in shared/dshot resynchronises
+; on every transition anyway.  Five samples a bit against a reply at five
+; quarters of the DShot rate puts this clock at six and a quarter times the
+; DShot rate.
+;
+; One idle sample is taken before the burst so the capture contains the
+; falling edge that starts it.  Without it the decoder would be handed a
+; stream that begins already low, which carries a level but no phase.
+;
+.program dshot_rx
+
+; The receiver runs on the state machine one above its transmitter, so the
+; flag it waits on is three above its own number modulo four -- which is one
+; below it, and therefore the transmitter's.
+public entry:
+    wait 1 irq 3 rel                ; the transmitter has released the line
+    wait 1 pin 0                    ; idle high, before anything is sent back
+    in pins, 1                      ; the one idle sample
+    wait 0 pin 0                    ; the burst starts here
+.wrap_target
+    in pins, 1
+.wrap
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+/* Eight state-machine cycles to a DShot bit; see the note at the top. */
+#define DSHOT_CYCLES_PER_BIT   8u
+
+/* Five samples to a reply bit, and the reply runs at 5/4 of the DShot rate. */
+#define DSHOT_RX_OVERSAMPLE    5u
+
+static inline float dshot_tx_clkdiv(uint32_t bits_per_second)
+{
+    return (float)clock_get_hz(clk_sys)
+           / ((float)bits_per_second * (float)DSHOT_CYCLES_PER_BIT);
+}
+
+static inline float dshot_rx_clkdiv(uint32_t bits_per_second)
+{
+    /* 5 samples a bit * 5/4 of the DShot rate = 25/4. */
+    return (float)clock_get_hz(clk_sys)
+           / ((float)bits_per_second * 25.0f / 4.0f);
+}
+
+static inline void dshot_tx_program_init(PIO pio, uint sm, uint offset,
+                                         uint pin, uint32_t bits_per_second)
+{
+    pio_gpio_init(pio, pin);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+
+    pio_sm_config c = dshot_tx_program_get_default_config(offset);
+    sm_config_set_sideset_pins(&c, pin);
+    /*
+     * Shifted out most significant bit first, refilled after sixteen.  A
+     * frame is sixteen bits and the word carrying it is thirty-two, so a
+     * threshold of thirty-two would send sixteen zero bits after every frame
+     * -- sixteen short high pulses an ESC reads as commands.
+     */
+    sm_config_set_out_shift(&c, false, true, 16);
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+    sm_config_set_clkdiv(&c, dshot_tx_clkdiv(bits_per_second));
+
+    pio_sm_init(pio, sm, offset, &c);
+}
+
+static inline void dshot_bidir_tx_program_init(PIO pio, uint sm, uint offset,
+                                               uint pin,
+                                               uint32_t bits_per_second)
+{
+    pio_gpio_init(pio, pin);
+    /* Starts as an input: between frames the line belongs to the ESC, and a
+     * pull-up holds it at the idle the protocol expects. */
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, false);
+
+    pio_sm_config c = dshot_bidir_tx_program_get_default_config(offset);
+    sm_config_set_sideset_pins(&c, pin);
+    sm_config_set_set_pins(&c, pin, 1);
+    sm_config_set_out_shift(&c, false, false, 32);   /* pulled by the program */
+    sm_config_set_clkdiv(&c, dshot_tx_clkdiv(bits_per_second));
+
+    pio_sm_init(pio, sm, offset, &c);
+}
+
+static inline void dshot_rx_program_init(PIO pio, uint sm, uint offset,
+                                         uint pin, uint32_t bits_per_second)
+{
+    pio_sm_config c = dshot_rx_program_get_default_config(offset);
+    sm_config_set_in_pins(&c, pin);
+    sm_config_set_jmp_pin(&c, pin);
+    /*
+     * Shifted in most significant bit first and pushed every thirty-two, so
+     * the first sample is the top bit of the first word.  dshot_rx_bits()
+     * reads a capture in exactly that order.
+     */
+    sm_config_set_in_shift(&c, false, true, 32);
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
+    sm_config_set_clkdiv(&c, dshot_rx_clkdiv(bits_per_second));
+
+    pio_sm_init(pio, sm, offset, &c);
+}
+%}

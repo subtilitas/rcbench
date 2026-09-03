@@ -47,7 +47,7 @@ typedef enum {
  * older host can ignore.
  */
 #define LINK_PROTOCOL_MAJOR 2u
-#define LINK_PROTOCOL_MINOR 0u
+#define LINK_PROTOCOL_MINOR 1u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -131,10 +131,18 @@ enum {
  * is renumbered, and a new protocol appends.
  */
 typedef enum {
-    LINK_DRIVER_NONE  = 0,
-    LINK_DRIVER_PWM   = 1,
-    LINK_DRIVER_PPM   = 2,
-    LINK_DRIVER_DSHOT = 3,
+    LINK_DRIVER_NONE        = 0,
+    LINK_DRIVER_PWM         = 1,
+    LINK_DRIVER_PPM         = 2,
+    LINK_DRIVER_DSHOT       = 3,
+    /*
+     * Bidirectional DShot is its own driver rather than a flag on the one
+     * above.  It inverts the line and the checksum, so an ESC (electronic
+     * speed controller) set up for one protocol ignores the other entirely;
+     * a slot that could be switched between them by a flag would look like
+     * one output with a setting instead of two incompatible wires.
+     */
+    LINK_DRIVER_DSHOT_BIDIR = 4,
 } link_out_driver_t;
 
 /* ---------------------------------------------------------------- identity */
@@ -249,8 +257,21 @@ enum {
     LINK_CT_ARM        = 0, /**< non-zero asks for ARMED                    */
     LINK_CT_THROTTLE   = 1, /**< 0..10000, hundredths of a percent          */
     LINK_CT_CLEAR      = 2, /**< write LINK_CLEAR_MAGIC to leave FAILSAFE   */
-    LINK_CT_COUNT      = 3,
+    /*
+     * The magnet count of the motor under test, so an electrical speed can
+     * be turned into a mechanical one.  It is the one number bidirectional
+     * DShot cannot carry: an ESC (electronic speed controller) reports
+     * electrical periods and has no idea what it is bolted to.  Zero means
+     * nobody has said, and rpm (revolutions per minute) is then not reported
+     * rather than reported wrong.
+     */
+    LINK_CT_MOTOR_POLES = 3,
+    LINK_CT_COUNT      = 4,
 };
+
+/** Even, and between these; zero is the fourth legal value, meaning unknown. */
+#define LINK_POLES_MIN  2u
+#define LINK_POLES_MAX 42u
 
 /**
  * Leaving failsafe takes this value written to LINK_CT_CLEAR, not any write

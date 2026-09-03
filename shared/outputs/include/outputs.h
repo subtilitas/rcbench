@@ -67,6 +67,7 @@ typedef enum {
     OUT_DRIVER_PWM,      /**< one channel, one pin, a pulse per frame      */
     OUT_DRIVER_PPM,      /**< several channels multiplexed onto one pin    */
     OUT_DRIVER_DSHOT,    /**< one channel, one pin, an 11-bit code         */
+    OUT_DRIVER_DSHOT_BIDIR, /**< the same, inverted, with a reply           */
     OUT_DRIVER_COUNT
 } out_driver_t;
 
@@ -109,12 +110,16 @@ typedef struct {
     uint16_t     rate_hz;
 } out_slot_t;
 
+/** The highest pin number a reservation mask can hold. */
+#define OUT_MAX_PIN     63u
+
 typedef struct {
     out_channel_t channel[OUT_MAX_CHANNELS];
     out_slot_t    slot[OUT_MAX_SLOTS];
     bool          armed;
     uint32_t      timeout_ms;   /**< silence after which it stops driving  */
     uint32_t      last_step_ms;
+    uint64_t      reserved;     /**< pins this build will not drive        */
 } outputs_t;
 
 /** Silence after which an output stops driving. */
@@ -131,6 +136,25 @@ void outputs_init(outputs_t *o, uint32_t now_ms);
  * rendering.
  */
 bool outputs_configure(outputs_t *o, uint8_t slot, const out_slot_t *cfg);
+
+/**
+ * Declare the pins this build must never drive, one bit per pin.
+ *
+ * Which pins exist and which are already spoken for is the one thing about an
+ * output the bank cannot work out for itself: it is a property of the board
+ * and the firmware around it, not of the protocol.  The pin arrives from the
+ * host over the OUTPUTS page and is therefore whatever an operator typed, so
+ * something has to hold the list of pins that already carry the CAN
+ * (Controller Area Network) controller, the safety line and the console.
+ *
+ * Setting the mask does not tear down a slot that is already using a pin in
+ * it.  Reserve before configuring; the coprocessor does this once at boot,
+ * and the panel leaves the mask empty because it drives no pin of its own.
+ */
+void outputs_reserve_pins(outputs_t *o, uint64_t mask);
+
+/** Whether @p pin may be driven: it exists and nothing else has claimed it. */
+bool outputs_pin_available(const outputs_t *o, uint8_t pin);
 
 /** Endpoints, refused rather than clamped.  Inverted pairs are straightened:
  *  an inverted pair is a mistake rather than a range, and it would make the
