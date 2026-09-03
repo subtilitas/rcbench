@@ -27,29 +27,30 @@ panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
 
 mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
-frame           10,881     1360 KiB     35.7      19.5
-frame-idle          895      112 KiB      2.9      39.0
-sim             11,891     1486 KiB     39.0      19.5
-chrome          30,559     3820 KiB    100.3       9.8
-overview           889      111 KiB      2.9      39.0
-servo           15,544     1943 KiB     51.0      19.5
-servo-grip        2,986      373 KiB      9.8      39.0
-analyser           835      104 KiB      2.7      39.0
-logs               860      108 KiB      2.8      39.0
-settings           830      104 KiB      2.7      39.0
-battery            836      104 KiB      2.7      39.0
-balance            822      103 KiB      2.7      39.0
-programmer          815      102 KiB      2.7      39.0
-balance-sim        2,408      301 KiB      7.9      39.0
-settings-sim        2,417      302 KiB      7.9      39.0
-battery-sim        2,417      302 KiB      7.9      39.0
-analyser-chrome          850      106 KiB      2.8      39.0
-logs-chrome       16,205     2026 KiB     53.2      13.0
-settings-chrome       22,607     2826 KiB     74.2      13.0
-battery-chrome          851      106 KiB      2.8      39.0
-balance-chrome          833      104 KiB      2.7      39.0
-programmer-chrome          833      104 KiB      2.7      39.0
-clear           12,005     1501 KiB     39.4      19.5
+frame           10,846     1356 KiB     35.6      19.5
+frame-idle          927      116 KiB      3.0      39.0
+sim             11,808     1476 KiB     38.8      19.5
+throttle        12,177     1522 KiB     40.0      19.5
+chrome          30,371     3796 KiB     99.7       9.8
+overview           913      114 KiB      3.0      39.0
+servo           15,424     1928 KiB     50.6      19.5
+servo-grip        2,962      370 KiB      9.7      39.0
+analyser           843      105 KiB      2.8      39.0
+logs               894      112 KiB      2.9      39.0
+settings           836      104 KiB      2.7      39.0
+battery            827      103 KiB      2.7      39.0
+balance            842      105 KiB      2.8      39.0
+programmer          854      107 KiB      2.8      39.0
+balance-sim        2,375      297 KiB      7.8      39.0
+settings-sim        2,386      298 KiB      7.8      39.0
+battery-sim        2,371      296 KiB      7.8      39.0
+analyser-chrome       39,173     4897 KiB    128.6       6.5
+logs-chrome       16,013     2002 KiB     52.6      13.0
+settings-chrome       22,691     2836 KiB     74.5      13.0
+battery-chrome       36,923     4615 KiB    121.2       7.8
+balance-chrome       40,644     5080 KiB    133.4       6.5
+programmer-chrome       28,408     3551 KiB     93.2       9.8
+clear           12,006     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
 ```
@@ -60,6 +61,7 @@ hlines               0        0 KiB      0.0      39.0
 | `frame` | the motor bench on a frame where a telemetry sample lands |
 | `frame-idle` | the motor bench on a frame between samples, nothing touched |
 | `sim` | as `frame`, with the SIMULATION watermark |
+| `throttle` | the motor bench with a finger on the throttle, the drag case |
 | `chrome` | the motor bench with nothing cached, repainted in full |
 | `overview` | the menu, chrome cached |
 | `servo` | the servo screen with the arm redrawn |
@@ -102,6 +104,14 @@ pixel, not traffic. It was 58 times the cost the table implied, and the table
 could not show it. Where a mode's measured frame time exceeds what its fills
 predict, count instructions before trusting the estimate.
 
+**Give a control that moves every frame its own counter.** A drag delivers a
+touch per frame. The motor screen's buttons and its throttle shared one
+revision, so dragging repainted the whole 800 x 90 control row: 14,454 fills
+against 12,177 for the readout's own 396 x 30 box and the track, which the
+trough paints opaque without a clear. At 39 Hz the difference is 47.4 ms
+against 40.0 ms, and the flip quantises to whole panel frames, so the drag
+either lands inside two of them or waits for a third: 19.5 fps or 13.0.
+
 **Paint only on frames that have something to paint.** Samples arrive at 20 Hz
 and the panel refreshes at 39 Hz, so about every other frame has nothing new.
 The bench screen keeps the plot's push count and a control revision, each per
@@ -124,6 +134,7 @@ would repaint identical pixels, drawing slower would drop samples. CI
 | `servo-grip` | 4,000 | a breath repainting the whole card |
 | the six per-screen modes | 1,200 | a screen that has started repainting |
 | the three `-sim` modes | 2,800 | the watermark growing past a full canvas |
+| the six `-chrome` modes | 45,000 | a full repaint growing |
 
 If a future pane needs more room, the remaining levers in order of bluntness
 are the plot's height, its width, and clipping the simulation watermark to the

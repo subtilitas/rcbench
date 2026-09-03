@@ -110,6 +110,11 @@ void ui_router_invalidate(void)
     motor_invalidate();
     log_viewer_invalidate();
     settings_screen_invalidate();
+    analyser_invalidate();
+    balance_invalidate();
+    battery_invalidate();
+    programmer_invalidate();
+    servo_invalidate();
 }
 
 void ui_router_tick(float dt_s)

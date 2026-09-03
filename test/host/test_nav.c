@@ -509,6 +509,50 @@ TEST_CASE(the_simulation_mark_lets_the_screen_through)
 }
 
 /*
+ * Every screen caches its chrome per framebuffer, so ui_router_invalidate()
+ * has to reach every screen.  Five of them had no hook at all, which left a
+ * theme change or a change of the SIMULATED flag showing stale chrome, and
+ * cost nothing measurable, so nothing caught it.  Scribbling over a settled
+ * canvas and invalidating has to restore exactly what a fresh render draws.
+ */
+TEST_CASE(invalidating_the_router_repaints_every_screen)
+{
+    const size_t bytes = (size_t)W * H * sizeof(gfx_color_t);
+    gfx_color_t *settled = malloc(bytes);
+    CHECK(settled != NULL);
+    if (settled == NULL) {
+        return;
+    }
+
+    for (int id = 0; id < SCREEN_COUNT; ++id) {
+        fresh();
+        ui_router_goto((ui_screen_id_t)id);
+        /* Both framebuffers, the way the panel settles them. */
+        ui_router_render(&cv, 0);
+        ui_router_render(&cv, 1);
+        ui_router_render(&cv, 0);
+        memcpy(settled, fb, bytes);
+
+        /* Something else owned the buffer in between. */
+        memset(fb, 0x5a, bytes);
+        ui_router_invalidate();
+        ui_router_render(&cv, 0);
+
+        if (memcmp(settled, fb, bytes) != 0) {
+            long differ = 0;
+            for (long i = 0; i < (long)W * H; ++i) {
+                if (settled[i] != fb[i]) {
+                    ++differ;
+                }
+            }
+            T_FAIL("screen %d keeps %ld px of stale chrome after "
+                   "ui_router_invalidate()", id, differ);
+        }
+    }
+    free(settled);
+}
+
+/*
  * The mark's stencil is cached, so a canvas whose geometry or ink differs
  * from the cached one has to rebuild it rather than replay the wrong points,
  * and a canvas covering more points than the table holds falls back to
@@ -704,6 +748,7 @@ int main(void)
     RUN(the_alert_band_renders_at_the_bottom);
     RUN(the_simulation_mark_covers_the_whole_screen);
     RUN(the_simulation_mark_lets_the_screen_through);
+    RUN(invalidating_the_router_repaints_every_screen);
     RUN(the_simulation_mark_follows_the_canvas_it_is_given);
     RUN(switching_the_mark_invalidates_the_cached_chrome);
     RUN(the_menu_marks_what_is_not_fitted);

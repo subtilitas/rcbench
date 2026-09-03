@@ -303,6 +303,13 @@ static gfx_rect_t proto_row(int i)
                          (int16_t)(W - 2 * PAD - 24), 58 };
 }
 
+void programmer_invalidate(void)
+{
+    s.drawn_mask = 0;
+    s.drawn[0] = UINT32_MAX;
+    s.drawn[1] = UINT32_MAX;
+}
+
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));

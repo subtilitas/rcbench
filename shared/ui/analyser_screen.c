@@ -94,6 +94,13 @@ static struct {
     unsigned drawn_mask;
 } s;
 
+void analyser_invalidate(void)
+{
+    s.drawn_mask = 0;
+    s.drawn[0] = UINT32_MAX;
+    s.drawn[1] = UINT32_MAX;
+}
+
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));

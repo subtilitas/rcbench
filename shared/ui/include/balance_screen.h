@@ -17,6 +17,9 @@ typedef enum {
 
 typedef enum { ROTOR_PROP = 0, ROTOR_EDF, ROTOR_COUNT } balance_rotor_t;
 
+/** Drop the cached chrome, so the next frame repaints it. */
+void balance_invalidate(void);
+
 const ui_screen_t *balance_screen(void);
 
 /** How many blades the rotor has, 2 to 6. */

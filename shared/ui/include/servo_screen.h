@@ -20,6 +20,9 @@ typedef struct {
     uint16_t         value_us;
 } servo_cmd_t;
 
+/** Drop the cached chrome, so the next frame repaints it. */
+void servo_invalidate(void);
+
 const ui_screen_t *servo_screen(void);
 
 /** Take the pending command, if any.  Cleared by reading. */
