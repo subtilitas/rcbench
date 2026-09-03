@@ -43,6 +43,12 @@ void motor_screen_set(const bench_state_t *b);
 /** Called per sample, so the plot's time base is the sample rate. */
 void motor_screen_push(const bench_state_t *b);
 void motor_screen_set_armed(bool armed);
+/**
+ * The kV the connected ESC reports, or 0 when it reports none.  Preferred
+ * over the SET_MOTOR_KV setting when it is non-zero.
+ */
+void motor_screen_set_esc_kv(int kv);
+
 float motor_screen_throttle(void);
 void motor_screen_set_throttle(float pct);
 

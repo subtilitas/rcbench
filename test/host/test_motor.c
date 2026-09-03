@@ -13,6 +13,7 @@
 #include "greatest.h"
 
 #include "motor_screen.h"
+#include "settings.h"
 #include "telemetry_sim.h"
 #include "ui_screen.h"
 #include "ui_theme.h"
@@ -50,14 +51,31 @@ static void ev(int x, int y, touch_event_type_t t, uint8_t id)
 static void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
                                 ev(x, y, TOUCH_EVENT_UP, 1); }
 
-/* Geometry mirrored from motor_screen.c; if the layout moves these move with
- * it, and the test names say what they aim at. */
-#define CTRL_Y   380
-#define TRACK_H  36
-#define ROW_Y    (342 + 14)   /* ARM and RESET share the readout row */
-#define ARM_X    490
-#define RESET_X  694
+/*
+ * Geometry mirrored from motor_screen.c; if the layout moves these move with
+ * it, and the test names say what they aim at.  Screen-local coordinates:
+ * the router strips the band before a screen sees an event.
+ */
+#define UP_Y     24
+#define UP_H     242
+#define LO_Y     (UP_Y + UP_H + 6)        /* 272 */
+#define TITLE_H  20
+#define BTN_H    36
+#define TRACK_H  40
+#define ROW_Y    (LO_Y + TITLE_H + 2)
+#define CTRL_Y   (ROW_Y + 42)             /* the throttle track */
 #define TRACK_Y  (CTRL_Y + TRACK_H / 2)
+/* ARM and RESET PEAKS live in the control panel on the right rail. */
+#define ARM_X    676
+#define ARM_Y    (LO_Y + TITLE_H + 8 + BTN_H / 2)
+#define RESET_X  676
+#define RESET_Y  (LO_Y + 154 - 6 - BTN_H / 2)
+/* One percentage point at each end of the track. */
+#define DOWN_X   33
+#define UP_X     519
+/* The track itself: x 72..486, so half of it is half the travel. */
+#define TRACK_X  72
+#define TRACK_W  414
 
 static motor_cmd_t last_cmd(void)
 {
@@ -70,11 +88,11 @@ TEST_CASE(arming_and_disarming_come_from_the_same_button)
 {
     fresh();
     motor_screen_set_armed(false);
-    tap(ARM_X, ROW_Y);
+    tap(ARM_X, ARM_Y);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
 
     motor_screen_set_armed(true);
-    tap(ARM_X, ROW_Y);
+    tap(ARM_X, ARM_Y);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_DISARM);
 }
 
@@ -83,7 +101,7 @@ TEST_CASE(a_press_that_slides_off_arm_does_nothing)
 {
     fresh();
     motor_screen_set_armed(false);
-    ev(ARM_X, ROW_Y, TOUCH_EVENT_DOWN, 1);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
     ev(60, 120, TOUCH_EVENT_MOVE, 1);
     ev(60, 120, TOUCH_EVENT_UP, 1);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
@@ -93,10 +111,10 @@ TEST_CASE(a_second_contact_cannot_steal_the_arm_release)
 {
     fresh();
     motor_screen_set_armed(false);
-    ev(ARM_X, ROW_Y, TOUCH_EVENT_DOWN, 1);
-    ev(ARM_X, ROW_Y, TOUCH_EVENT_UP, 2);        /* not ours */
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 2);        /* not ours */
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
-    ev(ARM_X, ROW_Y, TOUCH_EVENT_UP, 1);        /* ours */
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);        /* ours */
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
 }
 
@@ -108,9 +126,9 @@ TEST_CASE(a_pending_disarm_cannot_be_overwritten_by_an_arm)
 {
     fresh();
     motor_screen_set_armed(true);
-    tap(ARM_X, ROW_Y);                 /* posts DISARM */
+    tap(ARM_X, ARM_Y);                 /* posts DISARM */
     motor_screen_set_armed(false);
-    tap(ARM_X, ROW_Y);                 /* would post ARM */
+    tap(ARM_X, ARM_Y);                 /* would post ARM */
 
     motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f };
     CHECK(motor_screen_poll_cmd(&c));
@@ -122,29 +140,103 @@ TEST_CASE(the_disarm_latch_clears_when_it_is_read)
 {
     fresh();
     motor_screen_set_armed(true);
-    tap(ARM_X, ROW_Y);
+    tap(ARM_X, ARM_Y);
     (void)last_cmd();
 
     motor_screen_set_armed(false);
-    tap(ARM_X, ROW_Y);
+    tap(ARM_X, ARM_Y);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
 }
 
-TEST_CASE(the_throttle_track_posts_what_it_was_dragged_to)
+/*
+ * The rated kV comes from the connected ESC when it reports one, and from the
+ * setting when it does not.  Neither leaves the field empty: a guessed kV
+ * gives a plausible-looking efficiency that is wrong, and the schema
+ * therefore defaults to zero rather than to a typical motor.
+ */
+TEST_CASE(the_rated_kv_prefers_the_esc_over_the_entered_value)
+{
+    const size_t bytes = (size_t)W * H * sizeof(gfx_color_t);
+    gfx_color_t *shot = malloc(bytes);
+    CHECK(shot != NULL);
+    if (shot == NULL) {
+        return;
+    }
+
+    fresh();
+    settings_reset_all();
+    bench_state_t b;
+    telemetry_sim_t sim;
+    memset(&b, 0, sizeof(b));
+    telemetry_sim_init(&sim, NULL);
+    for (int i = 0; i < 60; ++i) {
+        telemetry_sim_step(&sim, 60.0f, 0.05f, &b);
+        motor_screen_push(&b);
+    }
+    CHECK_EQ(settings_get_int(SET_MOTOR_KV), 0);   /* nothing assumed */
+    scr->render(&cv, 0);
+    memcpy(shot, fb, bytes);
+
+    /* A value the operator entered fills the field. */
+    settings_set(SET_MOTOR_KV, 1000.0f);
+    motor_invalidate();
+    scr->render(&cv, 0);
+    CHECK(memcmp(shot, fb, bytes) != 0);
+    memcpy(shot, fb, bytes);
+
+    /* And what the ESC reports takes it back off them. */
+    motor_screen_set_esc_kv(2000);
+    motor_invalidate();
+    scr->render(&cv, 0);
+    CHECK(memcmp(shot, fb, bytes) != 0);
+
+    /* Zero from the ESC is "it did not say", not "zero". */
+    memcpy(shot, fb, bytes);
+    motor_screen_set_esc_kv(0);
+    motor_invalidate();
+    scr->render(&cv, 0);
+    CHECK(memcmp(shot, fb, bytes) != 0);
+
+    settings_reset_all();
+    free(shot);
+}
+
+/*
+ * The throttle moves by how far a finger travels, not to where it lands.
+ *
+ * A press used to command the value under it, so touching the right-hand end
+ * of the track asked for full travel in one contact.  The output bank's slew
+ * ramps rather than steps, which bounds how fast the motor follows, but the
+ * command still went to 100 and nothing had to be confirmed.
+ */
+TEST_CASE(the_throttle_track_moves_by_how_far_it_is_dragged)
 {
     fresh();
-    ev(6 + (800 - 12) / 2, TRACK_Y, TOUCH_EVENT_DOWN, 1);
+
+    /* A press commands nothing, wherever on the track it lands. */
+    ev(TRACK_X + TRACK_W - 4, TRACK_Y, TOUCH_EVENT_DOWN, 1);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
+    ev(TRACK_X + TRACK_W - 4, TRACK_Y, TOUCH_EVENT_UP, 1);
+    CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
+
+    /* Half the track's width of drag is half the travel, wherever it began. */
+    ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_DOWN, 1);
+    ev(TRACK_X + 10 + TRACK_W / 2, TRACK_Y, TOUCH_EVENT_MOVE, 1);
     const motor_cmd_t c = last_cmd();
     CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
     CHECK(c.value > 45.0f && c.value < 55.0f);
     CHECK_NEAR(motor_screen_throttle(), c.value, 0.01f);
-    ev(400, TRACK_Y, TOUCH_EVENT_UP, 1);
-}
 
+    /* And dragging back the same distance returns it. */
+    ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_MOVE, 1);
+    ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_UP, 1);
+    CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
+}
 TEST_CASE(reset_peaks_posts_its_own_command)
 {
     fresh();
-    tap(RESET_X, ROW_Y);
+    tap(RESET_X, RESET_Y);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_RESET_PEAKS);
 }
 
@@ -183,7 +275,7 @@ TEST_CASE(the_tabs_switch_panes_and_both_render)
     gfx_color_t *plot = malloc((size_t)W * H * sizeof(gfx_color_t));
     memcpy(plot, fb, (size_t)W * H * sizeof(gfx_color_t));
 
-    tap(200, 20);                       /* the TABLE tab */
+    tap(99, 11);                        /* the TABLE tab */
     scr->render(&cv, 0);
 
     int differ = 0;
@@ -198,7 +290,7 @@ TEST_CASE(the_tabs_switch_panes_and_both_render)
     }
 
     /* And back again lands on what it started as. */
-    tap(60, 20);
+    tap(37, 11);
     scr->render(&cv, 0);
     CHECK_EQ(memcmp(plot, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
     free(plot);
@@ -314,7 +406,7 @@ static gfx_color_t arm_px(void)
 {
     /* Inside the ARM button, clear of its rounded corner, its hairline and
      * the centred label. */
-    return fb[(size_t)356 * W + 415];
+    return fb[(size_t)(ARM_Y + 8) * W + (ARM_X - 90)];
 }
 
 /*
@@ -332,7 +424,7 @@ TEST_CASE(the_arm_button_fades_while_held_and_flashes_on_arming)
     CHECK(green_of(idle) > red_of(idle));   /* the OK green */
 
     /* Down on ARM, before the fade has run. */
-    ev(415, 356, TOUCH_EVENT_DOWN, 1);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
     scr->render(&cv, 0);
     const gfx_color_t held0 = arm_px();
 
@@ -348,7 +440,7 @@ TEST_CASE(the_arm_button_fades_while_held_and_flashes_on_arming)
     }
 
     /* Arming flashes it, and the flash decays. */
-    ev(415, 356, TOUCH_EVENT_UP, 1);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
     motor_screen_set_armed(true);
     scr->render(&cv, 0);
     const gfx_color_t flash = arm_px();
@@ -464,7 +556,8 @@ int main(void)
     RUN(a_second_contact_cannot_steal_the_arm_release);
     RUN(a_pending_disarm_cannot_be_overwritten_by_an_arm);
     RUN(the_disarm_latch_clears_when_it_is_read);
-    RUN(the_throttle_track_posts_what_it_was_dragged_to);
+    RUN(the_rated_kv_prefers_the_esc_over_the_entered_value);
+    RUN(the_throttle_track_moves_by_how_far_it_is_dragged);
     RUN(reset_peaks_posts_its_own_command);
     RUN(leaving_the_screen_disarms);
     RUN(the_tabs_switch_panes_and_both_render);

@@ -27,29 +27,29 @@ panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
 
 mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
-frame           10,852     1356 KiB     35.6      19.5
-frame-idle          931      116 KiB      3.1      39.0
-sim             11,814     1477 KiB     38.8      19.5
-throttle        13,154     1644 KiB     43.2      19.5
-chrome          30,377     3797 KiB     99.7       9.8
-overview           915      114 KiB      3.0      39.0
-servo           15,419     1927 KiB     50.6      19.5
-servo-grip        2,958      370 KiB      9.7      39.0
-analyser           843      105 KiB      2.8      39.0
-logs               894      112 KiB      2.9      39.0
-settings           836      104 KiB      2.7      39.0
-battery            827      103 KiB      2.7      39.0
-balance            842      105 KiB      2.8      39.0
-programmer          857      107 KiB      2.8      39.0
-balance-sim        2,375      297 KiB      7.8      39.0
-settings-sim        2,386      298 KiB      7.8      39.0
-battery-sim        2,371      296 KiB      7.8      39.0
-analyser-chrome       39,174     4897 KiB    128.6       6.5
-logs-chrome       16,013     2002 KiB     52.6      13.0
-settings-chrome       22,689     2836 KiB     74.5      13.0
-battery-chrome       36,924     4616 KiB    121.2       7.8
-balance-chrome       40,641     5080 KiB    133.4       6.5
-programmer-chrome       28,410     3551 KiB     93.2       9.8
+frame            8,632     1079 KiB     28.3      19.5
+frame-idle          927      116 KiB      3.0      39.0
+sim              9,590     1199 KiB     31.5      19.5
+throttle        10,360     1295 KiB     34.0      19.5
+chrome          32,972     4122 KiB    108.2       7.8
+overview           911      114 KiB      3.0      39.0
+servo           15,413     1927 KiB     50.6      19.5
+servo-grip        2,951      369 KiB      9.7      39.0
+analyser           845      106 KiB      2.8      39.0
+logs               893      112 KiB      2.9      39.0
+settings           840      105 KiB      2.8      39.0
+battery            832      104 KiB      2.7      39.0
+balance            839      105 KiB      2.8      39.0
+programmer          855      107 KiB      2.8      39.0
+balance-sim        2,370      296 KiB      7.8      39.0
+settings-sim        2,385      298 KiB      7.8      39.0
+battery-sim        2,368      296 KiB      7.8      39.0
+analyser-chrome       39,177     4897 KiB    128.6       6.5
+logs-chrome       16,015     2002 KiB     52.6      13.0
+settings-chrome       22,671     2834 KiB     74.4      13.0
+battery-chrome       36,920     4615 KiB    121.2       7.8
+balance-chrome       40,643     5080 KiB    133.4       6.5
+programmer-chrome       28,409     3551 KiB     93.2       9.8
 clear           12,006     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
@@ -106,11 +106,12 @@ predict, count instructions before trusting the estimate.
 
 **Give a control that moves every frame its own counter.** A drag delivers a
 touch per frame. The motor screen's buttons and its throttle shared one
-revision, so dragging repainted the whole 800 x 90 control row: 14,454 fills
-against 13,154 for the readout's own box and the slider's painted region. At
-39 Hz that is 47.4 ms against 43.2 ms, and the flip quantises to whole panel
-frames, so the drag either lands inside two of them or waits for a third:
-19.5 fps or 13.0.
+revision, so dragging repainted every control beside it. The throttle now
+carries its own, and repaints the readout's box and the slider's painted
+region: `throttle` costs 10,356 fills, 34.0 ms, against 9,586 for a sample
+frame. The flip quantises to whole panel frames, so a drag either lands
+inside two of them or waits for a third: 19.5 fps or 13.0. Measured on
+hardware at 50.5 ms, the old drag took the third.
 
 Clear what a widget paints, not what it occupies. The slider's thumb and its
 shadow stand proud of the track by 5 px above and 7 px below, and the hero

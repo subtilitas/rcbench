@@ -30,10 +30,12 @@ Absturz, hängender Task, Reset, Brown-out und abgestecktes Kabel führen dann
 zum selben Ergebnis: keine Flanken, kein Ausgang, unabhängig von der Firmware
 an beiden Enden.
 
-Fenster des Monoflops: etwa 150 ms. Der Heartbeat kommt aus der
-Render-Schleife des Panels, die je nach Last alle 26 bis 52 ms eine Flanke
-liefert; ein Fenster von 50 ms würde die Ausgänge unter Last abwerfen. 150 ms
-liegt innerhalb des 200-ms-Link-Failsafes des Koprozessors.
+Fenster des Monoflops: etwa 150 ms. Der Heartbeat kommt aus dem Control-Task
+des Panels, der alle 5 ms auf dem Kern läuft, der nicht zeichnet, und dessen
+Periode damit nicht davon abhängt, was ein Frame kostet. Das Fenster bleibt
+bei 150 ms und liegt innerhalb des 200-ms-Link-Failsafes des Koprozessors,
+statt auf die neue Periode zu schrumpfen: die Reserve ist das, was einen
+verspäteten Task überlebt.
 
 Das Monoflop ist auf keiner Platine. Die Flanken erreichen J8 und sonst
 nichts.
@@ -56,7 +58,9 @@ weg. Der Koprozessor verweigert das Schärfen, solange der Leitung nicht
 vertraut wird, und entschärft seine Ausgänge, sobald sie ausbleibt.
 
 Der Heartbeat wird in der Schleife erzeugt, die den Touch liest und STOP
-zeichnet, nicht von einem Timer oder einer Peripherie. Der Eingang des
+besitzt, nicht von einem Timer oder einer Peripherie und nicht in der
+Schleife, die zeichnet: ein Panel, das nicht mehr zeichnet, lässt sich noch
+stoppen, eines ohne Touch nicht. Der Eingang des
 Koprozessors hat einen Pull-down, sodass ein unversorgtes oder abgestecktes
 Panel als Leitung ohne Flanken gelesen wird.
 
@@ -64,6 +68,9 @@ Panel als Leitung ohne Flanken gelesen wird.
 
 - STOP rastet ein. Der Prüfstand bleibt entschärft, bis er erneut scharf
   geschaltet wird.
+- Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
+  Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, sodass
+  eine Berührung am Ende nicht mit einem Kontakt den vollen Weg anfordern kann.
 - Das Verlassen eines Prüfstandsbildschirms entschärft.
 - Antwortet der Touch-Controller 500 ms lang nicht, entschärft der Prüfstand
   und verweigert das Schärfen. Das Panel ist der einzige Ort mit einem

@@ -133,6 +133,8 @@ static const ui_bench_status_t k_status = {
     .run_seconds = 257,
     .mode        = "DSHOT600",
     .simulated   = false,
+    /* Not read in this harness; the strip prints "--". */
+    .mcu_temp_c = NAN,
 };
 
 static void write_ppm(const char *path, const gfx_color_t *pixels)

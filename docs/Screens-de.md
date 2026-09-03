@@ -52,10 +52,59 @@ Prüfstand schaltet nicht scharf. Wenn alle Schritte geantwortet haben,
 
 ![Motor und ESC](img/motor.png)
 
-Vier Kurven auf unabhängigen Skalen, der Gas-Slider und Spitzenwerte unter
-den Siebensegmentanzeigen. ARM gibt den Slider frei; DISARM und STOP halten
-den Ausgang sofort an, ohne Rampe. RESET PEAKS löscht die Spitzenwertmarken
-und lässt die Live-Anzeigen unverändert.
+Zwei Spalten. Der Plot und das Gas nehmen die linke, die vier Anzeigen und
+die Bedienelemente eine Leiste auf der rechten, damit das Ablesen der Werte
+und das Bedienen des Gases nicht um denselben Teil des Bildschirms
+konkurrieren.
+
+Der Streifen über beiden Spalten trägt die Abfragerate, die Fehlerzahl des
+Links (CRC-Fehler und Resyncs zusammengezählt; CRC: Cyclic Redundancy Check)
+und drei Temperaturen. ESC und MOT kommen von der Bench-Page. MCU ist der
+eigene Die des Panels, gelesen vom Sensor des ESP32-S3: die Temperatur der
+Displayplatine, nicht die des Koprozessors.
+
+Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
+Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, sodass
+eine Berührung am Ende nicht mit einem Kontakt den vollen Weg anfordern kann.
+`-1` und `+1` an den Enden des Tracks schalten um einen Prozentpunkt. ARM
+blendet beim Halten von Grün nach Rot und blitzt einmal auf, sobald scharf
+geschaltet ist; ein scharfer Prüfstand trägt das Gefahrenrot. DISARM und STOP
+halten den Ausgang sofort an, ohne Rampe. RESET PEAKS löscht die
+Spitzenwertmarken und lässt die Live-Anzeigen unverändert.
+
+### EFF ist eine Guessimetrik
+
+Der Header des Telemetrie-Panels zeigt die Nenn-kV, die Umdrehungen je Minute
+und Volt, die der Motor tatsächlich dreht, und EFF: das Zweite geteilt durch
+das Erste.
+
+Die Rechnung dahinter ist tragfähig. Die Klemmenspannung teilt sich in den
+ohmschen Abfall und die Gegen-EMK (elektromotorische Kraft) auf, weshalb rpm/V
+unter Last die Nenn-kV skaliert mit dem Anteil der Spannung ist, der die
+Gegen-EMK erreicht, und dieser Anteil ist der Anteil der Eingangsleistung, der
+mechanisch wird. Im idealen Motor ist das Verhältnis exakt der
+Umsetzungswirkungsgrad.
+
+Die Zahl auf dem Bildschirm ist das nicht, aus drei Gründen, und sie heisst
+deshalb EFF und nicht Wirkungsgrad:
+
+- Sie erfasst nur die Kupferverluste (I hoch 2 mal R). Eisenverluste, Reibung
+  und Luftwiderstand fallen auf die mechanische Seite der Aufteilung, also ist
+  die Zahl eine obere Schranke des Wellenwirkungsgrads und nicht sein Wert.
+- Der Prüfstand misst die Pack-Spannung, nicht die Klemmen des Motors, also
+  stecken die Durchlass- und Schaltverluste des ESC in der Zahl. Sie
+  beschreibt den Antriebsstrang; ein Vergleich mit einem Motordatenblatt
+  vergleicht zwei verschiedene Dinge.
+- Sie ist nur so gut wie die Nenn-kV. Ein Fehler dort geht direkt in den
+  Prozentwert, und ein Wert über 100 % bedeutet, dass die Nennangabe falsch
+  ist; der Bildschirm zeigt das, statt es zu verbergen, gedeckelt bei 199 %.
+
+Die Nenn-kV kommt vom angeschlossenen ESC, sobald einer sie meldet. Noch
+meldet sie keiner, also ist es in der Praxis die Einstellung `Rated kV`, deren
+Standardwert null ist: eine geratene kV ergibt einen plausibel aussehenden,
+aber falschen Prozentwert, und ohne Wert bleibt das Feld leer und es wird kein
+Prozentwert gezeigt. Die gemessene rpm/V wird in jedem Fall gezeigt, weil sie
+eine Messung und keine Herleitung ist.
 
 Solange die Werte simuliert sind, steht SIMULATION quer über dem Bildschirm.
 Das Watermark verschwindet, sobald gemessene Werte eintreffen: von einem ESC

@@ -28,6 +28,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <string.h>
 
 #include "gfx.h"
@@ -48,6 +49,8 @@ static gfx_color_t fb[W * H];
 static const ui_bench_status_t k_status = {
     .link_up = true, .armed = true, .faults = 0,
     .run_seconds = 257, .mode = "DSHOT600",
+    /* Not read in this harness; the strip prints "--". */
+    .mcu_temp_c = NAN,
 };
 
 /*

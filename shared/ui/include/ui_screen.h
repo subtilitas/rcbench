@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include <math.h>
 #include <stdbool.h>
 
 #include "gfx.h"
@@ -98,6 +99,19 @@ typedef struct {
      * nothing is fitted or nothing answered; the menu treats both the same.
      */
     uint16_t capabilities;
+
+    /**
+     * Link errors since boot: the coprocessor's CRC (cyclic redundancy
+     * check) failures and resyncs added together.  Zero is a clean bus.
+     */
+    uint32_t link_errors;
+
+    /**
+     * The panel's own die temperature in degrees Celsius, or NAN when it is
+     * not read.  The panel's, not the coprocessor's: the two boards run at
+     * different temperatures and this one is the display's.
+     */
+    float mcu_temp_c;
 } ui_bench_status_t;
 
 void ui_router_set_status(const ui_bench_status_t *status);

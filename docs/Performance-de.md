@@ -28,29 +28,29 @@ panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
 
 mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
-frame           10,852     1356 KiB     35.6      19.5
-frame-idle          931      116 KiB      3.1      39.0
-sim             11,814     1477 KiB     38.8      19.5
-throttle        13,154     1644 KiB     43.2      19.5
-chrome          30,377     3797 KiB     99.7       9.8
-overview           915      114 KiB      3.0      39.0
-servo           15,419     1927 KiB     50.6      19.5
-servo-grip        2,958      370 KiB      9.7      39.0
-analyser           843      105 KiB      2.8      39.0
-logs               894      112 KiB      2.9      39.0
-settings           836      104 KiB      2.7      39.0
-battery            827      103 KiB      2.7      39.0
-balance            842      105 KiB      2.8      39.0
-programmer          857      107 KiB      2.8      39.0
-balance-sim        2,375      297 KiB      7.8      39.0
-settings-sim        2,386      298 KiB      7.8      39.0
-battery-sim        2,371      296 KiB      7.8      39.0
-analyser-chrome       39,174     4897 KiB    128.6       6.5
-logs-chrome       16,013     2002 KiB     52.6      13.0
-settings-chrome       22,689     2836 KiB     74.5      13.0
-battery-chrome       36,924     4616 KiB    121.2       7.8
-balance-chrome       40,641     5080 KiB    133.4       6.5
-programmer-chrome       28,410     3551 KiB     93.2       9.8
+frame            8,632     1079 KiB     28.3      19.5
+frame-idle          927      116 KiB      3.0      39.0
+sim              9,590     1199 KiB     31.5      19.5
+throttle        10,360     1295 KiB     34.0      19.5
+chrome          32,972     4122 KiB    108.2       7.8
+overview           911      114 KiB      3.0      39.0
+servo           15,413     1927 KiB     50.6      19.5
+servo-grip        2,951      369 KiB      9.7      39.0
+analyser           845      106 KiB      2.8      39.0
+logs               893      112 KiB      2.9      39.0
+settings           840      105 KiB      2.8      39.0
+battery            832      104 KiB      2.7      39.0
+balance            839      105 KiB      2.8      39.0
+programmer          855      107 KiB      2.8      39.0
+balance-sim        2,370      296 KiB      7.8      39.0
+settings-sim        2,385      298 KiB      7.8      39.0
+battery-sim        2,368      296 KiB      7.8      39.0
+analyser-chrome       39,177     4897 KiB    128.6       6.5
+logs-chrome       16,015     2002 KiB     52.6      13.0
+settings-chrome       22,671     2834 KiB     74.4      13.0
+battery-chrome       36,920     4615 KiB    121.2       7.8
+balance-chrome       40,643     5080 KiB    133.4       6.5
+programmer-chrome       28,409     3551 KiB     93.2       9.8
 clear           12,006     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
@@ -112,12 +112,13 @@ Schätzung trauen.
 
 **Ein Bedienelement, das sich jeden Frame bewegt, bekommt seinen eigenen
 Zähler.** Ein Drag liefert eine Berührung je Frame. Die Buttons und das Gas
-des Motorbildschirms teilten eine Revision, weshalb ein Drag die ganze
-800 x 90 grosse Bedienzeile neu zeichnete: 14 454 Fills gegen 13 154 für die
-Box der Anzeige und die bemalte Region des Sliders. Bei 39 Hz sind das
-47,4 ms gegen 43,2 ms, und der Flip quantisiert auf ganze Panel-Frames: der
-Drag liegt entweder innerhalb von zwei davon oder wartet auf einen dritten,
-also 19,5 fps oder 13,0.
+des Motorbildschirms teilten eine Revision, weshalb ein Drag jedes
+Bedienelement daneben neu zeichnete. Das Gas hat jetzt seinen eigenen
+und zeichnet die Box der Anzeige und die bemalte Region des Sliders neu:
+`throttle` kostet 10 356 Fills, 34,0 ms, gegen 9 586 für einen Sample-Frame.
+Der Flip quantisiert auf ganze Panel-Frames: ein Drag liegt entweder
+innerhalb von zwei davon oder wartet auf einen dritten, also 19,5 fps oder
+13,0. Auf der Hardware mit 50,5 ms gemessen, nahm der alte Drag den dritten.
 
 Zu löschen ist, was ein Widget bemalt, nicht was es einnimmt. Der Daumen des
 Sliders und sein Schatten stehen 5 px oben und 7 px unten über den Track
