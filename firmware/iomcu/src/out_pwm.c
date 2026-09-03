@@ -69,6 +69,7 @@ bool out_pwm_bind(uint8_t pin, uint16_t rate_hz)
 
     const uint slice = pwm_gpio_to_slice_num(pin);
     binding_t *free_slot = NULL;
+    bool running = false;
     for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
         if (!s_bound[i].used) {
             if (free_slot == NULL) {
@@ -76,27 +77,38 @@ bool out_pwm_bind(uint8_t pin, uint16_t rate_hz)
             }
             continue;
         }
+        if (pwm_gpio_to_slice_num(s_bound[i].pin) != slice) {
+            continue;
+        }
         /* Two channels of one slice count off one wrap register.  Letting
          * the second binding win would move the first output's frame rate
          * without anything saying so. */
-        if (pwm_gpio_to_slice_num(s_bound[i].pin) == slice
-            && s_bound[i].rate_hz != rate_hz) {
+        if (s_bound[i].rate_hz != rate_hz) {
             return false;
         }
+        running = true;
     }
     if (free_slot == NULL) {
         return false;
     }
 
+    /* Zero first, so muxing the pin cannot put out one frame of whatever
+     * the compare register happened to hold. */
+    pwm_set_gpio_level(pin, 0u);
+    if (!running) {
+        pwm_config c = pwm_get_default_config();
+        pwm_config_set_clkdiv(&c,
+                              (float)clock_get_hz(clk_sys) / (float)TICK_HZ);
+        pwm_config_set_wrap(&c, wrap);
+        pwm_init(slice, &c, true);
+    }
+    /*
+     * A slice already carrying the other channel is left running.  pwm_init()
+     * rewrites the whole slice and resets its counter, so initialising it
+     * again here would step the servo already on it -- an output twitching
+     * because a different output was configured.
+     */
     gpio_set_function(pin, GPIO_FUNC_PWM);
-    pwm_config c = pwm_get_default_config();
-    pwm_config_set_clkdiv(&c, (float)clock_get_hz(clk_sys) / (float)TICK_HZ);
-    pwm_config_set_wrap(&c, wrap);
-    /* The level is set before the slice runs, so a pin cannot emit one frame
-     * of whatever the counter happened to hold. */
-    pwm_set_gpio_level(pin, 0u);
-    pwm_init(slice, &c, true);
-    pwm_set_gpio_level(pin, 0u);
 
     free_slot->used    = true;
     free_slot->pin     = pin;

@@ -200,6 +200,17 @@ void out_dshot_stop(uint8_t pin)
     if (s == NULL || (!s->running && !s->armed)) {
         return;      /* already stopped; the loop asks every pass */
     }
+    /*
+     * The frame in flight is cut rather than allowed to finish.  A truncated
+     * frame fails the ESC's checksum and is discarded, so nothing acts on
+     * it; waiting for one to finish would put a busy-wait of up to 107 us at
+     * DShot150 into the failsafe path, which is the one path that must not
+     * wait for anything.
+     *
+     * What the cut must not leave undefined is the level.  A state machine
+     * stopped mid-bit holds whatever its side-set wrote last, so the pin is
+     * taken back and put at the idle its protocol expects.
+     */
     pio_sm_set_enabled(s->pio, s->tx_sm, false);
     pio_sm_clear_fifos(s->pio, s->tx_sm);
     s->running = false;
@@ -208,6 +219,12 @@ void out_dshot_stop(uint8_t pin)
         pio_sm_clear_fifos(s->pio, s->rx_sm);
         /* Released, so the line sits at the idle its pull-up gives it. */
         pio_sm_set_consecutive_pindirs(s->pio, s->tx_sm, s->pin, 1, false);
+    } else {
+        /* Plain DShot idles low, and low is what a stopped state machine
+         * cannot be relied on to be holding. */
+        gpio_set_function(s->pin, GPIO_FUNC_SIO);
+        gpio_set_dir(s->pin, GPIO_OUT);
+        gpio_put(s->pin, 0);
     }
     s->armed = false;
 }
@@ -233,6 +250,10 @@ void out_dshot_send(uint8_t pin, uint16_t value, bool telemetry)
 
     if (!s->bidir) {
         if (!s->running) {
+            /* The pad went back to the processor when it stopped, so it is
+             * handed to the block again before the machine runs. */
+            pio_gpio_init(s->pio, pin);
+            pio_sm_set_consecutive_pindirs(s->pio, s->tx_sm, pin, 1, true);
             restart(s->pio, s->tx_sm, s->tx_offset);
             s->running = true;
         }

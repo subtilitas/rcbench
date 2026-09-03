@@ -251,7 +251,7 @@ void out_ppm_stop(uint8_t pin)
 bool out_ppm_write(uint8_t pin, const uint16_t *channel_us, uint8_t channels)
 {
     ppm_out_t *s = find(pin);
-    if (s == NULL || channels != s->channels) {
+    if (s == NULL || channel_us == NULL || channels != s->channels) {
         return false;
     }
     /*
