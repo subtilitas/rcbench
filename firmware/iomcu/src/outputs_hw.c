@@ -172,6 +172,14 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
 
     if (!drive) {
         out_dshot_stop(s->pin);
+        /*
+         * Kept current while nothing is being sent.  The comparison below is
+         * wrap-safe over half of the microsecond clock's 71 minutes, so a
+         * due time left behind by a bench that sat disarmed for more than 36
+         * of them would read as "not due yet" and stay that way for another
+         * 36 after it was armed again.
+         */
+        st->next_us = time_us_32();
         return;
     }
     const uint32_t now = time_us_32();

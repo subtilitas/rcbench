@@ -22,6 +22,17 @@
  */
 #define CAP_WORDS  8u
 
+/*
+ * The fewest words that can hold a whole reply: one idle sample plus 21 bits
+ * at five samples each is 106, which is four words.
+ *
+ * A poll that took less than this would take a reply that has not finished
+ * arriving.  The loop turns over thousands of times in the 70 us a capture
+ * takes, so the first poll after a frame always finds the queue short --
+ * draining it there would throw away every reply this bench will ever get.
+ */
+#define CAP_MIN_WORDS  4u
+
 typedef struct {
     bool     used;
     bool     bidir;
@@ -262,15 +273,21 @@ bool out_dshot_poll(uint8_t pin, dshot_telem_t *out)
     if (s == NULL || out == NULL || !s->bidir || !s->armed) {
         return false;
     }
+    /*
+     * Nothing is taken until the whole reply is there.  s->armed stays set,
+     * so the next pass looks again; an ESC that never answers leaves the
+     * queue short for ever and the next frame restarts the receiver, which
+     * is how a missing reply and a late one end up looking the same.
+     */
+    if (pio_sm_get_rx_fifo_level(s->pio, s->rx_sm) < CAP_MIN_WORDS) {
+        return false;
+    }
     uint32_t cap[CAP_WORDS];
     unsigned n = 0u;
     while (n < CAP_WORDS && !pio_sm_is_rx_fifo_empty(s->pio, s->rx_sm)) {
         cap[n++] = pio_sm_get(s->pio, s->rx_sm);
     }
     s->armed = false;
-    if (n == 0u) {
-        return false;
-    }
     uint32_t line = 0u;
     if (!dshot_rx_bits(cap, n, DSHOT_RX_OVERSAMPLE, &line)) {
         return false;
