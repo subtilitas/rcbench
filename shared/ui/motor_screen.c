@@ -475,17 +475,19 @@ static void draw_header(gfx_canvas_t *c)
  * The rated kV, what the motor is actually turning per volt, and what the
  * ratio of the two says about the drivetrain.
  *
- * Terminal voltage splits into the resistive drop and the back-EMF, so
- * rpm/V under load is the rated kV scaled by the fraction of the voltage
- * that reaches the back-EMF -- and that fraction is what becomes mechanical
- * power.  The ratio is therefore a conversion efficiency, not a rule of
- * thumb.
+ * The arithmetic is sound and the number is still an estimate, which is why
+ * it is labelled EFF rather than efficiency.  Terminal voltage splits into
+ * the resistive drop and the back-EMF, so rpm/V under load is the rated kV
+ * scaled by the fraction of the voltage reaching the back-EMF, and in an
+ * ideal motor that fraction is the conversion efficiency exactly.
  *
- * It counts copper loss only: iron loss, friction and windage fall on the
- * mechanical side of that split, so it is an upper bound on shaft
- * efficiency.  And the bench measures pack voltage rather than the motor's
- * terminals, so the ESC's own losses are inside the figure: it describes the
- * drivetrain, which is what the bench is turning.
+ * This motor is not that one.  The figure counts copper loss only, so iron
+ * loss, friction and windage are missing and it is an upper bound rather
+ * than a value.  The bench measures pack voltage rather than the motor's
+ * terminals, so the ESC's losses are inside it and it describes the
+ * drivetrain.  And it is only as good as the rated kV, an error in which
+ * maps straight into the percentage.  docs/Screens.md says so in the words
+ * an operator reads.
  *
  * The rated value comes from the connected ESC when it reports one, and from
  * SET_MOTOR_KV when it does not.  Nothing is assumed: with neither, the field

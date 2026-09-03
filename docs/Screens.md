@@ -50,10 +50,55 @@ the hold.
 
 ![Motor and ESC](img/motor.png)
 
-Four traces on independent scales, the throttle slider, and peak values under
-the seven-segment readouts. ARM enables the slider; DISARM and STOP stop the
-output immediately, with no ramp. RESET PEAKS clears the peak markers and
-leaves the live readings.
+Two columns. The plot and the throttle take the left, the four readouts and
+the controls take a rail on the right, so reading the numbers and working the
+throttle do not compete for the same part of the screen.
+
+The strip above both columns carries the poll rate, the link's error count
+(cyclic redundancy check failures and resyncs added together) and three
+temperatures. ESC and MOT come from the bench page. MCU is the panel's own
+die, read from the ESP32-S3's sensor: it is the display board's temperature,
+not the coprocessor's.
+
+The throttle moves by how far a finger travels, not to where it lands. A press
+on the track commands nothing, so a touch at the far end cannot ask for full
+travel in one contact. `-1` and `+1` at the ends of the track step one
+percentage point. ARM fades from green to red while it is held and flashes
+once as the arm takes effect; an armed bench carries the danger red. DISARM
+and STOP stop the output immediately, with no ramp. RESET PEAKS clears the
+peak markers and leaves the live readings.
+
+### EFF is a guessimetric
+
+The telemetry panel's header shows the rated kV, the revolutions per minute
+per volt the motor is actually turning, and EFF, the second divided by the
+first.
+
+The arithmetic behind it is sound. Terminal voltage divides into the resistive
+drop and the back electromotive force (back-EMF), so rpm/V under load is the
+rated kV scaled by the fraction of the voltage that reaches the back-EMF, and
+that fraction is the fraction of the input power that becomes mechanical. In
+an ideal motor the ratio is the conversion efficiency exactly.
+
+The number on the screen is not that, for three reasons, and it is labelled
+EFF rather than efficiency because of them:
+
+- It accounts for copper loss (I squared R) only. Iron loss, friction and
+  windage fall on the mechanical side of the split, so the figure is an upper
+  bound on shaft efficiency rather than a value of it.
+- The bench measures pack voltage, not the motor's terminals, so the ESC's
+  conduction and switching losses are inside the figure. It describes the
+  drivetrain, and comparing it against a motor datasheet compares two
+  different things.
+- It is only as good as the rated kV. An error there maps straight into the
+  percentage, and a figure above 100 % means the rated value is wrong; the
+  screen shows that rather than hiding it, capped at 199 %.
+
+The rated kV comes from the connected ESC when it reports one. No ESC reports
+it yet, so in practice it is the `Rated kV` setting, which defaults to zero: a
+guessed kV produces a plausible-looking percentage that is wrong, so with no
+value the field is drawn empty and no percentage is shown. The measured rpm/V
+is shown either way, being a measurement rather than an inference.
 
 While the values are simulated, SIMULATION is drawn across the screen. The
 watermark is removed when measured values arrive: from an ESC (electronic speed
