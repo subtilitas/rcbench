@@ -1051,6 +1051,9 @@ void app_main(void)
     s_cmd_q     = xQueueCreate(CMD_Q_LEN, sizeof(panel_cmd_t));
     s_sample_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(bench_state_t));
     s_snap_lock = xSemaphoreCreateMutex();
+    /* Zero is a temperature; the snapshot starts unread, so the strip shows
+     * "--" until the control task has published one. */
+    s_snap.mcu_temp_c = NAN;
     ESP_ERROR_CHECK((s_touch_q != NULL && s_cmd_q != NULL
                      && s_sample_q != NULL && s_snap_lock != NULL)
                     ? ESP_OK : ESP_ERR_NO_MEM);

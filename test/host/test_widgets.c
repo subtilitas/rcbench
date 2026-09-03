@@ -317,6 +317,31 @@ TEST_CASE(a_press_from_outside_never_becomes_a_drag)
     CHECK_EQ(sl.value, 10.0f);
 }
 
+/*
+ * ui_slider_painted_rect() is the region a caller clears before repainting
+ * the slider alone.  The presets are drawn by the same call and sit outside
+ * the track, so a rect that covered only the track's band would leave a row
+ * of buttons behind.
+ */
+TEST_CASE(the_painted_rect_covers_the_presets_too)
+{
+    fresh_slider();
+    const gfx_rect_t r = ui_slider_painted_rect(&sl);
+    CHECK(sl.preset_count > 0);
+    for (int i = 0; i < sl.preset_count; ++i) {
+        const gfx_rect_t p = sl.presets[i];
+        CHECK(p.w > 0 && p.h > 0);
+        if (p.x < r.x || p.y < r.y
+            || p.x + p.w > r.x + r.w || p.y + p.h > r.y + r.h) {
+            T_FAIL("preset %d at %d,%d %dx%d is outside the painted rect "
+                   "%d,%d %dx%d", i, p.x, p.y, p.w, p.h, r.x, r.y, r.w, r.h);
+        }
+    }
+    /* And the thumb's overhang is still inside it. */
+    CHECK(r.y <= sl.track.y - UI_SLIDER_OVERHANG);
+    CHECK(r.y + r.h >= sl.track.y + sl.track.h + UI_SLIDER_OVERHANG);
+}
+
 TEST_CASE(a_preset_sets_its_value_and_a_slip_does_not)
 {
     fresh_slider();
@@ -476,6 +501,7 @@ int main(void)
     RUN(a_drag_moves_by_how_far_it_travelled);
     RUN(a_drag_that_leaves_the_track_keeps_the_value);
     RUN(a_press_from_outside_never_becomes_a_drag);
+    RUN(the_painted_rect_covers_the_presets_too);
     RUN(a_preset_sets_its_value_and_a_slip_does_not);
     RUN(a_second_contact_cannot_steal_the_slider);
     RUN(tabs_select_and_a_slip_does_not);

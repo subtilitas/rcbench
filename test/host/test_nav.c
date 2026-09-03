@@ -525,28 +525,35 @@ TEST_CASE(invalidating_the_router_repaints_every_screen)
     }
 
     for (int id = 0; id < SCREEN_COUNT; ++id) {
-        fresh();
-        ui_router_goto((ui_screen_id_t)id);
-        /* Both framebuffers, the way the panel settles them. */
-        ui_router_render(&cv, 0);
-        ui_router_render(&cv, 1);
-        ui_router_render(&cv, 0);
-        memcpy(settled, fb, bytes);
+        /*
+         * Both framebuffers, because the caches are per buffer: a hook that
+         * cleared one bit and not the other would pass a check of buffer 0
+         * and leave the panel alternating between a repainted frame and a
+         * stale one, which reads as flicker.
+         */
+        for (int buf = 0; buf < 2; ++buf) {
+            fresh();
+            ui_router_goto((ui_screen_id_t)id);
+            ui_router_render(&cv, 0);
+            ui_router_render(&cv, 1);
+            ui_router_render(&cv, buf);
+            memcpy(settled, fb, bytes);
 
-        /* Something else owned the buffer in between. */
-        memset(fb, 0x5a, bytes);
-        ui_router_invalidate();
-        ui_router_render(&cv, 0);
+            /* Something else owned the buffer in between. */
+            memset(fb, 0x5a, bytes);
+            ui_router_invalidate();
+            ui_router_render(&cv, buf);
 
-        if (memcmp(settled, fb, bytes) != 0) {
-            long differ = 0;
-            for (long i = 0; i < (long)W * H; ++i) {
-                if (settled[i] != fb[i]) {
-                    ++differ;
+            if (memcmp(settled, fb, bytes) != 0) {
+                long differ = 0;
+                for (long i = 0; i < (long)W * H; ++i) {
+                    if (settled[i] != fb[i]) {
+                        ++differ;
+                    }
                 }
+                T_FAIL("screen %d buffer %d keeps %ld px of stale chrome "
+                       "after ui_router_invalidate()", id, buf, differ);
             }
-            T_FAIL("screen %d keeps %ld px of stale chrome after "
-                   "ui_router_invalidate()", id, differ);
         }
     }
     free(settled);

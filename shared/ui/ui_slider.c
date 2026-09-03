@@ -153,10 +153,22 @@ gfx_rect_t ui_slider_painted_rect(const ui_slider_t *s)
     if (s == NULL) {
         return gfx_rect_make(0, 0, 0, 0);
     }
-    return gfx_rect_make(s->track.x, s->track.y - UI_SLIDER_OVERHANG,
-                         s->track.w,
-                         s->track.h + 2 * UI_SLIDER_OVERHANG
-                             + SLIDER_SHADOW_DROP);
+    int x0 = s->track.x;
+    int y0 = s->track.y - UI_SLIDER_OVERHANG;
+    int x1 = s->track.x + s->track.w;
+    int y1 = s->track.y + s->track.h + UI_SLIDER_OVERHANG
+             + SLIDER_SHADOW_DROP;
+
+    /* The preset row is drawn by the same call and sits outside the track,
+     * so a caller clearing only the track's band would leave it behind. */
+    for (int i = 0; i < s->preset_count; ++i) {
+        const gfx_rect_t p = s->presets[i];
+        if (p.x < x0)               { x0 = p.x; }
+        if (p.y < y0)               { y0 = p.y; }
+        if (p.x + p.w > x1)         { x1 = p.x + p.w; }
+        if (p.y + p.h > y1)         { y1 = p.y + p.h; }
+    }
+    return gfx_rect_make(x0, y0, x1 - x0, y1 - y0);
 }
 
 void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
