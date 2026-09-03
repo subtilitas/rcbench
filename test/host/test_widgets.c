@@ -297,6 +297,17 @@ TEST_CASE(tap_to_set_is_off_unless_a_slider_asks_for_it)
     CHECK(ev(350, 120, TOUCH_EVENT_MOVE, 1));
     CHECK(sl.value > 61.0f && sl.value < 64.0f);
     (void)ev(350, 120, TOUCH_EVENT_UP, 1);
+
+    /* A track with no width to read has no position to take, and must not
+     * divide by its own width minus one. */
+    ui_slider_t narrow;
+    ui_slider_init(&narrow, (gfx_rect_t){ 10, 10, 1, 20 }, 0.0f, 100.0f, 0);
+    ui_slider_set_tap_to_set(&narrow, true);
+    const touch_event_t down = {
+        .type = TOUCH_EVENT_DOWN,
+        .point = { .id = 1, .x = 10, .y = 15, .strength = 40 } };
+    CHECK(!ui_slider_event(&narrow, &down));
+    CHECK_EQ(narrow.value, 0.0f);
 }
 
 /*

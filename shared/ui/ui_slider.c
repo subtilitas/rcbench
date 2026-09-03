@@ -146,8 +146,11 @@ bool ui_slider_event(ui_slider_t *s, const touch_event_t *evt)
             s->drag_id    = evt->point.id;
             s->drag_x     = (int16_t)x;
             s->drag_value = s->value;
-            if (!s->tap_to_set) {
-                return false;   /* a press on its own commands nothing */
+            if (!s->tap_to_set || s->track.w <= 1) {
+                /* A press on its own commands nothing -- and a track one
+                 * pixel wide has no position to read, which by_delta()
+                 * refuses for the same reason. */
+                return false;
             }
             /* Where the finger landed, and the drag measures from there. */
             const float span = s->max - s->min;
