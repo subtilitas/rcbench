@@ -251,12 +251,41 @@ static bool ev(int x, int y, touch_event_type_t t, uint8_t id)
     return ui_slider_event(&sl, &e);
 }
 
-TEST_CASE(a_press_on_the_track_sets_the_value)
+/*
+ * A press commands nothing, and a drag moves by the distance dragged.
+ *
+ * Taking the value under the finger would command whatever it landed on: a
+ * touch at the right-hand end of a throttle asks for full travel in one
+ * contact.  The output bank's slew ramps rather than steps, which bounds how
+ * fast a motor follows, but the command still went to the end.
+ */
+TEST_CASE(a_press_on_the_track_commands_nothing)
 {
     fresh_slider();
-    CHECK(ev(300, 120, TOUCH_EVENT_DOWN, 1));
-    CHECK(sl.value > 49.0f && sl.value < 51.0f);
+    ui_slider_set(&sl, 0.0f);
+    CHECK(!ev(300, 120, TOUCH_EVENT_DOWN, 1));
+    CHECK_EQ(sl.value, 0.0f);
     (void)ev(300, 120, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(sl.value, 0.0f);
+
+    /* The far end is the case that matters. */
+    fresh_slider();
+    ui_slider_set(&sl, 0.0f);
+    CHECK(!ev(499, 120, TOUCH_EVENT_DOWN, 1));
+    (void)ev(499, 120, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(sl.value, 0.0f);
+}
+
+/* A quarter of the track's width of travel is a quarter of the range,
+ * wherever on the track the finger went down. */
+TEST_CASE(a_drag_moves_by_how_far_it_travelled)
+{
+    fresh_slider();
+    ui_slider_set(&sl, 40.0f);
+    (void)ev(480, 120, TOUCH_EVENT_DOWN, 1);
+    CHECK(ev(380, 120, TOUCH_EVENT_MOVE, 1));   /* 100 px left of 400 */
+    CHECK(sl.value > 14.0f && sl.value < 16.0f);
+    (void)ev(380, 120, TOUCH_EVENT_UP, 1);
 }
 
 /*
@@ -267,9 +296,11 @@ TEST_CASE(a_press_on_the_track_sets_the_value)
 TEST_CASE(a_drag_that_leaves_the_track_keeps_the_value)
 {
     fresh_slider();
+    ui_slider_set(&sl, 20.0f);
     (void)ev(150, 120, TOUCH_EVENT_DOWN, 1);
     CHECK(ev(400, 400, TOUCH_EVENT_MOVE, 1));   /* far below the track */
-    CHECK(sl.value > 74.0f && sl.value < 76.0f);
+    /* 250 px of a 400 px track is 62.5 points on top of the 20 it began on. */
+    CHECK(sl.value > 81.0f && sl.value < 84.0f);
     (void)ev(400, 400, TOUCH_EVENT_UP, 1);
     CHECK(!sl.dragging);
 }
@@ -441,7 +472,8 @@ int main(void)
     RUN(a_legend_tap_cycles_focus_then_hidden);
     RUN(map_y_is_the_right_way_up_and_clamps);
     RUN(the_plot_and_hero_render_without_running_off_the_canvas);
-    RUN(a_press_on_the_track_sets_the_value);
+    RUN(a_press_on_the_track_commands_nothing);
+    RUN(a_drag_moves_by_how_far_it_travelled);
     RUN(a_drag_that_leaves_the_track_keeps_the_value);
     RUN(a_press_from_outside_never_becomes_a_drag);
     RUN(a_preset_sets_its_value_and_a_slip_does_not);

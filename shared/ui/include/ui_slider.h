@@ -52,6 +52,8 @@ typedef struct {
 
     bool    dragging;
     uint8_t drag_id;
+    int16_t drag_x;       /**< where the finger went down                 */
+    float   drag_value;   /**< and the value it went down on              */
     int     pressed_preset;   /**< index, or -1                           */
     uint8_t preset_id;
 } ui_slider_t;

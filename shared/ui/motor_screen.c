@@ -389,7 +389,9 @@ static void tick(float dt_s)
  */
 static gfx_color_t arm_fill(void)
 {
-    gfx_color_t fill = s.armed ? ui_theme_color(UI_C_WARN)
+    /* Armed is the danger red the press fades towards, so the fade previews
+     * the colour the button is about to hold. */
+    gfx_color_t fill = s.armed ? ui_theme_color(UI_C_DANGER)
                                : ui_theme_color(UI_C_OK);
     if (!s.armed && s.arm_held_s > 0.0f) {
         const uint8_t t =

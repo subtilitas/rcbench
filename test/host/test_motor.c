@@ -72,6 +72,9 @@ static void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 /* One percentage point at each end of the track. */
 #define DOWN_X   33
 #define UP_X     519
+/* The track itself: x 72..486, so half of it is half the travel. */
+#define TRACK_X  72
+#define TRACK_W  414
 
 static motor_cmd_t last_cmd(void)
 {
@@ -144,17 +147,38 @@ TEST_CASE(the_disarm_latch_clears_when_it_is_read)
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
 }
 
-TEST_CASE(the_throttle_track_posts_what_it_was_dragged_to)
+/*
+ * The throttle moves by how far a finger travels, not to where it lands.
+ *
+ * A press used to command the value under it, so touching the right-hand end
+ * of the track asked for full travel in one contact.  The output bank's slew
+ * ramps rather than steps, which bounds how fast the motor follows, but the
+ * command still went to 100 and nothing had to be confirmed.
+ */
+TEST_CASE(the_throttle_track_moves_by_how_far_it_is_dragged)
 {
     fresh();
-    ev(276, TRACK_Y, TOUCH_EVENT_DOWN, 1);
+
+    /* A press commands nothing, wherever on the track it lands. */
+    ev(TRACK_X + TRACK_W - 4, TRACK_Y, TOUCH_EVENT_DOWN, 1);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
+    ev(TRACK_X + TRACK_W - 4, TRACK_Y, TOUCH_EVENT_UP, 1);
+    CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
+
+    /* Half the track's width of drag is half the travel, wherever it began. */
+    ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_DOWN, 1);
+    ev(TRACK_X + 10 + TRACK_W / 2, TRACK_Y, TOUCH_EVENT_MOVE, 1);
     const motor_cmd_t c = last_cmd();
     CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
     CHECK(c.value > 45.0f && c.value < 55.0f);
     CHECK_NEAR(motor_screen_throttle(), c.value, 0.01f);
-    ev(400, TRACK_Y, TOUCH_EVENT_UP, 1);
-}
 
+    /* And dragging back the same distance returns it. */
+    ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_MOVE, 1);
+    ev(TRACK_X + 10, TRACK_Y, TOUCH_EVENT_UP, 1);
+    CHECK_NEAR(motor_screen_throttle(), 0.0f, 0.01f);
+}
 TEST_CASE(reset_peaks_posts_its_own_command)
 {
     fresh();
@@ -478,7 +502,7 @@ int main(void)
     RUN(a_second_contact_cannot_steal_the_arm_release);
     RUN(a_pending_disarm_cannot_be_overwritten_by_an_arm);
     RUN(the_disarm_latch_clears_when_it_is_read);
-    RUN(the_throttle_track_posts_what_it_was_dragged_to);
+    RUN(the_throttle_track_moves_by_how_far_it_is_dragged);
     RUN(reset_peaks_posts_its_own_command);
     RUN(leaving_the_screen_disarms);
     RUN(the_tabs_switch_panes_and_both_render);

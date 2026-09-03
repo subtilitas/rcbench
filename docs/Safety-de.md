@@ -68,6 +68,9 @@ Panel als Leitung ohne Flanken gelesen wird.
 
 - STOP rastet ein. Der Prüfstand bleibt entschärft, bis er erneut scharf
   geschaltet wird.
+- Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
+  Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, sodass
+  eine Berührung am Ende nicht mit einem Kontakt den vollen Weg anfordern kann.
 - Das Verlassen eines Prüfstandsbildschirms entschärft.
 - Antwortet der Touch-Controller 500 ms lang nicht, entschärft der Prüfstand
   und verweigert das Schärfen. Das Panel ist der einzige Ort mit einem

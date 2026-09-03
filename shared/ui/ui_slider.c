@@ -68,15 +68,24 @@ void ui_slider_set(ui_slider_t *s, float value)
     }
 }
 
-static bool from_x(ui_slider_t *s, int x)
+/*
+ * The value the drag started from, moved by as far as the finger has moved.
+ *
+ * Not the value under the finger: this control commands a throttle, and a
+ * press that lands where the finger happens to touch would command whatever
+ * is under it.  Touching the right-hand end of the track would ask for full
+ * travel, which the output bank's slew would then ramp to.  A press moves
+ * nothing; only a drag does, and it moves by the distance dragged.
+ */
+static bool by_delta(ui_slider_t *s, int x)
 {
     if (s->track.w <= 1) {
         return false;
     }
-    const float frac = clampf((float)(x - s->track.x) / (float)(s->track.w - 1),
-                              0.0f, 1.0f);
+    const float per_px = (s->max - s->min) / (float)(s->track.w - 1);
     const float was = s->value;
-    s->value = s->min + frac * (s->max - s->min);
+    s->value = clampf(s->drag_value + (float)(x - s->drag_x) * per_px,
+                      s->min, s->max);
     return s->value != was;
 }
 
@@ -90,9 +99,11 @@ bool ui_slider_event(ui_slider_t *s, const touch_event_t *evt)
 
     if (evt->type == TOUCH_EVENT_DOWN) {
         if (gfx_rect_contains(s->track, x, y)) {
-            s->dragging = true;
-            s->drag_id  = evt->point.id;
-            return from_x(s, x);
+            s->dragging   = true;
+            s->drag_id    = evt->point.id;
+            s->drag_x     = (int16_t)x;
+            s->drag_value = s->value;
+            return false;   /* a press on its own commands nothing */
         }
         for (int i = 0; i < s->preset_count; ++i) {
             if (gfx_rect_contains(s->presets[i], x, y)) {
@@ -110,11 +121,11 @@ bool ui_slider_event(ui_slider_t *s, const touch_event_t *evt)
         if (evt->type == TOUCH_EVENT_MOVE) {
             /* Deliberately not requiring the finger to stay on the track: a
              * press that began there owns the value until it lets go. */
-            return from_x(s, x);
+            return by_delta(s, x);
         }
         if (evt->type == TOUCH_EVENT_UP) {
             s->dragging = false;
-            return from_x(s, x);
+            return by_delta(s, x);
         }
         return false;
     }
