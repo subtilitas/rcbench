@@ -86,8 +86,9 @@ INCLUDES = [
     "shared/sbus/include",
 ]
 
-MODES = ["frame", "frame-idle", "sim", "throttle", "chrome", "overview", "servo",
-         "servo-grip", "analyser", "logs", "settings", "battery", "balance",
+MODES = ["frame", "frame-idle", "sim", "throttle", "chrome", "overview",
+         "servo", "servo-grip",
+         "analyser", "logs", "settings", "battery", "balance",
          "programmer", "balance-sim", "settings-sim", "battery-sim",
          "analyser-chrome", "logs-chrome", "settings-chrome",
          "battery-chrome", "balance-chrome", "programmer-chrome", "clear",
@@ -142,7 +143,11 @@ ROW_RE = re.compile(r"^([\w-]+)\s+([\d,]+)\s")
 # than byte for byte.  1 % of the steady-state frame is about 100 fills: two
 # orders of magnitude above the run-to-run variation and two below a change
 # worth documenting.
-DOC_TOLERANCE = 0.01
+# 2%, not 1%.  The hyphenated modes were skipped by the row pattern until
+# they were not, and the largest of them drifts about 275 fills of 22,700
+# between this machine and CI's -- more than 1% allows.  The tolerance is for
+# machine-to-machine variation, and it has to cover the modes actually checked.
+DOC_TOLERANCE = 0.02
 DOC_FLOOR = 100
 
 
