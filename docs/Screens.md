@@ -106,9 +106,11 @@ value the field is drawn empty and no percentage is shown. The measured rpm/V
 is shown either way, being a measurement rather than an inference.
 
 While the values are simulated, SIMULATION is drawn across the screen. The
-watermark is removed when measured values arrive: from an ESC (electronic speed
-controller) with telemetry (KISS, BLHeli_32, OpenYGE), from bidirectional
-DShot, or from the coprocessor's own sensors.
+panel simulates only while no coprocessor answers, so the watermark goes when
+one does. What replaces it is what that coprocessor can actually measure: rpm
+from bidirectional DShot today, and its own sensors when a measurement front
+end is fitted. A quantity nothing measures is drawn as an empty field rather
+than as a modelled number.
 
 ## Servo
 

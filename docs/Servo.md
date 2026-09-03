@@ -81,7 +81,11 @@ symmetric about centre. One current sensor across the pair is sufficient.
 
 ## Prerequisites
 
-The coprocessor's PWM (pulse-width modulation) output and current sensing on
-the servo outputs: one sensor per output for the limit search, one across the
-pair for the synchroniser. The order of work is in
+Current sensing on the servo outputs: one sensor per output for the limit
+search, one across the pair for the synchroniser. Neither is fitted, and both
+procedures are the reason they are wanted -- every number here is a current.
+
+The pulses themselves exist: the coprocessor's PWM (pulse-width modulation)
+driver is written, and [DShot and the output drivers](DShot.md) describes it.
+The order of work is in
 [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).

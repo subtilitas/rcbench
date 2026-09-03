@@ -23,11 +23,16 @@ static const out_driver_def_t k_drivers[OUT_DRIVER_COUNT] = {
      */
     [OUT_DRIVER_PPM]   = { "PPM",   1, 8, 1, false, true,   20,    50 },
     /*
-     * DShot's rate is its bit rate in kbit/s rather than a frame rate, and
-     * bidirectional DShot listens on the pin it drives, which is why pin
-     * count and read-back are separate questions.
+     * DShot's rate is its bit rate in kbit/s rather than a frame rate, which
+     * is why the rate range here is not a frame rate range.
      */
-    [OUT_DRIVER_DSHOT] = { "DShot", 1, 1, 1, true,  false, 150,  1200 },
+    [OUT_DRIVER_DSHOT] = { "DShot", 1, 1, 1, false, false, 150,  1200 },
+    /*
+     * Bidirectional DShot listens on the pin it drives, which is why pin
+     * count and read-back are separate questions: one wire, both directions.
+     */
+    [OUT_DRIVER_DSHOT_BIDIR] =
+                         { "DShot bidir", 1, 1, 1, true, false, 150, 1200 },
 };
 
 const out_driver_def_t *out_driver(out_driver_t d)
@@ -69,6 +74,22 @@ void outputs_init(outputs_t *o, uint32_t now_ms)
     o->last_step_ms = now_ms;
 }
 
+void outputs_reserve_pins(outputs_t *o, uint64_t mask)
+{
+    if (o == NULL) {
+        return;
+    }
+    o->reserved = mask;
+}
+
+bool outputs_pin_available(const outputs_t *o, uint8_t pin)
+{
+    if (o == NULL || pin > OUT_MAX_PIN) {
+        return false;
+    }
+    return (o->reserved & ((uint64_t)1u << pin)) == 0u;
+}
+
 /* Does [a0,a0+an) meet [b0,b0+bn)? */
 static bool overlaps(unsigned a0, unsigned an, unsigned b0, unsigned bn)
 {
@@ -95,6 +116,12 @@ bool outputs_configure(outputs_t *o, uint8_t slot, const out_slot_t *cfg)
         return false;
     }
     if (cfg->rate_hz < d->rate_min_hz || cfg->rate_hz > d->rate_max_hz) {
+        return false;
+    }
+    /* A pin that does not exist or already carries something else.  Refused
+     * here rather than at the driver, so the read-back of the OUTPUTS page
+     * and the bank disagree in the one place the panel already watches. */
+    if (!outputs_pin_available(o, cfg->pin)) {
         return false;
     }
 

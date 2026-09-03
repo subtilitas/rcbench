@@ -4,6 +4,52 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
+## Unreleased
+
+The coprocessor drives a pin.
+
+### Added
+
+- Four output drivers on the coprocessor: servo PWM on the hardware PWM
+  slices, PPM from a PIO program fed by a pair of DMA channels that retrigger
+  each other, DShot, and bidirectional DShot with the turnaround and the
+  reply capture inside the PIO block. `shared/dshot/` carries the frame, the
+  group code, the checksum, the period-to-speed arithmetic and the sampler
+  that resynchronises on every transition; `shared/ppm/` carries the frame
+  layout. Both are host-tested. [docs/DShot.md](docs/DShot.md) says what has
+  not been confirmed against an ESC.
+- Bidirectional DShot is driver 4 on the OUTPUTS page, not a flag on driver
+  3: it inverts the line and the checksum, so an ESC set up for one protocol
+  ignores the other.
+- CONTROL register 3, MOTOR_POLES. An ESC reports electrical periods and has
+  no idea what it is bolted to, so the magnet count is the one number the
+  wire has to carry for a mechanical speed to exist. The panel sends it from
+  the `Motor poles` setting when the coprocessor answers; at zero the
+  coprocessor reports no speed rather than one derived from a guess. Protocol
+  version 2.1.
+- The output bank refuses a pin the build has reserved. The pin in an OUTPUTS
+  slot is whatever an operator typed, and the coprocessor reserves the safety
+  line, the CAN controller's five pins, and every number above the last GPIO
+  the part has.
+- The coprocessor's capability word reports servo PWM, ESC drive and ESC
+  telemetry, which the panel marks its menu from.
+
+### Changed
+
+- The coprocessor no longer models the bench. It publishes what it measures,
+  with a valid bit per quantity and no SIMULATED flag; with no measurement
+  front end fitted that is rpm from a bidirectional DShot ESC and nothing
+  else, and the other fields are drawn empty. The panel still models the
+  whole bench while nothing answers, and marks that with the watermark, so a
+  modelled number and a measured one never appear on one screen.
+
+### Known limitations
+
+- No driver has been seen on a pin. Bit timings, the PPM DMA ring and the
+  bidirectional turnaround are what a host test cannot reach.
+- The panel's `Output`, `Output pin` and pulse settings do not write the
+  OUTPUTS and CHAN_CFG pages, so a slot still has to be configured by hand.
+
 ## 0.2.1 - 2026-09-03
 
 Arming is a deliberate gesture, and the first release cut from a tree whose

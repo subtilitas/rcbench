@@ -1,0 +1,53 @@
+;
+; PPM (pulse-position modulation) on one pin: alternating run lengths, mark
+; first.
+;
+; The program knows nothing about channels.  It is handed a list of durations
+; and toggles the pin at each one, which is the whole of PPM once the layout
+; has been worked out -- and the layout is arithmetic, so it is in
+; shared/ppm/ under the host suite rather than here.
+;
+; The clock is one cycle per microsecond, so a duration is a count of cycles.
+; A run of N microseconds is a one-cycle `out` plus N-1 cycles of loop, so the
+; count written into the FIFO (first in first out) is N-2 and the shortest run
+; this can produce is 2 us.
+;
+; SPDX-License-Identifier: MIT
+;
+
+.program ppm_tx
+.side_set 1
+
+.wrap_target
+    out x, 32       side 1      ; the mark begins: pin high
+mark:
+    jmp x-- mark    side 1
+    out y, 32       side 0      ; and ends: pin low for the space
+space:
+    jmp y-- space   side 0
+.wrap
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+/*
+ * One cycle per microsecond.  A servo pulse is resolved to the microsecond
+ * everywhere else in this firmware, and a PPM frame is a sum of pulse widths,
+ * so a finer tick would only make the counts larger.
+ */
+static inline void ppm_tx_program_init(PIO pio, uint sm, uint offset, uint pin)
+{
+    pio_gpio_init(pio, pin);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+
+    pio_sm_config c = ppm_tx_program_get_default_config(offset);
+    sm_config_set_sideset_pins(&c, pin);
+    /* Thirty-two bits at a time, refilled automatically: a run length is one
+     * word, so the program never has to say when to pull. */
+    sm_config_set_out_shift(&c, true, true, 32);
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+    sm_config_set_clkdiv(&c, (float)clock_get_hz(clk_sys) / 1000000.0f);
+
+    pio_sm_init(pio, sm, offset, &c);
+}
+%}

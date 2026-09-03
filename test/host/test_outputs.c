@@ -185,6 +185,48 @@ TEST_CASE(a_pin_belongs_to_one_driver)
 }
 
 /*
+ * Which pins exist, and which already carry the CAN (Controller Area Network)
+ * controller or the safety line, is a property of the board rather than of
+ * the protocol -- and the pin arrives from the host, so it is whatever an
+ * operator typed.  A driver bound to the heartbeat input is an output that
+ * cannot be seen to be wrong until the interlock stops working.
+ */
+TEST_CASE(a_reserved_pin_is_refused)
+{
+    fresh();
+    outputs_reserve_pins(&o, (1ull << 3) | (1ull << 8) | (1ull << 9));
+
+    CHECK(!outputs_pin_available(&o, 3));
+    CHECK(!outputs_pin_available(&o, 9));
+    CHECK(outputs_pin_available(&o, 7));
+    /* A pin past the width of the mask does not exist on any board here. */
+    CHECK(!outputs_pin_available(&o, OUT_MAX_PIN + 1u));
+
+    CHECK(!put_pwm(0, 0, 3));
+    CHECK(!put_pwm(0, 0, 8));
+    CHECK(put_pwm(0, 0, 7));
+
+    /* An empty mask is the panel's case: it drives no pin of its own, and
+     * nothing it configures may be refused for a reason it cannot know. */
+    fresh();
+    CHECK(put_pwm(0, 0, 3));
+}
+
+TEST_CASE(the_outputs_page_refuses_a_pin_that_does_not_fit_the_field)
+{
+    uint16_t regs[LINK_OS_COUNT];
+    outputs_slots_defaults(regs);
+
+    /* The register is sixteen bits and a pin is eight, so 259 would be
+     * stored, truncated to 3 at apply, and drive the safety line. */
+    const uint16_t pin = 259u;
+    CHECK_EQ(outputs_slots_write(regs, LINK_OS_PIN, 1, &pin),
+             LINK_NACK_BAD_VALUE);
+    const uint16_t ok = 63u;
+    CHECK_EQ(outputs_slots_write(regs, LINK_OS_PIN, 1, &ok), 0u);
+}
+
+/*
  * PPM (pulse-position modulation) is eight channels on one pin.  The table
  * says so, and the range it claims is the range the conflict check defends.
  */
@@ -209,11 +251,14 @@ TEST_CASE(ppm_claims_a_range_of_channels)
  * "is it only an output" are separate questions and the table answers both. */
 TEST_CASE(the_table_says_what_a_driver_is_shaped_like)
 {
-    CHECK(out_driver(OUT_DRIVER_DSHOT)->reads_back);
+    /* Only bidirectional DShot listens on the pin it drives. */
+    CHECK(out_driver(OUT_DRIVER_DSHOT_BIDIR)->reads_back);
+    CHECK(!out_driver(OUT_DRIVER_DSHOT)->reads_back);
     CHECK(!out_driver(OUT_DRIVER_PWM)->reads_back);
     /* Only pulse drivers go through the endpoints. */
     CHECK(out_driver(OUT_DRIVER_PWM)->pulsed);
     CHECK(!out_driver(OUT_DRIVER_DSHOT)->pulsed);
+    CHECK(!out_driver(OUT_DRIVER_DSHOT_BIDIR)->pulsed);
     CHECK_EQ(out_driver(OUT_DRIVER_PPM)->channels_max, 8);
     CHECK(out_driver(OUT_DRIVER_COUNT) == NULL);
 }
@@ -475,8 +520,10 @@ TEST_CASE(an_unknown_driver_is_refused)
     };
     CHECK_EQ(outputs_slots_write(slots, 0, LINK_OS_STRIDE, in),
              LINK_NACK_BAD_VALUE);
-    /* and DShot is a known driver, so it stores */
+    /* and both DShot drivers are known, so they store */
     in[LINK_OS_DRIVER] = LINK_DRIVER_DSHOT;
+    CHECK_EQ(outputs_slots_write(slots, 0, LINK_OS_STRIDE, in), 0);
+    in[LINK_OS_DRIVER] = LINK_DRIVER_DSHOT_BIDIR;
     CHECK_EQ(outputs_slots_write(slots, 0, LINK_OS_STRIDE, in), 0);
 }
 
@@ -541,6 +588,8 @@ int main(void)
     RUN(the_role_decides_which_direction_is_safe);
     RUN(a_slow_slew_still_moves);
     RUN(a_pin_belongs_to_one_driver);
+    RUN(a_reserved_pin_is_refused);
+    RUN(the_outputs_page_refuses_a_pin_that_does_not_fit_the_field);
     RUN(ppm_claims_a_range_of_channels);
     RUN(the_table_says_what_a_driver_is_shaped_like);
     RUN(a_rate_outside_the_driver_is_refused);

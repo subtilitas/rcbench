@@ -723,6 +723,24 @@ static bool control_write(bool armed, link_msg_t *reply)
            && reply->op == LINK_OP_ACK;
 }
 
+/*
+ * The magnet count of the motor under test, sent once when the coprocessor
+ * answers.
+ *
+ * A bidirectional DShot ESC (electronic speed controller) reports electrical
+ * periods and has no idea what it is bolted to, so this is the one number the
+ * far end cannot work out and the near end already has, in the Motor poles
+ * setting.  Until it arrives the coprocessor reports no speed at all rather
+ * than a speed derived from a guess.
+ */
+static bool control_write_poles(link_msg_t *reply)
+{
+    const uint16_t poles = (uint16_t)settings_get_int(SET_MOTOR_POLES);
+    return write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_MOTOR_POLES, 1u,
+                      &poles, reply)
+           && reply->op == LINK_OP_ACK;
+}
+
 static bool control_clear_failsafe(link_msg_t *reply)
 {
     const uint16_t magic = LINK_CLEAR_MAGIC;
@@ -1033,6 +1051,16 @@ static void control_task(void *arg)
             if (answered != link_up) {
                 ESP_LOGI(TAG, "coprocessor %s",
                          answered ? "answered" : "went quiet");
+                if (answered) {
+                    /* On the edge, not every poll: it does not change while
+                     * the link is up, so a write per poll would cost a
+                     * transaction for nothing. */
+                    link_msg_t pr;
+                    if (!control_write_poles(&pr)) {
+                        ESP_LOGW(TAG, "coprocessor did not take the pole "
+                                      "count -- rpm will read empty");
+                    }
+                }
             }
             link_up = answered;
 

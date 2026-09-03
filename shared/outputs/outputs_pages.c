@@ -22,13 +22,14 @@ static out_driver_t driver_of(uint16_t wire)
     case LINK_DRIVER_PWM:   return OUT_DRIVER_PWM;
     case LINK_DRIVER_PPM:   return OUT_DRIVER_PPM;
     case LINK_DRIVER_DSHOT: return OUT_DRIVER_DSHOT;
+    case LINK_DRIVER_DSHOT_BIDIR: return OUT_DRIVER_DSHOT_BIDIR;
     default:                return OUT_DRIVER_NONE;
     }
 }
 
 static bool known_driver(uint16_t wire)
 {
-    return wire <= LINK_DRIVER_DSHOT;
+    return wire <= LINK_DRIVER_DSHOT_BIDIR;
 }
 
 /* ------------------------------------------------------------ CHAN_CFG */
@@ -123,6 +124,12 @@ uint8_t outputs_slots_write(uint16_t *regs, uint8_t off, uint8_t n,
     for (uint8_t i = 0; i < n; ++i) {
         const uint8_t field = (uint8_t)((off + i) % LINK_OS_STRIDE);
         if (field == LINK_OS_DRIVER && !known_driver(in[i])) {
+            return LINK_NACK_BAD_VALUE;
+        }
+        /* The register is sixteen bits wide and a pin number is eight, so a
+         * pin above the top would be stored, truncated at apply, and drive a
+         * different pin than the one the page reads back. */
+        if (field == LINK_OS_PIN && in[i] > OUT_MAX_PIN) {
             return LINK_NACK_BAD_VALUE;
         }
     }

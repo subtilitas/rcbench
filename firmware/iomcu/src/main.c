@@ -4,9 +4,15 @@
  * Answers polls and never transmits unsolicited: every transmission here
  * follows a decoded request.
  *
- * The measurement front end, the PIO (programmable input/output) programs
- * and the power path are not written.  This file holds the wire, the
- * failsafe and the output bank.
+ * The measurement front end and the power path are not written.  This file
+ * holds the wire, the failsafe and the output bank; the output protocols are
+ * in out_pwm.c, out_ppm.c and out_dshot.c behind outputs_hw.c.
+ *
+ * Nothing here models a reading.  A number this end publishes came off a
+ * wire or a sensor, and a quantity nothing measures is left at zero with its
+ * valid bit clear.  The panel models when no coprocessor answers at all,
+ * which is the only case where a modelled number cannot be mistaken for a
+ * measured one.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,13 +22,15 @@
 #include "pico/stdlib.h"
 
 #include "iomcu_pins.h"
+#include "bench_state.h"
 #include "can_selftest.h"
 #include "heartbeat.h"
 #include "link_dev.h"
 #include "link_pages.h"
+#include "dshot.h"
 #include "outputs.h"
+#include "outputs_hw.h"
 #include "outputs_pages.h"
-#include "telemetry_sim.h"
 #include "xl2515.h"
 
 /* ------------------------------------------------------------- the pages */
@@ -170,6 +178,9 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
         return nack;
     }
     outputs_slots_apply(&s_outputs, s->slots);
+    /* The bank has decided what the slots are; this makes the silicon agree
+     * with it before the next pass renders anything. */
+    outputs_hw_apply(&s_outputs);
     return 0u;
 }
 
@@ -202,6 +213,14 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
         if (reg == LINK_CT_ARM && in[i] != 0
             && (s_dev.failsafe || !s_beat.alive)) {
             return LINK_NACK_NOT_ARMED;
+        }
+        /* Zero means nobody has said; anything else is an even count in the
+         * range a motor comes in.  An odd count is a typo, and accepting one
+         * would put a plausible wrong speed on the screen. */
+        if (reg == LINK_CT_MOTOR_POLES && in[i] != 0u
+            && (in[i] < LINK_POLES_MIN || in[i] > LINK_POLES_MAX
+                || (in[i] % 2u) != 0u)) {
+            return LINK_NACK_BAD_VALUE;
         }
         s->control[reg] = in[i];
     }
@@ -402,25 +421,75 @@ static void can_report(uint32_t now)
 /* ---------------------------------------------------------------- the loop */
 
 /*
- * No measurement front end is fitted, so the numbers are modelled here, and
- * every one of them carries LINK_BN_SIMULATED, which travels the wire and
- * puts SIMULATION across the panel's screen.
+ * The numbers, and only the ones something measured.
+ *
+ * There is no measurement front end, so voltage, current and temperature are
+ * zero with their valid bits clear and the panel draws those fields empty.
+ * The one quantity that has a source is speed, from a bidirectional DShot
+ * ESC (electronic speed controller) answering on its own signal line.
+ *
+ * LINK_BN_SIMULATED is never set here.  A coprocessor that is answering is
+ * reporting what it can see; the panel models only when nothing answers at
+ * all, and marks that itself.
  */
-static telemetry_sim_t s_sim;
-static bench_state_t   s_bench;
+static bench_state_t s_bench;
 
+/*
+ * How stale a speed may be before it stops being reported.
+ *
+ * Frames go out at a kilohertz, so a reply older than this is not a slow
+ * update but an ESC that has stopped answering -- unplugged, or one that
+ * never did bidirectional DShot.  A held-over speed on a stopped motor is
+ * exactly the plausible wrong number this bench exists to avoid.
+ */
+#define RPM_STALE_MS  200u
 
+/*
+ * The peaks belong to a run, and a run starts when the bank arms.
+ *
+ * They are kept on this end because it has the fast samples and the panel
+ * sees one poll in fifty of them, so only this end can see the peak at all.
+ * Holding them since boot instead would report a maximum from a motor that
+ * was taken off the bench two runs ago.
+ */
+static bool s_was_driving;
 
-static void sample(float dt_s)
+static void sample(void)
 {
     /*
-     * What the output is doing, not what was asked for: the bank has applied
-     * arming, slew and the silence timeout, and a simulation fed the raw
-     * request would show a motor at a speed the outputs refuse to produce.
+     * The live readings and their valid bits are rebuilt every sample; the
+     * peaks are not, because a peak that is recomputed from one sample is
+     * the current reading wearing a different name.
      */
-    const float throttle = (float)outputs_actual(&s_outputs, CH_THROTTLE)
-                           * 100.0f / (float)OUT_SPAN;
-    telemetry_sim_step(&s_sim, throttle, dt_s, &s_bench);
+    s_bench.voltage     = 0.0f;
+    s_bench.current     = 0.0f;
+    s_bench.power       = 0.0f;
+    s_bench.rpm         = 0.0f;
+    s_bench.temp_esc    = 0.0f;
+    s_bench.temp_motor  = 0.0f;
+    s_bench.flags       = 0u;
+
+    uint32_t erpm = 0u;
+    uint32_t age  = 0u;
+    const uint16_t poles = s_state.control[LINK_CT_MOTOR_POLES];
+    if (poles != 0u && outputs_hw_erpm(&erpm, &age) && age <= RPM_STALE_MS) {
+        /* Pole pairs, not poles: one electrical revolution per pair. */
+        s_bench.rpm = (float)dshot_rpm(erpm, (uint8_t)(poles / 2u));
+        s_bench.flags |= (uint16_t)LINK_BN_RPM_OK;
+    }
+
+    /* On the edge into driving, so a run's peaks are that run's.  The reset
+     * takes the current reading rather than zero, which is what stops a sag
+     * floor of 0 V reading as a collapsed pack. */
+    const bool driving = outputs_driving(&s_outputs);
+    if (driving && !s_was_driving) {
+        bench_state_reset_peaks(&s_bench);
+    }
+    s_was_driving = driving;
+
+    if (s_bench.rpm > s_bench.rpm_max) {
+        s_bench.rpm_max = s_bench.rpm;
+    }
     bench_state_to_regs(&s_bench, s_state.bench);
 
     s_state.status[LINK_ST_STATE] =
@@ -475,6 +544,9 @@ static void outputs_off(void)
     /* The channels page is what a read shows the panel; the bank is already at
      * rest from the disarm above, so the two agree only if this agrees too. */
     outputs_channels_defaults(s_state.channels);
+    /* And the pins, now rather than at the top of the next pass: a failsafe
+     * that waits for the loop to come round is a failsafe with a latency. */
+    outputs_hw_service(&s_outputs);
 }
 
 int main(void)
@@ -484,12 +556,20 @@ int main(void)
     s_state.identity[LINK_ID_PROTOCOL_MAJOR] = LINK_PROTOCOL_MAJOR;
     s_state.identity[LINK_ID_PROTOCOL_MINOR] = LINK_PROTOCOL_MINOR;
     /*
-     * No capability bits: every bit is a part that is not fitted or a driver
-     * that is not written (PWM (pulse-width modulation) to a servo lead, a
-     * shunt, a PIO receiver, an accelerometer).  The panel marks the menu
-     * from this word.  A fitted part sets one bit here.
+     * What this build can do, which the panel marks its menu from.  The three
+     * bits set are the three the output drivers make true: pulses to a servo
+     * lead, a signal line to an ESC (electronic speed controller), and
+     * telemetry back from one over bidirectional DShot.  The rest are parts
+     * that are not fitted -- a shunt, a cell monitor, an accelerometer -- or
+     * a program that is not written, and each is set by the thing arriving.
+     *
+     * These say the coprocessor can, not that anything is connected.  An ESC
+     * that does not answer is an ESC that does not answer, and the BENCH
+     * page's valid bits are where that shows.
      */
-    s_state.identity[LINK_ID_CAPABILITIES]   = 0;
+    s_state.identity[LINK_ID_CAPABILITIES] =
+        (uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE
+                   | LINK_CAP_ESC_TELEM);
 
     /* A range before anybody sets one, so the clamp is meaningful from the
      * first frame rather than from the first configuration. */
@@ -499,15 +579,27 @@ int main(void)
 
     const uint32_t now0 = (uint32_t)to_ms_since_boot(get_absolute_time());
     outputs_init(&s_outputs, now0);
+    /*
+     * The pins this build will not hand out, whatever the host asks for: the
+     * safety line, the CAN (Controller Area Network) controller's four SPI
+     * (Serial Peripheral Interface) pins and its interrupt, and every number
+     * above the last GPIO (general-purpose input/output) this part has.  The
+     * pin arrives from the panel over the OUTPUTS page, so it is whatever an
+     * operator typed, and an output bound to the heartbeat input is an
+     * interlock that stops working with nothing to show for it.
+     */
+    outputs_reserve_pins(&s_outputs,
+                         IOMCU_RESERVED_PINS | IOMCU_ABSENT_PINS);
     (void)outputs_set_role(&s_outputs, CH_THROTTLE, OUT_ROLE_THROTTLE);
     outputs_chan_cfg_apply(&s_outputs, s_state.chan_cfg);
     outputs_slots_apply(&s_outputs, s_state.slots);
     outputs_channels_apply(&s_outputs, s_state.channels, now0);
+    outputs_hw_init();
+    outputs_hw_apply(&s_outputs);
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 
     heartbeat_init();
     can_start();
-    telemetry_sim_init(&s_sim, NULL);
     memset(&s_bench, 0, sizeof(s_bench));
 
     uint32_t last_sample = (uint32_t)to_ms_since_boot(get_absolute_time());
@@ -539,11 +631,14 @@ int main(void)
                         && !s_dev.failsafe && s_beat.alive,
                     now);
         outputs_step(&s_outputs, now);
+        /* Straight after the step, so what reaches a pin is what the bank
+         * has just decided rather than what it decided a pass ago. */
+        outputs_hw_service(&s_outputs);
 
         /* 50 Hz, which is faster than the panel polls, so a poll always finds
          * a fresh sample rather than the one it was already shown. */
         if ((uint32_t)(now - last_sample) >= 20u) {
-            sample((float)(now - last_sample) / 1000.0f);
+            sample();
             last_sample = now;
         }
 

@@ -2,6 +2,10 @@
  * A pack, a motor and a propeller, modelled, so every screen runs without a
  * measurement front end.
  *
+ * It runs on the panel, and only while no coprocessor answers: a coprocessor
+ * that is answering reports what it measures and leaves the rest empty, so a
+ * modelled number and a measured one never appear on the same screen.
+ *
  * Every value it produces carries LINK_BN_SIMULATED, and the router draws
  * SIMULATION across the screen while that bit is set: a modelled number must
  * not read as a measured one.

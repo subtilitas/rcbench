@@ -113,10 +113,12 @@ Prozentwert gezeigt. Die gemessene rpm/V wird in jedem Fall gezeigt, weil sie
 eine Messung und keine Herleitung ist.
 
 Solange die Werte simuliert sind, steht SIMULATION quer über dem Bildschirm.
-Das Watermark verschwindet, sobald gemessene Werte eintreffen: von einem ESC
-(Electronic Speed Controller, Motorregler) mit Telemetrie (KISS, BLHeli_32,
-OpenYGE), über Bidirectional DShot oder von den eigenen Sensoren des
-Koprozessors.
+Das Panel simuliert nur, solange kein Koprozessor antwortet; das Watermark
+verschwindet also, sobald einer antwortet. An seine Stelle tritt, was dieser
+Koprozessor tatsächlich messen kann: heute rpm über Bidirectional DShot, und
+seine eigenen Sensoren, sobald ein Messfrontend bestückt ist. Eine Größe, die
+nichts misst, wird als leeres Feld gezeichnet und nicht als modellierter
+Wert.
 
 ## Servo
 

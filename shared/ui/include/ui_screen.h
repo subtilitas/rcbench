@@ -87,10 +87,12 @@ typedef struct {
     /**
      * The numbers are modelled, not measured.
      *
-     * Set when the bench numbers come from the panel's own simulator or from
-     * a coprocessor without a measurement front end (LINK_BN_SIMULATED).  The
-     * router draws SIMULATION across the whole screen while it is set; no
-     * screen can opt out.
+     * Set when the bench numbers come from the panel's own simulator, which
+     * runs only while no coprocessor answers.  A coprocessor that answers
+     * reports what it can see and nothing else, so the flag it sends
+     * (LINK_BN_SIMULATED) is never set by this firmware; the field it has no
+     * source for is empty instead.  The router draws SIMULATION across the
+     * whole screen while this is set, and no screen can opt out.
      */
     bool simulated;
 
