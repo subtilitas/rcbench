@@ -4,6 +4,49 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
+## 0.2.1 - 2026-09-03
+
+Arming is a deliberate gesture, and the first release cut from a tree whose
+CI passes.
+
+### Changed
+
+- ARM is a two-second hold. The fill fades from the OK green to the danger
+  red across the hold and the command goes when the fade completes, so
+  letting go early arms nothing and the release itself arms nothing. A press
+  is a gesture an elbow can make. Disarming stays a press: stopping never
+  needs a hold.
+- Arming flashes the whole button twice -- white, black, the danger red it
+  settles on, and again, one drawn frame each, about 154 ms at 39 Hz. What
+  was there decayed from white over 180 ms, which is a fade and reads as one.
+
+### Fixed
+
+- The release after a hold disarmed what that same press had just armed.
+  `motor_screen_set_armed()` cleared the flag remembering that this press was
+  the one that armed, and the application calls it between the hold
+  completing and the finger lifting, so the release read as a fresh press on
+  DISARM.
+- `tools/frame_cost.py` failed ruff on an 81-character line, and had done
+  since the per-screen modes were added.
+- `tools/frame_cost.py --check-doc` failed on CI and not locally. Its
+  tolerance is for machine-to-machine variation and was 1%, which was enough
+  only while the row pattern skipped every hyphenated mode; the largest of
+  them drifts about 275 fills of 22,700 between machines. It is 2%.
+- The coverage table in `STATUS.md` did not follow `motor_screen.c`.
+
+### Known limitations
+
+- The coprocessor refuses to arm while it is connected: it reads the
+  heartbeat on GP3 with a pull-down and the panel drives GPIO6 on J8, and
+  nothing joins them. The interlock is working; the wire is not fitted.
+- The control task has not run on hardware.
+- RESET PEAKS clears the panel's copy and the next poll restores it.
+- The link error count is the CAN controller's error counters, which decay as
+  the bus recovers and stop at bus-off.
+- A settings save disturbs the picture for the length of the write.
+- No output driver produces a signal on a pin.
+
 ## 0.2.0 - 2026-09-03
 
 The panel runs the bench from a task of its own, and the screen from what is
