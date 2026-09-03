@@ -20,9 +20,12 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 
 #include "board.h"
+#include "ui_band.h"
 #include "board_pins.h"
 #include "can_twai.h"
 #include "selftest.h"
@@ -181,6 +184,74 @@ static void beat(bool alive)
 {
     const bool level = heartbeat_gen_step(&s_beat, now_ms(), alive);
     gpio_set_level(PANEL_HEARTBEAT_PIN, level ? 1 : 0);
+}
+
+/* --------------------------------------------------- the two loops' plumbing */
+
+/*
+ * The bench and the screen run on separate cores.
+ *
+ * Touch, the outputs, the link and the heartbeat live in the control task at
+ * a fixed 5 ms; drawing lives in app_main at whatever rate the panel manages.
+ * A frame that costs 50 ms then delays what is shown and not what the bench
+ * does, and STOP does not wait for a repaint.
+ *
+ * The heartbeat follows the control task because the control task owns STOP,
+ * and the heartbeat's whole claim is that the loop owning STOP is running.
+ *
+ * The two share nothing directly.  Touch crosses one way and commands cross
+ * the other, both as queues; the numbers the screen draws cross as a snapshot
+ * under a mutex.  Screen state is static and single-threaded, so it is
+ * touched only by app_main.
+ */
+#define CONTROL_PERIOD_MS 5u
+#define TOUCH_Q_LEN       32
+#define CMD_Q_LEN         16
+#define ALERT_MAX         64
+
+/*
+ * The bench page is polled every 50 ms, so a sample is 1/20 s of plot.  The
+ * motor screen scales its time axis by the same number; the two have to
+ * agree or the axis lies about how long ago something happened.
+ */
+#define PANEL_SAMPLE_HZ   20.0f
+
+typedef enum { PANEL_CMD_MOTOR = 0, PANEL_CMD_SERVO,
+               PANEL_CMD_STOP } panel_cmd_kind_t;
+
+typedef struct {
+    panel_cmd_kind_t kind;
+    motor_cmd_t      motor;
+    servo_cmd_t      servo;
+} panel_cmd_t;
+
+static QueueHandle_t     s_touch_q;   /**< control task -> app_main */
+static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
+static SemaphoreHandle_t s_snap_lock;
+
+/* What the screen reads.  Written by the control task, copied by app_main. */
+static struct {
+    bench_state_t bench;
+    bool          link_up;
+    bool          armed;
+    bool          stopped;
+    uint16_t      faults;
+    uint32_t      link_errors;
+    uint32_t      seq;    /**< bench samples produced, for the plot */
+    char          alert[ALERT_MAX];
+    bool          alert_pending;
+} s_snap;
+
+static void snap_lock(void)   { xSemaphoreTake(s_snap_lock, portMAX_DELAY); }
+static void snap_unlock(void) { xSemaphoreGive(s_snap_lock); }
+
+/* Called from the control task, which must not touch the router. */
+static void control_alert(const char *text)
+{
+    snap_lock();
+    snprintf(s_snap.alert, sizeof(s_snap.alert), "%s", text);
+    s_snap.alert_pending = true;
+    snap_unlock();
 }
 
 /* ------------------------------------------------------------------- boot */
@@ -617,55 +688,45 @@ static bool read_bench(link_host_t *host, bench_state_t *out)
 
 /* ------------------------------------------------------------------- main */
 
-void app_main(void)
+/* --------------------------------------------------------- the control task */
+
+/*
+ * Everything the bench does, at a fixed 5 ms on the core the renderer does
+ * not use: touch, STOP, arming, the outputs, the link and the heartbeat.
+ *
+ * STOP is hit-tested here against the band's own rectangle rather than waiting
+ * for the router to report a press, because the router only sees events when
+ * a frame is drawn and a frame can cost 50 ms.  app_main forwards the
+ * router's own STOP as well, so a press this test misses still latches.
+ */
+static void control_task(void *arg)
 {
-    ESP_ERROR_CHECK(board_init());
-    heartbeat_init();
-    tsens_init();
+    (void)arg;
 
-    ui_theme_set(UI_THEME_DARK);
-    ui_router_init();
-
-    const bool healthy = bring_up();
-
-    /*
-     * While no coprocessor answers, the numbers come from the model, and
-     * every one of them carries LINK_BN_SIMULATED, which puts SIMULATION
-     * across the screen.  When the far end answers, read_bench() fills bench
-     * instead.
-     */
     telemetry_sim_t sim;
     bench_state_t   bench;
+    outputs_t       out;
+    memset(&bench, 0, sizeof(bench));
+    telemetry_sim_init(&sim, NULL);
     /*
      * The panel's throttle is a channel in an output bank, under the same
      * arming, slew and staleness rules as the coprocessor's outputs, so the
      * two ends cannot answer those questions differently.
      */
-    outputs_t       out;
-    memset(&bench, 0, sizeof(bench));
-    telemetry_sim_init(&sim, NULL);
     outputs_init(&out, now_ms());
     (void)outputs_set_role(&out, PANEL_CH_THROTTLE, OUT_ROLE_THROTTLE);
     (void)outputs_set_slew(&out, PANEL_CH_THROTTLE, PANEL_THROTTLE_RAMP);
 
-    if (!healthy) {
-        ui_router_set_alert("touch did not answer -- the bench will not arm");
-    }
-
-    uint32_t frames    = 0;
-    uint32_t last_us   = (uint32_t)esp_timer_get_time();
-    uint32_t last_poll = 0;
-    uint32_t last_status = 0;
-    uint32_t last_report = 0;
-    uint32_t last_temp   = 0;
+    uint32_t last_poll     = 0;
+    uint32_t last_status   = 0;
+    uint32_t last_report   = 0;
+    uint32_t last_temp     = 0;
     uint32_t last_touch_ok = now_ms();
-    bool     link_up = false;
+    bool     link_up       = false;
+    bool     stop_press    = false;
+    uint8_t  stop_id       = 0;
 
     for (;;) {
-        const uint32_t us = (uint32_t)esp_timer_get_time();
-        const float dt_s = (float)(us - last_us) / 1e6f;
-        last_us = us;
-
         /* --- touch, and the rule that outlives every screen --------------- */
         /*
          * touch_wait_event() returns bool, not esp_err_t, although its
@@ -676,7 +737,21 @@ void app_main(void)
         bool saw_touch = false;
         while (touch_wait_event(&evt, 0)) {
             saw_touch = true;
-            ui_router_event(&evt);
+            const gfx_rect_t stop = ui_band_stop_rect();
+            const bool in_stop =
+                gfx_rect_contains(stop, evt.point.x, evt.point.y);
+            if (evt.type == TOUCH_EVENT_DOWN && in_stop) {
+                stop_press = true;
+                stop_id    = evt.point.id;
+            } else if (stop_press && evt.point.id == stop_id
+                       && evt.type == TOUCH_EVENT_UP) {
+                stop_press = false;
+                if (in_stop) {
+                    s_stopped = true;
+                }
+            }
+            /* The screen still sees every event: it draws the press. */
+            (void)xQueueSend(s_touch_q, &evt, 0);
         }
         /*
          * touch_age_ms() is the time since the controller last answered a
@@ -695,7 +770,7 @@ void app_main(void)
             (uint32_t)(now_ms() - last_touch_ok) >= 500u;
         if (touch_dead && outputs_armed(&out)) {
             outputs_arm(&out, false, now_ms());
-            ui_router_set_alert("touch stopped answering -- disarmed");
+            control_alert("touch stopped answering -- disarmed");
             if (link_up) {
                 link_msg_t ack = { 0 };
                 (void)control_write(false, &ack);
@@ -708,10 +783,8 @@ void app_main(void)
          * monostable holds for longer than a frame.  Only an explicit arm
          * clears it.
          */
-        if (ui_router_take_stop()) {
+        if (s_stopped && outputs_armed(&out)) {
             outputs_arm(&out, false, now_ms());
-            motor_screen_set_armed(false);
-            s_stopped = true;
             /* The command as well as the heartbeat: a control-page write
              * wins arbitration against every telemetry frame in flight. */
             if (link_up) {
@@ -720,11 +793,63 @@ void app_main(void)
             }
         }
 
+        /* --- what the screens asked for ---------------------------------- */
+        panel_cmd_t pc;
+        while (xQueueReceive(s_cmd_q, &pc, 0) == pdTRUE) {
+            if (pc.kind == PANEL_CMD_STOP) {
+                s_stopped = true;
+                outputs_arm(&out, false, now_ms());
+                if (link_up) {
+                    link_msg_t ack = { 0 };
+                    (void)control_write(false, &ack);
+                }
+                continue;
+            }
+            if (pc.kind == PANEL_CMD_SERVO) {
+                if (!link_up) {
+                    continue;
+                }
+                const servo_cmd_t sv = pc.servo;
+                link_msg_t reply;
+                if (sv.kind == SERVO_CMD_RELEASE) {
+                    /* Stop driving: clear the slot.  The channel keeps its
+                     * last command, but with nothing rendering it that is
+                     * inert. */
+                    uint16_t slot[LINK_OS_STRIDE] = { LINK_DRIVER_NONE, 0, 0, 0 };
+                    (void)write_page(&s_host, LINK_PAGE_OUTPUTS,
+                                     LINK_OS_STRIDE, slot, &reply);
+                } else {
+                    /*
+                     * Configuration and command, sent whole every time.  The
+                     * coprocessor may have reset since the last write, so the
+                     * range the pulse is clamped against and the driver that
+                     * renders it are restated with each pulse.
+                     */
+                    uint16_t cfg[LINK_CC_STRIDE] = {
+                        [LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE,
+                        [LINK_CC_SLEW]   = 0u,
+                        [LINK_CC_MIN_US] = SERVO_MIN_US,
+                        [LINK_CC_MAX_US] = SERVO_MAX_US,
+                    };
+                    uint16_t slot[LINK_OS_STRIDE] = {
+                        [LINK_OS_DRIVER]  = LINK_DRIVER_PWM,
+                        [LINK_OS_PIN]     = SERVO_PIN,
+                        [LINK_OS_RANGE]   = LINK_OS_RANGE_OF(SERVO_CH, 1),
+                        [LINK_OS_RATE_HZ] = 50u,
+                    };
+                    const uint16_t span = us_to_span(sv.value_us, SERVO_MIN_US,
+                                                     SERVO_MAX_US);
+                    (void)write_page(&s_host, LINK_PAGE_CHAN_CFG,
+                                     LINK_CC_STRIDE, cfg, &reply);
+                    (void)write_page(&s_host, LINK_PAGE_OUTPUTS,
+                                     LINK_OS_STRIDE, slot, &reply);
+                    (void)write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &span,
+                                     &reply);
+                }
+                continue;
+            }
 
-        /* --- what the bench screen asked for ----------------------------- */
-        motor_cmd_t cmd;
-        while (motor_screen_poll_cmd(&cmd)) {
-            switch (cmd.kind) {
+            switch (pc.motor.kind) {
             case MOTOR_CMD_ARM:
                 /* Arming is the deliberate act that clears a latched stop.
                  * Nothing else does: not navigating away, not the alert
@@ -737,7 +862,7 @@ void app_main(void)
                     if (link_up
                         && !(control_clear_failsafe(&ack)
                              && control_write(true, &ack))) {
-                        ui_router_set_alert("coprocessor refused to arm");
+                        control_alert("coprocessor refused to arm");
                         break;
                     }
                     s_stopped = false;
@@ -752,57 +877,15 @@ void app_main(void)
                 }
                 break;
             case MOTOR_CMD_THROTTLE:
-                s_throttle_hundredths = pct_to_hundredths(cmd.value);
+                s_throttle_hundredths = pct_to_hundredths(pc.motor.value);
                 (void)outputs_set(&out, PANEL_CH_THROTTLE,
-                                  pct_to_span(cmd.value), now_ms());
+                                  pct_to_span(pc.motor.value), now_ms());
                 break;
             case MOTOR_CMD_RESET_PEAKS: bench_state_reset_peaks(&bench); break;
             default: break;
             }
         }
         (void)outputs_keepalive(&out, PANEL_CH_THROTTLE, now_ms());
-        motor_screen_set_armed(outputs_armed(&out));
-
-        /* --- and what the servo screen asked for -------------------------- */
-        servo_cmd_t sv;
-        if (servo_screen_take(&sv) && link_up) {
-            link_msg_t reply;
-            if (sv.kind == SERVO_CMD_RELEASE) {
-                /* Stop driving: clear the slot.  The channel keeps its last
-                 * command, but with nothing rendering it that is inert. */
-                uint16_t slot[LINK_OS_STRIDE] = { LINK_DRIVER_NONE, 0, 0, 0 };
-                (void)write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE,
-                                 slot, &reply);
-            } else {
-                /*
-                 * Configuration and command, sent whole every time.  The
-                 * coprocessor may have reset since the last write, so the
-                 * range the pulse is clamped against and the driver that
-                 * renders it are restated with each pulse.
-                 */
-                const uint16_t pulse_us = sv.value_us;
-                uint16_t cfg[LINK_CC_STRIDE] = {
-                    [LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE,
-                    [LINK_CC_SLEW]   = 0u,
-                    [LINK_CC_MIN_US] = SERVO_MIN_US,
-                    [LINK_CC_MAX_US] = SERVO_MAX_US,
-                };
-                uint16_t slot[LINK_OS_STRIDE] = {
-                    [LINK_OS_DRIVER]  = LINK_DRIVER_PWM,
-                    [LINK_OS_PIN]     = SERVO_PIN,
-                    [LINK_OS_RANGE]   = LINK_OS_RANGE_OF(SERVO_CH, 1),
-                    [LINK_OS_RATE_HZ] = 50u,
-                };
-                uint16_t span = us_to_span(pulse_us, SERVO_MIN_US,
-                                           SERVO_MAX_US);
-                (void)write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_STRIDE,
-                                 cfg, &reply);
-                (void)write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE,
-                                 slot, &reply);
-                (void)write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &span,
-                                 &reply);
-            }
-        }
 
         const bool was_armed = (s_log_file != NULL);
         if (outputs_armed(&out) && !was_armed) {
@@ -823,19 +906,8 @@ void app_main(void)
          */
         beat(!touch_dead && !s_stopped);
 
-        /* --- the numbers ------------------------------------------------- */
-        /* Modelled here only while nothing is answering; when the link is up,
-         * read_bench has already filled this with what the far end said. */
-        if (!link_up) {
-            telemetry_sim_step(&sim, emitted, dt_s, &bench);
-        }
-        motor_screen_push(&bench);
-        if (s_log_file != NULL) {
-            s_log_t += dt_s;
-            (void)log_writer_row(&s_log, s_log_t, &bench);
-        }
-
         /* --- the far end, at 1 Hz until it answers ----------------------- */
+        bool new_sample = false;
         if ((uint32_t)(now_ms() - last_poll) >= (link_up ? 50u : 1000u)) {
             last_poll = now_ms();
             link_msg_t reply;
@@ -853,7 +925,7 @@ void app_main(void)
                          * heartbeat.  A stop latches at this end too. */
                         outputs_arm(&out, false, now_ms());
                         s_stopped = true;
-                        ui_router_set_alert("coprocessor disarmed -- arm again");
+                        control_alert("coprocessor disarmed -- arm again");
                     }
                 }
             } else {
@@ -867,9 +939,8 @@ void app_main(void)
                      * identity page. */
                     ESP_LOGE(TAG, "coprocessor speaks protocol %u, we speak %u",
                              reply.regs[LINK_ID_PROTOCOL_MAJOR],
-                             (unsigned)LINK_PROTOCOL_MAJOR);
-                    outputs_arm(&out, false, now_ms());
-                    ui_router_set_alert("protocol mismatch -- will not arm");
+                             LINK_PROTOCOL_MAJOR);
+                    control_alert("protocol mismatch -- will not arm");
                     answered = false;
                 }
             }
@@ -880,18 +951,31 @@ void app_main(void)
             link_up = answered;
 
             /*
-             * The far end's own counters, every 1000 ms rather than every
-             * poll: a status read costs a whole transaction and its numbers
-             * move slowly.  They tell which end of the cable a fault is at.
+             * The numbers advance at the poll rate, not the frame rate: the
+             * plot's time axis is calibrated at SAMPLE_HZ, and pushing a
+             * sample per frame both stretches it and repaints the plot on
+             * every frame.
+             */
+            if (!link_up) {
+                telemetry_sim_step(&sim, emitted, 1.0f / PANEL_SAMPLE_HZ, &bench);
+            }
+            new_sample = true;
+            if (s_log_file != NULL) {
+                s_log_t += 1.0f / PANEL_SAMPLE_HZ;
+                (void)log_writer_row(&s_log, s_log_t, &bench);
+            }
+
+            /*
+             * The status page is read a tenth as often as the bench page: a
+             * status read costs a whole transaction and its numbers move
+             * slowly.
              */
             if (link_up
-                && (uint32_t)(now_ms() - last_status) >= 1000u) {
+                && (uint32_t)(now_ms() - last_status) >= 500u) {
                 last_status = now_ms();
                 link_msg_t st;
-                if (poll_page(&s_host, LINK_PAGE_STATUS,
-                              LINK_ST_COUNT, &st)
+                if (poll_page(&s_host, LINK_PAGE_STATUS, LINK_ST_COUNT, &st)
                     && st.op == LINK_OP_DATA) {
-                    s_bring.have_status = true;
                     s_bring.dev_frames =
                         (uint32_t)st.regs[LINK_ST_FRAMES_LO]
                         | ((uint32_t)st.regs[LINK_ST_FRAMES_HI] << 16);
@@ -902,31 +986,142 @@ void app_main(void)
             }
         }
 
-        /* Every 5 s while the link is down, every 60 s while it is up. */
         if ((uint32_t)(now_ms() - last_temp) >= 1000u) {
             last_temp = now_ms();
             tsens_read();
         }
 
+        /* Every 5 s while the link is down, every 60 s while it is up. */
         if ((uint32_t)(now_ms() - last_report)
             >= (link_up ? 60000u : 5000u)) {
             last_report = now_ms();
             link_report();
         }
 
+        /* --- hand the screen what it draws -------------------------------- */
+        snap_lock();
+        s_snap.bench       = bench;
+        s_snap.link_up     = link_up;
+        s_snap.armed       = outputs_armed(&out);
+        s_snap.stopped     = s_stopped;
+        s_snap.faults      = link_up ? s_dev_faults : (uint16_t)0;
+        s_snap.link_errors = (uint32_t)s_bring.dev_crc_errors
+                             + (uint32_t)s_bring.dev_resyncs;
+        if (new_sample) {
+            ++s_snap.seq;
+        }
+        snap_unlock();
+
+        vTaskDelay(pdMS_TO_TICKS(CONTROL_PERIOD_MS));
+    }
+}
+
+/* ------------------------------------------------------------------ main */
+
+void app_main(void)
+{
+    ESP_ERROR_CHECK(board_init());
+    heartbeat_init();
+    tsens_init();
+
+    ui_theme_set(UI_THEME_DARK);
+    ui_router_init();
+
+    const bool healthy = bring_up();
+
+    s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_event_t));
+    s_cmd_q     = xQueueCreate(CMD_Q_LEN, sizeof(panel_cmd_t));
+    s_snap_lock = xSemaphoreCreateMutex();
+    ESP_ERROR_CHECK((s_touch_q != NULL && s_cmd_q != NULL
+                     && s_snap_lock != NULL) ? ESP_OK : ESP_ERR_NO_MEM);
+
+    if (!healthy) {
+        ui_router_set_alert("touch did not answer -- the bench will not arm");
+    }
+
+    /*
+     * On the core the renderer does not use, and above it in priority: the
+     * bench's timing must not depend on how long a frame takes.
+     */
+    ESP_ERROR_CHECK(xTaskCreatePinnedToCore(control_task, "control", 6144,
+                                            NULL, 10, NULL, 1) == pdPASS
+                    ? ESP_OK : ESP_ERR_NO_MEM);
+
+    uint32_t frames  = 0;
+    uint32_t last_us = (uint32_t)esp_timer_get_time();
+    uint32_t drawn_seq = 0;
+
+    for (;;) {
+        const uint32_t us = (uint32_t)esp_timer_get_time();
+        const float dt_s = (float)(us - last_us) / 1e6f;
+        last_us = us;
+
+        /* What the control task saw of the panel. */
+        touch_event_t evt;
+        while (xQueueReceive(s_touch_q, &evt, 0) == pdTRUE) {
+            ui_router_event(&evt);
+        }
+
+        /* What the screens decided, back to the control task. */
+        motor_cmd_t mc;
+        while (motor_screen_poll_cmd(&mc)) {
+            panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc };
+            (void)xQueueSend(s_cmd_q, &pc, 0);
+        }
+        servo_cmd_t sv;
+        if (servo_screen_take(&sv)) {
+            panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv };
+            (void)xQueueSend(s_cmd_q, &pc, 0);
+        }
+        /* The control task hit-tests STOP itself; this is the backstop for a
+         * press it did not see, and it costs one queue entry. */
+        if (ui_router_take_stop()) {
+            panel_cmd_t pc = { .kind = PANEL_CMD_STOP };
+            (void)xQueueSend(s_cmd_q, &pc, 0);
+        }
+
+        bench_state_t bench;
+        bool     link_up;
+        bool     armed;
+        uint16_t faults;
+        uint32_t link_errors;
+        uint32_t seq;
+        char     alert[ALERT_MAX];
+        bool     have_alert;
+        snap_lock();
+        bench       = s_snap.bench;
+        link_up     = s_snap.link_up;
+        armed       = s_snap.armed;
+        faults      = s_snap.faults;
+        link_errors = s_snap.link_errors;
+        seq         = s_snap.seq;
+        have_alert  = s_snap.alert_pending;
+        if (have_alert) {
+            snprintf(alert, sizeof(alert), "%s", s_snap.alert);
+            s_snap.alert_pending = false;
+        }
+        snap_unlock();
+
+        if (have_alert) {
+            ui_router_set_alert(alert);
+        }
+        motor_screen_set_armed(armed);
+        /* One sample, one plot column: the control task counts them. */
+        if (seq != drawn_seq) {
+            drawn_seq = seq;
+            motor_screen_push(&bench);
+        }
+
         const ui_bench_status_t status = {
             .link_up     = link_up,
-            .armed       = outputs_armed(&out),
-            .faults      = link_up ? s_dev_faults : (uint16_t)0,
+            .armed       = armed,
+            .faults      = faults,
             .run_seconds = now_ms() / 1000u,
             .mode        = link_up ? "LINK" : "SIM",
             .simulated   = bench_state_simulated(&bench),
             .capabilities = s_capabilities,
-            /* CRC failures and resyncs together: both mean the bus dropped
-             * something, and one number is what fits beside the rate. */
-            .link_errors  = (uint32_t)s_bring.dev_crc_errors
-                            + (uint32_t)s_bring.dev_resyncs,
-            .mcu_temp_c   = s_mcu_c,
+            .link_errors = link_errors,
+            .mcu_temp_c  = s_mcu_c,
         };
         ui_router_set_status(&status);
 

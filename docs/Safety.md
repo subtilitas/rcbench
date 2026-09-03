@@ -28,10 +28,12 @@ monostable that stays energised only while edges keep arriving. A crash, a
 wedged task, a reset, a brown-out and an unplugged cable then all produce the
 same result: no edges, no output, independent of firmware at both ends.
 
-Monostable window: about 150 ms. The heartbeat comes from the panel's render
-loop, which delivers an edge every 26 to 52 ms depending on load; a 50 ms
-window would drop the outputs under load. 150 ms is inside the coprocessor's
-200 ms link failsafe.
+Monostable window: about 150 ms. The heartbeat comes from the panel's control
+task, which runs every 5 ms on the core that does not draw, so its period does
+not depend on what a frame costs. The window stays at 150 ms, inside the
+coprocessor's 200 ms link failsafe, rather than tightening to the new period:
+the margin is what survives a task that is late, and nothing is gained by
+removing it.
 
 The monostable is on no board. The edges reach J8 and nothing else.
 
@@ -51,8 +53,9 @@ The check is asymmetric: four good intervals before the line is trusted, one
 bad interval or one silent window to distrust it. The coprocessor refuses to
 arm while the line is not trusted, and disarms its outputs when it stops.
 
-The heartbeat is generated in the loop that reads touch and draws STOP, not by
-a timer or a peripheral. The coprocessor's input is pulled down, so an
+The heartbeat is generated in the loop that reads touch and owns STOP, not by
+a timer or a peripheral, and not in the loop that draws: a panel that has
+stopped drawing can still be stopped, and one that cannot read touch cannot. The coprocessor's input is pulled down, so an
 unpowered or unplugged panel reads as a line that is not edging.
 
 ## Deliberate behaviours
