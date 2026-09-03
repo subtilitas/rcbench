@@ -1053,8 +1053,8 @@ static void control_task(void *arg)
                          answered ? "answered" : "went quiet");
                 if (answered) {
                     /* On the edge, not every poll: it does not change while
-                     * the link is up, and a write a poll is a write that
-                     * costs a transaction for nothing. */
+                     * the link is up, so a write per poll would cost a
+                     * transaction for nothing. */
                     link_msg_t pr;
                     if (!control_write_poles(&pr)) {
                         ESP_LOGW(TAG, "coprocessor did not take the pole "

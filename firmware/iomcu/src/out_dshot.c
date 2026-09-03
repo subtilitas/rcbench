@@ -79,6 +79,20 @@ static bool claim_receiver(dshot_out_t *s)
     return true;
 }
 
+/*
+ * Give the pad back exactly as it was at boot: no inversion, no pull, and a
+ * plain input rather than a pin still muxed to a PIO block.  A pin left
+ * muxed is one the next configuration cannot have and one a scope reads as
+ * driven by something that no longer exists.
+ */
+static void release_pad(uint8_t pin)
+{
+    gpio_set_outover(pin, GPIO_OVERRIDE_NORMAL);
+    gpio_disable_pulls(pin);
+    gpio_set_function(pin, GPIO_FUNC_SIO);
+    gpio_set_dir(pin, GPIO_IN);
+}
+
 static void teardown(dshot_out_t *s)
 {
     if (s->pio != NULL) {
@@ -93,13 +107,7 @@ static void teardown(dshot_out_t *s)
     }
     const uint8_t pin = s->pin;
     memset(s, 0, sizeof(*s));
-
-    /* The pad goes back to being a plain input with no override, so the next
-     * configuration finds it as it was at boot. */
-    gpio_set_outover(pin, GPIO_OVERRIDE_NORMAL);
-    gpio_disable_pulls(pin);
-    gpio_set_function(pin, GPIO_FUNC_SIO);
-    gpio_set_dir(pin, GPIO_IN);
+    release_pad(pin);
 }
 
 bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional)
@@ -146,12 +154,13 @@ bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional)
         dshot_bidir_tx_program_init(s->pio, s->tx_sm, s->tx_offset, pin,
                                     s->bits_per_second);
         if (!claim_receiver(s)) {
+            /* The transmitter's program_init has already muxed the pad to
+             * the block, so the pad is put back with everything else this
+             * failed bind took. */
             pio_remove_program(s->pio, tx_program(true), s->tx_offset);
             pio_sm_unclaim(s->pio, s->tx_sm);
-            s->pio = NULL;
-            gpio_set_outover(pin, GPIO_OVERRIDE_NORMAL);
-            gpio_disable_pulls(pin);
             memset(s, 0, sizeof(*s));
+            release_pad(pin);
             return false;
         }
     } else {
