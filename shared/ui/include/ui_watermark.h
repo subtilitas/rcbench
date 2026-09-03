@@ -18,6 +18,9 @@ extern "C" {
 /** Draw "SIMULATION" across the whole canvas, blended over what is there. */
 void ui_watermark(gfx_canvas_t *c);
 
+/** Drop the cached stencil, so the next call rebuilds it. */
+void ui_watermark_invalidate(void);
+
 #ifdef __cplusplus
 }
 #endif

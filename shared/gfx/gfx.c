@@ -1062,12 +1062,24 @@ void gfx_arc_fade(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
     arc_walk(c, cx, cy, r, thickness, a0_deg, a1_deg, col, into, fade_deg);
 }
 
-void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
-                      const gfx_font_t *font, gfx_color_t fg, int scale,
-                      uint8_t alpha, float angle_deg)
+/*
+ * One scan of the rotated stencil.  With `out` NULL the covered pixels are
+ * written; otherwise they are recorded as packed y:x and nothing is drawn,
+ * and the return is the count, or -1 when more than `max_out` are covered.
+ *
+ * The mark covers under 1% of a canvas it spans corner to corner, so a caller
+ * that draws it every frame records the points once and replays them rather
+ * than rotating and dividing per pixel across the whole canvas again.
+ */
+static int rotated_stencil(gfx_canvas_t *c, int cx, int cy, const char *s,
+                           const gfx_font_t *font, gfx_color_t fg, int scale,
+                           uint8_t alpha, float angle_deg,
+                           uint32_t *out, int max_out)
 {
+    int n = 0;
+
     if (!canvas_ok(c) || s == NULL || font == NULL || alpha == 0) {
-        return;
+        return 0;
     }
     if (scale < 1) {
         scale = 1;
@@ -1075,12 +1087,12 @@ void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
 
     const int len = (int)strlen(s);
     if (len <= 0) {
-        return;
+        return 0;
     }
     /* Rounded, so a caller's alpha maps to the nearest 1/64 of coverage. */
     const int thresh = ((int)alpha * 64 + 127) / 255;
     if (thresh <= 0) {
-        return;
+        return 0;
     }
     const int tw = len * font->width * scale;
     const int th = font->height * scale;
@@ -1154,7 +1166,34 @@ void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
             if (k_bayer8[((dy & 7) << 3) + (dx & 7)] >= thresh) {
                 continue;
             }
-            gfx_pixel(c, dx, dy, fg);
+            if (out == NULL) {
+                gfx_pixel(c, dx, dy, fg);
+                continue;
+            }
+            if (n >= max_out) {
+                return -1;
+            }
+            out[n++] = ((uint32_t)dy << 16) | (uint32_t)dx;
         }
     }
+    return n;
+}
+
+void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
+                      const gfx_font_t *font, gfx_color_t fg, int scale,
+                      uint8_t alpha, float angle_deg)
+{
+    (void)rotated_stencil(c, cx, cy, s, font, fg, scale, alpha, angle_deg,
+                          NULL, 0);
+}
+
+int gfx_text_rotated_points(gfx_canvas_t *c, int cx, int cy, const char *s,
+                            const gfx_font_t *font, int scale, uint8_t alpha,
+                            float angle_deg, uint32_t *out, int max_out)
+{
+    if (out == NULL || max_out <= 0) {
+        return -1;
+    }
+    return rotated_stencil(c, cx, cy, s, font, 0, scale, alpha, angle_deg,
+                           out, max_out);
 }

@@ -60,6 +60,49 @@ TEST_CASE(rotated_text_is_idempotent)
     CHECK(count_of(GFX_WHITE) > 0);
 }
 
+/*
+ * The point list and the drawn pixels are one scan, so they have to agree:
+ * every recorded point carries the colour, and there are exactly as many
+ * points as pixels drawn.  The watermark replays the list instead of
+ * rotating and dividing per pixel over the whole canvas each frame.
+ */
+TEST_CASE(rotated_text_points_are_the_pixels_it_draws)
+{
+    fresh();
+    gfx_text_rotated(&s_c, W / 2, H / 2, "SIM", &gfx_font_8x16,
+                     GFX_WHITE, 1, 38, -30.0f);
+    const int drawn = count_of(GFX_WHITE);
+    CHECK(drawn > 0);
+
+    uint32_t pts[W * H];
+    const int n = gfx_text_rotated_points(&s_c, W / 2, H / 2, "SIM",
+                                          &gfx_font_8x16, 1, 38, -30.0f,
+                                          pts, (int)(sizeof(pts) / sizeof(pts[0])));
+    CHECK_EQ(n, drawn);
+    for (int i = 0; i < n; ++i) {
+        const int x = (int)(pts[i] & 0xffffu);
+        const int y = (int)(pts[i] >> 16);
+        CHECK(x >= 0 && x < W && y >= 0 && y < H);
+        CHECK_EQ(s_pixels[(size_t)y * W + x], GFX_WHITE);
+    }
+}
+
+/* A table too small to hold the mark is reported, not overrun. */
+TEST_CASE(rotated_text_points_reports_a_table_that_is_too_small)
+{
+    fresh();
+    uint32_t pts[4];
+    CHECK_EQ(gfx_text_rotated_points(&s_c, W / 2, H / 2, "SIM",
+                                     &gfx_font_8x16, 1, 38, -30.0f, pts, 2),
+             -1);
+    CHECK_EQ(gfx_text_rotated_points(&s_c, W / 2, H / 2, "SIM",
+                                     &gfx_font_8x16, 1, 38, -30.0f, NULL,
+                                     (int)(sizeof(pts) / sizeof(pts[0]))),
+             -1);
+    /* Recording draws nothing. */
+    CHECK_EQ(count_of(GFX_WHITE), 0);
+}
+
 /* Coverage scales with alpha. */
 TEST_CASE(rotated_text_alpha_sets_coverage)
 {
@@ -867,6 +910,8 @@ int main(void)
     RUN(seg_width_matches_what_it_draws);
     RUN(the_ghost_shows_the_unlit_segments);
     RUN(rotated_text_is_idempotent);
+    RUN(rotated_text_points_are_the_pixels_it_draws);
+    RUN(rotated_text_points_reports_a_table_that_is_too_small);
     RUN(rotated_text_alpha_sets_coverage);
     return test_summary("gfx");
 }

@@ -310,6 +310,19 @@ int gfx_text_bg(gfx_canvas_t *c, int x, int y, const char *s,
  * twice over the same pixels equals drawing it once, which a full-screen
  * overlay over selectively repainted screens requires.
  */
+/**
+ * The pixels gfx_text_rotated() would cover, packed as (y << 16) | x, in
+ * scan order and already clipped.  Returns the count, or -1 when more than
+ * `max_out` are covered or `out` is NULL.
+ *
+ * The stencil depends only on the geometry and the alpha, so an overlay drawn
+ * on every frame records it once and writes the points thereafter, instead of
+ * rotating and dividing per pixel over the whole canvas each time.
+ */
+int gfx_text_rotated_points(gfx_canvas_t *c, int cx, int cy, const char *s,
+                            const gfx_font_t *font, int scale, uint8_t alpha,
+                            float angle_deg, uint32_t *out, int max_out);
+
 void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
                       const gfx_font_t *font, gfx_color_t fg, int scale,
                       uint8_t alpha, float angle_deg);

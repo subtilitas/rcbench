@@ -43,10 +43,17 @@ CONFIG_ESP32S3_DATA_CACHE_64KB=y
 CONFIG_ESP32S3_DATA_CACHE_LINE_64B=y
 
 # LCD ----------------------------------------------------------------------
-# The RGB ISR (interrupt service routine) stays in IRAM (instruction
-# random-access memory): it refills the bounce buffers, and a cache miss
-# there shows as a torn or shifted frame.
-CONFIG_LCD_RGB_ISR_IRAM_SAFE=y
+# The RGB ISR (interrupt service routine) is not IRAM-safe (IRAM: instruction
+# random-access memory), so ESP-IDF masks it while the cache is disabled.
+#
+# That ISR refills the bounce buffer by reading PSRAM through the data cache,
+# which a main-flash operation closes.  Left IRAM-safe it runs anyway, faults
+# on PSRAM and panics the core with `Cache disabled but cached memory region
+# accessed`.  Masked, it simply does not run: the bounce buffer starves for
+# the length of the write and the picture is disturbed until the driver's
+# desync check restarts the DMA (direct memory access) at the next VBlank
+# (vertical blanking interval).  A disturbed frame is preferable to a panic.
+CONFIG_LCD_RGB_ISR_IRAM_SAFE=n
 #
 # The DMA (direct memory access) is restarted when a desync is detected, not
 # on every VBlank (vertical blanking interval).
@@ -62,12 +69,13 @@ CONFIG_LCD_RGB_RESTART_IN_VSYNC=n
 # refills the bounce buffer (10 lines, 16 KB, one every 512 us at a 16 MHz
 # pixel clock) from PSRAM through the data cache, and a flash read, write or
 # erase closes that cache for the length of the operation.  ESP-IDF documents
-# the restriction for the mode, and the panic is `Cache disabled but cached
-# memory region accessed`.
+# the restriction for the mode.  The ISR being masked rather than IRAM-safe is
+# what keeps that from being a panic.
 #
-# Flash work therefore happens where the panel is not scanning: the panel
-# loads its settings before display_init().  A save from the settings screen
-# runs against a live panel and is an open item.
+# Flash work still happens where the panel is not scanning where it can: the
+# panel loads its settings before display_init().  A save from the settings
+# screen runs against a live panel and disturbs it for the length of the
+# write.
 
 # Performance --------------------------------------------------------------
 # ESP-IDF (Espressif Internet-of-Things Development Framework) defaults to

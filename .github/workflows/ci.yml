@@ -117,6 +117,17 @@ jobs:
         run: python3 tools/frame_cost.py servo --max-lines 17000
              && python3 tools/frame_cost.py servo-grip --max-lines 4000
 
+      # Every screen caches its chrome, so a steady frame is a few hundred
+      # fills; 1,200 catches one that has started repainting.  The watermark
+      # blends over the whole canvas and costs about 1,355 on top of that.
+      - name: Every screen still idles on a cached frame
+        run: python3 tools/frame_cost.py analyser logs settings battery balance
+             programmer --max-lines 1200
+
+      - name: The SIMULATION watermark has not grown
+        run: python3 tools/frame_cost.py balance-sim settings-sim battery-sim
+             --max-lines 2800
+
       - name: The frame-cost table in the docs is current
         run: python3 tools/frame_cost.py --check-doc
 
