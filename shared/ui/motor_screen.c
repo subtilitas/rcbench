@@ -86,17 +86,22 @@
 #define RESET_Y   (LO_H + LO_Y - PAD - BTN_H)
 
 /*
- * ARM says what it is about to do while the finger is on it: 350 ms from the
- * OK green to the danger red, held there while the press continues.  The
- * command still goes on release, so the fade is a warning and not a
- * hold-to-arm; a release before it completes arms the bench just the same.
- *
- * Arming then flashes the button once, for 180 ms, because the label and the
- * colour both settle into a steady state that says "armed" and neither marks
- * the instant it became true.
+ * ARM is a hold, not a press: two seconds from the OK green to the danger
+ * red, and the command goes when the fade completes.  A release before then
+ * arms nothing.  A bench that spins a propeller should not do it on a touch
+ * that could have been an elbow.
  */
-#define ARM_FADE_S  0.35f
-#define ARM_FLASH_S 0.18f
+#define ARM_HOLD_S  2.0f
+
+/*
+ * And the arm itself flashes the whole button twice: white, black, the danger
+ * red it settles on, and again, one drawn frame each.  At 39 Hz that is about
+ * 154 ms -- short enough to read as a flash rather than an animation, and two
+ * of them are harder to miss than one.
+ */
+#define ARM_FLASH_CYCLE  3
+#define ARM_FLASH_TIMES  2
+#define ARM_FLASH_FRAMES (ARM_FLASH_CYCLE * ARM_FLASH_TIMES)
 
 /* The tabs move into the header strip: the mockup has no tab row, and the
  * table pane is not worth deleting to match it. */
@@ -149,7 +154,8 @@ static struct {
     uint32_t      drawn_arm[2];
     int           esc_kv;        /**< as reported by the ESC, 0 if it does not */
     float         arm_held_s;    /**< how long the ARM press has been held */
-    float         arm_flash_s;   /**< what is left of the flash on arming  */
+    bool          arm_fired;     /**< the hold completed; do not repeat it */
+    int           arm_flash_left;/**< frames of the flash still to draw    */
     gfx_rect_t    arm_rect;
     gfx_rect_t    reset_rect;
     gfx_rect_t    down_rect;    /**< one percentage point down */
@@ -275,9 +281,17 @@ void motor_screen_set_armed(bool armed)
     if (s.armed != armed) {
         s.armed = armed;
         if (armed) {
-            s.arm_flash_s = ARM_FLASH_S;
+            s.arm_flash_left = ARM_FLASH_FRAMES;
         }
         s.arm_held_s = 0.0f;
+        /*
+         * arm_fired is NOT cleared here.  It remembers that the press still
+         * under the finger is the one that armed, and the application calls
+         * this between the hold completing and the finger lifting: clearing
+         * it made that release look like a fresh press on DISARM, so the
+         * bench armed, flashed and disarmed itself on the way up.  The
+         * release consumes it.
+         */
         ++s.arm_rev;
         ++s.ctrl_rev;
     }
@@ -371,12 +385,22 @@ static void event(const touch_event_t *evt)
             ++s.ctrl_rev;   /* the button comes back up */
         }
         if (was == 1) {
-            s.arm_held_s = 0.0f;   /* and the fade goes back to green */
+            /* Whatever was held is abandoned: the fade goes back to green,
+             * and an arm that had not completed does not complete later. */
+            const bool fired = s.arm_fired;
+            s.arm_held_s = 0.0f;
+            s.arm_fired  = false;
             ++s.arm_rev;
+            /*
+             * Disarming is a press; arming is a hold that has already sent
+             * its command by the time the finger lifts.  A release that
+             * armed nothing sends nothing.
+             */
+            if (s.armed && !fired && gfx_rect_contains(s.arm_rect, x, y)) {
+                post(MOTOR_CMD_DISARM, 0.0f);
+            }
         }
-        if (was == 1 && gfx_rect_contains(s.arm_rect, x, y)) {
-            post(s.armed ? MOTOR_CMD_DISARM : MOTOR_CMD_ARM, 0.0f);
-        } else if (was == 2 && gfx_rect_contains(s.reset_rect, x, y)) {
+        if (was == 2 && gfx_rect_contains(s.reset_rect, x, y)) {
             post(MOTOR_CMD_RESET_PEAKS, 0.0f);
         }
     }
@@ -390,19 +414,19 @@ static void event(const touch_event_t *evt)
  */
 static void tick(float dt_s)
 {
-    if (s.pressed == 1 && !s.armed && s.arm_held_s < ARM_FADE_S) {
+    if (s.pressed == 1 && !s.armed && !s.arm_fired) {
         s.arm_held_s += dt_s;
-        if (s.arm_held_s > ARM_FADE_S) {
-            s.arm_held_s = ARM_FADE_S;
-        }
         ++s.arm_rev;
+        if (s.arm_held_s >= ARM_HOLD_S) {
+            /* The hold is the arming gesture: the command goes here, not on
+             * the release, so letting go early arms nothing. */
+            s.arm_held_s = ARM_HOLD_S;
+            s.arm_fired  = true;
+            post(MOTOR_CMD_ARM, 0.0f);
+        }
     }
-    if (s.arm_flash_s > 0.0f) {
-        s.arm_flash_s -= dt_s;
-        if (s.arm_flash_s < 0.0f) {
-            s.arm_flash_s = 0.0f;
-        }
-        ++s.arm_rev;
+    if (s.arm_flash_left > 0) {
+        ++s.arm_rev;   /* keep the frames coming while it flashes */
     }
 }
 
@@ -413,21 +437,38 @@ static void tick(float dt_s)
  * the flash as the arm takes effect.  With nothing held and nothing flashing
  * this is the plain OK or WARN the button has always carried.
  */
+/* One colour per frame actually drawn, so "a frame each" means a frame each
+ * however the render paths are gated. */
+static void arm_flash_advance(void)
+{
+    if (s.arm_flash_left > 0) {
+        --s.arm_flash_left;
+        /* The next colour needs a frame of its own, and this screen only
+         * paints when a counter moves.  Asking for it here rather than in
+         * tick() keeps the flash a property of the drawing. */
+        ++s.arm_rev;
+    }
+}
+
 static gfx_color_t arm_fill(void)
 {
     /* Armed is the danger red the press fades towards, so the fade previews
      * the colour the button is about to hold. */
     gfx_color_t fill = s.armed ? ui_theme_color(UI_C_DANGER)
                                : ui_theme_color(UI_C_OK);
+    /* The flash is the whole button, one colour per drawn frame, and it
+     * overrides everything else while it runs. */
+    if (s.arm_flash_left > 0) {
+        switch ((s.arm_flash_left - 1) % ARM_FLASH_CYCLE) {
+        case 2:  return GFX_WHITE;
+        case 1:  return GFX_BLACK;
+        default: return ui_theme_color(UI_C_DANGER);
+        }
+    }
     if (!s.armed && s.arm_held_s > 0.0f) {
         const uint8_t t =
-            (uint8_t)(s.arm_held_s / ARM_FADE_S * 255.0f + 0.5f);
+            (uint8_t)(s.arm_held_s / ARM_HOLD_S * 255.0f + 0.5f);
         fill = gfx_lerp(fill, ui_theme_color(UI_C_DANGER), t);
-    }
-    if (s.arm_flash_s > 0.0f) {
-        const uint8_t t =
-            (uint8_t)(s.arm_flash_s / ARM_FLASH_S * 255.0f + 0.5f);
-        fill = gfx_lerp(fill, GFX_WHITE, t);
     }
     return fill;
 }
@@ -759,6 +800,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
     if (arm_moved && !ctrl_moved && !thr_moved) {
         ui_button(c, s.arm_rect, s.armed ? "DISARM" : "ARM", arm_fill(),
                   s.pressed == 1, true);
+        arm_flash_advance();
         return;
     }
 
@@ -815,6 +857,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
     ui_button(c, s.arm_rect, s.armed ? "DISARM" : "ARM", arm_fill(),
               s.pressed == 1, true);
+    arm_flash_advance();
     if (!ctrl_moved) {
         return;
     }
@@ -840,8 +883,9 @@ static void leave(void)
     post(MOTOR_CMD_DISARM, 0.0f);
     s.armed = false;
     /* Neither animation should still be running when the screen comes back. */
-    s.arm_held_s  = 0.0f;
-    s.arm_flash_s = 0.0f;
+    s.arm_held_s     = 0.0f;
+    s.arm_fired      = false;
+    s.arm_flash_left = 0;
     ++s.arm_rev;
 }
 

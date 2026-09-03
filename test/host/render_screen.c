@@ -395,13 +395,6 @@ int main(int argc, char **argv)
     ui_router_set_status(&st);
     ui_router_goto(id);
 
-    if (id == SCREEN_MOTOR) {
-        /* Arming flashes the ARM button once.  The reference image is of the
-         * settled screen, so the flash is run out before anything is drawn
-         * rather than caught part way through. */
-        ui_router_tick(0.25f);
-    }
-
     if (id == SCREEN_LOGS) {
         /* Driven by taps, so the shots are of reachable states.  Taps are
          * in panel coordinates; the router removes the band before the
@@ -428,8 +421,21 @@ int main(int argc, char **argv)
 
     gfx_canvas_t c;
     gfx_canvas_init(&c, fb, W, H, W);
+
     gfx_clear(&c, ui_theme_color(UI_C_BG));
     ui_router_render(&c, 0);
+
+    /*
+     * Arming flashes the ARM button for a few drawn frames, and it advances
+     * per frame rendered rather than per second elapsed, so ticking does not
+     * clear it.  Drawn after the frame above, which has already painted
+     * everything else, so these repaint the button and nothing more.
+     */
+    if (id == SCREEN_MOTOR) {
+        for (int f = 0; f < 10; ++f) {
+            ui_router_render(&c, 0);
+        }
+    }
 
     write_ppm(argv[1], fb);
     return 0;
