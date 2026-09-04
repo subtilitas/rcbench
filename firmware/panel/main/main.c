@@ -539,11 +539,11 @@ static bool bring_up(void)
              */
             char detail[48];
             snprintf(detail, sizeof(detail), "proto %u.%u fw %u.%u.%u",
-                     reply.regs[LINK_ID_PROTOCOL_MAJOR],
-                     reply.regs[LINK_ID_PROTOCOL_MINOR],
-                     reply.regs[LINK_ID_FIRMWARE_MAJOR],
-                     reply.regs[LINK_ID_FIRMWARE_MINOR],
-                     reply.regs[LINK_ID_FIRMWARE_PATCH]);
+                     (unsigned)reply.regs[LINK_ID_PROTOCOL_MAJOR],
+                     (unsigned)reply.regs[LINK_ID_PROTOCOL_MINOR],
+                     (unsigned)reply.regs[LINK_ID_FIRMWARE_MAJOR],
+                     (unsigned)reply.regs[LINK_ID_FIRMWARE_MINOR],
+                     (unsigned)reply.regs[LINK_ID_FIRMWARE_PATCH]);
             s_bring.have_identity = true;
             /*
              * What the far end can do.  Read here, at bring-up, rather than
@@ -1121,8 +1121,8 @@ static void control_task(void *arg)
                      * refuses arming; the register is the first one of the
                      * identity page. */
                     ESP_LOGE(TAG, "coprocessor speaks protocol %u, we speak %u",
-                             reply.regs[LINK_ID_PROTOCOL_MAJOR],
-                             LINK_PROTOCOL_MAJOR);
+                             (unsigned)reply.regs[LINK_ID_PROTOCOL_MAJOR],
+                             (unsigned)LINK_PROTOCOL_MAJOR);
                     control_alert("protocol mismatch -- will not arm");
                     answered = false;
                 }
