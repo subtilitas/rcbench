@@ -216,8 +216,8 @@ Settings are behind the SETUP tile, in both themes:
 
 ## Outputs
 
-Behind the OUTPUTS key on the Setup screen. A protocol, and the pins it
-drives.
+Behind the OUTPUTS key on the Setup screen. The protocols bound to the
+coprocessor's pins, and which pins each one drives.
 
 ![Outputs](img/outputs.png)
 

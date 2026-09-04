@@ -231,8 +231,8 @@ Die Einstellungen liegen hinter der SETUP-Kachel, in beiden Themes:
 
 ## Outputs
 
-Hinter der OUTPUTS-Taste auf dem Setup-Bildschirm. Ein Protokoll und die Pins,
-die es treibt.
+Hinter der OUTPUTS-Taste auf dem Setup-Bildschirm. Die Protokolle, die an die
+Pins des Koprozessors gebunden sind, und welche Pins jedes davon treibt.
 
 ![Outputs](img/outputs.png)
 
