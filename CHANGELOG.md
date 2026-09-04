@@ -4,9 +4,9 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
-## Unreleased
+## 0.3.0 - 2026-09-04
 
-The coprocessor drives a pin.
+The coprocessor drives a pin, and remembers which one.
 
 ### Added
 
@@ -33,16 +33,6 @@ The coprocessor drives a pin.
   the part has.
 - The coprocessor's capability word reports servo PWM, ESC drive and ESC
   telemetry, which the panel marks its menu from.
-
-### Changed
-
-- The coprocessor no longer models the bench. It publishes what it measures,
-  with a valid bit per quantity and no SIMULATED flag; with no measurement
-  front end fitted that is rpm from a bidirectional DShot ESC and nothing
-  else, and the other fields are drawn empty. The panel still models the
-  whole bench while nothing answers, and marks that with the watermark, so a
-  modelled number and a measured one never appear on one screen.
-
 - An outputs screen behind Setup: a protocol list and a grid of the 26 GPIOs
   the header brings out, ticked to bind. Each ticked pin becomes one slot on
   the OUTPUTS page in pin order. Reserved pins are shown and refused, with
@@ -55,6 +45,16 @@ The coprocessor drives a pin.
   channel commands are not restored. The save waits for the bank to stop
   driving, because writing flash stops the core for longer than the
   heartbeat's window.
+
+### Changed
+
+- The coprocessor no longer models the bench. It publishes what it measures,
+  with a valid bit per quantity and no SIMULATED flag; with no measurement
+  front end fitted that is rpm from a bidirectional DShot ESC and nothing
+  else, and the other fields are drawn empty. The panel still models the
+  whole bench while nothing answers, and marks that with the watermark, so a
+  modelled number and a measured one never appear on one screen.
+
 
 ### Known limitations
 
