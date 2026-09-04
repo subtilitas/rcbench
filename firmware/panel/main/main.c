@@ -1155,6 +1155,18 @@ static void control_task(void *arg)
                     link_msg_t idr;
                     if (poll_identity(&s_host, &idr)) {
                         s_board = idr.regs[LINK_ID_HARDWARE];
+                    } else {
+                        /*
+                         * Keeping the last answer would be worse than having
+                         * none.  A read that failed says nothing about which
+                         * board is out there, and the one remembered may be
+                         * from boot or from a coprocessor since unplugged --
+                         * so the outputs page would be decoded against a
+                         * board that is not on the bench.  Forgetting makes
+                         * the screen offer nothing, which is the failure that
+                         * shows.
+                         */
+                        s_board = (uint16_t)OUTBIND_BOARD_UNKNOWN;
                     }
 
                     /* On the edge, not every poll: it does not change while
