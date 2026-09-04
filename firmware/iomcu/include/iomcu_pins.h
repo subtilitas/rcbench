@@ -20,6 +20,19 @@
 #ifndef RCBENCH_IOMCU_PINS_H
 #define RCBENCH_IOMCU_PINS_H
 
+#include "out_bind.h"
+
+/*
+ * Which board this image is built for.
+ *
+ * It is a build-time fact, not a runtime one: the pin map below is compiled
+ * in, so an image knows what it is and says so on the identity page.  The
+ * panel reads it and shows that board's pins and no other.  A second board
+ * appends an entry to k_boards in shared/outputs/out_bind.c and builds with
+ * its own copy of this header.
+ */
+#define IOMCU_BOARD_ID  ((uint16_t)OUTBIND_BOARD_PICO_HEADER)
+
 /*
  * The safety heartbeat from the panel's J8, through the retriggerable
  * monostable.  An input here: the coprocessor gates its own outputs from it

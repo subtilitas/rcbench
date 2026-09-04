@@ -253,6 +253,9 @@ static atomic_int s_outputs_result;
 static outbind_t s_outputs_read;
 static bool      s_outputs_read_fresh;    /* both under s_snap_lock */
 
+/* The coprocessor's board identity, from the identity page at bring-up. */
+static uint16_t  s_board;
+
 static QueueHandle_t     s_touch_q;   /**< control task -> app_main */
 static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
 /*
@@ -551,6 +554,13 @@ static bool bring_up(void)
              * shows a state in which the bench claims more than it has.
              */
             s_capabilities        = reply.regs[LINK_ID_CAPABILITIES];
+            /*
+             * Which board answered.  Everything the outputs screen offers is
+             * that board's, and a board this build does not know offers
+             * nothing -- guessing a pin map is how an output ends up on the
+             * safety line.
+             */
+            s_board               = reply.regs[LINK_ID_HARDWARE];
             s_bring.proto_major   = reply.regs[LINK_ID_PROTOCOL_MAJOR];
             s_bring.proto_minor   = reply.regs[LINK_ID_PROTOCOL_MINOR];
             const bool speaks_ours =
@@ -1112,8 +1122,16 @@ static void control_task(void *arg)
                     }
                 }
             } else {
+                /*
+                 * A NACK answers the request it refuses, so poll_page() is
+                 * true for one and regs[0] carries a refusal reason rather
+                 * than the first identity register.  Only a DATA reply holds
+                 * an identity page, and only an identity page says there is
+                 * a coprocessor there to talk to.
+                 */
                 answered = poll_page(&s_host, LINK_PAGE_IDENTITY,
-                                     LINK_ID_COUNT, &reply);
+                                     LINK_ID_COUNT, &reply)
+                           && reply.op == LINK_OP_DATA;
                 if (answered
                     && reply.regs[LINK_ID_PROTOCOL_MAJOR]
                            != LINK_PROTOCOL_MAJOR) {
@@ -1131,6 +1149,31 @@ static void control_task(void *arg)
                 ESP_LOGI(TAG, "coprocessor %s",
                          answered ? "answered" : "went quiet");
                 if (answered) {
+                    /*
+                     * Who answered, before anything is decoded against it.
+                     *
+                     * The identity read at bring-up runs once, with whatever
+                     * was attached then -- which may have been nothing.  A
+                     * coprocessor that turns up later, or one swapped for
+                     * another, would otherwise have its outputs page read
+                     * against a board identity from boot, or against zero,
+                     * and the screen would offer no pins for as long as it
+                     * stayed plugged in.
+                     *
+                     * The identity page that detected this edge is that
+                     * answer, so it is used rather than read again.  A second
+                     * read costs a transaction on the edge.  The retry loop
+                     * that would wrap it is bring-up's: it draws a frame
+                     * between attempts, which belongs to the splash and not
+                     * to a task running beside the renderer.
+                     *
+                     * Nothing has to forget the board.  The edge fires only
+                     * on an identity page, and the pages below are decoded
+                     * against it in the same pass, so no read of it can
+                     * reach a value from an earlier coprocessor.
+                     */
+                    s_board = reply.regs[LINK_ID_HARDWARE];
+
                     /* On the edge, not every poll: it does not change while
                      * the link is up, so a write per poll would cost a
                      * transaction for nothing. */
@@ -1150,7 +1193,7 @@ static void control_task(void *arg)
                     if (poll_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_COUNT,
                                   &orr)
                         && orr.op != LINK_OP_NACK
-                        && outbind_from_slots(&got, orr.regs)) {
+                        && outbind_from_slots(&got, s_board, orr.regs)) {
                         if (xSemaphoreTake(s_snap_lock, portMAX_DELAY)
                             == pdTRUE) {
                             s_outputs_read = got;
@@ -1158,8 +1201,31 @@ static void control_task(void *arg)
                             xSemaphoreGive(s_snap_lock);
                         }
                     } else {
-                        ESP_LOGW(TAG, "could not read the outputs page; the "
-                                      "screen will show nothing configured");
+                        /*
+                         * Two different failures land here and they are not
+                         * the same to somebody reading the log.  A board with
+                         * no pin map in this build can offer nothing at all;
+                         * a known board whose page would not read still
+                         * offers its pins, with nothing selected.
+                         */
+                        outbind_t none;
+                        outbind_init(&none);
+                        outbind_set_board(&none, s_board);
+                        if (xSemaphoreTake(s_snap_lock, portMAX_DELAY)
+                            == pdTRUE) {
+                            s_outputs_read = none;
+                            s_outputs_read_fresh = true;
+                            xSemaphoreGive(s_snap_lock);
+                        }
+                        if (outbind_board(s_board) == NULL) {
+                            ESP_LOGW(TAG, "hardware %u has no pin map in this "
+                                          "build; the screen will offer no "
+                                          "pins", (unsigned)s_board);
+                        } else {
+                            ESP_LOGW(TAG, "could not read the outputs page; "
+                                          "the screen will show nothing "
+                                          "configured");
+                        }
                     }
                 }
             }

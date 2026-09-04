@@ -48,6 +48,12 @@ static void fresh(void)
     outputs_screen_set_apply(on_apply);
     scr()->reset();
     outputs_screen_set_apply(on_apply);   /* reset clears the seam */
+    {   /* the screen shows nothing until it is told which board answered */
+        outbind_t b;
+        outbind_init(&b);
+        outbind_set_board(&b, OUTBIND_BOARD_PICO_HEADER);
+        outputs_screen_set_binding(&b);
+    }
     s_applied = 0;
 }
 
@@ -73,7 +79,7 @@ static void release_at(int x, int y)
 
 static void cell_centre(uint8_t gpio, int *x, int *y)
 {
-    const uint8_t i = outbind_index_of(gpio);
+    const uint8_t i = outbind_index_of(OUTBIND_BOARD_PICO_HEADER, gpio);
     const int col = i / GRID_ROWS, row = i % GRID_ROWS;
     *x = GRID_X + col * (CELL_W + CELL_GAP) + CELL_W / 2;
     *y = GRID_Y + row * (CELL_H + CELL_GAP) + CELL_H / 2;
@@ -201,7 +207,7 @@ TEST_CASE(every_state_renders_without_reading_off_the_canvas)
     for (int p = 0; p < (int)OUTBIND_PROTOS; ++p) {
         choose_proto(p);
         for (uint8_t g = 0; g < 29u; ++g) {
-            if (outbind_index_of(g) < OUTBIND_PINS) {
+            if (outbind_index_of(OUTBIND_BOARD_PICO_HEADER, g) < outbind_pin_count(OUTBIND_BOARD_PICO_HEADER)) {
                 tap_pin(g);
             }
         }
@@ -222,8 +228,9 @@ TEST_CASE(the_binding_survives_being_set_from_outside)
     fresh();
     outbind_t b;
     outbind_init(&b);
+    outbind_set_board(&b, OUTBIND_BOARD_PICO_HEADER);
     outbind_set_proto(&b, 4);                     /* DSHOT600 */
-    (void)outbind_toggle(&b, outbind_index_of(7));
+    (void)outbind_toggle(&b, outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 7));
     outputs_screen_set_binding(&b);
 
     /* What was loaded from storage is what the screen now shows and edits. */
@@ -244,6 +251,7 @@ TEST_CASE(a_protocol_index_from_outside_cannot_run_off_the_table)
     fresh();
     outbind_t b;
     outbind_init(&b);
+    outbind_set_board(&b, OUTBIND_BOARD_PICO_HEADER);
     b.proto = (uint8_t)(OUTBIND_PROTOS + 40u);
     b.pins  = 0xFFFFFFFFu;
     outputs_screen_set_binding(&b);

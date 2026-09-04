@@ -25,7 +25,7 @@
  * that use them; the coprocessor reserves the union of both, so the two
  * disagreeing costs a pin rather than the safety line.
  */
-static const outbind_pin_t k_pins[OUTBIND_PINS] = {
+static const outbind_pin_t k_pico_pins[OUTBIND_PINS] = {
     {  0,  1, false, NULL },
     {  1,  2, false, NULL },
     {  2,  4, false, NULL },
@@ -54,24 +54,95 @@ static const outbind_pin_t k_pins[OUTBIND_PINS] = {
     { 28, 34, false, NULL },
 };
 
-const outbind_pin_t *outbind_pins(void) { return k_pins; }
+/*
+ * Every board this build knows.  A second one appends a row here and a
+ * catalogue above it; nothing else in this file is per-board.
+ */
+static const outbind_board_t k_boards[] = {
+    { OUTBIND_BOARD_PICO_HEADER, "RP2350-CAN", k_pico_pins, OUTBIND_PINS,
+      false },
+};
 
-uint8_t outbind_index_of(uint8_t gpio)
+const outbind_board_t *outbind_board(uint16_t id)
 {
-    for (uint8_t i = 0; i < OUTBIND_PINS; ++i) {
-        if (k_pins[i].gpio == gpio) {
+    for (unsigned i = 0; i < sizeof(k_boards) / sizeof(k_boards[0]); ++i) {
+        if (k_boards[i].id == id) {
+            return &k_boards[i];
+        }
+    }
+    return NULL;                 /* including OUTBIND_BOARD_UNKNOWN */
+}
+
+uint8_t outbind_board_count(void)
+{
+    return (uint8_t)(sizeof(k_boards) / sizeof(k_boards[0]));
+}
+
+const outbind_board_t *outbind_board_at(uint8_t index)
+{
+    return (index < outbind_board_count()) ? &k_boards[index] : NULL;
+}
+
+/* Which bits of a selection can mean anything on this board. */
+static uint32_t board_mask(const outbind_board_t *bd)
+{
+    if (bd == NULL) {
+        return 0u;
+    }
+    return (bd->count >= 32u) ? ~(uint32_t)0u
+                              : (((uint32_t)1u << bd->count) - 1u);
+}
+
+bool outbind_pin_selectable(const outbind_board_t *board, uint8_t index)
+{
+    if (board == NULL || index >= board->count) {
+        return false;
+    }
+    if (board->fixed) {
+        return false;      /* soldered: there is nothing here to choose */
+    }
+    return !board->pins[index].reserved;
+}
+
+const outbind_pin_t *outbind_pins(uint16_t board)
+{
+    const outbind_board_t *b = outbind_board(board);
+    return (b != NULL) ? b->pins : NULL;
+}
+
+uint8_t outbind_pin_count(uint16_t board)
+{
+    const outbind_board_t *b = outbind_board(board);
+    return (b != NULL) ? b->count : 0u;
+}
+
+uint8_t outbind_index_of(uint16_t board, uint8_t gpio)
+{
+    const outbind_board_t *b = outbind_board(board);
+    if (b == NULL) {
+        return 0u;               /* no catalogue, so no index into one */
+    }
+    for (uint8_t i = 0; i < b->count; ++i) {
+        if (b->pins[i].gpio == gpio) {
             return i;
         }
     }
-    return (uint8_t)OUTBIND_PINS;
+    return b->count;
 }
 
-uint64_t outbind_reserved_mask(void)
+uint64_t outbind_reserved_mask(uint16_t board)
 {
+    const outbind_board_t *b = outbind_board(board);
+    if (b == NULL) {
+        /* A build that cannot say which pins are safe hands none of them
+         * out.  Refusing everything is the failure that shows; reserving
+         * nothing is the one that drives the heartbeat line. */
+        return ~(uint64_t)0u;
+    }
     uint64_t m = 0u;
-    for (uint8_t i = 0; i < OUTBIND_PINS; ++i) {
-        if (k_pins[i].reserved) {
-            m |= (uint64_t)1u << k_pins[i].gpio;
+    for (uint8_t i = 0; i < b->count; ++i) {
+        if (b->pins[i].reserved) {
+            m |= (uint64_t)1u << b->pins[i].gpio;
         }
     }
     return m;
@@ -108,8 +179,22 @@ void outbind_init(outbind_t *b)
     if (b == NULL) {
         return;
     }
+    b->board = (uint16_t)OUTBIND_BOARD_UNKNOWN;
     b->proto = 0u;      /* OFF: nothing drives until somebody says so */
     b->pins  = 0u;
+}
+
+void outbind_set_board(outbind_t *b, uint16_t board)
+{
+    if (b == NULL || b->board == board) {
+        return;
+    }
+    b->board = board;
+    /* A pin index belongs to one catalogue.  Keeping the selection across a
+     * change of board would bind whatever sits at that index on the board
+     * that is actually connected. */
+    b->pins  = 0u;
+    b->proto = 0u;
 }
 
 uint8_t outbind_chosen(const outbind_t *b)
@@ -118,7 +203,8 @@ uint8_t outbind_chosen(const outbind_t *b)
         return 0u;
     }
     uint8_t n = 0u;
-    for (uint8_t i = 0; i < OUTBIND_PINS; ++i) {
+    const uint8_t cnt = outbind_pin_count(b->board);
+    for (uint8_t i = 0; i < cnt; ++i) {
         if ((b->pins & ((uint32_t)1u << i)) != 0u) {
             ++n;
         }
@@ -128,7 +214,11 @@ uint8_t outbind_chosen(const outbind_t *b)
 
 bool outbind_can_add(const outbind_t *b, uint8_t index)
 {
-    if (b == NULL || index >= OUTBIND_PINS || k_pins[index].reserved) {
+    if (b == NULL) {
+        return false;
+    }
+    const outbind_board_t *bd = outbind_board(b->board);
+    if (!outbind_pin_selectable(bd, index)) {
         return false;
     }
     const outbind_proto_t *p = proto_of(b);
@@ -142,12 +232,25 @@ bool outbind_can_add(const outbind_t *b, uint8_t index)
 
 bool outbind_toggle(outbind_t *b, uint8_t index)
 {
-    if (b == NULL || index >= OUTBIND_PINS) {
+    if (b == NULL) {
+        return false;
+    }
+    const outbind_board_t *bd = outbind_board(b->board);
+    if (bd == NULL || index >= bd->count) {
+        return false;
+    }
+    /*
+     * A soldered board refuses both directions.  Only refusing additions
+     * would let an operator untick an output that is physically wired, and
+     * the page written from that would take away a driver the board still
+     * has a connector for.
+     */
+    if (bd->fixed) {
         return false;
     }
     const uint32_t bit = (uint32_t)1u << index;
     if ((b->pins & bit) != 0u) {
-        b->pins &= ~bit;              /* undoing is always allowed */
+        b->pins &= ~bit;              /* undoing is allowed; adding may not be */
         return true;
     }
     if (!outbind_can_add(b, index)) {
@@ -171,13 +274,22 @@ void outbind_set_proto(outbind_t *b, uint8_t proto)
     const outbind_proto_t *p = proto_of(b);
     const uint8_t cap = (p->max_pins < OUT_MAX_SLOTS) ? p->max_pins
                                                       : (uint8_t)OUT_MAX_SLOTS;
+    /*
+     * Anything above the board's own width first.  The trim below only walks
+     * that width, so a stray high bit would survive every protocol change and
+     * leave outbind_chosen() and the mask disagreeing about what is selected.
+     */
+    const outbind_board_t *bd = outbind_board(b->board);
+    b->pins &= board_mask(bd);
+
     uint8_t kept = 0u;
-    for (uint8_t i = 0; i < OUTBIND_PINS; ++i) {
+    const uint8_t cnt = (bd != NULL) ? bd->count : 0u;
+    for (uint8_t i = 0; i < cnt; ++i) {
         const uint32_t bit = (uint32_t)1u << i;
         if ((b->pins & bit) == 0u) {
             continue;
         }
-        if (kept < cap && !k_pins[i].reserved) {
+        if (kept < cap && !bd->pins[i].reserved) {
             ++kept;
         } else {
             b->pins &= ~bit;
@@ -203,8 +315,12 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs)
         return 0u;
     }
 
+    const outbind_board_t *bd = outbind_board(b->board);
+    if (bd == NULL) {
+        return 0u;
+    }
     uint8_t slot = 0u, channel = 0u;
-    for (uint8_t i = 0; i < OUTBIND_PINS && slot < LINK_OUT_SLOTS; ++i) {
+    for (uint8_t i = 0; i < bd->count && slot < LINK_OUT_SLOTS; ++i) {
         if ((b->pins & ((uint32_t)1u << i)) == 0u) {
             continue;
         }
@@ -213,7 +329,7 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs)
         }
         uint16_t *r = &regs[(size_t)slot * LINK_OS_STRIDE];
         r[LINK_OS_DRIVER]  = (uint16_t)link_driver_of(p->driver);
-        r[LINK_OS_PIN]     = k_pins[i].gpio;
+        r[LINK_OS_PIN]     = bd->pins[i].gpio;
         r[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(channel, p->channels);
         r[LINK_OS_RATE_HZ] = p->rate;
         channel = (uint8_t)(channel + p->channels);
@@ -222,12 +338,17 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs)
     return slot;
 }
 
-bool outbind_from_slots(outbind_t *b, const uint16_t *regs)
+bool outbind_from_slots(outbind_t *b, uint16_t board, const uint16_t *regs)
 {
     if (b == NULL || regs == NULL) {
         return false;
     }
+    const outbind_board_t *bd = outbind_board(board);
     outbind_init(b);
+    b->board = board;
+    if (bd == NULL) {
+        return false;      /* no catalogue to read the pins against */
+    }
 
     uint8_t proto = 0u;
     uint32_t pins = 0u;
@@ -248,6 +369,7 @@ bool outbind_from_slots(outbind_t *b, const uint16_t *regs)
         }
         if (found == 0u) {
             outbind_init(b);
+            b->board = board;
             return false;          /* a rate or driver no entry offers */
         }
         /* One protocol, not eight slots: a page with two of them is not
@@ -255,6 +377,7 @@ bool outbind_from_slots(outbind_t *b, const uint16_t *regs)
          * be showing a bench that is not there. */
         if (proto != 0u && found != proto) {
             outbind_init(b);
+            b->board = board;
             return false;
         }
         proto = found;
@@ -268,10 +391,11 @@ bool outbind_from_slots(outbind_t *b, const uint16_t *regs)
         const uint16_t pin = r[LINK_OS_PIN];
         if (pin > OUT_MAX_PIN) {
             outbind_init(b);
+            b->board = board;
             return false;
         }
-        const uint8_t idx = outbind_index_of((uint8_t)pin);
-        if (idx >= OUTBIND_PINS || k_pins[idx].reserved) {
+        const uint8_t idx = outbind_index_of(board, (uint8_t)pin);
+        if (idx >= bd->count || bd->pins[idx].reserved) {
             /*
              * A pin not on the header, or one that is spoken for.  The page
              * stores what was written and the bank refuses a reserved pin
@@ -280,6 +404,7 @@ bool outbind_from_slots(outbind_t *b, const uint16_t *regs)
              * accepted, and one the screen would not let you tick again.
              */
             outbind_init(b);
+            b->board = board;
             return false;
         }
         pins |= (uint32_t)1u << idx;
@@ -304,6 +429,7 @@ bool outbind_from_slots(outbind_t *b, const uint16_t *regs)
     for (unsigned i = 0; i < LINK_OS_COUNT; ++i) {
         if (check[i] != regs[i]) {
             outbind_init(b);
+            b->board = board;
             return false;
         }
     }

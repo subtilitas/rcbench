@@ -10,9 +10,30 @@ Die Regeln, denen jeder Output folgt — Weg, Rolle, Ruhelage, Slew, Begrenzung,
 Arming und das Silence-Timeout — stehen in `shared/outputs/` und gelten für alle
 vier gleich. Diese Seite handelt vom Signal auf der Leitung.
 
+## Welche Platine
+
+Es wird mehr als einen Koprozessor geben. Der, auf dem das Bring-up läuft, ist
+ein Modul im Pico-Formfaktor, von Hand verkabelt; eine spätere Platine trägt
+ihre Outputs auf Pins, die gelötet und nicht gewählt sind. Sie haben nicht
+dieselben Pins, und ein Pin-Index auf der einen bedeutet auf der anderen einen
+anderen Pin — oder keinen.
+
+Der Koprozessor sagt deshalb im Hardware-Register der
+[Identity-Page](Link-de.md#page-map), welche Platine er ist, und das Panel
+bietet die Pins dieser Platine an und keine anderen. Eine Platine, die dieser
+Build nicht kennt, bietet gar nichts an: eine Pin-Belegung zu raten ist der
+Weg, auf dem ein Output auf der Safety-Leitung landet. Ein Platinenwechsel
+verwirft aus demselben Grund jede Auswahl.
+
+Eine Platine mit gelöteten Outputs wird gezeigt, nicht angeboten. Der
+Koprozessor konfiguriert sich selbst, und das Panel zeigt, was es zurückliest,
+ohne es bearbeiten zu lassen: ein Bildschirm, der Pins neu bindet, die an
+keinem Stecker liegen, böte eine Wahl an, die die Platine nicht einlösen kann.
+
 ## Welcher Pin
 
-Kein Ausgangspin ist in der Firmware festgelegt. Ein Slot auf der
+Auf einer von Hand verkabelten Platine ist kein Ausgangspin in der Firmware
+festgelegt. Ein Slot auf der
 [OUTPUTS-Page](Link-de.md#page-map) trägt seine Pinnummer, der Pin ist also eine
 Einstellung und kein Build.
 
