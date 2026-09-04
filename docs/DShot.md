@@ -10,9 +10,27 @@ The rules every output obeys — travel, role, rest, slew, clamping, arming and
 the silence timeout — are in `shared/outputs/` and are the same for all four.
 This page is about the wire.
 
+## Which board
+
+More than one coprocessor will exist. The one the bring-up runs on is a
+Pico-form-factor module wired by hand; a later board carries its outputs on
+pins that are soldered rather than chosen. They do not have the same pins, and
+a pin index on one means a different pin -- or no pin -- on the other.
+
+The coprocessor therefore says which board it is, in the hardware register of
+the [identity page](Link.md#page-map), and the panel offers that board's pins
+and no other. A board this build does not know offers nothing: guessing a pin
+map is how an output ends up on the safety line. Changing board clears any
+selection for the same reason.
+
+A board whose outputs are soldered is shown rather than offered. The
+coprocessor configures itself and the panel displays what it reads back
+without letting it be edited, because a screen that re-bound pins which are
+not on connectors would be offering a choice the board cannot honour.
+
 ## Which pin
 
-No output pin is fixed in the firmware. A slot on the [OUTPUTS
+On a board that is wired by hand, no output pin is fixed in the firmware. A slot on the [OUTPUTS
 page](Link.md#page-map) carries its pin number, so the pin is a setting rather
 than a build.
 

@@ -35,7 +35,29 @@
 extern "C" {
 #endif
 
-/** GPIOs the Pico form factor brings out to the castellated pads. */
+/* ------------------------------------------------------------ the boards */
+
+/*
+ * Which coprocessor is on the other end.
+ *
+ * There is one today and there will be more: a custom board carries its
+ * outputs on pins that are soldered, not chosen, and knows a different set of
+ * them.  The panel is told which by the identity page rather than assuming,
+ * because the two things that must never happen are showing a pin map for a
+ * board that is not there and applying a binding made for one board to
+ * another.
+ *
+ * The numbers are a contract, like a page number: nothing is renumbered, and
+ * a new board appends.  Zero means nothing answered, or answered with an
+ * identity this build has never heard of -- and both are the same thing to a
+ * panel: it does not know this board, so it offers nothing.
+ */
+typedef enum {
+    OUTBIND_BOARD_UNKNOWN = 0,
+    OUTBIND_BOARD_PICO_HEADER = 1,  /**< Pico form factor, wired by hand    */
+} outbind_board_id_t;
+
+/** The most pins any board in this build brings out. */
 #define OUTBIND_PINS  26u
 
 typedef struct {
@@ -45,21 +67,45 @@ typedef struct {
     const char *held_by;    /**< what has it, or NULL when it is free       */
 } outbind_pin_t;
 
-/** The catalogue, in GPIO order.  Always OUTBIND_PINS entries. */
-const outbind_pin_t *outbind_pins(void);
+typedef struct {
+    uint16_t             id;      /**< as the identity page reports it      */
+    const char          *name;
+    const outbind_pin_t *pins;
+    uint8_t              count;
+    /**
+     * The outputs are soldered, not chosen.
+     *
+     * The coprocessor configures itself and the panel shows what it reads
+     * back without offering to change it.  A screen that let an operator
+     * re-bind pins that are not on connectors would be offering a choice the
+     * board cannot honour.
+     */
+    bool                 fixed;
+} outbind_board_t;
 
-/** Index of @p gpio in the catalogue, or OUTBIND_PINS when it is not on the
- *  header. */
-uint8_t outbind_index_of(uint8_t gpio);
+/** The board with this identity, or NULL when this build does not know it. */
+const outbind_board_t *outbind_board(uint16_t id);
+
+/** Its catalogue and how long it is.  NULL and 0 for a board this build does
+ *  not know, so a caller that forgets to check offers nothing rather than
+ *  offering the wrong thing. */
+const outbind_pin_t *outbind_pins(uint16_t board);
+uint8_t outbind_pin_count(uint16_t board);
+
+/** Index of @p gpio in that board's catalogue, or its count when the board
+ *  does not bring that pin out. */
+uint8_t outbind_index_of(uint16_t board, uint8_t gpio);
 
 /**
- * Every reserved pin, one bit per GPIO.
+ * Every reserved pin of a board, one bit per GPIO.
  *
- * The coprocessor hands this to outputs_reserve_pins() and the panel greys
- * the same pins, so the two ends cannot disagree about which pins exist to be
- * given away.  The coprocessor adds the pins its part does not have.
+ * The coprocessor hands its own board's mask to outputs_reserve_pins() and
+ * the panel greys the same pins, so the two ends cannot disagree about which
+ * pins exist to be given away.  The coprocessor adds the pins its part does
+ * not have.  An unknown board reserves everything: a build that cannot say
+ * which pins are safe must not hand any of them out.
  */
-uint64_t outbind_reserved_mask(void);
+uint64_t outbind_reserved_mask(uint16_t board);
 
 /* ------------------------------------------------------------- protocols */
 
@@ -85,11 +131,24 @@ const outbind_proto_t *outbind_protos(void);
 /* --------------------------------------------------------- the selection */
 
 typedef struct {
+    uint16_t board;         /**< which catalogue `pins` indexes             */
     uint8_t  proto;         /**< index into outbind_protos()                */
-    uint32_t pins;          /**< one bit per catalogue index                */
+    uint32_t pins;          /**< one bit per catalogue index of that board  */
 } outbind_t;
 
+/** Empty, and belonging to no board: nothing can be chosen until one is set. */
 void outbind_init(outbind_t *b);
+
+/**
+ * Say which board this binding is for.
+ *
+ * Clears the selection whenever the board changes, and that is the point: a
+ * bit in `pins` is an index into one board's catalogue and means a different
+ * pin -- or no pin -- in another's.  Carrying a selection across would bind
+ * whatever happened to sit at that index on the board now in front of the
+ * operator.
+ */
+void outbind_set_board(outbind_t *b, uint16_t board);
 
 /** How many pins are chosen. */
 uint8_t outbind_chosen(const outbind_t *b);
@@ -143,7 +202,8 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs);
  * cleared.  The screen then shows nothing chosen rather than a selection that
  * disagrees with the page it came from.
  */
-bool outbind_from_slots(outbind_t *b, const uint16_t *regs);
+bool outbind_from_slots(outbind_t *b, uint16_t board,
+                        const uint16_t *regs);
 
 /**
  * Render the channel configuration to match.

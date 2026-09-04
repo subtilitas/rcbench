@@ -16,7 +16,16 @@
 #include "link_pages.h"
 #include "outputs_pages.h"
 
-static uint8_t idx(uint8_t gpio) { return outbind_index_of(gpio); }
+#define BOARD ((uint16_t)OUTBIND_BOARD_PICO_HEADER)
+
+static uint8_t idx(uint8_t gpio) { return outbind_index_of(BOARD, gpio); }
+
+/* Every binding in this file is for the one board this build knows. */
+static void init(outbind_t *b)
+{
+    outbind_init(b);
+    outbind_set_board(b, BOARD);
+}
 
 static uint8_t proto_named(const char *name)
 {
@@ -33,15 +42,15 @@ static uint8_t proto_named(const char *name)
 
 TEST_CASE(the_catalogue_is_the_header_and_nothing_else)
 {
-    const outbind_pin_t *p = outbind_pins();
+    const outbind_pin_t *p = outbind_pins(BOARD);
     /* GP23 to GP25 exist in the part and not on the pads, so they cannot be
      * wired and are not offered. */
-    CHECK_EQ(idx(23), (uint8_t)OUTBIND_PINS);
-    CHECK_EQ(idx(24), (uint8_t)OUTBIND_PINS);
-    CHECK_EQ(idx(25), (uint8_t)OUTBIND_PINS);
-    CHECK_EQ(idx(29), (uint8_t)OUTBIND_PINS);
-    CHECK(idx(0) < OUTBIND_PINS);
-    CHECK(idx(28) < OUTBIND_PINS);
+    CHECK_EQ(idx(23), outbind_pin_count(BOARD));
+    CHECK_EQ(idx(24), outbind_pin_count(BOARD));
+    CHECK_EQ(idx(25), outbind_pin_count(BOARD));
+    CHECK_EQ(idx(29), outbind_pin_count(BOARD));
+    CHECK(idx(0) < outbind_pin_count(BOARD));
+    CHECK(idx(28) < outbind_pin_count(BOARD));
 
     /* In GPIO order, so a list drawn from it reads the way a pinout does. */
     for (uint8_t i = 1; i < OUTBIND_PINS; ++i) {
@@ -54,7 +63,7 @@ TEST_CASE(the_catalogue_is_the_header_and_nothing_else)
 
 TEST_CASE(the_reserved_set_is_the_safety_line_and_the_can_bus)
 {
-    const uint64_t m = outbind_reserved_mask();
+    const uint64_t m = outbind_reserved_mask(BOARD);
     const uint64_t want = (1ull << 3) | (1ull << 8) | (1ull << 9)
                         | (1ull << 10) | (1ull << 11) | (1ull << 12);
     /* Pinned exactly: the coprocessor hands this to outputs_reserve_pins(),
@@ -62,8 +71,8 @@ TEST_CASE(the_reserved_set_is_the_safety_line_and_the_can_bus)
      * heartbeat line or the CAN bus. */
     CHECK_EQ(m, want);
 
-    const outbind_pin_t *p = outbind_pins();
-    for (uint8_t i = 0; i < OUTBIND_PINS; ++i) {
+    const outbind_pin_t *p = outbind_pins(BOARD);
+    for (uint8_t i = 0; i < outbind_pin_count(BOARD); ++i) {
         const bool in = (m & (1ull << p[i].gpio)) != 0u;
         CHECK_EQ(in, p[i].reserved);
         /* A reserved pin says what has it, so the screen can too. */
@@ -74,10 +83,10 @@ TEST_CASE(the_reserved_set_is_the_safety_line_and_the_can_bus)
 TEST_CASE(the_pad_numbers_match_the_ones_printed_on_the_board)
 {
     /* The four corners of the header, which the silkscreen names. */
-    CHECK_EQ(outbind_pins()[idx(0)].pad, 1);
-    CHECK_EQ(outbind_pins()[idx(15)].pad, 20);
-    CHECK_EQ(outbind_pins()[idx(16)].pad, 21);
-    CHECK_EQ(outbind_pins()[idx(3)].pad, 5);
+    CHECK_EQ(outbind_pins(BOARD)[idx(0)].pad, 1);
+    CHECK_EQ(outbind_pins(BOARD)[idx(15)].pad, 20);
+    CHECK_EQ(outbind_pins(BOARD)[idx(16)].pad, 21);
+    CHECK_EQ(outbind_pins(BOARD)[idx(3)].pad, 5);
 }
 
 /* ------------------------------------------------------------- selecting */
@@ -85,7 +94,7 @@ TEST_CASE(the_pad_numbers_match_the_ones_printed_on_the_board)
 TEST_CASE(a_reserved_pin_cannot_be_chosen)
 {
     outbind_t b;
-    outbind_init(&b);
+    init(&b);
     outbind_set_proto(&b, proto_named("SERVO PWM"));
 
     CHECK(!outbind_can_add(&b, idx(3)));
@@ -100,7 +109,7 @@ TEST_CASE(a_reserved_pin_cannot_be_chosen)
 TEST_CASE(nothing_can_be_chosen_while_the_protocol_is_off)
 {
     outbind_t b;
-    outbind_init(&b);
+    init(&b);
     CHECK(!outbind_can_add(&b, idx(0)));
     CHECK(!outbind_toggle(&b, idx(0)));
 }
@@ -108,7 +117,7 @@ TEST_CASE(nothing_can_be_chosen_while_the_protocol_is_off)
 TEST_CASE(a_pin_can_always_be_taken_back)
 {
     outbind_t b;
-    outbind_init(&b);
+    init(&b);
     outbind_set_proto(&b, proto_named("PPM"));
     CHECK(outbind_toggle(&b, idx(0)));
     /* PPM is full at one pin, but undoing the one that filled it must work
@@ -121,7 +130,7 @@ TEST_CASE(a_pin_can_always_be_taken_back)
 TEST_CASE(ppm_takes_one_pin_and_pwm_takes_the_bank)
 {
     outbind_t b;
-    outbind_init(&b);
+    init(&b);
     outbind_set_proto(&b, proto_named("SERVO PWM"));
     static const uint8_t gp[9] = { 0,1,2,4,5,6,7,13,14 };
     for (unsigned i = 0; i < 8u; ++i) {
@@ -131,7 +140,7 @@ TEST_CASE(ppm_takes_one_pin_and_pwm_takes_the_bank)
     /* Eight slots is the whole bank; a ninth has nowhere to go. */
     CHECK(!outbind_toggle(&b, idx(gp[8])));
 
-    outbind_init(&b);
+    init(&b);
     outbind_set_proto(&b, proto_named("PPM"));
     CHECK(outbind_toggle(&b, idx(0)));
     CHECK(!outbind_toggle(&b, idx(1)));
@@ -141,7 +150,7 @@ TEST_CASE(ppm_takes_one_pin_and_pwm_takes_the_bank)
 TEST_CASE(switching_protocol_drops_the_pins_that_no_longer_fit)
 {
     outbind_t b;
-    outbind_init(&b);
+    init(&b);
     outbind_set_proto(&b, proto_named("SERVO PWM"));
     for (uint8_t g = 0; g < 3u; ++g) {
         CHECK(outbind_toggle(&b, idx(g)));      /* GP0, GP1, GP2 */
@@ -167,7 +176,7 @@ static uint16_t slot_reg(const uint16_t *regs, uint8_t slot, uint8_t field)
 TEST_CASE(each_pin_becomes_one_slot_in_pin_order)
 {
     outbind_t b;
-    outbind_init(&b);
+    init(&b);
     outbind_set_proto(&b, proto_named("SERVO PWM"));
     /* Ticked out of order; the page is written in pin order regardless, so
      * the lowest pin is channel 0 whatever order the screen was touched. */
@@ -196,12 +205,12 @@ TEST_CASE(a_page_written_from_a_selection_carries_nothing_from_the_last_one)
     outbind_t b;
     uint16_t regs[LINK_OS_COUNT];
 
-    outbind_init(&b);
+    init(&b);
     outbind_set_proto(&b, proto_named("SERVO PWM"));
     for (uint8_t g = 0; g < 3u; ++g) { (void)outbind_toggle(&b, idx(g)); }
     CHECK_EQ(outbind_to_slots(&b, regs), 3);
 
-    outbind_init(&b);
+    init(&b);
     outbind_set_proto(&b, proto_named("DSHOT600"));
     CHECK(outbind_toggle(&b, idx(7)));
     CHECK_EQ(outbind_to_slots(&b, regs), 1);
@@ -214,7 +223,7 @@ TEST_CASE(a_page_written_from_a_selection_carries_nothing_from_the_last_one)
 TEST_CASE(ppm_claims_the_whole_channel_range_on_its_one_pin)
 {
     outbind_t b;
-    outbind_init(&b);
+    init(&b);
     outbind_set_proto(&b, proto_named("PPM"));
     CHECK(outbind_toggle(&b, idx(2)));
 
@@ -229,7 +238,7 @@ TEST_CASE(the_two_dshot_drivers_are_told_apart_on_the_wire)
     outbind_t b;
     uint16_t regs[LINK_OS_COUNT];
 
-    outbind_init(&b);
+    init(&b);
     outbind_set_proto(&b, proto_named("DSHOT600"));
     CHECK(outbind_toggle(&b, idx(4)));
     (void)outbind_to_slots(&b, regs);
@@ -249,7 +258,7 @@ TEST_CASE(a_throttle_protocol_makes_throttles_and_a_pulse_one_makes_surfaces)
 
     /* The role decides where a channel goes when it stops being commanded.
      * A throttle that rests centred is a motor at half power. */
-    outbind_init(&b);
+    init(&b);
     outbind_set_proto(&b, proto_named("DSHOT600"));
     CHECK(outbind_toggle(&b, idx(0)));
     CHECK(outbind_toggle(&b, idx(1)));
@@ -259,7 +268,7 @@ TEST_CASE(a_throttle_protocol_makes_throttles_and_a_pulse_one_makes_surfaces)
     /* An untouched channel keeps the schema's default. */
     CHECK_EQ(cc[2 * LINK_CC_STRIDE + LINK_CC_ROLE], LINK_CC_ROLE_SURFACE);
 
-    outbind_init(&b);
+    init(&b);
     outbind_set_proto(&b, proto_named("SERVO PWM"));
     CHECK(outbind_toggle(&b, idx(0)));
     outbind_to_chan_cfg(&b, cc, 1100u, 1900u);
@@ -272,7 +281,7 @@ TEST_CASE(endpoints_a_servo_cannot_take_are_ignored_rather_than_written)
 {
     outbind_t b;
     uint16_t cc[LINK_CC_COUNT];
-    outbind_init(&b);
+    init(&b);
     outbind_set_proto(&b, proto_named("SERVO PWM"));
     CHECK(outbind_toggle(&b, idx(0)));
 
@@ -291,7 +300,7 @@ TEST_CASE(what_this_writes_is_what_the_bank_accepts)
      * the screen allowed and the bank refuses is an output that reads back
      * as configured and never moves. */
     outbind_t b;
-    outbind_init(&b);
+    init(&b);
     outbind_set_proto(&b, proto_named("SERVO PWM"));
     static const uint8_t gp[4] = { 0, 1, 20, 28 };
     for (unsigned i = 0; i < 4u; ++i) { CHECK(outbind_toggle(&b, idx(gp[i]))); }
@@ -301,7 +310,7 @@ TEST_CASE(what_this_writes_is_what_the_bank_accepts)
 
     outputs_t o;
     outputs_init(&o, 0u);
-    outputs_reserve_pins(&o, outbind_reserved_mask());
+    outputs_reserve_pins(&o, outbind_reserved_mask(BOARD));
     outputs_slots_apply(&o, slots);
     for (uint8_t s = 0; s < n; ++s) {
         if (o.slot[s].driver == OUT_DRIVER_NONE) {
@@ -322,14 +331,14 @@ TEST_CASE(a_selection_survives_the_round_trip_through_the_page)
                                          "DSHOT600 BIDIR" };
     for (unsigned k = 0; k < sizeof(names) / sizeof(names[0]); ++k) {
         outbind_t a, back;
-        outbind_init(&a);
+        init(&a);
         outbind_set_proto(&a, proto_named(names[k]));
         static const uint8_t gp[3] = { 0, 7, 22 };
         for (unsigned i = 0; i < 3u; ++i) { (void)outbind_toggle(&a, idx(gp[i])); }
 
         uint16_t regs[LINK_OS_COUNT];
         (void)outbind_to_slots(&a, regs);
-        if (!outbind_from_slots(&back, regs)) {
+        if (!outbind_from_slots(&back, BOARD, regs)) {
             T_FAIL("%s did not read back at all", names[k]);
         }
         if (back.proto != a.proto || back.pins != a.pins) {
@@ -345,7 +354,7 @@ TEST_CASE(an_empty_page_reads_back_as_nothing_configured)
     uint16_t regs[LINK_OS_COUNT];
     outputs_slots_defaults(regs);
     outbind_t b;
-    CHECK(outbind_from_slots(&b, regs));
+    CHECK(outbind_from_slots(&b, BOARD, regs));
     CHECK_EQ(b.proto, 0);
     CHECK_EQ(outbind_chosen(&b), 0);
 }
@@ -364,7 +373,7 @@ TEST_CASE(a_page_this_screen_cannot_describe_is_refused_rather_than_guessed)
     regs[1 * LINK_OS_STRIDE + LINK_OS_DRIVER]  = LINK_DRIVER_DSHOT;
     regs[1 * LINK_OS_STRIDE + LINK_OS_PIN]     = 1;
     regs[1 * LINK_OS_STRIDE + LINK_OS_RATE_HZ] = 600;
-    CHECK(!outbind_from_slots(&b, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, regs));
     CHECK_EQ(outbind_chosen(&b), 0);
 
     /* A rate no entry offers. */
@@ -372,14 +381,14 @@ TEST_CASE(a_page_this_screen_cannot_describe_is_refused_rather_than_guessed)
     regs[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
     regs[LINK_OS_PIN]     = 0;
     regs[LINK_OS_RATE_HZ] = 137;
-    CHECK(!outbind_from_slots(&b, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, regs));
 
     /* A pin that is not on the header, so the screen has no cell for it. */
     outputs_slots_defaults(regs);
     regs[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
     regs[LINK_OS_PIN]     = 24;
     regs[LINK_OS_RATE_HZ] = 50;
-    CHECK(!outbind_from_slots(&b, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, regs));
 }
 
 TEST_CASE(a_reserved_pin_on_the_page_is_refused_on_the_way_back)
@@ -398,12 +407,12 @@ TEST_CASE(a_reserved_pin_on_the_page_is_refused_on_the_way_back)
     regs[LINK_OS_RATE_HZ] = 50;
 
     outbind_t b;
-    CHECK(!outbind_from_slots(&b, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, regs));
     CHECK_EQ(outbind_chosen(&b), 0);
     CHECK_EQ(b.proto, 0);
 
     regs[LINK_OS_PIN] = 3;                    /* the heartbeat line */
-    CHECK(!outbind_from_slots(&b, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, regs));
 }
 
 TEST_CASE(a_pin_wider_than_a_pin_is_refused_before_it_is_narrowed)
@@ -421,14 +430,14 @@ TEST_CASE(a_pin_wider_than_a_pin_is_refused_before_it_is_narrowed)
     static const uint16_t bad[] = { 0x0100u, 0x0103u, 64u, 0xFFFFu };
     for (unsigned i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
         regs[LINK_OS_PIN] = bad[i];
-        if (outbind_from_slots(&b, regs)) {
+        if (outbind_from_slots(&b, BOARD, regs)) {
             T_FAIL("pin 0x%04X was accepted, as %u pin(s)",
                    bad[i], outbind_chosen(&b));
         }
     }
     /* And the widest pin that is real still works. */
     regs[LINK_OS_PIN] = 28u;
-    CHECK(outbind_from_slots(&b, regs));
+    CHECK(outbind_from_slots(&b, BOARD, regs));
     CHECK_EQ(outbind_chosen(&b), 1);
 }
 
@@ -444,11 +453,11 @@ TEST_CASE(a_page_that_does_not_render_back_to_itself_is_refused)
     regs[LINK_OS_PIN]     = 0;
     regs[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(0, 1);
     regs[LINK_OS_RATE_HZ] = 50;
-    CHECK(!outbind_from_slots(&b, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, regs));
 
     /* ... and with the right count it is fine. */
     regs[LINK_OS_RANGE] = LINK_OS_RANGE_OF(0, 8);
-    CHECK(outbind_from_slots(&b, regs));
+    CHECK(outbind_from_slots(&b, BOARD, regs));
     CHECK_EQ(outbind_chosen(&b), 1);
 
     /* Two PPM slots: more pins than the protocol takes, so a binding the
@@ -457,7 +466,7 @@ TEST_CASE(a_page_that_does_not_render_back_to_itself_is_refused)
     regs[LINK_OS_STRIDE + LINK_OS_PIN]     = 1;
     regs[LINK_OS_STRIDE + LINK_OS_RANGE]   = LINK_OS_RANGE_OF(8, 8);
     regs[LINK_OS_STRIDE + LINK_OS_RATE_HZ] = 50;
-    CHECK(!outbind_from_slots(&b, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, regs));
     CHECK_EQ(outbind_chosen(&b), 0);
 
     /* A first-channel field that does not follow the slot order. */
@@ -469,9 +478,141 @@ TEST_CASE(a_page_that_does_not_render_back_to_itself_is_refused)
         r[LINK_OS_RATE_HZ] = 50;
         r[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(k, 1);
     }
-    CHECK(outbind_from_slots(&b, regs));
+    CHECK(outbind_from_slots(&b, BOARD, regs));
     regs[LINK_OS_STRIDE + LINK_OS_RANGE] = LINK_OS_RANGE_OF(5, 1);
-    CHECK(!outbind_from_slots(&b, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, regs));
+}
+
+/* --------------------------------------------------------- more than one */
+
+TEST_CASE(a_board_this_build_does_not_know_offers_nothing)
+{
+    /* Zero is both "nothing answered" and "answered with an identity this
+     * build has never heard of", and the safe response to each is the same. */
+    CHECK(outbind_board(OUTBIND_BOARD_UNKNOWN) == NULL);
+    CHECK(outbind_board(9999) == NULL);
+    CHECK(outbind_pins(9999) == NULL);
+    CHECK_EQ(outbind_pin_count(9999), 0);
+
+    outbind_t b;
+    outbind_init(&b);
+    CHECK_EQ(b.board, (uint16_t)OUTBIND_BOARD_UNKNOWN);
+    for (uint8_t i = 0; i < OUTBIND_PINS; ++i) {
+        CHECK(!outbind_can_add(&b, i));
+        CHECK(!outbind_toggle(&b, i));
+    }
+    outbind_set_proto(&b, 1);
+    CHECK(!outbind_toggle(&b, 0));
+    CHECK_EQ(outbind_chosen(&b), 0);
+
+    uint16_t regs[LINK_OS_COUNT];
+    CHECK_EQ(outbind_to_slots(&b, regs), 0);
+}
+
+TEST_CASE(an_unknown_board_reserves_every_pin_rather_than_none)
+{
+    /* The direction of the failure is the point.  Reserving everything is a
+     * bench that will not drive; reserving nothing is an output on the
+     * heartbeat line. */
+    CHECK_EQ(outbind_reserved_mask(9999), ~(uint64_t)0u);
+    CHECK_EQ(outbind_reserved_mask(OUTBIND_BOARD_UNKNOWN), ~(uint64_t)0u);
+    CHECK(outbind_reserved_mask(BOARD) != ~(uint64_t)0u);
+}
+
+TEST_CASE(changing_board_drops_the_selection)
+{
+    /* A bit in `pins` is an index into one board's catalogue.  Carried
+     * across, it would bind whatever happens to sit at that index on the
+     * board actually connected -- a different pin, or none. */
+    outbind_t b;
+    init(&b);
+    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    CHECK(outbind_toggle(&b, idx(0)));
+    CHECK(outbind_toggle(&b, idx(5)));
+    CHECK_EQ(outbind_chosen(&b), 2);
+
+    outbind_set_board(&b, 9999);
+    CHECK_EQ(outbind_chosen(&b), 0);
+    CHECK_EQ(b.proto, 0);
+    CHECK_EQ(b.board, 9999);
+
+    /* Setting the board it already has is not a change and clears nothing. */
+    init(&b);
+    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    CHECK(outbind_toggle(&b, idx(0)));
+    outbind_set_board(&b, BOARD);
+    CHECK_EQ(outbind_chosen(&b), 1);
+}
+
+TEST_CASE(a_page_is_read_against_the_board_that_sent_it)
+{
+    outbind_t a, back;
+    init(&a);
+    outbind_set_proto(&a, proto_named("DSHOT600"));
+    CHECK(outbind_toggle(&a, idx(7)));
+
+    uint16_t regs[LINK_OS_COUNT];
+    (void)outbind_to_slots(&a, regs);
+
+    CHECK(outbind_from_slots(&back, BOARD, regs));
+    CHECK_EQ(back.board, BOARD);
+    CHECK_EQ(back.pins, a.pins);
+
+    /* The same registers against a board this build cannot map are refused,
+     * not reinterpreted. */
+    CHECK(!outbind_from_slots(&back, 9999, regs));
+    CHECK_EQ(outbind_chosen(&back), 0);
+    CHECK_EQ(back.board, 9999);
+}
+
+TEST_CASE(every_board_in_the_table_is_answerable)
+{
+    /* Whatever gets added later still has to satisfy these. */
+    for (uint16_t id = 1; id < 8; ++id) {
+        const outbind_board_t *bd = outbind_board(id);
+        if (bd == NULL) { continue; }
+        if (bd->name == NULL || bd->pins == NULL || bd->count == 0u) {
+            T_FAIL("board %u is in the table but describes nothing", id);
+        }
+        if (bd->count > OUTBIND_PINS) {
+            T_FAIL("board %u has %u pins; OUTBIND_PINS is %u",
+                   id, bd->count, (unsigned)OUTBIND_PINS);
+        }
+        /* The catalogue is in GPIO order and every reserved pin says what
+         * holds it, on every board. */
+        for (uint8_t i = 0; i < bd->count; ++i) {
+            if (i > 0 && bd->pins[i].gpio <= bd->pins[i-1].gpio) {
+                T_FAIL("board %u entry %u is out of order", id, i);
+            }
+            if (bd->pins[i].reserved && bd->pins[i].held_by == NULL) {
+                T_FAIL("board %u reserves GP%u without saying what has it",
+                       id, bd->pins[i].gpio);
+            }
+        }
+    }
+}
+
+TEST_CASE(nothing_can_be_chosen_on_a_board_that_is_soldered)
+{
+    /* No board declares itself fixed yet.  When one does, the screen must
+     * already refuse to edit it, so the rule is here before the board is. */
+    outbind_board_t fixed = *outbind_board(BOARD);
+    fixed.fixed = true;
+    CHECK(fixed.fixed);
+    /* The live path: a fixed board refuses every add through can_add(). */
+    for (uint16_t id = 1; id < 8; ++id) {
+        const outbind_board_t *bd = outbind_board(id);
+        if (bd == NULL || !bd->fixed) { continue; }
+        outbind_t b;
+        outbind_init(&b);
+        outbind_set_board(&b, id);
+        outbind_set_proto(&b, 1);
+        for (uint8_t i = 0; i < bd->count; ++i) {
+            if (outbind_can_add(&b, i)) {
+                T_FAIL("board %u is soldered and still offered pin %u", id, i);
+            }
+        }
+    }
 }
 
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
@@ -481,13 +622,14 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
     CHECK(!outbind_toggle(NULL, 0));
     CHECK(!outbind_can_add(NULL, 0));
     outbind_init(NULL);
+    outbind_set_board(NULL, 1);
     outbind_set_proto(NULL, 1);
     CHECK_EQ(outbind_to_slots(NULL, regs), 0);
     CHECK_EQ(outbind_to_slots(NULL, NULL), 0);
     outbind_to_chan_cfg(NULL, NULL, 1000u, 2000u);
     outbind_t b;
-    CHECK(!outbind_from_slots(NULL, regs));
-    CHECK(!outbind_from_slots(&b, NULL));
+    CHECK(!outbind_from_slots(NULL, BOARD, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, NULL));
 }
 
 int main(void)
@@ -513,6 +655,12 @@ int main(void)
     RUN(a_reserved_pin_on_the_page_is_refused_on_the_way_back);
     RUN(a_pin_wider_than_a_pin_is_refused_before_it_is_narrowed);
     RUN(a_page_that_does_not_render_back_to_itself_is_refused);
+    RUN(a_board_this_build_does_not_know_offers_nothing);
+    RUN(an_unknown_board_reserves_every_pin_rather_than_none);
+    RUN(changing_board_drops_the_selection);
+    RUN(a_page_is_read_against_the_board_that_sent_it);
+    RUN(every_board_in_the_table_is_answerable);
+    RUN(nothing_can_be_chosen_on_a_board_that_is_soldered);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("outbind");
 }

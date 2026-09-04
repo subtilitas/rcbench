@@ -379,10 +379,11 @@ int main(int argc, char **argv)
          * operator reaches in four taps, and the one worth a picture. */
         outbind_t b;
         outbind_init(&b);
+        outbind_set_board(&b, OUTBIND_BOARD_PICO_HEADER);
         outbind_set_proto(&b, 1u);                 /* SERVO PWM */
         static const uint8_t gp[4] = { 0, 1, 2, 4 };
         for (unsigned i = 0; i < 4u; ++i) {
-            (void)outbind_toggle(&b, outbind_index_of(gp[i]));
+            (void)outbind_toggle(&b, outbind_index_of(OUTBIND_BOARD_PICO_HEADER, gp[i]));
         }
         outputs_screen_set_binding(&b);
         outputs_screen_set_result(OUTPUTS_OK);

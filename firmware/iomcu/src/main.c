@@ -585,10 +585,11 @@ int main(void)
     s_state.identity[LINK_ID_FIRMWARE_MINOR] = RCBENCH_VERSION_MINOR;
     s_state.identity[LINK_ID_FIRMWARE_PATCH] = RCBENCH_VERSION_PATCH;
     /*
-     * Left at zero deliberately: there is no board, so there is no revision.
-     * A number here would be a fact this bench does not have.
+     * Which board this is.  The panel offers the pins of the board that
+     * answered and of no other, so this register is what stops a pin map
+     * being shown for hardware that is not on the bench.
      */
-    s_state.identity[LINK_ID_HARDWARE] = 0u;
+    s_state.identity[LINK_ID_HARDWARE] = IOMCU_BOARD_ID;
     /*
      * What this build can do, which the panel marks its menu from.  The three
      * bits set are the three the output drivers make true: pulses to a servo
@@ -642,7 +643,7 @@ int main(void)
      * line.
      */
     outputs_reserve_pins(&s_outputs,
-                         outbind_reserved_mask()
+                         outbind_reserved_mask(IOMCU_BOARD_ID)
                              | IOMCU_RESERVED_PINS | IOMCU_ABSENT_PINS);
     (void)outputs_set_role(&s_outputs, CH_THROTTLE, OUT_ROLE_THROTTLE);
     outputs_chan_cfg_apply(&s_outputs, s_state.chan_cfg);

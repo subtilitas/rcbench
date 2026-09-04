@@ -140,7 +140,7 @@ static bool inside(gfx_rect_t r, int x, int y)
 
 static int cell_at(int x, int y)
 {
-    for (int i = 0; i < (int)OUTBIND_PINS; ++i) {
+    for (int i = 0; i < (int)outbind_pin_count(s.bind.board); ++i) {
         if (inside(cell_rect(i), x, y)) {
             return i;
         }
@@ -296,7 +296,7 @@ static void draw_left(gfx_canvas_t *c)
 
 static void draw_cell(gfx_canvas_t *c, int i)
 {
-    const outbind_pin_t *pin = &outbind_pins()[i];
+    const outbind_pin_t *pin = &outbind_pins(s.bind.board)[i];
     const gfx_rect_t r = cell_rect(i);
     const bool on = (s.bind.pins & ((uint32_t)1u << i)) != 0u;
     const bool down = (s.hit_kind == HIT_CELL && s.hit_index == i);
@@ -376,7 +376,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
     gfx_fill_rect(c, 0, 0, c->width, c->height, UI_BG);
     draw_left(c);
-    for (int i = 0; i < (int)OUTBIND_PINS; ++i) {
+    for (int i = 0; i < (int)outbind_pin_count(s.bind.board); ++i) {
         draw_cell(c, i);
     }
     if (s.open) {

@@ -253,6 +253,9 @@ static atomic_int s_outputs_result;
 static outbind_t s_outputs_read;
 static bool      s_outputs_read_fresh;    /* both under s_snap_lock */
 
+/* The coprocessor's board identity, from the identity page at bring-up. */
+static uint16_t  s_board;
+
 static QueueHandle_t     s_touch_q;   /**< control task -> app_main */
 static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
 /*
@@ -551,6 +554,13 @@ static bool bring_up(void)
              * shows a state in which the bench claims more than it has.
              */
             s_capabilities        = reply.regs[LINK_ID_CAPABILITIES];
+            /*
+             * Which board answered.  Everything the outputs screen offers is
+             * that board's, and a board this build does not know offers
+             * nothing -- guessing a pin map is how an output ends up on the
+             * safety line.
+             */
+            s_board               = reply.regs[LINK_ID_HARDWARE];
             s_bring.proto_major   = reply.regs[LINK_ID_PROTOCOL_MAJOR];
             s_bring.proto_minor   = reply.regs[LINK_ID_PROTOCOL_MINOR];
             const bool speaks_ours =
@@ -1150,7 +1160,7 @@ static void control_task(void *arg)
                     if (poll_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_COUNT,
                                   &orr)
                         && orr.op != LINK_OP_NACK
-                        && outbind_from_slots(&got, orr.regs)) {
+                        && outbind_from_slots(&got, s_board, orr.regs)) {
                         if (xSemaphoreTake(s_snap_lock, portMAX_DELAY)
                             == pdTRUE) {
                             s_outputs_read = got;
@@ -1158,8 +1168,21 @@ static void control_task(void *arg)
                             xSemaphoreGive(s_snap_lock);
                         }
                     } else {
-                        ESP_LOGW(TAG, "could not read the outputs page; the "
-                                      "screen will show nothing configured");
+                        /* Also the path for a board this build has no pin
+                         * map for: the screen then offers nothing, which is
+                         * the only safe thing it can offer. */
+                        outbind_t none;
+                        outbind_init(&none);
+                        outbind_set_board(&none, s_board);
+                        if (xSemaphoreTake(s_snap_lock, portMAX_DELAY)
+                            == pdTRUE) {
+                            s_outputs_read = none;
+                            s_outputs_read_fresh = true;
+                            xSemaphoreGive(s_snap_lock);
+                        }
+                        ESP_LOGW(TAG, "no outputs page for hardware %u; the "
+                                      "screen will offer no pins",
+                                 (unsigned)s_board);
                     }
                 }
             }
