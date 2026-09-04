@@ -966,15 +966,27 @@ static void control_task(void *arg)
                                     (uint16_t)settings_get_int(SET_OUT_MAX_US));
                 (void)outbind_to_slots(&pc.bind, slots);
 
+                /*
+                 * A write that got no answer and one that was refused are
+                 * different things to be told.  REFUSED sends the operator
+                 * back to the pins they chose; NO LINK sends them to the
+                 * cable.  Collapsing the two would send them to the wrong
+                 * one every time the link dropped mid-write.
+                 */
                 link_msg_t reply;
-                bool ok = write_page(&s_host, LINK_PAGE_CHAN_CFG,
-                                     LINK_CC_COUNT, cfg, &reply)
-                          && reply.op == LINK_OP_ACK;
-                ok = ok && write_page(&s_host, LINK_PAGE_OUTPUTS,
-                                      LINK_OS_COUNT, slots, &reply)
-                     && reply.op == LINK_OP_ACK;
-                atomic_store(&s_outputs_result,
-                             ok ? (int)OUTPUTS_OK : (int)OUTPUTS_REFUSED);
+                outputs_result_t res = OUTPUTS_OK;
+                if (!write_page(&s_host, LINK_PAGE_CHAN_CFG,
+                                LINK_CC_COUNT, cfg, &reply)) {
+                    res = OUTPUTS_NO_LINK;
+                } else if (reply.op != LINK_OP_ACK) {
+                    res = OUTPUTS_REFUSED;
+                } else if (!write_page(&s_host, LINK_PAGE_OUTPUTS,
+                                       LINK_OS_COUNT, slots, &reply)) {
+                    res = OUTPUTS_NO_LINK;
+                } else if (reply.op != LINK_OP_ACK) {
+                    res = OUTPUTS_REFUSED;
+                }
+                atomic_store(&s_outputs_result, (int)res);
                 continue;
             }
             if (pc.kind == PANEL_CMD_SERVO) {
