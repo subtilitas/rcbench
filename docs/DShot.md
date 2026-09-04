@@ -19,9 +19,23 @@ a pin index on one means a different pin -- or no pin -- on the other.
 
 The coprocessor therefore says which board it is, in the hardware register of
 the [identity page](Link.md#page-map), and the panel offers that board's pins
-and no other. A board this build does not know offers nothing: guessing a pin
-map is how an output ends up on the safety line. Changing board clears any
-selection for the same reason.
+and no other. Changing board clears any selection, because a pin index on one
+board means a different pin on another.
+
+A board the panel has a catalogue for uses that catalogue. It has been read by
+somebody, it names the exact signal holding each reserved pin, and it cannot
+change under a running bench.
+
+A board the panel has never heard of describes its own pins, on the
+[catalogue page](Link.md#page-map): which GPIOs it brings out, the pad number
+printed beside each, and what holds the ones an output may not have. So a
+coprocessor newer than the panel is usable rather than blank.
+
+What a board cannot do is make one of its pins safe. The coprocessor reserves
+its own set at its own end whatever the catalogue page says, so a catalogue
+that is wrong costs a pin rather than the safety line. A board that neither
+describes itself nor is known offers nothing: guessing a pin map is how an
+output ends up on the safety line.
 
 A board whose outputs are soldered is shown rather than offered. The
 coprocessor configures itself and the panel displays what it reads back

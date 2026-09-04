@@ -20,10 +20,26 @@ anderen Pin — oder keinen.
 
 Der Koprozessor sagt deshalb im Hardware-Register der
 [Identity-Page](Link-de.md#page-map), welche Platine er ist, und das Panel
-bietet die Pins dieser Platine an und keine anderen. Eine Platine, die dieser
-Build nicht kennt, bietet gar nichts an: eine Pin-Belegung zu raten ist der
-Weg, auf dem ein Output auf der Safety-Leitung landet. Ein Platinenwechsel
-verwirft aus demselben Grund jede Auswahl.
+bietet die Pins dieser Platine an und keine anderen. Ein Platinenwechsel
+verwirft jede Auswahl, denn ein Pin-Index auf der einen Platine bedeutet auf
+der anderen einen anderen Pin.
+
+Eine Platine, für die das Panel einen Katalog hat, benutzt diesen Katalog. Ihn
+hat jemand gelesen, er benennt das genaue Signal, das jeden reservierten Pin
+hält, und er ändert sich nicht unter einem laufenden Prüfstand.
+
+Eine Platine, von der das Panel noch nie gehört hat, beschreibt ihre eigenen
+Pins auf der [Catalogue-Page](Link-de.md#page-map): welche GPIOs sie
+herausführt, die daneben aufgedruckte Pad-Nummer und was die hält, die ein
+Output nicht haben darf. Ein Koprozessor, der neuer ist als das Panel, ist so
+benutzbar statt leer.
+
+Was eine Platine nicht kann, ist einen ihrer Pins sicher machen. Der
+Koprozessor reserviert seinen eigenen Satz an seinem eigenen Ende, was die
+Catalogue-Page auch sagt — ein falscher Katalog kostet also einen Pin und
+nicht die Safety-Leitung. Eine Platine, die sich weder beschreibt noch bekannt
+ist, bietet gar nichts an: eine Pin-Belegung zu raten ist der Weg, auf dem ein
+Output auf der Safety-Leitung landet.
 
 Eine Platine mit gelöteten Outputs wird gezeigt, nicht angeboten. Der
 Koprozessor konfiguriert sich selbst, und das Panel zeigt, was es zurückliest,

@@ -7,6 +7,7 @@
 #include "out_bind.h"
 
 #include <stddef.h>
+#include <string.h>
 
 #include "link_pages.h"
 #include "outputs_pages.h"
@@ -63,6 +64,17 @@ static const outbind_board_t k_boards[] = {
       false },
 };
 
+/*
+ * One board learned over the link, for a coprocessor this build ships no
+ * catalogue for.  The name is formatted rather than carried: a name is a
+ * string and the page is registers, and the identity is what the operator
+ * needs to match against the board in front of them.
+ */
+static outbind_pin_t   s_learned_pins[LINK_CAT_PINS];
+static char            s_learned_name[16];
+static outbind_board_t s_learned;
+static bool            s_have_learned;
+
 const outbind_board_t *outbind_board(uint16_t id)
 {
     for (unsigned i = 0; i < sizeof(k_boards) / sizeof(k_boards[0]); ++i) {
@@ -70,7 +82,147 @@ const outbind_board_t *outbind_board(uint16_t id)
             return &k_boards[i];
         }
     }
+    /* Only after the table: a board this build describes uses its own
+     * description, whatever the wire says about it. */
+    if (s_have_learned && id != (uint16_t)OUTBIND_BOARD_UNKNOWN
+        && s_learned.id == id) {
+        return &s_learned;
+    }
     return NULL;                 /* including OUTBIND_BOARD_UNKNOWN */
+}
+
+/* The panel's words for what the wire can only number. */
+static const char *hold_name(uint8_t hold)
+{
+    switch (hold) {
+    case LINK_PIN_HEARTBEAT: return "heartbeat";
+    case LINK_PIN_CAN:       return "CAN";
+    case LINK_PIN_FLASH:     return "flash";
+    case LINK_PIN_DEBUG:     return "debug";
+    case LINK_PIN_SENSOR:    return "sensor";
+    default:                 return "in use";
+    }
+}
+
+void outbind_board_to_regs(const outbind_board_t *board, uint16_t *regs)
+{
+    if (regs == NULL) {
+        return;
+    }
+    /* Cleared first, so a slot past the board's pins carries pad 0 and says
+     * there is no pin there. */
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) {
+        regs[i] = 0u;
+    }
+    if (board == NULL) {
+        return;
+    }
+    for (uint8_t i = 0; i < board->count && i < LINK_CAT_PINS; ++i) {
+        /*
+         * The group, not the signal.  "CAN CS" and "CAN MOSI" are both the
+         * link to the panel as far as an operator choosing an output pin is
+         * concerned, and the wire has four bits.
+         */
+        uint8_t hold = LINK_PIN_FREE;
+        if (board->pins[i].reserved) {
+            hold = LINK_PIN_OTHER;
+            const char *why = board->pins[i].held_by;
+            if (why != NULL) {
+                if (strstr(why, "heart") != NULL) { hold = LINK_PIN_HEARTBEAT; }
+                else if (strstr(why, "CAN") != NULL) { hold = LINK_PIN_CAN; }
+            }
+        }
+        regs[i] = LINK_CAT_OF(board->pins[i].gpio, board->pins[i].pad, hold);
+    }
+}
+
+bool outbind_learn_board(uint16_t id, const uint16_t *regs)
+{
+    if (regs == NULL || id == (uint16_t)OUTBIND_BOARD_UNKNOWN) {
+        return false;
+    }
+    /* A board the table describes is not the wire's to redescribe. */
+    for (unsigned i = 0; i < sizeof(k_boards) / sizeof(k_boards[0]); ++i) {
+        if (k_boards[i].id == id) {
+            return false;
+        }
+    }
+
+    /*
+     * Read twice: once to decide, once to keep.
+     *
+     * The pins live in a static slot, so writing as it parsed would leave a
+     * board that failed half way over the one already learned -- and the
+     * failure returns false while outbind_board() goes on answering with a
+     * count from the old board and pins from two.  Nothing is written until
+     * the whole page is known to be a board.
+     */
+    uint8_t n = 0u;
+    int16_t last = -1;
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) {
+        const uint8_t pad = LINK_CAT_PAD(regs[i]);
+        if (pad == 0u) {
+            break;              /* no pin in this slot, and none after it */
+        }
+        /*
+         * No range check on the GPIO: the field is six bits and OUT_MAX_PIN
+         * is 63, so the page cannot name a pin that is not one.  A guard
+         * here would be a branch no page can take.
+         */
+        const uint8_t gpio = LINK_CAT_GPIO(regs[i]);
+        if ((int16_t)gpio <= last) {
+            return false;       /* out of order, or the same pin twice */
+        }
+        last = (int16_t)gpio;
+        ++n;
+    }
+    if (n == 0u) {
+        return false;           /* a board that brings out nothing is not one */
+    }
+
+    /* Decided.  From here nothing can refuse it, so the slot is safe to
+     * overwrite. */
+    for (uint8_t i = 0; i < n; ++i) {
+        const uint8_t hold = LINK_CAT_HOLD(regs[i]);
+        s_learned_pins[i].gpio     = LINK_CAT_GPIO(regs[i]);
+        s_learned_pins[i].pad      = LINK_CAT_PAD(regs[i]);
+        s_learned_pins[i].reserved = (hold != LINK_PIN_FREE);
+        s_learned_pins[i].held_by  = (hold != LINK_PIN_FREE)
+                                         ? hold_name(hold) : NULL;
+    }
+
+    /*
+     * Formatted by hand rather than with snprintf().  out_bind.c is linked
+     * into the coprocessor too, and it has no other reason to pull in the
+     * printf machinery for a name only the panel ever draws.
+     */
+    {
+        static const char k_pre[] = "BOARD ";
+        unsigned at = sizeof(k_pre) - 1u;
+        for (unsigned i = 0; i < at; ++i) { s_learned_name[i] = k_pre[i]; }
+        char digits[6];
+        unsigned d = 0u, v = id;
+        do { digits[d++] = (char)('0' + (v % 10u)); v /= 10u; } while (v != 0u);
+        while (d > 0u) { s_learned_name[at++] = digits[--d]; }
+        s_learned_name[at] = '\0';
+    }
+    s_learned.id    = id;
+    s_learned.name  = s_learned_name;
+    s_learned.pins  = s_learned_pins;
+    s_learned.count = n;
+    /*
+     * Never soldered.  `fixed` says the outputs are wired and the screen may
+     * only show them, and nothing on the wire says that yet; assuming it
+     * would make a board that describes itself unusable rather than usable.
+     */
+    s_learned.fixed = false;
+    s_have_learned  = true;
+    return true;
+}
+
+void outbind_forget_learned(void)
+{
+    s_have_learned = false;
 }
 
 uint8_t outbind_board_count(void)

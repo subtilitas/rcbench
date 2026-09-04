@@ -37,7 +37,7 @@ Control-Page.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der Koprozessor sendet nur als Antwort auf eine Anfrage.
-Protokollversion 2.1. Die Major-Version ist Register 0 der Page 0; das Panel
+Protokollversion 2.2. Die Major-Version ist Register 0 der Page 0; das Panel
 verweigert das Schärfen, wenn sie von seiner eigenen abweicht.
 
 ### Identifier
@@ -91,6 +91,7 @@ Ein NACK trägt seinen Grund in Register 0:
 | 0x21 | reserviert | | nicht vergeben; nicht wiederzuverwenden |
 | 0x22 | OUTPUTS | lesen, schreiben | je Slot: Treiber (0 keiner, 1 PWM (Pulsweitenmodulation), 2 PPM (Pulspositionsmodulation), 3 DShot, 4 bidirektionales DShot), Pin, erster Kanal und Kanalzahl in einem Register, Rate in Hz (kbit/s für beide DShot-Treiber); acht Slots zu vier Registern |
 | 0x23 | CHAN_CFG | lesen, schreiben | je Kanal: Rolle (0 throttle, 1 surface), Slew (Spanne je Sekunde, 0 = sofort), minimaler und maximaler Puls in µs; acht Kanäle zu vier Registern |
+| 0x24 | CATALOGUE | lesen | die eigenen Pins der Platine, je ein Register: GPIO-Nummer (General-Purpose Input/Output) in 6 Bit, die daneben aufgedruckte Pad-Nummer in 6, was ihn hält in 4 (0 frei, 1 Heartbeat, 2 CAN, 3 Flash, 4 Debug, 5 Sensor, 15 sonstiges); 32 Slots, und eine Pad-Nummer von 0 heißt, in diesem Slot ist kein Pin |
 
 Fault-Bitmap: Bit 0 Link still, Bit 1 Überstrom, Bit 2 Übertemperatur, Bit 3
 Stall, Bit 4 Heartbeat ausgeblieben, Bit 5 Protokollversion abweichend.

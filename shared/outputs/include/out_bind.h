@@ -89,8 +89,52 @@ typedef struct {
     bool                 fixed;
 } outbind_board_t;
 
-/** The board with this identity, or NULL when this build does not know it. */
+/**
+ * The board with this identity, or NULL when nothing here describes it.
+ *
+ * The table compiled into this build first, then a board learned over the
+ * link.  A build that ships a catalogue for a board uses its own: the
+ * compiled one has been read by somebody, names the exact signal holding
+ * each reserved pin, and cannot change under a running bench.
+ */
 const outbind_board_t *outbind_board(uint16_t id);
+
+/* ------------------------------------------------ a board that describes itself */
+
+/**
+ * Render a board's catalogue into LINK_CAT_COUNT registers for the wire.
+ *
+ * Slots past the board's own pins are left with a pad number of zero, which
+ * is how the page says there is no pin there.
+ */
+void outbind_board_to_regs(const outbind_board_t *board, uint16_t *regs);
+
+/**
+ * Learn the board a catalogue page describes, replacing any previous one.
+ *
+ * There is room for exactly one: the panel talks to one coprocessor, and a
+ * second learned board would be a pin map for hardware that is not on the
+ * bench.  Refuses a page that cannot be a board -- no pins, a GPIO past
+ * OUT_MAX_PIN, pins out of GPIO order, or the same GPIO twice -- and learns
+ * nothing rather than half of it, because a catalogue half read is a pin map
+ * that disagrees with the board sending it.
+ *
+ * Refuses an identity the compiled table already has: that board is
+ * described here already, and letting the wire replace it would let a
+ * coprocessor rename the pin holding the safety line.
+ */
+bool outbind_learn_board(uint16_t id, const uint16_t *regs);
+
+/**
+ * Forget it.
+ *
+ * Not needed when the link drops.  The slot is keyed by identity and is
+ * returned for that identity alone, so a board that has been unplugged
+ * cannot be reached by the one that replaces it -- and keeping it means the
+ * screen still knows the pins of a board whose link merely blinked, which is
+ * what a compiled-in catalogue already gives a board this build knows.
+ */
+void outbind_forget_learned(void);
 
 /** The table itself, so a caller can walk every board rather than guess at a
  *  range of identities.  outbind_board_at() returns NULL past the end. */

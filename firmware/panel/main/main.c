@@ -1174,6 +1174,53 @@ static void control_task(void *arg)
                      */
                     s_board = reply.regs[LINK_ID_HARDWARE];
 
+                    /*
+                     * A board this build ships no catalogue for describes
+                     * its own pins, so a coprocessor newer than this panel
+                     * is usable rather than blank.
+                     *
+                     * Only when the build has none.  A board it knows uses
+                     * its own catalogue: that one has been read by somebody,
+                     * names the exact signal holding each reserved pin, and
+                     * cannot change under a running bench.
+                     *
+                     * Nothing here makes a pin safe.  The coprocessor
+                     * reserves its own set at its own end whatever this page
+                     * says, so a catalogue that is wrong costs a pin rather
+                     * than the safety line.  A coprocessor built before the
+                     * page answers NACK, which is not a failure: the screen
+                     * then offers nothing for that board, as it did before.
+                     */
+                    if (outbind_board(s_board) == NULL) {
+                        link_msg_t cat;
+                        const bool answered_cat =
+                            poll_page(&s_host, LINK_PAGE_CATALOGUE,
+                                      LINK_CAT_COUNT, &cat);
+                        if (answered_cat && cat.op == LINK_OP_DATA
+                            && outbind_learn_board(s_board, cat.regs)) {
+                            ESP_LOGI(TAG, "hardware %u described itself: "
+                                          "%u pins", (unsigned)s_board,
+                                     (unsigned)outbind_pin_count(s_board));
+                        } else if (answered_cat && cat.op == LINK_OP_NACK
+                                   && cat.regs[0] == LINK_NACK_BAD_PAGE) {
+                            /*
+                             * Not a fault, and not warned about: a
+                             * coprocessor built before the page refuses it by
+                             * design, every time the link comes up.  A
+                             * warning on every link-up for a bench that is
+                             * working as built is a warning nobody reads.
+                             */
+                            ESP_LOGI(TAG, "hardware %u predates the catalogue "
+                                          "page; the screen will offer no "
+                                          "pins", (unsigned)s_board);
+                        } else {
+                            ESP_LOGW(TAG, "hardware %u has no pin map in this "
+                                          "build and did not describe itself; "
+                                          "the screen will offer no pins",
+                                     (unsigned)s_board);
+                        }
+                    }
+
                     /* On the edge, not every poll: it does not change while
                      * the link is up, so a write per poll would cost a
                      * transaction for nothing. */
