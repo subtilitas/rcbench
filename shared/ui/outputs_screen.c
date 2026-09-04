@@ -245,9 +245,17 @@ static gfx_color_t result_color(void)
     }
 }
 
+/* The binding can arrive from outside -- read off the wire, or restored --
+ * so the index is never trusted to be one this build knows. */
+static const outbind_proto_t *chosen_proto(void)
+{
+    const uint8_t i = (s.bind.proto < OUTBIND_PROTOS) ? s.bind.proto : 0u;
+    return &outbind_protos()[i];
+}
+
 static void draw_left(gfx_canvas_t *c)
 {
-    const outbind_proto_t *p = &outbind_protos()[s.bind.proto];
+    const outbind_proto_t *p = chosen_proto();
 
     gfx_text(c, COL_X, COL_Y, "PROTOCOL", UI_FONT_LABEL, UI_TEXT_FAINT, 1);
 
@@ -345,7 +353,7 @@ static void draw_popup(gfx_canvas_t *c)
     const outbind_proto_t *p = outbind_protos();
     for (int i = 0; i < (int)OUTBIND_PROTOS; ++i) {
         const gfx_rect_t rr = pop_row_rect(i);
-        const bool sel = (i == (int)s.bind.proto);
+        const bool sel = (&p[i] == chosen_proto());
         const bool down = (s.hit_kind == HIT_POP && s.hit_index == i);
         if (sel || down) {
             gfx_fill_chamfer_rect_ex(c, rr.x, rr.y, rr.w, rr.h, 6, 0, 6, 0,

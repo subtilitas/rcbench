@@ -382,6 +382,30 @@ TEST_CASE(a_page_this_screen_cannot_describe_is_refused_rather_than_guessed)
     CHECK(!outbind_from_slots(&b, regs));
 }
 
+TEST_CASE(a_reserved_pin_on_the_page_is_refused_on_the_way_back)
+{
+    /*
+     * The page stores what was written; the bank refuses a reserved pin only
+     * at apply.  So a page can name GP10 with nothing driving it, and reading
+     * that back as ticked would show a binding the bank never accepted -- and
+     * one the screen would not let the operator tick again.
+     */
+    uint16_t regs[LINK_OS_COUNT];
+    outputs_slots_defaults(regs);
+    regs[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
+    regs[LINK_OS_PIN]     = 10;               /* CAN SCK */
+    regs[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(0, 1);
+    regs[LINK_OS_RATE_HZ] = 50;
+
+    outbind_t b;
+    CHECK(!outbind_from_slots(&b, regs));
+    CHECK_EQ(outbind_chosen(&b), 0);
+    CHECK_EQ(b.proto, 0);
+
+    regs[LINK_OS_PIN] = 3;                    /* the heartbeat line */
+    CHECK(!outbind_from_slots(&b, regs));
+}
+
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     uint16_t regs[LINK_OS_COUNT];
@@ -418,6 +442,7 @@ int main(void)
     RUN(a_selection_survives_the_round_trip_through_the_page);
     RUN(an_empty_page_reads_back_as_nothing_configured);
     RUN(a_page_this_screen_cannot_describe_is_refused_rather_than_guessed);
+    RUN(a_reserved_pin_on_the_page_is_refused_on_the_way_back);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("outbind");
 }

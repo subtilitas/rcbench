@@ -138,7 +138,7 @@ TEST_CASE(a_release_away_from_the_press_does_nothing)
 
 /* ---------------------------------------------------------------- the pins */
 
-TEST_CASE(ticking_a_pin_applies_once_and_untitcking_applies_again)
+TEST_CASE(ticking_a_pin_applies_once_and_unticking_applies_again)
 {
     fresh();
     choose_proto(1);
@@ -233,6 +233,27 @@ TEST_CASE(the_binding_survives_being_set_from_outside)
     CHECK_EQ(outbind_chosen(outputs_screen_binding()), 2);
 }
 
+TEST_CASE(a_protocol_index_from_outside_cannot_run_off_the_table)
+{
+    /* The binding arrives from the wire and from flash, so the index is not
+     * this screen's to trust.  Reading past the protocol table would render
+     * a name from whatever followed it. */
+    static gfx_color_t px[800 * 432];
+    gfx_canvas_t c = { px, 800, 432, 800, { 0, 0, 800, 432 } };
+
+    fresh();
+    outbind_t b;
+    outbind_init(&b);
+    b.proto = (uint8_t)(OUTBIND_PROTOS + 40u);
+    b.pins  = 0xFFFFFFFFu;
+    outputs_screen_set_binding(&b);
+    scr()->render(&c, 0);
+
+    /* And it is still usable: the list picks up from OFF rather than wedging. */
+    choose_proto(1);
+    CHECK_EQ(outputs_screen_binding()->proto, 1);
+}
+
 TEST_CASE(null_events_are_refused_rather_than_dereferenced)
 {
     fresh();
@@ -247,12 +268,13 @@ int main(void)
     RUN(the_protocol_list_opens_and_a_choice_closes_it);
     RUN(an_open_list_can_be_left_without_choosing);
     RUN(a_release_away_from_the_press_does_nothing);
-    RUN(ticking_a_pin_applies_once_and_untitcking_applies_again);
+    RUN(ticking_a_pin_applies_once_and_unticking_applies_again);
     RUN(a_reserved_pin_never_reaches_the_apply_seam);
     RUN(a_pin_too_many_does_not_apply);
     RUN(nothing_can_be_ticked_while_the_protocol_is_off);
     RUN(every_state_renders_without_reading_off_the_canvas);
     RUN(the_binding_survives_being_set_from_outside);
+    RUN(a_protocol_index_from_outside_cannot_run_off_the_table);
     RUN(null_events_are_refused_rather_than_dereferenced);
     return test_summary("outputs_screen");
 }

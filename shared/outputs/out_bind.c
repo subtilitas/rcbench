@@ -260,9 +260,16 @@ bool outbind_from_slots(outbind_t *b, const uint16_t *regs)
         proto = found;
 
         const uint8_t idx = outbind_index_of((uint8_t)r[LINK_OS_PIN]);
-        if (idx >= OUTBIND_PINS) {
+        if (idx >= OUTBIND_PINS || k_pins[idx].reserved) {
+            /*
+             * A pin not on the header, or one that is spoken for.  The page
+             * stores what was written and the bank refuses a reserved pin
+             * only at apply, so a page can name one while nothing drives it.
+             * Reading it back as ticked would show a binding the bank never
+             * accepted, and one the screen would not let you tick again.
+             */
             outbind_init(b);
-            return false;          /* a pin that is not on the header */
+            return false;
         }
         pins |= (uint32_t)1u << idx;
     }

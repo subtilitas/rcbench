@@ -248,7 +248,7 @@ static volatile int s_outputs_result;
  * bench now.  The coprocessor keeps it in its own flash, and this asks.
  */
 static outbind_t s_outputs_read;
-static bool      s_outputs_read_fresh;
+static bool      s_outputs_read_fresh;    /* both under s_snap_lock */
 
 static QueueHandle_t     s_touch_q;   /**< control task -> app_main */
 static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
@@ -1326,11 +1326,20 @@ void app_main(void)
         /* What the coprocessor says its outputs are, and what became of the
          * last write.  Screen state stays app_main's; the control task only
          * leaves values behind. */
-        if (s_outputs_read_fresh
-            && xSemaphoreTake(s_snap_lock, 0) == pdTRUE) {
-            const outbind_t got = s_outputs_read;
-            s_outputs_read_fresh = false;
+        /* The flag is read inside the lock that guards the value it refers
+         * to.  Testing it outside would let this task cache it and miss a
+         * binding the control task had just read off the wire. */
+        outbind_t got;
+        bool have = false;
+        if (xSemaphoreTake(s_snap_lock, 0) == pdTRUE) {
+            have = s_outputs_read_fresh;
+            if (have) {
+                got = s_outputs_read;
+                s_outputs_read_fresh = false;
+            }
             xSemaphoreGive(s_snap_lock);
+        }
+        if (have) {
             outputs_screen_set_binding(&got);
         }
         outputs_screen_set_result((outputs_result_t)s_outputs_result);
