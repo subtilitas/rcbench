@@ -52,8 +52,14 @@ TEST_CASE(the_catalogue_is_the_header_and_nothing_else)
     CHECK(idx(0) < outbind_pin_count(BOARD));
     CHECK(idx(28) < outbind_pin_count(BOARD));
 
-    /* In GPIO order, so a list drawn from it reads the way a pinout does. */
-    for (uint8_t i = 1; i < OUTBIND_PINS; ++i) {
+    /*
+     * In GPIO order, so a list drawn from it reads the way a pinout does.
+     *
+     * Bounded by this board's own count, not by OUTBIND_PINS.  The two are
+     * equal today, which is the only reason the maximum worked here -- and it
+     * would read past the catalogue the first time a board had fewer pins.
+     */
+    for (uint8_t i = 1; i < outbind_pin_count(BOARD); ++i) {
         if (p[i].gpio <= p[i-1].gpio) {
             T_FAIL("entry %u (GP%u) does not follow GP%u",
                    i, p[i].gpio, p[i-1].gpio);
@@ -497,6 +503,9 @@ TEST_CASE(a_board_this_build_does_not_know_offers_nothing)
     outbind_t b;
     outbind_init(&b);
     CHECK_EQ(b.board, (uint16_t)OUTBIND_BOARD_UNKNOWN);
+    /* Deliberately the widest catalogue any board has: an unknown board has
+     * none, so every index including ones past the end must be refused
+     * rather than reaching an array. */
     for (uint8_t i = 0; i < OUTBIND_PINS; ++i) {
         CHECK(!outbind_can_add(&b, i));
         CHECK(!outbind_toggle(&b, i));
