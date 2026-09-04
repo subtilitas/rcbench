@@ -257,6 +257,29 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
     return 0;
 }
 
+/*
+ * This board's own pins, so a panel that has never heard of it can still
+ * offer the right ones.
+ *
+ * Rendered on demand rather than held: the catalogue is const and the page
+ * is read once at link-up, so a cached copy would be thirty-two registers of
+ * RAM to save a loop that runs once.
+ *
+ * Saying a pin is free here does not make it free.  outputs_reserve_pins()
+ * has already been given the union of this catalogue and the pins this file
+ * assigns, and refuses the rest whatever the page says -- so a catalogue
+ * that is wrong costs a pin rather than the safety line.
+ */
+static void catalogue_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    uint16_t all[LINK_CAT_COUNT];
+    outbind_board_to_regs(outbind_board(IOMCU_BOARD_ID), all);
+    for (uint8_t i = 0; i < n; ++i) {
+        out[i] = all[off + i];
+    }
+}
+
 static const link_page_t k_pages[] = {
     { LINK_PAGE_IDENTITY, LINK_ID_COUNT, identity_read, NULL },
     { LINK_PAGE_STATUS,   LINK_ST_COUNT, status_read,   NULL },
@@ -265,6 +288,7 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_BENCH,    LINK_BN_COUNT, bench_read,    NULL },
     { LINK_PAGE_OUTPUTS,  LINK_OS_COUNT, slots_read,    slots_write },
     { LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, chan_cfg_read, chan_cfg_write },
+    { LINK_PAGE_CATALOGUE, LINK_CAT_COUNT, catalogue_read, NULL },
 };
 
 /* ------------------------------------------------------------ the heartbeat */

@@ -875,6 +875,136 @@ TEST_CASE(a_bit_above_the_board_cannot_survive)
     CHECK_EQ(outbind_chosen_total(&u), 0);
 }
 
+/* ------------------------------------------------ a board that describes itself */
+
+#define LEARNED ((uint16_t)4242)
+
+TEST_CASE(a_board_can_describe_itself_and_read_back_the_same)
+{
+    /* The board this build knows, rendered to the page and learned under an
+     * identity the build has never heard of: what comes back has to be the
+     * same catalogue, because it is the same board. */
+    uint16_t regs[LINK_CAT_COUNT];
+    outbind_board_to_regs(outbind_board(BOARD), regs);
+
+    CHECK(outbind_board(LEARNED) == NULL);      /* nothing knows it yet */
+    CHECK(outbind_learn_board(LEARNED, regs));
+
+    const outbind_board_t *got = outbind_board(LEARNED);
+    if (got == NULL) { T_FAIL("a learned board is not answerable"); }
+    CHECK_EQ(got->id, LEARNED);
+    CHECK_EQ(got->count, outbind_pin_count(BOARD));
+    CHECK(!got->fixed);
+
+    const outbind_pin_t *mine = outbind_pins(BOARD);
+    for (uint8_t i = 0; i < got->count; ++i) {
+        if (got->pins[i].gpio != mine[i].gpio
+            || got->pins[i].pad != mine[i].pad
+            || got->pins[i].reserved != mine[i].reserved) {
+            T_FAIL("pin %u came back as GP%u pad %u reserved %d",
+                   i, got->pins[i].gpio, got->pins[i].pad,
+                   (int)got->pins[i].reserved);
+        }
+        /* Reserved pins still say what holds them, in the group's words. */
+        if (got->pins[i].reserved && got->pins[i].held_by == NULL) {
+            T_FAIL("GP%u is reserved and says nothing holds it",
+                   got->pins[i].gpio);
+        }
+    }
+
+    /* And it behaves like a board: the reserved ones cannot be chosen. */
+    outbind_t b;
+    outbind_init(&b);
+    outbind_set_board(&b, LEARNED);
+    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    CHECK(outbind_toggle(&b, outbind_index_of(LEARNED, 0)));
+    CHECK(!outbind_toggle(&b, outbind_index_of(LEARNED, 3)));   /* heartbeat */
+    CHECK_EQ(outbind_chosen(&b), 1);
+
+    outbind_forget_learned();
+    CHECK(outbind_board(LEARNED) == NULL);
+}
+
+TEST_CASE(a_board_this_build_describes_is_not_the_wires_to_redescribe)
+{
+    /*
+     * Otherwise a coprocessor could rename the pin holding the safety line,
+     * or free it.  The compiled catalogue has been read by somebody and
+     * cannot change under a running bench.
+     */
+    uint16_t regs[LINK_CAT_COUNT];
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) { regs[i] = 0u; }
+    regs[0] = LINK_CAT_OF(0, 1, LINK_PIN_FREE);
+    regs[1] = LINK_CAT_OF(3, 5, LINK_PIN_FREE);   /* the heartbeat, freed */
+    CHECK(!outbind_learn_board(BOARD, regs));
+
+    /* The board is still the one this build describes. */
+    const outbind_board_t *bd = outbind_board(BOARD);
+    const uint8_t hb = outbind_index_of(BOARD, 3);
+    CHECK(bd->pins[hb].reserved);
+    CHECK(!outbind_pin_selectable(bd, hb));
+}
+
+TEST_CASE(a_catalogue_that_cannot_be_a_board_is_refused_whole)
+{
+    uint16_t regs[LINK_CAT_COUNT];
+
+    /* Nothing brought out at all. */
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) { regs[i] = 0u; }
+    CHECK(!outbind_learn_board(LEARNED, regs));
+    CHECK(outbind_board(LEARNED) == NULL);
+
+    /* Out of GPIO order.  The catalogue is walked in order everywhere -- the
+     * page is rendered from it and the trim walks it -- so a page that is not
+     * ordered is not a catalogue. */
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) { regs[i] = 0u; }
+    regs[0] = LINK_CAT_OF(5, 1, LINK_PIN_FREE);
+    regs[1] = LINK_CAT_OF(2, 2, LINK_PIN_FREE);
+    CHECK(!outbind_learn_board(LEARNED, regs));
+    CHECK(outbind_board(LEARNED) == NULL);
+
+    /* The same GPIO twice is the same failure: not ascending. */
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) { regs[i] = 0u; }
+    regs[0] = LINK_CAT_OF(7, 1, LINK_PIN_FREE);
+    regs[1] = LINK_CAT_OF(7, 2, LINK_PIN_FREE);
+    CHECK(!outbind_learn_board(LEARNED, regs));
+
+    /*
+     * A GPIO past what a pin can be.  The field is six bits and OUT_MAX_PIN
+     * is 63, so this is the widest a page can name; a part with fewer pins
+     * refuses it at its own end.
+     */
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) { regs[i] = 0u; }
+    regs[0] = LINK_CAT_OF(0, 1, LINK_PIN_FREE);
+    CHECK(outbind_learn_board(LEARNED, regs));   /* the good one first */
+    outbind_forget_learned();
+
+    /* Learning nothing leaves nothing: a half-read catalogue is a pin map
+     * that disagrees with the board that sent it. */
+    CHECK(outbind_board(LEARNED) == NULL);
+}
+
+TEST_CASE(a_pad_of_zero_ends_the_catalogue)
+{
+    /*
+     * There is no count register.  One would have to live in the identity
+     * page, and lengthening that page makes every older coprocessor refuse
+     * the identity read and the link never come up.  Pads are numbered from
+     * one, so zero is the free way to say there is no pin here.
+     */
+    uint16_t regs[LINK_CAT_COUNT];
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) { regs[i] = 0u; }
+    regs[0] = LINK_CAT_OF(0, 1, LINK_PIN_FREE);
+    regs[1] = LINK_CAT_OF(1, 2, LINK_PIN_FREE);
+    /* regs[2] is pad 0, and GP9 below it must not be reached. */
+    regs[3] = LINK_CAT_OF(9, 12, LINK_PIN_FREE);
+    CHECK(outbind_learn_board(LEARNED, regs));
+    const outbind_board_t *got = outbind_board(LEARNED);
+    CHECK_EQ(got->count, 2);
+    CHECK_EQ(outbind_index_of(LEARNED, 9), got->count);   /* not on it */
+    outbind_forget_learned();
+}
+
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     uint16_t regs[LINK_OS_COUNT];
@@ -925,6 +1055,10 @@ int main(void)
     RUN(nothing_can_be_chosen_on_a_board_that_is_soldered);
     RUN(a_soldered_board_refuses_both_directions);
     RUN(a_bit_above_the_board_cannot_survive);
+    RUN(a_board_can_describe_itself_and_read_back_the_same);
+    RUN(a_board_this_build_describes_is_not_the_wires_to_redescribe);
+    RUN(a_catalogue_that_cannot_be_a_board_is_refused_whole);
+    RUN(a_pad_of_zero_ends_the_catalogue);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("outbind");
 }

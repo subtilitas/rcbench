@@ -37,6 +37,7 @@ typedef enum {
      */
     LINK_PAGE_OUTPUTS  = 0x22, /**< which driver drives what, on which pin */
     LINK_PAGE_CHAN_CFG = 0x23, /**< what each channel is and how it moves  */
+    LINK_PAGE_CATALOGUE = 0x24, /**< the board's own pins, read-only       */
 } link_page_id_t;
 
 /*
@@ -47,7 +48,7 @@ typedef enum {
  * older host can ignore.
  */
 #define LINK_PROTOCOL_MAJOR 2u
-#define LINK_PROTOCOL_MINOR 1u
+#define LINK_PROTOCOL_MINOR 2u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -251,6 +252,58 @@ typedef enum {
      */
     LINK_BN_SIMULATED  = 1u << 7,
 } link_bench_flag_t;
+
+/* --------------------------------------------------------------- catalogue */
+
+/*
+ * The board's own pins: which GPIOs it brings out, the pad number printed
+ * beside each, and what already holds the ones an output may not have.
+ *
+ * A board describes itself so a panel that has never heard of it can still
+ * offer the right pins.  What it cannot do is make a pin safe: the
+ * coprocessor reserves its own set at its own end whatever it says here, so
+ * a page that lies costs a pin rather than the safety line.
+ *
+ * One register per pin and no count register.  A count would have to live in
+ * the identity page, and lengthening that page breaks every coprocessor
+ * built before it: the panel asks for LINK_ID_COUNT registers, and a device
+ * whose identity page is shorter refuses the read rather than returning what
+ * it has -- which would leave the link down instead of degraded.  Instead a
+ * pad number of zero means there is no pin in that slot, since pads are
+ * numbered from one.
+ *
+ * A coprocessor built before this page answers NACK with LINK_NACK_BAD_PAGE,
+ * which is the panel's cue to use the catalogue compiled into it.
+ */
+#define LINK_CAT_PINS  32u
+#define LINK_CAT_COUNT LINK_CAT_PINS
+
+/** gpio in 6 bits, pad in 6, and what holds it in 4. */
+#define LINK_CAT_OF(gpio, pad, hold) \
+    ((uint16_t)((((unsigned)(gpio) & 0x3Fu) << 10) \
+                | (((unsigned)(pad) & 0x3Fu) << 4) \
+                | ((unsigned)(hold) & 0x0Fu)))
+#define LINK_CAT_GPIO(r) ((uint8_t)(((r) >> 10) & 0x3Fu))
+#define LINK_CAT_PAD(r)  ((uint8_t)(((r) >> 4) & 0x3Fu))
+#define LINK_CAT_HOLD(r) ((uint8_t)((r) & 0x0Fu))
+
+/**
+ * What holds a pin the bench may not drive.
+ *
+ * A code rather than a name: a name is a string and a register is sixteen
+ * bits.  The panel prints its own words for these, so a board it knows shows
+ * the exact signal -- "CAN CS" rather than "CAN" -- and a board it has only
+ * been told about shows the group.
+ */
+typedef enum {
+    LINK_PIN_FREE      = 0,  /**< an output may have it                    */
+    LINK_PIN_HEARTBEAT = 1,  /**< the safety line                          */
+    LINK_PIN_CAN       = 2,  /**< the link to the panel                    */
+    LINK_PIN_FLASH     = 3,
+    LINK_PIN_DEBUG     = 4,
+    LINK_PIN_SENSOR    = 5,
+    LINK_PIN_OTHER     = 15, /**< spoken for, and this build has no word   */
+} link_pin_hold_t;
 
 /* ----------------------------------------------------------------- control */
 enum {
