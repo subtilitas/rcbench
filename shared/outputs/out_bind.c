@@ -84,7 +84,6 @@ static const outbind_board_t k_boards[] = {
  */
 static outbind_pin_t   s_learned_pins[LINK_CAT_PINS];
 static outbind_shape_t s_learned_shape;
-static bool            s_have_learned_shape;
 static char            s_learned_name[16];
 static outbind_board_t s_learned;
 static bool            s_have_learned;
@@ -235,9 +234,8 @@ bool outbind_learn_board(uint16_t id, const uint16_t *regs)
      * so a new coprocessor is not drawn with the last one's outline while
      * its own shape page has yet to be read.
      */
-    s_have_learned_shape = false;
-    s_learned.shape      = NULL;
-    s_have_learned       = true;
+    s_learned.shape = NULL;
+    s_have_learned  = true;
     return true;
 }
 
@@ -295,9 +293,8 @@ bool outbind_learn_shape(uint16_t id, const uint16_t *regs)
         }
     }
 
-    s_learned_shape      = sh;
-    s_learned.shape      = &s_learned_shape;
-    s_have_learned_shape = true;
+    s_learned_shape = sh;
+    s_learned.shape = &s_learned_shape;
     return true;
 }
 
@@ -318,26 +315,32 @@ bool outbind_pad_xy(const outbind_shape_t *shape, uint8_t pad,
     const uint8_t idx = (uint8_t)(pad - 1u);
     const bool    far = (idx >= shape->per_side);
     const uint8_t in_row = far ? (uint8_t)(idx - shape->per_side) : idx;
-    const uint8_t along  = far ? (uint8_t)(shape->per_side - 1u - in_row)
-                               : in_row;
+    uint8_t along = far ? (uint8_t)(shape->per_side - 1u - in_row) : in_row;
+
+    /*
+     * A corner on the right numbers the row the other way, which is a step
+     * along the row and not a mirror across the outline.  Mirroring would
+     * put the pads at width - x, and the centring leaves an odd half
+     * millimetre on one side when (width - span) is odd -- so the whole row
+     * would shift by that much rather than simply reverse.
+     */
+    if (shape->corner == (uint8_t)LINK_SH_BOTTOM_RIGHT
+        || shape->corner == (uint8_t)LINK_SH_TOP_RIGHT) {
+        along = (uint8_t)(shape->per_side - 1u - along);
+    }
 
     /* Centred, so the margin either end of a row is the same. */
     const uint32_t span = (uint32_t)(shape->per_side - 1u) * shape->pitch_cmm;
     const uint32_t lead = ((uint32_t)shape->width_cmm - span) / 2u;
-    uint32_t x = lead + (uint32_t)along * shape->pitch_cmm;
+    const uint32_t x = lead + (uint32_t)along * shape->pitch_cmm;
 
     /* Pad 1's own row sits at its corner's edge; the other row opposite. */
     const bool starts_top = (shape->corner == (uint8_t)LINK_SH_TOP_LEFT
                              || shape->corner == (uint8_t)LINK_SH_TOP_RIGHT);
     const bool on_top = far ? !starts_top : starts_top;
-    uint32_t y = on_top ? shape->inset_cmm
-                        : ((uint32_t)shape->height_cmm - shape->inset_cmm);
-
-    /* A corner on the right numbers the other way along the row. */
-    if (shape->corner == (uint8_t)LINK_SH_BOTTOM_RIGHT
-        || shape->corner == (uint8_t)LINK_SH_TOP_RIGHT) {
-        x = (uint32_t)shape->width_cmm - x;
-    }
+    const uint32_t y = on_top ? shape->inset_cmm
+                              : ((uint32_t)shape->height_cmm
+                                 - shape->inset_cmm);
 
     *x_cmm = (uint16_t)x;
     *y_cmm = (uint16_t)y;
@@ -346,9 +349,8 @@ bool outbind_pad_xy(const outbind_shape_t *shape, uint8_t pad,
 
 void outbind_forget_learned(void)
 {
-    s_have_learned       = false;
-    s_have_learned_shape = false;
-    s_learned.shape      = NULL;
+    s_have_learned  = false;
+    s_learned.shape = NULL;
 }
 
 uint8_t outbind_board_count(void)

@@ -1273,24 +1273,60 @@ TEST_CASE(a_pad_the_shape_does_not_place_is_refused)
 TEST_CASE(a_corner_on_the_right_numbers_the_row_the_other_way)
 {
     /*
-     * Pad 1 at the bottom right runs its row leftwards.  A board numbered
-     * from the other end and drawn as though it were not would mirror every
-     * pad, which is the whole failure a drawn board can have.
+     * Pad 1 at the bottom right runs its row leftwards, so it lands exactly
+     * where a left-cornered board of the same outline puts its last pad.
+     *
+     * Reversing along the row, not mirroring across the outline.  The row is
+     * centred by integer division, so when (width - span) is odd the two
+     * margins differ by one and a mirror moves the whole row by that much
+     * instead of only reversing it.  The shapes below are built here rather
+     * than learned: outbind_pad_xy() takes the shape, and the point is to
+     * compare two of them.
      */
-    uint16_t regs[LINK_SH_COUNT];
-    outbind_shape_to_regs(outbind_board(BOARD), regs);
-    regs[LINK_SH_LAYOUT] = LINK_SH_LAYOUT_OF(LINK_SH_BOTTOM_RIGHT, 20);
-    learn_two_row_board(20);
-    CHECK(outbind_learn_shape(LEARNED, regs));
+    static const uint16_t widths[] = { 5100u, 5101u };   /* even, then odd */
+    for (unsigned w = 0; w < sizeof(widths) / sizeof(widths[0]); ++w) {
+        const outbind_shape_t lf = { widths[w], 2100u, 254u, 161u, 20u,
+                                     (uint8_t)LINK_SH_BOTTOM_LEFT };
+        const outbind_shape_t rt = { widths[w], 2100u, 254u, 161u, 20u,
+                                     (uint8_t)LINK_SH_BOTTOM_RIGHT };
+        for (uint8_t pad = 1; pad <= 40u; ++pad) {
+            /* Pad n from the right is pad (per_side + 1 - n) from the left,
+             * within its own row. */
+            const uint8_t row_start = (pad > 20u) ? 21u : 1u;
+            const uint8_t mirror =
+                (uint8_t)(row_start + (20u - 1u) - (pad - row_start));
+            uint16_t xr, yr, xl, yl;
+            CHECK(outbind_pad_xy(&rt, pad, &xr, &yr));
+            CHECK(outbind_pad_xy(&lf, mirror, &xl, &yl));
+            if (xr != xl || yr != yl) {
+                T_FAIL("width %u: pad %u from the right is at %u,%u; pad %u "
+                       "from the left is at %u,%u",
+                       widths[w], pad, xr, yr, mirror, xl, yl);
+            }
+        }
+    }
+}
 
-    const outbind_shape_t *sh = outbind_board(LEARNED)->shape;
-    const outbind_shape_t *lf = outbind_board(BOARD)->shape;
-    uint16_t xr, yr, xl, yl;
-    CHECK(outbind_pad_xy(sh, 1, &xr, &yr));
-    CHECK(outbind_pad_xy(lf, 1, &xl, &yl));
-    CHECK_EQ(xr, lf->width_cmm - xl);      /* mirrored across the outline */
-    CHECK_EQ(yr, yl);                      /* and in the same row */
-    outbind_forget_learned();
+TEST_CASE(the_row_sits_in_the_same_place_whichever_end_it_is_numbered_from)
+{
+    /*
+     * The pads are where they are; only the numbering changes.  So the set
+     * of positions a row occupies has to be identical for the two corners,
+     * including when the centring leaves an odd hundredth of a millimetre
+     * on one side.
+     */
+    const outbind_shape_t lf = { 5101u, 2100u, 254u, 161u, 20u,
+                                 (uint8_t)LINK_SH_BOTTOM_LEFT };
+    const outbind_shape_t rt = { 5101u, 2100u, 254u, 161u, 20u,
+                                 (uint8_t)LINK_SH_BOTTOM_RIGHT };
+    for (uint8_t i = 0; i < 20u; ++i) {
+        uint16_t xl, yl, xr, yr;
+        CHECK(outbind_pad_xy(&lf, (uint8_t)(i + 1u), &xl, &yl));
+        /* The same position, reached from the other end of the row. */
+        CHECK(outbind_pad_xy(&rt, (uint8_t)(20u - i), &xr, &yr));
+        CHECK_EQ(xr, xl);
+        CHECK_EQ(yr, yl);
+    }
 }
 
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
@@ -1356,6 +1392,7 @@ int main(void)
     RUN(a_shape_must_place_every_pad_the_catalogue_named);
     RUN(a_pad_the_shape_does_not_place_is_refused);
     RUN(a_corner_on_the_right_numbers_the_row_the_other_way);
+    RUN(the_row_sits_in_the_same_place_whichever_end_it_is_numbered_from);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("outbind");
 }
