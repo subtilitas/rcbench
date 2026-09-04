@@ -1141,6 +1141,22 @@ static void control_task(void *arg)
                 ESP_LOGI(TAG, "coprocessor %s",
                          answered ? "answered" : "went quiet");
                 if (answered) {
+                    /*
+                     * Who answered, before anything is decoded against it.
+                     *
+                     * The identity read at bring-up runs once, with whatever
+                     * was attached then -- which may have been nothing.  A
+                     * coprocessor that turns up later, or one swapped for
+                     * another, would otherwise have its outputs page read
+                     * against a board identity from boot, or against zero,
+                     * and the screen would offer no pins for as long as it
+                     * stayed plugged in.
+                     */
+                    link_msg_t idr;
+                    if (poll_identity(&s_host, &idr)) {
+                        s_board = idr.regs[LINK_ID_HARDWARE];
+                    }
+
                     /* On the edge, not every poll: it does not change while
                      * the link is up, so a write per poll would cost a
                      * transaction for nothing. */
