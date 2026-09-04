@@ -236,12 +236,18 @@ die es treibt.
 
 ![Outputs](img/outputs.png)
 
-Ein Protokoll auf einmal, nicht acht unabhängige Slots: ein Prüfstand wird
-protokollweise verkabelt, und erst nach dem Protokoll und dann nach den Pins
-zu fragen ist die Form dieser Arbeit. Jeder angehakte Pin wird ein Slot auf der
-[OUTPUTS-Page](Link-de.md#page-map), in Pin-Reihenfolge, mit Kanälen ab null —
-der niedrigste angehakte Pin ist also Kanal 0, in welcher Reihenfolge der
-Bildschirm auch berührt wurde.
+Ein Pin-Satz je Protokoll, nicht acht unabhängige Slots: ein Prüfstand wird
+protokollweise verkabelt — vier Servokabel, dann ein ESC (Electronic Speed
+Controller) — und erst nach dem Protokoll und dann nach seinen Pins zu fragen
+ist die Form dieser Arbeit. Mehr als ein Protokoll kann gleichzeitig gebunden
+sein, und ein Pin gehört höchstens einem davon.
+
+Jeder angehakte Pin wird ein Slot auf der [OUTPUTS-Page](Link-de.md#page-map),
+in Pin-Reihenfolge über alle Protokolle hinweg, mit Kanälen ab null — der
+niedrigste angehakte Pin ist also Kanal 0, in welcher Reihenfolge der
+Bildschirm auch berührt wurde und welches Protokoll ihn auch hält. Acht Slots
+und acht Kanäle sind das Budget, geteilt. PPM rendert acht Kanäle auf seinem
+einen Pin, ein Prüfstand mit PPM hat also für nichts anderes Platz.
 
 Das Protokoll ist eine Liste und kein Stepper: es gibt sieben davon, und sich
 an sechs vorbeizuschieben, um das siebte zu erreichen, ist keine Auswahl.
@@ -263,10 +269,26 @@ Bildschirm mit einer nicht gesendeten Auswahl ist ein Bildschirm, der dem
 Prüfstand widerspricht, und nichts sagt, welcher von beiden treibt. Was aus dem
 Schreiben wurde, steht unter dem Protokoll — WRITTEN, NO LINK oder REFUSED.
 
-Ein Protokollwechsel verwirft die Pins, die nicht mehr passen, statt den
-Wechsel zu verweigern. PPM mit vier angehakten Pins zu wählen behält den
-ersten: das Protokoll ist das, wonach gefragt wurde, und die Pins sind der
-Teil, der nachgeben muss.
+Ein Protokollwechsel sagt, welcher Satz gerade bearbeitet wird. Nichts wird
+verworfen: die Pins des verlassenen Protokolls bleiben gebunden, und die Pins
+des erreichten kommen zurück, wie sie waren. Ein Selektor, der die aktuellen
+Pins umlenkte, hieße, dass ein zweites Protokoll zu binden das erste löst.
+
+Ein Pin, den ein anderes Protokoll hält, wird grau gezeichnet, mit dem Namen
+dieses Protokolls darunter, wo ein freier Pin seine Pad-Nummer zeigt. Das ist
+eine Auswahl, rückgängig gemacht bei diesem Protokoll — anders als ein
+reservierter Pin, der rot und durchgestrichen ist, weil er die Verkabelung ist
+und keine Auswahl.
+
+Vier Servokabel und ein ESC, mit DShot600 als bearbeitetem Protokoll. GP5 ist
+angehakt; GP0, GP1, GP2 und GP4 sagen SERVO PWM und lassen sich hier nicht
+anhaken; GP3 und GP8 bis GP12 sind rot, weil der Koprozessor sie reserviert:
+
+![Outputs mit Pins, die ein anderes Protokoll hält](img/outputs-held.png)
+
+Eine Zelle ist also in einem von vier Zuständen, und jeder sagt, was zu tun
+ist: in diesem Protokoll angehakt, von einem anderen gehalten und benannt,
+reserviert und durchgestrichen, oder frei und mit seiner Pad-Nummer.
 
 ### Der Koprozessor hält sie, nicht das Panel
 

@@ -385,6 +385,18 @@ int main(int argc, char **argv)
         for (unsigned i = 0; i < 4u; ++i) {
             (void)outbind_toggle(&b, outbind_index_of(OUTBIND_BOARD_PICO_HEADER, gp[i]));
         }
+        if (strcmp(view, "outputs-held") == 0) {
+            /*
+             * An ESC beside the servos.  Under DShot the four servo pins are
+             * drawn greyed with SERVO PWM under them, which is the state the
+             * grid exists to make readable: those pins are taken, by a
+             * choice, and giving them back is done from the protocol that
+             * holds them.
+             */
+            outbind_set_proto(&b, 4u);             /* DSHOT600 */
+            (void)outbind_toggle(&b,
+                outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 5));
+        }
         outputs_screen_set_binding(&b);
         outputs_screen_set_result(OUTPUTS_OK);
         ui_router_goto(SCREEN_OUTPUTS);

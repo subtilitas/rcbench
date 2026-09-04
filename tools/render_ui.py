@@ -88,6 +88,7 @@ SCREENS = {
     "setup":      ("setup.png",      "setup",      "dark"),
     "outputs":    ("outputs.png",    "outputs",    "dark"),
     "outputs-protocol": ("outputs-protocol.png", "outputs", "dark"),
+    "outputs-held": ("outputs-held.png", "outputs", "dark"),
     "setup-light":("setup-light.png","setup",      "light"),
     "battery":    ("battery.png",    "battery",    "dark"),
     "balance":    ("balance.png",    "balance",    "dark"),
