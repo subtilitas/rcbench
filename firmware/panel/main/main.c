@@ -1122,8 +1122,16 @@ static void control_task(void *arg)
                     }
                 }
             } else {
+                /*
+                 * A NACK answers the request it refuses, so poll_page() is
+                 * true for one and regs[0] carries a refusal reason rather
+                 * than the first identity register.  Only a DATA reply holds
+                 * an identity page, and only an identity page says there is
+                 * a coprocessor there to talk to.
+                 */
                 answered = poll_page(&s_host, LINK_PAGE_IDENTITY,
-                                     LINK_ID_COUNT, &reply);
+                                     LINK_ID_COUNT, &reply)
+                           && reply.op == LINK_OP_DATA;
                 if (answered
                     && reply.regs[LINK_ID_PROTOCOL_MAJOR]
                            != LINK_PROTOCOL_MAJOR) {
@@ -1151,23 +1159,20 @@ static void control_task(void *arg)
                      * against a board identity from boot, or against zero,
                      * and the screen would offer no pins for as long as it
                      * stayed plugged in.
+                     *
+                     * The identity page that detected this edge is that
+                     * answer, so it is used rather than read again.  A second
+                     * read costs a transaction on the edge.  The retry loop
+                     * that would wrap it is bring-up's: it draws a frame
+                     * between attempts, which belongs to the splash and not
+                     * to a task running beside the renderer.
+                     *
+                     * Nothing has to forget the board.  The edge fires only
+                     * on an identity page, and the pages below are decoded
+                     * against it in the same pass, so no read of it can
+                     * reach a value from an earlier coprocessor.
                      */
-                    link_msg_t idr;
-                    if (poll_identity(&s_host, &idr)) {
-                        s_board = idr.regs[LINK_ID_HARDWARE];
-                    } else {
-                        /*
-                         * Keeping the last answer would be worse than having
-                         * none.  A read that failed says nothing about which
-                         * board is out there, and the one remembered may be
-                         * from boot or from a coprocessor since unplugged --
-                         * so the outputs page would be decoded against a
-                         * board that is not on the bench.  Forgetting makes
-                         * the screen offer nothing, which is the failure that
-                         * shows.
-                         */
-                        s_board = (uint16_t)OUTBIND_BOARD_UNKNOWN;
-                    }
+                    s_board = reply.regs[LINK_ID_HARDWARE];
 
                     /* On the edge, not every poll: it does not change while
                      * the link is up, so a write per poll would cost a
