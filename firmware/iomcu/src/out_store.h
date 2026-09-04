@@ -46,19 +46,29 @@ bool out_store_load(out_store_t *out);
  * Ask for @p cfg to be written.
  *
  * Returns immediately.  Nothing reaches flash until out_store_tick() finds
- * the bank idle, and a request that matches what is already saved is dropped:
- * a page rewritten with the same content would spend an erase cycle to change
- * nothing.
+ * the bank idle and the request settled, and a request that matches what is
+ * already saved is dropped: a page rewritten with the same content would
+ * spend an erase cycle to change nothing.
+ *
+ * @p now_ms restarts the settle window.  The two pages that describe the
+ * outputs are written in two transactions -- CHAN_CFG, then OUTPUTS -- and
+ * saving between them would record a new channel configuration against the
+ * slots from before it, which is what would come back at the next boot.
+ * Waiting for the writes to stop is what keeps the pair together.
  */
-void out_store_save(const out_store_t *cfg);
+void out_store_save(const out_store_t *cfg, uint32_t now_ms);
+
+/** How long after the last write the save is taken. */
+#define OUT_STORE_SETTLE_MS  400u
 
 /**
  * Take a deferred save if it is safe to.
  *
- * Call every pass with whether the bank is driving.  Returns true on the pass
- * that actually wrote, which is the pass that also lost its heartbeat edges.
+ * Call every pass with whether the bank is driving and the clock of the pass.
+ * Returns true on the pass that actually wrote, which is the pass that also
+ * lost its heartbeat edges.
  */
-bool out_store_tick(bool driving);
+bool out_store_tick(bool driving, uint32_t now_ms);
 
 /** Whether a save is waiting for the bench to stop driving. */
 bool out_store_pending(void);

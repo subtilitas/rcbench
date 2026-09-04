@@ -47,9 +47,21 @@ _Static_assert(sizeof(record_t) <= FLASH_PAGE_SIZE,
                "the record has outgrown one flash page");
 
 static bool        s_pending;
+static uint32_t    s_asked_ms;
 static out_store_t s_want;
 static bool        s_have_saved;
 static out_store_t s_saved;
+
+/*
+ * The staged page, as a union rather than a byte array with a cast.  The
+ * record has 32-bit fields and a bare uint8_t array carries no alignment, so
+ * writing through a pointer to it is a store the compiler is entitled to
+ * assume is aligned when it is not.
+ */
+static union {
+    uint8_t  bytes[FLASH_PAGE_SIZE];
+    record_t rec;
+} s_page;
 
 static uint16_t record_crc(const record_t *r)
 {
@@ -75,7 +87,7 @@ bool out_store_load(out_store_t *out)
     return true;
 }
 
-void out_store_save(const out_store_t *cfg)
+void out_store_save(const out_store_t *cfg, uint32_t now_ms)
 {
     if (cfg == NULL) {
         return;
@@ -88,20 +100,29 @@ void out_store_save(const out_store_t *cfg)
         return;
     }
     s_want = *cfg;
+    s_asked_ms = now_ms;
     s_pending = true;
 }
 
 bool out_store_pending(void) { return s_pending; }
 
-bool out_store_tick(bool driving)
+bool out_store_tick(bool driving, uint32_t now_ms)
 {
     if (!s_pending || driving) {
         return false;
     }
+    /*
+     * And not until the writes have stopped.  CHAN_CFG and OUTPUTS arrive as
+     * two transactions, so a save taken between them would record one page's
+     * new content against the other's old, and that mismatched pair is what
+     * would be restored at the next boot.
+     */
+    if ((uint32_t)(now_ms - s_asked_ms) < OUT_STORE_SETTLE_MS) {
+        return false;
+    }
 
-    static uint8_t page[FLASH_PAGE_SIZE];
-    record_t *r = (record_t *)(void *)page;
-    memset(page, 0xFF, sizeof(page));
+    record_t *r = &s_page.rec;
+    memset(s_page.bytes, 0xFF, sizeof(s_page.bytes));
     r->magic   = STORE_MAGIC;
     r->version = STORE_VERSION;
     r->cfg     = s_want;
@@ -115,7 +136,7 @@ bool out_store_tick(bool driving)
      */
     const uint32_t irq = save_and_disable_interrupts();
     flash_range_erase(STORE_OFFSET, FLASH_SECTOR_SIZE);
-    flash_range_program(STORE_OFFSET, page, FLASH_PAGE_SIZE);
+    flash_range_program(STORE_OFFSET, s_page.bytes, FLASH_PAGE_SIZE);
     restore_interrupts(irq);
 
     s_saved = s_want;

@@ -135,7 +135,7 @@ static void save_outputs(const iomcu_state_t *s)
     out_store_t cfg;
     memcpy(cfg.slots, s->slots, sizeof(cfg.slots));
     memcpy(cfg.chan_cfg, s->chan_cfg, sizeof(cfg.chan_cfg));
-    out_store_save(&cfg);
+    out_store_save(&cfg, (uint32_t)to_ms_since_boot(get_absolute_time()));
 }
 
 static void channels_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -694,13 +694,15 @@ int main(void)
         }
 
         /*
-         * A deferred save, once nothing is driving.  Writing flash stops this
-         * core with interrupts off for longer than the heartbeat's window, so
-         * it cannot happen while an output is live; the monitor loses its
-         * edges across the write and has to re-acquire, which is why it waits
-         * for the bench to be idle rather than merely disarmed.
+         * A deferred save, once nothing is driving and the writes have
+         * stopped.  Writing flash stops this core with interrupts off for
+         * longer than the heartbeat's window, so it cannot happen while an
+         * output is live; the monitor loses its edges across the write and
+         * has to re-acquire, which is why it waits for the bench to be idle
+         * rather than merely disarmed.  It also waits for the pages to stop
+         * arriving, so CHAN_CFG and OUTPUTS are saved as the pair they are.
          */
-        (void)out_store_tick(outputs_driving(&s_outputs));
+        (void)out_store_tick(outputs_driving(&s_outputs), now);
 
         can_report(now);
         /* Again straight after the report: printing to a USB host can take
