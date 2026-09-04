@@ -287,6 +287,26 @@ bool outbind_from_slots(outbind_t *b, const uint16_t *regs)
 
     b->proto = proto;
     b->pins  = pins;
+
+    /*
+     * The whole of "is this a page this screen can show": render the binding
+     * back and require it to be the page it came from.
+     *
+     * Matching on driver and rate alone accepted pages this shape cannot
+     * describe -- a PPM slot claiming one channel instead of eight, two PPM
+     * slots at once, a first-channel field that does not follow the slot
+     * order.  Each would have drawn a binding the operator could not have
+     * made and could not reproduce.  Comparing against what this selection
+     * would write catches all of them, including the ones not thought of.
+     */
+    uint16_t check[LINK_OS_COUNT];
+    (void)outbind_to_slots(b, check);
+    for (unsigned i = 0; i < LINK_OS_COUNT; ++i) {
+        if (check[i] != regs[i]) {
+            outbind_init(b);
+            return false;
+        }
+    }
     return true;
 }
 

@@ -432,6 +432,48 @@ TEST_CASE(a_pin_wider_than_a_pin_is_refused_before_it_is_narrowed)
     CHECK_EQ(outbind_chosen(&b), 1);
 }
 
+TEST_CASE(a_page_that_does_not_render_back_to_itself_is_refused)
+{
+    uint16_t regs[LINK_OS_COUNT];
+    outbind_t b;
+
+    /* PPM carries eight channels on its pin.  A slot claiming one is a page
+     * this screen cannot show: it would draw PPM and mean something else. */
+    outputs_slots_defaults(regs);
+    regs[LINK_OS_DRIVER]  = LINK_DRIVER_PPM;
+    regs[LINK_OS_PIN]     = 0;
+    regs[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(0, 1);
+    regs[LINK_OS_RATE_HZ] = 50;
+    CHECK(!outbind_from_slots(&b, regs));
+
+    /* ... and with the right count it is fine. */
+    regs[LINK_OS_RANGE] = LINK_OS_RANGE_OF(0, 8);
+    CHECK(outbind_from_slots(&b, regs));
+    CHECK_EQ(outbind_chosen(&b), 1);
+
+    /* Two PPM slots: more pins than the protocol takes, so a binding the
+     * operator could never have made and cannot reproduce. */
+    regs[LINK_OS_STRIDE + LINK_OS_DRIVER]  = LINK_DRIVER_PPM;
+    regs[LINK_OS_STRIDE + LINK_OS_PIN]     = 1;
+    regs[LINK_OS_STRIDE + LINK_OS_RANGE]   = LINK_OS_RANGE_OF(8, 8);
+    regs[LINK_OS_STRIDE + LINK_OS_RATE_HZ] = 50;
+    CHECK(!outbind_from_slots(&b, regs));
+    CHECK_EQ(outbind_chosen(&b), 0);
+
+    /* A first-channel field that does not follow the slot order. */
+    outputs_slots_defaults(regs);
+    for (uint8_t k = 0; k < 2u; ++k) {
+        uint16_t *r = &regs[(size_t)k * LINK_OS_STRIDE];
+        r[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
+        r[LINK_OS_PIN]     = k;
+        r[LINK_OS_RATE_HZ] = 50;
+        r[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(k, 1);
+    }
+    CHECK(outbind_from_slots(&b, regs));
+    regs[LINK_OS_STRIDE + LINK_OS_RANGE] = LINK_OS_RANGE_OF(5, 1);
+    CHECK(!outbind_from_slots(&b, regs));
+}
+
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     uint16_t regs[LINK_OS_COUNT];
@@ -470,6 +512,7 @@ int main(void)
     RUN(a_page_this_screen_cannot_describe_is_refused_rather_than_guessed);
     RUN(a_reserved_pin_on_the_page_is_refused_on_the_way_back);
     RUN(a_pin_wider_than_a_pin_is_refused_before_it_is_narrowed);
+    RUN(a_page_that_does_not_render_back_to_itself_is_refused);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("outbind");
 }
