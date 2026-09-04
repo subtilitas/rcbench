@@ -9,10 +9,13 @@
  */
 #include <string.h>
 
+#include <stdio.h>
+
 #include "greatest.h"
 
 #include "link_dev.h"
 #include "link_pages.h"
+#include "rcbench_version.h"
 
 /* A stand-in for the coprocessor's own state. */
 typedef struct {
@@ -227,6 +230,25 @@ TEST_CASE(every_request_is_answered)
     }
 }
 
+/*
+ * The version the coprocessor publishes on its identity page.  check_docs.py
+ * holds the numbers to the changelog; this holds the string to the numbers,
+ * because they are two spellings of one fact and the string is the one a
+ * person reads off a splash screen.
+ */
+TEST_CASE(the_version_string_says_what_the_numbers_say)
+{
+    char want[32];
+    snprintf(want, sizeof(want), "%d.%d.%d", RCBENCH_VERSION_MAJOR,
+             RCBENCH_VERSION_MINOR, RCBENCH_VERSION_PATCH);
+    CHECK_STR_EQ(RCBENCH_VERSION_STRING, want);
+
+    /* And it fits the registers it travels in. */
+    CHECK(RCBENCH_VERSION_MAJOR >= 0 && RCBENCH_VERSION_MAJOR <= 0xFFFF);
+    CHECK(RCBENCH_VERSION_MINOR >= 0 && RCBENCH_VERSION_MINOR <= 0xFFFF);
+    CHECK(RCBENCH_VERSION_PATCH >= 0 && RCBENCH_VERSION_PATCH <= 0xFFFF);
+}
+
 int main(void)
 {
     RUN(a_read_returns_the_registers);
@@ -238,5 +260,6 @@ int main(void)
     RUN(a_value_the_page_rejects_is_refused_with_a_reason);
     RUN(the_coprocessor_refuses_to_be_spoken_to_in_its_own_voice);
     RUN(every_request_is_answered);
+    RUN(the_version_string_says_what_the_numbers_say);
     return test_summary("link_pages");
 }

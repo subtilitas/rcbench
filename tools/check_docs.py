@@ -399,6 +399,39 @@ def check_screenshot_count(problems: list[str]) -> None:
                         f"docs/img holds {real}")
 
 
+VERSION_H = REPO / "shared" / "link" / "include" / "rcbench_version.h"
+
+
+def check_version(problems: list[str]) -> None:
+    """The version on the wire is the version in the changelog.
+
+    The coprocessor publishes these three numbers on its identity page, so a
+    release cut without moving them ships a board that misreports what it is
+    running -- and nobody notices until one is asked in the field.
+    """
+    text = read(VERSION_H)
+    got = {}
+    for part in ("MAJOR", "MINOR", "PATCH"):
+        m = re.search(rf"^#define RCBENCH_VERSION_{part}\s+(\d+)$", text,
+                      re.MULTILINE)
+        if m is None:
+            problems.append(f"rcbench_version.h has no RCBENCH_VERSION_{part}")
+            return
+        got[part] = int(m.group(1))
+
+    m = re.search(r"^## (\d+)\.(\d+)\.(\d+) - ", read(REPO / "CHANGELOG.md"),
+                  re.MULTILINE)
+    if m is None:
+        problems.append("CHANGELOG.md has no released version heading")
+        return
+    want = tuple(int(g) for g in m.groups())
+    have = (got["MAJOR"], got["MINOR"], got["PATCH"])
+    if have != want:
+        problems.append(
+            "rcbench_version.h says %d.%d.%d; the newest CHANGELOG entry is "
+            "%d.%d.%d" % (*have, *want))
+
+
 def check_spdx(problems: list[str]) -> None:
     """Every source file carries an SPDX (Software Package Data Exchange)
     licence line.  A new file without one fails the build.
@@ -421,6 +454,7 @@ def check_spdx(problems: list[str]) -> None:
 def main() -> int:
     problems: list[str] = []
     check_links(problems)
+    check_version(problems)
     check_anchors(problems)
     check_sidebar(problems)
     check_translations(problems)
