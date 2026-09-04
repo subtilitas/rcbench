@@ -4,6 +4,22 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
+## Unreleased
+
+### Fixed
+
+- Both images reported firmware 0.0.0. The identity page has carried
+  firmware major, minor and patch since the page map was written and nothing
+  ever set them, so a board asked what it was running answered wrongly and
+  answered confidently. `shared/link/include/rcbench_version.h` holds the
+  three numbers once; the coprocessor publishes them and the panel prints
+  what came back on its bring-up line, beside the protocol version. The panel
+  is the host and publishes no identity of its own, so it puts its own build
+  on the first splash line.
+- `tools/check_docs.py` holds that header to the newest heading in this file,
+  so a release cut without moving it fails the build rather than shipping a
+  board that misreports itself.
+
 ## 0.3.0 - 2026-09-04
 
 The coprocessor drives a pin, and remembers which one.
