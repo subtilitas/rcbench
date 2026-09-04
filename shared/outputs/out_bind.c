@@ -83,6 +83,16 @@ const outbind_board_t *outbind_board_at(uint8_t index)
     return (index < outbind_board_count()) ? &k_boards[index] : NULL;
 }
 
+/* Which bits of a selection can mean anything on this board. */
+static uint32_t board_mask(const outbind_board_t *bd)
+{
+    if (bd == NULL) {
+        return 0u;
+    }
+    return (bd->count >= 32u) ? ~(uint32_t)0u
+                              : (((uint32_t)1u << bd->count) - 1u);
+}
+
 bool outbind_pin_selectable(const outbind_board_t *board, uint8_t index)
 {
     if (board == NULL || index >= board->count) {
@@ -222,12 +232,25 @@ bool outbind_can_add(const outbind_t *b, uint8_t index)
 
 bool outbind_toggle(outbind_t *b, uint8_t index)
 {
-    if (b == NULL || index >= outbind_pin_count(b->board)) {
+    if (b == NULL) {
+        return false;
+    }
+    const outbind_board_t *bd = outbind_board(b->board);
+    if (bd == NULL || index >= bd->count) {
+        return false;
+    }
+    /*
+     * A soldered board refuses both directions.  Only refusing additions
+     * would let an operator untick an output that is physically wired, and
+     * the page written from that would take away a driver the board still
+     * has a connector for.
+     */
+    if (bd->fixed) {
         return false;
     }
     const uint32_t bit = (uint32_t)1u << index;
     if ((b->pins & bit) != 0u) {
-        b->pins &= ~bit;              /* undoing is always allowed */
+        b->pins &= ~bit;              /* undoing is allowed; adding may not be */
         return true;
     }
     if (!outbind_can_add(b, index)) {
@@ -251,8 +274,15 @@ void outbind_set_proto(outbind_t *b, uint8_t proto)
     const outbind_proto_t *p = proto_of(b);
     const uint8_t cap = (p->max_pins < OUT_MAX_SLOTS) ? p->max_pins
                                                       : (uint8_t)OUT_MAX_SLOTS;
-    uint8_t kept = 0u;
+    /*
+     * Anything above the board's own width first.  The trim below only walks
+     * that width, so a stray high bit would survive every protocol change and
+     * leave outbind_chosen() and the mask disagreeing about what is selected.
+     */
     const outbind_board_t *bd = outbind_board(b->board);
+    b->pins &= board_mask(bd);
+
+    uint8_t kept = 0u;
     const uint8_t cnt = (bd != NULL) ? bd->count : 0u;
     for (uint8_t i = 0; i < cnt; ++i) {
         const uint32_t bit = (uint32_t)1u << i;

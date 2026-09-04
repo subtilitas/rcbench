@@ -635,6 +635,57 @@ TEST_CASE(nothing_can_be_chosen_on_a_board_that_is_soldered)
     CHECK(!outbind_pin_selectable(&open_b, open_b.count));
 }
 
+TEST_CASE(a_soldered_board_refuses_both_directions)
+{
+    /*
+     * Refusing only additions would let an operator untick an output that is
+     * physically wired, and the page written from that would take away a
+     * driver the board still has a connector for.  There is no soldered
+     * board yet, so the rule is held where it is decided.
+     */
+    outbind_board_t fixed = *outbind_board(BOARD);
+    fixed.fixed = true;
+    for (uint8_t i = 0; i < fixed.count; ++i) {
+        CHECK(!outbind_pin_selectable(&fixed, i));
+    }
+
+    /* And on a board that is not soldered, undoing still always works --
+     * PPM is full at one pin and the operator must be able to change it. */
+    outbind_t b;
+    init(&b);
+    outbind_set_proto(&b, proto_named("PPM"));
+    CHECK(outbind_toggle(&b, idx(0)));
+    CHECK(!outbind_can_add(&b, idx(1)));
+    CHECK(outbind_toggle(&b, idx(0)));
+    CHECK_EQ(outbind_chosen(&b), 0);
+}
+
+TEST_CASE(a_bit_above_the_board_cannot_survive)
+{
+    /*
+     * outbind_t is a plain struct and the panel copies one off the wire, so
+     * a bit above the board's width can arrive.  The trim walks the board's
+     * own width, so anything above it would outlive every protocol change
+     * and leave the count and the mask disagreeing.
+     */
+    outbind_t b;
+    init(&b);
+    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    CHECK(outbind_toggle(&b, idx(0)));
+
+    b.pins |= (uint32_t)1u << 30;                 /* no such pin on any board */
+    outbind_set_proto(&b, proto_named("DSHOT600"));
+    CHECK_EQ(b.pins & ((uint32_t)1u << 30), 0u);
+    CHECK_EQ(outbind_chosen(&b), 1);
+
+    /* Nothing survives a protocol change on a board with no catalogue. */
+    outbind_t u;
+    outbind_init(&u);
+    u.pins = 0xFFFFFFFFu;
+    outbind_set_proto(&u, 1);
+    CHECK_EQ(u.pins, 0u);
+}
+
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     uint16_t regs[LINK_OS_COUNT];
@@ -681,6 +732,8 @@ int main(void)
     RUN(a_page_is_read_against_the_board_that_sent_it);
     RUN(every_board_in_the_table_is_answerable);
     RUN(nothing_can_be_chosen_on_a_board_that_is_soldered);
+    RUN(a_soldered_board_refuses_both_directions);
+    RUN(a_bit_above_the_board_cannot_survive);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("outbind");
 }
