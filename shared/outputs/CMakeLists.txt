@@ -1,7 +1,7 @@
 # The intermediary every output goes through: arming, clamping, slew and
 # staleness in one place, with a table of what each protocol is shaped like.
 # Pure logic with no pin, so it is host-tested before anything toggles.
-set(SRCS outputs.c outputs_pages.c)
+set(SRCS outputs.c outputs_pages.c out_bind.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES link)

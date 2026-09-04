@@ -40,6 +40,7 @@
 #include "log_writer.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
+#include "outputs_screen.h"
 #include "settings.h"
 #include "settings_screen.h"
 #include "splash_screen.h"
@@ -220,13 +221,36 @@ static void beat(bool alive)
 #define PANEL_SAMPLE_HZ   20.0f
 
 typedef enum { PANEL_CMD_MOTOR = 0, PANEL_CMD_SERVO,
-               PANEL_CMD_STOP } panel_cmd_kind_t;
+               PANEL_CMD_STOP, PANEL_CMD_OUTPUTS } panel_cmd_kind_t;
 
 typedef struct {
     panel_cmd_kind_t kind;
     motor_cmd_t      motor;
     servo_cmd_t      servo;
+    outbind_t        bind;   /**< PANEL_CMD_OUTPUTS: protocol and its pins */
 } panel_cmd_t;
+
+/*
+ * What became of the last output-page write.
+ *
+ * The control task writes it and app_main hands it to the screen, because
+ * screen state is app_main's alone.  Atomic rather than volatile, for the
+ * reason this file already gives for s_stop_live: volatile orders nothing
+ * between processors and promises no atomicity, and these two tasks are
+ * pinned to different cores.
+ */
+static atomic_int s_outputs_result;
+
+/*
+ * What the coprocessor says its outputs are.
+ *
+ * Read from the far end rather than remembered here.  A binding describes
+ * wiring, and this board is not the one the wires are in: a panel that kept a
+ * configuration and pushed it would be applying it to whatever is on the
+ * bench now.  The coprocessor keeps it in its own flash, and this asks.
+ */
+static outbind_t s_outputs_read;
+static bool      s_outputs_read_fresh;    /* both under s_snap_lock */
 
 static QueueHandle_t     s_touch_q;   /**< control task -> app_main */
 static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
@@ -924,6 +948,47 @@ static void control_task(void *arg)
                 }
                 continue;
             }
+            if (pc.kind == PANEL_CMD_OUTPUTS) {
+                if (!link_up) {
+                    atomic_store(&s_outputs_result, (int)OUTPUTS_NO_LINK);
+                    continue;
+                }
+                /*
+                 * CHAN_CFG first.  It says what a channel is; OUTPUTS says
+                 * what renders it.  A slot that starts rendering a channel
+                 * whose role has not arrived would drive it to the wrong
+                 * rest for as long as the second write takes.
+                 */
+                uint16_t cfg[LINK_CC_COUNT];
+                uint16_t slots[LINK_OS_COUNT];
+                outbind_to_chan_cfg(&pc.bind, cfg,
+                                    (uint16_t)settings_get_int(SET_OUT_MIN_US),
+                                    (uint16_t)settings_get_int(SET_OUT_MAX_US));
+                (void)outbind_to_slots(&pc.bind, slots);
+
+                /*
+                 * A write that got no answer and one that was refused are
+                 * different things to be told.  REFUSED sends the operator
+                 * back to the pins they chose; NO LINK sends them to the
+                 * cable.  Collapsing the two would send them to the wrong
+                 * one every time the link dropped mid-write.
+                 */
+                link_msg_t reply;
+                outputs_result_t res = OUTPUTS_OK;
+                if (!write_page(&s_host, LINK_PAGE_CHAN_CFG,
+                                LINK_CC_COUNT, cfg, &reply)) {
+                    res = OUTPUTS_NO_LINK;
+                } else if (reply.op != LINK_OP_ACK) {
+                    res = OUTPUTS_REFUSED;
+                } else if (!write_page(&s_host, LINK_PAGE_OUTPUTS,
+                                       LINK_OS_COUNT, slots, &reply)) {
+                    res = OUTPUTS_NO_LINK;
+                } else if (reply.op != LINK_OP_ACK) {
+                    res = OUTPUTS_REFUSED;
+                }
+                atomic_store(&s_outputs_result, (int)res);
+                continue;
+            }
             if (pc.kind == PANEL_CMD_SERVO) {
                 if (!link_up) {
                     continue;
@@ -1060,6 +1125,28 @@ static void control_task(void *arg)
                         ESP_LOGW(TAG, "coprocessor did not take the pole "
                                       "count -- rpm will read empty");
                     }
+                    /*
+                     * And what its outputs already are.  The screen shows
+                     * what is configured over there, not what this panel
+                     * last sent: after a panel restart those are different
+                     * things, and only one of them is driving pins.
+                     */
+                    link_msg_t orr;
+                    outbind_t got;
+                    if (poll_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_COUNT,
+                                  &orr)
+                        && orr.op != LINK_OP_NACK
+                        && outbind_from_slots(&got, orr.regs)) {
+                        if (xSemaphoreTake(s_snap_lock, portMAX_DELAY)
+                            == pdTRUE) {
+                            s_outputs_read = got;
+                            s_outputs_read_fresh = true;
+                            xSemaphoreGive(s_snap_lock);
+                        }
+                    } else {
+                        ESP_LOGW(TAG, "could not read the outputs page; the "
+                                      "screen will show nothing configured");
+                    }
                 }
             }
             link_up = answered;
@@ -1170,6 +1257,22 @@ static void send_cmd(const panel_cmd_t *pc)
     }
 }
 
+/*
+ * The outputs screen's choice, on its way to the control task.
+ *
+ * The screen runs on app_main and the link belongs to the control task, so
+ * this queues rather than writes.  Everything the far end thinks of the
+ * choice comes back as a word the control task leaves behind.
+ */
+static void outputs_apply(const outbind_t *b)
+{
+    if (b == NULL) {
+        return;
+    }
+    panel_cmd_t pc = { .kind = PANEL_CMD_OUTPUTS, .bind = *b };
+    send_cmd(&pc);
+}
+
 /* ------------------------------------------------------------------ main */
 
 void app_main(void)
@@ -1180,6 +1283,12 @@ void app_main(void)
 
     ui_theme_set(UI_THEME_DARK);
     ui_router_init();
+    /*
+     * The outputs screen hands its choice back through here.  It runs on
+     * app_main and the link belongs to the control task, so this queues the
+     * choice rather than writing it; the write happens where the link lives.
+     */
+    outputs_screen_set_apply(outputs_apply);
 
     const bool healthy = bring_up();
 
@@ -1229,6 +1338,28 @@ void app_main(void)
          * OLDEST entry rather than this one: the newest throttle position and
          * a disarm both matter more than a stale step.
          */
+        /* What the coprocessor says its outputs are, and what became of the
+         * last write.  Screen state stays app_main's; the control task only
+         * leaves values behind. */
+        /* The flag is read inside the lock that guards the value it refers
+         * to.  Testing it outside would let this task cache it and miss a
+         * binding the control task had just read off the wire. */
+        outbind_t got;
+        bool have = false;
+        if (xSemaphoreTake(s_snap_lock, 0) == pdTRUE) {
+            have = s_outputs_read_fresh;
+            if (have) {
+                got = s_outputs_read;
+                s_outputs_read_fresh = false;
+            }
+            xSemaphoreGive(s_snap_lock);
+        }
+        if (have) {
+            outputs_screen_set_binding(&got);
+        }
+        outputs_screen_set_result(
+            (outputs_result_t)atomic_load(&s_outputs_result));
+
         motor_cmd_t mc;
         while (motor_screen_poll_cmd(&mc)) {
             panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc };

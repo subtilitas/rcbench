@@ -36,6 +36,7 @@ typedef enum {
     SCREEN_BATTERY,
     SCREEN_BALANCE,
     SCREEN_PROGRAMMER,
+    SCREEN_OUTPUTS,
     SCREEN_COUNT
 } ui_screen_id_t;
 

@@ -28,6 +28,7 @@
 #include "telemetry_sim.h"
 #include "splash_screen.h"
 #include "stub_screen.h"
+#include "outputs_screen.h"
 #include "ui_screen.h"
 #include "ui_theme.h"
 
@@ -180,6 +181,7 @@ static ui_screen_id_t id_of(const char *name)
         { "battery",    SCREEN_BATTERY },
         { "balance",    SCREEN_BALANCE },
         { "programmer", SCREEN_PROGRAMMER },
+        { "outputs",    SCREEN_OUTPUTS },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         if (strcmp(name, k[i].name) == 0) {
@@ -369,6 +371,28 @@ int main(int argc, char **argv)
                 analyser_screen_push(&frame, &dec, raw, SBUS_FRAME_BYTES,
                                      t * 14u);
             }
+        }
+    }
+
+    if (id == SCREEN_OUTPUTS) {
+        /* Four servo leads on the first four free pins: the state an
+         * operator reaches in four taps, and the one worth a picture. */
+        outbind_t b;
+        outbind_init(&b);
+        outbind_set_proto(&b, 1u);                 /* SERVO PWM */
+        static const uint8_t gp[4] = { 0, 1, 2, 4 };
+        for (unsigned i = 0; i < 4u; ++i) {
+            (void)outbind_toggle(&b, outbind_index_of(gp[i]));
+        }
+        outputs_screen_set_binding(&b);
+        outputs_screen_set_result(OUTPUTS_OK);
+        ui_router_goto(SCREEN_OUTPUTS);
+        if (strcmp(view, "outputs-protocol") == 0) {
+            /* Tap the dropdown open. */
+            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 } };
+            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 } };
+            ui_router_event(&d);
+            ui_router_event(&u);
         }
     }
 

@@ -49,6 +49,7 @@ add_executable(rcbench-iomcu
     src/out_ppm.c
     src/out_dshot.c
     src/outputs_hw.c
+    src/out_store.c
 )
 target_include_directories(rcbench-iomcu PRIVATE include src)
 
@@ -73,6 +74,8 @@ target_link_libraries(rcbench-iomcu
     hardware_dma
     hardware_spi
     hardware_gpio
+    hardware_flash
+    hardware_sync
     rcbench_link
     rcbench_outputs
     rcbench_dshot

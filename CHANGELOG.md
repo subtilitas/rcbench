@@ -43,12 +43,28 @@ The coprocessor drives a pin.
   whole bench while nothing answers, and marks that with the watermark, so a
   modelled number and a measured one never appear on one screen.
 
+- An outputs screen behind Setup: a protocol list and a grid of the 26 GPIOs
+  the header brings out, ticked to bind. Each ticked pin becomes one slot on
+  the OUTPUTS page in pin order. Reserved pins are shown and refused, with
+  what holds them under the name; `shared/outputs/out_bind.c` carries the
+  catalogue, the rules and the mapping both ways, host-tested.
+- The output binding lives in the coprocessor's flash, not the panel's. A
+  binding describes wiring and the panel is not the board the wires are in, so
+  the coprocessor restores it at boot and the panel reads it back when the
+  link comes up. Restoring configures the outputs and does not drive them, and
+  channel commands are not restored. The save waits for the bank to stop
+  driving, because writing flash stops the core for longer than the
+  heartbeat's window.
+
 ### Known limitations
 
 - No driver has been seen on a pin. Bit timings, the PPM DMA ring and the
   bidirectional turnaround are what a host test cannot reach.
-- The panel's `Output`, `Output pin` and pulse settings do not write the
-  OUTPUTS and CHAN_CFG pages, so a slot still has to be configured by hand.
+- The coprocessor's flash store has never run: the erase window, the heartbeat
+  re-acquiring across it, and the sector surviving a power cycle are all
+  unmeasured.
+- `Output` and `Output pin` are still in the Setup table and no longer do
+  anything; the outputs screen replaced them.
 
 ## 0.2.1 - 2026-09-03
 
