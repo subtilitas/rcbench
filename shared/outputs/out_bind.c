@@ -155,9 +155,14 @@ bool outbind_learn_board(uint16_t id, const uint16_t *regs)
         if (pad == 0u) {
             break;              /* no pin in this slot, and none after it */
         }
+        /*
+         * No range check on the GPIO: the field is six bits and OUT_MAX_PIN
+         * is 63, so the page cannot name a pin that is not one.  A guard
+         * here would be a branch no page can take.
+         */
         const uint8_t gpio = LINK_CAT_GPIO(regs[i]);
-        if (gpio > OUT_MAX_PIN || (int16_t)gpio <= last) {
-            return false;       /* off the part, or out of order */
+        if ((int16_t)gpio <= last) {
+            return false;       /* out of order, or the same pin twice */
         }
         last = (int16_t)gpio;
         const uint8_t hold = LINK_CAT_HOLD(regs[i]);

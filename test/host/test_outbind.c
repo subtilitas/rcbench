@@ -970,18 +970,75 @@ TEST_CASE(a_catalogue_that_cannot_be_a_board_is_refused_whole)
     CHECK(!outbind_learn_board(LEARNED, regs));
 
     /*
-     * A GPIO past what a pin can be.  The field is six bits and OUT_MAX_PIN
-     * is 63, so this is the widest a page can name; a part with fewer pins
-     * refuses it at its own end.
+     * The widest GPIO the page can name is 63, because the field is six
+     * bits, and OUT_MAX_PIN is 63 -- so no page can name a pin that is not
+     * one, and it is learned like any other.
      */
     for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) { regs[i] = 0u; }
-    regs[0] = LINK_CAT_OF(0, 1, LINK_PIN_FREE);
-    CHECK(outbind_learn_board(LEARNED, regs));   /* the good one first */
+    regs[0] = LINK_CAT_OF(OUT_MAX_PIN, 1, LINK_PIN_FREE);
+    CHECK(outbind_learn_board(LEARNED, regs));
+    CHECK_EQ(outbind_board(LEARNED)->pins[0].gpio, OUT_MAX_PIN);
     outbind_forget_learned();
 
     /* Learning nothing leaves nothing: a half-read catalogue is a pin map
      * that disagrees with the board that sent it. */
     CHECK(outbind_board(LEARNED) == NULL);
+
+    /* Neither identity nor page is trusted to be there. */
+    CHECK(!outbind_learn_board(LEARNED, NULL));
+    CHECK(!outbind_learn_board((uint16_t)OUTBIND_BOARD_UNKNOWN, regs));
+    CHECK(outbind_board((uint16_t)OUTBIND_BOARD_UNKNOWN) == NULL);
+}
+
+TEST_CASE(every_hold_the_page_can_carry_says_what_has_the_pin)
+{
+    /*
+     * A pin an output may not have says so under its name, whichever group
+     * holds it.  A code the panel has no word for still says the pin is
+     * taken rather than saying nothing, because a pin that is greyed with no
+     * reason reads as a bug in the screen.
+     */
+    static const uint8_t holds[] = {
+        LINK_PIN_HEARTBEAT, LINK_PIN_CAN, LINK_PIN_FLASH,
+        LINK_PIN_DEBUG, LINK_PIN_SENSOR, LINK_PIN_OTHER, 9u,
+    };
+    uint16_t regs[LINK_CAT_COUNT];
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) { regs[i] = 0u; }
+    for (unsigned i = 0; i < sizeof(holds) / sizeof(holds[0]); ++i) {
+        regs[i] = LINK_CAT_OF(i, i + 1u, holds[i]);
+    }
+    /* And one free pin above them, so the board is not entirely reserved. */
+    regs[sizeof(holds) / sizeof(holds[0])] =
+        LINK_CAT_OF(20, 26, LINK_PIN_FREE);
+
+    CHECK(outbind_learn_board(LEARNED, regs));
+    const outbind_board_t *bd = outbind_board(LEARNED);
+    for (unsigned i = 0; i < sizeof(holds) / sizeof(holds[0]); ++i) {
+        if (!bd->pins[i].reserved) {
+            T_FAIL("hold %u left GP%u selectable", holds[i], i);
+        }
+        if (bd->pins[i].held_by == NULL || bd->pins[i].held_by[0] == '\0') {
+            T_FAIL("hold %u says nothing holds GP%u", holds[i], i);
+        }
+        CHECK(!outbind_pin_selectable(bd, (uint8_t)i));
+    }
+    /* The free one is still free. */
+    CHECK(bd->pins[sizeof(holds) / sizeof(holds[0])].held_by == NULL);
+    CHECK(outbind_pin_selectable(bd,
+        (uint8_t)(sizeof(holds) / sizeof(holds[0]))));
+    outbind_forget_learned();
+}
+
+TEST_CASE(rendering_a_catalogue_is_refused_rather_than_dereferenced)
+{
+    uint16_t regs[LINK_CAT_COUNT];
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) { regs[i] = 0xFFFFu; }
+    /* No board is not a crash, and the page it renders describes no pins. */
+    outbind_board_to_regs(NULL, regs);
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) {
+        CHECK_EQ(LINK_CAT_PAD(regs[i]), 0);
+    }
+    outbind_board_to_regs(outbind_board(BOARD), NULL);   /* nor is no page */
 }
 
 TEST_CASE(a_pad_of_zero_ends_the_catalogue)
@@ -1058,6 +1115,8 @@ int main(void)
     RUN(a_board_can_describe_itself_and_read_back_the_same);
     RUN(a_board_this_build_describes_is_not_the_wires_to_redescribe);
     RUN(a_catalogue_that_cannot_be_a_board_is_refused_whole);
+    RUN(every_hold_the_page_can_carry_says_what_has_the_pin);
+    RUN(rendering_a_catalogue_is_refused_rather_than_dereferenced);
     RUN(a_pad_of_zero_ends_the_catalogue);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("outbind");
