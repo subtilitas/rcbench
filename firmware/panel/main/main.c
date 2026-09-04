@@ -41,6 +41,7 @@
 #include "motor_screen.h"
 #include "servo_screen.h"
 #include "outputs_screen.h"
+#include "rcbench_version.h"
 #include "settings.h"
 #include "settings_screen.h"
 #include "splash_screen.h"
@@ -434,7 +435,11 @@ static bool bring_up(void)
 {
     bool ok = true;
 
-    splash_screen_set(SPLASH_STEP_BOARD, SPLASH_OK, "CH422G");
+    /* The panel's own build, on the first line it draws.  It is the host, so
+     * it publishes no identity page; without this the only version anywhere
+     * on the bench would be the coprocessor's. */
+    splash_screen_set(SPLASH_STEP_BOARD, SPLASH_OK,
+                      "CH422G fw " RCBENCH_VERSION_STRING);
 
     /*
      * Schema defaults, then the values the NVS (non-volatile storage) store
@@ -522,14 +527,23 @@ static bool bring_up(void)
     if (link_open) {
         link_msg_t reply;
         if (poll_identity(&s_host, &reply)) {
-            /* 40 bytes holds three 16-bit registers plus the words.  The
+            /*
+             * 48 bytes holds five 16-bit registers plus the words.  The
              * splash truncates its detail field anyway, but a truncating
-             * snprintf is a compiler warning, and warnings are errors. */
-            char detail[40];
-            snprintf(detail, sizeof(detail), "proto %u.%u hw %u",
-                     reply.regs[LINK_ID_PROTOCOL_MAJOR],
-                     reply.regs[LINK_ID_PROTOCOL_MINOR],
-                     reply.regs[LINK_ID_HARDWARE]);
+             * snprintf is a compiler warning, and warnings are errors.
+             *
+             * The far end's firmware version is printed as well as the
+             * protocol it speaks.  Two boards can speak the same protocol
+             * and be different builds, and "which one is on the bench" is
+             * the question a bring-up line exists to answer.
+             */
+            char detail[48];
+            snprintf(detail, sizeof(detail), "proto %u.%u fw %u.%u.%u",
+                     (unsigned)reply.regs[LINK_ID_PROTOCOL_MAJOR],
+                     (unsigned)reply.regs[LINK_ID_PROTOCOL_MINOR],
+                     (unsigned)reply.regs[LINK_ID_FIRMWARE_MAJOR],
+                     (unsigned)reply.regs[LINK_ID_FIRMWARE_MINOR],
+                     (unsigned)reply.regs[LINK_ID_FIRMWARE_PATCH]);
             s_bring.have_identity = true;
             /*
              * What the far end can do.  Read here, at bring-up, rather than
@@ -1107,8 +1121,8 @@ static void control_task(void *arg)
                      * refuses arming; the register is the first one of the
                      * identity page. */
                     ESP_LOGE(TAG, "coprocessor speaks protocol %u, we speak %u",
-                             reply.regs[LINK_ID_PROTOCOL_MAJOR],
-                             LINK_PROTOCOL_MAJOR);
+                             (unsigned)reply.regs[LINK_ID_PROTOCOL_MAJOR],
+                             (unsigned)LINK_PROTOCOL_MAJOR);
                     control_alert("protocol mismatch -- will not arm");
                     answered = false;
                 }

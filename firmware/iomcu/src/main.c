@@ -29,6 +29,7 @@
 #include "link_pages.h"
 #include "dshot.h"
 #include "out_bind.h"
+#include "rcbench_version.h"
 #include "out_store.h"
 #include "outputs.h"
 #include "outputs_hw.h"
@@ -575,6 +576,19 @@ int main(void)
 
     s_state.identity[LINK_ID_PROTOCOL_MAJOR] = LINK_PROTOCOL_MAJOR;
     s_state.identity[LINK_ID_PROTOCOL_MINOR] = LINK_PROTOCOL_MINOR;
+    /*
+     * What this image is, so a board can be asked rather than guessed at.
+     * The protocol version says what it speaks; these say which build is
+     * speaking it, and the two move independently.
+     */
+    s_state.identity[LINK_ID_FIRMWARE_MAJOR] = RCBENCH_VERSION_MAJOR;
+    s_state.identity[LINK_ID_FIRMWARE_MINOR] = RCBENCH_VERSION_MINOR;
+    s_state.identity[LINK_ID_FIRMWARE_PATCH] = RCBENCH_VERSION_PATCH;
+    /*
+     * Left at zero deliberately: there is no board, so there is no revision.
+     * A number here would be a fact this bench does not have.
+     */
+    s_state.identity[LINK_ID_HARDWARE] = 0u;
     /*
      * What this build can do, which the panel marks its menu from.  The three
      * bits set are the three the output drivers make true: pulses to a servo
