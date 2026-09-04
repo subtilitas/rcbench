@@ -228,7 +228,7 @@ typedef struct {
     panel_cmd_kind_t kind;
     motor_cmd_t      motor;
     servo_cmd_t      servo;
-    outbind_t        bind;   /**< PANEL_CMD_OUTPUTS: protocol and its pins */
+    outbind_t        bind;   /**< PANEL_CMD_OUTPUTS: the protocols and their pins */
 } panel_cmd_t;
 
 /*

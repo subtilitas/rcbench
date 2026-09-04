@@ -221,11 +221,18 @@ drives.
 
 ![Outputs](img/outputs.png)
 
-One protocol at a time, not eight independent slots: a bench is wired one
-protocol at a time, and asking for the protocol once and then for the pins is
-the shape of that job. Each ticked pin becomes one slot on the [OUTPUTS
-page](Link.md#page-map), in pin order, taking channels from zero upward — so
-the lowest ticked pin is channel 0 whatever order the screen was touched in.
+A set of pins per protocol, not eight independent slots: a bench is wired a
+protocol at a time — four servo leads, then one ESC (electronic speed
+controller) — and asking for the protocol and then for its pins is the shape
+of that job. More than one protocol can be bound at once, and a pin belongs to
+at most one of them.
+
+Each ticked pin becomes one slot on the [OUTPUTS page](Link.md#page-map), in
+pin order across every protocol, taking channels from zero upward — so the
+lowest ticked pin is channel 0 whatever order the screen was touched in and
+whichever protocol holds it. Eight slots and eight channels are the budget,
+shared. PPM renders eight channels on its one pin, so a bench with PPM on it
+has room for nothing else.
 
 The protocol is a list rather than a stepper, because there are seven of them
 and stepping past six to reach the seventh is not choosing:
@@ -247,9 +254,15 @@ holding a choice that has not been sent is a screen that disagrees with the
 bench, with nothing to say which of the two is driving. What became of the
 write is under the protocol — WRITTEN, NO LINK, or REFUSED.
 
-Switching protocol drops the pins that no longer fit rather than refusing the
-switch. Choosing PPM with four pins ticked keeps the first, because the
-protocol is what was asked for and the pins are the part that has to give.
+Switching protocol says which set is being edited. Nothing is dropped: the
+pins ticked for the protocol being left stay bound, and the pins of the one
+arrived at come back as they were. A selector that retargeted the current pins
+would make binding a second protocol mean unbinding the first.
+
+A pin another protocol holds is drawn greyed, with that protocol's name under
+it where a free pin shows its pad number. That is a choice, undone by going to
+that protocol and unticking it there — unlike a reserved pin, which is drawn
+red and struck through because it is the wiring rather than a choice.
 
 ### The coprocessor keeps it, not the panel
 

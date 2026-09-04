@@ -153,23 +153,79 @@ TEST_CASE(ppm_takes_one_pin_and_pwm_takes_the_bank)
     CHECK_EQ(outbind_chosen(&b), 1);
 }
 
-TEST_CASE(switching_protocol_drops_the_pins_that_no_longer_fit)
+TEST_CASE(switching_protocol_changes_which_set_is_edited)
 {
     outbind_t b;
     init(&b);
-    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    const uint8_t pwm = proto_named("SERVO PWM");
+    const uint8_t dshot = proto_named("DSHOT600");
+
+    outbind_set_proto(&b, pwm);
     for (uint8_t g = 0; g < 3u; ++g) {
         CHECK(outbind_toggle(&b, idx(g)));      /* GP0, GP1, GP2 */
     }
     CHECK_EQ(outbind_chosen(&b), 3);
 
-    /* The protocol is what was asked for; the pins are what gives. */
-    outbind_set_proto(&b, proto_named("PPM"));
-    CHECK_EQ(outbind_chosen(&b), 1);
-    CHECK((b.pins & (1u << idx(0))) != 0u);     /* the first one is kept */
+    /*
+     * The servo pins stay bound.  Binding a second protocol is not a way of
+     * unbinding the first, so the set arrived at starts as it was left --
+     * empty -- and the one left behind is still there to come back to.
+     */
+    outbind_set_proto(&b, dshot);
+    CHECK_EQ(outbind_chosen(&b), 0);
+    CHECK_EQ(outbind_chosen_total(&b), 3);
+    for (uint8_t g = 0; g < 3u; ++g) {
+        CHECK_EQ(outbind_group_of(&b, idx(g)), pwm);
+    }
 
-    outbind_set_proto(&b, proto_named("DSHOT600"));
+    /* A pin another protocol holds is that protocol's to give up: it is
+     * refused here rather than taken away from it. */
+    CHECK(!outbind_can_add(&b, idx(0)));
+    CHECK(!outbind_toggle(&b, idx(0)));
+    CHECK_EQ(outbind_group_of(&b, idx(0)), pwm);
+
+    CHECK(outbind_toggle(&b, idx(4)));
     CHECK_EQ(outbind_chosen(&b), 1);
+    CHECK_EQ(outbind_chosen_total(&b), 4);
+
+    outbind_set_proto(&b, pwm);
+    CHECK_EQ(outbind_chosen(&b), 3);            /* as they were left */
+    CHECK_EQ(outbind_group_of(&b, idx(4)), dshot);
+}
+
+TEST_CASE(the_slots_and_the_channels_are_one_budget_for_every_protocol)
+{
+    /*
+     * Eight slots and eight channels on the page, shared.  PPM renders all
+     * eight channels on its single pin, so a bench with PPM on it has room
+     * for nothing else -- and that is a refusal to add, not a pin quietly
+     * dropped from a page that would not have driven it.
+     */
+    outbind_t b;
+    init(&b);
+    outbind_set_proto(&b, proto_named("PPM"));
+    CHECK(outbind_toggle(&b, idx(0)));
+    CHECK_EQ(outbind_channels_used(&b), LINK_OUT_CHANNELS);
+
+    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    CHECK(!outbind_can_add(&b, idx(1)));
+    CHECK(!outbind_toggle(&b, idx(1)));
+    CHECK_EQ(outbind_chosen_total(&b), 1);
+
+    /* With the PPM pin given back, the same pin is free again. */
+    outbind_set_proto(&b, proto_named("PPM"));
+    CHECK(outbind_toggle(&b, idx(0)));
+    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    CHECK(outbind_toggle(&b, idx(1)));
+
+    /* Eight single-channel pins fill both budgets at once. */
+    static const uint8_t gp[7] = { 0, 2, 4, 5, 6, 7, 13 };
+    for (unsigned i = 0; i < sizeof(gp) / sizeof(gp[0]); ++i) {
+        CHECK(outbind_toggle(&b, idx(gp[i])));
+    }
+    CHECK_EQ(outbind_chosen_total(&b), LINK_OUT_SLOTS);
+    CHECK_EQ(outbind_channels_used(&b), LINK_OUT_CHANNELS);
+    CHECK(!outbind_can_add(&b, idx(14)));
 }
 
 /* ---------------------------------------------------------------- pages */
@@ -251,7 +307,12 @@ TEST_CASE(the_two_dshot_drivers_are_told_apart_on_the_wire)
     CHECK_EQ(slot_reg(regs, 0, LINK_OS_DRIVER), LINK_DRIVER_DSHOT);
     CHECK_EQ(slot_reg(regs, 0, LINK_OS_RATE_HZ), 600);
 
+    /* Given back, then bound again under the other entry.  Choosing a
+     * protocol says which set is being edited, so the pin has to leave the
+     * first set before the second can have it. */
+    CHECK(outbind_toggle(&b, idx(4)));
     outbind_set_proto(&b, proto_named("DSHOT300 BIDIR"));
+    CHECK(outbind_toggle(&b, idx(4)));
     (void)outbind_to_slots(&b, regs);
     CHECK_EQ(slot_reg(regs, 0, LINK_OS_DRIVER), LINK_DRIVER_DSHOT_BIDIR);
     CHECK_EQ(slot_reg(regs, 0, LINK_OS_RATE_HZ), 300);
@@ -347,12 +408,65 @@ TEST_CASE(a_selection_survives_the_round_trip_through_the_page)
         if (!outbind_from_slots(&back, BOARD, regs)) {
             T_FAIL("%s did not read back at all", names[k]);
         }
-        if (back.proto != a.proto || back.pins != a.pins) {
+        if (back.proto != a.proto
+            || memcmp(back.pins, a.pins, sizeof(a.pins)) != 0) {
             T_FAIL("%s came back as proto %u pins %08lX, not %u / %08lX",
-                   names[k], back.proto, (unsigned long)back.pins,
-                   a.proto, (unsigned long)a.pins);
+                   names[k], back.proto, (unsigned long)back.pins[back.proto],
+                   a.proto, (unsigned long)a.pins[a.proto]);
         }
     }
+}
+
+TEST_CASE(two_protocols_at_once_are_the_ordinary_case)
+{
+    outbind_t a, back;
+    init(&a);
+    const uint8_t pwm   = proto_named("SERVO PWM");
+    const uint8_t dshot = proto_named("DSHOT600");
+
+    /*
+     * Servos on GP0 and GP7 with an ESC on GP4 between them.  The ESC's pin
+     * sits inside the servos' range, so this page says slots follow pin
+     * order across protocols rather than one protocol's pins and then the
+     * next.
+     */
+    outbind_set_proto(&a, pwm);
+    CHECK(outbind_toggle(&a, idx(0)));
+    CHECK(outbind_toggle(&a, idx(7)));
+    outbind_set_proto(&a, dshot);
+    CHECK(outbind_toggle(&a, idx(4)));
+
+    uint16_t regs[LINK_OS_COUNT];
+    CHECK_EQ(outbind_to_slots(&a, regs), 3);
+    CHECK_EQ(slot_reg(regs, 0, LINK_OS_PIN), 0);
+    CHECK_EQ(slot_reg(regs, 0, LINK_OS_DRIVER), LINK_DRIVER_PWM);
+    CHECK_EQ(slot_reg(regs, 1, LINK_OS_PIN), 4);
+    CHECK_EQ(slot_reg(regs, 1, LINK_OS_DRIVER), LINK_DRIVER_DSHOT);
+    CHECK_EQ(slot_reg(regs, 2, LINK_OS_PIN), 7);
+    CHECK_EQ(slot_reg(regs, 2, LINK_OS_DRIVER), LINK_DRIVER_PWM);
+
+    /* Channels count up with the pins, whichever protocol holds them. */
+    for (uint8_t k = 0; k < 3u; ++k) {
+        CHECK_EQ(LINK_OS_FIRST(slot_reg(regs, k, LINK_OS_RANGE)), k);
+        CHECK_EQ(LINK_OS_CHANNELS(slot_reg(regs, k, LINK_OS_RANGE)), 1);
+    }
+
+    CHECK(outbind_from_slots(&back, BOARD, regs));
+    CHECK_EQ(memcmp(back.pins, a.pins, sizeof(a.pins)), 0);
+    /* Opened on the lowest-numbered protocol the page uses, so the choice
+     * does not depend on which slot happened to come first. */
+    CHECK_EQ(back.proto, pwm < dshot ? pwm : dshot);
+
+    /*
+     * The roles are mixed to match.  A throttle that centres is a motor at
+     * half power, so the ESC's channel has to be a throttle while the servo
+     * channels either side of it stay surfaces.
+     */
+    uint16_t cc[LINK_CC_COUNT];
+    outbind_to_chan_cfg(&a, cc, 1000, 2000);
+    CHECK_EQ(cc[0 * LINK_CC_STRIDE + LINK_CC_ROLE], LINK_CC_ROLE_SURFACE);
+    CHECK_EQ(cc[1 * LINK_CC_STRIDE + LINK_CC_ROLE], LINK_CC_ROLE_THROTTLE);
+    CHECK_EQ(cc[2 * LINK_CC_STRIDE + LINK_CC_ROLE], LINK_CC_ROLE_SURFACE);
 }
 
 TEST_CASE(an_empty_page_reads_back_as_nothing_configured)
@@ -370,17 +484,19 @@ TEST_CASE(a_page_this_screen_cannot_describe_is_refused_rather_than_guessed)
     uint16_t regs[LINK_OS_COUNT];
     outbind_t b;
 
-    /* Two protocols at once: the screen holds one, and showing either would
-     * be showing a bench that is not there. */
+    /* One pin, two slots: the page names GP0 twice, so no selection renders
+     * back to it however the two are read. */
     outputs_slots_defaults(regs);
     regs[0 * LINK_OS_STRIDE + LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
     regs[0 * LINK_OS_STRIDE + LINK_OS_PIN]     = 0;
+    regs[0 * LINK_OS_STRIDE + LINK_OS_RANGE]   = LINK_OS_RANGE_OF(0, 1);
     regs[0 * LINK_OS_STRIDE + LINK_OS_RATE_HZ] = 50;
     regs[1 * LINK_OS_STRIDE + LINK_OS_DRIVER]  = LINK_DRIVER_DSHOT;
-    regs[1 * LINK_OS_STRIDE + LINK_OS_PIN]     = 1;
+    regs[1 * LINK_OS_STRIDE + LINK_OS_PIN]     = 0;
+    regs[1 * LINK_OS_STRIDE + LINK_OS_RANGE]   = LINK_OS_RANGE_OF(1, 1);
     regs[1 * LINK_OS_STRIDE + LINK_OS_RATE_HZ] = 600;
     CHECK(!outbind_from_slots(&b, BOARD, regs));
-    CHECK_EQ(outbind_chosen(&b), 0);
+    CHECK_EQ(outbind_chosen_total(&b), 0);
 
     /* A rate no entry offers. */
     outputs_slots_defaults(regs);
@@ -565,7 +681,7 @@ TEST_CASE(a_page_is_read_against_the_board_that_sent_it)
 
     CHECK(outbind_from_slots(&back, BOARD, regs));
     CHECK_EQ(back.board, BOARD);
-    CHECK_EQ(back.pins, a.pins);
+    CHECK_EQ(memcmp(back.pins, a.pins, sizeof(a.pins)), 0);
 
     /* The same registers against a board this build cannot map are refused,
      * not reinterpreted. */
@@ -679,20 +795,84 @@ TEST_CASE(a_bit_above_the_board_cannot_survive)
      */
     outbind_t b;
     init(&b);
-    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    const uint8_t pwm = proto_named("SERVO PWM");
+    outbind_set_proto(&b, pwm);
     CHECK(outbind_toggle(&b, idx(0)));
 
-    b.pins |= (uint32_t)1u << 30;                 /* no such pin on any board */
+    b.pins[pwm] |= (uint32_t)1u << 30;            /* no such pin on any board */
     outbind_set_proto(&b, proto_named("DSHOT600"));
-    CHECK_EQ(b.pins & ((uint32_t)1u << 30), 0u);
-    CHECK_EQ(outbind_chosen(&b), 1);
+    CHECK_EQ(b.pins[pwm] & ((uint32_t)1u << 30), 0u);
+    CHECK_EQ(outbind_chosen_total(&b), 1);
+
+    /* One pin cannot be two protocols'.  The lower-numbered one keeps it, so
+     * what a struct from outside reads back as does not depend on the order
+     * the sets happen to be walked in. */
+    outbind_t d;
+    init(&d);
+    const uint8_t dshot = proto_named("DSHOT600");
+    d.pins[pwm]   = (uint32_t)1u << idx(0);
+    d.pins[dshot] = (uint32_t)1u << idx(0);
+    outbind_trim(&d);
+    CHECK_EQ(outbind_group_of(&d, idx(0)), pwm < dshot ? pwm : dshot);
+    CHECK_EQ(outbind_chosen_total(&d), 1);
+
+    /*
+     * And a struct claiming more than the page holds is cut to what would be
+     * written.  Eight PWM pins and one DShot pin is within what either
+     * protocol takes on its own -- both cap at eight -- and one slot past
+     * what the page has.  The ninth pin is the highest, so it is the one the
+     * walk runs out of room for.
+     */
+    outbind_t f;
+    init(&f);
+    static const uint8_t free_gp[8] = { 0, 1, 2, 4, 5, 6, 7, 13 };
+    f.pins[pwm] = 0u;
+    for (unsigned i = 0; i < sizeof(free_gp) / sizeof(free_gp[0]); ++i) {
+        f.pins[pwm] |= (uint32_t)1u << idx(free_gp[i]);
+    }
+    f.pins[dshot] = (uint32_t)1u << idx(14);
+    outbind_trim(&f);
+    CHECK_EQ(outbind_chosen_total(&f), LINK_OUT_SLOTS);
+    CHECK_EQ(outbind_channels_used(&f), LINK_OUT_CHANNELS);
+    CHECK_EQ(outbind_group_of(&f, idx(14)), 0);   /* no room, so not ticked */
+    CHECK_EQ(outbind_group_of(&f, idx(13)), pwm);
+
+    /* What survives is exactly what the page carries. */
+    uint16_t fr[LINK_OS_COUNT];
+    CHECK_EQ(outbind_to_slots(&f, fr), LINK_OUT_SLOTS);
+    outbind_t fb;
+    CHECK(outbind_from_slots(&fb, BOARD, fr));
+    CHECK_EQ(memcmp(fb.pins, f.pins, sizeof(f.pins)), 0);
+
+    /*
+     * The channel budget stops the walk the same way.  PPM on the lowest pin
+     * renders all eight channels, so a PWM pin above it has no channel to
+     * render into and is not left ticked.
+     */
+    outbind_t q;
+    init(&q);
+    q.pins[proto_named("PPM")] = (uint32_t)1u << idx(0);
+    q.pins[pwm]                = (uint32_t)1u << idx(1);
+    outbind_trim(&q);
+    CHECK_EQ(outbind_group_of(&q, idx(0)), proto_named("PPM"));
+    CHECK_EQ(outbind_group_of(&q, idx(1)), 0);
+    CHECK_EQ(outbind_channels_used(&q), LINK_OUT_CHANNELS);
+
+    /* A reserved pin cannot arrive bound either. */
+    outbind_t r;
+    init(&r);
+    r.pins[pwm] = (uint32_t)1u << idx(3);         /* GP3 is the heartbeat */
+    outbind_trim(&r);
+    CHECK_EQ(outbind_chosen_total(&r), 0);
 
     /* Nothing survives a protocol change on a board with no catalogue. */
     outbind_t u;
     outbind_init(&u);
-    u.pins = 0xFFFFFFFFu;
+    for (uint8_t g = 0; g < OUTBIND_PROTOS; ++g) {
+        u.pins[g] = 0xFFFFFFFFu;
+    }
     outbind_set_proto(&u, 1);
-    CHECK_EQ(u.pins, 0u);
+    CHECK_EQ(outbind_chosen_total(&u), 0);
 }
 
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
@@ -721,7 +901,8 @@ int main(void)
     RUN(nothing_can_be_chosen_while_the_protocol_is_off);
     RUN(a_pin_can_always_be_taken_back);
     RUN(ppm_takes_one_pin_and_pwm_takes_the_bank);
-    RUN(switching_protocol_drops_the_pins_that_no_longer_fit);
+    RUN(switching_protocol_changes_which_set_is_edited);
+    RUN(the_slots_and_the_channels_are_one_budget_for_every_protocol);
     RUN(each_pin_becomes_one_slot_in_pin_order);
     RUN(a_page_written_from_a_selection_carries_nothing_from_the_last_one);
     RUN(ppm_claims_the_whole_channel_range_on_its_one_pin);
@@ -730,6 +911,7 @@ int main(void)
     RUN(endpoints_a_servo_cannot_take_are_ignored_rather_than_written);
     RUN(what_this_writes_is_what_the_bank_accepts);
     RUN(a_selection_survives_the_round_trip_through_the_page);
+    RUN(two_protocols_at_once_are_the_ordinary_case);
     RUN(an_empty_page_reads_back_as_nothing_configured);
     RUN(a_page_this_screen_cannot_describe_is_refused_rather_than_guessed);
     RUN(a_reserved_pin_on_the_page_is_refused_on_the_way_back);
