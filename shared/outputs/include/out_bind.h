@@ -2,11 +2,17 @@
  * Binding a protocol to pins: what the operator chooses, and the OUTPUTS page
  * that comes out of it.
  *
- * One protocol and a set of pins, rather than eight independent slots.  A
- * bench is wired one protocol at a time -- four servo leads, or one ESC
- * (electronic speed controller) -- and asking for the protocol once and then
- * for the pins is the shape of that job.  Each chosen pin becomes one slot on
- * the OUTPUTS page, in pin order, taking channels from zero upward.
+ * A set of pins for each protocol, rather than eight independent slots.  A
+ * bench is wired a protocol at a time -- four servo leads, then one ESC
+ * (electronic speed controller) -- and asking for the protocol and then for
+ * its pins is the shape of that job.  The sets stand together: a pin belongs
+ * to at most one of them, and choosing a protocol says which set is being
+ * edited rather than retargeting the pins already chosen for another.
+ *
+ * Each chosen pin becomes one slot on the OUTPUTS page, in pin order across
+ * every protocol, taking channels from zero upward.  So the lowest chosen pin
+ * is channel 0 whichever protocol holds it, and a bench wired to one protocol
+ * writes the page it always wrote.
  *
  * The pin catalogue is the coprocessor's header, not its silicon.  A GPIO
  * (general-purpose input/output) the module does not bring out to a pad
@@ -145,13 +151,44 @@ const outbind_proto_t *outbind_protos(void);
 /* --------------------------------------------------------- the selection */
 
 typedef struct {
-    uint16_t board;         /**< which catalogue `pins` indexes             */
-    uint8_t  proto;         /**< index into outbind_protos()                */
-    uint32_t pins;          /**< one bit per catalogue index of that board  */
+    uint16_t board;         /**< which catalogue every `pins` set indexes   */
+    uint8_t  proto;         /**< the set being edited: outbind_protos()     */
+    /**
+     * One pin set per protocol, a bit per catalogue index of that board.
+     *
+     * `pins[0]` is OFF and is always empty -- OFF is how a protocol says it
+     * holds nothing, so a bit there would be a pin bound to no driver.
+     */
+    uint32_t pins[OUTBIND_PROTOS];
 } outbind_t;
 
 /** Empty, and belonging to no board: nothing can be chosen until one is set. */
 void outbind_init(outbind_t *b);
+
+/**
+ * Which protocol holds @p index, or 0 (OFF) when nothing does.
+ *
+ * A pin refused because another protocol holds it is a different fact from
+ * one the coprocessor reserves: the first is a choice the operator can undo
+ * by going to that protocol, the second is the wiring.  A screen that drew
+ * them alike would offer to free the heartbeat line.
+ */
+uint8_t outbind_group_of(const outbind_t *b, uint8_t index);
+
+/** Pins chosen across every protocol, and the channels they render.  Both
+ *  are budgets shared by all of them: LINK_OUT_SLOTS and LINK_OUT_CHANNELS. */
+uint8_t outbind_chosen_total(const outbind_t *b);
+uint8_t outbind_channels_used(const outbind_t *b);
+
+/**
+ * Drop anything a selection cannot mean on its board.
+ *
+ * Bits above the catalogue's width, and pins past what a protocol takes.
+ * `outbind_t` is a plain struct and one arrives from outside -- read off the
+ * wire, or restored -- so it is trimmed before it is shown rather than
+ * trusted.
+ */
+void outbind_trim(outbind_t *b);
 
 /**
  * Say which board this binding is for.
@@ -164,29 +201,35 @@ void outbind_init(outbind_t *b);
  */
 void outbind_set_board(outbind_t *b, uint16_t board);
 
-/** How many pins are chosen. */
+/** How many pins the protocol being edited has chosen. */
 uint8_t outbind_chosen(const outbind_t *b);
 
 /**
- * Add or remove a pin.
+ * Add or remove a pin, in the protocol being edited.
  *
- * Refuses a reserved pin, an index off the end, and one more pin than the
+ * Refuses a reserved pin, an index off the end, one more pin than the
  * protocol can take -- PPM's second pin is not a second output, it is a
- * mistake.  Removing always succeeds, because an operator must always be
- * able to undo what they just did.
+ * mistake -- and a pin another protocol holds, which is that protocol's to
+ * give up.  Removing a pin this protocol holds always succeeds, because an
+ * operator must always be able to undo what they just did.
  */
 bool outbind_toggle(outbind_t *b, uint8_t index);
 
 /**
- * Change protocol, dropping whatever no longer fits.
+ * Choose which protocol is being edited.
  *
- * Switching to PPM with four pins chosen keeps the first and drops the rest,
- * rather than refusing the switch: the protocol is what was asked for, and
- * the pins are the part that has to give.
+ * Nothing is dropped.  The pins chosen for the protocol being left stay
+ * bound and appear as held on the grid, and the pins of the one arrived at
+ * come back as they were: a selector that retargeted the current pins would
+ * make binding a second protocol mean unbinding the first.
+ *
+ * The whole selection is trimmed here, since this is every screen's way in
+ * to a binding that came from outside.
  */
 void outbind_set_proto(outbind_t *b, uint8_t proto);
 
-/** True when this pin may still be added, for a screen drawing it. */
+/** True when this pin may still be added to the protocol being edited, for a
+ *  screen drawing it. */
 bool outbind_can_add(const outbind_t *b, uint8_t index);
 
 /* ------------------------------------------------------------- the pages */
@@ -198,8 +241,10 @@ bool outbind_can_add(const outbind_t *b, uint8_t index);
  * selection does not use is set to no driver, so a page written from this is
  * the whole truth rather than a change to what was there.
  *
- * Slots are filled in pin order and take channels from zero upward, so the
- * lowest chosen pin is channel 0.  Returns how many slots were used.
+ * Slots are filled in pin order across every protocol and take channels from
+ * zero upward, so the lowest chosen pin is channel 0 whichever protocol holds
+ * it.  Filling stops at LINK_OUT_SLOTS slots or LINK_OUT_CHANNELS channels,
+ * whichever comes first.  Returns how many slots were used.
  */
 uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs);
 
@@ -211,10 +256,15 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs);
  * a panel that reapplied a remembered one would be applying it to whatever is
  * on the bench now.
  *
- * Returns false for a page this shape cannot describe -- slots on different
- * protocols, a rate no entry uses, a pin not on the header -- and leaves @p b
- * cleared.  The screen then shows nothing chosen rather than a selection that
- * disagrees with the page it came from.
+ * Slots on different protocols are the ordinary case; slots on the same
+ * driver and rate are one protocol's set, because that pair is what names a
+ * set.  The protocol left being edited is the lowest-numbered one the page
+ * uses, so a page with anything on it opens on something.
+ *
+ * Returns false for a page this shape cannot describe -- a rate no entry
+ * uses, a pin not on the header, a channel run that does not follow the slot
+ * order -- and leaves @p b cleared.  The screen then shows nothing chosen
+ * rather than a selection that disagrees with the page it came from.
  */
 bool outbind_from_slots(outbind_t *b, uint16_t board,
                         const uint16_t *regs);
@@ -224,8 +274,10 @@ bool outbind_from_slots(outbind_t *b, uint16_t board,
  *
  * A throttle protocol makes its channels throttles and a pulse protocol
  * leaves them surfaces, because that is what decides where a channel rests
- * when it stops being commanded -- stopped, or centred.  Channels the
- * selection does not use keep the schema's defaults.
+ * when it stops being commanded -- stopped, or centred.  With more than one
+ * protocol bound the roles are mixed, and each channel takes the role of the
+ * protocol whose pin renders it.  Channels the selection does not use keep
+ * the schema's defaults.
  */
 void outbind_to_chan_cfg(const outbind_t *b, uint16_t *regs,
                          uint16_t min_us, uint16_t max_us);

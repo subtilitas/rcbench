@@ -253,7 +253,9 @@ TEST_CASE(a_protocol_index_from_outside_cannot_run_off_the_table)
     outbind_init(&b);
     outbind_set_board(&b, OUTBIND_BOARD_PICO_HEADER);
     b.proto = (uint8_t)(OUTBIND_PROTOS + 40u);
-    b.pins  = 0xFFFFFFFFu;
+    for (uint8_t g = 0; g < OUTBIND_PROTOS; ++g) {
+        b.pins[g] = 0xFFFFFFFFu;
+    }
     outputs_screen_set_binding(&b);
     scr()->render(&c, 0);
 

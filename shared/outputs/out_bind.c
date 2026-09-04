@@ -167,11 +167,6 @@ static const outbind_proto_t k_protos[OUTBIND_PROTOS] = {
 
 const outbind_proto_t *outbind_protos(void) { return k_protos; }
 
-static const outbind_proto_t *proto_of(const outbind_t *b)
-{
-    return &k_protos[(b->proto < OUTBIND_PROTOS) ? b->proto : 0u];
-}
-
 /* --------------------------------------------------------- the selection */
 
 void outbind_init(outbind_t *b)
@@ -181,7 +176,9 @@ void outbind_init(outbind_t *b)
     }
     b->board = (uint16_t)OUTBIND_BOARD_UNKNOWN;
     b->proto = 0u;      /* OFF: nothing drives until somebody says so */
-    b->pins  = 0u;
+    for (uint8_t g = 0; g < OUTBIND_PROTOS; ++g) {
+        b->pins[g] = 0u;
+    }
 }
 
 void outbind_set_board(outbind_t *b, uint16_t board)
@@ -192,9 +189,31 @@ void outbind_set_board(outbind_t *b, uint16_t board)
     b->board = board;
     /* A pin index belongs to one catalogue.  Keeping the selection across a
      * change of board would bind whatever sits at that index on the board
-     * that is actually connected. */
-    b->pins  = 0u;
+     * that is actually connected -- and that is true of every protocol's
+     * set, not only the one being edited. */
+    for (uint8_t g = 0; g < OUTBIND_PROTOS; ++g) {
+        b->pins[g] = 0u;
+    }
     b->proto = 0u;
+}
+
+/* How many bits are set in one protocol's pin set. */
+static uint8_t count_pins(uint32_t pins, uint8_t width)
+{
+    uint8_t n = 0u;
+    for (uint8_t i = 0; i < width; ++i) {
+        if ((pins & ((uint32_t)1u << i)) != 0u) {
+            ++n;
+        }
+    }
+    return n;
+}
+
+/* What a protocol may take: its own cap, and never more slots than the page
+ * has. */
+static uint8_t cap_of(const outbind_proto_t *p)
+{
+    return (p->max_pins < OUT_MAX_SLOTS) ? p->max_pins : (uint8_t)OUT_MAX_SLOTS;
 }
 
 uint8_t outbind_chosen(const outbind_t *b)
@@ -202,14 +221,130 @@ uint8_t outbind_chosen(const outbind_t *b)
     if (b == NULL) {
         return 0u;
     }
-    uint8_t n = 0u;
+    const uint8_t proto = (b->proto < OUTBIND_PROTOS) ? b->proto : 0u;
+    return count_pins(b->pins[proto], outbind_pin_count(b->board));
+}
+
+uint8_t outbind_chosen_total(const outbind_t *b)
+{
+    if (b == NULL) {
+        return 0u;
+    }
     const uint8_t cnt = outbind_pin_count(b->board);
-    for (uint8_t i = 0; i < cnt; ++i) {
-        if ((b->pins & ((uint32_t)1u << i)) != 0u) {
-            ++n;
-        }
+    uint8_t n = 0u;
+    for (uint8_t g = 1; g < OUTBIND_PROTOS; ++g) {
+        n = (uint8_t)(n + count_pins(b->pins[g], cnt));
     }
     return n;
+}
+
+uint8_t outbind_channels_used(const outbind_t *b)
+{
+    if (b == NULL) {
+        return 0u;
+    }
+    const uint8_t cnt = outbind_pin_count(b->board);
+    unsigned n = 0u;
+    for (uint8_t g = 1; g < OUTBIND_PROTOS; ++g) {
+        n += (unsigned)count_pins(b->pins[g], cnt) * k_protos[g].channels;
+    }
+    return (uint8_t)((n > 0xFFu) ? 0xFFu : n);
+}
+
+uint8_t outbind_group_of(const outbind_t *b, uint8_t index)
+{
+    if (b == NULL || index >= outbind_pin_count(b->board)) {
+        return 0u;
+    }
+    const uint32_t bit = (uint32_t)1u << index;
+    for (uint8_t g = 1; g < OUTBIND_PROTOS; ++g) {
+        if ((b->pins[g] & bit) != 0u) {
+            return g;
+        }
+    }
+    return 0u;
+}
+
+void outbind_trim(outbind_t *b)
+{
+    if (b == NULL) {
+        return;
+    }
+    const outbind_board_t *bd = outbind_board(b->board);
+    if (b->proto >= OUTBIND_PROTOS) {
+        b->proto = 0u;
+    }
+    b->pins[0] = 0u;         /* OFF holds nothing, whatever arrived saying so */
+    if (bd == NULL) {
+        /* No catalogue to read the bits against, so none of them mean a pin. */
+        for (uint8_t g = 0; g < OUTBIND_PROTOS; ++g) {
+            b->pins[g] = 0u;
+        }
+        return;
+    }
+    /*
+     * Anything above the board's own width first.  The walk below only covers
+     * that width, so a stray high bit would survive every trim and leave
+     * outbind_chosen() and the mask disagreeing about what is selected.
+     */
+    const uint32_t mask = board_mask(bd);
+    uint32_t taken = 0u;
+    for (uint8_t g = 1; g < OUTBIND_PROTOS; ++g) {
+        b->pins[g] &= mask;
+        const uint8_t cap = cap_of(&k_protos[g]);
+        uint8_t kept = 0u;
+        for (uint8_t i = 0; i < bd->count; ++i) {
+            const uint32_t bit = (uint32_t)1u << i;
+            if ((b->pins[g] & bit) == 0u) {
+                continue;
+            }
+            /*
+             * One pin, one protocol.  A pin claimed twice is a page or a
+             * restored struct that cannot be rendered, and the lower-numbered
+             * protocol keeps it so the result does not depend on walk order.
+             */
+            if (kept < cap && !bd->pins[i].reserved && (taken & bit) == 0u) {
+                ++kept;
+                taken |= bit;
+            } else {
+                b->pins[g] &= ~bit;
+            }
+        }
+    }
+
+    /*
+     * Then the page's own budgets, walked exactly as outbind_to_slots()
+     * fills it -- pin order across every protocol, stopping at the first pin
+     * there is no room for.  A pin left ticked past that point is one the
+     * screen offers and the page never carries, which is the failure the far
+     * end cannot report: nothing refuses it, it simply does not drive.
+     */
+    uint8_t slot = 0u, channel = 0u;
+    bool room = true;
+    for (uint8_t i = 0; i < bd->count; ++i) {
+        const uint32_t bit = (uint32_t)1u << i;
+        uint8_t g = 0u;
+        for (uint8_t k = 1; k < OUTBIND_PROTOS; ++k) {
+            if ((b->pins[k] & bit) != 0u) {
+                g = k;
+                break;
+            }
+        }
+        if (g == 0u) {
+            continue;
+        }
+        const uint8_t ch = k_protos[g].channels;
+        if (room && slot < LINK_OUT_SLOTS
+            && (unsigned)channel + ch <= LINK_OUT_CHANNELS) {
+            channel = (uint8_t)(channel + ch);
+            ++slot;
+        } else {
+            /* to_slots() stops at this pin rather than skipping it, so
+             * nothing beyond it is written either. */
+            room = false;
+            b->pins[g] &= ~bit;
+        }
+    }
 }
 
 bool outbind_can_add(const outbind_t *b, uint8_t index)
@@ -221,13 +356,29 @@ bool outbind_can_add(const outbind_t *b, uint8_t index)
     if (!outbind_pin_selectable(bd, index)) {
         return false;
     }
-    const outbind_proto_t *p = proto_of(b);
+    const uint8_t proto = (b->proto < OUTBIND_PROTOS) ? b->proto : 0u;
+    const outbind_proto_t *p = &k_protos[proto];
     if (p->max_pins == 0u) {
         return false;                 /* OFF takes no pins */
     }
-    const uint8_t cap = (p->max_pins < OUT_MAX_SLOTS) ? p->max_pins
-                                                      : (uint8_t)OUT_MAX_SLOTS;
-    return outbind_chosen(b) < cap;
+    /* A pin another protocol holds is that protocol's to give up. */
+    const uint8_t held = outbind_group_of(b, index);
+    if (held != 0u && held != proto) {
+        return false;
+    }
+    if (outbind_chosen(b) >= cap_of(p)) {
+        return false;
+    }
+    /*
+     * The page's own budgets, shared by every protocol: eight slots and eight
+     * channels.  PPM renders eight channels on its one pin, so it fills the
+     * channel budget by itself and nothing else fits beside it.
+     */
+    if (outbind_chosen_total(b) >= LINK_OUT_SLOTS) {
+        return false;
+    }
+    return (unsigned)outbind_channels_used(b) + p->channels
+           <= LINK_OUT_CHANNELS;
 }
 
 bool outbind_toggle(outbind_t *b, uint8_t index)
@@ -248,15 +399,16 @@ bool outbind_toggle(outbind_t *b, uint8_t index)
     if (bd->fixed) {
         return false;
     }
+    const uint8_t proto = (b->proto < OUTBIND_PROTOS) ? b->proto : 0u;
     const uint32_t bit = (uint32_t)1u << index;
-    if ((b->pins & bit) != 0u) {
-        b->pins &= ~bit;              /* undoing is allowed; adding may not be */
+    if ((b->pins[proto] & bit) != 0u) {
+        b->pins[proto] &= ~bit;       /* undoing is allowed; adding may not be */
         return true;
     }
     if (!outbind_can_add(b, index)) {
         return false;
     }
-    b->pins |= bit;
+    b->pins[proto] |= bit;
     return true;
 }
 
@@ -265,36 +417,14 @@ void outbind_set_proto(outbind_t *b, uint8_t proto)
     if (b == NULL || proto >= OUTBIND_PROTOS) {
         return;
     }
+    /*
+     * Switching says which set is being edited.  The pins of the protocol
+     * being left stay bound: binding a second protocol is not a way of
+     * unbinding the first, and an operator who has wired four servos and now
+     * wants an ESC has not changed their mind about the servos.
+     */
     b->proto = proto;
-    /*
-     * Trim from the top, keeping the pins chosen first.  Switching to PPM
-     * with four pins ticked is an operator who has decided on PPM; refusing
-     * the switch would make them undo the pins to say so.
-     */
-    const outbind_proto_t *p = proto_of(b);
-    const uint8_t cap = (p->max_pins < OUT_MAX_SLOTS) ? p->max_pins
-                                                      : (uint8_t)OUT_MAX_SLOTS;
-    /*
-     * Anything above the board's own width first.  The trim below only walks
-     * that width, so a stray high bit would survive every protocol change and
-     * leave outbind_chosen() and the mask disagreeing about what is selected.
-     */
-    const outbind_board_t *bd = outbind_board(b->board);
-    b->pins &= board_mask(bd);
-
-    uint8_t kept = 0u;
-    const uint8_t cnt = (bd != NULL) ? bd->count : 0u;
-    for (uint8_t i = 0; i < cnt; ++i) {
-        const uint32_t bit = (uint32_t)1u << i;
-        if ((b->pins & bit) == 0u) {
-            continue;
-        }
-        if (kept < cap && !bd->pins[i].reserved) {
-            ++kept;
-        } else {
-            b->pins &= ~bit;
-        }
-    }
+    outbind_trim(b);
 }
 
 /* ------------------------------------------------------------- the pages */
@@ -310,20 +440,23 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs)
     if (b == NULL) {
         return 0u;
     }
-    const outbind_proto_t *p = proto_of(b);
-    if (p->driver == OUT_DRIVER_NONE) {
-        return 0u;
-    }
-
     const outbind_board_t *bd = outbind_board(b->board);
     if (bd == NULL) {
         return 0u;
     }
+    /*
+     * Pin order across every protocol, not one protocol's pins and then the
+     * next.  A slot's channels follow the pin it drives, so the operator
+     * reads the grid top to bottom and the channels count up with it however
+     * the protocols are mixed.
+     */
     uint8_t slot = 0u, channel = 0u;
     for (uint8_t i = 0; i < bd->count && slot < LINK_OUT_SLOTS; ++i) {
-        if ((b->pins & ((uint32_t)1u << i)) == 0u) {
+        const uint8_t g = outbind_group_of(b, i);
+        if (g == 0u) {
             continue;
         }
+        const outbind_proto_t *p = &k_protos[g];
         if ((unsigned)channel + p->channels > LINK_OUT_CHANNELS) {
             break;                    /* no channels left to render into */
         }
@@ -350,15 +483,15 @@ bool outbind_from_slots(outbind_t *b, uint16_t board, const uint16_t *regs)
         return false;      /* no catalogue to read the pins against */
     }
 
-    uint8_t proto = 0u;
-    uint32_t pins = 0u;
     for (uint8_t slot = 0; slot < LINK_OUT_SLOTS; ++slot) {
         const uint16_t *r = &regs[(size_t)slot * LINK_OS_STRIDE];
         if (r[LINK_OS_DRIVER] == (uint16_t)LINK_DRIVER_NONE) {
             continue;
         }
         /* Which entry describes this slot: driver and rate together, because
-         * DShot300 and DShot600 are the same driver. */
+         * DShot300 and DShot600 are the same driver.  That pair is also what
+         * names a set, so two slots matching the same entry are two pins of
+         * one protocol rather than two protocols that happen to agree. */
         uint8_t found = 0u;
         for (uint8_t i = 1; i < OUTBIND_PROTOS; ++i) {
             if (link_driver_of(k_protos[i].driver) == r[LINK_OS_DRIVER]
@@ -372,15 +505,6 @@ bool outbind_from_slots(outbind_t *b, uint16_t board, const uint16_t *regs)
             b->board = board;
             return false;          /* a rate or driver no entry offers */
         }
-        /* One protocol, not eight slots: a page with two of them is not
-         * something this screen can show, and showing one of the two would
-         * be showing a bench that is not there. */
-        if (proto != 0u && found != proto) {
-            outbind_init(b);
-            b->board = board;
-            return false;
-        }
-        proto = found;
 
         /*
          * Checked at its full width before it is narrowed.  The register is
@@ -407,22 +531,33 @@ bool outbind_from_slots(outbind_t *b, uint16_t board, const uint16_t *regs)
             b->board = board;
             return false;
         }
-        pins |= (uint32_t)1u << idx;
+        b->pins[found] |= (uint32_t)1u << idx;
     }
 
-    b->proto = proto;
-    b->pins  = pins;
+    /*
+     * Opened on the lowest-numbered protocol the page uses.  A page with
+     * anything on it opens on something the operator can see the pins of,
+     * and the choice does not depend on which slot happened to be first.
+     */
+    b->proto = 0u;
+    for (uint8_t g = 1; g < OUTBIND_PROTOS; ++g) {
+        if (b->pins[g] != 0u) {
+            b->proto = g;
+            break;
+        }
+    }
 
     /*
      * The whole of "is this a page this screen can show": render the binding
      * back and require it to be the page it came from.
      *
-     * Matching on driver and rate alone accepted pages this shape cannot
-     * describe -- a PPM slot claiming one channel instead of eight, two PPM
-     * slots at once, a first-channel field that does not follow the slot
-     * order.  Each would have drawn a binding the operator could not have
-     * made and could not reproduce.  Comparing against what this selection
-     * would write catches all of them, including the ones not thought of.
+     * Matching on driver and rate alone accepts pages this shape cannot
+     * describe -- a PPM slot claiming one channel instead of eight, a
+     * first-channel field that does not follow the slot order, a pin claimed
+     * by two slots, more channels than the page has.  Each would draw a
+     * binding the operator could not have made and could not reproduce.
+     * Comparing against what this selection would write catches all of them,
+     * including the ones not thought of.
      */
     uint16_t check[LINK_OS_COUNT];
     (void)outbind_to_slots(b, check);
@@ -446,27 +581,41 @@ void outbind_to_chan_cfg(const outbind_t *b, uint16_t *regs,
     if (b == NULL) {
         return;
     }
-    const outbind_proto_t *p = proto_of(b);
-    if (p->driver == OUT_DRIVER_NONE) {
+    const outbind_board_t *bd = outbind_board(b->board);
+    if (bd == NULL) {
         return;
     }
     /*
-     * A DShot channel is a throttle and a pulse channel is a surface.  The
-     * role is not decoration: it decides where the channel goes when it stops
-     * being commanded, and a throttle that centres is a motor at half power.
+     * The same walk outbind_to_slots() makes, so a channel takes the role of
+     * the protocol whose pin renders it.  A DShot channel is a throttle and a
+     * pulse channel is a surface.  The role is not decoration: it decides
+     * where the channel goes when it stops being commanded, and a throttle
+     * that centres is a motor at half power.
      */
-    const uint16_t role = (p->driver == OUT_DRIVER_DSHOT
-                           || p->driver == OUT_DRIVER_DSHOT_BIDIR)
-                              ? (uint16_t)LINK_CC_ROLE_THROTTLE
-                              : (uint16_t)LINK_CC_ROLE_SURFACE;
-    const uint8_t used = (uint8_t)(outbind_chosen(b) * p->channels);
-    for (uint8_t c = 0; c < used && c < LINK_OUT_CHANNELS; ++c) {
-        uint16_t *r = &regs[(size_t)c * LINK_CC_STRIDE];
-        r[LINK_CC_ROLE] = role;
-        if (min_us >= LINK_CC_FLOOR_US && max_us <= LINK_CC_CEILING_US
-            && min_us < max_us) {
-            r[LINK_CC_MIN_US] = min_us;
-            r[LINK_CC_MAX_US] = max_us;
+    uint8_t slot = 0u, channel = 0u;
+    for (uint8_t i = 0; i < bd->count && slot < LINK_OUT_SLOTS; ++i) {
+        const uint8_t g = outbind_group_of(b, i);
+        if (g == 0u) {
+            continue;
         }
+        const outbind_proto_t *p = &k_protos[g];
+        if ((unsigned)channel + p->channels > LINK_OUT_CHANNELS) {
+            break;
+        }
+        const uint16_t role = (p->driver == OUT_DRIVER_DSHOT
+                               || p->driver == OUT_DRIVER_DSHOT_BIDIR)
+                                  ? (uint16_t)LINK_CC_ROLE_THROTTLE
+                                  : (uint16_t)LINK_CC_ROLE_SURFACE;
+        for (uint8_t c = channel; c < channel + p->channels; ++c) {
+            uint16_t *r = &regs[(size_t)c * LINK_CC_STRIDE];
+            r[LINK_CC_ROLE] = role;
+            if (min_us >= LINK_CC_FLOOR_US && max_us <= LINK_CC_CEILING_US
+                && min_us < max_us) {
+                r[LINK_CC_MIN_US] = min_us;
+                r[LINK_CC_MAX_US] = max_us;
+            }
+        }
+        channel = (uint8_t)(channel + p->channels);
+        ++slot;
     }
 }

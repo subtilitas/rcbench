@@ -81,6 +81,9 @@ void outputs_screen_set_binding(const outbind_t *b)
 {
     if (b != NULL) {
         s.bind = *b;
+        /* Read off the wire or restored, so it is trimmed before it is drawn
+         * rather than trusted to mean something on this board. */
+        outbind_trim(&s.bind);
         touched();
     }
 }
@@ -140,7 +143,10 @@ static bool inside(gfx_rect_t r, int x, int y)
 
 static int cell_at(int x, int y)
 {
-    for (int i = 0; i < (int)outbind_pin_count(s.bind.board); ++i) {
+    /* Once, not per pin: the count is a board-table lookup and this runs on
+     * every touch event. */
+    const int n = (int)outbind_pin_count(s.bind.board);
+    for (int i = 0; i < n; ++i) {
         if (inside(cell_rect(i), x, y)) {
             return i;
         }
@@ -298,7 +304,13 @@ static void draw_cell(gfx_canvas_t *c, int i)
 {
     const outbind_pin_t *pin = &outbind_pins(s.bind.board)[i];
     const gfx_rect_t r = cell_rect(i);
-    const bool on = (s.bind.pins & ((uint32_t)1u << i)) != 0u;
+    const uint8_t proto = (s.bind.proto < OUTBIND_PROTOS) ? s.bind.proto : 0u;
+    const uint8_t held = outbind_group_of(&s.bind, (uint8_t)i);
+    const bool on = (held != 0u && held == proto);
+    /* Held by a protocol that is not the one being edited.  That is a choice
+     * somebody made and can undo from the other protocol, so it is drawn
+     * grey; the coprocessor's reserved pins stay red. */
+    const bool elsewhere = (held != 0u && held != proto);
     const bool down = (s.hit_kind == HIT_CELL && s.hit_index == i);
     const bool can = outbind_can_add(&s.bind, (uint8_t)i);
 
@@ -316,6 +328,11 @@ static void draw_cell(gfx_canvas_t *c, int i)
     if (on) {
         gfx_fill_chamfer_rect_ex(c, bx + 4, by + 4, BOX - 8, BOX - 8,
                                  3, 0, 3, 0, UI_ACCENT);
+    } else if (elsewhere) {
+        /* Filled, so it reads as taken rather than free, and dim, so it does
+         * not read as this protocol's. */
+        gfx_fill_chamfer_rect_ex(c, bx + 4, by + 4, BOX - 8, BOX - 8,
+                                 3, 0, 3, 0, UI_EDGE_HI);
     } else if (pin->reserved) {
         for (int k = 4; k < BOX - 4; ++k) {
             gfx_fill_rect(c, bx + k, by + k, 2, 2, UI_DANGER);
@@ -333,6 +350,9 @@ static void draw_cell(gfx_canvas_t *c, int i)
      * board, so an operator counting pads and one reading GPIOs both find it. */
     if (pin->reserved) {
         gfx_text(c, tx, r.y + 33, pin->held_by, UI_FONT_LABEL, UI_DANGER, 1);
+    } else if (elsewhere) {
+        gfx_text(c, tx, r.y + 33, outbind_protos()[held].name, UI_FONT_LABEL,
+                 UI_TEXT_DIM, 1);
     } else {
         char pad[10];
         snprintf(pad, sizeof(pad), "PAD %u", (unsigned)pin->pad);
@@ -376,7 +396,8 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
     gfx_fill_rect(c, 0, 0, c->width, c->height, UI_BG);
     draw_left(c);
-    for (int i = 0; i < (int)outbind_pin_count(s.bind.board); ++i) {
+    const int cells = (int)outbind_pin_count(s.bind.board);
+    for (int i = 0; i < cells; ++i) {
         draw_cell(c, i);
     }
     if (s.open) {
