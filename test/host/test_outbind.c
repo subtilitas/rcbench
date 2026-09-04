@@ -990,6 +990,47 @@ TEST_CASE(a_catalogue_that_cannot_be_a_board_is_refused_whole)
     CHECK(outbind_board((uint16_t)OUTBIND_BOARD_UNKNOWN) == NULL);
 }
 
+TEST_CASE(a_catalogue_that_is_refused_leaves_the_last_one_whole)
+{
+    /*
+     * The pins live in one slot, so a page that fails half way through must
+     * not be half written over the board already there.  The failure returns
+     * false while outbind_board() goes on answering, and it would answer with
+     * a count from one board and pins from two.
+     */
+    uint16_t good[LINK_CAT_COUNT];
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) { good[i] = 0u; }
+    good[0] = LINK_CAT_OF(0, 1, LINK_PIN_FREE);
+    good[1] = LINK_CAT_OF(1, 2, LINK_PIN_FREE);
+    good[2] = LINK_CAT_OF(2, 4, LINK_PIN_HEARTBEAT);
+    CHECK(outbind_learn_board(LEARNED, good));
+    CHECK_EQ(outbind_board(LEARNED)->count, 3);
+
+    /* Two pins in, then out of order.  Both the good ones are pins the slot
+     * already holds, at different pads, so a partial write shows. */
+    uint16_t bad[LINK_CAT_COUNT];
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) { bad[i] = 0u; }
+    bad[0] = LINK_CAT_OF(0, 31, LINK_PIN_CAN);
+    bad[1] = LINK_CAT_OF(9, 32, LINK_PIN_CAN);
+    bad[2] = LINK_CAT_OF(4, 34, LINK_PIN_FREE);   /* below GP9: refused here */
+    CHECK(!outbind_learn_board((uint16_t)(LEARNED + 1u), bad));
+
+    /* The board that was there is exactly as it was. */
+    const outbind_board_t *bd = outbind_board(LEARNED);
+    if (bd == NULL) { T_FAIL("a refused catalogue took the last one with it"); }
+    CHECK_EQ(bd->count, 3);
+    CHECK_EQ(bd->pins[0].gpio, 0);
+    CHECK_EQ(bd->pins[0].pad, 1);
+    CHECK(!bd->pins[0].reserved);
+    CHECK_EQ(bd->pins[1].gpio, 1);
+    CHECK_EQ(bd->pins[1].pad, 2);
+    CHECK_EQ(bd->pins[2].gpio, 2);
+    CHECK(bd->pins[2].reserved);
+    /* And the refused identity was not learned under its own name either. */
+    CHECK(outbind_board((uint16_t)(LEARNED + 1u)) == NULL);
+    outbind_forget_learned();
+}
+
 TEST_CASE(every_hold_the_page_can_carry_says_what_has_the_pin)
 {
     /*
@@ -1115,6 +1156,7 @@ int main(void)
     RUN(a_board_can_describe_itself_and_read_back_the_same);
     RUN(a_board_this_build_describes_is_not_the_wires_to_redescribe);
     RUN(a_catalogue_that_cannot_be_a_board_is_refused_whole);
+    RUN(a_catalogue_that_is_refused_leaves_the_last_one_whole);
     RUN(every_hold_the_page_can_carry_says_what_has_the_pin);
     RUN(rendering_a_catalogue_is_refused_rather_than_dereferenced);
     RUN(a_pad_of_zero_ends_the_catalogue);

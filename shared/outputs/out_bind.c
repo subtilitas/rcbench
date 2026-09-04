@@ -148,6 +148,15 @@ bool outbind_learn_board(uint16_t id, const uint16_t *regs)
         }
     }
 
+    /*
+     * Read twice: once to decide, once to keep.
+     *
+     * The pins live in a static slot, so writing as it parsed would leave a
+     * board that failed half way over the one already learned -- and the
+     * failure returns false while outbind_board() goes on answering with a
+     * count from the old board and pins from two.  Nothing is written until
+     * the whole page is known to be a board.
+     */
     uint8_t n = 0u;
     int16_t last = -1;
     for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) {
@@ -165,16 +174,21 @@ bool outbind_learn_board(uint16_t id, const uint16_t *regs)
             return false;       /* out of order, or the same pin twice */
         }
         last = (int16_t)gpio;
-        const uint8_t hold = LINK_CAT_HOLD(regs[i]);
-        s_learned_pins[n].gpio     = gpio;
-        s_learned_pins[n].pad      = pad;
-        s_learned_pins[n].reserved = (hold != LINK_PIN_FREE);
-        s_learned_pins[n].held_by  = (hold != LINK_PIN_FREE)
-                                         ? hold_name(hold) : NULL;
         ++n;
     }
     if (n == 0u) {
         return false;           /* a board that brings out nothing is not one */
+    }
+
+    /* Decided.  From here nothing can refuse it, so the slot is safe to
+     * overwrite. */
+    for (uint8_t i = 0; i < n; ++i) {
+        const uint8_t hold = LINK_CAT_HOLD(regs[i]);
+        s_learned_pins[i].gpio     = LINK_CAT_GPIO(regs[i]);
+        s_learned_pins[i].pad      = LINK_CAT_PAD(regs[i]);
+        s_learned_pins[i].reserved = (hold != LINK_PIN_FREE);
+        s_learned_pins[i].held_by  = (hold != LINK_PIN_FREE)
+                                         ? hold_name(hold) : NULL;
     }
 
     /*
