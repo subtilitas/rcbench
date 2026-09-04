@@ -216,8 +216,8 @@ Settings are behind the SETUP tile, in both themes:
 
 ## Outputs
 
-Behind the OUTPUTS key on the Setup screen. A protocol, and the pins it
-drives.
+Behind the OUTPUTS key on the Setup screen. The protocols bound to the
+coprocessor's pins, and which pins each one drives.
 
 ![Outputs](img/outputs.png)
 
@@ -263,6 +263,16 @@ A pin another protocol holds is drawn greyed, with that protocol's name under
 it where a free pin shows its pad number. That is a choice, undone by going to
 that protocol and unticking it there — unlike a reserved pin, which is drawn
 red and struck through because it is the wiring rather than a choice.
+
+Four servo leads and an ESC, with DShot600 the protocol being edited. GP5 is
+ticked; GP0, GP1, GP2 and GP4 say SERVO PWM and cannot be ticked here; GP3 and
+GP8 to GP12 are red because the coprocessor reserves them:
+
+![Outputs with pins held by another protocol](img/outputs-held.png)
+
+So a cell is in one of four states, and each says what to do about it: ticked
+in this protocol, held by another and named, reserved and struck through, or
+free and showing its pad number.
 
 ### The coprocessor keeps it, not the panel
 

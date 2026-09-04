@@ -185,7 +185,7 @@ this list to `test/host/CMakeLists.txt`.
 
 Coverage floors: 94% overall, 85% for every file except `stub_screen.c`, which
 is exempt by name. `tools/coverage.py --check` fails on drift of the table
-below. `render_ui.py --check` holds 25 committed screenshots to the current
+below. `render_ui.py --check` holds 26 committed screenshots to the current
 render; `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000.
 
