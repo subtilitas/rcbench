@@ -234,10 +234,12 @@ typedef struct {
  * What became of the last output-page write.
  *
  * The control task writes it and app_main hands it to the screen, because
- * screen state is app_main's alone.  A single word crossing without a lock
- * is the same trade the alert text already makes.
+ * screen state is app_main's alone.  Atomic rather than volatile, for the
+ * reason this file already gives for s_stop_live: volatile orders nothing
+ * between processors and promises no atomicity, and these two tasks are
+ * pinned to different cores.
  */
-static volatile int s_outputs_result;
+static atomic_int s_outputs_result;
 
 /*
  * What the coprocessor says its outputs are.
@@ -948,7 +950,7 @@ static void control_task(void *arg)
             }
             if (pc.kind == PANEL_CMD_OUTPUTS) {
                 if (!link_up) {
-                    s_outputs_result = (int)OUTPUTS_NO_LINK;
+                    atomic_store(&s_outputs_result, (int)OUTPUTS_NO_LINK);
                     continue;
                 }
                 /*
@@ -971,7 +973,8 @@ static void control_task(void *arg)
                 ok = ok && write_page(&s_host, LINK_PAGE_OUTPUTS,
                                       LINK_OS_COUNT, slots, &reply)
                      && reply.op == LINK_OP_ACK;
-                s_outputs_result = ok ? (int)OUTPUTS_OK : (int)OUTPUTS_REFUSED;
+                atomic_store(&s_outputs_result,
+                             ok ? (int)OUTPUTS_OK : (int)OUTPUTS_REFUSED);
                 continue;
             }
             if (pc.kind == PANEL_CMD_SERVO) {
@@ -1342,7 +1345,8 @@ void app_main(void)
         if (have) {
             outputs_screen_set_binding(&got);
         }
-        outputs_screen_set_result((outputs_result_t)s_outputs_result);
+        outputs_screen_set_result(
+            (outputs_result_t)atomic_load(&s_outputs_result));
 
         motor_cmd_t mc;
         while (motor_screen_poll_cmd(&mc)) {

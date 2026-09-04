@@ -18,7 +18,7 @@
  * out, and the pad numbers are the ones printed on the board so an operator
  * counting pads and an operator reading GPIOs arrive at the same pin.
  *
- * The reserved five are the coprocessor's: GP3 carries the safety heartbeat
+ * The reserved six are the coprocessor's: GP3 carries the safety heartbeat
  * in from the panel, and GP8 to GP12 are the CAN (Controller Area Network)
  * controller's interrupt and its SPI (Serial Peripheral Interface) bus.
  * firmware/iomcu/include/iomcu_pins.h assigns the same pins for the drivers
