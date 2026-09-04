@@ -1,0 +1,163 @@
+/*
+ * Binding a protocol to pins: what the operator chooses, and the OUTPUTS page
+ * that comes out of it.
+ *
+ * One protocol and a set of pins, rather than eight independent slots.  A
+ * bench is wired one protocol at a time -- four servo leads, or one ESC
+ * (electronic speed controller) -- and asking for the protocol once and then
+ * for the pins is the shape of that job.  Each chosen pin becomes one slot on
+ * the OUTPUTS page, in pin order, taking channels from zero upward.
+ *
+ * The pin catalogue is the coprocessor's header, not its silicon.  A GPIO
+ * (general-purpose input/output) the module does not bring out to a pad
+ * cannot be wired to anything, so it is not offered; GP23 to GP25 are absent
+ * for that reason rather than because anything reserves them.
+ *
+ * Reserved pins are offered but cannot be chosen.  Hiding them would leave an
+ * operator hunting for GP10 and finding a gap; showing them greyed says the
+ * pin exists and what already has it.
+ *
+ * Nothing here talks to the wire.  It produces register arrays, and the panel
+ * writes them.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+#ifndef RCBENCH_OUT_BIND_H
+#define RCBENCH_OUT_BIND_H
+
+#include <stdbool.h>
+#include <stdint.h>
+
+#include "outputs.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/** GPIOs the Pico form factor brings out to the castellated pads. */
+#define OUTBIND_PINS  26u
+
+typedef struct {
+    uint8_t     gpio;
+    uint8_t     pad;        /**< the number printed on the board            */
+    bool        reserved;   /**< the coprocessor refuses it                 */
+    const char *held_by;    /**< what has it, or NULL when it is free       */
+} outbind_pin_t;
+
+/** The catalogue, in GPIO order.  Always OUTBIND_PINS entries. */
+const outbind_pin_t *outbind_pins(void);
+
+/** Index of @p gpio in the catalogue, or OUTBIND_PINS when it is not on the
+ *  header. */
+uint8_t outbind_index_of(uint8_t gpio);
+
+/**
+ * Every reserved pin, one bit per GPIO.
+ *
+ * The coprocessor hands this to outputs_reserve_pins() and the panel greys
+ * the same pins, so the two ends cannot disagree about which pins exist to be
+ * given away.  The coprocessor adds the pins its part does not have.
+ */
+uint64_t outbind_reserved_mask(void);
+
+/* ------------------------------------------------------------- protocols */
+
+/**
+ * What can be bound, as an operator names it.
+ *
+ * Rate is not offered separately.  DShot600 and DShot300 are different
+ * entries because they are different things to choose between, not one thing
+ * with a number attached; the same goes for the bidirectional pair.
+ */
+typedef struct {
+    const char *name;
+    out_driver_t driver;
+    uint16_t     rate;      /**< Hz for a pulse driver, kbit/s for DShot    */
+    uint8_t      max_pins;  /**< PPM is one pin by definition               */
+    uint8_t      channels;  /**< channels one pin of it renders             */
+} outbind_proto_t;
+
+#define OUTBIND_PROTOS 7u
+
+const outbind_proto_t *outbind_protos(void);
+
+/* --------------------------------------------------------- the selection */
+
+typedef struct {
+    uint8_t  proto;         /**< index into outbind_protos()                */
+    uint32_t pins;          /**< one bit per catalogue index                */
+} outbind_t;
+
+void outbind_init(outbind_t *b);
+
+/** How many pins are chosen. */
+uint8_t outbind_chosen(const outbind_t *b);
+
+/**
+ * Add or remove a pin.
+ *
+ * Refuses a reserved pin, an index off the end, and one more pin than the
+ * protocol can take -- PPM's second pin is not a second output, it is a
+ * mistake.  Removing always succeeds, because an operator must always be
+ * able to undo what they just did.
+ */
+bool outbind_toggle(outbind_t *b, uint8_t index);
+
+/**
+ * Change protocol, dropping whatever no longer fits.
+ *
+ * Switching to PPM with four pins chosen keeps the first and drops the rest,
+ * rather than refusing the switch: the protocol is what was asked for, and
+ * the pins are the part that has to give.
+ */
+void outbind_set_proto(outbind_t *b, uint8_t proto);
+
+/** True when this pin may still be added, for a screen drawing it. */
+bool outbind_can_add(const outbind_t *b, uint8_t index);
+
+/* ------------------------------------------------------------- the pages */
+
+/**
+ * Render the selection into the OUTPUTS page.
+ *
+ * @p regs is LINK_OS_COUNT registers, cleared and rebuilt: every slot the
+ * selection does not use is set to no driver, so a page written from this is
+ * the whole truth rather than a change to what was there.
+ *
+ * Slots are filled in pin order and take channels from zero upward, so the
+ * lowest chosen pin is channel 0.  Returns how many slots were used.
+ */
+uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs);
+
+/**
+ * Read a selection back out of an OUTPUTS page.
+ *
+ * The coprocessor holds the configuration, so the panel asks it what is
+ * driving rather than remembering: a binding is a description of wiring, and
+ * a panel that reapplied a remembered one would be applying it to whatever is
+ * on the bench now.
+ *
+ * Returns false for a page this shape cannot describe -- slots on different
+ * protocols, a rate no entry uses, a pin not on the header -- and leaves @p b
+ * cleared.  The screen then shows nothing chosen rather than a selection that
+ * disagrees with the page it came from.
+ */
+bool outbind_from_slots(outbind_t *b, const uint16_t *regs);
+
+/**
+ * Render the channel configuration to match.
+ *
+ * A throttle protocol makes its channels throttles and a pulse protocol
+ * leaves them surfaces, because that is what decides where a channel rests
+ * when it stops being commanded -- stopped, or centred.  Channels the
+ * selection does not use keep the schema's defaults.
+ */
+void outbind_to_chan_cfg(const outbind_t *b, uint16_t *regs,
+                         uint16_t min_us, uint16_t max_us);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* RCBENCH_OUT_BIND_H */

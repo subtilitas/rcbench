@@ -27,6 +27,19 @@ static out_driver_t driver_of(uint16_t wire)
     }
 }
 
+uint16_t link_driver_of(out_driver_t d)
+{
+    switch (d) {
+    case OUT_DRIVER_PWM:         return (uint16_t)LINK_DRIVER_PWM;
+    case OUT_DRIVER_PPM:         return (uint16_t)LINK_DRIVER_PPM;
+    case OUT_DRIVER_DSHOT:       return (uint16_t)LINK_DRIVER_DSHOT;
+    case OUT_DRIVER_DSHOT_BIDIR: return (uint16_t)LINK_DRIVER_DSHOT_BIDIR;
+    case OUT_DRIVER_NONE:
+    case OUT_DRIVER_COUNT:
+    default:                     return (uint16_t)LINK_DRIVER_NONE;
+    }
+}
+
 static bool known_driver(uint16_t wire)
 {
     return wire <= LINK_DRIVER_DSHOT_BIDIR;

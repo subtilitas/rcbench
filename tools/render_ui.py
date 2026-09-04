@@ -48,6 +48,7 @@ SOURCES = [
     "shared/ui/balance_screen.c",
     "shared/ui/battery_screen.c",
     "shared/ui/programmer_screen.c",
+    "shared/ui/outputs_screen.c",
     "shared/ui/log_viewer_screen.c",
     "shared/ui/settings_screen.c",
     "shared/settings/settings.c",
@@ -60,6 +61,7 @@ SOURCES = [
     "shared/sbus/sbus.c",
     "shared/outputs/outputs.c",
     "shared/outputs/outputs_pages.c",
+    "shared/outputs/out_bind.c",
 ]
 
 # Every screen gets a committed screenshot; CI (continuous integration)
@@ -84,6 +86,8 @@ SCREENS = {
     "logs-import":("logs-import.png","logs",       "dark"),
     "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
     "setup":      ("setup.png",      "setup",      "dark"),
+    "outputs":    ("outputs.png",    "outputs",    "dark"),
+    "outputs-protocol": ("outputs-protocol.png", "outputs", "dark"),
     "setup-light":("setup-light.png","setup",      "light"),
     "battery":    ("battery.png",    "battery",    "dark"),
     "balance":    ("balance.png",    "balance",    "dark"),

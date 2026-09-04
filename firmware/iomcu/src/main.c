@@ -28,6 +28,8 @@
 #include "link_dev.h"
 #include "link_pages.h"
 #include "dshot.h"
+#include "out_bind.h"
+#include "out_store.h"
 #include "outputs.h"
 #include "outputs_hw.h"
 #include "outputs_pages.h"
@@ -120,6 +122,22 @@ static void bench_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
  * A read returns the stored register array; a write validates and stores,
  * then re-derives the bank from the whole page so a partial write composes.
  */
+/*
+ * Keep what describes the outputs.
+ *
+ * The configuration is this board's, because the wires are this board's: a
+ * panel that remembered a binding would reapply it to whatever is on the
+ * bench now.  Nothing reaches flash here -- the request is taken later, by
+ * the loop, once the bank has stopped driving.
+ */
+static void save_outputs(const iomcu_state_t *s)
+{
+    out_store_t cfg;
+    memcpy(cfg.slots, s->slots, sizeof(cfg.slots));
+    memcpy(cfg.chan_cfg, s->chan_cfg, sizeof(cfg.chan_cfg));
+    out_store_save(&cfg);
+}
+
 static void channels_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     const iomcu_state_t *s = (const iomcu_state_t *)ctx;
@@ -158,6 +176,7 @@ static uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
         return nack;
     }
     outputs_chan_cfg_apply(&s_outputs, s->chan_cfg);
+    save_outputs(s);
     return 0u;
 }
 
@@ -181,6 +200,7 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
     /* The bank has decided what the slots are; this makes the silicon agree
      * with it before the next pass renders anything. */
     outputs_hw_apply(&s_outputs);
+    save_outputs(s);
     return 0u;
 }
 
@@ -577,6 +597,21 @@ int main(void)
     outputs_chan_cfg_defaults(s_state.chan_cfg);
     outputs_slots_defaults(s_state.slots);
 
+    /*
+     * Then what was saved, over the defaults.  This configures the outputs;
+     * it does not drive them.  Every driver is gated by outputs_driving(),
+     * which wants the bench armed, the heartbeat trusted and a command
+     * arriving, so a restored binding claims its pins and holds them at idle
+     * until somebody arms.  The channels are not restored: a command is not
+     * a configuration, and a bench that came back holding the last throttle
+     * it was given is exactly what must not happen.
+     */
+    out_store_t saved;
+    if (out_store_load(&saved)) {
+        memcpy(s_state.slots, saved.slots, sizeof(s_state.slots));
+        memcpy(s_state.chan_cfg, saved.chan_cfg, sizeof(s_state.chan_cfg));
+    }
+
     const uint32_t now0 = (uint32_t)to_ms_since_boot(get_absolute_time());
     outputs_init(&s_outputs, now0);
     /*
@@ -587,9 +622,14 @@ int main(void)
      * pin arrives from the panel over the OUTPUTS page, so it is whatever an
      * operator typed, and an output bound to the heartbeat input is an
      * interlock that stops working with nothing to show for it.
+     *
+     * The union of what shared/outputs greys out on the panel and what this
+     * file assigns, so the two disagreeing costs a pin rather than the safety
+     * line.
      */
     outputs_reserve_pins(&s_outputs,
-                         IOMCU_RESERVED_PINS | IOMCU_ABSENT_PINS);
+                         outbind_reserved_mask()
+                             | IOMCU_RESERVED_PINS | IOMCU_ABSENT_PINS);
     (void)outputs_set_role(&s_outputs, CH_THROTTLE, OUT_ROLE_THROTTLE);
     outputs_chan_cfg_apply(&s_outputs, s_state.chan_cfg);
     outputs_slots_apply(&s_outputs, s_state.slots);
@@ -652,6 +692,15 @@ int main(void)
         if (!heartbeat_poll(now) && was_beating) {
             outputs_off();   /* fires on the edge only */
         }
+
+        /*
+         * A deferred save, once nothing is driving.  Writing flash stops this
+         * core with interrupts off for longer than the heartbeat's window, so
+         * it cannot happen while an output is live; the monitor loses its
+         * edges across the write and has to re-acquire, which is why it waits
+         * for the bench to be idle rather than merely disarmed.
+         */
+        (void)out_store_tick(outputs_driving(&s_outputs));
 
         can_report(now);
         /* Again straight after the report: printing to a USB host can take

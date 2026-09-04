@@ -63,6 +63,7 @@ TRACKED = [
     "shared/ui/programmer_screen.c",
     "shared/ui/log_viewer_screen.c",
     "shared/ui/settings_screen.c",
+    "shared/ui/outputs_screen.c",
     "shared/settings/settings.c",
     "shared/logfile/log_numbers.c",
     "shared/logfile/log_csv.c",
@@ -90,6 +91,7 @@ TRACKED = [
     "shared/bench/bench_state.c",
     "shared/outputs/outputs.c",
     "shared/outputs/outputs_pages.c",
+    "shared/outputs/out_bind.c",
     "shared/bench/telemetry_sim.c",
     "shared/bench/log_writer.c",
 ]

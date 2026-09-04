@@ -57,7 +57,8 @@
 /* A press that moves further than this is a scroll, not a tap. */
 #define DRAG_SLOP 8
 
-enum { HIT_NONE = 0, HIT_CAT, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST };
+enum { HIT_NONE = 0, HIT_CAT, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
+       HIT_OUTPUTS };
 
 static struct {
     setting_cat_t cat;
@@ -117,6 +118,19 @@ static gfx_rect_t cat_rect(int i)
 static gfx_rect_t reset_rect(void)
 {
     return gfx_rect_make(CAT_X, RESET_Y, CAT_W, 40);
+}
+
+/*
+ * The way to the outputs screen.
+ *
+ * Binding a protocol to pins is a set of pins, and a setting is one number,
+ * so it cannot be a row in the table beside the others; it is a screen, and
+ * this is the door to it.
+ */
+#define OUTPUTS_Y 252
+static gfx_rect_t outputs_rect(void)
+{
+    return gfx_rect_make(CAT_X, OUTPUTS_Y, CAT_W, 52);
 }
 
 /** Screen-space rect of a row, or an empty rect when it is scrolled away. */
@@ -233,6 +247,11 @@ static void event(const touch_event_t *evt)
             settings_screen_invalidate();
             return;
         }
+        if (gfx_rect_contains(outputs_rect(), x, y)) {
+            s.hit_kind = HIT_OUTPUTS;
+            settings_screen_invalidate();
+            return;
+        }
 
         int row = row_at(x, y);
         if (row >= 0) {
@@ -308,6 +327,9 @@ static void event(const touch_event_t *evt)
         } else if (kind == HIT_RESET && gfx_rect_contains(reset_rect(), x, y)) {
             settings_reset(s.cat);
             settings_apply_ui();
+        } else if (kind == HIT_OUTPUTS
+                   && gfx_rect_contains(outputs_rect(), x, y)) {
+            ui_router_goto(SCREEN_OUTPUTS);
         }
         break;
     }
@@ -339,6 +361,13 @@ static void draw_categories(gfx_canvas_t *c)
         gfx_text(c, r.x + 14, r.y + 40, buf, UI_FONT_LABEL,
                  active ? UI_TEXT_ON_LIGHT : UI_TEXT_FAINT, 1);
     }
+
+    gfx_rect_t orr = outputs_rect();
+    ui_button(c, orr, "OUTPUTS", UI_ACCENT, s.hit_kind == HIT_OUTPUTS, true);
+    gfx_text(c, orr.x + orr.w - 22, orr.y + 16, ">", UI_FONT_HEAD,
+             UI_TEXT_ON_LIGHT, 1);
+    gfx_text(c, CAT_X, OUTPUTS_Y + 60, "PROTOCOL AND PINS", UI_FONT_LABEL,
+             UI_TEXT_FAINT, 1);
 
     gfx_rect_t rr = reset_rect();
     ui_button(c, rr, "RESET CATEGORY", UI_WARN, s.hit_kind == HIT_RESET, true);

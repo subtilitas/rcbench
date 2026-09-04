@@ -225,6 +225,72 @@ Die Einstellungen liegen hinter der SETUP-Kachel, in beiden Themes:
 
 ![Setup im hellen Theme](img/setup-light.png)
 
+## Outputs
+
+Hinter der OUTPUTS-Taste auf dem Setup-Bildschirm. Ein Protokoll und die Pins,
+die es treibt.
+
+![Outputs](img/outputs.png)
+
+Ein Protokoll auf einmal, nicht acht unabhängige Slots: ein Prüfstand wird
+protokollweise verkabelt, und erst nach dem Protokoll und dann nach den Pins
+zu fragen ist die Form dieser Arbeit. Jeder angehakte Pin wird ein Slot auf der
+[OUTPUTS-Page](Link-de.md#page-map), in Pin-Reihenfolge, mit Kanälen ab null —
+der niedrigste angehakte Pin ist also Kanal 0, in welcher Reihenfolge der
+Bildschirm auch berührt wurde.
+
+Das Protokoll ist eine Liste und kein Stepper: es gibt sieben davon, und sich
+an sechs vorbeizuschieben, um das siebte zu erreichen, ist keine Auswahl.
+
+![Die Protokollliste](img/outputs-protocol.png)
+
+Reservierte Pins werden gezeigt und lassen sich nicht anhaken. GP3 trägt die
+Safety-Heartbeat-Leitung und GP8 bis GP12 den CAN-Controller (Controller Area
+Network); jeder sagt das unter seinem Namen. Sie zu verstecken hieße, dass
+jemand GP10 sucht und eine Lücke findet. [DShot und die
+Output-Treiber](DShot-de.md#welcher-pin) hat die ganze Übersicht.
+
+Die Pad-Nummer unter jedem Pin ist die auf der Platine aufgedruckte, damit wer
+Pads zählt und wer GPIO-Nummern (General-Purpose Input/Output) liest beim
+gleichen Pin ankommen.
+
+Jede Änderung schreibt die Pages sofort. Es gibt keine APPLY-Taste: ein
+Bildschirm mit einer nicht gesendeten Auswahl ist ein Bildschirm, der dem
+Prüfstand widerspricht, und nichts sagt, welcher von beiden treibt. Was aus dem
+Schreiben wurde, steht unter dem Protokoll — WRITTEN, NO LINK oder REFUSED.
+
+Ein Protokollwechsel verwirft die Pins, die nicht mehr passen, statt den
+Wechsel zu verweigern. PPM mit vier angehakten Pins zu wählen behält den
+ersten: das Protokoll ist das, wonach gefragt wurde, und die Pins sind der
+Teil, der nachgeben muss.
+
+### Der Koprozessor hält sie, nicht das Panel
+
+Eine Bindung beschreibt die Verkabelung, und das Panel ist nicht die Platine,
+in der die Drähte stecken. Der Koprozessor schreibt die Pages OUTPUTS und
+CHAN_CFG in seinen eigenen Flash und stellt sie beim Booten wieder her; das
+Panel speichert keine Bindung und sendet keine ungefragt. Kommt der Link hoch,
+liest das Panel die Page und zeigt, was drüben konfiguriert ist. Nach einem
+Panel-Neustart sind das, was dieser Bildschirm zeigt, und das, was Pins treibt,
+dieselbe Sache.
+
+Das Wiederherstellen konfiguriert die Outputs. Es treibt sie nicht: jeder
+Treiber ist daran gebunden, dass der Prüfstand armed ist, die
+Heartbeat-Leitung vertraut wird und ein Befehl eintrifft. Eine
+wiederhergestellte Bindung belegt also ihre Pins und hält sie im Idle, bis
+jemand armed. Kanalbefehle werden nicht wiederhergestellt — eine Konfiguration
+überlebt einen Power-Cycle, eine Gasstellung nicht.
+
+Das Speichern wartet, bis der Prüfstand nicht mehr treibt. Flash zu schreiben
+hält den Koprozessor zig Millisekunden mit abgeschalteten Interrupts an, länger
+als das Fenster des Heartbeats; eine Änderung während des Treibens wird also
+geschrieben, sobald es aufhört.
+
+Eine Page, die der Bildschirm nicht beschreiben kann — zwei Protokolle
+gleichzeitig, eine Rate, die kein Eintrag anbietet, ein Pin, der nicht auf dem
+Header liegt — liest sich als "nichts konfiguriert" zurück, statt als eine
+Auswahl, die der Page widerspricht, aus der sie stammt.
+
 ## Auswuchten
 
 Auf einer eigenen Seite beschrieben: [Auswuchten](Balance-de.md).

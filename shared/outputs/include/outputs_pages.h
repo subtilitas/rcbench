@@ -25,6 +25,15 @@
 
 #include "outputs.h"
 
+/**
+ * A bank driver as the wire numbers it.
+ *
+ * The wire's numbers are a contract and the bank's enum is not, so the two
+ * are mapped rather than cast in both directions.  Returns LINK_DRIVER_NONE
+ * for anything this build does not know.
+ */
+uint16_t link_driver_of(out_driver_t d);
+
 /* --- CHAN_CFG: what each channel is -- role, slew, and its pulse endpoints */
 void    outputs_chan_cfg_defaults(uint16_t *regs);
 uint8_t outputs_chan_cfg_write(uint16_t *regs, uint8_t off, uint8_t n,

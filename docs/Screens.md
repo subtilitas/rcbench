@@ -209,6 +209,67 @@ Settings are behind the SETUP tile, in both themes:
 
 ![Setup in the light theme](img/setup-light.png)
 
+## Outputs
+
+Behind the OUTPUTS key on the Setup screen. A protocol, and the pins it
+drives.
+
+![Outputs](img/outputs.png)
+
+One protocol at a time, not eight independent slots: a bench is wired one
+protocol at a time, and asking for the protocol once and then for the pins is
+the shape of that job. Each ticked pin becomes one slot on the [OUTPUTS
+page](Link.md#page-map), in pin order, taking channels from zero upward — so
+the lowest ticked pin is channel 0 whatever order the screen was touched in.
+
+The protocol is a list rather than a stepper, because there are seven of them
+and stepping past six to reach the seventh is not choosing:
+
+![The protocol list](img/outputs-protocol.png)
+
+Reserved pins are shown and cannot be ticked. GP3 carries the safety heartbeat
+and GP8 to GP12 are the CAN (Controller Area Network) controller, and each
+says so under its name. Hiding them would leave an operator hunting for GP10
+and finding a gap. [DShot and the output drivers](DShot.md#which-pin) has the
+whole map.
+
+The pad number under each pin is the one printed on the board, so an operator
+counting pads and an operator reading GPIO (general-purpose input/output)
+numbers arrive at the same pin.
+
+Changing anything writes the pages at once. There is no APPLY key: a screen
+holding a choice that has not been sent is a screen that disagrees with the
+bench, with nothing to say which of the two is driving. What became of the
+write is under the protocol — WRITTEN, NO LINK, or REFUSED.
+
+Switching protocol drops the pins that no longer fit rather than refusing the
+switch. Choosing PPM with four pins ticked keeps the first, because the
+protocol is what was asked for and the pins are the part that has to give.
+
+### The coprocessor keeps it, not the panel
+
+A binding describes wiring, and the panel is not the board the wires are in.
+The coprocessor writes the OUTPUTS and CHAN_CFG pages to its own flash and
+restores them at boot; the panel never stores a binding and never sends one
+unasked. When the link comes up the panel reads the page and shows what is
+configured over there. After a panel restart, what this screen shows and what
+is driving pins are the same thing.
+
+Restoring configures the outputs. It does not drive them: every driver is
+gated on the bench being armed, the heartbeat being trusted and a command
+arriving, so a restored binding claims its pins and holds them at idle until
+somebody arms. Channel commands are not restored — a configuration survives a
+power cycle and a throttle position does not.
+
+The save waits for the bench to stop driving. Writing flash stops the
+coprocessor for tens of milliseconds with interrupts off, which is longer than
+the heartbeat's window, so a change made while something is being driven is
+written once it stops.
+
+A page the screen cannot describe — two protocols at once, a rate no entry
+offers, a pin that is not on the header — reads back as nothing configured
+rather than as a selection that disagrees with the page it came from.
+
 ## Balancing
 
 Described on its own page: [Balancing](Balance.md).
