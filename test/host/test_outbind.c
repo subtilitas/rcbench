@@ -567,10 +567,23 @@ TEST_CASE(a_page_is_read_against_the_board_that_sent_it)
 
 TEST_CASE(every_board_in_the_table_is_answerable)
 {
-    /* Whatever gets added later still has to satisfy these. */
-    for (uint16_t id = 1; id < 8; ++id) {
-        const outbind_board_t *bd = outbind_board(id);
-        if (bd == NULL) { continue; }
+    /* The table itself, not a guessed range of identities: a board added
+     * later with an id outside such a range would be skipped by exactly the
+     * test meant to hold it. */
+    CHECK(outbind_board_count() >= 1);
+    CHECK(outbind_board_at(outbind_board_count()) == NULL);
+    for (uint8_t n = 0; n < outbind_board_count(); ++n) {
+        const outbind_board_t *bd = outbind_board_at(n);
+        const uint16_t id = (bd != NULL) ? bd->id : 0u;
+        if (bd == NULL) { T_FAIL("board %u is not there", n); }
+        /* and it is findable by the identity it reports */
+        if (outbind_board(id) != bd) {
+            T_FAIL("board %u is in the table and not findable by id %u",
+                   n, id);
+        }
+        if (id == OUTBIND_BOARD_UNKNOWN) {
+            T_FAIL("board %u claims the unknown identity", n);
+        }
         if (bd->name == NULL || bd->pins == NULL || bd->count == 0u) {
             T_FAIL("board %u is in the table but describes nothing", id);
         }
@@ -594,25 +607,32 @@ TEST_CASE(every_board_in_the_table_is_answerable)
 
 TEST_CASE(nothing_can_be_chosen_on_a_board_that_is_soldered)
 {
-    /* No board declares itself fixed yet.  When one does, the screen must
-     * already refuse to edit it, so the rule is here before the board is. */
+    /*
+     * No board in this build is soldered yet, so the rule is held against a
+     * board built here rather than one in the table.  That is the whole
+     * reason outbind_pin_selectable() takes the board: a rule nothing can
+     * exercise is a rule nobody knows is broken.
+     */
     outbind_board_t fixed = *outbind_board(BOARD);
     fixed.fixed = true;
-    CHECK(fixed.fixed);
-    /* The live path: a fixed board refuses every add through can_add(). */
-    for (uint16_t id = 1; id < 8; ++id) {
-        const outbind_board_t *bd = outbind_board(id);
-        if (bd == NULL || !bd->fixed) { continue; }
-        outbind_t b;
-        outbind_init(&b);
-        outbind_set_board(&b, id);
-        outbind_set_proto(&b, 1);
-        for (uint8_t i = 0; i < bd->count; ++i) {
-            if (outbind_can_add(&b, i)) {
-                T_FAIL("board %u is soldered and still offered pin %u", id, i);
-            }
+    for (uint8_t i = 0; i < fixed.count; ++i) {
+        if (outbind_pin_selectable(&fixed, i)) {
+            T_FAIL("a soldered board still offered pin %u", i);
         }
     }
+
+    /* The same board, not soldered, offers everything that is not reserved. */
+    outbind_board_t open_b = *outbind_board(BOARD);
+    open_b.fixed = false;
+    uint8_t offered = 0;
+    for (uint8_t i = 0; i < open_b.count; ++i) {
+        if (outbind_pin_selectable(&open_b, i)) { ++offered; }
+        CHECK_EQ(outbind_pin_selectable(&open_b, i), !open_b.pins[i].reserved);
+    }
+    CHECK_EQ(offered, 20);          /* 26 on the header, six of them taken */
+
+    CHECK(!outbind_pin_selectable(NULL, 0));
+    CHECK(!outbind_pin_selectable(&open_b, open_b.count));
 }
 
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)

@@ -86,6 +86,20 @@ typedef struct {
 /** The board with this identity, or NULL when this build does not know it. */
 const outbind_board_t *outbind_board(uint16_t id);
 
+/** The table itself, so a caller can walk every board rather than guess at a
+ *  range of identities.  outbind_board_at() returns NULL past the end. */
+uint8_t outbind_board_count(void);
+const outbind_board_t *outbind_board_at(uint8_t index);
+
+/**
+ * Whether @p index may be added to a selection on @p board.
+ *
+ * Takes the board rather than reading it from the table, so the rule can be
+ * held against a board this build does not yet contain -- a soldered one, for
+ * instance, which refuses every pin because there is nothing there to choose.
+ */
+bool outbind_pin_selectable(const outbind_board_t *board, uint8_t index);
+
 /** Its catalogue and how long it is.  NULL and 0 for a board this build does
  *  not know, so a caller that forgets to check offers nothing rather than
  *  offering the wrong thing. */

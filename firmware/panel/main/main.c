@@ -1168,9 +1168,13 @@ static void control_task(void *arg)
                             xSemaphoreGive(s_snap_lock);
                         }
                     } else {
-                        /* Also the path for a board this build has no pin
-                         * map for: the screen then offers nothing, which is
-                         * the only safe thing it can offer. */
+                        /*
+                         * Two different failures land here and they are not
+                         * the same to somebody reading the log.  A board with
+                         * no pin map in this build can offer nothing at all;
+                         * a known board whose page would not read still
+                         * offers its pins, with nothing selected.
+                         */
                         outbind_t none;
                         outbind_init(&none);
                         outbind_set_board(&none, s_board);
@@ -1180,9 +1184,15 @@ static void control_task(void *arg)
                             s_outputs_read_fresh = true;
                             xSemaphoreGive(s_snap_lock);
                         }
-                        ESP_LOGW(TAG, "no outputs page for hardware %u; the "
-                                      "screen will offer no pins",
-                                 (unsigned)s_board);
+                        if (outbind_board(s_board) == NULL) {
+                            ESP_LOGW(TAG, "hardware %u has no pin map in this "
+                                          "build; the screen will offer no "
+                                          "pins", (unsigned)s_board);
+                        } else {
+                            ESP_LOGW(TAG, "could not read the outputs page; "
+                                          "the screen will show nothing "
+                                          "configured");
+                        }
                     }
                 }
             }

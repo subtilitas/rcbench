@@ -73,6 +73,27 @@ const outbind_board_t *outbind_board(uint16_t id)
     return NULL;                 /* including OUTBIND_BOARD_UNKNOWN */
 }
 
+uint8_t outbind_board_count(void)
+{
+    return (uint8_t)(sizeof(k_boards) / sizeof(k_boards[0]));
+}
+
+const outbind_board_t *outbind_board_at(uint8_t index)
+{
+    return (index < outbind_board_count()) ? &k_boards[index] : NULL;
+}
+
+bool outbind_pin_selectable(const outbind_board_t *board, uint8_t index)
+{
+    if (board == NULL || index >= board->count) {
+        return false;
+    }
+    if (board->fixed) {
+        return false;      /* soldered: there is nothing here to choose */
+    }
+    return !board->pins[index].reserved;
+}
+
 const outbind_pin_t *outbind_pins(uint16_t board)
 {
     const outbind_board_t *b = outbind_board(board);
@@ -187,11 +208,8 @@ bool outbind_can_add(const outbind_t *b, uint8_t index)
         return false;
     }
     const outbind_board_t *bd = outbind_board(b->board);
-    if (bd == NULL || index >= bd->count || bd->pins[index].reserved) {
+    if (!outbind_pin_selectable(bd, index)) {
         return false;
-    }
-    if (bd->fixed) {
-        return false;      /* soldered: there is nothing here to choose */
     }
     const outbind_proto_t *p = proto_of(b);
     if (p->max_pins == 0u) {
