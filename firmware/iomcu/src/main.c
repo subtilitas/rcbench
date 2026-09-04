@@ -280,6 +280,21 @@ static void catalogue_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     }
 }
 
+/*
+ * And where those pins are, so a panel that has never seen this board can
+ * draw it rather than only list it.  Zeroes when the build has no shape for
+ * the board, which the panel reads as "not drawable" and nothing worse.
+ */
+static void shape_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    uint16_t all[LINK_SH_COUNT];
+    outbind_shape_to_regs(outbind_board(IOMCU_BOARD_ID), all);
+    for (uint8_t i = 0; i < n; ++i) {
+        out[i] = all[off + i];
+    }
+}
+
 static const link_page_t k_pages[] = {
     { LINK_PAGE_IDENTITY, LINK_ID_COUNT, identity_read, NULL },
     { LINK_PAGE_STATUS,   LINK_ST_COUNT, status_read,   NULL },
@@ -289,6 +304,7 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_OUTPUTS,  LINK_OS_COUNT, slots_read,    slots_write },
     { LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, chan_cfg_read, chan_cfg_write },
     { LINK_PAGE_CATALOGUE, LINK_CAT_COUNT, catalogue_read, NULL },
+    { LINK_PAGE_SHAPE,     LINK_SH_COUNT,  shape_read,     NULL },
 };
 
 /* ------------------------------------------------------------ the heartbeat */

@@ -38,6 +38,7 @@ typedef enum {
     LINK_PAGE_OUTPUTS  = 0x22, /**< which driver drives what, on which pin */
     LINK_PAGE_CHAN_CFG = 0x23, /**< what each channel is and how it moves  */
     LINK_PAGE_CATALOGUE = 0x24, /**< the board's own pins, read-only       */
+    LINK_PAGE_SHAPE     = 0x25, /**< where those pins are, read-only       */
 } link_page_id_t;
 
 /*
@@ -48,7 +49,7 @@ typedef enum {
  * older host can ignore.
  */
 #define LINK_PROTOCOL_MAJOR 2u
-#define LINK_PROTOCOL_MINOR 2u
+#define LINK_PROTOCOL_MINOR 3u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -304,6 +305,57 @@ typedef enum {
     LINK_PIN_SENSOR    = 5,
     LINK_PIN_OTHER     = 15, /**< spoken for, and this build has no word   */
 } link_pin_hold_t;
+
+/* ------------------------------------------------------------------- shape */
+
+/*
+ * Where the pins are, as opposed to which they are.
+ *
+ * The catalogue page names a pad and the pin on it; it does not say where
+ * that pad sits.  A picture of the board is the one place a pin number has
+ * to become a position, and a picture drawn from a guessed shape points at
+ * the wrong pad with the same confidence as the right one -- so the board
+ * says its shape rather than the panel assuming one.
+ *
+ * A coprocessor that does not serve this page gets no drawn board.  That is
+ * a screen the operator does not get, not a bench that does not work: the
+ * outputs grid offers the same pins from the catalogue alone.
+ *
+ * Two rows on one pitch, which is every 0.1-inch header board.  Pad 1 sits
+ * at LINK_SH_CORNER and the numbers run away from it along that edge, then
+ * back along the opposite one -- the DIP (dual in-line package) convention,
+ * and the one the Pico form factor follows.
+ *
+ * Hundredths of a millimetre throughout: a register is sixteen bits, which
+ * reaches 655.35 mm, and 0.01 mm is finer than any board is placed to.
+ */
+enum {
+    LINK_SH_WIDTH_CMM  = 0, /**< outline, along the pad rows              */
+    LINK_SH_HEIGHT_CMM = 1, /**< outline, across them                     */
+    LINK_SH_LAYOUT     = 2, /**< (corner << 8) | pads in one row          */
+    LINK_SH_PITCH_CMM  = 3, /**< centre to centre, 254 for 0.1 inch       */
+    /**
+     * Edge to the centre of the pad row.  The outline's own edge, not a
+     * photograph's: artwork carries its own calibration because a photo is
+     * not cropped to the outline.
+     */
+    LINK_SH_INSET_CMM  = 4,
+    LINK_SH_COUNT      = 5,
+};
+
+#define LINK_SH_LAYOUT_OF(corner, per_side) \
+    ((uint16_t)((((unsigned)(corner) & 0xFFu) << 8) \
+                | ((unsigned)(per_side) & 0xFFu)))
+#define LINK_SH_CORNER(r)   ((uint8_t)(((r) >> 8) & 0xFFu))
+#define LINK_SH_PER_SIDE(r) ((uint8_t)((r) & 0xFFu))
+
+/** Which corner of the outline pad 1 sits at, seen with the board as drawn. */
+typedef enum {
+    LINK_SH_BOTTOM_LEFT  = 0,
+    LINK_SH_BOTTOM_RIGHT = 1,
+    LINK_SH_TOP_LEFT     = 2,
+    LINK_SH_TOP_RIGHT    = 3,
+} link_shape_corner_t;
 
 /* ----------------------------------------------------------------- control */
 enum {

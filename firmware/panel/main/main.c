@@ -1201,6 +1201,25 @@ static void control_task(void *arg)
                             ESP_LOGI(TAG, "hardware %u described itself: "
                                           "%u pins", (unsigned)s_board,
                                      (unsigned)outbind_pin_count(s_board));
+                            /*
+                             * And where they are, if it says.  Only a
+                             * picture of the board needs this, so a board
+                             * that does not answer is used from its
+                             * catalogue and simply is not drawn.
+                             */
+                            link_msg_t shp;
+                            if (poll_page(&s_host, LINK_PAGE_SHAPE,
+                                          LINK_SH_COUNT, &shp)
+                                && shp.op == LINK_OP_DATA
+                                && outbind_learn_shape(s_board, shp.regs)) {
+                                ESP_LOGI(TAG, "hardware %u says where its "
+                                              "pads are", (unsigned)s_board);
+                            } else {
+                                ESP_LOGI(TAG, "hardware %u does not say where "
+                                              "its pads are; it will be "
+                                              "listed and not drawn",
+                                         (unsigned)s_board);
+                            }
                         } else if (answered_cat && cat.op == LINK_OP_NACK
                                    && cat.regs[0] == LINK_NACK_BAD_PAGE) {
                             /*

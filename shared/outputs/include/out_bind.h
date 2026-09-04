@@ -73,6 +73,22 @@ typedef struct {
     const char *held_by;    /**< what has it, or NULL when it is free       */
 } outbind_pin_t;
 
+/**
+ * Where a board's pads are: two rows on one pitch, which is every 0.1-inch
+ * header board.  Hundredths of a millimetre throughout.
+ *
+ * Only a picture of the board needs this.  Which pins exist and what holds
+ * them is the catalogue's job, and the outputs grid asks nothing else.
+ */
+typedef struct {
+    uint16_t width_cmm;   /**< outline, along the pad rows                 */
+    uint16_t height_cmm;  /**< outline, across them                        */
+    uint16_t pitch_cmm;   /**< centre to centre, 254 for 0.1 inch          */
+    uint16_t inset_cmm;   /**< edge to the centre of a pad row             */
+    uint8_t  per_side;    /**< pads in one row                             */
+    uint8_t  corner;      /**< a link_shape_corner_t: where pad 1 sits     */
+} outbind_shape_t;
+
 typedef struct {
     uint16_t             id;      /**< as the identity page reports it      */
     const char          *name;
@@ -87,6 +103,9 @@ typedef struct {
      * board cannot honour.
      */
     bool                 fixed;
+    /** Where the pads are, or NULL when nothing here says.  A board without
+     *  one is used from its catalogue and simply is not drawn. */
+    const outbind_shape_t *shape;
 } outbind_board_t;
 
 /**
@@ -124,6 +143,30 @@ void outbind_board_to_regs(const outbind_board_t *board, uint16_t *regs);
  * coprocessor rename the pin holding the safety line.
  */
 bool outbind_learn_board(uint16_t id, const uint16_t *regs);
+
+/** Render a board's shape into LINK_SH_COUNT registers, or leave them zero
+ *  when it has none. */
+void outbind_shape_to_regs(const outbind_board_t *board, uint16_t *regs);
+
+/**
+ * Give the learned board a shape from a shape page.
+ *
+ * Refuses one that cannot be a board: no pads in a row, a corner that is not
+ * one, no pitch, or an outline too small to hold the row it claims.  Refuses
+ * one whose rows cannot hold the catalogue's pins, since the two pages
+ * describe the same board and a pad with nowhere to sit would be drawn off
+ * the outline.  A board with no shape is used and not drawn, so refusing
+ * costs the picture and nothing else.
+ */
+bool outbind_learn_shape(uint16_t id, const uint16_t *regs);
+
+/**
+ * Where a pad's centre is, in hundredths of a millimetre from the top-left
+ * of the outline.  False for a pad the shape does not place: pads are
+ * numbered from one, up to twice the row length.
+ */
+bool outbind_pad_xy(const outbind_shape_t *shape, uint8_t pad,
+                    uint16_t *x_cmm, uint16_t *y_cmm);
 
 /**
  * Forget it.

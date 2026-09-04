@@ -59,9 +59,21 @@ static const outbind_pin_t k_pico_pins[OUTBIND_PINS] = {
  * Every board this build knows.  A second one appends a row here and a
  * catalogue above it; nothing else in this file is per-board.
  */
+/*
+ * The Pico form factor: 51.00 x 21.00 mm, forty pads on 2.54 mm, twenty a
+ * side, pad 1 at the bottom left with the numbers running away from it.
+ *
+ * The outline's own numbers.  The picker's photograph needs a different
+ * inset because a photograph is not cropped to the outline, and it carries
+ * that calibration itself.
+ */
+static const outbind_shape_t k_pico_shape = {
+    5100u, 2100u, 254u, 161u, 20u, (uint8_t)LINK_SH_BOTTOM_LEFT,
+};
+
 static const outbind_board_t k_boards[] = {
     { OUTBIND_BOARD_PICO_HEADER, "RP2350-CAN", k_pico_pins, OUTBIND_PINS,
-      false },
+      false, &k_pico_shape },
 };
 
 /*
@@ -71,6 +83,8 @@ static const outbind_board_t k_boards[] = {
  * needs to match against the board in front of them.
  */
 static outbind_pin_t   s_learned_pins[LINK_CAT_PINS];
+static outbind_shape_t s_learned_shape;
+static bool            s_have_learned_shape;
 static char            s_learned_name[16];
 static outbind_board_t s_learned;
 static bool            s_have_learned;
@@ -216,13 +230,125 @@ bool outbind_learn_board(uint16_t id, const uint16_t *regs)
      * would make a board that describes itself unusable rather than usable.
      */
     s_learned.fixed = false;
-    s_have_learned  = true;
+    /*
+     * A shape belongs to the board it came with.  Learning a board drops it,
+     * so a new coprocessor is not drawn with the last one's outline while
+     * its own shape page has yet to be read.
+     */
+    s_have_learned_shape = false;
+    s_learned.shape      = NULL;
+    s_have_learned       = true;
+    return true;
+}
+
+void outbind_shape_to_regs(const outbind_board_t *board, uint16_t *regs)
+{
+    if (regs == NULL) {
+        return;
+    }
+    for (unsigned i = 0; i < LINK_SH_COUNT; ++i) {
+        regs[i] = 0u;
+    }
+    if (board == NULL || board->shape == NULL) {
+        return;             /* a board with no shape says so with zeroes */
+    }
+    const outbind_shape_t *sh = board->shape;
+    regs[LINK_SH_WIDTH_CMM]  = sh->width_cmm;
+    regs[LINK_SH_HEIGHT_CMM] = sh->height_cmm;
+    regs[LINK_SH_LAYOUT]     = LINK_SH_LAYOUT_OF(sh->corner, sh->per_side);
+    regs[LINK_SH_PITCH_CMM]  = sh->pitch_cmm;
+    regs[LINK_SH_INSET_CMM]  = sh->inset_cmm;
+}
+
+bool outbind_learn_shape(uint16_t id, const uint16_t *regs)
+{
+    if (regs == NULL || !s_have_learned || s_learned.id != id) {
+        return false;       /* a shape for a board that is not the one here */
+    }
+    outbind_shape_t sh;
+    sh.width_cmm  = regs[LINK_SH_WIDTH_CMM];
+    sh.height_cmm = regs[LINK_SH_HEIGHT_CMM];
+    sh.pitch_cmm  = regs[LINK_SH_PITCH_CMM];
+    sh.inset_cmm  = regs[LINK_SH_INSET_CMM];
+    sh.per_side   = LINK_SH_PER_SIDE(regs[LINK_SH_LAYOUT]);
+    sh.corner     = LINK_SH_CORNER(regs[LINK_SH_LAYOUT]);
+
+    if (sh.per_side == 0u || sh.pitch_cmm == 0u
+        || sh.corner > (uint8_t)LINK_SH_TOP_RIGHT) {
+        return false;
+    }
+    /* The row has to fit the outline it claims, and the two rows have to fit
+     * across it. */
+    if ((uint32_t)(sh.per_side - 1u) * sh.pitch_cmm > sh.width_cmm
+        || (uint32_t)sh.inset_cmm * 2u >= sh.height_cmm) {
+        return false;
+    }
+    /*
+     * And it has to place every pad the catalogue named.  The two pages
+     * describe one board; a pad with nowhere to sit would be drawn off the
+     * outline, which is the failure a drawn board exists to avoid.
+     */
+    const unsigned pads = (unsigned)sh.per_side * 2u;
+    for (uint8_t i = 0; i < s_learned.count; ++i) {
+        if (s_learned_pins[i].pad == 0u || s_learned_pins[i].pad > pads) {
+            return false;
+        }
+    }
+
+    s_learned_shape      = sh;
+    s_learned.shape      = &s_learned_shape;
+    s_have_learned_shape = true;
+    return true;
+}
+
+bool outbind_pad_xy(const outbind_shape_t *shape, uint8_t pad,
+                    uint16_t *x_cmm, uint16_t *y_cmm)
+{
+    if (shape == NULL || x_cmm == NULL || y_cmm == NULL
+        || shape->per_side == 0u || pad == 0u
+        || pad > (unsigned)shape->per_side * 2u) {
+        return false;
+    }
+    /*
+     * The row pad 1 is in, then the other one coming back: pads run away
+     * from their corner along one edge and return along the opposite edge,
+     * so the second row's numbers ascend in the direction the first row's
+     * descend.
+     */
+    const uint8_t idx = (uint8_t)(pad - 1u);
+    const bool    far = (idx >= shape->per_side);
+    const uint8_t in_row = far ? (uint8_t)(idx - shape->per_side) : idx;
+    const uint8_t along  = far ? (uint8_t)(shape->per_side - 1u - in_row)
+                               : in_row;
+
+    /* Centred, so the margin either end of a row is the same. */
+    const uint32_t span = (uint32_t)(shape->per_side - 1u) * shape->pitch_cmm;
+    const uint32_t lead = ((uint32_t)shape->width_cmm - span) / 2u;
+    uint32_t x = lead + (uint32_t)along * shape->pitch_cmm;
+
+    /* Pad 1's own row sits at its corner's edge; the other row opposite. */
+    const bool starts_top = (shape->corner == (uint8_t)LINK_SH_TOP_LEFT
+                             || shape->corner == (uint8_t)LINK_SH_TOP_RIGHT);
+    const bool on_top = far ? !starts_top : starts_top;
+    uint32_t y = on_top ? shape->inset_cmm
+                        : ((uint32_t)shape->height_cmm - shape->inset_cmm);
+
+    /* A corner on the right numbers the other way along the row. */
+    if (shape->corner == (uint8_t)LINK_SH_BOTTOM_RIGHT
+        || shape->corner == (uint8_t)LINK_SH_TOP_RIGHT) {
+        x = (uint32_t)shape->width_cmm - x;
+    }
+
+    *x_cmm = (uint16_t)x;
+    *y_cmm = (uint16_t)y;
     return true;
 }
 
 void outbind_forget_learned(void)
 {
-    s_have_learned = false;
+    s_have_learned       = false;
+    s_have_learned_shape = false;
+    s_learned.shape      = NULL;
 }
 
 uint8_t outbind_board_count(void)

@@ -31,6 +31,14 @@ A board the panel has never heard of describes its own pins, on the
 printed beside each, and what holds the ones an output may not have. So a
 coprocessor newer than the panel is usable rather than blank.
 
+A board that also serves the [shape page](Link.md#page-map) says where its
+pads are -- the outline, the pitch, and which corner pad 1 sits at -- so the
+panel can draw it rather than only list it. Only a picture needs that: a board
+that does not answer is used from its catalogue and simply is not drawn. A
+picture drawn from a guessed shape would point at the wrong pad with the same
+confidence as the right one, which on a screen whose job is "find this pad on
+the board in front of you" is the failure worth avoiding.
+
 What a board cannot do is make one of its pins safe. The coprocessor reserves
 its own set at its own end whatever the catalogue page says, so a catalogue
 that is wrong costs a pin rather than the safety line. A board that neither
