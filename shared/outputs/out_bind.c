@@ -259,7 +259,18 @@ bool outbind_from_slots(outbind_t *b, const uint16_t *regs)
         }
         proto = found;
 
-        const uint8_t idx = outbind_index_of((uint8_t)r[LINK_OS_PIN]);
+        /*
+         * Checked at its full width before it is narrowed.  The register is
+         * sixteen bits and a pin is eight, so 0x0100 cast first becomes GP0
+         * and a page naming a pin that does not exist would read back as a
+         * binding on the first pin of the header.
+         */
+        const uint16_t pin = r[LINK_OS_PIN];
+        if (pin > OUT_MAX_PIN) {
+            outbind_init(b);
+            return false;
+        }
+        const uint8_t idx = outbind_index_of((uint8_t)pin);
         if (idx >= OUTBIND_PINS || k_pins[idx].reserved) {
             /*
              * A pin not on the header, or one that is spoken for.  The page

@@ -406,6 +406,32 @@ TEST_CASE(a_reserved_pin_on_the_page_is_refused_on_the_way_back)
     CHECK(!outbind_from_slots(&b, regs));
 }
 
+TEST_CASE(a_pin_wider_than_a_pin_is_refused_before_it_is_narrowed)
+{
+    /* The register is sixteen bits and a pin is eight.  Narrowed first,
+     * 0x0100 becomes GP0, and a page naming a pin that cannot exist would
+     * read back as a binding on the first pin of the header. */
+    uint16_t regs[LINK_OS_COUNT];
+    outputs_slots_defaults(regs);
+    regs[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
+    regs[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(0, 1);
+    regs[LINK_OS_RATE_HZ] = 50;
+
+    outbind_t b;
+    static const uint16_t bad[] = { 0x0100u, 0x0103u, 64u, 0xFFFFu };
+    for (unsigned i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        regs[LINK_OS_PIN] = bad[i];
+        if (outbind_from_slots(&b, regs)) {
+            T_FAIL("pin 0x%04X was accepted, as %u pin(s)",
+                   bad[i], outbind_chosen(&b));
+        }
+    }
+    /* And the widest pin that is real still works. */
+    regs[LINK_OS_PIN] = 28u;
+    CHECK(outbind_from_slots(&b, regs));
+    CHECK_EQ(outbind_chosen(&b), 1);
+}
+
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     uint16_t regs[LINK_OS_COUNT];
@@ -443,6 +469,7 @@ int main(void)
     RUN(an_empty_page_reads_back_as_nothing_configured);
     RUN(a_page_this_screen_cannot_describe_is_refused_rather_than_guessed);
     RUN(a_reserved_pin_on_the_page_is_refused_on_the_way_back);
+    RUN(a_pin_wider_than_a_pin_is_refused_before_it_is_narrowed);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("outbind");
 }
