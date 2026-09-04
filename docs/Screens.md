@@ -39,12 +39,17 @@ The menu in the light theme:
 ![The splash](img/splash.png)
 
 Each subsystem reports its result as it comes up: board, display, touch, SD
-card, settings, link, coprocessor. A missing card or an unusable NVS
-(non-volatile storage) is a warning. A touch
-controller that does not answer, or a coprocessor with a different protocol
-major version, is a failure and the bench will not arm. When every step has
-answered, the splash hands over to the menu after a hold of 1.6 s; a tap skips
-the hold.
+card, settings, link, coprocessor. The board line carries the panel's own
+firmware version, and the coprocessor line carries the protocol version and
+the firmware version that the coprocessor reported -- two boards can speak
+the same protocol and be different builds, and this is where that shows.
+
+A missing card or an unusable NVS (non-volatile storage) is a warning. A
+touch controller that does not answer, or a coprocessor with a different
+protocol major version, is a failure and the bench will not arm.
+
+When every step has answered, the splash hands over to the menu after a hold
+of 1.6 s; a tap skips the hold.
 
 ## Motor & ESC
 

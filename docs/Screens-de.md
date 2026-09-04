@@ -42,7 +42,11 @@ Das Menü im hellen Theme:
 ![Der Splash](img/splash.png)
 
 Jedes Subsystem meldet beim Hochfahren sein Ergebnis: Platine, Display,
-Touch, SD-Karte, Einstellungen, Link, Koprozessor. Eine fehlende Karte ist
+Touch, SD-Karte, Einstellungen, Link, Koprozessor. Die Zeile der Platine
+trägt die Firmware-Version des Panels selbst, die Zeile des Koprozessors die
+Protokollversion und die Firmware-Version, die dieser Koprozessor gemeldet
+hat — zwei Platinen können dasselbe Protokoll sprechen und verschiedene
+Builds sein, und hier zeigt sich das. Eine fehlende Karte ist
 eine Warnung. Ein Touch-Controller, der nicht antwortet, oder ein Koprozessor
 mit einer anderen Major-Version des Protokolls ist ein Fehler, und der
 Prüfstand schaltet nicht scharf. Wenn alle Schritte geantwortet haben,
