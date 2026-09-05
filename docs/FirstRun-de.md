@@ -4,7 +4,7 @@
 
 Für das erste Mal, dass beide Platinen mit gestecktem Heartbeat-Draht mit
 Strom versorgt werden. Geschrieben für 0.4.0. Nichts davon wurde je gemacht,
-also sagt jeder Schritt, wie „gut" aussieht und was aufzuschreiben ist, wenn
+also sagt jeder Schritt, wie „gut“ aussieht und was aufzuschreiben ist, wenn
 es das nicht tut.
 
 Die Liste von oben nach unten abarbeiten. Jeder Schritt setzt voraus, dass
@@ -251,7 +251,7 @@ der schnellste Weg, sie auszuschließen.
 ## 9. Was aufzuschreiben ist
 
 Für jeden Schritt: was gemessen wurde, wogegen es erwartet wurde und was das
-Oszilloskop zeigte. `STATUS.md` trägt eine Tabelle „Open items" — die Zeilen
+Oszilloskop zeigte. `STATUS.md` trägt eine Tabelle „Open items“ — die Zeilen
 über Treiber auf Hardware, die Control-Page und den Flash-Speicher sind die,
 die dieser Lauf beantwortet.
 

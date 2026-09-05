@@ -43,7 +43,7 @@ Alle drei laufen auf dem Koprozessor.
 ### Ergebnisse
 
 - Ein Endpunkt wird bereits um 25 µs zurückgenommen gemeldet.
-- „Keine Endlage gefunden" heißt: die Suche hat 600 µs von der Mitte erreicht,
+- „Keine Endlage gefunden“ heißt: die Suche hat 600 µs von der Mitte erreicht,
   ohne dass das Gestänge angelaufen ist.
 - Eine Endlage nahe der Mitte kann eine Schwergängigkeit im Gestänge sein,
   etwa ein klemmender Umlenkhebel oder eine streifende Schubstange, statt des
@@ -80,7 +80,7 @@ genügt.
 
 - Ein Paar, das bereits abgeglichen ist, liefert ein Minimum bei Korrektur
   null.
-- „Kein Minimum" heißt: der Strom schwankt über den breitesten Suchlauf um
+- „Kein Minimum“ heißt: der Strom schwankt über den breitesten Suchlauf um
   weniger als 0,08 A.
 - Zwei Servos, die sich einig sind und beide falsch stehen, erzeugen keinen
   Stromunterschied. Dieser Fall braucht den Beschleunigungssensor oder eine
