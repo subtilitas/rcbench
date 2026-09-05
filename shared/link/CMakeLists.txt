@@ -6,7 +6,8 @@
 # seed.  The CAN (Controller Area Network) link carries no CRC (cyclic
 # redundancy check) in its payload: CAN has a CRC, an acknowledge slot and
 # retransmission in silicon.
-set(SRCS link_crc.c link_can.c link_dev.c link_host.c link_bringup.c)
+set(SRCS link_crc.c link_can.c link_dev.c link_host.c link_bringup.c
+        link_artxfer.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include)

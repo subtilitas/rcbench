@@ -84,7 +84,7 @@ set(FAKES "")
 
 enable_testing()
 
-foreach(suite gfx touch_map nav widgets bench motor logview logwriter settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup outputs heartbeat arming servo_limit servo_sync openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem ppm outbind outputs_screen servo analyser programmer balance battery)
+foreach(suite gfx touch_map nav widgets bench motor logview logwriter settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer outputs heartbeat arming servo_limit servo_sync openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem ppm outbind outputs_screen servo analyser programmer balance battery)
     add_executable(test_${suite} test_${suite}.c ${FAKES})
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE

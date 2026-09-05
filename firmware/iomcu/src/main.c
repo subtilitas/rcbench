@@ -295,6 +295,87 @@ static void shape_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     }
 }
 
+/*
+ * A photograph of this board, if this build carries one.
+ *
+ * None yet: the artwork is a generated C array and the tool that generates
+ * it does not exist.  The pages are here so the mechanism is whole and the
+ * panel's answer to "this board has no picture" is exercised rather than
+ * assumed -- LINK_AW_BLOCKS of zero is the ordinary reply, not a fault, and
+ * a board with no photograph is drawn from its shape page instead.
+ *
+ * When there is one it is a const array in this binary rather than anything
+ * in the flash store: no erase window, no wear, and its version is the
+ * firmware version.  It has to sit inside the same conservative four
+ * megabytes out_store.c pins itself to, for the same reason.
+ */
+static const uint8_t *const k_art       = NULL;
+static const uint32_t       k_art_bytes = 0u;
+static const uint16_t       k_art_w     = 0u;
+static const uint16_t       k_art_h     = 0u;
+static const uint16_t       k_art_crc   = 0u;
+
+static void artwork_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    uint16_t all[LINK_AW_COUNT];
+    for (unsigned i = 0; i < LINK_AW_COUNT; ++i) { all[i] = 0u; }
+    if (k_art != NULL && k_art_bytes != 0u) {
+        const uint32_t blocks =
+            (k_art_bytes + LINK_AD_BYTES - 1u) / LINK_AD_BYTES;
+        all[LINK_AW_BLOCKS]   = (uint16_t)blocks;
+        all[LINK_AW_WIDTH]    = k_art_w;
+        all[LINK_AW_HEIGHT]   = k_art_h;
+        all[LINK_AW_FORMAT]   = (uint16_t)LINK_ART_RGB565;
+        all[LINK_AW_BYTES_LO] = (uint16_t)(k_art_bytes & 0xFFFFu);
+        all[LINK_AW_BYTES_HI] = (uint16_t)(k_art_bytes >> 16);
+        all[LINK_AW_CRC]      = k_art_crc;
+    }
+    for (uint8_t i = 0; i < n; ++i) {
+        out[i] = all[off + i];
+    }
+}
+
+/*
+ * Which block the data page is answering with.  Held here because the host
+ * says it in one transaction and reads it in the next: a block that advanced
+ * on being read would resend nothing after a reply went missing, and the
+ * panel would assemble a picture with a hole in it.
+ */
+static uint16_t s_art_block;
+
+static void art_data_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    uint16_t all[LINK_AD_COUNT];
+    for (unsigned i = 0; i < LINK_AD_COUNT; ++i) { all[i] = 0u; }
+    all[LINK_AD_BLOCK] = s_art_block;
+    if (k_art != NULL) {
+        const uint32_t at = (uint32_t)s_art_block * LINK_AD_BYTES;
+        for (unsigned i = 0; i < LINK_AD_BYTES && at + i < k_art_bytes; ++i) {
+            const uint16_t b = k_art[at + i];
+            /* Low byte first, the order the framebuffer is already in. */
+            all[LINK_AD_DATA + i / 2u] |=
+                (uint16_t)((i & 1u) ? (uint16_t)(b << 8) : b);
+        }
+    }
+    for (uint8_t i = 0; i < n; ++i) {
+        out[i] = all[off + i];
+    }
+}
+
+static uint8_t art_data_write(void *ctx, uint8_t off, uint8_t n,
+                              const uint16_t *in)
+{
+    (void)ctx;
+    /* Only the block register is writable; the payload is this board's. */
+    if (off != LINK_AD_BLOCK || n != 1u) {
+        return (uint8_t)LINK_NACK_READ_ONLY;
+    }
+    s_art_block = in[0];
+    return 0u;
+}
+
 static const link_page_t k_pages[] = {
     { LINK_PAGE_IDENTITY, LINK_ID_COUNT, identity_read, NULL },
     { LINK_PAGE_STATUS,   LINK_ST_COUNT, status_read,   NULL },
@@ -305,6 +386,8 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, chan_cfg_read, chan_cfg_write },
     { LINK_PAGE_CATALOGUE, LINK_CAT_COUNT, catalogue_read, NULL },
     { LINK_PAGE_SHAPE,     LINK_SH_COUNT,  shape_read,     NULL },
+    { LINK_PAGE_ARTWORK,   LINK_AW_COUNT,  artwork_read,   NULL },
+    { LINK_PAGE_ART_DATA,  LINK_AD_COUNT,  art_data_read,  art_data_write },
 };
 
 /* ------------------------------------------------------------ the heartbeat */

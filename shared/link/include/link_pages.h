@@ -39,6 +39,8 @@ typedef enum {
     LINK_PAGE_CHAN_CFG = 0x23, /**< what each channel is and how it moves  */
     LINK_PAGE_CATALOGUE = 0x24, /**< the board's own pins, read-only       */
     LINK_PAGE_SHAPE     = 0x25, /**< where those pins are, read-only       */
+    LINK_PAGE_ARTWORK   = 0x26, /**< what a picture of the board is        */
+    LINK_PAGE_ART_DATA  = 0x27, /**< and the picture itself, a block at a time */
 } link_page_id_t;
 
 /*
@@ -49,7 +51,7 @@ typedef enum {
  * older host can ignore.
  */
 #define LINK_PROTOCOL_MAJOR 2u
-#define LINK_PROTOCOL_MINOR 3u
+#define LINK_PROTOCOL_MINOR 4u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -356,6 +358,68 @@ typedef enum {
     LINK_SH_TOP_LEFT     = 2,
     LINK_SH_TOP_RIGHT    = 3,
 } link_shape_corner_t;
+
+/* ----------------------------------------------------------------- artwork */
+
+/*
+ * A photograph of the board, so the picker shows the thing in the
+ * operator's hands rather than an outline of it.
+ *
+ * Two pages because a page is thirty-two registers and no more.  The
+ * picture is two hundred kilobytes, which is three thousand-odd reads
+ * however it is cut, so every register the metadata takes out of the data
+ * page costs another sixty round trips.  Metadata here, payload next door,
+ * and a block stays sixty-two bytes.
+ *
+ * It is transferred once and kept.  At 1 Mbit/s a block is a write to say
+ * which one and a read to fetch it, about 1.4 ms the pair, so the whole
+ * picture is roughly ten seconds of link -- fine once for a board that has
+ * never been seen, and absurd every time the link comes up.
+ *
+ * LINK_AW_BLOCKS of zero means this coprocessor carries no picture of
+ * itself.  That is the ordinary answer, not a fault: a board is drawn from
+ * its shape page when there is no photograph, and used from its catalogue
+ * when there is no shape.
+ */
+enum {
+    LINK_AW_BLOCKS   = 0, /**< blocks of payload; 0 when there is none    */
+    LINK_AW_WIDTH    = 1, /**< pixels                                     */
+    LINK_AW_HEIGHT   = 2, /**< pixels                                     */
+    LINK_AW_FORMAT   = 3, /**< a link_art_format_t                        */
+    LINK_AW_BYTES_LO = 4, /**< payload length, low half                   */
+    LINK_AW_BYTES_HI = 5,
+    /**
+     * link_crc() over the whole payload, seeded zero.  The transfer is long
+     * enough that a block lost and silently skipped would otherwise be
+     * found by an operator looking at a corrupted board photograph months
+     * later, and cached in flash until then.
+     */
+    LINK_AW_CRC      = 6,
+    LINK_AW_COUNT    = 7,
+};
+
+typedef enum {
+    LINK_ART_NONE   = 0,
+    LINK_ART_RGB565 = 1, /**< two bytes a pixel, low byte first           */
+} link_art_format_t;
+
+/*
+ * The payload, a block at a time: write LINK_AD_BLOCK to say which, then
+ * read the page.  Two transactions rather than one because a block that
+ * advanced on being read would resend nothing after a reply went missing,
+ * and the host would assemble a picture with a hole in it.
+ *
+ * Bytes little-endian within a register, the low byte first, which is the
+ * order an RGB565 framebuffer is already in on both parts.  A final block
+ * carrying an odd count leaves the high byte of its last register unused.
+ */
+enum {
+    LINK_AD_BLOCK = 0,            /**< read and write: which block follows */
+    LINK_AD_DATA  = 1,            /**< the payload starts here             */
+    LINK_AD_COUNT = LINK_MAX_REGS,
+};
+#define LINK_AD_WORDS ((unsigned)(LINK_AD_COUNT - LINK_AD_DATA))
+#define LINK_AD_BYTES (LINK_AD_WORDS * 2u)
 
 /* ----------------------------------------------------------------- control */
 enum {
