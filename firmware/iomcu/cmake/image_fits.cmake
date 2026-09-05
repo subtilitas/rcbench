@@ -8,6 +8,14 @@
 #
 # SPDX-License-Identifier: MIT
 
+# Said before either is used, so a script invoked without them fails saying
+# which one is missing rather than comparing against an empty string.
+if(NOT DEFINED IMAGE OR IMAGE STREQUAL "")
+    message(FATAL_ERROR "image_fits.cmake needs -DIMAGE=<file>")
+endif()
+if(NOT DEFINED LIMIT OR LIMIT STREQUAL "")
+    message(FATAL_ERROR "image_fits.cmake needs -DLIMIT=<bytes>")
+endif()
 if(NOT EXISTS "${IMAGE}")
     message(FATAL_ERROR "image ${IMAGE} is missing")
 endif()
@@ -16,10 +24,10 @@ file(SIZE "${IMAGE}" size)
 if(size GREATER LIMIT)
     message(FATAL_ERROR
         "the image is ${size} bytes and the smallest module this build runs "
-        "on holds ${LIMIT} before the output store's sector. Either the "
-        "artwork or the code has outgrown it.")
+        "on holds ${LIMIT} bytes before the output store's sector. Either "
+        "the artwork or the code has outgrown it.")
 endif()
 
 math(EXPR pct "${size} * 100 / ${LIMIT}")
-message(STATUS "rcbench: image ${size} bytes, ${pct}% of the ${LIMIT} a "
-               "four-megabyte module leaves below the store")
+message(STATUS "rcbench: image ${size} bytes, ${pct}% of the ${LIMIT} bytes "
+               "a four-megabyte module leaves below the store")
