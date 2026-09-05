@@ -169,7 +169,15 @@ static bool button_rect(int i, gfx_rect_t *out)
     if (pins == NULL || i < 0 || i >= (int)n || bd == NULL) {
         return false;
     }
-    if (pins[i].reserved || bd->fixed) {
+    /*
+     * A reserved pin gets no button; a soldered board's pins do.
+     *
+     * Refusing them there would take the screen's answer away on exactly the
+     * board that most needs it: an operator holding one still has to find
+     * where GP7 is, and outbind_toggle() is what refuses the change. They are
+     * drawn as held instead, which is what they are.
+     */
+    if (pins[i].reserved) {
         return false;
     }
     int px, py;
@@ -196,7 +204,13 @@ static bool button_rect(int i, gfx_rect_t *out)
 
     int bx, by, bw, bh;
     board_box(&bx, &by, &bw, &bh);
-    const int th = (((top ? (by - UI_BAND_H) : (SCREEN_H - (by + bh)))
+    /*
+     * The room above the board is `by` and no less: the router hands a screen
+     * its own body, so the band is already out of these coordinates and
+     * taking it off again would shrink every top button by the height of a
+     * band it is not sharing the screen with.
+     */
+    const int th = (((top ? by : (SCREEN_H - (by + bh)))
                      - GAP) - (TIERS - 1) * TGAP) / TIERS;
     const int ty = top ? (by - GAP - (tier + 1) * th - tier * TGAP)
                        : (by + bh + GAP + tier * (th + TGAP));
@@ -286,6 +300,8 @@ static void draw_pads_and_buttons(gfx_canvas_t *c, const int8_t *chan)
     const outbind_pin_t *pins = outbind_pins(board);
     const uint8_t n = outbind_pin_count(board);
     const uint8_t proto = (s.bind.proto < OUTBIND_PROTOS) ? s.bind.proto : 0u;
+    const outbind_board_t *bd = outbind_board(board);
+    const bool locked = (bd != NULL) && bd->fixed;
 
     for (int i = 0; i < (int)n; ++i) {
         int px, py;
@@ -293,7 +309,9 @@ static void draw_pads_and_buttons(gfx_canvas_t *c, const int8_t *chan)
 
         const uint8_t held = outbind_group_of(&s.bind, (uint8_t)i);
         const bool on    = (held != 0u && held == proto);
-        const bool other = (held != 0u && held != proto);
+        /* A soldered board's pins are nobody's to press, so they are drawn
+         * the way a pin another protocol holds is: shown, and not offered. */
+        const bool other = (held != 0u && held != proto) || locked;
 
         if (pins[i].reserved) {
             cross(c, px, py, UI_DANGER);

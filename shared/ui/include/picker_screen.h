@@ -15,7 +15,9 @@
  * Where the pads are comes from the board, not from this file: the shape page
  * carries the outline, the pitch and the corner pad 1 sits at, and
  * outbind_pad_xy() turns a pad number into a position on it. A board that
- * does not say is not drawn, and the outputs screen still offers its pins.
+ * does not carry a shape page is not drawn at all, because a picture from a
+ * guessed one points at the wrong pad as confidently as the right one; its
+ * pins are still offered on the outputs screen.
  *
  * The photograph is optional in the same way. With one, the board on screen
  * is the board in the operator's hands; without one, its outline and pads are

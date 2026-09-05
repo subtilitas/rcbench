@@ -811,7 +811,13 @@ static void art_keep_task(void *arg)
  * Read rather than mapped: art_store_read() checks the payload against the
  * checksum the header carries, so flash that decayed since it was written is
  * a board drawn from its outline rather than a picture that is quietly
- * wrong. The buffer is held while the screen is up and is the only copy.
+ * wrong.
+ *
+ * One buffer, freed when the next photograph is asked for rather than when
+ * the screen closes -- so it outlives a visit and is reused by the following
+ * one. Two hundred kilobytes of PSRAM held between visits is worth less than
+ * a release path that has to be got right; what must not happen is two of
+ * them, and asking always frees before it allocates.
  */
 static uint8_t *s_artshow;
 
