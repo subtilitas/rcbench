@@ -35,9 +35,9 @@
 #include "gfx.h"
 #include "arming.h"
 #include "art_flash_esp.h"
+#include "art_fetch.h"
 #include "art_store.h"
 #include "heartbeat.h"
-#include "link_artxfer.h"
 #include "link_bringup.h"
 #include "link_host.h"
 #include "link_pages.h"
@@ -275,7 +275,7 @@ static uint16_t  s_board;
 #define ART_SLICE_MS 15u
 
 static const art_flash_t *s_artflash;
-static link_artxfer_t     s_artx;
+static art_fetch_t        s_artfetch;
 static uint8_t           *s_artbuf;
 static uint16_t           s_artboard;
 static bool               s_artbusy;
@@ -869,6 +869,45 @@ static void art_stop(const char *why)
  * happens a slice at a time.  A coprocessor built before the page answers
  * NACK, which is not a fault -- the board is then drawn from its shape.
  */
+/*
+ * How the fetch reaches the far end.  The sequence itself is in
+ * shared/artwork, where the suite runs it against a device in memory and can
+ * stop the link at a chosen transaction; this is the two calls it needs.
+ */
+static bool art_link_read(void *ctx, uint8_t page, uint8_t count,
+                          uint16_t *regs)
+{
+    (void)ctx;
+    link_msg_t r;
+    if (!poll_page(&s_host, page, count, &r) || r.op != LINK_OP_DATA) {
+        return false;
+    }
+    for (uint8_t i = 0; i < count; ++i) {
+        regs[i] = r.regs[i];
+    }
+    return true;
+}
+
+static bool art_link_write(void *ctx, uint8_t page, uint8_t reg,
+                           uint16_t value)
+{
+    (void)ctx;
+    link_msg_t ack;
+    return write_regs(&s_host, page, reg, 1u, &value, &ack)
+           && ack.op != LINK_OP_NACK;
+}
+
+static const art_transport_t s_art_link = {
+    art_link_read, art_link_write, NULL,
+};
+
+/*
+ * Ask for the picture, unless it is already kept or there is none.
+ *
+ * Runs on the link-up edge and does one transaction; everything after this
+ * happens a slice at a time.  A coprocessor built before the page answers
+ * NACK, which is not a fault -- the board is then drawn from its shape.
+ */
 static void art_begin(uint16_t board)
 {
     art_stop(NULL);
@@ -885,23 +924,18 @@ static void art_begin(uint16_t board)
         return;
     }
 
-    link_msg_t meta;
-    if (!poll_page(&s_host, LINK_PAGE_ARTWORK, LINK_AW_COUNT, &meta)
-        || meta.op != LINK_OP_DATA) {
-        return;                 /* older coprocessor, or none to be had */
-    }
-    if (meta.regs[LINK_AW_BLOCKS] == 0u) {
+    uint16_t meta[LINK_AW_COUNT];
+    uint32_t bytes = 0u;
+    if (!art_fetch_meta(&s_art_link, meta, &bytes)) {
         ESP_LOGI(TAG, "hardware %u carries no photograph of itself",
                  (unsigned)board);
         return;
     }
-    const uint32_t bytes = (uint32_t)meta.regs[LINK_AW_BYTES_LO]
-                           | ((uint32_t)meta.regs[LINK_AW_BYTES_HI] << 16);
     if (s_artflash != NULL && bytes > art_store_capacity(s_artflash)) {
         ESP_LOGW(TAG, "hardware %u's photograph is %u bytes and a slot holds "
                       "%u; not fetching it", (unsigned)board, (unsigned)bytes,
                  (unsigned)art_store_capacity(s_artflash));
-        return;                 /* ten seconds of link for nowhere to put it */
+        return;         /* ten seconds of link for nowhere to put it */
     }
 
     /* PSRAM: two hundred kilobytes is not internal memory's to spare, and
@@ -911,85 +945,70 @@ static void art_begin(uint16_t board)
         ESP_LOGW(TAG, "no room for a %u byte photograph", (unsigned)bytes);
         return;
     }
-    if (!link_artxfer_begin(&s_artx, meta.regs, s_artbuf, bytes)) {
-        ESP_LOGW(TAG, "hardware %u describes a photograph that cannot be one",
-                 (unsigned)board);
+    if (!art_fetch_begin(&s_artfetch, meta, s_artbuf, bytes)) {
+        ESP_LOGW(TAG, "hardware %u: %s", (unsigned)board,
+                 art_fetch_why(&s_artfetch));
         art_stop(NULL);
         return;
     }
     s_artbusy = true;
-    ESP_LOGI(TAG, "fetching hardware %u's photograph: %u x %u, %u blocks",
-             (unsigned)board, (unsigned)meta.regs[LINK_AW_WIDTH],
-             (unsigned)meta.regs[LINK_AW_HEIGHT],
-             (unsigned)meta.regs[LINK_AW_BLOCKS]);
+    ESP_LOGI(TAG, "fetching hardware %u's photograph: %u x %u, %u bytes",
+             (unsigned)board, (unsigned)art_fetch_width(&s_artfetch),
+             (unsigned)art_fetch_height(&s_artfetch), (unsigned)bytes);
 }
 
-/* One bounded slice of the transfer.  Returns with the link free. */
+/* It arrived and it is the picture it claimed.  Hand it to the keeper. */
+static void art_finish(void)
+{
+    s_artbusy = false;
+    if (s_artflash == NULL) {
+        ESP_LOGW(TAG, "hardware %u's photograph arrived; nowhere to keep it, "
+                      "so it will be fetched again", (unsigned)s_artboard);
+        art_stop(NULL);
+        return;
+    }
+    s_keepentry.board  = s_artboard;
+    s_keepentry.width  = art_fetch_width(&s_artfetch);
+    s_keepentry.height = art_fetch_height(&s_artfetch);
+    s_keepentry.crc    = art_fetch_crc(&s_artfetch);
+    s_keepentry.bytes  = art_fetch_bytes(&s_artfetch);
+    /*
+     * Hand the buffer over and stop owning it.  Below the renderer and on
+     * the other core: it is a long flash operation and nothing waits on it.
+     */
+    s_keepbuf = s_artbuf;
+    s_artbuf  = NULL;
+    s_keeping = true;
+    if (xTaskCreatePinnedToCore(art_keep_task, "artkeep", 4096, NULL,
+                                2, NULL, 0) != pdPASS) {
+        ESP_LOGW(TAG, "no task to keep hardware %u's photograph",
+                 (unsigned)s_artboard);
+        heap_caps_free(s_keepbuf);
+        s_keepbuf = NULL;
+        s_keeping = false;
+    }
+}
+
+/*
+ * One bounded slice of the fetch.
+ *
+ * A block at a time until the slice is spent: this task also beats the
+ * safety line, and its ceiling is 150 ms.  The sequence does exactly the
+ * blocks it is given, so how much of a poll goes to a photograph is decided
+ * here and nowhere else.
+ */
 static void art_slice(void)
 {
     const uint32_t began = now_ms();
     while (s_artbusy && (uint32_t)(now_ms() - began) < ART_SLICE_MS) {
-        const uint16_t want = link_artxfer_next(&s_artx);
-        link_msg_t ack, data;
-
-        /* Say which block, then read it.  The coprocessor does not advance
-         * on its own, so a reply that goes missing is asked for again
-         * rather than skipped. */
-        if (!write_page(&s_host, LINK_PAGE_ART_DATA, 1, &want, &ack)
-            || ack.op == LINK_OP_NACK) {
-            art_stop("the far end would not take a block number");
+        switch (art_fetch_step(&s_artfetch, &s_art_link, 1u)) {
+        case ART_FETCH_RUNNING:
+            break;
+        case ART_FETCH_DONE:
+            art_finish();
             return;
-        }
-        if (!poll_page(&s_host, LINK_PAGE_ART_DATA, LINK_AD_COUNT, &data)
-            || data.op != LINK_OP_DATA) {
-            art_stop("a block did not arrive");
-            return;
-        }
-        if (!link_artxfer_take(&s_artx, data.regs)) {
-            art_stop("a block arrived that was not the one asked for");
-            return;
-        }
-
-        if (link_artxfer_complete(&s_artx)) {
-            if (!link_artxfer_verify(&s_artx)) {
-                /* Every block arrived and the whole is not the picture.
-                 * Keeping it would cache the corruption for as long as the
-                 * board is known. */
-                art_stop("it did not match its own checksum");
-                return;
-            }
-            const art_entry_t e = {
-                .board  = s_artboard,
-                .width  = s_artx.meta.width,
-                .height = s_artx.meta.height,
-                .crc    = s_artx.meta.crc,
-                .bytes  = s_artx.meta.bytes,
-            };
-            s_artbusy = false;          /* stopped, and not given up on */
-            if (s_artflash == NULL) {
-                ESP_LOGW(TAG, "hardware %u's photograph arrived; nowhere to "
-                              "keep it, so it will be fetched again",
-                         (unsigned)s_artboard);
-                art_stop(NULL);
-                return;
-            }
-            /*
-             * Hand the buffer to the keeper and stop owning it.  Below the
-             * renderer and on the other core: it is a long flash operation
-             * and nothing waits on it.
-             */
-            s_keepentry = e;
-            s_keepbuf   = s_artbuf;
-            s_artbuf    = NULL;
-            s_keeping   = true;
-            if (xTaskCreatePinnedToCore(art_keep_task, "artkeep", 4096, NULL,
-                                        2, NULL, 0) != pdPASS) {
-                ESP_LOGW(TAG, "no task to keep hardware %u's photograph",
-                         (unsigned)s_artboard);
-                heap_caps_free(s_keepbuf);
-                s_keepbuf = NULL;
-                s_keeping = false;
-            }
+        default:
+            art_stop(art_fetch_why(&s_artfetch));
             return;
         }
     }
