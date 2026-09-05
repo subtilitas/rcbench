@@ -41,6 +41,7 @@ typedef enum {
     LINK_PAGE_SHAPE     = 0x25, /**< where those pins are, read-only       */
     LINK_PAGE_ARTWORK   = 0x26, /**< what a picture of the board is        */
     LINK_PAGE_ART_DATA  = 0x27, /**< and the picture itself, a block at a time */
+    LINK_PAGE_PADS      = 0x28, /**< the pads that are not pins, read-only  */
 } link_page_id_t;
 
 /*
@@ -51,7 +52,7 @@ typedef enum {
  * older host can ignore.
  */
 #define LINK_PROTOCOL_MAJOR 2u
-#define LINK_PROTOCOL_MINOR 4u
+#define LINK_PROTOCOL_MINOR 5u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -420,6 +421,51 @@ enum {
 };
 #define LINK_AD_WORDS ((unsigned)(LINK_AD_COUNT - LINK_AD_DATA))
 #define LINK_AD_BYTES (LINK_AD_WORDS * 2u)
+
+/* -------------------------------------------------------------------- pads */
+
+/*
+ * The pads that are not pins: grounds, rails, and the few that are neither.
+ *
+ * A servo lead has three wires and the catalogue describes one of them. An
+ * operator who has found where the signal goes still has to find a ground for
+ * the return and a rail for the positive, and counting pads on a board to do
+ * it is how a lead goes to the wrong place.
+ *
+ * Separate from the catalogue because they do not fit in it: a page is
+ * thirty-two registers, the catalogue is one per pin an output may have, and
+ * a forty-pad board has more pads than that between the two of them.
+ *
+ * A coprocessor that does not serve this page has its grounds and rails
+ * unmarked, which is where the picker started. It is a lead placed by
+ * reading the board instead of the screen, not a bench that does not work.
+ */
+#define LINK_PAD_SLOTS 32u
+#define LINK_PAD_COUNT LINK_PAD_SLOTS
+
+/** pad in 6 bits, what it is in 2, and its rail in 8 tenths of a volt. */
+#define LINK_PAD_OF(pad, kind, dv) \
+    ((uint16_t)((((unsigned)(pad) & 0x3Fu) << 10) \
+                | (((unsigned)(kind) & 0x03u) << 8) \
+                | ((unsigned)(dv) & 0xFFu)))
+#define LINK_PAD_NUM(r)  ((uint8_t)(((r) >> 10) & 0x3Fu))
+#define LINK_PAD_KIND(r) ((uint8_t)(((r) >> 8) & 0x03u))
+#define LINK_PAD_DV(r)   ((uint8_t)((r) & 0xFFu))
+
+/**
+ * What a pad that is not a pin is.
+ *
+ * Tenths of a volt reach 25.5 V, which covers every rail a logic board
+ * brings to a header. Zero on a power pad means the rail is not a fixed
+ * voltage -- an input like VSYS follows whatever feeds it -- and the screen
+ * says so rather than printing a number that is only sometimes true.
+ */
+typedef enum {
+    LINK_PAD_NONE   = 0, /**< no pad in this slot; the list ends here      */
+    LINK_PAD_GROUND = 1, /**< 0 V, and what a servo lead returns through   */
+    LINK_PAD_POWER  = 2, /**< a rail, at LINK_PAD_DV tenths of a volt      */
+    LINK_PAD_OTHER  = 3, /**< neither: a RUN or an enable                  */
+} link_pad_kind_t;
 
 /* ----------------------------------------------------------------- control */
 enum {

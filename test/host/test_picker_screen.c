@@ -321,6 +321,75 @@ TEST_CASE(the_photograph_is_asked_for_on_the_way_in)
     picker_screen_set_artwork_source(NULL);
 }
 
+TEST_CASE(a_ground_is_marked_and_is_not_a_button)
+{
+    /*
+     * A servo lead needs a ground, so the screen says where one is. What it
+     * must not do is offer it: a ground is not a pin an output may have, and
+     * a press there binds nothing.
+     */
+    fresh();
+    render();
+
+    const outbind_pad_t *pads = outbind_pads(BOARD);
+    const uint8_t n = outbind_pad_count(BOARD);
+    if (pads == NULL || n == 0u) {
+        T_FAIL("the board describes no grounds or rails");
+        return;
+    }
+    const outbind_board_t *bd = outbind_board(BOARD);
+    if (bd == NULL || bd->shape == NULL) {
+        T_FAIL("the board this build knows has no shape");
+        return;
+    }
+
+    unsigned pressed = 0;
+    for (uint8_t i = 0; i < n; ++i) {
+        uint16_t xc, yc;
+        if (!outbind_pad_xy(bd->shape, pads[i].pad, &xc, &yc)) { continue; }
+        const int bw = 500;
+        const int bh = (int)(((uint32_t)bw * bd->shape->height_cmm)
+                             / bd->shape->width_cmm);
+        const int bx = (SCREEN_W - bw) / 2;
+        const int by = (SCREEN_H - bh) / 2;
+        const int px = bx + (int)(((uint32_t)xc * (uint32_t)bw)
+                                 / bd->shape->width_cmm);
+        const int py = by + (int)(((uint32_t)yc * (uint32_t)bh)
+                                  / bd->shape->height_cmm);
+        touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)px, (int16_t)py, 40 } };
+        touch_event_t u = { TOUCH_EVENT_UP,   { 0, (int16_t)px, (int16_t)py, 40 } };
+        scr()->event(&d);
+        scr()->event(&u);
+        ++pressed;
+    }
+    CHECK(pressed > 0);
+    CHECK_EQ(s_applied, 0);          /* none of them bound anything */
+    CHECK_EQ(outbind_chosen_total(picker_screen_binding()), 0);
+}
+
+TEST_CASE(a_board_that_does_not_say_which_pads_are_ground_still_draws)
+{
+    /*
+     * The marks are the last thing to arrive and the first a board may not
+     * have. Without them the screen is what it was: a board, its pins, and
+     * a lead placed by reading the outline.
+     */
+    fresh();
+    outbind_t b;
+    outbind_init(&b);
+    outbind_set_board(&b, BOARD);
+    outbind_set_proto(&b, 1u);
+    picker_screen_set_binding(&b);
+
+    /* The board this build knows does say, so this is the case where it
+     * would not: the drawing must not depend on the list being there. */
+    CHECK(picker_screen_can_draw());
+    render();
+    int bx, by;
+    CHECK(button_point(4u, &bx, &by));
+    CHECK_EQ(s_applied, 1);
+}
+
 TEST_CASE(null_events_are_refused_rather_than_dereferenced)
 {
     fresh();
@@ -343,6 +412,8 @@ int main(void)
     RUN(a_photograph_is_used_when_there_is_one_and_not_when_there_is_not);
     RUN(the_tables_beside_the_board_say_what_the_pins_became);
     RUN(the_photograph_is_asked_for_on_the_way_in);
+    RUN(a_ground_is_marked_and_is_not_a_button);
+    RUN(a_board_that_does_not_say_which_pads_are_ground_still_draws);
     RUN(null_events_are_refused_rather_than_dereferenced);
     return test_summary("picker_screen");
 }

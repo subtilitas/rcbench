@@ -314,10 +314,23 @@ panel's flash, so it costs about ten seconds the first time a board is seen
 and nothing after that. A board with no photograph, or one whose transfer has
 not finished, is drawn rather than left blank.
 
-**Not shown:** which pads are ground and which are power. The catalogue page
-carries the pins an output may have and the pins something else holds; it
-does not say what a pad that is not a GPIO is for. An operator looking for a
-ground reads it off the board.
+A servo lead has three wires and the buttons describe one. The other two are
+marked on the board itself: a ground carries a white **G**, and a rail carries
+its voltage — **5V0**, **3V3**. A rail that is an input rather than a fixed
+voltage carries **PWR** instead, because a number that is only sometimes true
+is worse here than no number. Pads that are neither, like RUN, are dotted and
+left unlabelled.
+
+They are marked inside the outline on a short trace, at two depths so a run of
+rails at one end of a row does not draw one label over the next. Inside is the
+only room left: the space beside the board belongs to the buttons, and a mark
+on the pad itself would be as small as the pad.
+
+These come from the [pads page](Link.md#page-map), which is separate from the
+catalogue because they do not fit in it — a page is 32 registers and a
+40-pad board has more pads than that between the two. A board that does not
+serve it has its grounds and rails unmarked, and a lead is placed by reading
+the board rather than the screen.
 
 ### The coprocessor keeps it, not the panel
 

@@ -1475,6 +1475,21 @@ static void control_task(void *arg)
                                               "listed and not drawn",
                                          (unsigned)s_board);
                             }
+                            /*
+                             * And which of them are grounds and rails.  A
+                             * board that does not say has them unmarked,
+                             * which is a lead placed by reading the board
+                             * rather than the screen.
+                             */
+                            link_msg_t pdr;
+                            if (poll_page(&s_host, LINK_PAGE_PADS,
+                                          LINK_PAD_COUNT, &pdr)
+                                && pdr.op == LINK_OP_DATA
+                                && outbind_learn_pads(s_board, pdr.regs)) {
+                                ESP_LOGI(TAG, "hardware %u says which pads "
+                                              "are ground and rail",
+                                         (unsigned)s_board);
+                            }
                         } else if (answered_cat && cat.op == LINK_OP_NACK
                                    && cat.regs[0] == LINK_NACK_BAD_PAGE) {
                             /*
