@@ -274,6 +274,51 @@ So a cell is in one of four states, and each says what to do about it: ticked
 in this protocol, held by another and named, reserved and struck through, or
 free and showing its pad number.
 
+### Pick a pin
+
+Behind the PICK A PIN key on the Setup screen, and the same binding the
+Outputs screen holds. The list answers "which GPIO is bound"; this answers
+"where do I put the lead".
+
+![The pin picker](img/picker.png)
+
+The buttons are not the pads. At any size that fits a 480-pixel panel a pad is
+under 40 pixels across, which is smaller than a fingertip, so the pads are
+drawn where they are and the touching happens on staggered rows of buttons
+beside the board, each on a straight trace to its own pad.
+
+A button is coloured the way its cell is on the Outputs screen: this
+protocol's pins are accented, a pin another protocol holds is grey, and a pin
+the coprocessor reserves has no button at all — it is crossed on the pad,
+because a button under a pin that cannot be chosen says it could be.
+
+Down the left are this protocol's pins in channel order; down the right are
+the pins other protocols hold, named. The two together read as one run of
+channels, because that is what the OUTPUTS page carries.
+
+Where the pads are comes from the board, not from the panel: the [shape
+page](Link.md#page-map) carries the outline, the pitch and the corner pad 1
+sits at. A board that does not say is not drawn at all — a picture from a
+guessed shape points at the wrong pad as confidently as the right one, and
+this screen's whole job is finding a pad on the board in front of you. Its
+pins are still on the Outputs screen.
+
+The photograph is separate again. With one, the board on screen is the board
+in your hands; without one, the outline and every pad are drawn from the
+shape and the buttons are in the same places:
+
+![The picker without a photograph](img/picker-drawn.png)
+
+The photograph is fetched over the link once per board and kept in the
+panel's flash, so it costs about ten seconds the first time a board is seen
+and nothing after that. A board with no photograph, or one whose transfer has
+not finished, is drawn rather than left blank.
+
+**Not shown:** which pads are ground and which are power. The catalogue page
+carries the pins an output may have and the pins something else holds; it
+does not say what a pad that is not a GPIO is for. An operator looking for a
+ground reads it off the board.
+
 ### The coprocessor keeps it, not the panel
 
 A binding describes wiring, and the panel is not the board the wires are in.

@@ -122,6 +122,9 @@ int main(int argc, char **argv)
         { "battery",    SCREEN_BATTERY },
         { "balance",    SCREEN_BALANCE },
         { "programmer", SCREEN_PROGRAMMER },
+        /* The picker blits the board's photograph, which is 201 kB of it on
+         * a full repaint -- the one screen whose chrome is an image. */
+        { "picker",     SCREEN_PICKER },
     };
     bool plain = false;
     bool plain_chrome = false;

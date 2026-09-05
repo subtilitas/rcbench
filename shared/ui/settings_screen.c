@@ -58,7 +58,7 @@
 #define DRAG_SLOP 8
 
 enum { HIT_NONE = 0, HIT_CAT, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
-       HIT_OUTPUTS };
+       HIT_OUTPUTS, HIT_PICKER };
 
 static struct {
     setting_cat_t cat;
@@ -127,10 +127,29 @@ static gfx_rect_t reset_rect(void)
  * so it cannot be a row in the table beside the others; it is a screen, and
  * this is the door to it.
  */
-#define OUTPUTS_Y 252
+/*
+ * Two doors and one caption, in the 110 pixels between the categories and
+ * RESET.  RESET cannot move down: the SAVED line under it is already 8 px
+ * from the bottom of the screen.
+ */
+#define OUTPUTS_Y 248
+#define DOOR_H    42
+#define DOOR_GAP  4
 static gfx_rect_t outputs_rect(void)
 {
-    return gfx_rect_make(CAT_X, OUTPUTS_Y, CAT_W, 52);
+    return gfx_rect_make(CAT_X, OUTPUTS_Y, CAT_W, DOOR_H);
+}
+
+/*
+ * And the same binding seen as the board itself.  Two doors rather than a
+ * mode on one screen: the list answers "which GPIO is bound" and the picture
+ * answers "where do I put the lead", and an operator arrives already knowing
+ * which of those they want.
+ */
+#define PICKER_Y (OUTPUTS_Y + DOOR_H + DOOR_GAP)
+static gfx_rect_t picker_rect(void)
+{
+    return gfx_rect_make(CAT_X, PICKER_Y, CAT_W, DOOR_H);
 }
 
 /** Screen-space rect of a row, or an empty rect when it is scrolled away. */
@@ -252,6 +271,11 @@ static void event(const touch_event_t *evt)
             settings_screen_invalidate();
             return;
         }
+        if (gfx_rect_contains(picker_rect(), x, y)) {
+            s.hit_kind = HIT_PICKER;
+            settings_screen_invalidate();
+            return;
+        }
 
         int row = row_at(x, y);
         if (row >= 0) {
@@ -330,6 +354,9 @@ static void event(const touch_event_t *evt)
         } else if (kind == HIT_OUTPUTS
                    && gfx_rect_contains(outputs_rect(), x, y)) {
             ui_router_goto(SCREEN_OUTPUTS);
+        } else if (kind == HIT_PICKER
+                   && gfx_rect_contains(picker_rect(), x, y)) {
+            ui_router_goto(SCREEN_PICKER);
         }
         break;
     }
@@ -364,10 +391,16 @@ static void draw_categories(gfx_canvas_t *c)
 
     gfx_rect_t orr = outputs_rect();
     ui_button(c, orr, "OUTPUTS", UI_ACCENT, s.hit_kind == HIT_OUTPUTS, true);
-    gfx_text(c, orr.x + orr.w - 22, orr.y + 16, ">", UI_FONT_HEAD,
+    gfx_text(c, orr.x + orr.w - 22, orr.y + 11, ">", UI_FONT_HEAD,
              UI_TEXT_ON_LIGHT, 1);
-    gfx_text(c, CAT_X, OUTPUTS_Y + 60, "PROTOCOL AND PINS", UI_FONT_LABEL,
-             UI_TEXT_FAINT, 1);
+    gfx_rect_t pkr = picker_rect();
+    ui_button(c, pkr, "PICK A PIN", UI_ACCENT, s.hit_kind == HIT_PICKER, true);
+    gfx_text(c, pkr.x + pkr.w - 22, pkr.y + 11, ">", UI_FONT_HEAD,
+             UI_TEXT_ON_LIGHT, 1);
+
+    /* One caption for both: they are two views of the same binding. */
+    gfx_text(c, CAT_X, PICKER_Y + DOOR_H + 6, "PINS: A LIST OR THE BOARD",
+             UI_FONT_LABEL, UI_TEXT_FAINT, 1);
 
     gfx_rect_t rr = reset_rect();
     ui_button(c, rr, "RESET CATEGORY", UI_WARN, s.hit_kind == HIT_RESET, true);

@@ -66,6 +66,7 @@ SOURCES = [
     "shared/ui/log_viewer_screen.c",
     "shared/ui/settings_screen.c",
     "shared/ui/outputs_screen.c",
+    "shared/ui/picker_screen.c",
     "shared/settings/settings.c",
     "shared/logfile/log_numbers.c",
     "shared/logfile/log_csv.c",
@@ -96,7 +97,8 @@ MODES = ["frame", "frame-idle", "sim", "throttle", "chrome", "overview",
          "analyser", "logs", "settings", "battery", "balance",
          "programmer", "balance-sim", "settings-sim", "battery-sim",
          "analyser-chrome", "logs-chrome", "settings-chrome",
-         "battery-chrome", "balance-chrome", "programmer-chrome", "clear",
+         "battery-chrome", "balance-chrome", "programmer-chrome",
+         "picker", "picker-chrome", "clear",
          "vlines", "hlines"]
 
 # ESP32-S3 with CONFIG_ESP32S3_DATA_CACHE_64KB + _LINE_64B.
