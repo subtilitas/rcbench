@@ -159,6 +159,17 @@ bool art_store_put(const art_flash_t *f, uint16_t board,
     if (entry->bytes == 0u || entry->bytes > art_store_capacity(f)) {
         return false;
     }
+    /*
+     * And the pixels have to be the length.  A header saying 500 x 206 over a
+     * payload that is not that many bytes would be believed by whatever sized
+     * a buffer from it later; sixty-four bits because two sixteen-bit sides
+     * multiplied are not sixteen bits.
+     */
+    if (entry->width == 0u || entry->height == 0u
+        || (uint64_t)entry->width * (uint64_t)entry->height * 2u
+               != (uint64_t)entry->bytes) {
+        return false;
+    }
     if (link_crc(0u, payload, entry->bytes) != entry->crc) {
         return false;      /* not the picture it says it is */
     }

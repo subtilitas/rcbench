@@ -279,6 +279,26 @@ static uint8_t           *s_artbuf;
 static uint16_t           s_artboard;
 static bool               s_artbusy;
 
+/*
+ * Writing it down happens on a task of its own, not here.
+ *
+ * Erasing a slot and filling it is a quarter of a megabyte of flash: hundreds
+ * of milliseconds during which nothing else runs on this task.  The control
+ * task is the one that beats the safety line, and its ceiling is 150 ms -- so
+ * a commit taken here would drop the heartbeat and the coprocessor would fail
+ * safe, which is the interlock working and a bench that stops for a
+ * photograph.
+ *
+ * The display stalls for the length of a flash operation whichever task takes
+ * it, because the panel's bounce-buffer refill reads PSRAM through the cache
+ * a flash operation closes.  Settings saves already cost that.  What must not
+ * happen is the heartbeat missing its window, and a separate task is the
+ * whole of the fix.
+ */
+static uint8_t     *s_keepbuf;      /* the keeper's, once handed over */
+static art_entry_t  s_keepentry;
+static volatile bool s_keeping;
+
 static QueueHandle_t     s_touch_q;   /**< control task -> app_main */
 static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
 /*
@@ -768,6 +788,22 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
 
 /* --------------------------------------------------- the board photograph */
 
+static void art_keep_task(void *arg)
+{
+    (void)arg;
+    if (art_store_put(s_artflash, s_keepentry.board, &s_keepentry, s_keepbuf)) {
+        ESP_LOGI(TAG, "hardware %u's photograph kept",
+                 (unsigned)s_keepentry.board);
+    } else {
+        ESP_LOGW(TAG, "hardware %u's photograph could not be kept; it will be "
+                      "fetched again", (unsigned)s_keepentry.board);
+    }
+    heap_caps_free(s_keepbuf);
+    s_keepbuf = NULL;
+    s_keeping = false;
+    vTaskDelete(NULL);
+}
+
 static void art_stop(const char *why)
 {
     if (s_artbuf != NULL) {
@@ -792,6 +828,10 @@ static void art_begin(uint16_t board)
 {
     art_stop(NULL);
     s_artboard = board;
+
+    if (s_keeping) {
+        return;         /* the last one is still being written down */
+    }
 
     art_entry_t kept;
     if (s_artflash != NULL && art_store_find(s_artflash, board, &kept)) {
@@ -880,19 +920,31 @@ static void art_slice(void)
                 .crc    = s_artx.meta.crc,
                 .bytes  = s_artx.meta.bytes,
             };
+            s_artbusy = false;          /* stopped, and not given up on */
             if (s_artflash == NULL) {
                 ESP_LOGW(TAG, "hardware %u's photograph arrived; nowhere to "
                               "keep it, so it will be fetched again",
                          (unsigned)s_artboard);
-            } else if (art_store_put(s_artflash, s_artboard, &e, s_artbuf)) {
-                ESP_LOGI(TAG, "hardware %u's photograph kept", 
-                         (unsigned)s_artboard);
-            } else {
-                ESP_LOGW(TAG, "hardware %u's photograph arrived and could not "
-                              "be kept", (unsigned)s_artboard);
+                art_stop(NULL);
+                return;
             }
-            s_artbusy = false;          /* stopped, and not given up on */
-            art_stop(NULL);
+            /*
+             * Hand the buffer to the keeper and stop owning it.  Below the
+             * renderer and on the other core: it is a long flash operation
+             * and nothing waits on it.
+             */
+            s_keepentry = e;
+            s_keepbuf   = s_artbuf;
+            s_artbuf    = NULL;
+            s_keeping   = true;
+            if (xTaskCreatePinnedToCore(art_keep_task, "artkeep", 4096, NULL,
+                                        2, NULL, 0) != pdPASS) {
+                ESP_LOGW(TAG, "no task to keep hardware %u's photograph",
+                         (unsigned)s_artboard);
+                heap_caps_free(s_keepbuf);
+                s_keepbuf = NULL;
+                s_keeping = false;
+            }
             return;
         }
     }

@@ -224,6 +224,19 @@ TEST_CASE(a_payload_that_is_not_what_it_claims_is_refused_before_it_is_written)
     CHECK_EQ(g_writes, 0);                   /* and nothing was written */
     CHECK(!art_store_find(&f, 6u, &e));
 
+    /*
+     * Nor one whose pixels are not its length.  A header saying 500 x 206
+     * over a payload that is not 206000 bytes would be believed by whatever
+     * sized a buffer from it later.
+     */
+    src = make(20000u, 6u, &e);
+    e.height = (uint16_t)(e.height + 1u);
+    CHECK(!art_store_put(&f, 6u, &e, src));
+    src = make(20000u, 6u, &e);
+    e.width = 0u;
+    CHECK(!art_store_put(&f, 6u, &e, src));
+    CHECK_EQ(g_writes, 0);
+
     /* Nor one larger than a slot can hold. */
     src = make(20000u, 6u, &e);
     e.bytes = art_store_capacity(&f) + 1u;
