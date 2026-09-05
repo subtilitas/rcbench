@@ -89,6 +89,25 @@ typedef struct {
     uint8_t  corner;      /**< a link_shape_corner_t: where pad 1 sits     */
 } outbind_shape_t;
 
+/**
+ * A pad that is not a pin: a ground, a rail, or neither.
+ *
+ * A servo lead has three wires and the catalogue describes one. Somebody who
+ * has found where the signal goes still needs a ground for the return and a
+ * rail for the positive, and counting pads to find them is how a lead ends
+ * up in the wrong place.
+ */
+typedef struct {
+    uint8_t pad;        /**< the number printed on the board                */
+    uint8_t kind;       /**< a link_pad_kind_t                              */
+    /**
+     * Tenths of a volt. Zero on a rail means it is not a fixed voltage --
+     * an input follows whatever feeds it -- and is not the same as 0 V,
+     * which is what a ground is.
+     */
+    uint8_t decivolts;
+} outbind_pad_t;
+
 typedef struct {
     uint16_t             id;      /**< as the identity page reports it      */
     const char          *name;
@@ -106,6 +125,10 @@ typedef struct {
     /** Where the pads are, or NULL when nothing here says.  A board without
      *  one is used from its catalogue and simply is not drawn. */
     const outbind_shape_t *shape;
+    /** The pads that are not pins, or NULL when nothing here says. A board
+     *  without them is drawn with its grounds and rails unmarked. */
+    const outbind_pad_t *pads;
+    uint8_t              pad_count;
 } outbind_board_t;
 
 /**
@@ -167,6 +190,25 @@ bool outbind_learn_shape(uint16_t id, const uint16_t *regs);
  */
 bool outbind_pad_xy(const outbind_shape_t *shape, uint8_t pad,
                     uint16_t *x_cmm, uint16_t *y_cmm);
+
+/** The pads that are not pins, and how many.  NULL and 0 for a board nothing
+ *  here describes that way. */
+const outbind_pad_t *outbind_pads(uint16_t board);
+uint8_t outbind_pad_count(uint16_t board);
+
+/** Render them into LINK_PAD_COUNT registers, or leave them zero. */
+void outbind_pads_to_regs(const outbind_board_t *board, uint16_t *regs);
+
+/**
+ * Give the learned board its grounds and rails.
+ *
+ * Refuses a list that cannot belong to the board: a pad of zero, a kind that
+ * is not one, pads out of order or repeated, or a pad the catalogue already
+ * calls a pin -- one pad cannot be both a GPIO and a ground, and a page
+ * saying so is describing something other than this board. Refusing costs
+ * the marks and nothing else.
+ */
+bool outbind_learn_pads(uint16_t id, const uint16_t *regs);
 
 /**
  * Forget it.

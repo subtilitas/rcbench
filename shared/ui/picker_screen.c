@@ -259,6 +259,79 @@ static void draw_board(gfx_canvas_t *c)
     }
 }
 
+/*
+ * The grounds and the rails, marked inside the board on a short trace.
+ *
+ * A servo lead has three wires and the buttons describe one of them. These
+ * are the other two, and they go inside the outline because that is the only
+ * room left: the space beside the board is the buttons', and a mark on the
+ * pad itself would be under 40 pixels like the pad is.
+ *
+ * The depth alternates so a run of rails at one end of a row does not draw
+ * one label over the next. Grounds are five pads apart on this form factor
+ * and would not collide, but the rails are not.
+ */
+static void draw_pads_that_are_not_pins(gfx_canvas_t *c)
+{
+    const outbind_pad_t *pads = outbind_pads(s.bind.board);
+    const uint8_t n = outbind_pad_count(s.bind.board);
+    if (pads == NULL) {
+        return;                 /* this board does not say; nothing is drawn */
+    }
+    int bx, by, bw, bh;
+    board_box(&bx, &by, &bw, &bh);
+
+    int depth = 0;
+    for (uint8_t i = 0; i < n; ++i) {
+        int px, py;
+        if (!pad_xy(pads[i].pad, &px, &py)) { continue; }
+        const bool top = pad_is_top(pads[i].pad);
+
+        if (pads[i].kind == (uint8_t)LINK_PAD_OTHER) {
+            /* Neither a ground nor a rail, and not what anybody is looking
+             * for: marked as spoken for and left unlabelled. */
+            gfx_fill_circle(c, px, py, 4, GFX_RGB(70, 74, 82));
+            continue;
+        }
+        if (pads[i].kind != (uint8_t)LINK_PAD_GROUND
+            && pads[i].kind != (uint8_t)LINK_PAD_POWER) {
+            continue;
+        }
+
+        const bool ground = (pads[i].kind == (uint8_t)LINK_PAD_GROUND);
+        char label[6];
+        if (ground) {
+            label[0] = 'G';
+            label[1] = '\0';
+        } else if (pads[i].decivolts == 0u) {
+            /* An input rail follows whatever feeds it, so it carries no
+             * number rather than one that is only sometimes true. */
+            snprintf(label, sizeof(label), "PWR");
+        } else {
+            snprintf(label, sizeof(label), "%uV%u",
+                     (unsigned)(pads[i].decivolts / 10u),
+                     (unsigned)(pads[i].decivolts % 10u));
+        }
+
+        const int lw = gfx_text_width(UI_FONT_LABEL, label, 1);
+        const int cw = lw + 10, ch = 20;
+        const int drop = 24 + (depth & 1) * 26;
+        const int cy = top ? (py + drop) : (py - drop);
+        depth++;
+
+        const gfx_color_t face = ground ? GFX_RGB(232, 236, 244)
+                                        : GFX_RGB(240, 176, 64);
+        const gfx_color_t ink  = GFX_RGB(10, 10, 14);
+        /* The trace first, so the chip sits on top of its own end. */
+        for (int o = -1; o <= 1; ++o) {
+            gfx_line(c, px + o, py, px + o, cy, face);
+        }
+        gfx_fill_chamfer_rect_ex(c, px - cw / 2, cy - ch / 2, cw, ch,
+                                 6, 6, 6, 6, face);
+        gfx_text(c, px - lw / 2, cy - 8, label, UI_FONT_LABEL, ink, 1);
+    }
+}
+
 /* A cross on a pad something else already has. */
 static void cross(gfx_canvas_t *c, int x, int y, gfx_color_t col)
 {
@@ -532,6 +605,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         const uint8_t n = outbind_pin_count(s.bind.board);
         channels_of(chan, (n < OUTBIND_PINS) ? n : (uint8_t)OUTBIND_PINS);
         draw_board(c);
+        draw_pads_that_are_not_pins(c);
         draw_pads_and_buttons(c, chan);
         draw_mine(c, chan);
         draw_theirs(c, chan);

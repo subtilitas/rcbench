@@ -389,6 +389,20 @@ static uint8_t art_data_write(void *ctx, uint8_t off, uint8_t n,
     return 0u;
 }
 
+/*
+ * And which pads are grounds and rails, so a servo lead's other two wires
+ * can be found on the screen instead of by counting pads on the board.
+ */
+static void pads_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    uint16_t all[LINK_PAD_COUNT];
+    outbind_pads_to_regs(outbind_board(IOMCU_BOARD_ID), all);
+    for (uint8_t i = 0; i < n; ++i) {
+        out[i] = all[off + i];
+    }
+}
+
 static const link_page_t k_pages[] = {
     { LINK_PAGE_IDENTITY, LINK_ID_COUNT, identity_read, NULL },
     { LINK_PAGE_STATUS,   LINK_ST_COUNT, status_read,   NULL },
@@ -401,6 +415,7 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_SHAPE,     LINK_SH_COUNT,  shape_read,     NULL },
     { LINK_PAGE_ARTWORK,   LINK_AW_COUNT,  artwork_read,   NULL },
     { LINK_PAGE_ART_DATA,  LINK_AD_COUNT,  art_data_read,  art_data_write },
+    { LINK_PAGE_PADS,      LINK_PAD_COUNT, pads_read,      NULL },
 };
 
 /* ------------------------------------------------------------ the heartbeat */

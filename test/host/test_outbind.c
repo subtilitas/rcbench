@@ -700,7 +700,7 @@ TEST_CASE(every_board_in_the_table_is_answerable)
     for (uint8_t n = 0; n < outbind_board_count(); ++n) {
         const outbind_board_t *bd = outbind_board_at(n);
         const uint16_t id = (bd != NULL) ? bd->id : 0u;
-        if (bd == NULL) { T_FAIL("board %u is not there", n); }
+        if (bd == NULL) { T_FAIL("board %u is not there", n); return; }
         /* and it is findable by the identity it reports */
         if (outbind_board(id) != bd) {
             T_FAIL("board %u is in the table and not findable by id %u",
@@ -891,7 +891,7 @@ TEST_CASE(a_board_can_describe_itself_and_read_back_the_same)
     CHECK(outbind_learn_board(LEARNED, regs));
 
     const outbind_board_t *got = outbind_board(LEARNED);
-    if (got == NULL) { T_FAIL("a learned board is not answerable"); }
+    if (got == NULL) { T_FAIL("a learned board is not answerable"); return; }
     CHECK_EQ(got->id, LEARNED);
     CHECK_EQ(got->count, outbind_pin_count(BOARD));
     CHECK(!got->fixed);
@@ -1017,7 +1017,10 @@ TEST_CASE(a_catalogue_that_is_refused_leaves_the_last_one_whole)
 
     /* The board that was there is exactly as it was. */
     const outbind_board_t *bd = outbind_board(LEARNED);
-    if (bd == NULL) { T_FAIL("a refused catalogue took the last one with it"); }
+    if (bd == NULL) {
+        T_FAIL("a refused catalogue took the last one with it");
+        return;
+    }
     CHECK_EQ(bd->count, 3);
     CHECK_EQ(bd->pins[0].gpio, 0);
     CHECK_EQ(bd->pins[0].pad, 1);
@@ -1105,6 +1108,20 @@ TEST_CASE(a_pad_of_zero_ends_the_catalogue)
 
 /* ---------------------------------------------------------------- shape */
 
+/*
+ * A catalogue whose pins are on pads the Pico's grounds and rails do not
+ * use, for the tests that then learn those. Pad 40 is VBUS: a pin there is
+ * refused, and rightly.
+ */
+static void learn_pin_only_board(void)
+{
+    uint16_t regs[LINK_CAT_COUNT];
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) { regs[i] = 0u; }
+    regs[0] = LINK_CAT_OF(0, 1, LINK_PIN_FREE);
+    regs[1] = LINK_CAT_OF(1, 2, LINK_PIN_FREE);
+    CHECK(outbind_learn_board(LEARNED, regs));
+}
+
 /* Learn a plain catalogue under LEARNED so a shape has a board to belong to. */
 static void learn_two_row_board(uint8_t per_side)
 {
@@ -1120,7 +1137,10 @@ static void learn_two_row_board(uint8_t per_side)
 TEST_CASE(the_pico_shape_places_its_pads_where_the_board_has_them)
 {
     const outbind_board_t *bd = outbind_board(BOARD);
-    if (bd->shape == NULL) { T_FAIL("the board this build knows has no shape"); }
+    if (bd->shape == NULL) {
+        T_FAIL("the board this build knows has no shape");
+        return;
+    }
     const outbind_shape_t *sh = bd->shape;
 
     uint16_t x1, y1, x20, y20, x21, y21, x40, y40;
@@ -1183,7 +1203,7 @@ TEST_CASE(a_shape_survives_the_round_trip_through_the_page)
     CHECK(outbind_learn_shape(LEARNED, regs));
 
     const outbind_shape_t *sh = outbind_board(LEARNED)->shape;
-    if (sh == NULL) { T_FAIL("a learned shape is not there"); }
+    if (sh == NULL) { T_FAIL("a learned shape is not there"); return; }
     const outbind_shape_t *mine = outbind_board(BOARD)->shape;
     CHECK_EQ(sh->width_cmm, mine->width_cmm);
     CHECK_EQ(sh->height_cmm, mine->height_cmm);
@@ -1329,6 +1349,133 @@ TEST_CASE(the_row_sits_in_the_same_place_whichever_end_it_is_numbered_from)
     }
 }
 
+/* --------------------------------------------------- grounds and rails */
+
+TEST_CASE(the_board_says_which_pads_are_ground_and_which_are_rails)
+{
+    /*
+     * A servo lead has three wires and the catalogue describes one. These
+     * are the other two, and a pad an operator gets wrong here puts five
+     * volts where the return should be.
+     */
+    const outbind_pad_t *pads = outbind_pads(BOARD);
+    const uint8_t n = outbind_pad_count(BOARD);
+    if (pads == NULL || n == 0u) {
+        T_FAIL("the board describes no pads");
+        return;
+    }
+
+    unsigned grounds = 0, rails = 0;
+    int16_t last = -1;
+    for (uint8_t i = 0; i < n; ++i) {
+        if (pads[i].pad == 0u || (int16_t)pads[i].pad <= last) {
+            T_FAIL("pad %u is out of order", pads[i].pad);
+        }
+        last = (int16_t)pads[i].pad;
+        /* A pad is a pin or it is one of these, never both. */
+        for (uint8_t k = 0; k < outbind_pin_count(BOARD); ++k) {
+            if (outbind_pins(BOARD)[k].pad == pads[i].pad) {
+                T_FAIL("pad %u is both a pin and a %u", pads[i].pad,
+                       pads[i].kind);
+            }
+        }
+        if (pads[i].kind == LINK_PAD_GROUND) {
+            ++grounds;
+            CHECK_EQ(pads[i].decivolts, 0);   /* a ground is 0 V, not unknown */
+        } else if (pads[i].kind == LINK_PAD_POWER) {
+            ++rails;
+        }
+    }
+    CHECK_EQ(grounds, 8);                     /* the Pico form factor's eight */
+    CHECK(rails >= 2);
+
+    /* The two an operator reaches for, at the voltages printed on the board. */
+    bool five = false, three = false, unfixed = false;
+    for (uint8_t i = 0; i < n; ++i) {
+        if (pads[i].kind != LINK_PAD_POWER) { continue; }
+        if (pads[i].decivolts == 50u) { five = true; }
+        if (pads[i].decivolts == 33u) { three = true; }
+        /* VSYS is an input and follows whatever feeds it, so it carries no
+         * number rather than one that is only sometimes true. */
+        if (pads[i].decivolts == 0u) { unfixed = true; }
+    }
+    CHECK(five);
+    CHECK(three);
+    CHECK(unfixed);
+}
+
+TEST_CASE(pads_survive_the_round_trip_through_the_page)
+{
+    uint16_t regs[LINK_PAD_COUNT];
+    outbind_pads_to_regs(outbind_board(BOARD), regs);
+
+    learn_pin_only_board();
+    CHECK(outbind_pads(LEARNED) == NULL);
+    CHECK(outbind_learn_pads(LEARNED, regs));
+
+    const outbind_pad_t *got = outbind_pads(LEARNED);
+    const outbind_pad_t *mine = outbind_pads(BOARD);
+    if (got == NULL) { T_FAIL("learned pads are not there"); return; }
+    CHECK_EQ(outbind_pad_count(LEARNED), outbind_pad_count(BOARD));
+    for (uint8_t i = 0; i < outbind_pad_count(BOARD); ++i) {
+        if (got[i].pad != mine[i].pad || got[i].kind != mine[i].kind
+            || got[i].decivolts != mine[i].decivolts) {
+            T_FAIL("pad %u came back as %u/%u/%u", i, got[i].pad, got[i].kind,
+                   got[i].decivolts);
+        }
+    }
+
+    /* Learning the board again drops them: they belong to the board they
+     * came with, as the shape does. */
+    learn_pin_only_board();
+    CHECK(outbind_pads(LEARNED) == NULL);
+    outbind_forget_learned();
+}
+
+TEST_CASE(a_pad_list_that_cannot_belong_to_the_board_is_refused)
+{
+    uint16_t good[LINK_PAD_COUNT];
+    outbind_pads_to_regs(outbind_board(BOARD), good);
+    learn_pin_only_board();       /* pins on pads 1 and 2 */
+
+    uint16_t r[LINK_PAD_COUNT];
+    /* Nothing at all. */
+    for (unsigned i = 0; i < LINK_PAD_COUNT; ++i) { r[i] = 0u; }
+    CHECK(!outbind_learn_pads(LEARNED, r));
+
+    /* A pad of zero: pads are numbered from one. */
+    for (unsigned i = 0; i < LINK_PAD_COUNT; ++i) { r[i] = 0u; }
+    r[0] = LINK_PAD_OF(0, LINK_PAD_GROUND, 0);
+    CHECK(!outbind_learn_pads(LEARNED, r));
+
+    /* Out of order, and the same pad twice. */
+    for (unsigned i = 0; i < LINK_PAD_COUNT; ++i) { r[i] = 0u; }
+    r[0] = LINK_PAD_OF(9, LINK_PAD_GROUND, 0);
+    r[1] = LINK_PAD_OF(4, LINK_PAD_GROUND, 0);
+    CHECK(!outbind_learn_pads(LEARNED, r));
+    for (unsigned i = 0; i < LINK_PAD_COUNT; ++i) { r[i] = 0u; }
+    r[0] = LINK_PAD_OF(9, LINK_PAD_GROUND, 0);
+    r[1] = LINK_PAD_OF(9, LINK_PAD_POWER, 33);
+    CHECK(!outbind_learn_pads(LEARNED, r));
+
+    /*
+     * And a pad the catalogue already calls a pin. One pad cannot be both a
+     * GPIO and a ground; a page saying so describes another board, and
+     * believing it would draw a ground where an output is.
+     */
+    for (unsigned i = 0; i < LINK_PAD_COUNT; ++i) { r[i] = 0u; }
+    r[0] = LINK_PAD_OF(1, LINK_PAD_GROUND, 0);     /* pad 1 is a pin here */
+    CHECK(!outbind_learn_pads(LEARNED, r));
+
+    /* Pads for a board that is not the one here. */
+    CHECK(!outbind_learn_pads((uint16_t)(LEARNED + 1u), good));
+    CHECK(!outbind_learn_pads(LEARNED, NULL));
+
+    /* None of them took. */
+    CHECK(outbind_pads(LEARNED) == NULL);
+    outbind_forget_learned();
+}
+
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     uint16_t regs[LINK_OS_COUNT];
@@ -1393,6 +1540,9 @@ int main(void)
     RUN(a_pad_the_shape_does_not_place_is_refused);
     RUN(a_corner_on_the_right_numbers_the_row_the_other_way);
     RUN(the_row_sits_in_the_same_place_whichever_end_it_is_numbered_from);
+    RUN(the_board_says_which_pads_are_ground_and_which_are_rails);
+    RUN(pads_survive_the_round_trip_through_the_page);
+    RUN(a_pad_list_that_cannot_belong_to_the_board_is_refused);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("outbind");
 }

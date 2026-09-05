@@ -333,10 +333,25 @@ behalten. Es kostet also etwa zehn Sekunden, wenn eine Platine zum ersten Mal
 gesehen wird, und danach nichts. Eine Platine ohne Foto, oder eine, deren
 Übertragung nicht fertig wurde, wird gezeichnet statt leer gelassen.
 
-**Nicht gezeigt:** welche Pads Masse und welche Versorgung sind. Die
-Catalogue-Page trägt die Pins, die ein Output haben darf, und die, die etwas
-anderes hält; sie sagt nicht, wofür ein Pad da ist, das kein GPIO ist. Wer
-eine Masse sucht, liest sie auf der Platine ab.
+Ein Servokabel hat drei Adern, und die Tasten beschreiben eine davon. Die
+anderen beiden sind auf der Platine selbst markiert: eine Masse trägt ein
+weißes **G**, eine Versorgung ihre Spannung — **5V0**, **3V3**. Eine
+Versorgung, die ein Eingang und keine feste Spannung ist, trägt stattdessen
+**PWR**, denn eine Zahl, die nur manchmal stimmt, ist hier schlechter als
+keine. Pads, die keines von beidem sind, etwa RUN, bekommen einen Punkt und
+keine Beschriftung.
+
+Sie werden innerhalb des Umrisses an einer kurzen Leitung markiert, in zwei
+Tiefen, damit eine Reihe von Versorgungen an einem Ende nicht eine
+Beschriftung über die nächste zeichnet. Innen ist der einzige verbleibende
+Platz: der Raum neben der Platine gehört den Tasten, und eine Markierung auf
+dem Pad selbst wäre so klein wie das Pad.
+
+Sie kommen von der [Pads-Page](Link-de.md#page-map), die vom Katalog getrennt
+ist, weil sie dort nicht hineinpassen — eine Page hat 32 Register, und eine
+Platine mit 40 Pads hat zwischen beiden mehr Pads als das. Eine Platine, die
+sie nicht bedient, hat ihre Massen und Versorgungen unmarkiert, und ein Kabel
+wird gesteckt, indem man die Platine liest statt den Bildschirm.
 
 ### Der Koprozessor hält sie, nicht das Panel
 

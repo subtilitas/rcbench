@@ -71,9 +71,35 @@ static const outbind_shape_t k_pico_shape = {
     5100u, 2100u, 254u, 161u, 20u, (uint8_t)LINK_SH_BOTTOM_LEFT,
 };
 
+/*
+ * The pads that are not pins, in pad order.
+ *
+ * VSYS carries no voltage here because it does not have one: it is the input
+ * rail and follows whatever feeds it, which on the bring-up module is USB
+ * and on a bench could be anything. A number that is only sometimes true is
+ * worse on this screen than no number.
+ */
+static const outbind_pad_t k_pico_pads[] = {
+    {  3, LINK_PAD_GROUND, 0  },
+    {  8, LINK_PAD_GROUND, 0  },
+    { 13, LINK_PAD_GROUND, 0  },
+    { 18, LINK_PAD_GROUND, 0  },
+    { 23, LINK_PAD_GROUND, 0  },
+    { 28, LINK_PAD_GROUND, 0  },
+    { 30, LINK_PAD_OTHER,  0  },   /* RUN */
+    { 33, LINK_PAD_GROUND, 0  },
+    { 35, LINK_PAD_POWER,  33 },   /* VREF, the ADC reference */
+    { 36, LINK_PAD_POWER,  33 },   /* 3V3 */
+    { 37, LINK_PAD_OTHER,  0  },   /* 3V3_EN */
+    { 38, LINK_PAD_GROUND, 0  },
+    { 39, LINK_PAD_POWER,  0  },   /* VSYS: an input, not a fixed rail */
+    { 40, LINK_PAD_POWER,  50 },   /* VBUS */
+};
+
 static const outbind_board_t k_boards[] = {
     { OUTBIND_BOARD_PICO_HEADER, "RP2350-CAN", k_pico_pins, OUTBIND_PINS,
-      false, &k_pico_shape },
+      false, &k_pico_shape, k_pico_pads,
+      (uint8_t)(sizeof(k_pico_pads) / sizeof(k_pico_pads[0])) },
 };
 
 /*
@@ -83,6 +109,7 @@ static const outbind_board_t k_boards[] = {
  * needs to match against the board in front of them.
  */
 static outbind_pin_t   s_learned_pins[LINK_CAT_PINS];
+static outbind_pad_t   s_learned_pads[LINK_PAD_SLOTS];
 static outbind_shape_t s_learned_shape;
 static char            s_learned_name[16];
 static outbind_board_t s_learned;
@@ -234,8 +261,88 @@ bool outbind_learn_board(uint16_t id, const uint16_t *regs)
      * so a new coprocessor is not drawn with the last one's outline while
      * its own shape page has yet to be read.
      */
-    s_learned.shape = NULL;
-    s_have_learned  = true;
+    s_learned.shape     = NULL;
+    s_learned.pads      = NULL;
+    s_learned.pad_count = 0u;
+    s_have_learned      = true;
+    return true;
+}
+
+const outbind_pad_t *outbind_pads(uint16_t board)
+{
+    const outbind_board_t *b = outbind_board(board);
+    return (b != NULL) ? b->pads : NULL;
+}
+
+uint8_t outbind_pad_count(uint16_t board)
+{
+    const outbind_board_t *b = outbind_board(board);
+    return (b != NULL) ? b->pad_count : 0u;
+}
+
+void outbind_pads_to_regs(const outbind_board_t *board, uint16_t *regs)
+{
+    if (regs == NULL) {
+        return;
+    }
+    for (unsigned i = 0; i < LINK_PAD_COUNT; ++i) {
+        regs[i] = 0u;
+    }
+    if (board == NULL || board->pads == NULL) {
+        return;
+    }
+    for (uint8_t i = 0; i < board->pad_count && i < LINK_PAD_SLOTS; ++i) {
+        regs[i] = LINK_PAD_OF(board->pads[i].pad, board->pads[i].kind,
+                              board->pads[i].decivolts);
+    }
+}
+
+bool outbind_learn_pads(uint16_t id, const uint16_t *regs)
+{
+    if (regs == NULL || !s_have_learned || s_learned.id != id) {
+        return false;      /* pads for a board that is not the one here */
+    }
+
+    /*
+     * Decided before anything is written, as the catalogue is: the pads live
+     * in a static slot, and a list refused half way would leave half of
+     * itself over the board already there.
+     */
+    uint8_t n = 0u;
+    int16_t last = -1;
+    for (unsigned i = 0; i < LINK_PAD_COUNT; ++i) {
+        const uint8_t kind = LINK_PAD_KIND(regs[i]);
+        if (kind == (uint8_t)LINK_PAD_NONE) {
+            break;         /* no pad in this slot, and none after it */
+        }
+        const uint8_t pad = LINK_PAD_NUM(regs[i]);
+        if (pad == 0u || (int16_t)pad <= last) {
+            return false;  /* pads are numbered from one, and in order */
+        }
+        /*
+         * And a pad the catalogue calls a pin is not also a ground. One pad
+         * cannot be both, and a page saying so is describing something other
+         * than this board.
+         */
+        for (uint8_t k = 0; k < s_learned.count; ++k) {
+            if (s_learned_pins[k].pad == pad) {
+                return false;
+            }
+        }
+        last = (int16_t)pad;
+        ++n;
+    }
+    if (n == 0u) {
+        return false;
+    }
+
+    for (uint8_t i = 0; i < n; ++i) {
+        s_learned_pads[i].pad       = LINK_PAD_NUM(regs[i]);
+        s_learned_pads[i].kind      = LINK_PAD_KIND(regs[i]);
+        s_learned_pads[i].decivolts = LINK_PAD_DV(regs[i]);
+    }
+    s_learned.pads      = s_learned_pads;
+    s_learned.pad_count = n;
     return true;
 }
 
@@ -349,8 +456,10 @@ bool outbind_pad_xy(const outbind_shape_t *shape, uint8_t pad,
 
 void outbind_forget_learned(void)
 {
-    s_have_learned  = false;
-    s_learned.shape = NULL;
+    s_have_learned      = false;
+    s_learned.shape     = NULL;
+    s_learned.pads      = NULL;
+    s_learned.pad_count = 0u;
 }
 
 uint8_t outbind_board_count(void)
