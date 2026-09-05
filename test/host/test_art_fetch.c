@@ -109,7 +109,7 @@ TEST_CASE(a_photograph_arrives_a_block_at_a_time)
     const art_transport_t t = link();
     uint16_t meta[LINK_AW_COUNT];
     uint32_t bytes = 0;
-    CHECK(art_fetch_meta(&t, meta, &bytes));
+    CHECK(art_fetch_meta(&t, meta, &bytes, NULL));
     CHECK_EQ(bytes, BYTES);
 
     uint8_t got[BYTES];
@@ -142,7 +142,7 @@ TEST_CASE(a_step_does_the_blocks_it_is_given_and_no_more)
     const art_transport_t t = link();
     uint16_t meta[LINK_AW_COUNT];
     uint32_t bytes = 0;
-    CHECK(art_fetch_meta(&t, meta, &bytes));
+    CHECK(art_fetch_meta(&t, meta, &bytes, NULL));
     uint8_t got[BYTES];
     art_fetch_t f;
     CHECK(art_fetch_begin(&f, meta, got, sizeof(got)));
@@ -162,7 +162,7 @@ TEST_CASE(a_link_that_stops_answering_stops_the_fetch)
     const art_transport_t t = link();
     uint16_t meta[LINK_AW_COUNT];
     uint32_t bytes = 0;
-    CHECK(art_fetch_meta(&t, meta, &bytes));
+    CHECK(art_fetch_meta(&t, meta, &bytes, NULL));
     uint8_t got[BYTES];
     art_fetch_t f;
     CHECK(art_fetch_begin(&f, meta, got, sizeof(got)));
@@ -190,7 +190,7 @@ TEST_CASE(a_block_that_was_not_asked_for_stops_the_fetch)
     const art_transport_t t = link();
     uint16_t meta[LINK_AW_COUNT];
     uint32_t bytes = 0;
-    CHECK(art_fetch_meta(&t, meta, &bytes));
+    CHECK(art_fetch_meta(&t, meta, &bytes, NULL));
     uint8_t got[BYTES];
     art_fetch_t f;
     CHECK(art_fetch_begin(&f, meta, got, sizeof(got)));
@@ -207,7 +207,7 @@ TEST_CASE(a_picture_that_arrives_whole_and_wrong_is_not_done)
     const art_transport_t t = link();
     uint16_t meta[LINK_AW_COUNT];
     uint32_t bytes = 0;
-    CHECK(art_fetch_meta(&t, meta, &bytes));
+    CHECK(art_fetch_meta(&t, meta, &bytes, NULL));
     uint8_t got[BYTES];
     art_fetch_t f;
     CHECK(art_fetch_begin(&f, meta, got, sizeof(got)));
@@ -217,6 +217,43 @@ TEST_CASE(a_picture_that_arrives_whole_and_wrong_is_not_done)
         st = art_fetch_step(&f, &t, 1u);
     }
     CHECK_EQ(st, ART_FETCH_FAILED);             /* whole, and not the picture */
+}
+
+TEST_CASE(the_three_ways_there_is_no_picture_are_told_apart)
+{
+    /*
+     * No picture, no page, and a page that disagrees with itself all end the
+     * same way, and only the last is a fault. A log line that reported all
+     * three as "carries no photograph" would hide the one worth reading.
+     */
+    const art_transport_t t = link();
+    uint16_t meta[LINK_AW_COUNT];
+    uint32_t bytes = 1u;
+    const char *a = NULL, *b = NULL, *c = NULL;
+
+    fresh();
+    g_meta[LINK_AW_BLOCKS] = 0u;
+    CHECK(!art_fetch_meta(&t, meta, &bytes, &a));
+    CHECK_EQ(bytes, 0);                       /* nothing to allocate from */
+
+    fresh();
+    g_budget = 0;                             /* the page is not there */
+    bytes = 1u;
+    CHECK(!art_fetch_meta(&t, meta, &bytes, &b));
+    CHECK_EQ(bytes, 0);
+
+    fresh();
+    g_meta[LINK_AW_HEIGHT] = (uint16_t)(H + 1u);   /* disagrees with itself */
+    bytes = 1u;
+    CHECK(!art_fetch_meta(&t, meta, &bytes, &c));
+    CHECK_EQ(bytes, 0);
+
+    /* Three reasons, and none of them the same sentence. */
+    CHECK(a != NULL && b != NULL && c != NULL);
+    CHECK(a[0] != '\0' && b[0] != '\0' && c[0] != '\0');
+    CHECK(strcmp(a, b) != 0);
+    CHECK(strcmp(a, c) != 0);
+    CHECK(strcmp(b, c) != 0);
 }
 
 TEST_CASE(a_board_with_no_photograph_is_not_a_failure)
@@ -229,11 +266,11 @@ TEST_CASE(a_board_with_no_photograph_is_not_a_failure)
     const art_transport_t t = link();
     uint16_t meta[LINK_AW_COUNT];
     uint32_t bytes = 1u;
-    CHECK(!art_fetch_meta(&t, meta, &bytes));
+    CHECK(!art_fetch_meta(&t, meta, &bytes, NULL));
 
     fresh();
     g_budget = 0;                               /* the page is not there */
-    CHECK(!art_fetch_meta(&t, meta, &bytes));
+    CHECK(!art_fetch_meta(&t, meta, &bytes, NULL));
 }
 
 TEST_CASE(a_picture_there_is_no_room_for_is_refused_before_the_wait)
@@ -242,7 +279,7 @@ TEST_CASE(a_picture_there_is_no_room_for_is_refused_before_the_wait)
     const art_transport_t t = link();
     uint16_t meta[LINK_AW_COUNT];
     uint32_t bytes = 0;
-    CHECK(art_fetch_meta(&t, meta, &bytes));
+    CHECK(art_fetch_meta(&t, meta, &bytes, NULL));
     uint8_t small[BYTES - 1u];
     art_fetch_t f;
     CHECK(!art_fetch_begin(&f, meta, small, sizeof(small)));
@@ -259,13 +296,13 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
     uint8_t got[BYTES];
     art_fetch_t f;
 
-    CHECK(!art_fetch_meta(NULL, meta, &bytes));
-    CHECK(!art_fetch_meta(&t, NULL, &bytes));
-    CHECK(!art_fetch_meta(&t, meta, NULL));
+    CHECK(!art_fetch_meta(NULL, meta, &bytes, NULL));
+    CHECK(!art_fetch_meta(&t, NULL, &bytes, NULL));
+    CHECK(!art_fetch_meta(&t, meta, NULL, NULL));
     CHECK(!art_fetch_begin(NULL, meta, got, sizeof(got)));
     CHECK_EQ(art_fetch_step(NULL, &t, 1u), ART_FETCH_FAILED);
 
-    CHECK(art_fetch_meta(&t, meta, &bytes));
+    CHECK(art_fetch_meta(&t, meta, &bytes, NULL));
     CHECK(art_fetch_begin(&f, meta, got, sizeof(got)));
     CHECK_EQ(art_fetch_step(&f, NULL, 1u), ART_FETCH_FAILED);
 
@@ -283,6 +320,7 @@ int main(void)
     RUN(a_link_that_stops_answering_stops_the_fetch);
     RUN(a_block_that_was_not_asked_for_stops_the_fetch);
     RUN(a_picture_that_arrives_whole_and_wrong_is_not_done);
+    RUN(the_three_ways_there_is_no_picture_are_told_apart);
     RUN(a_board_with_no_photograph_is_not_a_failure);
     RUN(a_picture_there_is_no_room_for_is_refused_before_the_wait);
     RUN(null_arguments_are_refused_rather_than_dereferenced);

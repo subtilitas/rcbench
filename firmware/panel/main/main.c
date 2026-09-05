@@ -926,9 +926,13 @@ static void art_begin(uint16_t board)
 
     uint16_t meta[LINK_AW_COUNT];
     uint32_t bytes = 0u;
-    if (!art_fetch_meta(&s_art_link, meta, &bytes)) {
-        ESP_LOGI(TAG, "hardware %u carries no photograph of itself",
-                 (unsigned)board);
+    const char *why = "";
+    if (!art_fetch_meta(&s_art_link, meta, &bytes, &why)) {
+        /* Three different things end here -- no picture, no page, and a page
+         * that disagrees with itself -- and only the last is a fault. The
+         * line says which rather than reporting all three as the first. */
+        ESP_LOGI(TAG, "no photograph from hardware %u: %s", (unsigned)board,
+                 why);
         return;
     }
     if (s_artflash != NULL && bytes > art_store_capacity(s_artflash)) {

@@ -19,22 +19,40 @@ static art_fetch_state_t fail(art_fetch_t *f, const char *why)
 }
 
 bool art_fetch_meta(const art_transport_t *t, uint16_t *meta_regs,
-                    uint32_t *bytes)
+                    uint32_t *bytes, const char **why)
 {
+    const char *reason = "";
+    bool ok = false;
+
     if (t == NULL || t->read_page == NULL || meta_regs == NULL
         || bytes == NULL) {
-        return false;
+        reason = "there is no link to ask on";
+    } else if (!t->read_page(t->ctx, (uint8_t)LINK_PAGE_ARTWORK,
+                             (uint8_t)LINK_AW_COUNT, meta_regs)) {
+        /* No such page, or nothing answered. A coprocessor built before the
+         * page refuses it by design, every time the link comes up. */
+        reason = "it does not answer the artwork page";
+    } else if (meta_regs[LINK_AW_BLOCKS] == 0u) {
+        reason = "it carries no photograph of itself";
+    } else {
+        link_art_meta_t m;
+        if (!link_artxfer_meta_ok(meta_regs, &m)) {
+            /* Worth saying out loud: this one is a coprocessor disagreeing
+             * with itself, not a board that simply has no picture. */
+            reason = "it describes a photograph that cannot be one";
+        } else {
+            *bytes = m.bytes;
+            ok = true;
+        }
     }
-    if (!t->read_page(t->ctx, (uint8_t)LINK_PAGE_ARTWORK,
-                      (uint8_t)LINK_AW_COUNT, meta_regs)) {
-        return false;      /* no page there, or nothing answered */
+
+    if (!ok && bytes != NULL) {
+        *bytes = 0u;       /* nothing to size an allocation from */
     }
-    if (meta_regs[LINK_AW_BLOCKS] == 0u) {
-        return false;      /* this board carries no picture of itself */
+    if (why != NULL) {
+        *why = reason;
     }
-    *bytes = (uint32_t)meta_regs[LINK_AW_BYTES_LO]
-             | ((uint32_t)meta_regs[LINK_AW_BYTES_HI] << 16);
-    return *bytes != 0u;
+    return ok;
 }
 
 bool art_fetch_begin(art_fetch_t *f, const uint16_t *meta_regs, uint8_t *buf,

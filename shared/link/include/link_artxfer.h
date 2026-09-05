@@ -51,6 +51,17 @@ typedef struct {
 } link_artxfer_t;
 
 /**
+ * Whether these registers can describe a picture at all.
+ *
+ * Everything that does not depend on where the picture would go: a format
+ * this build can read, a block count the length implies, and a length that
+ * is the pixels claimed. Split out because the caller has to know the size
+ * before it can find room, and a page that cannot be a picture should be
+ * refused before anything is allocated for it rather than after.
+ */
+bool link_artxfer_meta_ok(const uint16_t *meta, link_art_meta_t *out);
+
+/**
  * Read the metadata and get ready to assemble into @p buf.
  *
  * Refuses metadata that cannot describe a picture: no blocks, a format this

@@ -61,12 +61,17 @@ typedef struct {
  * What the far end says its picture is.
  *
  * False when it has none, when the page is not there at all -- a coprocessor
- * built before it -- or when what it says cannot be a picture. The caller
- * needs @p bytes before it can find room, which is why this is separate from
- * the start.
+ * built before it -- or when what it says cannot be a picture. Those are
+ * different things to somebody reading a log, so @p why is set to which; it
+ * may be NULL, and it is never left pointing at nothing.
+ *
+ * Everything that can be checked without knowing where the picture would go
+ * is checked here, and @p bytes is left zero when any of it fails: the
+ * caller finds room from that number, and a page that cannot be a picture
+ * should not size an allocation first and be refused second.
  */
 bool art_fetch_meta(const art_transport_t *t, uint16_t *meta_regs,
-                    uint32_t *bytes);
+                    uint32_t *bytes, const char **why);
 
 /** Get ready to assemble into @p buf. False when the metadata cannot
  *  describe a picture that fits. */
