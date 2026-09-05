@@ -250,6 +250,77 @@ TEST_CASE(a_photograph_is_used_when_there_is_one_and_not_when_there_is_not)
     CHECK_EQ(outbind_group_of(&s_last, idx(4u)), 1);
 }
 
+TEST_CASE(the_tables_beside_the_board_say_what_the_pins_became)
+{
+    /*
+     * The columns are what the picture on its own cannot give: which lead is
+     * channel 0. Rendered with pins bound on two protocols, so both the "this
+     * one" and the "somebody else" paths draw.
+     */
+    fresh();
+    outbind_t b = *picker_screen_binding();
+    outbind_set_proto(&b, 1u);                     /* SERVO PWM */
+    CHECK(outbind_toggle(&b, idx(0u)));
+    CHECK(outbind_toggle(&b, idx(1u)));
+    outbind_set_proto(&b, 4u);                     /* DSHOT600 */
+    CHECK(outbind_toggle(&b, idx(6u)));
+    outbind_set_proto(&b, 1u);
+    picker_screen_set_binding(&b);
+    render();
+
+    /* The pins are held where the tables say they are: two here, one there. */
+    CHECK_EQ(outbind_chosen(picker_screen_binding()), 2);
+    CHECK_EQ(outbind_chosen_total(picker_screen_binding()), 3);
+    CHECK_EQ(outbind_group_of(picker_screen_binding(), idx(6u)), 4);
+
+    /* And the same board seen from the other protocol, which swaps which
+     * column each pin is drawn in. */
+    outbind_set_proto(&b, 4u);
+    picker_screen_set_binding(&b);
+    render();
+    CHECK_EQ(outbind_chosen(picker_screen_binding()), 1);
+
+    /* A protocol holding nothing draws the empty column rather than a gap. */
+    outbind_set_proto(&b, 2u);                     /* PPM */
+    picker_screen_set_binding(&b);
+    render();
+    CHECK_EQ(outbind_chosen(picker_screen_binding()), 0);
+}
+
+static int  s_asked;
+static uint16_t s_asked_board;
+
+static void artwork_source(uint16_t board)
+{
+    ++s_asked;
+    s_asked_board = board;
+    picker_screen_set_artwork(NULL, 0, 0);
+}
+
+TEST_CASE(the_photograph_is_asked_for_on_the_way_in)
+{
+    /*
+     * Asked on entry rather than held, because it is two hundred kilobytes
+     * and because one that arrived since the last visit should be the one
+     * shown -- as should none, for a board that has been swapped.
+     */
+    fresh();
+    s_asked = 0;
+    picker_screen_set_artwork_source(artwork_source);
+    outbind_t b = *picker_screen_binding();
+    picker_screen_set_binding(&b);
+
+    scr()->enter();
+    CHECK_EQ(s_asked, 1);
+    CHECK_EQ(s_asked_board, BOARD);
+    render();
+
+    scr()->leave();
+    scr()->enter();
+    CHECK_EQ(s_asked, 2);        /* asked again, not remembered */
+    picker_screen_set_artwork_source(NULL);
+}
+
 TEST_CASE(null_events_are_refused_rather_than_dereferenced)
 {
     fresh();
@@ -270,6 +341,8 @@ int main(void)
     RUN(a_release_somewhere_else_acts_not_at_all);
     RUN(a_board_that_does_not_say_where_its_pads_are_is_not_drawn);
     RUN(a_photograph_is_used_when_there_is_one_and_not_when_there_is_not);
+    RUN(the_tables_beside_the_board_say_what_the_pins_became);
+    RUN(the_photograph_is_asked_for_on_the_way_in);
     RUN(null_events_are_refused_rather_than_dereferenced);
     return test_summary("picker_screen");
 }

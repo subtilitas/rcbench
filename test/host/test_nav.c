@@ -217,6 +217,36 @@ TEST_CASE(a_second_contact_cannot_steal_the_release)
     CHECK(ui_router_take_stop());
 }
 
+/*
+ * The two doors on the Setup screen. They are the only way to either
+ * outputs view, so a tile that stopped navigating would leave a screen
+ * nobody can reach -- and the geometry here is what says the second door
+ * did not land on top of RESET CATEGORY.
+ */
+TEST_CASE(the_setup_screen_opens_both_views_of_the_outputs)
+{
+    /* Matching settings_screen.c: two doors of 42 in the left column. */
+    const int door_x = 16 + 208 / 2;
+    const int outputs_y = UI_BAND_H + 248 + 42 / 2;
+    const int picker_y  = UI_BAND_H + 248 + 42 + 4 + 42 / 2;
+
+    fresh();
+    ui_router_goto(SCREEN_SETUP);
+    tap(door_x, outputs_y);
+    CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+
+    ui_router_goto(SCREEN_SETUP);
+    tap(door_x, picker_y);
+    CHECK_EQ(ui_router_current(), SCREEN_PICKER);
+
+    /* And a press that slides off a door is not a tap on it. */
+    ui_router_goto(SCREEN_SETUP);
+    touch(door_x, picker_y, TOUCH_EVENT_DOWN, 1);
+    touch(door_x + 300, picker_y, TOUCH_EVENT_MOVE, 1);
+    touch(door_x + 300, picker_y, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+}
+
 /* Tiles navigate, and a press that slid off its tile is not a tap on it. */
 TEST_CASE(a_tile_navigates_and_a_slip_does_not)
 {
@@ -744,6 +774,7 @@ int main(void)
     RUN(the_home_tag_returns_to_the_overview);
     RUN(the_overview_has_no_home_tag);
     RUN(a_second_contact_cannot_steal_the_release);
+    RUN(the_setup_screen_opens_both_views_of_the_outputs);
     RUN(a_tile_navigates_and_a_slip_does_not);
     RUN(every_stub_renders_something_and_says_something);
     RUN(no_line_of_stub_copy_runs_off_the_screen);
