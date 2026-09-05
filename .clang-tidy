@@ -28,10 +28,14 @@
 #   clang-analyzer-optin.performance.Padding
 #                                    struct field order for padding is a
 #                                    micro-optimisation, not a defect
-#   portability-avoid-pragma-once    exists from LLVM 21; every header here
-#                                    uses #pragma once, which all three
-#                                    toolchains (GCC, ESP-IDF's GCC, ARM GCC)
-#                                    support.  Off so clang-tidy 18 (CI) and
+#   portability-avoid-pragma-once    exists from LLVM 21.  The tree uses both
+#                                    guards: 40 headers under shared/ use
+#                                    #pragma once and 18 use #ifndef, nine of
+#                                    those in shared/link.  #pragma once is
+#                                    supported by all three toolchains (GCC,
+#                                    ESP-IDF's GCC, ARM GCC), so the ones
+#                                    that use it are not a portability
+#                                    problem here.  Off so clang-tidy 18 (CI) and
 #                                    newer versions give the same answer
 Checks: >
   -*,

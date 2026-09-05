@@ -99,3 +99,14 @@ pico_enable_stdio_usb(rcbench-iomcu 1)
 pico_enable_stdio_uart(rcbench-iomcu 0)
 
 pico_add_extra_outputs(rcbench-iomcu)
+
+# The image has to fit the module fitted, not the one the board file names.
+# out_store.c pins its sector to 4 MB - 4 kB for the same reason; this is the
+# other half of that, and it is checked after the link because a binary's
+# size is not a compile-time constant. 4 MB - 4 kB = 4190208.
+add_custom_command(TARGET rcbench-iomcu POST_BUILD
+    COMMAND ${CMAKE_COMMAND}
+            -DIMAGE=$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu.bin
+            -DLIMIT=4190208
+            -P "${CMAKE_CURRENT_LIST_DIR}/cmake/image_fits.cmake"
+    VERBATIM)
