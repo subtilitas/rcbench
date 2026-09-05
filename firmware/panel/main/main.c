@@ -18,6 +18,7 @@
 
 #include "driver/gpio.h"
 #include "driver/temperature_sensor.h"
+#include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -33,7 +34,10 @@
 #include "display.h"
 #include "gfx.h"
 #include "arming.h"
+#include "art_flash_esp.h"
+#include "art_store.h"
 #include "heartbeat.h"
+#include "link_artxfer.h"
 #include "link_bringup.h"
 #include "link_host.h"
 #include "link_pages.h"
@@ -255,6 +259,25 @@ static bool      s_outputs_read_fresh;    /* both under s_snap_lock */
 
 /* The coprocessor's board identity, from the identity page at bring-up. */
 static uint16_t  s_board;
+
+/*
+ * Fetching the board's photograph, a slice of a poll at a time.
+ *
+ * Two hundred kilobytes over a link that carries sixty-two bytes a
+ * transaction is thousands of round trips.  Doing them in a loop would stop
+ * the control task for the length of the transfer, which is the bug the
+ * identity read had at a tenth of the scale; so a bounded slice of each poll
+ * goes to it and the bench keeps its cadence.  The transfer takes longer in
+ * wall clock than the link alone would need, and that is the trade: it
+ * happens once per board and never again.
+ */
+#define ART_SLICE_MS 15u
+
+static const art_flash_t *s_artflash;
+static link_artxfer_t     s_artx;
+static uint8_t           *s_artbuf;
+static uint16_t           s_artboard;
+static bool               s_artbusy;
 
 static QueueHandle_t     s_touch_q;   /**< control task -> app_main */
 static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
@@ -526,6 +549,9 @@ static bool bring_up(void)
      * splash step that is declared and never set keeps all_answered() false,
      * and the splash never hands over.
      */
+    /* The partition the photographs live in, looked up once. */
+    s_artflash = art_flash_esp();
+
     link_host_init(&s_host, now_ms());
     if (link_open) {
         link_msg_t reply;
@@ -738,6 +764,138 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
                        const uint16_t *regs, link_msg_t *reply)
 {
     return write_regs(host, page, 0, count, regs, reply);
+}
+
+/* --------------------------------------------------- the board photograph */
+
+static void art_stop(const char *why)
+{
+    if (s_artbuf != NULL) {
+        heap_caps_free(s_artbuf);
+        s_artbuf = NULL;
+    }
+    if (s_artbusy && why != NULL) {
+        ESP_LOGW(TAG, "gave up on hardware %u's photograph: %s",
+                 (unsigned)s_artboard, why);
+    }
+    s_artbusy = false;
+}
+
+/*
+ * Ask for the picture, unless it is already kept or there is none.
+ *
+ * Runs on the link-up edge and does one transaction: everything after this
+ * happens a slice at a time.  A coprocessor built before the page answers
+ * NACK, which is not a fault -- the board is then drawn from its shape.
+ */
+static void art_begin(uint16_t board)
+{
+    art_stop(NULL);
+    s_artboard = board;
+
+    art_entry_t kept;
+    if (s_artflash != NULL && art_store_find(s_artflash, board, &kept)) {
+        ESP_LOGI(TAG, "hardware %u's photograph is already kept (%u x %u)",
+                 (unsigned)board, (unsigned)kept.width, (unsigned)kept.height);
+        return;
+    }
+
+    link_msg_t meta;
+    if (!poll_page(&s_host, LINK_PAGE_ARTWORK, LINK_AW_COUNT, &meta)
+        || meta.op != LINK_OP_DATA) {
+        return;                 /* older coprocessor, or none to be had */
+    }
+    if (meta.regs[LINK_AW_BLOCKS] == 0u) {
+        ESP_LOGI(TAG, "hardware %u carries no photograph of itself",
+                 (unsigned)board);
+        return;
+    }
+    const uint32_t bytes = (uint32_t)meta.regs[LINK_AW_BYTES_LO]
+                           | ((uint32_t)meta.regs[LINK_AW_BYTES_HI] << 16);
+    if (s_artflash != NULL && bytes > art_store_capacity(s_artflash)) {
+        ESP_LOGW(TAG, "hardware %u's photograph is %u bytes and a slot holds "
+                      "%u; not fetching it", (unsigned)board, (unsigned)bytes,
+                 (unsigned)art_store_capacity(s_artflash));
+        return;                 /* ten seconds of link for nowhere to put it */
+    }
+
+    /* PSRAM: two hundred kilobytes is not internal memory's to spare, and
+     * the buffer lives only for the transfer. */
+    s_artbuf = heap_caps_malloc(bytes, MALLOC_CAP_SPIRAM);
+    if (s_artbuf == NULL) {
+        ESP_LOGW(TAG, "no room for a %u byte photograph", (unsigned)bytes);
+        return;
+    }
+    if (!link_artxfer_begin(&s_artx, meta.regs, s_artbuf, bytes)) {
+        ESP_LOGW(TAG, "hardware %u describes a photograph that cannot be one",
+                 (unsigned)board);
+        art_stop(NULL);
+        return;
+    }
+    s_artbusy = true;
+    ESP_LOGI(TAG, "fetching hardware %u's photograph: %u x %u, %u blocks",
+             (unsigned)board, (unsigned)meta.regs[LINK_AW_WIDTH],
+             (unsigned)meta.regs[LINK_AW_HEIGHT],
+             (unsigned)meta.regs[LINK_AW_BLOCKS]);
+}
+
+/* One bounded slice of the transfer.  Returns with the link free. */
+static void art_slice(void)
+{
+    const uint32_t began = now_ms();
+    while (s_artbusy && (uint32_t)(now_ms() - began) < ART_SLICE_MS) {
+        const uint16_t want = link_artxfer_next(&s_artx);
+        link_msg_t ack, data;
+
+        /* Say which block, then read it.  The coprocessor does not advance
+         * on its own, so a reply that goes missing is asked for again
+         * rather than skipped. */
+        if (!write_page(&s_host, LINK_PAGE_ART_DATA, 1, &want, &ack)
+            || ack.op == LINK_OP_NACK) {
+            art_stop("the far end would not take a block number");
+            return;
+        }
+        if (!poll_page(&s_host, LINK_PAGE_ART_DATA, LINK_AD_COUNT, &data)
+            || data.op != LINK_OP_DATA) {
+            art_stop("a block did not arrive");
+            return;
+        }
+        if (!link_artxfer_take(&s_artx, data.regs)) {
+            art_stop("a block arrived that was not the one asked for");
+            return;
+        }
+
+        if (link_artxfer_complete(&s_artx)) {
+            if (!link_artxfer_verify(&s_artx)) {
+                /* Every block arrived and the whole is not the picture.
+                 * Keeping it would cache the corruption for as long as the
+                 * board is known. */
+                art_stop("it did not match its own checksum");
+                return;
+            }
+            const art_entry_t e = {
+                .board  = s_artboard,
+                .width  = s_artx.meta.width,
+                .height = s_artx.meta.height,
+                .crc    = s_artx.meta.crc,
+                .bytes  = s_artx.meta.bytes,
+            };
+            if (s_artflash == NULL) {
+                ESP_LOGW(TAG, "hardware %u's photograph arrived; nowhere to "
+                              "keep it, so it will be fetched again",
+                         (unsigned)s_artboard);
+            } else if (art_store_put(s_artflash, s_artboard, &e, s_artbuf)) {
+                ESP_LOGI(TAG, "hardware %u's photograph kept", 
+                         (unsigned)s_artboard);
+            } else {
+                ESP_LOGW(TAG, "hardware %u's photograph arrived and could not "
+                              "be kept", (unsigned)s_artboard);
+            }
+            s_artbusy = false;          /* stopped, and not given up on */
+            art_stop(NULL);
+            return;
+        }
+    }
 }
 
 /* ------------------------------------------------------- the control page */
@@ -1240,6 +1398,13 @@ static void control_task(void *arg)
                         }
                     }
 
+                    /*
+                     * And a photograph of it, if there is one and it is not
+                     * already kept.  One transaction here; the rest happens
+                     * a slice of a poll at a time below.
+                     */
+                    art_begin(s_board);
+
                     /* On the edge, not every poll: it does not change while
                      * the link is up, so a write per poll would cost a
                      * transaction for nothing. */
@@ -1295,6 +1460,12 @@ static void control_task(void *arg)
                     }
                 }
             }
+            if (!answered && s_artbusy) {
+                /* The board that was sending it is gone, so the rest of its
+                 * picture is not coming.  Nothing was kept: the store only
+                 * becomes findable once the whole thing has checked out. */
+                art_stop("the link went quiet");
+            }
             link_up = answered;
 
             /*
@@ -1326,6 +1497,15 @@ static void control_task(void *arg)
                      * was lost in the move and left every one of them dead. */
                     s_bring.have_status    = true;
                 }
+            }
+
+            /*
+             * And a slice of the photograph, last: the bench's own pages are
+             * what the operator is watching, and this is a transfer that
+             * happens once and can afford to wait for them.
+             */
+            if (link_up && s_artbusy) {
+                art_slice();
             }
         }
 

@@ -77,6 +77,12 @@ jobs:
       - name: The checked-in fonts match their generator
         run: python3 tools/gen_font.py --check
 
+      # The board photographs the coprocessor serves are generated from the
+      # PNGs beside them and checked in, so the firmware build needs no
+      # Python and no image library.
+      - name: The checked-in board artwork matches its source
+        run: python3 tools/gen_board_art.py --check
+
       # Links, anchors, the sidebar, the translations, the list of test
       # binaries, the module tree and the compile table.
       - name: The docs agree with the tree

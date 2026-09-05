@@ -89,6 +89,7 @@ TRACKED = [
     "shared/link/link_dev.c",
     "shared/link/link_host.c",
     "shared/link/link_artxfer.c",
+    "shared/artwork/art_store.c",
     "shared/bench/bench_state.c",
     "shared/outputs/outputs.c",
     "shared/outputs/outputs_pages.c",
