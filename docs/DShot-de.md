@@ -34,6 +34,15 @@ herausführt, die daneben aufgedruckte Pad-Nummer und was die hält, die ein
 Output nicht haben darf. Ein Koprozessor, der neuer ist als das Panel, ist so
 benutzbar statt leer.
 
+Eine Platine, die auch die [Shape-Page](Link-de.md#page-map) bedient, sagt, wo
+ihre Pads liegen — der Umriss, das Raster und die Ecke, an der Pad 1 sitzt —,
+sodass das Panel sie zeichnen und nicht nur auflisten kann. Nur ein Bild
+braucht das: eine Platine, die nicht antwortet, wird aus ihrem Katalog benutzt
+und einfach nicht gezeichnet. Ein aus einer geratenen Form gezeichnetes Bild
+zeigte mit derselben Überzeugung auf den falschen wie auf den richtigen Pad —
+auf einem Bildschirm, dessen Aufgabe „finde diesen Pad auf der Platine vor
+dir" ist, ist das der Fehler, den es zu vermeiden gilt.
+
 Was eine Platine nicht kann, ist einen ihrer Pins sicher machen. Der
 Koprozessor reserviert seinen eigenen Satz an seinem eigenen Ende, was die
 Catalogue-Page auch sagt — ein falscher Katalog kostet also einen Pin und

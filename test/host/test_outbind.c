@@ -1103,6 +1103,232 @@ TEST_CASE(a_pad_of_zero_ends_the_catalogue)
     outbind_forget_learned();
 }
 
+/* ---------------------------------------------------------------- shape */
+
+/* Learn a plain catalogue under LEARNED so a shape has a board to belong to. */
+static void learn_two_row_board(uint8_t per_side)
+{
+    uint16_t regs[LINK_CAT_COUNT];
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) { regs[i] = 0u; }
+    /* One pin on the first pad and one on the last, so a shape has to place
+     * both ends of the numbering. */
+    regs[0] = LINK_CAT_OF(0, 1, LINK_PIN_FREE);
+    regs[1] = LINK_CAT_OF(1, (uint8_t)(per_side * 2u), LINK_PIN_FREE);
+    CHECK(outbind_learn_board(LEARNED, regs));
+}
+
+TEST_CASE(the_pico_shape_places_its_pads_where_the_board_has_them)
+{
+    const outbind_board_t *bd = outbind_board(BOARD);
+    if (bd->shape == NULL) { T_FAIL("the board this build knows has no shape"); }
+    const outbind_shape_t *sh = bd->shape;
+
+    uint16_t x1, y1, x20, y20, x21, y21, x40, y40;
+    CHECK(outbind_pad_xy(sh, 1,  &x1,  &y1));
+    CHECK(outbind_pad_xy(sh, 20, &x20, &y20));
+    CHECK(outbind_pad_xy(sh, 21, &x21, &y21));
+    CHECK(outbind_pad_xy(sh, 40, &x40, &y40));
+
+    /*
+     * The four corners, as the board reads: pad 1 bottom left, 20 bottom
+     * right, 21 above it, 40 back at the top left.  This is the order the
+     * numbers actually run in on a Pico -- GP16 is opposite GP15, not
+     * opposite GP0 -- and getting it backwards is how a picture points at
+     * the wrong pad.
+     */
+    CHECK_EQ(x1, 137);                        /* (5100 - 19 * 254) / 2 */
+    CHECK_EQ(y1, 2100 - 161);
+    CHECK_EQ(x20, 137 + 19 * 254);
+    CHECK_EQ(y20, y1);                        /* same row */
+    CHECK_EQ(x21, x20);                       /* directly above pad 20 */
+    CHECK_EQ(y21, 161);
+    CHECK_EQ(x40, x1);
+    CHECK_EQ(y40, y21);
+
+    /* Every step along a row is one pitch. */
+    for (uint8_t pad = 2; pad <= 20; ++pad) {
+        uint16_t xa, ya, xb, yb;
+        CHECK(outbind_pad_xy(sh, (uint8_t)(pad - 1u), &xa, &ya));
+        CHECK(outbind_pad_xy(sh, pad, &xb, &yb));
+        CHECK_EQ(yb, ya);
+        CHECK_EQ((int)(xb - xa), sh->pitch_cmm);
+    }
+
+    /*
+     * And it agrees with the board itself.  The pad centres were measured
+     * off the rectified photograph at 500 px for a 51.00 mm outline and fit
+     * x = 13.55 + 24.888 i pixels; these are the same points from the
+     * outline's own numbers, so the two must land together.
+     */
+    for (uint8_t i = 0; i < 20u; ++i) {
+        uint16_t x, y;
+        CHECK(outbind_pad_xy(sh, (uint8_t)(i + 1u), &x, &y));
+        /* 0.01 mm -> px at 500 px across 51.00 mm, rounded. */
+        const int px = (int)(((uint32_t)x * 500u + 2550u) / 5100u);
+        const int want = (int)(13.55 + 24.888 * (double)i + 0.5);
+        if (px < want - 1 || px > want + 1) {
+            T_FAIL("pad %u lands at %d px, the photo has it at %d",
+                   i + 1u, px, want);
+        }
+    }
+}
+
+TEST_CASE(a_shape_survives_the_round_trip_through_the_page)
+{
+    uint16_t regs[LINK_SH_COUNT];
+    outbind_shape_to_regs(outbind_board(BOARD), regs);
+
+    learn_two_row_board(20);
+    CHECK(outbind_board(LEARNED)->shape == NULL);   /* no shape until read */
+    CHECK(outbind_learn_shape(LEARNED, regs));
+
+    const outbind_shape_t *sh = outbind_board(LEARNED)->shape;
+    if (sh == NULL) { T_FAIL("a learned shape is not there"); }
+    const outbind_shape_t *mine = outbind_board(BOARD)->shape;
+    CHECK_EQ(sh->width_cmm, mine->width_cmm);
+    CHECK_EQ(sh->height_cmm, mine->height_cmm);
+    CHECK_EQ(sh->pitch_cmm, mine->pitch_cmm);
+    CHECK_EQ(sh->inset_cmm, mine->inset_cmm);
+    CHECK_EQ(sh->per_side, mine->per_side);
+    CHECK_EQ(sh->corner, mine->corner);
+
+    /* Learning the board again drops the shape: a shape belongs to the board
+     * it came with, and drawing the new one with the last one's outline is
+     * the failure this page exists to prevent. */
+    learn_two_row_board(20);
+    CHECK(outbind_board(LEARNED)->shape == NULL);
+    outbind_forget_learned();
+}
+
+TEST_CASE(a_shape_that_cannot_be_a_board_is_refused)
+{
+    uint16_t good[LINK_SH_COUNT];
+    outbind_shape_to_regs(outbind_board(BOARD), good);
+    learn_two_row_board(20);
+
+    uint16_t r[LINK_SH_COUNT];
+    /* No pads in a row. */
+    for (unsigned i = 0; i < LINK_SH_COUNT; ++i) { r[i] = good[i]; }
+    r[LINK_SH_LAYOUT] = LINK_SH_LAYOUT_OF(LINK_SH_BOTTOM_LEFT, 0);
+    CHECK(!outbind_learn_shape(LEARNED, r));
+
+    /* A corner that is not one. */
+    for (unsigned i = 0; i < LINK_SH_COUNT; ++i) { r[i] = good[i]; }
+    r[LINK_SH_LAYOUT] = LINK_SH_LAYOUT_OF(9, 20);
+    CHECK(!outbind_learn_shape(LEARNED, r));
+
+    /* No pitch: every pad would sit on top of the first. */
+    for (unsigned i = 0; i < LINK_SH_COUNT; ++i) { r[i] = good[i]; }
+    r[LINK_SH_PITCH_CMM] = 0u;
+    CHECK(!outbind_learn_shape(LEARNED, r));
+
+    /* A row longer than the outline it sits on. */
+    for (unsigned i = 0; i < LINK_SH_COUNT; ++i) { r[i] = good[i]; }
+    r[LINK_SH_WIDTH_CMM] = 1000u;
+    CHECK(!outbind_learn_shape(LEARNED, r));
+
+    /* Two rows that do not fit across it. */
+    for (unsigned i = 0; i < LINK_SH_COUNT; ++i) { r[i] = good[i]; }
+    r[LINK_SH_INSET_CMM] = (uint16_t)(good[LINK_SH_HEIGHT_CMM] / 2u);
+    CHECK(!outbind_learn_shape(LEARNED, r));
+
+    /* A shape for a board that is not the one here. */
+    CHECK(!outbind_learn_shape((uint16_t)(LEARNED + 1u), good));
+    CHECK(!outbind_learn_shape(LEARNED, NULL));
+
+    /* None of them took, and the good one still does. */
+    CHECK(outbind_board(LEARNED)->shape == NULL);
+    CHECK(outbind_learn_shape(LEARNED, good));
+    outbind_forget_learned();
+}
+
+TEST_CASE(a_shape_must_place_every_pad_the_catalogue_named)
+{
+    /*
+     * The two pages describe one board.  A catalogue naming pad 40 with a
+     * shape of ten pads a side has a pin with nowhere to sit, and a pad
+     * drawn off the outline is exactly what a drawn board must not do.
+     */
+    uint16_t sh[LINK_SH_COUNT];
+    outbind_shape_to_regs(outbind_board(BOARD), sh);
+    learn_two_row_board(20);                  /* names pad 1 and pad 40 */
+
+    sh[LINK_SH_LAYOUT] = LINK_SH_LAYOUT_OF(LINK_SH_BOTTOM_LEFT, 10);
+    CHECK(!outbind_learn_shape(LEARNED, sh));
+    CHECK(outbind_board(LEARNED)->shape == NULL);
+    outbind_forget_learned();
+}
+
+TEST_CASE(a_pad_the_shape_does_not_place_is_refused)
+{
+    const outbind_shape_t *sh = outbind_board(BOARD)->shape;
+    uint16_t x, y;
+    CHECK(!outbind_pad_xy(sh, 0, &x, &y));            /* pads start at one */
+    CHECK(!outbind_pad_xy(sh, 41, &x, &y));           /* past the last row */
+    CHECK(!outbind_pad_xy(NULL, 1, &x, &y));
+    CHECK(!outbind_pad_xy(sh, 1, NULL, &y));
+    CHECK(!outbind_pad_xy(sh, 1, &x, NULL));
+}
+
+TEST_CASE(a_corner_on_the_right_numbers_the_row_the_other_way)
+{
+    /*
+     * Pad 1 at the bottom right runs its row leftwards, so it lands exactly
+     * where a left-cornered board of the same outline puts its last pad.
+     *
+     * Reversing along the row, not mirroring across the outline.  The row is
+     * centred by integer division, so when (width - span) is odd the two
+     * margins differ by one and a mirror moves the whole row by that much
+     * instead of only reversing it.  The shapes below are built here rather
+     * than learned: outbind_pad_xy() takes the shape, and the point is to
+     * compare two of them.
+     */
+    static const uint16_t widths[] = { 5100u, 5101u };   /* even, then odd */
+    for (unsigned w = 0; w < sizeof(widths) / sizeof(widths[0]); ++w) {
+        const outbind_shape_t lf = { widths[w], 2100u, 254u, 161u, 20u,
+                                     (uint8_t)LINK_SH_BOTTOM_LEFT };
+        const outbind_shape_t rt = { widths[w], 2100u, 254u, 161u, 20u,
+                                     (uint8_t)LINK_SH_BOTTOM_RIGHT };
+        for (uint8_t pad = 1; pad <= 40u; ++pad) {
+            /* Pad n from the right is pad (per_side + 1 - n) from the left,
+             * within its own row. */
+            const uint8_t row_start = (pad > 20u) ? 21u : 1u;
+            const uint8_t mirror =
+                (uint8_t)(row_start + (20u - 1u) - (pad - row_start));
+            uint16_t xr, yr, xl, yl;
+            CHECK(outbind_pad_xy(&rt, pad, &xr, &yr));
+            CHECK(outbind_pad_xy(&lf, mirror, &xl, &yl));
+            if (xr != xl || yr != yl) {
+                T_FAIL("width %u: pad %u from the right is at %u,%u; pad %u "
+                       "from the left is at %u,%u",
+                       widths[w], pad, xr, yr, mirror, xl, yl);
+            }
+        }
+    }
+}
+
+TEST_CASE(the_row_sits_in_the_same_place_whichever_end_it_is_numbered_from)
+{
+    /*
+     * The pads are where they are; only the numbering changes.  So the set
+     * of positions a row occupies has to be identical for the two corners,
+     * including when the centring leaves an odd hundredth of a millimetre
+     * on one side.
+     */
+    const outbind_shape_t lf = { 5101u, 2100u, 254u, 161u, 20u,
+                                 (uint8_t)LINK_SH_BOTTOM_LEFT };
+    const outbind_shape_t rt = { 5101u, 2100u, 254u, 161u, 20u,
+                                 (uint8_t)LINK_SH_BOTTOM_RIGHT };
+    for (uint8_t i = 0; i < 20u; ++i) {
+        uint16_t xl, yl, xr, yr;
+        CHECK(outbind_pad_xy(&lf, (uint8_t)(i + 1u), &xl, &yl));
+        /* The same position, reached from the other end of the row. */
+        CHECK(outbind_pad_xy(&rt, (uint8_t)(20u - i), &xr, &yr));
+        CHECK_EQ(xr, xl);
+        CHECK_EQ(yr, yl);
+    }
+}
+
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     uint16_t regs[LINK_OS_COUNT];
@@ -1160,6 +1386,13 @@ int main(void)
     RUN(every_hold_the_page_can_carry_says_what_has_the_pin);
     RUN(rendering_a_catalogue_is_refused_rather_than_dereferenced);
     RUN(a_pad_of_zero_ends_the_catalogue);
+    RUN(the_pico_shape_places_its_pads_where_the_board_has_them);
+    RUN(a_shape_survives_the_round_trip_through_the_page);
+    RUN(a_shape_that_cannot_be_a_board_is_refused);
+    RUN(a_shape_must_place_every_pad_the_catalogue_named);
+    RUN(a_pad_the_shape_does_not_place_is_refused);
+    RUN(a_corner_on_the_right_numbers_the_row_the_other_way);
+    RUN(the_row_sits_in_the_same_place_whichever_end_it_is_numbered_from);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("outbind");
 }
