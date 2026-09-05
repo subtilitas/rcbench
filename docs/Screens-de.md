@@ -294,7 +294,7 @@ reserviert und durchgestrichen, oder frei und mit seiner Pad-Nummer.
 
 Hinter der Taste PICK A PIN auf dem Setup-Bildschirm, und dieselbe Bindung,
 die der Outputs-Bildschirm hält. Die Liste beantwortet „welcher GPIO ist
-gebunden"; dieser beantwortet „wo stecke ich das Kabel an".
+gebunden“; dieser beantwortet „wo stecke ich das Kabel an“.
 
 ![Der Pin-Picker](img/picker.png)
 

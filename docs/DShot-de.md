@@ -41,7 +41,7 @@ braucht das: eine Platine, die nicht antwortet, wird aus ihrem Katalog benutzt
 und einfach nicht gezeichnet. Ein aus einer geratenen Form gezeichnetes Bild
 zeigte mit derselben Überzeugung auf den falschen wie auf den richtigen Pad —
 auf einem Bildschirm, dessen Aufgabe „finde diesen Pad auf der Platine vor
-dir" ist, ist das der Fehler, den es zu vermeiden gilt.
+dir“ ist, ist das der Fehler, den es zu vermeiden gilt.
 
 Was eine Platine nicht kann, ist einen ihrer Pins sicher machen. Der
 Koprozessor reserviert seinen eigenen Satz an seinem eigenen Ende, was die

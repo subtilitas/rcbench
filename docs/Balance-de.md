@@ -19,7 +19,7 @@ Umdrehung.
 
 Blattzahl (2 bis 6) und Rotortyp einstellen. Der Bildschirm rechnet den
 gemessenen Winkel zusätzlich in eine Blattangabe um („zwischen Blatt zwei und
-drei").
+drei“).
 
 Bei einem Impeller wird die Korrektur als Winkel auf der Nabe angegeben, weil
 eine Blattspitze im Kanal nicht erreichbar ist:

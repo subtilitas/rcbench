@@ -152,7 +152,7 @@ Ausrichtung Undefined Behaviour sind.
 
 ### Skalierung von `rpm`
 
-Das Feld ist als „0.1 eRPM" beschrieben, der Referenzcode multipliziert aber
+Das Feld ist als „0.1 eRPM“ beschrieben, der Referenzcode multipliziert aber
 mit zehn. Multiplizieren ist hier die Annahme: 65535 × 10 = 655 350 eRPM ist
 eine plausible Obergrenze, 6 553 nicht. Messen (Abschnitt 8).
 
@@ -199,7 +199,7 @@ Getragen von `TELE_REQ` und `WRITE_PARAM_REQ`:
 
 Eine reine Telemetrieanfrage sendet beide als null. Ein Anfrageframe hat
 12 Bytes. Geschrieben wird ein Parameter je Frame, jeder mit eigener
-Sequenznummer. Blockweises Schreiben gibt es nicht; ein „Speichern" ist eine
+Sequenznummer. Blockweises Schreiben gibt es nicht; ein „Speichern“ ist eine
 Warteschlange einzelner Schreibvorgänge.
 
 ### 5.3 Parametertabelle
