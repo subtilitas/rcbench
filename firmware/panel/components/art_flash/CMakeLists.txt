@@ -4,5 +4,7 @@
 idf_component_register(
     SRCS "art_flash_esp.c"
     INCLUDE_DIRS include
-    REQUIRES artwork spi_flash
+    # esp_partition is its own component in IDF v5; spi_flash carries the
+    # sector size the store erases in.
+    REQUIRES artwork esp_partition spi_flash
 )
