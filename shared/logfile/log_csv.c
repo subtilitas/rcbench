@@ -528,24 +528,14 @@ static void guess_time_unit(const log_column_t *col, char *out, size_t out_size)
     copy_str(out, out_size, (span > 5e6) ? "us" : (span > 5e3) ? "ms" : "s");
 }
 
-log_err_t log_csv_analyse(log_source_t *src, const log_csv_opts_t *opts,
-                          log_analysis_t *out)
+/*
+ * Sniffing the delimiter, which has to happen before anything can be split
+ * into fields.  A source that cannot be rewound is a read error rather than
+ * a guess: every pass below starts from the top.
+ */
+static log_err_t sniff_delimiter(log_source_t *src, const log_csv_opts_t *opts,
+                                 char *out)
 {
-    log_csv_opts_t defaults;
-    if (opts == NULL) {
-        log_csv_opts_default(&defaults);
-        opts = &defaults;
-    }
-    if (src == NULL || out == NULL) {
-        return LOG_ERR_ARG;
-    }
-    memset(out, 0, sizeof(*out));
-    out->ambiguous_as = opts->ambiguous_as;
-    out->time_index = -1;
-
-    int max_rows = (opts->max_rows > 0) ? opts->max_rows : LOG_DEFAULT_MAX_ROWS;
-
-    /* --- delimiter ----------------------------------------------------- */
     char delimiter = opts->delimiter;
     if (delimiter == '\0') {
         static char sniff_buf[2048];
@@ -554,7 +544,8 @@ log_err_t log_csv_analyse(log_source_t *src, const log_csv_opts_t *opts,
         }
         size_t got = 0;
         while (got < sizeof(sniff_buf)) {
-            size_t n = src->read(src->ctx, sniff_buf + got, sizeof(sniff_buf) - got);
+            size_t n = src->read(src->ctx, sniff_buf + got,
+                                 sizeof(sniff_buf) - got);
             if (n == 0u) {
                 break;
             }
@@ -569,10 +560,24 @@ log_err_t log_csv_analyse(log_source_t *src, const log_csv_opts_t *opts,
         }
         delimiter = log_csv_sniff(s, slen);
     }
-    out->delimiter = delimiter;
+    *out = delimiter;
+    return LOG_OK;
+}
 
-    /* --- pass 1: geometry and evidence --------------------------------- */
+/*
+ * Pass one: how many columns there are, how many rows, and what the file
+ * looks like as evidence for a decimal convention.
+ *
+ * Two passes rather than one because the convention decides how a cell
+ * parses, and it is not known until every cell has voted.  The alternative is
+ * holding the file, and the file is the one thing that does not fit.
+ */
+static log_err_t scan_geometry(log_source_t *src, char delimiter,
+                               const log_csv_opts_t *opts, int max_rows,
+                               log_analysis_t *out)
+{
     log_reader_t reader;
+
 
     if (!src->rewind(src->ctx)) {
         return LOG_ERR_READ;
@@ -636,8 +641,21 @@ log_err_t log_csv_analyse(log_source_t *src, const log_csv_opts_t *opts,
                                            &out->convention_conflict);
     out->convention_forced = (opts->convention != LOG_CONV_AUTO);
     out->convention = out->convention_forced ? opts->convention : inferred;
+    return LOG_OK;
+}
 
-    /* --- pass 2: per-column statistics --------------------------------- */
+/*
+ * Pass two: what is in each column, now that the convention is settled.
+ *
+ * Bounded by the row count pass one arrived at, so a file that grew between
+ * the two passes is read to the length that was measured rather than to a
+ * different one.
+ */
+static log_err_t scan_columns(log_source_t *src, char delimiter,
+                              log_analysis_t *out)
+{
+    log_reader_t reader;
+
     for (int c = 0; c < out->n_columns; ++c) {
         out->columns[c].min = 0.0;
         out->columns[c].max = 0.0;
@@ -725,8 +743,19 @@ log_err_t log_csv_analyse(log_source_t *src, const log_csv_opts_t *opts,
                        (col->parsed * 5 >= col->non_empty * 4);
         col->monotonic = col->monotonic && (col->parsed > 1);
     }
+    return LOG_OK;
+}
 
-    /* --- time column ---------------------------------------------------- */
+/*
+ * Which column is the time axis.
+ *
+ * Named first, then headed like one, then a first column that only ever
+ * increases -- in that order, because a column called "time" is a statement
+ * and a column that happens to rise is a guess.
+ */
+static void pick_time_column(const log_csv_opts_t *opts, log_analysis_t *out)
+{
+
     if (opts->time_index != LOG_TIME_AUTO) {
         out->time_index = (opts->time_index < out->n_columns) ? opts->time_index
                                                               : -1;
@@ -766,7 +795,42 @@ log_err_t log_csv_analyse(log_source_t *src, const log_csv_opts_t *opts,
     } else {
         copy_str(out->time_unit, LOG_UNIT_MAX, "s");
     }
+}
 
+log_err_t log_csv_analyse(log_source_t *src, const log_csv_opts_t *opts,
+                          log_analysis_t *out)
+{
+    log_csv_opts_t defaults;
+    if (opts == NULL) {
+        log_csv_opts_default(&defaults);
+        opts = &defaults;
+    }
+    if (src == NULL || out == NULL) {
+        return LOG_ERR_ARG;
+    }
+    memset(out, 0, sizeof(*out));
+    out->ambiguous_as = opts->ambiguous_as;
+    out->time_index = -1;
+
+    const int max_rows = (opts->max_rows > 0) ? opts->max_rows
+                                              : LOG_DEFAULT_MAX_ROWS;
+
+    char delimiter;
+    log_err_t err = sniff_delimiter(src, opts, &delimiter);
+    if (err != LOG_OK) {
+        return err;
+    }
+    out->delimiter = delimiter;
+
+    err = scan_geometry(src, delimiter, opts, max_rows, out);
+    if (err != LOG_OK) {
+        return err;
+    }
+    err = scan_columns(src, delimiter, out);
+    if (err != LOG_OK) {
+        return err;
+    }
+    pick_time_column(opts, out);
     return LOG_OK;
 }
 
@@ -795,17 +859,19 @@ static int cmp_float(const void *a, const void *b)
     return (x < y) ? -1 : (x > y) ? 1 : 0;
 }
 
-log_err_t log_csv_build(log_source_t *src, const log_analysis_t *a,
-                        const int *columns, int n_columns, log_data_t *out)
+/*
+ * Which columns the plot gets: the ones asked for, or every numeric one that
+ * is not the time axis.
+ *
+ * A column that is not numeric is dropped rather than refused, because a file
+ * with a text column beside its numbers is an ordinary file and not a broken
+ * one.
+ */
+static int pick_columns(const log_analysis_t *a, const int *columns,
+                        int n_columns, int *pick)
 {
-    if (src == NULL || a == NULL || out == NULL) {
-        return LOG_ERR_ARG;
-    }
-    memset(out, 0, sizeof(*out));
-
-    /* --- which columns -------------------------------------------------- */
-    int pick[LOG_MAX_SERIES];
     int n_pick = 0;
+
     if (columns != NULL) {
         for (int i = 0; i < n_columns && n_pick < LOG_MAX_SERIES; ++i) {
             int c = columns[i];
@@ -821,10 +887,82 @@ log_err_t log_csv_build(log_source_t *src, const log_analysis_t *a,
             }
         }
     }
-    if (n_pick == 0) {
-        return LOG_ERR_NO_NUMERIC;
-    }
+    return n_pick;
+}
 
+/*
+ * What each series is called, what it is in, and what it grouped with.
+ *
+ * The blackbox grouping when the names match, and otherwise by unit, which
+ * keeps related channels together on a screen that has to draw them
+ * somewhere.
+ */
+static void name_fields(const log_analysis_t *a, const int *pick, int n_pick,
+                        const double *vmin, const double *vmax,
+                        log_data_t *out)
+{
+    for (int k = 0; k < n_pick; ++k) {
+        int c = pick[k];
+        log_field_t *f = &out->field[k];
+        copy_str(f->name, LOG_NAME_MAX, a->columns[c].name);
+        copy_str(f->unit, LOG_UNIT_MAX, a->columns[c].unit);
+        f->column = c;
+        f->min = (float)vmin[k];
+        f->max = (float)vmax[k];
+        f->constant = (vmin[k] == vmax[k]);
+        f->mixed_units = a->columns[c].mixed_units;
+
+        log_field_meta_t meta = log_field_meta(f->name);
+        if (strcmp(meta.group, "Other") != 0) {
+            copy_str(f->group, LOG_NAME_MAX, meta.group);
+        } else if (f->unit[0] != '\0') {
+            char unit[LOG_UNIT_MAX];
+            copy_str(unit, sizeof(unit), f->unit);
+            snprintf(f->group, LOG_NAME_MAX, "Unit %s", unit);
+        } else {
+            copy_str(f->group, LOG_NAME_MAX, "Data");
+        }
+    }
+}
+
+/*
+ * A time axis that runs backwards means the wrong column was picked, so the
+ * samples are numbered instead and the axis loses its name -- a plot against
+ * sample number is honest, and one against a column that is not time is not.
+ */
+static void undo_a_backwards_time_axis(const log_analysis_t *a,
+                                       log_data_t *out, int count)
+{
+    if (a->time_index < 0) {
+        return;
+    }
+    for (int k = 1; k < count; ++k) {
+        if (out->time[k] < out->time[k - 1]) {
+            for (int j = 0; j < count; ++j) {
+                out->time[j] = (float)j;
+            }
+            out->time_name[0] = '\0';
+            out->time_unit[0] = '\0';
+            return;
+        }
+    }
+}
+
+/*
+ * The time axis and the series, read together.
+ *
+ * One pass: a row's time and its values are the same row, and reading them
+ * separately would need the file twice or the rows held.
+ */
+static log_err_t read_series(log_source_t *src, const log_analysis_t *a,
+                             const int *pick, int n_pick, log_data_t *out,
+                             int *count_out)
+{
+    /*
+     * The row count pass one arrived at, which is what the arrays are sized
+     * to: a file that grew between the passes is read to the length that was
+     * measured, not to a different one.
+     */
     int count = a->row_count;
     out->count = count;
     out->n_fields = n_pick;
@@ -844,7 +982,6 @@ log_err_t log_csv_build(log_source_t *src, const log_analysis_t *a,
         }
     }
 
-    /* --- read ------------------------------------------------------------ */
     double time_scale = 1.0;
     if (a->time_index >= 0) {
         double s = log_time_unit_scale(a->time_unit);
@@ -948,46 +1085,26 @@ log_err_t log_csv_build(log_source_t *src, const log_analysis_t *a,
     out->count = i;
     count = i;
 
-    for (int k = 0; k < n_pick; ++k) {
-        int c = pick[k];
-        log_field_t *f = &out->field[k];
-        copy_str(f->name, LOG_NAME_MAX, a->columns[c].name);
-        copy_str(f->unit, LOG_UNIT_MAX, a->columns[c].unit);
-        f->column = c;
-        f->min = (float)vmin[k];
-        f->max = (float)vmax[k];
-        f->constant = (vmin[k] == vmax[k]);
-        f->mixed_units = a->columns[c].mixed_units;
+    name_fields(a, pick, n_pick, vmin, vmax, out);
+    undo_a_backwards_time_axis(a, out, count);
 
-        /* Reuse the blackbox grouping when the names match; otherwise group by
-         * unit, which keeps related channels together. */
-        log_field_meta_t meta = log_field_meta(f->name);
-        if (strcmp(meta.group, "Other") != 0) {
-            copy_str(f->group, LOG_NAME_MAX, meta.group);
-        } else if (f->unit[0] != '\0') {
-            char unit[LOG_UNIT_MAX];
-            copy_str(unit, sizeof(unit), f->unit);
-            snprintf(f->group, LOG_NAME_MAX, "Unit %s", unit);
-        } else {
-            copy_str(f->group, LOG_NAME_MAX, "Data");
-        }
-    }
+    /* The rows actually read, which is what the arrays hold: a file with
+     * blank rows in it ends shorter than pass one measured. */
+    *count_out = count;
+    return LOG_OK;
+}
 
-    /* A time axis that runs backwards means the wrong column was picked. */
-    if (a->time_index >= 0) {
-        for (int k = 1; k < count; ++k) {
-            if (out->time[k] < out->time[k - 1]) {
-                for (int j = 0; j < count; ++j) {
-                    out->time[j] = (float)j;
-                }
-                out->time_name[0] = '\0';
-                out->time_unit[0] = '\0';
-                break;
-            }
-        }
-    }
+/*
+ * What the samples add up to: how long, how fast, and the widest gap.
+ *
+ * The median interval rather than the mean, because one long gap in a log
+ * that is otherwise steady should not move the rate the screen reports. When
+ * there is no room to sort for a median, the mean is reported and the screen
+ * says which it is showing.
+ */
+static void series_stats(log_data_t *out, int count)
+{
 
-    /* --- stats ----------------------------------------------------------- */
     if (count > 1) {
         out->duration_s = (double)out->time[count - 1] - (double)out->time[0];
         float *dts = (float *)s_alloc(sizeof(float) * (size_t)(count - 1));
@@ -1013,6 +1130,27 @@ log_err_t log_csv_build(log_source_t *src, const log_analysis_t *a,
         }
         out->rate_hz = (out->median_dt_s > 0.0) ? 1.0 / out->median_dt_s : 0.0;
     }
+}
 
+log_err_t log_csv_build(log_source_t *src, const log_analysis_t *a,
+                        const int *columns, int n_columns, log_data_t *out)
+{
+    if (src == NULL || a == NULL || out == NULL) {
+        return LOG_ERR_ARG;
+    }
+    memset(out, 0, sizeof(*out));
+
+    int pick[LOG_MAX_SERIES];
+    const int n_pick = pick_columns(a, columns, n_columns, pick);
+    if (n_pick == 0) {
+        return LOG_ERR_NO_NUMERIC;
+    }
+
+    int count = 0;
+    const log_err_t err = read_series(src, a, pick, n_pick, out, &count);
+    if (err != LOG_OK) {
+        return err;
+    }
+    series_stats(out, count);
     return LOG_OK;
 }
