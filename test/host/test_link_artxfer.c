@@ -156,6 +156,39 @@ TEST_CASE(metadata_that_cannot_describe_a_picture_is_refused_before_the_wait)
     CHECK(!link_artxfer_begin(&x, g_meta, got, BYTES - 1u));
 }
 
+/* 65535 * 32769 * 2 is 4,295,032,830, which wraps to 65534 in a uint32_t. */
+#define WRAP_W     65535u
+#define WRAP_H     32769u
+#define WRAP_BYTES 65534u
+
+TEST_CASE(pixels_that_overflow_the_length_they_are_checked_against_are_refused)
+{
+    /*
+     * Width and height are sixteen bits each; their product times two is
+     * not.  A page claiming 65535 x 32769 pixels and 65534 bytes agrees
+     * with itself in thirty-two-bit arithmetic, and the block count agrees
+     * too.  It would transfer, assemble, and pass its CRC -- and hand back
+     * 65534 bytes calling themselves a 65535 x 32769 image, which anything
+     * that drew it would read four gigabytes past.
+     */
+    static uint8_t big[WRAP_BYTES];
+    uint16_t m[LINK_AW_COUNT];
+    m[LINK_AW_BLOCKS]   = (uint16_t)((WRAP_BYTES + LINK_AD_BYTES - 1u)
+                                     / LINK_AD_BYTES);
+    m[LINK_AW_WIDTH]    = (uint16_t)WRAP_W;
+    m[LINK_AW_HEIGHT]   = (uint16_t)WRAP_H;
+    m[LINK_AW_FORMAT]   = (uint16_t)LINK_ART_RGB565;
+    m[LINK_AW_BYTES_LO] = (uint16_t)(WRAP_BYTES & 0xFFFFu);
+    m[LINK_AW_BYTES_HI] = (uint16_t)(WRAP_BYTES >> 16);
+    m[LINK_AW_CRC]      = 0u;
+
+    /* The block count really does agree, so that is not what refuses it. */
+    CHECK_EQ((uint32_t)m[LINK_AW_BLOCKS] * LINK_AD_BYTES >= WRAP_BYTES, 1);
+
+    link_artxfer_t x;
+    CHECK(!link_artxfer_begin(&x, m, big, sizeof(big)));
+}
+
 TEST_CASE(a_transfer_that_has_ended_takes_nothing_more)
 {
     make_source();
@@ -204,6 +237,7 @@ int main(void)
     RUN(a_block_that_was_not_asked_for_is_refused_rather_than_placed);
     RUN(a_picture_that_does_not_match_its_own_checksum_is_not_accepted);
     RUN(metadata_that_cannot_describe_a_picture_is_refused_before_the_wait);
+    RUN(pixels_that_overflow_the_length_they_are_checked_against_are_refused);
     RUN(a_transfer_that_has_ended_takes_nothing_more);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("link_artxfer");

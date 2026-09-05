@@ -48,8 +48,17 @@ bool link_artxfer_begin(link_artxfer_t *x, const uint16_t *meta,
     if ((uint32_t)m.blocks != blocks_for(m.bytes)) {
         return false;
     }
-    /* And the length has to be the pixels it claims: two bytes each. */
-    if ((uint32_t)m.width * (uint32_t)m.height * 2u != m.bytes) {
+    /*
+     * And the length has to be the pixels it claims: two bytes each.
+     *
+     * In sixty-four bits, because the two are sixteen bits each and their
+     * product is not: 65535 x 32769 x 2 overflows a uint32_t and wraps to
+     * 65534, which is a length that agrees with a plausible block count.
+     * Such a page would pass, assemble 65534 bytes with a good CRC, and
+     * hand back something calling itself a 65535 x 32769 image -- and
+     * whatever drew it would read four gigabytes past the buffer.
+     */
+    if ((uint64_t)m.width * (uint64_t)m.height * 2u != (uint64_t)m.bytes) {
         return false;
     }
     if (m.bytes > cap) {
