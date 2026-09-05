@@ -17,14 +17,11 @@ static uint32_t blocks_for(uint32_t bytes)
     return (bytes + LINK_AD_BYTES - 1u) / LINK_AD_BYTES;
 }
 
-bool link_artxfer_begin(link_artxfer_t *x, const uint16_t *meta,
-                        uint8_t *buf, uint32_t cap)
+bool link_artxfer_meta_ok(const uint16_t *meta, link_art_meta_t *out)
 {
-    if (x == NULL || meta == NULL || buf == NULL) {
+    if (meta == NULL || out == NULL) {
         return false;
     }
-    memset(x, 0, sizeof(*x));
-
     link_art_meta_t m;
     m.blocks = meta[LINK_AW_BLOCKS];
     m.width  = meta[LINK_AW_WIDTH];
@@ -59,6 +56,22 @@ bool link_artxfer_begin(link_artxfer_t *x, const uint16_t *meta,
      * whatever drew it would read four gigabytes past the buffer.
      */
     if ((uint64_t)m.width * (uint64_t)m.height * 2u != (uint64_t)m.bytes) {
+        return false;
+    }
+    *out = m;
+    return true;
+}
+
+bool link_artxfer_begin(link_artxfer_t *x, const uint16_t *meta,
+                        uint8_t *buf, uint32_t cap)
+{
+    if (x == NULL || meta == NULL || buf == NULL) {
+        return false;
+    }
+    memset(x, 0, sizeof(*x));
+
+    link_art_meta_t m;
+    if (!link_artxfer_meta_ok(meta, &m)) {
         return false;
     }
     if (m.bytes > cap) {
