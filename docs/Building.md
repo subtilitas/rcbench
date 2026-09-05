@@ -20,6 +20,7 @@ rcbench/
     settings/             typed schema and values
     logfile/              number and CSV parsing
     link/                 page protocol · CAN framing · watchdogs · diagnosis
+    artwork/              the panel's cache of board photographs
     bench/                bench_state · telemetry simulator · log writer
     outputs/              channels · driver table · arming, slew and staleness
     safety/               heartbeat generator (panel) and monitor (coprocessor)
@@ -61,6 +62,7 @@ flat: `#include "gfx.h"`.
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `safety` · `can` | ✔ | ✔ | ✔ |
+| `artwork` | ✔ | | ✔ |
 | `servo` · `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
 
 ## Toolchains

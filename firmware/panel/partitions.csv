@@ -3,3 +3,7 @@ nvs,        data, nvs,     0x9000,   0x6000,
 phy_init,   data, phy,     0xf000,   0x1000,
 factory,    app,  factory, 0x10000,  3M,
 storage,    data, spiffs,  ,         1M,
+# Board photographs, fetched over the link once per board and kept.  Eight
+# slots of 256 kB; a 500 x 206 RGB565 picture is 201 kB.  The part is 8 MB
+# and the four partitions above it come to just over 4 MB.
+boardart,   data, 0x40,    ,         2M,
