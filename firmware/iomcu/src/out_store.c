@@ -28,6 +28,21 @@
 #define STORE_SIZE_BYTES  (4u * 1024u * 1024u)
 #define STORE_OFFSET      (STORE_SIZE_BYTES - FLASH_SECTOR_SIZE)
 
+/*
+ * Held at compile time as well as in the paragraph above.
+ *
+ * This catches a board file with less flash than the store needs -- a
+ * -DPICO_BOARD for a smaller module would otherwise put the sector past the
+ * end and the erase would go somewhere nobody can diagnose.
+ *
+ * It cannot catch the mismatch that actually exists: the board file claims
+ * sixteen megabytes and the module fitted has four, and no compiler can see
+ * a part it is not told about. That direction is guarded after the link
+ * instead, by the image-size check in this directory's CMakeLists.txt.
+ */
+_Static_assert(STORE_SIZE_BYTES <= PICO_FLASH_SIZE_BYTES,
+               "the output store is past the end of this board's flash");
+
 #define STORE_MAGIC    0x7263626FuL    /* "rcbo" */
 #define STORE_VERSION  1u
 
