@@ -60,10 +60,10 @@ static void render(void)
  * board's own shape. A test that repeated the arithmetic would pass with the
  * screen's copy of it wrong in the same way.
  */
-static bool pad_point(uint8_t gpio, int *x, int *y)
+static bool pad_point_on(uint16_t board, uint8_t gpio, int *x, int *y)
 {
-    const outbind_board_t *bd = outbind_board(BOARD);
-    const uint8_t i = idx(gpio);
+    const outbind_board_t *bd = outbind_board(board);
+    const uint8_t i = outbind_index_of(board, gpio);
     if (bd == NULL || bd->shape == NULL || i >= bd->count) { return false; }
     uint16_t xc, yc;
     if (!outbind_pad_xy(bd->shape, bd->pins[i].pad, &xc, &yc)) { return false; }
@@ -79,10 +79,15 @@ static bool pad_point(uint8_t gpio, int *x, int *y)
 
 /* The button belonging to a pad is on the pad's own side, straight out from
  * it. Walking away from the board finds it without knowing the tiers. */
-static bool button_point(uint8_t gpio, int *bxp, int *byp)
+static bool pad_point(uint8_t gpio, int *x, int *y)
+{
+    return pad_point_on(BOARD, gpio, x, y);
+}
+
+static bool button_point_on(uint16_t board, uint8_t gpio, int *bxp, int *byp)
 {
     int px, py;
-    if (!pad_point(gpio, &px, &py)) { return false; }
+    if (!pad_point_on(board, gpio, &px, &py)) { return false; }
     const int mid = SCREEN_H / 2;
     const int step = (py < mid) ? -1 : 1;
     for (int y = py + step * 20; y > 0 && y < SCREEN_H; y += step * 2) {
@@ -98,6 +103,11 @@ static bool button_point(uint8_t gpio, int *bxp, int *byp)
         }
     }
     return false;
+}
+
+static bool button_point(uint8_t gpio, int *bxp, int *byp)
+{
+    return button_point_on(BOARD, gpio, bxp, byp);
 }
 
 TEST_CASE(a_button_binds_the_pad_it_is_wired_to)
@@ -371,23 +381,67 @@ TEST_CASE(a_board_that_does_not_say_which_pads_are_ground_still_draws)
 {
     /*
      * The marks are the last thing to arrive and the first a board may not
-     * have. Without them the screen is what it was: a board, its pins, and
-     * a lead placed by reading the outline.
+     * have. Without them the screen is what it was: a board, its pins, and a
+     * lead placed by reading the outline.
+     *
+     * The board this build knows does say, so this learns one that does not:
+     * a catalogue and a shape and no pad list, which is what a coprocessor
+     * built before the page answers with.
      */
+    const uint16_t bare = 7777u;
+    uint16_t cat[LINK_CAT_COUNT];
+    for (unsigned i = 0; i < LINK_CAT_COUNT; ++i) { cat[i] = 0u; }
+    cat[0] = LINK_CAT_OF(0, 1, LINK_PIN_FREE);
+    cat[1] = LINK_CAT_OF(1, 2, LINK_PIN_FREE);
+    cat[2] = LINK_CAT_OF(4, 6, LINK_PIN_FREE);
+    CHECK(outbind_learn_board(bare, cat));
+    uint16_t sh[LINK_SH_COUNT];
+    outbind_shape_to_regs(outbind_board(BOARD), sh);
+    CHECK(outbind_learn_shape(bare, sh));
+    CHECK(outbind_pads(bare) == NULL);          /* the case under test */
+
     fresh();
     outbind_t b;
     outbind_init(&b);
-    outbind_set_board(&b, BOARD);
+    outbind_set_board(&b, bare);
     outbind_set_proto(&b, 1u);
     picker_screen_set_binding(&b);
-
-    /* The board this build knows does say, so this is the case where it
-     * would not: the drawing must not depend on the list being there. */
     CHECK(picker_screen_can_draw());
     render();
+
     int bx, by;
-    CHECK(button_point(4u, &bx, &by));
+    CHECK(button_point_on(bare, 4u, &bx, &by));
     CHECK_EQ(s_applied, 1);
+    CHECK_EQ(outbind_group_of(&s_last, outbind_index_of(bare, 4u)), 1);
+    outbind_forget_learned();
+}
+
+TEST_CASE(the_marks_do_not_get_in_the_way_of_the_buttons)
+{
+    /*
+     * With the marks drawn, every pin the board brings out is still bound by
+     * its own button: a chip drawn over a trace must not move where a button
+     * is or which pin it belongs to.
+     */
+    const outbind_board_t *bd = outbind_board(BOARD);
+    CHECK(outbind_pads(BOARD) != NULL);
+    for (uint8_t i = 0; i < bd->count; ++i) {
+        if (bd->pins[i].reserved) { continue; }
+        fresh();
+        render();
+        int bx, by;
+        const uint8_t gp = bd->pins[i].gpio;
+        if (!button_point(gp, &bx, &by)) {
+            T_FAIL("GP%u has no button with the marks drawn", gp);
+            return;
+        }
+        if (outbind_group_of(&s_last, i) != 1u
+            || outbind_chosen(&s_last) != 1u) {
+            T_FAIL("GP%u's button bound something else with the marks drawn",
+                   gp);
+            return;
+        }
+    }
 }
 
 TEST_CASE(null_events_are_refused_rather_than_dereferenced)
@@ -414,6 +468,7 @@ int main(void)
     RUN(the_photograph_is_asked_for_on_the_way_in);
     RUN(a_ground_is_marked_and_is_not_a_button);
     RUN(a_board_that_does_not_say_which_pads_are_ground_still_draws);
+    RUN(the_marks_do_not_get_in_the_way_of_the_buttons);
     RUN(null_events_are_refused_rather_than_dereferenced);
     return test_summary("picker_screen");
 }

@@ -1487,7 +1487,7 @@ static void control_task(void *arg)
                                 && pdr.op == LINK_OP_DATA
                                 && outbind_learn_pads(s_board, pdr.regs)) {
                                 ESP_LOGI(TAG, "hardware %u says which pads "
-                                              "are ground and rail",
+                                              "are grounds and rails",
                                          (unsigned)s_board);
                             }
                         } else if (answered_cat && cat.op == LINK_OP_NACK
