@@ -891,7 +891,8 @@ static int pick_columns(const log_analysis_t *a, const int *columns,
 }
 
 /*
- * What each series is called, what it is in, and what it grouped with.
+ * What each series is called, what it is measured in, and what it is
+ * grouped with.
  *
  * The blackbox grouping when the names match, and otherwise by unit, which
  * keeps related channels together on a screen that has to draw them
