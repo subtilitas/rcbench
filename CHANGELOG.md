@@ -6,7 +6,64 @@ history is in git.
 
 ## Unreleased
 
+## 0.4.0 - 2026-09-05
+
+A board the panel has never met is now usable without reflashing the panel:
+it says which pins it has, where they are, which pads are grounds and rails,
+and what it looks like.
+
+### Added
+
+- **A board describes itself over the link.** Four read-only pages, and each
+  one degrades on its own rather than taking the others with it. `CATALOGUE`
+  (0x24) carries which GPIOs the board brings out, the pad number printed
+  beside each and what holds the ones an output may not have. `SHAPE` (0x25)
+  carries the outline, the pitch and the corner pad 1 sits at, which is what
+  turns a pad number into a position. `PADS` (0x28) carries the grounds and
+  the rails, with each rail's voltage in tenths of a volt. `ARTWORK` (0x26)
+  and `ART_DATA` (0x27) carry a photograph of the board, 62 bytes at a time.
+  A coprocessor that serves none of them behaves as one built before them
+  did: the panel offers nothing for that board, which is what it did before.
+- **The pin picker**, behind PICK A PIN on the Setup screen. The board drawn
+  with a button on every pin an output may have, each on a straight trace to
+  its own pad, because at any size that fits a 480-pixel panel a pad is under
+  40 px across and smaller than a fingertip. A pin the coprocessor reserves
+  gets no button and a cross on the pad. A board that reports no shape is not
+  drawn at all: a picture from a guessed form factor points at the wrong pad
+  as confidently as the right one.
+- **Photographs are fetched once and kept.** A 2 MB `boardart` partition in
+  the panel's flash, eight slots of 256 kB. A transfer costs about ten
+  seconds of link and happens once per board; it runs in 15 ms slices of each
+  50 ms poll and the flash write runs on its own task, because the control
+  task beats the safety line and its ceiling is 150 ms.
+- `tools/gen_board_art.py` turns the PNG beside a board into a checked-in C
+  array, the `gen_font.py` convention: no Python in any firmware build, and
+  `--check` in CI so the two cannot drift.
+- [First run on hardware](docs/FirstRun.md), a nine-step bench guide for the
+  first time both boards are powered with the heartbeat wire fitted.
+- The coprocessor build fails when the image would not fit the module fitted.
+  The linker measures against the board file's 16 MB while the bring-up
+  module has 4 MB, so it would accept an image that does not boot.
+
+### Changed
+
+- **Every protocol has its own pin set.** `outbind_t` held one protocol and
+  one set of pins, so binding a second protocol meant unbinding the first.
+  Choosing a protocol now says which set is being edited and trims nothing;
+  a pin another protocol holds is drawn grey with the holder's name, which is
+  a different fact from a reserved pin's red. Slots fill in pin order across
+  every protocol, so a bench wired to one protocol writes the page it always
+  wrote. Slots and channels are one budget of eight each, shared.
+- Protocol minor 1 to 5. Every change is an added page; an older panel and a
+  newer coprocessor, or the reverse, still bring the link up.
+- `log_csv_analyse` 241 lines to 36 and `log_csv_build` 221 to 22, split into
+  named pieces with behaviour unchanged.
+- The artwork fetch sequence moved from the panel into
+  `shared/artwork/art_fetch.c` with the link passed in, so the block order and
+  every failure path are exercised by the host suite instead of by nothing.
+
 ### Fixed
+
 
 - Both images reported firmware 0.0.0. The identity page has carried
   firmware major, minor and patch since the page map was written and nothing
@@ -19,6 +76,28 @@ history is in git.
 - `tools/check_docs.py` holds that header to the newest heading in this file,
   so a release cut without moving it fails the build rather than shipping a
   board that misreports itself.
+- `outbind_learn_board()` wrote pins into its slot as it parsed, so a
+  catalogue refused part way left half of itself over the board already
+  learned while reporting failure.
+- A board numbered from its right-hand corner had its pad row mirrored across
+  the outline rather than reversed along itself, which moves the whole row by
+  a hundredth of a millimetre when the centring remainder is odd.
+- The picker repainted every frame: it cleared the other framebuffers on each
+  paint, which with two buffers alternating never settles. Its chrome is a
+  photograph, so that held the whole panel at 13 frames a second for as long
+  as the screen was open.
+- `link_artxfer_begin()` compared width times height times two against the
+  byte count in 32-bit arithmetic. 65535 x 32769 x 2 wraps to 65534, a length
+  that agrees with a plausible block count, so such a page would transfer,
+  pass its checksum, and hand back 65534 bytes calling themselves a
+  65535 x 32769 image.
+- `art_store_put()` persisted an entry whose width and height did not match
+  its byte count, which is what later code sizes a buffer from.
+- `art_fetch_meta()` returned a byte count it had not validated, so a
+  coprocessor disagreeing with itself got as far as an allocation before
+  being refused.
+- The `.clang-tidy` note said every header uses `#pragma once`. Forty do and
+  eighteen use `#ifndef` guards.
 
 ## 0.3.0 - 2026-09-04
 
