@@ -64,6 +64,7 @@ TRACKED = [
     "shared/ui/log_viewer_screen.c",
     "shared/ui/settings_screen.c",
     "shared/ui/outputs_screen.c",
+    "shared/ui/picker_screen.c",
     "shared/settings/settings.c",
     "shared/logfile/log_numbers.c",
     "shared/logfile/log_csv.c",

@@ -290,6 +290,54 @@ Eine Zelle ist also in einem von vier Zuständen, und jeder sagt, was zu tun
 ist: in diesem Protokoll angehakt, von einem anderen gehalten und benannt,
 reserviert und durchgestrichen, oder frei und mit seiner Pad-Nummer.
 
+### Pin auswählen
+
+Hinter der Taste PICK A PIN auf dem Setup-Bildschirm, und dieselbe Bindung,
+die der Outputs-Bildschirm hält. Die Liste beantwortet „welcher GPIO ist
+gebunden"; dieser beantwortet „wo stecke ich das Kabel an".
+
+![Der Pin-Picker](img/picker.png)
+
+Die Tasten sind nicht die Pads. In jeder Größe, die auf ein 480-Pixel-Panel
+passt, ist ein Pad unter 40 Pixel breit und damit kleiner als eine
+Fingerkuppe. Also werden die Pads gezeichnet, wo sie sind, und berührt wird
+auf versetzten Tastenreihen neben der Platine, jede an einer geraden Leitung
+zu ihrem eigenen Pad.
+
+Eine Taste ist gefärbt wie ihre Zelle auf dem Outputs-Bildschirm: die Pins
+dieses Protokolls in der Akzentfarbe, ein Pin, den ein anderes Protokoll
+hält, grau, und ein vom Koprozessor reservierter Pin hat gar keine Taste — er
+ist auf dem Pad durchgestrichen, denn eine Taste unter einem Pin, der nicht
+gewählt werden kann, sagt, er ließe sich wählen.
+
+Links stehen die Pins dieses Protokolls in Kanalreihenfolge, rechts die Pins,
+die andere Protokolle halten, mit Namen. Beide zusammen lesen sich als ein
+Lauf von Kanälen, denn das ist, was die OUTPUTS-Page trägt.
+
+Wo die Pads liegen, kommt von der Platine und nicht vom Panel: die
+[Shape-Page](Link-de.md#page-map) trägt den Umriss, das Raster und die Ecke,
+an der Pad 1 sitzt. Eine Platine, die das nicht sagt, wird gar nicht
+gezeichnet — ein Bild aus einer geratenen Form zeigt mit derselben
+Überzeugung auf den falschen wie auf den richtigen Pad, und die ganze Aufgabe
+dieses Bildschirms ist es, einen Pad auf der Platine vor dir zu finden. Ihre
+Pins stehen weiterhin auf dem Outputs-Bildschirm.
+
+Das Foto ist wieder davon getrennt. Mit einem ist die Platine auf dem
+Bildschirm die Platine in deinen Händen; ohne eines werden Umriss und jedes
+Pad aus der Form gezeichnet, und die Tasten liegen an denselben Stellen:
+
+![Der Picker ohne Foto](img/picker-drawn.png)
+
+Das Foto wird einmal je Platine über den Link geholt und im Flash des Panels
+behalten. Es kostet also etwa zehn Sekunden, wenn eine Platine zum ersten Mal
+gesehen wird, und danach nichts. Eine Platine ohne Foto, oder eine, deren
+Übertragung nicht fertig wurde, wird gezeichnet statt leer gelassen.
+
+**Nicht gezeigt:** welche Pads Masse und welche Versorgung sind. Die
+Catalogue-Page trägt die Pins, die ein Output haben darf, und die, die etwas
+anderes hält; sie sagt nicht, wofür ein Pad da ist, das kein GPIO ist. Wer
+eine Masse sucht, liest sie auf der Platine ab.
+
 ### Der Koprozessor hält sie, nicht das Panel
 
 Eine Bindung beschreibt die Verkabelung, und das Panel ist nicht die Platine,

@@ -128,7 +128,7 @@ jobs:
       # blends over the whole canvas and costs about 1,355 on top of that.
       - name: Every screen still idles on a cached frame
         run: python3 tools/frame_cost.py analyser logs settings battery balance
-             programmer --max-lines 1200
+             programmer picker --max-lines 1200
 
       - name: The SIMULATION watermark has not grown
         run: python3 tools/frame_cost.py balance-sim settings-sim battery-sim
@@ -139,7 +139,7 @@ jobs:
       - name: A full repaint of every screen stays bounded
         run: python3 tools/frame_cost.py analyser-chrome balance-chrome
              battery-chrome programmer-chrome logs-chrome settings-chrome
-             --max-lines 45000
+             picker-chrome --max-lines 45000
 
       - name: The frame-cost table in the docs is current
         run: python3 tools/frame_cost.py --check-doc

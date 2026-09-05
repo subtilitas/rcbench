@@ -26,6 +26,7 @@ set(SRCS
     log_viewer_screen.c
     settings_screen.c
     outputs_screen.c
+    picker_screen.c
 )
 
 if(ESP_PLATFORM)

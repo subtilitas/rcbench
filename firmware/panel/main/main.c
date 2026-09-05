@@ -45,6 +45,7 @@
 #include "motor_screen.h"
 #include "servo_screen.h"
 #include "outputs_screen.h"
+#include "picker_screen.h"
 #include "rcbench_version.h"
 #include "settings.h"
 #include "settings_screen.h"
@@ -802,6 +803,50 @@ static void art_keep_task(void *arg)
     s_keepbuf = NULL;
     s_keeping = false;
     vTaskDelete(NULL);
+}
+
+/*
+ * The picker asking for a board's photograph, on the way into the screen.
+ *
+ * Read rather than mapped: art_store_read() checks the payload against the
+ * checksum the header carries, so flash that decayed since it was written is
+ * a board drawn from its outline rather than a picture that is quietly
+ * wrong.
+ *
+ * One buffer, freed when the next photograph is asked for rather than when
+ * the screen closes -- so it outlives a visit and is reused by the following
+ * one. Two hundred kilobytes of PSRAM held between visits is worth less than
+ * a release path that has to be got right; what must not happen is two of
+ * them, and asking always frees before it allocates.
+ */
+static uint8_t *s_artshow;
+
+static void art_for_picker(uint16_t board)
+{
+    picker_screen_set_artwork(NULL, 0, 0);
+    if (s_artshow != NULL) {
+        heap_caps_free(s_artshow);
+        s_artshow = NULL;
+    }
+    art_entry_t e;
+    if (s_artflash == NULL || !art_store_find(s_artflash, board, &e)) {
+        return;
+    }
+    s_artshow = heap_caps_malloc(e.bytes, MALLOC_CAP_SPIRAM);
+    if (s_artshow == NULL) {
+        ESP_LOGW(TAG, "no room to show hardware %u's photograph",
+                 (unsigned)board);
+        return;
+    }
+    if (!art_store_read(s_artflash, board, s_artshow, e.bytes)) {
+        ESP_LOGW(TAG, "hardware %u's kept photograph did not check out",
+                 (unsigned)board);
+        heap_caps_free(s_artshow);
+        s_artshow = NULL;
+        return;
+    }
+    picker_screen_set_artwork((const gfx_color_t *)s_artshow, e.width,
+                              e.height);
 }
 
 static void art_stop(const char *why)
@@ -1667,6 +1712,12 @@ void app_main(void)
      * choice rather than writing it; the write happens where the link lives.
      */
     outputs_screen_set_apply(outputs_apply);
+    /*
+     * The picker is the same choice seen as the board, so it applies through
+     * the same seam and reads its photograph out of the store.
+     */
+    picker_screen_set_apply(outputs_apply);
+    picker_screen_set_artwork_source(art_for_picker);
 
     const bool healthy = bring_up();
 
@@ -1733,7 +1784,10 @@ void app_main(void)
             xSemaphoreGive(s_snap_lock);
         }
         if (have) {
+            /* Both views of one binding: whichever is on screen, the other
+             * is showing the same thing when the operator reaches it. */
             outputs_screen_set_binding(&got);
+            picker_screen_set_binding(&got);
         }
         outputs_screen_set_result(
             (outputs_result_t)atomic_load(&s_outputs_result));
