@@ -166,13 +166,20 @@ bool out_store_tick(bool driving, uint32_t now_ms)
      * is also why this only runs while the bank is idle -- the heartbeat
      * monitor will miss every edge in the window and have to re-acquire.
      */
-    const absolute_time_t began = get_absolute_time();
+    /*
+     * Both timestamps inside the window, because the window is what is being
+     * measured: taken either side of it they would also count the disable
+     * and restore, and the number is meant to be the time this core answered
+     * nothing. The timer is a peripheral and reads with interrupts off.
+     */
     const uint32_t irq = save_and_disable_interrupts();
+    const absolute_time_t began = get_absolute_time();
     flash_range_erase(STORE_OFFSET, FLASH_SECTOR_SIZE);
     flash_range_program(STORE_OFFSET, s_page.bytes, FLASH_PAGE_SIZE);
+    const uint32_t window = (uint32_t)absolute_time_diff_us(
+        began, get_absolute_time());
     restore_interrupts(irq);
-    s_last_window_us = (uint32_t)absolute_time_diff_us(began,
-                                                       get_absolute_time());
+    s_last_window_us = window;
 
     s_saved = s_want;
     s_have_saved = true;

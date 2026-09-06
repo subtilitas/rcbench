@@ -42,7 +42,9 @@ static const esp_partition_t *s_part;
  * milliseconds, which fits inside the heartbeat's 150 ms ceiling with room;
  * a whole slot does not.
  */
-#define ART_FLASH_CHUNK 4096u
+/* One erase granule. Written in terms of the platform's own constant so the
+ * two cannot drift if it changes. */
+#define ART_FLASH_CHUNK SPI_FLASH_SEC_SIZE
 
 /* Let whatever was waiting run, and let the cache come back on. */
 static void breathe(void)
@@ -79,8 +81,7 @@ static bool part_erase(void *ctx, uint32_t off, uint32_t len)
         return false;
     }
     while (len > 0u) {
-        const uint32_t n = (len > SPI_FLASH_SEC_SIZE) ? SPI_FLASH_SEC_SIZE
-                                                      : len;
+        const uint32_t n = (len > ART_FLASH_CHUNK) ? ART_FLASH_CHUNK : len;
         if (esp_partition_erase_range(s_part, off, n) != ESP_OK) {
             return false;
         }
