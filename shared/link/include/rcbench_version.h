@@ -20,12 +20,12 @@
 
 #define RCBENCH_VERSION_MAJOR 0
 #define RCBENCH_VERSION_MINOR 4
-#define RCBENCH_VERSION_PATCH 1
+#define RCBENCH_VERSION_PATCH 2
 
 #define RCBENCH_STRINGIFY_(x) #x
 #define RCBENCH_STRINGIFY(x)  RCBENCH_STRINGIFY_(x)
 
-/** "0.4.1", for anything that prints it rather than sends it. */
+/** "0.4.2", for anything that prints it rather than sends it. */
 #define RCBENCH_VERSION_STRING              \
     RCBENCH_STRINGIFY(RCBENCH_VERSION_MAJOR) "." \
     RCBENCH_STRINGIFY(RCBENCH_VERSION_MINOR) "." \
