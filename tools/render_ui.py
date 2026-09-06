@@ -89,6 +89,7 @@ SCREENS = {
     "logs-import":("logs-import.png","logs",       "dark"),
     "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
     "setup":      ("setup.png",      "setup",      "dark"),
+    "setup-dirty":("setup-dirty.png","setup",      "dark"),
     "outputs":    ("outputs.png",    "outputs",    "dark"),
     "outputs-protocol": ("outputs-protocol.png", "outputs", "dark"),
     "outputs-held": ("outputs-held.png", "outputs", "dark"),

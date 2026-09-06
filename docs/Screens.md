@@ -214,6 +214,31 @@ Settings are behind the SETUP tile, in both themes:
 
 ![Setup in the light theme](img/setup-light.png)
 
+### Keeping the values
+
+A changed value takes effect at once and is not written to flash until SAVE is
+pressed. The button under RESET CATEGORY says which of three states the
+screen is in:
+
+| Label | Meaning |
+| --- | --- |
+| `SAVED` | Nothing is unwritten. The button is inert. |
+| `SAVE` | Something is unwritten. Pressing it asks for a write. |
+| `WHEN IDLE` | A write has been asked for and is waiting for a moment to happen in. |
+
+![A changed value, with SAVE offered](img/setup-dirty.png)
+
+The press asks; it does not write. Writing settings commits a page of NVS
+(non-volatile storage), and a flash operation on the ESP32-S3 disables the
+instruction cache, so neither core runs for its duration. The write is taken
+on the first frame at which the bench is disarmed and no board photograph is
+being fetched or stored. On the settings screen that is the next frame, and
+the label goes to `SAVED` as fast as the eye follows the press. Armed, the
+request stands as `WHEN IDLE` until the bench is disarmed.
+
+Values not saved are kept until the panel is switched off. Leaving the screen
+writes nothing.
+
 ## Outputs
 
 Behind the OUTPUTS key on the Setup screen. The protocols bound to the
