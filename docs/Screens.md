@@ -293,10 +293,12 @@ over the total since boot, and an unreadable controller writes `?` in its
 columns rather than a differently shaped line: the reading that most needs a
 timestamp is the one where the controller would not answer.
 
-The card is there because the panel's console is not reachable on every board:
-the native USB socket carries GPIO19 and GPIO20, which the multiplexer hands to
-CAN about a second into boot, and whether the bridged socket reaches UART0 is
-[not traced on the schematic](../firmware/panel/components/board/include/board_pins.h).
+The card is there because the panel's console is not reachable on every board.
+The native USB socket carries GPIO19 and GPIO20, which the multiplexer hands to
+CAN about a second into boot, so it is gone before a bench fault happens. The
+bridged socket is on UART0 and normally carries the console right through —
+but one board has been seen whose bridge chip enumerates and passes nothing in
+either direction, and on that board there is no console at all.
 
 [Bringing up the link](Link.md) has the verdicts and what each one means.
 
