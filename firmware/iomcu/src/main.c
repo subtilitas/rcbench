@@ -868,7 +868,18 @@ int main(void)
          * rather than merely disarmed.  It also waits for the pages to stop
          * arriving, so CHAN_CFG and OUTPUTS are saved as the pair they are.
          */
-        (void)out_store_tick(outputs_driving(&s_outputs), now);
+        if (out_store_tick(outputs_driving(&s_outputs), now)) {
+            /*
+             * Printed because it is the number that decides whether a save
+             * is survivable: this core answers nothing while it writes, and
+             * the monitor calls the beat dead at 150 ms while the link calls
+             * the host silent at 200 ms.  A window past those makes the
+             * board fault itself and the panel say NO LINK over a good
+             * cable.
+             */
+            printf("rcbench-iomcu: outputs saved, flash window %lu us\n",
+                   (unsigned long)out_store_last_window_us());
+        }
 
         can_report(now);
         /* Again straight after the report: printing to a USB host can take
