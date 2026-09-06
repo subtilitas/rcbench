@@ -6,6 +6,52 @@ history is in git.
 
 ## Unreleased
 
+## 0.4.1 - 2026-09-06
+
+Two flash writes that stopped the bench, and the button that said a save had
+happened when none had been asked for. Both were found on hardware.
+
+### Fixed
+
+- **Opening OUTPUTS dropped the link.** Selecting a protocol showed `NO LINK`
+  and put the panel into SIM. The panel fetches a board's photograph once and
+  writes it to flash as one erase of 256 kB and one write of 201 kB; a flash
+  operation on the ESP32-S3 disables the instruction cache, so for its
+  duration neither core runs code outside IRAM -- including the task that
+  drives the heartbeat. The coprocessor saw the line still for longer than
+  HEARTBEAT_MAX_GAP_MS (150 ms), failed safe and stopped answering, which is
+  the interlock working. Every artwork flash operation now runs in chunks of
+  SPI_FLASH_SEC_SIZE (4096 bytes) with 2 ms between them, so the heartbeat
+  comes through between chunks. Reported as #99.
+- **SAVE on the settings screen did nothing.** The values were written
+  whenever the screen was left, and the only sign of it was the word `SAVED`
+  under `RESET CATEGORY`, in the same column and at the same width -- which
+  reads as a button that does not work. Reported as #100.
+
+### Changed
+
+- **Settings are written when SAVE is pressed, and not otherwise.** The press
+  is a request: `settings_save_tick(safe)` takes it on the first frame at
+  which the bench is disarmed and no board photograph is being fetched or
+  stored, so the NVS (non-volatile storage) commit and its cache-off stall
+  never land while the safety line is being driven. The label carries the
+  whole state -- `SAVED` with nothing unwritten, `SAVE` with something to
+  write, `WHEN IDLE` once asked and still waiting. Leaving the screen writes
+  nothing; unsaved values are kept until the panel is switched off.
+- The two doors on the settings screen, OUTPUTS and PICK A PIN, move up 16
+  pixels: SAVE takes the space under RESET CATEGORY.
+
+### Added
+
+- The coprocessor measures the window its own flash write spends with
+  interrupts off and prints it: `rcbench-iomcu: outputs saved, flash window
+  <n> us`, and `out_store_last_window_us()` reads it back. The window is
+  bounded by the flash part rather than by anything this firmware chooses,
+  and it has never been measured on hardware; the number says whether it is a
+  second cause of the same kind as #99. Nothing is compensated for it.
+- `setup-dirty.png`, the twenty-ninth committed screenshot: the settings
+  screen with a value changed and SAVE offered.
+
 ## 0.4.0 - 2026-09-05
 
 A board the panel has never met is now usable without reflashing the panel:
