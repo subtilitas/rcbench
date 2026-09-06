@@ -286,7 +286,12 @@ alert band says the link is gone and the screen waits for the disarm.
 The same numbers go to `RCBENCH.LOG` on the SD card, one line per report while
 the link is down:
 
-    t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44  polls=5323 replies=5279 timeouts=44
+    t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44
+
+The fields are the same in the same order every time. `rejoins` is this outage
+over the total since boot, and an unreadable controller writes `?` in its
+columns rather than a differently shaped line: the reading that most needs a
+timestamp is the one where the controller would not answer.
 
 The card is there because the panel's console is not reachable on every board:
 the native USB socket carries GPIO19 and GPIO20, which the multiplexer hands to

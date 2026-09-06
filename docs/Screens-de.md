@@ -306,7 +306,13 @@ Bildschirm wartet auf das Disarmieren.
 Dieselben Zahlen gehen in `RCBENCH.LOG` auf der SD-Karte, eine Zeile je
 Report, solange der Link unten ist:
 
-    t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44  polls=5323 replies=5279 timeouts=44
+    t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44
+
+Die Felder sind jedes Mal dieselben in derselben Reihenfolge. `rejoins` ist
+dieser Ausfall über der Gesamtzahl seit dem Start, und ein Controller, der
+sich nicht lesen lässt, schreibt `?` in seine Spalten statt einer anders
+geformten Zeile: die Ablesung, die einen Zeitstempel am nötigsten hat, ist
+genau die, bei der der Controller nicht geantwortet hat.
 
 Die Karte ist dafür da, weil die Konsole des Panels nicht auf jeder Platine
 erreichbar ist: die native USB-Buchse führt GPIO19 und GPIO20, die der

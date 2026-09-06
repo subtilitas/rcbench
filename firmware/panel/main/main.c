@@ -161,7 +161,15 @@ static bool              s_bus_ok = true;   /* until the test says otherwise */
 
 static uint32_t s_link_lost_ms;      /* when it went, 0 while it is up   */
 static bool     s_link_lost_shown;   /* the screen has had its turn      */
-static uint32_t s_recoveries;        /* times the bus was asked back     */
+/*
+ * Two counts, because they answer two questions.  The per-outage one sits on
+ * the screen beside "down N s" and says whether the recovery is working now;
+ * the lifetime one goes in the file and says whether this has been happening
+ * all session.  One number doing both would be read as the wrong one in at
+ * least one of the two places.
+ */
+static uint32_t s_recoveries;        /* this outage                      */
+static uint32_t s_recoveries_total;  /* since boot                       */
 
 /* ------------------------------------------------------------ the heartbeat */
 
@@ -1150,6 +1158,13 @@ static void debug_log(const char *line)
     fclose(f);
 }
 
+/* A number, or "?" when it could not be read: the column keeps its place. */
+static const char *u32(char *out, size_t n, uint32_t v)
+{
+    snprintf(out, n, "%lu", (unsigned long)v);
+    return out;
+}
+
 /* What can_twai_recover() found, in the screen's vocabulary. */
 static busfault_bus_t bus_state(void)
 {
@@ -1242,35 +1257,41 @@ static void link_report(void)
      */
     uint32_t tec = 0, rec = 0, bus = 0;
     bool off = false;
-    if (can_twai_errors(&tec, &rec, &bus, &off)) {
+    char n1[12], n2[12], n3[12];
+    const bool have_bus = can_twai_errors(&tec, &rec, &bus, &off);
+    if (have_bus) {
         ESP_LOGI(TAG, "  bus    tx errors %lu rx errors %lu bus errors %lu%s",
                  (unsigned long)tec, (unsigned long)rec, (unsigned long)bus,
                  off ? " -- BUS OFF" : "");
-        /*
-         * And to the card, one line with everything on it.  This is the line
-         * a tester sends when the panel's console cannot be reached, so it
-         * repeats what the lines above say rather than referring to them.
-         */
-        char row[192];
-        snprintf(row, sizeof(row),
-                 "t=%lus link=down for %lus  bus=%s tx_err=%lu rx_err=%lu "
-                 "bus_err=%lu rejoins=%lu  polls=%lu replies=%lu timeouts=%lu",
-                 (unsigned long)(now_ms() / 1000u),
-                 (unsigned long)(s_link_lost_ms == 0u
-                                     ? 0u
-                                     : (now_ms() - s_link_lost_ms) / 1000u),
-                 off ? "OFF" : "on",
-                 (unsigned long)tec, (unsigned long)rec, (unsigned long)bus,
-                 (unsigned long)s_recoveries,
-                 (unsigned long)s_bring.polls, (unsigned long)s_bring.replies,
-                 (unsigned long)s_bring.timeouts);
-        debug_log(row);
     } else {
         /* Zeros here would read as a healthy bus.  A controller that never
          * started is a different diagnosis from one with no errors. */
         ESP_LOGI(TAG, "  bus    the controller is not running");
-        debug_log("bus: the controller is not running");
     }
+
+    /*
+     * And to the card, one line with everything on it, the same fields in the
+     * same order every time.  This is the line a tester sends when the
+     * panel's console cannot be reached; a file whose shape changes with the
+     * fault is one nobody can read down a column, and the reading that most
+     * needs a timestamp is the one where the controller would not answer.
+     */
+    char row[208];
+    snprintf(row, sizeof(row),
+             "t=%lus link=down for %lus  bus=%s tx_err=%s rx_err=%s "
+             "bus_err=%s rejoins=%lu/%lu  polls=%lu replies=%lu timeouts=%lu",
+             (unsigned long)(now_ms() / 1000u),
+             (unsigned long)(s_link_lost_ms == 0u
+                                 ? 0u
+                                 : (now_ms() - s_link_lost_ms) / 1000u),
+             !have_bus ? "not running" : (off ? "OFF" : "on"),
+             have_bus ? u32(n1, sizeof(n1), tec) : "?",
+             have_bus ? u32(n2, sizeof(n2), rec) : "?",
+             have_bus ? u32(n3, sizeof(n3), bus) : "?",
+             (unsigned long)s_recoveries, (unsigned long)s_recoveries_total,
+             (unsigned long)s_bring.polls, (unsigned long)s_bring.replies,
+             (unsigned long)s_bring.timeouts);
+    debug_log(row);
 }
 
 /*
@@ -1554,6 +1575,7 @@ static void control_task(void *arg)
                  */
                 if (can_twai_recover() == CAN_TWAI_RECOVERING) {
                     ++s_recoveries;
+                    ++s_recoveries_total;
                 }
 
                 /*
@@ -1763,8 +1785,9 @@ static void control_task(void *arg)
              * screen is only shown from there.
              */
             if (answered) {
-                s_link_lost_ms   = 0;
+                s_link_lost_ms    = 0;
                 s_link_lost_shown = false;
+                s_recoveries      = 0;   /* the next outage counts its own */
             } else if (link_up) {
                 /* The edge: it was up until this poll. */
                 s_link_lost_ms = now_ms();
