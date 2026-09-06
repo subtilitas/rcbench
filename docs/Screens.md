@@ -296,9 +296,11 @@ timestamp is the one where the controller would not answer.
 The card is there because the panel's console is not reachable on every board.
 The native USB socket carries GPIO19 and GPIO20, which the multiplexer hands to
 CAN about a second into boot, so it is gone before a bench fault happens. The
-bridged socket is on UART0 and normally carries the console right through —
-but one board has been seen whose bridge chip enumerates and passes nothing in
-either direction, and on that board there is no console at all.
+bridged socket is on UART0 and normally carries the console right through, but
+what it is connected to is switchable: a slide switch beside the BOOT and
+RESET buttons is marked UART1 and UART2. In one position the bridge chip
+enumerates and passes nothing in either direction, and the panel then has no
+console at all.
 
 [Bringing up the link](Link.md) has the verdicts and what each one means.
 
