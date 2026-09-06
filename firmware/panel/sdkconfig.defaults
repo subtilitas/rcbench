@@ -109,9 +109,15 @@ CONFIG_FREERTOS_HZ=1000
 # selects CAN, the native USB console is gone.
 #
 # The bridged socket shares nothing with CAN, so it is the primary console.
-# The native one is the secondary: it costs nothing while USB is selected, and
-# it is the working console if the UART socket is wired to pins other than
-# UART0's defaults, which are not traced on the schematic.  Output goes to
-# both.
+# It is on UART0: a Rev1.2 accepts a firmware download through it, and the ROM
+# bootloader takes a serial download on UART0 and nowhere else.
+#
+# What that socket is connected to is switchable: a slide switch beside BOOT
+# and RESET is marked UART1 and UART2.  In one position the bridge enumerates
+# and passes nothing, which looks exactly like a broken board and is not one.
+#
+# The native socket is the secondary console.  It costs nothing while USB is
+# selected, and it is what is left when the bridged one says nothing.  Output
+# goes to both.
 CONFIG_ESP_CONSOLE_UART_DEFAULT=y
 CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG=y

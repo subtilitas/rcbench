@@ -315,10 +315,14 @@ geformten Zeile: die Ablesung, die einen Zeitstempel am nötigsten hat, ist
 genau die, bei der der Controller nicht geantwortet hat.
 
 Die Karte ist dafür da, weil die Konsole des Panels nicht auf jeder Platine
-erreichbar ist: die native USB-Buchse führt GPIO19 und GPIO20, die der
-Multiplexer etwa eine Sekunde nach dem Start an CAN übergibt, und ob die
-gebrückte Buchse an UART0 liegt, ist
-[auf dem Schaltplan nicht verfolgt](../firmware/panel/components/board/include/board_pins.h).
+erreichbar ist. Die native USB-Buchse führt GPIO19 und GPIO20, die der
+Multiplexer etwa eine Sekunde nach dem Start an CAN übergibt — sie ist also
+weg, bevor ein Fehler am Prüfstand passiert. Die gebrückte Buchse liegt an
+UART0 und trägt die Konsole normalerweise durchgehend; womit sie verbunden
+ist, ist aber umschaltbar: ein Schiebeschalter neben den Tastern BOOT und
+RESET ist mit UART1 und UART2 beschriftet. In einer Stellung meldet sich der
+Bridge-Chip an und lässt in keine Richtung etwas durch, und dann hat das Panel
+gar keine Konsole.
 
 [Den Link in Betrieb nehmen](Link-de.md) hat die Urteile und was jedes
 bedeutet.

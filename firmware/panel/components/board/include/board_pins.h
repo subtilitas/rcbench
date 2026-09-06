@@ -135,9 +135,23 @@ extern "C" {
  * The bridged socket shares nothing with CAN, so sdkconfig.defaults makes
  * UART0 the primary console and USB-Serial-JTAG the secondary.
  *
- * Not traced on the schematic: which GPIOs the bridged socket lands on.
- * UART0's default pins are assumed; if the board differs, the secondary
- * console works whenever USB is selected.
+ * The bridged socket is on UART0, on an ESP32-S3-Touch-LCD-7 Rev1.2.  Not
+ * from the schematic, which was never traced: the board accepts a firmware
+ * download through that socket, and the ROM bootloader takes a serial
+ * download on UART0 and nowhere else.  A socket that can flash the board is
+ * a socket the console reaches.
+ *
+ * What the socket is connected to is switchable.  A slide switch beside the
+ * BOOT and RESET buttons is marked UART1 and UART2, and it decides what the
+ * bridge chip's serial side reaches.  A board in one position enumerates its
+ * CH343 normally -- the port appears and Windows names it, which proves only
+ * the chip's supply, oscillator and USB side -- and passes nothing in either
+ * direction, neither a download nor a console byte.
+ *
+ * So a panel that says nothing on that socket is a switch to check before it
+ * is a fault to diagnose.  The panel does not depend on the socket either
+ * way: it reports a bus fault on its own screen and to the card
+ * (busfault_screen.h).
  */
 #define BOARD_EXIO_USB_SEL          5  /* 0 = USB, 1 = CAN        */
 #define BOARD_EXIO_LCD_VDD_EN       6

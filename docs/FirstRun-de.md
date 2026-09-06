@@ -25,6 +25,23 @@ Oszilloskop und kein Propeller.
 **Strombegrenzung:** so niedrig, dass ein kurzgeschlossener Output sie
 auslöst, statt eine Leiterbahn zu verbrennen.
 
+> ### Den UART-Schalter des Panels vor allem anderen auf `UART1` stellen
+>
+> Neben den Tastern **BOOT** und **RESET** sitzt ein Schiebeschalter,
+> beschriftet mit **`UART1`** und **`UART2`**. Er wählt aus, womit die
+> serielle Seite der gebrückten USB-C-Buchse verbunden ist; die Konsole
+> braucht ihn auf **`UART1`**.
+>
+> In der anderen Stellung meldet sich die Buchse trotzdem an: ein COM-Port
+> erscheint, das Betriebssystem benennt den CH343. Es kommt in keine Richtung
+> etwas durch — keine Konsolenausgabe, kein Flashen — also dasselbe Bild, das
+> ein defektes Kabel oder eine defekte Platine liefert.
+>
+> Die andere USB-C-Buchse des Panels führt natives USB auf GPIO19 und GPIO20,
+> die der Multiplexer etwa eine Sekunde nach jedem Start an CAN übergibt. Sie
+> flasht die Platine und kann eine laufende nicht beobachten. Die gebrückte
+> Buchse ist die einzige Konsole des Panels im Betrieb.
+
 ---
 
 ## 1. Beide Platinen flashen

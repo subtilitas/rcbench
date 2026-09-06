@@ -12,6 +12,22 @@ Work down the list. Each step assumes the one above it passed.
 
 ## 0. Before power
 
+> ### Set the panel's UART switch to `UART1` before anything else
+>
+> A slide switch beside the **BOOT** and **RESET** buttons is marked
+> **`UART1`** and **`UART2`**. It selects what the bridged USB-C socket's
+> serial side is connected to, and the console needs it on **`UART1`**.
+>
+> On the other setting the socket still enumerates: a COM port appears and
+> the operating system names the CH343. Nothing crosses it in either
+> direction — no console output and no flashing — which is the same symptom
+> a broken cable or a broken board gives.
+>
+> The panel's other USB-C socket carries native USB on GPIO19 and GPIO20,
+> which the multiplexer hands to CAN about a second into every boot. It
+> flashes the board and it cannot watch a running one. The bridged socket is
+> the panel's only console while the bench runs.
+
 **Have to hand:** an oscilloscope, one servo, one ESC that speaks
 bidirectional DShot, a bench supply with current limit, and the USB cable for
 each board.
