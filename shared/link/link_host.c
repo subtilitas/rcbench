@@ -123,11 +123,40 @@ bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
     }
 
     if (answers_write) {
-        if (part->offset != h->offset || part->count != h->count) {
+        /*
+         * A write's acknowledgement arrives in as many pieces as the request
+         * did.  Every frame of a wide write is self-describing and the far
+         * end answers each one it decodes, so a 32-register write draws
+         * eight acknowledgements of four registers at offsets 0, 4 ... 28 --
+         * never one of 32 at offset 0.
+         *
+         * Demanding the whole window in a single acknowledgement matched
+         * none of them.  Every write wider than LINK_CAN_REGS_PER_FRAME (4)
+         * counted its answers as mismatches and waited out
+         * LINK_HOST_TIMEOUT_MS, and the far end, hearing nothing for a
+         * second, latched its own silence failsafe.  Both output pages are
+         * 32 registers wide, so applying a binding did that every time.
+         *
+         * So the same coverage rule as a read: a piece belongs if it falls
+         * inside the window, and the write is answered when the window is
+         * full.
+         */
+        if (part->count == 0 || part->offset < h->offset
+            || (uint16_t)part->offset + (uint16_t)part->count
+                   > (uint16_t)h->offset + (uint16_t)h->count) {
             ++h->mismatches;
             return false;
         }
+        const uint8_t at = (uint8_t)(part->offset - h->offset);
+        for (uint8_t i = 0; i < part->count; ++i) {
+            h->acc_seen |= (uint32_t)1u << (at + i);
+        }
+        if (!window_complete(h)) {
+            return false;   /* not a fault: more of it is still coming */
+        }
         *whole = *part;
+        whole->offset = h->offset;
+        whole->count  = h->count;
         answered(h, now_ms, false);
         return true;
     }
