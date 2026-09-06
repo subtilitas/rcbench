@@ -575,7 +575,7 @@ static void can_report(uint32_t now)
     /*
      * Requests first, because it is the number that answers "is the other
      * end talking to me at all".  Echoes are self-test traffic and are zero
-     * in ordinary use, which read as nothing arriving when this line carried
+     * in ordinary use, which reads as nothing arriving when this line carried
      * them alone.  A request count standing still while the panel says NO
      * LINK means the panel has stopped transmitting; one that climbs while
      * the panel says NO LINK means the answers are not getting back.
