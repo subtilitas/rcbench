@@ -255,6 +255,33 @@ Anforderung als `WHEN IDLE`, bis der Prüfstand disarmed wird.
 Nicht gespeicherte Werte bleiben, bis das Panel ausgeschaltet wird. Das
 Verlassen des Bildschirms schreibt nichts.
 
+## Der Bus-Fehler-Bildschirm
+
+Das Panel führt den CAN-Echo-Selbsttest (Controller Area Network) bei jedem
+Start aus, 1200 ms lang innerhalb des Splash. Ein anderes Urteil als „alle
+Probes kamen unversehrt zurück" bringt diesen Bildschirm auf das Panel statt
+des Menüs.
+
+![Frames kommen verändert an](img/busfault.png)
+
+Es gibt ihn, weil der Fehler von jedem anderen Bildschirm aus unsichtbar ist:
+ein Bus, der keine Frames trägt, sieht genauso aus wie ein Koprozessor, der
+nicht bestückt ist, und beides sieht aus wie ein Prüfstand, der einfach keine
+Zahlen zeigt. Das Urteil ist die Überschrift, die Liste ist das, was der
+Reihe nach zu prüfen ist, und die rechte Spalte ist das, was beide Enden
+gezählt haben.
+
+![Es kam nichts zurück](img/busfault-silent.png)
+
+Verlassen kostet zwei Sekunden Halten — die ARM-Geste und dieselbe
+Überblendung. Das Quittieren repariert nichts: der Prüfstand läuft in
+Simulation, nichts treibt einen Ausgang, und der Test läuft beim nächsten
+Start wieder. Es gibt kein Band und kein STOP, denn dahinter kann nichts
+armiert sein.
+
+[Den Link in Betrieb nehmen](Link-de.md) hat die Urteile und was jedes
+bedeutet.
+
 ## Outputs
 
 Hinter der OUTPUTS-Taste auf dem Setup-Bildschirm. Die Protokolle, die an die

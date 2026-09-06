@@ -236,3 +236,27 @@ void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color)
 {
     gfx_hline(c, x, y, w, color);
 }
+
+gfx_color_t ui_hold_fill(gfx_color_t base, gfx_color_t target, float held_s)
+{
+    if (held_s <= 0.0f) {
+        return base;
+    }
+    if (held_s >= UI_HOLD_S) {
+        return target;
+    }
+    const uint8_t t = (uint8_t)(held_s / UI_HOLD_S * 255.0f + 0.5f);
+    return gfx_lerp(base, target, t);
+}
+
+gfx_color_t ui_hold_flash(gfx_color_t settled, int frames_left)
+{
+    if (frames_left <= 0) {
+        return settled;
+    }
+    switch ((frames_left - 1) % UI_HOLD_FLASH_CYCLE) {
+    case 2:  return GFX_WHITE;
+    case 1:  return GFX_BLACK;
+    default: return settled;
+    }
+}

@@ -38,6 +38,9 @@ typedef enum {
     SCREEN_PROGRAMMER,
     SCREEN_OUTPUTS,
     SCREEN_PICKER,
+    /* Start-up only, and not reachable from the menu: the bus self-test
+     * failed and the panel says so before anything else. */
+    SCREEN_BUSFAULT,
     SCREEN_COUNT
 } ui_screen_id_t;
 

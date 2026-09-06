@@ -157,11 +157,30 @@ TEST_CASE(stop_works_from_every_screen_that_has_a_band)
     const gfx_rect_t r = ui_band_stop_rect();
 
     for (int id = SCREEN_OVERVIEW; id < SCREEN_COUNT; ++id) {
+        /*
+         * The bus-fault screen is the one exception, and it is asserted
+         * rather than skipped: it has no band because nothing can be armed
+         * behind it -- the panel is on a bus that does not carry frames --
+         * and a STOP there would offer to stop something that is not
+         * running.
+         */
+        if (id == SCREEN_BUSFAULT) {
+            ui_router_goto((ui_screen_id_t)id);
+            CHECK(!ui_router_stop_live());
+            (void)ui_router_take_stop();
+            tap(r.x + r.w / 2, r.y + r.h / 2);
+            if (ui_router_take_stop()) {
+                T_FAIL("the bus-fault screen latched a stop it does not draw");
+                return;
+            }
+            continue;
+        }
         ui_router_goto((ui_screen_id_t)id);
         (void)ui_router_take_stop();
         tap(r.x + r.w / 2, r.y + r.h / 2);
         if (!ui_router_take_stop()) {
             T_FAIL("STOP did nothing on screen %d", id);
+            return;
         }
     }
 }

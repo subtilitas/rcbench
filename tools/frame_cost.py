@@ -67,6 +67,7 @@ SOURCES = [
     "shared/ui/settings_screen.c",
     "shared/ui/outputs_screen.c",
     "shared/ui/picker_screen.c",
+    "shared/ui/busfault_screen.c",
     "shared/settings/settings.c",
     "shared/logfile/log_numbers.c",
     "shared/logfile/log_csv.c",
@@ -78,6 +79,8 @@ SOURCES = [
     "shared/outputs/outputs.c",
     "shared/outputs/outputs_pages.c",
     "shared/outputs/out_bind.c",
+    "shared/can/can_selftest.c",
+    "shared/link/link_can.c",
 ]
 INCLUDES = [
     "shared/gfx/include",
@@ -85,6 +88,7 @@ INCLUDES = [
     "shared/ui/include",
     "shared/bench/include",
     "shared/link/include",
+    "shared/can/include",
     "shared/outputs/include",
     "shared/logfile/include",
     "shared/settings/include",

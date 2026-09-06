@@ -90,18 +90,13 @@
  * red, and the command goes when the fade completes.  A release before then
  * arms nothing.  A bench that spins a propeller should not do it on a touch
  * that could have been an elbow.
+ *
+ * The timing, the fade and the flash are ui_widgets' (UI_HOLD_S,
+ * ui_hold_fill, ui_hold_flash), so the other gesture that is held rather
+ * than pressed cannot come to look different from this one.
  */
-#define ARM_HOLD_S  2.0f
-
-/*
- * And the arm itself flashes the whole button twice: white, black, the danger
- * red it settles on, and again, one drawn frame each.  At 39 Hz that is about
- * 154 ms -- short enough to read as a flash rather than an animation, and two
- * of them are harder to miss than one.
- */
-#define ARM_FLASH_CYCLE  3
-#define ARM_FLASH_TIMES  2
-#define ARM_FLASH_FRAMES (ARM_FLASH_CYCLE * ARM_FLASH_TIMES)
+#define ARM_HOLD_S    UI_HOLD_S
+#define ARM_FLASH_FRAMES UI_HOLD_FLASH_FRAMES
 
 /* The tabs move into the header strip: the mockup has no tab row, and the
  * table pane is not worth deleting to match it. */
@@ -459,16 +454,10 @@ static gfx_color_t arm_fill(void)
     /* The flash is the whole button, one colour per drawn frame, and it
      * overrides everything else while it runs. */
     if (s.arm_flash_left > 0) {
-        switch ((s.arm_flash_left - 1) % ARM_FLASH_CYCLE) {
-        case 2:  return GFX_WHITE;
-        case 1:  return GFX_BLACK;
-        default: return ui_theme_color(UI_C_DANGER);
-        }
+        return ui_hold_flash(ui_theme_color(UI_C_DANGER), s.arm_flash_left);
     }
     if (!s.armed && s.arm_held_s > 0.0f) {
-        const uint8_t t =
-            (uint8_t)(s.arm_held_s / ARM_HOLD_S * 255.0f + 0.5f);
-        fill = gfx_lerp(fill, ui_theme_color(UI_C_DANGER), t);
+        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER), s.arm_held_s);
     }
     return fill;
 }

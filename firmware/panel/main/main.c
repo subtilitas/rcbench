@@ -30,6 +30,8 @@
 #include "ui_band.h"
 #include "board_pins.h"
 #include "can_twai.h"
+#include "busfault_screen.h"
+#include "can_selftest.h"
 #include "selftest.h"
 #include "display.h"
 #include "gfx.h"
@@ -125,6 +127,22 @@ static uint32_t now_ms(void)
 {
     return (uint32_t)(esp_timer_get_time() / 1000);
 }
+
+/* ------------------------------------------------------------ the CAN bus */
+
+/*
+ * How long the start-up echo test runs.
+ *
+ * A verdict needs CAN_SELFTEST_MIN_PROBES (8) probes and one probe is in
+ * flight at a time, so with a far end that answers this is hundreds of
+ * probes and with one that does not it is tens.  It is spent inside the
+ * splash, which holds afterwards anyway, so it costs no start-up time an
+ * operator waits through.
+ */
+#define CAN_SELFTEST_MS 1200u
+
+static busfault_report_t s_busfault;
+static bool              s_bus_ok = true;   /* until the test says otherwise */
 
 /* ------------------------------------------------------------ the heartbeat */
 
@@ -552,17 +570,27 @@ static bool bring_up(void)
     splash_screen_set(SPLASH_STEP_LINK,
                       link_open ? SPLASH_OK : SPLASH_WARN,
                       link_open ? "CAN 1 Mbit/s" : "not opened");
-#ifdef RCBENCH_CAN_SELFTEST
     /*
      * After the bus is up, so the echo test measures the bus rather than
      * reporting "nothing came back" regardless of the hardware, and before
      * the identity poll, so a broken bus is diagnosed as such rather than as
      * an identity that never answers.
+     *
+     * It runs at every start-up.  A bus that does not carry frames looks
+     * exactly like a coprocessor that is not fitted, and both look like a
+     * bench that shows no numbers; nothing else the panel does separates
+     * them, and an operator with no console cannot.
      */
     if (link_open) {
-        can_selftest_run(5);
+        s_bus_ok = can_selftest_run(CAN_SELFTEST_MS, &s_busfault);
+        splash_screen_set(SPLASH_STEP_LINK,
+                          s_bus_ok ? SPLASH_OK : SPLASH_FAIL,
+                          s_bus_ok ? "CAN 1 Mbit/s"
+                                   : can_selftest_text(s_busfault.verdict));
+        if (!s_bus_ok) {
+            busfault_screen_set(&s_busfault);
+        }
     }
-#endif
     pump();
 
     /*
@@ -1941,6 +1969,20 @@ void app_main(void)
         ui_router_set_status(&status);
 
         if (splash_screen_done() && ui_router_current() == SCREEN_SPLASH) {
+            /*
+             * A bus that failed its test is what the panel says first.  The
+             * menu offers screens that all read the same numbers, and every
+             * one of them would show the same nothing without saying why.
+             */
+            ui_router_goto(s_bus_ok ? SCREEN_OVERVIEW : SCREEN_BUSFAULT);
+        }
+
+        /*
+         * And the menu once it has been acknowledged.  The hold is the
+         * screen's; where an acknowledged fault leads is not, so it latches
+         * and this decides.
+         */
+        if (busfault_screen_take_ack()) {
             ui_router_goto(SCREEN_OVERVIEW);
         }
         ui_router_tick(dt_s);

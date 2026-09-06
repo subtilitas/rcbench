@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include "busfault_screen.h"
 #include "outputs_screen.h"
 #include "picker_screen.h"
 #include "ui_screen.h"
@@ -58,6 +59,7 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
     case SCREEN_SETUP:    return settings_screen();
     case SCREEN_OUTPUTS:  return outputs_screen();
     case SCREEN_PICKER:   return picker_screen();
+    case SCREEN_BUSFAULT: return busfault_screen();
     default:              return stub_screen(id);
     }
 }
@@ -121,6 +123,7 @@ void ui_router_invalidate(void)
     servo_invalidate();
     outputs_screen_invalidate();
     picker_screen_invalidate();
+    busfault_screen_invalidate();
 }
 
 void ui_router_tick(float dt_s)
@@ -164,7 +167,13 @@ bool ui_router_take_stop(void)
  * bench can be armed while the menu is showing.  The home tag is on every
  * screen except the splash and the overview.
  */
-static bool has_band(ui_screen_id_t id) { return id != SCREEN_SPLASH; }
+static bool has_band(ui_screen_id_t id)
+{
+    /* The bus-fault screen carries none either. Its whole claim is that the
+     * bench cannot be driven, and a STOP button on it would offer to stop
+     * something that is not running. */
+    return id != SCREEN_SPLASH && id != SCREEN_BUSFAULT;
+}
 
 /*
  * Whether a STOP button is on the screen at all.  The splash carries no band
@@ -174,7 +183,8 @@ static bool has_band(ui_screen_id_t id) { return id != SCREEN_SPLASH; }
 bool ui_router_stop_live(void) { return has_band(s.current); }
 static bool has_home(ui_screen_id_t id)
 {
-    return id != SCREEN_SPLASH && id != SCREEN_OVERVIEW;
+    return id != SCREEN_SPLASH && id != SCREEN_OVERVIEW
+           && id != SCREEN_BUSFAULT;
 }
 
 void ui_router_event(const touch_event_t *evt)

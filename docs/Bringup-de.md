@@ -44,22 +44,20 @@ nicht am CAN-Bus.
 
 ### Panel
 
-Der Test ist opt-in, weil das Starten von CAN das native USB des Panels
-wegnimmt:
+Der Test läuft bei jedem Start. Er dauert 1200 ms, innerhalb des Splash und
+vor dem Identity-Poll: ein kaputter Bus wird so als kaputter Bus diagnostiziert
+und nicht als eine Identity, die nie geantwortet hat.
 
-```bash
-cd firmware/panel
-idf.py -DRCBENCH_CAN_SELFTEST=1 build flash
-```
+Ein anderes Urteil als `every probe came back intact` bringt das Panel auf den
+[Bus-Fehler-Bildschirm](#der-bus-fehler-bildschirm) statt ins Menü. Es muss
+nichts aktiviert werden, und es wird keine Konsole gebraucht.
 
-Auf die UART-Buchse (Universal Asynchronous Receiver-Transmitter) schauen,
-nicht auf die native USB-Buchse. GPIO19 und GPIO20 (General-Purpose
-Input/Output) führen sowohl das native USB als auch den CAN-Transceiver, und
-der Multiplexer wählt eines aus; die Konsole liegt auf UART0 mit
-USB-Serial-JTAG (der eingebauten USB-Seriell- und Debug-Bridge des ESP32-S3)
-als Zweitkonsole.
-
-Der Test läuft 5 s lang beim Boot, vor dem Identity-Poll, und gibt aus:
+Die Einzelheiten stehen auf der Konsole. Auf die UART-Buchse (Universal
+Asynchronous Receiver-Transmitter) schauen, nicht auf die native USB-Buchse.
+GPIO19 und GPIO20 (General-Purpose Input/Output) führen sowohl das native USB
+als auch den CAN-Transceiver, und der Multiplexer wählt eines aus; die Konsole
+liegt auf UART0 mit USB-Serial-JTAG (der eingebauten USB-Seriell- und
+Debug-Bridge des ESP32-S3) als Zweitkonsole. Ausgegeben wird:
 
     I (…) can: 1000000 bit/s: brp 4, tseg1 14, tseg2 5, sjw 4, sample point 75.0%
     I (…) rcbench: CAN self-test: every probe came back intact
@@ -94,7 +92,34 @@ gelesen hat.
 
 Erreicht der Sendefehlerzähler während des Tests 128, quittiert kein anderer
 Knoten: der Koprozessor ist gar nicht auf dem Bus. Der Test meldet das
-einmal, bevor die fünf Sekunden vorbei sind.
+einmal, bevor der Durchlauf vorbei ist.
+
+### Der Bus-Fehler-Bildschirm
+
+Ein anderes Urteil als `every probe came back intact` wird auf dem Panel vor
+dem Menü gezeigt, denn der Fehler ist von jedem anderen Bildschirm aus
+unsichtbar: ein Bus, der keine Frames trägt, sieht genauso aus wie ein
+Koprozessor, der nicht bestückt ist, und beides sieht aus wie ein Prüfstand,
+der einfach keine Zahlen zeigt.
+
+![Frames kommen verändert an](img/busfault.png)
+
+Das Urteil ist die Überschrift, die Liste darunter ist das, was zu prüfen ist,
+in der Reihenfolge, die am wenigsten kostet, und die rechte Spalte ist das,
+was beide Enden gezählt haben. `returned` ist grün, sobald überhaupt etwas
+zurückkam; `BUS OFF` heißt, dass dieses Panel aufgehört hat zu senden.
+
+![Es kam nichts zurück](img/busfault-silent.png)
+
+Verlassen wird der Bildschirm mit einem zwei Sekunden langen Halten der Taste
+am unteren Rand — dieselbe Geste und dieselbe Überblendung wie bei ARM. Ein
+Bildschirm, der sagt, dass dem Prüfstand nicht zu trauen ist, soll sich nicht
+durch eine Berührung wegwischen lassen, die auch ein Ärmel gewesen sein
+könnte.
+
+Das Quittieren repariert nichts und schaltet den Test nicht ab: der Prüfstand
+läuft in Simulation, nichts treibt einen Ausgang, und der Test läuft beim
+nächsten Start wieder.
 
 Die Probe-Nutzdaten durchlaufen nur dominant, nur rezessiv und beide
 alternierenden Muster, weil CAN nach fünf gleichen Bits ein komplementäres

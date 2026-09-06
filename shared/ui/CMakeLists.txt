@@ -27,13 +27,14 @@ set(SRCS
     settings_screen.c
     outputs_screen.c
     picker_screen.c
+    busfault_screen.c
 )
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
-                           REQUIRES gfx touch bench logfile settings sbus link outputs)
+                           REQUIRES gfx touch bench logfile settings sbus link outputs can)
 else()
     add_library(rcbench_ui STATIC ${SRCS})
-    target_include_directories(rcbench_ui PUBLIC include "${CMAKE_CURRENT_LIST_DIR}/../link/include")
-    target_link_libraries(rcbench_ui PUBLIC rcbench_gfx rcbench_touch rcbench_bench rcbench_logfile rcbench_settings rcbench_sbus rcbench_link rcbench_outputs)
+    target_include_directories(rcbench_ui PUBLIC include "${CMAKE_CURRENT_LIST_DIR}/../link/include" "${CMAKE_CURRENT_LIST_DIR}/../can/include")
+    target_link_libraries(rcbench_ui PUBLIC rcbench_gfx rcbench_touch rcbench_bench rcbench_logfile rcbench_settings rcbench_sbus rcbench_link rcbench_outputs rcbench_can)
 endif()
