@@ -22,7 +22,17 @@ read per loop and answers only frames addressed to a page the map does not use.
 Boot output on the coprocessor's USB (Universal Serial Bus) console, repeated
 every 3 s:
 
-    rcbench-iomcu: CAN up, 1000000 bit/s, 0 echoes served, tx_err 0 rx_err 0 eflg 0x00
+    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00
+
+`requests served` counts link page requests the panel sent and this end
+answered; `self-test echoes` counts probe frames and is 0 unless the panel's
+CAN self-test is running. The two together say which end has stopped:
+
+| Requests | Panel says | Reading |
+| --- | --- | --- |
+| climbing | `LINK` | working |
+| standing still | `NO LINK` | nothing is arriving — the panel has stopped transmitting, or the wiring is open |
+| climbing | `NO LINK` | requests arrive and the answers do not get back |
 
 `CAN did not answer on SPI` means the controller did not report configuration
 mode after reset. The fault is on SPI (module not fitted, wiring on GP8 to
