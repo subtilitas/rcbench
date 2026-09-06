@@ -279,6 +279,41 @@ Simulation, nichts treibt einen Ausgang, und der Test läuft beim nächsten
 Start wieder. Es gibt kein Band und kein STOP, denn dahinter kann nichts
 armiert sein.
 
+### Ein Link, der abreißt
+
+Derselbe Bildschirm trägt die andere Hälfte: ein Link, der stand und seit 4 s
+weg ist. Die Überschrift ist das, was der CAN-Controller dieses Panels gerade
+tut — der Draht hat eben noch Frames getragen.
+
+![Das Panel ist vom Bus](img/busfault-lost.png)
+
+| Überschrift | Bedeutung |
+| --- | --- |
+| `this panel is off the bus` | zu viele Frames blieben unquittiert; es hat aufgehört zu senden |
+| `this panel is rejoining the bus` | es zählt die Ruhezeit ab, die ein Rejoin braucht, rund 3 s |
+| `this panel's controller has stopped` | untätig und nicht neu gestartet — ein Fehler in der Firmware |
+| `the link stopped answering` | der Controller ist am Bus und niemand antwortet |
+| `the controller cannot be read` | der Treiber läuft nicht; es kann nichts gesendet werden |
+
+Vier Sekunden, nicht eine: der Link fällt gelegentlich für einen Poll aus, und
+ein Bildschirm, der bei jedem Zucken übernimmt, ist einer, den man wegklickt.
+
+**Niemals bei armiertem Prüfstand.** Der Bildschirm hat kein STOP, und einem
+Prüfstand, an dem sich etwas dreht, darf keine Diagnose die Stopptaste
+verdecken. Armiert sagt das Alert-Band, dass der Link weg ist, und der
+Bildschirm wartet auf das Disarmieren.
+
+Dieselben Zahlen gehen in `RCBENCH.LOG` auf der SD-Karte, eine Zeile je
+Report, solange der Link unten ist:
+
+    t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44  polls=5323 replies=5279 timeouts=44
+
+Die Karte ist dafür da, weil die Konsole des Panels nicht auf jeder Platine
+erreichbar ist: die native USB-Buchse führt GPIO19 und GPIO20, die der
+Multiplexer etwa eine Sekunde nach dem Start an CAN übergibt, und ob die
+gebrückte Buchse an UART0 liegt, ist
+[auf dem Schaltplan nicht verfolgt](../firmware/panel/components/board/include/board_pins.h).
+
 [Den Link in Betrieb nehmen](Link-de.md) hat die Urteile und was jedes
 bedeutet.
 

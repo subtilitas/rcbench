@@ -260,6 +260,39 @@ Acknowledging repairs nothing: the bench runs in simulation, nothing drives an
 output, and the test runs again at the next start-up. There is no band and no
 STOP, because nothing can be armed behind it.
 
+### A link that stops
+
+The same screen carries the other half: a link that was up and has been gone
+for 4 s. The heading is what this panel's own CAN controller is doing, because
+the wire carried frames a moment ago.
+
+![The panel is off the bus](img/busfault-lost.png)
+
+| Heading | Meaning |
+| --- | --- |
+| `this panel is off the bus` | too many frames went unacknowledged; it stopped transmitting |
+| `this panel is rejoining the bus` | it is counting the quiet time a rejoin needs, about 3 s |
+| `this panel's controller has stopped` | idle and not restarted — a fault in the firmware |
+| `the link stopped answering` | the controller is on the bus and nothing answers |
+| `the controller cannot be read` | the driver is not running; nothing can be sent |
+
+Four seconds, not one: the link drops for a poll now and then, and a screen
+that took over on every blip is a screen operators learn to dismiss.
+
+**Never while armed.** The screen has no STOP, and a bench with something
+spinning must not have its stop button covered by a diagnosis. Armed, the
+alert band says the link is gone and the screen waits for the disarm.
+
+The same numbers go to `RCBENCH.LOG` on the SD card, one line per report while
+the link is down:
+
+    t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44  polls=5323 replies=5279 timeouts=44
+
+The card is there because the panel's console is not reachable on every board:
+the native USB socket carries GPIO19 and GPIO20, which the multiplexer hands to
+CAN about a second into boot, and whether the bridged socket reaches UART0 is
+[not traced on the schematic](../firmware/panel/components/board/include/board_pins.h).
+
 [Bringing up the link](Link.md) has the verdicts and what each one means.
 
 ## Outputs

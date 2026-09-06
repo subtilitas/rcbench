@@ -96,6 +96,79 @@ bool busfault_screen_take_ack(void)
  * the controller's.  can_selftest_text() says what the test saw; this says
  * what it is.
  */
+/*
+ * The heading, which is the phrase an operator repeats when they ask somebody
+ * about it.  For a link that dropped it is the controller's own state: the
+ * wire carried frames a moment ago, so what happened since is this end's
+ * business and not the bench's.
+ */
+static const char *bus_text(busfault_bus_t b)
+{
+    switch (b) {
+    case BUSFAULT_BUS_OFF:        return "this panel is off the bus";
+    case BUSFAULT_BUS_RECOVERING: return "this panel is rejoining the bus";
+    case BUSFAULT_BUS_STOPPED:    return "this panel's controller has stopped";
+    case BUSFAULT_BUS_RUNNING:    return "the link stopped answering";
+    case BUSFAULT_BUS_UNKNOWN:
+    default:                      return "the controller cannot be read";
+    }
+}
+
+/* The same state as one word, for the column: the heading already carries
+ * the sentence, and a column that repeats it says nothing twice. */
+static const char *bus_word(busfault_bus_t b)
+{
+    switch (b) {
+    case BUSFAULT_BUS_OFF:        return "BUS OFF";
+    case BUSFAULT_BUS_RECOVERING: return "rejoining";
+    case BUSFAULT_BUS_STOPPED:    return "stopped";
+    case BUSFAULT_BUS_RUNNING:    return "running";
+    case BUSFAULT_BUS_UNKNOWN:
+    default:                      return "not running";
+    }
+}
+
+static const char *bus_meaning(busfault_bus_t b)
+{
+    switch (b) {
+    case BUSFAULT_BUS_OFF:
+        return "Too many frames went unacknowledged. It stopped transmitting.";
+    case BUSFAULT_BUS_RECOVERING:
+        return "It is counting the quiet time a rejoin needs. Give it 3 s.";
+    case BUSFAULT_BUS_STOPPED:
+        return "It is idle and was not restarted. That is a fault in here.";
+    case BUSFAULT_BUS_RUNNING:
+        return "The controller is on the bus and nothing answers its frames.";
+    case BUSFAULT_BUS_UNKNOWN:
+    default:
+        return "The driver is not running, so nothing can be sent at all.";
+    }
+}
+
+static int bus_checks(busfault_bus_t b, const char *out[LIST_MAX])
+{
+    switch (b) {
+    case BUSFAULT_BUS_OFF:
+    case BUSFAULT_BUS_RECOVERING:
+        out[0] = "The panel is asking for the bus back, once a second.";
+        out[1] = "If this clears on its own, nothing here is broken.";
+        out[2] = "If it stays, photograph this screen and report it.";
+        return 3;
+    case BUSFAULT_BUS_RUNNING:
+        out[0] = "Is the coprocessor still powered? Its own LED.";
+        out[1] = "A connector only nearly seated behaves exactly like this.";
+        out[2] = "Photograph this screen if both look right.";
+        return 3;
+    case BUSFAULT_BUS_STOPPED:
+    case BUSFAULT_BUS_UNKNOWN:
+    default:
+        out[0] = "Nothing on the bench causes this. It is a fault in the";
+        out[1] = "  panel's own firmware.";
+        out[2] = "Photograph this screen and report it.";
+        return 3;
+    }
+}
+
 static const char *meaning_of(can_selftest_verdict_t v)
 {
     switch (v) {
@@ -243,6 +316,55 @@ static void flash_advance(void)
     }
 }
 
+/* The right-hand column for a link that dropped: this end's controller, and
+ * how long it has been quiet.  Different numbers from the start-up test's --
+ * there was no echo run, so there is nothing to count probes against. */
+static void draw_link_numbers(gfx_canvas_t *c)
+{
+    int y = VERDICT_Y;
+    char line[48];
+
+    gfx_text(c, NUM_X, y, "THIS PANEL", UI_FONT_LABEL,
+             ui_theme_color(UI_C_TEXT_FAINT), 1);
+    y += 24;
+
+    snprintf(line, sizeof(line), "down      %lu s", (unsigned long)s.r.down_s);
+    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_WARN), 1);
+    y += 20;
+    snprintf(line, sizeof(line), "requests  %lu", (unsigned long)s.r.polls);
+    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
+    y += 20;
+    snprintf(line, sizeof(line), "no answer %lu",
+             (unsigned long)s.r.timeouts);
+    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
+             s.r.timeouts > 0 ? ui_theme_color(UI_C_WARN)
+                              : ui_theme_color(UI_C_TEXT), 1);
+    y += 30;
+
+    gfx_text(c, NUM_X, y, "CONTROLLER", UI_FONT_LABEL,
+             ui_theme_color(UI_C_TEXT_FAINT), 1);
+    y += 22;
+    gfx_text(c, NUM_X, y, bus_word(s.r.bus), UI_FONT_LABEL,
+             s.r.bus == BUSFAULT_BUS_RUNNING ? ui_theme_color(UI_C_OK)
+                                             : ui_theme_color(UI_C_DANGER), 1);
+    y += 20;
+    snprintf(line, sizeof(line), "tx err %lu  rx err %lu",
+             (unsigned long)s.r.tx_errors, (unsigned long)s.r.rx_errors);
+    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
+             s.r.tx_errors >= 128u ? ui_theme_color(UI_C_DANGER)
+                                   : ui_theme_color(UI_C_TEXT), 1);
+    y += 20;
+    snprintf(line, sizeof(line), "bus err %lu",
+             (unsigned long)s.r.bus_errors);
+    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
+    y += 20;
+    snprintf(line, sizeof(line), "rejoins %lu",
+             (unsigned long)s.r.recoveries);
+    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
+             s.r.recoveries > 0 ? ui_theme_color(UI_C_WARN)
+                                : ui_theme_color(UI_C_TEXT), 1);
+}
+
 static void draw_numbers(gfx_canvas_t *c)
 {
     int y = VERDICT_Y;
@@ -327,21 +449,28 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
         /* The heading, on the danger colour: this is the one screen that
          * says the bench is not usable as it stands. */
+        const bool lost = (s.r.kind == BUSFAULT_LINK_LOST);
+
         gfx_fill_rect(c, 0, 0, W, BAR_H, ui_theme_color(UI_C_DANGER));
-        gfx_text(c, COL_X, 14, "CAN BUS FAULT", UI_FONT_HEAD, GFX_WHITE, 1);
+        gfx_text(c, COL_X, 14, lost ? "LINK LOST" : "CAN BUS FAULT",
+                 UI_FONT_HEAD, GFX_WHITE, 1);
 
         /* The verdict is the heading of the page, not a caption: it is what
          * the operator repeats when they ask somebody about it. */
-        gfx_text(c, COL_X, VERDICT_Y, can_selftest_text(s.r.verdict),
+        gfx_text(c, COL_X, VERDICT_Y,
+                 lost ? bus_text(s.r.bus) : can_selftest_text(s.r.verdict),
                  UI_FONT_HEAD, ui_theme_color(UI_C_TEXT), 1);
-        gfx_text(c, COL_X, MEANING_Y, meaning_of(s.r.verdict),
+        gfx_text(c, COL_X, MEANING_Y,
+                 lost ? bus_meaning(s.r.bus) : meaning_of(s.r.verdict),
                  UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
 
-        gfx_text(c, COL_X, HEAD_Y, "CHECK, IN THIS ORDER",
+        gfx_text(c, COL_X, HEAD_Y,
+                 lost ? "WHAT THIS MEANS" : "CHECK, IN THIS ORDER",
                  UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
 
         const char *checks[LIST_MAX] = { 0 };
-        const int n = checks_for(s.r.verdict, checks);
+        const int n = lost ? bus_checks(s.r.bus, checks)
+                           : checks_for(s.r.verdict, checks);
         for (int i = 0; i < n; ++i) {
             /* A continuation line is indented and carries no bullet: it is
              * the same instruction, not the next one. */
@@ -367,11 +496,16 @@ static void render(gfx_canvas_t *c, int buffer_index)
                  "numbers, and nothing will drive an output.",
                  UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
         gfx_text(c, COL_X, NOTE_Y + 44,
-                 "The test runs again at every start-up.",
+                 lost ? "The same numbers are written to RCBENCH.LOG on the card."
+                      : "The test runs again at every start-up.",
                  UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
 
         ui_rule(c, COL_X, ACK_Y - 20, ACK_W, ui_theme_color(UI_C_EDGE));
-        draw_numbers(c);
+        if (lost) {
+            draw_link_numbers(c);
+        } else {
+            draw_numbers(c);
+        }
         s.drawn_mask |= bit;
     }
 

@@ -100,6 +100,7 @@ SCREENS = {
     "picker-drawn": ("picker-drawn.png", "picker", "dark"),
     "busfault": ("busfault.png", "busfault", "dark"),
     "busfault-silent": ("busfault-silent.png", "busfault", "dark"),
+    "busfault-lost": ("busfault-lost.png", "busfault", "dark"),
     "setup-light":("setup-light.png","setup",      "light"),
     "battery":    ("battery.png",    "battery",    "dark"),
     "balance":    ("balance.png",    "balance",    "dark"),
