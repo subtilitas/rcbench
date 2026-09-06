@@ -245,6 +245,84 @@ TEST_CASE(every_timeout_releases_its_request_not_only_the_first)
     CHECK(host.escalated);
 }
 
+TEST_CASE(escalation_alone_does_not_end_a_request)
+{
+    /*
+     * link_host_tick() answers true for two facts, and only one of them
+     * releases the outstanding slot: this request timed out, or the link as
+     * a whole has gone quiet. A caller that treats them alike leaves the
+     * request pending for ever.
+     *
+     * The order matters and is what happens on a bench: the far end goes
+     * quiet, a second passes, and the next request is sent. Escalation is
+     * measured from the last reply and fires at once; the request's own
+     * timeout is a second away.
+     */
+    link_host_init(&host, 0);
+    link_msg_t req;
+
+    /*
+     * The state a bench is in when this happens, reached directly rather
+     * than played out: one request already given up on, and a last_reply_ms
+     * of 0 standing for a reply that arrived a second ago.  Nothing here
+     * exercises the accept path -- what is under test is which of tick()'s
+     * two facts ends a wait.
+     */
+    CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, 0, &req));
+    link_host_abandon(&host);
+    host.last_reply_ms = 0;
+
+    CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1,
+                         LINK_HOST_TIMEOUT_MS, &req));
+
+    /* One millisecond later: the link is a second quiet, this request is
+     * one millisecond old. */
+    CHECK(link_host_tick(&host, LINK_HOST_TIMEOUT_MS + 1u));
+    CHECK(host.escalated);
+    CHECK_EQ(host.timeouts, 1u);          /* the abandon above, and no more */
+
+    /* And the request is still this one's to wait for. */
+    CHECK(link_host_pending(&host));
+
+    /* Its own timeout is what ends it, a second after it was sent. */
+    CHECK(link_host_tick(&host, LINK_HOST_TIMEOUT_MS * 2u + 1u));
+    CHECK(!link_host_pending(&host));
+    CHECK_EQ(host.timeouts, 2u);
+}
+
+TEST_CASE(a_host_left_pending_is_deaf_until_something_ticks_it)
+{
+    /*
+     * Why the above matters, stated as the failure it caused: an outstanding
+     * request refuses every later one, and a caller whose only tick lives
+     * inside the wait it just left can never clear it. Polls stop, nothing
+     * reaches the wire, and no timeout is ever counted -- which is what a
+     * panel in the field reported, frozen at 1545 polls and 0 timeouts.
+     */
+    link_host_init(&host, 0);
+    link_msg_t req;
+
+    CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, 0, &req));
+    CHECK(link_host_pending(&host));
+
+    /* Every later request, at any time, for as long as it stands. */
+    for (uint32_t t = 1; t < LINK_HOST_TIMEOUT_MS * 10u; t += 997u) {
+        if (link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, t, &req)) {
+            T_FAIL("a second request was accepted while one was outstanding");
+            return;
+        }
+    }
+    CHECK_EQ(host.polls, 1u);
+    CHECK_EQ(host.timeouts, 0u);
+
+    /* The clock is the only way out, and one call is enough. */
+    CHECK(link_host_tick(&host, LINK_HOST_TIMEOUT_MS + 1u));
+    CHECK(!link_host_pending(&host));
+    CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1,
+                         LINK_HOST_TIMEOUT_MS + 2u, &req));
+    CHECK_EQ(host.polls, 2u);
+}
+
 /* And a request that never reached the wire is given up on directly, because
  * there is nothing coming and waiting out its timeout would refuse every
  * later request in the meantime. */
@@ -433,6 +511,8 @@ int main(void)
     RUN(the_host_is_the_more_patient_of_the_two);
     RUN(a_reply_resets_the_host_and_its_escalation);
     RUN(every_timeout_releases_its_request_not_only_the_first);
+    RUN(escalation_alone_does_not_end_a_request);
+    RUN(a_host_left_pending_is_deaf_until_something_ticks_it);
     RUN(a_request_that_was_never_sent_can_be_abandoned);
     RUN(only_one_request_is_outstanding_at_a_time);
     RUN(a_stale_reply_cannot_answer_the_current_question);
