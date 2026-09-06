@@ -149,3 +149,54 @@ void can_twai_errors(uint32_t *tx_err, uint32_t *rx_err, uint32_t *bus_err,
     if (bus_err != NULL) { *bus_err = st.bus_error_count; }
     if (bus_off != NULL) { *bus_off = (st.state == TWAI_STATE_BUS_OFF); }
 }
+
+/*
+ * Bus-off is permanent until somebody asks for the bus back.
+ *
+ * A CAN transmitter that gets no acknowledgement retransmits on its own and
+ * adds 8 to its error counter each time; at 1 Mbit/s a frame nobody answers
+ * reaches the bus-off threshold of 256 in about four milliseconds.  So a
+ * coprocessor that is not on the bus yet, has reset, or has stopped
+ * answering for a moment leaves the panel's controller in TWAI_STATE_BUS_OFF
+ * -- and there it stays.  Recovery is not automatic on this peripheral: every
+ * twai_transmit() returns ESP_ERR_INVALID_STATE, the link never comes back,
+ * and the panel shows NO LINK until it is switched off and on again.
+ *
+ * Recovery takes two steps and a wait between them.  twai_initiate_recovery()
+ * moves the controller to TWAI_STATE_RECOVERING, where it counts 128
+ * occurrences of eleven recessive bits before reaching TWAI_STATE_STOPPED;
+ * twai_start() is what runs it again.  Both are asked for from the same
+ * place, once per call, so the wait costs nothing and nothing spins.
+ */
+can_twai_health_t can_twai_recover(void)
+{
+    twai_status_info_t st;
+    if (!s_running || twai_get_status_info(&st) != ESP_OK) {
+        return CAN_TWAI_UNKNOWN;
+    }
+    switch (st.state) {
+    case TWAI_STATE_RUNNING:
+        return CAN_TWAI_RUNNING;
+    case TWAI_STATE_BUS_OFF:
+        ESP_LOGW(TAG, "bus off after %u transmit errors; asking for the bus "
+                      "back", (unsigned)st.tx_error_counter);
+        if (twai_initiate_recovery() != ESP_OK) {
+            return CAN_TWAI_BUS_OFF;
+        }
+        return CAN_TWAI_RECOVERING;
+    case TWAI_STATE_RECOVERING:
+        return CAN_TWAI_RECOVERING;
+    case TWAI_STATE_STOPPED:
+        /* Recovery finished, or the driver was installed and never started.
+         * Either way the controller is idle and starting it is what runs
+         * it. */
+        if (twai_start() != ESP_OK) {
+            ESP_LOGE(TAG, "the bus recovered and would not restart");
+            return CAN_TWAI_STOPPED;
+        }
+        ESP_LOGI(TAG, "bus recovered");
+        return CAN_TWAI_RUNNING;
+    default:
+        return CAN_TWAI_UNKNOWN;
+    }
+}

@@ -31,6 +31,32 @@ escalates after 1 s without an answer. The failsafe latches. Traffic returning
 stops the silence counter but does not lift the failsafe; leaving it takes a
 write of 0x5AFE to the CLEAR register of the control page.
 
+### Bus off
+
+A CAN transmitter that gets no acknowledgement retransmits on its own and adds
+8 to its transmit error counter each attempt. At 1 Mbit/s a frame nobody
+answers reaches the bus-off threshold of 256 in about 4 ms, so any moment with
+no second node on the bus — the coprocessor unpowered, reset, or held with
+interrupts off long enough — takes the panel's controller off the bus.
+
+The ESP32-S3's TWAI (Two-Wire Automotive Interface) controller does not return
+on its own. `can_twai_recover()` runs on the identity poll while the link is
+down, once per second: it calls `twai_initiate_recovery()` from the bus-off
+state, waits out the 128 bus-free signals the controller counts in the
+recovering state, and starts the controller again from the stopped state.
+Recovery therefore takes up to three polls, about 3 s. Without it the first
+quiet moment on the bus is permanent and only a power cycle clears it.
+
+The report printed every 5 s while the link is down carries the counters:
+
+```
+LINK ...
+  bus    tx errors 0 rx errors 0 bus errors 0
+```
+
+A transmit error counter climbing towards 256 says nobody is acknowledging. The
+line ends in `-- BUS OFF` when the panel has already stopped transmitting.
+
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The

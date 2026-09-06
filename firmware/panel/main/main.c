@@ -1129,6 +1129,20 @@ static void link_report(void)
                  (unsigned long)s_bring.rt_mean_us,
                  (unsigned long)s_bring.rt_max_us);
     }
+
+    /*
+     * And the controller itself, which is a different question from whether
+     * anything answered: a transmit error counter climbing towards 256 says
+     * nobody is acknowledging, and bus off says the panel has already stopped
+     * transmitting.  The recovery runs on the poll gate; this line is how it
+     * is seen from a console.
+     */
+    uint32_t tec = 0, rec = 0, bus = 0;
+    bool off = false;
+    can_twai_errors(&tec, &rec, &bus, &off);
+    ESP_LOGI(TAG, "  bus    tx errors %lu rx errors %lu bus errors %lu%s",
+             (unsigned long)tec, (unsigned long)rec, (unsigned long)bus,
+             off ? " -- BUS OFF" : "");
 }
 
 /*
@@ -1400,6 +1414,18 @@ static void control_task(void *arg)
                     }
                 }
             } else {
+                /*
+                 * The bus first, because a controller that has fallen off it
+                 * cannot ask anything.  A transmitter nobody answers -- a
+                 * coprocessor not powered yet, or one that has reset -- adds
+                 * 8 to its error counter per attempt and is off the bus in
+                 * about four milliseconds, and the ESP32-S3's TWAI does not
+                 * come back on its own.  Without this the first quiet moment
+                 * on the bus is permanent: every later transmit fails, the
+                 * panel shows NO LINK and only a power cycle clears it.
+                 */
+                (void)can_twai_recover();
+
                 /*
                  * A NACK answers the request it refuses, so poll_page() is
                  * true for one and regs[0] carries a refusal reason rather
