@@ -62,6 +62,21 @@ _Static_assert(sizeof(record_t) <= FLASH_PAGE_SIZE,
                "the record has outgrown one flash page");
 
 static bool        s_pending;
+/*
+ * How long the last erase and program took, with interrupts off.
+ *
+ * The number nothing has ever had.  This window is the one thing on the
+ * coprocessor that can stop it answering without anything being wrong: the
+ * heartbeat monitor misses every edge in it, the link's own silence timer
+ * runs at 200 ms and the monitor calls the beat dead at 150 ms, so a window
+ * past either makes the board report a fault it caused itself and the panel
+ * say NO LINK over a cable that is fine.
+ *
+ * Reported rather than compensated for. Whether it needs compensating is a
+ * question about this flash part, and guessing at it would replace a
+ * measurable fact with a constant.
+ */
+static uint32_t    s_last_window_us;
 static uint32_t    s_asked_ms;
 static out_store_t s_want;
 static bool        s_have_saved;
@@ -121,6 +136,8 @@ void out_store_save(const out_store_t *cfg, uint32_t now_ms)
 
 bool out_store_pending(void) { return s_pending; }
 
+uint32_t out_store_last_window_us(void) { return s_last_window_us; }
+
 bool out_store_tick(bool driving, uint32_t now_ms)
 {
     if (!s_pending || driving) {
@@ -149,10 +166,20 @@ bool out_store_tick(bool driving, uint32_t now_ms)
      * is also why this only runs while the bank is idle -- the heartbeat
      * monitor will miss every edge in the window and have to re-acquire.
      */
+    /*
+     * Both timestamps inside the window, because the window is what is being
+     * measured: taken either side of it they would also count the disable
+     * and restore, and the number is meant to be the time this core answered
+     * nothing. The timer is a peripheral and reads with interrupts off.
+     */
     const uint32_t irq = save_and_disable_interrupts();
+    const absolute_time_t began = get_absolute_time();
     flash_range_erase(STORE_OFFSET, FLASH_SECTOR_SIZE);
     flash_range_program(STORE_OFFSET, s_page.bytes, FLASH_PAGE_SIZE);
+    const uint32_t window = (uint32_t)absolute_time_diff_us(
+        began, get_absolute_time());
     restore_interrupts(irq);
+    s_last_window_us = window;
 
     s_saved = s_want;
     s_have_saved = true;

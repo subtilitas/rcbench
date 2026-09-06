@@ -6,5 +6,5 @@ idf_component_register(
     INCLUDE_DIRS include
     # esp_partition is its own component in IDF v5; spi_flash carries the
     # sector size the store erases in.
-    REQUIRES artwork esp_partition spi_flash
+    REQUIRES artwork esp_partition spi_flash freertos
 )

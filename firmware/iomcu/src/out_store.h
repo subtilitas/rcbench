@@ -73,4 +73,14 @@ bool out_store_tick(bool driving, uint32_t now_ms);
 /** Whether a save is waiting for the bench to stop driving. */
 bool out_store_pending(void);
 
+/**
+ * How long the last erase and program held interrupts off, in microseconds.
+ *
+ * Zero until one has run. The window is bounded by the flash part and has
+ * never been measured on this bench; it matters because the heartbeat
+ * monitor calls the beat dead after 150 ms and the link calls the host
+ * silent after 200 ms, and this core answers neither while it is writing.
+ */
+uint32_t out_store_last_window_us(void);
+
 #endif /* RCBENCH_OUT_STORE_H */
