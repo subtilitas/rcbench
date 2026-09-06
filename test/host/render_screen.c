@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include "log_viewer_screen.h"
+#include "busfault_screen.h"
 #include "settings.h"
 #include "balance_screen.h"
 #include "battery_screen.h"
@@ -190,6 +191,7 @@ static ui_screen_id_t id_of(const char *name)
         { "programmer", SCREEN_PROGRAMMER },
         { "outputs",    SCREEN_OUTPUTS },
         { "picker",     SCREEN_PICKER },
+        { "busfault",   SCREEN_BUSFAULT },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         if (strcmp(name, k[i].name) == 0) {
@@ -309,6 +311,30 @@ int main(int argc, char **argv)
      */
     if (id == SCREEN_SETUP && strcmp(view, "setup-dirty") == 0) {
         settings_set(SET_PACK_CELLS, 4.0f);
+    }
+
+    if (id == SCREEN_BUSFAULT) {
+        /* The bench that is wired but not terminated: frames cross and come
+         * back altered, which is the verdict a reflection produces. */
+        busfault_report_t r = {
+            .verdict = CAN_SELFTEST_CORRUPT,
+            .sent = 1284, .echoed = 1197, .corrupt = 71, .lost = 16,
+            .tx_errors = 0, .rx_errors = 24, .bus_errors = 87,
+            .bus_off = false,
+            .have_remote = true, .remote_up = true,
+            .remote_tx_errors = 0, .remote_rx_errors = 31,
+            .remote_flags = 0x40, .remote_overflows = 0,
+        };
+        if (strcmp(view, "busfault-silent") == 0) {
+            const busfault_report_t q = {
+                .verdict = CAN_SELFTEST_SILENT,
+                .sent = 1310, .echoed = 0, .corrupt = 0, .lost = 1310,
+                .tx_errors = 128, .rx_errors = 0, .bus_errors = 0,
+                .bus_off = true, .have_remote = false,
+            };
+            r = q;
+        }
+        busfault_screen_set(&r);
     }
 
     if (id == SCREEN_BALANCE && strcmp(view, "balance") != 0) {

@@ -50,6 +50,7 @@ SOURCES = [
     "shared/ui/programmer_screen.c",
     "shared/ui/outputs_screen.c",
     "shared/ui/picker_screen.c",
+    "shared/ui/busfault_screen.c",
     # Generated artwork: pure data, so the screenshot is the real photograph.
     "firmware/iomcu/src/art_rp2350_can.c",
     "shared/ui/log_viewer_screen.c",
@@ -65,6 +66,8 @@ SOURCES = [
     "shared/outputs/outputs.c",
     "shared/outputs/outputs_pages.c",
     "shared/outputs/out_bind.c",
+    "shared/can/can_selftest.c",
+    "shared/link/link_can.c",
 ]
 
 # Every screen gets a committed screenshot; CI (continuous integration)
@@ -95,6 +98,8 @@ SCREENS = {
     "outputs-held": ("outputs-held.png", "outputs", "dark"),
     "picker": ("picker.png", "picker", "dark"),
     "picker-drawn": ("picker-drawn.png", "picker", "dark"),
+    "busfault": ("busfault.png", "busfault", "dark"),
+    "busfault-silent": ("busfault-silent.png", "busfault", "dark"),
     "setup-light":("setup-light.png","setup",      "light"),
     "battery":    ("battery.png",    "battery",    "dark"),
     "balance":    ("balance.png",    "balance",    "dark"),
@@ -110,6 +115,7 @@ INCLUDES = [
     "shared/bench/include",
     "shared/outputs/include",
     "shared/link/include",
+    "shared/can/include",
     "shared/logfile/include",
     "shared/settings/include",
     "shared/servo/include",

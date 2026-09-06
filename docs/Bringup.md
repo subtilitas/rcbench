@@ -40,20 +40,20 @@ GP12), not on the CAN bus.
 
 ### Panel
 
-The test is opt-in, because starting CAN removes the panel's native USB:
+The test runs at every start-up. It takes 1200 ms, inside the splash and
+before the identity poll: a broken bus is then diagnosed as a broken bus
+rather than as an identity that never answered.
 
-```bash
-cd firmware/panel
-idf.py -DRCBENCH_CAN_SELFTEST=1 build flash
-```
+A verdict that is not `every probe came back intact` puts the panel on the
+[bus-fault screen](#the-bus-fault-screen) instead of the menu. Nothing has to
+be enabled and no console is needed.
 
-Watch the UART (universal asynchronous receiver-transmitter) socket, not the
-native USB socket. GPIO19 and GPIO20 (general-purpose input/output pins 19 and 20) carry both native USB and the CAN
-transceiver, and the multiplexer selects one; the console is on UART0 with
+The console carries the detail. Watch the UART (universal asynchronous
+receiver-transmitter) socket, not the native USB socket. GPIO19 and GPIO20
+(general-purpose input/output pins 19 and 20) carry both native USB and the
+CAN transceiver, and the multiplexer selects one; the console is on UART0 with
 USB-Serial-JTAG (the ESP32-S3's built-in USB serial and debug bridge) as
-secondary.
-
-The test runs for 5 s at boot, before the identity poll, and prints:
+secondary. It prints:
 
     I (…) can: 1000000 bit/s: brp 4, tseg1 14, tseg2 5, sjw 4, sample point 75.0%
     I (…) rcbench: CAN self-test: every probe came back intact
@@ -87,7 +87,31 @@ time.
 
 If the transmit error counter reaches 128 during the test, no other node is
 acknowledging: the coprocessor is not on the bus at all. The test reports this
-once, before the five seconds are over.
+once, before the run is over.
+
+### The bus-fault screen
+
+A verdict other than `every probe came back intact` is shown on the panel
+before the menu, because the fault is invisible from every other screen: a bus
+that does not carry frames looks exactly like a coprocessor that is not
+fitted, and both look like a bench that shows no numbers.
+
+![Frames cross and arrive changed](img/busfault.png)
+
+The verdict is the heading, the list under it is what to check in the order
+that costs least to check, and the right-hand column is what both ends
+counted. `returned` is green when anything came back at all; `BUS OFF` means
+this panel has stopped transmitting.
+
+![Nothing came back](img/busfault-silent.png)
+
+Leaving it takes a two-second hold on the button across the bottom, the same
+gesture and the same fade as ARM. A screen that says the bench cannot be
+trusted should not be dismissible by a touch that could have been a sleeve.
+
+Acknowledging does not repair anything and does not disable the test: the
+bench runs in simulation, nothing drives an output, and the test runs again at
+the next start-up.
 
 The probe payloads cycle through all-dominant, all-recessive and both
 alternating patterns, because CAN stuffs a complementary bit after five equal

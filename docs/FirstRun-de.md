@@ -63,27 +63,29 @@ esptool.py -p /dev/ttyACM0 write_flash 0x0 firmware/panel/build/rcbench-panel-me
 
 ## 2. Der Link, vor allem anderen
 
-[Den Link in Betrieb nehmen](Bringup-de.md) durcharbeiten — der
-CAN-Echo-Selbsttest. Er beantwortet eine Frage: kommen Frames unversehrt über
-den Bus? Er benutzt kein Page-Protokoll; besteht er und der Link arbeitet
+Das Panel führt den CAN-Echo-Selbsttest selbst aus, bei jedem Start, 1200 ms
+lang innerhalb des Splash. Er beantwortet eine Frage: kommen Frames unversehrt
+über den Bus? Er benutzt kein Page-Protokoll; besteht er und der Link arbeitet
 trotzdem nicht, liegt der Fehler oberhalb des Drahts.
 
-```bash
-idf.py -C firmware/panel -DRCBENCH_CAN_SELFTEST=1 build flash
-```
+**Gut sieht nach nichts aus:** der Splash zeigt `LINK  OK  CAN 1 Mbit/s` und
+übergibt ans Menü.
 
-Auf die **UART-Buchse** schauen, nicht auf natives USB: GPIO19 und GPIO20
-tragen beides, und der Multiplexer wählt eines aus.
+**Ein Fehlschlag ist ein Bildschirm**, vor dem Menü, mit dem Urteil, der Liste
+dessen, was der Reihe nach zu prüfen ist, und den Zählern beider Enden. Ihn zu
+verlassen kostet zwei Sekunden Halten. [Den Link in Betrieb
+nehmen](Bringup-de.md#der-bus-fehler-bildschirm) hat die Urteile und was jedes
+bedeutet.
 
-Gut sieht so aus:
+**Vorher nicht weitergehen.** Jeder Schritt darunter setzt voraus, dass Frames
+ankommen.
+
+Die Einzelheiten stehen auf der Konsole, wenn man sie will — auf der
+**UART-Buchse**, nicht auf nativem USB, denn GPIO19 und GPIO20 tragen beides
+und der Multiplexer wählt eines aus:
 
     I (…) rcbench: CAN self-test: every probe came back intact
     I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0
-
-**Vorher nicht weitergehen.** Jeder Schritt darunter setzt voraus, dass
-Frames ankommen.
-
-Danach das Panel **ohne** `-DRCBENCH_CAN_SELFTEST=1` neu flashen.
 
 ---
 

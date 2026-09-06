@@ -7,9 +7,8 @@
 
 #include "selftest.h"
 
-#ifdef RCBENCH_CAN_SELFTEST
-
 #include <stdint.h>
+#include <string.h>
 
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -44,7 +43,7 @@ static bool can_ask_remote(can_remote_status_t *out)
     return false;
 }
 
-void can_selftest_run(uint32_t seconds)
+bool can_selftest_run(uint32_t ms, busfault_report_t *out)
 {
     /*
      * The far end's counter runs from its own boot, so a reading taken only
@@ -56,7 +55,7 @@ void can_selftest_run(uint32_t seconds)
 
     can_selftest_t st;
     can_selftest_init(&st, 50);
-    const uint32_t until = now_ms() + seconds * 1000u;
+    const uint32_t until = now_ms() + ms;
     uint32_t queue_full = 0;
     bool said_unacked = false;
 
@@ -173,6 +172,26 @@ void can_selftest_run(uint32_t seconds)
     } else {
         ESP_LOGW(TAG, "  iomcu  did not answer a status request");
     }
-}
 
-#endif /* RCBENCH_CAN_SELFTEST */
+    if (out != NULL) {
+        memset(out, 0, sizeof(*out));
+        out->verdict    = v;
+        out->sent       = st.sent;
+        out->echoed     = st.echoed;
+        out->corrupt    = st.corrupt;
+        out->lost       = st.timed_out;
+        out->tx_errors  = tx_err;
+        out->rx_errors  = rx_err;
+        out->bus_errors = bus_err;
+        out->bus_off    = bus_off;
+        out->have_remote = have_remote;
+        if (have_remote) {
+            out->remote_up        = remote.up;
+            out->remote_tx_errors = remote.tx_errors;
+            out->remote_rx_errors = remote.rx_errors;
+            out->remote_flags     = remote.flags;
+            out->remote_overflows = remote.overflows;
+        }
+    }
+    return v == CAN_SELFTEST_OK;
+}

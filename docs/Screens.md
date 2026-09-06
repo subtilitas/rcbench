@@ -239,6 +239,29 @@ request stands as `WHEN IDLE` until the bench is disarmed.
 Values not saved are kept until the panel is switched off. Leaving the screen
 writes nothing.
 
+## The bus-fault screen
+
+The panel runs the CAN (Controller Area Network) echo self-test at every
+start-up, for 1200 ms inside the splash. A verdict other than every probe
+coming back intact puts this on the panel instead of the menu.
+
+![Frames cross and arrive changed](img/busfault.png)
+
+It exists because the fault is invisible from every other screen: a bus that
+does not carry frames looks exactly like a coprocessor that is not fitted, and
+both look like a bench that shows no numbers. The verdict is the heading, the
+list is what to check in the order that costs least to check, and the right
+column is what both ends counted.
+
+![Nothing came back](img/busfault-silent.png)
+
+Leaving it takes a two-second hold, the ARM gesture and the same fade.
+Acknowledging repairs nothing: the bench runs in simulation, nothing drives an
+output, and the test runs again at the next start-up. There is no band and no
+STOP, because nothing can be armed behind it.
+
+[Bringing up the link](Link.md) has the verdicts and what each one means.
+
 ## Outputs
 
 Behind the OUTPUTS key on the Setup screen. The protocols bound to the

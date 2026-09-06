@@ -61,26 +61,27 @@ esptool.py -p /dev/ttyACM0 write_flash 0x0 firmware/panel/build/rcbench-panel-me
 
 ## 2. The link, before anything else
 
-Follow **[Bringing up the link](Bringup.md)** — the CAN echo self-test. It
-answers one question: do frames cross the bus intact? It uses no page
-protocol, so if it passes and the link still does not work, the fault is
-above the wire.
+The panel runs the CAN echo self-test itself, at every start-up, for 1200 ms
+inside the splash. It answers one question: do frames cross the bus intact? It
+uses no page protocol, so if it passes and the link still does not work, the
+fault is above the wire.
 
-```bash
-idf.py -C firmware/panel -DRCBENCH_CAN_SELFTEST=1 build flash
-```
+**Good looks like nothing:** the splash shows `LINK  OK  CAN 1 Mbit/s` and
+hands over to the menu.
 
-Watch the **UART socket**, not native USB: GPIO19 and GPIO20 carry both, and
-the multiplexer selects one.
+**A failure is a screen**, before the menu, with the verdict, what to check in
+order, and both ends' counters. It takes a two-second hold to leave.
+[Bringing up the link](Bringup.md#the-bus-fault-screen) has the verdicts and
+what each one means.
 
-Good looks like:
+**Do not go on until it passes.** Every step below assumes frames cross.
+
+The console carries the detail if you want it — the **UART socket**, not
+native USB, because GPIO19 and GPIO20 carry both and the multiplexer selects
+one:
 
     I (…) rcbench: CAN self-test: every probe came back intact
     I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0
-
-**Do not go on until this passes.** Every step below assumes frames cross.
-
-Then reflash the panel **without** `-DRCBENCH_CAN_SELFTEST=1`.
 
 ---
 
