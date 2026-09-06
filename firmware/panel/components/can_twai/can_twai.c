@@ -172,6 +172,21 @@ bool can_twai_errors(uint32_t *tx_err, uint32_t *rx_err, uint32_t *bus_err,
  * twai_start() is what runs it again.  Both are asked for from the same
  * place, once per call, so the wait costs nothing and nothing spins.
  */
+can_twai_health_t can_twai_health(void)
+{
+    twai_status_info_t st;
+    if (!s_running || twai_get_status_info(&st) != ESP_OK) {
+        return CAN_TWAI_UNKNOWN;
+    }
+    switch (st.state) {
+    case TWAI_STATE_RUNNING:    return CAN_TWAI_RUNNING;
+    case TWAI_STATE_RECOVERING: return CAN_TWAI_RECOVERING;
+    case TWAI_STATE_STOPPED:    return CAN_TWAI_STOPPED;
+    case TWAI_STATE_BUS_OFF:    return CAN_TWAI_BUS_OFF;
+    default:                    return CAN_TWAI_UNKNOWN;
+    }
+}
+
 can_twai_health_t can_twai_recover(void)
 {
     twai_status_info_t st;

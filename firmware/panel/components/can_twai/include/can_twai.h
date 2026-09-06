@@ -58,6 +58,15 @@ typedef enum {
 can_twai_health_t can_twai_recover(void);
 
 /**
+ * The same reading without acting on it.
+ *
+ * For anything that reports the controller's state rather than repairing it,
+ * so a diagnosis does not start a recovery as a side effect of being looked
+ * at.
+ */
+can_twai_health_t can_twai_health(void);
+
+/**
  * Bus error counters, for the report. Any pointer may be NULL.
  *
  * False when the controller is not running or its status would not read; the

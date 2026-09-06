@@ -144,6 +144,33 @@ static uint32_t now_ms(void)
 static busfault_report_t s_busfault;
 static bool              s_bus_ok = true;   /* until the test says otherwise */
 
+/*
+ * A link that was up and stopped, said on the panel rather than on a console.
+ *
+ * The panel has no console an operator can reach while the bench runs: the
+ * native USB socket carries GPIO19 and GPIO20, which the multiplexer hands to
+ * CAN about a second into boot, and the bridged socket is not wired to UART0
+ * on every board (board_pins.h).  A fault that only a console can explain is
+ * one nobody in the field can report, and this one took five rounds with a
+ * tester to narrow down.
+ *
+ * Four seconds, not one: the link drops for a poll now and then, and a screen
+ * that took over on every blip would be a screen operators learn to dismiss.
+ */
+#define LINK_LOST_SCREEN_MS 4000u
+
+static uint32_t s_link_lost_ms;      /* when it went, 0 while it is up   */
+static bool     s_link_lost_shown;   /* the screen has had its turn      */
+/*
+ * Two counts, because they answer two questions.  The per-outage one sits on
+ * the screen beside "down N s" and says whether the recovery is working now;
+ * the lifetime one goes in the file and says whether this has been happening
+ * all session.  One number doing both would be read as the wrong one in at
+ * least one of the two places.
+ */
+static uint32_t s_recoveries;        /* this outage                      */
+static uint32_t s_recoveries_total;  /* since boot                       */
+
 /* ------------------------------------------------------------ the heartbeat */
 
 /*
@@ -1108,6 +1135,69 @@ static bool control_clear_failsafe(link_msg_t *reply)
  * One block naming the most fundamental fault rather than the loudest.
  * Printed every 5 s while the link is down and every 60 s while it is up.
  */
+/*
+ * The same report, appended to the card.
+ *
+ * A tester can send a file; a tester cannot send a console this board does
+ * not have.  Only while the link is down and only at link_report()'s 5 s
+ * cadence, so the volume is a few hundred bytes a minute, and the write is
+ * SPI to the card rather than internal flash -- it does not close the cache
+ * the way a settings save does.
+ */
+static void debug_log(const char *line)
+{
+    if (!storage_mounted()) {
+        return;
+    }
+    FILE *f = fopen("/sdcard/RCBENCH.LOG", "a");
+    if (f == NULL) {
+        return;
+    }
+    fputs(line, f);
+    fputc('\n', f);
+    fclose(f);
+}
+
+/* A number, or "?" when it could not be read: the column keeps its place. */
+static const char *u32(char *out, size_t n, uint32_t v)
+{
+    snprintf(out, n, "%lu", (unsigned long)v);
+    return out;
+}
+
+/* What can_twai_recover() found, in the screen's vocabulary. */
+static busfault_bus_t bus_state(void)
+{
+    switch (can_twai_health()) {
+    case CAN_TWAI_RUNNING:    return BUSFAULT_BUS_RUNNING;
+    case CAN_TWAI_RECOVERING: return BUSFAULT_BUS_RECOVERING;
+    case CAN_TWAI_STOPPED:    return BUSFAULT_BUS_STOPPED;
+    case CAN_TWAI_BUS_OFF:    return BUSFAULT_BUS_OFF;
+    case CAN_TWAI_UNKNOWN:
+    default:                  return BUSFAULT_BUS_UNKNOWN;
+    }
+}
+
+/*
+ * What the panel knows about a link that stopped, for the screen and for the
+ * card.  Everything in it is read here rather than remembered, so a
+ * photograph of the screen and a line in the file describe the same moment.
+ */
+static void link_lost_report(busfault_report_t *r)
+{
+    memset(r, 0, sizeof(*r));
+    r->kind       = BUSFAULT_LINK_LOST;
+    r->bus        = bus_state();
+    r->down_s     = s_link_lost_ms == 0u
+                        ? 0u
+                        : (uint32_t)(now_ms() - s_link_lost_ms) / 1000u;
+    r->recoveries = s_recoveries;
+    r->polls      = s_host.polls;
+    r->timeouts   = s_host.timeouts;
+    (void)can_twai_errors(&r->tx_errors, &r->rx_errors, &r->bus_errors,
+                          &r->bus_off);
+}
+
 static void link_report(void)
 {
     s_bring.polls         = s_host.polls;
@@ -1167,7 +1257,9 @@ static void link_report(void)
      */
     uint32_t tec = 0, rec = 0, bus = 0;
     bool off = false;
-    if (can_twai_errors(&tec, &rec, &bus, &off)) {
+    char n1[12], n2[12], n3[12];
+    const bool have_bus = can_twai_errors(&tec, &rec, &bus, &off);
+    if (have_bus) {
         ESP_LOGI(TAG, "  bus    tx errors %lu rx errors %lu bus errors %lu%s",
                  (unsigned long)tec, (unsigned long)rec, (unsigned long)bus,
                  off ? " -- BUS OFF" : "");
@@ -1176,6 +1268,30 @@ static void link_report(void)
          * started is a different diagnosis from one with no errors. */
         ESP_LOGI(TAG, "  bus    the controller is not running");
     }
+
+    /*
+     * And to the card, one line with everything on it, the same fields in the
+     * same order every time.  This is the line a tester sends when the
+     * panel's console cannot be reached; a file whose shape changes with the
+     * fault is one nobody can read down a column, and the reading that most
+     * needs a timestamp is the one where the controller would not answer.
+     */
+    char row[208];
+    snprintf(row, sizeof(row),
+             "t=%lus link=down for %lus  bus=%s tx_err=%s rx_err=%s "
+             "bus_err=%s rejoins=%lu/%lu  polls=%lu replies=%lu timeouts=%lu",
+             (unsigned long)(now_ms() / 1000u),
+             (unsigned long)(s_link_lost_ms == 0u
+                                 ? 0u
+                                 : (now_ms() - s_link_lost_ms) / 1000u),
+             !have_bus ? "not running" : (off ? "OFF" : "on"),
+             have_bus ? u32(n1, sizeof(n1), tec) : "?",
+             have_bus ? u32(n2, sizeof(n2), rec) : "?",
+             have_bus ? u32(n3, sizeof(n3), bus) : "?",
+             (unsigned long)s_recoveries, (unsigned long)s_recoveries_total,
+             (unsigned long)s_bring.polls, (unsigned long)s_bring.replies,
+             (unsigned long)s_bring.timeouts);
+    debug_log(row);
 }
 
 /*
@@ -1457,7 +1573,10 @@ static void control_task(void *arg)
                  * on the bus is permanent: every later transmit fails, the
                  * panel shows NO LINK and only a power cycle clears it.
                  */
-                (void)can_twai_recover();
+                if (can_twai_recover() == CAN_TWAI_RECOVERING) {
+                    ++s_recoveries;
+                    ++s_recoveries_total;
+                }
 
                 /*
                  * A NACK answers the request it refuses, so poll_page() is
@@ -1659,6 +1778,19 @@ static void control_task(void *arg)
                  * picture is not coming.  Nothing was kept: the store only
                  * becomes findable once the whole thing has checked out. */
                 art_stop("the link went quiet");
+            }
+            /*
+             * The link going, and how long ago.  Taken here rather than in
+             * the render loop because this is where the answer arrives; the
+             * screen is only shown from there.
+             */
+            if (answered) {
+                s_link_lost_ms    = 0;
+                s_link_lost_shown = false;
+                s_recoveries      = 0;   /* the next outage counts its own */
+            } else if (link_up) {
+                /* The edge: it was up until this poll. */
+                s_link_lost_ms = now_ms();
             }
             link_up = answered;
 
@@ -1984,6 +2116,28 @@ void app_main(void)
          */
         if (busfault_screen_take_ack()) {
             ui_router_goto(SCREEN_OVERVIEW);
+        }
+
+        /*
+         * A link that was up and has been gone for LINK_LOST_SCREEN_MS says
+         * so, with the controller's own counters on it.  The panel has no
+         * console an operator can reach while the bench runs, so a fault it
+         * cannot show is a fault nobody can report.
+         *
+         * Never while armed.  This screen carries no band and therefore no
+         * STOP, and a bench with something spinning must not have its stop
+         * button covered by a diagnosis.  Armed, the alert band already says
+         * the link is gone, and the screen waits for the disarm.
+         */
+        if (!armed && s_link_lost_ms != 0u && !s_link_lost_shown
+            && (uint32_t)(now_ms() - s_link_lost_ms) >= LINK_LOST_SCREEN_MS
+            && ui_router_current() != SCREEN_SPLASH
+            && ui_router_current() != SCREEN_BUSFAULT) {
+            busfault_report_t r;
+            link_lost_report(&r);
+            busfault_screen_set(&r);
+            s_link_lost_shown = true;
+            ui_router_goto(SCREEN_BUSFAULT);
         }
         ui_router_tick(dt_s);
 

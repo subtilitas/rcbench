@@ -317,6 +317,7 @@ int main(int argc, char **argv)
         /* The bench that is wired but not terminated: frames cross and come
          * back altered, which is the verdict a reflection produces. */
         busfault_report_t r = {
+            .kind = BUSFAULT_SELFTEST,
             .verdict = CAN_SELFTEST_CORRUPT,
             .sent = 1284, .echoed = 1197, .corrupt = 71, .lost = 16,
             .tx_errors = 0, .rx_errors = 24, .bus_errors = 87,
@@ -327,10 +328,22 @@ int main(int argc, char **argv)
         };
         if (strcmp(view, "busfault-silent") == 0) {
             const busfault_report_t q = {
+                .kind = BUSFAULT_SELFTEST,
                 .verdict = CAN_SELFTEST_SILENT,
                 .sent = 1310, .echoed = 0, .corrupt = 0, .lost = 1310,
                 .tx_errors = 128, .rx_errors = 0, .bus_errors = 0,
                 .bus_off = true, .have_remote = false,
+            };
+            r = q;
+        } else if (strcmp(view, "busfault-lost") == 0) {
+            /* The link was up and stopped, and the controller says why. */
+            const busfault_report_t q = {
+                .kind = BUSFAULT_LINK_LOST,
+                .bus = BUSFAULT_BUS_OFF,
+                .down_s = 47, .recoveries = 44,
+                .polls = 5323, .timeouts = 44,
+                .tx_errors = 248, .rx_errors = 0, .bus_errors = 1976,
+                .bus_off = true,
             };
             r = q;
         }

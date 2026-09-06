@@ -31,6 +31,34 @@
 extern "C" {
 #endif
 
+/** Which of the two faults brought the screen up. */
+typedef enum {
+    /** The start-up echo test did not pass. */
+    BUSFAULT_SELFTEST = 0,
+    /**
+     * The link was up and stopped.  A different question from the start-up
+     * one: the wire carried frames a moment ago, so what is worth showing is
+     * what this end's controller is doing now, not what to check on the
+     * bench.
+     */
+    BUSFAULT_LINK_LOST,
+} busfault_kind_t;
+
+/**
+ * The panel's own CAN controller, as can_twai_recover() found it.
+ *
+ * Mirrors can_twai_health_t, which lives in a firmware component: the screen
+ * is built for the host suite and cannot see it.  The application maps one to
+ * the other in one place.
+ */
+typedef enum {
+    BUSFAULT_BUS_UNKNOWN = 0, /**< not started, or the status would not read */
+    BUSFAULT_BUS_RUNNING,     /**< on the bus                               */
+    BUSFAULT_BUS_RECOVERING,  /**< counting bus-free signals before stopping */
+    BUSFAULT_BUS_STOPPED,     /**< idle, and would not start                */
+    BUSFAULT_BUS_OFF,         /**< off the bus, and recovery would not begin */
+} busfault_bus_t;
+
 /**
  * What the start-up test found, as the screen needs it.
  *
@@ -39,6 +67,7 @@ extern "C" {
  * it never answered are an outbound one.
  */
 typedef struct {
+    busfault_kind_t kind;
     can_selftest_verdict_t verdict;
 
     uint32_t sent;
@@ -50,6 +79,13 @@ typedef struct {
     uint32_t rx_errors;
     uint32_t bus_errors;
     bool     bus_off;
+
+    /* --- BUSFAULT_LINK_LOST only ------------------------------------- */
+    busfault_bus_t bus;        /**< what this panel's controller is doing  */
+    uint32_t       down_s;     /**< seconds since the link last answered   */
+    uint32_t       recoveries; /**< times the bus has been asked back      */
+    uint32_t       polls;      /**< requests this panel has sent           */
+    uint32_t       timeouts;   /**< and how many got no answer             */
 
     bool     have_remote; /**< the coprocessor answered a status request */
     bool     remote_up;   /**< and said its own controller came up       */

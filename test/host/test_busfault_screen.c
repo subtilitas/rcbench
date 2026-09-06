@@ -81,6 +81,19 @@ static void hold(int ticks)
     }
 }
 
+/* The red bar across the top, where the fault names itself. */
+static unsigned heading_face(void)
+{
+    scr()->render(&s_c, 0);
+    unsigned long sum = 0;
+    for (int y = 10; y < 50; ++y) {
+        for (int x = ACK_X; x < ACK_X + 420; ++x) {
+            sum += (unsigned long)s_px[y * SCREEN_W + x];
+        }
+    }
+    return (unsigned)(sum & 0xffffffffUL);
+}
+
 static int ack_cx(void) { return ACK_X + 300; }
 static int ack_cy(void) { return ACK_Y + ACK_H / 2; }
 
@@ -221,6 +234,70 @@ TEST_CASE(every_verdict_renders)
     }
 }
 
+TEST_CASE(a_lost_link_renders_every_controller_state)
+{
+    /*
+     * The link-lost screen picks its heading, its explanation and its list
+     * from the controller's state, so each of the five has to draw. A state
+     * the switch does not cover would fall through to whatever the default
+     * arm says, and on this screen that is the text an operator photographs
+     * and sends.
+     */
+    static const busfault_bus_t k[] = {
+        BUSFAULT_BUS_UNKNOWN, BUSFAULT_BUS_RUNNING, BUSFAULT_BUS_RECOVERING,
+        BUSFAULT_BUS_STOPPED, BUSFAULT_BUS_OFF,
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        fresh();
+        busfault_report_t r = { .kind = BUSFAULT_LINK_LOST, .bus = k[i] };
+        r.down_s     = (uint32_t)(i * 7u);
+        r.polls      = 5323;
+        r.timeouts   = (uint32_t)i;
+        r.recoveries = (uint32_t)(i * 2u);
+        r.tx_errors  = (uint32_t)(i * 64u);
+        busfault_screen_set(&r);
+        scr()->render(&s_c, 0);
+        scr()->render(&s_c, 1);
+    }
+}
+
+TEST_CASE(a_lost_link_is_acknowledged_the_same_way)
+{
+    /* One gesture, whichever fault brought the screen up: an operator does
+     * not learn two ways out of the same screen. */
+    fresh();
+    const busfault_report_t r = { .kind = BUSFAULT_LINK_LOST,
+                                  .bus = BUSFAULT_BUS_OFF, .down_s = 12 };
+    busfault_screen_set(&r);
+
+    down(ack_cx(), ack_cy());
+    hold((int)(UI_HOLD_S / 2.0f / TICK_S));
+    CHECK(!busfault_screen_take_ack());
+    hold(HOLD_TICKS);
+    CHECK(busfault_screen_take_ack());
+    CHECK(!busfault_screen_take_ack());
+}
+
+TEST_CASE(the_two_faults_do_not_share_a_heading)
+{
+    /*
+     * A start-up test that failed and a link that stopped are different
+     * things to be told, and the screen is the only place either is said.
+     * Compared as pixels, because what is under test is what reaches the
+     * panel rather than which branch ran.
+     */
+    fresh();
+    busfault_report_t a = { .kind = BUSFAULT_SELFTEST,
+                            .verdict = CAN_SELFTEST_SILENT, .sent = 1000 };
+    busfault_screen_set(&a);
+    const unsigned selftest = heading_face();
+
+    busfault_report_t b = { .kind = BUSFAULT_LINK_LOST,
+                            .bus = BUSFAULT_BUS_OFF, .down_s = 12 };
+    busfault_screen_set(&b);
+    CHECK(heading_face() != selftest);
+}
+
 TEST_CASE(the_button_fills_towards_the_colour_it_settles_on)
 {
     /*
@@ -253,6 +330,9 @@ int main(void)
     RUN(a_new_report_restarts_the_gesture);
     RUN(the_report_is_kept_and_handed_back);
     RUN(every_verdict_renders);
+    RUN(a_lost_link_renders_every_controller_state);
+    RUN(a_lost_link_is_acknowledged_the_same_way);
+    RUN(the_two_faults_do_not_share_a_heading);
     RUN(the_button_fills_towards_the_colour_it_settles_on);
     return test_summary("busfault_screen");
 }
