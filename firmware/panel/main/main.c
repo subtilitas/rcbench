@@ -1337,6 +1337,11 @@ static bool read_bench(link_host_t *host, bench_state_t *out)
 
 /*
  * The bench's own state, before the loop that maintains it.
+ *
+ * The last line is the one with a consequence outside this file:
+ * s_pump_live tells exchange() that a control task exists, so the wait for a
+ * link reply pumps the renderer instead of standing still.  Before this
+ * point there is no such task and nothing to pump.
  */
 static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
 {
@@ -1914,10 +1919,10 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
 }
 
 /*
- * The model and the log advance on their own 50 ms cadence.  Tying them to the
- * poll gate ran them at the identity-poll rate while the link was down -- one
- * step of 50 ms per 1000 ms of wall clock, so the plot's axis and every CSV
- * timestamp were twenty times slow.
+ * The model and the log advance on their own 50 ms cadence, not on the poll
+ * gate's.  The gate runs at 1 Hz while the link is down, which would step the
+ * model once per 1000 ms of wall clock instead of twenty times -- the plot's
+ * axis and every CSV timestamp twenty times slow.
  */
 static void advance_model_and_log(bool link_up, float emitted,
                                   telemetry_sim_t *sim, bench_state_t *bench,
