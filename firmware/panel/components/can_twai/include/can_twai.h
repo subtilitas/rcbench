@@ -37,8 +37,34 @@ bool can_twai_send(const link_can_frame_t *f, uint32_t timeout_ms);
 /** Take one frame, if one arrives within @p timeout_ms. */
 bool can_twai_recv(link_can_frame_t *f, uint32_t timeout_ms);
 
-/** Bus error counters, for the report. Any pointer may be NULL. */
-void can_twai_errors(uint32_t *tx_err, uint32_t *rx_err, uint32_t *bus_err,
+/** What the controller is doing, as can_twai_recover() found it. */
+typedef enum {
+    CAN_TWAI_UNKNOWN = 0, /**< not started, or the status would not read */
+    CAN_TWAI_RUNNING,     /**< on the bus */
+    CAN_TWAI_RECOVERING,  /**< counting the bus-free signals before stopping */
+    CAN_TWAI_STOPPED,     /**< idle, and would not start */
+    CAN_TWAI_BUS_OFF,     /**< off the bus, and recovery would not begin */
+} can_twai_health_t;
+
+/**
+ * Look at the controller and put it back on the bus if it has fallen off.
+ *
+ * A transmitter nobody answers reaches the bus-off threshold in about four
+ * milliseconds at 1 Mbit/s, and this peripheral does not recover on its own:
+ * without this call every later transmit fails and the link is gone until the
+ * panel is power-cycled. Call it while the link is down; it takes one step
+ * per call and never blocks.
+ */
+can_twai_health_t can_twai_recover(void);
+
+/**
+ * Bus error counters, for the report. Any pointer may be NULL.
+ *
+ * False when the controller is not running or its status would not read; the
+ * outputs are then left as the caller set them, because zeros would read as a
+ * healthy bus.
+ */
+bool can_twai_errors(uint32_t *tx_err, uint32_t *rx_err, uint32_t *bus_err,
                      bool *bus_off);
 
 #endif /* RCBENCH_CAN_TWAI_H */

@@ -87,7 +87,10 @@ void can_selftest_run(uint32_t seconds)
          * on the bus, a different fault from a bus that corrupts frames.
          */
         uint32_t tec = 0;
-        can_twai_errors(&tec, NULL, NULL, NULL);
+        /* A read that fails leaves tec at 0, which raises no alarm: the
+         * quiet direction is the right one for a message that sends the
+         * operator to the wiring. */
+        (void)can_twai_errors(&tec, NULL, NULL, NULL);
         if (!said_unacked && tec >= 128u) {
             said_unacked = true;
             ESP_LOGE(TAG, "nothing is acknowledging: transmit errors reached "
@@ -107,7 +110,7 @@ void can_selftest_run(uint32_t seconds)
      */
     uint32_t tx_err = 0, rx_err = 0, bus_err = 0;
     bool bus_off = false;
-    can_twai_errors(&tx_err, &rx_err, &bus_err, &bus_off);
+    (void)can_twai_errors(&tx_err, &rx_err, &bus_err, &bus_off);
     st.bus_errors = bus_err;
 
     can_remote_status_t remote;

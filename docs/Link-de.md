@@ -33,6 +33,37 @@ Verkehr stoppt den Stillezähler, hebt das Failsafe aber nicht auf; verlassen
 wird es durch das Schreiben von 0x5AFE in das Register CLEAR der
 Control-Page.
 
+### Bus off
+
+Ein CAN-Transmitter, der kein Acknowledge bekommt, wiederholt von sich aus und
+addiert je Versuch 8 auf seinen Transmit Error Counter. Bei 1 Mbit/s erreicht
+ein Frame, den niemand beantwortet, die Bus-off-Schwelle von 256 in etwa 4 ms
+— jeder Moment ohne zweiten Knoten am Bus nimmt den Controller des Panels also
+vom Bus: Koprozessor ohne Strom, nach einem Reset, oder lange genug mit
+abgeschalteten Interrupts.
+
+Der TWAI-Controller (Two-Wire Automotive Interface) des ESP32-S3 kommt nicht
+von selbst zurück. `can_twai_recover()` läuft am Identity-Poll, solange der
+Link unten ist, einmal pro Sekunde: aus dem Zustand Bus off ruft es
+`twai_initiate_recovery()`, wartet die 128 Bus-frei-Signale ab, die der
+Controller im Zustand Recovering zählt, und startet ihn aus dem Zustand
+Stopped wieder. Die Erholung dauert damit bis zu drei Polls, also rund 3 s.
+Ohne sie ist der erste stille Moment am Bus endgültig und nur ein
+Aus-und-Einschalten hilft.
+
+Der Report, der bei liegendem Link alle 5 s ausgegeben wird, trägt die Zähler:
+
+```
+LINK ...
+  bus    tx errors 0 rx errors 0 bus errors 0
+```
+
+Ein Transmit Error Counter, der auf 256 zuläuft, heißt, dass niemand die
+Frames mit einem ACK (Acknowledge) bestätigt. Die Zeile endet auf `-- BUS
+OFF`, wenn das Panel bereits aufgehört hat zu senden. Steht dort statt der
+Zähler `the controller is not running`, ist der CAN-Controller gar nicht erst
+gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
+
 ## Protokoll
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
