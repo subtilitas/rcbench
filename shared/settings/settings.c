@@ -375,7 +375,13 @@ void settings_request_save(void)
     s.save_asked = s.dirty;
 }
 
-bool settings_save_asked(void) { return s.save_asked; }
+/*
+ * A request only stands while there is something to write.  Values loaded
+ * or reset out from under a standing request leave nothing to save, and a
+ * request that outlives its reason would spend an erase cycle on what is
+ * already in flash.
+ */
+bool settings_save_asked(void) { return s.save_asked && s.dirty; }
 
 void settings_cancel_save(void) { s.save_asked = false; }
 

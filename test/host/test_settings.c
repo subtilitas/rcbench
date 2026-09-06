@@ -702,6 +702,59 @@ TEST_CASE(the_request_outlives_the_screen)
     settings_set_store(NULL);
 }
 
+/* The mean of the SAVE button's face, as the panel would show it. */
+static unsigned save_face(void)
+{
+    ui_router_render(&s_c, 0);
+    unsigned long sum = 0;
+    for (int y = SAVE_Y + 6; y < SAVE_Y + SAVE_H - 6; ++y) {
+        for (int x = CAT_X + 6; x < CAT_X + 200; ++x) {
+            sum += (unsigned long)s_fb[y * W + x];
+        }
+    }
+    return (unsigned)(sum & 0xffffffffUL);
+}
+
+TEST_CASE(a_press_while_the_save_is_pending_changes_nothing)
+{
+    /*
+     * Once asked, the button reads WHEN IDLE and is drawn inert. A press
+     * must not light it either: a highlight on a button that is doing
+     * nothing is the same lie the old SAVED line told.
+     */
+    fresh_screen();
+    settings_set_store(&s_mem_store);
+    s_save_calls = 0;
+
+    setting_id_t ids[64];
+    settings_in_category(SET_CAT_ESC, ids, 64);
+    tap(PLUS_X + BTN_W / 2, row_y(0));
+
+    /* Offered: holding it down changes the face. */
+    const unsigned offered = save_face();
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = CAT_X + 100,
+                                   .y = (int16_t)(SAVE_Y + SAVE_H / 2),
+                                   .strength = 40 } };
+    ui_router_event(&e);
+    CHECK(save_face() != offered);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    CHECK(settings_save_asked());
+
+    /* Asked for: holding it down does not. */
+    const unsigned pending = save_face();
+    e.type = TOUCH_EVENT_DOWN;
+    ui_router_event(&e);
+    CHECK_EQ(save_face(), pending);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+
+    CHECK_EQ(s_save_calls, 0);
+    CHECK(settings_save_asked());
+    settings_set_store(NULL);
+}
+
 TEST_CASE(asking_with_nothing_to_write_asks_for_nothing)
 {
     /* A button that presses with nothing to save says a save happened. */
@@ -746,6 +799,7 @@ int main(void)
     RUN(leaving_the_screen_no_longer_saves_on_its_own);
     RUN(the_save_button_asks_and_the_application_decides_when);
     RUN(the_request_outlives_the_screen);
+    RUN(a_press_while_the_save_is_pending_changes_nothing);
     RUN(asking_with_nothing_to_write_asks_for_nothing);
     return test_summary("settings");
 }

@@ -143,6 +143,12 @@ static gfx_rect_t save_rect(void)
     return gfx_rect_make(CAT_X, SAVE_Y, CAT_W, SAVE_H);
 }
 
+/* The one condition the press, the highlight and the render all read. */
+static bool save_offered(void)
+{
+    return settings_dirty() && !settings_save_asked();
+}
+
 /*
  * The way to the outputs screen.
  *
@@ -303,9 +309,12 @@ static void event(const touch_event_t *evt)
             settings_screen_invalidate();
             return;
         }
-        /* Only when there is something to write: a button that presses with
-         * nothing to save says a save happened. */
-        if (settings_dirty() && gfx_rect_contains(save_rect(), x, y)) {
+        /*
+         * Only while it is offered.  With nothing to write, a button that
+         * presses says a save happened; with a write already asked for,
+         * it lights a button the render draws as inert.
+         */
+        if (save_offered() && gfx_rect_contains(save_rect(), x, y)) {
             s.hit_kind = HIT_SAVE;
             settings_screen_invalidate();
             return;
@@ -391,7 +400,7 @@ static void event(const touch_event_t *evt)
         } else if (kind == HIT_PICKER
                    && gfx_rect_contains(picker_rect(), x, y)) {
             ui_router_goto(SCREEN_PICKER);
-        } else if (kind == HIT_SAVE
+        } else if (kind == HIT_SAVE && save_offered()
                    && gfx_rect_contains(save_rect(), x, y)) {
             /* Asked for, not written.  The application decides when the
              * bench can afford to stop for it. */
@@ -460,7 +469,7 @@ static void draw_categories(gfx_canvas_t *c)
     gfx_rect_t sv = save_rect();
     ui_button(c, sv, label,
               dirty ? (asked ? UI_WARN : UI_ACCENT) : UI_PANEL_HI,
-              s.hit_kind == HIT_SAVE, dirty && !asked);
+              s.hit_kind == HIT_SAVE, save_offered());
 }
 
 static void draw_row(gfx_canvas_t *c, int index)
