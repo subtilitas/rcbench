@@ -261,7 +261,13 @@ TEST_CASE(escalation_alone_does_not_end_a_request)
     link_host_init(&host, 0);
     link_msg_t req;
 
-    /* A reply, so last_reply_ms is real, then a second of silence. */
+    /*
+     * The state a bench is in when this happens, reached directly rather
+     * than played out: one request already given up on, and a last_reply_ms
+     * of 0 standing for a reply that arrived a second ago.  Nothing here
+     * exercises the accept path -- what is under test is which of tick()'s
+     * two facts ends a wait.
+     */
     CHECK(link_host_read(&host, LINK_PAGE_CONTROL, 0, 1, 0, &req));
     link_host_abandon(&host);
     host.last_reply_ms = 0;
