@@ -196,6 +196,11 @@ bool link_host_tick(link_host_t *h, uint32_t now_ms)
     return acted;
 }
 
+bool link_host_pending(const link_host_t *h)
+{
+    return h != NULL && h->pending;
+}
+
 void link_host_abandon(link_host_t *h)
 {
     if (h == NULL || !h->pending) {

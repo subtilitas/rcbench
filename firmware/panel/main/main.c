@@ -810,7 +810,25 @@ static bool exchange(link_host_t *host, const link_msg_t *req,
         if (s_pump_live) {
             control_pump();
         }
-        if (link_host_tick(host, now_ms())) {
+        /*
+         * The request's own timeout is the only thing that ends this wait.
+         *
+         * link_host_tick() answers true for two different facts: this
+         * request has been outstanding too long, and the link as a whole has
+         * gone quiet.  Only the first one releases the outstanding slot, and
+         * leaving on the second left the transaction pending for ever --
+         * link_host_read() then refused every later request, this function
+         * was never entered again, and tick() lives only in here, so the
+         * timeout that would have cleared it could not run.  The link stayed
+         * down until the panel was switched off, with polls frozen and not
+         * one timeout counted.
+         *
+         * The far end had gone quiet for a second, which is exactly when the
+         * second fact fires first: it is measured from the last reply and
+         * this request was sent after it.
+         */
+        (void)link_host_tick(host, now_ms());
+        if (!link_host_pending(host)) {
             return false;
         }
     }
@@ -1539,6 +1557,19 @@ static void control_task(void *arg)
         const float emitted =
             (float)outputs_actual(&s_out, PANEL_CH_THROTTLE) * 100.0f
             / (float)OUT_SPAN;
+
+        /*
+         * And the transaction clock, every pass.
+         *
+         * Defence rather than mechanism: exchange() releases the slot on the
+         * way out of every path it has.  But its tick was the only one, and
+         * a request left outstanding by any means at all would refuse every
+         * later one from a place that could no longer run the timeout.  Here
+         * the clock runs whatever the link is doing, so an outstanding
+         * request is abandoned a second after it was sent and the next poll
+         * gets its turn.
+         */
+        (void)link_host_tick(&s_host, now_ms());
 
         /* --- the far end, at 1 Hz until it answers ----------------------- */
         bool new_sample = false;

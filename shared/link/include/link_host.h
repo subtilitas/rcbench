@@ -106,6 +106,16 @@ bool link_host_tick(link_host_t *h, uint32_t now_ms);
  */
 void link_host_abandon(link_host_t *h);
 
+/**
+ * Whether a request is outstanding.
+ *
+ * A caller waiting for an answer needs this rather than link_host_tick()'s
+ * return, which is true for the link going quiet as well as for this
+ * request's timeout: only one of the two releases the slot, and a wait that
+ * ended on the other one left the host unable to send anything again.
+ */
+bool link_host_pending(const link_host_t *h);
+
 #ifdef __cplusplus
 }
 #endif
