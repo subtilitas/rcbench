@@ -58,9 +58,11 @@ LINK ...
   bus    tx errors 0 rx errors 0 bus errors 0
 ```
 
-Ein Transmit Error Counter, der auf 256 zuläuft, heißt: niemand
-acknowledged. Die Zeile endet auf `-- BUS OFF`, wenn das Panel bereits
-aufgehört hat zu senden.
+Ein Transmit Error Counter, der auf 256 zuläuft, heißt, dass niemand die
+Frames mit einem ACK (Acknowledge) bestätigt. Die Zeile endet auf `-- BUS
+OFF`, wenn das Panel bereits aufgehört hat zu senden. Steht dort statt der
+Zähler `the controller is not running`, ist der CAN-Controller gar nicht erst
+gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 ## Protokoll
 

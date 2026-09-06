@@ -137,17 +137,21 @@ bool can_twai_recv(link_can_frame_t *f, uint32_t timeout_ms)
     return true;
 }
 
-void can_twai_errors(uint32_t *tx_err, uint32_t *rx_err, uint32_t *bus_err,
+bool can_twai_errors(uint32_t *tx_err, uint32_t *rx_err, uint32_t *bus_err,
                      bool *bus_off)
 {
     twai_status_info_t st;
     if (!s_running || twai_get_status_info(&st) != ESP_OK) {
-        return;
+        /* Left untouched rather than zeroed: a caller that printed zeros
+         * here would report a healthy bus for a controller that is not
+         * running at all. */
+        return false;
     }
     if (tx_err != NULL)  { *tx_err = st.tx_error_counter; }
     if (rx_err != NULL)  { *rx_err = st.rx_error_counter; }
     if (bus_err != NULL) { *bus_err = st.bus_error_count; }
     if (bus_off != NULL) { *bus_off = (st.state == TWAI_STATE_BUS_OFF); }
+    return true;
 }
 
 /*

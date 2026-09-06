@@ -57,8 +57,14 @@ typedef enum {
  */
 can_twai_health_t can_twai_recover(void);
 
-/** Bus error counters, for the report. Any pointer may be NULL. */
-void can_twai_errors(uint32_t *tx_err, uint32_t *rx_err, uint32_t *bus_err,
+/**
+ * Bus error counters, for the report. Any pointer may be NULL.
+ *
+ * False when the controller is not running or its status would not read; the
+ * outputs are then left as the caller set them, because zeros would read as a
+ * healthy bus.
+ */
+bool can_twai_errors(uint32_t *tx_err, uint32_t *rx_err, uint32_t *bus_err,
                      bool *bus_off);
 
 #endif /* RCBENCH_CAN_TWAI_H */

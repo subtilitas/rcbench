@@ -1139,10 +1139,15 @@ static void link_report(void)
      */
     uint32_t tec = 0, rec = 0, bus = 0;
     bool off = false;
-    can_twai_errors(&tec, &rec, &bus, &off);
-    ESP_LOGI(TAG, "  bus    tx errors %lu rx errors %lu bus errors %lu%s",
-             (unsigned long)tec, (unsigned long)rec, (unsigned long)bus,
-             off ? " -- BUS OFF" : "");
+    if (can_twai_errors(&tec, &rec, &bus, &off)) {
+        ESP_LOGI(TAG, "  bus    tx errors %lu rx errors %lu bus errors %lu%s",
+                 (unsigned long)tec, (unsigned long)rec, (unsigned long)bus,
+                 off ? " -- BUS OFF" : "");
+    } else {
+        /* Zeros here would read as a healthy bus.  A controller that never
+         * started is a different diagnosis from one with no errors. */
+        ESP_LOGI(TAG, "  bus    the controller is not running");
+    }
 }
 
 /*

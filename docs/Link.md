@@ -55,7 +55,9 @@ LINK ...
 ```
 
 A transmit error counter climbing towards 256 says nobody is acknowledging. The
-line ends in `-- BUS OFF` when the panel has already stopped transmitting.
+line ends in `-- BUS OFF` when the panel has already stopped transmitting. It
+reads `the controller is not running` instead of the counters when TWAI never
+started, which is a different diagnosis from a bus with no errors.
 
 ## Protocol
 
