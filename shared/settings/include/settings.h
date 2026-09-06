@@ -130,6 +130,33 @@ bool settings_dirty(void);
 /** Persist through the store and clear the dirty flag. */
 void settings_save(void);
 
+/* ------------------------------------------------------- asking to save */
+
+/**
+ * Ask for the values to be written, without writing them.
+ *
+ * A save is a flash write, and on the panel a flash write disables the cache
+ * and stalls both cores: the task that beats the safety line does not run
+ * for its duration. So the operator says when they want it kept and the
+ * application says when that is survivable, which is the same split the
+ * coprocessor's own store already makes.
+ */
+void settings_request_save(void);
+
+/** Whether a save has been asked for and not yet taken. */
+bool settings_save_asked(void);
+
+/**
+ * Take the save if one was asked for and @p safe says now will do.
+ *
+ * Returns true when it wrote. Call it wherever the application knows the
+ * bench is idle -- an armed bench is not the moment to stop both cores.
+ */
+bool settings_save_tick(bool safe);
+
+/** Forget a request that has not been taken. */
+void settings_cancel_save(void);
+
 #ifdef __cplusplus
 }
 #endif

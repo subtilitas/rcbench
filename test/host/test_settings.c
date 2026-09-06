@@ -33,7 +33,10 @@
 #define PLUS_X   726
 #define MINUS_X  556
 #define BTN_W    44
-#define RESET_Y  (358 + UI_BAND_H)
+#define RESET_Y  (350 + UI_BAND_H)
+#define RESET_H  36
+#define SAVE_Y   (RESET_Y + RESET_H + 6)
+#define SAVE_H   36
 
 static gfx_color_t *s_fb;
 static gfx_canvas_t s_c;
@@ -614,8 +617,13 @@ TEST_CASE(reset_button_restores_the_open_category)
     CHECK_EQ(settings_get_int(SET_BRIGHTNESS), 50);   /* other category kept */
 }
 
-TEST_CASE(leaving_the_screen_saves)
+TEST_CASE(leaving_the_screen_no_longer_saves_on_its_own)
 {
+    /*
+     * It used to. A save is a flash write, and on this board that stalls
+     * both cores including the one that beats the safety line, so it does
+     * not happen at a moment nobody chose.
+     */
     fresh_screen();
     settings_set_store(&s_mem_store);
     s_save_calls = 0;
@@ -626,12 +634,90 @@ TEST_CASE(leaving_the_screen_saves)
     CHECK(settings_dirty());
 
     ui_router_goto(SCREEN_OVERVIEW);
+    CHECK(settings_dirty());          /* still unwritten */
+    CHECK_EQ(s_save_calls, 0);
+
+    settings_set_store(NULL);
+}
+
+TEST_CASE(the_save_button_asks_and_the_application_decides_when)
+{
+    /*
+     * The press is a request, not a write. Nothing reaches the store until
+     * the application says the bench can afford to stop for it.
+     */
+    fresh_screen();
+    settings_set_store(&s_mem_store);
+    s_save_calls = 0;
+
+    setting_id_t ids[64];
+    settings_in_category(SET_CAT_ESC, ids, 64);
+    tap(PLUS_X + BTN_W / 2, row_y(0));
+    CHECK(settings_dirty());
+    CHECK(!settings_save_asked());
+
+    tap(CAT_X + 100, SAVE_Y + SAVE_H / 2);
+    CHECK(settings_save_asked());
+    CHECK_EQ(s_save_calls, 0);        /* asked, and nothing written */
+    CHECK(settings_dirty());
+
+    /* Not while the bench is busy, however long that lasts. */
+    for (int i = 0; i < 20; ++i) {
+        CHECK(!settings_save_tick(false));
+    }
+    CHECK_EQ(s_save_calls, 0);
+    CHECK(settings_save_asked());
+
+    /* And then, once. */
+    CHECK(settings_save_tick(true));
+    CHECK_EQ(s_save_calls, 1);
     CHECK(!settings_dirty());
+    CHECK(!settings_save_asked());
+    CHECK(!settings_save_tick(true));  /* nothing left to take */
     CHECK_EQ(s_save_calls, 1);
 
     settings_set_store(NULL);
 }
 
+TEST_CASE(the_request_outlives_the_screen)
+{
+    /* The operator has said what they want kept; walking away does not
+     * unsay it, and the save still lands when the bench is idle. */
+    fresh_screen();
+    settings_set_store(&s_mem_store);
+    s_save_calls = 0;
+
+    setting_id_t ids[64];
+    settings_in_category(SET_CAT_ESC, ids, 64);
+    tap(PLUS_X + BTN_W / 2, row_y(0));
+    tap(CAT_X + 100, SAVE_Y + SAVE_H / 2);
+    CHECK(settings_save_asked());
+
+    ui_router_goto(SCREEN_OVERVIEW);
+    CHECK(settings_save_asked());
+    CHECK_EQ(s_save_calls, 0);
+
+    CHECK(settings_save_tick(true));
+    CHECK_EQ(s_save_calls, 1);
+    settings_set_store(NULL);
+}
+
+TEST_CASE(asking_with_nothing_to_write_asks_for_nothing)
+{
+    /* A button that presses with nothing to save says a save happened. */
+    fresh_screen();
+    settings_set_store(&s_mem_store);
+    s_save_calls = 0;
+    CHECK(!settings_dirty());
+
+    tap(CAT_X + 100, SAVE_Y + SAVE_H / 2);
+    CHECK(!settings_save_asked());
+    CHECK(!settings_save_tick(true));
+    CHECK_EQ(s_save_calls, 0);
+
+    settings_cancel_save();
+    settings_set_store(NULL);
+}
 
 
 
@@ -657,6 +743,9 @@ int main(void)
     RUN(a_drag_scrolls_instead_of_pressing);
     RUN(holding_a_key_repeats_with_acceleration);
     RUN(reset_button_restores_the_open_category);
-    RUN(leaving_the_screen_saves);
+    RUN(leaving_the_screen_no_longer_saves_on_its_own);
+    RUN(the_save_button_asks_and_the_application_decides_when);
+    RUN(the_request_outlives_the_screen);
+    RUN(asking_with_nothing_to_write_asks_for_nothing);
     return test_summary("settings");
 }

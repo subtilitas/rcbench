@@ -45,7 +45,25 @@
 #define MINUS_X  (PLUS_X - 8 - 110 - 8 - BTN_W)
 #define VALUE_R  (PLUS_X - 8)
 
-#define RESET_Y  358
+#define RESET_Y  350
+#define RESET_H  36
+
+/*
+ * SAVE, under it.
+ *
+ * The values used to be written whenever the screen was left, and the only
+ * sign of it was the word SAVED sitting under a button in the same column --
+ * which reads as a button that does nothing, and was reported as one.
+ *
+ * Pressing this does not write anything. A save is a flash write, and on
+ * this board a flash write disables the cache and stalls both cores: the
+ * task that beats the safety line does not run for its duration. So the
+ * press says the operator wants the values kept and the application takes it
+ * when the bench can afford to stop, which is the same split the
+ * coprocessor's own store makes.
+ */
+#define SAVE_Y   (RESET_Y + RESET_H + 6)
+#define SAVE_H   36
 #define MAX_ROWS 32
 
 /* Held +/- repeats: a 0 to 30,000 mAh range is 300 taps otherwise. */
@@ -58,7 +76,7 @@
 #define DRAG_SLOP 8
 
 enum { HIT_NONE = 0, HIT_CAT, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
-       HIT_OUTPUTS, HIT_PICKER };
+       HIT_OUTPUTS, HIT_PICKER, HIT_SAVE };
 
 static struct {
     setting_cat_t cat;
@@ -117,7 +135,12 @@ static gfx_rect_t cat_rect(int i)
 
 static gfx_rect_t reset_rect(void)
 {
-    return gfx_rect_make(CAT_X, RESET_Y, CAT_W, 40);
+    return gfx_rect_make(CAT_X, RESET_Y, CAT_W, RESET_H);
+}
+
+static gfx_rect_t save_rect(void)
+{
+    return gfx_rect_make(CAT_X, SAVE_Y, CAT_W, SAVE_H);
 }
 
 /*
@@ -128,11 +151,11 @@ static gfx_rect_t reset_rect(void)
  * this is the door to it.
  */
 /*
- * Two doors and one caption, in the 110 pixels between the categories and
- * RESET.  RESET cannot move down: the SAVED line under it is already 8 px
- * from the bottom of the screen.
+ * Two doors and one caption, in the 118 pixels between the categories and
+ * RESET.  RESET cannot move down: SAVE sits under it and reaches to 12 px
+ * from the bottom of the screen, so the doors move up instead.
  */
-#define OUTPUTS_Y 248
+#define OUTPUTS_Y 232
 #define DOOR_H    42
 #define DOOR_GAP  4
 static gfx_rect_t outputs_rect(void)
@@ -210,9 +233,13 @@ static void enter(void)
 
 static void leave(void)
 {
-    if (settings_dirty()) {
-        settings_save();
-    }
+    /*
+     * Nothing is written here any more.  Leaving the screen used to save,
+     * which meant a flash write at a moment nobody chose and no way to ask
+     * for one; the SAVE button asks, and the application takes it when the
+     * bench is idle.  A request outlives this screen on purpose: the
+     * operator has said what they want kept.
+     */
 }
 
 static void tick(float dt_s)
@@ -273,6 +300,13 @@ static void event(const touch_event_t *evt)
         }
         if (gfx_rect_contains(picker_rect(), x, y)) {
             s.hit_kind = HIT_PICKER;
+            settings_screen_invalidate();
+            return;
+        }
+        /* Only when there is something to write: a button that presses with
+         * nothing to save says a save happened. */
+        if (settings_dirty() && gfx_rect_contains(save_rect(), x, y)) {
+            s.hit_kind = HIT_SAVE;
             settings_screen_invalidate();
             return;
         }
@@ -357,6 +391,12 @@ static void event(const touch_event_t *evt)
         } else if (kind == HIT_PICKER
                    && gfx_rect_contains(picker_rect(), x, y)) {
             ui_router_goto(SCREEN_PICKER);
+        } else if (kind == HIT_SAVE
+                   && gfx_rect_contains(save_rect(), x, y)) {
+            /* Asked for, not written.  The application decides when the
+             * bench can afford to stop for it. */
+            settings_request_save();
+            settings_screen_invalidate();
         }
         break;
     }
@@ -405,12 +445,22 @@ static void draw_categories(gfx_canvas_t *c)
     gfx_rect_t rr = reset_rect();
     ui_button(c, rr, "RESET CATEGORY", UI_WARN, s.hit_kind == HIT_RESET, true);
 
-    const char *state = settings_dirty() ? "UNSAVED" : "SAVED";
-    gfx_fill_rect(c, CAT_X, RESET_Y + 48, CAT_W, 18, UI_BG);
-    gfx_text(c, CAT_X, RESET_Y + 48, state, UI_FONT_LABEL,
-             settings_dirty() ? UI_WARN : UI_TEXT_FAINT, 1);
-    gfx_text(c, CAT_X + 88, RESET_Y + 48, "ON LEAVING", UI_FONT_LABEL,
-             UI_TEXT_FAINT, 1);
+    /*
+     * Three states, and the label is the whole of the feedback: nothing to
+     * write (SAVED), something to write (SAVE), and something asked for and
+     * waiting for a moment to write it in (WHEN IDLE).  The third is seen
+     * only while the bench is armed or a transfer is running; disarmed, the
+     * write is taken on the next frame.  SAVE takes the accent rather than
+     * the warning colour: RESET CATEGORY sits directly above it and two
+     * amber buttons in a column read as one control.
+     */
+    const bool dirty = settings_dirty();
+    const bool asked = settings_save_asked();
+    const char *label = !dirty ? "SAVED" : (asked ? "WHEN IDLE" : "SAVE");
+    gfx_rect_t sv = save_rect();
+    ui_button(c, sv, label,
+              dirty ? (asked ? UI_WARN : UI_ACCENT) : UI_PANEL_HI,
+              s.hit_kind == HIT_SAVE, dirty && !asked);
 }
 
 static void draw_row(gfx_canvas_t *c, int index)

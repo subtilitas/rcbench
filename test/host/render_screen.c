@@ -302,6 +302,15 @@ int main(int argc, char **argv)
         battery_screen_set(&b);
     }
 
+    /*
+     * SAVE is amber and pressable only while something is unwritten, and
+     * grey and inert otherwise, so the shot that shows it needs a value
+     * changed first.
+     */
+    if (id == SCREEN_SETUP && strcmp(view, "setup-dirty") == 0) {
+        settings_set(SET_PACK_CELLS, 4.0f);
+    }
+
     if (id == SCREEN_BALANCE && strcmp(view, "balance") != 0) {
         ui_router_goto(SCREEN_BALANCE);
         if (strcmp(view, "balance-rig") == 0) {

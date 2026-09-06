@@ -229,6 +229,32 @@ Die Einstellungen liegen hinter der SETUP-Kachel, in beiden Themes:
 
 ![Setup im hellen Theme](img/setup-light.png)
 
+### Werte behalten
+
+Ein geänderter Wert wirkt sofort und wird erst in den Flash geschrieben, wenn
+SAVE gedrückt wird. Die Taste unter RESET CATEGORY nennt einen von drei
+Zuständen:
+
+| Beschriftung | Bedeutung |
+| --- | --- |
+| `SAVED` | Nichts ist ungeschrieben. Die Taste ist inaktiv. |
+| `SAVE` | Etwas ist ungeschrieben. Ein Druck fordert das Schreiben an. |
+| `WHEN IDLE` | Das Schreiben ist angefordert und wartet auf einen Moment dafür. |
+
+![Ein geänderter Wert, SAVE angeboten](img/setup-dirty.png)
+
+Der Druck fordert an, er schreibt nicht. Einstellungen zu schreiben committet
+eine Page im NVS (Non-Volatile Storage), und eine Flash-Operation auf dem
+ESP32-S3 schaltet den Instruction Cache ab, es läuft also für ihre Dauer auf
+keinem der beiden Kerne Code. Geschrieben wird im ersten Frame, in dem der
+Prüfstand disarmed ist und kein Platinenfoto geholt oder abgelegt wird. Auf
+dem Einstellungs-Bildschirm ist das der nächste Frame, und die Beschriftung
+steht auf `SAVED`, so schnell wie das Auge dem Druck folgt. Armed steht die
+Anforderung als `WHEN IDLE`, bis der Prüfstand disarmed wird.
+
+Nicht gespeicherte Werte bleiben, bis das Panel ausgeschaltet wird. Das
+Verlassen des Bildschirms schreibt nichts.
+
 ## Outputs
 
 Hinter der OUTPUTS-Taste auf dem Setup-Bildschirm. Die Protokolle, die an die

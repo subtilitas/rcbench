@@ -130,6 +130,7 @@ static const char *const k_cat_names[SET_CAT_COUNT] = {
 static struct {
     float values[SETTING_COUNT];
     bool  dirty;
+    bool     save_asked;   /* asked for, not yet taken */
     const settings_store_t *store;
     settings_observer_fn observer;
 } s;
@@ -363,4 +364,31 @@ void settings_save(void)
         s.store->save(s.values, SETTING_COUNT);
     }
     s.dirty = false;
+    s.save_asked = false;
+}
+
+void settings_request_save(void)
+{
+    /* Asking for a save when there is nothing to write is not an error and
+     * not a request: it would spend an erase cycle on what is already
+     * there. */
+    s.save_asked = s.dirty;
+}
+
+bool settings_save_asked(void) { return s.save_asked; }
+
+void settings_cancel_save(void) { s.save_asked = false; }
+
+bool settings_save_tick(bool safe)
+{
+    if (!s.save_asked || !safe) {
+        return false;
+    }
+    if (!s.dirty) {
+        /* Something else wrote them in between; the request is answered. */
+        s.save_asked = false;
+        return false;
+    }
+    settings_save();
+    return true;
 }

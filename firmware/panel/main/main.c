@@ -1914,6 +1914,25 @@ void app_main(void)
         }
         ui_router_tick(dt_s);
 
+        /*
+         * The save the settings screen asked for, taken at a moment that can
+         * afford it.
+         *
+         * Writing settings commits an NVS page, and a flash operation on this
+         * part disables the cache: neither core runs code that is not in
+         * IRAM for its duration.  Taken here it costs a frame, which is what
+         * it has always cost.  What it must not do is happen while the bench
+         * is armed -- the control task beats the safety line and its ceiling
+         * is HEARTBEAT_MAX_GAP_MS (150 ms) -- or while the board's
+         * photograph is being fetched or written, which is a quarter of a
+         * megabyte already spoken for.
+         *
+         * Waiting costs nothing.  The request stands until a quiet frame
+         * comes, and disarmed -- which is where the settings screen is used
+         * -- the next frame is one.
+         */
+        (void)settings_save_tick(!armed && !s_artbusy && !s_keeping);
+
         gfx_canvas_t *c = display_canvas();
         const int64_t draw_start = esp_timer_get_time();
         ui_router_render(c, display_back_index());
