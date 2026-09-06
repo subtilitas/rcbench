@@ -6,6 +6,46 @@ history is in git.
 
 ## Unreleased
 
+## 0.4.2 - 2026-09-06
+
+The panel could not get back on the CAN bus once it fell off it, and the
+coprocessor's console could not say whether anything was arriving.
+
+### Fixed
+
+- **A link that dropped stayed dropped.** A CAN (Controller Area Network)
+  transmitter that gets no acknowledgement retransmits on its own and adds 8
+  to its transmit error counter each attempt; at 1 Mbit/s a frame nobody
+  answers reaches the bus-off threshold of 256 in about 4 ms. The ESP32-S3's
+  TWAI (Two-Wire Automotive Interface) controller does not recover on its own,
+  and nothing asked it to: after that every transmit failed, the identity poll
+  never got an answer, and the panel showed NO LINK with SIM until it was
+  power-cycled. `can_twai_recover()` runs on the identity poll while the link
+  is down and takes one step per call -- `twai_initiate_recovery()` from
+  bus off, then `twai_start()` once the controller has counted its 128
+  bus-free signals and stopped. Recovery takes up to three polls, about 3 s.
+
+### Changed
+
+- **The coprocessor's CAN report counts requests.** It carried `echoes
+  served`, which counts self-test probe frames and is zero whenever the
+  panel's CAN self-test is not running -- so on a bench with a link that had
+  stopped it read as "nothing arrived" when it meant "no self-test was
+  running". It now prints the link requests this end has answered as well:
+
+  ```
+  rcbench-iomcu: CAN up, 1000000 bit/s, 4271 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00
+  ```
+
+  A count standing still while the panel says NO LINK means nothing is
+  arriving; a count climbing while the panel says NO LINK means the answers
+  are not getting back. No counter and no protocol register changed:
+  `s_frames` is the one already published as `LINK_ST_FRAMES_LO`/`_HI`.
+- The panel's link report, printed every 5 s while the link is down, carries
+  the controller's own counters and ends the line in `-- BUS OFF` when it is,
+  or says the controller is not running when TWAI never started. Zeros there
+  read as a healthy bus for the one fault that stops everything.
+
 ## 0.4.1 - 2026-09-06
 
 Two flash writes that stopped the bench, and the button that said a save had
