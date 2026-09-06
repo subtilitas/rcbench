@@ -75,7 +75,15 @@ eine Berührung am Ende nicht mit einem Kontakt den vollen Weg anfordern kann.
 ARM wird gehalten. Die Füllung blendet über zwei Sekunden von Grün ins
 Gefahrenrot, und der Prüfstand schaltet scharf, wenn die Blende
 durchgelaufen ist; früher loszulassen schaltet nichts scharf, und das
-Loslassen selbst ebenfalls nicht. Das Scharfschalten lässt den ganzen Button
+Loslassen selbst ebenfalls nicht.
+
+Der Finger muss auf dem Button bleiben. Verlässt er ihn, ist das Halten
+abgebrochen — die Geste ist der Kontakt mit dem Bedienelement und nicht mit
+dem Panel. Zurückrutschen setzt es nicht fort: der Kontakt ist für ARM
+beendet, und Scharfschalten verlangt danach, den Finger abzuheben und neu zu
+drücken. Wird der Prüfstand unter einem noch gehaltenen Finger unscharf,
+endet die Geste ebenfalls — sonst würde genau der Kontakt, mit dem angehalten
+wurde, zwei Sekunden später wieder scharf schalten. Das Scharfschalten lässt den ganzen Button
 zweimal aufblitzen: weiss, schwarz, rot, und noch einmal, je ein gezeichneter
 Frame. Ein scharfer Prüfstand trägt das Gefahrenrot, und DISARM ist ein Druck
 und kein Halten: Anhalten braucht nie ein Halten. DISARM und STOP halten den

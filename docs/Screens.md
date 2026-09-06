@@ -72,7 +72,15 @@ percentage point.
 
 ARM is a hold. The fill fades from green to the danger red across two
 seconds, and the bench arms when the fade completes; letting go before then
-arms nothing, and the release itself arms nothing either. Arming flashes the
+arms nothing, and the release itself arms nothing either.
+
+The finger has to stay on the button. One that leaves it abandons the hold,
+because the gesture is contact with the control and not with the panel.
+Coming back is not resuming: the contact is finished as far as ARM is
+concerned, so arming after that takes lifting the finger and pressing again.
+A bench that disarms under a finger still held on the button ends the gesture
+too — otherwise the contact made to stop it would arm it again two seconds
+later. Arming flashes the
 whole button twice: white, black, red, and again, one drawn frame each. An
 armed bench carries the danger red, and DISARM is a press rather than a hold:
 stopping never needs a hold. DISARM and STOP stop the output immediately, with
