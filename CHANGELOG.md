@@ -6,6 +6,67 @@ history is in git.
 
 ## Unreleased
 
+## 0.5.0 - 2026-09-06
+
+A link that dropped never came back, and the panel could not say why. Both
+are fixed, and the panel now explains a bad bus on its own screen instead of
+on a console that is not always reachable.
+
+### Fixed
+
+- **A link that dropped stayed dropped, and nothing on the bench said so.**
+  The panel holds one request at a time. `link_host_tick()` answers true for
+  two different facts -- this request has been outstanding too long, and the
+  link as a whole has gone quiet -- and only the first releases the
+  outstanding slot. The wait in the panel ended on either, so a wait that
+  ended on the second left the request pending for ever: `link_host_read()`
+  then refuses every later request, returning before the wait is entered, and
+  the wait held the only call to the clock that would have cleared it. The
+  panel stopped transmitting, the CAN (Controller Area Network) controller
+  reported a healthy bus because nothing reached the wire, and only a power
+  cycle cleared it. The order that triggers it is the ordinary one:
+  escalation is measured from the last reply and the request timeout from the
+  request, so after a second of silence the next request wedges. Reported as
+  #99, and diagnosed from a field log showing polls frozen at 1545 with zero
+  timeouts and zero bus errors.
+
+### Added
+
+- **The CAN self-test runs at every start-up**, 1200 ms inside the splash and
+  before the identity poll. A verdict other than every probe coming back
+  intact puts the panel on a screen of its own instead of the menu: the
+  verdict, what to check in the order that costs least to check, and what
+  both ends counted. It was behind a compile-time flag and a console before,
+  which an operator has neither of.
+- **A link that was up and has been gone for 4 s says so on the same
+  screen**, with this end's own counters -- what the CAN controller is doing,
+  its transmit, receive and bus error counts, how many times the bus has been
+  asked back, and how long the link has been quiet. Never while armed: the
+  screen carries no STOP, and a bench with something spinning must not have
+  its stop button covered by a diagnosis.
+- **`RCBENCH.LOG` on the SD card**, one line per report while the link is
+  down, the same fields in the same order every time. A tester can send a
+  file rather than a photograph.
+- The acknowledgement on both is a two-second hold, ARM's gesture and its
+  fade. `UI_HOLD_S`, `ui_hold_fill()` and `ui_hold_flash()` move to
+  `ui_widgets` and ARM is ported onto them, so the two cannot come to look
+  different from each other.
+
+### Changed
+
+- **The coprocessor's CAN report counts the link requests it has answered**,
+  not only self-test echoes -- which are zero in ordinary use and read as
+  nothing arriving.
+- **The bridged USB-C socket is on UART0, and a switch decides what it
+  reaches.** A slide switch beside the BOOT and RESET buttons is marked
+  `UART1` and `UART2`. In one position the bridge chip enumerates, names
+  itself to the operating system and passes nothing in either direction,
+  which is the symptom a broken cable gives. It is step 0 of
+  [First run on hardware](docs/FirstRun.md) now. The header said UART0's pins
+  were assumed and not traced; a board accepts a firmware download through
+  that socket and the ROM bootloader takes one on UART0 and nowhere else, so
+  they are not assumed any more.
+
 ## 0.4.2 - 2026-09-06
 
 The panel could not get back on the CAN bus once it fell off it, and the
