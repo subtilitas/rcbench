@@ -24,7 +24,18 @@ an eine Page, die die Page Map nicht benutzt.
 Boot-Ausgabe auf der USB-Konsole (Universal Serial Bus) des Koprozessors,
 alle 3 s wiederholt:
 
-    rcbench-iomcu: CAN up, 1000000 bit/s, 0 echoes served, tx_err 0 rx_err 0 eflg 0x00
+    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00
+
+`requests served` zählt die Link-Page-Anfragen, die das Panel geschickt und
+dieses Ende beantwortet hat; `self-test echoes` zählt Probe-Frames und steht
+auf 0, solange der CAN-Selbsttest des Panels nicht läuft. Zusammen sagen die
+beiden, welches Ende aufgehört hat:
+
+| Requests | Panel zeigt | Lesart |
+| --- | --- | --- |
+| steigend | `LINK` | funktioniert |
+| unverändert | `NO LINK` | es kommt nichts an — das Panel sendet nicht mehr, oder die Verkabelung ist offen |
+| steigend | `NO LINK` | die Anfragen kommen an, die Antworten nicht zurück |
 
 `CAN did not answer on SPI` heißt, dass der Controller nach dem Reset nicht
 den Configuration Mode gemeldet hat. Der Fehler liegt an SPI (Serial
