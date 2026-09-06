@@ -176,9 +176,15 @@ static void event(const touch_event_t *evt)
         }
         break;
     case TOUCH_EVENT_MOVE:
-        /* A finger that slides off the button abandons the hold, as ARM's
-         * does: the gesture is contact with the control, not with the
-         * panel. */
+        /*
+         * A finger that slides off the button abandons the hold: the gesture
+         * is contact with the control, not with the panel.
+         *
+         * Stricter than ARM, which handles no move at all -- a press that
+         * starts on ARM and slides anywhere still arms when the two seconds
+         * are up.  That is worth looking at on its own; it is the arming
+         * path and not this screen's to change in passing.
+         */
         if (s.have_press && evt->point.id == s.press_id
             && !in_ack(evt->point.x, evt->point.y)) {
             s.pressed = false;
