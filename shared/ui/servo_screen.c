@@ -247,6 +247,12 @@ void servo_screen_cancel_arm(void)
      */
     ui_hold_reset(&s.arm);
     s.arm_down = false;
+    /* And an arm the gesture has already produced but nobody has read yet.
+     * Cancelling the hold and leaving its command behind would send it a
+     * frame later, which is the thing being prevented. */
+    if (s.pending.kind == SERVO_CMD_ARM) {
+        s.pending.kind = SERVO_CMD_NONE;
+    }
     ++s.arm_rev;
 }
 

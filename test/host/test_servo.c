@@ -423,6 +423,21 @@ TEST_CASE(a_stop_abandons_a_hold_that_is_under_way)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
 }
 
+TEST_CASE(a_cancelled_hold_leaves_no_arm_to_be_read_later)
+{
+    /*
+     * The hold can complete in the same frame the stop arrives, so the arm
+     * is already waiting to be read.  Cancelling the gesture and leaving its
+     * command behind would forward it a frame later and clear the latch.
+     */
+    fresh();
+    arm_press();
+    held(UI_HOLD_S + 0.2f);
+    servo_screen_cancel_arm();
+    servo_cmd_t got;
+    CHECK(!servo_screen_take(&got));
+}
+
 TEST_CASE(a_second_contact_cannot_take_over_the_arm_hold)
 {
     /*
@@ -564,6 +579,7 @@ int main(void)
     RUN(the_trim_says_the_position_again_while_it_is_held);
     RUN(nothing_is_said_again_when_nothing_is_being_held);
     RUN(a_stop_abandons_a_hold_that_is_under_way);
+    RUN(a_cancelled_hold_leaves_no_arm_to_be_read_later);
     RUN(a_second_contact_cannot_take_over_the_arm_hold);
     RUN(a_stop_stops_the_screen_holding_anything);
     RUN(leaving_disarms_and_lets_go_of_the_output);

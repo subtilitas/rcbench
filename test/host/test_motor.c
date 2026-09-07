@@ -296,6 +296,18 @@ TEST_CASE(a_stop_abandons_a_hold_that_is_under_way)
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
 }
 
+TEST_CASE(a_cancelled_hold_leaves_no_arm_to_be_read_later)
+{
+    /* See the servo screen's own: the arm can already be waiting when the
+     * stop arrives, and cancelling the hold has to take it with it. */
+    fresh();
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS + 4);
+    motor_screen_cancel_arm();
+    motor_cmd_t got;
+    CHECK(!motor_screen_poll_cmd(&got));
+}
+
 TEST_CASE(a_second_contact_cannot_take_over_the_arm_hold)
 {
     fresh();
@@ -885,6 +897,7 @@ int main(void)
     RUN(a_press_that_slides_off_arm_does_nothing);
     RUN(a_second_contact_cannot_steal_the_disarm_release);
     RUN(a_stop_abandons_a_hold_that_is_under_way);
+    RUN(a_cancelled_hold_leaves_no_arm_to_be_read_later);
     RUN(a_second_contact_cannot_take_over_the_arm_hold);
     RUN(a_short_press_on_arm_does_nothing);
     RUN(arming_flashes_the_whole_button);

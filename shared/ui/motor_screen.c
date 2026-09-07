@@ -283,6 +283,11 @@ void motor_screen_cancel_arm(void)
         s.pressed = 0;
         ++s.ctrl_rev;
     }
+    /* And an arm the gesture has already produced but nobody has read yet;
+     * see the servo screen's own. */
+    if (s.pending.kind == MOTOR_CMD_ARM) {
+        s.pending.kind = MOTOR_CMD_NONE;
+    }
     ++s.arm_rev;
 }
 

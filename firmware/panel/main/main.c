@@ -2455,6 +2455,24 @@ void app_main(void)
         outputs_screen_set_result(
             (outputs_result_t)atomic_load(&s_outputs_result));
 
+        /*
+         * The stop latch before anything the screens produced.
+         *
+         * A hold that completed in the frame the stop arrived has its command
+         * waiting to be read, and forwarding it first would send an arm from
+         * a gesture the stop has just cancelled -- which clears the latch a
+         * pass or two later, when nothing is left to say it should not.
+         */
+        bool stopped_now;
+        snap_lock();
+        stopped_now = s_snap.stopped;
+        snap_unlock();
+        if (stopped_now && !was_stopped) {
+            motor_screen_cancel_arm();
+            servo_screen_cancel_arm();
+        }
+        was_stopped = stopped_now;
+
         motor_cmd_t mc;
         while (motor_screen_poll_cmd(&mc)) {
             panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc };
@@ -2482,7 +2500,6 @@ void app_main(void)
         bench_state_t bench;
         bool     link_up;
         bool     armed;
-        bool     stopped;
         uint16_t faults;
         uint32_t link_errors;
         float    mcu_temp_c;
@@ -2493,7 +2510,6 @@ void app_main(void)
         bench       = s_snap.bench;
         link_up     = s_snap.link_up;
         armed       = s_snap.armed;
-        stopped     = s_snap.stopped;
         faults      = s_snap.faults;
         link_errors = s_snap.link_errors;
         mcu_temp_c  = s_snap.mcu_temp_c;
@@ -2515,18 +2531,6 @@ void app_main(void)
             (void)motor_screen_poll_cmd(&mc);   /* not a command, a follow */
         }
         was_armed = armed;
-        /*
-         * A stop that latches ends any hold under way, on both screens.
-         * set_armed() cannot do it: a stop on a bench that was not armed
-         * changes nothing about whether it is armed, and the gesture would
-         * finish its two seconds and ask to arm -- clearing the latch that
-         * had just been set.
-         */
-        if (stopped && !was_stopped) {
-            motor_screen_cancel_arm();
-            servo_screen_cancel_arm();
-        }
-        was_stopped = stopped;
         motor_screen_set_armed(armed);
         servo_screen_set_armed(armed);
         /* One sample, one plot column, however many frames it took to get

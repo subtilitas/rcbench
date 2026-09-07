@@ -26,6 +26,12 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **A cancelled arming gesture could still deliver its arm.** The hold can
+  complete in the same frame the stop arrives, leaving the command waiting to
+  be read; the screens were asked about the stop after their commands had
+  been forwarded, so the arm went out a frame later and cleared the latch.
+  The stop edge is handled before anything the screens produced, and
+  cancelling a hold takes its unread command with it.
 - **A stop did not end an arming gesture already under way.** A stop can
   latch on a bench that is not armed -- a STOP press, a dead touch, the far
   end -- so nothing about the armed state changed and a hold still under a
