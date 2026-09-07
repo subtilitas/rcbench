@@ -1911,15 +1911,20 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
             /* The edge: it was up until this poll. */
             s_link_lost_ms = now_ms();
         }
-        *link_up = answered;
-
         /*
-         * A sample exists only if the far end answered.  A poll that timed out
-         * republishes nothing: counting it would put a stale reading on the
-         * plot as a fresh column and stamp a log row for a measurement that
-         * never arrived.
+         * A sample exists only if the bench page was read.  A poll that timed
+         * out republishes nothing: counting it would put a stale reading on
+         * the plot as a fresh column and stamp a log row for a measurement
+         * that never arrived.
+         *
+         * Taken before link_up moves, and from the branch rather than from
+         * the answer.  While the link is down the question asked is the
+         * identity page, so an answer there says a coprocessor is there to
+         * talk to and says nothing about the bench: bench still holds
+         * whatever it held, which at boot is zeros.
          */
         new_sample = *link_up && answered;
+        *link_up = answered;
 
         /*
          * The status page is read a tenth as often as the bench page: a status
