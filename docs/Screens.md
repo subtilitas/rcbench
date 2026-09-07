@@ -134,6 +134,14 @@ position; the faint arm is the commanded position. The gap between them is the
 servo's own lag. The rings around the tip pulse while the servo is being
 driven. Releasing the sweep clears the output slot.
 
+**ARM before anything moves.** While the bench is not armed the coprocessor
+writes a pulse of length zero to every PWM pin, so the horn on screen follows
+the finger and the servo does not. The button is a two-second hold, the same
+gesture and the same fade as the one on MOTOR & ESC, and a press on it while
+armed disarms. Leaving the screen disarms and lets go of the pin: a screen
+that is not visible must not be holding a servo somewhere, or leaving the
+bench armed behind it.
+
 ## Analyser
 
 ![Analyser](img/analyser.png)

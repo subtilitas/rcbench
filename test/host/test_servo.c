@@ -15,6 +15,7 @@
 #include "servo_screen.h"
 #include "ui_screen.h"
 #include "ui_theme.h"
+#include "ui_widgets.h"
 
 #define W 800
 #define H 480
@@ -174,16 +175,132 @@ TEST_CASE(centre_and_release_post_their_own_commands)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
 }
 
+/* ---------------------------------------------------------------- arming */
+
+/* The ARM button, mirrored from servo_screen.c: full width of the right
+ * card's inner column, under CENTRE and RELEASE. */
+#define ARM_X (508 + 12)
+#define ARM_W (800 - 508 - 6 - 24)
+#define ARM_Y 388
+#define ARM_H 32
+static void arm_press(void)   { ev(ARM_X + 40, ARM_Y + 16, TOUCH_EVENT_DOWN, 1); }
+static void arm_release(void) { ev(ARM_X + 40, ARM_Y + 16, TOUCH_EVENT_UP, 1); }
+static void held(float s_total)
+{
+    /* The frame rate the panel runs at, so the hold is fed the way it is fed
+     * on the bench rather than in one jump. */
+    for (int i = 0; i < (int)(s_total * 39.0f + 0.5f); ++i) {
+        scr->tick(1.0f / 39.0f);
+    }
+}
+
 /*
- * Leaving releases the output, for the reason the motor bench disarms on the
- * way out: a screen that does not show the horn must not be holding it
- * somewhere.
+ * The gesture is the same two seconds as MOTOR & ESC's, because it is the
+ * same control: a press that is held arms, and a press that is not does
+ * nothing.  A servo cannot be driven without it -- the coprocessor writes a
+ * pulse of length zero to every PWM pin while the bench is not armed.
  */
-TEST_CASE(leaving_releases_the_output)
+TEST_CASE(a_hold_on_arm_asks_to_arm_exactly_once)
+{
+    fresh();
+    arm_press();
+    held(UI_HOLD_S + 0.2f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
+
+    /* It does not repeat under the same finger. */
+    servo_cmd_t junk;
+    while (servo_screen_take(&junk)) { }
+    held(UI_HOLD_S + 0.2f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
+TEST_CASE(a_short_press_on_arm_asks_for_nothing)
+{
+    fresh();
+    arm_press();
+    held(UI_HOLD_S / 2.0f);
+    arm_release();
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
+TEST_CASE(a_finger_that_leaves_arm_arms_nothing)
+{
+    fresh();
+    arm_press();
+    held(UI_HOLD_S / 2.0f);
+    ev(ARM_X + 40, ARM_Y - 120, TOUCH_EVENT_MOVE, 1);   /* slid off it */
+    held(UI_HOLD_S + 0.2f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+
+    /* Sliding back on does not resume it: the press is over. */
+    ev(ARM_X + 40, ARM_Y + 16, TOUCH_EVENT_MOVE, 1);
+    held(UI_HOLD_S + 0.2f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
+TEST_CASE(arming_and_disarming_come_from_the_same_button)
+{
+    fresh();
+    arm_press();
+    held(UI_HOLD_S + 0.2f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
+    /* The bench answers, and the release that armed is not also a press. */
+    servo_screen_set_armed(true);
+    arm_release();
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+
+    /* A fresh press on it, while armed, is the disarm. */
+    tap(ARM_X + 40, ARM_Y + 16);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_DISARM);
+}
+
+TEST_CASE(a_press_that_disarmed_the_bench_does_not_then_arm_it)
+{
+    /*
+     * The bench goes away under the finger -- a stop, a failsafe, or the far
+     * end -- and the press that is still down must not start a fresh hold
+     * and arm it again two seconds later.
+     */
+    fresh();
+    servo_screen_set_armed(true);
+    arm_press();
+    servo_screen_set_armed(false);
+    held(UI_HOLD_S + 0.5f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+
+    /* And the button is not stranded: the next hold still arms. */
+    arm_release();
+    arm_press();
+    held(UI_HOLD_S + 0.2f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
+}
+
+TEST_CASE(a_pending_disarm_is_not_overwritten_by_a_position)
+{
+    /* One command is held at a time, and a drag landing on top of a disarm
+     * would drive a bench somebody has just asked to stop. */
+    fresh();
+    servo_screen_set_armed(true);
+    tap(ARM_X + 40, ARM_Y + 16);
+    int x, y;
+    dial_at(30.0f, ARC_R - 20, &x, &y);
+    ev(x, y, TOUCH_EVENT_DOWN, 2);
+    servo_cmd_t got;
+    CHECK(servo_screen_take(&got));
+    CHECK_EQ(got.kind, SERVO_CMD_DISARM);
+}
+
+/*
+ * Leaving disarms, the same rule as the motor bench's: a screen that does
+ * not show the horn must not be holding it somewhere, and it must not leave
+ * the bench armed behind itself either.  The disarm lets go of the pin on
+ * its way, so one command covers both.
+ */
+TEST_CASE(leaving_disarms_and_lets_go_of_the_output)
 {
     fresh();
     scr->leave();
-    CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_DISARM);
 }
 
 /*
@@ -228,7 +345,13 @@ int main(void)
     RUN(the_case_is_not_the_dial);
     RUN(the_travel_limit_clamps_rather_than_refuses);
     RUN(centre_and_release_post_their_own_commands);
-    RUN(leaving_releases_the_output);
+    RUN(a_hold_on_arm_asks_to_arm_exactly_once);
+    RUN(a_short_press_on_arm_asks_for_nothing);
+    RUN(a_finger_that_leaves_arm_arms_nothing);
+    RUN(arming_and_disarming_come_from_the_same_button);
+    RUN(a_press_that_disarmed_the_bench_does_not_then_arm_it);
+    RUN(a_pending_disarm_is_not_overwritten_by_a_position);
+    RUN(leaving_disarms_and_lets_go_of_the_output);
     RUN(trim_shifts_the_pulse_and_not_the_angle);
     RUN(feedback_is_shown_rather_than_travelled_to);
     return test_summary("servo");

@@ -566,6 +566,88 @@ TEST_CASE(the_formatters_round_and_pad_as_the_readouts_expect)
     ui_clock(b, sizeof(b), 3599);      CHECK_STR_EQ(b, "59:59");
 }
 
+/* ------------------------------------------------------------- the hold */
+
+/*
+ * Two screens arm the bench with this, so the rules are here rather than in
+ * either of them: what a hold does, what a finger leaving the control does
+ * to it, and what happens when the state it asked for goes away under a
+ * press that is still down.
+ */
+TEST_CASE(a_hold_fires_once_and_only_when_it_is_held)
+{
+    ui_hold_t h;
+    ui_hold_reset(&h);
+
+    /* Time passing without a press is not a hold. */
+    CHECK(!ui_hold_tick(&h, UI_HOLD_S * 2.0f));
+
+    ui_hold_begin(&h);
+    CHECK(!ui_hold_tick(&h, UI_HOLD_S / 2.0f));
+    CHECK(ui_hold_tick(&h, UI_HOLD_S / 2.0f));
+    /* It does not fire again under the same press. */
+    CHECK(!ui_hold_tick(&h, UI_HOLD_S));
+    /* The fill stops at the end of the fade rather than running past it. */
+    CHECK_EQ((int)(h.held_s * 100.0f), (int)(UI_HOLD_S * 100.0f));
+
+    /* The release consumes the firing: it is not also a press. */
+    CHECK(ui_hold_end(&h));
+    CHECK(!ui_hold_end(&h));
+}
+
+TEST_CASE(a_finger_that_leaves_the_control_ends_the_hold)
+{
+    ui_hold_t h;
+    ui_hold_reset(&h);
+    ui_hold_begin(&h);
+    CHECK(!ui_hold_tick(&h, UI_HOLD_S / 2.0f));
+    CHECK(ui_hold_leave(&h));
+    CHECK(!ui_hold_tick(&h, UI_HOLD_S * 2.0f));   /* and it does not resume */
+
+    /* Once it has fired, the press is waiting for its release instead. */
+    ui_hold_reset(&h);
+    ui_hold_begin(&h);
+    CHECK(ui_hold_tick(&h, UI_HOLD_S));
+    CHECK(!ui_hold_leave(&h));
+}
+
+TEST_CASE(a_state_that_goes_away_under_a_press_ends_the_gesture)
+{
+    ui_hold_t h;
+    ui_hold_reset(&h);
+    ui_hold_begin(&h);
+    CHECK(ui_hold_tick(&h, UI_HOLD_S));
+    ui_hold_reached(&h);
+    CHECK_EQ(h.flash_left, UI_HOLD_FLASH_FRAMES);
+    /* Reaching it keeps the firing: the finger is still down on the press
+     * that fired, and its release consumes it. */
+    CHECK(h.fired);
+
+    /* Now it goes away under that finger.  Both halves end, so a press left
+     * standing cannot start a fresh hold and ask for it again. */
+    CHECK(ui_hold_left(&h));
+    CHECK(!ui_hold_tick(&h, UI_HOLD_S * 2.0f));
+    /* And with no press down there is nothing to end. */
+    CHECK(!ui_hold_left(&h));
+
+    for (int i = 0; i < UI_HOLD_FLASH_FRAMES; ++i) { ui_hold_flash_step(&h); }
+    CHECK_EQ(h.flash_left, 0);
+    ui_hold_flash_step(&h);
+    CHECK_EQ(h.flash_left, 0);
+}
+
+TEST_CASE(the_hold_refuses_a_null_rather_than_following_it)
+{
+    ui_hold_reset(NULL);
+    ui_hold_begin(NULL);
+    ui_hold_reached(NULL);
+    ui_hold_flash_step(NULL);
+    CHECK(!ui_hold_leave(NULL));
+    CHECK(!ui_hold_end(NULL));
+    CHECK(!ui_hold_tick(NULL, UI_HOLD_S));
+    CHECK(!ui_hold_left(NULL));
+}
+
 int main(void)
 {
     RUN(the_scale_ladder_has_its_fine_steps);
@@ -589,5 +671,9 @@ int main(void)
     RUN(tabs_select_and_a_slip_does_not);
     RUN(no_widget_draws_outside_the_box_it_was_given);
     RUN(the_formatters_round_and_pad_as_the_readouts_expect);
+    RUN(a_hold_fires_once_and_only_when_it_is_held);
+    RUN(a_finger_that_leaves_the_control_ends_the_hold);
+    RUN(a_state_that_goes_away_under_a_press_ends_the_gesture);
+    RUN(the_hold_refuses_a_null_rather_than_following_it);
     return test_summary("widgets");
 }

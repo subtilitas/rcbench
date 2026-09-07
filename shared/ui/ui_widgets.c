@@ -249,6 +249,96 @@ gfx_color_t ui_hold_fill(gfx_color_t base, gfx_color_t target, float held_s)
     return gfx_lerp(base, target, t);
 }
 
+void ui_hold_reset(ui_hold_t *h)
+{
+    if (h == NULL) {
+        return;
+    }
+    h->held_s = 0.0f;
+    h->down = false;
+    h->fired = false;
+    h->flash_left = 0;
+}
+
+void ui_hold_begin(ui_hold_t *h)
+{
+    if (h == NULL) {
+        return;
+    }
+    h->down = true;
+    h->held_s = 0.0f;
+}
+
+bool ui_hold_leave(ui_hold_t *h)
+{
+    /* Only while the hold is running.  Once it has fired, the press is
+     * waiting for the release that consumes it. */
+    if (h == NULL || !h->down || h->fired) {
+        return false;
+    }
+    h->down = false;
+    h->held_s = 0.0f;
+    return true;
+}
+
+bool ui_hold_end(ui_hold_t *h)
+{
+    if (h == NULL) {
+        return false;
+    }
+    const bool fired = h->fired;
+    h->down = false;
+    h->held_s = 0.0f;
+    h->fired = false;
+    return fired;
+}
+
+bool ui_hold_tick(ui_hold_t *h, float dt_s)
+{
+    if (h == NULL || !h->down || h->fired) {
+        return false;
+    }
+    h->held_s += dt_s;
+    if (h->held_s < UI_HOLD_S) {
+        return false;
+    }
+    /* The hold is the gesture: it completes here, not on the release, so
+     * letting go early asks for nothing. */
+    h->held_s = UI_HOLD_S;
+    h->fired = true;
+    return true;
+}
+
+void ui_hold_reached(ui_hold_t *h)
+{
+    if (h == NULL) {
+        return;
+    }
+    h->flash_left = UI_HOLD_FLASH_FRAMES;
+    h->held_s = 0.0f;
+}
+
+bool ui_hold_left(ui_hold_t *h)
+{
+    if (h == NULL) {
+        return false;
+    }
+    h->held_s = 0.0f;
+    if (!h->down) {
+        return false;
+    }
+    h->down = false;
+    h->fired = false;
+    return true;
+}
+
+void ui_hold_flash_step(ui_hold_t *h)
+{
+    if (h != NULL && h->flash_left > 0) {
+        --h->flash_left;
+    }
+}
+
 gfx_color_t ui_hold_flash(gfx_color_t settled, int frames_left)
 {
     if (frames_left <= 0) {

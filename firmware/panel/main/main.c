@@ -1559,6 +1559,25 @@ static void write_servo(const servo_cmd_t sv)
 }
 
 /*
+ * Disarming, wherever it was asked for.
+ *
+ * Two screens can arm the bench and both disarm it the same way: the policy
+ * is told, this end's own bank stops driving, the throttle goes to zero so
+ * the next arm cannot carry the last one's command, and the far end is told
+ * while there is a link to tell it on.
+ */
+static void disarm_here(bool link_up)
+{
+    arming_request_disarm(&s_arm);
+    outputs_arm(&s_out, false, now_ms());
+    throttle_to_zero();
+    if (link_up) {
+        link_msg_t ack = { 0 };
+        (void)control_write(false, &ack);
+    }
+}
+
+/*
  * One motor command.  Arming is asked of the policy rather than done here;
  * the throttle is a channel command like any other.
  */
@@ -1575,13 +1594,7 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
         arming_request_arm(&s_arm, now_ms());
         break;
     case MOTOR_CMD_DISARM:
-        arming_request_disarm(&s_arm);
-        outputs_arm(&s_out, false, now_ms());
-        throttle_to_zero();
-        if (link_up) {
-            link_msg_t ack = { 0 };
-            (void)control_write(false, &ack);
-        }
+        disarm_here(link_up);
         break;
     case MOTOR_CMD_THROTTLE:
         s_throttle_hundredths = pct_to_hundredths(mc->value);
@@ -1590,6 +1603,35 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
         break;
     case MOTOR_CMD_RESET_PEAKS: bench_state_reset_peaks(bench); break;
     default: break;
+    }
+}
+
+/*
+ * One servo command.
+ *
+ * Arming and disarming go to the same policy the motor screen's do -- the
+ * bench has one armed state and one set of rules for reaching it, whichever
+ * screen is up.  A disarm is acted on with or without a link, because the
+ * part of it that matters most is at this end.
+ */
+static void apply_servo_cmd(const servo_cmd_t sv, bool link_up)
+{
+    if (sv.kind == SERVO_CMD_ARM) {
+        arming_request_arm(&s_arm, now_ms());
+        return;
+    }
+    if (sv.kind == SERVO_CMD_DISARM) {
+        disarm_here(link_up);
+        if (link_up) {
+            /* And let go of the pin: the slot is this screen's, and a screen
+             * that has been left must not keep one bound. */
+            const servo_cmd_t release = { SERVO_CMD_RELEASE, 0 };
+            write_servo(release);
+        }
+        return;
+    }
+    if (link_up) {
+        write_servo(sv);
     }
 }
 
@@ -1624,10 +1666,7 @@ static void drain_commands(bool link_up, bench_state_t *bench)
             continue;
         }
         if (pc.kind == PANEL_CMD_SERVO) {
-            if (!link_up) {
-                continue;
-            }
-            write_servo(pc.servo);
+            apply_servo_cmd(pc.servo, link_up);
             continue;
         }
 
@@ -2326,6 +2365,7 @@ void app_main(void)
         }
         was_armed = armed;
         motor_screen_set_armed(armed);
+        servo_screen_set_armed(armed);
         /* One sample, one plot column, however many frames it took to get
          * here: the queue holds what this loop was too busy to draw. */
         bench_state_t sample;

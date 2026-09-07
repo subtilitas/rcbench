@@ -142,6 +142,15 @@ Abstand zwischen beiden ist die Verzögerung des Servos selbst. Die Ringe um
 die Spitze pulsieren, solange das Servo angesteuert wird. Loslassen des Bogens
 löscht den Ausgangs-Slot.
 
+**Vor jeder Bewegung ARM.** Solange der Prüfstand nicht scharf ist, schreibt
+der Koprozessor auf jeden PWM-Pin einen Impuls der Länge null: der Arm auf dem
+Bildschirm folgt dem Finger, das Servo nicht. Der Knopf ist ein
+Zwei-Sekunden-Halten, dieselbe Geste und dieselbe Blende wie auf MOTOR & ESC,
+und ein Druck darauf im scharfen Zustand schaltet unscharf. Das Verlassen des
+Bildschirms schaltet unscharf und gibt den Pin frei: ein Bildschirm, den man
+nicht sieht, darf weder ein Servo halten noch den Prüfstand scharf
+zurücklassen.
+
 ## Analyser
 
 ![Analyser](img/analyser.png)

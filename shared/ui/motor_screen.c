@@ -150,9 +150,7 @@ static struct {
     uint32_t      arm_rev;
     uint32_t      drawn_arm[2];
     int           esc_kv;        /**< as reported by the ESC, 0 if it does not */
-    float         arm_held_s;    /**< how long the ARM press has been held */
-    bool          arm_fired;     /**< the hold completed; do not repeat it */
-    int           arm_flash_left;/**< frames of the flash still to draw    */
+    ui_hold_t     arm;           /**< the ARM gesture: ui_widgets owns it  */
     gfx_rect_t    arm_rect;
     gfx_rect_t    reset_rect;
     gfx_rect_t    down_rect;    /**< one percentage point down */
@@ -278,41 +276,19 @@ void motor_screen_set_armed(bool armed)
     if (s.armed != armed) {
         s.armed = armed;
         if (armed) {
-            s.arm_flash_left = ARM_FLASH_FRAMES;
-        } else if (s.pressed == 1) {
-            /*
-             * The bench disarmed under a finger that is still down on the
-             * button.  The gesture ends here, both halves of it.
-             *
-             * tick() asks only whether a press is held, not where it is, so
-             * a press left standing would start a fresh two seconds the
-             * moment s.armed went false and arm the bench again -- from a
-             * contact the operator made to stop it, and after a failsafe or
-             * a STOP, which is where nobody is expecting it.  Clearing the
-             * press without arm_fired would strand it: the release consumes
-             * arm_fired and a release of a press that is no longer held
-             * does nothing, so the next hold could never complete.
-             */
-            s.pressed   = 0;
-            s.arm_fired = false;
+            ui_hold_reached(&s.arm);
+        } else if (ui_hold_left(&s.arm)) {
+            /* The bench disarmed under a finger still down on the button and
+             * the hold ended with it, so this screen drops the press it was
+             * routing.  Why both halves end together is in ui_hold_left(). */
+            s.pressed = 0;
             ++s.ctrl_rev;
         }
-        s.arm_held_s = 0.0f;
-        /*
-         * arm_fired is NOT cleared on the way to armed.  It remembers that
-         * the press still under the finger is the one that armed, and the
-         * application calls this between the hold completing and the finger
-         * lifting: clearing it made that release look like a fresh press on
-         * DISARM, so the bench armed, flashed and disarmed itself on the way
-         * up.  The release consumes it.
-         *
-         * On the way back to disarmed it is cleared, together with the press
-         * it belongs to -- see above.
-         */
         ++s.arm_rev;
         ++s.ctrl_rev;
     }
 }
+
 /*
  * The kV the connected ESC reports, or 0 when it reports none.  Preferred
  * over SET_MOTOR_KV: the part under test knows its own rating and a value
@@ -382,7 +358,7 @@ static void event(const touch_event_t *evt)
         }
         if (gfx_rect_contains(s.arm_rect, x, y)) {
             s.have_press = true; s.press_id = evt->point.id; s.pressed = 1;
-            s.arm_held_s = 0.0f;
+            ui_hold_begin(&s.arm);
             ++s.arm_rev;
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.reset_rect, x, y)) {
@@ -396,22 +372,17 @@ static void event(const touch_event_t *evt)
     }
     if (evt->type == TOUCH_EVENT_MOVE) {
         /*
-         * A finger that leaves ARM abandons the hold: the gesture is contact
-         * with the control, not with the panel.  A press that starts on ARM
-         * and slides onto the plot would otherwise arm the bench two seconds
-         * later.  Sliding back on does not resume it -- the press is over as
-         * far as ARM is concerned -- so the hold starts again from zero on
-         * the next press.
+         * A finger that leaves ARM abandons the hold -- see ui_hold_leave().
+         * A press that starts on ARM and slides onto the plot would otherwise
+         * arm the bench two seconds later.
          *
-         * Only while the hold is running.  Once it has fired, the press is
-         * waiting for the release that consumes arm_fired; while the bench is
-         * armed the same press is a DISARM, whose release is already checked
-         * against the rectangle.
+         * While the bench is armed the same press is a DISARM, whose release
+         * is already checked against the rectangle, so the hold is not asked
+         * about it.
          */
-        if (s.pressed == 1 && !s.armed && !s.arm_fired
-            && !gfx_rect_contains(s.arm_rect, x, y)) {
-            s.pressed    = 0;
-            s.arm_held_s = 0.0f;
+        if (s.pressed == 1 && !s.armed && !gfx_rect_contains(s.arm_rect, x, y)
+            && ui_hold_leave(&s.arm)) {
+            s.pressed = 0;
             ++s.arm_rev;
             ++s.ctrl_rev;
         }
@@ -427,9 +398,7 @@ static void event(const touch_event_t *evt)
         if (was == 1) {
             /* Whatever was held is abandoned: the fade goes back to green,
              * and an arm that had not completed does not complete later. */
-            const bool fired = s.arm_fired;
-            s.arm_held_s = 0.0f;
-            s.arm_fired  = false;
+            const bool fired = ui_hold_end(&s.arm);
             ++s.arm_rev;
             /*
              * Disarming is a press; arming is a hold that has already sent
@@ -454,18 +423,13 @@ static void event(const touch_event_t *evt)
  */
 static void tick(float dt_s)
 {
-    if (s.pressed == 1 && !s.armed && !s.arm_fired) {
-        s.arm_held_s += dt_s;
+    if (s.pressed == 1 && !s.armed) {
         ++s.arm_rev;
-        if (s.arm_held_s >= ARM_HOLD_S) {
-            /* The hold is the arming gesture: the command goes here, not on
-             * the release, so letting go early arms nothing. */
-            s.arm_held_s = ARM_HOLD_S;
-            s.arm_fired  = true;
+        if (ui_hold_tick(&s.arm, dt_s)) {
             post(MOTOR_CMD_ARM, 0.0f);
         }
     }
-    if (s.arm_flash_left > 0) {
+    if (s.arm.flash_left > 0) {
         ++s.arm_rev;   /* keep the frames coming while it flashes */
     }
 }
@@ -481,8 +445,8 @@ static void tick(float dt_s)
  * however the render paths are gated. */
 static void arm_flash_advance(void)
 {
-    if (s.arm_flash_left > 0) {
-        --s.arm_flash_left;
+    if (s.arm.flash_left > 0) {
+        ui_hold_flash_step(&s.arm);
         /* The next colour needs a frame of its own, and this screen only
          * paints when a counter moves.  Asking for it here rather than in
          * tick() keeps the flash a property of the drawing. */
@@ -498,11 +462,11 @@ static gfx_color_t arm_fill(void)
                                : ui_theme_color(UI_C_OK);
     /* The flash is the whole button, one colour per drawn frame, and it
      * overrides everything else while it runs. */
-    if (s.arm_flash_left > 0) {
-        return ui_hold_flash(ui_theme_color(UI_C_DANGER), s.arm_flash_left);
+    if (s.arm.flash_left > 0) {
+        return ui_hold_flash(ui_theme_color(UI_C_DANGER), s.arm.flash_left);
     }
-    if (!s.armed && s.arm_held_s > 0.0f) {
-        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER), s.arm_held_s);
+    if (!s.armed && s.arm.held_s > 0.0f) {
+        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER), s.arm.held_s);
     }
     return fill;
 }
@@ -917,9 +881,7 @@ static void leave(void)
     post(MOTOR_CMD_DISARM, 0.0f);
     s.armed = false;
     /* Neither animation should still be running when the screen comes back. */
-    s.arm_held_s     = 0.0f;
-    s.arm_fired      = false;
-    s.arm_flash_left = 0;
+    ui_hold_reset(&s.arm);
     ++s.arm_rev;
 }
 

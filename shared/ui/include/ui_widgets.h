@@ -93,9 +93,9 @@ void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color);
  * could have been an elbow; the bus-fault screen uses it because an
  * acknowledgement that can be given by brushing the panel is not one.
  *
- * The state stays with each screen -- ARM's is bound up with its own flash
- * and its "already fired" latch -- and these are the timing and the colours,
- * so the two gestures cannot look different from each other.
+ * The timing, the colours and the rules are all here: two screens can arm
+ * the bench, and a safety control that behaves differently on one of them is
+ * a control the operator has to learn twice.
  */
 #define UI_HOLD_S 2.0f
 
@@ -118,6 +118,71 @@ gfx_color_t ui_hold_fill(gfx_color_t base, gfx_color_t target, float held_s);
  * @p settled is what it returns to.
  */
 gfx_color_t ui_hold_flash(gfx_color_t settled, int frames_left);
+
+/**
+ * A hold in progress: how long, whether it has already fired, and the flash
+ * that follows it.
+ *
+ * The screen owns the touch routing -- which of its buttons a press is on --
+ * and hands this the four things that happen to the gesture: it began, it
+ * left the control, it ended, and time passed. What the hold asked for
+ * arriving or going away again is the fifth, and it comes from the bench
+ * rather than from the finger.
+ */
+typedef struct {
+    float held_s;      /**< how long the press has been held           */
+    bool  down;        /**< a press is on the control                  */
+    bool  fired;       /**< the hold completed; it does not repeat     */
+    int   flash_left;  /**< frames of the flash still to draw          */
+} ui_hold_t;
+
+/** Nothing held, nothing fired, nothing flashing. */
+void ui_hold_reset(ui_hold_t *h);
+
+/** A press landed on the control: the hold starts from zero. */
+void ui_hold_begin(ui_hold_t *h);
+
+/**
+ * The press left the control, so the gesture is over: contact with the
+ * control is the gesture, not contact with the panel. Sliding back on does
+ * not resume it. Returns whether a hold was actually abandoned, which is
+ * what tells the screen to drop its own record of the press.
+ */
+bool ui_hold_leave(ui_hold_t *h);
+
+/** The press lifted. Returns whether it was the press that fired, which the
+ *  release consumes: a release that fired is not also a press. */
+bool ui_hold_end(ui_hold_t *h);
+
+/** Time passed. True on the one frame the hold completes, and never again
+ *  until the press is lifted and made afresh. */
+bool ui_hold_tick(ui_hold_t *h, float dt_s);
+
+/**
+ * What the hold asked for has arrived: flash, and stop filling.
+ *
+ * `fired` is deliberately kept. It remembers that the press still under the
+ * finger is the one that fired, and the application calls this between the
+ * hold completing and the finger lifting; clearing it would make that
+ * release look like a fresh press.
+ */
+void ui_hold_reached(ui_hold_t *h);
+
+/**
+ * What the hold asked for has gone away -- a stop, a failsafe, or the far
+ * end -- possibly under a finger that is still down.
+ *
+ * Both halves of the gesture end here. A press left standing would start a
+ * fresh hold the moment the state went away and ask for it again, from a
+ * contact the operator made to stop it. Returns whether such a press was
+ * ended, so the screen can drop its own record of it; clearing the press
+ * without `fired` would strand it, because the release consumes `fired` and
+ * a release of a press that is no longer held does nothing.
+ */
+bool ui_hold_left(ui_hold_t *h);
+
+/** One frame of the flash is spent. */
+void ui_hold_flash_step(ui_hold_t *h);
 
 #ifdef __cplusplus
 }

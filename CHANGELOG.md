@@ -6,6 +6,18 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- **ARM on the servo screen.** Arming existed only on MOTOR & ESC and leaving
+  that screen disarms, so the servo screen could not drive a servo at all: the
+  coprocessor writes a pulse of length zero to every PWM (pulse-width
+  modulation) pin while the bench is not armed, and there was no way to reach
+  an armed bench with the horn on screen. The button is the same two-second
+  hold as the other screen's, and the gesture itself -- the hold, what a
+  finger leaving the control does to it, and what happens when the bench
+  disarms under a press -- now lives once in `ui_widgets` (`ui_hold_t`) rather
+  than twice. Leaving the screen disarms and releases the pin. Reported as #99.
+
 ## 0.6.1 - 2026-09-07
 
 The throttle reached no bound pin, so an ESC (electronic speed controller) on
