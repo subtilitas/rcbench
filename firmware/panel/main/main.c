@@ -1848,15 +1848,23 @@ static void control_task(void *arg)
                 /* The edge: it was up until this poll. */
                 s_link_lost_ms = now_ms();
             }
-            link_up = answered;
-
             /*
-             * A sample exists only if the far end answered.  A poll that
+             * A sample exists only if the bench page was read.  A poll that
              * timed out republishes nothing: counting it would put a stale
              * reading on the plot as a fresh column and stamp a log row for
              * a measurement that never arrived.
+             *
+             * Taken before link_up moves, and from the branch rather than
+             * from the answer.  While the link is down the question asked is
+             * the identity page, so an answer there says a coprocessor is
+             * there to talk to and says nothing about the bench: bench still
+             * holds whatever it held, which at boot is zeros.  Reading
+             * new_sample from `answered` after link_up had been set to it
+             * made the link-up edge produce one fabricated column and one
+             * log row of it.
              */
             new_sample = link_up && answered;
+            link_up = answered;
 
             /*
              * The status page is read a tenth as often as the bench page: a
