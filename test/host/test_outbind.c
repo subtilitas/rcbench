@@ -574,8 +574,18 @@ TEST_CASE(a_page_that_does_not_render_back_to_itself_is_refused)
      * The rate comes from the catalogue rather than a literal: PPM's is the
      * fastest frame eight channels fit in, and a page carrying any other
      * rate is one this screen could not have produced.
+     *
+     * Looked up by driver, not by index. The table's order is what the
+     * protocol list on the screen shows, so it is arranged for an operator
+     * and may be rearranged for one.
      */
-    const uint16_t ppm_hz = outbind_protos()[2].rate;
+    uint16_t ppm_hz = 0;
+    for (uint8_t p = 0; p < OUTBIND_PROTOS; ++p) {
+        if (outbind_protos()[p].driver == OUT_DRIVER_PPM) {
+            ppm_hz = outbind_protos()[p].rate;
+        }
+    }
+    CHECK(ppm_hz != 0);
     outputs_slots_defaults(regs);
     regs[LINK_OS_DRIVER]  = LINK_DRIVER_PPM;
     regs[LINK_OS_PIN]     = 0;
