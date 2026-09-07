@@ -353,7 +353,9 @@ in Pin-Reihenfolge über alle Protokolle hinweg, mit Kanälen ab null — der
 niedrigste angehakte Pin ist also Kanal 0, in welcher Reihenfolge der
 Bildschirm auch berührt wurde und welches Protokoll ihn auch hält. Acht Slots
 und acht Kanäle sind das Budget, geteilt. PPM rendert acht Kanäle auf seinem
-einen Pin, ein Prüfstand mit PPM hat also für nichts anderes Platz.
+einen Pin, ein Prüfstand mit PPM hat also für nichts anderes Platz. Es läuft
+mit 40 Hz und nicht mit den 50 Hz der übrigen Pulstreiber: acht Kanäle
+brauchen 23 300 us Rahmen, und 50 Hz geben 20 000.
 
 Das Protokoll ist eine Liste und kein Stepper: es gibt sieben davon, und sich
 an sechs vorbeizuschieben, um das siebte zu erreichen, ist keine Auswahl.
