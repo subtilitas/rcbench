@@ -68,7 +68,7 @@ hlines               0        0 KiB      0.0      39.0
 | `overview` | the menu, chrome cached |
 | `servo` | the servo screen with the arm redrawn |
 | `servo-grip` | the servo screen with only the grip repainted |
-| `analyser`, `logs`, `settings`, `battery`, `balance`, `programmer` | one steady frame of that screen, chrome cached |
+| `analyser`, `logs`, `settings`, `battery`, `balance`, `programmer`, `picker` | one steady frame of that screen, chrome cached |
 | `<screen>-sim` | the same screen with the SIMULATION watermark |
 | `<screen>-chrome` | the same screen invalidated on every frame |
 | `clear` | a full-screen clear |
@@ -142,9 +142,9 @@ would repaint identical pixels, drawing slower would drop samples. CI
 | `overview` | 2,000 | a chrome-cached screen that has started repainting |
 | `servo` | 17,000 | the arm and grip drawing growing |
 | `servo-grip` | 4,000 | a breath repainting the whole card |
-| the six per-screen modes | 1,200 | a screen that has started repainting |
+| the seven per-screen modes | 1,200 | a screen that has started repainting |
 | the three `-sim` modes | 2,800 | the watermark growing past a full canvas |
-| the six `-chrome` modes | 45,000 | a full repaint growing |
+| the seven `-chrome` modes | 45,000 | a full repaint growing |
 
 If a future pane needs more room, the remaining levers in order of bluntness
 are the plot's height, its width, and clipping the simulation watermark to the

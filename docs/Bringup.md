@@ -120,8 +120,8 @@ bits and long runs of one level are what a marginal bus fails on.
 ## Link report
 
 After bring-up the panel polls the coprocessor's identity page every second
-until it answers, then polls the bench page at 20 Hz and the status page at 1
-Hz. Every 5 s while the link is down, and once a minute while it is up, the
+until it answers, then polls the bench page at 20 Hz and the status page every
+500 ms. Every 5 s while the link is down, and once a minute while it is up, the
 panel prints a diagnosis:
 
     I (…) rcbench: LINK works, and not every time

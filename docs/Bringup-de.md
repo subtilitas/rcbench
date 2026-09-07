@@ -130,7 +130,7 @@ Bus scheitert.
 
 Nach der Inbetriebnahme pollt das Panel jede Sekunde die Identity-Page des
 Koprozessors, bis er antwortet, dann die Bench-Page mit 20 Hz und die
-Status-Page mit 1 Hz. Alle 5 s, solange der Link ausgefallen ist, und einmal
+Status-Page alle 500 ms. Alle 5 s, solange der Link ausgefallen ist, und einmal
 pro Minute, solange er läuft, gibt das Panel eine Diagnose aus:
 
     I (…) rcbench: LINK works, and not every time
