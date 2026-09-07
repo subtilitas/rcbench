@@ -3,7 +3,7 @@
 <sub>**English** · [Deutsch](FirstRun-de.md)</sub>
 
 For the first time both boards are powered with the heartbeat wire fitted.
-Written for 0.6.0. Nothing below has been done before, so
+Written for 0.6.1. Nothing below has been done before, so
 every step says what "good" looks like and what to write down when it is not.
 
 Work down the list. Each step assumes the one above it passed.
