@@ -6,6 +6,13 @@ history is in git.
 
 ## Unreleased
 
+## 0.6.1 - 2026-09-07
+
+The throttle reached no bound pin, so an ESC (electronic speed controller) on
+the OUTPUTS screen initialised, armed, and held one value at every slider
+position. A PWM (pulse-width modulation) ESC could only be bound as a servo,
+whose channel rests at half throttle.
+
 ### Added
 
 - **MOTOR PWM, beside SERVO PWM.** The same pulse at the same 50 Hz, bound to
@@ -29,6 +36,25 @@ history is in git.
   and leaves the surface channels to the screens that own them. Reported as
   #99 from a bench: the ESC initialising, ARMED lit, and an unchanging pulse
   on a scope.
+- **Opening the run log stopped the heartbeat.** `log_start()` runs on the
+  arming edge, on the task that drives the heartbeat and reads STOP, and it
+  probed for a free file name one card transaction at a time: a card holding
+  400 runs cost 400 opens with nothing pumped in between, against a
+  HEARTBEAT_MAX_GAP_MS ceiling of 150 ms. The pump now runs between probes and
+  the scan starts where the last one finished. The retry was the worse half --
+  the arming edge was read from the file handle, so a card that is full or
+  unwritable made every pass look like a fresh arm and rescan once per
+  CONTROL_PERIOD_MS for as long as the bench stayed armed. Whether a run is
+  open is its own flag now, and a run that is not being recorded says so on
+  the alert band rather than only on a console that is not reachable on every
+  board.
+- **The outputs board went grey without saying why.** The rules refusing every
+  pin are right and the screen kept them to itself: a bench with one servo pin
+  bound leaves seven channels free, PPM needs eight, and the whole board greys
+  with nothing beside it. The reason now sits under the protocol in amber --
+  the channels needed against the channels free, the slots when those run out
+  first, or the protocol's own pin limit -- and only when nothing can be
+  added. Reported as #99.
 
 ## 0.6.0 - 2026-09-07
 
