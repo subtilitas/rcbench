@@ -1408,12 +1408,17 @@ static void control_task(void *arg)
             /*
              * An arm starts from nothing, and this is where that is made
              * true rather than hoped for.  ARM and THROTTLE travel in one
-             * transaction, so a command left over from before the disarm
-             * would be the first thing the far end acts on -- with no ramp,
-             * because the panel's throttle channel carries no slew until the
-             * bank is armed.  Every disarm clears it as well; a disarm that
-             * forgot to would be a motor stepping to its old position on a
-             * bench the operator had just stopped, and there has been one.
+             * transaction, so a command left over from before the disarm is
+             * the first thing the far end acts on -- and it steps straight
+             * to it.  The coprocessor's throttle is bank channel 8, off the
+             * CHAN_CFG page that addresses channels 0 to 7, so its slew is
+             * never configured and stays at the zero outputs_init() left:
+             * there is no ramp on that channel at any time.
+             *
+             * Every disarm returns the command to zero as well.  A disarm
+             * that forgot to would be a motor stepping to its old position
+             * on a bench the operator had just stopped, and there has been
+             * one.
              */
             throttle_to_zero();
             if (link_up
