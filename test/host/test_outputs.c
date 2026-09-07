@@ -630,8 +630,56 @@ TEST_CASE(the_throttle_stops_at_the_page_it_was_given)
              0);
 }
 
+TEST_CASE(a_channel_write_keeps_only_the_channels_it_named_alive)
+{
+    /*
+     * The timeout is per channel because the pages that write them are
+     * written independently.  A servo refreshed at 10 Hz to hold its
+     * position must not stamp the clock of a surface nobody is driving, or
+     * that surface never reaches its rest.
+     */
+    fresh_pages();
+    outputs_t b;
+    outputs_init(&b, 0u);
+    outputs_arm(&b, true, 0u);
+
+    uint16_t two[2] = { LINK_CH_SPAN / 4u, LINK_CH_SPAN / 2u };
+    CHECK_EQ(outputs_channels_write(chans, 0, 2, two), 0);
+    outputs_channels_apply_n(&b, chans, 0u, 2u, 0u);
+
+    /* 600 ms later only channel 0 is written again, one register. */
+    uint16_t one[1] = { LINK_CH_SPAN / 4u };
+    CHECK_EQ(outputs_channels_write(chans, 0, 1, one), 0);
+    outputs_channels_apply_n(&b, chans, 0u, 1u, 600u);
+
+    CHECK(!outputs_overdue(&b, 0, 600u));
+    CHECK(outputs_overdue(&b, 1, 600u));
+
+    /* And the one nobody commanded goes to its rest, while the other holds. */
+    outputs_step(&b, 600u);
+    CHECK_EQ(outputs_actual(&b, 0), OUT_SPAN / 4u);
+    CHECK_EQ(outputs_actual(&b, 1), OUT_SPAN / 2u);   /* a surface rests mid */
+}
+
+TEST_CASE(a_channel_range_outside_the_page_is_refused_rather_than_wrapped)
+{
+    fresh_pages();
+    outputs_t b;
+    outputs_init(&b, 0u);
+    /* Past the end, and a count that runs past it: neither may write. */
+    outputs_channels_apply_n(&b, chans, (uint8_t)LINK_CH_COUNT, 1u, 10u);
+    outputs_channels_apply_n(&b, chans, (uint8_t)(LINK_CH_COUNT - 1u), 8u, 10u);
+    outputs_channels_apply_n(NULL, chans, 0u, 1u, 10u);
+    outputs_channels_apply_n(&b, NULL, 0u, 1u, 10u);
+    /* The whole page still applies through the plain call. */
+    outputs_channels_apply(&b, chans, 10u);
+    CHECK(!outputs_overdue(&b, 0, 10u));
+}
+
 int main(void)
 {
+    RUN(a_channel_write_keeps_only_the_channels_it_named_alive);
+    RUN(a_channel_range_outside_the_page_is_refused_rather_than_wrapped);
     RUN(the_throttle_reaches_every_motor_channel_and_no_other);
     RUN(the_throttle_stops_at_the_page_it_was_given);
     RUN(everything_goes_to_rest_together);

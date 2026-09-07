@@ -26,6 +26,19 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **A write to one channel kept every other channel alive.** The coprocessor
+  applied a CHANNELS write by commanding all eight channels of the stored
+  page, whatever the frame carried, so any periodic write stamped every
+  channel's clock. The timeout that returns an uncommanded output to its rest
+  is per channel precisely so one screen's traffic cannot hold another's
+  output up, and applying the page defeated it. Only the registers a frame
+  carries are applied now. Latent until this release, which is the first
+  thing to write a channel periodically.
+- **Changing the servo type, trim or travel left the old pulse on the pin.**
+  The pulse is the angle put through those three, and none of them said the
+  position again, so a servo held while switching from STANDARD to NARROW 760
+  kept 1500 us on a servo whose maximum is 860 while the screen showed the
+  new range.
 - **An arm could render a servo's slot before the release reached the far
   end.** The release was posted after ARM in the same pass, and the far end
   applies ARM and stamps every channel's clock before it steps its outputs,
@@ -34,7 +47,9 @@ history is in git.
   end acknowledges it, rather than assumed from a write that may have gone
   into a link that was dropping, and RELEASE asks for the clear whether or
   not the panel remembers binding the slot -- after a restart the far end can
-  hold a slot this end has never written.
+  hold a slot this end has never written. The servo screen's own DISARM asks
+  for the same clear; a stop from anywhere else stays conditional, so it
+  cannot quietly clear a slot the OUTPUTS screen bound.
 - **A stop left a servo position an arm would step back to.** Only the servo
   screen's own disarm let go of the pin; a STOP, a dead touch, a disarm from
   MOTOR & ESC and a far-end disarm did not, and the far end keeps both the

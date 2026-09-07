@@ -1672,7 +1672,17 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up)
         return;
     }
     if (sv.kind == SERVO_CMD_DISARM) {
-        disarm_here(link_up);   /* which lets go of the pin as well */
+        /*
+         * Asked for by this screen, so the slot goes whether or not this
+         * process cached a position for it -- the far end keeps its slots
+         * across a panel restart, and the screen promises to let go of the
+         * pin.  A stop from anywhere else stays conditional: it must not
+         * quietly clear a slot 0 the OUTPUTS screen bound.
+         */
+        s_servo_held.kind = SERVO_CMD_NONE;
+        s_servo_release_owed = true;
+        disarm_here(link_up);
+        servo_service(link_up);
         return;
     }
     if (sv.kind == SERVO_CMD_RELEASE) {

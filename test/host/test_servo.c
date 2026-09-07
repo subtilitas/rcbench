@@ -179,6 +179,8 @@ TEST_CASE(centre_and_release_post_their_own_commands)
 
 /* The ARM button, mirrored from servo_screen.c: full width of the right
  * card's inner column, under CENTRE and RELEASE. */
+#define TRIM_UP_X (508 + 12 + (800 - 508 - 6 - 24) - 15)
+#define TRIM_UP_Y (156 + 13)
 #define TYPE_X (508 + 12 + (800 - 508 - 6 - 24) - 75)
 #define TYPE_Y (232 + 13)
 #define ARM_X (508 + 12)
@@ -362,6 +364,52 @@ TEST_CASE(the_hold_repaints_the_button_and_leaves_the_card_alone)
     CHECK(arm_px() != 0x1234);                  /* and the button did repaint */
 }
 
+/*
+ * A held output follows a change to the mapping it was made under.  The
+ * pulse is the angle put through the type, the trim and the travel, so
+ * changing one of them while something is held leaves the pin on the old
+ * mapping while the screen shows the new one.
+ */
+TEST_CASE(changing_the_type_says_the_position_again)
+{
+    fresh();
+    int x, y;
+    dial_at(45.0f, ARC_R - 20, &x, &y);
+    tap(x, y);
+    const servo_cmd_t first = last_cmd();
+    CHECK_EQ(first.kind, SERVO_CMD_POSITION);
+    CHECK_EQ(first.max_us, 2000);
+
+    tap(TYPE_X, TYPE_Y);                       /* STANDARD -> NARROW 760 */
+    const servo_cmd_t again = last_cmd();
+    CHECK_EQ(again.kind, SERVO_CMD_POSITION);
+    CHECK_EQ(again.max_us, 860);
+    CHECK(again.value_us >= again.min_us && again.value_us <= again.max_us);
+}
+
+TEST_CASE(the_trim_says_the_position_again_while_it_is_held)
+{
+    fresh();
+    int x, y;
+    dial_at(0.0f, ARC_R - 20, &x, &y);
+    tap(x, y);
+    const uint16_t was = last_cmd().value_us;
+
+    tap(TRIM_UP_X, TRIM_UP_Y);
+    const servo_cmd_t after = last_cmd();
+    CHECK_EQ(after.kind, SERVO_CMD_POSITION);
+    CHECK_EQ(after.value_us, was + 5);
+}
+
+TEST_CASE(nothing_is_said_again_when_nothing_is_being_held)
+{
+    /* A screen that is not driving anything commands nothing by having its
+     * settings changed. */
+    fresh();
+    tap(TYPE_X, TYPE_Y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
 /* ------------------------------------------------------- the servo's range */
 
 /*
@@ -453,6 +501,9 @@ int main(void)
     RUN(the_arm_button_fades_across_the_hold_and_flashes_when_it_lands);
     RUN(the_hold_repaints_the_button_and_leaves_the_card_alone);
     RUN(a_command_carries_the_endpoints_of_the_type_it_was_made_for);
+    RUN(changing_the_type_says_the_position_again);
+    RUN(the_trim_says_the_position_again_while_it_is_held);
+    RUN(nothing_is_said_again_when_nothing_is_being_held);
     RUN(leaving_disarms_and_lets_go_of_the_output);
     RUN(trim_shifts_the_pulse_and_not_the_angle);
     RUN(feedback_is_shown_rather_than_travelled_to);

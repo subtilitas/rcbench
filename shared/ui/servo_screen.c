@@ -184,6 +184,22 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
     s.driving = (kind == SERVO_CMD_POSITION || kind == SERVO_CMD_CENTRE);
 }
 
+/*
+ * Say the position again under a mapping that has just changed.
+ *
+ * The pulse a command carries is the angle put through the type, the trim
+ * and the travel; change any of them while an output is held and the pulse
+ * on the pin belongs to the old one.  Switching a held servo from STANDARD
+ * to NARROW 760 would otherwise leave 1500 us on a servo whose maximum is
+ * 860 while the screen shows the new range.
+ */
+static void reissue(void)
+{
+    if (s.driving) {
+        post(SERVO_CMD_POSITION, deg_to_us(s.commanded_deg));
+    }
+}
+
 static void command(float deg)
 {
     s.commanded_deg = clamp_travel(deg);
@@ -346,12 +362,13 @@ static void event(const touch_event_t *evt)
             command(deg);
             return;
         }
-        if (gfx_rect_contains(s.trim_dn, px, py))   { s.trim_us -= 5; ++s.ctrl_rev; }
-        else if (gfx_rect_contains(s.trim_up, px, py)) { s.trim_us += 5; ++s.ctrl_rev; }
+        if (gfx_rect_contains(s.trim_dn, px, py))   { s.trim_us -= 5; reissue(); ++s.ctrl_rev; }
+        else if (gfx_rect_contains(s.trim_up, px, py)) { s.trim_us += 5; reissue(); ++s.ctrl_rev; }
         else if (gfx_rect_contains(s.travel_dn, px, py)) {
             s.travel_deg -= 5.0f;
             if (s.travel_deg < 10.0f) { s.travel_deg = 10.0f; }
             s.commanded_deg = clamp_travel(s.commanded_deg);
+            reissue();
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.travel_up, px, py)) {
             s.travel_deg += 5.0f;
@@ -359,6 +376,7 @@ static void event(const touch_event_t *evt)
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.type_btn, px, py)) {
             s.type = (s.type + 1) % TYPE_COUNT;
+            reissue();
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.centre_btn, px, py)) {
             s.commanded_deg = 0.0f;
