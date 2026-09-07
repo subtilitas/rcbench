@@ -1494,8 +1494,18 @@ static void service_arming(bool link_up)
          * command for as long as the release takes to arrive.
          */
         servo_service(link_up);
-        if (link_up
-            && !(control_clear_failsafe(&ack) && control_write(true, &ack))) {
+        if (s_servo_release_owed) {
+            /*
+             * The release did not land, so the far end still has the slot and
+             * the command in it.  Arming now would render that command before
+             * anything else reached it, so the arm is refused and the debt
+             * stays; the next attempt starts by paying it.
+             */
+            arming_refused(&s_arm);
+            control_alert("servo output not released -- arm again");
+        } else if (link_up
+                   && !(control_clear_failsafe(&ack)
+                        && control_write(true, &ack))) {
             arming_refused(&s_arm);
             control_alert("coprocessor refused to arm");
         } else {
@@ -2254,10 +2264,19 @@ static void control_task(void *arg)
     for (;;) {
         control_pump();
 
-        service_arming(link_up);
-
-        /* --- what the screens asked for ---------------------------------- */
+        /*
+         * The screens first, then the policy.
+         *
+         * A hold that completes queues its arm, and a STOP pressed after it
+         * arrives on its own flag.  Stepping the policy first consumed that
+         * stop and then let the older arm clear the latch it had just set:
+         * the bench armed after a press made to stop it.  arming_stop()
+         * abandons an arm rather than deferring it, so with the queue drained
+         * first the newer stop is the one that stands.
+         */
         drain_commands(link_up, &bench);
+
+        service_arming(link_up);
         (void)outputs_keepalive(&s_out, PANEL_CH_THROTTLE, now_ms());
         servo_service(link_up);
 

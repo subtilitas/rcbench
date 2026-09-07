@@ -26,6 +26,22 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **A stop pressed after an arming gesture could be undone by it.** The
+  control loop stepped the arming policy before it drained what the screens
+  had asked for, so a STOP that latched at the top of a pass was cleared
+  later in the same pass by an arm queued before it: the bench armed from a
+  press made to stop it. The queue is drained first now, and
+  `arming_stop()` abandons an arm rather than deferring it, so the newer
+  stop stands. Both screens' ARM went through this.
+- **An arm could proceed on a servo release that did not land.** A release
+  that is not acknowledged keeps its debt, but the arm went ahead anyway, so
+  a transient link error during the release meant arming with the slot and
+  its command still installed at the far end. An outstanding release now
+  refuses the arm and says so on the alert band.
+- **The servo screen went on showing a hold the bench had let go of.** A
+  STOP, a dead touch or a far-end disarm left the driving state set, so the
+  rings kept pulsing and a change to the type, trim or travel said the
+  position again -- rebuilding the command the stop had released.
 - **A write to one channel kept every other channel alive.** The coprocessor
   applied a CHANNELS write by commanding all eight channels of the stored
   page, whatever the frame carried, so any periodic write stamped every

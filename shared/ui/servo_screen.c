@@ -215,10 +215,20 @@ void servo_screen_set_armed(bool armed)
     s.armed = armed;
     if (armed) {
         ui_hold_reached(&s.arm);
-    } else if (ui_hold_left(&s.arm)) {
-        /* The bench disarmed under a finger still down on the button, and
-         * the hold ended with it; see ui_hold_left(). */
-        s.arm_down = false;
+    } else {
+        /*
+         * Disarmed, however it happened -- this screen's button, a STOP, a
+         * dead touch, or the far end.  Nothing is being held any more: the
+         * rings must stop pulsing, and a change to the type, the trim or the
+         * travel must not say a position again and rebuild a command the
+         * stop had just released.
+         */
+        s.driving = false;
+        if (ui_hold_left(&s.arm)) {
+            /* The bench disarmed under a finger still down on the button, and
+             * the hold ended with it; see ui_hold_left(). */
+            s.arm_down = false;
+        }
     }
     ++s.arm_rev;
     ++s.ctrl_rev;

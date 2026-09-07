@@ -401,6 +401,26 @@ TEST_CASE(the_trim_says_the_position_again_while_it_is_held)
     CHECK_EQ(after.value_us, was + 5);
 }
 
+TEST_CASE(a_stop_stops_the_screen_holding_anything)
+{
+    /*
+     * The bench can be disarmed by something the screen did not do -- a
+     * STOP, a dead touch, the far end.  What was being held is not being
+     * held any more, so a change to the settings must not say a position
+     * again and rebuild the command the stop released.
+     */
+    fresh();
+    servo_screen_set_armed(true);
+    int x, y;
+    dial_at(30.0f, ARC_R - 20, &x, &y);
+    tap(x, y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+
+    servo_screen_set_armed(false);
+    tap(TYPE_X, TYPE_Y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
 TEST_CASE(nothing_is_said_again_when_nothing_is_being_held)
 {
     /* A screen that is not driving anything commands nothing by having its
@@ -504,6 +524,7 @@ int main(void)
     RUN(changing_the_type_says_the_position_again);
     RUN(the_trim_says_the_position_again_while_it_is_held);
     RUN(nothing_is_said_again_when_nothing_is_being_held);
+    RUN(a_stop_stops_the_screen_holding_anything);
     RUN(leaving_disarms_and_lets_go_of_the_output);
     RUN(trim_shifts_the_pulse_and_not_the_angle);
     RUN(feedback_is_shown_rather_than_travelled_to);
