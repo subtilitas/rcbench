@@ -74,6 +74,12 @@
 #define SERVO_CH        0u
 #define SERVO_SLOT      0u
 #define SERVO_PIN       2u
+/*
+ * How often the servo's position is said again, against the far end's
+ * OUT_DEFAULT_TIMEOUT_MS of 500 ms.  Five times the margin, and one
+ * register on the wire each time.
+ */
+#define SERVO_HOLD_MS   100u
 #define SERVO_MIN_US    1000u
 #define SERVO_MAX_US    2000u
 
@@ -394,6 +400,11 @@ static outputs_t s_out;
  * the host suite can hold it; this file drives it and acts on what it says.
  */
 static arming_t  s_arm;
+
+/* What the servo screen is holding, so it can be said again before the far
+ * end times it out.  SERVO_CMD_NONE means nothing is being held. */
+static servo_cmd_t s_servo_held;
+static uint32_t    s_servo_next_ms;
 static uint16_t  s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
 
 /*
@@ -1536,11 +1547,23 @@ static void write_servo(const servo_cmd_t sv)
          * clamped against and the driver that renders it are restated with
          * each pulse.
          */
+        /*
+         * The endpoints the screen named, not this file's.  A narrow servo
+         * runs 660 to 860 us and its centre is below a standard servo's
+         * floor, so clamping it against 1000 to 2000 would send its whole
+         * travel to one end.  A command that names no range keeps the
+         * standard one.
+         */
+        const bool named = sv.max_us > sv.min_us
+                           && sv.min_us >= LINK_CC_FLOOR_US
+                           && sv.max_us <= LINK_CC_CEILING_US;
+        const uint16_t min_us = named ? sv.min_us : (uint16_t)SERVO_MIN_US;
+        const uint16_t max_us = named ? sv.max_us : (uint16_t)SERVO_MAX_US;
         uint16_t cfg[LINK_CC_STRIDE] = {
             [LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE,
             [LINK_CC_SLEW]   = 0u,
-            [LINK_CC_MIN_US] = SERVO_MIN_US,
-            [LINK_CC_MAX_US] = SERVO_MAX_US,
+            [LINK_CC_MIN_US] = min_us,
+            [LINK_CC_MAX_US] = max_us,
         };
         uint16_t slot[LINK_OS_STRIDE] = {
             [LINK_OS_DRIVER]  = LINK_DRIVER_PWM,
@@ -1548,8 +1571,7 @@ static void write_servo(const servo_cmd_t sv)
             [LINK_OS_RANGE]   = LINK_OS_RANGE_OF(SERVO_CH, 1),
             [LINK_OS_RATE_HZ] = 50u,
         };
-        const uint16_t span = us_to_span(sv.value_us, SERVO_MIN_US,
-                                         SERVO_MAX_US);
+        const uint16_t span = us_to_span(sv.value_us, min_us, max_us);
         (void)write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_STRIDE, cfg,
                          &reply);
         (void)write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
@@ -1621,18 +1643,50 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up)
         return;
     }
     if (sv.kind == SERVO_CMD_DISARM) {
+        s_servo_held.kind = SERVO_CMD_NONE;
         disarm_here(link_up);
         if (link_up) {
             /* And let go of the pin: the slot is this screen's, and a screen
              * that has been left must not keep one bound. */
-            const servo_cmd_t release = { SERVO_CMD_RELEASE, 0 };
+            const servo_cmd_t release = { SERVO_CMD_RELEASE, 0, 0, 0 };
             write_servo(release);
         }
         return;
     }
+    if (sv.kind == SERVO_CMD_RELEASE) {
+        s_servo_held.kind = SERVO_CMD_NONE;
+    } else {
+        s_servo_held = sv;
+        s_servo_next_ms = now_ms() + SERVO_HOLD_MS;
+    }
     if (link_up) {
         write_servo(sv);
     }
+}
+
+/*
+ * Say the servo's position again, before the far end stops believing it.
+ *
+ * A channel nobody has commanded for OUT_DEFAULT_TIMEOUT_MS (500 ms) goes to
+ * its rest, which for a surface is mid-travel: a servo held at an endpoint
+ * would swing back to centre half a second after the finger stopped, with
+ * the screen still showing where it was put.  The throttle is kept alive by
+ * the control page, which is written every poll; nothing wrote this channel
+ * between touches.
+ *
+ * One register, and only while there is something to hold.
+ */
+static void servo_hold(bool link_up)
+{
+    if (s_servo_held.kind == SERVO_CMD_NONE || !link_up) {
+        return;
+    }
+    const uint32_t now = now_ms();
+    if ((int32_t)(now - s_servo_next_ms) < 0) {
+        return;
+    }
+    s_servo_next_ms = now + SERVO_HOLD_MS;
+    write_servo(s_servo_held);
 }
 
 /*
@@ -2131,6 +2185,7 @@ static void control_task(void *arg)
         /* --- what the screens asked for ---------------------------------- */
         drain_commands(link_up, &bench);
         (void)outputs_keepalive(&s_out, PANEL_CH_THROTTLE, now_ms());
+        servo_hold(link_up);
 
         log_follow_arming();
 

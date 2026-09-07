@@ -27,6 +27,15 @@ typedef enum {
 typedef struct {
     servo_cmd_kind_t kind;
     uint16_t         value_us;
+    /**
+     * The endpoints the selected servo type has, carried with the command.
+     *
+     * The pulse means nothing without them: 760 us is the centre of a narrow
+     * servo and below the bottom of a standard one, so a command clamped
+     * against the wrong pair is a servo that does not move, or one driven
+     * past its stops. Zero on either says the sender named no range.
+     */
+    uint16_t         min_us, max_us;
 } servo_cmd_t;
 
 /** Drop the cached chrome, so the next frame repaints it. */

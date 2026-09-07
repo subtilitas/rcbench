@@ -161,8 +161,24 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
     if (s.pending.kind == SERVO_CMD_DISARM && kind != SERVO_CMD_DISARM) {
         return;
     }
+    /*
+     * And an arm that has completed survives everything but a disarm.  The
+     * application drains these between frames, so a hold that finishes in
+     * tick() waits a frame to be read; a touch landing in that gap would
+     * throw away two seconds of gesture and leave the bench unarmed with
+     * nothing on screen to say why.
+     */
+    if (s.pending.kind == SERVO_CMD_ARM && kind != SERVO_CMD_DISARM
+        && kind != SERVO_CMD_ARM) {
+        return;
+    }
     s.pending.kind     = kind;
     s.pending.value_us = us;
+    /* The range travels with the pulse: the panel configures the channel
+     * from it, and a narrow servo's 760 us centre is below a standard
+     * servo's floor. */
+    s.pending.min_us   = type()->min_us;
+    s.pending.max_us   = type()->max_us;
     /* The grip only breathes while something is actually being held, so this
      * has to follow the command rather than the screen being open. */
     s.driving = (kind == SERVO_CMD_POSITION || kind == SERVO_CMD_CENTRE);

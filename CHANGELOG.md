@@ -18,6 +18,20 @@ history is in git.
   disarms under a press -- now lives once in `ui_widgets` (`ui_hold_t`) rather
   than twice. Leaving the screen disarms and releases the pin. Reported as #99.
 
+### Fixed
+
+- **A servo swung back to centre half a second after the finger stopped.**
+  The panel wrote the servo's channel on a touch and never again; a channel
+  nobody has commanded for OUT_DEFAULT_TIMEOUT_MS (500 ms) goes to its rest,
+  which for a surface is mid-travel. The position is now said again every
+  100 ms while something is being held, one register at a time. Not reachable
+  before this release, because the servo screen could not arm.
+- **A servo other than the standard one was driven against the wrong
+  endpoints.** The panel configured the channel with a fixed 1000 to 2000 us
+  whatever the screen's TYPE said, so a narrow servo (660 to 860 us) had its
+  whole travel clamped to one end and a wide one (800 to 2200 us) was clipped
+  at both. The command now carries the endpoints of the type it was made for.
+
 ## 0.6.1 - 2026-09-07
 
 The throttle reached no bound pin, so an ESC (electronic speed controller) on

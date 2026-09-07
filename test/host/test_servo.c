@@ -179,6 +179,8 @@ TEST_CASE(centre_and_release_post_their_own_commands)
 
 /* The ARM button, mirrored from servo_screen.c: full width of the right
  * card's inner column, under CENTRE and RELEASE. */
+#define TYPE_X (508 + 12 + (800 - 508 - 6 - 24) - 75)
+#define TYPE_Y (232 + 13)
 #define ARM_X (508 + 12)
 #define ARM_W (800 - 508 - 6 - 24)
 #define ARM_Y 388
@@ -290,6 +292,103 @@ TEST_CASE(a_pending_disarm_is_not_overwritten_by_a_position)
     CHECK_EQ(got.kind, SERVO_CMD_DISARM);
 }
 
+static int red_of(gfx_color_t c)   { return (int)(((c >> 11) & 0x1f) << 3); }
+static int green_of(gfx_color_t c) { return (int)(((c >> 5) & 0x3f) << 2); }
+
+/* Inside the ARM button, clear of its rounded corner and its centred
+ * label. */
+static gfx_color_t arm_px(void)
+{
+    return fb[(size_t)(ARM_Y + 8) * W + (ARM_X + 12)];
+}
+
+TEST_CASE(the_arm_button_fades_across_the_hold_and_flashes_when_it_lands)
+{
+    fresh();
+    scr->render(&cv, 0);
+    const gfx_color_t idle = arm_px();
+    CHECK(green_of(idle) > red_of(idle));       /* the OK green */
+
+    arm_press();
+    held(UI_HOLD_S / 2.0f);
+    scr->render(&cv, 0);
+    const gfx_color_t half = arm_px();
+    CHECK(red_of(half) > red_of(idle));         /* on its way to red */
+
+    held(UI_HOLD_S);
+    scr->render(&cv, 0);
+    const gfx_color_t full = arm_px();
+    if (!(red_of(full) > red_of(half) && red_of(full) > green_of(full))) {
+        T_FAIL("the hold went %04x -> %04x -> %04x, which is not a fade to "
+               "red", idle, half, full);
+    }
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
+
+    /* Arriving flashes the whole button, one colour per drawn frame, and it
+     * settles on the danger red.  The finger comes off first: a press lerps
+     * the fill towards white, and what is under test here is the flash. */
+    servo_screen_set_armed(true);
+    arm_release();
+    bool saw_white = false, saw_black = false;
+    for (int i = 0; i < UI_HOLD_FLASH_FRAMES; ++i) {
+        scr->render(&cv, 0);
+        const gfx_color_t px = arm_px();
+        if (px == GFX_WHITE) { saw_white = true; }
+        if (px == GFX_BLACK) { saw_black = true; }
+        scr->tick(1.0f / 39.0f);
+    }
+    CHECK(saw_white);
+    CHECK(saw_black);
+    scr->render(&cv, 0);
+    const gfx_color_t settled = arm_px();
+    CHECK(red_of(settled) > green_of(settled));
+}
+
+TEST_CASE(the_hold_repaints_the_button_and_leaves_the_card_alone)
+{
+    /* The fade runs for two seconds at the frame rate, and the right card is
+     * 292 x 420: a fade that asked for the card would spend most of the
+     * panel's bandwidth on one button. */
+    fresh();
+    scr->render(&cv, 0);
+    /* A pixel of the card above the button, on the RANGE row. */
+    const size_t probe = (size_t)(ARM_Y - 60) * W + (ARM_X + 12);
+    fb[probe] = 0x1234;
+
+    arm_press();
+    held(UI_HOLD_S / 2.0f);
+    scr->render(&cv, 0);
+    CHECK_EQ(fb[probe], 0x1234);                /* untouched */
+    CHECK(arm_px() != 0x1234);                  /* and the button did repaint */
+}
+
+/* ------------------------------------------------------- the servo's range */
+
+/*
+ * The range travels with the pulse.  A narrow servo runs 660 to 860 us and
+ * its centre is below a standard servo's floor, so a command clamped against
+ * the wrong pair sends the whole travel to one end.
+ */
+TEST_CASE(a_command_carries_the_endpoints_of_the_type_it_was_made_for)
+{
+    fresh();
+    int x, y;
+    dial_at(0.0f, ARC_R - 20, &x, &y);
+    tap(x, y);
+    servo_cmd_t got = last_cmd();
+    CHECK_EQ(got.min_us, 1000);
+    CHECK_EQ(got.max_us, 2000);
+
+    /* TYPE steps to the next servo, and the endpoints follow it. */
+    tap(TYPE_X, TYPE_Y);
+    tap(x, y);
+    got = last_cmd();
+    CHECK_EQ(got.min_us, 660);
+    CHECK_EQ(got.max_us, 860);
+    /* And the pulse it asks for is inside them. */
+    CHECK(got.value_us >= got.min_us && got.value_us <= got.max_us);
+}
+
 /*
  * Leaving disarms, the same rule as the motor bench's: a screen that does
  * not show the horn must not be holding it somewhere, and it must not leave
@@ -351,6 +450,9 @@ int main(void)
     RUN(arming_and_disarming_come_from_the_same_button);
     RUN(a_press_that_disarmed_the_bench_does_not_then_arm_it);
     RUN(a_pending_disarm_is_not_overwritten_by_a_position);
+    RUN(the_arm_button_fades_across_the_hold_and_flashes_when_it_lands);
+    RUN(the_hold_repaints_the_button_and_leaves_the_card_alone);
+    RUN(a_command_carries_the_endpoints_of_the_type_it_was_made_for);
     RUN(leaving_disarms_and_lets_go_of_the_output);
     RUN(trim_shifts_the_pulse_and_not_the_angle);
     RUN(feedback_is_shown_rather_than_travelled_to);
