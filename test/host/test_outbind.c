@@ -570,11 +570,27 @@ TEST_CASE(a_page_that_does_not_render_back_to_itself_is_refused)
 
     /* PPM carries eight channels on its pin.  A slot claiming one is a page
      * this screen cannot show: it would draw PPM and mean something else. */
+    /*
+     * The rate comes from the catalogue rather than a literal: PPM's is the
+     * fastest frame eight channels fit in, and a page carrying any other
+     * rate is one this screen could not have produced.
+     *
+     * Looked up by driver, not by index. The table's order is what the
+     * protocol list on the screen shows, so it is arranged for an operator
+     * and may be rearranged for one.
+     */
+    uint16_t ppm_hz = 0;
+    for (uint8_t p = 0; p < OUTBIND_PROTOS; ++p) {
+        if (outbind_protos()[p].driver == OUT_DRIVER_PPM) {
+            ppm_hz = outbind_protos()[p].rate;
+        }
+    }
+    CHECK(ppm_hz != 0);
     outputs_slots_defaults(regs);
     regs[LINK_OS_DRIVER]  = LINK_DRIVER_PPM;
     regs[LINK_OS_PIN]     = 0;
     regs[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(0, 1);
-    regs[LINK_OS_RATE_HZ] = 50;
+    regs[LINK_OS_RATE_HZ] = ppm_hz;
     CHECK(!outbind_from_slots(&b, BOARD, regs));
 
     /* ... and with the right count it is fine. */
@@ -587,7 +603,7 @@ TEST_CASE(a_page_that_does_not_render_back_to_itself_is_refused)
     regs[LINK_OS_STRIDE + LINK_OS_DRIVER]  = LINK_DRIVER_PPM;
     regs[LINK_OS_STRIDE + LINK_OS_PIN]     = 1;
     regs[LINK_OS_STRIDE + LINK_OS_RANGE]   = LINK_OS_RANGE_OF(8, 8);
-    regs[LINK_OS_STRIDE + LINK_OS_RATE_HZ] = 50;
+    regs[LINK_OS_STRIDE + LINK_OS_RATE_HZ] = ppm_hz;
     CHECK(!outbind_from_slots(&b, BOARD, regs));
     CHECK_EQ(outbind_chosen(&b), 0);
 

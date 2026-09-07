@@ -540,14 +540,23 @@ uint64_t outbind_reserved_mask(uint16_t board)
 /* ------------------------------------------------------------- protocols */
 
 /*
- * PWM and PPM run at 50 Hz, which every analogue and digital servo takes.
+ * PWM runs at 50 Hz, which every analogue and digital servo takes.
+ *
+ * PPM runs at 40 Hz because eight channels do not fit in a 50 Hz frame.  A
+ * channel is at most OUT_CEILING_US (2500 us), and the frame also carries
+ * the mark and a sync gap of at least PPM_SYNC_MIN_US, so eight of them need
+ * 8 x 2500 + 300 + 3000 = 23,300 us and 50 Hz gives 20,000.  The coprocessor
+ * refuses the bind and leaves the slot unbound, having acknowledged the page
+ * that asked for it, so the screen shows a binding the bench does not have.
+ * 40 Hz gives 25,000 us and binds.
+ *
  * The DShot rates are bit rates and the two bidirectional entries are the
  * same wire asking for telemetry back.
  */
 static const outbind_proto_t k_protos[OUTBIND_PROTOS] = {
     { "OFF",            OUT_DRIVER_NONE,        0,   0, 0 },
     { "SERVO PWM",      OUT_DRIVER_PWM,        50,   8, 1 },
-    { "PPM",            OUT_DRIVER_PPM,        50,   1, 8 },
+    { "PPM",            OUT_DRIVER_PPM,        40,   1, 8 },
     { "DSHOT300",       OUT_DRIVER_DSHOT,     300,   8, 1 },
     { "DSHOT600",       OUT_DRIVER_DSHOT,     600,   8, 1 },
     { "DSHOT300 BIDIR", OUT_DRIVER_DSHOT_BIDIR, 300, 8, 1 },

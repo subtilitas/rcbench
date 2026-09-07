@@ -330,7 +330,8 @@ pin order across every protocol, taking channels from zero upward — so the
 lowest ticked pin is channel 0 whatever order the screen was touched in and
 whichever protocol holds it. Eight slots and eight channels are the budget,
 shared. PPM renders eight channels on its one pin, so a bench with PPM on it
-has room for nothing else.
+has room for nothing else. It runs at 40 Hz, not the 50 Hz the pulse drivers
+use: eight channels need 23,300 us of frame and 50 Hz gives 20,000.
 
 The protocol is a list rather than a stepper, because there are seven of them
 and stepping past six to reach the seventh is not choosing:
