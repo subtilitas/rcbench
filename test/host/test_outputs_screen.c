@@ -19,6 +19,7 @@
 
 /* Geometry the screen draws to; a test that hard-codes it is a test that
  * notices when the layout moves under the hit testing. */
+#define COL_X  16
 #define DD_X   16
 #define DD_Y   44
 #define DD_W   208
@@ -223,6 +224,78 @@ TEST_CASE(every_state_renders_without_reading_off_the_canvas)
     }
 }
 
+/* The strip under the protocol where the reason is drawn, as a sum: a line
+ * there is ink, no line is the background. */
+static unsigned reason_ink(gfx_canvas_t *c)
+{
+    unsigned long sum = 0;
+    for (int y = DD_Y + DD_H + 56; y < DD_Y + DD_H + 76; ++y) {
+        for (int x = COL_X; x < COL_X + 210; ++x) {
+            sum += (unsigned long)c->pixels[y * c->stride + x];
+        }
+    }
+    return (unsigned)(sum & 0xffffffffUL);
+}
+
+TEST_CASE(a_board_that_can_take_nothing_says_why)
+{
+    /*
+     * The rules refusing every pin are out_bind's and they are right; what
+     * is under test is that the screen states them. A board drawn entirely
+     * in grey with nothing beside it reads as a fault, and an operator
+     * reported it as one.
+     */
+    static gfx_color_t px[800 * 432];
+    gfx_canvas_t c = { px, 800, 432, 800, { 0, 0, 800, 432 } };
+
+    fresh();
+    choose_proto(1);                              /* SERVO PWM */
+    scr()->render(&c, 0);
+    const unsigned quiet = reason_ink(&c);
+
+    /*
+     * Four servo pins, then PPM: eight channels needed against four free,
+     * so nothing can be ticked at all. This is the state that was asked
+     * about.
+     */
+    static const uint8_t gp[4] = { 0, 1, 2, 4 };
+    for (unsigned i = 0; i < 4u; ++i) {
+        tap_pin(gp[i]);
+    }
+    choose_proto(2);                              /* PPM */
+    scr()->render(&c, 0);
+    CHECK(reason_ink(&c) != quiet);
+
+    /* And it goes away again when the protocol can take a pin. */
+    choose_proto(1);
+    scr()->render(&c, 0);
+    CHECK_EQ(reason_ink(&c), quiet);
+}
+
+TEST_CASE(a_protocol_that_has_all_its_pins_says_so)
+{
+    static gfx_color_t px[800 * 432];
+    gfx_canvas_t c = { px, 800, 432, 800, { 0, 0, 800, 432 } };
+
+    fresh();
+    choose_proto(1);                              /* SERVO PWM, eight pins */
+    scr()->render(&c, 0);
+    const unsigned quiet = reason_ink(&c);
+
+    uint8_t taken = 0;
+    for (uint8_t g = 0; g < 29u && taken < 8u; ++g) {
+        const uint8_t i = outbind_index_of(OUTBIND_BOARD_PICO_HEADER, g);
+        if (i < outbind_pin_count(OUTBIND_BOARD_PICO_HEADER)
+            && outbind_can_add(outputs_screen_binding(), i)) {
+            tap_pin(g);
+            ++taken;
+        }
+    }
+    CHECK_EQ(taken, 8u);
+    scr()->render(&c, 0);
+    CHECK(reason_ink(&c) != quiet);
+}
+
 TEST_CASE(the_binding_survives_being_set_from_outside)
 {
     fresh();
@@ -283,6 +356,8 @@ int main(void)
     RUN(a_pin_too_many_does_not_apply);
     RUN(nothing_can_be_ticked_while_the_protocol_is_off);
     RUN(every_state_renders_without_reading_off_the_canvas);
+    RUN(a_board_that_can_take_nothing_says_why);
+    RUN(a_protocol_that_has_all_its_pins_says_so);
     RUN(the_binding_survives_being_set_from_outside);
     RUN(a_protocol_index_from_outside_cannot_run_off_the_table);
     RUN(null_events_are_refused_rather_than_dereferenced);

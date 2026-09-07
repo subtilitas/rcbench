@@ -322,8 +322,9 @@ static void draw_left(gfx_canvas_t *c)
             why = buf;
         } else if ((unsigned)used_ch + p->channels
                    > (unsigned)LINK_OUT_CHANNELS) {
-            snprintf(buf, sizeof(buf), "NEEDS %u CHANNELS, %u FREE",
+            snprintf(buf, sizeof(buf), "NEEDS %u CHANNEL%s, %u FREE",
                      (unsigned)p->channels,
+                     p->channels == 1u ? "" : "S",
                      (unsigned)(LINK_OUT_CHANNELS - used_ch));
             why = buf;
         }
