@@ -26,6 +26,15 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **An arm could render a servo's slot before the release reached the far
+  end.** The release was posted after ARM in the same pass, and the far end
+  applies ARM and stamps every channel's clock before it steps its outputs,
+  so a slot still bound at that moment rendered its old command until the
+  clear arrived. The slot now goes first. A clear is also kept until the far
+  end acknowledges it, rather than assumed from a write that may have gone
+  into a link that was dropping, and RELEASE asks for the clear whether or
+  not the panel remembers binding the slot -- after a restart the far end can
+  hold a slot this end has never written.
 - **A stop left a servo position an arm would step back to.** Only the servo
   screen's own disarm let go of the pin; a STOP, a dead touch, a disarm from
   MOTOR & ESC and a far-end disarm did not, and the far end keeps both the

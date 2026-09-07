@@ -1487,6 +1487,13 @@ static void service_arming(bool link_up)
          */
         throttle_to_zero();
         servo_let_go();
+        /*
+         * And the slot goes before the arm does, not after it.  The far end
+         * applies ARM and stamps every channel's clock before it steps its
+         * outputs, so a slot still bound at that moment renders its stale
+         * command for as long as the release takes to arrive.
+         */
+        servo_service(link_up);
         if (link_up
             && !(control_clear_failsafe(&ack) && control_write(true, &ack))) {
             arming_refused(&s_arm);
@@ -1546,15 +1553,20 @@ static void write_output_binding(const outbind_t *bind)
 /*
  * One servo command, as configuration and pulse.
  */
-static void write_servo(const servo_cmd_t sv)
+static bool write_servo(const servo_cmd_t sv)
 {
     link_msg_t reply;
     if (sv.kind == SERVO_CMD_RELEASE) {
         /* Stop driving: clear the slot.  The channel keeps its last command,
-         * but with nothing rendering it that is inert. */
+         * but with nothing rendering it that is inert.
+         *
+         * Whether the far end took it is returned rather than assumed: a
+         * write that did not land leaves the slot bound, and the caller's
+         * record of owing the release is the only thing that would notice. */
         uint16_t slot[LINK_OS_STRIDE] = { LINK_DRIVER_NONE, 0, 0, 0 };
-        (void)write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
-                         &reply);
+        return write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
+                          &reply)
+               && reply.op == LINK_OP_ACK;
     } else {
         /*
          * Configuration and command, sent whole every time.  The coprocessor
@@ -1591,7 +1603,8 @@ static void write_servo(const servo_cmd_t sv)
                          &reply);
         (void)write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
                          &reply);
-        (void)write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &span, &reply);
+        return write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &span, &reply)
+               && reply.op == LINK_OP_ACK;
     }
 }
 
@@ -1663,16 +1676,21 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up)
         return;
     }
     if (sv.kind == SERVO_CMD_RELEASE) {
-        /* The slot goes through the same debt as every other way of letting
-         * go, so a release that cannot be sent now is still sent later. */
-        servo_let_go();
+        /*
+         * Asked for, so the slot is cleared whether or not this process
+         * remembers binding it: after a panel restart, or with slot 0 bound
+         * from the OUTPUTS screen, the far end holds a slot this end has
+         * never written, and the button says it releases the output.
+         */
+        s_servo_held.kind = SERVO_CMD_NONE;
+        s_servo_release_owed = true;
         servo_service(link_up);
         return;
     }
     s_servo_held = sv;
     s_servo_next_ms = now_ms() + SERVO_HOLD_MS;
     if (link_up) {
-        write_servo(sv);
+        (void)write_servo(sv);
     }
 }
 
@@ -1715,8 +1733,11 @@ static void servo_service(bool link_up)
     }
     if (s_servo_release_owed) {
         const servo_cmd_t release = { SERVO_CMD_RELEASE, 0, 0, 0 };
-        write_servo(release);
-        s_servo_release_owed = false;
+        /* Only a write the far end acknowledged pays it off.  link_up is a
+         * snapshot and the link can go during the transaction; forgetting an
+         * unacknowledged clear would leave the slot bound with nothing left
+         * to remember it. */
+        s_servo_release_owed = !write_servo(release);
         return;
     }
     if (s_servo_held.kind == SERVO_CMD_NONE) {
@@ -1727,7 +1748,7 @@ static void servo_service(bool link_up)
         return;
     }
     s_servo_next_ms = now + SERVO_HOLD_MS;
-    write_servo(s_servo_held);
+    (void)write_servo(s_servo_held);
 }
 
 /*
