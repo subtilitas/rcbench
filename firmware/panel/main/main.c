@@ -1336,6 +1336,670 @@ static bool read_bench(link_host_t *host, bench_state_t *out)
 /* --------------------------------------------------------- the control task */
 
 /*
+ * The bench's own state, before the loop that maintains it.
+ *
+ * The last line is the one with a consequence outside this file:
+ * s_pump_live tells exchange() that a control task exists, so the wait for a
+ * link reply pumps the renderer instead of standing still.  Before this
+ * point there is no such task and nothing to pump.
+ */
+static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
+{
+    memset(bench, 0, sizeof(*bench));
+    telemetry_sim_init(sim, NULL);
+    /*
+     * The panel's throttle is a channel in an output bank, under the same
+     * arming, slew and staleness rules as the coprocessor's outputs, so the
+     * two ends cannot answer those questions differently.
+     */
+    outputs_init(&s_out, now_ms());
+    (void)outputs_set_role(&s_out, PANEL_CH_THROTTLE, OUT_ROLE_THROTTLE);
+    (void)outputs_set_slew(&s_out, PANEL_CH_THROTTLE, PANEL_THROTTLE_RAMP);
+    arming_init(&s_arm, now_ms(),
+                HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS + HEARTBEAT_PERIOD_MS);
+    s_pump_live = true;
+}
+
+/*
+ * The latched stop, and then the act the arming policy asks for.
+ *
+ * link_up is passed in because an arm and a disarm are written to the
+ * coprocessor's control page only while the link is up.  The flag is the
+ * control loop's own and is published nowhere this could read it.
+ */
+static void service_arming(bool link_up)
+{
+    /*
+     * STOP latches rather than clearing on the next frame: a stop that lasts
+     * one frame is one the coprocessor may never see, and its monostable holds
+     * for longer than a frame.  Only an explicit arm clears it.
+     */
+    if (atomic_exchange(&s_stop_request, false)) {
+        arming_stop(&s_arm);
+    }
+
+    /*
+     * One place decides, and it is the one under test.  A disarm here is the
+     * policy's, not this loop's: a latched stop, dead touch, or an arm that
+     * finished settling.
+     */
+    const bool was_touch_dead = arming_touch_dead(&s_arm, now_ms());
+    switch (arming_step(&s_arm, now_ms())) {
+    case ARMING_ACT_DISARM:
+        outputs_arm(&s_out, false, now_ms());
+        throttle_to_zero();
+        if (was_touch_dead) {
+            control_alert("touch stopped answering -- disarmed");
+        }
+        if (link_up) {
+            link_msg_t ack = { 0 };
+            (void)control_write(false, &ack);
+        }
+        break;
+    case ARMING_ACT_ARM: {
+        link_msg_t ack = { 0 };
+        /*
+         * An arm starts from nothing, and this is where that is made true
+         * rather than hoped for.  ARM and THROTTLE travel in one
+         * transaction, so a command left over from before the disarm is the
+         * first thing the far end acts on -- and it steps straight to it.
+         * The coprocessor's throttle is bank channel 8, off the CHAN_CFG
+         * page that addresses channels 0 to 7, so its slew is never
+         * configured and stays at the zero outputs_init() left: there is no
+         * ramp on that channel at any time.
+         *
+         * Every disarm returns the command to zero as well.  A disarm that
+         * forgot to would be a motor stepping to its old position on a bench
+         * the operator had just stopped, and there has been one.
+         */
+        throttle_to_zero();
+        if (link_up
+            && !(control_clear_failsafe(&ack) && control_write(true, &ack))) {
+            arming_refused(&s_arm);
+            control_alert("coprocessor refused to arm");
+        } else {
+            outputs_arm(&s_out, true, now_ms());
+        }
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+/*
+ * The outputs screen's choice, onto the coprocessor's two output pages.
+ *
+ * Leaves what became of it in s_outputs_result, which app_main hands to the
+ * screen; screen state is app_main's alone.
+ */
+static void write_output_binding(const outbind_t *bind)
+{
+    /*
+     * CHAN_CFG first.  It says what a channel is; OUTPUTS says what renders
+     * it.  A slot that starts rendering a channel whose role has not arrived
+     * would drive it to the wrong rest for as long as the second write takes.
+     */
+    uint16_t cfg[LINK_CC_COUNT];
+    uint16_t slots[LINK_OS_COUNT];
+    outbind_to_chan_cfg(bind, cfg,
+                        (uint16_t)settings_get_int(SET_OUT_MIN_US),
+                        (uint16_t)settings_get_int(SET_OUT_MAX_US));
+    (void)outbind_to_slots(bind, slots);
+
+    /*
+     * A write that got no answer and one that was refused are different things
+     * to be told.  REFUSED sends the operator back to the pins they chose; NO
+     * LINK sends them to the cable.  Collapsing the two would send them to the
+     * wrong one every time the link dropped mid-write.
+     */
+    link_msg_t reply;
+    outputs_result_t res = OUTPUTS_OK;
+    if (!write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, cfg,
+                    &reply)) {
+        res = OUTPUTS_NO_LINK;
+    } else if (reply.op != LINK_OP_ACK) {
+        res = OUTPUTS_REFUSED;
+    } else if (!write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_COUNT, slots,
+                           &reply)) {
+        res = OUTPUTS_NO_LINK;
+    } else if (reply.op != LINK_OP_ACK) {
+        res = OUTPUTS_REFUSED;
+    }
+    atomic_store(&s_outputs_result, (int)res);
+}
+
+/*
+ * One servo command, as configuration and pulse.
+ */
+static void write_servo(const servo_cmd_t sv)
+{
+    link_msg_t reply;
+    if (sv.kind == SERVO_CMD_RELEASE) {
+        /* Stop driving: clear the slot.  The channel keeps its last command,
+         * but with nothing rendering it that is inert. */
+        uint16_t slot[LINK_OS_STRIDE] = { LINK_DRIVER_NONE, 0, 0, 0 };
+        (void)write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
+                         &reply);
+    } else {
+        /*
+         * Configuration and command, sent whole every time.  The coprocessor
+         * may have reset since the last write, so the range the pulse is
+         * clamped against and the driver that renders it are restated with
+         * each pulse.
+         */
+        uint16_t cfg[LINK_CC_STRIDE] = {
+            [LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE,
+            [LINK_CC_SLEW]   = 0u,
+            [LINK_CC_MIN_US] = SERVO_MIN_US,
+            [LINK_CC_MAX_US] = SERVO_MAX_US,
+        };
+        uint16_t slot[LINK_OS_STRIDE] = {
+            [LINK_OS_DRIVER]  = LINK_DRIVER_PWM,
+            [LINK_OS_PIN]     = SERVO_PIN,
+            [LINK_OS_RANGE]   = LINK_OS_RANGE_OF(SERVO_CH, 1),
+            [LINK_OS_RATE_HZ] = 50u,
+        };
+        const uint16_t span = us_to_span(sv.value_us, SERVO_MIN_US,
+                                         SERVO_MAX_US);
+        (void)write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_STRIDE, cfg,
+                         &reply);
+        (void)write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
+                         &reply);
+        (void)write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &span, &reply);
+    }
+}
+
+/*
+ * One motor command.  Arming is asked of the policy rather than done here;
+ * the throttle is a channel command like any other.
+ */
+static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
+                            bench_state_t *bench)
+{
+    switch (mc->kind) {
+    case MOTOR_CMD_ARM:
+        /*
+         * Arming is the deliberate act that clears a latched stop. The policy
+         * clears it, gives the heartbeat time to be believed and only then
+         * asks for the write; see shared/safety/arming.c.
+         */
+        arming_request_arm(&s_arm, now_ms());
+        break;
+    case MOTOR_CMD_DISARM:
+        arming_request_disarm(&s_arm);
+        outputs_arm(&s_out, false, now_ms());
+        throttle_to_zero();
+        if (link_up) {
+            link_msg_t ack = { 0 };
+            (void)control_write(false, &ack);
+        }
+        break;
+    case MOTOR_CMD_THROTTLE:
+        s_throttle_hundredths = pct_to_hundredths(mc->value);
+        (void)outputs_set(&s_out, PANEL_CH_THROTTLE,
+                          pct_to_span(mc->value), now_ms());
+        break;
+    case MOTOR_CMD_RESET_PEAKS: bench_state_reset_peaks(bench); break;
+    default: break;
+    }
+}
+
+/*
+ * What the screens asked for, in the order they asked it.
+ *
+ * The screens run on app_main and the link belongs to this task, so a command
+ * crosses as a queue entry and is acted on here.  link_up is passed in
+ * because most of these write to the far end, and the flag that says whether
+ * that is possible is the control loop's.
+ */
+static void drain_commands(bool link_up, bench_state_t *bench)
+{
+    panel_cmd_t pc;
+    while (xQueueReceive(s_cmd_q, &pc, 0) == pdTRUE) {
+        if (pc.kind == PANEL_CMD_STOP) {
+            arming_stop(&s_arm);
+            outputs_arm(&s_out, false, now_ms());
+            throttle_to_zero();
+            if (link_up) {
+                link_msg_t ack = { 0 };
+                (void)control_write(false, &ack);
+            }
+            continue;
+        }
+        if (pc.kind == PANEL_CMD_OUTPUTS) {
+            if (!link_up) {
+                atomic_store(&s_outputs_result, (int)OUTPUTS_NO_LINK);
+                continue;
+            }
+            write_output_binding(&pc.bind);
+            continue;
+        }
+        if (pc.kind == PANEL_CMD_SERVO) {
+            if (!link_up) {
+                continue;
+            }
+            write_servo(pc.servo);
+            continue;
+        }
+
+        apply_motor_cmd(&pc.motor, link_up, bench);
+    }
+}
+
+/*
+ * A run is one arming: the log opens when the bank arms and closes when it
+ * disarms.  s_log_file is the record of which of the two happened last.
+ */
+static void log_follow_arming(void)
+{
+    const bool armed_now = outputs_armed(&s_out);
+    const bool was_armed = (s_log_file != NULL);
+    if (armed_now && !was_armed) {
+        log_start();
+    } else if (!armed_now && was_armed) {
+        log_stop();
+    }
+}
+
+/*
+ * The bench page, and the control page in the same pass.
+ *
+ * While the far end answers, the bench page is what is asked for; identity is
+ * asked only while the far end is silent.
+ */
+static bool poll_bench(bench_state_t *bench)
+{
+    const bool answered = read_bench(&s_host, bench);
+    if (answered) {
+        link_msg_t ack = { 0 };
+        const bool armed = outputs_armed(&s_out);
+        if (!control_write(armed, &ack) && armed && ack.op == LINK_OP_NACK) {
+            /*
+             * The coprocessor is in failsafe or has lost the heartbeat.  A
+             * stop latches at this end too.
+             *
+             * The command goes to zero here rather than through the policy:
+             * arming_stop_from_far_end() clears a->armed itself, and
+             * arming_step()'s disarm is gated on a->armed, so
+             * ARMING_ACT_DISARM cannot follow and the throttle would keep
+             * its last value.
+             */
+            outputs_arm(&s_out, false, now_ms());
+            throttle_to_zero();
+            arming_stop_from_far_end(&s_arm);
+            control_alert("coprocessor disarmed -- arm again");
+        }
+    }
+    return answered;
+}
+
+/*
+ * Who is there, while nothing is answering.
+ *
+ * True only for a DATA identity page from a coprocessor speaking
+ * LINK_PROTOCOL_MAJOR; reply then holds that page.
+ */
+static bool probe_identity(link_msg_t *reply)
+{
+    bool answered;
+    /*
+     * The bus first, because a controller that has fallen off it cannot ask
+     * anything.  A transmitter nobody answers -- a coprocessor not powered
+     * yet, or one that has reset -- adds 8 to its error counter per attempt
+     * and is off the bus in about four milliseconds, and the ESP32-S3's TWAI
+     * does not come back on its own.  Without this the first quiet moment on
+     * the bus is permanent: every later transmit fails, the panel shows NO
+     * LINK and only a power cycle clears it.
+     */
+    if (can_twai_recover() == CAN_TWAI_RECOVERING) {
+        ++s_recoveries;
+        ++s_recoveries_total;
+    }
+
+    /*
+     * A NACK answers the request it refuses, so poll_page() is true for one
+     * and regs[0] carries a refusal reason rather than the first identity
+     * register.  Only a DATA reply holds an identity page, and only an
+     * identity page says there is a coprocessor there to talk to.
+     */
+    answered = poll_page(&s_host, LINK_PAGE_IDENTITY, LINK_ID_COUNT, reply)
+               && reply->op == LINK_OP_DATA;
+    if (answered
+        && reply->regs[LINK_ID_PROTOCOL_MAJOR] != LINK_PROTOCOL_MAJOR) {
+        /* A protocol major that differs from LINK_PROTOCOL_MAJOR refuses
+         * arming; the register is the first one of the identity page. */
+        ESP_LOGE(TAG, "coprocessor speaks protocol %u, we speak %u",
+                 (unsigned)reply->regs[LINK_ID_PROTOCOL_MAJOR],
+                 (unsigned)LINK_PROTOCOL_MAJOR);
+        control_alert("protocol mismatch -- will not arm");
+        answered = false;
+    }
+    return answered;
+}
+
+/*
+ * A board this build ships no catalogue for, described by the board itself.
+ */
+static void learn_board_pins(void)
+{
+    link_msg_t cat;
+    const bool answered_cat =
+        poll_page(&s_host, LINK_PAGE_CATALOGUE, LINK_CAT_COUNT, &cat);
+    if (answered_cat && cat.op == LINK_OP_DATA
+        && outbind_learn_board(s_board, cat.regs)) {
+        ESP_LOGI(TAG, "hardware %u described itself: %u pins",
+                 (unsigned)s_board,
+                 (unsigned)outbind_pin_count(s_board));
+        /*
+         * And where they are, if it says.  Only a picture of the board needs
+         * this, so a board that does not answer is used from its catalogue and
+         * simply is not drawn.
+         */
+        link_msg_t shp;
+        if (poll_page(&s_host, LINK_PAGE_SHAPE, LINK_SH_COUNT, &shp)
+            && shp.op == LINK_OP_DATA
+            && outbind_learn_shape(s_board, shp.regs)) {
+            ESP_LOGI(TAG, "hardware %u says where its pads are",
+                     (unsigned)s_board);
+        } else {
+            ESP_LOGI(TAG, "hardware %u does not say where its pads are; it "
+                          "will be listed and not drawn", (unsigned)s_board);
+        }
+        /*
+         * And which of them are grounds and rails.  A board that does not say
+         * has them unmarked, which is a lead placed by reading the board
+         * rather than the screen.
+         */
+        link_msg_t pdr;
+        if (poll_page(&s_host, LINK_PAGE_PADS, LINK_PAD_COUNT, &pdr)
+            && pdr.op == LINK_OP_DATA
+            && outbind_learn_pads(s_board, pdr.regs)) {
+            ESP_LOGI(TAG, "hardware %u says which pads are grounds and rails",
+                     (unsigned)s_board);
+        }
+    } else if (answered_cat && cat.op == LINK_OP_NACK
+               && cat.regs[0] == LINK_NACK_BAD_PAGE) {
+        /*
+         * Not a fault, and not warned about: a coprocessor built before the
+         * page refuses it by design, every time the link comes up.  A warning
+         * on every link-up for a bench that is working as built is a warning
+         * nobody reads.
+         */
+        ESP_LOGI(TAG, "hardware %u predates the catalogue page; the screen "
+                      "will offer no pins", (unsigned)s_board);
+    } else {
+        ESP_LOGW(TAG, "hardware %u has no pin map in this build and did not "
+                      "describe itself; the screen will offer no pins",
+                 (unsigned)s_board);
+    }
+}
+
+/*
+ * What the coprocessor's outputs already are, into the snapshot the outputs
+ * and picker screens read.
+ */
+static void read_outputs_binding(void)
+{
+    link_msg_t orr;
+    outbind_t got;
+    if (poll_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_COUNT, &orr)
+        && orr.op != LINK_OP_NACK
+        && outbind_from_slots(&got, s_board, orr.regs)) {
+        if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
+            s_outputs_read = got;
+            s_outputs_read_fresh = true;
+            xSemaphoreGive(s_snap_lock);
+        }
+    } else {
+        /*
+         * Two different failures land here and they are not the same to
+         * somebody reading the log.  A board with no pin map in this build can
+         * offer nothing at all; a known board whose page would not read still
+         * offers its pins, with nothing selected.
+         */
+        outbind_t none;
+        outbind_init(&none);
+        outbind_set_board(&none, s_board);
+        if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
+            s_outputs_read = none;
+            s_outputs_read_fresh = true;
+            xSemaphoreGive(s_snap_lock);
+        }
+        if (outbind_board(s_board) == NULL) {
+            ESP_LOGW(TAG, "hardware %u has no pin map in this build; the "
+                          "screen will offer no pins", (unsigned)s_board);
+        } else {
+            ESP_LOGW(TAG, "could not read the outputs page; the screen will "
+                          "show nothing configured");
+        }
+    }
+}
+
+/*
+ * The edge: a coprocessor started answering.
+ *
+ * All of it costs a transaction and none of it changes while the link is up,
+ * so it runs once per edge rather than once per 50 ms poll.  reply is the
+ * identity page that detected the edge.
+ */
+static void link_came_up(const link_msg_t *reply)
+{
+    /*
+     * Who answered, before anything is decoded against it.
+     *
+     * The identity read at bring-up runs once, with whatever was attached then
+     * -- which may have been nothing.  A coprocessor that turns up later, or
+     * one swapped for another, would otherwise have its outputs page read
+     * against a board identity from boot, or against zero, and the screen
+     * would offer no pins for as long as it stayed plugged in.
+     *
+     * The identity page that detected this edge is that answer, so it is used
+     * rather than read again.  A second read costs a transaction on the edge.
+     * The retry loop that would wrap it is bring-up's: it draws a frame
+     * between attempts, which belongs to the splash and not to a task running
+     * beside the renderer.
+     *
+     * Nothing has to forget the board.  The edge fires only on an identity
+     * page, and the pages below are decoded against it in the same pass, so no
+     * read of it can reach a value from an earlier coprocessor.
+     */
+    s_board = reply->regs[LINK_ID_HARDWARE];
+
+    /*
+     * A board this build ships no catalogue for describes its own pins, so a
+     * coprocessor newer than this panel is usable rather than blank.
+     *
+     * Only when the build has none.  A board it knows uses its own catalogue:
+     * that one has been read by somebody, names the exact signal holding each
+     * reserved pin, and cannot change under a running bench.
+     *
+     * Nothing here makes a pin safe.  The coprocessor reserves its own set at
+     * its own end whatever this page says, so a catalogue that is wrong costs
+     * a pin rather than the safety line.  A coprocessor built before the page
+     * answers NACK, which is not a failure: the screen then offers nothing for
+     * that board, as it did before.
+     */
+    if (outbind_board(s_board) == NULL) {
+        learn_board_pins();
+    }
+
+    /*
+     * And a photograph of it, if there is one and it is not already kept.  One
+     * transaction here; the rest happens a slice of a poll at a time below.
+     */
+    art_begin(s_board);
+
+    /* On the edge, not every poll: it does not change while the link is up,
+     * so a write per poll would cost a transaction for nothing. */
+    link_msg_t pr;
+    if (!control_write_poles(&pr)) {
+        ESP_LOGW(TAG, "coprocessor did not take the pole count -- rpm will "
+                      "read empty");
+    }
+    /*
+     * And what its outputs already are.  The screen shows what is configured
+     * over there, not what this panel last sent: after a panel restart those
+     * are different things, and only one of them is driving pins.
+     */
+    read_outputs_binding();
+}
+
+/*
+ * The status page's counters, into the bring-up record.
+ */
+static void read_status_counters(void)
+{
+    link_msg_t st;
+    if (poll_page(&s_host, LINK_PAGE_STATUS, LINK_ST_COUNT, &st)
+        && st.op == LINK_OP_DATA) {
+        s_bring.dev_frames = (uint32_t)st.regs[LINK_ST_FRAMES_LO]
+                             | ((uint32_t)st.regs[LINK_ST_FRAMES_HI] << 16);
+        s_bring.dev_crc_errors = st.regs[LINK_ST_CRC_ERRORS];
+        s_bring.dev_resyncs    = st.regs[LINK_ST_RESYNCS];
+        s_dev_faults           = st.regs[LINK_ST_FAULTS];
+        /* Two of link_bringup's diagnoses are gated on this; it was lost in
+         * the move and left every one of them dead. */
+        s_bring.have_status    = true;
+    }
+}
+
+/*
+ * The far end: one poll, and everything that hangs off whether it answered.
+ *
+ * Every value it maintains belongs to the control loop and is passed in.
+ * link_up is both the gate's period -- 50 ms up, 1000 ms down -- and this
+ * poll's answer; last_poll and last_status are the two gates' clocks.
+ * Returns whether this pass produced a bench sample.
+ */
+static bool poll_far_end(bool *link_up, bench_state_t *bench,
+                         uint32_t *last_poll, uint32_t *last_status)
+{
+    bool new_sample = false;
+    if ((uint32_t)(now_ms() - *last_poll) >= (*link_up ? 50u : 1000u)) {
+        *last_poll = now_ms();
+        link_msg_t reply;
+        bool answered;
+        if (*link_up) {
+            answered = poll_bench(bench);
+        } else {
+            answered = probe_identity(&reply);
+        }
+        if (answered != *link_up) {
+            ESP_LOGI(TAG, "coprocessor %s",
+                     answered ? "answered" : "went quiet");
+            if (answered) {
+                link_came_up(&reply);
+            }
+        }
+        if (!answered && s_artbusy) {
+            /* The board that was sending it is gone, so the rest of its
+             * picture is not coming.  Nothing was kept: the store only becomes
+             * findable once the whole thing has checked out. */
+            art_stop("the link went quiet");
+        }
+        /*
+         * The link going, and how long ago.  Taken here rather than in the
+         * render loop because this is where the answer arrives; the screen is
+         * only shown from there.
+         */
+        if (answered) {
+            s_link_lost_ms    = 0;
+            s_link_lost_shown = false;
+            s_recoveries      = 0;   /* the next outage counts its own */
+        } else if (*link_up) {
+            /* The edge: it was up until this poll. */
+            s_link_lost_ms = now_ms();
+        }
+        /*
+         * A sample exists only if the bench page was read.  A poll that timed
+         * out republishes nothing: counting it would put a stale reading on
+         * the plot as a fresh column and stamp a log row for a measurement
+         * that never arrived.
+         *
+         * Taken before link_up moves, and from the branch rather than from
+         * the answer.  While the link is down the question asked is the
+         * identity page, so an answer there says a coprocessor is there to
+         * talk to and says nothing about the bench: bench still holds
+         * whatever it held, which at boot is zeros.
+         */
+        new_sample = *link_up && answered;
+        *link_up = answered;
+
+        /*
+         * The status page is read a tenth as often as the bench page: a status
+         * read costs a whole transaction and its numbers move slowly.
+         */
+        if (*link_up && (uint32_t)(now_ms() - *last_status) >= 500u) {
+            *last_status = now_ms();
+            read_status_counters();
+        }
+
+        /*
+         * And a slice of the photograph, last: the bench's own pages are what
+         * the operator is watching, and this is a transfer that happens once
+         * and can afford to wait for them.
+         */
+        if (*link_up && s_artbusy) {
+            art_slice();
+        }
+    }
+    return new_sample;
+}
+
+/*
+ * The model and the log advance on their own 50 ms cadence, not on the poll
+ * gate's.  The gate runs at 1 Hz while the link is down, which would step the
+ * model once per 1000 ms of wall clock instead of twenty times -- the plot's
+ * axis and every CSV timestamp twenty times slow.
+ */
+static void advance_model_and_log(bool link_up, float emitted,
+                                  telemetry_sim_t *sim, bench_state_t *bench,
+                                  uint32_t *last_sample, bool *new_sample)
+{
+    if ((uint32_t)(now_ms() - *last_sample)
+        >= (uint32_t)(1000.0f / PANEL_SAMPLE_HZ)) {
+        *last_sample = now_ms();
+        if (!link_up) {
+            telemetry_sim_step(sim, emitted, 1.0f / PANEL_SAMPLE_HZ, bench);
+            *new_sample = true;
+        }
+        if (*new_sample && s_log_file != NULL) {
+            s_log_t += 1.0f / PANEL_SAMPLE_HZ;
+            (void)log_writer_row(&s_log, s_log_t, bench);
+        }
+    }
+}
+
+/*
+ * What the renderer draws: the numbers under the mutex, and the sample on the
+ * queue.
+ */
+static void publish_snapshot(const bench_state_t *bench, bool link_up,
+                             bool new_sample)
+{
+    snap_lock();
+    s_snap.bench       = *bench;
+    s_snap.link_up     = link_up;
+    s_snap.armed       = outputs_armed(&s_out);
+    s_snap.stopped     = s_arm.stopped;
+    s_snap.faults      = link_up ? s_dev_faults : (uint16_t)0;
+    s_snap.link_errors = (uint32_t)s_bring.dev_crc_errors
+                         + (uint32_t)s_bring.dev_resyncs;
+    s_snap.run_seconds = arming_run_seconds(&s_arm);
+    s_snap.mcu_temp_c  = s_mcu_c;
+    snap_unlock();
+
+    /* One queue entry per sample, so none of the plot's time base is lost to
+     * a renderer that was busy. */
+    if (new_sample && xQueueSend(s_sample_q, bench, 0) != pdTRUE) {
+        bench_state_t stale;
+        (void)xQueueReceive(s_sample_q, &stale, 0);
+        (void)xQueueSend(s_sample_q, bench, 0);
+    }
+}
+
+/*
  * Everything the bench does, at a fixed 5 ms on the core the renderer does
  * not use: touch, STOP, arming, the outputs, the link and the heartbeat.
  *
@@ -1350,19 +2014,7 @@ static void control_task(void *arg)
 
     telemetry_sim_t sim;
     bench_state_t   bench;
-    memset(&bench, 0, sizeof(bench));
-    telemetry_sim_init(&sim, NULL);
-    /*
-     * The panel's throttle is a channel in an output bank, under the same
-     * arming, slew and staleness rules as the coprocessor's outputs, so the
-     * two ends cannot answer those questions differently.
-     */
-    outputs_init(&s_out, now_ms());
-    (void)outputs_set_role(&s_out, PANEL_CH_THROTTLE, OUT_ROLE_THROTTLE);
-    (void)outputs_set_slew(&s_out, PANEL_CH_THROTTLE, PANEL_THROTTLE_RAMP);
-    arming_init(&s_arm, now_ms(),
-                HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS + HEARTBEAT_PERIOD_MS);
-    s_pump_live = true;
+    control_setup(&sim, &bench);
 
     uint32_t last_poll     = 0;
     uint32_t last_status   = 0;
@@ -1375,200 +2027,13 @@ static void control_task(void *arg)
     for (;;) {
         control_pump();
 
-        /*
-         * STOP latches rather than clearing on the next frame: a stop that
-         * lasts one frame is one the coprocessor may never see, and its
-         * monostable holds for longer than a frame.  Only an explicit arm
-         * clears it.
-         */
-        if (atomic_exchange(&s_stop_request, false)) {
-            arming_stop(&s_arm);
-        }
-
-        /*
-         * One place decides, and it is the one under test.  A disarm here is
-         * the policy's, not this loop's: a latched stop, dead touch, or an
-         * arm that finished settling.
-         */
-        const bool was_touch_dead = arming_touch_dead(&s_arm, now_ms());
-        switch (arming_step(&s_arm, now_ms())) {
-        case ARMING_ACT_DISARM:
-            outputs_arm(&s_out, false, now_ms());
-            throttle_to_zero();
-            if (was_touch_dead) {
-                control_alert("touch stopped answering -- disarmed");
-            }
-            if (link_up) {
-                link_msg_t ack = { 0 };
-                (void)control_write(false, &ack);
-            }
-            break;
-        case ARMING_ACT_ARM: {
-            link_msg_t ack = { 0 };
-            /*
-             * An arm starts from nothing, and this is where that is made
-             * true rather than hoped for.  ARM and THROTTLE travel in one
-             * transaction, so a command left over from before the disarm is
-             * the first thing the far end acts on -- and it steps straight
-             * to it.  The coprocessor's throttle is bank channel 8, off the
-             * CHAN_CFG page that addresses channels 0 to 7, so its slew is
-             * never configured and stays at the zero outputs_init() left:
-             * there is no ramp on that channel at any time.
-             *
-             * Every disarm returns the command to zero as well.  A disarm
-             * that forgot to would be a motor stepping to its old position
-             * on a bench the operator had just stopped, and there has been
-             * one.
-             */
-            throttle_to_zero();
-            if (link_up
-                && !(control_clear_failsafe(&ack) && control_write(true, &ack))) {
-                arming_refused(&s_arm);
-                control_alert("coprocessor refused to arm");
-            } else {
-                outputs_arm(&s_out, true, now_ms());
-            }
-            break;
-        }
-        default:
-            break;
-        }
+        service_arming(link_up);
 
         /* --- what the screens asked for ---------------------------------- */
-        panel_cmd_t pc;
-        while (xQueueReceive(s_cmd_q, &pc, 0) == pdTRUE) {
-            if (pc.kind == PANEL_CMD_STOP) {
-                arming_stop(&s_arm);
-                outputs_arm(&s_out, false, now_ms());
-                throttle_to_zero();
-                if (link_up) {
-                    link_msg_t ack = { 0 };
-                    (void)control_write(false, &ack);
-                }
-                continue;
-            }
-            if (pc.kind == PANEL_CMD_OUTPUTS) {
-                if (!link_up) {
-                    atomic_store(&s_outputs_result, (int)OUTPUTS_NO_LINK);
-                    continue;
-                }
-                /*
-                 * CHAN_CFG first.  It says what a channel is; OUTPUTS says
-                 * what renders it.  A slot that starts rendering a channel
-                 * whose role has not arrived would drive it to the wrong
-                 * rest for as long as the second write takes.
-                 */
-                uint16_t cfg[LINK_CC_COUNT];
-                uint16_t slots[LINK_OS_COUNT];
-                outbind_to_chan_cfg(&pc.bind, cfg,
-                                    (uint16_t)settings_get_int(SET_OUT_MIN_US),
-                                    (uint16_t)settings_get_int(SET_OUT_MAX_US));
-                (void)outbind_to_slots(&pc.bind, slots);
-
-                /*
-                 * A write that got no answer and one that was refused are
-                 * different things to be told.  REFUSED sends the operator
-                 * back to the pins they chose; NO LINK sends them to the
-                 * cable.  Collapsing the two would send them to the wrong
-                 * one every time the link dropped mid-write.
-                 */
-                link_msg_t reply;
-                outputs_result_t res = OUTPUTS_OK;
-                if (!write_page(&s_host, LINK_PAGE_CHAN_CFG,
-                                LINK_CC_COUNT, cfg, &reply)) {
-                    res = OUTPUTS_NO_LINK;
-                } else if (reply.op != LINK_OP_ACK) {
-                    res = OUTPUTS_REFUSED;
-                } else if (!write_page(&s_host, LINK_PAGE_OUTPUTS,
-                                       LINK_OS_COUNT, slots, &reply)) {
-                    res = OUTPUTS_NO_LINK;
-                } else if (reply.op != LINK_OP_ACK) {
-                    res = OUTPUTS_REFUSED;
-                }
-                atomic_store(&s_outputs_result, (int)res);
-                continue;
-            }
-            if (pc.kind == PANEL_CMD_SERVO) {
-                if (!link_up) {
-                    continue;
-                }
-                const servo_cmd_t sv = pc.servo;
-                link_msg_t reply;
-                if (sv.kind == SERVO_CMD_RELEASE) {
-                    /* Stop driving: clear the slot.  The channel keeps its
-                     * last command, but with nothing rendering it that is
-                     * inert. */
-                    uint16_t slot[LINK_OS_STRIDE] = { LINK_DRIVER_NONE, 0, 0, 0 };
-                    (void)write_page(&s_host, LINK_PAGE_OUTPUTS,
-                                     LINK_OS_STRIDE, slot, &reply);
-                } else {
-                    /*
-                     * Configuration and command, sent whole every time.  The
-                     * coprocessor may have reset since the last write, so the
-                     * range the pulse is clamped against and the driver that
-                     * renders it are restated with each pulse.
-                     */
-                    uint16_t cfg[LINK_CC_STRIDE] = {
-                        [LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE,
-                        [LINK_CC_SLEW]   = 0u,
-                        [LINK_CC_MIN_US] = SERVO_MIN_US,
-                        [LINK_CC_MAX_US] = SERVO_MAX_US,
-                    };
-                    uint16_t slot[LINK_OS_STRIDE] = {
-                        [LINK_OS_DRIVER]  = LINK_DRIVER_PWM,
-                        [LINK_OS_PIN]     = SERVO_PIN,
-                        [LINK_OS_RANGE]   = LINK_OS_RANGE_OF(SERVO_CH, 1),
-                        [LINK_OS_RATE_HZ] = 50u,
-                    };
-                    const uint16_t span = us_to_span(sv.value_us, SERVO_MIN_US,
-                                                     SERVO_MAX_US);
-                    (void)write_page(&s_host, LINK_PAGE_CHAN_CFG,
-                                     LINK_CC_STRIDE, cfg, &reply);
-                    (void)write_page(&s_host, LINK_PAGE_OUTPUTS,
-                                     LINK_OS_STRIDE, slot, &reply);
-                    (void)write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &span,
-                                     &reply);
-                }
-                continue;
-            }
-
-            switch (pc.motor.kind) {
-            case MOTOR_CMD_ARM:
-                /*
-                 * Arming is the deliberate act that clears a latched stop.
-                 * The policy clears it, gives the heartbeat time to be
-                 * believed and only then asks for the write; see
-                 * shared/safety/arming.c.
-                 */
-                arming_request_arm(&s_arm, now_ms());
-                break;
-            case MOTOR_CMD_DISARM:
-                arming_request_disarm(&s_arm);
-                outputs_arm(&s_out, false, now_ms());
-                throttle_to_zero();
-                if (link_up) {
-                    link_msg_t ack = { 0 };
-                    (void)control_write(false, &ack);
-                }
-                break;
-            case MOTOR_CMD_THROTTLE:
-                s_throttle_hundredths = pct_to_hundredths(pc.motor.value);
-                (void)outputs_set(&s_out, PANEL_CH_THROTTLE,
-                                  pct_to_span(pc.motor.value), now_ms());
-                break;
-            case MOTOR_CMD_RESET_PEAKS: bench_state_reset_peaks(&bench); break;
-            default: break;
-            }
-        }
+        drain_commands(link_up, &bench);
         (void)outputs_keepalive(&s_out, PANEL_CH_THROTTLE, now_ms());
 
-        const bool armed_now = outputs_armed(&s_out);
-        const bool was_armed = (s_log_file != NULL);
-        if (armed_now && !was_armed) {
-            log_start();
-        } else if (!armed_now && was_armed) {
-            log_stop();
-        }
+        log_follow_arming();
 
         const float emitted =
             (float)outputs_actual(&s_out, PANEL_CH_THROTTLE) * 100.0f
@@ -1588,336 +2053,11 @@ static void control_task(void *arg)
         (void)link_host_tick(&s_host, now_ms());
 
         /* --- the far end, at 1 Hz until it answers ----------------------- */
-        bool new_sample = false;
-        if ((uint32_t)(now_ms() - last_poll) >= (link_up ? 50u : 1000u)) {
-            last_poll = now_ms();
-            link_msg_t reply;
-            bool answered;
-            if (link_up) {
-                /* While the far end answers, the bench page is what is asked
-                 * for; identity is asked only while the far end is silent. */
-                answered = read_bench(&s_host, &bench);
-                if (answered) {
-                    link_msg_t ack = { 0 };
-                    const bool armed = outputs_armed(&s_out);
-                    if (!control_write(armed, &ack) && armed
-                        && ack.op == LINK_OP_NACK) {
-                        /*
-                         * The coprocessor is in failsafe or has lost the
-                         * heartbeat.  A stop latches at this end too.
-                         *
-                         * The command goes to zero here rather than through
-                         * the policy: arming_stop_from_far_end() clears
-                         * a->armed itself, and arming_step()'s disarm is
-                         * gated on a->armed, so ARMING_ACT_DISARM cannot
-                         * follow and the throttle would keep its last value.
-                         */
-                        outputs_arm(&s_out, false, now_ms());
-                        throttle_to_zero();
-                        arming_stop_from_far_end(&s_arm);
-                        control_alert("coprocessor disarmed -- arm again");
-                    }
-                }
-            } else {
-                /*
-                 * The bus first, because a controller that has fallen off it
-                 * cannot ask anything.  A transmitter nobody answers -- a
-                 * coprocessor not powered yet, or one that has reset -- adds
-                 * 8 to its error counter per attempt and is off the bus in
-                 * about four milliseconds, and the ESP32-S3's TWAI does not
-                 * come back on its own.  Without this the first quiet moment
-                 * on the bus is permanent: every later transmit fails, the
-                 * panel shows NO LINK and only a power cycle clears it.
-                 */
-                if (can_twai_recover() == CAN_TWAI_RECOVERING) {
-                    ++s_recoveries;
-                    ++s_recoveries_total;
-                }
+        bool new_sample = poll_far_end(&link_up, &bench, &last_poll,
+                                       &last_status);
 
-                /*
-                 * A NACK answers the request it refuses, so poll_page() is
-                 * true for one and regs[0] carries a refusal reason rather
-                 * than the first identity register.  Only a DATA reply holds
-                 * an identity page, and only an identity page says there is
-                 * a coprocessor there to talk to.
-                 */
-                answered = poll_page(&s_host, LINK_PAGE_IDENTITY,
-                                     LINK_ID_COUNT, &reply)
-                           && reply.op == LINK_OP_DATA;
-                if (answered
-                    && reply.regs[LINK_ID_PROTOCOL_MAJOR]
-                           != LINK_PROTOCOL_MAJOR) {
-                    /* A protocol major that differs from LINK_PROTOCOL_MAJOR
-                     * refuses arming; the register is the first one of the
-                     * identity page. */
-                    ESP_LOGE(TAG, "coprocessor speaks protocol %u, we speak %u",
-                             (unsigned)reply.regs[LINK_ID_PROTOCOL_MAJOR],
-                             (unsigned)LINK_PROTOCOL_MAJOR);
-                    control_alert("protocol mismatch -- will not arm");
-                    answered = false;
-                }
-            }
-            if (answered != link_up) {
-                ESP_LOGI(TAG, "coprocessor %s",
-                         answered ? "answered" : "went quiet");
-                if (answered) {
-                    /*
-                     * Who answered, before anything is decoded against it.
-                     *
-                     * The identity read at bring-up runs once, with whatever
-                     * was attached then -- which may have been nothing.  A
-                     * coprocessor that turns up later, or one swapped for
-                     * another, would otherwise have its outputs page read
-                     * against a board identity from boot, or against zero,
-                     * and the screen would offer no pins for as long as it
-                     * stayed plugged in.
-                     *
-                     * The identity page that detected this edge is that
-                     * answer, so it is used rather than read again.  A second
-                     * read costs a transaction on the edge.  The retry loop
-                     * that would wrap it is bring-up's: it draws a frame
-                     * between attempts, which belongs to the splash and not
-                     * to a task running beside the renderer.
-                     *
-                     * Nothing has to forget the board.  The edge fires only
-                     * on an identity page, and the pages below are decoded
-                     * against it in the same pass, so no read of it can
-                     * reach a value from an earlier coprocessor.
-                     */
-                    s_board = reply.regs[LINK_ID_HARDWARE];
-
-                    /*
-                     * A board this build ships no catalogue for describes
-                     * its own pins, so a coprocessor newer than this panel
-                     * is usable rather than blank.
-                     *
-                     * Only when the build has none.  A board it knows uses
-                     * its own catalogue: that one has been read by somebody,
-                     * names the exact signal holding each reserved pin, and
-                     * cannot change under a running bench.
-                     *
-                     * Nothing here makes a pin safe.  The coprocessor
-                     * reserves its own set at its own end whatever this page
-                     * says, so a catalogue that is wrong costs a pin rather
-                     * than the safety line.  A coprocessor built before the
-                     * page answers NACK, which is not a failure: the screen
-                     * then offers nothing for that board, as it did before.
-                     */
-                    if (outbind_board(s_board) == NULL) {
-                        link_msg_t cat;
-                        const bool answered_cat =
-                            poll_page(&s_host, LINK_PAGE_CATALOGUE,
-                                      LINK_CAT_COUNT, &cat);
-                        if (answered_cat && cat.op == LINK_OP_DATA
-                            && outbind_learn_board(s_board, cat.regs)) {
-                            ESP_LOGI(TAG, "hardware %u described itself: "
-                                          "%u pins", (unsigned)s_board,
-                                     (unsigned)outbind_pin_count(s_board));
-                            /*
-                             * And where they are, if it says.  Only a
-                             * picture of the board needs this, so a board
-                             * that does not answer is used from its
-                             * catalogue and simply is not drawn.
-                             */
-                            link_msg_t shp;
-                            if (poll_page(&s_host, LINK_PAGE_SHAPE,
-                                          LINK_SH_COUNT, &shp)
-                                && shp.op == LINK_OP_DATA
-                                && outbind_learn_shape(s_board, shp.regs)) {
-                                ESP_LOGI(TAG, "hardware %u says where its "
-                                              "pads are", (unsigned)s_board);
-                            } else {
-                                ESP_LOGI(TAG, "hardware %u does not say where "
-                                              "its pads are; it will be "
-                                              "listed and not drawn",
-                                         (unsigned)s_board);
-                            }
-                            /*
-                             * And which of them are grounds and rails.  A
-                             * board that does not say has them unmarked,
-                             * which is a lead placed by reading the board
-                             * rather than the screen.
-                             */
-                            link_msg_t pdr;
-                            if (poll_page(&s_host, LINK_PAGE_PADS,
-                                          LINK_PAD_COUNT, &pdr)
-                                && pdr.op == LINK_OP_DATA
-                                && outbind_learn_pads(s_board, pdr.regs)) {
-                                ESP_LOGI(TAG, "hardware %u says which pads "
-                                              "are grounds and rails",
-                                         (unsigned)s_board);
-                            }
-                        } else if (answered_cat && cat.op == LINK_OP_NACK
-                                   && cat.regs[0] == LINK_NACK_BAD_PAGE) {
-                            /*
-                             * Not a fault, and not warned about: a
-                             * coprocessor built before the page refuses it by
-                             * design, every time the link comes up.  A
-                             * warning on every link-up for a bench that is
-                             * working as built is a warning nobody reads.
-                             */
-                            ESP_LOGI(TAG, "hardware %u predates the catalogue "
-                                          "page; the screen will offer no "
-                                          "pins", (unsigned)s_board);
-                        } else {
-                            ESP_LOGW(TAG, "hardware %u has no pin map in this "
-                                          "build and did not describe itself; "
-                                          "the screen will offer no pins",
-                                     (unsigned)s_board);
-                        }
-                    }
-
-                    /*
-                     * And a photograph of it, if there is one and it is not
-                     * already kept.  One transaction here; the rest happens
-                     * a slice of a poll at a time below.
-                     */
-                    art_begin(s_board);
-
-                    /* On the edge, not every poll: it does not change while
-                     * the link is up, so a write per poll would cost a
-                     * transaction for nothing. */
-                    link_msg_t pr;
-                    if (!control_write_poles(&pr)) {
-                        ESP_LOGW(TAG, "coprocessor did not take the pole "
-                                      "count -- rpm will read empty");
-                    }
-                    /*
-                     * And what its outputs already are.  The screen shows
-                     * what is configured over there, not what this panel
-                     * last sent: after a panel restart those are different
-                     * things, and only one of them is driving pins.
-                     */
-                    link_msg_t orr;
-                    outbind_t got;
-                    if (poll_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_COUNT,
-                                  &orr)
-                        && orr.op != LINK_OP_NACK
-                        && outbind_from_slots(&got, s_board, orr.regs)) {
-                        if (xSemaphoreTake(s_snap_lock, portMAX_DELAY)
-                            == pdTRUE) {
-                            s_outputs_read = got;
-                            s_outputs_read_fresh = true;
-                            xSemaphoreGive(s_snap_lock);
-                        }
-                    } else {
-                        /*
-                         * Two different failures land here and they are not
-                         * the same to somebody reading the log.  A board with
-                         * no pin map in this build can offer nothing at all;
-                         * a known board whose page would not read still
-                         * offers its pins, with nothing selected.
-                         */
-                        outbind_t none;
-                        outbind_init(&none);
-                        outbind_set_board(&none, s_board);
-                        if (xSemaphoreTake(s_snap_lock, portMAX_DELAY)
-                            == pdTRUE) {
-                            s_outputs_read = none;
-                            s_outputs_read_fresh = true;
-                            xSemaphoreGive(s_snap_lock);
-                        }
-                        if (outbind_board(s_board) == NULL) {
-                            ESP_LOGW(TAG, "hardware %u has no pin map in this "
-                                          "build; the screen will offer no "
-                                          "pins", (unsigned)s_board);
-                        } else {
-                            ESP_LOGW(TAG, "could not read the outputs page; "
-                                          "the screen will show nothing "
-                                          "configured");
-                        }
-                    }
-                }
-            }
-            if (!answered && s_artbusy) {
-                /* The board that was sending it is gone, so the rest of its
-                 * picture is not coming.  Nothing was kept: the store only
-                 * becomes findable once the whole thing has checked out. */
-                art_stop("the link went quiet");
-            }
-            /*
-             * The link going, and how long ago.  Taken here rather than in
-             * the render loop because this is where the answer arrives; the
-             * screen is only shown from there.
-             */
-            if (answered) {
-                s_link_lost_ms    = 0;
-                s_link_lost_shown = false;
-                s_recoveries      = 0;   /* the next outage counts its own */
-            } else if (link_up) {
-                /* The edge: it was up until this poll. */
-                s_link_lost_ms = now_ms();
-            }
-            /*
-             * A sample exists only if the bench page was read.  A poll that
-             * timed out republishes nothing: counting it would put a stale
-             * reading on the plot as a fresh column and stamp a log row for
-             * a measurement that never arrived.
-             *
-             * Taken before link_up moves, and from the branch rather than
-             * from the answer.  While the link is down the question asked is
-             * the identity page, so an answer there says a coprocessor is
-             * there to talk to and says nothing about the bench: bench still
-             * holds whatever it held, which at boot is zeros.  Reading
-             * new_sample from `answered` after link_up had been set to it
-             * made the link-up edge produce one fabricated column and one
-             * log row of it.
-             */
-            new_sample = link_up && answered;
-            link_up = answered;
-
-            /*
-             * The status page is read a tenth as often as the bench page: a
-             * status read costs a whole transaction and its numbers move
-             * slowly.
-             */
-            if (link_up
-                && (uint32_t)(now_ms() - last_status) >= 500u) {
-                last_status = now_ms();
-                link_msg_t st;
-                if (poll_page(&s_host, LINK_PAGE_STATUS, LINK_ST_COUNT, &st)
-                    && st.op == LINK_OP_DATA) {
-                    s_bring.dev_frames =
-                        (uint32_t)st.regs[LINK_ST_FRAMES_LO]
-                        | ((uint32_t)st.regs[LINK_ST_FRAMES_HI] << 16);
-                    s_bring.dev_crc_errors = st.regs[LINK_ST_CRC_ERRORS];
-                    s_bring.dev_resyncs    = st.regs[LINK_ST_RESYNCS];
-                    s_dev_faults           = st.regs[LINK_ST_FAULTS];
-                    /* Two of link_bringup's diagnoses are gated on this; it
-                     * was lost in the move and left every one of them dead. */
-                    s_bring.have_status    = true;
-                }
-            }
-
-            /*
-             * And a slice of the photograph, last: the bench's own pages are
-             * what the operator is watching, and this is a transfer that
-             * happens once and can afford to wait for them.
-             */
-            if (link_up && s_artbusy) {
-                art_slice();
-            }
-        }
-
-        /*
-         * The model and the log advance on their own 50 ms cadence.  Tying
-         * them to the poll gate ran them at the identity-poll rate while the
-         * link was down -- one step of 50 ms per 1000 ms of wall clock, so
-         * the plot's axis and every CSV timestamp were twenty times slow.
-         */
-        if ((uint32_t)(now_ms() - last_sample)
-            >= (uint32_t)(1000.0f / PANEL_SAMPLE_HZ)) {
-            last_sample = now_ms();
-            if (!link_up) {
-                telemetry_sim_step(&sim, emitted, 1.0f / PANEL_SAMPLE_HZ,
-                                   &bench);
-                new_sample = true;
-            }
-            if (new_sample && s_log_file != NULL) {
-                s_log_t += 1.0f / PANEL_SAMPLE_HZ;
-                (void)log_writer_row(&s_log, s_log_t, &bench);
-            }
-        }
+        advance_model_and_log(link_up, emitted, &sim, &bench, &last_sample,
+                              &new_sample);
 
         if ((uint32_t)(now_ms() - last_temp) >= 1000u) {
             last_temp = now_ms();
@@ -1932,25 +2072,7 @@ static void control_task(void *arg)
         }
 
         /* --- hand the screen what it draws -------------------------------- */
-        snap_lock();
-        s_snap.bench       = bench;
-        s_snap.link_up     = link_up;
-        s_snap.armed       = outputs_armed(&s_out);
-        s_snap.stopped     = s_arm.stopped;
-        s_snap.faults      = link_up ? s_dev_faults : (uint16_t)0;
-        s_snap.link_errors = (uint32_t)s_bring.dev_crc_errors
-                             + (uint32_t)s_bring.dev_resyncs;
-        s_snap.run_seconds = arming_run_seconds(&s_arm);
-        s_snap.mcu_temp_c  = s_mcu_c;
-        snap_unlock();
-
-        /* One queue entry per sample, so none of the plot's time base is lost
-         * to a renderer that was busy. */
-        if (new_sample && xQueueSend(s_sample_q, &bench, 0) != pdTRUE) {
-            bench_state_t stale;
-            (void)xQueueReceive(s_sample_q, &stale, 0);
-            (void)xQueueSend(s_sample_q, &bench, 0);
-        }
+        publish_snapshot(&bench, link_up, new_sample);
 
         vTaskDelay(pdMS_TO_TICKS(CONTROL_PERIOD_MS));
     }
