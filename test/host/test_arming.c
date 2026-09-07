@@ -218,6 +218,37 @@ TEST_CASE(the_far_end_can_stop_the_bench)
     CHECK_EQ(arming_step(&a, t), ARMING_ACT_NONE);   /* already disarmed */
 }
 
+/*
+ * And no disarm ever follows it, which is a trap for the caller.
+ *
+ * arming_stop_from_far_end() clears a->armed itself, and arming_step()'s
+ * disarm branch is gated on a->armed, so ARMING_ACT_DISARM cannot be
+ * returned afterwards -- not on this pass and not on any later one. Whatever
+ * a caller does when it sees that action, it has to do here too.
+ *
+ * The panel learned this the expensive way: everything it does on a disarm
+ * returns the throttle command to zero, and the far-end stop did not, so the
+ * next arm carried the throttle from before the stop into the same
+ * transaction that armed.
+ */
+TEST_CASE(a_far_end_stop_leaves_no_disarm_for_the_caller_to_act_on)
+{
+    arming_init(&a, 0, SETTLE_MS);
+    uint32_t t = arm_by(100);
+    CHECK(a.armed);
+
+    arming_stop_from_far_end(&a);
+    for (uint32_t i = 0; i < 40; ++i) {
+        t += 50;
+        if (arming_step(&a, t) == ARMING_ACT_DISARM) {
+            T_FAIL("a disarm followed a far-end stop at %u ms", t);
+            return;
+        }
+    }
+    CHECK(!a.armed);
+    CHECK(a.stopped);
+}
+
 /* Timestamps wrap; the rules must not. */
 TEST_CASE(the_rules_survive_a_millisecond_wrap)
 {
@@ -254,6 +285,7 @@ int main(void)
     RUN(the_heartbeat_follows_the_stop_and_the_touch_only);
     RUN(the_run_clock_times_the_run);
     RUN(the_far_end_can_stop_the_bench);
+    RUN(a_far_end_stop_leaves_no_disarm_for_the_caller_to_act_on);
     RUN(the_rules_survive_a_millisecond_wrap);
     return test_summary("arming");
 }
