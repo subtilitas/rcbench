@@ -741,7 +741,22 @@ static int file_write(void *ctx, const void *data, size_t len)
  */
 static void log_start(void)
 {
-    if (s_log_file != NULL || !storage_mounted()) {
+    if (s_log_file != NULL) {
+        return;
+    }
+    /*
+     * Said, not swallowed, and said on the panel rather than to a console.
+     *
+     * The retry is gated on the run now, so a card that is not there at the
+     * arming edge means this run is not recorded and nothing tries again
+     * until the next arm.  That is the right behaviour -- polling a missing
+     * card from the task that drives the heartbeat is what this change is
+     * removing -- but it has to be visible, and the panel's console is not
+     * reachable on every bench.
+     */
+    if (!storage_mounted()) {
+        ESP_LOGW(TAG, "no card mounted; this run is not recorded");
+        control_alert("no card -- this run is not recorded");
         return;
     }
     /* Numbered, not timestamped: no clock on this board survives a power
@@ -763,6 +778,7 @@ static void log_start(void)
     }
     if (s_log_file == NULL) {
         ESP_LOGW(TAG, "no log file could be opened; the run is not recorded");
+        control_alert("card full or unwritable -- run not recorded");
         return;
     }
     const log_sink_t sink = { file_write, s_log_file };
