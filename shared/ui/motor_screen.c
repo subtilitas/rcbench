@@ -88,8 +88,10 @@
 /*
  * ARM is a hold, not a press: two seconds from the OK green to the danger
  * red, and the command goes when the fade completes.  A release before then
- * arms nothing.  A bench that spins a propeller should not do it on a touch
- * that could have been an elbow.
+ * arms nothing, and neither does a finger that leaves the button: the
+ * gesture is contact with the control, not with the panel.  A bench that
+ * spins a propeller should not do it on a touch that could have been an
+ * elbow.
  *
  * The timing, the fade and the flash are ui_widgets' (UI_HOLD_S,
  * ui_hold_fill, ui_hold_flash), so the other gesture that is held rather
@@ -277,15 +279,35 @@ void motor_screen_set_armed(bool armed)
         s.armed = armed;
         if (armed) {
             s.arm_flash_left = ARM_FLASH_FRAMES;
+        } else if (s.pressed == 1) {
+            /*
+             * The bench disarmed under a finger that is still down on the
+             * button.  The gesture ends here, both halves of it.
+             *
+             * tick() asks only whether a press is held, not where it is, so
+             * a press left standing would start a fresh two seconds the
+             * moment s.armed went false and arm the bench again -- from a
+             * contact the operator made to stop it, and after a failsafe or
+             * a STOP, which is where nobody is expecting it.  Clearing the
+             * press without arm_fired would strand it: the release consumes
+             * arm_fired and a release of a press that is no longer held
+             * does nothing, so the next hold could never complete.
+             */
+            s.pressed   = 0;
+            s.arm_fired = false;
+            ++s.ctrl_rev;
         }
         s.arm_held_s = 0.0f;
         /*
-         * arm_fired is NOT cleared here.  It remembers that the press still
-         * under the finger is the one that armed, and the application calls
-         * this between the hold completing and the finger lifting: clearing
-         * it made that release look like a fresh press on DISARM, so the
-         * bench armed, flashed and disarmed itself on the way up.  The
-         * release consumes it.
+         * arm_fired is NOT cleared on the way to armed.  It remembers that
+         * the press still under the finger is the one that armed, and the
+         * application calls this between the hold completing and the finger
+         * lifting: clearing it made that release look like a fresh press on
+         * DISARM, so the bench armed, flashed and disarmed itself on the way
+         * up.  The release consumes it.
+         *
+         * On the way back to disarmed it is cleared, together with the press
+         * it belongs to -- see above.
          */
         ++s.arm_rev;
         ++s.ctrl_rev;
@@ -371,6 +393,29 @@ static void event(const touch_event_t *evt)
     }
     if (!s.have_press || evt->point.id != s.press_id) {
         return;   /* a second finger cannot steal the first one's release */
+    }
+    if (evt->type == TOUCH_EVENT_MOVE) {
+        /*
+         * A finger that leaves ARM abandons the hold: the gesture is contact
+         * with the control, not with the panel.  A press that starts on ARM
+         * and slides onto the plot would otherwise arm the bench two seconds
+         * later.  Sliding back on does not resume it -- the press is over as
+         * far as ARM is concerned -- so the hold starts again from zero on
+         * the next press.
+         *
+         * Only while the hold is running.  Once it has fired, the press is
+         * waiting for the release that consumes arm_fired; while the bench is
+         * armed the same press is a DISARM, whose release is already checked
+         * against the rectangle.
+         */
+        if (s.pressed == 1 && !s.armed && !s.arm_fired
+            && !gfx_rect_contains(s.arm_rect, x, y)) {
+            s.pressed    = 0;
+            s.arm_held_s = 0.0f;
+            ++s.arm_rev;
+            ++s.ctrl_rev;
+        }
+        return;
     }
     if (evt->type == TOUCH_EVENT_UP) {
         const int was = s.pressed;

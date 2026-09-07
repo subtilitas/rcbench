@@ -96,6 +96,34 @@ esp_err_t board_exio_write(uint8_t mask)
     return ESP_OK;
 }
 
+/*
+ * One bit of the expander, read-modify-write against the shadow.
+ *
+ * Not locked, because nothing reaches it from more than one task.  Every
+ * caller runs during bring-up on app_main, before the control task is
+ * created: board_backlight() from display_init(), board_touch_reset_sequence()
+ * from the touch bring-up, board_sd_cs() from storage_init(), and
+ * board_select_can() from can_twai_start().  board_lcd_reset() and
+ * storage_deinit() have no callers at all.
+ *
+ * Rendering is on app_main too, not a task of its own; the only tasks this
+ * firmware creates are the control task and the artwork keeper, and neither
+ * touches the expander after bring-up.
+ *
+ * The bit that makes this worth stating is BOARD_EXIO_USB_SEL, which drives
+ * the FSUSB42UMX between native USB and the CAN transceiver.  A lost update
+ * here would clear it from a stale shadow and take CAN off the bus with no
+ * error anywhere -- NO LINK against a controller reporting a healthy bus,
+ * until the panel is switched off.
+ *
+ * So: a caller added on the control task, the artwork keeper or any task
+ * added later needs a mutex around the shadow read, the modify and the I2C
+ * transaction together.  Its wait has to be bounded well under HEARTBEAT_MAX_GAP_MS
+ * (150 ms), the ceiling the safety line is watched against -- a lock timeout
+ * longer than that trades a fault nobody has had for a failsafe everybody
+ * gets.  I2C_TIMEOUT_MS is 100 ms, so one transaction already spends most of
+ * that budget and a second waiter cannot be made safe by waiting longer.
+ */
 esp_err_t board_exio_set(int exio, bool level)
 {
     ESP_RETURN_ON_FALSE(exio >= 0 && exio <= 7, ESP_ERR_INVALID_ARG, TAG,

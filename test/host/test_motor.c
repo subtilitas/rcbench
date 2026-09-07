@@ -120,6 +120,124 @@ static motor_cmd_t last_cmd(void)
     return c;
 }
 
+/* Somewhere well clear of the ARM button: the plot, half the screen away. */
+#define OFF_X 300
+#define OFF_Y 120
+
+TEST_CASE(a_finger_that_leaves_arm_arms_nothing)
+{
+    /*
+     * The gesture is contact with the control, not with the panel. A press
+     * that lands on ARM and slides onto the plot would otherwise arm the
+     * bench two seconds later, with the finger nowhere near the button.
+     */
+    fresh();
+    motor_screen_set_armed(false);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS / 4);
+    ev(OFF_X, OFF_Y, TOUCH_EVENT_MOVE, 1);
+    tick_for(HOLD_TICKS * 2);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    ev(OFF_X, OFF_Y, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+}
+
+TEST_CASE(a_finger_that_comes_back_has_to_be_lifted_first)
+{
+    /*
+     * Coming back is not resuming and not restarting: the press is over as
+     * far as ARM is concerned. Held here for a full ARM_HOLD_S after
+     * returning, which is what tells the two apart -- a shorter hold would
+     * pass whether the timer restarted or the press was dead.
+     */
+    fresh();
+    motor_screen_set_armed(false);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS / 4);
+    ev(OFF_X, OFF_Y, TOUCH_EVENT_MOVE, 1);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_MOVE, 1);
+    tick_for(HOLD_TICKS * 2);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    /* And a fresh press does arm, so nothing is left stuck. */
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    hold_arm();
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+}
+
+TEST_CASE(a_hold_that_stays_put_still_arms_exactly_once)
+{
+    fresh();
+    motor_screen_set_armed(false);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    /* A move that does not leave the button is not a departure. */
+    ev(ARM_X - 10, ARM_Y + 2, TOUCH_EVENT_MOVE, 1);
+    tick_for(HOLD_TICKS);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+    tick_for(HOLD_TICKS);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+}
+
+TEST_CASE(a_press_that_disarmed_the_bench_does_not_then_arm_it)
+{
+    /*
+     * The bench disarms under a finger that is still down: a failsafe, a
+     * STOP, or the coprocessor dropping the outputs. tick() asks only
+     * whether a press is held, so a press left standing would start its two
+     * seconds the moment armed went false and arm the bench again -- from
+     * the very contact the operator made to stop it.
+     */
+    fresh();
+    motor_screen_set_armed(true);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);   /* reads DISARM while armed */
+    tick_for(HOLD_TICKS / 4);
+
+    motor_screen_set_armed(false);           /* the far end disarmed */
+    tick_for(HOLD_TICKS * 2);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    /* And the button is not left stuck: the next hold still arms. */
+    hold_arm();
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+}
+
+TEST_CASE(a_press_that_wandered_off_does_not_arm_when_the_bench_disarms)
+{
+    /* The same edge with the finger already gone from the button. */
+    fresh();
+    motor_screen_set_armed(true);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    ev(OFF_X, OFF_Y, TOUCH_EVENT_MOVE, 1);
+    motor_screen_set_armed(false);
+    tick_for(HOLD_TICKS * 2);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    ev(OFF_X, OFF_Y, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+}
+
+TEST_CASE(a_throttle_drag_is_not_an_arming_gesture)
+{
+    /* A drag on the slider never touches the button's press state. */
+    fresh();
+    motor_screen_set_armed(false);
+    ev(120, 300, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 8; ++i) {
+        ev(120 + i * 40, 300, TOUCH_EVENT_MOVE, 1);
+    }
+    tick_for(HOLD_TICKS * 2);
+    ev(440, 300, TOUCH_EVENT_UP, 1);
+    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f };
+    bool armed_seen = false;
+    while (motor_screen_poll_cmd(&c)) {
+        if (c.kind == MOTOR_CMD_ARM) { armed_seen = true; }
+    }
+    CHECK(!armed_seen);
+}
+
 TEST_CASE(arming_and_disarming_come_from_the_same_button)
 {
     fresh();
@@ -727,6 +845,12 @@ TEST_CASE(an_unanswered_bench_does_not_show_numbers)
 
 int main(void)
 {
+    RUN(a_finger_that_leaves_arm_arms_nothing);
+    RUN(a_finger_that_comes_back_has_to_be_lifted_first);
+    RUN(a_hold_that_stays_put_still_arms_exactly_once);
+    RUN(a_press_that_disarmed_the_bench_does_not_then_arm_it);
+    RUN(a_press_that_wandered_off_does_not_arm_when_the_bench_disarms);
+    RUN(a_throttle_drag_is_not_an_arming_gesture);
     RUN(arming_and_disarming_come_from_the_same_button);
     RUN(a_press_that_slides_off_arm_does_nothing);
     RUN(a_second_contact_cannot_steal_the_disarm_release);
