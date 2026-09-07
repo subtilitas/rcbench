@@ -23,10 +23,16 @@
 
 /* ------------------------------------------------------------ the device */
 
+/* A page as wide as the protocol allows, writable, so a request that has to
+ * be split can be answered the way the far end answers it. Both output pages
+ * are this wide. */
+#define WIDE_COUNT LINK_MAX_REGS
+
 typedef struct {
     uint16_t identity[LINK_ID_COUNT];
     uint16_t control[LINK_CT_COUNT];
     uint16_t bench[LINK_BN_COUNT];
+    uint16_t wide[WIDE_COUNT];
 } state_t;
 
 static state_t   g;
@@ -54,10 +60,22 @@ static void bn_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     memcpy(out, ((state_t *)ctx)->bench + off, (size_t)n * 2u);
 }
 
+static void wide_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    memcpy(out, ((state_t *)ctx)->wide + off, (size_t)n * 2u);
+}
+static uint8_t wide_write(void *ctx, uint8_t off, uint8_t n,
+                          const uint16_t *in)
+{
+    memcpy(((state_t *)ctx)->wide + off, in, (size_t)n * 2u);
+    return 0;
+}
+
 static const link_page_t k_pages[] = {
     { LINK_PAGE_IDENTITY, LINK_ID_COUNT, id_read, NULL },
     { LINK_PAGE_CONTROL,  LINK_CT_COUNT, ct_read, ct_write },
     { LINK_PAGE_BENCH,    LINK_BN_COUNT, bn_read, NULL },
+    { LINK_PAGE_OUTPUTS,  WIDE_COUNT,    wide_read, wide_write },
 };
 
 /* --------------------------------------------------------------- the bus */
@@ -130,7 +148,7 @@ static void fresh(void)
     }
     g.identity[LINK_ID_PROTOCOL_MAJOR] = LINK_PROTOCOL_MAJOR;
     g.identity[LINK_ID_PROTOCOL_MINOR] = LINK_PROTOCOL_MINOR;
-    link_dev_init(&dev, k_pages, 3, &g, 0);
+    link_dev_init(&dev, k_pages, 4, &g, 0);
     link_host_init(&host, 0);
 }
 
@@ -209,6 +227,116 @@ TEST_CASE(a_write_is_acknowledged_with_what_was_stored)
  * acknowledge) could not tell a page it may not write from a link that has
  * died.
  */
+/*
+ * The transport the coprocessor actually is.
+ *
+ * exchange() above keeps one reply, which is what a request of a single
+ * frame produces. firmware/iomcu/src/main.c decodes every frame it receives
+ * and answers each one (its receive loop dispatches and transmits inside the
+ * same pass), so a request that took eight frames draws eight answers. A
+ * write of a whole page is exactly that, and neither output page fits in one
+ * frame: LINK_CC_COUNT and LINK_OS_COUNT are both 32 registers against
+ * LINK_CAN_REGS_PER_FRAME of 4.
+ */
+static bool exchange_answering_every_frame(const link_msg_t *req,
+                                           uint32_t now_ms, link_msg_t *got)
+{
+    link_can_frame_t out[LINK_CAN_MAX_FRAMES];
+    const size_t n = link_can_encode(req, out, LINK_CAN_MAX_FRAMES);
+    if (n == 0) {
+        return false;
+    }
+    bool answered = false;
+    for (size_t i = 0; i < n; ++i) {
+        link_msg_t part, reply;
+        ++bus.carried;
+        if (!link_can_decode(&out[i], &part)) {
+            continue;
+        }
+        if (!link_dev_dispatch(&dev, &part, &reply, now_ms)) {
+            continue;
+        }
+        link_can_frame_t back[LINK_CAN_MAX_FRAMES];
+        const size_t m = link_can_encode(&reply, back, LINK_CAN_MAX_FRAMES);
+        for (size_t k = 0; k < m; ++k) {
+            link_msg_t ans;
+            ++bus.carried;
+            if (!link_can_decode(&back[k], &ans)) {
+                continue;
+            }
+            if (link_host_accept(&host, &ans, now_ms, got)) {
+                answered = true;
+            }
+        }
+    }
+    return answered;
+}
+
+/*
+ * A page-wide write, answered the way the far end answers it.
+ *
+ * The acknowledgement comes back in as many pieces as the request went out
+ * in, each naming its own four registers. A host that waited for one
+ * acknowledgement of the whole window matched none of them, counted all
+ * eight as mismatches and waited out LINK_HOST_TIMEOUT_MS -- during which it
+ * transmitted nothing, so the far end's own 200 ms silence watchdog latched.
+ * Applying an output binding did that every time.
+ */
+TEST_CASE(a_write_wider_than_a_frame_is_answered_by_its_pieces)
+{
+    fresh();
+    link_msg_t req, got;
+    uint16_t v[WIDE_COUNT];
+    const uint8_t wide = (uint8_t)WIDE_COUNT;
+    CHECK(wide > LINK_CAN_REGS_PER_FRAME);
+    for (uint8_t i = 0; i < wide; ++i) {
+        v[i] = (uint16_t)(0x100 + i);
+    }
+
+    CHECK(link_host_write(&host, LINK_PAGE_OUTPUTS, 0, wide, v, 0, &req));
+    CHECK(exchange_answering_every_frame(&req, 100, &got));
+    CHECK_EQ(got.op, LINK_OP_ACK);
+
+    /* The window it answers is the window that was asked for, not the last
+     * frame's quarter of it. */
+    CHECK_EQ(got.offset, 0);
+    CHECK_EQ(got.count, wide);
+
+    /* Every register reached the far end. */
+    for (uint8_t i = 0; i < wide; ++i) {
+        CHECK_EQ(g.wide[i], (uint16_t)(0x100 + i));
+    }
+
+    /* And the answer carries the whole window that was stored, not the
+     * four registers of whichever piece arrived last. */
+    for (uint8_t i = 0; i < wide; ++i) {
+        CHECK_EQ(got.regs[i], (uint16_t)(0x100 + i));
+    }
+
+    /* Nothing counted as a stray: every piece belonged to this request. */
+    CHECK_EQ(host.mismatches, 0u);
+    CHECK(!host.pending);
+    CHECK_EQ(host.replies, 1u);
+}
+
+/* And a piece that belongs to no window is still a stray. */
+TEST_CASE(an_acknowledgement_outside_the_window_is_refused)
+{
+    fresh();
+    link_msg_t req, got;
+    const uint16_t v[2] = { 0, 4321 };
+    CHECK(link_host_write(&host, LINK_PAGE_CONTROL, 0, 2, v, 0, &req));
+
+    link_msg_t stray = { 0 };
+    stray.op     = LINK_OP_ACK;
+    stray.page   = LINK_PAGE_CONTROL;
+    stray.offset = 8;               /* past the two registers asked for */
+    stray.count  = 2;
+    CHECK(!link_host_accept(&host, &stray, 100, &got));
+    CHECK_EQ(host.mismatches, 1u);
+    CHECK(host.pending);            /* still waiting for its own answer */
+}
+
 TEST_CASE(a_refusal_answers_and_says_why)
 {
     fresh();
@@ -331,6 +459,8 @@ int main(void)
     RUN(the_pieces_may_arrive_in_any_order);
     RUN(a_window_inside_a_page_answers_with_that_window);
     RUN(a_write_is_acknowledged_with_what_was_stored);
+    RUN(a_write_wider_than_a_frame_is_answered_by_its_pieces);
+    RUN(an_acknowledgement_outside_the_window_is_refused);
     RUN(a_refusal_answers_and_says_why);
     RUN(a_lost_piece_leaves_the_request_unanswered);
     RUN(a_reply_to_an_abandoned_question_is_refused);
