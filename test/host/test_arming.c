@@ -275,6 +275,20 @@ TEST_CASE(the_rules_survive_a_millisecond_wrap)
     CHECK_EQ(arming_step(&a, t), ARMING_ACT_DISARM);
 }
 
+TEST_CASE(the_latch_can_be_asked_about)
+{
+    /* A screen asks so a gesture already under way can be abandoned: a stop
+     * on a bench that was not armed changes nothing else it could look at. */
+    arming_t a;
+    arming_init(&a, 0, SETTLE_MS);
+    CHECK(!arming_stopped(&a));
+    arming_stop(&a);
+    CHECK(arming_stopped(&a));
+    arming_request_arm(&a, 10u);
+    CHECK(!arming_stopped(&a));
+    CHECK(!arming_stopped(NULL));
+}
+
 int main(void)
 {
     RUN(a_stop_latches_until_an_explicit_arm);
@@ -287,5 +301,6 @@ int main(void)
     RUN(the_far_end_can_stop_the_bench);
     RUN(a_far_end_stop_leaves_no_disarm_for_the_caller_to_act_on);
     RUN(the_rules_survive_a_millisecond_wrap);
+    RUN(the_latch_can_be_asked_about);
     return test_summary("arming");
 }

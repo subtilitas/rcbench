@@ -58,6 +58,15 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
  */
 void servo_screen_set_armed(bool armed);
 
+/**
+ * Abandon a hold that is under way, because the bench has been stopped.
+ *
+ * Separate from servo_screen_set_armed() because a stop on a bench that was
+ * not armed changes nothing about whether it is armed, and the gesture must
+ * end all the same.
+ */
+void servo_screen_cancel_arm(void);
+
 /** Commanded pulse width, for the application and for tests. */
 uint16_t servo_screen_commanded(void);
 

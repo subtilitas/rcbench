@@ -26,6 +26,16 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **A stop did not end an arming gesture already under way.** A stop can
+  latch on a bench that is not armed -- a STOP press, a dead touch, the far
+  end -- so nothing about the armed state changed and a hold still under a
+  finger ran on, completed, and asked to arm, clearing the latch that had
+  just been set. Both screens abandon a hold when a stop latches.
+- **A second contact could take over an arming hold.** A finger, or a palm,
+  landing on ARM while another was holding it replaced the contact the
+  gesture belonged to; the first finger's release was then ignored and the
+  second contact could arm the bench. The hold now stays with the contact
+  that began it, on both screens.
 - **A stop pressed after an arming gesture could be undone by it.** The
   control loop stepped the arming policy before it drained what the screens
   had asked for, so a STOP that latched at the top of a pass was cleared

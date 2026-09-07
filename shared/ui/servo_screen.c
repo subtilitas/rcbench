@@ -234,6 +234,22 @@ void servo_screen_set_armed(bool armed)
     ++s.ctrl_rev;
 }
 
+void servo_screen_cancel_arm(void)
+{
+    if (!s.arm_down && s.arm.held_s == 0.0f) {
+        return;
+    }
+    /*
+     * A stop latched while a hold was running.  The bench may already have
+     * been unarmed, so nothing about its state changed and the gesture would
+     * otherwise finish its two seconds and ask to arm -- clearing the latch
+     * that had just been set, from a contact made before the stop.
+     */
+    ui_hold_reset(&s.arm);
+    s.arm_down = false;
+    ++s.arm_rev;
+}
+
 bool servo_screen_take(servo_cmd_t *out)
 {
     if (out == NULL || s.pending.kind == SERVO_CMD_NONE) {
@@ -396,6 +412,13 @@ static void event(const touch_event_t *evt)
             post(SERVO_CMD_RELEASE, 0);
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.arm_btn, px, py)) {
+            if (s.arm_down) {
+                /* The gesture belongs to the contact that began it.  A second
+                 * finger, or a palm, taking it over would leave the first
+                 * one's release ignored and arm the bench from a contact
+                 * nobody made deliberately. */
+                return;
+            }
             s.arm_down = true;
             s.arm_id   = evt->point.id;
             ui_hold_begin(&s.arm);

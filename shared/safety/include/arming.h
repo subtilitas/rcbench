@@ -66,6 +66,10 @@ void arming_touch_seen(arming_t *a, uint32_t now_ms);
 /** True once touch has been silent for ARMING_TOUCH_DEAD_MS. */
 bool arming_touch_dead(const arming_t *a, uint32_t now_ms);
 
+/** Whether the stop latch is set: a STOP, a dead touch, or the far end.
+ *  A screen asks so a gesture already under way can be abandoned. */
+bool arming_stopped(const arming_t *a);
+
 /** STOP. Latches; abandons an arm that is waiting for the line. */
 void arming_stop(arming_t *a);
 

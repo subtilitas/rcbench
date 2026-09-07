@@ -401,6 +401,45 @@ TEST_CASE(the_trim_says_the_position_again_while_it_is_held)
     CHECK_EQ(after.value_us, was + 5);
 }
 
+TEST_CASE(a_stop_abandons_a_hold_that_is_under_way)
+{
+    /*
+     * A stop can latch while the bench is not armed -- a STOP press, a dead
+     * touch, the far end -- so nothing about the armed state changes and the
+     * hold would otherwise finish and ask to arm, clearing the latch that had
+     * just been set.
+     */
+    fresh();
+    arm_press();
+    held(UI_HOLD_S / 2.0f);
+    servo_screen_cancel_arm();
+    held(UI_HOLD_S + 0.2f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+
+    /* And the button is not stranded: lifting and pressing again arms. */
+    arm_release();
+    arm_press();
+    held(UI_HOLD_S + 0.2f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
+}
+
+TEST_CASE(a_second_contact_cannot_take_over_the_arm_hold)
+{
+    /*
+     * The gesture belongs to the contact that began it.  A second finger, or
+     * a palm, taking it over would leave the first one's release ignored and
+     * arm the bench from a contact nobody made deliberately.
+     */
+    fresh();
+    arm_press();                                   /* contact 1 */
+    held(UI_HOLD_S / 2.0f);
+    ev(ARM_X + 80, ARM_Y + 16, TOUCH_EVENT_DOWN, 2);   /* contact 2 lands */
+    /* The first contact leaves the button, which ends the gesture. */
+    ev(ARM_X + 40, ARM_Y - 120, TOUCH_EVENT_MOVE, 1);
+    held(UI_HOLD_S + 0.2f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
 TEST_CASE(a_stop_stops_the_screen_holding_anything)
 {
     /*
@@ -524,6 +563,8 @@ int main(void)
     RUN(changing_the_type_says_the_position_again);
     RUN(the_trim_says_the_position_again_while_it_is_held);
     RUN(nothing_is_said_again_when_nothing_is_being_held);
+    RUN(a_stop_abandons_a_hold_that_is_under_way);
+    RUN(a_second_contact_cannot_take_over_the_arm_hold);
     RUN(a_stop_stops_the_screen_holding_anything);
     RUN(leaving_disarms_and_lets_go_of_the_output);
     RUN(trim_shifts_the_pulse_and_not_the_angle);

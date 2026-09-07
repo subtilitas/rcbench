@@ -278,6 +278,36 @@ TEST_CASE(a_second_contact_cannot_steal_the_disarm_release)
  * nothing, and it does not arm later either: a bench that spins a propeller
  * should not do it on a touch that could have been an elbow.
  */
+TEST_CASE(a_stop_abandons_a_hold_that_is_under_way)
+{
+    /* The bench need not have been armed for a stop to latch, so set_armed()
+     * sees no change and the hold would run on and arm from a contact made
+     * before the stop. */
+    fresh();
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS / 2);
+    motor_screen_cancel_arm();
+    tick_for(HOLD_TICKS + 4);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS + 4);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+}
+
+TEST_CASE(a_second_contact_cannot_take_over_the_arm_hold)
+{
+    fresh();
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS / 2);
+    ev(ARM_X + 20, ARM_Y, TOUCH_EVENT_DOWN, 2);   /* a second finger lands */
+    /* The contact that began it leaves the button, ending the gesture. */
+    ev(ARM_X, ARM_Y - 200, TOUCH_EVENT_MOVE, 1);
+    tick_for(HOLD_TICKS + 4);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+}
+
 TEST_CASE(a_short_press_on_arm_does_nothing)
 {
     fresh();
@@ -854,6 +884,8 @@ int main(void)
     RUN(arming_and_disarming_come_from_the_same_button);
     RUN(a_press_that_slides_off_arm_does_nothing);
     RUN(a_second_contact_cannot_steal_the_disarm_release);
+    RUN(a_stop_abandons_a_hold_that_is_under_way);
+    RUN(a_second_contact_cannot_take_over_the_arm_hold);
     RUN(a_short_press_on_arm_does_nothing);
     RUN(arming_flashes_the_whole_button);
     RUN(a_pending_disarm_cannot_be_overwritten_by_an_arm);

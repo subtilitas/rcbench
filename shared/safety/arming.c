@@ -42,6 +42,11 @@ void arming_stop(arming_t *a)
     a->arming  = false;
 }
 
+bool arming_stopped(const arming_t *a)
+{
+    return a != NULL && a->stopped;
+}
+
 void arming_request_arm(arming_t *a, uint32_t now_ms)
 {
     if (a == NULL || arming_touch_dead(a, now_ms)) {

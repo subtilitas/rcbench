@@ -271,6 +271,21 @@ void motor_screen_push(const bench_state_t *b)
     ui_plot_update_scales(&s.plot, PLOT_W);
 }
 
+void motor_screen_cancel_arm(void)
+{
+    if (s.pressed != 1 && s.arm.held_s == 0.0f) {
+        return;
+    }
+    /* A stop latched under a hold that is still running; see the servo
+     * screen's own, and ui_hold_reset(). */
+    ui_hold_reset(&s.arm);
+    if (s.pressed == 1) {
+        s.pressed = 0;
+        ++s.ctrl_rev;
+    }
+    ++s.arm_rev;
+}
+
 void motor_screen_set_armed(bool armed)
 {
     if (s.armed != armed) {
@@ -357,6 +372,9 @@ static void event(const touch_event_t *evt)
             return;
         }
         if (gfx_rect_contains(s.arm_rect, x, y)) {
+            if (s.pressed == 1) {
+                return;   /* the hold belongs to the contact that began it */
+            }
             s.have_press = true; s.press_id = evt->point.id; s.pressed = 1;
             ui_hold_begin(&s.arm);
             ++s.arm_rev;

@@ -2219,7 +2219,7 @@ static void publish_snapshot(const bench_state_t *bench, bool link_up,
     s_snap.bench       = *bench;
     s_snap.link_up     = link_up;
     s_snap.armed       = outputs_armed(&s_out);
-    s_snap.stopped     = s_arm.stopped;
+    s_snap.stopped     = arming_stopped(&s_arm);
     s_snap.faults      = link_up ? s_dev_faults : (uint16_t)0;
     s_snap.link_errors = (uint32_t)s_bring.dev_crc_errors
                          + (uint32_t)s_bring.dev_resyncs;
@@ -2409,6 +2409,7 @@ void app_main(void)
     uint32_t frames  = 0;
     uint32_t last_us = (uint32_t)esp_timer_get_time();
     bool     was_armed = false;
+    bool was_stopped = false;
 
     for (;;) {
         const uint32_t us = (uint32_t)esp_timer_get_time();
@@ -2481,6 +2482,7 @@ void app_main(void)
         bench_state_t bench;
         bool     link_up;
         bool     armed;
+        bool     stopped;
         uint16_t faults;
         uint32_t link_errors;
         float    mcu_temp_c;
@@ -2491,6 +2493,7 @@ void app_main(void)
         bench       = s_snap.bench;
         link_up     = s_snap.link_up;
         armed       = s_snap.armed;
+        stopped     = s_snap.stopped;
         faults      = s_snap.faults;
         link_errors = s_snap.link_errors;
         mcu_temp_c  = s_snap.mcu_temp_c;
@@ -2512,6 +2515,18 @@ void app_main(void)
             (void)motor_screen_poll_cmd(&mc);   /* not a command, a follow */
         }
         was_armed = armed;
+        /*
+         * A stop that latches ends any hold under way, on both screens.
+         * set_armed() cannot do it: a stop on a bench that was not armed
+         * changes nothing about whether it is armed, and the gesture would
+         * finish its two seconds and ask to arm -- clearing the latch that
+         * had just been set.
+         */
+        if (stopped && !was_stopped) {
+            motor_screen_cancel_arm();
+            servo_screen_cancel_arm();
+        }
+        was_stopped = stopped;
         motor_screen_set_armed(armed);
         servo_screen_set_armed(armed);
         /* One sample, one plot column, however many frames it took to get
