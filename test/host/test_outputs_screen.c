@@ -92,6 +92,23 @@ static void choose_proto(int index)
     tap(DD_X + 40, DD_Y + 4 + index * POP_ROW + POP_ROW / 2);
 }
 
+/* By name, because the row a protocol sits on is the catalogue's business:
+ * an entry added between two others must not silently retarget a test at a
+ * protocol it was not written for. */
+static int proto_row(const char *name)
+{
+    const outbind_proto_t *k = outbind_protos();
+    for (int i = 0; i < (int)OUTBIND_PROTOS; ++i) {
+        if (strcmp(k[i].name, name) == 0) {
+            return i;
+        }
+    }
+    T_FAIL("the catalogue offers no %s", name);
+    return 0;
+}
+
+static void choose_named(const char *name) { choose_proto(proto_row(name)); }
+
 static void tap_pin(uint8_t gpio)
 {
     int x, y;
@@ -104,7 +121,7 @@ static void tap_pin(uint8_t gpio)
 TEST_CASE(the_protocol_list_opens_and_a_choice_closes_it)
 {
     fresh();
-    choose_proto(1);                                    /* SERVO PWM */
+    choose_named("SERVO PWM");
     CHECK_EQ(outputs_screen_binding()->proto, 1);
     CHECK_EQ(s_applied, 1);
 
@@ -116,7 +133,7 @@ TEST_CASE(the_protocol_list_opens_and_a_choice_closes_it)
 TEST_CASE(an_open_list_can_be_left_without_choosing)
 {
     fresh();
-    choose_proto(1);
+    choose_named("SERVO PWM");
     const int was = s_applied;
 
     tap(DD_X + DD_W / 2, DD_Y + DD_H / 2);              /* open */
@@ -132,7 +149,7 @@ TEST_CASE(an_open_list_can_be_left_without_choosing)
 TEST_CASE(a_release_away_from_the_press_does_nothing)
 {
     fresh();
-    choose_proto(1);
+    choose_named("SERVO PWM");
     const int was = s_applied;
 
     int x, y;
@@ -148,7 +165,7 @@ TEST_CASE(a_release_away_from_the_press_does_nothing)
 TEST_CASE(ticking_a_pin_applies_once_and_unticking_applies_again)
 {
     fresh();
-    choose_proto(1);
+    choose_named("SERVO PWM");
     const int was = s_applied;
 
     tap_pin(4);
@@ -164,7 +181,7 @@ TEST_CASE(ticking_a_pin_applies_once_and_unticking_applies_again)
 TEST_CASE(a_reserved_pin_never_reaches_the_apply_seam)
 {
     fresh();
-    choose_proto(1);
+    choose_named("SERVO PWM");
     const int was = s_applied;
 
     /* The application writes the wire from that seam, so a call here would
@@ -178,7 +195,7 @@ TEST_CASE(a_reserved_pin_never_reaches_the_apply_seam)
 TEST_CASE(a_pin_too_many_does_not_apply)
 {
     fresh();
-    choose_proto(2);                 /* PPM: one pin */
+    choose_named("PPM");             /* one pin */
     const int was = s_applied;
 
     tap_pin(0);
@@ -249,7 +266,7 @@ TEST_CASE(a_board_that_can_take_nothing_says_why)
     gfx_canvas_t c = { px, 800, 432, 800, { 0, 0, 800, 432 } };
 
     fresh();
-    choose_proto(1);                              /* SERVO PWM */
+    choose_named("SERVO PWM");
     scr()->render(&c, 0);
     const unsigned quiet = reason_ink(&c);
 
@@ -262,12 +279,12 @@ TEST_CASE(a_board_that_can_take_nothing_says_why)
     for (unsigned i = 0; i < 4u; ++i) {
         tap_pin(gp[i]);
     }
-    choose_proto(2);                              /* PPM */
+    choose_named("PPM");
     scr()->render(&c, 0);
     CHECK(reason_ink(&c) != quiet);
 
     /* And it goes away again when the protocol can take a pin. */
-    choose_proto(1);
+    choose_named("SERVO PWM");
     scr()->render(&c, 0);
     CHECK_EQ(reason_ink(&c), quiet);
 }
@@ -278,7 +295,7 @@ TEST_CASE(a_protocol_that_has_all_its_pins_says_so)
     gfx_canvas_t c = { px, 800, 432, 800, { 0, 0, 800, 432 } };
 
     fresh();
-    choose_proto(1);                              /* SERVO PWM, eight pins */
+    choose_named("SERVO PWM");                    /* eight pins */
     scr()->render(&c, 0);
     const unsigned quiet = reason_ink(&c);
 
@@ -302,12 +319,13 @@ TEST_CASE(the_binding_survives_being_set_from_outside)
     outbind_t b;
     outbind_init(&b);
     outbind_set_board(&b, OUTBIND_BOARD_PICO_HEADER);
-    outbind_set_proto(&b, 4);                     /* DSHOT600 */
+    const int dshot600 = proto_row("DSHOT600");
+    outbind_set_proto(&b, (uint8_t)dshot600);
     (void)outbind_toggle(&b, outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 7));
     outputs_screen_set_binding(&b);
 
     /* What was loaded from storage is what the screen now shows and edits. */
-    CHECK_EQ(outputs_screen_binding()->proto, 4);
+    CHECK_EQ(outputs_screen_binding()->proto, dshot600);
     CHECK_EQ(outbind_chosen(outputs_screen_binding()), 1);
     tap_pin(13);
     CHECK_EQ(outbind_chosen(outputs_screen_binding()), 2);
@@ -333,7 +351,7 @@ TEST_CASE(a_protocol_index_from_outside_cannot_run_off_the_table)
     scr()->render(&c, 0);
 
     /* And it is still usable: the list picks up from OFF rather than wedging. */
-    choose_proto(1);
+    choose_named("SERVO PWM");
     CHECK_EQ(outputs_screen_binding()->proto, 1);
 }
 

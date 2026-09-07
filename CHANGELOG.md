@@ -6,6 +6,30 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- **MOTOR PWM, beside SERVO PWM.** The same pulse at the same 50 Hz, bound to
+  a channel whose role is throttle rather than surface. An ESC (electronic
+  speed controller) on a pulse pin was previously bindable only as SERVO PWM,
+  which rests its channel at mid-span: 1500 us, half throttle, whenever the
+  channel stopped being commanded while armed. The two entries are one driver
+  at one rate, so the OUTPUTS page alone cannot tell them apart and the panel
+  reads the CHAN_CFG page with it; a binding read back without the roles is
+  not shown at all rather than shown as a servo.
+
+### Fixed
+
+- **The throttle drove no bound pin.** The MOTOR & ESC throttle commands bank
+  channel 8, which is off the OUTPUTS page by design so that a motor command
+  keeps the control page's priority on the wire; a pin bound on the OUTPUTS
+  screen renders channels 0 to 7, and nothing wrote those. An ESC bound to
+  GP0 with DShot therefore initialised, armed, and held whatever its channel
+  rested at, at every slider position. The control page now commands every
+  channel the binding marks a throttle -- the DShot entries and MOTOR PWM --
+  and leaves the surface channels to the screens that own them. Reported as
+  #99 from a bench: the ESC initialising, ARMED lit, and an unchanging pulse
+  on a scope.
+
 ## 0.6.0 - 2026-09-07
 
 Applying an output binding never worked, PPM never worked, and an arm could

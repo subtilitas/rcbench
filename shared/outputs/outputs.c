@@ -216,6 +216,27 @@ bool outputs_set(outputs_t *o, uint8_t ch, uint16_t command, uint32_t now_ms)
     return true;
 }
 
+unsigned outputs_set_role_channels(outputs_t *o, out_role_t role,
+                                   uint8_t limit, uint16_t command,
+                                   uint32_t now_ms)
+{
+    if (o == NULL) {
+        return 0u;
+    }
+    if ((unsigned)limit > OUT_MAX_CHANNELS) {
+        limit = (uint8_t)OUT_MAX_CHANNELS;
+    }
+    unsigned n = 0u;
+    for (uint8_t ch = 0; ch < limit; ++ch) {
+        if (o->channel[ch].role != role) {
+            continue;
+        }
+        (void)outputs_set(o, ch, command, now_ms);
+        ++n;
+    }
+    return n;
+}
+
 bool outputs_keepalive(outputs_t *o, uint8_t ch, uint32_t now_ms)
 {
     if (o == NULL || ch >= OUT_MAX_CHANNELS) {

@@ -271,9 +271,19 @@ typedef struct {
     uint16_t     rate;      /**< Hz for a pulse driver, kbit/s for DShot    */
     uint8_t      max_pins;  /**< PPM is one pin by definition               */
     uint8_t      channels;  /**< channels one pin of it renders             */
+    /**
+     * What the channels this entry renders are for.
+     *
+     * Carried by the entry rather than derived from the driver: a pulse at
+     * 50 Hz is a servo on one pin and an ESC (electronic speed controller)
+     * on the next, and the two rest in different places -- centred at
+     * 1500 us, or stopped at the low end.  The driver cannot tell them
+     * apart, so the operator does, by choosing the entry.
+     */
+    out_role_t   role;
 } outbind_proto_t;
 
-#define OUTBIND_PROTOS 7u
+#define OUTBIND_PROTOS 8u
 
 const outbind_proto_t *outbind_protos(void);
 
@@ -394,16 +404,22 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs);
  * uses, a pin not on the header, a channel run that does not follow the slot
  * order -- and leaves @p b cleared.  The screen then shows nothing chosen
  * rather than a selection that disagrees with the page it came from.
+ *
+ * @p chan_cfg is the CHAN_CFG page that came back with @p regs, and it is
+ * what separates two entries the slots page cannot: SERVO PWM and MOTOR PWM
+ * are one driver at one rate, and only the role of the slot's first channel
+ * says which was chosen.  NULL takes the first entry that matches driver and
+ * rate, which on this catalogue reads a motor back as a servo and rests it
+ * at half throttle, so pass the page whenever there is one.
  */
 bool outbind_from_slots(outbind_t *b, uint16_t board,
-                        const uint16_t *regs);
+                        const uint16_t *regs, const uint16_t *chan_cfg);
 
 /**
  * Render the channel configuration to match.
  *
- * A throttle protocol makes its channels throttles and a pulse protocol
- * leaves them surfaces, because that is what decides where a channel rests
- * when it stops being commanded -- stopped, or centred.  With more than one
+ * Each entry says what its channels are for, and that is what decides where
+ * a channel rests when it stops being commanded -- stopped, or centred.  With more than one
  * protocol bound the roles are mixed, and each channel takes the role of the
  * protocol whose pin renders it.  Channels the selection does not use keep
  * the schema's defaults.

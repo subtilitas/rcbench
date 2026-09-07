@@ -579,8 +579,61 @@ TEST_CASE(writing_off_a_page_end_is_refused)
     outputs_channels_apply(NULL, chans, 0);
 }
 
+TEST_CASE(the_throttle_reaches_every_motor_channel_and_no_other)
+{
+    /*
+     * One slider, several pins.  A bench binds an ESC (electronic speed
+     * controller) and a servo at once, and the throttle drives the motors
+     * without disturbing the surface beside them.
+     */
+    outputs_t b;
+    outputs_init(&b, 0u);
+    CHECK(outputs_set_role(&b, 0, OUT_ROLE_THROTTLE));
+    CHECK(outputs_set_role(&b, 1, OUT_ROLE_SURFACE));
+    CHECK(outputs_set_role(&b, 2, OUT_ROLE_THROTTLE));
+    const uint16_t surface_was = OUT_SPAN / 4u;
+    CHECK(outputs_set(&b, 1, surface_was, 0u));
+
+    CHECK_EQ(outputs_set_role_channels(&b, OUT_ROLE_THROTTLE,
+                                       (uint8_t)LINK_OUT_CHANNELS,
+                                       OUT_SPAN / 2u, 10u), 2);
+    outputs_arm(&b, true, 10u);
+    outputs_step(&b, 10u);
+    CHECK_EQ(outputs_actual(&b, 0), OUT_SPAN / 2u);
+    CHECK_EQ(outputs_actual(&b, 2), OUT_SPAN / 2u);
+    CHECK_EQ(outputs_actual(&b, 1), surface_was);
+}
+
+TEST_CASE(the_throttle_stops_at_the_page_it_was_given)
+{
+    /* The bank is wider than the page.  A channel above the limit is not a
+     * bound pin, and the fan-out must not reach it. */
+    outputs_t b;
+    outputs_init(&b, 0u);
+    for (uint8_t ch = 0; ch < OUT_MAX_CHANNELS; ++ch) {
+        CHECK(outputs_set_role(&b, ch, OUT_ROLE_THROTTLE));
+    }
+    CHECK_EQ(outputs_set_role_channels(&b, OUT_ROLE_THROTTLE,
+                                       (uint8_t)LINK_OUT_CHANNELS,
+                                       OUT_SPAN, 5u), LINK_OUT_CHANNELS);
+    outputs_arm(&b, true, 5u);
+    outputs_step(&b, 5u);
+    CHECK_EQ(outputs_actual(&b, LINK_OUT_CHANNELS - 1u), OUT_SPAN);
+    /* Never commanded, so it sits at the rest of its role. */
+    CHECK_EQ(outputs_actual(&b, LINK_OUT_CHANNELS), 0u);
+
+    /* A limit past the bank is clamped to the bank, and a null bank is not
+     * followed. */
+    CHECK_EQ(outputs_set_role_channels(&b, OUT_ROLE_THROTTLE, 255u,
+                                       OUT_SPAN, 6u), OUT_MAX_CHANNELS);
+    CHECK_EQ(outputs_set_role_channels(NULL, OUT_ROLE_THROTTLE, 8u, 0u, 6u),
+             0);
+}
+
 int main(void)
 {
+    RUN(the_throttle_reaches_every_motor_channel_and_no_other);
+    RUN(the_throttle_stops_at_the_page_it_was_given);
     RUN(everything_goes_to_rest_together);
     RUN(silence_stops_every_role);
     RUN(one_quiet_channel_does_not_stop_the_others);

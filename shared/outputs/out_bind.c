@@ -552,15 +552,21 @@ uint64_t outbind_reserved_mask(uint16_t board)
  *
  * The DShot rates are bit rates and the two bidirectional entries are the
  * same wire asking for telemetry back.
+ *
+ * SERVO PWM and MOTOR PWM are the same signal at the same rate and differ
+ * only in what the channel is for.  A servo centres when nothing commands
+ * it; a motor stops.  Nothing in the pulse says which is on the pin, so the
+ * two are separate entries and the operator picks the one that is wired.
  */
 static const outbind_proto_t k_protos[OUTBIND_PROTOS] = {
-    { "OFF",            OUT_DRIVER_NONE,        0,   0, 0 },
-    { "SERVO PWM",      OUT_DRIVER_PWM,        50,   8, 1 },
-    { "PPM",            OUT_DRIVER_PPM,        40,   1, 8 },
-    { "DSHOT300",       OUT_DRIVER_DSHOT,     300,   8, 1 },
-    { "DSHOT600",       OUT_DRIVER_DSHOT,     600,   8, 1 },
-    { "DSHOT300 BIDIR", OUT_DRIVER_DSHOT_BIDIR, 300, 8, 1 },
-    { "DSHOT600 BIDIR", OUT_DRIVER_DSHOT_BIDIR, 600, 8, 1 },
+    { "OFF",            OUT_DRIVER_NONE,        0,   0, 0, OUT_ROLE_SURFACE  },
+    { "SERVO PWM",      OUT_DRIVER_PWM,        50,   8, 1, OUT_ROLE_SURFACE  },
+    { "MOTOR PWM",      OUT_DRIVER_PWM,        50,   8, 1, OUT_ROLE_THROTTLE },
+    { "PPM",            OUT_DRIVER_PPM,        40,   1, 8, OUT_ROLE_SURFACE  },
+    { "DSHOT300",       OUT_DRIVER_DSHOT,     300,   8, 1, OUT_ROLE_THROTTLE },
+    { "DSHOT600",       OUT_DRIVER_DSHOT,     600,   8, 1, OUT_ROLE_THROTTLE },
+    { "DSHOT300 BIDIR", OUT_DRIVER_DSHOT_BIDIR, 300, 8, 1, OUT_ROLE_THROTTLE },
+    { "DSHOT600 BIDIR", OUT_DRIVER_DSHOT_BIDIR, 600, 8, 1, OUT_ROLE_THROTTLE },
 };
 
 const outbind_proto_t *outbind_protos(void) { return k_protos; }
@@ -869,7 +875,31 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs)
     return slot;
 }
 
-bool outbind_from_slots(outbind_t *b, uint16_t board, const uint16_t *regs)
+/*
+ * What the CHAN_CFG page says the channels of this slot are for.
+ *
+ * The slot's first channel answers for the run: outbind_to_chan_cfg() writes
+ * one role across every channel a slot renders, so no page this end produced
+ * can disagree with itself.  A page that does -- which nothing here writes --
+ * is read by its first channel rather than refused, and a first channel past
+ * the page reads as a surface, which is where an unconfigured channel
+ * already rests.
+ */
+static out_role_t role_of_slot(const uint16_t *chan_cfg, const uint16_t *r)
+{
+    if (chan_cfg == NULL) {
+        return OUT_ROLE_SURFACE;
+    }
+    const uint8_t first = LINK_OS_FIRST(r[LINK_OS_RANGE]);
+    if ((unsigned)first >= LINK_OUT_CHANNELS) {
+        return OUT_ROLE_SURFACE;
+    }
+    return (chan_cfg[(size_t)first * LINK_CC_STRIDE + LINK_CC_ROLE]
+            == LINK_CC_ROLE_THROTTLE) ? OUT_ROLE_THROTTLE : OUT_ROLE_SURFACE;
+}
+
+bool outbind_from_slots(outbind_t *b, uint16_t board, const uint16_t *regs,
+                        const uint16_t *chan_cfg)
 {
     if (b == NULL || regs == NULL) {
         return false;
@@ -889,11 +919,21 @@ bool outbind_from_slots(outbind_t *b, uint16_t board, const uint16_t *regs)
         /* Which entry describes this slot: driver and rate together, because
          * DShot300 and DShot600 are the same driver.  That pair is also what
          * names a set, so two slots matching the same entry are two pins of
-         * one protocol rather than two protocols that happen to agree. */
+         * one protocol rather than two protocols that happen to agree.
+         *
+         * SERVO PWM and MOTOR PWM agree on both, and the slots page holds
+         * nothing else that separates them.  What the channel is for does,
+         * and it is on the CHAN_CFG page that came back with this one, so
+         * the role of the slot's first channel picks between them.  Without
+         * that page the first match stands, which reads a motor back as a
+         * servo.
+         */
+        const out_role_t want = role_of_slot(chan_cfg, r);
         uint8_t found = 0u;
         for (uint8_t i = 1; i < OUTBIND_PROTOS; ++i) {
             if (link_driver_of(k_protos[i].driver) == r[LINK_OS_DRIVER]
-                && k_protos[i].rate == r[LINK_OS_RATE_HZ]) {
+                && k_protos[i].rate == r[LINK_OS_RATE_HZ]
+                && (chan_cfg == NULL || k_protos[i].role == want)) {
                 found = i;
                 break;
             }
@@ -985,10 +1025,10 @@ void outbind_to_chan_cfg(const outbind_t *b, uint16_t *regs,
     }
     /*
      * The same walk outbind_to_slots() makes, so a channel takes the role of
-     * the protocol whose pin renders it.  A DShot channel is a throttle and a
-     * pulse channel is a surface.  The role is not decoration: it decides
-     * where the channel goes when it stops being commanded, and a throttle
-     * that centres is a motor at half power.
+     * the protocol whose pin renders it.  The role is not decoration: it
+     * decides where the channel goes when it stops being commanded, and it
+     * is what the throttle looks for when it drives the bound pins, so a
+     * throttle that centres is a motor at half power.
      */
     uint8_t slot = 0u, channel = 0u;
     for (uint8_t i = 0; i < bd->count && slot < LINK_OUT_SLOTS; ++i) {
@@ -1000,8 +1040,7 @@ void outbind_to_chan_cfg(const outbind_t *b, uint16_t *regs,
         if ((unsigned)channel + p->channels > LINK_OUT_CHANNELS) {
             break;
         }
-        const uint16_t role = (p->driver == OUT_DRIVER_DSHOT
-                               || p->driver == OUT_DRIVER_DSHOT_BIDIR)
+        const uint16_t role = (p->role == OUT_ROLE_THROTTLE)
                                   ? (uint16_t)LINK_CC_ROLE_THROTTLE
                                   : (uint16_t)LINK_CC_ROLE_SURFACE;
         for (uint8_t c = channel; c < channel + p->channels; ++c) {
