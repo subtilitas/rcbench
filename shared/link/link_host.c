@@ -149,14 +149,22 @@ bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
         }
         const uint8_t at = (uint8_t)(part->offset - h->offset);
         for (uint8_t i = 0; i < part->count; ++i) {
+            /* An acknowledgement carries what the far end stored, not what
+             * was sent, so the pieces are collected the same way a read's
+             * are: a caller that reads the answer gets the whole window and
+             * not whichever quarter of it arrived last. */
+            h->acc[at + i] = part->regs[i];
             h->acc_seen |= (uint32_t)1u << (at + i);
         }
         if (!window_complete(h)) {
             return false;   /* not a fault: more of it is still coming */
         }
-        *whole = *part;
+        memset(whole, 0, sizeof(*whole));
+        whole->op     = LINK_OP_ACK;
+        whole->page   = h->page;
         whole->offset = h->offset;
         whole->count  = h->count;
+        memcpy(whole->regs, h->acc, (size_t)h->count * sizeof(h->acc[0]));
         answered(h, now_ms, false);
         return true;
     }

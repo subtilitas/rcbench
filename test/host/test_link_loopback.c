@@ -307,6 +307,12 @@ TEST_CASE(a_write_wider_than_a_frame_is_answered_by_its_pieces)
         CHECK_EQ(g.wide[i], (uint16_t)(0x100 + i));
     }
 
+    /* And the answer carries the whole window that was stored, not the
+     * four registers of whichever piece arrived last. */
+    for (uint8_t i = 0; i < wide; ++i) {
+        CHECK_EQ(got.regs[i], (uint16_t)(0x100 + i));
+    }
+
     /* Nothing counted as a stray: every piece belonged to this request. */
     CHECK_EQ(host.mismatches, 0u);
     CHECK(!host.pending);
