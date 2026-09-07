@@ -69,7 +69,7 @@ hlines               0        0 KiB      0.0      39.0
 | `overview` | das Menü, Chrome gecacht |
 | `servo` | der Servobildschirm mit neu gezeichnetem Arm |
 | `servo-grip` | der Servobildschirm, nur der Griff neu gezeichnet |
-| `analyser`, `logs`, `settings`, `battery`, `balance`, `programmer` | ein ruhiger Frame dieses Bildschirms, Chrome gecacht |
+| `analyser`, `logs`, `settings`, `battery`, `balance`, `programmer`, `picker` | ein ruhiger Frame dieses Bildschirms, Chrome gecacht |
 | `<screen>-sim` | derselbe Bildschirm mit dem SIMULATION-Watermark |
 | `<screen>-chrome` | derselbe Bildschirm, auf jedem Frame invalidiert |
 | `clear` | ein Löschen des ganzen Bildschirms |
@@ -152,9 +152,9 @@ jeden Modus an eine Obergrenze:
 | `overview` | 2 000 | einen Bildschirm mit gecachtem Chrome, der neu zu zeichnen begonnen hat |
 | `servo` | 17 000 | ein Wachsen der Arm- und Griffzeichnung |
 | `servo-grip` | 4 000 | ein Atmen, das die ganze Karte neu zeichnet |
-| die sechs Bildschirmmodi | 1 200 | einen Bildschirm, der neu zu zeichnen begonnen hat |
+| die sieben Bildschirmmodi | 1 200 | einen Bildschirm, der neu zu zeichnen begonnen hat |
 | die drei `-sim`-Modi | 2 800 | ein Watermark, das über die volle Canvas hinauswächst |
-| die sechs `-chrome`-Modi | 45 000 | ein wachsendes vollständiges Neuzeichnen |
+| die sieben `-chrome`-Modi | 45 000 | ein wachsendes vollständiges Neuzeichnen |
 
 Braucht ein künftiger Bereich mehr Platz, sind die verbleibenden Hebel vom
 gröbsten zum feinsten: die Höhe des Plots, seine Breite, und das
