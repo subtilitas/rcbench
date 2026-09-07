@@ -393,25 +393,27 @@ TEST_CASE(a_selection_survives_the_round_trip_through_the_page)
 {
     /* The panel asks the coprocessor what its outputs are rather than
      * remembering: what comes back has to be what was sent. */
-    static const char *const names[] = { "SERVO PWM", "PPM", "DSHOT300",
-                                         "DSHOT600", "DSHOT300 BIDIR",
-                                         "DSHOT600 BIDIR" };
-    for (unsigned k = 0; k < sizeof(names) / sizeof(names[0]); ++k) {
+    /* Every entry the catalogue offers, so an entry added later is covered
+     * by the fact that it is offered rather than by remembering to list it
+     * here. */
+    for (uint8_t k = 1; k < OUTBIND_PROTOS; ++k) {
+        const char *const name = outbind_protos()[k].name;
         outbind_t a, back;
         init(&a);
-        outbind_set_proto(&a, proto_named(names[k]));
+        outbind_set_proto(&a, k);
         static const uint8_t gp[3] = { 0, 7, 22 };
         for (unsigned i = 0; i < 3u; ++i) { (void)outbind_toggle(&a, idx(gp[i])); }
 
-        uint16_t regs[LINK_OS_COUNT];
+        uint16_t regs[LINK_OS_COUNT], cc[LINK_CC_COUNT];
         (void)outbind_to_slots(&a, regs);
-        if (!outbind_from_slots(&back, BOARD, regs)) {
-            T_FAIL("%s did not read back at all", names[k]);
+        outbind_to_chan_cfg(&a, cc, 1000u, 2000u);
+        if (!outbind_from_slots(&back, BOARD, regs, cc)) {
+            T_FAIL("%s did not read back at all", name);
         }
         if (back.proto != a.proto
             || memcmp(back.pins, a.pins, sizeof(a.pins)) != 0) {
             T_FAIL("%s came back as proto %u pins %08lX, not %u / %08lX",
-                   names[k], back.proto, (unsigned long)back.pins[back.proto],
+                   name, back.proto, (unsigned long)back.pins[back.proto],
                    a.proto, (unsigned long)a.pins[a.proto]);
         }
     }
@@ -451,7 +453,7 @@ TEST_CASE(two_protocols_at_once_are_the_ordinary_case)
         CHECK_EQ(LINK_OS_CHANNELS(slot_reg(regs, k, LINK_OS_RANGE)), 1);
     }
 
-    CHECK(outbind_from_slots(&back, BOARD, regs));
+    CHECK(outbind_from_slots(&back, BOARD, regs, NULL));
     CHECK_EQ(memcmp(back.pins, a.pins, sizeof(a.pins)), 0);
     /* Opened on the lowest-numbered protocol the page uses, so the choice
      * does not depend on which slot happened to come first. */
@@ -469,12 +471,83 @@ TEST_CASE(two_protocols_at_once_are_the_ordinary_case)
     CHECK_EQ(cc[2 * LINK_CC_STRIDE + LINK_CC_ROLE], LINK_CC_ROLE_SURFACE);
 }
 
+TEST_CASE(a_motor_and_a_servo_on_the_same_pulse_read_back_apart)
+{
+    /*
+     * SERVO PWM and MOTOR PWM are one driver at one rate: the slots page
+     * cannot tell them apart, and the role on the CHAN_CFG page is the only
+     * thing that can.  Reading a motor back as a servo would rest an ESC
+     * (electronic speed controller) at mid-span, which is half throttle.
+     */
+    const uint8_t servo = proto_named("SERVO PWM");
+    const uint8_t motor = proto_named("MOTOR PWM");
+    CHECK(servo != 0 && motor != 0 && servo != motor);
+
+    const uint8_t which[2] = { servo, motor };
+    const uint16_t want[2] = { LINK_CC_ROLE_SURFACE, LINK_CC_ROLE_THROTTLE };
+    for (unsigned k = 0; k < 2u; ++k) {
+        outbind_t a, back;
+        init(&a);
+        outbind_set_proto(&a, which[k]);
+        (void)outbind_toggle(&a, idx(0));
+
+        uint16_t regs[LINK_OS_COUNT], cc[LINK_CC_COUNT];
+        (void)outbind_to_slots(&a, regs);
+        outbind_to_chan_cfg(&a, cc, 1000u, 2000u);
+        CHECK_EQ(cc[0 * LINK_CC_STRIDE + LINK_CC_ROLE], want[k]);
+
+        CHECK(outbind_from_slots(&back, BOARD, regs, cc));
+        CHECK_EQ(back.proto, which[k]);
+        CHECK_EQ(back.pins[which[k]], a.pins[which[k]]);
+    }
+}
+
+TEST_CASE(a_mixed_page_keeps_each_slot_on_its_own_entry)
+{
+    /* A servo on GP0 and a motor on GP4, both PWM at 50 Hz.  Each slot is
+     * read by its own channel's role, not by the first slot's. */
+    outbind_t a, back;
+    init(&a);
+    outbind_set_proto(&a, proto_named("SERVO PWM"));
+    (void)outbind_toggle(&a, idx(0));
+    outbind_set_proto(&a, proto_named("MOTOR PWM"));
+    (void)outbind_toggle(&a, idx(4));
+
+    uint16_t regs[LINK_OS_COUNT], cc[LINK_CC_COUNT];
+    (void)outbind_to_slots(&a, regs);
+    outbind_to_chan_cfg(&a, cc, 1000u, 2000u);
+    CHECK_EQ(cc[0 * LINK_CC_STRIDE + LINK_CC_ROLE], LINK_CC_ROLE_SURFACE);
+    CHECK_EQ(cc[1 * LINK_CC_STRIDE + LINK_CC_ROLE], LINK_CC_ROLE_THROTTLE);
+
+    CHECK(outbind_from_slots(&back, BOARD, regs, cc));
+    CHECK_EQ(memcmp(back.pins, a.pins, sizeof(a.pins)), 0);
+}
+
+TEST_CASE(without_the_roles_a_pulse_slot_reads_as_the_first_entry)
+{
+    /*
+     * The stated fallback: with no CHAN_CFG page there is nothing to
+     * separate the two entries, so the first match stands.  It is recorded
+     * here because it is what a caller that passes NULL gets, and the panel
+     * therefore reads both pages or shows nothing.
+     */
+    outbind_t a, back;
+    init(&a);
+    outbind_set_proto(&a, proto_named("MOTOR PWM"));
+    (void)outbind_toggle(&a, idx(0));
+
+    uint16_t regs[LINK_OS_COUNT];
+    (void)outbind_to_slots(&a, regs);
+    CHECK(outbind_from_slots(&back, BOARD, regs, NULL));
+    CHECK_EQ(back.proto, proto_named("SERVO PWM"));
+}
+
 TEST_CASE(an_empty_page_reads_back_as_nothing_configured)
 {
     uint16_t regs[LINK_OS_COUNT];
     outputs_slots_defaults(regs);
     outbind_t b;
-    CHECK(outbind_from_slots(&b, BOARD, regs));
+    CHECK(outbind_from_slots(&b, BOARD, regs, NULL));
     CHECK_EQ(b.proto, 0);
     CHECK_EQ(outbind_chosen(&b), 0);
 }
@@ -495,7 +568,7 @@ TEST_CASE(a_page_this_screen_cannot_describe_is_refused_rather_than_guessed)
     regs[1 * LINK_OS_STRIDE + LINK_OS_PIN]     = 0;
     regs[1 * LINK_OS_STRIDE + LINK_OS_RANGE]   = LINK_OS_RANGE_OF(1, 1);
     regs[1 * LINK_OS_STRIDE + LINK_OS_RATE_HZ] = 600;
-    CHECK(!outbind_from_slots(&b, BOARD, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, regs, NULL));
     CHECK_EQ(outbind_chosen_total(&b), 0);
 
     /* A rate no entry offers. */
@@ -503,14 +576,14 @@ TEST_CASE(a_page_this_screen_cannot_describe_is_refused_rather_than_guessed)
     regs[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
     regs[LINK_OS_PIN]     = 0;
     regs[LINK_OS_RATE_HZ] = 137;
-    CHECK(!outbind_from_slots(&b, BOARD, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, regs, NULL));
 
     /* A pin that is not on the header, so the screen has no cell for it. */
     outputs_slots_defaults(regs);
     regs[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
     regs[LINK_OS_PIN]     = 24;
     regs[LINK_OS_RATE_HZ] = 50;
-    CHECK(!outbind_from_slots(&b, BOARD, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, regs, NULL));
 }
 
 TEST_CASE(a_reserved_pin_on_the_page_is_refused_on_the_way_back)
@@ -529,12 +602,12 @@ TEST_CASE(a_reserved_pin_on_the_page_is_refused_on_the_way_back)
     regs[LINK_OS_RATE_HZ] = 50;
 
     outbind_t b;
-    CHECK(!outbind_from_slots(&b, BOARD, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, regs, NULL));
     CHECK_EQ(outbind_chosen(&b), 0);
     CHECK_EQ(b.proto, 0);
 
     regs[LINK_OS_PIN] = 3;                    /* the heartbeat line */
-    CHECK(!outbind_from_slots(&b, BOARD, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, regs, NULL));
 }
 
 TEST_CASE(a_pin_wider_than_a_pin_is_refused_before_it_is_narrowed)
@@ -552,14 +625,14 @@ TEST_CASE(a_pin_wider_than_a_pin_is_refused_before_it_is_narrowed)
     static const uint16_t bad[] = { 0x0100u, 0x0103u, 64u, 0xFFFFu };
     for (unsigned i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
         regs[LINK_OS_PIN] = bad[i];
-        if (outbind_from_slots(&b, BOARD, regs)) {
+        if (outbind_from_slots(&b, BOARD, regs, NULL)) {
             T_FAIL("pin 0x%04X was accepted, as %u pin(s)",
                    bad[i], outbind_chosen(&b));
         }
     }
     /* And the widest pin that is real still works. */
     regs[LINK_OS_PIN] = 28u;
-    CHECK(outbind_from_slots(&b, BOARD, regs));
+    CHECK(outbind_from_slots(&b, BOARD, regs, NULL));
     CHECK_EQ(outbind_chosen(&b), 1);
 }
 
@@ -591,11 +664,11 @@ TEST_CASE(a_page_that_does_not_render_back_to_itself_is_refused)
     regs[LINK_OS_PIN]     = 0;
     regs[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(0, 1);
     regs[LINK_OS_RATE_HZ] = ppm_hz;
-    CHECK(!outbind_from_slots(&b, BOARD, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, regs, NULL));
 
     /* ... and with the right count it is fine. */
     regs[LINK_OS_RANGE] = LINK_OS_RANGE_OF(0, 8);
-    CHECK(outbind_from_slots(&b, BOARD, regs));
+    CHECK(outbind_from_slots(&b, BOARD, regs, NULL));
     CHECK_EQ(outbind_chosen(&b), 1);
 
     /* Two PPM slots: more pins than the protocol takes, so a binding the
@@ -604,7 +677,7 @@ TEST_CASE(a_page_that_does_not_render_back_to_itself_is_refused)
     regs[LINK_OS_STRIDE + LINK_OS_PIN]     = 1;
     regs[LINK_OS_STRIDE + LINK_OS_RANGE]   = LINK_OS_RANGE_OF(8, 8);
     regs[LINK_OS_STRIDE + LINK_OS_RATE_HZ] = ppm_hz;
-    CHECK(!outbind_from_slots(&b, BOARD, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, regs, NULL));
     CHECK_EQ(outbind_chosen(&b), 0);
 
     /* A first-channel field that does not follow the slot order. */
@@ -616,9 +689,9 @@ TEST_CASE(a_page_that_does_not_render_back_to_itself_is_refused)
         r[LINK_OS_RATE_HZ] = 50;
         r[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(k, 1);
     }
-    CHECK(outbind_from_slots(&b, BOARD, regs));
+    CHECK(outbind_from_slots(&b, BOARD, regs, NULL));
     regs[LINK_OS_STRIDE + LINK_OS_RANGE] = LINK_OS_RANGE_OF(5, 1);
-    CHECK(!outbind_from_slots(&b, BOARD, regs));
+    CHECK(!outbind_from_slots(&b, BOARD, regs, NULL));
 }
 
 /* --------------------------------------------------------- more than one */
@@ -695,13 +768,13 @@ TEST_CASE(a_page_is_read_against_the_board_that_sent_it)
     uint16_t regs[LINK_OS_COUNT];
     (void)outbind_to_slots(&a, regs);
 
-    CHECK(outbind_from_slots(&back, BOARD, regs));
+    CHECK(outbind_from_slots(&back, BOARD, regs, NULL));
     CHECK_EQ(back.board, BOARD);
     CHECK_EQ(memcmp(back.pins, a.pins, sizeof(a.pins)), 0);
 
     /* The same registers against a board this build cannot map are refused,
      * not reinterpreted. */
-    CHECK(!outbind_from_slots(&back, 9999, regs));
+    CHECK(!outbind_from_slots(&back, 9999, regs, NULL));
     CHECK_EQ(outbind_chosen(&back), 0);
     CHECK_EQ(back.board, 9999);
 }
@@ -857,7 +930,7 @@ TEST_CASE(a_bit_above_the_board_cannot_survive)
     uint16_t fr[LINK_OS_COUNT];
     CHECK_EQ(outbind_to_slots(&f, fr), LINK_OUT_SLOTS);
     outbind_t fb;
-    CHECK(outbind_from_slots(&fb, BOARD, fr));
+    CHECK(outbind_from_slots(&fb, BOARD, fr, NULL));
     CHECK_EQ(memcmp(fb.pins, f.pins, sizeof(f.pins)), 0);
 
     /*
@@ -1505,8 +1578,8 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
     CHECK_EQ(outbind_to_slots(NULL, NULL), 0);
     outbind_to_chan_cfg(NULL, NULL, 1000u, 2000u);
     outbind_t b;
-    CHECK(!outbind_from_slots(NULL, BOARD, regs));
-    CHECK(!outbind_from_slots(&b, BOARD, NULL));
+    CHECK(!outbind_from_slots(NULL, BOARD, regs, NULL));
+    CHECK(!outbind_from_slots(&b, BOARD, NULL, NULL));
 }
 
 int main(void)
@@ -1529,6 +1602,9 @@ int main(void)
     RUN(what_this_writes_is_what_the_bank_accepts);
     RUN(a_selection_survives_the_round_trip_through_the_page);
     RUN(two_protocols_at_once_are_the_ordinary_case);
+    RUN(a_motor_and_a_servo_on_the_same_pulse_read_back_apart);
+    RUN(a_mixed_page_keeps_each_slot_on_its_own_entry);
+    RUN(without_the_roles_a_pulse_slot_reads_as_the_first_entry);
     RUN(an_empty_page_reads_back_as_nothing_configured);
     RUN(a_page_this_screen_cannot_describe_is_refused_rather_than_guessed);
     RUN(a_reserved_pin_on_the_page_is_refused_on_the_way_back);

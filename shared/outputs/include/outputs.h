@@ -167,6 +167,23 @@ bool outputs_set_slew(outputs_t *o, uint8_t ch, uint16_t per_s);
 /** Command a channel.  Clamped, and remembered even while disarmed. */
 bool outputs_set(outputs_t *o, uint8_t ch, uint16_t command, uint32_t now_ms);
 
+/**
+ * Command every channel below @p limit that carries @p role, and say how
+ * many took it.
+ *
+ * One command reaching several channels is what a bench throttle is: the
+ * screen has one slider, and the pins it should drive are whichever ones the
+ * binding said are motors.  Naming them by role rather than by number keeps
+ * that decision in the binding, where the operator made it, instead of
+ * fixing a channel number in two places that must agree.
+ *
+ * Channels of another role are not touched, so a servo bound beside a motor
+ * keeps its own command.
+ */
+unsigned outputs_set_role_channels(outputs_t *o, out_role_t role,
+                                   uint8_t limit, uint16_t command,
+                                   uint32_t now_ms);
+
 /** Arming is decided by the end holding the wire, not by the asker.
  *  Disarming goes to rest with no ramp.
  *

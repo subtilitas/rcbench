@@ -333,6 +333,13 @@ shared. PPM renders eight channels on its one pin, so a bench with PPM on it
 has room for nothing else. It runs at 40 Hz, not the 50 Hz the pulse drivers
 use: eight channels need 23,300 us of frame and 50 Hz gives 20,000.
 
+SERVO PWM and MOTOR PWM are the same pulse at the same 50 Hz and differ in
+what the channel is for. A servo channel centres when nothing commands it; a
+motor channel stops. Nothing in the pulse says which is on the pin, so the
+entry says it: bind an ESC as MOTOR PWM and a control surface as SERVO PWM.
+The MOTOR & ESC throttle drives every channel bound as a motor — MOTOR PWM
+and the DShot entries — and leaves the servo channels alone.
+
 When the protocol can take no more pins, the reason is under it in amber:
 `NEEDS 8 CHANNELS, 4 FREE`, `ALL 8 SLOTS IN USE`, or `SERVO PWM TAKES 8
 PINS`. A board drawn entirely in grey with nothing beside it reads as a
@@ -340,8 +347,8 @@ fault, and PPM greys the whole board whenever anything else is bound.
 
 ![PPM with servo pins already bound](img/outputs-full.png)
 
-The protocol is a list rather than a stepper, because there are seven of them
-and stepping past six to reach the seventh is not choosing:
+The protocol is a list rather than a stepper, because there are eight of them
+and stepping past seven to reach the eighth is not choosing:
 
 ![The protocol list](img/outputs-protocol.png)
 

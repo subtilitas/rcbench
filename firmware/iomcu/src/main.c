@@ -250,10 +250,20 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
      * a motor command keeps control priority on the wire; underneath it is
      * the same bank, so it is set here the same way a channel is.
      */
-    (void)outputs_set(&s_outputs, CH_THROTTLE,
-                      (uint16_t)(((uint32_t)s->control[LINK_CT_THROTTLE]
-                                  * OUT_SPAN) / LINK_THROTTLE_MAX),
-                      (uint32_t)to_ms_since_boot(get_absolute_time()));
+    const uint16_t thr = (uint16_t)(((uint32_t)s->control[LINK_CT_THROTTLE]
+                                     * OUT_SPAN) / LINK_THROTTLE_MAX);
+    const uint32_t now = (uint32_t)to_ms_since_boot(get_absolute_time());
+    (void)outputs_set(&s_outputs, CH_THROTTLE, thr, now);
+    /*
+     * And the same command to the pins bound as motors.  CH_THROTTLE is off
+     * the page and nothing renders it, so on its own it drives no pin: the
+     * throttle screen would command a channel no slot reads while the ESC on
+     * GP0 sat at its rest for ever.  Which channels are motors is the
+     * binding's answer, carried as the role on the CHAN_CFG page, so a servo
+     * bound beside a motor is left alone.
+     */
+    (void)outputs_set_role_channels(&s_outputs, OUT_ROLE_THROTTLE,
+                                    (uint8_t)LINK_OUT_CHANNELS, thr, now);
     return 0;
 }
 

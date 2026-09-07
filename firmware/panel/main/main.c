@@ -1792,11 +1792,20 @@ static void learn_board_pins(void)
  */
 static void read_outputs_binding(void)
 {
-    link_msg_t orr;
+    link_msg_t orr, ccr;
     outbind_t got;
+    /*
+     * Both pages, because the slots page alone cannot say whether a 50 Hz
+     * pulse slot is a servo or a motor.  The roles on CHAN_CFG say which,
+     * and reading the binding back without them rests an ESC at half
+     * throttle.  A CHAN_CFG that will not read leaves the roles unknown
+     * rather than guessed, and the binding is then not shown at all.
+     */
     if (poll_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_COUNT, &orr)
         && orr.op != LINK_OP_NACK
-        && outbind_from_slots(&got, s_board, orr.regs)) {
+        && poll_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, &ccr)
+        && ccr.op != LINK_OP_NACK
+        && outbind_from_slots(&got, s_board, orr.regs, ccr.regs)) {
         if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
             s_outputs_read = got;
             s_outputs_read_fresh = true;

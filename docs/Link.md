@@ -108,7 +108,7 @@ A NACK carries its reason in register 0:
 | ---: | --- | --- | --- |
 | 0x00 | IDENTITY | read | protocol major, protocol minor, firmware major, minor, patch, hardware revision, capabilities bitmap |
 | 0x01 | STATUS | read | state (0 idle, 1 armed, 2 failsafe), faults bitmap, uptime in ms (two registers), requests accepted (two registers), XL2515 receive error counter, XL2515 transmit error counter |
-| 0x10 | CONTROL | read, write | ARM (non-zero arms), THROTTLE (0..10000, hundredths of a percent), CLEAR (write 0x5AFE to leave failsafe), MOTOR_POLES |
+| 0x10 | CONTROL | read, write | ARM (non-zero arms), THROTTLE (0..10000, hundredths of a percent, and it commands every channel CHAN_CFG marks a throttle), CLEAR (write 0x5AFE to leave failsafe), MOTOR_POLES |
 | 0x11 | LIMITS | | declared, not served |
 | 0x12 | FAILSAFE | | declared, not served |
 | 0x13 | CHANNELS | read, write | one command per output channel, 0..1000 of the channel's travel; eight channels |
