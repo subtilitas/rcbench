@@ -128,6 +128,10 @@ static bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
                       link_msg_t *reply);
 static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
                        const uint16_t *regs, link_msg_t *reply);
+/* Paired with throttle_to_zero() in every path that stops the bench; defined
+ * with the rest of the servo's wire handling. */
+static void servo_let_go(void);
+static void servo_service(bool link_up);
 
 static uint32_t now_ms(void)
 {
@@ -405,6 +409,15 @@ static arming_t  s_arm;
  * end times it out.  SERVO_CMD_NONE means nothing is being held. */
 static servo_cmd_t s_servo_held;
 static uint32_t    s_servo_next_ms;
+/*
+ * A slot the far end still has and this end has finished with.
+ *
+ * Kept as a debt rather than written and forgotten: a screen left while the
+ * link is down cannot send the release, and the far end keeps both the slot
+ * and the channel command through a failsafe.  A later arm -- from either
+ * screen -- would then drive the servo to where it was before.
+ */
+static bool        s_servo_release_owed;
 static uint16_t  s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
 
 /*
@@ -1447,6 +1460,7 @@ static void service_arming(bool link_up)
     case ARMING_ACT_DISARM:
         outputs_arm(&s_out, false, now_ms());
         throttle_to_zero();
+        servo_let_go();
         if (was_touch_dead) {
             control_alert("touch stopped answering -- disarmed");
         }
@@ -1472,6 +1486,7 @@ static void service_arming(bool link_up)
          * the operator had just stopped, and there has been one.
          */
         throttle_to_zero();
+        servo_let_go();
         if (link_up
             && !(control_clear_failsafe(&ack) && control_write(true, &ack))) {
             arming_refused(&s_arm);
@@ -1593,6 +1608,7 @@ static void disarm_here(bool link_up)
     arming_request_disarm(&s_arm);
     outputs_arm(&s_out, false, now_ms());
     throttle_to_zero();
+    servo_let_go();
     if (link_up) {
         link_msg_t ack = { 0 };
         (void)control_write(false, &ack);
@@ -1643,42 +1659,67 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up)
         return;
     }
     if (sv.kind == SERVO_CMD_DISARM) {
-        s_servo_held.kind = SERVO_CMD_NONE;
-        disarm_here(link_up);
-        if (link_up) {
-            /* And let go of the pin: the slot is this screen's, and a screen
-             * that has been left must not keep one bound. */
-            const servo_cmd_t release = { SERVO_CMD_RELEASE, 0, 0, 0 };
-            write_servo(release);
-        }
+        disarm_here(link_up);   /* which lets go of the pin as well */
         return;
     }
     if (sv.kind == SERVO_CMD_RELEASE) {
-        s_servo_held.kind = SERVO_CMD_NONE;
-    } else {
-        s_servo_held = sv;
-        s_servo_next_ms = now_ms() + SERVO_HOLD_MS;
+        /* The slot goes through the same debt as every other way of letting
+         * go, so a release that cannot be sent now is still sent later. */
+        servo_let_go();
+        servo_service(link_up);
+        return;
     }
+    s_servo_held = sv;
+    s_servo_next_ms = now_ms() + SERVO_HOLD_MS;
     if (link_up) {
         write_servo(sv);
     }
 }
 
 /*
- * Say the servo's position again, before the far end stops believing it.
+ * Stop holding the servo, the way throttle_to_zero() stops holding the
+ * throttle, and for the same reason: a disarm that leaves a position behind
+ * is an arm that steps straight back to it.
+ *
+ * The far end keeps the slot and the channel command through a disarm and a
+ * failsafe, and outputs_arm() stamps every channel's clock, so on the next
+ * arm the servo is neither overdue nor at rest -- it is at its old position,
+ * with nobody having touched anything.  So the slot has to go, and until it
+ * can the release is owed.
+ */
+static void servo_let_go(void)
+{
+    if (s_servo_held.kind != SERVO_CMD_NONE) {
+        s_servo_release_owed = true;
+    }
+    s_servo_held.kind = SERVO_CMD_NONE;
+}
+
+/*
+ * Say the servo's position again before the far end stops believing it, and
+ * pay off a release that is owed.
  *
  * A channel nobody has commanded for OUT_DEFAULT_TIMEOUT_MS (500 ms) goes to
  * its rest, which for a surface is mid-travel: a servo held at an endpoint
  * would swing back to centre half a second after the finger stopped, with
  * the screen still showing where it was put.  The throttle is kept alive by
- * the control page, which is written every poll; nothing wrote this channel
+ * the control page, which is written every poll; nothing writes this channel
  * between touches.
  *
- * One register, and only while there is something to hold.
+ * One register, and only while there is something to say.
  */
-static void servo_hold(bool link_up)
+static void servo_service(bool link_up)
 {
-    if (s_servo_held.kind == SERVO_CMD_NONE || !link_up) {
+    if (!link_up) {
+        return;   /* nothing can be said, and the debt keeps */
+    }
+    if (s_servo_release_owed) {
+        const servo_cmd_t release = { SERVO_CMD_RELEASE, 0, 0, 0 };
+        write_servo(release);
+        s_servo_release_owed = false;
+        return;
+    }
+    if (s_servo_held.kind == SERVO_CMD_NONE) {
         return;
     }
     const uint32_t now = now_ms();
@@ -1705,6 +1746,7 @@ static void drain_commands(bool link_up, bench_state_t *bench)
             arming_stop(&s_arm);
             outputs_arm(&s_out, false, now_ms());
             throttle_to_zero();
+            servo_let_go();
             if (link_up) {
                 link_msg_t ack = { 0 };
                 (void)control_write(false, &ack);
@@ -1771,6 +1813,7 @@ static bool poll_bench(bench_state_t *bench)
              */
             outputs_arm(&s_out, false, now_ms());
             throttle_to_zero();
+            servo_let_go();
             arming_stop_from_far_end(&s_arm);
             control_alert("coprocessor disarmed -- arm again");
         }
@@ -2185,7 +2228,7 @@ static void control_task(void *arg)
         /* --- what the screens asked for ---------------------------------- */
         drain_commands(link_up, &bench);
         (void)outputs_keepalive(&s_out, PANEL_CH_THROTTLE, now_ms());
-        servo_hold(link_up);
+        servo_service(link_up);
 
         log_follow_arming();
 

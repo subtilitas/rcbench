@@ -26,6 +26,16 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **A stop left a servo position an arm would step back to.** Only the servo
+  screen's own disarm let go of the pin; a STOP, a dead touch, a disarm from
+  MOTOR & ESC and a far-end disarm did not, and the far end keeps both the
+  slot and the channel command through a disarm and a failsafe. The next arm
+  found the channel neither overdue nor at rest and drove the servo to where
+  it had been, with nobody having touched anything. Letting go of the servo
+  is now paired with returning the throttle to zero, in every path that stops
+  the bench. A release that cannot be sent -- the screen left while the link
+  is down -- is kept as a debt and sent when the link is back, so a slot
+  cannot outlive the screen that bound it.
 - **A servo other than the standard one was driven against the wrong
   endpoints.** The panel configured the channel with a fixed 1000 to 2000 us
   whatever the screen's TYPE said, so a narrow servo (660 to 860 us) had its
