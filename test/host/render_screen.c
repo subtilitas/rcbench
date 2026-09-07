@@ -456,6 +456,15 @@ int main(int argc, char **argv)
         outputs_screen_set_binding(&b);
         outputs_screen_set_result(OUTPUTS_OK);
         ui_router_goto(SCREEN_OUTPUTS);
+        if (strcmp(view, "outputs-full") == 0) {
+            /*
+             * PPM with servo pins already bound: the whole board greyed and
+             * a line saying why. An operator met this state and could not
+             * tell it from a fault.
+             */
+            outbind_set_proto(&b, 2u);             /* PPM */
+            outputs_screen_set_binding(&b);
+        }
         if (strcmp(view, "outputs-protocol") == 0) {
             /* Tap the dropdown open. */
             touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 } };

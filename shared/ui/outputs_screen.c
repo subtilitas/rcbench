@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "link_pages.h"
 #include "ui_screen.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -292,6 +293,44 @@ static void draw_left(gfx_canvas_t *c)
                  (unsigned)p->channels);
         gfx_text(c, COL_X, DD_Y + DD_H + 38, buf, UI_FONT_LABEL,
                  UI_TEXT_FAINT, 1);
+    }
+
+    /*
+     * Why nothing can be ticked, when nothing can.
+     *
+     * The rules are in out_bind and they are right, but a board drawn
+     * entirely in grey with no reason beside it is a screen that looks
+     * broken.  An operator met exactly that: PPM carries eight channels on
+     * one pin, so a single servo pin already bound leaves seven free and
+     * greys the whole board -- correct, and indistinguishable from a fault
+     * without this line.
+     *
+     * Only when the protocol takes pins and none can be added, so the line
+     * appears when it explains something and not otherwise.
+     */
+    if (p->max_pins > 0u) {
+        const uint8_t used_ch = outbind_channels_used(&s.bind);
+        const uint8_t used_sl = outbind_chosen_total(&s.bind);
+        const char *why = NULL;
+        if (n >= cap) {
+            snprintf(buf, sizeof(buf), "%s TAKES %u PIN%s", p->name,
+                     (unsigned)cap, cap == 1u ? "" : "S");
+            why = buf;
+        } else if (used_sl >= (uint8_t)LINK_OUT_SLOTS) {
+            snprintf(buf, sizeof(buf), "ALL %u SLOTS IN USE",
+                     (unsigned)LINK_OUT_SLOTS);
+            why = buf;
+        } else if ((unsigned)used_ch + p->channels
+                   > (unsigned)LINK_OUT_CHANNELS) {
+            snprintf(buf, sizeof(buf), "NEEDS %u CHANNELS, %u FREE",
+                     (unsigned)p->channels,
+                     (unsigned)(LINK_OUT_CHANNELS - used_ch));
+            why = buf;
+        }
+        if (why != NULL) {
+            gfx_text(c, COL_X, DD_Y + DD_H + 60, why, UI_FONT_LABEL,
+                     UI_WARN, 1);
+        }
     }
 
     gfx_text(c, COL_X, SCREEN_H - 92, "LAST WRITE", UI_FONT_LABEL,
