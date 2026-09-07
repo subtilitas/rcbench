@@ -701,6 +701,26 @@ static bool bring_up(void)
  * viewer reads, and a host test writes a run and parses it back.
  */
 static FILE       *s_log_file;
+
+/*
+ * Whether a run is open, which is not the same as whether a file is.
+ *
+ * A card that is full or unwritable leaves s_log_file NULL, and the arming
+ * edge was read from that pointer: with the bench armed and the open
+ * failing, every pass of the control loop looked like a fresh arm and ran
+ * the whole scan again -- card work on the task that drives the heartbeat,
+ * once per CONTROL_PERIOD_MS, for as long as the bench stayed armed. The run
+ * is its own flag, so a failed open is a run without a log rather than a
+ * retry.
+ */
+static bool        s_log_run;
+
+/*
+ * Where the numbering got to.  The scan is a linear probe from 1, so a card
+ * holding 400 runs cost 400 opens at the arming edge; after the first one it
+ * starts from what it found.
+ */
+static int         s_log_next = 1;
 static log_writer_t s_log;
 static float        s_log_t;
 
@@ -710,6 +730,15 @@ static int file_write(void *ctx, const void *data, size_t len)
     return (int)fwrite(data, 1, len, f);
 }
 
+/*
+ * Open the run's file.  Called on the arming edge, from the task that drives
+ * the heartbeat and reads STOP.
+ *
+ * Every probe is a card transaction, and the loop can make hundreds of them.
+ * The heartbeat's ceiling is HEARTBEAT_MAX_GAP_MS (150 ms) and STOP has to
+ * be seen within a frame of the press, so control_pump() runs between
+ * probes -- the same reason exchange() pumps while it waits for a reply.
+ */
 static void log_start(void)
 {
     if (s_log_file != NULL || !storage_mounted()) {
@@ -717,9 +746,10 @@ static void log_start(void)
     }
     /* Numbered, not timestamped: no clock on this board survives a power
      * cycle, so every file would be dated 1970-01-01. */
-    for (int i = 1; i < 1000 && s_log_file == NULL; ++i) {
+    for (int i = s_log_next; i < 1000 && s_log_file == NULL; ++i) {
         char path[64];
         snprintf(path, sizeof(path), "/sdcard/BENCH%03d.CSV", i);
+        control_pump();
         FILE *probe = fopen(path, "r");
         if (probe != NULL) {
             fclose(probe);
@@ -727,10 +757,12 @@ static void log_start(void)
         }
         s_log_file = fopen(path, "w");
         if (s_log_file != NULL) {
+            s_log_next = i + 1;
             ESP_LOGI(TAG, "logging to %s", path);
         }
     }
     if (s_log_file == NULL) {
+        ESP_LOGW(TAG, "no log file could be opened; the run is not recorded");
         return;
     }
     const log_sink_t sink = { file_write, s_log_file };
@@ -1594,10 +1626,13 @@ static void drain_commands(bool link_up, bench_state_t *bench)
 static void log_follow_arming(void)
 {
     const bool armed_now = outputs_armed(&s_out);
-    const bool was_armed = (s_log_file != NULL);
-    if (armed_now && !was_armed) {
+    if (armed_now == s_log_run) {
+        return;
+    }
+    s_log_run = armed_now;
+    if (armed_now) {
         log_start();
-    } else if (!armed_now && was_armed) {
+    } else {
         log_stop();
     }
 }
