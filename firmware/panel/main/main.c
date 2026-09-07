@@ -1405,6 +1405,17 @@ static void control_task(void *arg)
             break;
         case ARMING_ACT_ARM: {
             link_msg_t ack = { 0 };
+            /*
+             * An arm starts from nothing, and this is where that is made
+             * true rather than hoped for.  ARM and THROTTLE travel in one
+             * transaction, so a command left over from before the disarm
+             * would be the first thing the far end acts on -- with no ramp,
+             * because the panel's throttle channel carries no slew until the
+             * bank is armed.  Every disarm clears it as well; a disarm that
+             * forgot to would be a motor stepping to its old position on a
+             * bench the operator had just stopped, and there has been one.
+             */
+            throttle_to_zero();
             if (link_up
                 && !(control_clear_failsafe(&ack) && control_write(true, &ack))) {
                 arming_refused(&s_arm);
@@ -1586,9 +1597,18 @@ static void control_task(void *arg)
                     const bool armed = outputs_armed(&s_out);
                     if (!control_write(armed, &ack) && armed
                         && ack.op == LINK_OP_NACK) {
-                        /* The coprocessor is in failsafe or has lost the
-                         * heartbeat.  A stop latches at this end too. */
+                        /*
+                         * The coprocessor is in failsafe or has lost the
+                         * heartbeat.  A stop latches at this end too.
+                         *
+                         * The command goes to zero here rather than through
+                         * the policy: arming_stop_from_far_end() clears
+                         * a->armed itself, and arming_step()'s disarm is
+                         * gated on a->armed, so ARMING_ACT_DISARM cannot
+                         * follow and the throttle would keep its last value.
+                         */
                         outputs_arm(&s_out, false, now_ms());
+                        throttle_to_zero();
                         arming_stop_from_far_end(&s_arm);
                         control_alert("coprocessor disarmed -- arm again");
                     }
