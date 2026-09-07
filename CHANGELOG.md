@@ -6,6 +6,72 @@ history is in git.
 
 ## Unreleased
 
+## 0.6.0 - 2026-09-07
+
+Applying an output binding never worked, PPM never worked, and an arm could
+carry the throttle from before the last stop. All three were on the bench the
+whole time and none of them showed as an error.
+
+### Fixed
+
+- **Applying a binding reported NO LINK against a link that was up.** Every
+  frame of a request is self-describing and the coprocessor answers each one
+  it decodes, so a write of 32 registers draws eight acknowledgements of four
+  at offsets 0, 4 ... 28. The panel waited for one acknowledgement covering
+  the whole window, matched none of them, counted all eight as mismatches and
+  waited out LINK_HOST_TIMEOUT_MS (1000 ms) -- transmitting nothing for that
+  second, so the coprocessor's own LINK_DEV_SILENCE_MS (200 ms) watchdog
+  latched failsafe. Both output pages are 32 registers wide, so it happened
+  on every apply, and the second page of the pair was never sent: the far end
+  kept a new channel configuration against the old slots. An acknowledgement
+  is now taken in pieces the way a read's answer already was. Reported as #99
+  and identified from a bench: LINK steady, LAST WRITE reading NO LINK, and
+  `stale 8` in the panel's own counters -- one mismatch per frame.
+- **PPM could be selected and never drove a pin.** The catalogue offered PPM
+  at 50 Hz with eight channels, and eight channels need 8 x 2500 + 300 + 3000
+  = 23,300 us of frame against the 20,000 us that 50 Hz gives.
+  outputs_configure() accepted the rate, the coprocessor acknowledged the page
+  and read it back unchanged, and out_ppm_bind() then refused the frame and
+  left the slot unbound. The screen showed a binding the bench did not have.
+  PPM runs at 40 Hz now, which gives 25,000 us and binds.
+- **An arm could carry the throttle from before the last stop.** ARM and
+  THROTTLE travel in one transaction, and the coprocessor's throttle is bank
+  channel 8, off the CHAN_CFG page that addresses channels 0 to 7, so its
+  slew is never configured and it steps straight to the command. Three disarm
+  paths returned the command to zero; the far-end disarm did not, and no
+  later disarm could cover for it -- arming_stop_from_far_end() clears
+  a->armed itself and arming_step()'s disarm is gated on a->armed. A
+  coprocessor disarm therefore left the throttle at its last position while
+  the screen showed zero, and the next arm sent it. Every arm now starts from
+  zero, at the arm rather than at each path that has to remember.
+- **The arming hold did not end when the finger left the button**, so a press
+  that started on ARM and slid onto the plot armed the bench two seconds
+  later. Coming back does not resume it: the contact is finished and arming
+  takes a fresh press. And a press standing while the bench was armed -- a
+  press made to DISARM -- started its own two seconds the moment the bench
+  disarmed, turning the operator's stopping contact into an arming one. The
+  gesture now ends on the way to disarmed.
+- **The link-up edge counted a sample that was never read.** While the link is
+  down the question asked is the identity page, so an answer there says a
+  coprocessor is present and nothing about the bench. One plot column and one
+  CSV row carried the previous bench values, or zeros at boot.
+
+### Changed
+
+- **control_task() is 69 lines and calls sixteen named steps**, from 578. The
+  order of every operation and every early exit is preserved; no loop local
+  became a file static. The image differs by 12 bytes of .flash.text, all of
+  it two inlining decisions: no other symbol changes size, and a control
+  build with the steps forced inline reproduces the baseline's choices
+  exactly. It buys readability, not coverage -- the steps are static and
+  reach file statics, so the host suite still cannot link them.
+- The panel's expander write records that it is single-threaded, names every
+  caller, and states that a lock added later has to be bounded well under
+  HEARTBEAT_MAX_GAP_MS (150 ms) -- I2C_TIMEOUT_MS is already 100 ms of it.
+- Three claims corrected against the code: the protocol version on the wire
+  is 2.5, the status page is polled every 500 ms, and CI holds seven
+  per-screen and seven `-chrome` modes to their ceilings rather than six.
+
 ## 0.5.0 - 2026-09-06
 
 A link that dropped never came back, and the panel could not say why. Both
