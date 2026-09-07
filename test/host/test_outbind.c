@@ -542,6 +542,26 @@ TEST_CASE(without_the_roles_a_pulse_slot_reads_as_the_first_entry)
     CHECK_EQ(back.proto, proto_named("SERVO PWM"));
 }
 
+TEST_CASE(a_slot_naming_a_channel_off_the_page_does_not_read_past_the_roles)
+{
+    /*
+     * The range field is whatever is on the page, and the roles are read by
+     * it.  A first channel of eight is off an eight-channel page, so it
+     * indexes past the CHAN_CFG array the caller handed in; the page is
+     * refused either way, but the read must not happen first.
+     */
+    outbind_t b;
+    uint16_t regs[LINK_OS_COUNT], cc[LINK_CC_COUNT];
+    outputs_slots_defaults(regs);
+    outputs_chan_cfg_defaults(cc);
+    regs[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
+    regs[LINK_OS_PIN]     = 0;
+    regs[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(LINK_OUT_CHANNELS, 1);
+    regs[LINK_OS_RATE_HZ] = 50;
+    CHECK(!outbind_from_slots(&b, BOARD, regs, cc));
+    CHECK_EQ(outbind_chosen(&b), 0);
+}
+
 TEST_CASE(an_empty_page_reads_back_as_nothing_configured)
 {
     uint16_t regs[LINK_OS_COUNT];
@@ -1602,6 +1622,7 @@ int main(void)
     RUN(what_this_writes_is_what_the_bank_accepts);
     RUN(a_selection_survives_the_round_trip_through_the_page);
     RUN(two_protocols_at_once_are_the_ordinary_case);
+    RUN(a_slot_naming_a_channel_off_the_page_does_not_read_past_the_roles);
     RUN(a_motor_and_a_servo_on_the_same_pulse_read_back_apart);
     RUN(a_mixed_page_keeps_each_slot_on_its_own_entry);
     RUN(without_the_roles_a_pulse_slot_reads_as_the_first_entry);

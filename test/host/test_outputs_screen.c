@@ -319,12 +319,13 @@ TEST_CASE(the_binding_survives_being_set_from_outside)
     outbind_t b;
     outbind_init(&b);
     outbind_set_board(&b, OUTBIND_BOARD_PICO_HEADER);
-    outbind_set_proto(&b, 4);                     /* DSHOT600 */
+    const int dshot600 = proto_row("DSHOT600");
+    outbind_set_proto(&b, (uint8_t)dshot600);
     (void)outbind_toggle(&b, outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 7));
     outputs_screen_set_binding(&b);
 
     /* What was loaded from storage is what the screen now shows and edits. */
-    CHECK_EQ(outputs_screen_binding()->proto, 4);
+    CHECK_EQ(outputs_screen_binding()->proto, dshot600);
     CHECK_EQ(outbind_chosen(outputs_screen_binding()), 1);
     tap_pin(13);
     CHECK_EQ(outbind_chosen(outputs_screen_binding()), 2);
