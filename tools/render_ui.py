@@ -96,6 +96,7 @@ SCREENS = {
     "outputs":    ("outputs.png",    "outputs",    "dark"),
     "outputs-protocol": ("outputs-protocol.png", "outputs", "dark"),
     "outputs-held": ("outputs-held.png", "outputs", "dark"),
+    "outputs-full": ("outputs-full.png", "outputs", "dark"),
     "picker": ("picker.png", "picker", "dark"),
     "picker-drawn": ("picker-drawn.png", "picker", "dark"),
     "busfault": ("busfault.png", "busfault", "dark"),

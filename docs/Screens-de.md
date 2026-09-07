@@ -357,6 +357,14 @@ einen Pin, ein Prüfstand mit PPM hat also für nichts anderes Platz. Es läuft
 mit 40 Hz und nicht mit den 50 Hz der übrigen Pulstreiber: acht Kanäle
 brauchen 23 300 us Rahmen, und 50 Hz geben 20 000.
 
+Wenn das Protokoll keinen Pin mehr nehmen kann, steht der Grund in Bernstein
+darunter: `NEEDS 8 CHANNELS, 4 FREE`, `ALL 8 SLOTS IN USE` oder `SERVO PWM
+TAKES 8 PINS`. Eine komplett graue Platine ohne Begründung daneben liest sich
+wie ein Defekt, und PPM färbt die ganze Platine grau, sobald irgendetwas
+anderes gebunden ist.
+
+![PPM bei schon gebundenen Servo-Pins](img/outputs-full.png)
+
 Das Protokoll ist eine Liste und kein Stepper: es gibt sieben davon, und sich
 an sechs vorbeizuschieben, um das siebte zu erreichen, ist keine Auswahl.
 
