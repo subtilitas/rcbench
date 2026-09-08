@@ -678,24 +678,21 @@ static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
     static storage_entry_t entries[LOG_VIEWER_MAX_FILES];
     const int max = (max_entries < LOG_VIEWER_MAX_FILES) ? max_entries
                                                          : LOG_VIEWER_MAX_FILES;
-    int n = storage_list(CARD_DIR, CARD_SUFFIXES, entries, max);
+    const int n = storage_list(CARD_DIR, CARD_SUFFIXES, entries, max);
     if (n < 0) {
         /*
          * Mounted, and yet its root will not open: the card it was mounted
          * from has been taken out or swapped.  Nothing clears that flag on
-         * its own -- only storage_deinit() does -- so without this the mount
-         * stays stale for ever and every later RESCAN reads the old volume's
-         * metadata instead of the new card's.
+         * its own -- only storage_deinit() does -- so the mount stays stale
+         * and a replacement card is not found until the panel restarts.
+         *
+         * Not unmounted from here.  This runs on the task that renders, and
+         * the control task writes the run log on the same volume: unmounting
+         * under an open handle frees the SPI bus beneath a write on the other
+         * core.  Putting that right means one task owning the card's
+         * lifetime, which is a change of its own; see STATUS.md.
          */
-        ESP_LOGW(TAG, "the card stopped answering; remounting");
-        storage_deinit();
-        if (storage_init() != ESP_OK || !storage_mounted()) {
-            return -1;
-        }
-        n = storage_list(CARD_DIR, CARD_SUFFIXES, entries, max);
-        if (n < 0) {
-            return -1;
-        }
+        return -1;
     }
     for (int i = 0; i < n; ++i) {
         /* Field by field rather than a block copy of the structure: the two
