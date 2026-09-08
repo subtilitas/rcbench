@@ -176,9 +176,18 @@ the kernel and the firmware -- it has been `gpiochip4` and it has been
 `host/selftest.sh` reads the same three variables, so the wiring is stated
 once and nothing in the scripts has to know it.
 
-Three wires and a ground: SWCLK, SWDIO, and the target's 3.3 V as a reference
-only. Start at 1,000 kHz and come down if a flash fails to verify; a bad clock
-on this interface looks like intermittent verification rather than a clean
+Three wires: SWCLK, SWDIO and ground, and nothing else. The Pi's 3.3 V header
+pin is a regulated output rather than a reference input, so wiring it to a
+target that has its own supply ties two regulators together and back-powers
+one of them. Both boards here are powered already; the Pi contributes the two
+signals and the common ground.
+
+`linuxgpiod` drives the two signals at the Pi's own 3.3 V, which is what the
+RP2350 expects. A target at another voltage needs a level translator that
+senses the target's rail, not a wire from this header.
+
+Start at 1,000 kHz and come down if a flash fails to verify; a bad clock on
+this interface looks like intermittent verification rather than a clean
 error.
 
 The same applies to the bench's own coprocessor if it is to be reflashed
