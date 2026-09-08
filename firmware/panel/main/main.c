@@ -1610,24 +1610,32 @@ static bool write_servo(const servo_cmd_t sv)
         };
         const uint16_t span = us_to_span(sv.value_us, min_us, max_us);
         /*
-         * Both halves of the configuration have to land before the pulse
-         * does.  The endpoints travel with the command, so a CHAN_CFG that
-         * was refused or timed out leaves the far end clamping against the
-         * range it had before: a narrow servo selected against a standard
-         * configuration renders 1500 us, past its 860 us maximum, until the
-         * next refresh.  Nothing is worth sending until they are in.
+         * What the channel is, then what it is to do, and only then the slot
+         * that renders it.  Each is its own transaction and the far end steps
+         * its outputs between them, so a slot bound before the position had
+         * arrived would drive whatever channel 0 was holding -- the position
+         * from before the last release, or the surface rest of mid-travel
+         * once that has gone stale -- and would keep driving it if the
+         * position write then failed.  Binding last means the pin is either
+         * unbound or already carrying what was asked for.
+         *
+         * All three are required.  The endpoints travel with the command, so
+         * a CHAN_CFG that was refused or timed out leaves the far end
+         * clamping against the range it had before: a narrow servo selected
+         * against a standard configuration renders 1500 us, past its 860 us
+         * maximum. The 100 ms refresh is the retry.
          */
         if (!write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_STRIDE, cfg,
                         &reply)
             || reply.op != LINK_OP_ACK) {
             return false;
         }
-        if (!write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
-                        &reply)
+        if (!write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &span, &reply)
             || reply.op != LINK_OP_ACK) {
             return false;
         }
-        return write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &span, &reply)
+        return write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
+                          &reply)
                && reply.op == LINK_OP_ACK;
     }
 }

@@ -26,6 +26,13 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **Binding the servo's pin before its position arrived drove the old one.**
+  The three writes a servo command makes are three transactions and the far
+  end steps its outputs between them, so binding the slot second rendered
+  whatever channel 0 was holding -- the position from before the last
+  release, or mid-travel once that had gone stale -- and kept driving it if
+  the position write then failed. The slot is bound last, so the pin is
+  either unbound or already carrying what was asked for.
 - **A servo pulse could be sent against a configuration that never landed.**
   Only the last of the three writes a servo command makes was checked, so a
   CHAN_CFG that was refused or timed out left the far end clamping against
