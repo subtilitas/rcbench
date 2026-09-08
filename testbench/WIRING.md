@@ -174,17 +174,31 @@ its threshold set for it, which is a per-run setting and an argument to
 A 20 ms square wave. A gap longer than 150 ms is what the monostable and the
 coprocessor both act on, and should not be there on a healthy panel.
 
-**Check, two: the interlock, without firmware.** Arm the bench with an output
-bound, capture that output, and stop the edges at the panel end -- hold the
-panel in reset with its relay, which is a state no firmware can talk its way
-out of.
+**Check, two: the interlock, and only the interlock.** Stopping the edges is
+not a test on its own. `firmware/iomcu/src/main.c` polls the same line and
+calls `outputs_off()` when it has been quiet for HEARTBEAT_MAX_GAP_MS
+(150 ms) -- the same threshold, by design, since both watch the same wire. So
+an output that stops when the edges stop proves nothing: a bench with no
+monostable at all passes that.
+
+Two probes settle it, and the second is the decisive one.
+
+*The part itself.* Put leads on the monostable's own outputs -- the
+coprocessor's output enable, and the switched servo and ESC power -- and stop
+the edges. Both should go inactive within the window. No firmware runs on
+those nodes, so what they do is the hardware's doing.
+
+*The differential test.* Keep the firmware happy and starve only the hardware:
+have the RP2350 drive GP3 with a clean 20 ms square so `heartbeat_poll()`
+never expires, while the monostable's input gets nothing. Arm, bind an output,
+and capture it.
 
     testbench/host/capture.sh interlock D0,D3 1m 2m 1.65
 
-The edges stop, and the output stops within the monostable's window. If the
-output keeps driving after the edges have gone, the monostable is not in the
-path or is not gating what it should, and the bench is a direct wire wearing a
-part number.
+The firmware has every reason to keep driving, and the output must stop
+anyway. If it keeps going, the monostable is not in the path or is not gating
+what it should, and the bench is a direct wire wearing a part number. If it
+stops, the only thing that could have stopped it is the part.
 
 ---
 
