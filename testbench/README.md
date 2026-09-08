@@ -73,11 +73,15 @@ in three ways:
   task arms, stops and drives, which is the condition the frame budget and the
   PSRAM (pseudo-static random-access memory) bandwidth concern in `STATUS.md`
   are about. A timing measured with the screen dark is not the bench's timing.
-- **The link is observable at both ends.** The XL2515's serial peripheral
-  interface (SPI) lines are five probe points, so an exchange can be timed
-  from the panel's request to the coprocessor's answer, and the 1,000 ms
-  host timeout and the 200 ms silence watchdog stop being numbers only the
-  code believes.
+- **The link is observable at both ends.** Four probes on the XL2515's serial
+  peripheral interface (SPI) show every register the driver touches, and a
+  fifth on RXCAN between the controller and the transceiver shows the bit
+  stream itself. Both are needed: the SPI says when the driver noticed a
+  frame, RXCAN says when it arrived, and the difference between those two is
+  the polling interval. The controller's INT pin is not a probe point --
+  `firmware/iomcu/src/xl2515.c` writes zero to CANINTE and polls CANINTF, so
+  INT never asserts. With RXCAN, the 1,000 ms host timeout and the 200 ms
+  silence watchdog stop being numbers only the code believes.
 - **Touch becomes something a script can do.** See below; it is the one that
   matters most.
 
@@ -101,14 +105,14 @@ Proposed channel map, to be checked against the wiring as built:
 | 5 | CAN MOSI | coprocessor GP11, pad 15 | |
 | 6 | CAN MISO | coprocessor GP12, pad 16 | with SCK and MOSI, every register the driver writes |
 | 7 | CAN CS | coprocessor GP9, pad 12 | frames the transaction, and is the cheapest thing to trigger on |
-| 8 | CAN INT | coprocessor GP8, pad 11 | the controller's own interrupt, so a reply can be timed from the wire rather than from the driver |
+| 8 | RXCAN | XL2515 to transceiver | the bit stream itself, which is when a frame actually arrived |
 | 9 | touch SCL | panel to GT911 | the touch controller's clock |
 | 10 | touch SDA | panel to GT911 | with SCL, what the panel believes a finger did |
 | 11 | DShot reply | ESC to coprocessor | the same wire as channel 0 when bidirectional; kept separate so a probe can sit on the ESC end |
 | 12 | programmer line | one-wire, 19,200 baud | BLHeli_S, AM32, ESCape32 |
 | 13 | telemetry RX | ESC to bench | OpenYGE, and DShot extended telemetry |
 | 14 | SBUS | receiver to bench | inverted; the analyser reads it as it is and the decoder inverts |
-| 15 | spare | | a second probe on whatever a run is chasing |
+| 15 | TXCAN, or spare | XL2515 to transceiver | the other direction when a run wants both ends of an exchange |
 
 **The budget is 16 channels and the map is 15**, so a run takes the subset it
 needs rather than everything at once: an output measurement wants channels 0
@@ -179,9 +183,32 @@ a stop pressed while a hold is running, and touch that stops answering
 altogether. All of them are decided by what the GT911 touch controller reports
 over I²C (inter-integrated circuit).
 
-**So the RP2350 pretends to be the GT911.** It sits on the panel's touch bus
-and answers as the controller does, and a recipe then says "press at (612,
-396), hold 2.1 s, release" and the panel cannot tell the difference. With the
+**So the RP2350 pretends to be the GT911**, and the real controller has to be
+out of the way while it does.
+
+Two devices at one address both acknowledge, and their open-drain pulls
+combine rather than one replacing the other: what the panel would read is
+neither. The panel also probes the physical part at start-up --
+`firmware/panel/components/gt911/touch.c` runs `board_touch_reset_sequence()`
+and then `gt911_new()`, which tries 0x5D and then 0x14 -- so a controller that
+is merely ignored still answers that probe.
+
+The wiring therefore has to isolate it. In order of preference:
+
+1. **Hold the real GT911 in reset** while the emulator is active, with its
+   reset line driven from the Pi. This is the cheapest and it is reversible
+   between runs, but it needs checking that a GT911 in reset releases the bus
+   rather than holding a line down.
+2. **Break the bus** with an analogue switch on SDA and SCL, so the panel sees
+   exactly one device and which one is a Pi output.
+3. **Two panels**, one wired for measurement and one whole. The most work, and
+   the only one that leaves a bench nobody has modified.
+
+Until one of those is built, the emulator cannot inject anything, and this
+section is a plan rather than a capability.
+
+With it built, a recipe says "press at (612, 396), hold 2.1 s, release" and
+the panel cannot tell the difference. With the
 analyser on the heartbeat and the output pin at the same time, one capture
 holds the gesture and what the bench did about it:
 
@@ -233,14 +260,33 @@ sigrok has no DShot decoder. One has to be written, and a decoder written from
 the same specification as the firmware would agree with the firmware for the
 same wrong reason.
 
-So the decoder is checked against traffic whose content is known
-independently: `shared/dshot/dshot_frame.c` builds a frame from a value and a
-cyclic redundancy check, the host suite can emit that frame as a waveform, and
-the decoder must read back the value and the check that went in. That
-verification needs no hardware and can be done before the bench exists.
+The first check is a round trip against the tree's own builder:
+`shared/dshot/dshot_frame.c` makes a frame from a value and a cyclic
+redundancy check, the host suite emits it as a waveform, and the decoder must
+read back what went in. It needs no hardware and can be done before the bench
+exists.
 
-Only then is a capture of the real coprocessor worth reading, because a
-disagreement is then the firmware's rather than the decoder's.
+**That check is necessary and it is not sufficient.** The production path
+calls the same builder -- `firmware/iomcu/src/out_dshot.c` -- so decoder and
+firmware can agree on a bit order or a checksum convention that is wrong in
+the same way, and the round trip would pass. It proves transcription, not
+convention.
+
+Convention needs a source outside this tree, and there are three, in order of
+what they cost:
+
+1. **Published vectors** — a throttle value and the frame it must produce,
+   from the protocol's own documentation rather than from an implementation.
+2. **A device that is not ours.** An ESC that spins at the commanded throttle
+   is evidence the frames are right, because it was written by somebody who
+   never read this code. A reply decoded to an electrical revolutions figure
+   that tracks a separately measured shaft speed is the same evidence for the
+   reply direction.
+3. **A capture of another implementation** driving the same ESC, decoded by
+   this decoder and compared.
+
+Until one of those has been done, a capture of the coprocessor says the
+firmware and the decoder agree, and no more than that.
 
 ---
 

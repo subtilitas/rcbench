@@ -1,2 +1,8 @@
+# Run artefacts are not committed: they are large, and a capture is
+# evidence of one run rather than something the tree depends on.
 *
+
+# The reference set is, because the decoders are tested against it.
 !.gitignore
+!reference/
+!reference/**
