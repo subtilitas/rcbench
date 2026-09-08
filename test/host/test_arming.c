@@ -315,6 +315,56 @@ TEST_CASE(every_stop_counts_even_when_the_latch_does_not_move)
     CHECK_EQ(arming_stop_count(NULL), 0);
 }
 
+TEST_CASE(a_settling_arm_is_abandoned_when_touch_dies)
+{
+    /*
+     * The request is already the policy's by then, so no screen can retract
+     * it: if the settle simply ran on, a controller that recovered inside
+     * the two seconds would arm from a gesture nobody has re-made.
+     */
+    /*
+     * A settle longer than the bench's, so a 500 ms outage fits inside it.
+     * The bench settles in about 100 ms, which is shorter than the silence
+     * that declares touch dead; the rule under test is the policy's, and it
+     * has to hold for whatever settle it is given.
+     */
+    const uint32_t settle = 4u * ARMING_TOUCH_DEAD_MS;
+    arming_t a;
+    arming_init(&a, 0, settle);
+    arming_touch_seen(&a, 0);
+    arming_request_arm(&a, 0);
+
+    /* Touch dies during the settle, then answers again before the deadline. */
+    const uint32_t dead_at = ARMING_TOUCH_DEAD_MS + 1u;
+    arming_touch_poll(&a, dead_at);
+    arming_touch_seen(&a, dead_at + 10u);
+
+    CHECK_EQ(arming_step(&a, settle + 1u), ARMING_ACT_NONE);
+    CHECK(!a.armed);
+}
+
+TEST_CASE(touch_health_can_be_judged_apart_from_the_policy_step)
+{
+    /*
+     * The caller that judges touch and the caller that steps the policy are
+     * not the same and need not run at the same rate.  A death and a
+     * recovery between two steps must still count.
+     */
+    arming_t a;
+    arming_init(&a, 0, SETTLE_MS);
+    arming_touch_seen(&a, 0);
+    (void)arming_step(&a, 10u);
+    CHECK_EQ(arming_stop_count(&a), 0);
+
+    const uint32_t dead_at = ARMING_TOUCH_DEAD_MS + 1u;
+    arming_touch_poll(&a, dead_at);          /* seen only by the pump */
+    arming_touch_seen(&a, dead_at + 5u);     /* and it answers again */
+    (void)arming_step(&a, dead_at + 10u);    /* the policy runs afterwards */
+    CHECK_EQ(arming_stop_count(&a), 1);
+
+    arming_touch_poll(NULL, 0);
+}
+
 TEST_CASE(touch_that_stops_answering_counts_once)
 {
     /*
@@ -362,5 +412,7 @@ int main(void)
     RUN(the_latch_can_be_asked_about);
     RUN(every_stop_counts_even_when_the_latch_does_not_move);
     RUN(touch_that_stops_answering_counts_once);
+    RUN(a_settling_arm_is_abandoned_when_touch_dies);
+    RUN(touch_health_can_be_judged_apart_from_the_policy_step);
     return test_summary("arming");
 }

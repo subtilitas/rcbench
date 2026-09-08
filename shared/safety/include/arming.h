@@ -86,6 +86,17 @@ bool arming_stopped(const arming_t *a);
  *  so a caller can act on the event rather than on the level. */
 uint32_t arming_stop_count(const arming_t *a);
 
+/**
+ * Sample the touch controller's health, and act on the edge where it dies.
+ *
+ * Called by whatever judges touch, as often as it judges it, and by
+ * arming_step(). The two are not the same caller and need not run at the
+ * same rate: a link exchange can wait a second while touch is still being
+ * pumped, and a controller that died and recovered inside that wait would
+ * leave nothing for the policy to see afterwards.
+ */
+void arming_touch_poll(arming_t *a, uint32_t now_ms);
+
 /** STOP. Latches; abandons an arm that is waiting for the line. */
 void arming_stop(arming_t *a);
 

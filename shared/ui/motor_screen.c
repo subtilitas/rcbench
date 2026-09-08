@@ -908,6 +908,16 @@ static void leave(void)
     s.armed = false;
     /* Neither animation should still be running when the screen comes back. */
     ui_hold_reset(&s.arm);
+    /*
+     * And the press this screen was routing goes with it.  No release will
+     * arrive for a finger that was on ARM as the screen changed -- the UP
+     * belongs to whatever is up now -- and a press left recorded would own
+     * the button for ever: the guard that keeps a hold with the contact that
+     * began it refuses every later press while one is held.
+     */
+    s.pressed    = 0;
+    s.have_press = false;
+    ++s.ctrl_rev;
     ++s.arm_rev;
 }
 

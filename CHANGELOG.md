@@ -26,6 +26,21 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **A touch outage inside a link wait left no trace.** The stop was counted
+  only where the policy steps, and a link exchange waits up to 1000 ms while
+  touch is still being pumped: a controller that died and recovered inside
+  one such wait was never seen to have died, and a hold left standing by it
+  completed and was accepted. Touch health is judged where touch is judged
+  now, at the rate it is judged.
+- **An arm still settling was not abandoned when touch died.** The disarm was
+  gated on the bench being armed, and an arm that is settling is not armed
+  yet, so a controller recovering before the deadline armed the bench from a
+  gesture nobody had re-made -- and no screen could retract a request the
+  policy already held.
+- **Leaving MOTOR & ESC under a held ARM stranded the button.** No release
+  arrives for a contact that was on ARM as the screen changed, and the press
+  stayed recorded; with the hold kept for the contact that began it, every
+  later press was then refused. Leaving drops the press it was routing.
 - **Touch that stopped answering left an arming hold running.** A hold
   advances on frames rather than on touch events, so one still down when the
   controller went quiet kept counting; the arm was refused while touch stayed

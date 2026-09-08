@@ -507,6 +507,9 @@ static void control_pump(void)
     if (saw_touch || touch_age_ms() < 200u) {
         arming_touch_seen(&s_arm, now_ms());
     }
+    /* And judged here, at the rate touch is judged: this runs inside the
+     * link's wait, where arming_step() does not. */
+    arming_touch_poll(&s_arm, now_ms());
 
     outputs_step(&s_out, now_ms());
     /*

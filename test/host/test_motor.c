@@ -316,6 +316,26 @@ TEST_CASE(a_cancelled_hold_leaves_no_arm_to_be_read_later)
     CHECK(!motor_screen_poll_cmd(&got));
 }
 
+TEST_CASE(leaving_under_a_held_arm_does_not_strand_the_button)
+{
+    /*
+     * A second contact can navigate away while the first is holding ARM, and
+     * no release arrives for that first contact -- the UP belongs to whatever
+     * screen is up by then.  A press left recorded would own the button for
+     * ever, because the hold stays with the contact that began it.
+     */
+    fresh();
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS / 2);
+    scr->leave();
+
+    /* Back on the screen, a fresh hold still arms. */
+    (void)motor_screen_poll_cmd(NULL);      /* the disarm leave() posted */
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 2);
+    tick_for(HOLD_TICKS + 4);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+}
+
 TEST_CASE(a_second_contact_cannot_take_over_the_arm_hold)
 {
     fresh();
@@ -906,6 +926,7 @@ int main(void)
     RUN(a_second_contact_cannot_steal_the_disarm_release);
     RUN(a_stop_abandons_a_hold_that_is_under_way);
     RUN(a_cancelled_hold_leaves_no_arm_to_be_read_later);
+    RUN(leaving_under_a_held_arm_does_not_strand_the_button);
     RUN(a_second_contact_cannot_take_over_the_arm_hold);
     RUN(a_short_press_on_arm_does_nothing);
     RUN(arming_flashes_the_whole_button);
