@@ -1775,13 +1775,13 @@ static void write_output_binding(const outbind_t *bind)
 static uint8_t s_servo_channels;
 
 /*
- * And which of them the last position actually reached.
+ * And whether the last position actually reached any of them.
  *
  * Separate from s_servo_channels because the two can differ: a write that
  * failed part way through leaves some surfaces holding a position and not
- * others, and the operator can rebind between putting a surface somewhere and
- * letting go of it.  A release settles what was written, which is the only
- * set that is still holding anything.
+ * others.  It says a release is owed, not where the release goes -- that is
+ * always the channels bound as surfaces now, because a channel that has
+ * stopped being one must not be written by this screen.
  */
 static uint8_t s_servo_written;
 
@@ -1837,19 +1837,23 @@ static bool write_servo(const servo_cmd_t sv)
 {
     link_msg_t reply;
     /*
-     * A release settles both what this process wrote and what is bound now;
-     * anything else goes to what is bound now.
+     * Every command, a release included, goes to the channels the binding
+     * marks as surfaces now -- never to the ones this process wrote earlier.
      *
-     * The union rather than either alone.  The operator can rebind between
-     * putting a surface somewhere and letting go of it, so the channel still
-     * holding the position need not be bound any more; and after a panel
-     * restart nothing was written by this process at all, while the far end
-     * still holds whatever it was left at.  Centring a surface that is not
-     * holding anything costs nothing -- centre is where a surface rests.
+     * A channel that has stopped being a surface is not this screen's to
+     * settle, and centring it would be the defect this file just stopped
+     * committing from the other side: mid-travel is a surface's rest and half
+     * power on a throttle, so a channel rebound as a motor between the drag
+     * and the release would be commanded to half throttle.  What settles it
+     * instead is the rebinding itself, which carries the new role and the
+     * rest that goes with it, or the unbinding, after which no slot renders
+     * the channel at all.
+     *
+     * Reaching what this process never wrote is deliberate: after a panel
+     * restart the far end still holds whatever it was left at, and centring a
+     * surface that is not holding anything costs nothing.
      */
-    const uint8_t mask = (sv.kind == SERVO_CMD_RELEASE)
-                             ? (uint8_t)(s_servo_written | s_servo_channels)
-                             : s_servo_channels;
+    const uint8_t mask = s_servo_channels;
     /*
      * Nothing is bound as a surface, or nothing is holding a position, so
      * there is nothing to say.  True rather than false: a false here would
@@ -1889,6 +1893,13 @@ static bool write_servo(const servo_cmd_t sv)
              * later one can still fail and the debt is what is left. */
             s_servo_written &= (uint8_t)~servo_run_bits(first, count);
         }
+        /*
+         * And nothing is held anywhere else either.  A bit left over names a
+         * channel that has stopped being a surface, which this screen must
+         * not write and whose own rebinding has already given it a rest;
+         * keeping it would owe a release that no write can ever pay.
+         */
+        s_servo_written = 0u;
         return true;
     } else {
         /*
@@ -2224,11 +2235,12 @@ static void drain_commands(bool link_up, bench_state_t *bench)
              *
              * The debt is not voided.  A binding writes the roles and the
              * slots and not the commands, so a surface the horn left
-             * somewhere is still there afterwards, and the release still owes
-             * it a centre -- against the channels it was written to, which is
-             * why s_servo_written is not touched here either.  What does stop
-             * is the holding: the screen's position was for the wiring that
-             * has just been replaced.
+             * somewhere is still there afterwards and still owes a centre.
+             * The release goes to whatever is a surface under the new
+             * binding: a channel this binding turned into a motor carries the
+             * rest its new role brought with it, and a servo horn writing to
+             * it would undo exactly that.  What stops here is the holding --
+             * the screen's position was for the wiring just replaced.
              */
             if (atomic_load(&s_outputs_result) == (int)OUTPUTS_OK) {
                 s_servo_channels =
