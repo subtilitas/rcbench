@@ -36,6 +36,15 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **A disarm could not reach a write already on the wire.** The far end
+  applies a write and then acknowledges it, so a disarm arriving while that
+  acknowledgement was in flight found the output already bound -- and a lost
+  acknowledgement left it driving for the full LINK_HOST_TIMEOUT_MS (1000 ms)
+  with the request unserved. The safety line is the one channel that does not
+  need the link, so it now carries an unserved disarm: on a healthy link the
+  request is served on the next pass and nothing changes, and on a link that
+  has stopped answering the far end fails safe. A release does not do this;
+  letting go of one pin is not worth latching a failsafe.
 - **A touch outage that recovered left the bank armed.** Touch can die and
   answer again inside one blocking link exchange: by the time the policy ran
   the controller was healthy, so nothing in the state said the outage had

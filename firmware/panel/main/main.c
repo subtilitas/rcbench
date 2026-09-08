@@ -574,8 +574,25 @@ static void control_pump(void)
      * STOP is running its loop; whether the two boards can talk is a separate
      * question with its own watchdog at each end.  Gating on both would let a
      * dropped CAN frame cut the safety line.
+     *
+     * It is gated on a disarm nobody has served yet.  A write that has been
+     * transmitted cannot be recalled: the far end applies it and then
+     * acknowledges, and if that acknowledgement is lost this task waits
+     * LINK_HOST_TIMEOUT_MS (1000 ms) with the request unserved and the
+     * output driving.  The line is the one channel that does not need the
+     * link, so it carries the disarm instead.
+     *
+     * On a healthy link this costs nothing -- the request is served on the
+     * next pass, well inside HEARTBEAT_MAX_GAP_MS (150 ms).  On a link that
+     * has stopped answering it fails the far end safe, and a bench whose
+     * panel is asking it to disarm and cannot be heard is one that should
+     * fail safe.
+     *
+     * A release is not a disarm and does not do this: letting go of one pin
+     * is not worth latching the far end's failsafe.
      */
-    beat(arming_heartbeat(&s_arm, now_ms()));
+    beat(arming_heartbeat(&s_arm, now_ms())
+         && !atomic_load(&s_disarm_request));
 }
 
 /* ------------------------------------------------------------------- boot */
@@ -1964,7 +1981,7 @@ static void servo_service(bool link_up)
         return;   /* nothing can be said, and the debt keeps */
     }
     if (s_servo_release_owed) {
-        const servo_cmd_t release = { SERVO_CMD_RELEASE, 0, 0, 0 };
+        const servo_cmd_t release = { SERVO_CMD_RELEASE, 0, 0, 0, 0 };
         /* Only a write the far end acknowledged pays it off.  link_up is a
          * snapshot and the link can go during the transaction; forgetting an
          * unacknowledged clear would leave the slot bound with nothing left
