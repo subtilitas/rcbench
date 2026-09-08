@@ -132,6 +132,7 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
  * with the rest of the servo's wire handling. */
 static void servo_let_go(void);
 static void servo_service(bool link_up);
+static void disarm_here(bool link_up);
 
 static uint32_t now_ms(void)
 {
@@ -465,6 +466,10 @@ static uint8_t   s_stop_id;
  */
 static atomic_bool s_stop_live;
 static atomic_bool s_stop_request;
+/* A disarm, and the servo screen's own release, as flags rather than queue
+ * entries: neither may be lost to an eviction.  See send_cmd(). */
+static atomic_bool s_disarm_request;
+static atomic_bool s_servo_release_request;
 /* False until the control task owns the safety state; bring-up polls the
  * link before that, with nothing to service. */
 static bool s_pump_live;
@@ -1501,6 +1506,20 @@ static void service_arming(bool link_up)
      * being refreshed every 100 ms, over the top of an outputs binding made
      * later.
      */
+    /*
+     * A disarm that was asked for, whether or not its queue entry survived.
+     * Doing it twice is doing it once: the policy, the bank and the far end
+     * all take the same state again.
+     */
+    if (atomic_exchange(&s_servo_release_request, false)) {
+        s_servo_held.kind = SERVO_CMD_NONE;
+        s_servo_release_owed = true;
+    }
+    if (atomic_exchange(&s_disarm_request, false)) {
+        disarm_here(link_up);
+        servo_service(link_up);
+    }
+
     const uint32_t stops = arming_stop_count(&s_arm);
     if (stops != s_stops_served) {
         s_stops_served = stops;
@@ -1919,6 +1938,18 @@ static void drain_commands(bool link_up, bench_state_t *bench)
                 continue;
             }
             write_output_binding(&pc.bind);
+            /*
+             * A binding that landed says what every slot is, slot 0
+             * included, so an older release still owed for that slot is
+             * void: paying it afterwards would clear a binding the screen
+             * has just been told was written, and the far end would keep
+             * the cleared page.  A binding that did not land changes
+             * nothing and the debt stands.
+             */
+            if (atomic_load(&s_outputs_result) == (int)OUTPUTS_OK) {
+                s_servo_held.kind = SERVO_CMD_NONE;
+                s_servo_release_owed = false;
+            }
             continue;
         }
         if (pc.kind == PANEL_CMD_SERVO) {
@@ -2465,6 +2496,23 @@ static void control_task(void *arg)
  */
 static void send_cmd(const panel_cmd_t *pc)
 {
+    /*
+     * A disarm does not depend on the queue.
+     *
+     * The queue drops its oldest entry when it is full, and a screen that is
+     * being left generates commands on the way out while the next screen
+     * generates more: a disarm posted by leave() can be evicted by them and
+     * the bench stays armed with nobody watching it.  So it is also a flag,
+     * the way a stop is, and applying it twice costs nothing.
+     */
+    if (pc->kind == PANEL_CMD_MOTOR && pc->motor.kind == MOTOR_CMD_DISARM) {
+        atomic_store(&s_disarm_request, true);
+    } else if (pc->kind == PANEL_CMD_SERVO
+               && pc->servo.kind == SERVO_CMD_DISARM) {
+        atomic_store(&s_disarm_request, true);
+        atomic_store(&s_servo_release_request, true);
+    }
+
     if (xQueueSend(s_cmd_q, pc, pdMS_TO_TICKS(5)) == pdTRUE) {
         return;
     }

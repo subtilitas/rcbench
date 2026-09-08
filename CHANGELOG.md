@@ -26,6 +26,19 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **A leave-time disarm could be evicted from the command queue.** The queue
+  drops its oldest entry when full, and leaving a screen generates commands
+  on the way out while the next screen generates more, so the disarm posted by
+  leaving an armed servo screen could be dropped -- leaving the bench armed
+  and the servo held behind a screen nobody was watching. A disarm is a flag
+  as well as a queue entry now, the way a stop is; applying it twice costs
+  nothing.
+- **An older servo release could clear a binding that had just been made.** A
+  release that timed out keeps its debt, and a binding applied afterwards in
+  the same drain writes every slot including slot 0; paying the debt then
+  cleared the binding the outputs screen had just been told was written, and
+  the far end kept the cleared page. A binding that lands says what slot 0 is,
+  so it voids an older release owed for it.
 - **STOP waited out a link exchange before it did anything.** The press was
   recorded and acted on by the policy, which is exactly what a blocked loop
   cannot reach: a servo command makes up to three exchanges of up to
