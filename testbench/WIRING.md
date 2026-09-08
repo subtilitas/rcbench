@@ -24,7 +24,7 @@ used for any of them.
 | Two 120 Ω terminators | one at each end of the CAN pair. Two in parallel are the 60 Ω the pair should measure |
 | Level translation | for any line that leaves the 3.3 V island: a translator that senses the target's rail, not a divider chosen once |
 | A camera and a mount | rigid enough that it does not move between sessions; the calibration is only valid while it does not |
-| The monostable | retriggerable, about a 150 ms window, gating the coprocessor's output enable and the servo and ESC power path. It is on no board and it is not optional: see `docs/Safety.md` |
+| The monostable | required by `docs/Safety.md`, on no board, **and not specified anywhere in this tree**. It cannot be built from this guide. What it has to do is below; what it is made of is a decision nobody has taken |
 
 ---
 
@@ -173,6 +173,28 @@ monostable gates the coprocessor's output enable and the servo and ESC power
 path; GP3 sees the line as well so the firmware can judge it. `docs/Safety.md`
 sets this out and `docs/FirstRun.md` step 3 routes the wire through it.
 
+**The circuit does not exist yet.** `docs/Safety.md` requires it and says it
+is on no board; no page in this tree gives a part, a timing network, a trigger
+polarity, or the two gates. So this guide cannot be followed to build it, and
+an assembler improvising one may well produce something that stays enabled
+after the edges stop -- which is the failure it exists to prevent.
+
+What it has to do, so that a circuit can be designed against it and checked:
+
+| | |
+|---|---|
+| Input | edges from the panel's GPIO6 on J8, nominally one every 20 ms |
+| Behaviour | retriggerable: asserted while edges keep arriving, deasserted no later than the window after the last one |
+| Window | about 150 ms. Above the 20 ms period with margin for a late task, and below the coprocessor's 200 ms link failsafe |
+| Gates | two, both downstream of the coprocessor's pins: its output enable, and the servo and ESC power path |
+| Fail-safe direction | unpowered, undriven or unbuilt means disabled. A failure of the interlock cannot be a bench that keeps driving |
+| Not defeatable | no firmware at either end is in the path, which is the whole point |
+| A link in the trigger branch | removable, so the differential test below can starve the monostable while GP3 still sees edges |
+
+Part numbers are deliberately absent: `hardware/README.md` says a part is not
+chosen until it is available at a vendor, and this belongs in `hardware/` as
+its own page rather than being improvised inside a wiring guide.
+
 A direct wire is the failure this bench must not build. It satisfies the
 firmware's heartbeat monitor, so every check in this guide would pass, and the
 one thing the interlock exists for -- a panel that has crashed, wedged, reset
@@ -206,8 +228,15 @@ coprocessor's output enable, and the switched servo and ESC power -- and stop
 the edges. Both should go inactive within the window. No firmware runs on
 those nodes, so what they do is the hardware's doing.
 
-*The differential test.* Keep the firmware happy and starve only the hardware:
-have the RP2350 drive GP3 with a clean 20 ms square so `heartbeat_poll()`
+*The differential test.* Keep the firmware happy and starve only the hardware.
+
+GP3 and the monostable's trigger are the same line, so injecting a heartbeat
+at GP3 retriggers the monostable too, and the test would show a healthy
+interlock as failed for the second reason in two rounds. **Open the link in
+the trigger branch first** -- that is what it is there for -- so the RP2350
+drives GP3 alone.
+
+Then have the RP2350 drive GP3 with a clean 20 ms square so `heartbeat_poll()`
 never expires, while the monostable's input gets nothing. Arm, bind an output,
 and capture **after the gate** -- the load-facing side of the gated output, and
 the monostable's output-enable line -- on whichever channels the run is not
