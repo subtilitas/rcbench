@@ -3032,6 +3032,15 @@ static void control_task(void *arg)
  * its screen by the time it gets here, so a refused send is a discarded
  * disarm or a throttle that never arrives.
  */
+/*
+ * Take what the screens have decided and hand it to the control task.
+ *
+ * Called after every touch event as well as once a pass, because a screen's
+ * enter() can be long: a command recorded by the screen being left must not
+ * wait behind the work of the screen being entered.
+ */
+static void flush_screen_commands(uint32_t stops_now);
+
 static void send_cmd(const panel_cmd_t *pc)
 {
     /*
@@ -3070,6 +3079,24 @@ static void send_cmd(const panel_cmd_t *pc)
     (void)xQueueReceive(s_cmd_q, &stale, 0);
     if (xQueueSend(s_cmd_q, pc, 0) != pdTRUE) {
         ESP_LOGW(TAG, "control queue full; a command was lost");
+    }
+}
+
+static void flush_screen_commands(uint32_t stops_now)
+{
+    motor_cmd_t mc;
+    while (motor_screen_poll_cmd(&mc)) {
+        panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
+                           .stops = stops_now,
+                           .lets_go = atomic_load(&s_lets_go) };
+        send_cmd(&pc);
+    }
+    servo_cmd_t sv;
+    if (servo_screen_take(&sv)) {
+        panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
+                           .stops = stops_now,
+                           .lets_go = atomic_load(&s_lets_go) };
+        send_cmd(&pc);
     }
 }
 
@@ -3194,6 +3221,18 @@ void app_main(void)
         touch_event_t evt;
         while (xQueueReceive(s_touch_q, &evt, 0) == pdTRUE) {
             ui_router_event(&evt);
+            /*
+             * And what that event decided, before the next one is dispatched.
+             *
+             * Leaving a bench screen records a disarm, and entering a screen
+             * runs its enter() there and then -- the log viewer's reads the
+             * card's whole root directory.  Two taps in one drain, HOME and
+             * then LOGS, would otherwise leave the disarm sitting in the
+             * screen while the walk ran, and the output stays live for as
+             * long as that takes.  STOP is unaffected: the control task
+             * hit-tests its band itself.
+             */
+            flush_screen_commands(stops_now);
         }
 
         /* What the screens decided, back to the control task. */
@@ -3229,20 +3268,7 @@ void app_main(void)
         outputs_screen_set_result(
             (outputs_result_t)atomic_load(&s_outputs_result));
 
-        motor_cmd_t mc;
-        while (motor_screen_poll_cmd(&mc)) {
-            panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
-                               .stops = stops_now,
-                               .lets_go = atomic_load(&s_lets_go) };
-            send_cmd(&pc);
-        }
-        servo_cmd_t sv;
-        if (servo_screen_take(&sv)) {
-            panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
-                               .stops = stops_now,
-                               .lets_go = atomic_load(&s_lets_go) };
-            send_cmd(&pc);
-        }
+        flush_screen_commands(stops_now);
         /*
          * Whether a STOP is on screen to press.  The control task hit-tests
          * the band's rectangle and cannot see which screen is up.
