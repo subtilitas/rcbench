@@ -436,6 +436,18 @@ TEST_CASE(a_cancelled_hold_leaves_no_arm_to_be_read_later)
     servo_screen_cancel_arm();
     servo_cmd_t got;
     CHECK(!servo_screen_take(&got));
+
+    /*
+     * And after the finger has lifted, which is the harder case: the release
+     * leaves nothing held and nothing counting, so a cancel that asks only
+     * about the gesture finds nothing to do and walks past the command.
+     */
+    fresh();
+    arm_press();
+    held(UI_HOLD_S + 0.2f);
+    arm_release();
+    servo_screen_cancel_arm();
+    CHECK(!servo_screen_take(&got));
 }
 
 TEST_CASE(a_second_contact_cannot_take_over_the_arm_hold)

@@ -306,6 +306,14 @@ TEST_CASE(a_cancelled_hold_leaves_no_arm_to_be_read_later)
     motor_screen_cancel_arm();
     motor_cmd_t got;
     CHECK(!motor_screen_poll_cmd(&got));
+
+    /* And after the release, which clears the gesture but not its command. */
+    fresh();
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS + 4);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    motor_screen_cancel_arm();
+    CHECK(!motor_screen_poll_cmd(&got));
 }
 
 TEST_CASE(a_second_contact_cannot_take_over_the_arm_hold)

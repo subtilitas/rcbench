@@ -273,22 +273,25 @@ void motor_screen_push(const bench_state_t *b)
 
 void motor_screen_cancel_arm(void)
 {
-    if (s.pressed != 1 && s.arm.held_s == 0.0f) {
-        return;
+    /* A stop latched; see the servo screen's own for why the command is
+     * dealt with first and on its own account. */
+    bool changed = false;
+    if (s.pending.kind == MOTOR_CMD_ARM) {
+        s.pending.kind = MOTOR_CMD_NONE;
+        changed = true;
     }
-    /* A stop latched under a hold that is still running; see the servo
-     * screen's own, and ui_hold_reset(). */
-    ui_hold_reset(&s.arm);
     if (s.pressed == 1) {
         s.pressed = 0;
         ++s.ctrl_rev;
+        changed = true;
     }
-    /* And an arm the gesture has already produced but nobody has read yet;
-     * see the servo screen's own. */
-    if (s.pending.kind == MOTOR_CMD_ARM) {
-        s.pending.kind = MOTOR_CMD_NONE;
+    if (s.arm.down || s.arm.held_s > 0.0f) {
+        changed = true;
     }
-    ++s.arm_rev;
+    if (changed) {
+        ui_hold_reset(&s.arm);
+        ++s.arm_rev;
+    }
 }
 
 void motor_screen_set_armed(bool armed)

@@ -1609,10 +1609,24 @@ static bool write_servo(const servo_cmd_t sv)
             [LINK_OS_RATE_HZ] = 50u,
         };
         const uint16_t span = us_to_span(sv.value_us, min_us, max_us);
-        (void)write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_STRIDE, cfg,
-                         &reply);
-        (void)write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
-                         &reply);
+        /*
+         * Both halves of the configuration have to land before the pulse
+         * does.  The endpoints travel with the command, so a CHAN_CFG that
+         * was refused or timed out leaves the far end clamping against the
+         * range it had before: a narrow servo selected against a standard
+         * configuration renders 1500 us, past its 860 us maximum, until the
+         * next refresh.  Nothing is worth sending until they are in.
+         */
+        if (!write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_STRIDE, cfg,
+                        &reply)
+            || reply.op != LINK_OP_ACK) {
+            return false;
+        }
+        if (!write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
+                        &reply)
+            || reply.op != LINK_OP_ACK) {
+            return false;
+        }
         return write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &span, &reply)
                && reply.op == LINK_OP_ACK;
     }

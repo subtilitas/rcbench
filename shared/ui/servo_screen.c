@@ -236,24 +236,29 @@ void servo_screen_set_armed(bool armed)
 
 void servo_screen_cancel_arm(void)
 {
-    if (!s.arm_down && s.arm.held_s == 0.0f) {
-        return;
-    }
     /*
-     * A stop latched while a hold was running.  The bench may already have
-     * been unarmed, so nothing about its state changed and the gesture would
-     * otherwise finish its two seconds and ask to arm -- clearing the latch
-     * that had just been set, from a contact made before the stop.
+     * A stop latched, so a hold under way is abandoned and an arm it has
+     * already produced is dropped.
+     *
+     * The command is dealt with first and on its own account.  A hold that
+     * completed and whose finger has since lifted leaves nothing held and
+     * nothing counting -- the release cleared both -- while its arm is still
+     * waiting to be read, and that is precisely the one that would be
+     * forwarded a frame later and clear the latch the stop had just set.
      */
-    ui_hold_reset(&s.arm);
-    s.arm_down = false;
-    /* And an arm the gesture has already produced but nobody has read yet.
-     * Cancelling the hold and leaving its command behind would send it a
-     * frame later, which is the thing being prevented. */
+    bool changed = false;
     if (s.pending.kind == SERVO_CMD_ARM) {
         s.pending.kind = SERVO_CMD_NONE;
+        changed = true;
     }
-    ++s.arm_rev;
+    if (s.arm_down || s.arm.held_s > 0.0f) {
+        ui_hold_reset(&s.arm);
+        s.arm_down = false;
+        changed = true;
+    }
+    if (changed) {
+        ++s.arm_rev;
+    }
 }
 
 bool servo_screen_take(servo_cmd_t *out)
