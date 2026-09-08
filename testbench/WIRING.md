@@ -130,16 +130,29 @@ at 0x5D and is not disturbed.
 **Do not probe this bus with the Pi.** The panel is the master. A second
 master is a fault, not a measurement.
 
-**Check.** Capture SCL and SDA while the panel starts:
+**Check, one: the tap.** Capture SCL and SDA while the panel starts:
 
     testbench/host/capture.sh touch-boot D9,D10 4m 2m 1.65
 
 Decoded as I²C, it shows the panel addressing 0x5D and the real controller
 answering. That is the correct result today: the panel does not yet ask for
-0x14, and until that firmware change exists the emulator is on the bus and
-silent. Seeing 0x5D is how you know the tap is right.
+0x14, so this says the probes are on the right two lines and nothing about the
+emulator.
 
----
+**Check, two: the emulator's own leads.** The capture above passes with the
+emulator unplugged, or with its two leads swapped, and the fault would then
+surface only when the panel starts probing 0x14 -- one firmware change and
+many steps later.
+
+So make the emulator prove each lead, one at a time, while the panel is idle:
+have it pull SDA low for a few milliseconds, then release it and pull SCL low.
+
+    testbench/host/capture.sh touch-leads D9,D10 4m 2m 1.65
+
+The line it was told to pull is the line that moves. If pulling SDA moves SCL,
+the leads are swapped; if neither moves, the lead is not on the bus. Do this
+before the panel's touch is in use -- a line held low during a transaction
+costs that transaction, which is a missed touch sample and nothing worse.---
 
 ## 6. The link
 
@@ -172,9 +185,25 @@ nothing.
 
     testbench/host/capture.sh link-idle D7,D8 8m 4m 1.65
 
-CS should be busy at the poll rate. RXCAN should carry traffic between the
-bursts. If CS moves and RXCAN is flat, the probe is on the wrong side of the
-transceiver -- it wants the logic-level pin, not the differential pair.
+CS should be busy at the poll rate, and RXCAN should carry traffic between the
+bursts.
+
+**If CS moves and RXCAN is flat, do not move the probe first.** A crossed pair
+gives exactly this picture and the probe is already right: CANH to CANL
+measures the same 60 Ω, the panel keeps polling its controller over SPI, and
+the coprocessor's RXCAN sits recessive until the transmitter gives up and goes
+bus-off. In order of what costs least to check:
+
+1. **The multiplexer.** The panel is only on the bus with CH422G EXIO5 set to
+   CAN. In USB mode it is not transmitting at all.
+2. **Polarity.** CANH to CANH and CANL to CANL. Crossed reads 60 Ω and works
+   for nobody.
+3. **What the ends say.** The panel's start-up self-test gives a verdict, and
+   the coprocessor's error counters say whether it has been transmitting into
+   silence. A transmitter that has gone bus-off is a bus fault, not a probe
+   fault.
+4. **Then the probe**, which wants the logic-level pin between the controller
+   and the transceiver rather than the differential pair.
 
 ---
 
