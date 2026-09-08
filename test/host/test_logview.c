@@ -995,6 +995,44 @@ TEST_CASE(a_card_of_999_runs_offers_the_newest_that_fit)
     CHECK_EQ(set[held - 1].size, (uint32_t)LOG_RUN_LAST);
 }
 
+/*
+ * Directories sort above files whichever side of the comparison they arrive
+ * on. qsort decides that, so a set whose only directory is already first
+ * exercises one answer and never the other, and a comparator that returned
+ * the same sign both ways would order correctly here and wrongly on a card
+ * that happened to be read in another order.
+ */
+TEST_CASE(a_directory_sorts_first_from_either_side_of_the_comparison)
+{
+    static const char *const names[] = { "A.CSV", "DIR", "B.CSV", "ZDIR" };
+    static const bool dirs[]         = { false,   true,  false,   true };
+
+    log_viewer_file_t set[4];
+    for (int i = 0; i < 4; ++i) {
+        memset(&set[i], 0, sizeof(set[i]));
+        snprintf(set[i].name, sizeof(set[i].name), "%s", names[i]);
+        set[i].is_dir = dirs[i];
+    }
+    log_select_sort(set, 4);
+    CHECK_STR_EQ(set[0].name, "DIR");
+    CHECK_STR_EQ(set[1].name, "ZDIR");
+    CHECK_STR_EQ(set[2].name, "A.CSV");
+    CHECK_STR_EQ(set[3].name, "B.CSV");
+
+    /* And again with the input reversed, so the comparator meets the same
+     * pairs the other way round. */
+    for (int i = 0; i < 4; ++i) {
+        memset(&set[i], 0, sizeof(set[i]));
+        snprintf(set[i].name, sizeof(set[i].name), "%s", names[3 - i]);
+        set[i].is_dir = dirs[3 - i];
+    }
+    log_select_sort(set, 4);
+    CHECK_STR_EQ(set[0].name, "DIR");
+    CHECK_STR_EQ(set[1].name, "ZDIR");
+    CHECK_STR_EQ(set[2].name, "A.CSV");
+    CHECK_STR_EQ(set[3].name, "B.CSV");
+}
+
 TEST_CASE(a_full_list_keeps_runs_over_what_it_cannot_date)
 {
     /* Four slots and five entries, offered in the order a card holds them.
@@ -1129,6 +1167,7 @@ int main(void)
     RUN(a_run_name_and_its_number_are_one_rule);
     RUN(the_newest_run_outranks_the_rest_of_the_card);
     RUN(a_card_of_999_runs_offers_the_newest_that_fit);
+    RUN(a_directory_sorts_first_from_either_side_of_the_comparison);
     RUN(a_full_list_keeps_runs_over_what_it_cannot_date);
     RUN(a_list_that_was_cut_says_so);
     RUN(a_count_above_the_list_does_not_reach_past_it);
