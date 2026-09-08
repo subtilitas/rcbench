@@ -36,6 +36,19 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **The disarm inhibit was lifted by the transaction meant to honour it.**
+  The request was cleared before the write that delivers it, so the pump
+  inside that write's wait saw nothing outstanding and put the safety line
+  back up -- with the far end still armed if the write was lost. The request
+  stands until the far end has taken it, or until the line has been down
+  twice HEARTBEAT_MAX_GAP_MS (300 ms), by which time the far end has failed
+  safe on its own account. A disarm nobody can deliver does not hold the line
+  down for ever.
+- **An explicit RELEASE waited for the end of the drain.** Only the disarm
+  branch cleared the slot it had let go of; a release recorded the debt and
+  left it to the post-drain service, behind whatever else was queued -- two
+  blocking exchanges for an outputs binding, for instance. Both pay it before
+  returning to the queue.
 - **A disarm could not reach a write already on the wire.** The far end
   applies a write and then acknowledges it, so a disarm arriving while that
   acknowledgement was in flight found the output already bound -- and a lost

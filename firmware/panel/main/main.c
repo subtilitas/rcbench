@@ -132,7 +132,7 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
  * with the rest of the servo's wire handling. */
 static void servo_let_go(void);
 static void servo_service(bool link_up);
-static void disarm_here(bool link_up);
+static bool disarm_here(bool link_up);
 
 static uint32_t now_ms(void)
 {
@@ -424,6 +424,16 @@ static arming_t  s_arm;
  * end times it out.  SERVO_CMD_NONE means nothing is being held. */
 /* The stop count this task has already let go for; see service_arming(). */
 static uint32_t    s_stops_served;
+/*
+ * When the outstanding disarm started holding the safety line down, and how
+ * long that may go on for.
+ *
+ * Twice HEARTBEAT_MAX_GAP_MS (150 ms), so a far end that never answers has
+ * certainly failed safe by then and the line can go back up: a disarm nobody
+ * can deliver must not hold it down for ever.
+ */
+#define DISARM_INHIBIT_MS (2u * HEARTBEAT_MAX_GAP_MS)
+static uint32_t    s_disarm_since;
 
 static servo_cmd_t s_servo_held;
 static uint32_t    s_servo_next_ms;
@@ -1539,12 +1549,42 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
  */
 static void service_disarm(bool link_up)
 {
+    bool owed = false;
+
     if (atomic_exchange(&s_servo_release_request, false)) {
         s_servo_held.kind = SERVO_CMD_NONE;
         s_servo_release_owed = true;
+        owed = true;
     }
-    if (atomic_exchange(&s_disarm_request, false)) {
-        disarm_here(link_up);
+
+    if (atomic_load(&s_disarm_request)) {
+        if (s_disarm_since == 0u) {
+            s_disarm_since = now_ms() | 1u;   /* never zero: that means none */
+        }
+        const bool told = disarm_here(link_up);
+        /*
+         * The request stands until the far end has taken it, because the
+         * heartbeat is withheld while it stands and clearing it first would
+         * put the line back up during the very transaction meant to deliver
+         * it -- with the far end still armed if that transaction is lost.
+         *
+         * Or until the line has been down long enough that the far end has
+         * failed safe on its own account, which is the same outcome by the
+         * other route and stops a disarm nobody can deliver from holding the
+         * line down for ever.
+         */
+        if (told
+            || (uint32_t)(now_ms() - s_disarm_since) >= DISARM_INHIBIT_MS) {
+            atomic_store(&s_disarm_request, false);
+            s_disarm_since = 0u;
+        }
+        owed = true;
+    }
+
+    /* Whichever of the two it was, the slot it let go of is cleared here.
+     * The release alone used to leave that to the end of the drain, behind
+     * whatever else was queued. */
+    if (owed) {
         servo_service(link_up);
     }
 }
@@ -1829,16 +1869,17 @@ static bool write_servo(const servo_cmd_t sv)
  * the next arm cannot carry the last one's command, and the far end is told
  * while there is a link to tell it on.
  */
-static void disarm_here(bool link_up)
+static bool disarm_here(bool link_up)
 {
     arming_request_disarm(&s_arm);
     outputs_arm(&s_out, false, now_ms());
     throttle_to_zero();
     servo_let_go();
-    if (link_up) {
-        link_msg_t ack = { 0 };
-        (void)control_write(false, &ack);
+    if (!link_up) {
+        return false;   /* nothing to tell it on, so it has not been told */
     }
+    link_msg_t ack = { 0 };
+    return control_write(false, &ack);
 }
 
 /*
@@ -1858,7 +1899,7 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
         arming_request_arm(&s_arm, now_ms());
         break;
     case MOTOR_CMD_DISARM:
-        disarm_here(link_up);
+        (void)disarm_here(link_up);
         break;
     case MOTOR_CMD_THROTTLE:
         s_throttle_hundredths = pct_to_hundredths(mc->value);
@@ -1914,7 +1955,7 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
          */
         s_servo_held.kind = SERVO_CMD_NONE;
         s_servo_release_owed = true;
-        disarm_here(link_up);
+        (void)disarm_here(link_up);
         servo_service(link_up);
         return;
     }
