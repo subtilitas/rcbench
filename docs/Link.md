@@ -62,7 +62,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-coprocessor transmits only in answer to a request. Protocol version 2.5. The
+coprocessor transmits only in answer to a request. Protocol version 3.0. The
 major version is register 0 of page 0; the panel refuses to arm when it differs
 from its own.
 

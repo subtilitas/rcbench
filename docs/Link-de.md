@@ -68,7 +68,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der Koprozessor sendet nur als Antwort auf eine Anfrage.
-Protokollversion 2.5. Die Major-Version ist Register 0 der Page 0; das Panel
+Protokollversion 3.0. Die Major-Version ist Register 0 der Page 0; das Panel
 verweigert das Schärfen, wenn sie von seiner eigenen abweicht.
 
 ### Identifier
