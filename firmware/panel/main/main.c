@@ -1622,11 +1622,29 @@ static void service_arming(bool link_up)
              */
             arming_refused(&s_arm);
             control_alert("servo output not released -- arm again");
-        } else if (link_up
-                   && !(control_clear_failsafe(&ack)
-                        && control_write(true, &ack))) {
-            arming_refused(&s_arm);
-            control_alert("coprocessor refused to arm");
+        } else if (link_up) {
+            /*
+             * Two exchanges, each of which can wait a second, and what the
+             * operator wants can change between them: the pump runs inside
+             * both and applies a stop, and a disarm can be posted while the
+             * clear is still on the wire.  Asked again before the write that
+             * actually arms, because after it the far end is driving and
+             * nothing here can take it back for the length of a timeout.
+             */
+            if (!control_clear_failsafe(&ack)) {
+                arming_refused(&s_arm);
+                control_alert("coprocessor refused to arm");
+            } else if (arming_stopped(&s_arm)
+                       || atomic_load(&s_disarm_request)) {
+                /* Stopped or disarmed while the clear was in flight.  No
+                 * alert: the operator asked for this and knows. */
+                arming_refused(&s_arm);
+            } else if (!control_write(true, &ack)) {
+                arming_refused(&s_arm);
+                control_alert("coprocessor refused to arm");
+            } else {
+                outputs_arm(&s_out, true, now_ms());
+            }
         } else {
             outputs_arm(&s_out, true, now_ms());
         }

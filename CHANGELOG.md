@@ -26,6 +26,12 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **An arm went through even when the operator changed their mind mid-write.**
+  Arming is two exchanges, each of which can wait a second, and the pump runs
+  inside both: a stop applied there, or a disarm posted while the failsafe
+  clear was still on the wire, was not looked at before the write that
+  actually arms. The far end could then be driving for a timeout before
+  anything took it back. The bench is asked again between the two.
 - **A disarm waited behind a backlog of positions.** Making it unloseable did
   not make it prompt: the flag was read once before the queue was drained, and
   a backlog of servo positions is three exchanges each, so a degraded link
