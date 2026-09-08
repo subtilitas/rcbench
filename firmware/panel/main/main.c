@@ -639,7 +639,10 @@ static void pump(void)
  * card, whatever is actually mounted.
  */
 #define CARD_DIR      ""          /* the root of the mount point */
-#define CARD_SUFFIXES ".csv"      /* storage_list() matches case-insensitively */
+/* Both kinds the viewer says it browses: its empty-card line names ".csv or
+ * .bfl", and a Betaflight log is written in upper case.  storage_list()
+ * matches case-insensitively. */
+#define CARD_SUFFIXES ".csv .bfl"
 
 /* The file the viewer currently has open, so close() has something to close.
  * One at a time: the viewer opens a log, reads it and closes it before it
@@ -649,6 +652,16 @@ static FILE *s_card_file;
 static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
 {
     (void)ctx;
+    /*
+     * A card put in after the panel booted is mounted here, on the way past.
+     * The only other storage_init() runs in the splash sequence, so without
+     * this the RESCAN button that the empty screen tells the operator to
+     * press could never find a card and a reboot would be the only way in.
+     * Mounting when something is already mounted returns at once.
+     */
+    if (!storage_mounted()) {
+        (void)storage_init();
+    }
     /*
      * No card is -1 and an empty card is 0, and the viewer says different
      * things about them.  storage_list() cannot open the root of a volume
