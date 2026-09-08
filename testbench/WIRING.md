@@ -23,6 +23,7 @@ used for any of them.
 | Series resistors | a few hundred ohms, one per analyser probe lead. It costs nothing and a mistake then costs a resistor |
 | Level translation | for any line that leaves the 3.3 V island: a translator that senses the target's rail, not a divider chosen once |
 | A camera and a mount | rigid enough that it does not move between sessions; the calibration is only valid while it does not |
+| The monostable | retriggerable, about a 150 ms window, gating the coprocessor's output enable and the servo and ESC power path. It is on no board and it is not optional: see `docs/Safety.md` |
 
 ---
 
@@ -144,22 +145,46 @@ transceiver -- it wants the logic-level pin, not the differential pair.
 
 ---
 
-## 7. The outputs and the heartbeat
+## 7. The outputs, and the heartbeat through the monostable
 
-GP0, GP1 and GP2 for whatever OUTPUTS binds, and GP3 for the heartbeat between
-the panel's J8/GPIO6 and the coprocessor.
+GP0, GP1 and GP2 for whatever OUTPUTS binds.
+
+**The heartbeat does not go straight from the panel to the coprocessor.** It
+leaves the panel at GPIO6 on J8, drives the retriggerable monostable, and the
+monostable gates the coprocessor's output enable and the servo and ESC power
+path; GP3 sees the line as well so the firmware can judge it. `docs/Safety.md`
+sets this out and `docs/FirstRun.md` step 3 routes the wire through it.
+
+A direct wire is the failure this bench must not build. It satisfies the
+firmware's heartbeat monitor, so every check in this guide would pass, and the
+one thing the interlock exists for -- a panel that has crashed, wedged, reset
+or browned out taking the outputs down without asking firmware at either end
+-- would be absent. The window is about 150 ms, inside the coprocessor's
+200 ms link failsafe.
 
 A servo or an ESC signal line that runs at 5 V goes through the translator on
 its way to anything at 3.3 V. The analyser can watch a 5 V line directly with
 its threshold set for it, which is a per-run setting and an argument to
 `capture.sh` rather than something left where the last run put it.
 
-**Check.** The heartbeat with nothing else running:
+**Check, one.** The heartbeat with nothing else running:
 
     testbench/host/capture.sh heartbeat D3 1m 2m 1.65
 
-A 20 ms square wave. A gap longer than 150 ms is the coprocessor's failsafe
-threshold and should not be there on a healthy panel.
+A 20 ms square wave. A gap longer than 150 ms is what the monostable and the
+coprocessor both act on, and should not be there on a healthy panel.
+
+**Check, two: the interlock, without firmware.** Arm the bench with an output
+bound, capture that output, and stop the edges at the panel end -- hold the
+panel in reset with its relay, which is a state no firmware can talk its way
+out of.
+
+    testbench/host/capture.sh interlock D0,D3 1m 2m 1.65
+
+The edges stop, and the output stops within the monostable's window. If the
+output keeps driving after the edges have gone, the monostable is not in the
+path or is not gating what it should, and the bench is a direct wire wearing a
+part number.
 
 ---
 
@@ -202,11 +227,14 @@ show:
    in place.
 4. **The relay board**, and where each contact meets each button pad, on both
    boards.
-5. **The panel's touch connector**, close enough to read the silkscreen, with
+5. **The monostable**, and both of the things it gates -- output enable and
+   the servo and ESC power path -- so the path can be checked against
+   `docs/Safety.md` rather than taken on trust.
+6. **The panel's touch connector**, close enough to read the silkscreen, with
    the tap and the emulator's leads.
-6. **The coprocessor and its transceiver**, close enough to identify RXCAN.
-7. **The analyser's probe ends**, labelled, against the channel map.
-8. **One frame from the camera**, showing the splash, so the calibration can
+7. **The coprocessor and its transceiver**, close enough to identify RXCAN.
+8. **The analyser's probe ends**, labelled, against the channel map.
+9. **One frame from the camera**, showing the splash, so the calibration can
    be checked before anything depends on it.
 
 A photograph of a connector whose silkscreen cannot be read is a photograph
