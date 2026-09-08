@@ -476,7 +476,7 @@ static void render_browse(gfx_canvas_t *c)
                                            : "No .csv files in the root.";
         gfx_text(c, box.x + 24, box.y + 52, why, UI_FONT_LABEL, UI_TEXT, 1);
         gfx_text(c, box.x + 24, box.y + 76,
-                 "The data logger writes here; so does Betaflight.",
+                 "Runs are written here as BENCH001.CSV and upwards.",
                  UI_FONT_LABEL, UI_TEXT_FAINT, 1);
     } else {
         ui_panel(c, BR_LIST, "FILES", UI_ACCENT);

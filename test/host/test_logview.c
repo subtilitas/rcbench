@@ -70,6 +70,7 @@ static const struct {
 };
 
 static bool g_no_card;
+static bool g_empty_card;
 
 /* Which listed entry is a subdirectory, or -1 for none.  A card full of
  * directories is not the normal case, and every other case here wants to open
@@ -82,6 +83,9 @@ static int fake_list(log_viewer_file_t *out, int max_entries, void *ctx)
     (void)ctx;
     if (g_no_card) {
         return -1;
+    }
+    if (g_empty_card) {
+        return 0;       /* mounted, and nothing on it the viewer can open */
     }
     static const uint32_t sizes[] = { 900u, 4096u, 300u, 200u, 120u,
                                       3u * 1024u * 1024u, 12u };
@@ -144,6 +148,7 @@ static void reset_screen(void)
 {
     ui_theme_set(UI_THEME_DARK);
     g_no_card = false;
+    g_empty_card = false;
     screen()->reset();
     log_viewer_set_io(&k_io);
     screen()->enter();
@@ -371,6 +376,29 @@ TEST_CASE(no_card_says_so_and_stays_put)
     CHECK(log_viewer_analysis() == NULL);
 
     /* And it still renders: an empty card is a normal state, not a fault. */
+    screen()->render(&s_c, 0);
+    CHECK(gfx_pixel_get(&s_c, 400, 240) != 0);
+}
+
+/*
+ * A card that is there and carries nothing the viewer can open is not the same
+ * state as no card, and the screen says so: one tells the operator to insert a
+ * card and tap RESCAN, the other would send them looking for a card that is
+ * already in.
+ */
+TEST_CASE(an_empty_card_is_not_the_same_as_no_card)
+{
+    fresh();
+    g_empty_card = true;
+    log_viewer_refresh();
+
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+
+    tap(400, BR_ROW_Y(0));
+    tap(400, BR_ROW_Y(0));
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    CHECK(log_viewer_analysis() == NULL);
+
     screen()->render(&s_c, 0);
     CHECK(gfx_pixel_get(&s_c, 400, 240) != 0);
 }
@@ -781,6 +809,7 @@ int main(void)
     RUN(a_file_with_no_time_column_plots_against_the_row_number);
     RUN(a_two_row_file_still_draws_a_trace);
     RUN(no_card_says_so_and_stays_put);
+    RUN(an_empty_card_is_not_the_same_as_no_card);
     RUN(a_second_tap_opens_the_file_and_analyses_it);
     RUN(a_german_file_is_read_as_german);
     RUN(plotting_loads_exactly_the_picked_columns);
