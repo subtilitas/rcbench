@@ -197,6 +197,25 @@ TEST_CASE(peaks_ignore_the_fields_nothing_answered_for)
     /* And the voltage floor was a measurement from the start, because the
      * reset happened with a valid reading in hand. */
     CHECK_EQ(b.voltage_min, 24.0f);
+
+    /*
+     * Power and speed carry no valid bit of their own.  Power is a product
+     * that stays at zero unless both halves arrived, and speed is empty when
+     * no reply carried one, so a zero cannot raise either peak.
+     */
+    b.power = 1320.0f;
+    b.rpm   = 24500.0f;
+    bench_state_track_peaks(&b);
+    CHECK_EQ(b.power_max, 1320.0f);
+    CHECK_EQ(b.rpm_max, 24500.0f);
+
+    b.power = 900.0f;
+    b.rpm   = 10000.0f;
+    bench_state_track_peaks(&b);
+    CHECK_EQ(b.power_max, 1320.0f);   /* a peak is not the live reading */
+    CHECK_EQ(b.rpm_max, 24500.0f);
+
+    bench_state_track_peaks(NULL);    /* refused rather than dereferenced */
 }
 
 /* ------------------------------------------------------------ the simulator */
