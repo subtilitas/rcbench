@@ -6,6 +6,53 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- **A save on the OUTPUTS screen cost CAN (Controller Area Network) frames.**
+  The coprocessor erased and programmed one flash sector per save, which held
+  interrupts off for a measured 19,174 to 19,186 us; a frame is about 130 us
+  at 1 Mbit/s and the XL2515 holds two, so the receive buffers overran in step
+  with the saves -- the count climbed from 2 to 8 across nine of them -- and
+  the bus reported no error, because the frames arrived and nobody collected
+  them. A lost request costs the panel `LINK_HOST_TIMEOUT_MS` (1000 ms) of
+  waiting and 1000 ms of silence latches the coprocessor's 200 ms failsafe, so
+  one lost frame ends as `FAULT 01`. The store is now two sectors of sixteen
+  record slots: a save programs one page, and a sector is erased only once
+  every record in it is superseded, which is one erase per sixteen saves.
+  That erase is taken ahead of the save that needs it -- at boot before the
+  CAN controller is started, or in a gap in the traffic -- and both windows
+  wait for `OUT_STORE_QUIET_MS` (5 ms) of silence so they land between the
+  panel's 50 ms poll cycles rather than inside one. A settled save takes its
+  window without a gap after `OUT_STORE_GAP_WAIT_MS` (1000 ms), so a busy bus
+  cannot postpone a binding for ever.
+
+### Changed
+
+- **A power cut during a save leaves the binding from before it.** A record is
+  only ever programmed into an erased slot, and a sector is only ever erased
+  while the live record is in the other one, so the record being written can
+  be torn without taking the previous one with it. The store's checksum covers
+  the record's sequence number as well as its configuration: an erase lifts
+  bits towards 0xFF, and a record caught half way through one has to fail its
+  check rather than outrank the record still wanted. The record format is
+  version 2; a store written by an earlier build reads as unwritten, so the
+  first boot on this build restores the defaults and the panel writes the
+  binding again.
+- The coprocessor times the erase and the page program separately and prints
+  them: `outputs saved, record <n>, program window <n> us` and `output store
+  sector erased, window <n> us`. The program window is what every save costs
+  and has not been measured on hardware; the erase has.
+- The coprocessor's store takes the last two sectors of the first 4 MB rather
+  than the last one, so the image size check falls from 4,190,208 to
+  4,186,112 bytes.
+
+### Added
+
+- `test_outstore`, the forty-fourth host binary: where a save goes in the
+  store, which sector can be erased and what a power cut in either leaves
+  behind, in `shared/outputs/out_store_map.c`. The rules are on the host
+  because the board has one copy of the sector and the cases need many.
+
 ## 0.7.0 - 2026-09-08
 
 The servo screen can drive a servo. Arming existed only on MOTOR & ESC and

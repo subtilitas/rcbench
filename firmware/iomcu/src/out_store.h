@@ -11,11 +11,39 @@
  * heartbeat trusted and a command arriving, so a restored binding claims its
  * pins and holds them at idle until somebody arms.
  *
- * Writing to flash stops the processor for tens of milliseconds with
- * interrupts off, which is longer than the heartbeat's window.  The save is
- * therefore only ever taken while the bank is not driving, and out_store_tick()
- * is where that is decided; asking to save while armed defers it rather than
- * refusing it.
+ * What a write costs.  The flash cannot be read while it is written and this
+ * core executes from it, so a write runs with interrupts off and this end
+ * answers nothing for its length.  On the bring-up module an erase and
+ * program together measured 19,178 us: a CAN (Controller Area Network) frame
+ * at 1 Mbit/s is about 130 us and the XL2515 holds two of them, so a request
+ * arriving in that window is lost with nothing wrong on the wire.  A lost
+ * request costs the panel LINK_HOST_TIMEOUT_MS (1000 ms) of waiting, and
+ * 1000 ms of silence latches this end's LINK_DEV_SILENCE_MS (200 ms)
+ * failsafe.  One lost frame is enough for that, which is what makes the
+ * length of these windows a safety number rather than a performance one.
+ *
+ * What this store does about it:
+ *
+ *   The sector is not erased per save.  Two sectors hold sixteen record
+ *   slots each; a save programs the next erased slot, and a sector is erased
+ *   only once its records are all superseded.  Fifteen saves in sixteen
+ *   therefore cost one page program rather than an erase and a program.
+ *
+ *   The erase is taken before the save that needs it, by out_store_reclaim(),
+ *   at a moment chosen for being quiet rather than at the moment an operator
+ *   ticked a pin.
+ *
+ *   Both wait for a gap in the traffic; see OUT_STORE_QUIET_MS.
+ *
+ * The window is not eliminated.  A page program is not measured on this part:
+ * the erase covers 4,096 bytes and the program 256, and the two differ by one
+ * to two orders of magnitude on serial NOR (not-or) flash, which puts it
+ * somewhere between 200 and 2,000 us against the 260 us of frames the
+ * controller holds.  out_store_last_program_us() is what will settle it.
+ * Removing the loss rather than shrinking it needs the receive buffers
+ * emptied during the window, which means reading the controller over SPI
+ * (Serial Peripheral Interface) from a routine held in RAM while the flash is
+ * busy; that is not written.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -36,9 +64,11 @@ typedef struct {
 /**
  * Read what was saved.
  *
- * Returns false when the sector has never been written, holds a version this
- * build does not know, or fails its check -- and then @p out is untouched, so
- * the caller keeps the defaults it already had.
+ * Takes the valid record with the highest sequence number across both
+ * sectors.  Returns false when no slot holds one -- a store never written,
+ * one written by a build with a different record in it, or one whose records
+ * are all torn -- and then @p out is untouched, so the caller keeps the
+ * defaults it already had.
  */
 bool out_store_load(out_store_t *out);
 
@@ -46,9 +76,9 @@ bool out_store_load(out_store_t *out);
  * Ask for @p cfg to be written.
  *
  * Returns immediately.  Nothing reaches flash until out_store_tick() finds
- * the bank idle and the request settled, and a request that matches what is
- * already saved is dropped: a page rewritten with the same content would
- * spend an erase cycle to change nothing.
+ * the bank idle, the request settled and the bus quiet, and a request that
+ * matches what is already saved is dropped: a record written with the same
+ * content would spend a slot to change nothing.
  *
  * @p now_ms restarts the settle window.  The two pages that describe the
  * outputs are written in two transactions -- CHAN_CFG, then OUTPUTS -- and
@@ -62,25 +92,77 @@ void out_store_save(const out_store_t *cfg, uint32_t now_ms);
 #define OUT_STORE_SETTLE_MS  400u
 
 /**
+ * How long the bus is quiet before a window is opened in it.
+ *
+ * The panel polls every 50 ms and each poll is a run of back-to-back
+ * transactions, so silence longer than any gap inside a run means the run is
+ * over.  Five milliseconds is that, and it leaves about 43 ms of the panel's
+ * gap ahead -- more than twice the 19,178 us the erase measured.  Nothing
+ * enforces the pattern: a write from a screen arrives when a finger moves,
+ * and this narrows the odds rather than removing them.
+ */
+#define OUT_STORE_QUIET_MS  5u
+
+/**
+ * How long a settled save waits for a gap before taking one anyway.
+ *
+ * A save that waits for ever is a binding an operator set that the next boot
+ * does not have.  One second is twenty of the panel's poll periods.
+ */
+#define OUT_STORE_GAP_WAIT_MS  1000u
+
+/** What a pass of out_store_tick() did. */
+typedef enum {
+    OUT_STORE_IDLE = 0,   /**< nothing to do, or not yet the moment for it */
+    OUT_STORE_ERASED,     /**< a sector was erased; the record follows */
+    OUT_STORE_WROTE       /**< the record is in flash */
+} out_store_step_t;
+
+/**
  * Take a deferred save if it is safe to.
  *
- * Call every pass with whether the bank is driving and the clock of the pass.
- * Returns true on the pass that actually wrote, which is the pass that also
- * lost its heartbeat edges.
+ * Call every pass with whether the bank is driving, how long the bus has been
+ * quiet, and the clock of the pass.  A save that needs an erase first erases
+ * on one pass and writes on a later one, so the caller services the CAN
+ * controller between the two windows rather than holding both off at once.
  */
-bool out_store_tick(bool driving, uint32_t now_ms);
+out_store_step_t out_store_tick(bool driving, uint32_t quiet_ms,
+                                uint32_t now_ms);
 
-/** Whether a save is waiting for the bench to stop driving. */
+/**
+ * Erase a sector that holds nothing still wanted.
+ *
+ * The window is the same length wherever it is taken; the point is that the
+ * caller picks the moment, and that the save which later finds the sector
+ * ready costs a page program alone.  Returns true on the pass that erased.
+ * Nothing to do is the ordinary answer: there is at most one sector to
+ * reclaim per sixteen saves.
+ */
+bool out_store_reclaim(bool driving, uint32_t quiet_ms);
+
+/** Whether a save has been asked for and not yet reached flash. */
 bool out_store_pending(void);
 
 /**
- * How long the last erase and program held interrupts off, in microseconds.
+ * How long the last sector erase held interrupts off, in microseconds.
  *
- * Zero until one has run. The window is bounded by the flash part and has
- * never been measured on this bench; it matters because the heartbeat
- * monitor calls the beat dead after 150 ms and the link calls the host
- * silent after 200 ms, and this core answers neither while it is writing.
+ * Zero until one has run.  Measured on the bring-up module at 19,174 to
+ * 19,186 us over eight saves, when every save erased.
  */
-uint32_t out_store_last_window_us(void);
+uint32_t out_store_last_erase_us(void);
+
+/**
+ * How long the last page program held interrupts off, in microseconds.
+ *
+ * Zero until one has run, and not measured on hardware: until this build
+ * every save erased and programmed inside one window and only the total was
+ * printed.  It is the window every save pays, so it is the number that says
+ * whether a save can still cost a frame.
+ */
+uint32_t out_store_last_program_us(void);
+
+/** Which of the 32 record slots the last save went into, for the console
+ *  line: it is what shows the store advancing towards its next erase. */
+uint8_t out_store_last_record(void);
 
 #endif /* RCBENCH_OUT_STORE_H */

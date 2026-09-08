@@ -495,6 +495,18 @@ static bool     s_can_up;
 static uint32_t s_can_echoes;
 static uint32_t s_can_overflows;
 
+/*
+ * When a frame was last taken out of the controller.
+ *
+ * can_service() empties both receive buffers every pass, so where this is
+ * read it is the age of the last frame on the bus rather than of the last one
+ * collected.  The flash windows are opened against it: this core answers
+ * nothing while it writes, and the two buffers hold 260 us of frames.  Zero
+ * until the first frame, so a board that has heard nothing since boot reads
+ * as a quiet bus, which is what it has.
+ */
+static uint32_t s_last_rx_ms;
+
 static void can_start(void)
 {
     s_can_up = xl2515_init(IOMCU_CAN_BITRATE);
@@ -519,6 +531,7 @@ static void can_service(uint32_t now)
     }
     link_can_frame_t in, out;
     while (xl2515_recv(&in)) {
+        s_last_rx_ms = now;
         if (can_selftest_echo(&in, &out)) {
             if (xl2515_send(&out)) {
                 ++s_can_echoes;
@@ -829,6 +842,18 @@ int main(void)
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 
     heartbeat_init();
+
+    /*
+     * The store's spare sector, erased before the controller is started.
+     * Nothing can arrive yet, so this is the one window in the run that costs
+     * no frame at all, and the first save after it is a page program.
+     */
+    if (out_store_reclaim(false, OUT_STORE_QUIET_MS)) {
+        printf("rcbench-iomcu: output store sector reclaimed at boot, "
+               "window %lu us\n",
+               (unsigned long)out_store_last_erase_us());
+    }
+
     can_start();
     memset(&s_bench, 0, sizeof(s_bench));
 
@@ -884,25 +909,57 @@ int main(void)
         }
 
         /*
-         * A deferred save, once nothing is driving and the writes have
-         * stopped.  Writing flash stops this core with interrupts off for
-         * longer than the heartbeat's window, so it cannot happen while an
-         * output is live; the monitor loses its edges across the write and
-         * has to re-acquire, which is why it waits for the bench to be idle
-         * rather than merely disarmed.  It also waits for the pages to stop
-         * arriving, so CHAN_CFG and OUTPUTS are saved as the pair they are.
+         * A deferred save, once nothing is driving, the writes have stopped
+         * and the bus has gone quiet.  Writing flash stops this core with
+         * interrupts off for longer than the heartbeat's window, so it cannot
+         * happen while an output is live; the monitor loses its edges across
+         * the write and has to re-acquire, which is why it waits for the
+         * bench to be idle rather than merely disarmed.  It also waits for
+         * the pages to stop arriving, so CHAN_CFG and OUTPUTS are saved as
+         * the pair they are.
+         *
+         * How long since a frame arrived is what puts the window in the gap
+         * between the panel's poll cycles rather than in the middle of one.
          */
-        if (out_store_tick(outputs_driving(&s_outputs), now)) {
+        const uint32_t quiet = (uint32_t)(now - s_last_rx_ms);
+        const bool driving = outputs_driving(&s_outputs);
+        const out_store_step_t step = out_store_tick(driving, quiet, now);
+        switch (step) {
+        case OUT_STORE_WROTE:
             /*
              * Printed because it is the number that decides whether a save
-             * is survivable: this core answers nothing while it writes, and
-             * the monitor calls the beat dead at 150 ms while the link calls
-             * the host silent at 200 ms.  A window past those makes the
-             * board fault itself and the panel say NO LINK over a good
-             * cable.
+             * costs a frame: this core answers nothing while it writes, the
+             * controller holds two frames of about 130 us each, and a request
+             * lost there costs the panel 1000 ms of waiting, which is past
+             * this end's 200 ms silence failsafe.
              */
-            printf("rcbench-iomcu: outputs saved, flash window %lu us\n",
-                   (unsigned long)out_store_last_window_us());
+            printf("rcbench-iomcu: outputs saved, record %u, "
+                   "program window %lu us\n",
+                   (unsigned)out_store_last_record(),
+                   (unsigned long)out_store_last_program_us());
+            break;
+        case OUT_STORE_ERASED:
+            printf("rcbench-iomcu: output store sector erased, "
+                   "window %lu us\n",
+                   (unsigned long)out_store_last_erase_us());
+            break;
+        case OUT_STORE_IDLE:
+        default:
+            break;
+        }
+        /*
+         * And the erase for the save after next, taken in a gap now rather
+         * than in front of an operator who has just ticked a pin.  At most one
+         * sector per sixteen saves has anything to reclaim.
+         *
+         * Only on a pass that wrote nothing: two windows in one pass would be
+         * one long window with a printf in the middle of it, and the pass
+         * between them is what empties the receive buffers.
+         */
+        if (step == OUT_STORE_IDLE && out_store_reclaim(driving, quiet)) {
+            printf("rcbench-iomcu: output store sector reclaimed, "
+                   "window %lu us\n",
+                   (unsigned long)out_store_last_erase_us());
         }
 
         can_report(now);

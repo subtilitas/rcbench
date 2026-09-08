@@ -510,10 +510,30 @@ wiederhergestellte Bindung belegt also ihre Pins und hält sie im Idle, bis
 jemand armed. Kanalbefehle werden nicht wiederhergestellt — eine Konfiguration
 überlebt einen Power-Cycle, eine Gasstellung nicht.
 
-Das Speichern wartet, bis der Prüfstand nicht mehr treibt. Flash zu schreiben
-hält den Koprozessor zig Millisekunden mit abgeschalteten Interrupts an, länger
-als das Fenster des Heartbeats; eine Änderung während des Treibens wird also
-geschrieben, sobald es aufhört.
+Das Speichern wartet, bis der Prüfstand nicht mehr treibt, und dann auf eine
+Lücke im Verkehr. Flash zu schreiben hält den Koprozessor mit abgeschalteten
+Interrupts an, und solange antwortet er auf nichts: das Löschen eines Sektors
+wurde auf dem Inbetriebnahme-Modul mit 19.178 us gemessen, gegen einen
+CAN-Frame von etwa 130 us und zwei Frames Puffer im Controller. Ein in diesem
+Fenster verlorener Request kostet das Panel 1000 ms Wartezeit, was über dem
+200-ms-Failsafe des Koprozessors liegt; ein einziger verlorener Frame endet
+also als `FAULT 01` (`LINK_FAULT_LINK_SILENT`) an einem Kabel, an dem nichts
+fehlt.
+
+Der Sektor wird deshalb nicht je Speichervorgang gelöscht. Zwei Sektoren
+halten je sechzehn Records; ein Speichervorgang schreibt den nächsten Record,
+und ein Sektor wird erst gelöscht, wenn jeder Record darin überholt ist.
+Dieses Löschen wird in einer Lücke im Verkehr vorgezogen, vor dem
+Speichervorgang, der es braucht, oder beim Booten, bevor der Koprozessor
+antwortet. Fünfzehn von sechzehn Speichervorgängen kosten damit ein Page
+Program und kein Löschen. Wie lange ein Page Program auf dem Flash des Moduls
+dauert, ist nicht gemessen; die Konsolenzeile nach jedem Speichervorgang
+trägt den Wert.
+
+Ein Stromausfall während des Speicherns lässt die Bindung von davor stehen.
+Der gerade geschriebene Record fällt durch seine Prüfsumme, der Record davor
+ist weiterhin der neueste gültige, und der gelöschte Sektor ist nie der, in
+dem der noch gebrauchte Record liegt.
 
 Eine Page, die der Bildschirm nicht beschreiben kann — zwei Protokolle
 gleichzeitig, eine Rate, die kein Eintrag anbietet, ein Pin, der nicht auf dem

@@ -474,10 +474,27 @@ arriving, so a restored binding claims its pins and holds them at idle until
 somebody arms. Channel commands are not restored — a configuration survives a
 power cycle and a throttle position does not.
 
-The save waits for the bench to stop driving. Writing flash stops the
-coprocessor for tens of milliseconds with interrupts off, which is longer than
-the heartbeat's window, so a change made while something is being driven is
-written once it stops.
+The save waits for the bench to stop driving, and then for a gap in the
+traffic. Writing flash stops the coprocessor with interrupts off, and it
+answers nothing while it is stopped: erasing a sector measured 19,178 us on
+the bring-up module, against a CAN frame of about 130 us and two frames of
+buffer in the controller. A request lost in that window costs the panel
+1000 ms of waiting, which is past the coprocessor's 200 ms silence failsafe,
+so one lost frame ends as `FAULT 01` (`LINK_FAULT_LINK_SILENT`) over a cable
+with nothing wrong with it.
+
+So the sector is not erased per save. Two sectors hold sixteen records each; a
+save writes the next record, and a sector is erased only once every record in
+it has been superseded. That erase is taken in a gap in the traffic before the
+save that needs it, or at boot before the coprocessor starts answering, so
+fifteen saves in sixteen cost one page program and no erase. How long a page
+program takes on the module's flash is not measured; the console line printed
+after each save carries it.
+
+A power cut during a save leaves the binding from before it. The record being
+written fails its checksum and the record before it is still the newest good
+one, and the sector being erased is never the one holding the record still
+wanted.
 
 A page the screen cannot describe — two protocols at once, a rate no entry
 offers, a pin that is not on the header — reads back as nothing configured
