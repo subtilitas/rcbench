@@ -187,6 +187,23 @@ The payload is a period, not a speed:
 
 A payload of 0x0FFF means the motor is not turning.
 
+### The inversion lives on the pad, and it goes on last
+
+The line is inverted by the pad's output override rather than by the PIO
+program, so the same pin still reads the line's true level once the
+transmitter has let go of it, and the pull-up holds the idle in between.
+
+The override is applied **after** the state machine's initialisation, never
+before. That initialisation begins with `pio_gpio_init()`, which is
+`gpio_set_function()`, which assigns the pad's whole control register instead
+of masking it. The override lives in that register and is lost. The pull-up is
+not, because pulls are in the pad block, so a pin that lost its inversion still
+idles high and looks like a protocol fault rather than a pin fault.
+
+The bind reads the register back and refuses rather than driving a line whose
+polarity it could not set. Ordering is the whole of the polarity here, and
+nothing else in the driver would notice losing it.
+
 ### The reply is sampled, not timed
 
 The coprocessor samples the line at five times the reply's bit rate and decodes
