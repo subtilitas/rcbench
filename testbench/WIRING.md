@@ -21,6 +21,7 @@ used for any of them.
 | Signal relays | two per board -- one for BOOT, one for RESET -- with gold-plated contacts. A button line switches microamps and contacts rated for power grow a film a dry circuit will not break through |
 | Relay driver | a transistor and a flyback diode per coil, or a relay module that has them, run from its own supply rather than the panel's rail |
 | Series resistors | a few hundred ohms, one per analyser probe lead. It costs nothing and a mistake then costs a resistor |
+| Two 120 Ω terminators | one at each end of the CAN pair. Two in parallel are the 60 Ω the pair should measure |
 | Level translation | for any line that leaves the 3.3 V island: a translator that senses the target's rail, not a divider chosen once |
 | A camera and a mount | rigid enough that it does not move between sessions; the calibration is only valid while it does not |
 | The monostable | retriggerable, about a 150 ms window, gating the coprocessor's output enable and the servo and ESC power path. It is on no board and it is not optional: see `docs/Safety.md` |
@@ -127,7 +128,24 @@ silent. Seeing 0x5D is how you know the tap is right.
 
 ## 6. The link
 
-Four leads on the coprocessor's SPI to the XL2515 -- SCK on GP10 pad 14, MOSI
+**The bus first, then the probes.** CANH to CANH and CANL to CANL between the
+two transceivers, with 120 Ω at both ends -- `docs/Link.md` gives the
+termination and the 1 Mbit/s rate. Without the pair and its terminators a
+transmitter gets no acknowledgement, retries, and goes bus-off: the capture
+below would show nothing and the panel's start-up self-test would fail, and
+neither would be telling you about the probes.
+
+Measured across CANH and CANL with everything unpowered, two 120 Ω
+terminators in parallel read about 60 Ω. One terminator, or none, reads 120 Ω
+or open, and that is the commonest way this is built wrong.
+
+**And the panel has to be in CAN mode to be on that bus at all.** GPIO19 and
+GPIO20 carry both USB and CAN, and the FSUSB42UMX multiplexer chooses -- CH422G
+EXIO5, 0 for USB and 1 for CAN. Selecting CAN takes the panel's native USB
+away, which is worth knowing before it is the port a flash was going to use.
+`docs/Link.md` has the detail.
+
+Then four leads on the coprocessor's SPI to the XL2515 -- SCK on GP10 pad 14, MOSI
 on GP11 pad 15, MISO on GP12 pad 16, CS on GP9 pad 12 -- and one on RXCAN
 between the controller and its transceiver.
 
