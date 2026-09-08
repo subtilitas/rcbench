@@ -375,6 +375,7 @@ static struct {
     bool          armed;
     float         mcu_temp_c;
     bool          stopped;
+    uint32_t      stops;
     uint16_t      faults;
     uint32_t      link_errors;
     uint32_t      run_seconds;
@@ -2242,6 +2243,7 @@ static void publish_snapshot(const bench_state_t *bench, bool link_up,
     s_snap.link_up     = link_up;
     s_snap.armed       = outputs_armed(&s_out);
     s_snap.stopped     = arming_stopped(&s_arm);
+    s_snap.stops       = arming_stop_count(&s_arm);
     s_snap.faults      = link_up ? s_dev_faults : (uint16_t)0;
     s_snap.link_errors = (uint32_t)s_bring.dev_crc_errors
                          + (uint32_t)s_bring.dev_resyncs;
@@ -2431,7 +2433,7 @@ void app_main(void)
     uint32_t frames  = 0;
     uint32_t last_us = (uint32_t)esp_timer_get_time();
     bool     was_armed = false;
-    bool was_stopped = false;
+    uint32_t last_stops = 0;
 
     for (;;) {
         const uint32_t us = (uint32_t)esp_timer_get_time();
@@ -2484,16 +2486,21 @@ void app_main(void)
          * waiting to be read, and forwarding it first would send an arm from
          * a gesture the stop has just cancelled -- which clears the latch a
          * pass or two later, when nothing is left to say it should not.
+         *
+         * Counted rather than watched for an edge.  The latch says only that
+         * a stop is in force, so a second STOP during a hold begun after the
+         * first one changes nothing about it, and that hold would run to
+         * completion and clear the latch.  Every stop is an event here.
          */
-        bool stopped_now;
+        uint32_t stops_now;
         snap_lock();
-        stopped_now = s_snap.stopped;
+        stops_now = s_snap.stops;
         snap_unlock();
-        if (stopped_now && !was_stopped) {
+        if (stops_now != last_stops) {
             motor_screen_cancel_arm();
             servo_screen_cancel_arm();
         }
-        was_stopped = stopped_now;
+        last_stops = stops_now;
 
         motor_cmd_t mc;
         while (motor_screen_poll_cmd(&mc)) {

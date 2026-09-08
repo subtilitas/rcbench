@@ -46,6 +46,15 @@ typedef enum {
 typedef struct {
     bool     armed;
     bool     stopped;         /**< the latch                              */
+    /**
+     * How many times the bench has been stopped.
+     *
+     * The latch is a level and says only that a stop is in force; a screen
+     * needs the event. A second STOP during a hold that began after the
+     * first one leaves the latch exactly as it was, and the hold would
+     * otherwise complete and clear it.
+     */
+    uint32_t stops;
     bool     arming;          /**< an arm is waiting for the line         */
     uint32_t settle_ms;       /**< how long the line is given             */
     uint32_t settle_until_ms;
@@ -69,6 +78,10 @@ bool arming_touch_dead(const arming_t *a, uint32_t now_ms);
 /** Whether the stop latch is set: a STOP, a dead touch, or the far end.
  *  A screen asks so a gesture already under way can be abandoned. */
 bool arming_stopped(const arming_t *a);
+
+/** How many stops have been applied. Changes on every stop, latched or not,
+ *  so a caller can act on the event rather than on the level. */
+uint32_t arming_stop_count(const arming_t *a);
 
 /** STOP. Latches; abandons an arm that is waiting for the line. */
 void arming_stop(arming_t *a);

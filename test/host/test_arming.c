@@ -289,6 +289,32 @@ TEST_CASE(the_latch_can_be_asked_about)
     CHECK(!arming_stopped(NULL));
 }
 
+TEST_CASE(every_stop_counts_even_when_the_latch_does_not_move)
+{
+    /*
+     * The latch is a level: a second stop while one is already in force
+     * changes nothing about it.  A screen watching the level would not
+     * cancel a hold begun after the first stop, and that hold would complete
+     * and clear the latch.  The count is the event.
+     */
+    arming_t a;
+    arming_init(&a, 0, SETTLE_MS);
+    CHECK_EQ(arming_stop_count(&a), 0);
+
+    arming_stop(&a);
+    CHECK_EQ(arming_stop_count(&a), 1);
+    arming_stop(&a);                        /* the latch is already set */
+    CHECK(arming_stopped(&a));
+    CHECK_EQ(arming_stop_count(&a), 2);
+
+    /* The far end's stop counts too, and an arm does not undo the count. */
+    arming_stop_from_far_end(&a);
+    CHECK_EQ(arming_stop_count(&a), 3);
+    arming_request_arm(&a, 10u);
+    CHECK_EQ(arming_stop_count(&a), 3);
+    CHECK_EQ(arming_stop_count(NULL), 0);
+}
+
 int main(void)
 {
     RUN(a_stop_latches_until_an_explicit_arm);
@@ -302,5 +328,6 @@ int main(void)
     RUN(a_far_end_stop_leaves_no_disarm_for_the_caller_to_act_on);
     RUN(the_rules_survive_a_millisecond_wrap);
     RUN(the_latch_can_be_asked_about);
+    RUN(every_stop_counts_even_when_the_latch_does_not_move);
     return test_summary("arming");
 }

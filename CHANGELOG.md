@@ -46,6 +46,13 @@ history is in git.
   The stop edge is handled before anything the screens produced, and
   cancelling a hold takes its unread command with it -- including after the
   finger has lifted, which clears the gesture but not what it produced.
+- **A second stop during a new arming hold did nothing.** The latch is a
+  level and says only that a stop is in force, so a STOP pressed while one
+  was already latched -- during a hold begun after the first, which is how a
+  stop is cleared -- left it exactly as it was, and the screens watching that
+  level saw no change. The hold ran to completion and cleared the latch.
+  Stops are counted now, in the policy where the latch is set, and every one
+  of them cancels both screens' holds.
 - **A stop did not end an arming gesture already under way.** A stop can
   latch on a bench that is not armed -- a STOP press, a dead touch, the far
   end -- so nothing about the armed state changed and a hold still under a

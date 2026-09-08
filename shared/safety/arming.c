@@ -37,6 +37,7 @@ void arming_stop(arming_t *a)
         return;
     }
     a->stopped = true;
+    ++a->stops;
     /* A stop during the settle wins: the arm is abandoned, not deferred to
      * whenever the line happens to become trustworthy. */
     a->arming  = false;
@@ -45,6 +46,11 @@ void arming_stop(arming_t *a)
 bool arming_stopped(const arming_t *a)
 {
     return a != NULL && a->stopped;
+}
+
+uint32_t arming_stop_count(const arming_t *a)
+{
+    return (a != NULL) ? a->stops : 0u;
 }
 
 void arming_request_arm(arming_t *a, uint32_t now_ms)
@@ -84,6 +90,7 @@ void arming_stop_from_far_end(arming_t *a)
 {
     if (a != NULL) {
         a->stopped = true;
+        ++a->stops;
         a->arming  = false;
         a->armed   = false;
     }
