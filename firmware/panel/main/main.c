@@ -52,6 +52,7 @@
 #include "settings.h"
 #include "settings_screen.h"
 #include "splash_screen.h"
+#include "log_viewer_screen.h"
 #include "storage.h"
 #include "telemetry_sim.h"
 #include "outputs.h"
@@ -625,6 +626,111 @@ static void pump(void)
  */
 #define IDENTITY_WAIT_MS 3000u
 
+
+/* ------------------------------------------------------- the card, listed */
+
+/*
+ * The log viewer's side of the SD card.
+ *
+ * The viewer knows about names, sizes and a rewindable source; it knows
+ * nothing about a mount point or a suffix filter, and it is built by the host
+ * suite against a fake card.  This is the only place the two meet, and
+ * without it the viewer has no list function at all -- which it reports as no
+ * card, whatever is actually mounted.
+ */
+#define CARD_DIR      ""          /* the root of the mount point */
+#define CARD_SUFFIXES ".csv"      /* storage_list() matches case-insensitively */
+
+/* The file the viewer currently has open, so close() has something to close.
+ * One at a time: the viewer opens a log, reads it and closes it before it
+ * opens another. */
+static FILE *s_card_file;
+
+static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
+{
+    (void)ctx;
+    /*
+     * No card is -1 and an empty card is 0, and the viewer says different
+     * things about them.  storage_list() cannot open the root of a volume
+     * that is not mounted, so the two already arrive apart; asking
+     * storage_mounted() first makes that true by construction rather than by
+     * how a failure happened to surface.
+     */
+    if (!storage_mounted()) {
+        return -1;
+    }
+    static storage_entry_t entries[LOG_VIEWER_MAX_FILES];
+    const int n = storage_list(CARD_DIR, CARD_SUFFIXES, entries,
+                               (max_entries < LOG_VIEWER_MAX_FILES)
+                                   ? max_entries
+                                   : LOG_VIEWER_MAX_FILES);
+    if (n < 0) {
+        return -1;
+    }
+    for (int i = 0; i < n; ++i) {
+        /* Field by field rather than a block copy of the structure: the two
+         * agree today and neither owns the other's layout.  The name is
+         * copied whole and terminated by hand, so one that filled its array
+         * without a terminator ends here rather than running off the end. */
+        _Static_assert(sizeof(out->name) == sizeof(entries->name),
+                       "the viewer's name field and the card's are one size");
+        memcpy(out[i].name, entries[i].name, sizeof(out[i].name));
+        out[i].name[sizeof(out[i].name) - 1u] = '\0';
+        out[i].size   = entries[i].size;
+        out[i].is_dir = entries[i].is_dir;
+    }
+    return n;
+}
+
+static bool card_open(const char *name, log_source_t *src, void *ctx)
+{
+    (void)ctx;
+    if (name == NULL || src == NULL) {
+        return false;
+    }
+    /* Whatever was open is closed first.  A viewer that opened a second log
+     * without closing the first would leak the handle, and there are few. */
+    if (s_card_file != NULL) {
+        fclose(s_card_file);
+        s_card_file = NULL;
+    }
+    char path[STORAGE_NAME_MAX + sizeof(STORAGE_MOUNT_POINT) + 2];
+    storage_path(CARD_DIR, name, path, sizeof(path));
+    s_card_file = fopen(path, "rb");
+    if (s_card_file == NULL) {
+        /* Listed and then gone, or unreadable.  The viewer says so; there is
+         * nothing here to retry. */
+        ESP_LOGW(TAG, "could not open %s", path);
+        return false;
+    }
+    log_source_stdio(src, s_card_file);
+    return true;
+}
+
+static void card_close(void *ctx)
+{
+    (void)ctx;
+    if (s_card_file != NULL) {
+        fclose(s_card_file);
+        s_card_file = NULL;
+    }
+}
+
+static const char *card_volume(void *ctx)
+{
+    (void)ctx;
+    return storage_card_name();
+}
+
+static const log_viewer_io_t k_card_io = {
+    .list   = card_list,
+    .open   = card_open,
+    .close  = card_close,
+    .volume = card_volume,
+    .ctx    = NULL,
+};
+
+
 /*
  * Ask the coprocessor who it is, repeatedly, for IDENTITY_WAIT_MS.
  *
@@ -700,6 +806,9 @@ static bool bring_up(void)
      * missing card is a warning the operator reads on the way past rather
      * than a boot failure. */
     (void)storage_init();
+    /* And the viewer is told how to reach it.  Without this it has no way to
+     * list anything and reports no card whatever is mounted. */
+    log_viewer_set_io(&k_card_io);
     splash_screen_set(SPLASH_STEP_STORAGE,
                       storage_mounted() ? SPLASH_OK : SPLASH_WARN,
                       storage_status());
