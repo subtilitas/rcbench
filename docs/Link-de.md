@@ -141,7 +141,12 @@ Bit 6 Vibrationssensor und Indeximpuls, Bit 7 Zellenmonitor, Bit 8
 Programmierung. Das Panel leitet daraus die Marken im Menü ab.
 
 BENCH-Flags: Bit 0 Spannung gültig, Bit 1 Strom gültig, Bit 2 Drehzahl
-gültig, Bit 3 Temperatur gültig, Bit 7 simuliert. Ein Koprozessor ohne
+gültig, Bit 3 Temperatur des ESC gültig, Bit 4 Temperatur des Motors gültig,
+Bit 7 simuliert. Die beiden Temperaturen haben getrennte Bits, weil sie aus
+verschiedenen Quellen kommen und eine davon meist gar nicht kommt: ein ESC
+meldet seine eigene Temperatur über die erweiterte DShot-Telemetrie und weiß
+nichts über den Motor, den er treibt. Bis Protokoll 3.0 galt Bit 3 für beide —
+deshalb ist diese Änderung ein Major. Ein Koprozessor ohne
 Mess-Frontend setzt Bit 7, und das Panel zeichnet SIMULATION über den
 Bildschirm.
 

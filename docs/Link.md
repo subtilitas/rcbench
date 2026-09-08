@@ -134,7 +134,12 @@ sensor and index pulse, bit 7 cell monitor, bit 8 programming. The panel
 derives the menu marks from it.
 
 BENCH flags: bit 0 voltage valid, bit 1 current valid, bit 2 rpm valid, bit 3
-temperature valid, bit 7 simulated. A coprocessor without a measurement front
+the ESC's temperature valid, bit 4 the motor's temperature valid, bit 7
+simulated. The two temperatures carry separate bits because they come from
+different places and one of them usually does not come at all: an ESC reports
+its own temperature over extended DShot telemetry and knows nothing about the
+motor it drives. Bit 3 validated both until protocol 3.0, which is why that
+change is a major. A coprocessor without a measurement front
 end sets bit 7, and the panel draws SIMULATION across the screen.
 
 MOTOR_POLES is the magnet count of the motor under test, even and between 2 and

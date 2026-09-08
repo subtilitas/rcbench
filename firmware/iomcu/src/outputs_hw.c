@@ -40,10 +40,13 @@ typedef struct {
      * edt_asked set means the asking is done and the replies may carry the
      * other frame types.
      *
-     * Asked again on every edge into driving rather than once at bind time.
-     * Extended telemetry is a runtime setting an ESC forgets when it loses
-     * power, and an ESC can be swapped on a bench between one run and the
-     * next.
+     * The two have different lifetimes and that is the point.  edt_left is
+     * owed again on every edge into driving, because extended telemetry is a
+     * runtime setting an ESC forgets when it loses power and an ESC can be
+     * swapped between runs.  edt_asked follows the binding instead: an ESC
+     * that keeps power keeps the setting across a disarm, so a run that
+     * started by reading replies as periods again would take an interleaved
+     * temperature or current frame for a speed.
      */
     uint8_t  edt_left;
     bool     edt_asked;
@@ -171,10 +174,12 @@ void outputs_hw_apply(const outputs_t *o)
         moved[i] = !(same(&s_shadow[i], &o->slot[i]) && s_state[i].bound);
         if (moved[i]) {
             /* Whatever this slot's ESC said belongs to a binding that is
-             * going away.  Cleared for a slot that was never bound too: a
-             * failed bind leaves no output but the readings from before it
-             * would otherwise still be published. */
+             * going away, and so does whether that ESC was ever asked for
+             * extended telemetry.  Cleared for a slot that was never bound
+             * too: a failed bind leaves no output but the readings from
+             * before it would otherwise still be published. */
             forget_slot_telem(i);
+            s_state[i].edt_asked = false;
         }
         if (moved[i] && s_state[i].bound) {
             unbind(&s_shadow[i]);
@@ -299,9 +304,16 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
          * an ESC forgets when it loses power, and an ESC can be swapped on a
          * bench between one run and the next; asking again costs ten frames
          * at the start of a run and nothing after that.
+         *
+         * What is not forgotten is that it was asked.  The setting lives in
+         * the ESC, and an ESC that keeps power keeps it across this bench's
+         * disarm: reading the next run's first replies as periods would take
+         * an interleaved temperature or current frame for a speed, and a
+         * current of 120 A decodes as 8,900 rpm -- a number nobody questions,
+         * latched into the run's peak.  edt_asked follows the binding, not
+         * the run; only a slot that moves or a restart clears it.
          */
-        st->edt_left  = (uint8_t)DSHOT_CMD_REPEATS;
-        st->edt_asked = false;
+        st->edt_left = (uint8_t)DSHOT_CMD_REPEATS;
         return;
     }
     const uint32_t now = time_us_32();
