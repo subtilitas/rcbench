@@ -26,6 +26,16 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **An arm could be granted from a gesture invalidated while it waited.** The
+  servo screen's arm releases the slot first, and that release can wait a
+  second on the wire with the pump running inside it, so a stop -- or touch
+  dying and recovering -- could invalidate the gesture between the drain's
+  check and the request. The gesture is asked about again after the release.
+- **A newer servo write did not void an older release.** A release that failed
+  keeps its debt, and a position written afterwards rebinds the slot to what
+  was asked for; paying the debt then cleared it and left the pin dead until
+  the next refresh. A write that the far end acknowledged voids a release
+  owed for that slot, and one that failed does not.
 - **A leave-time disarm could be evicted from the command queue.** The queue
   drops its oldest entry when full, and leaving a screen generates commands
   on the way out while the next screen generates more, so the disarm posted by

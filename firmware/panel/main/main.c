@@ -1780,7 +1780,7 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
  * screen is up.  A disarm is acted on with or without a link, because the
  * part of it that matters most is at this end.
  */
-static void apply_servo_cmd(const servo_cmd_t sv, bool link_up)
+static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
 {
     if (sv.kind == SERVO_CMD_ARM) {
         /*
@@ -1793,6 +1793,16 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up)
         s_servo_held.kind = SERVO_CMD_NONE;
         s_servo_release_owed = true;
         servo_service(link_up);
+        /*
+         * And the gesture is asked about again, because that call can wait a
+         * second on the wire and the pump runs inside it: a stop, or touch
+         * dying and recovering, can happen between the drain's check and
+         * this line, and the arm would then be one the bench has already
+         * invalidated.
+         */
+        if (stops != arming_stop_count(&s_arm)) {
+            return;
+        }
         arming_request_arm(&s_arm, now_ms());
         return;
     }
@@ -1824,8 +1834,14 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up)
     }
     s_servo_held = sv;
     s_servo_next_ms = now_ms() + SERVO_HOLD_MS;
-    if (link_up) {
-        (void)write_servo(sv);
+    if (link_up && write_servo(sv)) {
+        /*
+         * The slot is bound again, by this write, to this position: an older
+         * release still owed for it is void.  Paying it afterwards would
+         * clear what was just asked for and leave the pin dead until the
+         * next refresh.  A write that failed leaves the debt where it was.
+         */
+        s_servo_release_owed = false;
     }
 }
 
@@ -1953,7 +1969,7 @@ static void drain_commands(bool link_up, bench_state_t *bench)
             continue;
         }
         if (pc.kind == PANEL_CMD_SERVO) {
-            apply_servo_cmd(pc.servo, link_up);
+            apply_servo_cmd(pc.servo, link_up, pc.stops);
             continue;
         }
 
