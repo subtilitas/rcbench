@@ -673,11 +673,24 @@ typedef struct {
     log_viewer_file_t *out;
     int max;
     int held;
+    int files;      /* what the card holds that this viewer could open */
 } card_pick_t;
 
 static void card_take(const storage_entry_t *entry, void *ctx)
 {
     card_pick_t *pick = (card_pick_t *)ctx;
+    /*
+     * Files only.  storage_walk() offers directories whatever the suffix
+     * filter says, because a filter is about names and a directory has no
+     * extension to match -- but this viewer cannot enter one, so a directory
+     * row is a row that says "is a folder" and nothing else.  Letting them
+     * compete for a bounded list means 48 folders sorted early can fill it
+     * and leave the card's only log unreachable.
+     */
+    if (entry->is_dir) {
+        return;
+    }
+    ++pick->files;
     /* Field by field rather than a block copy of the structure: the two
      * agree today and neither owns the other's layout.  The name is copied
      * whole and terminated by hand, so one that filled its array without a
@@ -715,7 +728,7 @@ static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
     if (!storage_mounted()) {
         return -1;
     }
-    card_pick_t pick = { out, max_entries, 0 };
+    card_pick_t pick = { out, max_entries, 0, 0 };
     const int total = storage_walk(CARD_DIR, CARD_SUFFIXES, card_take, &pick);
     if (total < 0) {
         /*
@@ -746,7 +759,12 @@ static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
     }
     /* Held in rank order while the card is read, drawn in name order. */
     log_select_sort(out, pick.held);
-    return total;          /* what the card holds; pick.held were written */
+    /*
+     * Files, not entries.  The number goes to the tab that says how much of
+     * the card is on the list, and counting folders there would say a card
+     * holds more than the list can ever show while the list is complete.
+     */
+    return pick.files;     /* what the card holds; pick.held were written */
 }
 
 static bool card_open(const char *name, log_source_t *src, void *ctx)
@@ -1021,6 +1039,22 @@ static bool        s_log_run;
  * starts from what it found.
  */
 static int         s_log_next = LOG_RUN_FIRST;
+/* Whether s_log_next has been put above what the card already holds.  Once
+ * per boot: after that this end has written every number it handed out. */
+static bool        s_log_numbered;
+
+/* The highest run number on the card, for the visitor below. */
+static void log_highest(const storage_entry_t *entry, void *ctx)
+{
+    int *highest = (int *)ctx;
+    if (entry->is_dir) {
+        return;
+    }
+    const int n = log_run_number(entry->name);
+    if (n > *highest) {
+        *highest = n;
+    }
+}
 static log_writer_t s_log;
 static float        s_log_t;
 
@@ -1066,7 +1100,23 @@ static void log_start(void)
      * log_run_number() to decide which runs it can still show once a card
      * holds more of them than the screen does; log_run_name() is the one
      * place the name is built.
+     *
+     * Above every number the card already carries, not in the first gap.
+     * A gap is what deleting an old run on a computer leaves, and a run
+     * written into one is the newest run wearing the oldest number: the
+     * viewer would rank it last and drop it from a full list, hiding the
+     * experiment just recorded.  One directory read settles it, which is
+     * also cheaper than the probes it replaces -- a card holding 400 runs
+     * cost 400 opens before the first free number.
      */
+    if (!s_log_numbered) {
+        int highest = LOG_RUN_FIRST - 1;
+        if (storage_walk(CARD_DIR, CARD_SUFFIXES, log_highest, &highest) >= 0) {
+            s_log_next = (highest >= LOG_RUN_FIRST) ? highest + 1
+                                                    : LOG_RUN_FIRST;
+            s_log_numbered = true;
+        }
+    }
     for (int i = s_log_next; i <= LOG_RUN_LAST && s_log_file == NULL; ++i) {
         char name[LOG_RUN_NAME_MAX];
         char path[64];
