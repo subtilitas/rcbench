@@ -398,8 +398,10 @@ firmware and the decoder agree, and no more than that.
 - **The panel's debug touch address.** Described above; without it the touch
   emulator injects nothing. One build option and one probe order, in its own
   pull request.
-- **The decoders.** Described in `decoders/README.md`, and waiting on a
-  capture to check them against.
+- **The decoders.** Described in `decoders/README.md`. Two of their three
+  checks wait on nothing: the round trip against this tree's own builder, and
+  the published vectors that prove the convention. Only the comparison against
+  a capture of another implementation needs the bench.
 - **The recipes.** The runner, and the first measurement, wait on the bench
   existing.
 
