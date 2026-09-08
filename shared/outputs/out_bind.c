@@ -1009,45 +1009,6 @@ bool outbind_from_slots(outbind_t *b, uint16_t board, const uint16_t *regs,
     return true;
 }
 
-uint8_t outbind_role_channels(const outbind_t *b, out_role_t role)
-{
-    /* One bit per channel.  The mask is as wide as the page. */
-    _Static_assert(LINK_OUT_CHANNELS <= 8u,
-                   "a channel mask holds LINK_OUT_CHANNELS bits");
-    if (b == NULL) {
-        return 0u;
-    }
-    const outbind_board_t *bd = outbind_board(b->board);
-    if (bd == NULL) {
-        return 0u;
-    }
-    /*
-     * The same walk outbind_to_slots() and outbind_to_chan_cfg() make, so the
-     * bit set here is the channel the slot written from the same selection
-     * renders.  Three walks that must agree, and they agree by being the
-     * same loop over the same catalogue rather than by a comment saying so.
-     */
-    uint8_t mask = 0u, slot = 0u, channel = 0u;
-    for (uint8_t i = 0; i < bd->count && slot < LINK_OUT_SLOTS; ++i) {
-        const uint8_t g = outbind_group_of(b, i);
-        if (g == 0u) {
-            continue;
-        }
-        const outbind_proto_t *p = &k_protos[g];
-        if ((unsigned)channel + p->channels > LINK_OUT_CHANNELS) {
-            break;                    /* no channels left to render into */
-        }
-        if (p->role == role) {
-            for (uint8_t c = channel; c < channel + p->channels; ++c) {
-                mask |= (uint8_t)(1u << c);
-            }
-        }
-        channel = (uint8_t)(channel + p->channels);
-        ++slot;
-    }
-    return mask;
-}
-
 void outbind_to_chan_cfg(const outbind_t *b, uint16_t *regs,
                          uint16_t min_us, uint16_t max_us)
 {

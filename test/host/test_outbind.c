@@ -1588,6 +1588,19 @@ TEST_CASE(a_pad_list_that_cannot_belong_to_the_board_is_refused)
 /* ------------------------------------------- which channels carry a role */
 
 /*
+ * The mask as the panel takes it: render the selection to the two pages, then
+ * read the roles back off them per channel.  Going through the pages is the
+ * point -- that is what the far end holds and what the panel reads.
+ */
+static uint8_t role_mask(const outbind_t *b, out_role_t role)
+{
+    uint16_t slots[LINK_OS_COUNT], cc[LINK_CC_COUNT];
+    (void)outbind_to_slots(b, slots);
+    outbind_to_chan_cfg(b, cc, 1000u, 2000u);
+    return outputs_role_channels(slots, cc, role);
+}
+
+/*
  * A screen that commands a role has to reach exactly the channels the
  * binding gave that role.  Reaching one more is the defect this pair of
  * masks exists to stop: a servo horn that also commanded a motor's channel
@@ -1609,8 +1622,8 @@ TEST_CASE(the_horn_reaches_the_surfaces_and_never_the_motor)
     (void)outbind_toggle(&b, idx(2));
     (void)outbind_toggle(&b, idx(5));
 
-    const uint8_t surfaces = outbind_role_channels(&b, OUT_ROLE_SURFACE);
-    const uint8_t motors   = outbind_role_channels(&b, OUT_ROLE_THROTTLE);
+    const uint8_t surfaces = role_mask(&b, OUT_ROLE_SURFACE);
+    const uint8_t motors   = role_mask(&b, OUT_ROLE_THROTTLE);
 
     CHECK_EQ(motors,   0x01u);            /* channel 0 alone */
     CHECK_EQ(surfaces, 0x06u);            /* channels 1 and 2 */
@@ -1631,8 +1644,8 @@ TEST_CASE(a_binding_with_no_surface_gives_the_horn_nothing)
     outbind_set_proto(&b, motor);
     (void)outbind_toggle(&b, idx(0));
 
-    CHECK_EQ(outbind_role_channels(&b, OUT_ROLE_SURFACE), 0u);
-    CHECK_EQ(outbind_role_channels(&b, OUT_ROLE_THROTTLE), 0x01u);
+    CHECK_EQ(role_mask(&b, OUT_ROLE_SURFACE), 0u);
+    CHECK_EQ(role_mask(&b, OUT_ROLE_THROTTLE), 0x01u);
 }
 
 /* PPM is eight channels on one pin, and all eight carry the entry's role. */
@@ -1644,8 +1657,8 @@ TEST_CASE(one_ppm_pin_puts_every_channel_it_carries_in_the_mask)
     outbind_set_proto(&b, ppm);
     (void)outbind_toggle(&b, idx(0));
 
-    CHECK_EQ(outbind_role_channels(&b, OUT_ROLE_SURFACE), 0xFFu);
-    CHECK_EQ(outbind_role_channels(&b, OUT_ROLE_THROTTLE), 0u);
+    CHECK_EQ(role_mask(&b, OUT_ROLE_SURFACE), 0xFFu);
+    CHECK_EQ(role_mask(&b, OUT_ROLE_THROTTLE), 0u);
 }
 
 /*
@@ -1676,8 +1689,8 @@ TEST_CASE(the_mask_names_the_channels_the_pages_render)
     outbind_to_chan_cfg(&b, cc, 1000u, 2000u);
     CHECK_EQ(used, 4u);
 
-    const uint8_t surfaces = outbind_role_channels(&b, OUT_ROLE_SURFACE);
-    const uint8_t motors   = outbind_role_channels(&b, OUT_ROLE_THROTTLE);
+    const uint8_t surfaces = role_mask(&b, OUT_ROLE_SURFACE);
+    const uint8_t motors   = role_mask(&b, OUT_ROLE_THROTTLE);
     CHECK_EQ(surfaces & motors, 0u);
 
     for (uint8_t ch = 0; ch < LINK_OUT_CHANNELS; ++ch) {
@@ -1731,8 +1744,8 @@ TEST_CASE(a_binding_wider_than_the_page_stops_the_mask_where_it_stops_the_slots)
     CHECK_EQ(used, 1u);                   /* the PPM pin, and no room after */
 
     /* Every channel the page renders, and not one more. */
-    CHECK_EQ(outbind_role_channels(&b, OUT_ROLE_SURFACE), 0xFFu);
-    CHECK_EQ(outbind_role_channels(&b, OUT_ROLE_THROTTLE), 0u);
+    CHECK_EQ(role_mask(&b, OUT_ROLE_SURFACE), 0xFFu);
+    CHECK_EQ(role_mask(&b, OUT_ROLE_THROTTLE), 0u);
 
     const uint16_t *r = &slots[0];
     CHECK_EQ(LINK_OS_FIRST(r[LINK_OS_RANGE]), 0u);
@@ -1743,14 +1756,51 @@ TEST_CASE(a_binding_wider_than_the_page_stops_the_mask_where_it_stops_the_slots)
     }
 }
 
+/*
+ * A slot whose channels do not agree is read channel by channel.
+ *
+ * outbind_from_slots() takes a slot's role from its first channel and lets the
+ * rest differ, so a binding cannot answer this: an eight-channel PPM slot
+ * whose channel 0 is a surface would put all eight in the surfaces' mask,
+ * throttles included, and a servo horn would command a motor to where a
+ * surface rests. The pages are read per channel so it cannot.
+ */
+TEST_CASE(a_slot_whose_channels_disagree_is_read_one_channel_at_a_time)
+{
+    outbind_t b;
+    init(&b);
+    outbind_set_proto(&b, proto_named("PPM"));
+    (void)outbind_toggle(&b, idx(0));
+
+    uint16_t slots[LINK_OS_COUNT], cc[LINK_CC_COUNT];
+    CHECK_EQ(outbind_to_slots(&b, slots), 1u);
+    outbind_to_chan_cfg(&b, cc, 1000u, 2000u);
+
+    /* One slot, eight channels, every one a surface as this end writes it. */
+    CHECK_EQ(outputs_role_channels(slots, cc, OUT_ROLE_SURFACE), 0xFFu);
+
+    /* Now the page says channel 1 is a throttle, which nothing here writes
+     * but the far end can be holding -- from an older build, or from a
+     * restored store. The mask must follow the page, not the slot. */
+    cc[1 * LINK_CC_STRIDE + LINK_CC_ROLE] = (uint16_t)LINK_CC_ROLE_THROTTLE;
+    CHECK_EQ(outputs_role_channels(slots, cc, OUT_ROLE_SURFACE), 0xFDu);
+    CHECK_EQ(outputs_role_channels(slots, cc, OUT_ROLE_THROTTLE), 0x02u);
+
+    /* And read back into a binding, the same page collapses to one role --
+     * which is exactly why the mask does not come from a binding. */
+    outbind_t back;
+    CHECK(outbind_from_slots(&back, BOARD, slots, cc));
+    CHECK_EQ(back.proto, proto_named("PPM"));
+}
+
 /* A binding that names no board describes no wiring, so it carries no
  * channels rather than the channels of whatever board was last asked. */
 TEST_CASE(a_mask_without_a_board_is_empty_rather_than_guessed)
 {
     outbind_t b;
     outbind_init(&b);          /* OUTBIND_BOARD_UNKNOWN */
-    CHECK_EQ(outbind_role_channels(&b, OUT_ROLE_SURFACE), 0u);
-    CHECK_EQ(outbind_role_channels(NULL, OUT_ROLE_SURFACE), 0u);
+    CHECK_EQ(role_mask(&b, OUT_ROLE_SURFACE), 0u);
+    CHECK_EQ(outputs_role_channels(NULL, NULL, OUT_ROLE_SURFACE), 0u);
 }
 
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
@@ -1829,6 +1879,7 @@ int main(void)
     RUN(one_ppm_pin_puts_every_channel_it_carries_in_the_mask);
     RUN(the_mask_names_the_channels_the_pages_render);
     RUN(a_binding_wider_than_the_page_stops_the_mask_where_it_stops_the_slots);
+    RUN(a_slot_whose_channels_disagree_is_read_one_channel_at_a_time);
     RUN(a_mask_without_a_board_is_empty_rather_than_guessed);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("outbind");

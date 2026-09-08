@@ -55,6 +55,7 @@
 #include "storage.h"
 #include "telemetry_sim.h"
 #include "outputs.h"
+#include "outputs_pages.h"
 
 /*
  * The panel's throttle, as a channel in an output bank.
@@ -2469,11 +2470,18 @@ static void read_outputs_binding(void)
         && ccr.op != LINK_OP_NACK
         && outbind_from_slots(&got, s_board, orr.regs, ccr.regs)) {
         /*
-         * Which channels the horn may drive, from the same read.  Held
-         * unlocked because the control task is the only one that touches it,
-         * and it is the only task that writes the wire.
+         * Which channels the horn may drive, from the pages themselves rather
+         * than from the binding they were read into.  A binding names one
+         * role per slot -- outbind_from_slots() takes a slot's role from its
+         * first channel -- so a multi-channel slot whose channels disagree
+         * would put a throttle in the surfaces' mask, and the horn would
+         * command it.  The pages answer per channel.
+         *
+         * Held unlocked because the control task is the only one that touches
+         * it, and it is the only task that writes the wire.
          */
-        s_servo_channels = outbind_role_channels(&got, OUT_ROLE_SURFACE);
+        s_servo_channels = outputs_role_channels(orr.regs, ccr.regs,
+                                                 OUT_ROLE_SURFACE);
         s_servo_known    = true;
         if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
             s_outputs_read = got;
