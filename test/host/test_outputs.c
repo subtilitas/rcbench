@@ -58,8 +58,9 @@ TEST_CASE(everything_goes_to_rest_together)
 }
 
 /*
- * One silence timeout for every channel: a surface stops driving after
- * silence the same as a throttle does.
+ * One silence timeout for every channel: a surface goes to its rest after
+ * silence the same as a throttle does.  Both keep driving; rest is centred
+ * for the surface and stopped for the throttle.
  */
 TEST_CASE(silence_stops_every_role)
 {
@@ -340,8 +341,7 @@ TEST_CASE(a_command_while_disarmed_is_remembered_and_not_emitted)
  * it cannot ask about the safety line, which the end holding the wire settles
  * before it arms.  A bank armed with every channel past the timeout still
  * drives, and what reaches the pin is the channel's rest: 1500 us for a
- * surface across the default 1000 to 2000 us endpoints, which an ESC
- * (electronic speed controller) reads as about half throttle.
+ * surface across the default 1000 to 2000 us endpoints.
  */
 TEST_CASE(driving_is_armed_and_asks_nothing_about_commands)
 {
@@ -369,6 +369,84 @@ TEST_CASE(driving_is_armed_and_asks_nothing_about_commands)
     /* A disarm is what stops it. */
     outputs_arm(&o, false, late);
     CHECK(!outputs_driving(&o));
+}
+
+/*
+ * Rest is the midpoint of the channel's own endpoints, not 1500 us.  The
+ * default 1000 to 2000 us rests at 1500 us; the narrow servo the servo screen
+ * offers, 660 to 860 us, rests at 760 us.
+ */
+TEST_CASE(a_surface_rests_at_the_midpoint_of_its_own_endpoints)
+{
+    fresh();
+    CHECK(outputs_set_endpoints(&o, 1, 660u, 860u));
+    outputs_arm(&o, true, 1000u);
+    outputs_step(&o, 1000u + OUT_DEFAULT_TIMEOUT_MS);
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+    CHECK_EQ(outputs_pulse_us(&o, 0), 1500u);
+    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u);
+    CHECK_EQ(outputs_pulse_us(&o, 1), 760u);
+}
+
+/*
+ * The timeout reaches an uncommanded channel every pass and resolves to the
+ * rest it already sits at, so the bank keeps driving.  A wrong role is not
+ * beyond every command either: the throttle addresses channels by role and
+ * passes a surface by, and the CHANNELS page addresses them by index and
+ * reaches it.
+ */
+TEST_CASE(the_timeout_reaches_a_channel_and_leaves_it_driving)
+{
+    fresh();
+    outputs_arm(&o, true, 1000u);
+    const uint32_t late = 1000u + OUT_DEFAULT_TIMEOUT_MS;
+    outputs_step(&o, late);
+    CHECK(outputs_overdue(&o, 0, late));
+    CHECK(outputs_driving(&o));
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+
+    /* By role: channel 0 is a surface, so a throttle command passes it by. */
+    CHECK_EQ(outputs_set_role_channels(&o, OUT_ROLE_THROTTLE,
+                                       (uint8_t)OUT_MAX_CHANNELS, OUT_SPAN,
+                                       late),
+             0u);
+    outputs_step(&o, late + 1u);
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+
+    /* By index: the CHANNELS page reaches it whatever its role. */
+    uint16_t regs[LINK_CH_COUNT];
+    outputs_channels_defaults(regs);
+    regs[0] = 0u;
+    outputs_channels_apply_n(&o, regs, 0u, 1u, late + 1u);
+    outputs_step(&o, late + 2u);
+    CHECK(!outputs_overdue(&o, 0, late + 2u));
+    CHECK_EQ(outputs_actual(&o, 0), 0u);
+    CHECK_EQ(outputs_pulse_us(&o, 0), 1000u);
+}
+
+/*
+ * For the first OUT_DEFAULT_TIMEOUT_MS after an arm, a channel is at its last
+ * command rather than at its rest: outputs_arm() stamps every channel's
+ * clock, so a command given while disarmed is not overdue.
+ */
+TEST_CASE(an_arm_makes_a_disarmed_command_fresh_for_the_timeout)
+{
+    fresh();
+    outputs_set(&o, 0, 900u, 1000u);
+    outputs_step(&o, 1010u);
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);   /* not emitted */
+
+    outputs_arm(&o, true, 2000u);
+    outputs_step(&o, 2001u);
+    CHECK(!outputs_overdue(&o, 0, 2001u));
+    CHECK_EQ(outputs_actual(&o, 0), 900u);
+    CHECK_EQ(outputs_pulse_us(&o, 0), 1900u);
+
+    outputs_step(&o, 2000u + OUT_DEFAULT_TIMEOUT_MS - 1u);
+    CHECK_EQ(outputs_actual(&o, 0), 900u);
+
+    outputs_step(&o, 2000u + OUT_DEFAULT_TIMEOUT_MS);
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
 }
 
 /* Disarming goes to rest with no ramp: the reason a stop exists is that
@@ -737,6 +815,9 @@ int main(void)
     RUN(the_pulse_spans_the_endpoints);
     RUN(a_command_while_disarmed_is_remembered_and_not_emitted);
     RUN(driving_is_armed_and_asks_nothing_about_commands);
+    RUN(a_surface_rests_at_the_midpoint_of_its_own_endpoints);
+    RUN(the_timeout_reaches_a_channel_and_leaves_it_driving);
+    RUN(an_arm_makes_a_disarmed_command_fresh_for_the_timeout);
     RUN(disarming_does_not_ramp);
     RUN(a_role_change_moves_rest);
     RUN(out_of_range_is_refused_everywhere);

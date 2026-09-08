@@ -52,7 +52,10 @@ follows the slider and a servo beside it does not. On the wire: the
 pin is in the slot, not in the firmware: the coprocessor refuses the pins it
 must not drive and binds the rest as they arrive. An armed bank drives every
 bound pin whether or not anything commands it: a channel nobody has commanded
-for 500 ms is rendered at its role's rest, which for a surface is 1500 us.
+for 500 ms is rendered at its role's rest, which for a surface is the midpoint
+of that channel's own endpoints -- 1500 us across the default 1000 to 2000 us,
+and 760 us across the 660 to 860 us of a narrow servo. The timeout moves the
+channel to that rest and leaves the pin driving; a disarm is what stops it.
 [Reference](docs/DShot.md).
 
 **Measured or modelled.** A coprocessor that answers reports only what it

@@ -469,10 +469,11 @@ configured over there. After a panel restart, what this screen shows and what
 is driving pins are the same thing.
 
 Restoring configures the outputs. It does not drive them: every driver is
-gated on the bench being armed, the heartbeat being trusted and a command
-arriving, so a restored binding claims its pins and holds them at idle until
-somebody arms. Channel commands are not restored — a configuration survives a
-power cycle and a throttle position does not.
+gated on the bank being armed, which the coprocessor grants only while the ARM
+register is set, the link is out of failsafe and the heartbeat is trusted, so
+a restored binding claims its pins and holds them at idle until somebody arms.
+Channel commands are not restored — a configuration survives a power cycle and
+a throttle position does not.
 
 The save waits for the bench to stop driving. Writing flash stops the
 coprocessor for tens of milliseconds with interrupts off, which is longer than

@@ -504,11 +504,12 @@ Panel-Neustart sind das, was dieser Bildschirm zeigt, und das, was Pins treibt,
 dieselbe Sache.
 
 Das Wiederherstellen konfiguriert die Outputs. Es treibt sie nicht: jeder
-Treiber ist daran gebunden, dass der Prüfstand armed ist, die
-Heartbeat-Leitung vertraut wird und ein Befehl eintrifft. Eine
-wiederhergestellte Bindung belegt also ihre Pins und hält sie im Idle, bis
-jemand armed. Kanalbefehle werden nicht wiederhergestellt — eine Konfiguration
-überlebt einen Power-Cycle, eine Gasstellung nicht.
+Treiber ist daran gebunden, dass die Bank armed ist, was der Koprozessor nur
+gewährt, solange das ARM-Register gesetzt ist, der Link nicht im Failsafe ist
+und der Heartbeat vertraut wird. Eine wiederhergestellte Bindung belegt also
+ihre Pins und hält sie im Idle, bis jemand armed. Kanalbefehle werden nicht
+wiederhergestellt — eine Konfiguration überlebt einen Power-Cycle, eine
+Gasstellung nicht.
 
 Das Speichern wartet, bis der Prüfstand nicht mehr treibt. Flash zu schreiben
 hält den Koprozessor zig Millisekunden mit abgeschalteten Interrupts an, länger

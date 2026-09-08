@@ -90,12 +90,25 @@ Panel als Leitung ohne Flanken gelesen wird.
 - Ein scharfer Prüfstand treibt jeden gebundenen Pin, ob ihn etwas
   kommandiert oder nicht. Ein Kanal, der 500 ms lang kein Kommando bekommt,
   wird auf der Ruhelage seiner Rolle ausgegeben: gestoppt bei throttle,
-  zentriert bei surface. Zentriert sind 1500 us über den voreingestellten
-  Endpunkten 1000 bis 2000 us, was ein ESC als etwa halbes Gas liest. Ein ESC
-  an einem Pin, der als Servoausgang gebunden ist, läuft damit mit etwa
-  halbem Gas, solange der Prüfstand scharf ist, und kein Timeout erreicht
-  ihn, weil das Gas die Pins kommandiert, die die Bindung als Motoren führt.
-  Beendet wird das durch Entschärfen.
+  zentriert bei surface. Zentriert ist die Mitte der Endpunkte dieses Kanals
+  — 1500 us über den voreingestellten 1000 bis 2000 us, 760 us über den 660
+  bis 860 us eines schmalen Servos. Das Timeout legt den Kanal auf diese
+  Ruhelage und lässt den Pin weiter treiben; beendet werden die Flanken durch
+  Entschärfen.
+- 1500 us an einem Empfängerausgang sind etwa halbes Gas. Was ein ESC tut,
+  der noch keinen Puls gesehen hat und dann 1500 us bekommt, ist an diesem
+  Prüfstand nicht gemessen: er kann mit etwa halbem Gas laufen, und er kann
+  das Scharfschalten verweigern, bis er einen Stopp gesehen hat. Ein Pin, der
+  als Servoausgang gebunden ist, kann daher einen laufenden Motor führen.
+- Das Gas erreicht einen Kanal mit der Rolle surface nicht, weil es die Pins
+  kommandiert, die die Bindung als Motoren führt. Ein Schreiben auf die
+  CHANNELS-Page erreicht ihn, weil diese Page Kanäle über den Index adressiert
+  und nicht über die Rolle.
+- In den ersten 500 ms nach dem Scharfschalten steht ein Kanal auf seinem
+  letzten Kommando und nicht auf seiner Ruhelage. Das Scharfschalten stempelt
+  die Uhr jedes Kanals, sodass ein Kommando, das im entschärften Zustand
+  gegeben wurde, nicht überfällig ist und ausgegeben wird, bis es überfällig
+  wird.
 
 ## Heartbeat statt Enable-Pegel
 

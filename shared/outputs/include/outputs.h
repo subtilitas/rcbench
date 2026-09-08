@@ -117,12 +117,13 @@ typedef struct {
     out_channel_t channel[OUT_MAX_CHANNELS];
     out_slot_t    slot[OUT_MAX_SLOTS];
     bool          armed;
-    uint32_t      timeout_ms;   /**< silence after which it stops driving  */
+    uint32_t      timeout_ms;   /**< silence after which a channel rests   */
     uint32_t      last_step_ms;
     uint64_t      reserved;     /**< pins this build will not drive        */
 } outputs_t;
 
-/** Silence after which an output stops driving. */
+/** Silence after which a channel is rendered at its role's rest.  It keeps
+ *  driving; see outputs_driving(). */
 #define OUT_DEFAULT_TIMEOUT_MS  500u
 
 void outputs_init(outputs_t *o, uint32_t now_ms);
@@ -228,7 +229,9 @@ bool outputs_keepalive(outputs_t *o, uint8_t ch, uint32_t now_ms);
 /** Whether the bank is armed, for a screen that shows it. */
 bool outputs_armed(const outputs_t *o);
 
-/** Advance slew to @p now_ms, and stop driving if nobody has commanded. */
+/** Advance slew to @p now_ms, and put a channel nobody has commanded for
+ *  timeout_ms at its role's rest.  It decides what a channel renders, not
+ *  whether it renders: see outputs_driving(). */
 void outputs_step(outputs_t *o, uint32_t now_ms);
 
 /** Everything to rest, immediately.  The failsafe edge calls this, and it
@@ -259,13 +262,35 @@ uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
  *   where they are.
  *
  * Limitation: an armed bank drives every bound pin whether or not anything is
- * commanding it.  A channel nobody commands sits at its role's rest, and a
- * surface's rest is OUT_SPAN/2 -- 1500 us across the default 1000 to 2000 us
- * endpoints, which an ESC (electronic speed controller) reads as about half
- * throttle.  A channel carrying the wrong role therefore presents mid travel
- * on its pin for as long as the bank is armed, and no timeout reaches it:
- * outputs_set_role_channels() addresses channels by role, so nothing ever
- * commands it.  The role is the only thing that decides this.
+ * commanding it.  A channel that has had no command for timeout_ms is
+ * rendered at its role's rest.  A surface's rest is OUT_SPAN/2, which
+ * outputs_pulse_us() renders as the midpoint of that channel's own endpoints:
+ * 1500 us across the default 1000 to 2000 us, and 760 us across the 660 to
+ * 860 us of a narrow servo.  Endpoints are per channel and are written over
+ * the CHAN_CFG page, so a channel carrying the wrong role presents the
+ * midpoint of whatever range it was given, for as long as the bank is armed.
+ *
+ * The timeout does reach that channel.  outputs_overdue() is true for it and
+ * outputs_step() acts on it every pass; what the timeout resolves to is the
+ * rest the channel is already at, so the edges stay on the pin.  A disarm is
+ * what takes them away.
+ *
+ * Nor is a wrong role out of reach of every command.  Channels are addressed
+ * two ways.  outputs_set_role_channels() addresses them by role and passes a
+ * surface by, which is why the throttle does not reach one.  outputs_set()
+ * and outputs_channels_apply_n() address them by index, and the CHANNELS page
+ * is written that way, so a write there commands a channel whatever its role.
+ *
+ * Rest is not where a channel sits for the first timeout_ms after an arm
+ * either.  outputs_arm() stamps last_command_ms on all OUT_MAX_CHANNELS
+ * channels, so a command given while disarmed is fresh again and is rendered
+ * until it goes overdue: 500 ms of the last command the bank was left with,
+ * at the default timeout.
+ *
+ * What an ESC (electronic speed controller) does with the surface rest is a
+ * question about the ESC.  A receiver output of 1500 us is about half
+ * throttle.  Whether one that has seen no pulses and is then handed 1500 us
+ * runs there or refuses to arm is not measured on this bench.
  */
 bool outputs_driving(const outputs_t *o);
 

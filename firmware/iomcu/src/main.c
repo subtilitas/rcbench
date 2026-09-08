@@ -888,10 +888,11 @@ int main(void)
          * A deferred save, once nothing is driving and the writes have
          * stopped.  Writing flash stops this core with interrupts off for
          * longer than the heartbeat's window, so it cannot happen while an
-         * output is live; the monitor loses its edges across the write and
-         * has to re-acquire, which is why it waits for the bench to be idle
-         * rather than merely disarmed.  It also waits for the pages to stop
-         * arriving, so CHAN_CFG and OUTPUTS are saved as the pair they are.
+         * output is live: the monitor loses its edges across the write and
+         * has to re-acquire.  The gate is outputs_driving(), which is the
+         * bank's armed flag, so what the save waits for is a disarm.  It also
+         * waits for the pages to stop arriving, so CHAN_CFG and OUTPUTS are
+         * saved as the pair they are.
          */
         if (out_store_tick(outputs_driving(&s_outputs), now)) {
             /*
