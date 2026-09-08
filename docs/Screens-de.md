@@ -245,6 +245,15 @@ Importansicht zeigt, was er entschieden hat, bevor die Datei geplottet wird.
 Vom Prüfstand aufgezeichnete Läufe werden als `BENCHnnn.CSV` im
 Wurzelverzeichnis der Karte abgelegt.
 
+Ein Lauf wird alle 20 Zeilen oder 1000 ms Laufzeit auf die Karte festgeschrieben,
+je nachdem, was zuerst eintritt: Ein Stromausfall mitten im Lauf kostet damit
+höchstens 1000 ms davon, der Rest der Datei bleibt lesbar. Geschrieben wird von
+einer eigenen Task. Eine SD-Karte (Secure Digital) darf sich für einen Schreibvorgang
+250 ms Zeit nehmen, und die Task, die die Sicherheitsleitung schlägt, hat eine
+Obergrenze von 150 ms. Kommt die Karte dem Lauf nicht nach, meldet das Panel beim
+Schließen des Laufs `the card fell behind -- the log has gaps`, und die Zeitspalte
+der Datei zeigt, wo die Lücke liegt.
+
 ## Setup
 
 ![Setup](img/setup.png)

@@ -228,6 +228,14 @@ point, a units row and ragged rows; the import view shows what it decided
 before the file is plotted. Runs recorded by the bench are written as
 `BENCHnnn.CSV` in the card's root directory.
 
+A run is committed to the card every 20 rows or 1000 ms of run, whichever
+comes first, so power lost mid-run costs at most 1000 ms of it and the rest of
+the file is readable. The card is written by a task of its own: an SD (Secure
+Digital) card is allowed 250 ms to finish a write, and the task that beats the
+safety line has a ceiling of 150 ms. If that task falls behind the run, the
+panel says `the card fell behind -- the log has gaps` when the run closes and
+the file's time column shows where the gap is.
+
 ## Setup
 
 ![Setup](img/setup.png)

@@ -267,14 +267,17 @@ Code baut. Für jede einen echten Wert aufschreiben:
 | Output geht nach ½ s in die Mitte | Arbeitet wie vorgesehen — in diesen Kanal hat nichts geschrieben, also ist er in seine Ruhelage gegangen: Mitte beim Servo, null beim Motor. Die Impulse laufen weiter, solange der Prüfstand scharf ist |
 | Impulse hören ganz auf | Nicht der Timeout. Etwas hat den Pin freigegeben, unscharf geschaltet oder den Prüfstand gestoppt |
 
-**Verhält sich der Prüfstand so, dass es aufs Panel zeigt**, sind die beiden
+**Verhält sich der Prüfstand so, dass es aufs Panel zeigt**, sind die drei
 neuesten und am wenigsten bewährten Dinge nur vom Compiler geprüft:
 
-- die **Flash-Keeper-Task** (`artkeep`) und
-- die **Artwork-Scheibe** in der Poll-Schleife der Control-Task.
+- die **Flash-Keeper-Task** (`artkeep`),
+- die **Artwork-Scheibe** in der Poll-Schleife der Control-Task und
+- die **Run-Log-Task** (`runlog`), der jeder Schreibzugriff auf die SD-Karte
+  (Secure Digital) gehört.
 
-Beide sind bei einem Koprozessor, der kein Foto meldet, wirkungslos — das ist
-der schnellste Weg, sie auszuschließen.
+Die ersten beiden sind bei einem Koprozessor, der kein Foto meldet, wirkungslos —
+das ist der schnellste Weg, sie auszuschließen. Die dritte ist ohne Karte im
+Schacht wirkungslos und tut nichts, bevor der Prüfstand scharf ist.
 
 ---
 

@@ -6,6 +6,27 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- **A power cut during a run left a 0-byte CSV (comma-separated values)
+  file.** The run log was written and never committed, and closed only on the
+  disarm edge. FAT (file allocation table) keeps a file's length in its
+  directory entry, and `fwrite` alone never writes that entry, so the whole
+  run was lost whatever the data sectors held. The file is committed every 20
+  rows or 1000 ms of run, whichever comes first, with `fflush` followed by
+  `fsync`. A power cut costs at most 20 rows, spanning less than 1.0 s of the
+  run.
+- **The run log put SD (Secure Digital) card writes on the safety line.** Row
+  writes, the file-name scan and the close ran on the control task, which
+  drives the heartbeat on GPIO6 and reads STOP. That task's ceiling is
+  HEARTBEAT_MAX_GAP_MS (150 ms) and the coprocessor fails safe after 200 ms of
+  link silence, while the SD specification allows a card 250 ms to finish one
+  single-block write: a card that paused was a dropped heartbeat, not a late
+  row. Every card access is now on the `runlog` task, and rows cross to it on
+  a queue the control task never waits on. A card that falls behind the run
+  costs rows, which are counted and reported on the panel when the run closes,
+  rather than costing the heartbeat.
+
 ## 0.7.0 - 2026-09-08
 
 The servo screen can drive a servo. Arming existed only on MOTOR & ESC and

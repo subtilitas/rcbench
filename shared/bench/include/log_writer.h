@@ -23,15 +23,42 @@ extern "C" {
 typedef struct {
     /** Returns bytes written, or a negative value on failure. */
     int (*write)(void *ctx, const void *data, size_t len);
+    /**
+     * Commit what has been written, so that a power cut keeps it.
+     *
+     * NULL for a sink that needs no commit, such as memory.  Returns false
+     * on failure.  Writing a row is not keeping it: on FAT (file allocation
+     * table) the directory entry carries the length, and until that entry is
+     * written the file reads as 0 bytes whatever the data sectors hold.
+     */
+    bool (*flush)(void *ctx);
     void *ctx;
 } log_sink_t;
 
 typedef struct {
     log_sink_t sink;
     uint32_t   rows;
+    uint32_t   pending;      /**< rows written since the last commit */
+    float      last_s;       /**< t_s of the last row written */
+    float      committed_s;  /**< t_s of the row the last commit ended at */
     bool       header_done;
     bool       failed;     /**< a write failed; the file is not trustworthy */
 } log_writer_t;
+
+/*
+ * What a power cut costs.
+ *
+ * The writer commits every LOG_WRITER_FLUSH_ROWS rows, and again once
+ * LOG_WRITER_FLUSH_S have passed on the run's own clock, whichever comes
+ * first.  At the panel's 20 Hz sample rate the two are the same point: 20
+ * rows is 1000 ms of run.
+ *
+ * A run interrupted at any moment therefore loses at most 20 rows, spanning
+ * less than 1.0 s of its own clock.  The price is one commit per second per
+ * run.
+ */
+#define LOG_WRITER_FLUSH_ROWS 20u
+#define LOG_WRITER_FLUSH_S    1.0f
 
 /**
  * Semicolon as the separator, full stop as the decimal point.
@@ -51,8 +78,32 @@ void log_writer_init(log_writer_t *w, const log_sink_t *sink);
  */
 bool log_writer_header(log_writer_t *w);
 
-/** Append one sample at @p t_s seconds. */
+/**
+ * Append one sample at @p t_s seconds, and commit when the row completes an
+ * interval.  False means the row did not go in, or it went in and the commit
+ * that followed it failed; log_writer_failed() then stays true either way.
+ */
 bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b);
+
+/**
+ * Commit the rows written since the last commit.
+ *
+ * log_writer_row() calls it on the schedule above.  A caller calls it by
+ * hand when a run has gone quiet with rows still uncommitted, and at the end
+ * of a run when closing the sink does not commit by itself.
+ *
+ * A commit with nothing pending does nothing and reports success: on a card
+ * it would be a transaction that buys nothing.  A commit that fails latches
+ * the writer the way a failed write does, because a row the sink will not
+ * keep is a row the file has lost.
+ */
+bool log_writer_commit(log_writer_t *w);
+
+/** Rows written and not yet committed: what a power cut would cost now. */
+static inline uint32_t log_writer_pending(const log_writer_t *w)
+{
+    return (w == NULL) ? 0u : w->pending;
+}
 
 /** True once any write has failed: the file is incomplete, not merely short. */
 static inline bool log_writer_failed(const log_writer_t *w)
