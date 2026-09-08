@@ -220,8 +220,18 @@ Versorgungen tragen ihre Spannung.
 beiden Enden des Wegs und den Jitter. Bit-Timings sind die größte
 unbestätigte Fläche im Baum.
 
-**Danach:** aufhören zu kommandieren und bestätigen, dass der Output nach
-**500 ms** aufhört zu treiben (`OUT_DEFAULT_TIMEOUT_MS`).
+**Danach:** bestätigen, dass der Servo-Bildschirm loslässt, wenn man es ihm
+sagt, und nur dann. Den Finger zu heben stoppt den Ausgang nicht: der
+Bildschirm hält die gegebene Stellung und wiederholt sie alle **100 ms**
+(`SERVO_HOLD_MS`) gegen die **500 ms** des Koprozessors
+(`OUT_DEFAULT_TIMEOUT_MS`), ein Servo bleibt also stehen, wo es hingestellt
+wurde. Es stoppt durch **RELEASE**, Unscharfschalten, STOP oder das Verlassen
+des Bildschirms — jedes davon löscht den Slot. Am Oszilloskop prüfen, dass die
+Impulse bei RELEASE aufhören.
+
+Ein Kanal, den niemand auffrischt, geht nach 500 ms weiterhin in seine
+Ruhelage; das betrifft einen gebundenen Pin, den der Servo-Bildschirm nicht
+hält.
 
 ---
 
