@@ -403,14 +403,17 @@ firmware and the decoder agree, and no more than that.
 
 ---
 
-## What is not decided
+## Settled
 
-**Does the Pi have the LA2016's field-programmable gate array bitstream?**
-libsigrok's driver needs it extracted from the vendor's software, and without
-it the analyser enumerates and captures nothing — which looks like a quiet
-bench rather than a broken one. `host/selftest.sh` asks that question
-specifically. If the extraction is a problem, the alternative is a different
-analyser, and it is better to know before the wiring is made.
-
-Settled: SWD over `linuxgpiod`, and the panel, display, touch and CAN
-controller live on the rig rather than being attached per session.
+- **The analyser's bitstream is provided**, so libsigrok can drive the LA2016.
+  `host/selftest.sh` still asks, because the failure is silent: an analyser
+  without it enumerates, accepts a capture and returns nothing, which reads as
+  a quiet bench rather than a broken one.
+- **SWD over `linuxgpiod`**, three wires and no supply between the Pi and a
+  board that has its own.
+- **The whole bench lives on the rig** — panel, display, touch and the CAN
+  controller — so a regression run is the same recipes over the same wiring
+  after every merge.
+- **Relays across BOOT and RESET**, closed by the RP2350.
+- **A camera on the display**, on a fixed mount, calibrated from the splash.
+- **The touch emulator answers at 0x14**, beside the real controller at 0x5D.
