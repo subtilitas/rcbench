@@ -46,6 +46,26 @@ uint8_t outputs_slots_write(uint16_t *regs, uint8_t off, uint8_t n,
                             const uint16_t *in);
 void    outputs_slots_apply(outputs_t *o, const uint16_t *regs);
 
+/**
+ * The channels these two pages render and mark with @p role, as a mask.
+ *
+ * Bit n is channel n.  Read per channel from the pages themselves, because a
+ * binding cannot answer this: outbind_from_slots() reads a slot's role from
+ * its first channel and lets the rest differ, so a multi-channel slot whose
+ * CHAN_CFG roles disagree collapses to one of them.  A screen that commands a
+ * role has to reach exactly the channels that carry it on the wire, and a
+ * servo horn reaching a channel bound as a throttle is a motor commanded to
+ * where a surface rests.
+ *
+ * A channel no slot renders is never in the mask, so a command sent to what
+ * this returns always reaches a pin.  Either page NULL returns zero, which is
+ * a caller that knows nothing rather than one that assumes.
+ *
+ * One bit per channel over LINK_OUT_CHANNELS channels, which is 8.
+ */
+uint8_t outputs_role_channels(const uint16_t *slots, const uint16_t *chan_cfg,
+                              out_role_t role);
+
 /* --- CHANNELS: what each output is asked for.  Clamped, not refused, because
  *     a command arrives many times a second from a host that may be mid-drag. */
 void    outputs_channels_defaults(uint16_t *regs);
