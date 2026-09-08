@@ -473,7 +473,7 @@ static void render_browse(gfx_canvas_t *c)
         gfx_rect_t box = gfx_rect_make(120, 160, 560, 160);
         ui_panel(c, box, "NO LOGS", UI_WARN);
         const char *why = (s.listed == -1) ? "No card. Insert one and tap RESCAN."
-                                           : "No .csv or .bfl files in the root.";
+                                           : "No .csv files in the root.";
         gfx_text(c, box.x + 24, box.y + 52, why, UI_FONT_LABEL, UI_TEXT, 1);
         gfx_text(c, box.x + 24, box.y + 76,
                  "The data logger writes here; so does Betaflight.",

@@ -639,10 +639,13 @@ static void pump(void)
  * card, whatever is actually mounted.
  */
 #define CARD_DIR      ""          /* the root of the mount point */
-/* Both kinds the viewer says it browses: its empty-card line names ".csv or
- * .bfl", and a Betaflight log is written in upper case.  storage_list()
- * matches case-insensitively. */
-#define CARD_SUFFIXES ".csv .bfl"
+/*
+ * What the viewer can actually open.  Every file it lists is handed to
+ * log_csv_analyse(), and nothing in the tree decodes a Betaflight blackbox
+ * log, so offering .bfl here would list files that fail to open.  The screen
+ * says the same thing; the two are kept together deliberately.
+ */
+#define CARD_SUFFIXES ".csv"
 
 /* The file the viewer currently has open, so close() has something to close.
  * One at a time: the viewer opens a log, reads it and closes it before it
@@ -673,12 +676,26 @@ static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
         return -1;
     }
     static storage_entry_t entries[LOG_VIEWER_MAX_FILES];
-    const int n = storage_list(CARD_DIR, CARD_SUFFIXES, entries,
-                               (max_entries < LOG_VIEWER_MAX_FILES)
-                                   ? max_entries
-                                   : LOG_VIEWER_MAX_FILES);
+    const int max = (max_entries < LOG_VIEWER_MAX_FILES) ? max_entries
+                                                         : LOG_VIEWER_MAX_FILES;
+    int n = storage_list(CARD_DIR, CARD_SUFFIXES, entries, max);
     if (n < 0) {
-        return -1;
+        /*
+         * Mounted, and yet its root will not open: the card it was mounted
+         * from has been taken out or swapped.  Nothing clears that flag on
+         * its own -- only storage_deinit() does -- so without this the mount
+         * stays stale for ever and every later RESCAN reads the old volume's
+         * metadata instead of the new card's.
+         */
+        ESP_LOGW(TAG, "the card stopped answering; remounting");
+        storage_deinit();
+        if (storage_init() != ESP_OK || !storage_mounted()) {
+            return -1;
+        }
+        n = storage_list(CARD_DIR, CARD_SUFFIXES, entries, max);
+        if (n < 0) {
+            return -1;
+        }
     }
     for (int i = 0; i < n; ++i) {
         /* Field by field rather than a block copy of the structure: the two
