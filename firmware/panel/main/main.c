@@ -301,6 +301,8 @@ typedef struct {
      * dropped.
      */
     uint32_t         stops;
+    /** And how many disarms; see s_disarms. */
+    uint32_t         disarms;
 } panel_cmd_t;
 
 /*
@@ -473,6 +475,14 @@ static atomic_bool s_stop_request;
 static atomic_bool s_stop_counted;
 static atomic_bool s_disarm_request;
 static atomic_bool s_servo_release_request;
+/*
+ * How many disarms have been asked for.
+ *
+ * The same job the stop count does: a disarm can be acted on between queue
+ * entries, out of the order the queue holds, so a drive command still behind
+ * it would otherwise put back what the disarm let go of.
+ */
+static atomic_uint s_disarms;
 /* False until the control task owns the safety state; bring-up polls the
  * link before that, with nothing to service. */
 static bool s_pump_live;
@@ -494,6 +504,7 @@ static void control_pump(void)
     bool saw_touch = false;
     while (touch_wait_event(&evt, 0)) {
         saw_touch = true;
+        bool counted_here = false;
         /*
          * The band's rectangle is a constant, so it has to be asked whether a
          * STOP is drawn: on the splash a tap in that corner presses nothing.
@@ -527,18 +538,22 @@ static void control_pump(void)
                  * slot, telling the far end -- follows when the loop is free.
                  */
                 arming_stop(&s_arm);
-                /*
-                 * And the router will latch this same release, because the
-                 * screen still sees the event: without this the backstop
-                 * would stop the bench a second time.  The count is what
-                 * rejects commands made before a stop, so a second one would
-                 * throw away a command the operator made after it.
-                 */
-                atomic_store(&s_stop_counted, true);
+                counted_here = true;
             }
         }
         /* The screen still sees every event: it draws the press. */
-        (void)xQueueSend(s_touch_q, &evt, 0);
+        const bool routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
+        /*
+         * The router will latch this same release and the backstop would
+         * then stop the bench a second time, so a stop applied here is
+         * marked -- but only if the event actually reached the router.  A
+         * marker left standing for an event nobody saw is consumed by the
+         * next stop the backstop really does have to apply, and that stop
+         * would be ignored.
+         */
+        if (counted_here && routed) {
+            atomic_store(&s_stop_counted, true);
+        }
     }
     /*
      * touch_age_ms() is the time since the controller last answered a poll,
@@ -1495,6 +1510,27 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
  * coprocessor's control page only while the link is up.  The flag is the
  * control loop's own and is published nowhere this could read it.
  */
+/*
+ * A disarm that was asked for, whether or not its queue entry survived.
+ *
+ * Doing it twice is doing it once: the policy, the bank and the far end all
+ * take the same state again.  Called between queue entries as well as before
+ * the drain, because a backlog of servo positions can hold the drain for
+ * seconds -- three exchanges each -- and a disarm must not wait behind
+ * commands that were asked for before it.
+ */
+static void service_disarm(bool link_up)
+{
+    if (atomic_exchange(&s_servo_release_request, false)) {
+        s_servo_held.kind = SERVO_CMD_NONE;
+        s_servo_release_owed = true;
+    }
+    if (atomic_exchange(&s_disarm_request, false)) {
+        disarm_here(link_up);
+        servo_service(link_up);
+    }
+}
+
 static void service_arming(bool link_up)
 {
     /*
@@ -1518,19 +1554,7 @@ static void service_arming(bool link_up)
      * being refreshed every 100 ms, over the top of an outputs binding made
      * later.
      */
-    /*
-     * A disarm that was asked for, whether or not its queue entry survived.
-     * Doing it twice is doing it once: the policy, the bank and the far end
-     * all take the same state again.
-     */
-    if (atomic_exchange(&s_servo_release_request, false)) {
-        s_servo_held.kind = SERVO_CMD_NONE;
-        s_servo_release_owed = true;
-    }
-    if (atomic_exchange(&s_disarm_request, false)) {
-        disarm_here(link_up);
-        servo_service(link_up);
-    }
+    service_disarm(link_up);
 
     const uint32_t stops = arming_stop_count(&s_arm);
     if (stops != s_stops_served) {
@@ -1927,6 +1951,12 @@ static void drain_commands(bool link_up, bench_state_t *bench)
     panel_cmd_t pc;
     while (xQueueReceive(s_cmd_q, &pc, 0) == pdTRUE) {
         /*
+         * Between entries, because a backlog of positions is seconds of
+         * exchanges and a disarm asked for during it must not wait them out.
+         */
+        service_disarm(link_up);
+
+        /*
          * Nothing asked for before a stop drives anything after it.
          *
          * The count of stops the sender had seen is no longer current, so
@@ -1946,7 +1976,9 @@ static void drain_commands(bool link_up, bench_state_t *bench)
                                 && (pc.servo.kind == SERVO_CMD_ARM
                                     || pc.servo.kind == SERVO_CMD_POSITION
                                     || pc.servo.kind == SERVO_CMD_CENTRE));
-        if (drives && pc.stops != arming_stop_count(&s_arm)) {
+        if (drives
+            && (pc.stops != arming_stop_count(&s_arm)
+                || pc.disarms != atomic_load(&s_disarms))) {
             continue;
         }
         if (pc.kind == PANEL_CMD_STOP) {
@@ -2534,9 +2566,11 @@ static void send_cmd(const panel_cmd_t *pc)
      * the way a stop is, and applying it twice costs nothing.
      */
     if (pc->kind == PANEL_CMD_MOTOR && pc->motor.kind == MOTOR_CMD_DISARM) {
+        atomic_fetch_add(&s_disarms, 1u);
         atomic_store(&s_disarm_request, true);
     } else if (pc->kind == PANEL_CMD_SERVO
                && pc->servo.kind == SERVO_CMD_DISARM) {
+        atomic_fetch_add(&s_disarms, 1u);
         atomic_store(&s_disarm_request, true);
         atomic_store(&s_servo_release_request, true);
     }
@@ -2710,13 +2744,15 @@ void app_main(void)
         motor_cmd_t mc;
         while (motor_screen_poll_cmd(&mc)) {
             panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
-                               .stops = stops_now };
+                               .stops = stops_now,
+                               .disarms = atomic_load(&s_disarms) };
             send_cmd(&pc);
         }
         servo_cmd_t sv;
         if (servo_screen_take(&sv)) {
             panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
-                               .stops = stops_now };
+                               .stops = stops_now,
+                               .disarms = atomic_load(&s_disarms) };
             send_cmd(&pc);
         }
         /*

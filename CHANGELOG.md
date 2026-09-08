@@ -26,6 +26,19 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **A disarm waited behind a backlog of positions.** Making it unloseable did
+  not make it prompt: the flag was read once before the queue was drained, and
+  a backlog of servo positions is three exchanges each, so a degraded link
+  could keep the bench armed for seconds after a disarm. The flags are
+  serviced between queue entries now, and a command that predates a disarm no
+  longer drives after it -- each carries the count of disarms its sender had
+  seen, as it already carried the count of stops.
+- **A stop the pump saw but could not route could swallow the next one.** The
+  marker that stops the backstop counting a press twice was set whether or not
+  the event reached the router; when the router's queue was full it never
+  latched, and the marker stayed armed until it consumed a later stop the
+  backstop really did have to apply. It is set only when the event was
+  actually routed.
 - **One STOP press counted as two stops.** The press is applied where it is
   seen, and the screen still receives the event, so the router latched the
   same release and the backstop stopped the bench again. The count is what
