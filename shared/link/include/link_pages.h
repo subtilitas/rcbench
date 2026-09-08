@@ -51,8 +51,8 @@ typedef enum {
  * bump the minor when a page or a register is added at the end, which an
  * older host can ignore.
  */
-#define LINK_PROTOCOL_MAJOR 2u
-#define LINK_PROTOCOL_MINOR 5u
+#define LINK_PROTOCOL_MAJOR 3u
+#define LINK_PROTOCOL_MINOR 0u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -248,7 +248,25 @@ typedef enum {
     LINK_BN_VOLTAGE_OK = 1u << 0, /**< a sensor answered; else the field is 0 */
     LINK_BN_CURRENT_OK = 1u << 1,
     LINK_BN_RPM_OK     = 1u << 2,
+    /**
+     * The ESC's own temperature.
+     *
+     * Its meaning changed at protocol 3.0: before that it validated both
+     * temperature fields, which is why the change is a major and not an
+     * added bit.  A coprocessor that sets it and leaves temp_motor at zero
+     * would have told a 2.x panel that a motor it cannot measure is at 0 C.
+     */
     LINK_BN_TEMP_OK    = 1u << 3,
+    /**
+     * The motor's temperature, which is a different sensor.
+     *
+     * Separate because the two arrive from different places and one of them
+     * usually does not arrive at all: an ESC reports its own temperature over
+     * extended DShot telemetry and knows nothing about the motor it is
+     * driving.  One flag for both would show a motor at 0 C whenever an ESC
+     * reported its own.
+     */
+    LINK_BN_TEMP_MOT_OK = 1u << 4,
     /**
      * The numbers are modelled, not measured.  Set by a coprocessor running
      * without a front end and by the panel's own simulator; the panel draws

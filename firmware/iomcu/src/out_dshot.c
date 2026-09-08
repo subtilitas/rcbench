@@ -10,6 +10,7 @@
 
 #include "hardware/gpio.h"
 #include "hardware/pio.h"
+#include "hardware/structs/io_bank0.h"
 
 #include "dshot.pio.h"
 #include "outputs.h"
@@ -98,9 +99,14 @@ static bool claim_receiver(dshot_out_t *s)
  */
 static void release_pad(uint8_t pin)
 {
+    /* The function first, then the overrides: gpio_set_function() assigns the
+     * pad's control register whole, so anything set before it is lost.  Both
+     * orders end at NORMAL here, but the trap is the same one that cost
+     * bidirectional DShot its inversion, and it is not worth leaving written
+     * down the wrong way round. */
+    gpio_set_function(pin, GPIO_FUNC_SIO);
     gpio_set_outover(pin, GPIO_OVERRIDE_NORMAL);
     gpio_disable_pulls(pin);
-    gpio_set_function(pin, GPIO_FUNC_SIO);
     gpio_set_dir(pin, GPIO_IN);
 }
 
@@ -159,11 +165,37 @@ bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional)
          * the output driver only, so the same pin still reads the line's true
          * level once the transmitter has let go of it, and the pull-up is
          * what holds the idle in between.
+         *
+         * After the program's init, never before it.  That init begins with
+         * pio_gpio_init(), which is gpio_set_function(), which assigns the
+         * pad's whole control register rather than masking it -- the SDK says
+         * so in as many words: "Zero all fields apart from fsel".  OUTOVER is
+         * one of those fields.  Setting the inverter first leaves it wiped
+         * before a single frame goes out, and the pull-up survives because
+         * pulls live in the pad block instead, so the line still idles high
+         * and the fault reads as a protocol that no ESC accepts rather than
+         * as a pin that was never inverted.
          */
-        gpio_set_outover(pin, GPIO_OVERRIDE_INVERT);
         gpio_pull_up(pin);
         dshot_bidir_tx_program_init(s->pio, s->tx_sm, s->tx_offset, pin,
                                     s->bits_per_second);
+        gpio_set_outover(pin, GPIO_OVERRIDE_INVERT);
+        /*
+         * And read back what the pad actually holds.  The ordering above is
+         * the whole of bidirectional DShot's polarity and nothing else in
+         * this file would notice losing it: a bind that quietly went out
+         * non-inverted is an ESC that never initialises, which is what this
+         * cost once already.  Refused rather than driven wrong.
+         */
+        if ((io_bank0_hw->io[pin].ctrl & IO_BANK0_GPIO0_CTRL_OUTOVER_BITS)
+            != ((uint32_t)GPIO_OVERRIDE_INVERT
+                << IO_BANK0_GPIO0_CTRL_OUTOVER_LSB)) {
+            pio_remove_program(s->pio, tx_program(true), s->tx_offset);
+            pio_sm_unclaim(s->pio, s->tx_sm);
+            memset(s, 0, sizeof(*s));
+            release_pad(pin);
+            return false;
+        }
         if (!claim_receiver(s)) {
             /* The transmitter's program_init has already muxed the pad to
              * the block, so the pad is put back with everything else this
@@ -288,7 +320,7 @@ void out_dshot_send(uint8_t pin, uint16_t value, bool telemetry)
 
 /* ------------------------------------------------------------- the reply */
 
-bool out_dshot_poll(uint8_t pin, dshot_telem_t *out)
+bool out_dshot_poll(uint8_t pin, bool edt, dshot_telem_t *out)
 {
     dshot_out_t *s = find(pin);
     if (s == NULL || out == NULL || !s->bidir || !s->armed) {
@@ -313,6 +345,7 @@ bool out_dshot_poll(uint8_t pin, dshot_telem_t *out)
     if (!dshot_rx_bits(cap, n, DSHOT_RX_OVERSAMPLE, &line)) {
         return false;
     }
-    /* Extended telemetry is never enabled, so every reply is a period. */
-    return dshot_telem_decode(line, false, out);
+    /* Whether the other frame types can be in this stream is the caller's to
+     * know: it is the end that sent DSHOT_CMD_EDT_ENABLE. */
+    return dshot_telem_decode(line, edt, out);
 }

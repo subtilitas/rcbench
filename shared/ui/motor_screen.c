@@ -535,9 +535,14 @@ static void draw_header(gfx_canvas_t *c)
      */
     const bool temp_ok = s.bench.valid
                          && (s.bench.flags & LINK_BN_TEMP_OK) != 0u;
+    /* The motor's sensor is its own, and usually there is not one: an ESC
+     * reporting its own temperature says nothing about the motor it drives,
+     * and one flag for both would draw "MOT 0C" as a reading. */
+    const bool mot_ok = s.bench.valid
+                        && (s.bench.flags & LINK_BN_TEMP_MOT_OK) != 0u;
     char esc[16], mot[16], mcu[16], temps[52];
     temp_text(esc, sizeof(esc), "ESC", s.bench.temp_esc, temp_ok);
-    temp_text(mot, sizeof(mot), "MOT", s.bench.temp_motor, temp_ok);
+    temp_text(mot, sizeof(mot), "MOT", s.bench.temp_motor, mot_ok);
     temp_text(mcu, sizeof(mcu), "MCU", st->mcu_temp_c,
               isfinite(st->mcu_temp_c));
     snprintf(temps, sizeof(temps), "%s  %s  %s", esc, mot, mcu);

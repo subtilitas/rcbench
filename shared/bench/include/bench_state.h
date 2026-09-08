@@ -41,6 +41,15 @@ typedef struct {
 
     uint16_t flags;     /**< link_bench_flag_t                            */
     bool     valid;     /**< a poll has answered at least once            */
+    /**
+     * Whether voltage_min is a measurement yet.
+     *
+     * The sag floor is the one peak that cannot start at the live reading
+     * when there is no live reading: a run whose first samples arrive before
+     * the first voltage does would keep a floor of 0 V and reject every real
+     * reading after it, and report a collapsed pack for the whole run.
+     */
+    bool     sag_seeded;
 } bench_state_t;
 
 /** True when the numbers are modelled rather than measured. */
@@ -64,6 +73,16 @@ void bench_state_to_regs(const bench_state_t *b, uint16_t *regs);
 
 /** Clear the peaks without disturbing the live readings. */
 void bench_state_reset_peaks(bench_state_t *b);
+
+/**
+ * Take the live readings into the peaks.
+ *
+ * Only what the flags mark valid: an empty field is not a measurement of
+ * zero, and a sag floor or a current peak taken from one would stand for the
+ * rest of the run. The floor is seeded by the first valid voltage rather than
+ * by the reset, because a reset can happen before any voltage has arrived.
+ */
+void bench_state_track_peaks(bench_state_t *b);
 
 #ifdef __cplusplus
 }

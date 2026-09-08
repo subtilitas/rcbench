@@ -187,6 +187,23 @@ The payload is a period, not a speed:
 
 A payload of 0x0FFF means the motor is not turning.
 
+### The inversion lives on the pad, and it goes on last
+
+The line is inverted by the pad's output override rather than by the PIO
+program, so the same pin still reads the line's true level once the
+transmitter has let go of it, and the pull-up holds the idle in between.
+
+The override is applied **after** the state machine's initialisation, never
+before. That initialisation begins with `pio_gpio_init()`, which is
+`gpio_set_function()`, which assigns the pad's whole control register instead
+of masking it. The override lives in that register and is lost. The pull-up is
+not, because pulls are in the pad block, so a pin that lost its inversion still
+idles high and looks like a protocol fault rather than a pin fault.
+
+The bind reads the register back and refuses rather than driving a line whose
+polarity it could not set. Ordering is the whole of the polarity here, and
+nothing else in the driver would notice losing it.
+
 ### The reply is sampled, not timed
 
 The coprocessor samples the line at five times the reply's bit rate and decodes
@@ -215,12 +232,32 @@ is worse than an empty field.
 An ESC sent command 13 interleaves temperature, voltage, current, stress and
 status frames between the speed ones, marked by the top nibble of the payload.
 
-The bench does not send that command, so every reply is read as a period. The
-two cannot be told apart from the bits alone: the nibble that marks an extended
-frame is an ordinary exponent and mantissa in a speed frame, and only an ESC
-with extended telemetry enabled guarantees the normalisation that separates
-them. The decoder therefore takes the mode as an argument rather than inferring
-it.
+The bench sends command 13 on every edge into driving, ten times, before any
+throttle. Ten frames at 1 kHz is 10 ms, and command 13 is inside the command
+range, so nothing turns while it goes out; a throttle already asked for
+arrives 10 ms later than it otherwise would. It is sent again on each edge
+rather than once at bind time, because extended telemetry is a runtime setting
+an ESC forgets when it loses power and an ESC can be swapped between runs.
+
+The two frame kinds cannot be told apart from the bits alone: the nibble that
+marks an extended frame is an ordinary exponent and mantissa in a speed frame,
+and only an ESC with extended telemetry enabled guarantees the normalisation
+that separates them. The decoder therefore takes the mode as an argument
+rather than inferring it, and `outputs_hw.c` passes true once the ten repeats
+have gone.
+
+An ESC that does not know command 13 ignores it and keeps sending periods.
+Those still read as periods: a frame is taken for an extended one only when
+the mantissa's top bit is clear and the type nibble is not zero, which an ESC
+that normalises its exponent never sends. An ESC that does not normalise is
+the case this cannot survive, and no such ESC has been tried.
+
+Temperature, voltage and current reach the bench numbers from here and from
+nowhere else: there is no measurement front end on the coprocessor. Each keeps
+its own staleness window of 2000 ms, against 200 ms for speed, because the
+extended frames are interleaved a few a second while a period comes back on
+every frame. Power is the product of voltage and current, and stays empty
+unless both arrived.
 
 ## What has not been confirmed on a wire
 
@@ -232,7 +269,8 @@ on an oscilloscope or against an ESC on this bench:
 - the reply rate of five quarters of the DShot rate;
 - the leading-bit convention of the group code;
 - the turnaround delay, and whether 30 µs is what an ESC actually waits;
-- the extended-telemetry frame types and their units;
+- the extended-telemetry frame types and their units, and whether an ESC
+  accepts command 13 at all;
 - every bit timing, against a real ESC's tolerance rather than against the
   specification.
 
