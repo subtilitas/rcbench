@@ -94,19 +94,39 @@ Coils from their own supply, through their driver, controlled by the RP2350.
 Coil unpowered is button not pressed, which is the state a board runs in.
 
 Four driver inputs need four pins. The testbench firmware does not exist yet,
-so this is a proposal to fix when it is written rather than something the tree
-already says:
+so the whole of this table is a proposal to fix when it is written rather than
+something the tree already says. It is here because an assembler cannot wire
+steps 5 and 7 without it.
 
-| RP2350 pin | Closes |
-|---|---|
-| GP16 | panel RESET |
-| GP17 | panel BOOT |
-| GP18 | coprocessor RESET |
-| GP19 | coprocessor BOOT |
+| RP2350 pin | Carries | Direction |
+|---|---|---|
+| GP16 | panel RESET relay | out |
+| GP17 | panel BOOT relay | out |
+| GP18 | coprocessor RESET relay | out |
+| GP19 | coprocessor BOOT relay | out |
+| GP20 | touch emulator SDA, step 5 | open drain, both ways |
+| GP21 | touch emulator SCL, step 5 | open drain, both ways |
+| GP22 | heartbeat injection, step 7 | out |
 
-The same firmware carries the touch emulator's I²C pair, the stimulus outputs
-and the heartbeat injection for the interlock test, so the four are chosen
-away from those rather than at the start of the header.
+GP20 and GP21 are an I²C0 pair on this part: the function table gives
+`I2C0_SDA` on GP20 and `I2C0_SCL` on GP21. They must be **open drain with no
+pull-up added here** -- the panel's bus already has its pull-ups, and a second
+set changes the rise time on a bus this bench exists to measure. The emulator
+is an I²C target at 0x14, not a master; the panel is the master and the real
+controller stays at 0x5D.
+
+The same two pins do double duty in step 5's second check, where the emulator
+pulls one line at a time to prove which lead is on which. That is the same
+open-drain drive, so it needs no extra pin.
+
+GP22 is a plain output. It drives the heartbeat junction with a 20 ms square
+in step 7, and **only after both links there are open** -- the panel drives
+its end push-pull, so driving that node while its branch is closed is
+contention, not a test.
+
+The relays are at GP16 to GP19 rather than at the start of the header so that
+GP0 to GP15 stay free for the analyser leads and for a stimulus generator this
+guide does not yet describe.
 
 **Check**, one at a time, with the boards powered:
 
@@ -124,8 +144,9 @@ normally-closed contact.
 ## 5. The touch bus
 
 Two probe leads on the panel's I²C bus, SCL and SDA, and the emulator's two
-lines to the same bus. The emulator answers at 0x14; the real controller stays
-at 0x5D and is not disturbed.
+lines to the same bus -- SDA to the RP2350's GP20 and SCL to GP21, open drain,
+adding no pull-up. The emulator answers at 0x14; the real controller stays at
+0x5D and is not disturbed.
 
 **Do not probe this bus with the Pi.** The panel is the master. A second
 master is a fault, not a measurement.
@@ -283,8 +304,9 @@ Split it before injecting anything, which is what the two links are for:
 
 1. **Open the panel's branch.** Nothing of the panel's is driving now.
 2. **Open the monostable's trigger branch.** It can see nothing from here on.
-3. **Have the RP2350 drive the junction** with a clean 20 ms square, so
-   `heartbeat_poll()` on the coprocessor never expires.
+3. **Have the RP2350 drive the junction from GP22** with a clean 20 ms square,
+   so `heartbeat_poll()` on the coprocessor never expires. Both links above
+   are open before this pin drives anything.
 
 Firmware is now being told the panel is alive, and the interlock is being told
 nothing. Arm, bind an output, and capture **after the gate** -- the load-facing
