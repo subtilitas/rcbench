@@ -136,7 +136,7 @@ nothing.
 
 **Check.** With both boards running, capture CS and RXCAN:
 
-    testbench/host/capture.sh link-idle D7,D11 8m 4m 1.65
+    testbench/host/capture.sh link-idle D7,D8 8m 4m 1.65
 
 CS should be busy at the poll rate. RXCAN should carry traffic between the
 bursts. If CS moves and RXCAN is flat, the probe is on the wrong side of the
