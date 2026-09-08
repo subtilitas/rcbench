@@ -239,3 +239,40 @@ void outputs_channels_apply(outputs_t *o, const uint16_t *regs,
 {
     outputs_channels_apply_n(o, regs, 0u, (uint8_t)LINK_CH_COUNT, now_ms);
 }
+
+uint8_t outputs_role_channels(const uint16_t *slots, const uint16_t *chan_cfg,
+                              out_role_t role)
+{
+    /* One bit per channel.  The mask is as wide as the page. */
+    _Static_assert(LINK_OUT_CHANNELS <= 8u,
+                   "a channel mask holds LINK_OUT_CHANNELS bits");
+    if (slots == NULL || chan_cfg == NULL) {
+        return 0u;
+    }
+    const uint16_t want = (role == OUT_ROLE_THROTTLE)
+                              ? (uint16_t)LINK_CC_ROLE_THROTTLE
+                              : (uint16_t)LINK_CC_ROLE_SURFACE;
+    uint8_t mask = 0u;
+    for (uint8_t sl = 0; sl < LINK_OUT_SLOTS; ++sl) {
+        const uint16_t *r = &slots[(size_t)sl * LINK_OS_STRIDE];
+        if (r[LINK_OS_DRIVER] == (uint16_t)LINK_DRIVER_NONE) {
+            continue;
+        }
+        const uint8_t first = LINK_OS_FIRST(r[LINK_OS_RANGE]);
+        const uint8_t n     = LINK_OS_CHANNELS(r[LINK_OS_RANGE]);
+        for (uint8_t c = first; c < first + n && c < LINK_OUT_CHANNELS; ++c) {
+            /*
+             * Each channel answers for itself.  A slot whose channels carry
+             * different roles is not a page this end writes, but it is a page
+             * this end can be handed, and reading it by its first channel is
+             * how a throttle ends up in a surface's mask.
+             */
+            const uint16_t got =
+                chan_cfg[(size_t)c * LINK_CC_STRIDE + LINK_CC_ROLE];
+            if (got == want) {
+                mask |= (uint8_t)(1u << c);
+            }
+        }
+    }
+    return mask;
+}

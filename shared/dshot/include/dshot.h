@@ -135,6 +135,8 @@ typedef enum {
     DSHOT_TELEM_DEBUG2,
     DSHOT_TELEM_STRESS,
     DSHOT_TELEM_STATUS,
+    /** How many kinds there are, for anything holding one slot per kind. */
+    DSHOT_TELEM_KINDS,
 } dshot_telem_kind_t;
 
 typedef struct {
