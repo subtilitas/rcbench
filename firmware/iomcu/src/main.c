@@ -724,23 +724,9 @@ static void sample(void)
     }
     s_was_driving = driving;
 
-    if (s_bench.rpm > s_bench.rpm_max) {
-        s_bench.rpm_max = s_bench.rpm;
-    }
-    /* Peaks only from readings that arrived.  A field left empty is not a
-     * measurement of zero, and a sag floor taken from one would read as a
-     * collapsed pack for the rest of the run. */
-    if ((s_bench.flags & (uint16_t)LINK_BN_VOLTAGE_OK) != 0u
-        && s_bench.voltage < s_bench.voltage_min) {
-        s_bench.voltage_min = s_bench.voltage;
-    }
-    if ((s_bench.flags & (uint16_t)LINK_BN_CURRENT_OK) != 0u
-        && s_bench.current > s_bench.current_max) {
-        s_bench.current_max = s_bench.current;
-    }
-    if (s_bench.power > s_bench.power_max) {
-        s_bench.power_max = s_bench.power;
-    }
+    /* Peaks only from readings that arrived, and a sag floor seeded by the
+     * first voltage of the run rather than by the reset that opened it. */
+    bench_state_track_peaks(&s_bench);
     bench_state_to_regs(&s_bench, s_state.bench);
 
     s_state.status[LINK_ST_STATE] =

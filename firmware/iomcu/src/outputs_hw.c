@@ -69,16 +69,14 @@ static bool     s_have_edt[DSHOT_TELEM_KINDS];
 static uint16_t s_edt[DSHOT_TELEM_KINDS];
 static uint32_t s_edt_ms[DSHOT_TELEM_KINDS];
 
+/* Defined with the rendering, which is what decides when a run has ended. */
+static void forget_telem(void);
+
 void outputs_hw_init(void)
 {
     memset(s_shadow, 0, sizeof(s_shadow));
     memset(s_state, 0, sizeof(s_state));
-    s_have_erpm = false;
-    s_erpm      = 0u;
-    s_erpm_ms   = 0u;
-    memset(s_have_edt, 0, sizeof(s_have_edt));
-    memset(s_edt, 0, sizeof(s_edt));
-    memset(s_edt_ms, 0, sizeof(s_edt_ms));
+    forget_telem();
 }
 
 bool outputs_hw_bound(uint8_t slot)
@@ -194,6 +192,24 @@ static void record_telem(const dshot_telem_t *t)
     }
 }
 
+/*
+ * Drop everything an ESC said.
+ *
+ * At the end of a run, because the next run need not be the same ESC: one can
+ * be unplugged and another fitted between two arms, and a reading that
+ * outlived its sender would be published as the new one's for as long as its
+ * staleness window lasts -- and would seed that run's peaks on the way past.
+ */
+static void forget_telem(void)
+{
+    s_have_erpm = false;
+    s_erpm      = 0u;
+    s_erpm_ms   = 0u;
+    memset(s_have_edt, 0, sizeof(s_have_edt));
+    memset(s_edt, 0, sizeof(s_edt));
+    memset(s_edt_ms, 0, sizeof(s_edt_ms));
+}
+
 static void service_ppm(const outputs_t *o, const out_slot_t *s, bool drive)
 {
     if (!drive) {
@@ -288,6 +304,17 @@ void outputs_hw_service(const outputs_t *o)
      * while another had already stopped.
      */
     const bool drive = outputs_driving(o);
+
+    /*
+     * The end of a run, asked once for the bank rather than per slot: the
+     * telemetry cache is one motor's and the slots share it, so a slot that
+     * happened not to be driving must not clear what another one just heard.
+     */
+    static bool s_was_driving;
+    if (s_was_driving && !drive) {
+        forget_telem();
+    }
+    s_was_driving = drive;
 
     for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
         if (!s_state[i].bound) {
