@@ -415,8 +415,11 @@ the CLEAR register -- so the link can be back and showing `LINK` while the bit
 is still displayed. It says something happened, not that something is wrong
 now.
 
-- An older build on one of the two boards, which counts the wait for the
-  panel's first request as silence.
+- An older **coprocessor** image, which counts the wait for the panel's first
+  request as silence. Only that board can produce this one: the pre-request
+  watchdog is `link_dev_tick()`, and the panel does not run `link_dev` at all.
+  A panel older than 0.7.0 does not cause it, so reflashing the panel for this
+  symptom changes nothing.
 - A real gap after the first request. `shared/link/link_dev.c` latches the
   failsafe after 200 ms of silence, and 200 ms of silence has causes that have
   nothing to do with the build: a save to the coprocessor's flash stops that
