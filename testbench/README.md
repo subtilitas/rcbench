@@ -10,9 +10,11 @@ in the tree was written from a specification and exercised only against frames
 the same code builds. `docs/FirstRun.md` section 7 is the list of numbers
 nobody has measured. This bench is what answers it.
 
-**Nothing here has been run.** The hardware is being assembled; the pin map
-below is a proposal to be checked against the wiring, and the two open
-questions at the end need answering before any of it is true.
+**Nothing here has been run.** The hardware is being assembled, the channel
+map is a proposal to be checked against the wiring as built, and three of the
+pieces are described rather than written -- the panel's debug touch address,
+the decoders and the recipes. Each says so where it is described, and they are
+listed together under *What is not built yet*.
 
 ---
 
@@ -396,21 +398,26 @@ firmware and the decoder agree, and no more than that.
 - **The panel's debug touch address.** Described above; without it the touch
   emulator injects nothing. One build option and one probe order, in its own
   pull request.
-- **The decoders.** Described in `decoders/README.md`, and waiting on a
-  capture to check them against.
+- **The decoders.** Described in `decoders/README.md`. Two of their three
+  checks wait on nothing: the round trip against this tree's own builder, and
+  the published vectors that prove the convention. Only the comparison against
+  a capture of another implementation needs the bench.
 - **The recipes.** The runner, and the first measurement, wait on the bench
   existing.
 
 ---
 
-## What is not decided
+## Settled
 
-**Does the Pi have the LA2016's field-programmable gate array bitstream?**
-libsigrok's driver needs it extracted from the vendor's software, and without
-it the analyser enumerates and captures nothing — which looks like a quiet
-bench rather than a broken one. `host/selftest.sh` asks that question
-specifically. If the extraction is a problem, the alternative is a different
-analyser, and it is better to know before the wiring is made.
-
-Settled: SWD over `linuxgpiod`, and the panel, display, touch and CAN
-controller live on the rig rather than being attached per session.
+- **The analyser's bitstream is provided**, so libsigrok can drive the LA2016.
+  `host/selftest.sh` still asks, because the failure is silent: an analyser
+  without it enumerates, accepts a capture and returns nothing, which reads as
+  a quiet bench rather than a broken one.
+- **SWD over `linuxgpiod`**, three wires and no supply between the Pi and a
+  board that has its own.
+- **The whole bench lives on the rig** — panel, display, touch and the CAN
+  controller — so a regression run is the same recipes over the same wiring
+  after every merge.
+- **Relays across BOOT and RESET**, closed by the RP2350.
+- **A camera on the display**, on a fixed mount, calibrated from the splash.
+- **The touch emulator answers at 0x14**, beside the real controller at 0x5D.
