@@ -83,8 +83,10 @@ void telemetry_sim_step(telemetry_sim_t *s, float throttle_pct, float dt_s,
     if (power   > out->power_max)   { out->power_max   = power; }
     if (s->rpm  > out->rpm_max)     { out->rpm_max     = s->rpm; }
 
+    /* Both temperatures, because this models both: the motor's flag is
+     * separate precisely because a real ESC reports only its own. */
     out->flags = LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
-               | LINK_BN_RPM_OK | LINK_BN_TEMP_OK
+               | LINK_BN_RPM_OK | LINK_BN_TEMP_OK | LINK_BN_TEMP_MOT_OK
                | LINK_BN_SIMULATED;
     out->valid = true;
 }

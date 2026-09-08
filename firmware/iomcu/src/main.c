@@ -641,6 +641,16 @@ static bench_state_t s_bench;
 #define RPM_STALE_MS  200u
 
 /*
+ * How old an extended-telemetry reading may be before the field goes empty.
+ *
+ * Longer than RPM_STALE_MS because the rates are not the same: an ESC answers
+ * every frame with a period and interleaves temperature, voltage and current
+ * between them a few times a second.  Holding those to the speed's window
+ * would blank fields that are arriving exactly as the protocol sends them.
+ */
+#define EDT_STALE_MS  2000u
+
+/*
  * The peaks belong to a run, and a run starts when the bank arms.
  *
  * They are kept on this end because it has the fast samples and the panel
@@ -674,6 +684,40 @@ static void sample(void)
         s_bench.flags |= (uint16_t)LINK_BN_RPM_OK;
     }
 
+    /*
+     * What the ESC says about itself, when it does extended telemetry.  The
+     * units belong to the frame type: a quarter of a volt and a whole amp per
+     * count, and degrees Celsius as a byte.
+     *
+     * There is no other source for any of these on this board.  An ESC that
+     * was not asked, or that does not know the command, leaves them empty and
+     * the flags clear, which is what the panel draws as a blank field rather
+     * than as a zero.
+     */
+    uint16_t edt = 0u;
+    if (outputs_hw_edt(DSHOT_TELEM_VOLTAGE, &edt, &age) && age <= EDT_STALE_MS) {
+        s_bench.voltage = (float)edt * 0.25f;
+        s_bench.flags |= (uint16_t)LINK_BN_VOLTAGE_OK;
+    }
+    if (outputs_hw_edt(DSHOT_TELEM_CURRENT, &edt, &age) && age <= EDT_STALE_MS) {
+        s_bench.current = (float)edt;
+        s_bench.flags |= (uint16_t)LINK_BN_CURRENT_OK;
+    }
+    if (outputs_hw_edt(DSHOT_TELEM_TEMPERATURE, &edt, &age)
+        && age <= EDT_STALE_MS) {
+        /* The ESC's own, and only that.  LINK_BN_TEMP_MOT_OK stays clear:
+         * an ESC knows nothing about the motor it drives, and temp_motor has
+         * no source on this board at all. */
+        s_bench.temp_esc = (float)edt;
+        s_bench.flags |= (uint16_t)LINK_BN_TEMP_OK;
+    }
+    /* Power is the product and not a reading, so it is only as good as both
+     * halves: one of them missing leaves it empty rather than zero. */
+    if ((s_bench.flags & (uint16_t)LINK_BN_VOLTAGE_OK) != 0u
+        && (s_bench.flags & (uint16_t)LINK_BN_CURRENT_OK) != 0u) {
+        s_bench.power = s_bench.voltage * s_bench.current;
+    }
+
     /* On the edge into driving, so a run's peaks are that run's.  The reset
      * takes the current reading rather than zero, which is what stops a sag
      * floor of 0 V reading as a collapsed pack. */
@@ -683,9 +727,9 @@ static void sample(void)
     }
     s_was_driving = driving;
 
-    if (s_bench.rpm > s_bench.rpm_max) {
-        s_bench.rpm_max = s_bench.rpm;
-    }
+    /* Peaks only from readings that arrived, and a sag floor seeded by the
+     * first voltage of the run rather than by the reset that opened it. */
+    bench_state_track_peaks(&s_bench);
     bench_state_to_regs(&s_bench, s_state.bench);
 
     s_state.status[LINK_ST_STATE] =
