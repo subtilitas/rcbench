@@ -198,9 +198,12 @@ void outputs_hw_service(const outputs_t *o)
         return;
     }
     /*
-     * One question for the whole bank: is it armed and being commanded.
-     * Asking it per slot would let one output keep driving on a stale answer
-     * while another had already stopped.
+     * One question for the whole bank: is it armed.  Asking it per slot would
+     * let one output keep driving on a stale answer while another had already
+     * stopped.  Whether a channel is still being commanded is a separate
+     * question, answered per channel one step earlier: outputs_step() has put
+     * an overdue channel at its rest, so what goes on the pin below is that
+     * rest rather than nothing.
      */
     const bool drive = outputs_driving(o);
 

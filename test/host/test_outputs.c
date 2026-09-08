@@ -333,6 +333,44 @@ TEST_CASE(a_command_while_disarmed_is_remembered_and_not_emitted)
     CHECK(!outputs_driving(&o));
 }
 
+/*
+ * outputs_driving() is the bank's armed flag and asks nothing else.  It does
+ * not ask whether a channel is still being commanded -- that is per channel,
+ * and it decides what a channel renders rather than whether it renders -- and
+ * it cannot ask about the safety line, which the end holding the wire settles
+ * before it arms.  A bank armed with every channel past the timeout still
+ * drives, and what reaches the pin is the channel's rest: 1500 us for a
+ * surface across the default 1000 to 2000 us endpoints, which an ESC
+ * (electronic speed controller) reads as about half throttle.
+ */
+TEST_CASE(driving_is_armed_and_asks_nothing_about_commands)
+{
+    fresh();
+    CHECK(!outputs_driving(&o));
+    CHECK_EQ(outputs_driving(&o), outputs_armed(&o));
+
+    outputs_arm(&o, true, 1000u);
+    outputs_set(&o, 0, 900u, 1000u);
+    outputs_step(&o, 1010u);
+    CHECK(outputs_driving(&o));
+    CHECK_EQ(outputs_actual(&o, 0), 900u);
+
+    /* Every channel past the timeout, and the bank drives on. */
+    const uint32_t late = 1000u + OUT_DEFAULT_TIMEOUT_MS;
+    outputs_step(&o, late);
+    for (uint8_t ch = 0; ch < (uint8_t)OUT_MAX_CHANNELS; ++ch) {
+        CHECK(outputs_overdue(&o, ch, late));
+    }
+    CHECK(outputs_driving(&o));
+    CHECK_EQ(outputs_driving(&o), outputs_armed(&o));
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+    CHECK_EQ(outputs_pulse_us(&o, 0), 1500u);
+
+    /* A disarm is what stops it. */
+    outputs_arm(&o, false, late);
+    CHECK(!outputs_driving(&o));
+}
+
 /* Disarming goes to rest with no ramp: the reason a stop exists is that
  * somebody wants it to have happened already. */
 TEST_CASE(disarming_does_not_ramp)
@@ -698,6 +736,7 @@ int main(void)
     RUN(an_inverted_range_is_straightened);
     RUN(the_pulse_spans_the_endpoints);
     RUN(a_command_while_disarmed_is_remembered_and_not_emitted);
+    RUN(driving_is_armed_and_asks_nothing_about_commands);
     RUN(disarming_does_not_ramp);
     RUN(a_role_change_moves_rest);
     RUN(out_of_range_is_refused_everywhere);

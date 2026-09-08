@@ -87,6 +87,15 @@ Panel als Leitung ohne Flanken gelesen wird.
   Werts (0x5AFE) auf die Control-Page verlassen.
 - Bei Überstrom, Übertemperatur, Stall-Timeout und totem Link handelt der
   Koprozessor aus eigener Befugnis und meldet den Fehler beim nächsten Poll.
+- Ein scharfer Prüfstand treibt jeden gebundenen Pin, ob ihn etwas
+  kommandiert oder nicht. Ein Kanal, der 500 ms lang kein Kommando bekommt,
+  wird auf der Ruhelage seiner Rolle ausgegeben: gestoppt bei throttle,
+  zentriert bei surface. Zentriert sind 1500 us über den voreingestellten
+  Endpunkten 1000 bis 2000 us, was ein ESC als etwa halbes Gas liest. Ein ESC
+  an einem Pin, der als Servoausgang gebunden ist, läuft damit mit etwa
+  halbem Gas, solange der Prüfstand scharf ist, und kein Timeout erreicht
+  ihn, weil das Gas die Pins kommandiert, die die Bindung als Motoren führt.
+  Beendet wird das durch Entschärfen.
 
 ## Heartbeat statt Enable-Pegel
 

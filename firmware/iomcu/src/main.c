@@ -790,11 +790,12 @@ int main(void)
     /*
      * Then what was saved, over the defaults.  This configures the outputs;
      * it does not drive them.  Every driver is gated by outputs_driving(),
-     * which wants the bench armed, the heartbeat trusted and a command
-     * arriving, so a restored binding claims its pins and holds them at idle
-     * until somebody arms.  The channels are not restored: a command is not
-     * a configuration, and a bench that came back holding the last throttle
-     * it was given is exactly what must not happen.
+     * which is the bank's armed flag, and this end sets that flag only while
+     * the ARM register is set, the link is out of failsafe and the heartbeat
+     * is trusted, so a restored binding claims its pins and holds them at
+     * idle until somebody arms.  The channels are not restored: a command is
+     * not a configuration, and a bench that came back holding the last
+     * throttle it was given is exactly what must not happen.
      */
     out_store_t saved;
     if (out_store_load(&saved)) {

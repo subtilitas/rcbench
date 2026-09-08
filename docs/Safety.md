@@ -77,6 +77,14 @@ unpowered or unplugged panel reads as a line that is not edging.
   page.
 - The coprocessor acts on overcurrent, over-temperature, stall timeout and a
   lost link on its own authority and reports the fault at the next poll.
+- An armed bench drives every bound pin, whether or not anything is commanding
+  it. A channel that has had no command for 500 ms is rendered at its role's
+  rest: stopped for a throttle, centred for a surface. Centred is 1500 us
+  across the default endpoints of 1000 to 2000 us, which an ESC reads as about
+  half throttle. An ESC on a pin bound as a servo output therefore runs at
+  about half throttle for as long as the bench is armed, and no timeout
+  reaches it, because the throttle commands the pins the binding calls motors.
+  Disarming is what stops it.
 
 ## Heartbeat rather than enable level
 

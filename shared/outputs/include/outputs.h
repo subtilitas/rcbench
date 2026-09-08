@@ -240,8 +240,33 @@ uint16_t outputs_actual(const outputs_t *o, uint8_t ch);
 /** What a pulse driver should emit for @p ch, in microseconds. */
 uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
 
-/** True while the bank is armed and being commanded: what a driver asks
- *  before it puts an edge on a pin. */
+/**
+ * Whether a driver may put edges on a pin: the bank is armed, and nothing
+ * beyond that.  The same answer as outputs_armed(), asked by a driver rather
+ * than by a screen.
+ *
+ * Two gates a driver also stands behind are not in this answer:
+ *
+ *   The heartbeat.  Nothing here can see the safety line.  What armed means
+ *   is settled by the end holding the wire before it calls outputs_arm(): the
+ *   coprocessor recomputes it every pass from the ARM register, its link
+ *   failsafe and its heartbeat monitor, so a bank armed there already carries
+ *   a trusted beat.
+ *
+ *   A command arriving.  That is per channel, outputs_overdue(), and it
+ *   decides what a channel renders rather than whether it renders.
+ *   outputs_step() puts an overdue channel at its rest and leaves the others
+ *   where they are.
+ *
+ * Limitation: an armed bank drives every bound pin whether or not anything is
+ * commanding it.  A channel nobody commands sits at its role's rest, and a
+ * surface's rest is OUT_SPAN/2 -- 1500 us across the default 1000 to 2000 us
+ * endpoints, which an ESC (electronic speed controller) reads as about half
+ * throttle.  A channel carrying the wrong role therefore presents mid travel
+ * on its pin for as long as the bank is armed, and no timeout reaches it:
+ * outputs_set_role_channels() addresses channels by role, so nothing ever
+ * commands it.  The role is the only thing that decides this.
+ */
 bool outputs_driving(const outputs_t *o);
 
 #ifdef __cplusplus
