@@ -1837,16 +1837,26 @@ static void drain_commands(bool link_up, bench_state_t *bench)
     panel_cmd_t pc;
     while (xQueueReceive(s_cmd_q, &pc, 0) == pdTRUE) {
         /*
-         * An arm from before a stop is not an arm.  The gesture was made
-         * against a count of stops that is no longer current, so something
-         * stopped the bench between the asking and the arriving -- and
-         * arming_request_arm() would clear that stop's own latch.
+         * Nothing asked for before a stop drives anything after it.
+         *
+         * The count of stops the sender had seen is no longer current, so
+         * something stopped the bench between the asking and the arriving.
+         * An arm would clear that stop's own latch; a position or a throttle
+         * would put back what the stop had just let go of -- and a stop from
+         * touch dying or from the far end has no queued STOP behind it to
+         * release the slot a second time.
+         *
+         * Only what drives.  A disarm, a release or a binding asked for
+         * before the stop still means what it meant.
          */
-        const bool is_arm = (pc.kind == PANEL_CMD_MOTOR
-                             && pc.motor.kind == MOTOR_CMD_ARM)
+        const bool drives = (pc.kind == PANEL_CMD_MOTOR
+                             && (pc.motor.kind == MOTOR_CMD_ARM
+                                 || pc.motor.kind == MOTOR_CMD_THROTTLE))
                             || (pc.kind == PANEL_CMD_SERVO
-                                && pc.servo.kind == SERVO_CMD_ARM);
-        if (is_arm && pc.stops != arming_stop_count(&s_arm)) {
+                                && (pc.servo.kind == SERVO_CMD_ARM
+                                    || pc.servo.kind == SERVO_CMD_POSITION
+                                    || pc.servo.kind == SERVO_CMD_CENTRE));
+        if (drives && pc.stops != arming_stop_count(&s_arm)) {
             continue;
         }
         if (pc.kind == PANEL_CMD_STOP) {

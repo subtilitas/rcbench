@@ -26,6 +26,13 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **A position asked for before a stop was still driven after it.** Only
+  arms were dropped as stale; a servo position or centre queued before a stop
+  was applied afterwards, rebinding the slot the stop had just released and
+  refreshing it from then on -- and a stop from touch dying or from the far
+  end has no queued STOP behind it to release it a second time. Nothing that
+  drives an output survives a stop it predates; a disarm, a release or a
+  binding still does.
 - **A stop waited behind commands that talk to the link.** The control loop
   drained the screens' commands before it served a pending STOP, and an
   unanswered exchange holds that loop for LINK_HOST_TIMEOUT_MS (1000 ms) --
