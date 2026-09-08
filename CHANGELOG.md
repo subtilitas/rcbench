@@ -36,6 +36,12 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **The disarm inhibit lasted one pass instead of 300 ms.** Whether the timer
+  was running was encoded by forcing its timestamp non-zero, which moved it
+  a millisecond into the future whenever the clock was even; the elapsed time
+  then wrapped to its maximum and ended the inhibit immediately. A far end
+  that could not be reached never saw its 150 ms of silence and kept driving.
+  The timer's state is its own flag.
 - **The disarm inhibit was lifted by the transaction meant to honour it.**
   The request was cleared before the write that delivers it, so the pump
   inside that write's wait saw nothing outstanding and put the safety line

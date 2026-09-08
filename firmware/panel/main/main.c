@@ -433,6 +433,7 @@ static uint32_t    s_stops_served;
  * can deliver must not hold it down for ever.
  */
 #define DISARM_INHIBIT_MS (2u * HEARTBEAT_MAX_GAP_MS)
+static bool        s_disarm_timing;   /**< whether s_disarm_since means anything */
 static uint32_t    s_disarm_since;
 
 static servo_cmd_t s_servo_held;
@@ -1558,8 +1559,9 @@ static void service_disarm(bool link_up)
     }
 
     if (atomic_load(&s_disarm_request)) {
-        if (s_disarm_since == 0u) {
-            s_disarm_since = now_ms() | 1u;   /* never zero: that means none */
+        if (!s_disarm_timing) {
+            s_disarm_timing = true;
+            s_disarm_since  = now_ms();
         }
         const bool told = disarm_here(link_up);
         /*
@@ -1576,7 +1578,7 @@ static void service_disarm(bool link_up)
         if (told
             || (uint32_t)(now_ms() - s_disarm_since) >= DISARM_INHIBIT_MS) {
             atomic_store(&s_disarm_request, false);
-            s_disarm_since = 0u;
+            s_disarm_timing = false;
         }
         owed = true;
     }
