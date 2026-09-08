@@ -3,7 +3,7 @@
 <sub>[English](FirstRun.md) · **Deutsch**</sub>
 
 Für das erste Mal, dass beide Platinen mit gestecktem Heartbeat-Draht mit
-Strom versorgt werden. Geschrieben für 0.6.1. Nichts davon wurde je gemacht,
+Strom versorgt werden. Geschrieben für 0.7.0. Nichts davon wurde je gemacht,
 also sagt jeder Schritt, wie „gut“ aussieht und was aufzuschreiben ist, wenn
 es das nicht tut.
 
