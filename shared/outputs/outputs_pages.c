@@ -181,8 +181,9 @@ void outputs_slots_apply(outputs_t *o, const uint16_t *regs)
             .rate_hz       = r[LINK_OS_RATE_HZ],
         };
         /* A slot the panel double-books is refused and left cleared.  The
-         * read-back shows what was asked and the bank shows what drives; the
-         * disagreement is the panel's to notice. */
+         * read-back shows what was asked, and the bank -- which is what
+         * drives -- is not on the wire, so a cleared slot reads back from the
+         * page like any other. */
         (void)outputs_configure(o, (uint8_t)s, &cfg);
     }
 }

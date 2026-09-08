@@ -195,10 +195,12 @@ void outputs_hw_apply(const outputs_t *o)
             continue;
         }
         /*
-         * A slot the silicon cannot serve is left unbound.  The OUTPUTS page
-         * still reads back what was asked for, so the disagreement between
-         * the page and what is driving is visible from the panel, which is
-         * the same way a slot the bank refused already behaves.
+         * A slot the silicon cannot serve is left unbound, which is the same
+         * way a slot the bank refused already behaves.  The OUTPUTS page
+         * still reads back what was asked for and no register on it says
+         * whether a slot is bound, so the panel draws an unbound slot exactly
+         * as it draws a driving one and the operator meets it as a lead that
+         * does not move.
          */
         s_state[i].bound   = bind(&s_shadow[i]);
         s_state[i].next_us = time_us_32();
