@@ -309,9 +309,24 @@ Split it before injecting anything, which is what the two links are for:
    are open before this pin drives anything.
 
 Firmware is now being told the panel is alive, and the interlock is being told
-nothing. Arm, bind an output, and capture **after the gate** -- the load-facing
-side of the gated output, and the monostable's output-enable -- on whichever
-channels the run is not otherwise using:
+nothing.
+
+**Bind first, then arm.** Binding is done on SETTINGS/OUTPUTS, and both bench
+screens disarm as they are left (`shared/ui/motor_screen.c`,
+`shared/ui/servo_screen.c`), so arming and then walking to OUTPUTS to bind
+undoes the arm on the way. In order:
+
+1. **SETTINGS/OUTPUTS**: bind the output the capture watches, which is GP0 on
+   D0 here.
+2. **MOTOR & ESC**, or **SERVO** for a pulse output: open it and arm there.
+3. **Command it away from rest** -- throttle above zero, or the horn off
+   centre. Arming is what makes the pin drive at all; a command away from rest
+   is what makes the trace unambiguous, since a DShot zero-throttle frame and
+   a 1500 us centre pulse are both edges and neither is distinctive.
+
+Then capture **after the gate** -- the load-facing side of the gated output,
+and the monostable's output-enable -- on whichever channels the run is not
+otherwise using:
 
     testbench/host/capture.sh interlock D0,D14,D15 1m 2m 1.65
 
