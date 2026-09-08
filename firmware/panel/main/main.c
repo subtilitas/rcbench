@@ -1043,9 +1043,19 @@ static int         s_log_next = LOG_RUN_FIRST;
  * per boot: after that this end has written every number it handed out. */
 static bool        s_log_numbered;
 
-/* The highest run number on the card, for the visitor below. */
+/*
+ * The highest run number on the card, for the visitor below.
+ *
+ * This runs on the control task, which is the task that beats the safety line
+ * and hit-tests STOP, and a populated root takes longer to read than
+ * HEARTBEAT_MAX_GAP_MS (150 ms).  So it pumps per entry, the same way the
+ * probe loop it replaced pumped per name: a scan that ran to completion
+ * without pumping would drop the coprocessor into failsafe as the run began
+ * and leave STOP unread until it finished.
+ */
 static void log_highest(const storage_entry_t *entry, void *ctx)
 {
+    control_pump();
     int *highest = (int *)ctx;
     if (entry->is_dir) {
         return;
@@ -1111,11 +1121,21 @@ static void log_start(void)
      */
     if (!s_log_numbered) {
         int highest = LOG_RUN_FIRST - 1;
-        if (storage_walk(CARD_DIR, CARD_SUFFIXES, log_highest, &highest) >= 0) {
-            s_log_next = (highest >= LOG_RUN_FIRST) ? highest + 1
-                                                    : LOG_RUN_FIRST;
-            s_log_numbered = true;
+        if (storage_walk(CARD_DIR, CARD_SUFFIXES, log_highest, &highest) < 0) {
+            /*
+             * The card would not list.  Falling through would number this run
+             * from 1 and take the first gap, which is the numbering this scan
+             * exists to prevent: the run would be recorded and then rank as
+             * the oldest on the card, and a full list would hide it.  A run
+             * the operator is told is not recorded is better than one that
+             * records itself out of sight.
+             */
+            ESP_LOGW(TAG, "the card would not list; this run is not recorded");
+            control_alert("card unreadable -- run not recorded");
+            return;
         }
+        s_log_next = (highest >= LOG_RUN_FIRST) ? highest + 1 : LOG_RUN_FIRST;
+        s_log_numbered = true;
     }
     for (int i = s_log_next; i <= LOG_RUN_LAST && s_log_file == NULL; ++i) {
         char name[LOG_RUN_NAME_MAX];
@@ -3270,19 +3290,33 @@ void app_main(void)
         /* What the control task saw of the panel. */
         touch_event_t evt;
         while (xQueueReceive(s_touch_q, &evt, 0) == pdTRUE) {
+            const ui_screen_id_t before = ui_router_current();
             ui_router_event(&evt);
             /*
-             * And what that event decided, before the next one is dispatched.
+             * A navigation, and only a navigation, is taken out before the
+             * next event is dispatched.
              *
              * Leaving a bench screen records a disarm, and entering a screen
              * runs its enter() there and then -- the log viewer's reads the
              * card's whole root directory.  Two taps in one drain, HOME and
              * then LOGS, would otherwise leave the disarm sitting in the
              * screen while the walk ran, and the output stays live for as
-             * long as that takes.  STOP is unaffected: the control task
-             * hit-tests its band itself.
+             * long as that takes.
+             *
+             * Not after every event.  The servo screen holds one pending
+             * command and lets the next overwrite it, so a drag's queued
+             * MOVEs collapse to where the finger is now.  Taking each one out
+             * as it arrives turns that into a queue of positions the finger
+             * has already left, and the horn follows them one link exchange
+             * at a time.  A navigation is the one thing that cannot be
+             * coalesced away, and nothing else here needs to jump the queue.
+             *
+             * STOP is unaffected either way: the control task hit-tests its
+             * band itself.
              */
-            flush_screen_commands(stops_now);
+            if (ui_router_current() != before) {
+                flush_screen_commands(stops_now);
+            }
         }
 
         /* What the screens decided, back to the control task. */
