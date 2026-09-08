@@ -844,11 +844,19 @@ int main(void)
     heartbeat_init();
 
     /*
-     * The store's spare sector, erased before the controller is started.
-     * Nothing can arrive yet, so this is the one window in the run that costs
-     * no frame at all, and the first save after it is a page program.
+     * The store's spare sectors, erased before the controller is started.
+     * Nothing can arrive yet, so these are the windows in the run that cost no
+     * frame at all, and the first save after them is a page program.
+     *
+     * A loop, because out_store_reclaim() erases one sector per call and a
+     * store can have more than one to take: a store whose sectors all hold
+     * records this build cannot read -- an earlier record version -- has one
+     * per sector.  Left to the main loop the second of those would be a 19 ms
+     * window with the controller already up.  Each call erases a sector that
+     * was not erased and the call after it looks again, so this ends after at
+     * most one pass per sector.
      */
-    if (out_store_reclaim(false, OUT_STORE_QUIET_MS)) {
+    while (out_store_reclaim(false, OUT_STORE_QUIET_MS)) {
         printf("rcbench-iomcu: output store sector reclaimed at boot, "
                "window %lu us\n",
                (unsigned long)out_store_last_erase_us());
@@ -910,16 +918,32 @@ int main(void)
 
         /*
          * A deferred save, once nothing is driving, the writes have stopped
-         * and the bus has gone quiet.  Writing flash stops this core with
-         * interrupts off for longer than the heartbeat's window, so it cannot
-         * happen while an output is live; the monitor loses its edges across
-         * the write and has to re-acquire, which is why it waits for the
-         * bench to be idle rather than merely disarmed.  It also waits for
-         * the pages to stop arriving, so CHAN_CFG and OUTPUTS are saved as
-         * the pair they are.
+         * and the bus has gone quiet.
          *
-         * How long since a frame arrived is what puts the window in the gap
-         * between the panel's poll cycles rather than in the middle of one.
+         * Writing flash stops this core with interrupts off -- an erase and a
+         * program together measured 19,178 us on the bring-up module -- and
+         * what that costs is CAN frames: the controller holds two, about
+         * 130 us each, and this loop collects none of them while the window is
+         * open.  A frame lost there can be the CONTROL write that disarms or
+         * the CHANNELS write a live channel is waiting for, and this loop
+         * steps no output while the window is open either, so the save waits
+         * for the bench to be idle rather than merely disarmed.
+         *
+         * The heartbeat is not what bounds the window.  The line edges every
+         * HEARTBEAT_PERIOD_MS (20 ms) and is sampled by this loop, so an edge
+         * inside a 19 ms window is timestamped when the loop resumes rather
+         * than lost, and the stretched interval stays far under
+         * HEARTBEAT_MAX_GAP_MS (150 ms).  The interval after it can read short
+         * instead: under HEARTBEAT_MIN_GAP_MS (4 ms) the monitor rejects it
+         * and drops the line until HEARTBEAT_GOOD_RUN (4) good intervals have
+         * run, about 80 ms.  That is derived from the periods, not measured on
+         * hardware.
+         *
+         * The save also waits for the pages to stop arriving, so CHAN_CFG and
+         * OUTPUTS are saved as the pair they are.  How long since a frame
+         * arrived is what keeps the window out of a run of the panel's poll
+         * transactions: a minimum quiet time, which says nothing about how
+         * much of the gap after it is left.
          */
         const uint32_t quiet = (uint32_t)(now - s_last_rx_ms);
         const bool driving = outputs_driving(&s_outputs);
@@ -948,9 +972,10 @@ int main(void)
             break;
         }
         /*
-         * And the erase for the save after next, taken in a gap now rather
-         * than in front of an operator who has just ticked a pin.  At most one
-         * sector per sixteen saves has anything to reclaim.
+         * And the erase for the save after next, taken now rather than in
+         * front of the save that will need it.  Now is the pass after the
+         * record that left a sector behind, with the bus quiet: one save in
+         * sixteen leaves one, and the other fifteen find nothing to do.
          *
          * Only on a pass that wrote nothing: two windows in one pass would be
          * one long window with a printf in the middle of it, and the pass

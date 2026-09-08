@@ -19,10 +19,12 @@ history is in git.
   one lost frame ends as `FAULT 01`. The store is now two sectors of sixteen
   record slots: a save programs one page, and a sector is erased only once
   every record in it is superseded, which is one erase per sixteen saves.
-  That erase is taken ahead of the save that needs it -- at boot before the
-  CAN controller is started, or in a gap in the traffic -- and both windows
-  wait for `OUT_STORE_QUIET_MS` (5 ms) of silence so they land between the
-  panel's 50 ms poll cycles rather than inside one. A settled save takes its
+  That erase is taken ahead of the save that needs it: at boot before the CAN
+  controller is started, where every sector there is to reclaim is taken and
+  nothing can arrive to be lost, and otherwise on the pass after the save that
+  leaves a sector behind. Both windows wait for `OUT_STORE_QUIET_MS` (5 ms) of
+  silence, which is a minimum quiet time rather than a promise of where in the
+  panel's 50 ms poll cycle the window opens. A settled save takes its
   window without a gap after `OUT_STORE_GAP_WAIT_MS` (1000 ms), so a busy bus
   cannot postpone a binding for ever.
 
@@ -36,12 +38,17 @@ history is in git.
   bits towards 0xFF, and a record caught half way through one has to fail its
   check rather than outrank the record still wanted. The record format is
   version 2; a store written by an earlier build reads as unwritten, so the
-  first boot on this build restores the defaults and the panel writes the
-  binding again.
+  first boot on this build starts from the defaults -- no driver and no pin in
+  any slot. The panel keeps no binding of its own and sends none unasked: it
+  reads the pages back when the link comes up and shows nothing configured, so
+  the binding is set again on the OUTPUTS screen, and that save writes the
+  first version 2 record.
 - The coprocessor times the erase and the page program separately and prints
-  them: `outputs saved, record <n>, program window <n> us` and `output store
-  sector erased, window <n> us`. The program window is what every save costs
-  and has not been measured on hardware; the erase has.
+  four lines: `outputs saved, record <n>, program window <n> us`, `output
+  store sector erased, window <n> us`, `output store sector reclaimed, window
+  <n> us` and `output store sector reclaimed at boot, window <n> us`. Neither
+  window is measured on hardware: the 19,174 to 19,186 us above is an erase
+  and a page program inside one window, from the store this replaces.
 - The coprocessor's store takes the last two sectors of the first 4 MB rather
   than the last one, so the image size check falls from 4,190,208 to
   4,186,112 bytes.

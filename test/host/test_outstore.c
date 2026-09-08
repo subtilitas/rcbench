@@ -2,10 +2,12 @@
  * Where a saved output binding goes in the coprocessor's flash.
  *
  * The rules under test decide two things the bench feels: how often a save
- * costs a sector erase, which is 19,178 us of a core that answers no CAN
- * (Controller Area Network) frame, and what a power cut in the middle of one
- * leaves behind.  Both are checked here rather than on the board, because the
- * board has one copy of the sector and a test needs many.
+ * costs a sector erase, and what a power cut in the middle of one leaves
+ * behind.  A save that erased and programmed inside one window measured
+ * 19,178 us on the bring-up module, and for that long the core answers no CAN
+ * (Controller Area Network) frame; the erase on its own is not measured.
+ * Both are checked here rather than on the board, because the board has one
+ * copy of the sector and a test needs many.
  *
  * SPDX-License-Identifier: MIT
  */

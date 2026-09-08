@@ -16,11 +16,13 @@
  * answers nothing for its length.  On the bring-up module an erase and
  * program together measured 19,178 us: a CAN (Controller Area Network) frame
  * at 1 Mbit/s is about 130 us and the XL2515 holds two of them, so a request
- * arriving in that window is lost with nothing wrong on the wire.  A lost
- * request costs the panel LINK_HOST_TIMEOUT_MS (1000 ms) of waiting, and
- * 1000 ms of silence latches this end's LINK_DEV_SILENCE_MS (200 ms)
- * failsafe.  One lost frame is enough for that, which is what makes the
- * length of these windows a safety number rather than a performance one.
+ * arriving in that window is lost with nothing wrong on the wire.  That
+ * measurement is the two operations inside one window; neither half of it was
+ * timed on its own.  A lost request costs the panel LINK_HOST_TIMEOUT_MS
+ * (1000 ms) of waiting, and 1000 ms of silence latches this end's
+ * LINK_DEV_SILENCE_MS (200 ms) failsafe.  One lost frame is enough for that,
+ * which is what makes the length of these windows a safety number rather than
+ * a performance one.
  *
  * What this store does about it:
  *
@@ -29,9 +31,12 @@
  *   only once its records are all superseded.  Fifteen saves in sixteen
  *   therefore cost one page program rather than an erase and a program.
  *
- *   The erase is taken before the save that needs it, by out_store_reclaim(),
- *   at a moment chosen for being quiet rather than at the moment an operator
- *   ticked a pin.
+ *   The erase is taken before the save that needs it, by out_store_reclaim():
+ *   at boot before the CAN controller is started, and otherwise on the first
+ *   pass after the save that left a sector behind.  That pass is milliseconds
+ *   after the record, not a lull chosen later; what it buys is that an erase
+ *   and the record it makes room for are never one window, and that the save
+ *   which finds the sector ready costs a page program alone.
  *
  *   Both wait for a gap in the traffic; see OUT_STORE_QUIET_MS.
  *
@@ -96,10 +101,16 @@ void out_store_save(const out_store_t *cfg, uint32_t now_ms);
  *
  * The panel polls every 50 ms and each poll is a run of back-to-back
  * transactions, so silence longer than any gap inside a run means the run is
- * over.  Five milliseconds is that, and it leaves about 43 ms of the panel's
- * gap ahead -- more than twice the 19,178 us the erase measured.  Nothing
- * enforces the pattern: a write from a screen arrives when a finger moves,
- * and this narrows the odds rather than removing them.
+ * over.  Five milliseconds is that.
+ *
+ * It is a minimum and nothing more.  The test says the last frame was 5 ms
+ * ago; it does not say how much of the gap is left, so a window can open in
+ * front of the next run as well as behind the last one.  A run that has just
+ * ended leaves up to 45 ms before the next, which is more than the 19,178 us
+ * an erase and a program together measured; a 5 ms lull inside a run leaves
+ * whatever the run has left.  Nothing enforces the pattern either -- a write
+ * from a screen arrives when a finger moves.  This narrows the odds rather
+ * than removing them.
  */
 #define OUT_STORE_QUIET_MS  5u
 
@@ -135,8 +146,12 @@ out_store_step_t out_store_tick(bool driving, uint32_t quiet_ms,
  * The window is the same length wherever it is taken; the point is that the
  * caller picks the moment, and that the save which later finds the sector
  * ready costs a page program alone.  Returns true on the pass that erased.
- * Nothing to do is the ordinary answer: there is at most one sector to
- * reclaim per sixteen saves.
+ *
+ * One call erases at most one sector, and the call after it looks again.
+ * Nothing to do is the ordinary answer: one save in sixteen leaves a sector
+ * behind.  A store whose sectors all hold records this build cannot read --
+ * an earlier record version -- has one to reclaim per sector, so a caller
+ * that wants them all takes them in as many calls.
  */
 bool out_store_reclaim(bool driving, uint32_t quiet_ms);
 
@@ -146,23 +161,30 @@ bool out_store_pending(void);
 /**
  * How long the last sector erase held interrupts off, in microseconds.
  *
- * Zero until one has run.  Measured on the bring-up module at 19,174 to
- * 19,186 us over eight saves, when every save erased.
+ * Zero until one has run.  The erase on its own is not measured: what the
+ * bring-up module printed was 19,174 to 19,186 us over eight saves, and each
+ * of those windows held an erase and a page program together.  This is what
+ * separates the two.
  */
 uint32_t out_store_last_erase_us(void);
 
 /**
  * How long the last page program held interrupts off, in microseconds.
  *
- * Zero until one has run, and not measured on hardware: until this build
- * every save erased and programmed inside one window and only the total was
- * printed.  It is the window every save pays, so it is the number that says
- * whether a save can still cost a frame.
+ * Zero until one has run, and not measured on hardware.  It is the window
+ * every save pays, so it is the number that says whether a save can still
+ * cost a frame.
  */
 uint32_t out_store_last_program_us(void);
 
-/** Which of the 32 record slots the last save went into, for the console
- *  line: it is what shows the store advancing towards its next erase. */
+/**
+ * Which of the 32 record slots the store last used.
+ *
+ * The slot the last save was programmed into.  out_store_load() sets it as
+ * well, so before the first save of a run it is the slot the boot read the
+ * binding from, and it is zero when neither has happened.  The console line
+ * prints it: it is what shows the store advancing towards its next erase.
+ */
 uint8_t out_store_last_record(void);
 
 #endif /* RCBENCH_OUT_STORE_H */

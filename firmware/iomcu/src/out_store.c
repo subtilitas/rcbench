@@ -165,8 +165,9 @@ static void survey(out_store_rec_t *recs)
 /*
  * Interrupts off for the whole operation: the flash cannot be read while it
  * is being written, and this core executes from it.  That is also why none of
- * this runs while the bank is driving -- the heartbeat monitor misses every
- * edge in the window and has to re-acquire.
+ * this runs while the bank is driving -- the caller's loop takes nothing off
+ * the CAN controller and steps no output for the length of the window, so a
+ * disarm or a command in flight waits for it.
  *
  * Both timestamps are inside the window, because the window is what is being
  * measured: taken either side of it they would also count the disable and
