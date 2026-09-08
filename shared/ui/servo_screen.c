@@ -17,6 +17,7 @@
 #include "ui_theme.h"
 #include "ui_slider.h"
 #include "ui_widgets.h"
+#include "outputs.h"
 
 #define W 800
 #define H (480 - UI_BAND_H)
@@ -151,6 +152,32 @@ static float clamp_travel(float deg)
     return deg;
 }
 
+/*
+ * SPEED as the bench's slew, in channel-span units a second.
+ *
+ * The horn's full travel is 180 degrees and a channel's span covers it, so
+ * the 360 degrees a second the drawing uses at 100% is two spans a second:
+ * SPEED_FULL_SPAN_S.  Below 100% the bench ramps the command at that
+ * fraction of it, and a servo asked for 30% takes three times as long to
+ * cross as one asked for 90%.
+ *
+ * 100% is immediate rather than two spans a second.  It is the value the
+ * screen starts at, so anybody who never touches the slider gets what they
+ * got before -- the servo at its own rate, with nothing in front of it.
+ */
+#define SPEED_FULL_SPAN_S (2u * OUT_SPAN)
+
+static uint16_t slew_of(int pct)
+{
+    if (pct >= 100) {
+        return 0u;
+    }
+    if (pct < 1) {
+        pct = 1;
+    }
+    return (uint16_t)((unsigned)SPEED_FULL_SPAN_S * (unsigned)pct / 100u);
+}
+
 static void post(servo_cmd_kind_t kind, uint16_t us)
 {
     /*
@@ -179,6 +206,7 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
      * servo's floor. */
     s.pending.min_us   = type()->min_us;
     s.pending.max_us   = type()->max_us;
+    s.pending.slew_per_s = slew_of(s.speed_pct);
     /* The grip only breathes while something is actually being held, so this
      * has to follow the command rather than the screen being open. */
     s.driving = (kind == SERVO_CMD_POSITION || kind == SERVO_CMD_CENTRE);
@@ -499,6 +527,9 @@ static void event(const touch_event_t *evt)
 
     if (ui_slider_event(&s.speed, evt)) {
         s.speed_pct = (int)(s.speed.value + 0.5f);
+        /* The rate is part of the command, so a held output takes the new
+         * one rather than waiting for the next drag. */
+        reissue();
         ++s.ctrl_rev;
     }
 }

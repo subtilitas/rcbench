@@ -343,6 +343,32 @@ TEST_CASE(a_settling_arm_is_abandoned_when_touch_dies)
     CHECK(!a.armed);
 }
 
+TEST_CASE(an_outage_that_recovers_still_brings_the_bank_down)
+{
+    /*
+     * Touch can die and answer again inside one blocking link exchange.  By
+     * the time the policy runs, the controller is healthy and nothing in the
+     * state would say the outage happened -- and the heartbeat need not have
+     * been withheld long enough for the far end to fail safe either.  What
+     * was armed comes down all the same.
+     */
+    arming_t a;
+    arming_init(&a, 0, SETTLE_MS);
+    arming_touch_seen(&a, 0);
+    arming_request_arm(&a, 0);
+    CHECK_EQ(arming_step(&a, SETTLE_MS + 1u), ARMING_ACT_ARM);
+    CHECK(a.armed);
+
+    const uint32_t dead_at = SETTLE_MS + ARMING_TOUCH_DEAD_MS + 2u;
+    arming_touch_poll(&a, dead_at);        /* seen only by the pump */
+    arming_touch_seen(&a, dead_at + 5u);   /* and it answers again */
+
+    CHECK_EQ(arming_step(&a, dead_at + 10u), ARMING_ACT_DISARM);
+    CHECK(!a.armed);
+    /* Once, not on every later step. */
+    CHECK_EQ(arming_step(&a, dead_at + 20u), ARMING_ACT_NONE);
+}
+
 TEST_CASE(touch_health_can_be_judged_apart_from_the_policy_step)
 {
     /*
@@ -414,5 +440,6 @@ int main(void)
     RUN(touch_that_stops_answering_counts_once);
     RUN(a_settling_arm_is_abandoned_when_touch_dies);
     RUN(touch_health_can_be_judged_apart_from_the_policy_step);
+    RUN(an_outage_that_recovers_still_brings_the_bank_down);
     return test_summary("arming");
 }

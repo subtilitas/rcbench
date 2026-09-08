@@ -58,6 +58,16 @@ typedef struct {
      */
     uint32_t stops;
     bool     touch_was_dead;  /**< so touch dying is counted once, not per pass */
+    /**
+     * A disarm owed to something the policy saw between steps.
+     *
+     * Touch can die and answer again inside one blocking link exchange, and
+     * the bank must not survive that: by the time the policy next runs the
+     * controller is healthy, so nothing in the state would say the outage
+     * happened, and the heartbeat need not have been withheld for long
+     * enough for the far end to fail safe either.
+     */
+    bool     disarm_pending;
     bool     arming;          /**< an arm is waiting for the line         */
     uint32_t settle_ms;       /**< how long the line is given             */
     uint32_t settle_until_ms;

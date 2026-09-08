@@ -121,6 +121,11 @@ void arming_touch_poll(arming_t *a, uint32_t now_ms)
     const bool dead = arming_touch_dead(a, now_ms);
     if (dead && !a->touch_was_dead) {
         ++a->stops;
+        /* And what is armed comes down, even if the controller answers
+         * again before the policy next runs. */
+        if (a->armed) {
+            a->disarm_pending = true;
+        }
         /*
          * And a settle in progress is abandoned, exactly as a stop abandons
          * one.  It is not gated on being armed: an arm that is still settling
@@ -144,6 +149,16 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
 
     arming_touch_poll(a, now_ms);
     const bool dead = arming_touch_dead(a, now_ms);
+
+    /* An outage the poll saw and this step cannot: see disarm_pending. */
+    if (a->disarm_pending) {
+        a->disarm_pending = false;
+        if (a->armed) {
+            a->armed  = false;
+            a->arming = false;
+            return ARMING_ACT_DISARM;
+        }
+    }
 
     /* Touch that has stopped answering, or a latched stop, disarms. */
     if ((dead || a->stopped) && a->armed) {

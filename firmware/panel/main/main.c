@@ -301,8 +301,8 @@ typedef struct {
      * dropped.
      */
     uint32_t         stops;
-    /** And how many disarms; see s_disarms. */
-    uint32_t         disarms;
+    /** And how many times it had been told to let go; see s_lets_go. */
+    uint32_t         lets_go;
 } panel_cmd_t;
 
 /*
@@ -476,13 +476,14 @@ static atomic_bool s_stop_counted;
 static atomic_bool s_disarm_request;
 static atomic_bool s_servo_release_request;
 /*
- * How many disarms have been asked for.
+ * How many times the panel has been told to let go: a disarm, or an explicit
+ * release of the servo's pin.
  *
- * The same job the stop count does: a disarm can be acted on between queue
+ * The same job the stop count does.  Either is acted on between queue
  * entries, out of the order the queue holds, so a drive command still behind
- * it would otherwise put back what the disarm let go of.
+ * one would otherwise put back what it let go of.
  */
-static atomic_uint s_disarms;
+static atomic_uint s_lets_go;
 /* False until the control task owns the safety state; bring-up polls the
  * link before that, with nothing to service. */
 static bool s_pump_live;
@@ -1700,6 +1701,16 @@ static void write_output_binding(const outbind_t *bind)
 /*
  * One servo command, as configuration and pulse.
  */
+/* Whether the operator has asked, since this began, for the thing being
+ * written to stop: a stop applied by the pump, or a disarm or release posted
+ * while an exchange was on the wire. */
+static bool servo_countermanded(void)
+{
+    return arming_stopped(&s_arm)
+           || atomic_load(&s_disarm_request)
+           || atomic_load(&s_servo_release_request);
+}
+
 static bool write_servo(const servo_cmd_t sv)
 {
     link_msg_t reply;
@@ -1735,7 +1746,10 @@ static bool write_servo(const servo_cmd_t sv)
         const uint16_t max_us = named ? sv.max_us : (uint16_t)SERVO_MAX_US;
         uint16_t cfg[LINK_CC_STRIDE] = {
             [LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE,
-            [LINK_CC_SLEW]   = 0u,
+            /* What the screen's SPEED means at this end: the rate the bench
+             * is allowed to move the output, rather than a number that only
+             * changed the drawing. */
+            [LINK_CC_SLEW]   = sv.slew_per_s,
             [LINK_CC_MIN_US] = min_us,
             [LINK_CC_MAX_US] = max_us,
         };
@@ -1767,8 +1781,21 @@ static bool write_servo(const servo_cmd_t sv)
             || reply.op != LINK_OP_ACK) {
             return false;
         }
+        /*
+         * Each of these waits up to a second and the pump runs inside them,
+         * so a stop can be applied and a disarm posted between one and the
+         * next.  The slot is bound by the last write, so giving up here
+         * leaves the pin unbound rather than driving what nobody wants any
+         * more.
+         */
+        if (servo_countermanded()) {
+            return false;
+        }
         if (!write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &span, &reply)
             || reply.op != LINK_OP_ACK) {
+            return false;
+        }
+        if (servo_countermanded()) {
             return false;
         }
         return write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
@@ -1996,7 +2023,7 @@ static void drain_commands(bool link_up, bench_state_t *bench)
                                     || pc.servo.kind == SERVO_CMD_CENTRE));
         if (drives
             && (pc.stops != arming_stop_count(&s_arm)
-                || pc.disarms != atomic_load(&s_disarms))) {
+                || pc.lets_go != atomic_load(&s_lets_go))) {
             continue;
         }
         if (pc.kind == PANEL_CMD_STOP) {
@@ -2584,12 +2611,22 @@ static void send_cmd(const panel_cmd_t *pc)
      * the way a stop is, and applying it twice costs nothing.
      */
     if (pc->kind == PANEL_CMD_MOTOR && pc->motor.kind == MOTOR_CMD_DISARM) {
-        atomic_fetch_add(&s_disarms, 1u);
+        atomic_fetch_add(&s_lets_go, 1u);
         atomic_store(&s_disarm_request, true);
     } else if (pc->kind == PANEL_CMD_SERVO
                && pc->servo.kind == SERVO_CMD_DISARM) {
-        atomic_fetch_add(&s_disarms, 1u);
+        atomic_fetch_add(&s_lets_go, 1u);
         atomic_store(&s_disarm_request, true);
+        atomic_store(&s_servo_release_request, true);
+    } else if (pc->kind == PANEL_CMD_SERVO
+               && pc->servo.kind == SERVO_CMD_RELEASE) {
+        /*
+         * RELEASE lets go of the pin without disarming the bench, and it is
+         * as much a safety command as the disarm: waiting behind a backlog
+         * of positions, three exchanges each, would hold the servo for
+         * seconds after the operator asked it to stop.
+         */
+        atomic_fetch_add(&s_lets_go, 1u);
         atomic_store(&s_servo_release_request, true);
     }
 
@@ -2763,14 +2800,14 @@ void app_main(void)
         while (motor_screen_poll_cmd(&mc)) {
             panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
                                .stops = stops_now,
-                               .disarms = atomic_load(&s_disarms) };
+                               .lets_go = atomic_load(&s_lets_go) };
             send_cmd(&pc);
         }
         servo_cmd_t sv;
         if (servo_screen_take(&sv)) {
             panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
                                .stops = stops_now,
-                               .disarms = atomic_load(&s_disarms) };
+                               .lets_go = atomic_load(&s_lets_go) };
             send_cmd(&pc);
         }
         /*

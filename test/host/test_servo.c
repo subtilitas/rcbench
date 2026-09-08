@@ -16,6 +16,7 @@
 #include "ui_screen.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "outputs.h"
 
 #define W 800
 #define H 480
@@ -179,6 +180,9 @@ TEST_CASE(centre_and_release_post_their_own_commands)
 
 /* The ARM button, mirrored from servo_screen.c: full width of the right
  * card's inner column, under CENTRE and RELEASE. */
+/* The SPEED track, mirrored from the screen: x, w and y of the slider. */
+#define SPEED_X_HALF (508 + 12 + (800 - 508 - 6 - 24) / 2)
+#define SPEED_Y (296 + 11)
 #define TRIM_UP_X (508 + 12 + (800 - 508 - 6 - 24) - 15)
 #define TRIM_UP_Y (156 + 13)
 #define TYPE_X (508 + 12 + (800 - 508 - 6 - 24) - 75)
@@ -370,6 +374,29 @@ TEST_CASE(the_hold_repaints_the_button_and_leaves_the_card_alone)
  * changing one of them while something is held leaves the pin on the old
  * mapping while the screen shows the new one.
  */
+/*
+ * SPEED is the rate the bench may move the output, not a number that only
+ * changes the drawing: a servo goes at its own rate unless the command in
+ * front of it is ramped.
+ */
+TEST_CASE(the_speed_travels_with_the_command_as_a_rate)
+{
+    fresh();
+    int x, y;
+    dial_at(20.0f, ARC_R - 20, &x, &y);
+    tap(x, y);
+    /* The screen starts at 100%, which is immediate: anybody who never
+     * touches the slider gets the servo at its own rate. */
+    CHECK_EQ(last_cmd().slew_per_s, 0);
+
+    /* Half speed is half of the two spans a second the drawing uses. */
+    tap(SPEED_X_HALF, SPEED_Y);
+    const servo_cmd_t after = last_cmd();
+    CHECK_EQ(after.kind, SERVO_CMD_POSITION);   /* said again at the new rate */
+    CHECK(after.slew_per_s > 0);
+    CHECK(after.slew_per_s <= 2u * OUT_SPAN);
+}
+
 TEST_CASE(changing_the_type_says_the_position_again)
 {
     fresh();
@@ -627,6 +654,7 @@ int main(void)
     RUN(the_arm_button_fades_across_the_hold_and_flashes_when_it_lands);
     RUN(the_hold_repaints_the_button_and_leaves_the_card_alone);
     RUN(a_command_carries_the_endpoints_of_the_type_it_was_made_for);
+    RUN(the_speed_travels_with_the_command_as_a_rate);
     RUN(changing_the_type_says_the_position_again);
     RUN(the_trim_says_the_position_again_while_it_is_held);
     RUN(nothing_is_said_again_when_nothing_is_being_held);

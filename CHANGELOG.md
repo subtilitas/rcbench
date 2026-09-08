@@ -18,6 +18,16 @@ history is in git.
   disarms under a press -- now lives once in `ui_widgets` (`ui_hold_t`) rather
   than twice. Leaving the screen disarms and releases the pin. Reported as #99.
 
+### Changed
+
+- **SPEED on the servo screen sets the rate the bench moves the output.** It
+  moved the drawn arm and nothing else, so a servo went at its own rate
+  whatever the screen said. It is the channel's slew now, carried with the
+  command: 100% is immediate, which is where the screen starts and what
+  everybody had before, and below that the bench ramps the command in front
+  of the servo -- 30% takes three times as long to cross as 90%. Changing it
+  applies to an output already being held.
+
 ### Fixed
 
 - **A servo swung back to centre half a second after the finger stopped.**
@@ -26,6 +36,21 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **A touch outage that recovered left the bank armed.** Touch can die and
+  answer again inside one blocking link exchange: by the time the policy ran
+  the controller was healthy, so nothing in the state said the outage had
+  happened, and the heartbeat need not have been withheld long enough for the
+  far end to fail safe either. What was armed comes down, on the edge that
+  saw the outage rather than on the state afterwards.
+- **A servo's three writes could not be countermanded partway through.** Each
+  waits up to LINK_HOST_TIMEOUT_MS (1000 ms) with the pump running inside it,
+  so a stop or a disarm could arrive between one write and the next and the
+  slot was bound anyway. The writes stop when that happens, and the slot is
+  bound by the last of them, so the pin is left unbound rather than driving.
+- **RELEASE waited behind the backlog while DISARM did not.** Tapping RELEASE
+  lets go of the pin without disarming the bench, and it queued like any
+  other command -- behind positions that are three exchanges each. It is out
+  of band now, as the disarm is, and it voids drive commands that predate it.
 - **An arm went through even when the operator changed their mind mid-write.**
   Arming is two exchanges, each of which can wait a second, and the pump runs
   inside both: a stop applied there, or a disarm posted while the failsafe

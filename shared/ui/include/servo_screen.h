@@ -36,6 +36,16 @@ typedef struct {
      * past its stops. Zero on either says the sender named no range.
      */
     uint16_t         min_us, max_us;
+    /**
+     * How fast the bench may move the output, in channel-span units a
+     * second; zero is at once.
+     *
+     * The SPEED setting, as the far end takes it. A servo goes at its own
+     * rate unless the bench ramps the command in front of it, so a speed
+     * that only moved the drawing would be a control that does nothing to
+     * the thing under test.
+     */
+    uint16_t         slew_per_s;
 } servo_cmd_t;
 
 /** Drop the cached chrome, so the next frame repaints it. */
