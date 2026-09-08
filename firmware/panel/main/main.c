@@ -468,6 +468,9 @@ static atomic_bool s_stop_live;
 static atomic_bool s_stop_request;
 /* A disarm, and the servo screen's own release, as flags rather than queue
  * entries: neither may be lost to an eviction.  See send_cmd(). */
+/* Set when the pump applied a stop for a press the router will also latch,
+ * so the backstop does not stop the bench twice for one press. */
+static atomic_bool s_stop_counted;
 static atomic_bool s_disarm_request;
 static atomic_bool s_servo_release_request;
 /* False until the control task owns the safety state; bring-up polls the
@@ -524,6 +527,14 @@ static void control_pump(void)
                  * slot, telling the far end -- follows when the loop is free.
                  */
                 arming_stop(&s_arm);
+                /*
+                 * And the router will latch this same release, because the
+                 * screen still sees the event: without this the backstop
+                 * would stop the bench a second time.  The count is what
+                 * rejects commands made before a stop, so a second one would
+                 * throw away a command the operator made after it.
+                 */
+                atomic_store(&s_stop_counted, true);
             }
         }
         /* The screen still sees every event: it draws the press. */
@@ -1494,7 +1505,8 @@ static void service_arming(bool link_up)
      * This is the router's backstop for a press the pump's own hit test
      * missed; a press it saw has already been applied there.
      */
-    if (atomic_exchange(&s_stop_request, false)) {
+    if (atomic_exchange(&s_stop_request, false)
+        && !atomic_exchange(&s_stop_counted, false)) {
         arming_stop(&s_arm);
     }
 

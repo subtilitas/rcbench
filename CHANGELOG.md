@@ -26,6 +26,12 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **One STOP press counted as two stops.** The press is applied where it is
+  seen, and the screen still receives the event, so the router latched the
+  same release and the backstop stopped the bench again. The count is what
+  rejects commands made before a stop, so a command the operator made after
+  it -- between the two -- was thrown away. A press the pump applied is not
+  counted again by the backstop.
 - **An arm could be granted from a gesture invalidated while it waited.** The
   servo screen's arm releases the slot first, and that release can wait a
   second on the wire with the pump running inside it, so a stop -- or touch
