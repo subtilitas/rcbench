@@ -61,8 +61,9 @@ GP8 to GP12 (the CAN (Controller Area Network) controller's SPI (Serial
 Peripheral Interface) and interrupt), and any number above the last GPIO
 (general-purpose input/output) the part has — 29 on the RP2350A the bring-up
 module carries, 47 on the RP2350B the final board needs. A refused slot is left
-unbound. The page still reads back what was asked for, so a slot that is not
-driving is visible as a disagreement between the page and the output.
+unbound. The page still reads back what was asked for, and no register on it
+says whether a slot is bound, so an unbound slot reads back exactly like a
+driving one. What reaches the operator is a lead that does not move.
 
 A PIO (programmable input/output) block addresses 32 pins from a base of 0 or
 16, fixed while the block holds a program. Which block can reach a given pin is
@@ -85,6 +86,19 @@ A slice is two channels sharing one counter, so two pins on the same slice run
 at the same frame rate. A second binding that asks for a different rate on a
 slice already in use is refused rather than retimed, because retiming would
 move an output that nobody touched.
+
+GPIO numbers fold onto the 12 slices. GP0 to GP31 take slice (pin / 2) modulo
+8; GP32 to GP47 take slice 8 + (pin / 2) modulo 4; the channel is the low bit
+of the pin number in both ranges. Two pins 16 apart below GP32 are therefore
+the same channel of the same slice, and above GP32 the distance is 8. A
+channel is one compare register and a compare register is one pulse width, so
+the second pin of such a pair is refused rather than bound: binding it would
+mux it onto the first pin's pulse width, and one lead would follow the other
+with nothing on any screen to say so.
+
+Six of those pairs are both free on the header the coprocessor offers: GP0 and
+GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22.
+Either pin of a pair may be used; the two together may not.
 
 ## PPM
 
@@ -260,6 +274,7 @@ on an oscilloscope or against an ESC on this bench:
 | Frames, group code, checksum, speed, sampler | `shared/dshot/` |
 | PPM frame layout | `shared/ppm/` |
 | Travel, role, rest, slew, arming, timeout | `shared/outputs/` |
+| Which PWM slice and channel a GPIO reaches | `shared/outputs/out_pwm_map.c` |
 | PIO programs | `firmware/iomcu/src/ppm.pio`, `dshot.pio` |
 | Hardware PWM, PPM and DShot backends | `firmware/iomcu/src/out_*.c` |
 | Binding the bank to the pins | `firmware/iomcu/src/outputs_hw.c` |

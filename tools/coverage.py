@@ -97,6 +97,7 @@ TRACKED = [
     "shared/outputs/outputs.c",
     "shared/outputs/outputs_pages.c",
     "shared/outputs/out_bind.c",
+    "shared/outputs/out_pwm_map.c",
     "shared/bench/telemetry_sim.c",
     "shared/bench/log_writer.c",
 ]

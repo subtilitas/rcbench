@@ -10,6 +10,7 @@
 #include "hardware/gpio.h"
 #include "hardware/pwm.h"
 
+#include "out_pwm_map.h"
 #include "outputs.h"
 
 /*
@@ -20,8 +21,8 @@
 #define TICK_HZ  1000000u
 
 /*
- * What is bound, so the slice-sharing rule can be checked and a release can
- * put the pin back.  One entry per slot the bank can hold; nothing here has
+ * What is bound, so the sharing rules can be checked and a release can put
+ * the pin back.  One entry per slot the bank can hold; nothing here has
  * more outputs than that.
  */
 typedef struct {
@@ -51,7 +52,12 @@ static uint16_t wrap_for(uint16_t rate_hz)
 
 bool out_pwm_bind(uint8_t pin, uint16_t rate_hz)
 {
-    if (rate_hz == 0u) {
+    /*
+     * A pin this package does not have.  NUM_BANK0_GPIOS is 30 on the RP2350A
+     * the bring-up module carries and 48 on the RP2350B, and the pico-sdk's
+     * mapping macros are defined only below it.
+     */
+    if (pin >= NUM_BANK0_GPIOS || rate_hz == 0u) {
         return false;
     }
     const uint16_t wrap = wrap_for(rate_hz);
@@ -67,7 +73,20 @@ bool out_pwm_bind(uint8_t pin, uint16_t rate_hz)
         return existing->rate_hz == rate_hz;
     }
 
-    const uint slice = pwm_gpio_to_slice_num(pin);
+    /*
+     * Which registers this pin drives.  out_pwm_map.h holds the fold so the
+     * host suite can test it, and the pico-sdk's own macros are what
+     * pwm_init() and pwm_set_gpio_level() act on, so the two are compared
+     * here on every bind.  A pin they disagree about is refused: the sharing
+     * rules below would otherwise be reasoning about a different register
+     * than the one reaching the pad.
+     */
+    const uint8_t slice = out_pwm_slice_of(pin);
+    if (slice != (uint8_t)pwm_gpio_to_slice_num(pin)
+        || out_pwm_channel_of(pin) != (uint8_t)pwm_gpio_to_channel(pin)) {
+        return false;
+    }
+
     binding_t *free_slot = NULL;
     bool running = false;
     for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
@@ -77,8 +96,20 @@ bool out_pwm_bind(uint8_t pin, uint16_t rate_hz)
             }
             continue;
         }
-        if (pwm_gpio_to_slice_num(s_bound[i].pin) != slice) {
+        if (!out_pwm_same_slice(s_bound[i].pin, pin)) {
             continue;
+        }
+        /*
+         * A channel is one compare register, and a compare register is one
+         * pulse width.  GP0 and GP16 are both slice 0 channel A, and the
+         * header this coprocessor offers leaves five more such pairs free:
+         * GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and
+         * GP22.  Binding the second pin of a pair muxes it onto the first
+         * pin's pulse width -- two leads, one number, and nothing on any
+         * screen to say which output is following which.
+         */
+        if (out_pwm_same_compare(s_bound[i].pin, pin)) {
+            return false;
         }
         /* Two channels of one slice count off one wrap register.  Letting
          * the second binding win would move the first output's frame rate
