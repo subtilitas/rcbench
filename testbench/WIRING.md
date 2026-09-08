@@ -407,8 +407,27 @@ In this order, and stop at the first step that does not do what it says:
 The panel shows the splash, runs its CAN self-test inside it, and comes up
 with `LINK` and `SAFE`. With 0.7.0 or later there should be no `FAULT` at
 power-up: the coprocessor no longer counts the wait for the panel's first
-request as silence. A `FAULT 01` here means an older build on one of the two
-boards.
+request as silence.
+
+**A `FAULT 01` here has two causes and they look identical.** Bit 0 is "the
+link was silent once", it latches, and nothing clears it until an arm writes
+the CLEAR register -- so the link can be back and showing `LINK` while the bit
+is still displayed. It says something happened, not that something is wrong
+now.
+
+- An older build on one of the two boards, which counts the wait for the
+  panel's first request as silence.
+- A real gap after the first request. `shared/link/link_dev.c` latches the
+  failsafe after 200 ms of silence, and 200 ms of silence has causes that have
+  nothing to do with the build: a save to the coprocessor's flash stops that
+  core long enough to lose CAN frames, and an intermittent lead or a marginal
+  termination does the same.
+
+Do not read it as a version problem without checking. Both boards' versions
+are in the splash, and the coprocessor's USB console counts what actually
+happened -- `requests served`, the receive-buffer overrun line, and `tx_err` /
+`rx_err`. A `FAULT 01` with a healthy bus and a climbing overrun count is
+frames arriving with nobody to collect them, not an old image.
 
 ---
 
