@@ -26,6 +26,12 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **An arm queued before a stop could still arm the bench.** The command
+  queue and the stop count cross between the two tasks independently, so an
+  arm could be queued from a gesture the sender had watched and a stop be
+  applied before that arm was drained -- and the arm then cleared the latch
+  the stop had set. Each arm carries the count of stops its sender had seen,
+  and one whose count is no longer current is dropped.
 - **Arming from the servo screen could energise a slot the panel had never
   written.** After a panel restart the coprocessor still holds its slots, so
   slot 0 and the command in it survive while the panel remembers nothing; the

@@ -289,6 +289,17 @@ typedef struct {
     motor_cmd_t      motor;
     servo_cmd_t      servo;
     outbind_t        bind;   /**< PANEL_CMD_OUTPUTS: the protocols and their pins */
+    /**
+     * How many stops the sender had seen when it queued this.
+     *
+     * The queue and the stop latch cross between the two tasks
+     * independently, so an arm can be queued from a gesture the sender
+     * watched, and a stop be applied before that arm is drained: the arm
+     * would then clear a latch that was set after it was asked for. An arm
+     * carrying a count that is no longer current is out of date and is
+     * dropped.
+     */
+    uint32_t         stops;
 } panel_cmd_t;
 
 /*
@@ -1822,6 +1833,19 @@ static void drain_commands(bool link_up, bench_state_t *bench)
 {
     panel_cmd_t pc;
     while (xQueueReceive(s_cmd_q, &pc, 0) == pdTRUE) {
+        /*
+         * An arm from before a stop is not an arm.  The gesture was made
+         * against a count of stops that is no longer current, so something
+         * stopped the bench between the asking and the arriving -- and
+         * arming_request_arm() would clear that stop's own latch.
+         */
+        const bool is_arm = (pc.kind == PANEL_CMD_MOTOR
+                             && pc.motor.kind == MOTOR_CMD_ARM)
+                            || (pc.kind == PANEL_CMD_SERVO
+                                && pc.servo.kind == SERVO_CMD_ARM);
+        if (is_arm && pc.stops != arming_stop_count(&s_arm)) {
+            continue;
+        }
         if (pc.kind == PANEL_CMD_STOP) {
             arming_stop(&s_arm);
             outputs_arm(&s_out, false, now_ms());
@@ -2527,12 +2551,14 @@ void app_main(void)
 
         motor_cmd_t mc;
         while (motor_screen_poll_cmd(&mc)) {
-            panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc };
+            panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
+                               .stops = stops_now };
             send_cmd(&pc);
         }
         servo_cmd_t sv;
         if (servo_screen_take(&sv)) {
-            panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv };
+            panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
+                               .stops = stops_now };
             send_cmd(&pc);
         }
         /*
