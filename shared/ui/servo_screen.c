@@ -298,7 +298,7 @@ void servo_screen_cancel_arm(void)
     /*
      * And nothing is being held any more.  The armed state need not have
      * moved -- a bench that was not armed is stopped just the same, and the
-     * panel releases the slot either way -- so this cannot wait for that
+     * panel centres the surface either way -- so this cannot wait for that
      * edge: the rings would go on pulsing, and the next change of type, trim
      * or travel would say the released position again.
      */
@@ -983,7 +983,7 @@ static void leave(void)
     ui_slider_release(&s.speed);
     /* Disarm rather than release: navigating away from an armed bench must
      * not leave it armed behind a screen that is not visible, and the
-     * disarm lets go of the pin on its way. */
+     * disarm lets go of the output on its way. */
     post(SERVO_CMD_DISARM, 0);
     s.armed = false;
     ui_hold_reset(&s.arm);
