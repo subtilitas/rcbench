@@ -26,6 +26,19 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **STOP waited out a link exchange before it did anything.** The press was
+  recorded and acted on by the policy, which is exactly what a blocked loop
+  cannot reach: a servo command makes up to three exchanges of up to
+  LINK_HOST_TIMEOUT_MS (1000 ms) each, and the far end drives throughout. The
+  press is applied where it is seen now, in the pump that runs inside that
+  wait, so the safety line stops being asserted in the same pass and the
+  coprocessor fails safe within HEARTBEAT_MAX_GAP_MS (150 ms) whatever the
+  panel is waiting for. The rest of a stop follows when the loop is free.
+- **A stop on a bench that was not armed left the servo driven.** Letting go
+  hung off the policy's disarm, which does not happen when nothing was armed,
+  so a servo held from before the stop kept its slot refreshed every 100 ms --
+  over the top of an outputs binding made afterwards. Every stop lets go now,
+  counted rather than inferred from the disarm.
 - **A position asked for before a stop was still driven after it.** Only
   arms were dropped as stale; a servo position or centre queued before a stop
   was applied afterwards, rebinding the slot the stop had just released and

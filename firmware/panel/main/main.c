@@ -419,6 +419,9 @@ static arming_t  s_arm;
 
 /* What the servo screen is holding, so it can be said again before the far
  * end times it out.  SERVO_CMD_NONE means nothing is being held. */
+/* The stop count this task has already let go for; see service_arming(). */
+static uint32_t    s_stops_served;
+
 static servo_cmd_t s_servo_held;
 static uint32_t    s_servo_next_ms;
 /*
@@ -451,9 +454,14 @@ static uint8_t   s_stop_id;
  * Both cross the two cores, so both are atomic rather than volatile: volatile
  * orders nothing between processors and promises no atomicity.
  *
- * s_stop_request is taken with an exchange rather than a test and a clear.
- * A stop arriving between those two would have been dropped -- the read said
- * "none", the write then said "none" over the top of it.
+ * s_stop_request carries the router's backstop for a press this task's own
+ * hit test did not see, so it crosses from app_main.  A press this task sees
+ * is not recorded but applied, in the pump that saw it: waiting for the
+ * policy to run would wait out a link exchange with the far end driving.
+ *
+ * It is taken with an exchange rather than a test and a clear.  A stop
+ * arriving between those two would have been dropped -- the read said "none",
+ * the write then said "none" over the top of it.
  */
 static atomic_bool s_stop_live;
 static atomic_bool s_stop_request;
@@ -493,7 +501,24 @@ static void control_pump(void)
                    && evt.type == TOUCH_EVENT_UP) {
             s_stop_press = false;
             if (in_stop) {
-                atomic_store(&s_stop_request, true);
+                /*
+                 * Applied here, not recorded for later.
+                 *
+                 * This runs inside the link's wait as well as at the top of
+                 * the loop, and a servo command makes up to three exchanges
+                 * of up to LINK_HOST_TIMEOUT_MS (1000 ms) each.  A stop that
+                 * only set a flag would wait all of that out with the far end
+                 * driving, because the policy that acts on the flag is what
+                 * is blocked.  arming_stop() takes effect in the same pass:
+                 * arming_heartbeat() is false while stopped, so the beat at
+                 * the end of this function stops asserting the line and the
+                 * coprocessor fails safe within HEARTBEAT_MAX_GAP_MS
+                 * (150 ms) whatever this task is waiting for.
+                 *
+                 * The rest of a stop -- the bank, the throttle, the servo's
+                 * slot, telling the far end -- follows when the loop is free.
+                 */
+                arming_stop(&s_arm);
             }
         }
         /* The screen still sees every event: it draws the press. */
@@ -1460,9 +1485,27 @@ static void service_arming(bool link_up)
      * STOP latches rather than clearing on the next frame: a stop that lasts
      * one frame is one the coprocessor may never see, and its monostable holds
      * for longer than a frame.  Only an explicit arm clears it.
+     *
+     * This is the router's backstop for a press the pump's own hit test
+     * missed; a press it saw has already been applied there.
      */
     if (atomic_exchange(&s_stop_request, false)) {
         arming_stop(&s_arm);
+    }
+
+    /*
+     * Every stop lets go of what was being driven, whether or not the bench
+     * was armed and whichever thing raised it -- a press, the far end, touch
+     * that stopped answering.  A bench that was not armed still had a servo
+     * held, and nothing else would have released it: the slot would go on
+     * being refreshed every 100 ms, over the top of an outputs binding made
+     * later.
+     */
+    const uint32_t stops = arming_stop_count(&s_arm);
+    if (stops != s_stops_served) {
+        s_stops_served = stops;
+        throttle_to_zero();
+        servo_let_go();
     }
 
     /*
