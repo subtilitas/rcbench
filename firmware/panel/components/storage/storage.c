@@ -248,16 +248,15 @@ int storage_walk(const char *dir, const char *suffixes,
         storage_entry_t cur;
         memcpy(cur.name, e->d_name, len + 1u);
         cur.is_dir = is_dir;
+        /*
+         * No size here.  A stat() is another path lookup through the same
+         * single-sector directory window, and the walk sees every matching
+         * name on the card while its caller keeps a bounded few: on a card
+         * holding hundreds of runs that is hundreds of synchronous card
+         * transactions on the task that renders and handles touch.
+         * storage_size() fills in the ones that are kept.
+         */
         cur.size = 0;
-
-        if (!is_dir) {
-            char full[STORAGE_NAME_MAX * 3];
-            int w = snprintf(full, sizeof(full), "%s/%s", path, e->d_name);
-            struct stat st;
-            if (w > 0 && (size_t)w < sizeof(full) && stat(full, &st) == 0) {
-                cur.size = (uint32_t)st.st_size;
-            }
-        }
         ++matched;
         if (visit != NULL) {
             visit(&cur, ctx);
@@ -272,4 +271,15 @@ int storage_walk(const char *dir, const char *suffixes,
     }
 
     return matched;
+}
+
+uint32_t storage_size(const char *dir, const char *name)
+{
+    if (name == NULL || !s.mounted) {
+        return 0u;
+    }
+    char full[STORAGE_NAME_MAX * 3];
+    storage_path(dir, name, full, sizeof(full));
+    struct stat st;
+    return (stat(full, &st) == 0) ? (uint32_t)st.st_size : 0u;
 }

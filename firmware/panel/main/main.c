@@ -732,6 +732,18 @@ static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
          */
         return -1;
     }
+    /*
+     * Sizes last, and only for what was kept.  The walk carries names alone
+     * because a size is a path lookup of its own; asking for one per entry on
+     * a card holding hundreds of runs would put hundreds of card transactions
+     * on the task that renders and handles touch, to fill a column for
+     * entries the list has already dropped.
+     */
+    for (int i = 0; i < pick.held; ++i) {
+        if (!out[i].is_dir) {
+            out[i].size = storage_size(CARD_DIR, out[i].name);
+        }
+    }
     /* Held in rank order while the card is read, drawn in name order. */
     log_select_sort(out, pick.held);
     return total;          /* what the card holds; pick.held were written */

@@ -82,6 +82,16 @@ typedef void (*storage_visit_fn)(const storage_entry_t *entry, void *ctx);
  * @return the number of matching entries, or -1 when the directory cannot be
  *         opened or read to its end.
  */
+/**
+ * The size of one file, in bytes.
+ *
+ * Separate from the walk because a size costs a path lookup of its own, and a
+ * caller that keeps a bounded few of what the walk offers should pay for
+ * those and no more. Zero for a name that will not stat, which is what an
+ * entry that has gone between the walk and this call looks like.
+ */
+uint32_t storage_size(const char *dir, const char *name);
+
 int storage_walk(const char *dir, const char *suffixes, storage_visit_fn visit,
                  void *ctx);
 
