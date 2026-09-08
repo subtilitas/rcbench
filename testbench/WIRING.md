@@ -19,7 +19,7 @@ used for any of them.
 |---|---|
 | Jumper leads | female-to-female for headers, and a few female-to-pin for probe tips |
 | Signal relays | two per board -- one for BOOT, one for RESET -- with gold-plated contacts. A button line switches microamps and contacts rated for power grow a film a dry circuit will not break through |
-| Relay driver | a transistor and a flyback diode per coil, or a relay module that has them, run from its own supply rather than the panel's rail |
+| Relay driver | a transistor and a flyback diode per coil, or a relay module that has them, run from its own supply rather than the panel's rail. **Each input needs a resistor holding it at the inactive level** -- pull-down for an active-high driver, pull-up for active-low. GP16 to GP19 are inputs whenever the RP2350 is reset or reflashed, which is the recovery this guide relies on, and an undriven gate can close a BOOT or RESET contact and hold a board out of its own firmware |
 | Series resistors | a few hundred ohms, one per analyser probe lead. It costs nothing and a mistake then costs a resistor |
 | Two 120 Ω terminators | one at each end of the CAN pair. Two in parallel are the 60 Ω the pair should measure |
 | Level translation | for any line that leaves the 3.3 V island: a translator that senses the target's rail, not a divider chosen once |
@@ -136,7 +136,8 @@ pulls one line at a time to prove which lead is on which. That is the same
 open-drain drive, so it needs no extra pin.
 
 GP22 is a plain output, and it is an input at every other moment. It drives
-the heartbeat junction with a 20 ms square inside step 7 alone, **only after
+the heartbeat junction with an edge every 20 ms inside step 7 alone, **only
+after
 both links there are open**, and is tri-stated again before either link is
 closed. The panel drives its end push-pull, so that node carries one driver at
 a time or it carries contention.
@@ -144,6 +145,12 @@ a time or it carries contention.
 The relays are at GP16 to GP19 rather than at the start of the header so that
 GP0 to GP15 stay free for the analyser leads and for a stimulus generator this
 guide does not yet describe.
+
+**Before the panel half of this check**, set the panel's UART selector to
+`UART1` and use the bridged USB-C socket with a cable that carries data. On
+`UART2` the CH343 port still enumerates and passes nothing
+(`docs/FirstRun.md`), so a correctly wired relay reads as a loader that will
+not accept a download.
 
 **Check**, one at a time, with the boards powered:
 
@@ -219,12 +226,19 @@ Not the controller's INT pin. `firmware/iomcu/src/xl2515.c` writes zero to
 CANINTE and polls CANINTF, so INT never asserts and a probe there measures
 nothing.
 
-**Check.** With both boards running, capture CS and RXCAN:
+**Check.** With both boards running, capture the SPI probes and RXCAN
+together:
 
-    testbench/host/capture.sh link-idle D7,D8 8m 4m 1.65
+    testbench/host/capture.sh link-idle D4,D5,D6,D7,D8 24m 4m 1.65
 
 CS should be busy at the poll rate, and RXCAN should carry traffic between the
-bursts.
+bursts. SCK, MOSI and MISO are in the capture because they are passive taps on
+a link that works without them: a lead that is off or on the wrong pin changes
+nothing about the traffic, and a capture of CS and RXCAN alone passes with all
+three wrong. Every one of the five has to move.
+
+24 MHz for a 10 MHz clock is the lowest rate that resolves it; at 8 MHz the
+clock aliases and the decode is worse than no capture.
 
 **If CS moves and RXCAN is flat, do not move the probe first.** A crossed pair
 gives exactly this picture and the probe is already right: CANH to CANL
@@ -265,7 +279,7 @@ What it has to do, so that a circuit can be designed against it and checked:
 
 | | |
 |---|---|
-| Input | edges from the panel's GPIO6 on J8, nominally one every 20 ms |
+| Input | edges from the panel's GPIO6 on J8, nominally one every 20 ms, which is a 40 ms cycle: `heartbeat_gen_step()` toggles the level once per period |
 | Behaviour | retriggerable: asserted while edges keep arriving, deasserted no later than the window after the last one |
 | Window | about 150 ms. Above the 20 ms period with margin for a late task, and below the coprocessor's 200 ms link failsafe |
 | Gates | two, both downstream of the coprocessor's pins: its output enable, and the servo and ESC power path |
@@ -293,8 +307,9 @@ its threshold set for it, which is a per-run setting and an argument to
 
     testbench/host/capture.sh heartbeat D3 1m 2m 1.65
 
-A 20 ms square wave. A gap longer than 150 ms is what the monostable and the
-coprocessor both act on, and should not be there on a healthy panel.
+An edge every 20 ms, so a 40 ms cycle: 20 ms high then 20 ms low. A gap longer
+than 150 ms is what the monostable and the coprocessor both act on, and should
+not be there on a healthy panel.
 
 **Check, two: the interlock, and only the interlock.** Stopping the edges is
 not a test on its own. `firmware/iomcu/src/main.c` polls the same line and
@@ -321,9 +336,12 @@ Split it before injecting anything, which is what the two links are for:
 
 1. **Open the panel's branch.** Nothing of the panel's is driving now.
 2. **Open the monostable's trigger branch.** It can see nothing from here on.
-3. **Have the RP2350 drive the junction from GP22** with a clean 20 ms square,
-   so `heartbeat_poll()` on the coprocessor never expires. Both links above
-   are open before this pin drives anything.
+3. **Have the RP2350 drive the junction from GP22** with one edge every
+   20 ms -- a 40 ms cycle, not a 40 ms edge spacing and not a 20 ms cycle --
+   so `heartbeat_poll()` on the coprocessor never expires. Twice that rate is
+   rejected by the monitor's 4 ms floor only well beyond it, so a wrong
+   reading here is injected rather than caught. Both links above are open
+   before this pin drives anything.
 
 Firmware is now being told the panel is alive, and the interlock is being told
 nothing.
