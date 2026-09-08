@@ -60,9 +60,26 @@ per run:
   telemetry, or a servo that answers Hitec D-series. That makes the panel's
   programmer and telemetry paths testable without owning every device.
 
-**The bench itself** — panel and coprocessor — attaches as the device under
-test when the measurement is about what this project emits rather than about
-what it reads.
+**The bench itself** — panel, display, touch and the CAN (controller area
+network) controller — lives on the rig rather than being attached per session.
+That is what makes a regression run possible: the same recipes over the same
+wiring after every merge, rather than a measurement somebody remembered to
+take.
+
+Having the display and the CAN controller wired changes what can be measured,
+in three ways:
+
+- **The panel runs as it ships.** The renderer is drawing while the control
+  task arms, stops and drives, which is the condition the frame budget and the
+  PSRAM (pseudo-static random-access memory) bandwidth concern in `STATUS.md`
+  are about. A timing measured with the screen dark is not the bench's timing.
+- **The link is observable at both ends.** The XL2515's serial peripheral
+  interface (SPI) lines are five probe points, so an exchange can be timed
+  from the panel's request to the coprocessor's answer, and the 1,000 ms
+  host timeout and the 200 ms silence watchdog stop being numbers only the
+  code believes.
+- **Touch becomes something a script can do.** See below; it is the one that
+  matters most.
 
 ---
 
@@ -80,15 +97,23 @@ Proposed channel map, to be checked against the wiring as built:
 | 1 | GP1 output | coprocessor | |
 | 2 | GP2 output | coprocessor | the servo screen's own pin |
 | 3 | heartbeat | panel J8 / GPIO6 to coprocessor GP3 | 20 ms square, the safety line |
-| 4 | CAN TX | panel | link traffic, for timing the exchanges |
-| 5 | CAN RX | panel | |
-| 6 | DShot reply | ESC to coprocessor | the same wire as channel 0 when bidirectional; kept separate so a probe can sit on the ESC end |
-| 7 | programmer line | one-wire, 19,200 baud | BLHeli_S, AM32, ESCape32 |
-| 8 | telemetry RX | ESC to bench | OpenYGE, and DShot extended telemetry |
-| 9 | SBUS | receiver to bench | inverted; the analyser reads it as it is and the decoder inverts |
-| 10 | RP2350 stimulus A | stimulus board | known-good reference traffic |
-| 11 | RP2350 stimulus B | stimulus board | |
-| 12–15 | spare | | |
+| 4 | CAN SCK | coprocessor GP10, pad 14 | the XL2515's SPI clock |
+| 5 | CAN MOSI | coprocessor GP11, pad 15 | |
+| 6 | CAN MISO | coprocessor GP12, pad 16 | with SCK and MOSI, every register the driver writes |
+| 7 | CAN CS | coprocessor GP9, pad 12 | frames the transaction, and is the cheapest thing to trigger on |
+| 8 | CAN INT | coprocessor GP8, pad 11 | the controller's own interrupt, so a reply can be timed from the wire rather than from the driver |
+| 9 | touch SCL | panel to GT911 | the touch controller's clock |
+| 10 | touch SDA | panel to GT911 | with SCL, what the panel believes a finger did |
+| 11 | DShot reply | ESC to coprocessor | the same wire as channel 0 when bidirectional; kept separate so a probe can sit on the ESC end |
+| 12 | programmer line | one-wire, 19,200 baud | BLHeli_S, AM32, ESCape32 |
+| 13 | telemetry RX | ESC to bench | OpenYGE, and DShot extended telemetry |
+| 14 | SBUS | receiver to bench | inverted; the analyser reads it as it is and the decoder inverts |
+| 15 | spare | | a second probe on whatever a run is chasing |
+
+**The budget is 16 channels and the map is 15**, so a run takes the subset it
+needs rather than everything at once: an output measurement wants channels 0
+to 3, a link measurement wants 4 to 8, and only a failure that crosses the two
+wants both.
 
 **Levels.** The RP2350 runs at 3.3 V and its pins are not 5 V tolerant.
 Servo and ESC signal lines are commonly 5 V, and a one-wire programming line
@@ -115,16 +140,62 @@ it.
 ## Flashing without hands
 
 The RP2350's BOOTSEL button is not available to an agent, so the board is
-flashed over SWD (serial wire debug) rather than by unplugging it. On a
-Raspberry Pi 5 the general-purpose input/output pins sit behind the RP1
-controller, so OpenOCD's older native Broadcom driver does not work; the two
-routes that do are `linuxgpiod`, or a Raspberry Pi Debug Probe on USB
-(universal serial bus). The Debug Probe is the one to prefer: it is the same
-interface whatever the host, and it leaves the Pi's pins for the star ground
-and the relay.
+flashed over SWD (serial wire debug) rather than by unplugging it, driven from
+the Pi's own pins through OpenOCD's `linuxgpiod` interface.
+
+On a Raspberry Pi 5 the general-purpose input/output pins sit behind the RP1
+controller, so OpenOCD's older native Broadcom driver does not work and the
+character device is the route. Which device the 40-pin header is depends on
+the kernel and the firmware -- it has been `gpiochip4` and it has been
+`gpiochip0` -- so it is read from `gpiodetect` rather than assumed:
+
+    gpiodetect                       # which chip carries the header
+    openocd -f interface/linuxgpiod.cfg -f target/rp2350.cfg \
+            -c "adapter gpio swclk <pin>; adapter gpio swdio <pin>" \
+            -c "adapter speed 1000"
+
+Three wires and a ground: SWCLK, SWDIO, and the target's 3.3 V as a reference
+only. Start at 1,000 kHz and come down if a flash fails to verify; a bad clock
+on this interface looks like intermittent verification rather than a clean
+error.
 
 The same applies to the bench's own coprocessor if it is to be reflashed
 between runs.
+
+---
+
+## Touch, which is the one that matters
+
+Fifty-one review findings on one branch were about arming, and every one was
+argued rather than measured, because the panel's control task is outside the
+host suite and a gesture needs a finger. The cases were: a press held for two
+seconds, a finger that slides off the button, a second contact landing on it,
+a stop pressed while a hold is running, and touch that stops answering
+altogether. All of them are decided by what the GT911 touch controller reports
+over I²C (inter-integrated circuit).
+
+**So the RP2350 pretends to be the GT911.** It sits on the panel's touch bus
+and answers as the controller does, and a recipe then says "press at (612,
+396), hold 2.1 s, release" and the panel cannot tell the difference. With the
+analyser on the heartbeat and the output pin at the same time, one capture
+holds the gesture and what the bench did about it:
+
+| Gesture the recipe drives | What the capture has to show |
+|---|---|
+| hold 2.1 s on ARM | the output starts driving, and not before 2.0 s |
+| hold 1.9 s and release | nothing drives |
+| hold, slide off the button, hold | nothing drives |
+| second contact lands, first leaves | nothing drives |
+| STOP while a hold is running | the heartbeat stops being asserted within 150 ms |
+| the emulator stops answering | the bank comes down, and the far end fails safe |
+
+That last one is the case that took four review rounds to get right and still
+has no test. Here it is a wire going quiet on purpose.
+
+It also gives the failure that cannot be staged any other way: a touch
+controller that answers slowly, or that reports a contact that was never
+there. Both are things a real GT911 does when its ground is poor, and neither
+has ever been in front of this firmware.
 
 ---
 
@@ -180,17 +251,12 @@ disagreement is then the firmware's rather than the decoder's.
 
 ## What is not decided
 
-Two things I cannot settle from here, and both change the design:
+**Does the Pi have the LA2016's field-programmable gate array bitstream?**
+libsigrok's driver needs it extracted from the vendor's software, and without
+it the analyser enumerates and captures nothing — which looks like a quiet
+bench rather than a broken one. `host/selftest.sh` asks that question
+specifically. If the extraction is a problem, the alternative is a different
+analyser, and it is better to know before the wiring is made.
 
-1. **Does the Pi have the LA2016's FPGA bitstream?** Without it libsigrok
-   drives nothing. If the extraction is a problem, the alternative is a
-   supported analyser, and it is better to know before the wiring is made.
-
-2. **Debug Probe or `linuxgpiod` for SWD?** If a Debug Probe is on the Pi, the
-   RP2350 can be reflashed unattended and a run can start from a build. If not,
-   every firmware change needs a person, and the recipes should be written to
-   assume a fixed stimulus firmware instead.
-
-One more, smaller: whether the panel and coprocessor live on this bench
-permanently or are attached per session. Permanent is what makes a regression
-run possible — the same recipes over the same wiring after every merge.
+Settled: SWD over `linuxgpiod`, and the panel, display, touch and CAN
+controller live on the rig rather than being attached per session.
