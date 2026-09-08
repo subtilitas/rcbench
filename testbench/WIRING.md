@@ -52,14 +52,30 @@ Three wires: SWCLK, SWDIO, and the ground that is already part of the star.
 **No supply wire.** The Pi's 3.3 V pin is a regulated output, not a reference,
 and the RP2350 has its own.
 
+| Pi GPIO | Header pin | To the RP2350 |
+|---|---|---|
+| GPIO25 | 22 | SWCLK |
+| GPIO24 | 18 | SWDIO |
+| ground | 20 | ground, already on the star |
+
+These are the pins Raspberry Pi's own instructions for debugging one Pi from
+another use, so the wiring can be checked against a second source. Any two free
+header GPIOs work -- the lines are bit-banged through `linuxgpiod`, not a
+peripheral -- but the bench is reproducible only if every assembler uses the
+same two, and `testbench/host/selftest.sh` reports whichever it is given.
+
 **Check**, with the RP2350 powered from its own supply:
 
     gpiodetect                      # which chip carries the 40-pin header
-    export SWD_GPIOCHIP=<n> SWD_SWCLK=<pin> SWD_SWDIO=<pin>
+    export SWD_GPIOCHIP=<n> SWD_SWCLK=25 SWD_SWDIO=24
     openocd -f interface/linuxgpiod.cfg -f target/rp2350.cfg \
             -c "adapter gpio swclk -chip $SWD_GPIOCHIP $SWD_SWCLK" \
             -c "adapter gpio swdio -chip $SWD_GPIOCHIP $SWD_SWDIO" \
             -c "adapter speed 1000" -c "init; exit"
+
+The chip number stays a placeholder because it moves with the kernel and the
+firmware -- it has been `gpiochip4` and it has been `gpiochip0` -- which is
+what `gpiodetect` is for. The two GPIO numbers do not move.
 
 It should find a target and exit without complaint. If it half-works --
 connects sometimes, fails to verify a flash -- come down to 500 kHz before
