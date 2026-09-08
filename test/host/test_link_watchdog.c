@@ -46,10 +46,22 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_CONTROL, LINK_CT_COUNT, control_read, control_write },
 };
 
+/*
+ * A coprocessor that has heard the panel, which is what every case below
+ * means by "the link was up".  The watchdog does not run before the first
+ * request arrives -- see silence_before_the_first_request_is_not_silence --
+ * so a fixture that only initialised would be testing a link that had never
+ * existed rather than one that stopped.
+ */
 static void fresh_dev(uint32_t now)
 {
     memset(g_control, 0, sizeof(g_control));
     link_dev_init(&dev, k_pages, 1, NULL, now);
+    link_msg_t req = { 0 };
+    req.op = LINK_OP_READ; req.page = LINK_PAGE_CONTROL;
+    req.offset = 0; req.count = 1;
+    link_msg_t reply;
+    (void)link_dev_dispatch(&dev, &req, &reply, now);
 }
 
 static void poll_at(uint32_t now)
@@ -499,6 +511,32 @@ TEST_CASE(the_coprocessor_gives_up_long_before_the_panel_does)
     CHECK(dev_fired < host_fired);
 }
 
+TEST_CASE(silence_before_the_first_request_is_not_silence)
+{
+    /*
+     * The coprocessor is awake a few hundred milliseconds before the panel
+     * starts polling.  Counting that as a fault lit the panel's indicator
+     * from power-on, on every bench, before anything had happened -- and a
+     * warning that is always on is one nobody reads.
+     */
+    link_dev_t d;
+    link_dev_init(&d, k_pages, 1, NULL, 0);
+
+    /* Long past the timeout, with nothing ever received. */
+    CHECK(!link_dev_tick(&d, LINK_DEV_SILENCE_MS * 10u));
+    CHECK(!d.failsafe);
+
+    /* One request, and the watchdog means something from then on. */
+    link_msg_t req = { 0 };
+    req.op = LINK_OP_READ; req.page = LINK_PAGE_CONTROL;
+    req.offset = 0; req.count = 1;
+    link_msg_t reply;
+    (void)link_dev_dispatch(&d, &req, &reply, 1000u);
+    CHECK(!link_dev_tick(&d, 1000u + LINK_DEV_SILENCE_MS - 1u));
+    CHECK(link_dev_tick(&d, 1000u + LINK_DEV_SILENCE_MS));
+    CHECK(d.failsafe);
+}
+
 int main(void)
 {
     RUN(the_coprocessor_fails_safe_after_two_hundred_milliseconds);
@@ -520,5 +558,6 @@ int main(void)
     RUN(a_nack_answers_the_request_it_refuses);
     RUN(the_host_watchdog_survives_the_millisecond_wrap);
     RUN(the_coprocessor_gives_up_long_before_the_panel_does);
+    RUN(silence_before_the_first_request_is_not_silence);
     return test_summary("link_watchdog");
 }

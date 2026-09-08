@@ -72,6 +72,7 @@ bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
      */
     d->last_request_ms = now_ms;
     d->silent          = false;
+    d->heard           = true;
     ++d->requests;
 
     const link_page_t *p = find_page(d, req->page);
@@ -129,6 +130,14 @@ bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
 bool link_dev_tick(link_dev_t *d, uint32_t now_ms)
 {
     if (d == NULL || d->silent) {
+        return false;
+    }
+    /*
+     * Nothing has ever been said, so nothing has gone quiet.  See `heard`:
+     * this end boots first, and the wait for the panel's first request is
+     * not a fault.
+     */
+    if (!d->heard) {
         return false;
     }
     if (!elapsed(now_ms, d->last_request_ms, LINK_DEV_SILENCE_MS)) {

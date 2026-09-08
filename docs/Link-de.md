@@ -130,7 +130,10 @@ Ein NACK trägt seinen Grund in Register 0:
 
 Fault-Bitmap: Bit 0 Link still, Bit 1 Überstrom, Bit 2 Übertemperatur, Bit 3
 Stall, Bit 4 Heartbeat ausgeblieben, Bit 5 Protokollversion abweichend.
-Faults bleiben gesetzt, bis sie gelesen und gelöscht werden.
+Faults bleiben gesetzt, bis sie gelesen und gelöscht werden. Bit 0 setzt
+voraus, dass über den Link mindestens eine Anfrage gelaufen ist: der
+Koprozessor ist wach, bevor das Panel pollt, und das Warten auf die erste
+Anfrage ist keine Stille.
 
 Capabilities-Bitmap: Bit 0 ESC-Ansteuerung, Bit 1 ESC-Telemetrie, Bit 2
 Servo-PWM, Bit 3 Servo-Strommessung, Bit 4 Akkumessung, Bit 5 Empfängerbus,
