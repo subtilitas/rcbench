@@ -262,17 +262,24 @@ nothing. Arm, bind an output, and capture **after the gate** -- the load-facing
 side of the gated output, and the monostable's output-enable -- on whichever
 channels the run is not otherwise using:
 
-    testbench/host/capture.sh interlock D14,D15 1m 2m 1.65
+    testbench/host/capture.sh interlock D0,D14,D15 1m 2m 1.65
 
-The coprocessor's own pin, D0, is expected to keep toggling throughout, and it
-is not the evidence: the firmware has been given every reason to drive and is
-driving. What must stop is the load side. If it does, the only thing that
-could have stopped it is the part, because nothing else in the path is
-listening. If it keeps driving, the monostable is not in the path or is not
-gating what it should, and the bench is a direct wire wearing a part number.
+Three things have to be in the one capture, and each answers a different
+question:
 
-Probing D0 for this and expecting it to stop is the mistake that reads as a
-failed interlock on a bench that is wired correctly.
+| | |
+|---|---|
+| D0, the raw pin | **toggling.** This is the precondition, not the evidence: it says the arm worked, the binding took and the pin is wired. Flat here and the test proved nothing -- a bench with no interlock at all would look identical |
+| the enable | deasserted, within the window of the last edge into the trigger |
+| the load side | quiet |
+
+An actively driven input, blocked downstream, is the whole of the claim.
+Leaving D0 out of the capture turns a failed arm into a passing interlock
+test.
+
+D0 keeps toggling throughout, and expecting it to stop is the mistake that
+reads as a failed interlock on a bench that is wired correctly. It is the
+input to the gate, not the output of it.
 
 ---
 
