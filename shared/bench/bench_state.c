@@ -102,4 +102,32 @@ void bench_state_reset_peaks(bench_state_t *b)
     b->current_max = b->current;
     b->power_max   = b->power;
     b->rpm_max     = b->rpm;
+    /* And if that reading was not a measurement, neither is the floor: the
+     * run's first valid voltage seeds it instead. */
+    b->sag_seeded  = (b->flags & (uint16_t)LINK_BN_VOLTAGE_OK) != 0u;
+}
+
+void bench_state_track_peaks(bench_state_t *b)
+{
+    if (b == NULL) {
+        return;
+    }
+    if ((b->flags & (uint16_t)LINK_BN_VOLTAGE_OK) != 0u) {
+        if (!b->sag_seeded || b->voltage < b->voltage_min) {
+            b->voltage_min = b->voltage;
+            b->sag_seeded  = true;
+        }
+    }
+    if ((b->flags & (uint16_t)LINK_BN_CURRENT_OK) != 0u
+        && b->current > b->current_max) {
+        b->current_max = b->current;
+    }
+    /* Power is a product and carries no flag of its own; it is left at zero
+     * unless both halves arrived, so a zero cannot raise a peak. */
+    if (b->power > b->power_max) {
+        b->power_max = b->power;
+    }
+    if (b->rpm > b->rpm_max) {
+        b->rpm_max = b->rpm;
+    }
 }

@@ -23,10 +23,6 @@
 #include <stdio.h>
 #include <string.h>
 
-static const char *const k_telem_src[] = {
-    "SIMULATED", "BLHELI SERIAL", "DSHOT TELEM", "VESC", "SENSORS",
-};
-static const char *const k_out_proto[] = { "SERVO PWM", "DSHOT300", "DSHOT600" };
 static const char *const k_theme[]     = { "DARK", "LIGHT" };
 static const char *const k_language[]  = { "ENGLISH", "DEUTSCH" };
 static const char *const k_units[]     = { "METRIC", "IMPERIAL" };
@@ -56,18 +52,6 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "motor_kv", "Rated kV",
         "Used when the ESC reports none; 0 shows the field empty", "rpm/V",
         SET_CAT_ESC, SET_TYPE_INT, 0, 10000, 10, 0, NULL, 0 },
-    [SET_TELEM_SRC] = {
-        "telem_src", "Telemetry", "Where V, A and RPM come from", "",
-        SET_CAT_ESC, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_telem_src) },
-    [SET_TELEM_HZ] = {
-        "telem_hz", "Sample rate", "Trace is 762 wide; 20 Hz is ~38 s", "Hz",
-        SET_CAT_ESC, SET_TYPE_INT, 5, 100, 5, 20, NULL, 0 },
-    [SET_OUT_PROTO] = {
-        "out_proto", "Output", "Throttle signal to the ESC", "",
-        SET_CAT_ESC, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_out_proto) },
-    [SET_OUT_PIN] = {
-        "out_pin", "Output pin", "-1 disables the throttle output", "GPIO",
-        SET_CAT_ESC, SET_TYPE_INT, -1, 48, 1, 6, NULL, 0 },
     [SET_OUT_MIN_US] = {
         "out_min_us", "Idle pulse", "Width at 0 % throttle", "us",
         SET_CAT_ESC, SET_TYPE_INT, 800, 1600, 10, 1000, NULL, 0 },
