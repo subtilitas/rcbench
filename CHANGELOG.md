@@ -26,6 +26,19 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **A stop waited behind commands that talk to the link.** The control loop
+  drained the screens' commands before it served a pending STOP, and an
+  unanswered exchange holds that loop for LINK_HOST_TIMEOUT_MS (1000 ms) --
+  several such commands multiply it, with the far end armed throughout. The
+  stop is served first again. What made that unsafe before was an arm queued
+  from a gesture made before the stop, and each command now carries the count
+  of stops its sender had seen, so a stale arm is dropped instead.
+- **An arm learned after this frame's touch discarded a position issued after
+  it.** The screens are told whether the bench is armed at the end of a
+  frame, and an arm discards what was held before it; a position commanded
+  earlier in the same frame, after the bench had actually armed, was thrown
+  away by that. The bench's state is read before the frame's touch is
+  dispatched, so a press acts on what the bench already is.
 - **A stop on a bench that was not armed left the servo screen holding.**
   Dragging while disarmed commands a position, and a stop then changes
   nothing about the armed state while the panel releases the slot all the

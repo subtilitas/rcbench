@@ -2339,18 +2339,24 @@ static void control_task(void *arg)
         control_pump();
 
         /*
-         * The screens first, then the policy.
+         * The policy first, then the screens.
          *
-         * A hold that completes queues its arm, and a STOP pressed after it
-         * arrives on its own flag.  Stepping the policy first consumed that
-         * stop and then let the older arm clear the latch it had just set:
-         * the bench armed after a press made to stop it.  arming_stop()
-         * abandons an arm rather than deferring it, so with the queue drained
-         * first the newer stop is the one that stands.
+         * A stop must not wait behind a command that talks to the link: an
+         * unanswered exchange holds this loop for LINK_HOST_TIMEOUT_MS
+         * (1000 ms), and a queue with several such commands in it multiplies
+         * that, with the far end armed the whole time.  control_pump() keeps
+         * the heartbeat going during the wait but only records further stop
+         * requests; acting on them is here.
+         *
+         * What made this ordering unsafe before was an arm queued from a
+         * gesture made before the stop, which would clear the latch on the
+         * next pass.  Each command now carries the count of stops its sender
+         * had seen and an arm whose count is stale is dropped, so the stop
+         * can be served first without an older arm undoing it.
          */
-        drain_commands(link_up, &bench);
-
         service_arming(link_up);
+
+        drain_commands(link_up, &bench);
         (void)outputs_keepalive(&s_out, PANEL_CH_THROTTLE, now_ms());
         servo_service(link_up);
 
@@ -2490,6 +2496,49 @@ void app_main(void)
         const float dt_s = (float)(us - last_us) / 1e6f;
         last_us = us;
 
+        /*
+         * What the bench is, before this frame's touch is dispatched.
+         *
+         * A press dispatched below can command a position, and the screens
+         * decide what a command means from whether the bench is armed: an arm
+         * discards what was held before it, so learning of the arm after the
+         * press would throw away a position issued after it and leave the
+         * screen showing nothing driven while the panel held one.
+         */
+        bool     armed_now;
+        uint32_t stops_now;
+        snap_lock();
+        armed_now = s_snap.armed;
+        stops_now = s_snap.stops;
+        snap_unlock();
+
+        /*
+         * A stop ends any hold under way and drops an arm it has already
+         * produced, on both screens.
+         *
+         * Counted rather than watched for an edge.  The latch says only that
+         * a stop is in force, so a second STOP during a hold begun after the
+         * first one changes nothing about it, and that hold would run to
+         * completion and clear the latch.  Every stop is an event here, and
+         * touch that stops answering is counted as one.
+         */
+        if (stops_now != last_stops) {
+            motor_screen_cancel_arm();
+            servo_screen_cancel_arm();
+        }
+        last_stops = stops_now;
+
+        /* The slider follows the bench: a disarm returns the command to
+         * zero, so the control the operator picks up next is at zero too. */
+        if (was_armed && !armed_now) {
+            motor_screen_set_throttle(0.0f);
+            motor_cmd_t follow;
+            (void)motor_screen_poll_cmd(&follow);   /* not a command */
+        }
+        was_armed = armed_now;
+        motor_screen_set_armed(armed_now);
+        servo_screen_set_armed(armed_now);
+
         /* What the control task saw of the panel. */
         touch_event_t evt;
         while (xQueueReceive(s_touch_q, &evt, 0) == pdTRUE) {
@@ -2529,29 +2578,6 @@ void app_main(void)
         outputs_screen_set_result(
             (outputs_result_t)atomic_load(&s_outputs_result));
 
-        /*
-         * The stop latch before anything the screens produced.
-         *
-         * A hold that completed in the frame the stop arrived has its command
-         * waiting to be read, and forwarding it first would send an arm from
-         * a gesture the stop has just cancelled -- which clears the latch a
-         * pass or two later, when nothing is left to say it should not.
-         *
-         * Counted rather than watched for an edge.  The latch says only that
-         * a stop is in force, so a second STOP during a hold begun after the
-         * first one changes nothing about it, and that hold would run to
-         * completion and clear the latch.  Every stop is an event here.
-         */
-        uint32_t stops_now;
-        snap_lock();
-        stops_now = s_snap.stops;
-        snap_unlock();
-        if (stops_now != last_stops) {
-            motor_screen_cancel_arm();
-            servo_screen_cancel_arm();
-        }
-        last_stops = stops_now;
-
         motor_cmd_t mc;
         while (motor_screen_poll_cmd(&mc)) {
             panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
@@ -2580,7 +2606,6 @@ void app_main(void)
 
         bench_state_t bench;
         bool     link_up;
-        bool     armed;
         uint16_t faults;
         uint32_t link_errors;
         float    mcu_temp_c;
@@ -2590,7 +2615,6 @@ void app_main(void)
         snap_lock();
         bench       = s_snap.bench;
         link_up     = s_snap.link_up;
-        armed       = s_snap.armed;
         faults      = s_snap.faults;
         link_errors = s_snap.link_errors;
         mcu_temp_c  = s_snap.mcu_temp_c;
@@ -2605,15 +2629,9 @@ void app_main(void)
         if (have_alert) {
             ui_router_set_alert(alert);
         }
-        /* The slider follows the bench: a disarm returns the command to
-         * zero, so the control the operator picks up next is at zero too. */
-        if (was_armed && !armed) {
-            motor_screen_set_throttle(0.0f);
-            (void)motor_screen_poll_cmd(&mc);   /* not a command, a follow */
-        }
-        was_armed = armed;
-        motor_screen_set_armed(armed);
-        servo_screen_set_armed(armed);
+        /* The armed state this frame acted on, read before the touch was
+         * dispatched; the band shows what the screens were told. */
+        const bool armed = armed_now;
         /* One sample, one plot column, however many frames it took to get
          * here: the queue holds what this loop was too busy to draw. */
         bench_state_t sample;
