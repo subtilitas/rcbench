@@ -1585,6 +1585,174 @@ TEST_CASE(a_pad_list_that_cannot_belong_to_the_board_is_refused)
     outbind_forget_learned();
 }
 
+/* ------------------------------------------- which channels carry a role */
+
+/*
+ * A screen that commands a role has to reach exactly the channels the
+ * binding gave that role.  Reaching one more is the defect this pair of
+ * masks exists to stop: a servo horn that also commanded a motor's channel
+ * would drive an ESC to whatever the horn was showing.
+ */
+TEST_CASE(the_horn_reaches_the_surfaces_and_never_the_motor)
+{
+    const uint8_t servo = proto_named("SERVO PWM");
+    const uint8_t motor = proto_named("DSHOT600");
+    CHECK(servo != 0 && motor != 0);
+
+    /* GP0 is the motor and takes channel 0, the lowest pin first.  GP2 and
+     * GP5 are servos and take channels 1 and 2. */
+    outbind_t b;
+    init(&b);
+    outbind_set_proto(&b, motor);
+    (void)outbind_toggle(&b, idx(0));
+    outbind_set_proto(&b, servo);
+    (void)outbind_toggle(&b, idx(2));
+    (void)outbind_toggle(&b, idx(5));
+
+    const uint8_t surfaces = outbind_role_channels(&b, OUT_ROLE_SURFACE);
+    const uint8_t motors   = outbind_role_channels(&b, OUT_ROLE_THROTTLE);
+
+    CHECK_EQ(motors,   0x01u);            /* channel 0 alone */
+    CHECK_EQ(surfaces, 0x06u);            /* channels 1 and 2 */
+    CHECK_EQ(surfaces & motors, 0u);      /* and never both */
+}
+
+/*
+ * With nothing bound as a surface the horn has nothing to drive, and the
+ * answer is no channels rather than channel 0.  Falling back to a channel
+ * number is how a screen ends up commanding whatever the operator happened
+ * to bind first.
+ */
+TEST_CASE(a_binding_with_no_surface_gives_the_horn_nothing)
+{
+    const uint8_t motor = proto_named("DSHOT600");
+    outbind_t b;
+    init(&b);
+    outbind_set_proto(&b, motor);
+    (void)outbind_toggle(&b, idx(0));
+
+    CHECK_EQ(outbind_role_channels(&b, OUT_ROLE_SURFACE), 0u);
+    CHECK_EQ(outbind_role_channels(&b, OUT_ROLE_THROTTLE), 0x01u);
+}
+
+/* PPM is eight channels on one pin, and all eight carry the entry's role. */
+TEST_CASE(one_ppm_pin_puts_every_channel_it_carries_in_the_mask)
+{
+    const uint8_t ppm = proto_named("PPM");
+    outbind_t b;
+    init(&b);
+    outbind_set_proto(&b, ppm);
+    (void)outbind_toggle(&b, idx(0));
+
+    CHECK_EQ(outbind_role_channels(&b, OUT_ROLE_SURFACE), 0xFFu);
+    CHECK_EQ(outbind_role_channels(&b, OUT_ROLE_THROTTLE), 0u);
+}
+
+/*
+ * The mask, the slots and the roles are three walks over one catalogue, and
+ * they have to agree: every channel the mask names is rendered by a slot and
+ * carries that role on the page written from the same selection.  Checked
+ * against the pages rather than against a second copy of the walk, so a
+ * change to the order breaks this rather than passing twice.
+ */
+TEST_CASE(the_mask_names_the_channels_the_pages_render)
+{
+    const uint8_t servo = proto_named("SERVO PWM");
+    const uint8_t motor = proto_named("MOTOR PWM");
+    const uint8_t dshot = proto_named("DSHOT300");
+
+    outbind_t b;
+    init(&b);
+    outbind_set_proto(&b, dshot);
+    (void)outbind_toggle(&b, idx(0));
+    outbind_set_proto(&b, servo);
+    (void)outbind_toggle(&b, idx(1));
+    (void)outbind_toggle(&b, idx(4));
+    outbind_set_proto(&b, motor);
+    (void)outbind_toggle(&b, idx(6));
+
+    uint16_t slots[LINK_OS_COUNT], cc[LINK_CC_COUNT];
+    const uint8_t used = outbind_to_slots(&b, slots);
+    outbind_to_chan_cfg(&b, cc, 1000u, 2000u);
+    CHECK_EQ(used, 4u);
+
+    const uint8_t surfaces = outbind_role_channels(&b, OUT_ROLE_SURFACE);
+    const uint8_t motors   = outbind_role_channels(&b, OUT_ROLE_THROTTLE);
+    CHECK_EQ(surfaces & motors, 0u);
+
+    for (uint8_t ch = 0; ch < LINK_OUT_CHANNELS; ++ch) {
+        const uint8_t bit = (uint8_t)(1u << ch);
+        /* Rendered by one of the slots this selection used? */
+        bool rendered = false;
+        for (uint8_t sl = 0; sl < used; ++sl) {
+            const uint16_t *r = &slots[(size_t)sl * LINK_OS_STRIDE];
+            const uint8_t first = LINK_OS_FIRST(r[LINK_OS_RANGE]);
+            const uint8_t n     = LINK_OS_CHANNELS(r[LINK_OS_RANGE]);
+            if (ch >= first && ch < first + n) {
+                rendered = true;
+            }
+        }
+        const uint16_t role = cc[(size_t)ch * LINK_CC_STRIDE + LINK_CC_ROLE];
+        if ((surfaces & bit) != 0u) {
+            CHECK(rendered);
+            CHECK_EQ(role, (uint16_t)LINK_CC_ROLE_SURFACE);
+        }
+        if ((motors & bit) != 0u) {
+            CHECK(rendered);
+            CHECK_EQ(role, (uint16_t)LINK_CC_ROLE_THROTTLE);
+        }
+        if (!rendered) {
+            CHECK_EQ((uint8_t)((surfaces | motors) & bit), 0u);
+        }
+    }
+}
+
+/*
+ * A binding wider than the page stops the mask where it stops the slots.
+ *
+ * PPM on the lowest pin renders all eight channels, so a pin above it has no
+ * channel to render into.  Built by hand and not trimmed, because the walk's
+ * own budget is what is under test: a mask that counted a channel no slot
+ * renders would send the horn to a channel that reaches no pin.
+ */
+TEST_CASE(a_binding_wider_than_the_page_stops_the_mask_where_it_stops_the_slots)
+{
+    const uint8_t ppm   = proto_named("PPM");
+    const uint8_t dshot = proto_named("DSHOT600");
+
+    outbind_t b;
+    init(&b);
+    b.pins[ppm]   = (uint32_t)1u << idx(0);
+    b.pins[dshot] = (uint32_t)1u << idx(13);
+
+    uint16_t slots[LINK_OS_COUNT], cc[LINK_CC_COUNT];
+    const uint8_t used = outbind_to_slots(&b, slots);
+    outbind_to_chan_cfg(&b, cc, 1000u, 2000u);
+    CHECK_EQ(used, 1u);                   /* the PPM pin, and no room after */
+
+    /* Every channel the page renders, and not one more. */
+    CHECK_EQ(outbind_role_channels(&b, OUT_ROLE_SURFACE), 0xFFu);
+    CHECK_EQ(outbind_role_channels(&b, OUT_ROLE_THROTTLE), 0u);
+
+    const uint16_t *r = &slots[0];
+    CHECK_EQ(LINK_OS_FIRST(r[LINK_OS_RANGE]), 0u);
+    CHECK_EQ(LINK_OS_CHANNELS(r[LINK_OS_RANGE]), (uint8_t)LINK_OUT_CHANNELS);
+    for (uint8_t ch = 0; ch < LINK_OUT_CHANNELS; ++ch) {
+        CHECK_EQ(cc[(size_t)ch * LINK_CC_STRIDE + LINK_CC_ROLE],
+                 (uint16_t)LINK_CC_ROLE_SURFACE);
+    }
+}
+
+/* A binding that names no board describes no wiring, so it carries no
+ * channels rather than the channels of whatever board was last asked. */
+TEST_CASE(a_mask_without_a_board_is_empty_rather_than_guessed)
+{
+    outbind_t b;
+    outbind_init(&b);          /* OUTBIND_BOARD_UNKNOWN */
+    CHECK_EQ(outbind_role_channels(&b, OUT_ROLE_SURFACE), 0u);
+    CHECK_EQ(outbind_role_channels(NULL, OUT_ROLE_SURFACE), 0u);
+}
+
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     uint16_t regs[LINK_OS_COUNT];
@@ -1656,6 +1824,12 @@ int main(void)
     RUN(the_board_says_which_pads_are_ground_and_which_are_rails);
     RUN(pads_survive_the_round_trip_through_the_page);
     RUN(a_pad_list_that_cannot_belong_to_the_board_is_refused);
+    RUN(the_horn_reaches_the_surfaces_and_never_the_motor);
+    RUN(a_binding_with_no_surface_gives_the_horn_nothing);
+    RUN(one_ppm_pin_puts_every_channel_it_carries_in_the_mask);
+    RUN(the_mask_names_the_channels_the_pages_render);
+    RUN(a_binding_wider_than_the_page_stops_the_mask_where_it_stops_the_slots);
+    RUN(a_mask_without_a_board_is_empty_rather_than_guessed);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("outbind");
 }

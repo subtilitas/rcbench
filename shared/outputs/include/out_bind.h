@@ -427,6 +427,25 @@ bool outbind_from_slots(outbind_t *b, uint16_t board,
 void outbind_to_chan_cfg(const outbind_t *b, uint16_t *regs,
                          uint16_t min_us, uint16_t max_us);
 
+/**
+ * The channels this binding renders and marks @p role, as a mask.
+ *
+ * Bit n is channel n, counted the way outbind_to_slots() counts them.  A
+ * screen that commands a role rather than a pin asks this: the throttle
+ * drives whatever the operator bound as a motor, the servo horn whatever
+ * they bound as a surface, and neither can reach the other's pins.  Naming a
+ * pin in a screen instead would be a second place the wiring is written
+ * down, and the two would disagree the first time the operator rebound one.
+ *
+ * Channels no slot renders are not in the mask, so a command sent to what it
+ * returns always reaches a pin.  A binding that names nothing of @p role
+ * returns zero, which is a screen with nothing to drive rather than a screen
+ * that drives channel 0.
+ *
+ * One bit per channel over LINK_OUT_CHANNELS channels, which is 8.
+ */
+uint8_t outbind_role_channels(const outbind_t *b, out_role_t role);
+
 #ifdef __cplusplus
 }
 #endif
