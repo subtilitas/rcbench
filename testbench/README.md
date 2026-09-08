@@ -60,8 +60,8 @@ per run:
   telemetry, or a servo that answers Hitec D-series. That makes the panel's
   programmer and telemetry paths testable without owning every device. It also
   answers as a touch controller at its own address; see below.
-- **Hands.** It drives the reset and boot lines of both boards, which is what
-  makes a cold start scriptable and a bad flash recoverable.
+- **Hands.** It closes the relays across both boards' reset and boot buttons,
+  which is what makes a cold start scriptable and a bad flash recoverable.
 
 **A camera** on a fixed mount, looking at the display. It is the only thing
 here that can see what the panel actually shows, as opposed to what its
@@ -121,9 +121,9 @@ Proposed channel map, to be checked against the wiring as built:
 | 14 | SBUS | receiver to bench | inverted; the analyser reads it as it is and the decoder inverts |
 | 15 | TXCAN, or spare | XL2515 to transceiver | the other direction when a run wants both ends of an exchange |
 
-Not on the analyser, and driven rather than watched: the panel's and the
-coprocessor's reset and boot lines, from the RP2350, open-drain. They are
-wiring all the same and belong on the same star ground.
+Not on the analyser: the relay contacts across both boards' reset and boot
+buttons, closed by the RP2350. They are wiring all the same and belong on the
+same star ground.
 
 **The budget is 16 channels and the map is 15**, so a run takes the subset it
 needs rather than everything at once: an output measurement wants channels 0
@@ -142,13 +142,15 @@ it.
 
 ## Safety
 
-- **No propeller, ever.** A motor on this bench runs bare.
+**Nothing on this bench spins.** The loads are servos and an ESC that is
+listened to rather than driven into a motor, so the hazards here are a shorted
+rail and a board nobody can restart, not a propeller.
+
 - The bench supply has a current limit set low enough that a short trips it
   rather than burning a track.
-- Power to the device under test goes through a relay the Pi can open, so a
-  run that has gone wrong ends without a person in the room.
 - The analyser is passive and stays passive: it observes, and nothing on it
   drives a line.
+- Every probe point has a series resistor, so a mistake costs a resistor.
 
 ---
 
@@ -272,29 +274,33 @@ thing is what makes a measurement believable.
 
 ## Reset, and the boot buttons
 
-The RP2350 drives the reset and boot lines of both boards, which is what makes
-the bench recoverable without a person.
+Relays across the buttons, one contact each, closed by the RP2350. A relay
+contact is what a button is -- a dry contact to ground -- so there is no line
+to drive, no level to match, and nothing that can hold a pin high. Coil
+unpowered is button not pressed, which is the state a board runs in, so a
+controller that has crashed or lost power leaves both boards alone.
+
+What that makes possible:
 
 - **A cold start on demand.** The link-silent fault, the 1,200 ms splash, the
   CAN self-test and the heartbeat's first acquisition all happen once per
-  power-up and have never been measured across a hundred of them. A reset line
-  under a script turns that into a loop.
-- **Boot mode without hands.** The coprocessor's BOOTSEL and the panel's BOOT
-  are held while reset is released, which is how each enters its loader. The
-  panel needs this: it is flashed over a serial port with BOOT held, and
-  without it there is no unattended way to put firmware on the panel at all.
-- **Recovery.** A flash that leaves a board unable to run is undone by the
-  same two lines rather than by somebody driving to the bench.
+  power-up and have never been seen across a hundred of them. A reset under a
+  script turns that into a loop.
+- **Boot mode without hands.** BOOT closed, RESET pulsed, RESET released, BOOT
+  released: that sequence is what puts each board in its loader. The panel
+  needs it -- it is flashed over a serial port with BOOT held, and without this
+  there is no unattended way to put firmware on the panel at all.
+- **Recovery.** A flash that leaves a board unable to run is undone by the same
+  two contacts rather than by somebody driving to the bench.
 
-**Drive them open-drain.** Pull low to assert and release to let the board's
-own pull-up take it, never drive high. A push-pull output that is stuck, or
-held by a crashed emulator, would otherwise fight the board and keep it from
-starting -- and a bench nobody can reset is the failure this is meant to
-prevent.
+Two practical notes. Use signal relays with gold-plated contacts: a button
+line switches microamps, and contacts rated for power can grow an oxide film
+that a dry circuit will not break through. And run the coils from their own
+supply through a transistor with a flyback diode -- a coil collapsing into the
+rail that feeds the panel is a brown-out that reads like a firmware fault.
 
-That leaves one chain with no dead end: the Pi resets the RP2350 over SWD, the
-RP2350 resets the panel and the coprocessor, and each link is driven by
-something the link above it can restart.
+The chain then has no dead end: the Pi resets the RP2350 over SWD, the RP2350
+closes the contacts that reset the boards.
 
 ---
 
