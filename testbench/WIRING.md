@@ -93,6 +93,21 @@ to ground and the relay is only closing it.
 Coils from their own supply, through their driver, controlled by the RP2350.
 Coil unpowered is button not pressed, which is the state a board runs in.
 
+Four driver inputs need four pins. The testbench firmware does not exist yet,
+so this is a proposal to fix when it is written rather than something the tree
+already says:
+
+| RP2350 pin | Closes |
+|---|---|
+| GP16 | panel RESET |
+| GP17 | panel BOOT |
+| GP18 | coprocessor RESET |
+| GP19 | coprocessor BOOT |
+
+The same firmware carries the touch emulator's I²C pair, the stimulus outputs
+and the heartbeat injection for the interlock test, so the four are chosen
+away from those rather than at the start of the header.
+
 **Check**, one at a time, with the boards powered:
 
 - Close RESET alone: the board restarts. On the panel the splash comes back.
@@ -189,7 +204,7 @@ What it has to do, so that a circuit can be designed against it and checked:
 | Gates | two, both downstream of the coprocessor's pins: its output enable, and the servo and ESC power path |
 | Fail-safe direction | unpowered, undriven or unbuilt means disabled. A failure of the interlock cannot be a bench that keeps driving |
 | Not defeatable | no firmware at either end is in the path, which is the whole point |
-| A link in the trigger branch | removable, so the differential test below can starve the monostable while GP3 still sees edges |
+| Two links, both removable | one in the panel's GPIO6 branch and one in the monostable's trigger branch, meeting at a junction with the coprocessor's GP3. The differential test needs to split that node three ways, and the panel drives GPIO6 push-pull, so it cannot simply be joined |
 
 Part numbers are deliberately absent: `hardware/README.md` says a part is not
 chosen until it is available at a vendor, and this belongs in `hardware/` as
@@ -230,17 +245,22 @@ those nodes, so what they do is the hardware's doing.
 
 *The differential test.* Keep the firmware happy and starve only the hardware.
 
-GP3 and the monostable's trigger are the same line, so injecting a heartbeat
-at GP3 retriggers the monostable too, and the test would show a healthy
-interlock as failed for the second reason in two rounds. **Open the link in
-the trigger branch first** -- that is what it is there for -- so the RP2350
-drives GP3 alone.
+The heartbeat is one node: the panel's GPIO6, the coprocessor's GP3 and the
+monostable's trigger all meet on it. The panel drives its end **push-pull**
+(`firmware/panel/main/main.c`), so a second driver on that node is contention
+rather than a test -- a corrupted reading at best and a damaged pin at worst.
 
-Then have the RP2350 drive GP3 with a clean 20 ms square so `heartbeat_poll()`
-never expires, while the monostable's input gets nothing. Arm, bind an output,
-and capture **after the gate** -- the load-facing side of the gated output, and
-the monostable's output-enable line -- on whichever channels the run is not
-otherwise using:
+Split it before injecting anything, which is what the two links are for:
+
+1. **Open the panel's branch.** Nothing of the panel's is driving now.
+2. **Open the monostable's trigger branch.** It can see nothing from here on.
+3. **Have the RP2350 drive the junction** with a clean 20 ms square, so
+   `heartbeat_poll()` on the coprocessor never expires.
+
+Firmware is now being told the panel is alive, and the interlock is being told
+nothing. Arm, bind an output, and capture **after the gate** -- the load-facing
+side of the gated output, and the monostable's output-enable -- on whichever
+channels the run is not otherwise using:
 
     testbench/host/capture.sh interlock D14,D15 1m 2m 1.65
 
