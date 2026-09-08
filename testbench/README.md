@@ -10,9 +10,11 @@ in the tree was written from a specification and exercised only against frames
 the same code builds. `docs/FirstRun.md` section 7 is the list of numbers
 nobody has measured. This bench is what answers it.
 
-**Nothing here has been run.** The hardware is being assembled; the pin map
-below is a proposal to be checked against the wiring, and the two open
-questions at the end need answering before any of it is true.
+**Nothing here has been run.** The hardware is being assembled, the channel
+map is a proposal to be checked against the wiring as built, and three of the
+pieces are described rather than written -- the panel's debug touch address,
+the decoders and the recipes. Each says so where it is described, and they are
+listed together under *What is not built yet*.
 
 ---
 
