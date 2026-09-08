@@ -251,7 +251,8 @@ builds. Record real values for each:
 | Display freezes briefly | A flash write. Expected once, when the photograph is kept. |
 | Coprocessor does not boot after flashing | Image past 4 MB. Check the size line from §1. |
 | Panel boots but no `boardart` partition | Flashed app-only over an old table. Merge-bin at offset 0. |
-| Output stops on its own after ½ s | Working as intended — nothing wrote to it. |
+| Output goes to mid-travel after ½ s | Working as intended — nothing wrote to that channel, so it went to its rest: mid-travel for a servo, zero for a motor. The pulses continue while the bench is armed |
+| Pulses stop altogether | Not the timeout. Something released the pin, disarmed, or stopped the bench |
 
 **If the bench misbehaves in a way that points at the panel**, the two newest
 and least proven things are both mine and both only compiler-checked:
