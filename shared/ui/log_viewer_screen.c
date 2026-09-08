@@ -82,7 +82,8 @@ static struct {
     log_viewer_io_t io;
 
     log_viewer_file_t files[LOG_VIEWER_MAX_FILES];
-    int n_files;
+    int n_files;  /* rows held, never above LOG_VIEWER_MAX_FILES */
+    int n_card;   /* what the volume holds; above n_files when cut */
     int listed;   /* -1 no volume, 0 not read, 1 read     */
     int sel;      /* highlighted file                     */
     int scroll;
@@ -160,6 +161,7 @@ void log_viewer_set_io(const log_viewer_io_t *io)
 void log_viewer_refresh(void)
 {
     s.n_files = 0;
+    s.n_card = 0;
     s.sel = -1;
     s.scroll = 0;
     if (s.io.list == NULL) {
@@ -169,7 +171,17 @@ void log_viewer_refresh(void)
         if (n < 0) {
             s.listed = -1;
         } else {
-            s.n_files = n;
+            /*
+             * The count is what the volume holds, which can be more than was
+             * written: a card takes up to 999 runs and this screen holds
+             * LOG_VIEWER_MAX_FILES of them.  Rows are clamped to what is in
+             * the array -- every list index below runs off the end otherwise
+             * -- and the browse panel names both numbers, because a viewer
+             * that shows a subset without saying so is a viewer the operator
+             * reads as the whole card.
+             */
+            s.n_card = n;
+            s.n_files = (n < LOG_VIEWER_MAX_FILES) ? n : LOG_VIEWER_MAX_FILES;
             s.listed = 1;
         }
     }
@@ -479,7 +491,22 @@ static void render_browse(gfx_canvas_t *c)
                  "Runs are written here as BENCH001.CSV and upwards.",
                  UI_FONT_LABEL, UI_TEXT_FAINT, 1);
     } else {
-        ui_panel(c, BR_LIST, "FILES", UI_ACCENT);
+        /*
+         * The tab carries both numbers when the volume holds more than the
+         * list does: a file missing from a list headed FILES reads as a file
+         * that is not on the card.  Which entries arrive is the lister's
+         * decision -- the panel's keeps the newest runs, see log_select.h.
+         * The buffer takes both counts written out in full, so a volume that
+         * reports a nonsense one still leaves a terminated title.
+         */
+        char title[40];
+        if (s.n_card > s.n_files) {
+            snprintf(title, sizeof(title), "%d OF %d FILES", s.n_files,
+                     s.n_card);
+        } else {
+            snprintf(title, sizeof(title), "FILES");
+        }
+        ui_panel(c, BR_LIST, title, UI_ACCENT);
         int y = BR_LIST.y + 30;
         for (int r = 0; r < BR_ROWS; ++r) {
             int i = s.scroll + r;

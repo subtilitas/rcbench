@@ -43,6 +43,8 @@
 #include "link_bringup.h"
 #include "link_host.h"
 #include "link_pages.h"
+#include "log_name.h"
+#include "log_select.h"
 #include "log_writer.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
@@ -652,6 +654,37 @@ static void pump(void)
  * opens another. */
 static FILE *s_card_file;
 
+/*
+ * One directory entry on its way into the viewer's list.
+ *
+ * The card takes LOG_RUN_LAST runs and the list holds LOG_VIEWER_MAX_FILES of
+ * them, so which of them arrive is a decision rather than a side effect of
+ * where the read stopped: every entry is offered to log_select_keep(), which
+ * holds the newest runs.
+ */
+typedef struct {
+    log_viewer_file_t *out;
+    int max;
+    int held;
+} card_pick_t;
+
+static void card_take(const storage_entry_t *entry, void *ctx)
+{
+    card_pick_t *pick = (card_pick_t *)ctx;
+    /* Field by field rather than a block copy of the structure: the two
+     * agree today and neither owns the other's layout.  The name is copied
+     * whole and terminated by hand, so one that filled its array without a
+     * terminator ends here rather than running off the end. */
+    _Static_assert(sizeof(pick->out->name) == sizeof(entry->name),
+                   "the viewer's name field and the card's are one size");
+    log_viewer_file_t f;
+    memcpy(f.name, entry->name, sizeof(f.name));
+    f.name[sizeof(f.name) - 1u] = '\0';
+    f.size   = entry->size;
+    f.is_dir = entry->is_dir;
+    pick->held = log_select_keep(pick->out, pick->held, pick->max, &f);
+}
+
 static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
 {
     (void)ctx;
@@ -667,7 +700,7 @@ static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
     }
     /*
      * No card is -1 and an empty card is 0, and the viewer says different
-     * things about them.  storage_list() cannot open the root of a volume
+     * things about them.  storage_walk() cannot open the root of a volume
      * that is not mounted, so the two already arrive apart; asking
      * storage_mounted() first makes that true by construction rather than by
      * how a failure happened to surface.
@@ -675,11 +708,9 @@ static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
     if (!storage_mounted()) {
         return -1;
     }
-    static storage_entry_t entries[LOG_VIEWER_MAX_FILES];
-    const int max = (max_entries < LOG_VIEWER_MAX_FILES) ? max_entries
-                                                         : LOG_VIEWER_MAX_FILES;
-    const int n = storage_list(CARD_DIR, CARD_SUFFIXES, entries, max);
-    if (n < 0) {
+    card_pick_t pick = { out, max_entries, 0 };
+    const int total = storage_walk(CARD_DIR, CARD_SUFFIXES, card_take, &pick);
+    if (total < 0) {
         /*
          * Mounted, and yet its root will not open: the card it was mounted
          * from has been taken out or swapped.  Nothing clears that flag on
@@ -694,19 +725,9 @@ static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
          */
         return -1;
     }
-    for (int i = 0; i < n; ++i) {
-        /* Field by field rather than a block copy of the structure: the two
-         * agree today and neither owns the other's layout.  The name is
-         * copied whole and terminated by hand, so one that filled its array
-         * without a terminator ends here rather than running off the end. */
-        _Static_assert(sizeof(out->name) == sizeof(entries->name),
-                       "the viewer's name field and the card's are one size");
-        memcpy(out[i].name, entries[i].name, sizeof(out[i].name));
-        out[i].name[sizeof(out[i].name) - 1u] = '\0';
-        out[i].size   = entries[i].size;
-        out[i].is_dir = entries[i].is_dir;
-    }
-    return n;
+    /* Held in rank order while the card is read, drawn in name order. */
+    log_select_sort(out, pick.held);
+    return total;          /* what the card holds; pick.held were written */
 }
 
 static bool card_open(const char *name, log_source_t *src, void *ctx)
@@ -980,7 +1001,7 @@ static bool        s_log_run;
  * holding 400 runs cost 400 opens at the arming edge; after the first one it
  * starts from what it found.
  */
-static int         s_log_next = 1;
+static int         s_log_next = LOG_RUN_FIRST;
 static log_writer_t s_log;
 static float        s_log_t;
 
@@ -1019,11 +1040,19 @@ static void log_start(void)
         control_alert("no card -- this run is not recorded");
         return;
     }
-    /* Numbered, not timestamped: no clock on this board survives a power
-     * cycle, so every file would be dated 1970-01-01. */
-    for (int i = s_log_next; i < 1000 && s_log_file == NULL; ++i) {
+    /*
+     * Numbered, not timestamped: no clock on this board survives a power
+     * cycle, so every file would be dated 1970-01-01.  The number is the
+     * only order the card carries, and the viewer reads it back with
+     * log_run_number() to decide which runs it can still show once a card
+     * holds more of them than the screen does; log_run_name() is the one
+     * place the name is built.
+     */
+    for (int i = s_log_next; i <= LOG_RUN_LAST && s_log_file == NULL; ++i) {
+        char name[LOG_RUN_NAME_MAX];
         char path[64];
-        snprintf(path, sizeof(path), "/sdcard/BENCH%03d.CSV", i);
+        log_run_name(name, sizeof(name), i);
+        storage_path(CARD_DIR, name, path, sizeof(path));
         control_pump();
         FILE *probe = fopen(path, "r");
         if (probe != NULL) {

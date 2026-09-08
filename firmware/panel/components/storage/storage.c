@@ -8,7 +8,6 @@
 #include <dirent.h>
 #include <errno.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -200,20 +199,10 @@ static bool suffix_matches(const char *name, const char *suffixes)
     return false;
 }
 
-static int compare_entries(const void *a, const void *b)
+int storage_walk(const char *dir, const char *suffixes,
+                 storage_visit_fn visit, void *ctx)
 {
-    const storage_entry_t *x = (const storage_entry_t *)a;
-    const storage_entry_t *y = (const storage_entry_t *)b;
-    if (x->is_dir != y->is_dir) {
-        return x->is_dir ? -1 : 1;
-    }
-    return strcasecmp(x->name, y->name);
-}
-
-int storage_list(const char *dir, const char *suffixes, storage_entry_t *out,
-                 int max_entries)
-{
-    if (!s.mounted || out == NULL || max_entries <= 0) {
+    if (!s.mounted) {
         return -1;
     }
 
@@ -238,9 +227,9 @@ int storage_list(const char *dir, const char *suffixes, storage_entry_t *out,
      * vanished rather than that the card had.
      */
     errno = 0;
-    int n = 0;
+    int matched = 0;
     struct dirent *e;
-    while (n < max_entries && (e = readdir(d)) != NULL) {
+    while ((e = readdir(d)) != NULL) {
         if (e->d_name[0] == '.') {
             continue; /* ".", ".." and the metadata files a Mac leaves behind */
         }
@@ -256,19 +245,23 @@ int storage_list(const char *dir, const char *suffixes, storage_entry_t *out,
             continue;
         }
 
-        memcpy(out[n].name, e->d_name, len + 1u);
-        out[n].is_dir = is_dir;
-        out[n].size = 0;
+        storage_entry_t cur;
+        memcpy(cur.name, e->d_name, len + 1u);
+        cur.is_dir = is_dir;
+        cur.size = 0;
 
         if (!is_dir) {
             char full[STORAGE_NAME_MAX * 3];
             int w = snprintf(full, sizeof(full), "%s/%s", path, e->d_name);
             struct stat st;
             if (w > 0 && (size_t)w < sizeof(full) && stat(full, &st) == 0) {
-                out[n].size = (uint32_t)st.st_size;
+                cur.size = (uint32_t)st.st_size;
             }
         }
-        ++n;
+        ++matched;
+        if (visit != NULL) {
+            visit(&cur, ctx);
+        }
         errno = 0;              /* only the last readdir's answer counts */
     }
     const int err = errno;
@@ -278,6 +271,5 @@ int storage_list(const char *dir, const char *suffixes, storage_entry_t *out,
         return -1;              /* no volume, not an empty one */
     }
 
-    qsort(out, (size_t)n, sizeof(out[0]), compare_entries);
-    return n;
+    return matched;
 }
