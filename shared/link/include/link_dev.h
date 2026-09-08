@@ -52,6 +52,16 @@ typedef struct {
     void              *ctx;
 
     uint32_t last_request_ms;
+    /**
+     * Whether a request has ever arrived.
+     *
+     * Silence before the first one is not silence: this end is awake a few
+     * hundred milliseconds before the panel starts polling, and counting
+     * that as a fault lights the panel's indicator from power-on, on every
+     * bench, before anything has happened. A warning that is always on is
+     * one nobody reads.
+     */
+    bool     heard;
     bool     silent;      /**< nothing has arrived for LINK_DEV_SILENCE_MS  */
     bool     failsafe;    /**< latched: only an explicit clear leaves it    */
     uint32_t requests;

@@ -124,7 +124,9 @@ A NACK carries its reason in register 0:
 
 Faults bitmap: bit 0 link silent, bit 1 overcurrent, bit 2 over-temperature,
 bit 3 stall, bit 4 heartbeat stopped, bit 5 protocol version mismatch. Faults
-are sticky until read and cleared.
+are sticky until read and cleared. Bit 0 needs the link to have carried at
+least one request before it can be set: the coprocessor is awake before the
+panel polls, and the wait for the first one is not silence.
 
 Capabilities bitmap: bit 0 ESC drive, bit 1 ESC telemetry, bit 2 servo PWM, bit
 3 servo current sense, bit 4 pack sense, bit 5 receiver bus, bit 6 vibration

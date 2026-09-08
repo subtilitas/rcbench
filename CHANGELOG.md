@@ -6,6 +6,17 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- **Every bench showed FAULT 01 from power-up.** The coprocessor's silence
+  watchdog counted from its own boot, and it is awake a few hundred
+  milliseconds before the panel starts polling, so LINK_DEV_SILENCE_MS
+  (200 ms) elapsed before the first request could arrive and the link-silent
+  fault latched on every bench, before anything had happened. It cleared only
+  on the first arm. The watchdog does not run until a request has arrived:
+  the wait for the first one is not silence. Reported as #99, where an
+  operator asked whether the bench was broken.
+
 ### Added
 
 - **ARM on the servo screen.** Arming existed only on MOTOR & ESC and leaving
