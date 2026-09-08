@@ -1378,9 +1378,16 @@ static void link_lost_report(busfault_report_t *r)
     memset(r, 0, sizeof(*r));
     r->kind       = BUSFAULT_LINK_LOST;
     r->bus        = bus_state();
-    r->down_s     = s_link_lost_ms == 0u
+    /*
+     * The timestamp is read once.  The control task clears it on the other
+     * core the moment the link answers, and a second read that caught the
+     * zero would make this now_ms() / 1000 -- the uptime, printed as how
+     * long the link has been down.
+     */
+    const uint32_t lost_ms = s_link_lost_ms;
+    r->down_s     = lost_ms == 0u
                         ? 0u
-                        : (uint32_t)(now_ms() - s_link_lost_ms) / 1000u;
+                        : (uint32_t)(now_ms() - lost_ms) / 1000u;
     r->recoveries = s_recoveries;
     r->polls      = s_host.polls;
     r->timeouts   = s_host.timeouts;
@@ -2960,9 +2967,16 @@ void app_main(void)
          * STOP, and a bench with something spinning must not have its stop
          * button covered by a diagnosis.  Armed, the alert band already says
          * the link is gone, and the screen waits for the disarm.
+         *
+         * The timestamp is read once and tested twice.  The control task
+         * clears it on the other core the moment the link answers, and a
+         * second read that caught the zero would test now_ms() - 0, the
+         * uptime, against LINK_LOST_SCREEN_MS: past 4000 ms of uptime that
+         * passes, and the screen takes over on a link that is up.
          */
-        if (!armed && s_link_lost_ms != 0u && !s_link_lost_shown
-            && (uint32_t)(now_ms() - s_link_lost_ms) >= LINK_LOST_SCREEN_MS
+        const uint32_t lost_ms = s_link_lost_ms;
+        if (!armed && lost_ms != 0u && !s_link_lost_shown
+            && (uint32_t)(now_ms() - lost_ms) >= LINK_LOST_SCREEN_MS
             && ui_router_current() != SCREEN_SPLASH
             && ui_router_current() != SCREEN_BUSFAULT) {
             busfault_report_t r;
