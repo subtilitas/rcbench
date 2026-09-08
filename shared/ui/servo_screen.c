@@ -213,6 +213,15 @@ void servo_screen_set_armed(bool armed)
         return;
     }
     s.armed = armed;
+    /*
+     * Nothing is being held across this edge, in either direction.  An arm
+     * starts from nothing -- the panel drops the position and the slot on the
+     * way through -- and a disarm holds nothing by definition.  A screen that
+     * went on believing it was driving would say a discarded position again
+     * on the next change of type, trim or travel, onto a bench that is now
+     * armed.
+     */
+    s.driving = false;
     if (armed) {
         ui_hold_reached(&s.arm);
     } else {
@@ -223,7 +232,6 @@ void servo_screen_set_armed(bool armed)
          * travel must not say a position again and rebuild a command the
          * stop had just released.
          */
-        s.driving = false;
         if (ui_hold_left(&s.arm)) {
             /* The bench disarmed under a finger still down on the button, and
              * the hold ended with it; see ui_hold_left(). */

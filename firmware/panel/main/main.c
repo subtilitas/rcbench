@@ -1495,12 +1495,18 @@ static void service_arming(bool link_up)
          * command for as long as the release takes to arrive.
          */
         servo_service(link_up);
-        if (s_servo_release_owed) {
+        if (link_up && s_servo_release_owed) {
             /*
              * The release did not land, so the far end still has the slot and
              * the command in it.  Arming now would render that command before
              * anything else reached it, so the arm is refused and the debt
              * stays; the next attempt starts by paying it.
+             *
+             * Only while there is a link.  With none, the debt cannot be paid
+             * by anybody and nothing at the far end is being armed either, so
+             * refusing would leave the panel unable to arm its own bank --
+             * the simulator included -- until a coprocessor answered again.
+             * What the far end must not do meanwhile is arm; see poll_bench().
              */
             arming_refused(&s_arm);
             control_alert("servo output not released -- arm again");
@@ -1701,6 +1707,16 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
 static void apply_servo_cmd(const servo_cmd_t sv, bool link_up)
 {
     if (sv.kind == SERVO_CMD_ARM) {
+        /*
+         * The slot goes first, whether or not this process cached one.  After
+         * a panel restart the far end can still hold slot 0 and the command
+         * in it, and arming would render that: the same reason DISARM and
+         * RELEASE ask unconditionally.  The arm itself waits for the clear --
+         * see ARMING_ACT_ARM.
+         */
+        s_servo_held.kind = SERVO_CMD_NONE;
+        s_servo_release_owed = true;
+        servo_service(link_up);
         arming_request_arm(&s_arm, now_ms());
         return;
     }
@@ -1863,7 +1879,14 @@ static bool poll_bench(bench_state_t *bench)
     const bool answered = read_bench(&s_host, bench);
     if (answered) {
         link_msg_t ack = { 0 };
-        const bool armed = outputs_armed(&s_out);
+        /*
+         * Not while a servo slot is still bound at the far end and owed a
+         * release.  A bank armed with no link -- the simulator, or a cable
+         * pulled -- reaches this the moment one answers, and the far end
+         * would render the slot's old command before the clear arrived.
+         * servo_service() pays the debt every pass, so this holds for one.
+         */
+        const bool armed = outputs_armed(&s_out) && !s_servo_release_owed;
         if (!control_write(armed, &ack) && armed && ack.op == LINK_OP_NACK) {
             /*
              * The coprocessor is in failsafe or has lost the heartbeat.  A

@@ -467,6 +467,26 @@ TEST_CASE(a_second_contact_cannot_take_over_the_arm_hold)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
+TEST_CASE(arming_drops_a_position_held_before_it)
+{
+    /*
+     * Dragging while disarmed commands a position, and arming discards it:
+     * the panel drops the held command and the slot so that an arm starts
+     * from nothing.  A screen still believing it was driving would say that
+     * discarded position again on the next change of type, trim or travel --
+     * onto a bench that is armed by then.
+     */
+    fresh();
+    int x, y;
+    dial_at(60.0f, ARC_R - 20, &x, &y);
+    tap(x, y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+
+    servo_screen_set_armed(true);
+    tap(TYPE_X, TYPE_Y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
 TEST_CASE(a_stop_stops_the_screen_holding_anything)
 {
     /*
@@ -593,6 +613,7 @@ int main(void)
     RUN(a_stop_abandons_a_hold_that_is_under_way);
     RUN(a_cancelled_hold_leaves_no_arm_to_be_read_later);
     RUN(a_second_contact_cannot_take_over_the_arm_hold);
+    RUN(arming_drops_a_position_held_before_it);
     RUN(a_stop_stops_the_screen_holding_anything);
     RUN(leaving_disarms_and_lets_go_of_the_output);
     RUN(trim_shifts_the_pulse_and_not_the_angle);

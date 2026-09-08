@@ -26,6 +26,23 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **Arming from the servo screen could energise a slot the panel had never
+  written.** After a panel restart the coprocessor still holds its slots, so
+  slot 0 and the command in it survive while the panel remembers nothing; the
+  screen's DISARM and RELEASE asked for the clear unconditionally but its ARM
+  did not, and the arm rendered the old position. It asks first now, and the
+  arm waits for the clear.
+- **An unpayable release debt refused every arm.** Leaving the servo screen
+  with the link down leaves a release owed that nothing can pay, and the arm
+  gate refused every arm until a coprocessor answered -- including arming the
+  panel's own bank in simulation, where no far-end output exists. The gate
+  applies only while there is a link, and the far end is not told to arm while
+  a slot is still owed a release instead.
+- **Arming left the servo screen showing a position it had discarded.** An
+  arm drops the held command and the slot so it starts from nothing, and the
+  screen went on believing it was driving -- so the next change of type, trim
+  or travel said that discarded position again, onto a bench that was armed
+  by then.
 - **Binding the servo's pin before its position arrived drove the old one.**
   The three writes a servo command makes are three transactions and the far
   end steps its outputs between them, so binding the slot second rendered
