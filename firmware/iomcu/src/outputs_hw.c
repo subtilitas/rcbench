@@ -305,17 +305,6 @@ void outputs_hw_service(const outputs_t *o)
      */
     const bool drive = outputs_driving(o);
 
-    /*
-     * The end of a run, asked once for the bank rather than per slot: the
-     * telemetry cache is one motor's and the slots share it, so a slot that
-     * happened not to be driving must not clear what another one just heard.
-     */
-    static bool s_was_driving;
-    if (s_was_driving && !drive) {
-        forget_telem();
-    }
-    s_was_driving = drive;
-
     for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
         if (!s_state[i].bound) {
             continue;
@@ -339,6 +328,22 @@ void outputs_hw_service(const outputs_t *o)
             break;
         }
     }
+
+    /*
+     * The end of a run, and after the loop rather than before it: a
+     * bidirectional slot reads the reply to its last frame on the way to
+     * stopping, so a cache cleared first is repopulated by that reply with a
+     * fresh timestamp and the run's final reading outlives the run.
+     *
+     * Asked once for the bank rather than per slot: the cache is one motor's
+     * and the slots share it, so a slot that happened not to be driving must
+     * not clear what another one just heard.
+     */
+    static bool s_was_driving;
+    if (s_was_driving && !drive) {
+        forget_telem();
+    }
+    s_was_driving = drive;
 }
 
 bool outputs_hw_erpm(uint32_t *erpm, uint32_t *age_ms)
