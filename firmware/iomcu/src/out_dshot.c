@@ -288,7 +288,7 @@ void out_dshot_send(uint8_t pin, uint16_t value, bool telemetry)
 
 /* ------------------------------------------------------------- the reply */
 
-bool out_dshot_poll(uint8_t pin, dshot_telem_t *out)
+bool out_dshot_poll(uint8_t pin, bool edt, dshot_telem_t *out)
 {
     dshot_out_t *s = find(pin);
     if (s == NULL || out == NULL || !s->bidir || !s->armed) {
@@ -313,6 +313,7 @@ bool out_dshot_poll(uint8_t pin, dshot_telem_t *out)
     if (!dshot_rx_bits(cap, n, DSHOT_RX_OVERSAMPLE, &line)) {
         return false;
     }
-    /* Extended telemetry is never enabled, so every reply is a period. */
-    return dshot_telem_decode(line, false, out);
+    /* Whether the other frame types can be in this stream is the caller's to
+     * know: it is the end that sent DSHOT_CMD_EDT_ENABLE. */
+    return dshot_telem_decode(line, edt, out);
 }

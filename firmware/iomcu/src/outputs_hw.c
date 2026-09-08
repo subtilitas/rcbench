@@ -31,16 +31,43 @@
 typedef struct {
     bool     bound;
     uint32_t next_us;      /* DShot only: when the next frame is due */
+    /*
+     * Extended telemetry, which an ESC only sends after it has been asked.
+     *
+     * edt_left counts the repeats still owed: a command is an ordinary frame
+     * and an ESC tells one from a glitch by counting them, so it is sent
+     * DSHOT_CMD_REPEATS times before anything else goes out.  Zero with
+     * edt_asked set means the asking is done and the replies may carry the
+     * other frame types.
+     *
+     * Asked again on every edge into driving rather than once at bind time.
+     * Extended telemetry is a runtime setting an ESC forgets when it loses
+     * power, and an ESC can be swapped on a bench between one run and the
+     * next.
+     */
+    uint8_t  edt_left;
+    bool     edt_asked;
 } slot_state_t;
 
 static out_slot_t   s_shadow[OUT_MAX_SLOTS];
 static slot_state_t s_state[OUT_MAX_SLOTS];
 
-/* The last reading any bidirectional ESC gave, with the clock it arrived on.
- * One motor is under test at a time, so one reading is the whole of it. */
+/*
+ * The last readings any bidirectional ESC gave, with the clock each arrived
+ * on.  One motor is under test at a time, so one set is the whole of it.
+ *
+ * Each kind keeps its own clock.  An ESC interleaves the extended frames
+ * between eRPM ones, so temperature arrives far less often than speed does,
+ * and one age for all of them would either throw away good readings or keep
+ * stale ones.
+ */
 static bool     s_have_erpm;
 static uint32_t s_erpm;
 static uint32_t s_erpm_ms;
+
+static bool     s_have_edt[DSHOT_TELEM_KINDS];
+static uint16_t s_edt[DSHOT_TELEM_KINDS];
+static uint32_t s_edt_ms[DSHOT_TELEM_KINDS];
 
 void outputs_hw_init(void)
 {
@@ -49,6 +76,9 @@ void outputs_hw_init(void)
     s_have_erpm = false;
     s_erpm      = 0u;
     s_erpm_ms   = 0u;
+    memset(s_have_edt, 0, sizeof(s_have_edt));
+    memset(s_edt, 0, sizeof(s_edt));
+    memset(s_edt_ms, 0, sizeof(s_edt_ms));
 }
 
 bool outputs_hw_bound(uint8_t slot)
@@ -133,10 +163,36 @@ void outputs_hw_apply(const outputs_t *o)
          */
         s_state[i].bound   = bind(&s_shadow[i]);
         s_state[i].next_us = time_us_32();
+        /* A pin that has just been taken has told its ESC nothing yet. */
+        s_state[i].edt_left  = (uint8_t)DSHOT_CMD_REPEATS;
+        s_state[i].edt_asked = false;
     }
 }
 
 /* ------------------------------------------------------------ rendering */
+
+/*
+ * One reply, filed under what it turned out to be.
+ *
+ * Each kind keeps its own arrival clock because they do not arrive at one
+ * rate: speed comes back on every frame and the extended kinds are
+ * interleaved between them, a few a second at most.
+ */
+static void record_telem(const dshot_telem_t *t)
+{
+    const uint32_t now = (uint32_t)to_ms_since_boot(get_absolute_time());
+    if (t->kind == DSHOT_TELEM_ERPM) {
+        s_erpm      = t->erpm;
+        s_erpm_ms   = now;
+        s_have_erpm = true;
+        return;
+    }
+    if ((unsigned)t->kind < (unsigned)DSHOT_TELEM_KINDS) {
+        s_edt[t->kind]      = t->value;
+        s_edt_ms[t->kind]   = now;
+        s_have_edt[t->kind] = true;
+    }
+}
 
 static void service_ppm(const outputs_t *o, const out_slot_t *s, bool drive)
 {
@@ -163,10 +219,8 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
      */
     if (s->driver == OUT_DRIVER_DSHOT_BIDIR) {
         dshot_telem_t t;
-        if (out_dshot_poll(s->pin, &t) && t.kind == DSHOT_TELEM_ERPM) {
-            s_erpm      = t.erpm;
-            s_erpm_ms   = to_ms_since_boot(get_absolute_time());
-            s_have_erpm = true;
+        if (out_dshot_poll(s->pin, st->edt_asked, &t)) {
+            record_telem(&t);
         }
     }
 
@@ -180,6 +234,14 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
          * 36 after it was armed again.
          */
         st->next_us = time_us_32();
+        /*
+         * And the ask is owed again.  Extended telemetry is a runtime setting
+         * an ESC forgets when it loses power, and an ESC can be swapped on a
+         * bench between one run and the next; asking again costs ten frames
+         * at the start of a run and nothing after that.
+         */
+        st->edt_left  = (uint8_t)DSHOT_CMD_REPEATS;
+        st->edt_asked = false;
         return;
     }
     const uint32_t now = time_us_32();
@@ -187,6 +249,29 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
         return;                              /* not due yet, wrap-safe */
     }
     st->next_us = now + DSHOT_PERIOD_US;
+
+    /*
+     * The ask goes first, before any throttle.  A command is an ordinary
+     * frame and an ESC tells one from a glitch by counting repeats, so this
+     * takes the first DSHOT_CMD_REPEATS frames of a run: ten at
+     * DSHOT_UPDATE_HZ, which is 10 ms.  DSHOT_CMD_EDT_ENABLE is in the
+     * command range, so nothing turns while it is being sent, and a throttle
+     * the operator has already asked for arrives 10 ms later than it would
+     * have.
+     *
+     * An ESC that does not know the command ignores it and keeps sending
+     * periods.  Those still read as periods: this decoder only takes a frame
+     * for an extended one when the mantissa's top bit is clear and the type
+     * nibble is not zero, which an ESC that normalises its exponent never
+     * sends.
+     */
+    if (s->driver == OUT_DRIVER_DSHOT_BIDIR && st->edt_left > 0u) {
+        out_dshot_send(s->pin, (uint16_t)DSHOT_CMD_EDT_ENABLE, false);
+        if (--st->edt_left == 0u) {
+            st->edt_asked = true;
+        }
+        return;
+    }
 
     const uint16_t command = outputs_actual(o, s->first_channel);
     out_dshot_send(s->pin, dshot_throttle(command, OUT_SPAN), false);
@@ -236,5 +321,16 @@ bool outputs_hw_erpm(uint32_t *erpm, uint32_t *age_ms)
     }
     *erpm   = s_erpm;
     *age_ms = (uint32_t)(to_ms_since_boot(get_absolute_time()) - s_erpm_ms);
+    return true;
+}
+
+bool outputs_hw_edt(dshot_telem_kind_t kind, uint16_t *value, uint32_t *age_ms)
+{
+    if ((unsigned)kind >= (unsigned)DSHOT_TELEM_KINDS || value == NULL
+        || age_ms == NULL || !s_have_edt[kind]) {
+        return false;
+    }
+    *value  = s_edt[kind];
+    *age_ms = (uint32_t)(to_ms_since_boot(get_absolute_time()) - s_edt_ms[kind]);
     return true;
 }
