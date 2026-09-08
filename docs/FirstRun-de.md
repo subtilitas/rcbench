@@ -264,7 +264,8 @@ Code baut. Für jede einen echten Wert aufschreiben:
 | Display friert kurz ein | Ein Flash-Schreiben. Einmalig erwartet, wenn das Foto behalten wird. |
 | Koprozessor bootet nach dem Flashen nicht | Image über 4 MB. Die Größenzeile aus §1 prüfen. |
 | Panel bootet, aber keine `boardart`-Partition | Nur die App über eine alte Tabelle geflasht. Merge-bin bei Offset 0. |
-| Output hört nach ½ s von selbst auf | Arbeitet wie vorgesehen — es hat nichts hineingeschrieben. |
+| Output geht nach ½ s in die Mitte | Arbeitet wie vorgesehen — in diesen Kanal hat nichts geschrieben, also ist er in seine Ruhelage gegangen: Mitte beim Servo, null beim Motor. Die Impulse laufen weiter, solange der Prüfstand scharf ist |
+| Impulse hören ganz auf | Nicht der Timeout. Etwas hat den Pin freigegeben, unscharf geschaltet oder den Prüfstand gestoppt |
 
 **Verhält sich der Prüfstand so, dass es aufs Panel zeigt**, sind die beiden
 neuesten und am wenigsten bewährten Dinge nur vom Compiler geprüft:
