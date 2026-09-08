@@ -320,10 +320,19 @@ monostable at all passes that.
 
 Two probes settle it, and the second is the decisive one.
 
-*The part itself.* Put leads on the monostable's own outputs -- the
-coprocessor's output enable, and the switched servo and ESC power -- and stop
-the edges. Both should go inactive within the window. No firmware runs on
-those nodes, so what they do is the hardware's doing.
+*The part itself.* Put leads on the monostable's own outputs and stop the
+edges. Both should go inactive within the window. No firmware runs on those
+nodes, so what they do is the hardware's doing.
+
+**Probe the control, not the rail.** The output enable is a logic line and
+takes a lead directly. The servo and ESC power are not: the servo rail is
+8.4 V and an ESC pack is higher still, and every analyser lead on this bench
+is a direct connection with a series resistor -- `capture.sh`'s threshold
+argument sets a comparator level, it does not attenuate anything. An LA2016
+input is rated to 5 V. So take the **switch's control node** -- the gate or
+enable pin of whatever passes that rail -- which is logic and says the same
+thing: the switch is being told to open. If the rail itself has to be seen,
+that is a scope with a probe rated for it, not this analyser.
 
 *The differential test.* Keep the firmware happy and starve only the hardware.
 
@@ -334,17 +343,24 @@ rather than a test -- a corrupted reading at best and a damaged pin at worst.
 
 Split it before injecting anything, which is what the two links are for:
 
-1. **Open the panel's branch.** Nothing of the panel's is driving now.
-2. **Open the monostable's trigger branch.** It can see nothing from here on.
-3. **Have the RP2350 drive the junction from GP22** with one edge every
+1. **Open the panel's branch.** Nothing of the panel's is driving now, so the
+   next step is not contention.
+2. **Have the RP2350 drive the junction from GP22** with one edge every
    20 ms -- a 40 ms cycle, not a 40 ms edge spacing and not a 20 ms cycle --
    so `heartbeat_poll()` on the coprocessor never expires. Twice that rate is
    rejected by the monitor's 4 ms floor only well beyond it, so a wrong
-   reading here is injected rather than caught. Both links above are open
-   before this pin drives anything.
+   reading here is injected rather than caught.
 
-Firmware is now being told the panel is alive, and the interlock is being told
-nothing.
+The monostable's trigger branch stays **closed** for now, and that is the
+change that makes the test measurable. Both the firmware and the interlock are
+being fed at this point, which is the state the run has to start from: the
+enable asserted, the load side live, and edges on the trigger to measure a
+window from. Opening that branch first instead leaves nothing in the trace but
+an enable that is already down, and an enable that fell in 120 ms, one that
+took four seconds and one that was never asserted at all are the same picture.
+
+Firmware is being told the panel is alive, and so is the interlock -- until the
+capture is running and the branch comes out.
 
 **Bind first, then arm.** Binding is done on SETTINGS/OUTPUTS, and both bench
 screens disarm as they are left (`shared/ui/motor_screen.c`,
@@ -363,15 +379,26 @@ Then capture **after the gate** -- the load-facing side of the gated output,
 and the monostable's output-enable -- on whichever channels the run is not
 otherwise using:
 
-    testbench/host/capture.sh interlock D0,D14,D15 1m 2m 1.65
+    testbench/host/capture.sh interlock D0,D3,D14,D15 1m 4m 1.65
 
-Three things have to be in the one capture, and each answers a different
+**Open the monostable's trigger branch while this is running**, not before it.
+The window is measured from the last edge into the trigger, so that edge and
+the enable falling have to be in one trace. D3 is the trigger node; it carries
+edges until the link comes out and none after, and it is what makes the number
+measurable rather than assumed.
+
+The coprocessor keeps seeing GP22 on the junction throughout, so firmware
+stays happy and D0 keeps toggling. Only the interlock is starved, which is the
+whole point of the test.
+
+Four things have to be in the one capture, and each answers a different
 question:
 
 | | |
 |---|---|
 | D0, the raw pin | **toggling.** This is the precondition, not the evidence: it says the arm worked, the binding took and the pin is wired. Flat here and the test proved nothing -- a bench with no interlock at all would look identical |
-| the enable | deasserted, within the window of the last edge into the trigger |
+| D3, the trigger | edges, then none. The last one is where the window starts, and without it in the trace there is no window to measure against |
+| the enable | deasserted, within 150 ms of that last edge |
 | the load side | quiet |
 
 An actively driven input, blocked downstream, is the whole of the claim.
