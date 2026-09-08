@@ -119,10 +119,11 @@ The same two pins do double duty in step 5's second check, where the emulator
 pulls one line at a time to prove which lead is on which. That is the same
 open-drain drive, so it needs no extra pin.
 
-GP22 is a plain output. It drives the heartbeat junction with a 20 ms square
-in step 7, and **only after both links there are open** -- the panel drives
-its end push-pull, so driving that node while its branch is closed is
-contention, not a test.
+GP22 is a plain output, and it is an input at every other moment. It drives
+the heartbeat junction with a 20 ms square inside step 7 alone, **only after
+both links there are open**, and is tri-stated again before either link is
+closed. The panel drives its end push-pull, so that node carries one driver at
+a time or it carries contention.
 
 The relays are at GP16 to GP19 rather than at the start of the header so that
 GP0 to GP15 stay free for the analyser leads and for a stimulus generator this
@@ -346,6 +347,24 @@ test.
 D0 keeps toggling throughout, and expecting it to stop is the mistake that
 reads as a failed interlock on a bench that is wired correctly. It is the
 input to the gate, not the output of it.
+
+**Putting the heartbeat back, in this order.** The test leaves GP22 driving
+the junction and both links open, which is not a state to walk away from: the
+first power-up in section 9 cannot acquire a heartbeat with the panel's branch
+open, and closing that branch while GP22 still drives is the push-pull
+contention this section opened by warning about -- the panel's GPIO6 against
+the RP2350's output, at whatever levels the two happen to be on.
+
+1. **Disarm the bench**, so nothing is driving an output while the interlock
+   is about to change state.
+2. **Tri-state GP22.** Not "drive it high" and not "drive it low": an input,
+   off the node entirely. This is the step that makes the next two safe.
+3. **Close the monostable's trigger branch.**
+4. **Close the panel's branch.**
+
+The heartbeat is one node again, with one driver on it. Section 9 expects
+that, and a bench left with GP22 driving fails there with a symptom that
+points at the panel.
 
 ---
 
