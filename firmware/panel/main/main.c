@@ -135,6 +135,9 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
  * with the rest of the servo's wire handling. */
 static void servo_let_go(void);
 static void servo_service(bool link_up);
+/* Defined with the rest of the link's reads; the OUTPUTS screen's write asks
+ * for one straight afterwards. */
+static void read_outputs_binding(void);
 static bool disarm_here(bool link_up);
 
 static uint32_t now_ms(void)
@@ -1775,6 +1778,22 @@ static void write_output_binding(const outbind_t *bind)
 static uint8_t s_servo_channels;
 
 /*
+ * Whether that mask is an answer at all.
+ *
+ * Empty and unknown are different benches.  Empty is a binding that was read
+ * and names no surface -- a bench carrying only a motor, which must still
+ * arm.  Unknown is a binding nobody has read, or one whose write did not come
+ * back: the far end may be rendering surfaces this end cannot name, and
+ * treating that as empty would let a release report success without settling
+ * them and let the arm that follows drive them.
+ *
+ * False until a binding has been read from the far end.  Nothing this end
+ * merely sent counts: a write whose acknowledgement was lost was applied over
+ * there all the same.
+ */
+static bool s_servo_known;
+
+/*
  * And whether the last position actually reached any of them.
  *
  * Separate from s_servo_channels because the two can differ: a write that
@@ -1853,6 +1872,16 @@ static bool write_servo(const servo_cmd_t sv)
      * restart the far end still holds whatever it was left at, and centring a
      * surface that is not holding anything costs nothing.
      */
+    /*
+     * An unknown binding is not an empty one.  Returning true here would pay
+     * a release that settled nothing and let the bench arm onto surfaces the
+     * far end is still rendering; returning false keeps the debt, and
+     * ARMING_ACT_ARM refuses the arm and says so.  It is paid as soon as a
+     * read succeeds, which the poll loop retries every second.
+     */
+    if (!s_servo_known) {
+        return false;
+    }
     const uint8_t mask = s_servo_channels;
     /*
      * Nothing is bound as a surface, or nothing is holding a position, so
@@ -2228,10 +2257,14 @@ static void drain_commands(bool link_up, bench_state_t *bench)
             }
             write_output_binding(&pc.bind);
             /*
-             * A binding that landed is the new answer to which channels the
-             * horn may drive, and it is known here without waiting for the
-             * next link-up read: the operator can bind a servo and walk
-             * straight to the screen that drives it.
+             * What the horn may drive has changed, and what this end sent is
+             * not the answer: a write whose acknowledgement was lost was
+             * applied over there all the same, so a result of NO LINK does
+             * not mean the old binding still stands.  The mask goes unknown
+             * and the far end is asked, here rather than at the next link-up
+             * edge -- the operator can bind a servo and walk straight to the
+             * screen that drives it, and a read that fails is retried by the
+             * poll loop.
              *
              * The debt is not voided.  A binding writes the roles and the
              * slots and not the commands, so a surface the horn left
@@ -2242,11 +2275,9 @@ static void drain_commands(bool link_up, bench_state_t *bench)
              * it would undo exactly that.  What stops here is the holding --
              * the screen's position was for the wiring just replaced.
              */
-            if (atomic_load(&s_outputs_result) == (int)OUTPUTS_OK) {
-                s_servo_channels =
-                    outbind_role_channels(&pc.bind, OUT_ROLE_SURFACE);
-                servo_let_go();
-            }
+            s_servo_known = false;
+            servo_let_go();
+            read_outputs_binding();
             continue;
         }
         if (pc.kind == PANEL_CMD_SERVO) {
@@ -2443,6 +2474,7 @@ static void read_outputs_binding(void)
          * and it is the only task that writes the wire.
          */
         s_servo_channels = outbind_role_channels(&got, OUT_ROLE_SURFACE);
+        s_servo_known    = true;
         if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
             s_outputs_read = got;
             s_outputs_read_fresh = true;
@@ -2458,9 +2490,14 @@ static void read_outputs_binding(void)
         outbind_t none;
         outbind_init(&none);
         outbind_set_board(&none, s_board);
-        /* A binding that would not read names no surface either.  The horn
-         * drives nothing rather than the channels of the last one that did. */
+        /*
+         * A binding that would not read is unknown, not empty.  The horn
+         * drives nothing either way, but the release stays owed: the far end
+         * may still be rendering surfaces from before this panel started, and
+         * nothing here can name them to settle them.
+         */
         s_servo_channels = 0u;
+        s_servo_known    = false;
         if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
             s_outputs_read = none;
             s_outputs_read_fresh = true;
@@ -2633,6 +2670,16 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
         if (*link_up && (uint32_t)(now_ms() - *last_status) >= 500u) {
             *last_status = now_ms();
             read_status_counters();
+            /*
+             * And the binding, while it is unknown.  Without a retry an
+             * output page that would not read once leaves the servo screen
+             * unable to name a channel, and the release it owes unpayable,
+             * until the next link-up edge -- which on a link that stays up
+             * never comes.  Once it is known this costs nothing.
+             */
+            if (!s_servo_known) {
+                read_outputs_binding();
+            }
         }
 
         /*
