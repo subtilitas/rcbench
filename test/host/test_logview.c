@@ -136,6 +136,7 @@ static gfx_color_t *s_fb;
 static gfx_color_t *s_fb_b;
 static gfx_canvas_t s_c;
 
+
 static const ui_screen_t *screen(void)
 {
     return log_viewer_screen();
@@ -388,12 +389,31 @@ TEST_CASE(no_card_says_so_and_stays_put)
  */
 TEST_CASE(an_empty_card_is_not_the_same_as_no_card)
 {
+    /*
+     * The two states must not draw the same panel.  Asserting that each one
+     * renders something would pass with one message for both, which is the
+     * bug: it would send an operator to look for a card that is already in.
+     * So the two are rendered and compared.
+     */
+    if (s_fb_b == NULL) {
+        s_fb_b = calloc((size_t)W * H, sizeof(gfx_color_t));
+        CHECK(s_fb_b != NULL);
+    }
+
+    fresh();
+    g_no_card = true;
+    log_viewer_refresh();
+    screen()->render(&s_c, 0);
+    gfx_color_t *no_card = calloc((size_t)W * H, sizeof(gfx_color_t));
+    CHECK(no_card != NULL);
+    memcpy(no_card, s_fb, (size_t)W * H * sizeof(gfx_color_t));
+
     fresh();
     g_empty_card = true;
     log_viewer_refresh();
 
     CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
-
+    /* Nothing to open, the same as no card -- that much they do share. */
     tap(400, BR_ROW_Y(0));
     tap(400, BR_ROW_Y(0));
     CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
@@ -401,6 +421,26 @@ TEST_CASE(an_empty_card_is_not_the_same_as_no_card)
 
     screen()->render(&s_c, 0);
     CHECK(gfx_pixel_get(&s_c, 400, 240) != 0);
+
+    /*
+     * And what they SAY is different -- compared over the message line alone,
+     * not the whole frame.  The whole frame differs anyway because the header
+     * carries the volume name, which is empty with no card; asserting on that
+     * would pass with one message for both, which is the defect.
+     *
+     * The panel is drawn at (120,160) 560x160 and the reason sits at
+     * box.y + 52, so the band below covers that line and nothing else.
+     */
+    int differing = 0;
+    for (int y = 205; y < 226; ++y) {
+        for (int x = 140; x < 660; ++x) {
+            if (no_card[y * W + x] != s_fb[y * W + x]) {
+                ++differing;
+            }
+        }
+    }
+    CHECK(differing > 0);
+    free(no_card);
 }
 
 TEST_CASE(a_second_tap_opens_the_file_and_analyses_it)

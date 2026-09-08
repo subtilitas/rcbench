@@ -6,6 +6,7 @@
 
 #include <ctype.h>
 #include <dirent.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -228,6 +229,15 @@ int storage_list(const char *dir, const char *suffixes, storage_entry_t *out,
         return -1;
     }
 
+    /*
+     * readdir() returns NULL for two different things: the end of the
+     * directory, and a read that failed.  A card pulled part way through a
+     * listing takes the second, and without errno the two are the same
+     * answer -- so a card that has gone would be reported as a card with
+     * nothing on it, and the screen would tell the operator their logs had
+     * vanished rather than that the card had.
+     */
+    errno = 0;
     int n = 0;
     struct dirent *e;
     while (n < max_entries && (e = readdir(d)) != NULL) {
@@ -259,8 +269,14 @@ int storage_list(const char *dir, const char *suffixes, storage_entry_t *out,
             }
         }
         ++n;
+        errno = 0;              /* only the last readdir's answer counts */
     }
+    const int err = errno;
     closedir(d);
+    if (err != 0) {
+        ESP_LOGW(TAG, "listing %s stopped: %s", path, strerror(err));
+        return -1;              /* no volume, not an empty one */
+    }
 
     qsort(out, (size_t)n, sizeof(out[0]), compare_entries);
     return n;
