@@ -6,6 +6,19 @@ history is in git.
 
 ## Unreleased
 
+## 0.7.0 - 2026-09-08
+
+The servo screen can drive a servo. Arming existed only on MOTOR & ESC and
+leaving that screen disarms, so the horn followed the finger and nothing
+moved; SPEED changed the drawing and not the servo; and every bench showed
+FAULT 01 from power-up.
+
+Most of what follows is the arming and command path either side of that
+button. A stop, a disarm and a release each have to survive a link that is
+slow, a queue that is full, a screen that is being left and a touch
+controller that stops answering, and each of those was a way for something to
+keep driving after the operator had asked it to stop.
+
 ### Fixed
 
 - **Every bench showed FAULT 01 from power-up.** The coprocessor's silence

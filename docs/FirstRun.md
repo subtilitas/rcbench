@@ -3,7 +3,7 @@
 <sub>**English** · [Deutsch](FirstRun-de.md)</sub>
 
 For the first time both boards are powered with the heartbeat wire fitted.
-Written for 0.6.1. Nothing below has been done before, so
+Written for 0.7.0. Nothing below has been done before, so
 every step says what "good" looks like and what to write down when it is not.
 
 Work down the list. Each step assumes the one above it passed.
@@ -211,8 +211,16 @@ carry their voltage.
 travel, and the jitter. Bit timings are the largest unverified surface in the
 tree.
 
-**Then:** stop commanding it and confirm the output stops driving after
-**500 ms** (`OUT_DEFAULT_TIMEOUT_MS`).
+**Then:** confirm the servo screen lets go when it is told to, and only
+then. Lifting the finger does not stop the output: the screen holds the
+position it was given and says it again every **100 ms** (`SERVO_HOLD_MS`),
+against the coprocessor's **500 ms** (`OUT_DEFAULT_TIMEOUT_MS`), so a servo
+stays where it was put. What stops it is **RELEASE**, a disarm, a STOP, or
+leaving the screen — each clears the slot. Check on the scope that the pulses
+stop when RELEASE is pressed.
+
+A channel nobody is refreshing does still go to rest after 500 ms, which is
+what happens to a bound pin the servo screen is not holding.
 
 ---
 
