@@ -46,6 +46,28 @@ typedef enum {
 typedef struct {
     bool     armed;
     bool     stopped;         /**< the latch                              */
+    /**
+     * How many times the bench has been stopped, by any means: a STOP, the
+     * far end, or touch that stopped answering.
+     *
+     * The latch is a level and says only that a stop is in force; a screen
+     * needs the event. A second STOP during a hold that began after the
+     * first one leaves the latch exactly as it was, and the hold would
+     * otherwise complete and clear it. Touch dying is not a latch at all,
+     * and it invalidates a gesture just as much.
+     */
+    uint32_t stops;
+    bool     touch_was_dead;  /**< so touch dying is counted once, not per pass */
+    /**
+     * A disarm owed to something the policy saw between steps.
+     *
+     * Touch can die and answer again inside one blocking link exchange, and
+     * the bank must not survive that: by the time the policy next runs the
+     * controller is healthy, so nothing in the state would say the outage
+     * happened, and the heartbeat need not have been withheld for long
+     * enough for the far end to fail safe either.
+     */
+    bool     disarm_pending;
     bool     arming;          /**< an arm is waiting for the line         */
     uint32_t settle_ms;       /**< how long the line is given             */
     uint32_t settle_until_ms;
@@ -65,6 +87,25 @@ void arming_touch_seen(arming_t *a, uint32_t now_ms);
 
 /** True once touch has been silent for ARMING_TOUCH_DEAD_MS. */
 bool arming_touch_dead(const arming_t *a, uint32_t now_ms);
+
+/** Whether the stop latch is set: a STOP, a dead touch, or the far end.
+ *  A screen asks so a gesture already under way can be abandoned. */
+bool arming_stopped(const arming_t *a);
+
+/** How many stops have been applied. Changes on every stop, latched or not,
+ *  so a caller can act on the event rather than on the level. */
+uint32_t arming_stop_count(const arming_t *a);
+
+/**
+ * Sample the touch controller's health, and act on the edge where it dies.
+ *
+ * Called by whatever judges touch, as often as it judges it, and by
+ * arming_step(). The two are not the same caller and need not run at the
+ * same rate: a link exchange can wait a second while touch is still being
+ * pumped, and a controller that died and recovered inside that wait would
+ * leave nothing for the policy to see afterwards.
+ */
+void arming_touch_poll(arming_t *a, uint32_t now_ms);
 
 /** STOP. Latches; abandons an arm that is waiting for the line. */
 void arming_stop(arming_t *a);

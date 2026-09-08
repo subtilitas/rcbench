@@ -134,6 +134,20 @@ position; the faint arm is the commanded position. The gap between them is the
 servo's own lag. The rings around the tip pulse while the servo is being
 driven. Releasing the sweep clears the output slot.
 
+SPEED is the rate the bench may move the output, in degrees a second of the
+horn's travel, not a speed for the drawing alone. At 100% the command goes
+straight through and the servo moves at its own rate; below that the bench
+ramps the command in front of it, so 30% takes three times as long to cross
+as 90%. It applies to a held output as soon as it is changed.
+
+**ARM before anything moves.** While the bench is not armed the coprocessor
+writes a pulse of length zero to every PWM pin, so the horn on screen follows
+the finger and the servo does not. The button is a two-second hold, the same
+gesture and the same fade as the one on MOTOR & ESC, and a press on it while
+armed disarms. Leaving the screen disarms and lets go of the pin: a screen
+that is not visible must not be holding a servo somewhere, or leaving the
+bench armed behind it.
+
 ## Analyser
 
 ![Analyser](img/analyser.png)

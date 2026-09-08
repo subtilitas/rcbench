@@ -142,6 +142,22 @@ Abstand zwischen beiden ist die Verzögerung des Servos selbst. Die Ringe um
 die Spitze pulsieren, solange das Servo angesteuert wird. Loslassen des Bogens
 löscht den Ausgangs-Slot.
 
+SPEED ist die Geschwindigkeit, mit der der Prüfstand den Ausgang bewegen
+darf, und nicht nur eine Geschwindigkeit für die Zeichnung. Bei 100 % geht
+der Befehl unverändert durch und das Servo läuft mit seiner eigenen
+Geschwindigkeit; darunter rampt der Prüfstand den Befehl davor, 30 % braucht
+also dreimal so lange wie 90 %. Die Änderung wirkt sofort auf einen
+gehaltenen Ausgang.
+
+**Vor jeder Bewegung ARM.** Solange der Prüfstand nicht scharf ist, schreibt
+der Koprozessor auf jeden PWM-Pin einen Impuls der Länge null: der Arm auf dem
+Bildschirm folgt dem Finger, das Servo nicht. Der Knopf ist ein
+Zwei-Sekunden-Halten, dieselbe Geste und dieselbe Blende wie auf MOTOR & ESC,
+und ein Druck darauf im scharfen Zustand schaltet unscharf. Das Verlassen des
+Bildschirms schaltet unscharf und gibt den Pin frei: ein Bildschirm, den man
+nicht sieht, darf weder ein Servo halten noch den Prüfstand scharf
+zurücklassen.
+
 ## Analyser
 
 ![Analyser](img/analyser.png)

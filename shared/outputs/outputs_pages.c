@@ -218,13 +218,23 @@ uint8_t outputs_channels_write(uint16_t *regs, uint8_t off, uint8_t n,
     return 0u;
 }
 
+void outputs_channels_apply_n(outputs_t *o, const uint16_t *regs,
+                              uint8_t first, uint8_t count, uint32_t now_ms)
+{
+    if (o == NULL || regs == NULL || (unsigned)first >= LINK_CH_COUNT) {
+        return;
+    }
+    unsigned last = (unsigned)first + count;
+    if (last > LINK_CH_COUNT) {
+        last = LINK_CH_COUNT;
+    }
+    for (unsigned c = first; c < last; ++c) {
+        (void)outputs_set(o, (uint8_t)c, regs[c], now_ms);
+    }
+}
+
 void outputs_channels_apply(outputs_t *o, const uint16_t *regs,
                             uint32_t now_ms)
 {
-    if (o == NULL || regs == NULL) {
-        return;
-    }
-    for (unsigned c = 0; c < LINK_CH_COUNT; ++c) {
-        (void)outputs_set(o, (uint8_t)c, regs[c], now_ms);
-    }
+    outputs_channels_apply_n(o, regs, 0u, (uint8_t)LINK_CH_COUNT, now_ms);
 }

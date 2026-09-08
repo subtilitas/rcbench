@@ -17,6 +17,7 @@
 #include "ui_theme.h"
 #include "ui_slider.h"
 #include "ui_widgets.h"
+#include "outputs.h"
 
 #define W 800
 #define H (480 - UI_BAND_H)
@@ -97,7 +98,21 @@ static struct {
 
     servo_cmd_t pending;
 
-    gfx_rect_t centre_btn, release_btn;
+    /*
+     * Arming, which this screen needs as much as MOTOR & ESC does: until the
+     * bench is armed the coprocessor writes a pulse of length zero to every
+     * PWM pin, so dragging the horn moves nothing and shows nothing on a
+     * scope.  The gesture is ui_widgets' -- the same two seconds and the same
+     * fade as the other screen's, because it is the same control.
+     */
+    bool       armed;
+    ui_hold_t  arm;
+    bool       arm_down;   /**< a press is on the ARM button          */
+    int        arm_id;     /**< which contact it is                   */
+    uint32_t   arm_rev;
+    uint32_t   drawn_arm[2];
+
+    gfx_rect_t arm_btn, centre_btn, release_btn;
     gfx_rect_t trim_dn, trim_up, travel_dn, travel_up, type_btn;
     ui_slider_t speed;
 
@@ -137,13 +152,80 @@ static float clamp_travel(float deg)
     return deg;
 }
 
+/*
+ * SPEED as the bench's slew, in channel-span units a second.
+ *
+ * The horn's full travel is 180 degrees and a channel's span covers it, so
+ * the 360 degrees a second the drawing uses at 100% is two spans a second:
+ * SPEED_FULL_SPAN_S.  Below 100% the bench ramps the command at that
+ * fraction of it, and a servo asked for 30% takes three times as long to
+ * cross as one asked for 90%.
+ *
+ * 100% is immediate rather than two spans a second.  It is the value the
+ * screen starts at, so anybody who never touches the slider gets what they
+ * got before -- the servo at its own rate, with nothing in front of it.
+ */
+#define SPEED_FULL_SPAN_S (2u * OUT_SPAN)
+
+static uint16_t slew_of(int pct)
+{
+    if (pct >= 100) {
+        return 0u;
+    }
+    if (pct < 1) {
+        pct = 1;
+    }
+    return (uint16_t)((unsigned)SPEED_FULL_SPAN_S * (unsigned)pct / 100u);
+}
+
 static void post(servo_cmd_kind_t kind, uint16_t us)
 {
+    /*
+     * A pending disarm survives everything.  One command is held at a time,
+     * so a position landing on top of a disarm would drive a bench somebody
+     * has just asked to stop.
+     */
+    if (s.pending.kind == SERVO_CMD_DISARM && kind != SERVO_CMD_DISARM) {
+        return;
+    }
+    /*
+     * And an arm that has completed survives everything but a disarm.  The
+     * application drains these between frames, so a hold that finishes in
+     * tick() waits a frame to be read; a touch landing in that gap would
+     * throw away two seconds of gesture and leave the bench unarmed with
+     * nothing on screen to say why.
+     */
+    if (s.pending.kind == SERVO_CMD_ARM && kind != SERVO_CMD_DISARM
+        && kind != SERVO_CMD_ARM) {
+        return;
+    }
     s.pending.kind     = kind;
     s.pending.value_us = us;
+    /* The range travels with the pulse: the panel configures the channel
+     * from it, and a narrow servo's 760 us centre is below a standard
+     * servo's floor. */
+    s.pending.min_us   = type()->min_us;
+    s.pending.max_us   = type()->max_us;
+    s.pending.slew_per_s = slew_of(s.speed_pct);
     /* The grip only breathes while something is actually being held, so this
      * has to follow the command rather than the screen being open. */
-    s.driving = (kind != SERVO_CMD_RELEASE);
+    s.driving = (kind == SERVO_CMD_POSITION || kind == SERVO_CMD_CENTRE);
+}
+
+/*
+ * Say the position again under a mapping that has just changed.
+ *
+ * The pulse a command carries is the angle put through the type, the trim
+ * and the travel; change any of them while an output is held and the pulse
+ * on the pin belongs to the old one.  Switching a held servo from STANDARD
+ * to NARROW 760 would otherwise leave 1500 us on a servo whose maximum is
+ * 860 while the screen shows the new range.
+ */
+static void reissue(void)
+{
+    if (s.driving) {
+        post(SERVO_CMD_POSITION, deg_to_us(s.commanded_deg));
+    }
 }
 
 static void command(float deg)
@@ -151,6 +233,79 @@ static void command(float deg)
     s.commanded_deg = clamp_travel(deg);
     post(SERVO_CMD_POSITION, deg_to_us(s.commanded_deg));
     ++s.ctrl_rev;
+}
+
+void servo_screen_set_armed(bool armed)
+{
+    if (s.armed == armed) {
+        return;
+    }
+    s.armed = armed;
+    /*
+     * Nothing is being held across this edge, in either direction.  An arm
+     * starts from nothing -- the panel drops the position and the slot on the
+     * way through -- and a disarm holds nothing by definition.  A screen that
+     * went on believing it was driving would say a discarded position again
+     * on the next change of type, trim or travel, onto a bench that is now
+     * armed.
+     */
+    s.driving = false;
+    if (armed) {
+        ui_hold_reached(&s.arm);
+    } else {
+        /*
+         * Disarmed, however it happened -- this screen's button, a STOP, a
+         * dead touch, or the far end.  Nothing is being held any more: the
+         * rings must stop pulsing, and a change to the type, the trim or the
+         * travel must not say a position again and rebuild a command the
+         * stop had just released.
+         */
+        if (ui_hold_left(&s.arm)) {
+            /* The bench disarmed under a finger still down on the button, and
+             * the hold ended with it; see ui_hold_left(). */
+            s.arm_down = false;
+        }
+    }
+    ++s.arm_rev;
+    ++s.ctrl_rev;
+}
+
+void servo_screen_cancel_arm(void)
+{
+    /*
+     * A stop latched, so a hold under way is abandoned and an arm it has
+     * already produced is dropped.
+     *
+     * The command is dealt with first and on its own account.  A hold that
+     * completed and whose finger has since lifted leaves nothing held and
+     * nothing counting -- the release cleared both -- while its arm is still
+     * waiting to be read, and that is precisely the one that would be
+     * forwarded a frame later and clear the latch the stop had just set.
+     */
+    bool changed = false;
+    if (s.pending.kind == SERVO_CMD_ARM) {
+        s.pending.kind = SERVO_CMD_NONE;
+        changed = true;
+    }
+    if (s.arm_down || s.arm.held_s > 0.0f) {
+        ui_hold_reset(&s.arm);
+        s.arm_down = false;
+        changed = true;
+    }
+    if (changed) {
+        ++s.arm_rev;
+    }
+    /*
+     * And nothing is being held any more.  The armed state need not have
+     * moved -- a bench that was not armed is stopped just the same, and the
+     * panel releases the slot either way -- so this cannot wait for that
+     * edge: the rings would go on pulsing, and the next change of type, trim
+     * or travel would say the released position again.
+     */
+    if (s.driving) {
+        s.driving = false;
+        ++s.ctrl_rev;
+    }
 }
 
 bool servo_screen_take(servo_cmd_t *out)
@@ -244,6 +399,11 @@ static void reset(void)
     s.centre_btn  = (gfx_rect_t){ (int16_t)x, 350, (int16_t)(w / 2 - 5), 32 };
     s.release_btn = (gfx_rect_t){ (int16_t)(x + w / 2 + 5), 350,
                                   (int16_t)(w / 2 - 5), 32 };
+    /* Full width and last, under the two that only shape what is commanded:
+     * this is the one that decides whether anything is driven at all. */
+    s.arm_btn     = (gfx_rect_t){ (int16_t)x, 388, (int16_t)w, 32 };
+    s.drawn_arm[0] = UINT32_MAX;
+    s.drawn_arm[1] = UINT32_MAX;
 }
 
 /* ------------------------------------------------------------------ events */
@@ -286,12 +446,13 @@ static void event(const touch_event_t *evt)
             command(deg);
             return;
         }
-        if (gfx_rect_contains(s.trim_dn, px, py))   { s.trim_us -= 5; ++s.ctrl_rev; }
-        else if (gfx_rect_contains(s.trim_up, px, py)) { s.trim_us += 5; ++s.ctrl_rev; }
+        if (gfx_rect_contains(s.trim_dn, px, py))   { s.trim_us -= 5; reissue(); ++s.ctrl_rev; }
+        else if (gfx_rect_contains(s.trim_up, px, py)) { s.trim_us += 5; reissue(); ++s.ctrl_rev; }
         else if (gfx_rect_contains(s.travel_dn, px, py)) {
             s.travel_deg -= 5.0f;
             if (s.travel_deg < 10.0f) { s.travel_deg = 10.0f; }
             s.commanded_deg = clamp_travel(s.commanded_deg);
+            reissue();
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.travel_up, px, py)) {
             s.travel_deg += 5.0f;
@@ -299,6 +460,7 @@ static void event(const touch_event_t *evt)
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.type_btn, px, py)) {
             s.type = (s.type + 1) % TYPE_COUNT;
+            reissue();
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.centre_btn, px, py)) {
             s.commanded_deg = 0.0f;
@@ -307,6 +469,45 @@ static void event(const touch_event_t *evt)
         } else if (gfx_rect_contains(s.release_btn, px, py)) {
             post(SERVO_CMD_RELEASE, 0);
             ++s.ctrl_rev;
+        } else if (gfx_rect_contains(s.arm_btn, px, py)) {
+            if (s.arm_down) {
+                /* The gesture belongs to the contact that began it.  A second
+                 * finger, or a palm, taking it over would leave the first
+                 * one's release ignored and arm the bench from a contact
+                 * nobody made deliberately. */
+                return;
+            }
+            s.arm_down = true;
+            s.arm_id   = evt->point.id;
+            ui_hold_begin(&s.arm);
+            ++s.arm_rev;
+        }
+    }
+
+    if (s.arm_down && evt->point.id == s.arm_id) {
+        if (evt->type == TOUCH_EVENT_MOVE) {
+            /* A finger that leaves ARM abandons the hold -- see
+             * ui_hold_leave().  While the bench is armed the same press is a
+             * disarm, whose release is checked against the rectangle. */
+            if (!s.armed && !gfx_rect_contains(s.arm_btn, px, py)
+                && ui_hold_leave(&s.arm)) {
+                s.arm_down = false;
+                ++s.arm_rev;
+            }
+            return;
+        }
+        if (evt->type == TOUCH_EVENT_UP) {
+            const bool fired = ui_hold_end(&s.arm);
+            s.arm_down = false;
+            ++s.arm_rev;
+            /*
+             * Disarming is a press; arming is a hold that has already sent
+             * its command by the time the finger lifts.
+             */
+            if (s.armed && !fired && gfx_rect_contains(s.arm_btn, px, py)) {
+                post(SERVO_CMD_DISARM, 0);
+            }
+            return;
         }
     }
 
@@ -326,6 +527,9 @@ static void event(const touch_event_t *evt)
 
     if (ui_slider_event(&s.speed, evt)) {
         s.speed_pct = (int)(s.speed.value + 0.5f);
+        /* The rate is part of the command, so a held output takes the new
+         * one rather than waiting for the next drag. */
+        reissue();
         ++s.ctrl_rev;
     }
 }
@@ -567,6 +771,29 @@ static void row(gfx_canvas_t *c, int y, const char *label, const char *value)
     }
 }
 
+/*
+ * The same fill as MOTOR & ESC's ARM, from the same widget: armed is the
+ * danger red the press fades towards, and the flash is the whole button.
+ */
+static gfx_color_t arm_fill(void)
+{
+    gfx_color_t fill = s.armed ? ui_theme_color(UI_C_DANGER)
+                               : ui_theme_color(UI_C_OK);
+    if (s.arm.flash_left > 0) {
+        return ui_hold_flash(ui_theme_color(UI_C_DANGER), s.arm.flash_left);
+    }
+    if (!s.armed && s.arm.held_s > 0.0f) {
+        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER), s.arm.held_s);
+    }
+    return fill;
+}
+
+static void draw_arm(gfx_canvas_t *c)
+{
+    ui_button(c, s.arm_btn, s.armed ? "DISARM" : "ARM", arm_fill(),
+              s.arm_down, true);
+}
+
 static void draw_right(gfx_canvas_t *c)
 {
     const int x = RCARD_X + 12;
@@ -625,10 +852,21 @@ static void draw_right(gfx_canvas_t *c)
               false, true);
     ui_button(c, s.release_btn, "RELEASE", ui_theme_color(UI_C_PANEL_HI),
               false, true);
+    draw_arm(c);
 }
 
 static void tick(float dt_s)
 {
+    if (s.arm_down && !s.armed) {
+        ++s.arm_rev;
+        if (ui_hold_tick(&s.arm, dt_s)) {
+            post(SERVO_CMD_ARM, 0);
+        }
+    }
+    if (s.arm.flash_left > 0) {
+        ++s.arm_rev;   /* keep the frames coming while it flashes */
+    }
+
     if (s.driving) {
         s.pulse += dt_s * 3.6f;         /* a little under two seconds a cycle */
         if (s.pulse > 6.28318f) {
@@ -680,6 +918,25 @@ static void render(gfx_canvas_t *c, int buffer_index)
      * card a breath alone has to repaint. */
     const int grip_r = 36;
 
+    /*
+     * ARM animating on its own repaints its own 292 x 32 button and nothing
+     * else.  The right card is 292 x 420 and the fade runs for two seconds:
+     * asking for the card every frame would spend most of the panel's
+     * bandwidth on one button.
+     */
+    if (s.drawn_ctrl[buf] == s.ctrl_rev && s.drawn_arm[buf] != s.arm_rev) {
+        s.drawn_arm[buf] = s.arm_rev;
+        gfx_rect_t old_clip = c->clip;
+        if (gfx_clip_set(c, s.arm_btn)) {
+            draw_arm(c);
+        }
+        c->clip = old_clip;
+        if (s.arm.flash_left > 0) {
+            ui_hold_flash_step(&s.arm);
+        }
+        return;
+    }
+
     if (s.drawn_ctrl[buf] == s.ctrl_rev) {
         /*
          * Nothing moved, so only the grip is repainted, and only while it
@@ -705,10 +962,14 @@ static void render(gfx_canvas_t *c, int buffer_index)
         return;
     }
     s.drawn_ctrl[buf] = s.ctrl_rev;
+    s.drawn_arm[buf]  = s.arm_rev;
     s.drawn_pulse[buf] = (int)(s.pulse * 8.0f);
 
     draw_left(c);
     draw_right(c);
+    if (s.arm.flash_left > 0) {
+        ui_hold_flash_step(&s.arm);
+    }
 }
 
 /*
@@ -720,7 +981,14 @@ static void leave(void)
     /* No release arrives for a finger on the speed slider as the screen
      * changes, and a latched drag outlives the gesture. */
     ui_slider_release(&s.speed);
-    post(SERVO_CMD_RELEASE, 0);
+    /* Disarm rather than release: navigating away from an armed bench must
+     * not leave it armed behind a screen that is not visible, and the
+     * disarm lets go of the pin on its way. */
+    post(SERVO_CMD_DISARM, 0);
+    s.armed = false;
+    ui_hold_reset(&s.arm);
+    s.arm_down = false;
+    ++s.arm_rev;
 }
 
 static const ui_screen_t k_screen = {

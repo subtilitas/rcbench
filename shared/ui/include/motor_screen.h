@@ -43,6 +43,11 @@ void motor_screen_set(const bench_state_t *b);
 /** Called per sample, so the plot's time base is the sample rate. */
 void motor_screen_push(const bench_state_t *b);
 void motor_screen_set_armed(bool armed);
+
+/** Abandon a hold that is under way, because the bench has been stopped.
+ *  A stop on a bench that was not armed changes nothing about whether it is
+ *  armed, and the gesture must end all the same. */
+void motor_screen_cancel_arm(void);
 /**
  * The kV the connected ESC reports, or 0 when it reports none.  Preferred
  * over the SET_MOTOR_KV setting when it is non-zero.

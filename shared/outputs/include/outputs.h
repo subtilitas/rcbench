@@ -164,6 +164,19 @@ bool outputs_set_endpoints(outputs_t *o, uint8_t ch, uint16_t min_us,
 bool outputs_set_role(outputs_t *o, uint8_t ch, out_role_t role);
 bool outputs_set_slew(outputs_t *o, uint8_t ch, uint16_t per_s);
 
+/**
+ * Apply @p count channels of a CHANNELS page from @p first, as commands.
+ *
+ * A page write arrives in frames and each frame says which registers it
+ * carries, so only those are commanded: a channel outside the frame has not
+ * been commanded by it, and stamping its clock would keep it alive on
+ * somebody else's traffic.  That is the whole of the per-channel timeout --
+ * a servo held at 10 Hz must not keep a surface nobody is driving from
+ * reaching its rest.
+ */
+void outputs_channels_apply_n(outputs_t *o, const uint16_t *regs,
+                              uint8_t first, uint8_t count, uint32_t now_ms);
+
 /** Command a channel.  Clamped, and remembered even while disarmed. */
 bool outputs_set(outputs_t *o, uint8_t ch, uint16_t command, uint32_t now_ms);
 

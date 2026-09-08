@@ -6,6 +6,305 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- **ARM on the servo screen.** Arming existed only on MOTOR & ESC and leaving
+  that screen disarms, so the servo screen could not drive a servo at all: the
+  coprocessor writes a pulse of length zero to every PWM (pulse-width
+  modulation) pin while the bench is not armed, and there was no way to reach
+  an armed bench with the horn on screen. The button is the same two-second
+  hold as the other screen's, and the gesture itself -- the hold, what a
+  finger leaving the control does to it, and what happens when the bench
+  disarms under a press -- now lives once in `ui_widgets` (`ui_hold_t`) rather
+  than twice. Leaving the screen disarms and releases the pin. Reported as #99.
+
+### Changed
+
+- **SPEED on the servo screen sets the rate the bench moves the output.** It
+  moved the drawn arm and nothing else, so a servo went at its own rate
+  whatever the screen said. It is the channel's slew now, carried with the
+  command: 100% is immediate, which is where the screen starts and what
+  everybody had before, and below that the bench ramps the command in front
+  of the servo -- 30% takes three times as long to cross as 90%. Changing it
+  applies to an output already being held.
+
+### Fixed
+
+- **A servo swung back to centre half a second after the finger stopped.**
+  The panel wrote the servo's channel on a touch and never again; a channel
+  nobody has commanded for OUT_DEFAULT_TIMEOUT_MS (500 ms) goes to its rest,
+  which for a surface is mid-travel. The position is now said again every
+  100 ms while something is being held, one register at a time. Not reachable
+  before this release, because the servo screen could not arm.
+- **The disarm inhibit lasted one pass instead of 300 ms.** Whether the timer
+  was running was encoded by forcing its timestamp non-zero, which moved it
+  a millisecond into the future whenever the clock was even; the elapsed time
+  then wrapped to its maximum and ended the inhibit immediately. A far end
+  that could not be reached never saw its 150 ms of silence and kept driving.
+  The timer's state is its own flag.
+- **The disarm inhibit was lifted by the transaction meant to honour it.**
+  The request was cleared before the write that delivers it, so the pump
+  inside that write's wait saw nothing outstanding and put the safety line
+  back up -- with the far end still armed if the write was lost. The request
+  stands until the far end has taken it, or until the line has been down
+  twice HEARTBEAT_MAX_GAP_MS (300 ms), by which time the far end has failed
+  safe on its own account. A disarm nobody can deliver does not hold the line
+  down for ever.
+- **An explicit RELEASE waited for the end of the drain.** Only the disarm
+  branch cleared the slot it had let go of; a release recorded the debt and
+  left it to the post-drain service, behind whatever else was queued -- two
+  blocking exchanges for an outputs binding, for instance. Both pay it before
+  returning to the queue.
+- **A disarm could not reach a write already on the wire.** The far end
+  applies a write and then acknowledges it, so a disarm arriving while that
+  acknowledgement was in flight found the output already bound -- and a lost
+  acknowledgement left it driving for the full LINK_HOST_TIMEOUT_MS (1000 ms)
+  with the request unserved. The safety line is the one channel that does not
+  need the link, so it now carries an unserved disarm: on a healthy link the
+  request is served on the next pass and nothing changes, and on a link that
+  has stopped answering the far end fails safe. A release does not do this;
+  letting go of one pin is not worth latching a failsafe.
+- **A touch outage that recovered left the bank armed.** Touch can die and
+  answer again inside one blocking link exchange: by the time the policy ran
+  the controller was healthy, so nothing in the state said the outage had
+  happened, and the heartbeat need not have been withheld long enough for the
+  far end to fail safe either. What was armed comes down, on the edge that
+  saw the outage rather than on the state afterwards.
+- **A servo's three writes could not be countermanded partway through.** Each
+  waits up to LINK_HOST_TIMEOUT_MS (1000 ms) with the pump running inside it,
+  so a stop or a disarm could arrive between one write and the next and the
+  slot was bound anyway. The writes stop when that happens, and the slot is
+  bound by the last of them, so the pin is left unbound rather than driving.
+- **RELEASE waited behind the backlog while DISARM did not.** Tapping RELEASE
+  lets go of the pin without disarming the bench, and it queued like any
+  other command -- behind positions that are three exchanges each. It is out
+  of band now, as the disarm is, and it voids drive commands that predate it.
+- **An arm went through even when the operator changed their mind mid-write.**
+  Arming is two exchanges, each of which can wait a second, and the pump runs
+  inside both: a stop applied there, or a disarm posted while the failsafe
+  clear was still on the wire, was not looked at before the write that
+  actually arms. The far end could then be driving for a timeout before
+  anything took it back. The bench is asked again between the two.
+- **A disarm waited behind a backlog of positions.** Making it unloseable did
+  not make it prompt: the flag was read once before the queue was drained, and
+  a backlog of servo positions is three exchanges each, so a degraded link
+  could keep the bench armed for seconds after a disarm. The flags are
+  serviced between queue entries now, and a command that predates a disarm no
+  longer drives after it -- each carries the count of disarms its sender had
+  seen, as it already carried the count of stops.
+- **A stop the pump saw but could not route could swallow the next one.** The
+  marker that stops the backstop counting a press twice was set whether or not
+  the event reached the router; when the router's queue was full it never
+  latched, and the marker stayed armed until it consumed a later stop the
+  backstop really did have to apply. It is set only when the event was
+  actually routed.
+- **One STOP press counted as two stops.** The press is applied where it is
+  seen, and the screen still receives the event, so the router latched the
+  same release and the backstop stopped the bench again. The count is what
+  rejects commands made before a stop, so a command the operator made after
+  it -- between the two -- was thrown away. A press the pump applied is not
+  counted again by the backstop.
+- **An arm could be granted from a gesture invalidated while it waited.** The
+  servo screen's arm releases the slot first, and that release can wait a
+  second on the wire with the pump running inside it, so a stop -- or touch
+  dying and recovering -- could invalidate the gesture between the drain's
+  check and the request. The gesture is asked about again after the release.
+- **A newer servo write did not void an older release.** A release that failed
+  keeps its debt, and a position written afterwards rebinds the slot to what
+  was asked for; paying the debt then cleared it and left the pin dead until
+  the next refresh. A write that the far end acknowledged voids a release
+  owed for that slot, and one that failed does not.
+- **A leave-time disarm could be evicted from the command queue.** The queue
+  drops its oldest entry when full, and leaving a screen generates commands
+  on the way out while the next screen generates more, so the disarm posted by
+  leaving an armed servo screen could be dropped -- leaving the bench armed
+  and the servo held behind a screen nobody was watching. A disarm is a flag
+  as well as a queue entry now, the way a stop is; applying it twice costs
+  nothing.
+- **An older servo release could clear a binding that had just been made.** A
+  release that timed out keeps its debt, and a binding applied afterwards in
+  the same drain writes every slot including slot 0; paying the debt then
+  cleared the binding the outputs screen had just been told was written, and
+  the far end kept the cleared page. A binding that lands says what slot 0 is,
+  so it voids an older release owed for it.
+- **STOP waited out a link exchange before it did anything.** The press was
+  recorded and acted on by the policy, which is exactly what a blocked loop
+  cannot reach: a servo command makes up to three exchanges of up to
+  LINK_HOST_TIMEOUT_MS (1000 ms) each, and the far end drives throughout. The
+  press is applied where it is seen now, in the pump that runs inside that
+  wait, so the safety line stops being asserted in the same pass and the
+  coprocessor fails safe within HEARTBEAT_MAX_GAP_MS (150 ms) whatever the
+  panel is waiting for. The rest of a stop follows when the loop is free.
+- **A stop on a bench that was not armed left the servo driven.** Letting go
+  hung off the policy's disarm, which does not happen when nothing was armed,
+  so a servo held from before the stop kept its slot refreshed every 100 ms --
+  over the top of an outputs binding made afterwards. Every stop lets go now,
+  counted rather than inferred from the disarm.
+- **A position asked for before a stop was still driven after it.** Only
+  arms were dropped as stale; a servo position or centre queued before a stop
+  was applied afterwards, rebinding the slot the stop had just released and
+  refreshing it from then on -- and a stop from touch dying or from the far
+  end has no queued STOP behind it to release it a second time. Nothing that
+  drives an output survives a stop it predates; a disarm, a release or a
+  binding still does.
+- **A stop waited behind commands that talk to the link.** The control loop
+  drained the screens' commands before it served a pending STOP, and an
+  unanswered exchange holds that loop for LINK_HOST_TIMEOUT_MS (1000 ms) --
+  several such commands multiply it, with the far end armed throughout. The
+  stop is served first again. What made that unsafe before was an arm queued
+  from a gesture made before the stop, and each command now carries the count
+  of stops its sender had seen, so a stale arm is dropped instead.
+- **An arm learned after this frame's touch discarded a position issued after
+  it.** The screens are told whether the bench is armed at the end of a
+  frame, and an arm discards what was held before it; a position commanded
+  earlier in the same frame, after the bench had actually armed, was thrown
+  away by that. The bench's state is read before the frame's touch is
+  dispatched, so a press acts on what the bench already is.
+- **A stop on a bench that was not armed left the servo screen holding.**
+  Dragging while disarmed commands a position, and a stop then changes
+  nothing about the armed state while the panel releases the slot all the
+  same. The screen cleared its driving state only on that state's edge, so it
+  went on showing the output as held and the next change of type, trim or
+  travel said the released position again. A stop lets go, whether or not
+  anything was armed.
+- **A touch outage inside a link wait left no trace.** The stop was counted
+  only where the policy steps, and a link exchange waits up to 1000 ms while
+  touch is still being pumped: a controller that died and recovered inside
+  one such wait was never seen to have died, and a hold left standing by it
+  completed and was accepted. Touch health is judged where touch is judged
+  now, at the rate it is judged.
+- **An arm still settling was not abandoned when touch died.** The disarm was
+  gated on the bench being armed, and an arm that is settling is not armed
+  yet, so a controller recovering before the deadline armed the bench from a
+  gesture nobody had re-made -- and no screen could retract a request the
+  policy already held.
+- **Leaving MOTOR & ESC under a held ARM stranded the button.** No release
+  arrives for a contact that was on ARM as the screen changed, and the press
+  stayed recorded; with the hold kept for the contact that began it, every
+  later press was then refused. Leaving drops the press it was routing.
+- **Touch that stopped answering left an arming hold running.** A hold
+  advances on frames rather than on touch events, so one still down when the
+  controller went quiet kept counting; the arm was refused while touch stayed
+  dead, but a controller that answered again before the two seconds were up
+  let it through -- arming with nobody having touched anything since. Touch
+  going dead counts as a stop now, once, on the edge, so every screen
+  abandons its gesture and an arm made before it is dropped.
+- **An arm queued before a stop could still arm the bench.** The command
+  queue and the stop count cross between the two tasks independently, so an
+  arm could be queued from a gesture the sender had watched and a stop be
+  applied before that arm was drained -- and the arm then cleared the latch
+  the stop had set. Each arm carries the count of stops its sender had seen,
+  and one whose count is no longer current is dropped.
+- **Arming from the servo screen could energise a slot the panel had never
+  written.** After a panel restart the coprocessor still holds its slots, so
+  slot 0 and the command in it survive while the panel remembers nothing; the
+  screen's DISARM and RELEASE asked for the clear unconditionally but its ARM
+  did not, and the arm rendered the old position. It asks first now, and the
+  arm waits for the clear.
+- **An unpayable release debt refused every arm.** Leaving the servo screen
+  with the link down leaves a release owed that nothing can pay, and the arm
+  gate refused every arm until a coprocessor answered -- including arming the
+  panel's own bank in simulation, where no far-end output exists. The gate
+  applies only while there is a link, and the far end is not told to arm while
+  a slot is still owed a release instead.
+- **Arming left the servo screen showing a position it had discarded.** An
+  arm drops the held command and the slot so it starts from nothing, and the
+  screen went on believing it was driving -- so the next change of type, trim
+  or travel said that discarded position again, onto a bench that was armed
+  by then.
+- **Binding the servo's pin before its position arrived drove the old one.**
+  The three writes a servo command makes are three transactions and the far
+  end steps its outputs between them, so binding the slot second rendered
+  whatever channel 0 was holding -- the position from before the last
+  release, or mid-travel once that had gone stale -- and kept driving it if
+  the position write then failed. The slot is bound last, so the pin is
+  either unbound or already carrying what was asked for.
+- **A servo pulse could be sent against a configuration that never landed.**
+  Only the last of the three writes a servo command makes was checked, so a
+  CHAN_CFG that was refused or timed out left the far end clamping against
+  the endpoints it had before -- a narrow servo selected against a standard
+  configuration renders 1500 us, past its 860 us maximum. All three are
+  required now, and nothing is sent when the configuration has not arrived.
+- **A cancelled arming gesture could still deliver its arm.** The hold can
+  complete in the same frame the stop arrives, leaving the command waiting to
+  be read; the screens were asked about the stop after their commands had
+  been forwarded, so the arm went out a frame later and cleared the latch.
+  The stop edge is handled before anything the screens produced, and
+  cancelling a hold takes its unread command with it -- including after the
+  finger has lifted, which clears the gesture but not what it produced.
+- **A second stop during a new arming hold did nothing.** The latch is a
+  level and says only that a stop is in force, so a STOP pressed while one
+  was already latched -- during a hold begun after the first, which is how a
+  stop is cleared -- left it exactly as it was, and the screens watching that
+  level saw no change. The hold ran to completion and cleared the latch.
+  Stops are counted now, in the policy where the latch is set, and every one
+  of them cancels both screens' holds.
+- **A stop did not end an arming gesture already under way.** A stop can
+  latch on a bench that is not armed -- a STOP press, a dead touch, the far
+  end -- so nothing about the armed state changed and a hold still under a
+  finger ran on, completed, and asked to arm, clearing the latch that had
+  just been set. Both screens abandon a hold when a stop latches.
+- **A second contact could take over an arming hold.** A finger, or a palm,
+  landing on ARM while another was holding it replaced the contact the
+  gesture belonged to; the first finger's release was then ignored and the
+  second contact could arm the bench. The hold now stays with the contact
+  that began it, on both screens.
+- **A stop pressed after an arming gesture could be undone by it.** The
+  control loop stepped the arming policy before it drained what the screens
+  had asked for, so a STOP that latched at the top of a pass was cleared
+  later in the same pass by an arm queued before it: the bench armed from a
+  press made to stop it. The queue is drained first now, and
+  `arming_stop()` abandons an arm rather than deferring it, so the newer
+  stop stands. Both screens' ARM went through this.
+- **An arm could proceed on a servo release that did not land.** A release
+  that is not acknowledged keeps its debt, but the arm went ahead anyway, so
+  a transient link error during the release meant arming with the slot and
+  its command still installed at the far end. An outstanding release now
+  refuses the arm and says so on the alert band.
+- **The servo screen went on showing a hold the bench had let go of.** A
+  STOP, a dead touch or a far-end disarm left the driving state set, so the
+  rings kept pulsing and a change to the type, trim or travel said the
+  position again -- rebuilding the command the stop had released.
+- **A write to one channel kept every other channel alive.** The coprocessor
+  applied a CHANNELS write by commanding all eight channels of the stored
+  page, whatever the frame carried, so any periodic write stamped every
+  channel's clock. The timeout that returns an uncommanded output to its rest
+  is per channel precisely so one screen's traffic cannot hold another's
+  output up, and applying the page defeated it. Only the registers a frame
+  carries are applied now. Latent until this release, which is the first
+  thing to write a channel periodically.
+- **Changing the servo type, trim or travel left the old pulse on the pin.**
+  The pulse is the angle put through those three, and none of them said the
+  position again, so a servo held while switching from STANDARD to NARROW 760
+  kept 1500 us on a servo whose maximum is 860 while the screen showed the
+  new range.
+- **An arm could render a servo's slot before the release reached the far
+  end.** The release was posted after ARM in the same pass, and the far end
+  applies ARM and stamps every channel's clock before it steps its outputs,
+  so a slot still bound at that moment rendered its old command until the
+  clear arrived. The slot now goes first. A clear is also kept until the far
+  end acknowledges it, rather than assumed from a write that may have gone
+  into a link that was dropping, and RELEASE asks for the clear whether or
+  not the panel remembers binding the slot -- after a restart the far end can
+  hold a slot this end has never written. The servo screen's own DISARM asks
+  for the same clear; a stop from anywhere else stays conditional, so it
+  cannot quietly clear a slot the OUTPUTS screen bound.
+- **A stop left a servo position an arm would step back to.** Only the servo
+  screen's own disarm let go of the pin; a STOP, a dead touch, a disarm from
+  MOTOR & ESC and a far-end disarm did not, and the far end keeps both the
+  slot and the channel command through a disarm and a failsafe. The next arm
+  found the channel neither overdue nor at rest and drove the servo to where
+  it had been, with nobody having touched anything. Letting go of the servo
+  is now paired with returning the throttle to zero, in every path that stops
+  the bench. A release that cannot be sent -- the screen left while the link
+  is down -- is kept as a debt and sent when the link is back, so a slot
+  cannot outlive the screen that bound it.
+- **A servo other than the standard one was driven against the wrong
+  endpoints.** The panel configured the channel with a fixed 1000 to 2000 us
+  whatever the screen's TYPE said, so a narrow servo (660 to 860 us) had its
+  whole travel clamped to one end and a wide one (800 to 2200 us) was clipped
+  at both. The command now carries the endpoints of the type it was made for.
+
 ## 0.6.1 - 2026-09-07
 
 The throttle reached no bound pin, so an ESC (electronic speed controller) on

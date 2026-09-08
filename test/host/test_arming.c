@@ -275,6 +275,154 @@ TEST_CASE(the_rules_survive_a_millisecond_wrap)
     CHECK_EQ(arming_step(&a, t), ARMING_ACT_DISARM);
 }
 
+TEST_CASE(the_latch_can_be_asked_about)
+{
+    /* A screen asks so a gesture already under way can be abandoned: a stop
+     * on a bench that was not armed changes nothing else it could look at. */
+    arming_t a;
+    arming_init(&a, 0, SETTLE_MS);
+    CHECK(!arming_stopped(&a));
+    arming_stop(&a);
+    CHECK(arming_stopped(&a));
+    arming_request_arm(&a, 10u);
+    CHECK(!arming_stopped(&a));
+    CHECK(!arming_stopped(NULL));
+}
+
+TEST_CASE(every_stop_counts_even_when_the_latch_does_not_move)
+{
+    /*
+     * The latch is a level: a second stop while one is already in force
+     * changes nothing about it.  A screen watching the level would not
+     * cancel a hold begun after the first stop, and that hold would complete
+     * and clear the latch.  The count is the event.
+     */
+    arming_t a;
+    arming_init(&a, 0, SETTLE_MS);
+    CHECK_EQ(arming_stop_count(&a), 0);
+
+    arming_stop(&a);
+    CHECK_EQ(arming_stop_count(&a), 1);
+    arming_stop(&a);                        /* the latch is already set */
+    CHECK(arming_stopped(&a));
+    CHECK_EQ(arming_stop_count(&a), 2);
+
+    /* The far end's stop counts too, and an arm does not undo the count. */
+    arming_stop_from_far_end(&a);
+    CHECK_EQ(arming_stop_count(&a), 3);
+    arming_request_arm(&a, 10u);
+    CHECK_EQ(arming_stop_count(&a), 3);
+    CHECK_EQ(arming_stop_count(NULL), 0);
+}
+
+TEST_CASE(a_settling_arm_is_abandoned_when_touch_dies)
+{
+    /*
+     * The request is already the policy's by then, so no screen can retract
+     * it: if the settle simply ran on, a controller that recovered inside
+     * the two seconds would arm from a gesture nobody has re-made.
+     */
+    /*
+     * A settle longer than the bench's, so a 500 ms outage fits inside it.
+     * The bench settles in about 100 ms, which is shorter than the silence
+     * that declares touch dead; the rule under test is the policy's, and it
+     * has to hold for whatever settle it is given.
+     */
+    const uint32_t settle = 4u * ARMING_TOUCH_DEAD_MS;
+    arming_t a;
+    arming_init(&a, 0, settle);
+    arming_touch_seen(&a, 0);
+    arming_request_arm(&a, 0);
+
+    /* Touch dies during the settle, then answers again before the deadline. */
+    const uint32_t dead_at = ARMING_TOUCH_DEAD_MS + 1u;
+    arming_touch_poll(&a, dead_at);
+    arming_touch_seen(&a, dead_at + 10u);
+
+    CHECK_EQ(arming_step(&a, settle + 1u), ARMING_ACT_NONE);
+    CHECK(!a.armed);
+}
+
+TEST_CASE(an_outage_that_recovers_still_brings_the_bank_down)
+{
+    /*
+     * Touch can die and answer again inside one blocking link exchange.  By
+     * the time the policy runs, the controller is healthy and nothing in the
+     * state would say the outage happened -- and the heartbeat need not have
+     * been withheld long enough for the far end to fail safe either.  What
+     * was armed comes down all the same.
+     */
+    arming_t a;
+    arming_init(&a, 0, SETTLE_MS);
+    arming_touch_seen(&a, 0);
+    arming_request_arm(&a, 0);
+    CHECK_EQ(arming_step(&a, SETTLE_MS + 1u), ARMING_ACT_ARM);
+    CHECK(a.armed);
+
+    const uint32_t dead_at = SETTLE_MS + ARMING_TOUCH_DEAD_MS + 2u;
+    arming_touch_poll(&a, dead_at);        /* seen only by the pump */
+    arming_touch_seen(&a, dead_at + 5u);   /* and it answers again */
+
+    CHECK_EQ(arming_step(&a, dead_at + 10u), ARMING_ACT_DISARM);
+    CHECK(!a.armed);
+    /* Once, not on every later step. */
+    CHECK_EQ(arming_step(&a, dead_at + 20u), ARMING_ACT_NONE);
+}
+
+TEST_CASE(touch_health_can_be_judged_apart_from_the_policy_step)
+{
+    /*
+     * The caller that judges touch and the caller that steps the policy are
+     * not the same and need not run at the same rate.  A death and a
+     * recovery between two steps must still count.
+     */
+    arming_t a;
+    arming_init(&a, 0, SETTLE_MS);
+    arming_touch_seen(&a, 0);
+    (void)arming_step(&a, 10u);
+    CHECK_EQ(arming_stop_count(&a), 0);
+
+    const uint32_t dead_at = ARMING_TOUCH_DEAD_MS + 1u;
+    arming_touch_poll(&a, dead_at);          /* seen only by the pump */
+    arming_touch_seen(&a, dead_at + 5u);     /* and it answers again */
+    (void)arming_step(&a, dead_at + 10u);    /* the policy runs afterwards */
+    CHECK_EQ(arming_stop_count(&a), 1);
+
+    arming_touch_poll(NULL, 0);
+}
+
+TEST_CASE(touch_that_stops_answering_counts_once)
+{
+    /*
+     * A hold advances on frames, not on touch events, so one left standing
+     * when the controller died goes on counting and would arm on recovery
+     * with nobody having touched anything since.  It counts as a stop, and
+     * once: a screen that abandoned its gesture must not be told again every
+     * pass while the controller stays quiet.
+     */
+    arming_t a;
+    arming_init(&a, 0, SETTLE_MS);
+    arming_touch_seen(&a, 0);
+    CHECK_EQ(arming_stop_count(&a), 0);
+
+    (void)arming_step(&a, 10u);
+    CHECK_EQ(arming_stop_count(&a), 0);       /* still answering */
+
+    const uint32_t dead_at = ARMING_TOUCH_DEAD_MS + 1u;
+    (void)arming_step(&a, dead_at);
+    CHECK_EQ(arming_stop_count(&a), 1);
+    (void)arming_step(&a, dead_at + 100u);
+    (void)arming_step(&a, dead_at + 200u);
+    CHECK_EQ(arming_stop_count(&a), 1);       /* the edge, not the level */
+
+    /* It answers again, and dying a second time counts again. */
+    arming_touch_seen(&a, dead_at + 300u);
+    (void)arming_step(&a, dead_at + 300u);
+    CHECK_EQ(arming_stop_count(&a), 1);
+    (void)arming_step(&a, dead_at + 300u + ARMING_TOUCH_DEAD_MS + 1u);
+    CHECK_EQ(arming_stop_count(&a), 2);
+}
+
 int main(void)
 {
     RUN(a_stop_latches_until_an_explicit_arm);
@@ -287,5 +435,11 @@ int main(void)
     RUN(the_far_end_can_stop_the_bench);
     RUN(a_far_end_stop_leaves_no_disarm_for_the_caller_to_act_on);
     RUN(the_rules_survive_a_millisecond_wrap);
+    RUN(the_latch_can_be_asked_about);
+    RUN(every_stop_counts_even_when_the_latch_does_not_move);
+    RUN(touch_that_stops_answering_counts_once);
+    RUN(a_settling_arm_is_abandoned_when_touch_dies);
+    RUN(touch_health_can_be_judged_apart_from_the_policy_step);
+    RUN(an_outage_that_recovers_still_brings_the_bank_down);
     return test_summary("arming");
 }

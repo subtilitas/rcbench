@@ -155,8 +155,14 @@ static uint8_t channels_write(void *ctx, uint8_t off, uint8_t n,
     if (nack != 0u) {
         return nack;
     }
-    outputs_channels_apply(&s_outputs, s->channels,
-                           (uint32_t)to_ms_since_boot(get_absolute_time()));
+    /*
+     * Only what this frame carried.  Applying the whole page would stamp
+     * every channel's clock on a write that named one of them, and the
+     * timeout that returns an uncommanded output to rest is per channel
+     * exactly so that one screen's traffic cannot hold another's output up.
+     */
+    outputs_channels_apply_n(&s_outputs, s->channels, off, n,
+                             (uint32_t)to_ms_since_boot(get_absolute_time()));
     return 0u;
 }
 

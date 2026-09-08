@@ -74,6 +74,12 @@
 #define SERVO_CH        0u
 #define SERVO_SLOT      0u
 #define SERVO_PIN       2u
+/*
+ * How often the servo's position is said again, against the far end's
+ * OUT_DEFAULT_TIMEOUT_MS of 500 ms.  Five times the margin, and one
+ * register on the wire each time.
+ */
+#define SERVO_HOLD_MS   100u
 #define SERVO_MIN_US    1000u
 #define SERVO_MAX_US    2000u
 
@@ -122,6 +128,11 @@ static bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
                       link_msg_t *reply);
 static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
                        const uint16_t *regs, link_msg_t *reply);
+/* Paired with throttle_to_zero() in every path that stops the bench; defined
+ * with the rest of the servo's wire handling. */
+static void servo_let_go(void);
+static void servo_service(bool link_up);
+static bool disarm_here(bool link_up);
 
 static uint32_t now_ms(void)
 {
@@ -279,6 +290,19 @@ typedef struct {
     motor_cmd_t      motor;
     servo_cmd_t      servo;
     outbind_t        bind;   /**< PANEL_CMD_OUTPUTS: the protocols and their pins */
+    /**
+     * How many stops the sender had seen when it queued this.
+     *
+     * The queue and the stop latch cross between the two tasks
+     * independently, so an arm can be queued from a gesture the sender
+     * watched, and a stop be applied before that arm is drained: the arm
+     * would then clear a latch that was set after it was asked for. An arm
+     * carrying a count that is no longer current is out of date and is
+     * dropped.
+     */
+    uint32_t         stops;
+    /** And how many times it had been told to let go; see s_lets_go. */
+    uint32_t         lets_go;
 } panel_cmd_t;
 
 /*
@@ -365,6 +389,7 @@ static struct {
     bool          armed;
     float         mcu_temp_c;
     bool          stopped;
+    uint32_t      stops;
     uint16_t      faults;
     uint32_t      link_errors;
     uint32_t      run_seconds;
@@ -394,6 +419,34 @@ static outputs_t s_out;
  * the host suite can hold it; this file drives it and acts on what it says.
  */
 static arming_t  s_arm;
+
+/* What the servo screen is holding, so it can be said again before the far
+ * end times it out.  SERVO_CMD_NONE means nothing is being held. */
+/* The stop count this task has already let go for; see service_arming(). */
+static uint32_t    s_stops_served;
+/*
+ * When the outstanding disarm started holding the safety line down, and how
+ * long that may go on for.
+ *
+ * Twice HEARTBEAT_MAX_GAP_MS (150 ms), so a far end that never answers has
+ * certainly failed safe by then and the line can go back up: a disarm nobody
+ * can deliver must not hold it down for ever.
+ */
+#define DISARM_INHIBIT_MS (2u * HEARTBEAT_MAX_GAP_MS)
+static bool        s_disarm_timing;   /**< whether s_disarm_since means anything */
+static uint32_t    s_disarm_since;
+
+static servo_cmd_t s_servo_held;
+static uint32_t    s_servo_next_ms;
+/*
+ * A slot the far end still has and this end has finished with.
+ *
+ * Kept as a debt rather than written and forgotten: a screen left while the
+ * link is down cannot send the release, and the far end keeps both the slot
+ * and the channel command through a failsafe.  A later arm -- from either
+ * screen -- would then drive the servo to where it was before.
+ */
+static bool        s_servo_release_owed;
 static uint16_t  s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
 
 /*
@@ -415,12 +468,33 @@ static uint8_t   s_stop_id;
  * Both cross the two cores, so both are atomic rather than volatile: volatile
  * orders nothing between processors and promises no atomicity.
  *
- * s_stop_request is taken with an exchange rather than a test and a clear.
- * A stop arriving between those two would have been dropped -- the read said
- * "none", the write then said "none" over the top of it.
+ * s_stop_request carries the router's backstop for a press this task's own
+ * hit test did not see, so it crosses from app_main.  A press this task sees
+ * is not recorded but applied, in the pump that saw it: waiting for the
+ * policy to run would wait out a link exchange with the far end driving.
+ *
+ * It is taken with an exchange rather than a test and a clear.  A stop
+ * arriving between those two would have been dropped -- the read said "none",
+ * the write then said "none" over the top of it.
  */
 static atomic_bool s_stop_live;
 static atomic_bool s_stop_request;
+/* A disarm, and the servo screen's own release, as flags rather than queue
+ * entries: neither may be lost to an eviction.  See send_cmd(). */
+/* Set when the pump applied a stop for a press the router will also latch,
+ * so the backstop does not stop the bench twice for one press. */
+static atomic_bool s_stop_counted;
+static atomic_bool s_disarm_request;
+static atomic_bool s_servo_release_request;
+/*
+ * How many times the panel has been told to let go: a disarm, or an explicit
+ * release of the servo's pin.
+ *
+ * The same job the stop count does.  Either is acted on between queue
+ * entries, out of the order the queue holds, so a drive command still behind
+ * one would otherwise put back what it let go of.
+ */
+static atomic_uint s_lets_go;
 /* False until the control task owns the safety state; bring-up polls the
  * link before that, with nothing to service. */
 static bool s_pump_live;
@@ -442,6 +516,7 @@ static void control_pump(void)
     bool saw_touch = false;
     while (touch_wait_event(&evt, 0)) {
         saw_touch = true;
+        bool counted_here = false;
         /*
          * The band's rectangle is a constant, so it has to be asked whether a
          * STOP is drawn: on the splash a tap in that corner presses nothing.
@@ -457,11 +532,40 @@ static void control_pump(void)
                    && evt.type == TOUCH_EVENT_UP) {
             s_stop_press = false;
             if (in_stop) {
-                atomic_store(&s_stop_request, true);
+                /*
+                 * Applied here, not recorded for later.
+                 *
+                 * This runs inside the link's wait as well as at the top of
+                 * the loop, and a servo command makes up to three exchanges
+                 * of up to LINK_HOST_TIMEOUT_MS (1000 ms) each.  A stop that
+                 * only set a flag would wait all of that out with the far end
+                 * driving, because the policy that acts on the flag is what
+                 * is blocked.  arming_stop() takes effect in the same pass:
+                 * arming_heartbeat() is false while stopped, so the beat at
+                 * the end of this function stops asserting the line and the
+                 * coprocessor fails safe within HEARTBEAT_MAX_GAP_MS
+                 * (150 ms) whatever this task is waiting for.
+                 *
+                 * The rest of a stop -- the bank, the throttle, the servo's
+                 * slot, telling the far end -- follows when the loop is free.
+                 */
+                arming_stop(&s_arm);
+                counted_here = true;
             }
         }
         /* The screen still sees every event: it draws the press. */
-        (void)xQueueSend(s_touch_q, &evt, 0);
+        const bool routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
+        /*
+         * The router will latch this same release and the backstop would
+         * then stop the bench a second time, so a stop applied here is
+         * marked -- but only if the event actually reached the router.  A
+         * marker left standing for an event nobody saw is consumed by the
+         * next stop the backstop really does have to apply, and that stop
+         * would be ignored.
+         */
+        if (counted_here && routed) {
+            atomic_store(&s_stop_counted, true);
+        }
     }
     /*
      * touch_age_ms() is the time since the controller last answered a poll,
@@ -471,6 +575,9 @@ static void control_pump(void)
     if (saw_touch || touch_age_ms() < 200u) {
         arming_touch_seen(&s_arm, now_ms());
     }
+    /* And judged here, at the rate touch is judged: this runs inside the
+     * link's wait, where arming_step() does not. */
+    arming_touch_poll(&s_arm, now_ms());
 
     outputs_step(&s_out, now_ms());
     /*
@@ -478,8 +585,25 @@ static void control_pump(void)
      * STOP is running its loop; whether the two boards can talk is a separate
      * question with its own watchdog at each end.  Gating on both would let a
      * dropped CAN frame cut the safety line.
+     *
+     * It is gated on a disarm nobody has served yet.  A write that has been
+     * transmitted cannot be recalled: the far end applies it and then
+     * acknowledges, and if that acknowledgement is lost this task waits
+     * LINK_HOST_TIMEOUT_MS (1000 ms) with the request unserved and the
+     * output driving.  The line is the one channel that does not need the
+     * link, so it carries the disarm instead.
+     *
+     * On a healthy link this costs nothing -- the request is served on the
+     * next pass, well inside HEARTBEAT_MAX_GAP_MS (150 ms).  On a link that
+     * has stopped answering it fails the far end safe, and a bench whose
+     * panel is asking it to disarm and cannot be heard is one that should
+     * fail safe.
+     *
+     * A release is not a disarm and does not do this: letting go of one pin
+     * is not worth latching the far end's failsafe.
      */
-    beat(arming_heartbeat(&s_arm, now_ms()));
+    beat(arming_heartbeat(&s_arm, now_ms())
+         && !atomic_load(&s_disarm_request));
 }
 
 /* ------------------------------------------------------------------- boot */
@@ -1415,15 +1539,88 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
  * coprocessor's control page only while the link is up.  The flag is the
  * control loop's own and is published nowhere this could read it.
  */
+/*
+ * A disarm that was asked for, whether or not its queue entry survived.
+ *
+ * Doing it twice is doing it once: the policy, the bank and the far end all
+ * take the same state again.  Called between queue entries as well as before
+ * the drain, because a backlog of servo positions can hold the drain for
+ * seconds -- three exchanges each -- and a disarm must not wait behind
+ * commands that were asked for before it.
+ */
+static void service_disarm(bool link_up)
+{
+    bool owed = false;
+
+    if (atomic_exchange(&s_servo_release_request, false)) {
+        s_servo_held.kind = SERVO_CMD_NONE;
+        s_servo_release_owed = true;
+        owed = true;
+    }
+
+    if (atomic_load(&s_disarm_request)) {
+        if (!s_disarm_timing) {
+            s_disarm_timing = true;
+            s_disarm_since  = now_ms();
+        }
+        const bool told = disarm_here(link_up);
+        /*
+         * The request stands until the far end has taken it, because the
+         * heartbeat is withheld while it stands and clearing it first would
+         * put the line back up during the very transaction meant to deliver
+         * it -- with the far end still armed if that transaction is lost.
+         *
+         * Or until the line has been down long enough that the far end has
+         * failed safe on its own account, which is the same outcome by the
+         * other route and stops a disarm nobody can deliver from holding the
+         * line down for ever.
+         */
+        if (told
+            || (uint32_t)(now_ms() - s_disarm_since) >= DISARM_INHIBIT_MS) {
+            atomic_store(&s_disarm_request, false);
+            s_disarm_timing = false;
+        }
+        owed = true;
+    }
+
+    /* Whichever of the two it was, the slot it let go of is cleared here.
+     * The release alone used to leave that to the end of the drain, behind
+     * whatever else was queued. */
+    if (owed) {
+        servo_service(link_up);
+    }
+}
+
 static void service_arming(bool link_up)
 {
     /*
      * STOP latches rather than clearing on the next frame: a stop that lasts
      * one frame is one the coprocessor may never see, and its monostable holds
      * for longer than a frame.  Only an explicit arm clears it.
+     *
+     * This is the router's backstop for a press the pump's own hit test
+     * missed; a press it saw has already been applied there.
      */
-    if (atomic_exchange(&s_stop_request, false)) {
+    if (atomic_exchange(&s_stop_request, false)
+        && !atomic_exchange(&s_stop_counted, false)) {
         arming_stop(&s_arm);
+    }
+
+    /*
+     * Every stop lets go of what was being driven, whether or not the bench
+     * was armed and whichever thing raised it -- a press, the far end, touch
+     * that stopped answering.  A bench that was not armed still had a servo
+     * held, and nothing else would have released it: the slot would go on
+     * being refreshed every 100 ms, over the top of an outputs binding made
+     * later.
+     */
+    service_disarm(link_up);
+
+    const uint32_t stops = arming_stop_count(&s_arm);
+    if (stops != s_stops_served) {
+        s_stops_served = stops;
+        throttle_to_zero();
+        servo_let_go();
     }
 
     /*
@@ -1436,6 +1633,7 @@ static void service_arming(bool link_up)
     case ARMING_ACT_DISARM:
         outputs_arm(&s_out, false, now_ms());
         throttle_to_zero();
+        servo_let_go();
         if (was_touch_dead) {
             control_alert("touch stopped answering -- disarmed");
         }
@@ -1461,10 +1659,52 @@ static void service_arming(bool link_up)
          * the operator had just stopped, and there has been one.
          */
         throttle_to_zero();
-        if (link_up
-            && !(control_clear_failsafe(&ack) && control_write(true, &ack))) {
+        servo_let_go();
+        /*
+         * And the slot goes before the arm does, not after it.  The far end
+         * applies ARM and stamps every channel's clock before it steps its
+         * outputs, so a slot still bound at that moment renders its stale
+         * command for as long as the release takes to arrive.
+         */
+        servo_service(link_up);
+        if (link_up && s_servo_release_owed) {
+            /*
+             * The release did not land, so the far end still has the slot and
+             * the command in it.  Arming now would render that command before
+             * anything else reached it, so the arm is refused and the debt
+             * stays; the next attempt starts by paying it.
+             *
+             * Only while there is a link.  With none, the debt cannot be paid
+             * by anybody and nothing at the far end is being armed either, so
+             * refusing would leave the panel unable to arm its own bank --
+             * the simulator included -- until a coprocessor answered again.
+             * What the far end must not do meanwhile is arm; see poll_bench().
+             */
             arming_refused(&s_arm);
-            control_alert("coprocessor refused to arm");
+            control_alert("servo output not released -- arm again");
+        } else if (link_up) {
+            /*
+             * Two exchanges, each of which can wait a second, and what the
+             * operator wants can change between them: the pump runs inside
+             * both and applies a stop, and a disarm can be posted while the
+             * clear is still on the wire.  Asked again before the write that
+             * actually arms, because after it the far end is driving and
+             * nothing here can take it back for the length of a timeout.
+             */
+            if (!control_clear_failsafe(&ack)) {
+                arming_refused(&s_arm);
+                control_alert("coprocessor refused to arm");
+            } else if (arming_stopped(&s_arm)
+                       || atomic_load(&s_disarm_request)) {
+                /* Stopped or disarmed while the clear was in flight.  No
+                 * alert: the operator asked for this and knows. */
+                arming_refused(&s_arm);
+            } else if (!control_write(true, &ack)) {
+                arming_refused(&s_arm);
+                control_alert("coprocessor refused to arm");
+            } else {
+                outputs_arm(&s_out, true, now_ms());
+            }
         } else {
             outputs_arm(&s_out, true, now_ms());
         }
@@ -1520,15 +1760,30 @@ static void write_output_binding(const outbind_t *bind)
 /*
  * One servo command, as configuration and pulse.
  */
-static void write_servo(const servo_cmd_t sv)
+/* Whether the operator has asked, since this began, for the thing being
+ * written to stop: a stop applied by the pump, or a disarm or release posted
+ * while an exchange was on the wire. */
+static bool servo_countermanded(void)
+{
+    return arming_stopped(&s_arm)
+           || atomic_load(&s_disarm_request)
+           || atomic_load(&s_servo_release_request);
+}
+
+static bool write_servo(const servo_cmd_t sv)
 {
     link_msg_t reply;
     if (sv.kind == SERVO_CMD_RELEASE) {
         /* Stop driving: clear the slot.  The channel keeps its last command,
-         * but with nothing rendering it that is inert. */
+         * but with nothing rendering it that is inert.
+         *
+         * Whether the far end took it is returned rather than assumed: a
+         * write that did not land leaves the slot bound, and the caller's
+         * record of owing the release is the only thing that would notice. */
         uint16_t slot[LINK_OS_STRIDE] = { LINK_DRIVER_NONE, 0, 0, 0 };
-        (void)write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
-                         &reply);
+        return write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
+                          &reply)
+               && reply.op == LINK_OP_ACK;
     } else {
         /*
          * Configuration and command, sent whole every time.  The coprocessor
@@ -1536,11 +1791,26 @@ static void write_servo(const servo_cmd_t sv)
          * clamped against and the driver that renders it are restated with
          * each pulse.
          */
+        /*
+         * The endpoints the screen named, not this file's.  A narrow servo
+         * runs 660 to 860 us and its centre is below a standard servo's
+         * floor, so clamping it against 1000 to 2000 would send its whole
+         * travel to one end.  A command that names no range keeps the
+         * standard one.
+         */
+        const bool named = sv.max_us > sv.min_us
+                           && sv.min_us >= LINK_CC_FLOOR_US
+                           && sv.max_us <= LINK_CC_CEILING_US;
+        const uint16_t min_us = named ? sv.min_us : (uint16_t)SERVO_MIN_US;
+        const uint16_t max_us = named ? sv.max_us : (uint16_t)SERVO_MAX_US;
         uint16_t cfg[LINK_CC_STRIDE] = {
             [LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE,
-            [LINK_CC_SLEW]   = 0u,
-            [LINK_CC_MIN_US] = SERVO_MIN_US,
-            [LINK_CC_MAX_US] = SERVO_MAX_US,
+            /* What the screen's SPEED means at this end: the rate the bench
+             * is allowed to move the output, rather than a number that only
+             * changed the drawing. */
+            [LINK_CC_SLEW]   = sv.slew_per_s,
+            [LINK_CC_MIN_US] = min_us,
+            [LINK_CC_MAX_US] = max_us,
         };
         uint16_t slot[LINK_OS_STRIDE] = {
             [LINK_OS_DRIVER]  = LINK_DRIVER_PWM,
@@ -1548,14 +1818,70 @@ static void write_servo(const servo_cmd_t sv)
             [LINK_OS_RANGE]   = LINK_OS_RANGE_OF(SERVO_CH, 1),
             [LINK_OS_RATE_HZ] = 50u,
         };
-        const uint16_t span = us_to_span(sv.value_us, SERVO_MIN_US,
-                                         SERVO_MAX_US);
-        (void)write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_STRIDE, cfg,
-                         &reply);
-        (void)write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
-                         &reply);
-        (void)write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &span, &reply);
+        const uint16_t span = us_to_span(sv.value_us, min_us, max_us);
+        /*
+         * What the channel is, then what it is to do, and only then the slot
+         * that renders it.  Each is its own transaction and the far end steps
+         * its outputs between them, so a slot bound before the position had
+         * arrived would drive whatever channel 0 was holding -- the position
+         * from before the last release, or the surface rest of mid-travel
+         * once that has gone stale -- and would keep driving it if the
+         * position write then failed.  Binding last means the pin is either
+         * unbound or already carrying what was asked for.
+         *
+         * All three are required.  The endpoints travel with the command, so
+         * a CHAN_CFG that was refused or timed out leaves the far end
+         * clamping against the range it had before: a narrow servo selected
+         * against a standard configuration renders 1500 us, past its 860 us
+         * maximum. The 100 ms refresh is the retry.
+         */
+        if (!write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_STRIDE, cfg,
+                        &reply)
+            || reply.op != LINK_OP_ACK) {
+            return false;
+        }
+        /*
+         * Each of these waits up to a second and the pump runs inside them,
+         * so a stop can be applied and a disarm posted between one and the
+         * next.  The slot is bound by the last write, so giving up here
+         * leaves the pin unbound rather than driving what nobody wants any
+         * more.
+         */
+        if (servo_countermanded()) {
+            return false;
+        }
+        if (!write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &span, &reply)
+            || reply.op != LINK_OP_ACK) {
+            return false;
+        }
+        if (servo_countermanded()) {
+            return false;
+        }
+        return write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
+                          &reply)
+               && reply.op == LINK_OP_ACK;
     }
+}
+
+/*
+ * Disarming, wherever it was asked for.
+ *
+ * Two screens can arm the bench and both disarm it the same way: the policy
+ * is told, this end's own bank stops driving, the throttle goes to zero so
+ * the next arm cannot carry the last one's command, and the far end is told
+ * while there is a link to tell it on.
+ */
+static bool disarm_here(bool link_up)
+{
+    arming_request_disarm(&s_arm);
+    outputs_arm(&s_out, false, now_ms());
+    throttle_to_zero();
+    servo_let_go();
+    if (!link_up) {
+        return false;   /* nothing to tell it on, so it has not been told */
+    }
+    link_msg_t ack = { 0 };
+    return control_write(false, &ack);
 }
 
 /*
@@ -1575,13 +1901,7 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
         arming_request_arm(&s_arm, now_ms());
         break;
     case MOTOR_CMD_DISARM:
-        arming_request_disarm(&s_arm);
-        outputs_arm(&s_out, false, now_ms());
-        throttle_to_zero();
-        if (link_up) {
-            link_msg_t ack = { 0 };
-            (void)control_write(false, &ack);
-        }
+        (void)disarm_here(link_up);
         break;
     case MOTOR_CMD_THROTTLE:
         s_throttle_hundredths = pct_to_hundredths(mc->value);
@@ -1591,6 +1911,136 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
     case MOTOR_CMD_RESET_PEAKS: bench_state_reset_peaks(bench); break;
     default: break;
     }
+}
+
+/*
+ * One servo command.
+ *
+ * Arming and disarming go to the same policy the motor screen's do -- the
+ * bench has one armed state and one set of rules for reaching it, whichever
+ * screen is up.  A disarm is acted on with or without a link, because the
+ * part of it that matters most is at this end.
+ */
+static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
+{
+    if (sv.kind == SERVO_CMD_ARM) {
+        /*
+         * The slot goes first, whether or not this process cached one.  After
+         * a panel restart the far end can still hold slot 0 and the command
+         * in it, and arming would render that: the same reason DISARM and
+         * RELEASE ask unconditionally.  The arm itself waits for the clear --
+         * see ARMING_ACT_ARM.
+         */
+        s_servo_held.kind = SERVO_CMD_NONE;
+        s_servo_release_owed = true;
+        servo_service(link_up);
+        /*
+         * And the gesture is asked about again, because that call can wait a
+         * second on the wire and the pump runs inside it: a stop, or touch
+         * dying and recovering, can happen between the drain's check and
+         * this line, and the arm would then be one the bench has already
+         * invalidated.
+         */
+        if (stops != arming_stop_count(&s_arm)) {
+            return;
+        }
+        arming_request_arm(&s_arm, now_ms());
+        return;
+    }
+    if (sv.kind == SERVO_CMD_DISARM) {
+        /*
+         * Asked for by this screen, so the slot goes whether or not this
+         * process cached a position for it -- the far end keeps its slots
+         * across a panel restart, and the screen promises to let go of the
+         * pin.  A stop from anywhere else stays conditional: it must not
+         * quietly clear a slot 0 the OUTPUTS screen bound.
+         */
+        s_servo_held.kind = SERVO_CMD_NONE;
+        s_servo_release_owed = true;
+        (void)disarm_here(link_up);
+        servo_service(link_up);
+        return;
+    }
+    if (sv.kind == SERVO_CMD_RELEASE) {
+        /*
+         * Asked for, so the slot is cleared whether or not this process
+         * remembers binding it: after a panel restart, or with slot 0 bound
+         * from the OUTPUTS screen, the far end holds a slot this end has
+         * never written, and the button says it releases the output.
+         */
+        s_servo_held.kind = SERVO_CMD_NONE;
+        s_servo_release_owed = true;
+        servo_service(link_up);
+        return;
+    }
+    s_servo_held = sv;
+    s_servo_next_ms = now_ms() + SERVO_HOLD_MS;
+    if (link_up && write_servo(sv)) {
+        /*
+         * The slot is bound again, by this write, to this position: an older
+         * release still owed for it is void.  Paying it afterwards would
+         * clear what was just asked for and leave the pin dead until the
+         * next refresh.  A write that failed leaves the debt where it was.
+         */
+        s_servo_release_owed = false;
+    }
+}
+
+/*
+ * Stop holding the servo, the way throttle_to_zero() stops holding the
+ * throttle, and for the same reason: a disarm that leaves a position behind
+ * is an arm that steps straight back to it.
+ *
+ * The far end keeps the slot and the channel command through a disarm and a
+ * failsafe, and outputs_arm() stamps every channel's clock, so on the next
+ * arm the servo is neither overdue nor at rest -- it is at its old position,
+ * with nobody having touched anything.  So the slot has to go, and until it
+ * can the release is owed.
+ */
+static void servo_let_go(void)
+{
+    if (s_servo_held.kind != SERVO_CMD_NONE) {
+        s_servo_release_owed = true;
+    }
+    s_servo_held.kind = SERVO_CMD_NONE;
+}
+
+/*
+ * Say the servo's position again before the far end stops believing it, and
+ * pay off a release that is owed.
+ *
+ * A channel nobody has commanded for OUT_DEFAULT_TIMEOUT_MS (500 ms) goes to
+ * its rest, which for a surface is mid-travel: a servo held at an endpoint
+ * would swing back to centre half a second after the finger stopped, with
+ * the screen still showing where it was put.  The throttle is kept alive by
+ * the control page, which is written every poll; nothing writes this channel
+ * between touches.
+ *
+ * One register, and only while there is something to say.
+ */
+static void servo_service(bool link_up)
+{
+    if (!link_up) {
+        return;   /* nothing can be said, and the debt keeps */
+    }
+    if (s_servo_release_owed) {
+        const servo_cmd_t release = { SERVO_CMD_RELEASE, 0, 0, 0, 0 };
+        /* Only a write the far end acknowledged pays it off.  link_up is a
+         * snapshot and the link can go during the transaction; forgetting an
+         * unacknowledged clear would leave the slot bound with nothing left
+         * to remember it. */
+        s_servo_release_owed = !write_servo(release);
+        return;
+    }
+    if (s_servo_held.kind == SERVO_CMD_NONE) {
+        return;
+    }
+    const uint32_t now = now_ms();
+    if ((int32_t)(now - s_servo_next_ms) < 0) {
+        return;
+    }
+    s_servo_next_ms = now + SERVO_HOLD_MS;
+    (void)write_servo(s_servo_held);
 }
 
 /*
@@ -1605,10 +2055,42 @@ static void drain_commands(bool link_up, bench_state_t *bench)
 {
     panel_cmd_t pc;
     while (xQueueReceive(s_cmd_q, &pc, 0) == pdTRUE) {
+        /*
+         * Between entries, because a backlog of positions is seconds of
+         * exchanges and a disarm asked for during it must not wait them out.
+         */
+        service_disarm(link_up);
+
+        /*
+         * Nothing asked for before a stop drives anything after it.
+         *
+         * The count of stops the sender had seen is no longer current, so
+         * something stopped the bench between the asking and the arriving.
+         * An arm would clear that stop's own latch; a position or a throttle
+         * would put back what the stop had just let go of -- and a stop from
+         * touch dying or from the far end has no queued STOP behind it to
+         * release the slot a second time.
+         *
+         * Only what drives.  A disarm, a release or a binding asked for
+         * before the stop still means what it meant.
+         */
+        const bool drives = (pc.kind == PANEL_CMD_MOTOR
+                             && (pc.motor.kind == MOTOR_CMD_ARM
+                                 || pc.motor.kind == MOTOR_CMD_THROTTLE))
+                            || (pc.kind == PANEL_CMD_SERVO
+                                && (pc.servo.kind == SERVO_CMD_ARM
+                                    || pc.servo.kind == SERVO_CMD_POSITION
+                                    || pc.servo.kind == SERVO_CMD_CENTRE));
+        if (drives
+            && (pc.stops != arming_stop_count(&s_arm)
+                || pc.lets_go != atomic_load(&s_lets_go))) {
+            continue;
+        }
         if (pc.kind == PANEL_CMD_STOP) {
             arming_stop(&s_arm);
             outputs_arm(&s_out, false, now_ms());
             throttle_to_zero();
+            servo_let_go();
             if (link_up) {
                 link_msg_t ack = { 0 };
                 (void)control_write(false, &ack);
@@ -1621,13 +2103,22 @@ static void drain_commands(bool link_up, bench_state_t *bench)
                 continue;
             }
             write_output_binding(&pc.bind);
+            /*
+             * A binding that landed says what every slot is, slot 0
+             * included, so an older release still owed for that slot is
+             * void: paying it afterwards would clear a binding the screen
+             * has just been told was written, and the far end would keep
+             * the cleared page.  A binding that did not land changes
+             * nothing and the debt stands.
+             */
+            if (atomic_load(&s_outputs_result) == (int)OUTPUTS_OK) {
+                s_servo_held.kind = SERVO_CMD_NONE;
+                s_servo_release_owed = false;
+            }
             continue;
         }
         if (pc.kind == PANEL_CMD_SERVO) {
-            if (!link_up) {
-                continue;
-            }
-            write_servo(pc.servo);
+            apply_servo_cmd(pc.servo, link_up, pc.stops);
             continue;
         }
 
@@ -1664,7 +2155,14 @@ static bool poll_bench(bench_state_t *bench)
     const bool answered = read_bench(&s_host, bench);
     if (answered) {
         link_msg_t ack = { 0 };
-        const bool armed = outputs_armed(&s_out);
+        /*
+         * Not while a servo slot is still bound at the far end and owed a
+         * release.  A bank armed with no link -- the simulator, or a cable
+         * pulled -- reaches this the moment one answers, and the far end
+         * would render the slot's old command before the clear arrived.
+         * servo_service() pays the debt every pass, so this holds for one.
+         */
+        const bool armed = outputs_armed(&s_out) && !s_servo_release_owed;
         if (!control_write(armed, &ack) && armed && ack.op == LINK_OP_NACK) {
             /*
              * The coprocessor is in failsafe or has lost the heartbeat.  A
@@ -1678,6 +2176,7 @@ static bool poll_bench(bench_state_t *bench)
              */
             outputs_arm(&s_out, false, now_ms());
             throttle_to_zero();
+            servo_let_go();
             arming_stop_from_far_end(&s_arm);
             control_alert("coprocessor disarmed -- arm again");
         }
@@ -2042,7 +2541,8 @@ static void publish_snapshot(const bench_state_t *bench, bool link_up,
     s_snap.bench       = *bench;
     s_snap.link_up     = link_up;
     s_snap.armed       = outputs_armed(&s_out);
-    s_snap.stopped     = s_arm.stopped;
+    s_snap.stopped     = arming_stopped(&s_arm);
+    s_snap.stops       = arming_stop_count(&s_arm);
     s_snap.faults      = link_up ? s_dev_faults : (uint16_t)0;
     s_snap.link_errors = (uint32_t)s_bring.dev_crc_errors
                          + (uint32_t)s_bring.dev_resyncs;
@@ -2087,11 +2587,27 @@ static void control_task(void *arg)
     for (;;) {
         control_pump();
 
+        /*
+         * The policy first, then the screens.
+         *
+         * A stop must not wait behind a command that talks to the link: an
+         * unanswered exchange holds this loop for LINK_HOST_TIMEOUT_MS
+         * (1000 ms), and a queue with several such commands in it multiplies
+         * that, with the far end armed the whole time.  control_pump() keeps
+         * the heartbeat going during the wait but only records further stop
+         * requests; acting on them is here.
+         *
+         * What made this ordering unsafe before was an arm queued from a
+         * gesture made before the stop, which would clear the latch on the
+         * next pass.  Each command now carries the count of stops its sender
+         * had seen and an arm whose count is stale is dropped, so the stop
+         * can be served first without an older arm undoing it.
+         */
         service_arming(link_up);
 
-        /* --- what the screens asked for ---------------------------------- */
         drain_commands(link_up, &bench);
         (void)outputs_keepalive(&s_out, PANEL_CH_THROTTLE, now_ms());
+        servo_service(link_up);
 
         log_follow_arming();
 
@@ -2145,6 +2661,35 @@ static void control_task(void *arg)
  */
 static void send_cmd(const panel_cmd_t *pc)
 {
+    /*
+     * A disarm does not depend on the queue.
+     *
+     * The queue drops its oldest entry when it is full, and a screen that is
+     * being left generates commands on the way out while the next screen
+     * generates more: a disarm posted by leave() can be evicted by them and
+     * the bench stays armed with nobody watching it.  So it is also a flag,
+     * the way a stop is, and applying it twice costs nothing.
+     */
+    if (pc->kind == PANEL_CMD_MOTOR && pc->motor.kind == MOTOR_CMD_DISARM) {
+        atomic_fetch_add(&s_lets_go, 1u);
+        atomic_store(&s_disarm_request, true);
+    } else if (pc->kind == PANEL_CMD_SERVO
+               && pc->servo.kind == SERVO_CMD_DISARM) {
+        atomic_fetch_add(&s_lets_go, 1u);
+        atomic_store(&s_disarm_request, true);
+        atomic_store(&s_servo_release_request, true);
+    } else if (pc->kind == PANEL_CMD_SERVO
+               && pc->servo.kind == SERVO_CMD_RELEASE) {
+        /*
+         * RELEASE lets go of the pin without disarming the bench, and it is
+         * as much a safety command as the disarm: waiting behind a backlog
+         * of positions, three exchanges each, would hold the servo for
+         * seconds after the operator asked it to stop.
+         */
+        atomic_fetch_add(&s_lets_go, 1u);
+        atomic_store(&s_servo_release_request, true);
+    }
+
     if (xQueueSend(s_cmd_q, pc, pdMS_TO_TICKS(5)) == pdTRUE) {
         return;
     }
@@ -2222,11 +2767,55 @@ void app_main(void)
     uint32_t frames  = 0;
     uint32_t last_us = (uint32_t)esp_timer_get_time();
     bool     was_armed = false;
+    uint32_t last_stops = 0;
 
     for (;;) {
         const uint32_t us = (uint32_t)esp_timer_get_time();
         const float dt_s = (float)(us - last_us) / 1e6f;
         last_us = us;
+
+        /*
+         * What the bench is, before this frame's touch is dispatched.
+         *
+         * A press dispatched below can command a position, and the screens
+         * decide what a command means from whether the bench is armed: an arm
+         * discards what was held before it, so learning of the arm after the
+         * press would throw away a position issued after it and leave the
+         * screen showing nothing driven while the panel held one.
+         */
+        bool     armed_now;
+        uint32_t stops_now;
+        snap_lock();
+        armed_now = s_snap.armed;
+        stops_now = s_snap.stops;
+        snap_unlock();
+
+        /*
+         * A stop ends any hold under way and drops an arm it has already
+         * produced, on both screens.
+         *
+         * Counted rather than watched for an edge.  The latch says only that
+         * a stop is in force, so a second STOP during a hold begun after the
+         * first one changes nothing about it, and that hold would run to
+         * completion and clear the latch.  Every stop is an event here, and
+         * touch that stops answering is counted as one.
+         */
+        if (stops_now != last_stops) {
+            motor_screen_cancel_arm();
+            servo_screen_cancel_arm();
+        }
+        last_stops = stops_now;
+
+        /* The slider follows the bench: a disarm returns the command to
+         * zero, so the control the operator picks up next is at zero too. */
+        if (was_armed && !armed_now) {
+            motor_screen_set_throttle(0.0f);
+            motor_cmd_t follow;
+            (void)motor_screen_poll_cmd(&follow);   /* not a command */
+        }
+        was_armed = armed_now;
+        motor_screen_set_armed(armed_now);
+        servo_screen_set_armed(armed_now);
 
         /* What the control task saw of the panel. */
         touch_event_t evt;
@@ -2269,12 +2858,16 @@ void app_main(void)
 
         motor_cmd_t mc;
         while (motor_screen_poll_cmd(&mc)) {
-            panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc };
+            panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
+                               .stops = stops_now,
+                               .lets_go = atomic_load(&s_lets_go) };
             send_cmd(&pc);
         }
         servo_cmd_t sv;
         if (servo_screen_take(&sv)) {
-            panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv };
+            panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
+                               .stops = stops_now,
+                               .lets_go = atomic_load(&s_lets_go) };
             send_cmd(&pc);
         }
         /*
@@ -2293,7 +2886,6 @@ void app_main(void)
 
         bench_state_t bench;
         bool     link_up;
-        bool     armed;
         uint16_t faults;
         uint32_t link_errors;
         float    mcu_temp_c;
@@ -2303,7 +2895,6 @@ void app_main(void)
         snap_lock();
         bench       = s_snap.bench;
         link_up     = s_snap.link_up;
-        armed       = s_snap.armed;
         faults      = s_snap.faults;
         link_errors = s_snap.link_errors;
         mcu_temp_c  = s_snap.mcu_temp_c;
@@ -2318,14 +2909,9 @@ void app_main(void)
         if (have_alert) {
             ui_router_set_alert(alert);
         }
-        /* The slider follows the bench: a disarm returns the command to
-         * zero, so the control the operator picks up next is at zero too. */
-        if (was_armed && !armed) {
-            motor_screen_set_throttle(0.0f);
-            (void)motor_screen_poll_cmd(&mc);   /* not a command, a follow */
-        }
-        was_armed = armed;
-        motor_screen_set_armed(armed);
+        /* The armed state this frame acted on, read before the touch was
+         * dispatched; the band shows what the screens were told. */
+        const bool armed = armed_now;
         /* One sample, one plot column, however many frames it took to get
          * here: the queue holds what this loop was too busy to draw. */
         bench_state_t sample;
