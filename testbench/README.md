@@ -220,9 +220,18 @@ there, and falls back to the real controller when nothing answers. A panel
 with no bench attached finds nothing at 0x14 and behaves exactly as it does
 now, one failed probe later.
 
-`gt911_new()` already takes an address to try (`cfg.i2c_addr`), so the change
-is which candidate goes first and where that choice comes from, not new
-probing machinery.
+**The panel does not do this yet.** `firmware/panel/components/gt911/touch.c`
+passes a zeroed configuration, so `gt911.c` tries 0x5D first, finds the real
+controller and never asks 0x14. Until that changes the emulator can sit on the
+bus answering perfectly and the panel will not have spoken to it: every
+gesture and every silence in the table below is a plan, not a capability.
+
+What the change is: `gt911_new()` already takes an address to try
+(`cfg.i2c_addr`), so it is which candidate goes first and where that choice
+comes from -- a build option, off in a release, so a shipped panel does not
+look for a debug device at all. It is one small change to the panel and it
+belongs in its own pull request, with its own review, rather than inside a
+description of a bench.
 
 **And the panel says so while it is doing it.** A bench being driven by
 something other than the panel's own glass is a fact the operator must be able
@@ -379,6 +388,18 @@ firmware and the decoder agree, and no more than that.
       host/          the scripts the Pi runs: capture, decode, self-test
       decoders/      protocol decoders, and their offline verification
       captures/      run artefacts, not committed
+
+---
+
+## What is not built yet
+
+- **The panel's debug touch address.** Described above; without it the touch
+  emulator injects nothing. One build option and one probe order, in its own
+  pull request.
+- **The decoders.** Described in `decoders/README.md`, and waiting on a
+  capture to check them against.
+- **The recipes.** The runner, and the first measurement, wait on the bench
+  existing.
 
 ---
 
