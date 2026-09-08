@@ -58,7 +58,14 @@ per run:
 - **Responder.** It pretends to be the device at the other end — an ESC that
   answers a BLHeli_S bootloader handshake, or one that emits OpenYGE
   telemetry, or a servo that answers Hitec D-series. That makes the panel's
-  programmer and telemetry paths testable without owning every device.
+  programmer and telemetry paths testable without owning every device. It also
+  answers as a touch controller at its own address; see below.
+- **Hands.** It drives the reset and boot lines of both boards, which is what
+  makes a cold start scriptable and a bad flash recoverable.
+
+**A camera** on a fixed mount, looking at the display. It is the only thing
+here that can see what the panel actually shows, as opposed to what its
+renderer would draw.
 
 **The bench itself** — panel, display, touch and the CAN (controller area
 network) controller — lives on the rig rather than being attached per session.
@@ -106,13 +113,17 @@ Proposed channel map, to be checked against the wiring as built:
 | 6 | CAN MISO | coprocessor GP12, pad 16 | with SCK and MOSI, every register the driver writes |
 | 7 | CAN CS | coprocessor GP9, pad 12 | frames the transaction, and is the cheapest thing to trigger on |
 | 8 | RXCAN | XL2515 to transceiver | the bit stream itself, which is when a frame actually arrived |
-| 9 | touch SCL | panel to GT911 | the touch controller's clock |
-| 10 | touch SDA | panel to GT911 | with SCL, what the panel believes a finger did |
+| 9 | touch SCL | panel's I²C bus | the clock, shared by the real controller at 0x5D and the emulator at 0x14 |
+| 10 | touch SDA | panel's I²C bus | with SCL, which address answered and what it said |
 | 11 | DShot reply | ESC to coprocessor | the same wire as channel 0 when bidirectional; kept separate so a probe can sit on the ESC end |
 | 12 | programmer line | one-wire, 19,200 baud | BLHeli_S, AM32, ESCape32 |
 | 13 | telemetry RX | ESC to bench | OpenYGE, and DShot extended telemetry |
 | 14 | SBUS | receiver to bench | inverted; the analyser reads it as it is and the decoder inverts |
 | 15 | TXCAN, or spare | XL2515 to transceiver | the other direction when a run wants both ends of an exchange |
+
+Not on the analyser, and driven rather than watched: the panel's and the
+coprocessor's reset and boot lines, from the RP2350, open-drain. They are
+wiring all the same and belong on the same star ground.
 
 **The budget is 16 channels and the map is 15**, so a run takes the subset it
 needs rather than everything at once: an output measurement wants channels 0
@@ -183,29 +194,29 @@ a stop pressed while a hold is running, and touch that stops answering
 altogether. All of them are decided by what the GT911 touch controller reports
 over I²C (inter-integrated circuit).
 
-**So the RP2350 pretends to be the GT911**, and the real controller has to be
-out of the way while it does.
+**So the RP2350 pretends to be the GT911, at an address of its own.**
 
-Two devices at one address both acknowledge, and their open-drain pulls
-combine rather than one replacing the other: what the panel would read is
-neither. The panel also probes the physical part at start-up --
-`firmware/panel/components/gt911/touch.c` runs `board_touch_reset_sequence()`
-and then `gt911_new()`, which tries 0x5D and then 0x14 -- so a controller that
-is merely ignored still answers that probe.
+Sharing an address does not work: two devices both acknowledge and their
+open-drain pulls combine, so what the panel reads is neither, and the panel
+probes the physical part at start-up anyway --
+`firmware/panel/components/gt911/gt911.c` tries 0x5D and then 0x14.
 
-The wiring therefore has to isolate it. In order of preference:
+Giving the emulator the second of those two addresses removes the conflict
+entirely. The real controller answers at 0x5D as it always did, the emulator
+answers at 0x14, and nothing on the bus collides. What changes is which one
+the panel asks first: it probes the debug address, uses it if something is
+there, and falls back to the real controller when nothing answers. A panel
+with no bench attached finds nothing at 0x14 and behaves exactly as it does
+now, one failed probe later.
 
-1. **Hold the real GT911 in reset** while the emulator is active, with its
-   reset line driven from the Pi. This is the cheapest and it is reversible
-   between runs, but it needs checking that a GT911 in reset releases the bus
-   rather than holding a line down.
-2. **Break the bus** with an analogue switch on SDA and SCL, so the panel sees
-   exactly one device and which one is a Pi output.
-3. **Two panels**, one wired for measurement and one whole. The most work, and
-   the only one that leaves a bench nobody has modified.
+`gt911_new()` already takes an address to try (`cfg.i2c_addr`), so the change
+is which candidate goes first and where that choice comes from, not new
+probing machinery.
 
-Until one of those is built, the emulator cannot inject anything, and this
-section is a plan rather than a capability.
+**And the panel says so while it is doing it.** A bench being driven by
+something other than the panel's own glass is a fact the operator must be able
+to see, in the same way a run that is not being recorded says so. `touch.h`
+already reports which address answered, so the band has what it needs.
 
 With it built, a recipe says "press at (612, 396), hold 2.1 s, release" and
 the panel cannot tell the difference. With the
@@ -228,6 +239,62 @@ It also gives the failure that cannot be staged any other way: a touch
 controller that answers slowly, or that reports a contact that was never
 there. Both are things a real GT911 does when its ground is poor, and neither
 has ever been in front of this firmware.
+
+---
+
+## A camera on the display
+
+The panel's own renderer is checked on the host: `tools/render_ui.py` draws
+every screen and `--check` fails on a pixel of drift. What that cannot see is
+the panel — a screen that is blank, torn, shifted, or the wrong colours,
+which is what `STATUS.md` warns about when a second core touches PSRAM while
+the bounce buffer is refilling.
+
+A camera on a fixed mount closes that. The comparison is not naive: a
+photograph has perspective, lighting and a lens, so a run rectifies before it
+compares. The splash screen is the calibration frame — it is drawn from
+constants, it fills the panel, and it has corners. One capture of it per
+session gives the transform; after that a photograph can be laid over the
+golden render.
+
+What it is asked has to match what it can answer. Geometry to a few pixels,
+yes: is the ARM button where it should be, is the band drawn, has the screen
+shifted. Colour to a tolerance and no tighter, because a camera's white
+balance is not the panel's. Text by its shape rather than by reading it,
+unless the run wants to install a reader and prove that too.
+
+It also gives the plainest evidence there is for a gesture: the recipe drives
+a two-second hold, the analyser shows the pin start driving, and the
+photograph shows ARMED on the band. Three independent things saying the same
+thing is what makes a measurement believable.
+
+---
+
+## Reset, and the boot buttons
+
+The RP2350 drives the reset and boot lines of both boards, which is what makes
+the bench recoverable without a person.
+
+- **A cold start on demand.** The link-silent fault, the 1,200 ms splash, the
+  CAN self-test and the heartbeat's first acquisition all happen once per
+  power-up and have never been measured across a hundred of them. A reset line
+  under a script turns that into a loop.
+- **Boot mode without hands.** The coprocessor's BOOTSEL and the panel's BOOT
+  are held while reset is released, which is how each enters its loader. The
+  panel needs this: it is flashed over a serial port with BOOT held, and
+  without it there is no unattended way to put firmware on the panel at all.
+- **Recovery.** A flash that leaves a board unable to run is undone by the
+  same two lines rather than by somebody driving to the bench.
+
+**Drive them open-drain.** Pull low to assert and release to let the board's
+own pull-up take it, never drive high. A push-pull output that is stuck, or
+held by a crashed emulator, would otherwise fight the board and keep it from
+starting -- and a bench nobody can reset is the failure this is meant to
+prevent.
+
+That leaves one chain with no dead end: the Pi resets the RP2350 over SWD, the
+RP2350 resets the panel and the coprocessor, and each link is driven by
+something the link above it can restart.
 
 ---
 
