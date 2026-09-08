@@ -209,14 +209,21 @@ those nodes, so what they do is the hardware's doing.
 *The differential test.* Keep the firmware happy and starve only the hardware:
 have the RP2350 drive GP3 with a clean 20 ms square so `heartbeat_poll()`
 never expires, while the monostable's input gets nothing. Arm, bind an output,
-and capture it.
+and capture **after the gate** -- the load-facing side of the gated output, and
+the monostable's output-enable line -- on whichever channels the run is not
+otherwise using:
 
-    testbench/host/capture.sh interlock D0,D3 1m 2m 1.65
+    testbench/host/capture.sh interlock D14,D15 1m 2m 1.65
 
-The firmware has every reason to keep driving, and the output must stop
-anyway. If it keeps going, the monostable is not in the path or is not gating
-what it should, and the bench is a direct wire wearing a part number. If it
-stops, the only thing that could have stopped it is the part.
+The coprocessor's own pin, D0, is expected to keep toggling throughout, and it
+is not the evidence: the firmware has been given every reason to drive and is
+driving. What must stop is the load side. If it does, the only thing that
+could have stopped it is the part, because nothing else in the path is
+listening. If it keeps driving, the monostable is not in the path or is not
+gating what it should, and the bench is a direct wire wearing a part number.
+
+Probing D0 for this and expecting it to stop is the mistake that reads as a
+failed interlock on a bench that is wired correctly.
 
 ---
 
