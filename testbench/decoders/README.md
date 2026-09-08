@@ -15,6 +15,10 @@ emit that frame as a waveform, and the decoder must read back the value and
 the check that went in. A decoder that passes that is worth pointing at the
 coprocessor; one that has not is not.
 
-Nothing is written here yet: it waits on the two questions at the end of
-`../README.md`, because whether a capture can be taken at all decides whether
-a decoder can be checked against one.
+Nothing is written here yet, and what it waits on is a capture rather than a
+decision. The round trip against this tree's own frame builder can be written
+now and needs no hardware; the part that cannot be written yet is the check
+that the convention is right, because that needs traffic from an
+implementation which is not ours. `../README.md` says which sources of
+independence count, under *Trusting a decoder before trusting a
+measurement*.
