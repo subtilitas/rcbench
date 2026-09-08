@@ -136,11 +136,16 @@ pulls one line at a time to prove which lead is on which. That is the same
 open-drain drive, so it needs no extra pin.
 
 GP22 is a plain output, and it is an input at every other moment. It drives
-the heartbeat junction with an edge every 20 ms inside step 7 alone, **only
-after
-both links there are open**, and is tri-stated again before either link is
-closed. The panel drives its end push-pull, so that node carries one driver at
-a time or it carries contention.
+the heartbeat junction with an edge every 20 ms inside step 7 alone.
+
+**The panel's link is open before it drives; the monostable's stays closed.**
+The panel drives its end push-pull, so that node carries one driver at a time
+or it carries contention, and opening the panel's branch is what makes room.
+The monostable's branch is not in the way -- it only listens -- and it has to
+stay closed so the interlock is still being fed when the capture starts.
+Opening it early is what makes the window unmeasurable: step 7 takes it out
+while the capture runs, so the last trigger edge and the enable falling are in
+one trace. GP22 is tri-stated before either link is closed again.
 
 The relays are at GP16 to GP19 rather than at the start of the header so that
 GP0 to GP15 stay free for the analyser leads and for a stimulus generator this
