@@ -47,14 +47,17 @@ typedef struct {
     bool     armed;
     bool     stopped;         /**< the latch                              */
     /**
-     * How many times the bench has been stopped.
+     * How many times the bench has been stopped, by any means: a STOP, the
+     * far end, or touch that stopped answering.
      *
      * The latch is a level and says only that a stop is in force; a screen
      * needs the event. A second STOP during a hold that began after the
      * first one leaves the latch exactly as it was, and the hold would
-     * otherwise complete and clear it.
+     * otherwise complete and clear it. Touch dying is not a latch at all,
+     * and it invalidates a gesture just as much.
      */
     uint32_t stops;
+    bool     touch_was_dead;  /**< so touch dying is counted once, not per pass */
     bool     arming;          /**< an arm is waiting for the line         */
     uint32_t settle_ms;       /**< how long the line is given             */
     uint32_t settle_until_ms;

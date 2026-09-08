@@ -104,8 +104,25 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
 
     arming_action_t act = ARMING_ACT_NONE;
 
+    /*
+     * Touch that stops answering counts as a stop, once, on the edge.
+     *
+     * It is not a latch -- it clears by itself when the controller answers
+     * again -- but it invalidates a gesture the same way, and for the same
+     * reason: a hold advances on frames rather than on touch events, so one
+     * left standing when the controller died goes on counting and would arm
+     * the bench on recovery without anybody having touched anything since.
+     * Counting it here means every caller that watches the count already
+     * abandons the gesture and drops an arm made before it.
+     */
+    const bool dead = arming_touch_dead(a, now_ms);
+    if (dead && !a->touch_was_dead) {
+        ++a->stops;
+    }
+    a->touch_was_dead = dead;
+
     /* Touch that has stopped answering, or a latched stop, disarms. */
-    if ((arming_touch_dead(a, now_ms) || a->stopped) && a->armed) {
+    if ((dead || a->stopped) && a->armed) {
         a->armed  = false;
         a->arming = false;
         act = ARMING_ACT_DISARM;

@@ -26,6 +26,13 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **Touch that stopped answering left an arming hold running.** A hold
+  advances on frames rather than on touch events, so one still down when the
+  controller went quiet kept counting; the arm was refused while touch stayed
+  dead, but a controller that answered again before the two seconds were up
+  let it through -- arming with nobody having touched anything since. Touch
+  going dead counts as a stop now, once, on the edge, so every screen
+  abandons its gesture and an arm made before it is dropped.
 - **An arm queued before a stop could still arm the bench.** The command
   queue and the stop count cross between the two tasks independently, so an
   arm could be queued from a gesture the sender had watched and a stop be

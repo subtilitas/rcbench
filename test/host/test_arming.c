@@ -315,6 +315,38 @@ TEST_CASE(every_stop_counts_even_when_the_latch_does_not_move)
     CHECK_EQ(arming_stop_count(NULL), 0);
 }
 
+TEST_CASE(touch_that_stops_answering_counts_once)
+{
+    /*
+     * A hold advances on frames, not on touch events, so one left standing
+     * when the controller died goes on counting and would arm on recovery
+     * with nobody having touched anything since.  It counts as a stop, and
+     * once: a screen that abandoned its gesture must not be told again every
+     * pass while the controller stays quiet.
+     */
+    arming_t a;
+    arming_init(&a, 0, SETTLE_MS);
+    arming_touch_seen(&a, 0);
+    CHECK_EQ(arming_stop_count(&a), 0);
+
+    (void)arming_step(&a, 10u);
+    CHECK_EQ(arming_stop_count(&a), 0);       /* still answering */
+
+    const uint32_t dead_at = ARMING_TOUCH_DEAD_MS + 1u;
+    (void)arming_step(&a, dead_at);
+    CHECK_EQ(arming_stop_count(&a), 1);
+    (void)arming_step(&a, dead_at + 100u);
+    (void)arming_step(&a, dead_at + 200u);
+    CHECK_EQ(arming_stop_count(&a), 1);       /* the edge, not the level */
+
+    /* It answers again, and dying a second time counts again. */
+    arming_touch_seen(&a, dead_at + 300u);
+    (void)arming_step(&a, dead_at + 300u);
+    CHECK_EQ(arming_stop_count(&a), 1);
+    (void)arming_step(&a, dead_at + 300u + ARMING_TOUCH_DEAD_MS + 1u);
+    CHECK_EQ(arming_stop_count(&a), 2);
+}
+
 int main(void)
 {
     RUN(a_stop_latches_until_an_explicit_arm);
@@ -329,5 +361,6 @@ int main(void)
     RUN(the_rules_survive_a_millisecond_wrap);
     RUN(the_latch_can_be_asked_about);
     RUN(every_stop_counts_even_when_the_latch_does_not_move);
+    RUN(touch_that_stops_answering_counts_once);
     return test_summary("arming");
 }
