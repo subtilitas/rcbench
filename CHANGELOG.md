@@ -26,6 +26,13 @@ history is in git.
   which for a surface is mid-travel. The position is now said again every
   100 ms while something is being held, one register at a time. Not reachable
   before this release, because the servo screen could not arm.
+- **A stop on a bench that was not armed left the servo screen holding.**
+  Dragging while disarmed commands a position, and a stop then changes
+  nothing about the armed state while the panel releases the slot all the
+  same. The screen cleared its driving state only on that state's edge, so it
+  went on showing the output as held and the next change of type, trim or
+  travel said the released position again. A stop lets go, whether or not
+  anything was armed.
 - **A touch outage inside a link wait left no trace.** The stop was counted
   only where the policy steps, and a link exchange waits up to 1000 ms while
   touch is still being pumped: a controller that died and recovered inside

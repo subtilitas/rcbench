@@ -487,6 +487,26 @@ TEST_CASE(arming_drops_a_position_held_before_it)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
+TEST_CASE(a_stop_on_a_bench_that_was_not_armed_still_lets_go)
+{
+    /*
+     * Dragging while disarmed commands a position, and a STOP then changes
+     * nothing about the armed state -- there is nothing to disarm -- while
+     * the panel releases the slot all the same.  A screen still believing it
+     * was driving would say the released position again on the next change
+     * of type, trim or travel.
+     */
+    fresh();
+    int x, y;
+    dial_at(-40.0f, ARC_R - 20, &x, &y);
+    tap(x, y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+
+    servo_screen_cancel_arm();       /* what a stop calls */
+    tap(TYPE_X, TYPE_Y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
 TEST_CASE(a_stop_stops_the_screen_holding_anything)
 {
     /*
@@ -614,6 +634,7 @@ int main(void)
     RUN(a_cancelled_hold_leaves_no_arm_to_be_read_later);
     RUN(a_second_contact_cannot_take_over_the_arm_hold);
     RUN(arming_drops_a_position_held_before_it);
+    RUN(a_stop_on_a_bench_that_was_not_armed_still_lets_go);
     RUN(a_stop_stops_the_screen_holding_anything);
     RUN(leaving_disarms_and_lets_go_of_the_output);
     RUN(trim_shifts_the_pulse_and_not_the_angle);

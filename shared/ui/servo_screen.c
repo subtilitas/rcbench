@@ -267,6 +267,17 @@ void servo_screen_cancel_arm(void)
     if (changed) {
         ++s.arm_rev;
     }
+    /*
+     * And nothing is being held any more.  The armed state need not have
+     * moved -- a bench that was not armed is stopped just the same, and the
+     * panel releases the slot either way -- so this cannot wait for that
+     * edge: the rings would go on pulsing, and the next change of type, trim
+     * or travel would say the released position again.
+     */
+    if (s.driving) {
+        s.driving = false;
+        ++s.ctrl_rev;
+    }
 }
 
 bool servo_screen_take(servo_cmd_t *out)
