@@ -384,10 +384,11 @@ firmware and the decoder agree, and no more than that.
 ## What is here
 
     testbench/
-      README.md      this
+      README.md      this: what the bench is for, and why each part is there
+      WIRING.md      what to connect, in order, with a check after each step
       host/          the scripts the Pi runs: capture, decode, self-test
       decoders/      protocol decoders, and their offline verification
-      captures/      run artefacts, not committed
+      captures/      run artefacts, not committed; reference/ is
 
 ---
 
