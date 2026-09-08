@@ -37,10 +37,10 @@
 /**
  * How often the panel asks for an edge.
  *
- * The panel toggles from its render loop, which runs at 39 Hz when the screen
- * is idle and 19.5 Hz on the frames a telemetry sample lands, so the interval
- * actually delivered lands between about 26 ms and 52 ms. Asking for 20 ms
- * means "every frame" without the generator having to know the frame rate.
+ * The panel toggles from its control task, which runs every 5 ms, so an edge
+ * asked for at 20 ms is delivered within one of those passes and the line
+ * edges every 20 ms. The generator does not have to know the caller's rate:
+ * it is asked on every pass and answers when the period is up.
  */
 #define HEARTBEAT_PERIOD_MS   20u
 
@@ -48,10 +48,10 @@
  * The interval the monitor will accept between two edges.
  *
  * The floor rejects noise: a line that is ringing, shorted to a clock, or
- * being driven by anything other than a 39 Hz render loop edges far faster
- * than a panel can, and the monostable alone would happily be retriggered by
- * it. The ceiling is the render loop's worst frame with room to spare -- a
- * panel that has not drawn for 150 ms has stopped drawing.
+ * driven by something other than the panel edges far faster than a 20 ms
+ * period can, and the monostable alone would happily be retriggered by it.
+ * The ceiling leaves room above that period for a panel whose control task is
+ * held up -- a panel that has not edged for 150 ms has stopped running.
  */
 #define HEARTBEAT_MIN_GAP_MS  4u
 #define HEARTBEAT_MAX_GAP_MS  150u

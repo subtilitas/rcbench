@@ -852,11 +852,18 @@ int main(void)
      * store can have more than one to take: a store whose sectors all hold
      * records this build cannot read -- an earlier record version -- has one
      * per sector.  Left to the main loop the second of those would be a 19 ms
-     * window with the controller already up.  Each call erases a sector that
-     * was not erased and the call after it looks again, so this ends after at
-     * most one pass per sector.
+     * window with the controller already up.
+     *
+     * Bounded by the store's shape, not by the flash answering.
+     * flash_range_erase() reports nothing, so a sector that will not erase is
+     * surveyed as not erased and offered again; a loop that ended only when
+     * the store came back clean would spin here for ever, before can_start(),
+     * with no CAN controller and no failsafe. Past this bound the sector
+     * falls to the main loop, which costs a window per pass and keeps the
+     * bench answering.
      */
-    while (out_store_reclaim(false, OUT_STORE_QUIET_MS)) {
+    for (unsigned i = 0; i < OUT_STORE_SECTORS
+                         && out_store_reclaim(false, OUT_STORE_QUIET_MS); ++i) {
         printf("rcbench-iomcu: output store sector reclaimed at boot, "
                "window %lu us\n",
                (unsigned long)out_store_last_erase_us());
@@ -924,10 +931,10 @@ int main(void)
          * program together measured 19,178 us on the bring-up module -- and
          * what that costs is CAN frames: the controller holds two, about
          * 130 us each, and this loop collects none of them while the window is
-         * open.  A frame lost there can be the CONTROL write that disarms or
-         * the CHANNELS write a live channel is waiting for, and this loop
-         * steps no output while the window is open either, so the save waits
-         * for the bench to be idle rather than merely disarmed.
+         * open.  A frame lost there can be the CONTROL write that disarms, and this
+         * loop steps no output while the window is open either, so the save
+         * waits for a disarm: out_store_tick() is gated on outputs_driving(),
+         * which is the bank's armed flag.
          *
          * The heartbeat is not what bounds the window.  The line edges every
          * HEARTBEAT_PERIOD_MS (20 ms) and is sampled by this loop, so an edge

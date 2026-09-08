@@ -525,8 +525,11 @@ Der Sektor wird deshalb nicht je Speichervorgang gelöscht. Zwei Sektoren
 halten je sechzehn Records; ein Speichervorgang schreibt den nächsten Record,
 und ein Sektor wird erst gelöscht, wenn jeder Record darin überholt ist.
 Dieses Löschen wird vor den Speichervorgang gezogen, der es braucht: beim
-Booten, bevor der Koprozessor antwortet, oder im Durchlauf nach dem
-Speichervorgang, der einen Sektor füllt, sobald der Bus 5 ms ruhig war.
+Booten, bevor der Koprozessor antwortet, oder in einem Durchlauf nach dem
+Speichervorgang, der zuerst in den anderen Sektor schreibt, sobald der Bus
+5 ms ruhig war. Gelöscht wird der zurückgelassene Sektor, nicht der gerade
+gefüllte, und zwischen dem Löschen und dem Speichervorgang, der es braucht,
+liegen die fünfzehn Speichervorgänge dazwischen.
 Fünfzehn von sechzehn Speichervorgängen kosten damit ein Page Program und
 kein Löschen. Wie lange ein Page Program auf dem Flash des Moduls dauert, ist
 nicht gemessen; die Konsolenzeile nach jedem Speichervorgang trägt den Wert.

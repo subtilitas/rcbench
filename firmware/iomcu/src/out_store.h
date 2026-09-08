@@ -112,6 +112,12 @@ void out_store_save(const out_store_t *cfg, uint32_t now_ms);
  * from a screen arrives when a finger moves.  This narrows the odds rather
  * than removing them.
  */
+/*
+ * How many sectors the store spans, so a caller reclaiming at boot can bound
+ * its loop by the store's shape rather than by the flash answering.
+ */
+#define OUT_STORE_SECTORS  2u
+
 #define OUT_STORE_QUIET_MS  5u
 
 /**

@@ -487,8 +487,11 @@ coprocessor's 200 ms silence failsafe, so one lost frame ends as `FAULT 01`
 So the sector is not erased per save. Two sectors hold sixteen records each; a
 save writes the next record, and a sector is erased only once every record in
 it has been superseded. That erase is taken before the save that needs it: at
-boot before the coprocessor starts answering, or on the pass after the save
-that fills a sector, once the bus has been quiet for 5 ms. Fifteen saves in
+boot before the coprocessor starts answering, or on a pass after the save that
+first writes into the other sector, once the bus has been quiet for 5 ms. It
+is the sector left behind that is erased, not the one just filled, so the
+erase and the save that needs it are separated by the fifteen saves in
+between. Fifteen saves in
 sixteen therefore cost one page program and no erase. How long a page program
 takes on the module's flash is not measured; the console line printed after
 each save carries it.
