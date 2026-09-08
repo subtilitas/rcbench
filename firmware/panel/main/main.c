@@ -55,6 +55,7 @@
 #include "storage.h"
 #include "telemetry_sim.h"
 #include "outputs.h"
+#include "outputs_pages.h"
 
 /*
  * The panel's throttle, as a channel in an output bank.
@@ -67,13 +68,16 @@
 #define PANEL_THROTTLE_RAMP   ((uint16_t)(OUT_SPAN * 55u / 100u))   /* 55 %/s */
 
 /*
- * The servo bench's output: bank and wire channel 0, slot 0, on GP2.  The
- * panel owns these: the driver, the pin and the range travel on the OUTPUTS
- * and CHAN_CFG pages, and the coprocessor holds no servo-specific constant.
+ * The servo bench's output is whichever channels the operator bound as
+ * surfaces, and this file names no pin.  The wiring is described once, on the
+ * OUTPUTS screen, and the horn asks the binding which channels carry it; a
+ * pin named here as well would be a second record of the same wiring, and the
+ * two would disagree the first time the operator rebound one.
+ *
+ * The slots stay the operator's.  This screen writes channels and never the
+ * OUTPUTS page, so no drag can take a pin away from what it was bound to, and
+ * no channel the binding marked a motor is written by a servo horn.
  */
-#define SERVO_CH        0u
-#define SERVO_SLOT      0u
-#define SERVO_PIN       2u
 /*
  * How often the servo's position is said again, against the far end's
  * OUT_DEFAULT_TIMEOUT_MS of 500 ms.  Five times the margin, and one
@@ -132,6 +136,9 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
  * with the rest of the servo's wire handling. */
 static void servo_let_go(void);
 static void servo_service(bool link_up);
+/* Defined with the rest of the link's reads; the OUTPUTS screen's write asks
+ * for one straight afterwards. */
+static void read_outputs_binding(void);
 static bool disarm_here(bool link_up);
 
 static uint32_t now_ms(void)
@@ -439,12 +446,12 @@ static uint32_t    s_disarm_since;
 static servo_cmd_t s_servo_held;
 static uint32_t    s_servo_next_ms;
 /*
- * A slot the far end still has and this end has finished with.
+ * A position the far end still holds and this end has finished with.
  *
  * Kept as a debt rather than written and forgotten: a screen left while the
- * link is down cannot send the release, and the far end keeps both the slot
- * and the channel command through a failsafe.  A later arm -- from either
- * screen -- would then drive the servo to where it was before.
+ * link is down cannot send the release, and the far end keeps the channel
+ * command through a failsafe.  A later arm -- from either screen -- would then
+ * drive the surface to where it was before.
  */
 static bool        s_servo_release_owed;
 static uint16_t  s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
@@ -1590,9 +1597,9 @@ static void service_disarm(bool link_up)
         owed = true;
     }
 
-    /* Whichever of the two it was, the slot it let go of is cleared here.
-     * The release alone used to leave that to the end of the drain, behind
-     * whatever else was queued. */
+    /* Whichever of the two it was, the position it let go of is settled
+     * here rather than at the end of the drain, behind whatever else is
+     * queued. */
     if (owed) {
         servo_service(link_up);
     }
@@ -1617,7 +1624,7 @@ static void service_arming(bool link_up)
      * Every stop lets go of what was being driven, whether or not the bench
      * was armed and whichever thing raised it -- a press, the far end, touch
      * that stopped answering.  A bench that was not armed still had a servo
-     * held, and nothing else would have released it: the slot would go on
+     * held, and nothing else would have released it: the position would go on
      * being refreshed every 100 ms, over the top of an outputs binding made
      * later.
      */
@@ -1668,18 +1675,18 @@ static void service_arming(bool link_up)
         throttle_to_zero();
         servo_let_go();
         /*
-         * And the slot goes before the arm does, not after it.  The far end
-         * applies ARM and stamps every channel's clock before it steps its
-         * outputs, so a slot still bound at that moment renders its stale
-         * command for as long as the release takes to arrive.
+         * And the surfaces are centred before the arm, not after it.  The far
+         * end applies ARM and stamps every channel's clock before it steps its
+         * outputs, so a channel still holding a position at that moment
+         * renders it for as long as the centre takes to arrive.
          */
         servo_service(link_up);
         if (link_up && s_servo_release_owed) {
             /*
-             * The release did not land, so the far end still has the slot and
-             * the command in it.  Arming now would render that command before
-             * anything else reached it, so the arm is refused and the debt
-             * stays; the next attempt starts by paying it.
+             * The release did not land, so the far end still holds the
+             * position.  Arming now would render it before anything else
+             * reached it, so the arm is refused and the debt stays; the next
+             * attempt starts by paying it.
              *
              * Only while there is a link.  With none, the debt cannot be paid
              * by anybody and nothing at the far end is being armed either, so
@@ -1765,6 +1772,82 @@ static void write_output_binding(const outbind_t *bind)
 }
 
 /*
+ * Which channels the horn drives: the ones the binding marks as surfaces.
+ *
+ * Written and read by the control task alone, which is the only task that
+ * puts anything on the wire, and refreshed from the binding read back in
+ * read_outputs_binding().
+ *
+ * Zero is a bench with nothing bound as a surface, and then the horn drives
+ * nothing.  Falling back to a channel number instead is how this screen came
+ * to command whatever was bound first, which on a bench with an ESC on the
+ * lowest pin is the motor.
+ */
+static uint8_t s_servo_channels;
+
+/*
+ * Whether that mask is an answer at all.
+ *
+ * Empty and unknown are different benches.  Empty is a binding that was read
+ * and names no surface -- a bench carrying only a motor, which must still
+ * arm.  Unknown is a binding nobody has read, or one whose write did not come
+ * back: the far end may be rendering surfaces this end cannot name, and
+ * treating that as empty would let a release report success without settling
+ * them and let the arm that follows drive them.
+ *
+ * False until a binding has been read from the far end.  Nothing this end
+ * merely sent counts: a write whose acknowledgement was lost was applied over
+ * there all the same.
+ */
+static bool s_servo_known;
+
+/*
+ * And whether the last position actually reached any of them.
+ *
+ * Separate from s_servo_channels because the two can differ: a write that
+ * failed part way through leaves some surfaces holding a position and not
+ * others.  It says a release is owed, not where the release goes -- that is
+ * always the channels bound as surfaces now, because a channel that has
+ * stopped being one must not be written by this screen.
+ */
+static uint8_t s_servo_written;
+
+/* The channels of one run, as bits. */
+static uint8_t servo_run_bits(uint8_t first, uint8_t count)
+{
+    uint8_t bits = 0u;
+    for (uint8_t c = first; c < first + count; ++c) {
+        bits |= (uint8_t)(1u << c);
+    }
+    return bits;
+}
+
+/*
+ * The next run of set channels in @p mask at or after @p from.
+ *
+ * Runs rather than single channels: a binding's surfaces are contiguous
+ * unless a motor sits between them, and each exchange on this wire can wait a
+ * second.  Returns false when there is no run left.
+ */
+static bool servo_next_run(uint8_t mask, uint8_t from, uint8_t *first,
+                           uint8_t *count)
+{
+    uint8_t i = from;
+    while (i < LINK_OUT_CHANNELS && (mask & (uint8_t)(1u << i)) == 0u) {
+        ++i;
+    }
+    if (i >= LINK_OUT_CHANNELS) {
+        return false;
+    }
+    *first = i;
+    while (i < LINK_OUT_CHANNELS && (mask & (uint8_t)(1u << i)) != 0u) {
+        ++i;
+    }
+    *count = (uint8_t)(i - *first);
+    return true;
+}
+
+/*
  * One servo command, as configuration and pulse.
  */
 /* Whether the operator has asked, since this began, for the thing being
@@ -1780,23 +1863,86 @@ static bool servo_countermanded(void)
 static bool write_servo(const servo_cmd_t sv)
 {
     link_msg_t reply;
+    /*
+     * Every command, a release included, goes to the channels the binding
+     * marks as surfaces now -- never to the ones this process wrote earlier.
+     *
+     * A channel that has stopped being a surface is not this screen's to
+     * settle, and centring it would be the defect this file just stopped
+     * committing from the other side: mid-travel is a surface's rest and half
+     * power on a throttle, so a channel rebound as a motor between the drag
+     * and the release would be commanded to half throttle.  What settles it
+     * instead is the rebinding itself, which carries the new role and the
+     * rest that goes with it, or the unbinding, after which no slot renders
+     * the channel at all.
+     *
+     * Reaching what this process never wrote is deliberate: after a panel
+     * restart the far end still holds whatever it was left at, and centring a
+     * surface that is not holding anything costs nothing.
+     */
+    /*
+     * An unknown binding is not an empty one.  Returning true here would pay
+     * a release that settled nothing and let the bench arm onto surfaces the
+     * far end is still rendering; returning false keeps the debt, and
+     * ARMING_ACT_ARM refuses the arm and says so.  It is paid as soon as a
+     * read succeeds, which the poll loop retries every second.
+     */
+    if (!s_servo_known) {
+        return false;
+    }
+    const uint8_t mask = s_servo_channels;
+    /*
+     * Nothing is bound as a surface, or nothing is holding a position, so
+     * there is nothing to say.  True rather than false: a false here would
+     * leave a release owed for ever, and ARMING_ACT_ARM refuses to arm while
+     * one is -- a bench with only a motor on it would stop arming.
+     */
+    if (mask == 0u) {
+        return true;
+    }
+    uint8_t first = 0u, count = 0u;
     if (sv.kind == SERVO_CMD_RELEASE) {
-        /* Stop driving: clear the slot.  The channel keeps its last command,
-         * but with nothing rendering it that is inert.
+        /*
+         * Stop holding the surfaces where the horn put them: each is
+         * commanded to the centre it rests at.  The slots are the operator's,
+         * written from the OUTPUTS screen, and are not touched -- a screen
+         * that cleared one would take away the wiring the operator described,
+         * and on a bench where a motor holds the lowest pin it would take
+         * away the motor's.
          *
          * Whether the far end took it is returned rather than assumed: a
-         * write that did not land leaves the slot bound, and the caller's
-         * record of owing the release is the only thing that would notice. */
-        uint16_t slot[LINK_OS_STRIDE] = { LINK_DRIVER_NONE, 0, 0, 0 };
-        return write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
-                          &reply)
-               && reply.op == LINK_OP_ACK;
+         * write that did not land leaves the surface where it was, and the
+         * caller's record of owing the release is the only thing that would
+         * notice.
+         */
+        uint16_t centre[LINK_OUT_CHANNELS];
+        for (uint8_t i = 0; i < LINK_OUT_CHANNELS; ++i) {
+            centre[i] = (uint16_t)(LINK_CH_SPAN / 2u);
+        }
+        for (uint8_t at = 0u; servo_next_run(mask, at, &first, &count);
+             at = (uint8_t)(first + count)) {
+            if (!write_regs(&s_host, LINK_PAGE_CHANNELS, first, count,
+                            &centre[first], &reply)
+                || reply.op != LINK_OP_ACK) {
+                return false;
+            }
+            /* Settled, so no longer holding anything.  Run by run, because a
+             * later one can still fail and the debt is what is left. */
+            s_servo_written &= (uint8_t)~servo_run_bits(first, count);
+        }
+        /*
+         * And nothing is held anywhere else either.  A bit left over names a
+         * channel that has stopped being a surface, which this screen must
+         * not write and whose own rebinding has already given it a rest;
+         * keeping it would owe a release that no write can ever pay.
+         */
+        s_servo_written = 0u;
+        return true;
     } else {
         /*
          * Configuration and command, sent whole every time.  The coprocessor
          * may have reset since the last write, so the range the pulse is
-         * clamped against and the driver that renders it are restated with
-         * each pulse.
+         * clamped against is restated with each pulse.
          */
         /*
          * The endpoints the screen named, not this file's.  A narrow servo
@@ -1810,63 +1956,68 @@ static bool write_servo(const servo_cmd_t sv)
                            && sv.max_us <= LINK_CC_CEILING_US;
         const uint16_t min_us = named ? sv.min_us : (uint16_t)SERVO_MIN_US;
         const uint16_t max_us = named ? sv.max_us : (uint16_t)SERVO_MAX_US;
-        uint16_t cfg[LINK_CC_STRIDE] = {
-            [LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE,
+        const uint16_t span = us_to_span(sv.value_us, min_us, max_us);
+
+        /*
+         * Only the channels the binding marked surfaces are written, and the
+         * role written to them is the one they already carry.  A write that
+         * reached further would be this screen deciding what a channel is
+         * for, and a motor channel told it is a surface rests at mid-travel,
+         * which on a throttle is half power.
+         */
+        uint16_t cfg[LINK_CC_COUNT];
+        uint16_t cmd[LINK_OUT_CHANNELS];
+        for (uint8_t i = 0; i < LINK_OUT_CHANNELS; ++i) {
+            uint16_t *r = &cfg[(size_t)i * LINK_CC_STRIDE];
+            r[LINK_CC_ROLE] = LINK_CC_ROLE_SURFACE;
             /* What the screen's SPEED means at this end: the rate the bench
              * is allowed to move the output, rather than a number that only
              * changed the drawing. */
-            [LINK_CC_SLEW]   = sv.slew_per_s,
-            [LINK_CC_MIN_US] = min_us,
-            [LINK_CC_MAX_US] = max_us,
-        };
-        uint16_t slot[LINK_OS_STRIDE] = {
-            [LINK_OS_DRIVER]  = LINK_DRIVER_PWM,
-            [LINK_OS_PIN]     = SERVO_PIN,
-            [LINK_OS_RANGE]   = LINK_OS_RANGE_OF(SERVO_CH, 1),
-            [LINK_OS_RATE_HZ] = 50u,
-        };
-        const uint16_t span = us_to_span(sv.value_us, min_us, max_us);
+            r[LINK_CC_SLEW]   = sv.slew_per_s;
+            r[LINK_CC_MIN_US] = min_us;
+            r[LINK_CC_MAX_US] = max_us;
+            cmd[i] = span;
+        }
         /*
-         * What the channel is, then what it is to do, and only then the slot
-         * that renders it.  Each is its own transaction and the far end steps
-         * its outputs between them, so a slot bound before the position had
-         * arrived would drive whatever channel 0 was holding -- the position
-         * from before the last release, or the surface rest of mid-travel
-         * once that has gone stale -- and would keep driving it if the
-         * position write then failed.  Binding last means the pin is either
-         * unbound or already carrying what was asked for.
+         * What the channel is, then what it is to do.  Each is its own
+         * transaction and the far end steps its outputs between them, so a
+         * range that had not arrived would clamp the pulse against the one
+         * before it: a narrow servo selected against a standard configuration
+         * renders 1500 us, past its 860 us maximum.  The 100 ms refresh is
+         * the retry.
          *
-         * All three are required.  The endpoints travel with the command, so
-         * a CHAN_CFG that was refused or timed out leaves the far end
-         * clamping against the range it had before: a narrow servo selected
-         * against a standard configuration renders 1500 us, past its 860 us
-         * maximum. The 100 ms refresh is the retry.
+         * Both waits can take a second and the pump runs inside them, so a
+         * stop can be applied and a disarm posted between one and the next.
+         * Giving up part way leaves the surfaces already written holding what
+         * was asked for, and the next refresh or the release settles them;
+         * no pin changes hands either way, because no slot is written here.
          */
-        if (!write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_STRIDE, cfg,
-                        &reply)
-            || reply.op != LINK_OP_ACK) {
-            return false;
+        for (uint8_t at = 0u; servo_next_run(mask, at, &first, &count);
+             at = (uint8_t)(first + count)) {
+            if (!write_regs(&s_host, LINK_PAGE_CHAN_CFG,
+                            (uint8_t)(first * LINK_CC_STRIDE),
+                            (uint8_t)(count * LINK_CC_STRIDE),
+                            &cfg[(size_t)first * LINK_CC_STRIDE], &reply)
+                || reply.op != LINK_OP_ACK) {
+                return false;
+            }
+            if (servo_countermanded()) {
+                return false;
+            }
+            if (!write_regs(&s_host, LINK_PAGE_CHANNELS, first, count,
+                            &cmd[first], &reply)
+                || reply.op != LINK_OP_ACK) {
+                return false;
+            }
+            /* Landed, so this run is holding a position and a release owes
+             * it a centre.  Recorded before the next run is attempted: one
+             * that fails must not lose what an earlier one did. */
+            s_servo_written |= servo_run_bits(first, count);
+            if (servo_countermanded()) {
+                return false;
+            }
         }
-        /*
-         * Each of these waits up to a second and the pump runs inside them,
-         * so a stop can be applied and a disarm posted between one and the
-         * next.  The slot is bound by the last write, so giving up here
-         * leaves the pin unbound rather than driving what nobody wants any
-         * more.
-         */
-        if (servo_countermanded()) {
-            return false;
-        }
-        if (!write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &span, &reply)
-            || reply.op != LINK_OP_ACK) {
-            return false;
-        }
-        if (servo_countermanded()) {
-            return false;
-        }
-        return write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
-                          &reply)
-               && reply.op == LINK_OP_ACK;
+        return true;
     }
 }
 
@@ -1932,11 +2083,11 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
 {
     if (sv.kind == SERVO_CMD_ARM) {
         /*
-         * The slot goes first, whether or not this process cached one.  After
-         * a panel restart the far end can still hold slot 0 and the command
-         * in it, and arming would render that: the same reason DISARM and
-         * RELEASE ask unconditionally.  The arm itself waits for the clear --
-         * see ARMING_ACT_ARM.
+         * The surfaces are centred first, whether or not this process cached
+         * a position.  After a panel restart the far end can still hold the
+         * command from before it, and arming would render that: the same
+         * reason DISARM and RELEASE ask unconditionally.  The arm itself
+         * waits for it -- see ARMING_ACT_ARM.
          */
         s_servo_held.kind = SERVO_CMD_NONE;
         s_servo_release_owed = true;
@@ -1956,11 +2107,10 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
     }
     if (sv.kind == SERVO_CMD_DISARM) {
         /*
-         * Asked for by this screen, so the slot goes whether or not this
-         * process cached a position for it -- the far end keeps its slots
-         * across a panel restart, and the screen promises to let go of the
-         * pin.  A stop from anywhere else stays conditional: it must not
-         * quietly clear a slot 0 the OUTPUTS screen bound.
+         * Asked for by this screen, so the surfaces are centred whether or not
+         * this process cached a position for them -- the far end keeps its
+         * channel commands across a panel restart, and the screen promises to
+         * let go of the output.
          */
         s_servo_held.kind = SERVO_CMD_NONE;
         s_servo_release_owed = true;
@@ -1970,10 +2120,10 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
     }
     if (sv.kind == SERVO_CMD_RELEASE) {
         /*
-         * Asked for, so the slot is cleared whether or not this process
-         * remembers binding it: after a panel restart, or with slot 0 bound
-         * from the OUTPUTS screen, the far end holds a slot this end has
-         * never written, and the button says it releases the output.
+         * Asked for, so the surfaces are centred whether or not this process
+         * remembers commanding them: after a panel restart the far end holds
+         * a position this end never wrote, and the button says it releases
+         * the output.
          */
         s_servo_held.kind = SERVO_CMD_NONE;
         s_servo_release_owed = true;
@@ -1984,10 +2134,10 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
     s_servo_next_ms = now_ms() + SERVO_HOLD_MS;
     if (link_up && write_servo(sv)) {
         /*
-         * The slot is bound again, by this write, to this position: an older
-         * release still owed for it is void.  Paying it afterwards would
-         * clear what was just asked for and leave the pin dead until the
-         * next refresh.  A write that failed leaves the debt where it was.
+         * The surfaces are holding this position now, so an older release
+         * still owed for them is void.  Paying it afterwards would centre
+         * what was just asked for and leave the output at rest until the next
+         * refresh.  A write that failed leaves the debt where it was.
          */
         s_servo_release_owed = false;
     }
@@ -1998,15 +2148,19 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
  * throttle, and for the same reason: a disarm that leaves a position behind
  * is an arm that steps straight back to it.
  *
- * The far end keeps the slot and the channel command through a disarm and a
- * failsafe, and outputs_arm() stamps every channel's clock, so on the next
- * arm the servo is neither overdue nor at rest -- it is at its old position,
- * with nobody having touched anything.  So the slot has to go, and until it
- * can the release is owed.
+ * The far end keeps the channel command through a disarm and a failsafe, and
+ * outputs_arm() stamps every channel's clock, so on the next arm the surface
+ * is neither overdue nor at rest -- it is at its old position, with nobody
+ * having touched anything.  So the position has to be returned to centre, and
+ * until it can be the release is owed.
+ *
+ * Owed for what was written rather than for what the screen is holding: a
+ * position that landed and then stopped being held is still out there, and it
+ * is the far end's copy that arms the bench into it.
  */
 static void servo_let_go(void)
 {
-    if (s_servo_held.kind != SERVO_CMD_NONE) {
+    if (s_servo_held.kind != SERVO_CMD_NONE || s_servo_written != 0u) {
         s_servo_release_owed = true;
     }
     s_servo_held.kind = SERVO_CMD_NONE;
@@ -2076,7 +2230,7 @@ static void drain_commands(bool link_up, bench_state_t *bench)
          * An arm would clear that stop's own latch; a position or a throttle
          * would put back what the stop had just let go of -- and a stop from
          * touch dying or from the far end has no queued STOP behind it to
-         * release the slot a second time.
+         * settle the surfaces a second time.
          *
          * Only what drives.  A disarm, a release or a binding asked for
          * before the stop still means what it meant.
@@ -2111,17 +2265,27 @@ static void drain_commands(bool link_up, bench_state_t *bench)
             }
             write_output_binding(&pc.bind);
             /*
-             * A binding that landed says what every slot is, slot 0
-             * included, so an older release still owed for that slot is
-             * void: paying it afterwards would clear a binding the screen
-             * has just been told was written, and the far end would keep
-             * the cleared page.  A binding that did not land changes
-             * nothing and the debt stands.
+             * What the horn may drive has changed, and what this end sent is
+             * not the answer: a write whose acknowledgement was lost was
+             * applied over there all the same, so a result of NO LINK does
+             * not mean the old binding still stands.  The mask goes unknown
+             * and the far end is asked, here rather than at the next link-up
+             * edge -- the operator can bind a servo and walk straight to the
+             * screen that drives it, and a read that fails is retried by the
+             * poll loop.
+             *
+             * The debt is not voided.  A binding writes the roles and the
+             * slots and not the commands, so a surface the horn left
+             * somewhere is still there afterwards and still owes a centre.
+             * The release goes to whatever is a surface under the new
+             * binding: a channel this binding turned into a motor carries the
+             * rest its new role brought with it, and a servo horn writing to
+             * it would undo exactly that.  What stops here is the holding --
+             * the screen's position was for the wiring just replaced.
              */
-            if (atomic_load(&s_outputs_result) == (int)OUTPUTS_OK) {
-                s_servo_held.kind = SERVO_CMD_NONE;
-                s_servo_release_owed = false;
-            }
+            s_servo_known = false;
+            servo_let_go();
+            read_outputs_binding();
             continue;
         }
         if (pc.kind == PANEL_CMD_SERVO) {
@@ -2163,10 +2327,10 @@ static bool poll_bench(bench_state_t *bench)
     if (answered) {
         link_msg_t ack = { 0 };
         /*
-         * Not while a servo slot is still bound at the far end and owed a
-         * release.  A bank armed with no link -- the simulator, or a cable
-         * pulled -- reaches this the moment one answers, and the far end
-         * would render the slot's old command before the clear arrived.
+         * Not while a surface at the far end is still holding a position and
+         * owed a release.  A bank armed with no link -- the simulator, or a
+         * cable pulled -- reaches this the moment one answers, and the far end
+         * would render that old command before the centre arrived.
          * servo_service() pays the debt every pass, so this holds for one.
          */
         const bool armed = outputs_armed(&s_out) && !s_servo_release_owed;
@@ -2312,6 +2476,20 @@ static void read_outputs_binding(void)
         && poll_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, &ccr)
         && ccr.op != LINK_OP_NACK
         && outbind_from_slots(&got, s_board, orr.regs, ccr.regs)) {
+        /*
+         * Which channels the horn may drive, from the pages themselves rather
+         * than from the binding they were read into.  A binding names one
+         * role per slot -- outbind_from_slots() takes a slot's role from its
+         * first channel -- so a multi-channel slot whose channels disagree
+         * would put a throttle in the surfaces' mask, and the horn would
+         * command it.  The pages answer per channel.
+         *
+         * Held unlocked because the control task is the only one that touches
+         * it, and it is the only task that writes the wire.
+         */
+        s_servo_channels = outputs_role_channels(orr.regs, ccr.regs,
+                                                 OUT_ROLE_SURFACE);
+        s_servo_known    = true;
         if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
             s_outputs_read = got;
             s_outputs_read_fresh = true;
@@ -2327,6 +2505,14 @@ static void read_outputs_binding(void)
         outbind_t none;
         outbind_init(&none);
         outbind_set_board(&none, s_board);
+        /*
+         * A binding that would not read is unknown, not empty.  The horn
+         * drives nothing either way, but the release stays owed: the far end
+         * may still be rendering surfaces from before this panel started, and
+         * nothing here can name them to settle them.
+         */
+        s_servo_channels = 0u;
+        s_servo_known    = false;
         if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
             s_outputs_read = none;
             s_outputs_read_fresh = true;
@@ -2499,6 +2685,16 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
         if (*link_up && (uint32_t)(now_ms() - *last_status) >= 500u) {
             *last_status = now_ms();
             read_status_counters();
+            /*
+             * And the binding, while it is unknown.  Without a retry an
+             * output page that would not read once leaves the servo screen
+             * unable to name a channel, and the release it owes unpayable,
+             * until the next link-up edge -- which on a link that stays up
+             * never comes.  Once it is known this costs nothing.
+             */
+            if (!s_servo_known) {
+                read_outputs_binding();
+            }
         }
 
         /*

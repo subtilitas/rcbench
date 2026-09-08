@@ -214,17 +214,17 @@ TEST_CASE(values_are_clamped_to_the_schema)
 TEST_CASE(enums_and_booleans_cycle)
 {
     fresh_model();
-    const setting_def_t *d = settings_def(SET_TELEM_SRC);
+    const setting_def_t *d = settings_def(SET_LANGUAGE);
     CHECK(d->option_count >= 2);
 
     for (int i = 0; i < d->option_count; ++i) {
-        CHECK_EQ(settings_get_int(SET_TELEM_SRC), i);
-        settings_adjust(SET_TELEM_SRC, 1);
+        CHECK_EQ(settings_get_int(SET_LANGUAGE), i);
+        settings_adjust(SET_LANGUAGE, 1);
     }
-    CHECK_EQ(settings_get_int(SET_TELEM_SRC), 0);      /* wrapped */
+    CHECK_EQ(settings_get_int(SET_LANGUAGE), 0);      /* wrapped */
 
-    settings_adjust(SET_TELEM_SRC, -1);
-    CHECK_EQ(settings_get_int(SET_TELEM_SRC), d->option_count - 1);
+    settings_adjust(SET_LANGUAGE, -1);
+    CHECK_EQ(settings_get_int(SET_LANGUAGE), d->option_count - 1);
 
     CHECK(settings_get_bool(SET_BACKLIGHT));
     settings_adjust(SET_BACKLIGHT, 1);
@@ -280,9 +280,9 @@ TEST_CASE(value_text_renders_every_type)
     settings_set(SET_BACKLIGHT, 0);
     CHECK_STR_EQ(settings_value_text(SET_BACKLIGHT, buf, sizeof(buf)), "OFF");
 
-    settings_set(SET_TELEM_SRC, 0);
-    CHECK_STR_EQ(settings_value_text(SET_TELEM_SRC, buf, sizeof(buf)),
-                 settings_def(SET_TELEM_SRC)->options[0]);
+    settings_set(SET_LANGUAGE, 0);
+    CHECK_STR_EQ(settings_value_text(SET_LANGUAGE, buf, sizeof(buf)),
+                 settings_def(SET_LANGUAGE)->options[0]);
 
     settings_set(SET_PACK_CELLS, 6);
     CHECK_STR_EQ(settings_value_text(SET_PACK_CELLS, buf, sizeof(buf)), "6");
