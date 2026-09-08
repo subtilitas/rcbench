@@ -705,6 +705,9 @@ static void sample(void)
     }
     if (outputs_hw_edt(DSHOT_TELEM_TEMPERATURE, &edt, &age)
         && age <= EDT_STALE_MS) {
+        /* The ESC's own, and only that.  LINK_BN_TEMP_MOT_OK stays clear:
+         * an ESC knows nothing about the motor it drives, and temp_motor has
+         * no source on this board at all. */
         s_bench.temp_esc = (float)edt;
         s_bench.flags |= (uint16_t)LINK_BN_TEMP_OK;
     }
