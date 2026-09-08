@@ -37,16 +37,31 @@ else
     fi
 fi
 
-# 2. The debug adapter, which is what makes flashing unattended.
+# 2. SWD, which is what makes flashing unattended.
+#
+# The route is linuxgpiod: the Pi's own pins through the character device.
+# Which device carries the 40-pin header depends on the kernel and the
+# firmware, so it is named here rather than guessed, and the three settings
+# come from the environment so this file does not have to know the wiring.
+: "${SWD_GPIOCHIP:=}"
+: "${SWD_SWCLK:=}"
+: "${SWD_SWDIO:=}"
+
 if ! command -v openocd >/dev/null; then
     bad "openocd" "not installed"
+elif [ -z "$SWD_GPIOCHIP" ] || [ -z "$SWD_SWCLK" ] || [ -z "$SWD_SWDIO" ]; then
+    say "openocd" "$(openocd --version 2>&1 | head -1)"
+    bad "RP2350 over SWD" "set SWD_GPIOCHIP, SWD_SWCLK and SWD_SWDIO -- gpiodetect says which chip"
 else
     say "openocd" "$(openocd --version 2>&1 | head -1)"
-    if openocd -f interface/cmsis-dap.cfg -f target/rp2350.cfg \
+    if openocd -f interface/linuxgpiod.cfg -f target/rp2350.cfg \
+               -c "adapter gpio swclk -chip $SWD_GPIOCHIP $SWD_SWCLK" \
+               -c "adapter gpio swdio -chip $SWD_GPIOCHIP $SWD_SWDIO" \
+               -c "adapter speed 1000" \
                -c "init; exit" >/dev/null 2>&1; then
-        say "RP2350 over SWD" "reachable"
+        say "RP2350 over SWD" "reachable on gpiochip$SWD_GPIOCHIP, clk $SWD_SWCLK, io $SWD_SWDIO"
     else
-        bad "RP2350 over SWD" "not reachable -- see README, Flashing without hands"
+        bad "RP2350 over SWD" "not reachable on gpiochip$SWD_GPIOCHIP -- see README, Flashing without hands"
     fi
 fi
 

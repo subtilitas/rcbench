@@ -41,13 +41,26 @@ args=(--driver kingst-la2016
 
 sigrok-cli "${args[@]}"
 
-# A capture of the right length that is all one level is what a probe on the
-# wrong pin looks like, and it is worth saying so here rather than three
-# steps later in a decoder.
-levels=$(sigrok-cli --input-file "$out" --output-format bits:width=1 2>/dev/null \
-         | tr -d ' \n' | tr -d '[:alpha:]:' | fold -w1 | sort -u | tr -d '\n')
-if [ "${#levels}" -le 1 ]; then
-    echo "warning: every sample is the same level -- probe, threshold or ground" >&2
+# A channel that never changes is what a probe on the wrong pin looks like,
+# and it is worth saying so here rather than three steps later in a decoder.
+#
+# Per channel, and by the payload only: the bits formatter writes rows as
+# "D0:1111 1111", so the channel's own name carries digits that are not
+# samples -- counting those makes an all-high D0 look like two levels.
+flat=$(sigrok-cli --input-file "$out" --output-format bits:width=1 2>/dev/null |
+       awk -F: 'NF > 1 {
+           name = $1; gsub(/[ \t]/, "", name);
+           bits = $2; gsub(/[^01]/, "", bits);
+           if (bits == "") next;
+           seen[name] = seen[name] bits;
+       }
+       END {
+           for (n in seen)
+               if (index(seen[n], "0") == 0 || index(seen[n], "1") == 0)
+                   printf "%s ", n;
+       }')
+if [ -n "$flat" ]; then
+    echo "warning: never changed: ${flat% } -- probe, threshold or ground" >&2
 fi
 
 echo "$out"

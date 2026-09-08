@@ -150,9 +150,14 @@ the kernel and the firmware -- it has been `gpiochip4` and it has been
 `gpiochip0` -- so it is read from `gpiodetect` rather than assumed:
 
     gpiodetect                       # which chip carries the header
+    export SWD_GPIOCHIP=<n> SWD_SWCLK=<pin> SWD_SWDIO=<pin>
     openocd -f interface/linuxgpiod.cfg -f target/rp2350.cfg \
-            -c "adapter gpio swclk <pin>; adapter gpio swdio <pin>" \
+            -c "adapter gpio swclk -chip $SWD_GPIOCHIP $SWD_SWCLK" \
+            -c "adapter gpio swdio -chip $SWD_GPIOCHIP $SWD_SWDIO" \
             -c "adapter speed 1000"
+
+`host/selftest.sh` reads the same three variables, so the wiring is stated
+once and nothing in the scripts has to know it.
 
 Three wires and a ground: SWCLK, SWDIO, and the target's 3.3 V as a reference
 only. Start at 1,000 kHz and come down if a flash fails to verify; a bad clock
