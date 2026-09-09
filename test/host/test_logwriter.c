@@ -329,6 +329,34 @@ TEST_CASE(a_failing_sink_latches_and_stops)
     CHECK_EQ((int)w.rows, wrote);
 }
 
+/*
+ * A commit after a failure is refused, however willing the sink is.
+ *
+ * The write failed and the file has a hole in it; a flush that succeeds
+ * afterwards would clear the pending count and hand the caller a true, which
+ * is a caller being told an incomplete file is safely on the card.  The
+ * caller here is the panel's end-of-run commit, and what it does with a true
+ * is report the run as written.
+ */
+TEST_CASE(a_commit_after_a_failure_is_refused)
+{
+    fresh(400);   /* fail once about four hundred bytes are in */
+    log_writer_t w = writer();
+    const int wrote = write_run(&w, 200);
+    CHECK(wrote > 0);
+    CHECK(log_writer_failed(&w));
+
+    /* The sink is willing again -- a card that answers after a stall -- and
+     * rows are still pending from before the failure. */
+    g_mem.fail_after   = -1;
+    g_mem.commit_fails = false;
+    CHECK(!log_writer_commit(&w));
+    CHECK(log_writer_failed(&w));
+    /* And it does not clear the count on the way past, so nothing downstream
+     * can read the writer as up to date. */
+    CHECK(log_writer_pending(&w) > 0u);
+}
+
 /* What it produced before failing must still parse: a truncated log is a
  * short log, not a corrupt one. */
 TEST_CASE(what_survived_a_failure_still_reads)
@@ -522,6 +550,7 @@ int main(void)
     RUN(a_non_finite_reading_is_written_as_an_absent_cell);
     RUN(the_header_is_written_once_and_without_being_asked);
     RUN(a_failing_sink_latches_and_stops);
+    RUN(a_commit_after_a_failure_is_refused);
     RUN(what_survived_a_failure_still_reads);
     RUN(a_writer_with_no_sink_fails_rather_than_crashes);
     RUN(no_more_than_one_interval_of_a_run_is_ever_uncommitted);

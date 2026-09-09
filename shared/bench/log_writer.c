@@ -44,13 +44,22 @@ void log_writer_init(log_writer_t *w, const log_sink_t *sink)
 /*
  * Tell the sink to keep what it has been given.
  *
+ * A writer that has already failed is refused before anything is attempted.
+ * The file has a hole in it from the row that failed, and a flush that
+ * succeeds after that would clear the pending count and report a commit --
+ * which is a caller being told an incomplete file is safely on the card.
+ * Once failed, always failed; the file is closed and said to be short.
+ *
  * Nothing to commit is success, not a transaction: on a card an empty commit
  * costs a directory write and buys nothing.
  */
 static bool commit(log_writer_t *w)
 {
+    if (w->failed) {
+        return false;
+    }
     if (w->pending == 0u) {
-        return !w->failed;
+        return true;
     }
     if (w->sink.flush != NULL && !w->sink.flush(w->sink.ctx)) {
         w->failed = true;

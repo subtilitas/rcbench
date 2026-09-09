@@ -1338,16 +1338,16 @@ static void log_close(void)
     }
     /*
      * The close is the last commit and the largest one: FATFS writes the
-     * directory entry in f_close, so every row since the last fsync -- up to
-     * LOG_WRITER_FLUSH_ROWS - 1 (19) of them -- is kept by this call and by
-     * nothing else.  A card that fails here fails silently otherwise: the
-     * file is left at its last committed length and the viewer, which reads
-     * it as soon as s_log_open_run is cleared, shows a complete-looking run
-     * that stops early.
+     * directory entry in f_close, so every row the writer has not committed
+     * is kept by this call and by nothing else.  A card that fails here fails
+     * silently otherwise: the file is left at its last committed length and
+     * the viewer, which reads it as soon as s_log_open_run is cleared, shows
+     * a complete-looking run that stops early.
      */
+    const unsigned uncommitted = (unsigned)log_writer_pending(&s_log);
     if (fclose(s_log_file) != 0) {
-        ESP_LOGW(TAG, "the log did not close: up to %u rows are not in it",
-                 (unsigned)LOG_WRITER_FLUSH_ROWS - 1u);
+        ESP_LOGW(TAG, "the log did not close: %u rows are not in it",
+                 uncommitted);
         if (!failed) {
             control_alert("the card failed on the last write -- the log is "
                           "short");

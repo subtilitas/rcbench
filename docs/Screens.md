@@ -238,11 +238,11 @@ did not write, so a card holding 48 or more runs lists no other file. Delete
 old runs on a computer to get one back.
 
 A run is committed to the card every 20 rows or 1000 ms of run, whichever
-comes first. Power lost mid-run costs the rows since that commit and the rows
-still in the queue between the control task and the card's own task: under
-1.0 s of run while the card keeps up, and 83 rows, 4.15 s at the panel's 20 Hz
-sample rate, if the card has stalled and the queue is full. The rest of the
-file is readable either way. The card is written by a task of its own: an SD (Secure
+comes first. Power lost mid-run costs the rows the commit has not finished
+with and the rows still in the queue between the control task and the card's
+own task: under 1.0 s of run while the card keeps up, and 84 rows, 4.20 s at
+the panel's 20 Hz sample rate, if the card has stalled and the queue is full.
+The rest of the file is readable either way. The card is written by a task of its own: an SD (Secure
 Digital) card is allowed 250 ms to finish a write, and the task that beats the
 safety line has a ceiling of 150 ms.
 
@@ -253,7 +253,7 @@ Four messages say what a card did to a run. Each appears on the band:
 | `the card fell behind -- the log has gaps` | rows were dropped; the file's time column shows where |
 | `the card did not keep up -- run not recorded` | every row was dropped, so there is no file for this run at all |
 | `the card stopped taking rows -- run not recorded past here` | a write failed mid-run; every later row is rejected |
-| `the card failed on the last write -- the log is short` | the close failed, so up to 19 rows are not in the file |
+| `the card failed on the last write -- the log is short` | the close failed, so the rows since the last commit are not in the file |
 
 A run being written is not offered in LOGS. A file's length lives in its
 directory entry and is written when the file is closed, so a run still open

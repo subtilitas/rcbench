@@ -54,7 +54,10 @@ typedef struct {
  * rows is 1000 ms of run.
  *
  * A run interrupted at any moment therefore loses at most 20 rows, spanning
- * less than 1.0 s of its own clock.  The price is one commit per second per
+ * less than 1.0 s of its own clock.  Twenty and not nineteen: the count
+ * reaches LOG_WRITER_FLUSH_ROWS before the commit is attempted and is
+ * cleared only once the commit has succeeded, so those twenty rows are not
+ * durable for as long as the sink takes.  The price is one commit per second per
  * run.
  */
 #define LOG_WRITER_FLUSH_ROWS 20u

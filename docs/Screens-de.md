@@ -257,10 +257,11 @@ andere Datei mehr. Alte Läufe am Rechner löschen, um eine zurückzuholen.
 
 Ein Lauf wird alle 20 Zeilen oder 1000 ms Laufzeit auf die Karte festgeschrieben,
 je nachdem, was zuerst eintritt. Ein Stromausfall mitten im Lauf kostet die
-Zeilen seit diesem Festschreiben und die Zeilen, die noch in der Queue zwischen
-der Control-Task und der Karten-Task stehen: unter 1,0 s Laufzeit, solange die
-Karte mitkommt, und 83 Zeilen, 4,15 s bei den 20 Hz des Panels, wenn die Karte
-hängt und die Queue voll ist. Der Rest der Datei bleibt in beiden Fällen lesbar. Geschrieben wird von
+Zeilen, mit denen das Festschreiben noch nicht fertig ist, und die Zeilen, die
+noch in der Queue zwischen der Control-Task und der Karten-Task stehen: unter
+1,0 s Laufzeit, solange die Karte mitkommt, und 84 Zeilen, 4,20 s bei den 20 Hz
+des Panels, wenn die Karte hängt und die Queue voll ist. Der Rest der Datei
+bleibt in beiden Fällen lesbar. Geschrieben wird von
 einer eigenen Task. Eine SD-Karte (Secure Digital) darf sich für einen Schreibvorgang
 250 ms Zeit nehmen, und die Task, die die Sicherheitsleitung schlägt, hat eine
 Obergrenze von 150 ms.
@@ -273,7 +274,7 @@ im Band:
 | `the card fell behind -- the log has gaps` | Zeilen wurden verworfen; die Zeitspalte der Datei zeigt, wo |
 | `the card did not keep up -- run not recorded` | jede Zeile wurde verworfen, es gibt für diesen Lauf gar keine Datei |
 | `the card stopped taking rows -- run not recorded past here` | ein Schreibvorgang ist mitten im Lauf fehlgeschlagen, jede weitere Zeile wird abgewiesen |
-| `the card failed on the last write -- the log is short` | das Schließen ist fehlgeschlagen, bis zu 19 Zeilen fehlen in der Datei |
+| `the card failed on the last write -- the log is short` | das Schließen ist fehlgeschlagen, die Zeilen seit dem letzten Festschreiben fehlen in der Datei |
 
 Ein Lauf, der gerade geschrieben wird, erscheint nicht in LOGS. Die Länge einer
 Datei steht in ihrem Verzeichniseintrag und wird beim Schließen geschrieben, ein
