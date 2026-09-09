@@ -116,6 +116,13 @@ unpowered or unplugged panel reads as a line that is not edging.
   disarm has already put it at rest and it ramps from there, covering at most
   `slew_per_s * 500 / 1000` before the timeout takes it back. Either way it is
   driving, and a disarm is what stops it.
+- The `Ramp limit` setting, 5 to 300 %/s, governs the panel's own throttle
+  bank. That bank is the modelled bench: its slewed value is read by the
+  telemetry simulator and by nothing else, and only while the link is down. A
+  coprocessor that is answering is sent the raw command instead, and
+  `outbind_to_chan_cfg()` writes no slew for any channel, so a pin bound as a
+  throttle steps to it on the next 1 ms pass. Whether the physical throttle
+  should be ramped is an open item; nothing rate-limits it today.
 
 ## Heartbeat rather than enable level
 

@@ -102,6 +102,11 @@ A NACK carries its reason in register 0:
 | 4 | BAD_VALUE |
 | 5 | NOT_ARMED |
 
+A write is all or nothing. Every register of a frame is checked before any of
+them is stored, so a NACK leaves the page exactly as it was: none of the up to
+four registers a frame carries is kept, and no side effect of one of them runs.
+Clearing a latched failsafe is such a side effect.
+
 ### Page map
 
 | Page | Name | Access | Registers |

@@ -268,6 +268,16 @@ arrives 10 ms later than it otherwise would. It is sent again on each edge
 rather than once at bind time, because extended telemetry is a runtime setting
 an ESC forgets when it loses power and an ESC can be swapped between runs.
 
+Each of the ten frames carries the telemetry bit set. On a value of 1 to 47
+that bit is what marks the frame as a command for the BLHeli_S family
+(Bluejay): it discards a command whose telemetry bit is clear and zeroes its
+repeat counter with it, so ten frames without the bit never reach the six
+repeats its command handler counts. AM32 has no such gate and acts on either.
+On a bidirectional pin the frame is `0x01B5` with the bit and `0x01A4`
+without it — a different payload and a different checksum nibble.
+`test_dshot_frame` holds that word. The bit's other meaning is a request on
+the separate serial telemetry wire, which nothing on this bench reads.
+
 The two frame kinds cannot be told apart from the bits alone: the nibble that
 marks an extended frame is an ordinary exponent and mantissa in a speed frame,
 and only an ESC with extended telemetry enabled guarantees the normalisation
@@ -305,6 +315,11 @@ bidirectional item below is unconfirmed in every sense:
 - the turnaround delay, and whether 30 µs is what an ESC actually waits;
 - the extended-telemetry frame types and their units, and whether an ESC
   accepts command 13 at all;
+- whether the specification's "wait at least 35 ms" note belongs to command
+  13 or to command 12 (save settings). The table admits both readings, and
+  the bench waits neither way: the throttle follows the tenth repeat at the
+  next 1 ms tick. Settling it needs the specification text rather than a
+  board;
 - every bit timing, against a real ESC's tolerance rather than against the
   specification.
 

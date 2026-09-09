@@ -1,11 +1,11 @@
 /*
  * The outbound DShot frame, and the map from travel onto it.
  *
- * The failures under test are the two that are silent on a wire: a checksum
- * that agrees with a shifted copy of the payload, and a throttle map that
- * walks through the command range on its way up from idle.  An ESC given
- * command 12 instead of 4% throttle saves its settings; nothing about that
- * looks like a driver fault.
+ * The failures under test are the three that are silent on a wire: a checksum
+ * that agrees with a shifted copy of the payload, a throttle map that walks
+ * through the command range on its way up from idle, and a command frame with
+ * its telemetry bit clear.  An ESC given command 12 instead of 4% throttle
+ * saves its settings; nothing about that looks like a driver fault.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -73,6 +73,39 @@ TEST_CASE(a_value_that_does_not_fit_becomes_a_stop)
     CHECK_EQ((uint16_t)(c & 0x0Fu), 0u);
 }
 
+TEST_CASE(the_edt_enable_command_sets_the_telemetry_bit)
+{
+    /*
+     * Pins the exact word that asks for extended telemetry: command 13 on a
+     * bidirectional pin, telemetry bit set, complemented checksum.  On a
+     * value of 1 to 47 that bit is what marks the frame as a command for the
+     * BLHeli_S family (Bluejay), which discards a command whose telemetry bit
+     * is clear and zeroes its repeat counter with it.  Ten frames of 0x01A4
+     * therefore never reach the six repeats its command handler counts, and
+     * temperature, voltage, current, stress, status and power stay empty for
+     * the whole run.  AM32 has no such gate and acts on either frame, so the
+     * failure is one ESC family wide and silent on the others.
+     *
+     * firmware/iomcu/src/outputs_hw.c picks the argument and is not in this
+     * suite; what is held here is the word that argument produces.
+     */
+    const uint16_t edt =
+        dshot_frame((uint16_t)DSHOT_CMD_EDT_ENABLE, true, true);
+    CHECK_EQ(edt, 0x01B5u);
+    CHECK_EQ(value_of(edt), (uint16_t)DSHOT_CMD_EDT_ENABLE);
+    CHECK_EQ(telem_of(edt), true);
+    CHECK_EQ(csum_of(edt), 0x05u);
+
+    /* Clearing the bit moves the payload and the checksum nibble both, so
+     * the two frames differ in eight of the sixteen bits' meaning rather
+     * than in one. */
+    const uint16_t clear =
+        dshot_frame((uint16_t)DSHOT_CMD_EDT_ENABLE, false, true);
+    CHECK_EQ(clear, 0x01A4u);
+    CHECK_EQ(csum_of(clear), 0x04u);
+    CHECK(csum_of(edt) != csum_of(clear));
+}
+
 TEST_CASE(the_throttle_map_never_lands_in_the_command_range)
 {
     /* One step above stop is already past the last command.  This is the
@@ -121,6 +154,7 @@ int main(void)
     RUN(the_checksum_folds_the_payload_the_way_an_esc_unfolds_it);
     RUN(the_bidirectional_checksum_is_the_complement_of_the_ordinary_one);
     RUN(a_value_that_does_not_fit_becomes_a_stop);
+    RUN(the_edt_enable_command_sets_the_telemetry_bit);
     RUN(the_throttle_map_never_lands_in_the_command_range);
     RUN(the_throttle_map_reaches_both_ends_and_rises_all_the_way);
     RUN(a_degenerate_span_does_not_divide_by_zero);

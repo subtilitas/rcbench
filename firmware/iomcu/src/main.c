@@ -234,25 +234,21 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
                              const uint16_t *in)
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
+    /*
+     * Every register of the frame is validated before any of them is stored,
+     * so a refused write leaves the page as it was and lifts no latched
+     * failsafe.  A frame carries up to four registers, and a single pass that
+     * stored as it went would commit the ones ahead of the refusal while
+     * answering NACK -- a CLEAR among them takes the link out of failsafe,
+     * which link_dev.h says needs an explicit clear.
+     */
     for (uint8_t i = 0; i < n; ++i) {
         const uint8_t reg = (uint8_t)(off + i);
         if (reg == LINK_CT_THROTTLE && in[i] > LINK_THROTTLE_MAX) {
             return LINK_NACK_BAD_VALUE;
         }
-        if (reg == LINK_CT_CLEAR) {
-            if (in[i] != LINK_CLEAR_MAGIC) {
-                return LINK_NACK_BAD_VALUE;
-            }
-            /*
-             * The clock of this pass, as recorded by the dispatcher, not a
-             * fresh read.  A fresh read is later than the `now` that
-             * link_dev_tick() receives a few lines further on, and the
-             * wrap-safe comparison there reads a timestamp in the future as
-             * 4,294,967,295 ms of silence, which re-arms the failsafe
-             * immediately.
-             */
-            link_dev_clear_failsafe(&s_dev, s_dev.last_request_ms);
-            continue;
+        if (reg == LINK_CT_CLEAR && in[i] != LINK_CLEAR_MAGIC) {
+            return LINK_NACK_BAD_VALUE;
         }
         /* Refusing to arm while in failsafe is the coprocessor's decision:
          * the panel is not the authority on whether it is safe here. */
@@ -267,6 +263,21 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
             && (in[i] < LINK_POLES_MIN || in[i] > LINK_POLES_MAX
                 || (in[i] % 2u) != 0u)) {
             return LINK_NACK_BAD_VALUE;
+        }
+    }
+    for (uint8_t i = 0; i < n; ++i) {
+        const uint8_t reg = (uint8_t)(off + i);
+        if (reg == LINK_CT_CLEAR) {
+            /*
+             * The clock of this pass, as recorded by the dispatcher, not a
+             * fresh read.  A fresh read is later than the `now` that
+             * link_dev_tick() receives a few lines further on, and the
+             * wrap-safe comparison there reads a timestamp in the future as
+             * 4,294,967,295 ms of silence, which re-arms the failsafe
+             * immediately.
+             */
+            link_dev_clear_failsafe(&s_dev, s_dev.last_request_ms);
+            continue;
         }
         s->control[reg] = in[i];
     }

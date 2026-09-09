@@ -606,9 +606,10 @@ TEST_CASE(the_rated_kv_prefers_the_esc_over_the_entered_value)
  * The throttle moves by how far a finger travels, not to where it lands.
  *
  * A press used to command the value under it, so touching the right-hand end
- * of the track asked for full travel in one contact.  The output bank's slew
- * ramps rather than steps, which bounds how fast the motor follows, but the
- * command still went to 100 and nothing had to be confirmed.
+ * of the track asked for full travel in one contact.  Nothing bounds how fast
+ * the motor follows that: a throttle channel bound on the coprocessor carries
+ * no slew, so the command went to 100 and the next pass rendered it, with
+ * nothing to confirm.
  */
 TEST_CASE(the_throttle_track_moves_by_how_far_it_is_dragged)
 {
