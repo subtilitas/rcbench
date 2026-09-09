@@ -431,6 +431,20 @@ def check_version(problems: list[str]) -> None:
             "rcbench_version.h says %d.%d.%d; the newest CHANGELOG entry is "
             "%d.%d.%d" % (*have, *want))
 
+    # RCBENCH_VERSION_STRING composes its value from the three defines, so a
+    # wrong number in the comment above it changes nothing and compiles.  It
+    # is the one place in that file a reader looks for the version, and it
+    # was hand-bumped at every release until one was missed.
+    m = re.search(r'^/\*\* "(\d+\.\d+\.\d+)", for anything that prints it',
+                  text, re.MULTILINE)
+    if m is None:
+        problems.append(
+            "rcbench_version.h has no documented RCBENCH_VERSION_STRING")
+    elif m.group(1) != "%d.%d.%d" % have:
+        problems.append(
+            "rcbench_version.h documents RCBENCH_VERSION_STRING as %s; the "
+            "defines make it %d.%d.%d" % (m.group(1), *have))
+
 
 def check_spdx(problems: list[str]) -> None:
     """Every source file carries an SPDX (Software Package Data Exchange)
