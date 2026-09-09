@@ -424,18 +424,6 @@ static uint8_t     *s_keepbuf;      /* the keeper's, once handed over */
 static art_entry_t  s_keepentry;
 static volatile bool s_keeping;
 
-/*
- * A touch event and the number of the send that queued it.  A GT911 track id
- * is eight bits and the controller reuses them, so an id alone cannot say
- * which entry is which: an older release carrying a recycled id would be
- * taken for the one a marker refers to.  The sequence is unique for the life
- * of the run and is written by the one task that sends.
- */
-typedef struct {
-    touch_event_t evt;
-    uint32_t      seq;
-} touch_slot_t;
-
 static QueueHandle_t     s_touch_q;   /**< control task -> app_main */
 static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
 /*
@@ -551,12 +539,6 @@ static atomic_bool s_stop_request;
 /* Set when the pump applied a stop for a press the router will also latch,
  * so the backstop does not stop the bench twice for one press. */
 static atomic_bool s_stop_counted;
-/* The sequence of the release s_stop_counted refers to, so an eviction can
- * tell that one entry from any other. */
-static atomic_uint s_stop_counted_seq;
-/* Every send gets the next one.  Written only by the control task, which is
- * the only sender, so it needs no atomic. */
-static uint32_t s_touch_seq;
 /* The driver's loss count this task has already answered, for its own STOP
  * ownership.  Touched only by the control task. */
 static unsigned s_stop_lost_seen;
@@ -617,11 +599,26 @@ static bool s_pump_live;
  */
 static void stop_press_check_lost(void)
 {
-    const unsigned drv_lost = touch_lost();
-    if (drv_lost == s_stop_lost_seen) {
+    const unsigned lost = touch_losses();
+    if (lost == s_stop_lost_seen) {
         return;
     }
-    s_stop_lost_seen = drv_lost;
+    s_stop_lost_seen = lost;
+
+    /*
+     * The marker first, and unconditionally.  It says the router will latch
+     * a stop this task already applied, and something has to consume it --
+     * but the render loop cancels the band's press on this same loss, before
+     * it dispatches anything, so the router raises no request whether or not
+     * the release is still queued.  A marker left standing is consumed by
+     * the next stop that genuinely needs the backstop, and that stop is then
+     * ignored.
+     *
+     * Which entry was lost does not enter into it: after any loss there is
+     * no request coming.
+     */
+    atomic_store(&s_stop_counted, false);
+
     if (!s_stop_press) {
         return;
     }
@@ -712,8 +709,7 @@ static void control_pump(void)
          * resting on the glass reaches it in about 90 ms of undrained
          * frame.  What happens when it does fill is below.
          */
-        const touch_slot_t slot = { evt, ++s_touch_seq };
-        bool routed = (xQueueSend(s_touch_q, &slot, 0) == pdTRUE);
+        bool routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
         if (!routed) {
             /*
              * The consumer is behind.  Drop the oldest and take the newest,
@@ -737,7 +733,7 @@ static void control_pump(void)
              * screen drops the gesture, and which event went missing stops
              * mattering.
              */
-            touch_slot_t stale;
+            touch_event_t stale;
             const bool dropped =
                 (xQueueReceive(s_touch_q, &stale, 0) == pdTRUE);
             /*
@@ -746,7 +742,7 @@ static void control_pump(void)
              * then there is room without anything having been evicted --
              * discarding the new event there would lose one for no reason.
              */
-            routed = (xQueueSend(s_touch_q, &slot, 0) == pdTRUE);
+            routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
             /*
              * Only when an event actually went.  The render task can drain
              * this queue between the failed send and the receive, in which
@@ -757,20 +753,8 @@ static void control_pump(void)
             if (dropped || !routed) {
                 atomic_fetch_add(&s_touch_lost, 1u);
             }
-            /*
-             * And the marker that says the router will latch a stop this
-             * task already applied -- but only when the entry evicted is
-             * the release that marker refers to.  Then the router raises no
-             * request and the marker would stand, to be consumed by the
-             * next stop that genuinely needs the backstop.  Clearing it for
-             * any eviction is the opposite error: the release is still in
-             * the queue, the router raises its request, and the stop is
-             * applied a second time for one press.
-             */
-            if (dropped && atomic_load(&s_stop_counted)
-                && stale.seq == atomic_load(&s_stop_counted_seq)) {
-                atomic_store(&s_stop_counted, false);
-            }
+            /* The marker is answered by stop_press_check_lost(), which
+             * runs at the end of this pass and sees the count this raised. */
         }
         /*
          * The router will latch this same release and the backstop would
@@ -781,7 +765,6 @@ static void control_pump(void)
          * would be ignored.
          */
         if (counted_here && routed) {
-            atomic_store(&s_stop_counted_seq, slot.seq);
             atomic_store(&s_stop_counted, true);
         }
     }
@@ -3819,7 +3802,7 @@ void app_main(void)
 
     const bool healthy = bring_up();
 
-    s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_slot_t));
+    s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_event_t));
     s_cmd_q     = xQueueCreate(CMD_Q_LEN, sizeof(panel_cmd_t));
     s_sample_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(bench_state_t));
     s_log_q     = xQueueCreate(LOG_Q_LEN, sizeof(log_row_t));
@@ -3964,9 +3947,8 @@ void app_main(void)
         }
 
         /* What the control task saw of the panel. */
-        touch_slot_t slot;
-        while (xQueueReceive(s_touch_q, &slot, 0) == pdTRUE) {
-            const touch_event_t evt = slot.evt;
+        touch_event_t evt;
+        while (xQueueReceive(s_touch_q, &evt, 0) == pdTRUE) {
             const ui_screen_id_t before = ui_router_current();
             ui_router_event(&evt);
             /*
