@@ -199,8 +199,11 @@ something from the operator or shows them something new:
   lowest free one. A gap left by deleting a run on a computer is not filled,
   because a run written into one is the newest run wearing the oldest number
   and a full list would rank it last and drop it. A card already holding
-  `BENCH999.CSV` therefore records nothing until a run is deleted, where
-  before it would have taken a gap.
+  `BENCH999.CSV` therefore records nothing, where before it would have taken a
+  gap; deleting *that* run is what frees the number, because a gap lower down
+  is not filled. The numbering is re-read after a run that could not be
+  opened, so the deletion takes effect on the next arming rather than at the
+  next boot.
 - **The run log writes an empty cell for a quantity nothing measured.** Each
   column carries the valid flag that says whether anything measured it, and a
   field with no flag set is written empty rather than as `0`, so the reader

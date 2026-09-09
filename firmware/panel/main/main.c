@@ -1348,6 +1348,17 @@ static void log_open(uint32_t arm)
         }
     }
     if (s_log_file == NULL) {
+        /*
+         * And the numbering is asked again next time.  It is latched for the
+         * boot so a card holding hundreds of runs is read once, which is
+         * right while runs are being written -- but a run that could not be
+         * opened has written no number, and the operator's answer to a full
+         * card is to delete one.  Without this the scan never runs again and
+         * the deletion changes nothing until the panel restarts.  It costs a
+         * directory read per failed run, and a failed run is already a run
+         * that is not being recorded.
+         */
+        s_log_numbered = false;
         ESP_LOGW(TAG, "no log file could be opened; the run is not recorded");
         control_alert("card full or unwritable -- run not recorded");
         return;
