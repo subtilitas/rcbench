@@ -283,7 +283,8 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
      * bound beside a motor is left alone.
      */
     (void)outputs_set_role_channels(&s_outputs, OUT_ROLE_THROTTLE,
-                                    (uint8_t)LINK_OUT_CHANNELS, thr, now);
+                                    (uint8_t)LINK_OUT_CHANNELS, thr,
+                                    s_now_ms);
     return 0;
 }
 
