@@ -195,7 +195,24 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag || github.ref_name }}
           REPO: ${{ github.repository }}
+          SHA: ${{ needs.version.outputs.sha }}
         run: |
+          # The pin holds for every checkout and not for the tag itself: a tag
+          # force-moved after the version job leaves these images built from
+          # the pinned commit and the release attached to the tag's new
+          # target.  --verify-tag does not cover it -- it asks whether the tag
+          # exists, not where it points -- so the last thing before publishing
+          # is to ask the remote where it points now.
+          peeled=$(git ls-remote "https://github.com/$REPO.git" \
+                     "refs/tags/$TAG^{}" | cut -f1)
+          [ -n "$peeled" ] || peeled=$(git ls-remote \
+                     "https://github.com/$REPO.git" "refs/tags/$TAG" | cut -f1)
+          if [ "$peeled" != "$SHA" ]; then
+            echo "::error::$TAG points at ${peeled:-nothing}; these images are $SHA"
+            exit 1
+          fi
+          echo "$TAG still points at $SHA"
+
           # --verify-tag, because a tag gh has to invent is created from the
           # default branch: without it a dispatch for a tag nobody pushed
           # would attach these images to whatever main happened to be.
