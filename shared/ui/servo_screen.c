@@ -1007,6 +1007,12 @@ static void cancel(void)
     if (s.armed && s.arm_down && !s.arm.fired) {
         post(SERVO_CMD_DISARM, 0);
     }
+    /* And an arm posted but not yet collected: a command is forwarded on the
+     * frame after the one that posted it, and the frame that observes a loss
+     * cancels before that forwarding.  A disarm is kept. */
+    if (s.pending.kind == SERVO_CMD_ARM) {
+        s.pending.kind = SERVO_CMD_NONE;
+    }
     ui_slider_release(&s.speed);
     ui_hold_reset(&s.arm);
     s.arm_down = false;

@@ -1059,6 +1059,38 @@ TEST_CASE(a_cancelled_arm_asks_for_nothing)
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 }
 
+/*
+ * A hold that completes on the same frame a touch event is lost has already
+ * posted its arm by the time the next frame observes the loss.  A command is
+ * forwarded on the frame after the one that posted it, and the frame that
+ * observes a loss cancels before that forwarding, so the arm is dropped here
+ * rather than reaching the bench.  A disarm is kept: it is the direction that
+ * fails safe.
+ */
+TEST_CASE(a_cancel_drops_an_arm_the_hold_already_posted)
+{
+    fresh();
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS);
+
+    /* The hold fired and the arm is waiting to be collected. */
+    scr->cancel();
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+}
+
+/* And the other way: a disarm waiting to be collected survives a cancel,
+ * because losing it leaves an armed bench driving. */
+TEST_CASE(a_cancel_keeps_a_disarm_already_posted)
+{
+    fresh();
+    motor_screen_set_armed(true);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+
+    scr->cancel();
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_DISARM);
+}
+
 int main(void)
 {
     RUN(a_finger_that_leaves_arm_arms_nothing);
@@ -1095,5 +1127,7 @@ int main(void)
     RUN(a_cancelled_gesture_does_not_arm);
     RUN(a_cancelled_disarm_still_disarms);
     RUN(a_cancelled_arm_asks_for_nothing);
+    RUN(a_cancel_drops_an_arm_the_hold_already_posted);
+    RUN(a_cancel_keeps_a_disarm_already_posted);
     return test_summary("motor");
 }

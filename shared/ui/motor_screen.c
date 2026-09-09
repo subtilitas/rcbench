@@ -1042,6 +1042,17 @@ static void cancel(void)
     if (s.armed && s.pressed == 1 && !s.arm.fired) {
         post(MOTOR_CMD_DISARM, 0.0f);
     }
+    /*
+     * And an arm this screen has posted but the application has not yet
+     * collected.  A command is forwarded on the frame after the one that
+     * posted it, and the frame that observes a loss cancels before that
+     * forwarding, so an arm completed by a hold whose contact had already
+     * gone is dropped here rather than reaching the bench.  A disarm is
+     * kept: it is the direction that fails safe.
+     */
+    if (s.pending.kind == MOTOR_CMD_ARM) {
+        s.pending.kind = MOTOR_CMD_NONE;
+    }
     ui_slider_release(&s.slider);
     ui_hold_reset(&s.arm);
     s.pressed    = 0;

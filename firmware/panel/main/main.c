@@ -670,7 +670,16 @@ static void control_pump(void)
             if (dropped) {
                 routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
             }
-            atomic_fetch_add(&s_touch_lost, 1u);
+            /*
+             * Only when an event actually went.  The render task can drain
+             * this queue between the failed send and the receive, in which
+             * case nothing was evicted and the retry succeeds -- counting
+             * that would cancel a gesture that is still on the glass, and on
+             * an armed bench a cancelled disarm gesture posts a disarm.
+             */
+            if (dropped || !routed) {
+                atomic_fetch_add(&s_touch_lost, 1u);
+            }
             /*
              * And the marker that says the router will latch a stop this
              * task already applied -- but only when the entry evicted is

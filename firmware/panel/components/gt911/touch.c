@@ -99,9 +99,21 @@ static void publish(const touch_point_t *pts, int count)
                  * into its own and cancel on.
                  */
                 touch_event_t dropped;
-                (void)xQueueReceive(s_touch.events, &dropped, 0);
-                (void)xQueueSend(s_touch.events, &evts[i], 0);
-                atomic_fetch_add(&s_touch.lost, 1u);
+                const bool took =
+                    (xQueueReceive(s_touch.events, &dropped, 0) == pdTRUE);
+                const bool sent =
+                    (xQueueSend(s_touch.events, &evts[i], 0) == pdTRUE);
+                /*
+                 * Only when an event actually went.  The consumer can drain
+                 * this queue between the failed send and the receive, in
+                 * which case nothing was evicted and the retry succeeds --
+                 * counting that would tell the render loop the stream broke
+                 * when it did not, and it would cancel a gesture that is
+                 * still on the glass.
+                 */
+                if (took || !sent) {
+                    atomic_fetch_add(&s_touch.lost, 1u);
+                }
             }
         }
     }
