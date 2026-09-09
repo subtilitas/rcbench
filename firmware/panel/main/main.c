@@ -1136,17 +1136,20 @@ static atomic_uint s_log_arm_now;
 /* Rows the queue would not take, counted by the control task and reported
  * when the run closes. */
 /*
- * By the arming's parity, not one counter.
+ * The run's rows, counted by the task that posts them.
  *
- * A re-arm can happen before the logger has drained and closed the run
- * before it -- a stalled card is exactly when that happens, and exactly when
- * there are drops to report.  One counter reset on the arming edge would
- * erase the closing run's count and then charge the new run's drops to the
- * old run's file.  Consecutive armings always differ in parity (see the
- * counter's wrap below), so two slots hold every pair that can be in flight
- * at once.
+ * Not shared with the logger, and not per arming in any table: the control
+ * task is the one that drops a row, it is the one that knows which arming it
+ * was dropping from, and it sees the disarm edge exactly.  Handing the count
+ * across to be reported at the close instead needs a slot per arming in
+ * flight, and a stalled card is what puts three of them in flight -- the run
+ * whose rows are still queued, and two the operator has run since.
+ *
+ * So the count is reported where it is kept, on the disarm edge.  The logger
+ * reports what the logger knows: rows written, and a write that failed.
  */
-static atomic_uint s_log_lost[2];
+static uint32_t    s_log_run_lost;
+static uint32_t    s_log_run_sent;
 
 /* The control task's own: the arming it numbers rows with, and whether it
  * has seen the bank arm.  The counter never takes the value 0, because 0 is
@@ -1319,34 +1322,47 @@ static void log_open(uint32_t arm)
 
 static void log_close(void)
 {
-    /* Read before the run is let go of: the dropped-row count is kept by the
-     * arming's parity, and s_log_arm is what says which slot. */
-    const uint32_t arm = s_log_arm;
     s_log_arm = 0u;
     if (s_log_file == NULL) {
         return;
     }
-    const unsigned lost = (unsigned)atomic_load(&s_log_lost[arm & 1u]);
-    if (log_writer_failed(&s_log)) {
+    const bool failed = log_writer_failed(&s_log);
+    if (failed) {
         ESP_LOGW(TAG, "the log is short: a write failed after %u rows",
                  (unsigned)s_log.rows);
         /* On the band as well as the console.  A write that failed mid-run
          * is the difference between an experiment and half of one, and the
-         * operator at the bench has no console. */
+         * operator at the bench has no console.  Dropped rows are the control
+         * task's to report; see log_follow_arming(). */
         control_alert("the card stopped taking rows -- the log is short");
-    } else if (lost > 0u) {
-        ESP_LOGW(TAG, "%u rows written and %u dropped: the card did not keep "
-                      "up with the run", (unsigned)s_log.rows, lost);
-        control_alert("the card fell behind -- the log has gaps");
-    } else {
+    }
+    /*
+     * The close is the last commit and the largest one: FATFS writes the
+     * directory entry in f_close, so every row since the last fsync -- up to
+     * LOG_WRITER_FLUSH_ROWS - 1 (19) of them -- is kept by this call and by
+     * nothing else.  A card that fails here fails silently otherwise: the
+     * file is left at its last committed length and the viewer, which reads
+     * it as soon as s_log_open_run is cleared, shows a complete-looking run
+     * that stops early.
+     */
+    if (fclose(s_log_file) != 0) {
+        ESP_LOGW(TAG, "the log did not close: up to %u rows are not in it",
+                 (unsigned)LOG_WRITER_FLUSH_ROWS - 1u);
+        if (!failed) {
+            control_alert("the card failed on the last write -- the log is "
+                          "short");
+        }
+    } else if (!failed) {
         ESP_LOGI(TAG, "%u rows written", (unsigned)s_log.rows);
     }
-    /* The close is the last commit: FATFS writes the directory entry in
-     * f_close, so the rows since the last fsync are kept by this. */
-    fclose(s_log_file);
     s_log_file = NULL;
-    /* And only now is the run something the viewer may read: the length of a
-     * FAT file lives in its directory entry, and f_close is what writes it. */
+    /*
+     * And only now is the run something the viewer may read.  The length of a
+     * FAT file lives in its directory entry, and f_close is what writes it --
+     * so this is cleared after the call whether or not the call succeeded: a
+     * failed close has still given up the handle, and holding the run back
+     * for ever would hide the rows that did reach the card.
+     */
     atomic_store(&s_log_open_run, 0u);
 }
 
@@ -1458,8 +1474,10 @@ static void log_post(float t_s, const bench_state_t *b)
         return;
     }
     const log_row_t row = { .arm = s_log_arm_ctr, .t_s = t_s, .bench = *b };
-    if (xQueueSend(s_log_q, &row, 0) != pdTRUE) {
-        atomic_fetch_add(&s_log_lost[row.arm & 1u], 1u);
+    if (xQueueSend(s_log_q, &row, 0) == pdTRUE) {
+        ++s_log_run_sent;
+    } else {
+        ++s_log_run_lost;
     }
 }
 
@@ -2846,20 +2864,34 @@ static void log_follow_arming(void)
     s_log_armed = armed_now;
     if (!armed_now) {
         atomic_store(&s_log_arm_now, 0u);
+        /*
+         * The run's rows, answered here because the run has just ended and
+         * this task has both numbers.  Every row of a run is posted between
+         * the two edges, so the counts are final at this point whatever the
+         * card is still doing with the queue.
+         *
+         * A run that got nothing through is the one the logger cannot report
+         * at all: no row of it ever reached the logger, so no file was opened
+         * and no close will happen for it.  That is the case a full queue
+         * left over from the run before produces, and it is the case where an
+         * operator would otherwise look for a CSV that is not there.
+         */
+        if (s_log_run_lost > 0u && s_log_run_sent == 0u) {
+            control_alert("the card did not keep up -- run not recorded");
+        } else if (s_log_run_lost > 0u) {
+            control_alert("the card fell behind -- the log has gaps");
+        }
         return;
     }
-    /* The run's clock, its dropped-row count and its number, all set before
-     * the level goes up so the logger cannot see a run half started.  Zero
-     * means no run, so the count skips it on the one wrap in 2^32 arms. */
+    /* The run's clock, its row counts and its number, all set before the
+     * level goes up so the logger cannot see a run half started.  Zero means
+     * no run, so the count skips it on the one wrap in 2^32 arms. */
     s_log_t = 0.0f;
-    /* Two, not one: 0 means no run, and 1 would share the parity of the
-     * 0xFFFFFFFF before it and put two live armings in one slot. */
+    s_log_run_lost = 0u;
+    s_log_run_sent = 0u;
     if (++s_log_arm_ctr == 0u) {
-        s_log_arm_ctr = 2u;
+        s_log_arm_ctr = 1u;
     }
-    /* This arming's slot only.  The other slot belongs to the run the logger
-     * may still be closing. */
-    atomic_store(&s_log_lost[s_log_arm_ctr & 1u], 0u);
     atomic_store(&s_log_arm_now, s_log_arm_ctr);
 }
 
