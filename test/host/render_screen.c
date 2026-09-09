@@ -185,6 +185,7 @@ static ui_screen_id_t id_of(const char *name)
         { "splash",     SCREEN_SPLASH },
         { "overview",   SCREEN_OVERVIEW },
         { "motor",      SCREEN_MOTOR },
+        { "motor-held", SCREEN_MOTOR },
         { "servo",      SCREEN_SERVO },
         { "analyser",   SCREEN_ANALYSER },
         { "logs",       SCREEN_LOGS },
@@ -252,6 +253,10 @@ int main(int argc, char **argv)
         bench_state_t bench;
         memset(&bench, 0, sizeof(bench));
         telemetry_sim_init(&sim, NULL);
+        /* Before the samples, not after: the plot advances only while the
+         * bench is armed, and arming clears it.  Posed the other way round
+         * the trace would be empty. */
+        motor_screen_set_armed(true);
         for (int i = 0; i < 780; ++i) {
             const float t = (float)i * 0.05f;
             float th = 0.0f;
@@ -265,7 +270,11 @@ int main(int argc, char **argv)
             motor_screen_push(&bench);
         }
         motor_screen_set_throttle(64.0f);
-        motor_screen_set_armed(true);
+        /* The run ends for the held view, so the trace stops where the last
+         * sample left it and the panel says it is holding one. */
+        if (strcmp(view, "motor-held") == 0) {
+            motor_screen_set_armed(false);
+        }
     }
 
     if (id == SCREEN_PROGRAMMER && strcmp(view, "programmer") != 0) {
@@ -535,7 +544,8 @@ int main(int argc, char **argv)
 
     ui_bench_status_t st = k_status;
     st.simulated = sim || (id == SCREEN_MOTOR);
-    st.armed     = (id == SCREEN_MOTOR);
+    st.armed     = (id == SCREEN_MOTOR
+                    && strcmp(view, "motor-held") != 0);
     ui_router_set_status(&st);
     ui_router_goto(id);
 

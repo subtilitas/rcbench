@@ -27,31 +27,32 @@ panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
 
 mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
-frame            8,713     1089 KiB     28.6      19.5
-frame-idle          946      118 KiB      3.1      39.0
-sim              9,674     1209 KiB     31.8      19.5
-throttle        10,453     1307 KiB     34.3      19.5
-chrome          33,110     4139 KiB    108.7       7.8
-overview           947      118 KiB      3.1      39.0
-servo           15,472     1934 KiB     50.8      19.5
-servo-grip        2,990      374 KiB      9.8      39.0
-analyser           895      112 KiB      2.9      39.0
-logs               929      116 KiB      3.0      39.0
-settings           886      111 KiB      2.9      39.0
-battery            895      112 KiB      2.9      39.0
-balance            893      112 KiB      2.9      39.0
-programmer          902      113 KiB      3.0      39.0
-balance-sim        2,406      301 KiB      7.9      39.0
-settings-sim        2,418      302 KiB      7.9      39.0
-battery-sim        2,411      301 KiB      7.9      39.0
-analyser-chrome       39,243     4905 KiB    128.8       6.5
-logs-chrome       16,064     2008 KiB     52.7      13.0
-settings-chrome       23,599     2950 KiB     77.5       9.8
-battery-chrome       36,994     4624 KiB    121.4       7.8
-balance-chrome       40,699     5087 KiB    133.6       6.5
-programmer-chrome       28,483     3560 KiB     93.5       9.8
-picker             910      114 KiB      3.0      39.0
-picker-chrome       15,886     1986 KiB     52.1      13.0
+frame            8,856     1107 KiB     29.1      19.5
+frame-idle        1,274      159 KiB      4.2      39.0
+held             8,856     1107 KiB     29.1      19.5
+sim              9,817     1227 KiB     32.2      19.5
+throttle        10,598     1325 KiB     34.8      19.5
+chrome          33,106     4138 KiB    108.7       7.8
+overview           953      119 KiB      3.1      39.0
+servo           15,759     1970 KiB     51.7      13.0
+servo-grip        3,026      378 KiB      9.9      39.0
+analyser           871      109 KiB      2.9      39.0
+logs               937      117 KiB      3.1      39.0
+settings           862      108 KiB      2.8      39.0
+battery            871      109 KiB      2.9      39.0
+balance            865      108 KiB      2.8      39.0
+programmer          895      112 KiB      2.9      39.0
+balance-sim        2,395      299 KiB      7.9      39.0
+settings-sim        2,407      301 KiB      7.9      39.0
+battery-sim        2,401      300 KiB      7.9      39.0
+analyser-chrome       39,234     4904 KiB    128.8       6.5
+logs-chrome       16,061     2008 KiB     52.7      13.0
+settings-chrome       23,591     2949 KiB     77.4       9.8
+battery-chrome       36,987     4623 KiB    121.4       7.8
+balance-chrome       40,685     5086 KiB    133.5       6.5
+programmer-chrome       28,480     3560 KiB     93.5       9.8
+picker             902      113 KiB      3.0      39.0
+picker-chrome       15,883     1985 KiB     52.1      13.0
 clear           12,006     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
@@ -62,6 +63,7 @@ hlines               0        0 KiB      0.0      39.0
 | --- | --- |
 | `frame` | the motor bench on a frame where a telemetry sample lands |
 | `frame-idle` | the motor bench on a frame between samples, nothing touched |
+| `held` | the motor bench between runs: live readouts over a plot that is holding the last one |
 | `sim` | as `frame`, with the SIMULATION watermark |
 | `throttle` | the motor bench with a finger on the throttle, the drag case |
 | `chrome` | the motor bench with nothing cached, repainted in full |

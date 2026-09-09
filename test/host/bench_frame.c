@@ -154,6 +154,11 @@ int main(int argc, char **argv)
     }
     ui_router_goto(start);
 
+    /* The plot advances only while the bench is armed, and every motor mode
+     * but "held" measures a running one, so the arm comes before the warm
+     * renders and before the samples. */
+    motor_screen_set_armed(true);
+
     /* Warm both framebuffers the way the panel does, before measuring. */
     ui_router_render(&c, 0);
     ui_router_render(&c, 1);
@@ -188,6 +193,13 @@ int main(int argc, char **argv)
         if (feed) {
             telemetry_sim_step(&sim, 60.0f, 0.05f, &bench);
             motor_screen_push(&bench);
+        }
+        if (strcmp(mode, "held") == 0 && i == 200) {
+            /* The run ends part way in, and the rest of the frames measure
+             * what the panel does between runs: live readouts over a plot
+             * that cannot move.  That is where a bench spends most of its
+             * time, and it must cost less than a running one, not more. */
+            motor_screen_set_armed(false);
         }
         if (strcmp(mode, "throttle") == 0) {
             /* A finger on the throttle: the control revision moves on every

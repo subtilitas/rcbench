@@ -58,6 +58,30 @@ of 1.6 s; a tap skips the hold.
 Two columns. The plot and the throttle take the left, the four readouts and
 the controls take a rail on the right, so reading the numbers and working the
 throttle do not compete for the same part of the screen.
+### The plot covers one run
+
+![Motor and ESC, telemetry held](img/motor-held.png)
+
+The trace is the record of a run. It advances only while the bench is armed:
+arming clears it, disarming holds it as it stood. The panel tag reads
+`LIVE TELEMETRY` while it advances, `TELEMETRY HELD` while it holds a run, and
+`TELEMETRY IDLE` before the first arm, when the plot reads `no run recorded`.
+The right-hand axis label reads `NOW` while it advances and `END` where a held
+one stopped. The readouts, the TABLE pane, the totals and the temperature
+strip are live at all times, armed or not.
+
+The window is 534 columns at 20 samples per second, 26.7 s. A longer run holds
+its last 26.7 s; what came before is in the CSV file and not on the screen.
+
+The trace ends at the disarm, not when the motor stops. Disarming commands
+zero throttle and the propeller coasts down after it. That coast-down is on
+the readouts and not on the plot, and not in the CSV file either, which closes
+on the same edge.
+
+Arming clears the plot, and a latched stop is cleared by arming, so the trace
+of a run a STOP ended does not survive making the bench usable again. One
+arming writes one CSV file, and the log viewer plots it.
+
 
 The strip above both columns carries the poll rate, the link's error count
 (cyclic redundancy check failures and resyncs added together) and three
