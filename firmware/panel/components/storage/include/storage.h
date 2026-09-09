@@ -64,6 +64,18 @@ const char *storage_status(void);
 typedef void (*storage_visit_fn)(const storage_entry_t *entry, void *ctx);
 
 /**
+ * The size of one file, in bytes.
+ *
+ * Separate from the walk because a size costs a path lookup of its own, and a
+ * caller that keeps a bounded few of what the walk offers should pay for
+ * those and no more. Zero for a name that will not stat, which is what an
+ * entry that has gone between the walk and this call looks like.
+ */
+uint32_t storage_size(const char *dir, const char *name);
+
+typedef void (*storage_tick_fn)(void);
+
+/**
  * Walk a directory, handing every matching entry to @p visit.
  *
  * The whole directory is read, and nothing here decides what is worth
@@ -79,6 +91,7 @@ typedef void (*storage_visit_fn)(const storage_entry_t *entry, void *ctx);
  *                  everything.  Applied to files; directories always match
  * @param visit     called with a borrowed entry that does not outlive the
  *                  call; NULL counts the matches without reporting them
+ * @param ctx       passed to @p visit untouched
  * @param tick      called once per directory entry read, before any filter,
  *                  or NULL.  A caller on a task with a deadline passes the
  *                  thing that meets it: the filters reject dot-names, wrong
@@ -88,18 +101,6 @@ typedef void (*storage_visit_fn)(const storage_entry_t *entry, void *ctx);
  * @return the number of matching entries, or -1 when the directory cannot be
  *         opened or read to its end.
  */
-/**
- * The size of one file, in bytes.
- *
- * Separate from the walk because a size costs a path lookup of its own, and a
- * caller that keeps a bounded few of what the walk offers should pay for
- * those and no more. Zero for a name that will not stat, which is what an
- * entry that has gone between the walk and this call looks like.
- */
-uint32_t storage_size(const char *dir, const char *name);
-
-typedef void (*storage_tick_fn)(void);
-
 int storage_walk(const char *dir, const char *suffixes, storage_visit_fn visit,
                  void *ctx, storage_tick_fn tick);
 
