@@ -107,7 +107,7 @@ one:
 |---|---|
 | Panel end | **GPIO6**, on **J8** (a three-pin header carrying 3V3, GND, GPIO6) |
 | Coprocessor end | **GP3** |
-| Through | the retriggerable monostable, once one exists. It is on no board, so the bring-up bench runs a direct wire and has no hardware backstop. The wire covers a panel that stops beating -- the coprocessor disarms after 150 ms of silence. What it cannot cover is the coprocessor's own firmware wedging, where nothing polls the monitor and nothing disarms |
+| Through | the retriggerable monostable, once one exists. It is on no board, so the bring-up bench runs a direct wire and has no hardware backstop. The wire covers a panel that stops beating while the coprocessor is healthy: it disarms after 150 ms of silence. What is uncovered is a panel that stops beating while the coprocessor cannot act -- nothing then removes the outputs, and that is what the monostable would do without any firmware |
 
 Without this wire the coprocessor refuses every arm, and that is the interlock
 working, not a fault.

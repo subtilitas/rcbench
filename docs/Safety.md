@@ -38,14 +38,20 @@ removing it.
 The monostable is on no board. On the bring-up bench the edges reach the
 coprocessor's GP3 by a direct wire from J8, which is what lets that bench arm.
 
-What the direct wire cannot cover is the case the monostable exists for: the
-coprocessor's own firmware wedging. Nothing then polls the monitor, so nothing
-disarms, and the bank goes on driving whatever the panel does. A panel that
-crashes on its own is already covered by the monitor below -- no edge for
-HEARTBEAT_MAX_GAP_MS and the loop disarms -- and that is the case the wire
-handles. The monostable is the one that does not need the coprocessor's
-firmware to be running. Until it is fitted, firmware at both ends is the whole
-of the interlock.
+The monostable is retriggered by the panel's edges and removes the outputs
+when they stop. What it adds over the direct wire is that it does this without
+the coprocessor's firmware doing anything. Three cases, and the middle one is
+the gap:
+
+| | Direct wire and firmware | With the monostable |
+|---|---|---|
+| The panel stops beating, the coprocessor is healthy | disarms after HEARTBEAT_MAX_GAP_MS | the same, and sooner or later by its own timing |
+| The panel stops beating and the coprocessor cannot act -- wedged, or not servicing its monitor | nothing disarms; the bank goes on driving | the outputs are removed anyway |
+| The panel is healthy and the coprocessor misbehaves | the panel's STOP and the link watchdog are what is left | **no help**: the panel is still beating, so the monostable stays energised |
+
+The third row is not a case the monostable is for, and no hardware in this
+design covers it. Until the part is fitted, the second row is uncovered too,
+and firmware at both ends is the whole of the interlock.
 
 ## Heartbeat monitor
 

@@ -112,7 +112,7 @@ und der Multiplexer wählt eines aus:
 |---|---|
 | Panel-Seite | **GPIO6**, an **J8** (dreipolige Stiftleiste mit 3V3, GND, GPIO6) |
 | Koprozessor-Seite | **GP3** |
-| Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Aufbau-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene. Die Leitung deckt ein Panel ab, das aufhört zu schlagen -- der Koprozessor entschärft nach 150 ms Stille. Nicht abdecken kann sie, dass die Firmware des Koprozessors selbst hängt: dann fragt nichts den Monitor ab und nichts entschärft |
+| Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Aufbau-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene. Die Leitung deckt ein Panel ab, das aufhört zu schlagen, solange der Koprozessor gesund ist: Er entschärft nach 150 ms Stille. Unabgedeckt bleibt ein Panel, das aufhört zu schlagen, während der Koprozessor nicht handeln kann -- dann nimmt nichts die Ausgänge weg, und genau das täte das Monoflop ohne jede Firmware |
 
 Ohne diesen Draht verweigert der Koprozessor jedes Arm, und das ist die
 Verriegelung, die arbeitet — kein Fehler.

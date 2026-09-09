@@ -41,14 +41,20 @@ Das Monoflop ist auf keiner Platine. Auf dem Aufbau-Prüfstand erreichen die
 Flanken über eine direkte Leitung von J8 den GP3 des Koprozessors, weshalb
 dieser Prüfstand scharfschalten kann.
 
-Was die direkte Leitung nicht abdeckt, ist der Fall, für den das Monoflop da
-ist: Die Firmware des Koprozessors selbst hängt. Dann fragt nichts mehr den
-Monitor ab, also entschärft auch nichts, und die Bank treibt weiter, was immer
-das Panel tut. Ein Panel, das für sich abstürzt, ist bereits abgedeckt -- der
-Monitor unten sieht HEARTBEAT_MAX_GAP_MS lang keine Flanke und die Schleife
-entschärft --, und das ist der Fall, den die Leitung erledigt. Das Monoflop
-ist der Fall, der nicht davon abhängt, dass die Firmware des Koprozessors
-läuft. Solange es fehlt, ist die Firmware an beiden Enden die gesamte
+Das Monoflop wird von den Flanken des Panels nachgetriggert und nimmt die
+Ausgänge weg, wenn diese ausbleiben. Was es gegenüber der direkten Leitung
+hinzufügt: Es tut das, ohne dass die Firmware des Koprozessors etwas tun muss.
+Drei Fälle, und der mittlere ist die Lücke:
+
+| | Direkte Leitung und Firmware | Mit Monoflop |
+|---|---|---|
+| Das Panel hört auf zu schlagen, der Koprozessor ist gesund | entschärft nach HEARTBEAT_MAX_GAP_MS | dasselbe, nach seiner eigenen Zeit |
+| Das Panel hört auf zu schlagen und der Koprozessor kann nicht handeln -- hängt, oder bedient seinen Monitor nicht | nichts entschärft, die Bank treibt weiter | die Ausgänge fallen trotzdem weg |
+| Das Panel ist gesund und der Koprozessor verhält sich falsch | es bleiben STOP am Panel und der Link-Watchdog | **keine Hilfe**: das Panel schlägt weiter, das Monoflop bleibt bestromt |
+
+Die dritte Zeile ist kein Fall, für den das Monoflop da ist, und keine
+Hardware in diesem Entwurf deckt sie ab. Solange das Bauteil fehlt, ist auch
+die zweite Zeile unabgedeckt, und die Firmware an beiden Enden ist die gesamte
 Verriegelung.
 
 ## Heartbeat-Überwachung
