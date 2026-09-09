@@ -576,6 +576,11 @@ static atomic_uint s_lets_go;
 static atomic_bool s_poles_owed;
 static atomic_uint s_poles_value;
 
+/* Exchanges one poles_service() will take before giving the rest to the next
+ * poll.  Two: one for the debt it was called for, one for an edit made while
+ * that one was on the wire. */
+#define POLES_SERVICE_TRIES 2u
+
 /*
  * A setting the far end keeps a copy of has changed.
  *
@@ -2041,20 +2046,40 @@ static bool control_write_poles(link_msg_t *reply)
  */
 static bool poles_service(void)
 {
-    if (!atomic_exchange(&s_poles_owed, false)) {
-        return true;
+    /*
+     * Up to POLES_SERVICE_TRIES exchanges, because each one can wait
+     * LINK_HOST_TIMEOUT_MS and an edit made while it is on the wire raises
+     * the debt again behind the value already loaded.  Answering that here
+     * rather than at the next poll matters on the arming path: the far end
+     * would otherwise start sampling on the old divisor and put a wrong
+     * speed into the run's sticky rpm_max, which no later correction
+     * removes.
+     *
+     * Bounded rather than a loop until the debt clears: an operator holding
+     * a key down raises it faster than the wire can answer, and a bench that
+     * will not arm while a finger rests on a settings key is the worse
+     * failure.  What remains after the last try is a window a few
+     * instructions wide, and it closes at the next 50 ms poll.  Closing it
+     * entirely means carrying the count in the transaction that arms; that
+     * is a change to the shape of the arming write and is recorded as an
+     * open item rather than made here.
+     */
+    for (unsigned try = 0; try < POLES_SERVICE_TRIES; ++try) {
+        if (!atomic_exchange(&s_poles_owed, false)) {
+            return true;
+        }
+        link_msg_t pr;
+        memset(&pr, 0, sizeof(pr));
+        if (!control_write_poles(&pr)) {
+            if (pr.op == LINK_OP_NACK) {
+                control_alert("coprocessor refused the pole count");
+                return false;
+            }
+            atomic_store(&s_poles_owed, true);
+            return false;
+        }
     }
-    link_msg_t pr;
-    memset(&pr, 0, sizeof(pr));
-    if (control_write_poles(&pr)) {
-        return true;
-    }
-    if (pr.op == LINK_OP_NACK) {
-        control_alert("coprocessor refused the pole count");
-        return false;
-    }
-    atomic_store(&s_poles_owed, true);
-    return false;
+    return !atomic_load(&s_poles_owed);
 }
 
 static bool control_clear_failsafe(link_msg_t *reply)
