@@ -93,9 +93,19 @@ unpowered or unplugged panel reads as a line that is not edging.
   does not decide which one is removed. The loss is counted instead, and the
   frame that observes it tells the screen on top that its record of the glass
   is stale; the screen drops any gesture in progress, which asks for nothing,
-  exactly as letting go early does. MOTOR & ESC, SERVO and CAN BUS FAULT are
-  the screens with a gesture that completes on a timer, and each implements
-  it. The frame log carries the count as `TOUCHLOST`.
+  exactly as letting go early does. Both queues are counted -- the driver's
+  own event queue evicts its oldest for the same reason -- and the count is
+  read after the drain and before the frame's tick, so an event lost while
+  the loop is running is answered in that frame rather than the next. The
+  frame log carries the two counts as `TOUCHLOST <panel>/<driver>`.
+- Every control that holds state between a press and its release cancels.
+  MOTOR & ESC, SERVO and CAN BUS FAULT have a gesture that completes on a
+  timer, so a lost release there arms or acknowledges on its own; the
+  overview's tiles, the outputs and picker screens' cells and the settings
+  screen's keys act on the release instead, and a press left latched owns a
+  track id the controller reuses, so a later contact that began elsewhere is
+  taken for the missing release. HOME and STOP are the router's own gesture
+  and it cancels those itself.
 - The throttle moves by how far a finger travels, not to where it lands. A
   press on the track commands nothing, so a touch at the far end cannot ask
   for full travel in one contact. Sliders that command nothing dangerous, such

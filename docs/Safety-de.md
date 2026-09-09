@@ -105,10 +105,21 @@ Panel als Leitung ohne Flanken gelesen wird.
   also nicht, welcher entfernt wird. Stattdessen wird der Verlust gezählt,
   und der Frame, der ihn bemerkt, sagt dem obersten Screen, dass sein Bild
   vom Glas veraltet ist; der Screen verwirft jede laufende Geste, was nichts
-  kommandiert, genau wie ein frühes Loslassen. MOTOR & ESC, SERVO und
-  CAN BUS FAULT sind die Screens mit einer Geste, die auf einem Timer
-  fertig wird, und jeder setzt das um. Das Frame-Log führt die Zahl als
-  `TOUCHLOST`.
+  kommandiert, genau wie ein frühes Loslassen. Beide Queues werden gezählt --
+  die Event-Queue des Treibers verwirft ihren ältesten Eintrag aus demselben
+  Grund -- und die Zahl wird nach dem Leeren und vor dem Tick des Frames
+  gelesen, ein Event, das während des Durchlaufs verloren geht, wird also in
+  diesem Frame beantwortet und nicht erst im nächsten. Das Frame-Log führt
+  beide Zahlen als `TOUCHLOST <Panel>/<Treiber>`.
+- Jedes Bedienelement, das zwischen Druck und Release Zustand hält, bricht
+  ab. MOTOR & ESC, SERVO und CAN BUS FAULT haben eine Geste, die auf einem
+  Timer fertig wird, ein verlorenes Release schaltet dort also von selbst
+  scharf oder quittiert; die Kacheln der Übersicht, die Zellen des Outputs-
+  und des Picker-Bildschirms und die Tasten des Einstellungs-Bildschirms
+  wirken stattdessen auf das Release, und ein gehaltener Druck besitzt eine
+  Track-ID, die der Controller wiederverwendet -- ein späterer Kontakt, der
+  woanders begann, wird dann für das fehlende Release gehalten. HOME und STOP
+  sind die eigene Geste des Routers, und er bricht sie selbst ab.
 - Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
   Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, sodass
   eine Berührung am Ende nicht mit einem Kontakt den vollen Weg anfordern kann.

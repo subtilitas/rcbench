@@ -267,6 +267,25 @@ TEST_CASE(the_setup_screen_opens_both_views_of_the_outputs)
 }
 
 /* Tiles navigate, and a press that slid off its tile is not a tap on it. */
+/*
+ * A tile navigates on its release, so a press left latched after a lost
+ * event is a navigation waiting for any release over that tile.  The GT911
+ * reuses track ids, so that release need not belong to the same contact.
+ */
+TEST_CASE(a_cancelled_tile_press_navigates_nowhere)
+{
+    to_overview();
+    touch(110, UI_BAND_H + 90, TOUCH_EVENT_DOWN, 3);
+    ui_router_cancel_gestures();
+
+    touch(110, UI_BAND_H + 90, TOUCH_EVENT_UP, 3);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+
+    /* And nothing is stuck: a fresh tap still navigates. */
+    tap(110, UI_BAND_H + 90);
+    CHECK_EQ(ui_router_current(), SCREEN_MOTOR);
+}
+
 TEST_CASE(a_tile_navigates_and_a_slip_does_not)
 {
     fresh();
@@ -782,6 +801,31 @@ TEST_CASE(the_menu_marks_what_is_not_fitted)
     CHECK(full > 0);
 }
 
+/*
+ * HOME and STOP are the router's gesture, not the screen's, so a band press
+ * left latched after a lost event belongs to the router to clear.  The
+ * GT911 reuses track ids: a later contact that began on the screen would
+ * otherwise be taken for this one's release and act on where it lifts.
+ */
+TEST_CASE(cancelling_gestures_lets_go_of_the_band)
+{
+    to_overview();
+    const gfx_rect_t stop = ui_band_stop_rect();
+    const int sx = stop.x + stop.w / 2, sy = stop.y + stop.h / 2;
+
+    /* A press on STOP, and then the events stop arriving. */
+    touch(sx, sy, TOUCH_EVENT_DOWN, 7);
+    ui_router_cancel_gestures();
+
+    /* The release the router never saw arrives on a reused id, over a tile.
+     * With the band press cleared it is not the band's, so it neither stops
+     * the bench nor navigates from a press nobody made. */
+    const ui_screen_id_t before = ui_router_current();
+    touch(sx, sy, TOUCH_EVENT_UP, 7);
+    CHECK_EQ(ui_router_current(), before);
+    CHECK(!ui_router_take_stop());
+}
+
 int main(void)
 {
     RUN(the_router_starts_on_the_splash);
@@ -809,5 +853,7 @@ int main(void)
     RUN(the_simulation_mark_follows_the_canvas_it_is_given);
     RUN(switching_the_mark_invalidates_the_cached_chrome);
     RUN(the_menu_marks_what_is_not_fitted);
+    RUN(cancelling_gestures_lets_go_of_the_band);
+    RUN(a_cancelled_tile_press_navigates_nowhere);
     return test_summary("nav");
 }

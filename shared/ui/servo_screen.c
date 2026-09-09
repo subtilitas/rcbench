@@ -1003,6 +1003,13 @@ static void cancel(void)
     ui_slider_release(&s.speed);
     ui_hold_reset(&s.arm);
     s.arm_down = false;
+    /*
+     * And the dial.  A drag left latched owns its track id, and the GT911
+     * reuses ids: a later contact that began somewhere else would satisfy
+     * the drag path and command a position with no press on the dial, which
+     * on an armed bench moves the servo.
+     */
+    s.dragging = false;
     ++s.arm_rev;
 }
 

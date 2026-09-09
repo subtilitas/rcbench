@@ -774,6 +774,49 @@ TEST_CASE(asking_with_nothing_to_write_asks_for_nothing)
 
 
 
+/*
+ * A hit held open acts on its release and the plus and minus keys repeat on
+ * the frame timer while it stands, so a lost event must not leave either
+ * running: the GT911 reuses track ids, and a later contact that began
+ * somewhere else would be taken for this one.
+ */
+/* Panel coordinates, like the other constants here: the screen's own
+ * OUTPUTS_Y is 232 and the band sits above it. */
+#define OUTPUTS_Y (232 + UI_BAND_H)
+#define DOOR_H    42
+
+TEST_CASE(a_cancelled_hit_presses_nothing)
+{
+    fresh_screen();
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+
+    /* Press the door to the outputs screen, then the events stop arriving. */
+    const int dy = OUTPUTS_Y + DOOR_H / 2;
+    touch_event_t d = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = CAT_X + 100,
+                                   .y = (int16_t)dy } };
+    ui_router_event(&d);
+
+    ui_router_cancel_gestures();
+
+    /*
+     * The release the screen never saw arrives on a reused track id.  The
+     * hit is gone, so it opens nothing: a navigation from a press nobody
+     * made is the small version of what the same latch costs on the outputs
+     * screen, where the release applies a binding change.
+     */
+    touch_event_t u = { .type = TOUCH_EVENT_UP,
+                        .point = { .id = 1, .x = CAT_X + 100,
+                                   .y = (int16_t)dy } };
+    ui_router_event(&u);
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+
+    /* And a fresh press still opens it, so nothing is stuck. */
+    ui_router_event(&d);
+    ui_router_event(&u);
+    CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+}
+
 int main(void)
 {
     RUN(defaults_come_from_the_schema);
@@ -801,5 +844,6 @@ int main(void)
     RUN(the_request_outlives_the_screen);
     RUN(a_press_while_the_save_is_pending_changes_nothing);
     RUN(asking_with_nothing_to_write_asks_for_nothing);
+    RUN(a_cancelled_hit_presses_nothing);
     return test_summary("settings");
 }

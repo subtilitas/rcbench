@@ -616,6 +616,20 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
 }
 
+/*
+ * Touch events were lost between two frames, so the cell recorded under the
+ * finger may not be under one any more.  A release toggles the pin when it
+ * lands on the cell the press began on, and a stale record turns the next
+ * release over that cell into a binding change nobody asked for.
+ */
+static void cancel(void)
+{
+    if (s.hit >= 0) {
+        s.hit = -1;
+        touched();
+    }
+}
+
 static const ui_screen_t s_screen = {
     .title  = "PICK A PIN",
     .reset  = reset,
@@ -623,6 +637,7 @@ static const ui_screen_t s_screen = {
     .leave  = leave,
     .tick   = NULL,
     .event  = event,
+    .cancel = cancel,
     .render = render,
 };
 

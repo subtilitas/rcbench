@@ -630,6 +630,14 @@ static void control_pump(void)
                 routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
             }
             atomic_fetch_add(&s_touch_lost, 1u);
+            /*
+             * And the marker that says the router will latch a stop this
+             * task already applied.  The event it refers to may be the one
+             * just evicted, in which case the router raises no request and
+             * the marker stands -- to be consumed by the next stop that
+             * genuinely needs the backstop, which would then be ignored.
+             */
+            atomic_store(&s_stop_counted, false);
         }
         /*
          * The router will latch this same release and the backstop would
@@ -3702,9 +3710,10 @@ void app_main(void)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
     uint32_t frames  = 0;
-    /* The loss count this loop has already answered.  It only rises, so a
-     * difference is one or more events the screens never saw. */
-    unsigned lost_seen = atomic_load(&s_touch_lost);
+    /* The loss count this loop has already answered, over both queues.  It
+     * only rises, so a difference is one or more events the screens never
+     * saw. */
+    unsigned lost_seen = atomic_load(&s_touch_lost) + touch_lost();
     uint32_t last_us = (uint32_t)esp_timer_get_time();
     bool     was_armed = false;
     uint32_t last_stops = 0;
@@ -3796,24 +3805,7 @@ void app_main(void)
         }
         servo_screen_set_armed(armed_now);
 
-        /*
-         * What the control task saw of the panel -- and whether it saw more
-         * than it could hand over.  Read before the drain, so an event lost
-         * while this loop runs is answered by the next frame rather than
-         * missed: the count only rises.
-         */
-        const unsigned lost_now = atomic_load(&s_touch_lost);
-        if (lost_now != lost_seen) {
-            /*
-             * At least one event never reached the screens, so their record
-             * of what is on the glass is stale.  A gesture that completes on
-             * a timer -- the arming hold, the fault acknowledgement -- would
-             * otherwise finish on a contact that has gone.  Cancelling asks
-             * for nothing, which is what letting go early already does.
-             */
-            lost_seen = lost_now;
-            ui_router_cancel_gestures();
-        }
+        /* What the control task saw of the panel. */
         touch_event_t evt;
         while (xQueueReceive(s_touch_q, &evt, 0) == pdTRUE) {
             const ui_screen_id_t before = ui_router_current();
@@ -3990,6 +3982,30 @@ void app_main(void)
             s_link_lost_shown = true;
             ui_router_goto(SCREEN_BUSFAULT);
         }
+        /*
+         * Whether every touch event of this frame reached the screens.
+         *
+         * Read after the drain and before the tick, because both queues can
+         * lose an event while this loop is running: the control task refills
+         * s_touch_q from the other core, and the driver's own queue drops
+         * its oldest when nobody collects it.  Sampling before the drain
+         * would leave a loss that happened during it unanswered until the
+         * next frame, and a hold already near two seconds completes in this
+         * one.
+         *
+         * Both counts only rise, so a difference is one or more events the
+         * screens never saw, and their record of what is on the glass is
+         * stale.  A gesture that completes on a timer -- the arming hold,
+         * the fault acknowledgement -- would otherwise finish on a contact
+         * that has gone.  Cancelling asks for nothing, which is what letting
+         * go early already does; a press dispatched in this frame and then
+         * cancelled costs the operator a repeat of the gesture.
+         */
+        const unsigned lost_now = atomic_load(&s_touch_lost) + touch_lost();
+        if (lost_now != lost_seen) {
+            lost_seen = lost_now;
+            ui_router_cancel_gestures();
+        }
         ui_router_tick(dt_s);
 
         /*
@@ -4025,10 +4041,10 @@ void app_main(void)
          */
         if (++frames % 300u == 0u) {
             ESP_LOGI(TAG,
-                     "%.1f fps  DRAW %u us  WAIT %u us  TOUCHLOST %u",
+                     "%.1f fps  DRAW %u us  WAIT %u us  TOUCHLOST %u/%u",
                      (double)display_fps(), (unsigned)draw_us,
                      (unsigned)display_last_wait_us(),
-                     atomic_load(&s_touch_lost));
+                     atomic_load(&s_touch_lost), touch_lost());
         }
     }
 }

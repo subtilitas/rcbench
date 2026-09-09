@@ -178,6 +178,17 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
 }
 
+/*
+ * Touch events were lost between two frames, so this screen's record of what
+ * is on the glass cannot be trusted.  A press held open owns its track id,
+ * and the GT911 reuses ids: a later contact that began somewhere else would
+ * be taken for this one's release and act on a control nobody pressed.
+ */
+static void cancel(void)
+{
+    s.have_press = false;
+}
+
 static const ui_screen_t k_screen = {
     .title  = "rcbench",
     .reset  = reset,
@@ -185,6 +196,7 @@ static const ui_screen_t k_screen = {
     .leave  = NULL,
     .tick   = NULL,
     .event  = event,
+    .cancel = cancel,
     .render = render,
 };
 

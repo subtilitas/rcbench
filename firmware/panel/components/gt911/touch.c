@@ -4,6 +4,7 @@
 
 #include "touch.h"
 
+#include <stdatomic.h>
 #include <string.h>
 
 #include "board.h"
@@ -46,6 +47,14 @@ typedef struct {
      * not that a finger was down; an untouched panel is healthy.
      */
     volatile uint32_t last_ok_ms;
+
+    /*
+     * Events this queue had to drop because the consumer was behind.  The
+     * gesture that loses one is in the same state as one that loses it
+     * further downstream, so the application folds this into its own count
+     * and cancels on the difference.
+     */
+    atomic_uint lost;
 } touch_state_t;
 
 static uint32_t now_ms(void)
@@ -81,10 +90,18 @@ static void publish(const touch_point_t *pts, int count)
     if (s_touch.events) {
         for (int i = 0; i < n; ++i) {
             if (xQueueSend(s_touch.events, &evts[i], 0) != pdTRUE) {
-                /* The consumer is behind: drop the oldest, keep the newest. */
+                /*
+                 * The consumer is behind: drop the oldest, keep the newest,
+                 * and count it.  A gesture that loses an event here is in
+                 * the same state as one that loses it downstream -- the
+                 * screen goes on holding a press whose release is gone --
+                 * so the count is published for the render loop to fold
+                 * into its own and cancel on.
+                 */
                 touch_event_t dropped;
                 (void)xQueueReceive(s_touch.events, &dropped, 0);
                 (void)xQueueSend(s_touch.events, &evts[i], 0);
+                atomic_fetch_add(&s_touch.lost, 1u);
             }
         }
     }
@@ -294,4 +311,9 @@ uint32_t touch_age_ms(void)
         return UINT32_MAX;
     }
     return now_ms() - s_touch.last_ok_ms;
+}
+
+unsigned touch_lost(void)
+{
+    return atomic_load(&s_touch.lost);
 }

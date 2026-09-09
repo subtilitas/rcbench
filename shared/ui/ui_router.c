@@ -243,6 +243,14 @@ void ui_router_event(const touch_event_t *evt)
 
 void ui_router_cancel_gestures(void)
 {
+    /*
+     * The band's own press first: HOME and STOP are the router's gesture,
+     * not the screen's, and a band press left latched owns its track id.
+     * The GT911 reuses ids, so a later contact that began on the screen
+     * would be taken for this one's release and act on where it lifts.
+     */
+    s.band_press = false;
+
     const ui_screen_t *scr = screen_for(s.current);
     if (scr != NULL && scr->cancel != NULL) {
         scr->cancel();

@@ -528,6 +528,10 @@ static void cancel(void)
 {
     s.pressed = false;
     s.held_s  = 0.0f;
+    /* And the id it owned: without this every later press is refused until
+     * one arrives carrying the id whose release went missing, and the
+     * operator cannot acknowledge the fault or leave the screen. */
+    s.have_press = false;
 }
 
 static const ui_screen_t k_screen = {
