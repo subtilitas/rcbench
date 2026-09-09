@@ -54,10 +54,15 @@ elif [ -z "$SWD_GPIOCHIP" ] || [ -z "$SWD_SWCLK" ] || [ -z "$SWD_SWDIO" ]; then
     bad "RP2350 over SWD" "set SWD_GPIOCHIP, SWD_SWCLK and SWD_SWDIO -- gpiodetect says which chip"
 else
     say "openocd" "$(openocd --version 2>&1 | head -1)"
-    if openocd -f interface/linuxgpiod.cfg -f target/rp2350.cfg \
+    # OpenOCD 0.12.0 ships no interface/linuxgpiod.cfg, so the driver is named.
+    # target/rp2350.cfg comes after the GPIO assignments: it selects the
+    # transport, which needs the pins already set. linuxgpiod has no
+    # configurable speed, so nothing sets one. With no target on the pins
+    # openocd exits 1 after "Error connecting DP: cannot read IDR".
+    if openocd -c "adapter driver linuxgpiod" \
                -c "adapter gpio swclk -chip $SWD_GPIOCHIP $SWD_SWCLK" \
                -c "adapter gpio swdio -chip $SWD_GPIOCHIP $SWD_SWDIO" \
-               -c "adapter speed 1000" \
+               -f target/rp2350.cfg \
                -c "init; exit" >/dev/null 2>&1; then
         say "RP2350 over SWD" "reachable on gpiochip$SWD_GPIOCHIP, clk $SWD_SWCLK, io $SWD_SWDIO"
     else

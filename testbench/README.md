@@ -162,24 +162,59 @@ The RP2350's BOOTSEL button is not available to an agent, so the board is
 flashed over SWD (serial wire debug) rather than by unplugging it, driven from
 the Pi's own pins through OpenOCD's `linuxgpiod` interface.
 
+**Untested end to end.** No RP2350 has been on these pins. The commands below
+run and are checked against the software installed on the bench host; what
+none of them has done is find a target.
+
 On a Raspberry Pi 5 the general-purpose input/output pins sit behind the RP1
 controller, so OpenOCD's older native Broadcom driver does not work and the
 character device is the route. Which device the 40-pin header is depends on
-the kernel and the firmware -- it has been `gpiochip4` and it has been
-`gpiochip0` -- so it is read from `gpiodetect` rather than assumed:
+the kernel and the firmware, so it is read rather than assumed. On the bench
+host -- Raspberry Pi 5 Model B Rev 1.1, kernel 6.18.34, Debian 13 --
+`gpiodetect` reports the header as `gpiochip0 [pinctrl-rp1]`, 54 lines.
+
+There is no `interface/linuxgpiod.cfg` in OpenOCD 0.12.0. The driver is
+selected by name:
 
     gpiodetect                       # which chip carries the header
-    export SWD_GPIOCHIP=<n> SWD_SWCLK=25 SWD_SWDIO=24
-    openocd -f interface/linuxgpiod.cfg -f target/rp2350.cfg \
+    export SWD_GPIOCHIP=0 SWD_SWCLK=25 SWD_SWDIO=24
+    openocd -c "adapter driver linuxgpiod" \
             -c "adapter gpio swclk -chip $SWD_GPIOCHIP $SWD_SWCLK" \
             -c "adapter gpio swdio -chip $SWD_GPIOCHIP $SWD_SWDIO" \
-            -c "adapter speed 1000"
+            -f target/rp2350.cfg
+
+The driver is named before the GPIO assignments and `target/rp2350.cfg` after
+them, because the target file selects the transport. Checked against OpenOCD
+0.12.0+dev-snapshot (2026-02-16-16:07) on the bench host, which ships
+`target/rp2350.cfg` and carries the `linuxgpiod` driver but no
+`interface/linuxgpiod.cfg`.
+
+With `-c "init; exit"` appended and no target on the pins it reaches the
+driver and stops there:
+
+    Info : Linux GPIOD JTAG/SWD bitbang driver
+    Error: Error connecting DP: cannot read IDR
+
+That is the whole of what has been confirmed. `cannot read IDR` is the
+no-target reading; a board on the pins has to replace it.
+
+OpenOCD 0.12.0 also ships `interface/raspberrypi5-gpiod.cfg`, which resolves
+the chip number from the `/proc/device-tree/aliases` entry pointing at the RP1
+instead of taking it from a variable. It assigns SWDIO to GPIO8 and SWCLK to
+GPIO11, not the pair below.
 
 GPIO25 on header pin 22 is SWCLK and GPIO24 on header pin 18 is SWDIO, which
 is the pair Raspberry Pi's own instructions for debugging one Pi from another
 use. `testbench/WIRING.md` has the table. Any two free header GPIOs would work,
 since the lines are bit-banged rather than driven by a peripheral, but a bench
 is reproducible only if every assembler uses the same two.
+
+Both of those lines come up pulled down: `pinctrl get 24,25` on the bench host
+reports `pd` for each, against `pu` on GPIO8. The SWD specification puts a
+pull-up on SWDIO at the target, which is why OpenOCD's own Pi 5 configuration
+moved SWDIO onto GPIO8. Whether an adapter pull-down against the RP2350's own
+termination costs anything here is untested, and is one of the things a target
+on these pins would answer. GPIO8 is the fallback if it does.
 
 `host/selftest.sh` reads the same three variables, so the wiring is stated
 once and nothing in the scripts has to know it.
@@ -194,9 +229,23 @@ signals and the common ground.
 RP2350 expects. A target at another voltage needs a level translator that
 senses the target's rail, not a wire from this header.
 
-Start at 1,000 kHz and come down if a flash fails to verify; a bad clock on
-this interface looks like intermittent verification rather than a clean
-error.
+There is no clock to set. OpenOCD prints `Note: The adapter "linuxgpiod"
+doesn't support configurable speed` when the driver initialises, so an
+`adapter speed` line is accepted and has no effect. Its
+`interface/raspberrypi5-gpiod.cfg` puts the fixed rate at about 800 kHz for
+SWD writes and 360 kHz for reads; neither is measured on this host. If a flash
+fails to verify, the clock is not the knob.
+
+Two host settings bear on it, both read on the bench host:
+
+- PCIe active-state power management is `powersave`. OpenOCD's Pi 5
+  configuration warns that the first few pulses are then clocked as fast as
+  20 MHz, and asks for `performance`:
+
+      echo performance | sudo tee /sys/module/pcie_aspm/parameters/policy
+
+- `libgpiod` is 2.2.1, so the option spellings in `WIRING.md` are the version 2
+  ones.
 
 The same applies to the bench's own coprocessor if it is to be reflashed
 between runs.
