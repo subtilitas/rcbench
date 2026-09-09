@@ -86,7 +86,13 @@ typedef void (*settings_observer_fn)(setting_id_t id);
 
 typedef struct {
     bool (*load)(float *values, int count);
-    void (*save)(const float *values, int count);
+    /*
+     * True only if every value reached the medium.  A store that cannot
+     * say so cannot be believed: the model keeps the edit and the screen
+     * goes on offering the write, rather than reporting a save that did
+     * not happen and refusing the retry that would notice.
+     */
+    bool (*save)(const float *values, int count);
 } settings_store_t;
 
 /** Reset to defaults, then load from the store if one is set. */
@@ -124,7 +130,17 @@ const settings_store_t *settings_nvs_store(void);
 
 bool settings_dirty(void);
 /** Persist through the store and clear the dirty flag. */
-void settings_save(void);
+/*
+ * Write the values through the store.  True if the store took them.  False
+ * if there is no store, or the store refused: the values stay dirty, the
+ * request is answered so the button offers the write again, and
+ * settings_save_failed() stands until the next successful save or the next
+ * edit.
+ */
+bool settings_save(void);
+
+/** Whether the last attempt failed and nothing has been written since. */
+bool settings_save_failed(void);
 
 /* ------------------------------------------------------- asking to save */
 

@@ -94,6 +94,17 @@ static struct {
 
     bool     chrome_valid[MAX_FBS];
     setting_cat_t drawn_cat;
+
+    /*
+     * The save button's three inputs as the last frame drew them.  The
+     * write is taken by settings_save_tick() outside this screen, so a
+     * pending write completing -- or being refused -- moves them with no
+     * touch to invalidate the cached framebuffers.  Without this, a
+     * refusal keeps drawing WHEN IDLE until something else repaints.
+     */
+    bool     drawn_dirty;
+    bool     drawn_asked;
+    bool     drawn_failed;
 } s;
 
 void settings_screen_invalidate(void)
@@ -250,6 +261,12 @@ static void leave(void)
 
 static void tick(float dt_s)
 {
+    if (s.drawn_dirty != settings_dirty()
+        || s.drawn_asked != settings_save_asked()
+        || s.drawn_failed != settings_save_failed()) {
+        settings_screen_invalidate();
+    }
+
     if (s.hit_kind != HIT_MINUS && s.hit_kind != HIT_PLUS) {
         s.held_for = 0.0f;
         s.repeating = false;
@@ -455,20 +472,30 @@ static void draw_categories(gfx_canvas_t *c)
     ui_button(c, rr, "RESET CATEGORY", UI_WARN, s.hit_kind == HIT_RESET, true);
 
     /*
-     * Three states, and the label is the whole of the feedback: nothing to
-     * write (SAVED), something to write (SAVE), and something asked for and
-     * waiting for a moment to write it in (WHEN IDLE).  The third is seen
-     * only while the bench is armed or a transfer is running; disarmed, the
-     * write is taken on the next frame.  SAVE takes the accent rather than
-     * the warning colour: RESET CATEGORY sits directly above it and two
-     * amber buttons in a column read as one control.
+     * Four states, and the label is the whole of the feedback: nothing to
+     * write (SAVED), something to write (SAVE), something asked for and
+     * waiting for a moment to write it in (WHEN IDLE), and an attempt the
+     * store refused (NOT SAVED).  WHEN IDLE is seen only while the bench is
+     * armed or a transfer is running; disarmed, the write is taken on the
+     * next frame.  SAVE takes the accent rather than the warning colour:
+     * RESET CATEGORY sits directly above it and two amber buttons in a
+     * column read as one control.  NOT SAVED takes the danger colour,
+     * because the values on this screen are not the values the next boot
+     * will load and nothing else on the panel says so.
      */
-    const bool dirty = settings_dirty();
-    const bool asked = settings_save_asked();
-    const char *label = !dirty ? "SAVED" : (asked ? "WHEN IDLE" : "SAVE");
+    const bool dirty  = settings_dirty();
+    const bool asked  = settings_save_asked();
+    const bool failed = settings_save_failed();
+    s.drawn_dirty  = dirty;
+    s.drawn_asked  = asked;
+    s.drawn_failed = failed;
+    const char *label = !dirty ? "SAVED"
+                        : asked ? "WHEN IDLE"
+                        : failed ? "NOT SAVED" : "SAVE";
     gfx_rect_t sv = save_rect();
     ui_button(c, sv, label,
-              dirty ? (asked ? UI_WARN : UI_ACCENT) : UI_PANEL_HI,
+              dirty ? (asked ? UI_WARN : failed ? UI_DANGER : UI_ACCENT)
+                    : UI_PANEL_HI,
               s.hit_kind == HIT_SAVE, save_offered());
 }
 

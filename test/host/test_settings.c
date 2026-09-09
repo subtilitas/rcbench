@@ -61,16 +61,31 @@ static bool mem_load(float *values, int count)
     return true;
 }
 
-static void mem_save(const float *values, int count)
+/* True when the medium took every value; the refusing store below is what
+ * a panel with unusable NVS (non-volatile storage) looks like. */
+static bool mem_save(const float *values, int count)
 {
     for (int i = 0; i < count && i < SETTING_COUNT; ++i) {
         s_saved[i] = values[i];
     }
     s_has_saved = true;
     ++s_save_calls;
+    return true;
 }
 
 static const settings_store_t s_mem_store = { mem_load, mem_save };
+
+/* A store that is asked and answers no.  It writes nothing, so a later load
+ * returns what was there before the refused save. */
+static bool refuse_save(const float *values, int count)
+{
+    (void)values;
+    (void)count;
+    ++s_save_calls;
+    return false;
+}
+
+static const settings_store_t s_refusing_store = { mem_load, refuse_save };
 
 static int s_observed;
 static setting_id_t s_last_observed;
@@ -946,6 +961,154 @@ TEST_CASE(asking_with_nothing_to_write_asks_for_nothing)
 
 
 
+/*
+ * A store that refuses leaves the values dirty.  The screen's label is the
+ * whole of the feedback, and it reads SAVED only when nothing is left to
+ * write; reporting that against a store that wrote nothing would be a claim
+ * the next boot contradicts.
+ */
+TEST_CASE(a_refused_save_keeps_the_values_dirty)
+{
+    fresh_model();
+    settings_set_store(&s_refusing_store);
+    settings_init();
+
+    settings_set(SET_MOTOR_POLES, 12.0f);
+    CHECK(settings_dirty());
+    CHECK(!settings_save_failed());
+
+    CHECK(!settings_save());
+    CHECK(settings_dirty());          /* still to be written */
+    CHECK(settings_save_failed());
+    CHECK(!settings_save_asked());    /* the request is answered */
+    CHECK_EQ(s_save_calls, 1);
+}
+
+/*
+ * No store at all is a failed save and not a no-op.  settings_set_store(NULL)
+ * is what a panel gets when NVS cannot be brought up, and every save it takes
+ * for the rest of that session writes nothing.
+ */
+TEST_CASE(a_missing_store_is_a_failed_save)
+{
+    fresh_model();
+    settings_set_store(NULL);
+    settings_init();
+
+    settings_set(SET_MOTOR_POLES, 12.0f);
+    CHECK(!settings_save());
+    CHECK(settings_dirty());
+    CHECK(settings_save_failed());
+}
+
+/* A store that takes them clears both the dirt and the failure. */
+TEST_CASE(a_successful_save_retires_an_earlier_failure)
+{
+    fresh_model();
+    settings_set_store(&s_refusing_store);
+    settings_init();
+    settings_set(SET_MOTOR_POLES, 12.0f);
+    CHECK(!settings_save());
+    CHECK(settings_save_failed());
+
+    settings_set_store(&s_mem_store);
+    CHECK(settings_save());
+    CHECK(!settings_dirty());
+    CHECK(!settings_save_failed());
+}
+
+/*
+ * And so does an edit: the failure described values these no longer are, and
+ * a stale NOT SAVED beside a number the operator has just changed says the
+ * wrong thing about the wrong value.
+ */
+TEST_CASE(an_edit_retires_an_earlier_failure)
+{
+    fresh_model();
+    settings_set_store(&s_refusing_store);
+    settings_init();
+    settings_set(SET_MOTOR_POLES, 12.0f);
+    CHECK(!settings_save());
+    CHECK(settings_save_failed());
+
+    settings_set(SET_MOTOR_POLES, 14.0f);
+    CHECK(!settings_save_failed());
+    CHECK(settings_dirty());
+}
+
+/* The idle write reports what the store did rather than that it was tried. */
+TEST_CASE(the_idle_save_reports_a_refusal)
+{
+    fresh_model();
+    settings_set_store(&s_refusing_store);
+    settings_init();
+    settings_set(SET_MOTOR_POLES, 12.0f);
+    settings_request_save();
+    CHECK(settings_save_asked());
+
+    CHECK(!settings_save_tick(true));
+    CHECK(settings_dirty());
+    CHECK(settings_save_failed());
+}
+
+/*
+ * A reset that changes nothing is not an edit.  A category already holding
+ * its defaults is reset to what it has; treating that as an edit would drop
+ * NOT SAVED while the values whose write was refused are still the ones in
+ * memory and nothing has been written since.
+ */
+TEST_CASE(a_reset_that_changes_nothing_keeps_the_failure)
+{
+    fresh_model();
+    settings_set_store(&s_refusing_store);
+    settings_init();
+
+    settings_set(SET_MOTOR_POLES, 12.0f);
+    CHECK(!settings_save());
+    CHECK(settings_save_failed());
+
+    /* APP holds its defaults, so this moves nothing. */
+    settings_reset(SET_CAT_APP);
+    CHECK(settings_save_failed());
+
+    /* ESC / BENCH holds the edited pole count, so this does move something
+     * and is an edit like any other. */
+    settings_reset(SET_CAT_ESC);
+    CHECK(!settings_save_failed());
+    CHECK(settings_dirty());
+}
+
+/*
+ * The write is taken outside this screen, by settings_save_tick() in the
+ * panel's render loop, so a pending write completing or being refused moves
+ * the button's state with no touch to invalidate the cached framebuffers.
+ * The screen has to notice that itself, or a refusal goes on drawing
+ * WHEN IDLE until something else repaints.
+ */
+TEST_CASE(a_refused_pending_write_repaints_the_button)
+{
+    fresh_screen();
+    settings_set_store(&s_refusing_store);
+    settings_init();
+
+    settings_set(SET_MOTOR_POLES, 12.0f);
+    settings_request_save();
+    CHECK(settings_save_asked());
+
+    /* Drawn once as WHEN IDLE, with the chrome cached for this buffer. */
+    ui_router_render(&s_c, 0);
+    static gfx_color_t before[(size_t)W * H];
+    memcpy(before, s_fb, sizeof(before));
+
+    /* The write is taken and refused, away from any touch. */
+    CHECK(!settings_save_tick(true));
+    CHECK(settings_save_failed());
+
+    ui_router_tick(0.05f);
+    ui_router_render(&s_c, 0);
+    CHECK(memcmp(before, s_fb, sizeof(before)) != 0);
+}
+
 int main(void)
 {
     RUN(defaults_come_from_the_schema);
@@ -977,5 +1140,12 @@ int main(void)
     RUN(the_request_outlives_the_screen);
     RUN(a_press_while_the_save_is_pending_changes_nothing);
     RUN(asking_with_nothing_to_write_asks_for_nothing);
+    RUN(a_refused_save_keeps_the_values_dirty);
+    RUN(a_missing_store_is_a_failed_save);
+    RUN(a_successful_save_retires_an_earlier_failure);
+    RUN(an_edit_retires_an_earlier_failure);
+    RUN(the_idle_save_reports_a_refusal);
+    RUN(a_reset_that_changes_nothing_keeps_the_failure);
+    RUN(a_refused_pending_write_repaints_the_button);
     return test_summary("settings");
 }
