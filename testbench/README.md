@@ -118,6 +118,8 @@ keeps working untouched.
 The tarball unpacks at `/` and holds `opt/sigrok` and nothing else, which the
 workflow asserts against the member list before upload. Installing it is:
 
+    gh run download <run-id> -n sigrok-kingst-la2016-debian13-arm64
+    sha256sum -c SHA256SUMS
     sudo tar -C / -xzf sigrok-kingst-la2016-debian13-arm64.tar.gz
     sudo apt-get install -y --no-install-recommends \
         $(cat /opt/sigrok/RUNTIME-DEPENDS.txt)
@@ -128,6 +130,14 @@ workflow asserts against the member list before upload. Installing it is:
     sudo udevadm trigger --subsystem-match=usb
     sudo adduser "$USER" plugdev        # log out and back in to take effect
     export PATH=/opt/sigrok/bin:$PATH
+
+**The artifact is a zip holding the tarball and its `SHA256SUMS`.** An
+artifact uploaded unarchived cannot be fetched: both `actions/download-artifact`
+and `gh run download` expect a zip and fail on a bare file with `zip: not a
+valid zip file`. The zip does not alter the tarball's bytes, and the checksum
+line is there to confirm that rather than to be taken on trust -- check it
+against the file's own `SHA256SUMS` rather than against a sum computed here,
+because a sum computed from a bad download matches itself.
 
 **The packages are a step.** The tarball carries `sigrok-cli` and
 `libsigrok.so.4` and nothing else it links against. `RUNTIME-DEPENDS.txt` is
