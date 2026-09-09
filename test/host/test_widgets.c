@@ -472,8 +472,8 @@ static bool ev(int x, int y, touch_event_type_t t, uint8_t id)
  *
  * Taking the value under the finger would command whatever it landed on: a
  * touch at the right-hand end of a throttle asks for full travel in one
- * contact.  The output bank's slew ramps rather than steps, which bounds how
- * fast a motor follows, but the command still went to the end.
+ * contact, and nothing downstream bounds how fast a motor follows it -- a
+ * throttle channel bound on the coprocessor carries no slew.
  */
 TEST_CASE(a_press_on_the_track_commands_nothing)
 {

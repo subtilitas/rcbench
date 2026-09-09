@@ -408,6 +408,14 @@ uint16_t outputs_actual(const outputs_t *o, uint8_t ch)
     return o->channel[ch].actual;
 }
 
+uint16_t outputs_command(const outputs_t *o, uint8_t ch)
+{
+    if (o == NULL || ch >= OUT_MAX_CHANNELS) {
+        return 0u;
+    }
+    return o->channel[ch].command;
+}
+
 uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch)
 {
     if (o == NULL || ch >= OUT_MAX_CHANNELS) {
