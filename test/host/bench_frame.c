@@ -159,15 +159,30 @@ int main(int argc, char **argv)
      * renders and before the samples. */
     motor_screen_set_armed(true);
 
-    /* Warm both framebuffers the way the panel does, before measuring. */
-    ui_router_render(&c, 0);
-    ui_router_render(&c, 1);
-
     telemetry_sim_t sim;
     bench_state_t bench;
     memset(&bench, 0, sizeof(bench));
     telemetry_sim_init(&sim, NULL);
     const bool feed = (strcmp(mode, "frame-idle") != 0);
+
+    /*
+     * "held" measures the frame between two runs, so the run has to be over
+     * before the first measured frame.  It is filled and ended here rather
+     * than part way through the loop: this harness is invoked for 1 frame and
+     * for 11, and the cost is the difference between them, so anything that
+     * happens after frame 11 is never measured at all.
+     */
+    if (strcmp(mode, "held") == 0) {
+        for (int i = 0; i < 200; ++i) {
+            telemetry_sim_step(&sim, 60.0f, 0.05f, &bench);
+            motor_screen_push(&bench);
+        }
+        motor_screen_set_armed(false);
+    }
+
+    /* Warm both framebuffers the way the panel does, before measuring. */
+    ui_router_render(&c, 0);
+    ui_router_render(&c, 1);
 
     for (int i = 0; i < frames; ++i) {
         if (plain) {
@@ -193,13 +208,6 @@ int main(int argc, char **argv)
         if (feed) {
             telemetry_sim_step(&sim, 60.0f, 0.05f, &bench);
             motor_screen_push(&bench);
-        }
-        if (strcmp(mode, "held") == 0 && i == 200) {
-            /* The run ends part way in, and the rest of the frames measure
-             * what the panel does between runs: live readouts over a plot
-             * that cannot move.  That is where a bench spends most of its
-             * time, and it must cost less than a running one, not more. */
-            motor_screen_set_armed(false);
         }
         if (strcmp(mode, "throttle") == 0) {
             /* A finger on the throttle: the control revision moves on every

@@ -3699,6 +3699,10 @@ void app_main(void)
             (void)motor_screen_poll_cmd(&follow);   /* not a command */
         }
         was_armed = armed_now;
+        /* The arm state the plot was last told, so the arm edge is seen here
+         * rather than inferred from was_armed, which several other things
+         * above already consume. */
+        static bool motor_armed;
         /*
          * The arm edge before this frame's samples and the disarm edge after
          * them, so a queued sample lands on the side of the run boundary it
@@ -3706,10 +3710,26 @@ void app_main(void)
          * ordering is what decides where a run's trace begins and ends: the
          * arm clears the plot, so an arm reported after the drain would wipe
          * the samples the drain had just recorded into the new run.
+         *
+         * What this does not cover: a run that both arms and disarms between
+         * two frames is never seen armed here, so it leaves no trace at all.
+         * That is a run shorter than one frame, about 26 ms at 39 Hz.
          */
+        if (armed_now && !motor_armed) {
+            /*
+             * A run starts at the arm, so what the queue is holding from
+             * before it is not part of it.  Dropped rather than pushed: the
+             * queue can hold SAMPLE_Q_LEN samples, 400 ms at
+             * PANEL_SAMPLE_HZ, and without this the first 400 ms of a run's
+             * trace would be readings taken while the bench was not driving.
+             */
+            bench_state_t stale;
+            while (xQueueReceive(s_sample_q, &stale, 0) == pdTRUE) { }
+        }
         if (armed_now) {
             motor_screen_set_armed(true);
         }
+        motor_armed = armed_now;
         /* One sample, one plot column, however many frames it took to get
          * here: the queue holds what this loop was too busy to draw. */
         bench_state_t queued;

@@ -30,7 +30,7 @@ mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
 frame            8,856     1107 KiB     29.1      19.5
 frame-idle        1,274      159 KiB      4.2      39.0
-held             8,856     1107 KiB     29.1      19.5
+held             4,777      597 KiB     15.7      39.0
 sim              9,817     1227 KiB     32.2      19.5
 throttle        10,598     1325 KiB     34.8      19.5
 chrome          33,106     4138 KiB    108.7       7.8
