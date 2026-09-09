@@ -539,6 +539,12 @@ static atomic_bool s_stop_request;
 /* Set when the pump applied a stop for a press the router will also latch,
  * so the backstop does not stop the bench twice for one press. */
 static atomic_bool s_stop_counted;
+/* The release s_stop_counted refers to, so an eviction can tell that one
+ * from any other. */
+static atomic_uint s_stop_counted_id;
+/* The driver's loss count this task has already answered, for its own STOP
+ * ownership.  Touched only by the control task. */
+static unsigned s_stop_lost_seen;
 static atomic_bool s_disarm_request;
 static atomic_bool s_servo_release_request;
 /*
@@ -557,6 +563,17 @@ static atomic_uint s_lets_go;
  * progress.  Nonzero on a bench is the condition below.
  */
 static atomic_uint s_touch_lost;
+
+/*
+ * Events neither queue could hand over, since boot.  Both are counted: the
+ * driver's own queue drops its oldest when this task is behind, and this
+ * task's queue drops its oldest when the render loop is.  A gesture that
+ * loses an event to either is in the same state.
+ */
+static unsigned touch_losses(void)
+{
+    return atomic_load(&s_touch_lost) + touch_lost();
+}
 /* False until the control task owns the safety state; bring-up polls the
  * link before that, with nothing to service. */
 static bool s_pump_live;
@@ -657,18 +674,27 @@ static void control_pump(void)
              * mattering.
              */
             touch_event_t stale;
-            if (xQueueReceive(s_touch_q, &stale, 0) == pdTRUE) {
+            const bool dropped =
+                (xQueueReceive(s_touch_q, &stale, 0) == pdTRUE);
+            if (dropped) {
                 routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
             }
             atomic_fetch_add(&s_touch_lost, 1u);
             /*
              * And the marker that says the router will latch a stop this
-             * task already applied.  The event it refers to may be the one
-             * just evicted, in which case the router raises no request and
-             * the marker stands -- to be consumed by the next stop that
-             * genuinely needs the backstop, which would then be ignored.
+             * task already applied -- but only when the entry evicted is
+             * the release that marker refers to.  Then the router raises no
+             * request and the marker would stand, to be consumed by the
+             * next stop that genuinely needs the backstop.  Clearing it for
+             * any eviction is the opposite error: the release is still in
+             * the queue, the router raises its request, and the stop is
+             * applied a second time for one press.
              */
-            atomic_store(&s_stop_counted, false);
+            if (dropped && stale.type == TOUCH_EVENT_UP
+                && atomic_load(&s_stop_counted)
+                && stale.point.id == atomic_load(&s_stop_counted_id)) {
+                atomic_store(&s_stop_counted, false);
+            }
         }
         /*
          * The router will latch this same release and the backstop would
@@ -679,6 +705,7 @@ static void control_pump(void)
          * would be ignored.
          */
         if (counted_here && routed) {
+            atomic_store(&s_stop_counted_id, evt.point.id);
             atomic_store(&s_stop_counted, true);
         }
     }
@@ -687,6 +714,24 @@ static void control_pump(void)
      * not since the last touch.  An untouched panel is healthy; a controller
      * that has stopped answering is not.
      */
+    /*
+     * And this task's own record of a STOP press.  It owns s_stop_press
+     * independently of the screens, and the driver's queue can drop the
+     * release before this loop ever sees it: the controller then reuses the
+     * track id, and a contact that begins elsewhere and lifts over STOP
+     * satisfies the branch above and stops a run nobody asked to stop.
+     *
+     * Only the driver's count is watched here.  This task is the one that
+     * evicts from s_touch_q, and it does so after the event has already
+     * been through the branch above, so its own losses cannot orphan this
+     * press.
+     */
+    const unsigned drv_lost = touch_lost();
+    if (drv_lost != s_stop_lost_seen) {
+        s_stop_lost_seen = drv_lost;
+        s_stop_press = false;
+    }
+
     if (saw_touch || touch_age_ms() < 200u) {
         arming_touch_seen(&s_arm, now_ms());
     }
@@ -3749,10 +3794,9 @@ void app_main(void)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
     uint32_t frames  = 0;
-    /* The loss count this loop has already answered, over both queues.  It
-     * only rises, so a difference is one or more events the screens never
-     * saw. */
-    unsigned lost_seen = atomic_load(&s_touch_lost) + touch_lost();
+    /* The loss count this loop has already answered.  It only rises, so a
+     * difference is one or more events the screens never saw. */
+    unsigned lost_seen = touch_losses();
     uint32_t last_us = (uint32_t)esp_timer_get_time();
     bool     was_armed = false;
     uint32_t last_stops = 0;
@@ -3843,6 +3887,20 @@ void app_main(void)
             motor_screen_set_armed(false);
         }
         servo_screen_set_armed(armed_now);
+
+        /*
+         * A loss already recorded before this frame began is answered
+         * first.  The events still in the queue were captured around the
+         * one that went missing, and dispatching them into a screen whose
+         * record of the glass is stale is what the cancellation exists to
+         * prevent: a queued movement on a reused track id commands a servo
+         * position, an orphan release applies a binding change, and
+         * cancelling afterwards cannot take either back.
+         */
+        if (touch_losses() != lost_seen) {
+            lost_seen = touch_losses();
+            ui_router_cancel_gestures();
+        }
 
         /* What the control task saw of the panel. */
         touch_event_t evt;
@@ -4040,7 +4098,7 @@ void app_main(void)
          * go early already does; a press dispatched in this frame and then
          * cancelled costs the operator a repeat of the gesture.
          */
-        const unsigned lost_now = atomic_load(&s_touch_lost) + touch_lost();
+        const unsigned lost_now = touch_losses();
         if (lost_now != lost_seen) {
             lost_seen = lost_now;
             ui_router_cancel_gestures();

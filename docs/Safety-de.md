@@ -106,12 +106,16 @@ Panel als Leitung ohne Flanken gelesen wird.
   und der Frame, der ihn bemerkt, sagt dem obersten Screen, dass sein Bild
   vom Glas veraltet ist; der Screen verwirft jede laufende Geste. Das
   kommandiert nichts, genau wie ein frühes Loslassen, mit der einen Ausnahme
-  weiter unten. Beide Queues werden gezählt --
-  die Event-Queue des Treibers verwirft ihren ältesten Eintrag aus demselben
-  Grund -- und die Zahl wird nach dem Leeren und vor dem Tick des Frames
-  gelesen, ein Event, das während des Durchlaufs verloren geht, wird also in
-  diesem Frame beantwortet und nicht erst im nächsten. Das Frame-Log führt
-  beide Zahlen als `TOUCHLOST <Panel>/<Treiber>`.
+  weiter unten. Beide Queues werden gezählt -- die Event-Queue des Treibers
+  verwirft ihren ältesten Eintrag aus demselben Grund -- und die Zahl wird
+  zweimal gelesen: bevor die Events dieses Frames zugestellt werden, damit
+  die Überlebenden rund um das fehlende Event nicht auf einem veralteten
+  Bild handeln, und erneut vor dem Tick des Frames, damit ein Event, das
+  während des Durchlaufs verloren geht, in diesem Frame beantwortet wird und
+  nicht erst im nächsten. Das Frame-Log führt beide Zahlen als
+  `TOUCHLOST <Panel>/<Treiber>`. Der Control-Task verwirft aus demselben
+  Grund seinen eigenen Vermerk eines STOP-Drucks bei einem Verlust im
+  Treiber: Er besitzt diesen Druck unabhängig von den Screens.
 - Jedes Bedienelement, das zwischen Druck und Release Zustand hält, bricht
   ab. MOTOR & ESC, SERVO und CAN BUS FAULT haben eine Geste, die auf einem
   Timer fertig wird, ein verlorenes Release schaltet dort also von selbst
