@@ -59,7 +59,7 @@ part of the wiring rather than something assumed:
 | | |
 |---|---|
 | The Pi | its own supply |
-| The RP2350 | its own USB, from the Pi or a charger. **Not from the Pi's 3.3 V pin** -- see the next step |
+| The RP2350 | its own USB, from a charger or a powered hub -- **not from the Pi**, and **not from the Pi's 3.3 V pin**. A cable to the Pi grounds the two a second time, through the USB shell, and the star lead in step 2 is then one of two return paths rather than the only one |
 | The coprocessor | its own USB |
 | The panel | its own USB-C, on the socket it is flashed from |
 | Relay coils | their own supply, through the driver |
@@ -188,7 +188,9 @@ not accept a download.
 
 **Check**, one at a time, with the boards powered:
 
-- Close RESET alone: the board restarts. On the panel the splash comes back.
+- **Pulse** RESET alone -- close it, then release it. The board restarts on
+  the release, so a contact left closed holds it in reset and looks exactly
+  like a relay that is not wired.
 - Close BOOT, pulse RESET, release RESET, release BOOT: the board comes up in
   its loader. The coprocessor appears as a mass-storage device; the panel
   accepts a serial download.
@@ -376,16 +378,35 @@ measured on the switched side, with a probe rated for 8.4 V or whatever the
 ESC pack is.
 
 **A meter is not enough.** It says the rail is down by the time you look,
-which is a different claim from down within 150 ms: a switch with a slow
-gate drive, a rail with a bulk capacitor, or a load light enough not to
-discharge one, all read zero eventually and fail the deadline. So the rail
-goes on a scope channel triggered from the same edge as the trace above --
-the last edge into the monostable's trigger -- and the time from that edge to
-the rail leaving its band is the number the check produces.
+which is a different claim from down within 150 ms: a switch with a slow gate
+drive, a rail with a bulk capacitor, or a load light enough not to discharge
+one, all read zero eventually and miss the deadline. The rail goes on a scope
+channel triggered from the same edge as the trace above -- the last edge into
+the monostable's trigger.
+
+**Both rails, and to a stated voltage.** Two things make that measurement mean
+something:
+
+- *A threshold, not "off".* Leaving the regulation band is not being
+  de-energised: a servo holds position and an ESC stays armed well below
+  nominal. The number is the time from the trigger edge to the rail falling
+  **below the load's own minimum operating voltage**, which is the servo's or
+  the ESC's datasheet figure and belongs written next to the capture. Above
+  that voltage the load is still powered, whatever the rail is called.
+- *A load on it.* An unloaded rail with a bulk capacitor decays slowly and
+  measures whatever the capacitor decides. Take it with the servo or the ESC
+  connected -- the bench's own load, in the state the interlock exists for.
+
+The servo rail and the ESC pack are separate supplies, so each has its own
+switch and each is its own claim. Measuring one proves nothing about the
+other: a bypassed or failed-short switch on the unmeasured rail leaves that
+load powered through a check that passed. Capture both, or repeat the whole
+measurement for each.
 
 Passing the control side without the rail is the interlock's own failure mode:
 the switch told to open and the power still on. Passing the rail without a
-timebase is the same failure with a slower clock.
+timebase is the same failure with a slower clock, and passing one rail is the
+same failure on the other one.
 
 *The differential test.* Keep the firmware happy and starve only the hardware.
 
