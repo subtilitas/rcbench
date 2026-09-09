@@ -97,6 +97,7 @@ typedef struct {
     uint16_t   actual;       /**< what the slew has reached                */
     uint16_t   rest;         /**< where it goes when it is not driving     */
     uint16_t   slew_per_s;   /**< span units per second; 0 is immediate    */
+    uint16_t   slew_rem;     /**< thousandths carried between steps        */
     uint16_t   min_us;       /**< what a pulse driver renders 0 as         */
     uint16_t   max_us;       /**< and OUT_SPAN                             */
     uint32_t   last_command_ms;
@@ -117,12 +118,13 @@ typedef struct {
     out_channel_t channel[OUT_MAX_CHANNELS];
     out_slot_t    slot[OUT_MAX_SLOTS];
     bool          armed;
-    uint32_t      timeout_ms;   /**< silence after which it stops driving  */
+    uint32_t      timeout_ms;   /**< silence after which a channel rests   */
     uint32_t      last_step_ms;
     uint64_t      reserved;     /**< pins this build will not drive        */
 } outputs_t;
 
-/** Silence after which an output stops driving. */
+/** Silence after which a channel is rendered at its role's rest.  It keeps
+ *  driving; see outputs_driving(). */
 #define OUT_DEFAULT_TIMEOUT_MS  500u
 
 void outputs_init(outputs_t *o, uint32_t now_ms);
@@ -228,7 +230,9 @@ bool outputs_keepalive(outputs_t *o, uint8_t ch, uint32_t now_ms);
 /** Whether the bank is armed, for a screen that shows it. */
 bool outputs_armed(const outputs_t *o);
 
-/** Advance slew to @p now_ms, and stop driving if nobody has commanded. */
+/** Advance slew to @p now_ms, and put a channel nobody has commanded for
+ *  timeout_ms at its role's rest.  It decides what a channel renders, not
+ *  whether it renders: see outputs_driving(). */
 void outputs_step(outputs_t *o, uint32_t now_ms);
 
 /** Everything to rest, immediately.  The failsafe edge calls this, and it
@@ -240,8 +244,82 @@ uint16_t outputs_actual(const outputs_t *o, uint8_t ch);
 /** What a pulse driver should emit for @p ch, in microseconds. */
 uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
 
-/** True while the bank is armed and being commanded: what a driver asks
- *  before it puts an edge on a pin. */
+/**
+ * Whether a driver may put edges on a pin: the bank is armed, and nothing
+ * beyond that.  The same answer as outputs_armed(), asked by a driver rather
+ * than by a screen.
+ *
+ * Two gates a driver also stands behind are not in this answer:
+ *
+ *   The heartbeat.  Nothing here can see the safety line.  What armed means
+ *   is settled by the end holding the wire before it calls outputs_arm(): the
+ *   coprocessor recomputes it every pass from the ARM register, its link
+ *   failsafe and its heartbeat monitor, so a bank armed there already carries
+ *   a beat that was judged this pass.  "This pass" is the whole of the
+ *   guarantee: silence is noticed by a poll, so the line can have been dead
+ *   for up to one pass of that loop before the poll says so, and the
+ *   monostable is what covers that gap in hardware.
+ *
+ *   A command arriving.  That is per channel, outputs_overdue(), and it
+ *   decides what a channel renders rather than whether it renders.
+ *   outputs_step() puts an overdue channel at its rest and leaves the others
+ *   where they are.
+ *
+ * Limitation: an armed bank drives every bound pin whether or not anything is
+ * commanding it.  A channel that has had no command for timeout_ms is
+ * rendered at its role's rest.  A surface's rest is OUT_SPAN/2, which
+ * outputs_pulse_us() renders as the midpoint of that channel's own endpoints:
+ * 1500 us across the default 1000 to 2000 us, and 760 us across the 660 to
+ * 860 us of a narrow servo.  Endpoints are per channel and are written over
+ * the CHAN_CFG page, so a channel carrying the wrong role presents the
+ * midpoint of whatever range it was given, for as long as the bank is armed.
+ *
+ * The timeout does reach that channel.  outputs_overdue() is true for it and
+ * outputs_step() acts on it every pass; what the timeout resolves to is the
+ * rest the channel is already at, so the edges stay on the pin.  A disarm is
+ * what takes them away.
+ *
+ * Nor is a wrong role out of reach of every command.  Channels are addressed
+ * two ways.  outputs_set_role_channels() addresses them by role and passes a
+ * surface by, which is why the throttle does not reach one.  outputs_set()
+ * and outputs_channels_apply_n() address them by index, and the CHANNELS page
+ * is written that way, so a write there commands a channel whatever its role.
+ *
+ * Rest is not where a channel sits for the first timeout_ms after an arm
+ * either.  outputs_arm() stamps last_command_ms on all OUT_MAX_CHANNELS
+ * channels, so a command given while disarmed is fresh again and is rendered
+ * until it goes overdue.  What gets rendered in that time is the slew's
+ * answer, not the command:
+ *
+ *   slew_per_s 0   the first step is the whole distance, so the bank
+ *                  carries the last command it was left with for the whole
+ *                  timeout -- 500 ms at OUT_DEFAULT_TIMEOUT_MS
+ *   slew_per_s > 0 the disarm has already put actual at rest, so the bank
+ *                  carries a ramp from rest towards that command.  It
+ *                  arrives only if the distance is under
+ *                  slew_per_s * timeout_ms / 1000, half of slew_per_s at
+ *                  the default timeout; past that the timeout returns it to
+ *                  rest with the command never reached.  The timeout runs
+ *                  from the arm, not from the arrival.  That bound holds
+ *                  however often the caller steps, because outputs_step()
+ *                  carries the part-unit between steps rather than rounding
+ *                  each one up.
+ *
+ * A throttle rests at 0, so its re-arm ramp is always upward and is slewed.
+ * A surface rests at the middle of its travel and ramps either way.
+ *
+ * The bank is what carries it; the pin can lag.  A driver with a setup
+ * sequence sends that first: firmware/iomcu/src/outputs_hw.c sends
+ * DSHOT_CMD_EDT_ENABLE for DSHOT_CMD_REPEATS (10) frames on the edge into
+ * driving for a bidirectional DShot slot, which at the coprocessor's
+ * 1,000 Hz update rate is the first 10 ms of the arm.  The command reaches
+ * that ESC after them.
+ *
+ * What an ESC (electronic speed controller) does with the surface rest is a
+ * question about the ESC.  A receiver output of 1500 us is about half
+ * throttle.  Whether one that has seen no pulses and is then handed 1500 us
+ * runs there or refuses to arm is not measured on this bench.
+ */
 bool outputs_driving(const outputs_t *o);
 
 #ifdef __cplusplus

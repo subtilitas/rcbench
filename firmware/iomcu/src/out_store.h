@@ -7,8 +7,9 @@
  * one reapplies it to the leads still plugged into it.
  *
  * Restoring at boot configures the slots.  It does not drive them: every
- * driver is gated by outputs_driving(), which needs the bench armed, the
- * heartbeat trusted and a command arriving, so a restored binding claims its
+ * driver is gated by outputs_driving(), which is the bank's armed flag, and
+ * main.c sets that flag only while the ARM register is set, the link is out
+ * of failsafe and the heartbeat is trusted, so a restored binding claims its
  * pins and holds them at idle until somebody arms.
  *
  * What a write costs.  The flash cannot be read while it is written and this

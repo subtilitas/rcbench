@@ -77,6 +77,29 @@ unpowered or unplugged panel reads as a line that is not edging.
   page.
 - The coprocessor acts on overcurrent, over-temperature, stall timeout and a
   lost link on its own authority and reports the fault at the next poll.
+- An armed bench drives every bound pin, whether or not anything is commanding
+  it. A channel that has had no command for 500 ms is rendered at its role's
+  rest: stopped for a throttle, centred for a surface. Centred is the midpoint
+  of that channel's own endpoints — 1500 us across the default 1000 to 2000 us,
+  and 760 us across the 660 to 860 us of a narrow servo. The timeout moves the
+  channel to that rest and leaves the pin driving; disarming is what stops the
+  edges.
+- A receiver output of 1500 us is about half throttle. What an ESC that has
+  seen no pulses does when it is then handed 1500 us is not measured on this
+  bench: it may run at about half throttle, and it may refuse to arm until it
+  has seen a stop. A pin bound as a servo output can therefore carry a running
+  motor.
+- The throttle does not reach a channel bound as a surface, because it
+  commands the pins the binding calls motors. A write to the CHANNELS page
+  does, because that page addresses channels by index rather than by role.
+- For the first 500 ms after an arm, a channel is not at its rest. Arming
+  stamps every channel's clock, so a command given while the bench was
+  disarmed is not overdue and is rendered until it goes overdue. What is
+  rendered depends on the channel's slew: with no slew the first step is the
+  whole distance, so the channel is at that command; with a slew set, the
+  disarm has already put it at rest and it ramps from there, covering at most
+  `slew_per_s * 500 / 1000` before the timeout takes it back. Either way it is
+  driving, and a disarm is what stops it.
 
 ## Heartbeat rather than enable level
 

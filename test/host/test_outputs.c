@@ -59,8 +59,9 @@ TEST_CASE(everything_goes_to_rest_together)
 }
 
 /*
- * One silence timeout for every channel: a surface stops driving after
- * silence the same as a throttle does.
+ * One silence timeout for every channel: a surface goes to its rest after
+ * silence the same as a throttle does.  Both keep driving; rest is centred
+ * for the surface and stopped for the throttle.
  */
 TEST_CASE(silence_stops_every_role)
 {
@@ -162,8 +163,112 @@ TEST_CASE(a_slow_slew_still_moves)
     outputs_arm(&o, true, 1000u);
     outputs_set(&o, 0, 1000u, 1000u);
     const uint16_t was = outputs_actual(&o, 0);
-    outputs_step(&o, 1001u);                /* a millisecond */
-    CHECK(outputs_actual(&o, 0) > was);
+    /* A millisecond is a thousandth of a unit: carried, not yet moved. */
+    outputs_step(&o, 1001u);
+    CHECK_EQ(outputs_actual(&o, 0), was);
+    /* And a thousand of those milliseconds is the unit.  Stepped one at a
+     * time, so it is the carry that gets there and not one long step.  The
+     * command is refreshed each pass to keep the channel out of its own
+     * timeout, which is what a host driving an output does. */
+    for (uint32_t t = 1002u; t <= 2000u; ++t) {
+        outputs_set(&o, 0, 1000u, t);
+        outputs_step(&o, t);
+    }
+    CHECK_EQ(outputs_actual(&o, 0), (uint16_t)(was + 1u));
+}
+
+/*
+ * Standing still earns no credit towards the next command.
+ *
+ * The remainder is carried between steps, so a channel left at its command
+ * would otherwise bank a thousandth of a unit per millisecond and spend it
+ * the moment a command arrives -- a rate limit that is not one for the first
+ * step after any pause.
+ */
+TEST_CASE(a_stationary_channel_earns_no_slew_credit)
+{
+    fresh();
+    CHECK(outputs_set_slew(&o, 0, 1u));   /* one unit a second */
+    outputs_arm(&o, true, 1000u);
+    /* Commanded to where it already is, for 999 ms. */
+    for (uint32_t t = 1001u; t <= 1999u; ++t) {
+        outputs_set(&o, 0, OUT_SPAN / 2u, t);
+        outputs_step(&o, t);
+    }
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+
+    /* Then asked to move.  One millisecond at one unit a second is a
+     * thousandth of a unit, and none of the 999 before it counts. */
+    outputs_set(&o, 0, OUT_SPAN, 2000u);
+    outputs_step(&o, 2000u);
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+}
+
+/*
+ * A throttle coming down does not wait for a slew step.
+ *
+ * Reducing throttle is the safe direction, so it is not ramped -- and the
+ * step that rounds to zero must not delay it either.  At SPEED 1% the slew is
+ * 20 units a second, which is a fiftieth of a unit in the millisecond a pass
+ * takes, so a drop gated behind a non-zero step would wait up to 50 ms.
+ */
+TEST_CASE(a_throttle_coming_down_does_not_wait_for_a_slew_step)
+{
+    fresh();
+    CHECK(outputs_set_role(&o, 0, OUT_ROLE_THROTTLE));
+    CHECK(outputs_set_slew(&o, 0, 20u));
+    outputs_arm(&o, true, 1000u);
+    outputs_set(&o, 0, OUT_SPAN, 1000u);
+    /* Inside the timeout, so the ramp runs rather than the channel resting:
+     * 400 ms at 20 units a second is 8 units up from a throttle's rest of 0. */
+    outputs_step(&o, 1400u);
+    CHECK_EQ(outputs_actual(&o, 0), 8u);
+
+    /* One millisecond later, commanded to stop.  The slew step for that
+     * millisecond is zero; the drop happens anyway. */
+    outputs_set(&o, 0, 0u, 1401u);
+    outputs_step(&o, 1401u);
+    CHECK_EQ(outputs_actual(&o, 0), 0u);
+}
+
+/*
+ * A long interval is not truncated.
+ *
+ * The elapsed time is capped only where a longer step would arrive anyway --
+ * OUT_SPAN units covers any distance a channel can be from its command -- so
+ * an interval well past a minute still delivers every unit it is worth.
+ */
+TEST_CASE(a_long_step_is_not_truncated)
+{
+    fresh();
+    CHECK(outputs_set_slew(&o, 0, 1u));   /* one unit a second */
+    outputs_arm(&o, true, 1000u);
+    outputs_step(&o, 1000u);
+    /* 61 seconds, with the command refreshed so the channel is not overdue. */
+    outputs_set(&o, 0, OUT_SPAN, 62000u);
+    outputs_step(&o, 62000u);
+    CHECK_EQ(outputs_actual(&o, 0), (uint16_t)(OUT_SPAN / 2u + 61u));
+}
+
+/*
+ * How often the caller steps does not change the rate.
+ *
+ * Rounding each step up on its own would deliver at least one unit per call,
+ * so 200 units a second rendered as 1000 whenever the caller stepped every
+ * millisecond -- which is what the coprocessor's loop does, and what made
+ * every SPEED from 1% to 49% on the servo screen move the horn at 50%.
+ */
+TEST_CASE(the_slew_rate_does_not_follow_the_step_cadence)
+{
+    fresh();
+    CHECK(outputs_set_slew(&o, 0, 200u));
+    outputs_arm(&o, true, 1000u);
+    for (uint32_t t = 1001u; t <= 1400u; ++t) {
+        outputs_set(&o, 0, 1000u, t);
+        outputs_step(&o, t);
+    }
+    /* 400 ms at 200 units a second is 80 units, up from the 500 rest. */
+    CHECK_EQ(outputs_actual(&o, 0), 580u);
 }
 
 /*
@@ -332,6 +437,180 @@ TEST_CASE(a_command_while_disarmed_is_remembered_and_not_emitted)
     CHECK_EQ(outputs_actual(&o, 0), 0u);
     CHECK_EQ(o.channel[0].command, 700u);
     CHECK(!outputs_driving(&o));
+}
+
+/*
+ * outputs_driving() is the bank's armed flag and asks nothing else.  It does
+ * not ask whether a channel is still being commanded -- that is per channel,
+ * and it decides what a channel renders rather than whether it renders -- and
+ * it cannot ask about the safety line, which the end holding the wire settles
+ * before it arms.  A bank armed with every channel past the timeout still
+ * drives, and what reaches the pin is the channel's rest: 1500 us for a
+ * surface across the default 1000 to 2000 us endpoints.
+ */
+TEST_CASE(driving_is_armed_and_asks_nothing_about_commands)
+{
+    fresh();
+    CHECK(!outputs_driving(&o));
+    CHECK_EQ(outputs_driving(&o), outputs_armed(&o));
+
+    outputs_arm(&o, true, 1000u);
+    outputs_set(&o, 0, 900u, 1000u);
+    outputs_step(&o, 1010u);
+    CHECK(outputs_driving(&o));
+    CHECK_EQ(outputs_actual(&o, 0), 900u);
+
+    /* Every channel past the timeout, and the bank drives on. */
+    const uint32_t late = 1000u + OUT_DEFAULT_TIMEOUT_MS;
+    outputs_step(&o, late);
+    for (uint8_t ch = 0; ch < (uint8_t)OUT_MAX_CHANNELS; ++ch) {
+        CHECK(outputs_overdue(&o, ch, late));
+    }
+    CHECK(outputs_driving(&o));
+    CHECK_EQ(outputs_driving(&o), outputs_armed(&o));
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+    CHECK_EQ(outputs_pulse_us(&o, 0), 1500u);
+
+    /* A disarm is what stops it. */
+    outputs_arm(&o, false, late);
+    CHECK(!outputs_driving(&o));
+}
+
+/*
+ * A re-arm renders the slew's answer, not the command.
+ *
+ * outputs_arm() refreshes the clock and nothing else; the disarm before it
+ * put actual at rest.  With no slew the first step is the whole distance and
+ * the pin carries the remembered command for the whole timeout.  With a slew
+ * the pin carries a ramp from rest, and a rate too slow to cross the distance
+ * inside timeout_ms never gets there: the timeout returns the channel to rest
+ * with the command still standing.
+ */
+TEST_CASE(a_re_arm_ramps_from_rest_when_the_channel_is_slewed)
+{
+    fresh();
+    /* Channel 0 unslewed, channel 1 at 200 units a second: 100 units in the
+     * 500 ms timeout, against 400 units from rest to the command. */
+    CHECK(outputs_set_slew(&o, 1, 200u));
+
+    outputs_arm(&o, true, 1000u);
+    outputs_set(&o, 0, 900u, 1000u);
+    outputs_set(&o, 1, 900u, 1000u);
+    outputs_step(&o, 1001u);
+    CHECK_EQ(outputs_actual(&o, 0), 900u);
+    /* 200 units a second is a fifth of a unit in a millisecond: carried. */
+    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u);
+
+    /* Disarmed, and still stepped: the loop calls outputs_step() every pass
+     * whether the bank is armed or not, so the slew's elapsed time does not
+     * count the disarmed gap in one lump. */
+    outputs_arm(&o, false, 1001u);
+    outputs_step(&o, 2000u);
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u);
+
+    /* Re-armed with both commands still standing.  The arm refreshes the
+     * clock and nothing else. */
+    outputs_arm(&o, true, 2000u);
+    outputs_step(&o, 2001u);
+    CHECK_EQ(outputs_actual(&o, 0), 900u);   /* the whole distance at once */
+    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u);
+
+    /* One millisecond before the timeout.  499 ms at 200 units a second is
+     * 99 units and 800 thousandths, so the ramp stands at 599 of the 900
+     * commanded -- inside the header's bound of slew_per_s * timeout_ms /
+     * 1000, which is 100 units here. */
+    outputs_step(&o, 2000u + OUT_DEFAULT_TIMEOUT_MS - 1u);
+    CHECK_EQ(outputs_actual(&o, 0), 900u);
+    CHECK_EQ(outputs_actual(&o, 1), 599u);
+    CHECK(outputs_actual(&o, 1) - OUT_SPAN / 2u
+          <= 200u * OUT_DEFAULT_TIMEOUT_MS / 1000u);
+
+    /* At the timeout both go to rest, the slewed one without ever having
+     * rendered what it was commanded.  The bank is still driving. */
+    outputs_step(&o, 2000u + OUT_DEFAULT_TIMEOUT_MS);
+    CHECK(outputs_overdue(&o, 1, 2000u + OUT_DEFAULT_TIMEOUT_MS));
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u);
+    CHECK(outputs_driving(&o));
+}
+
+/*
+ * Rest is the midpoint of the channel's own endpoints, not 1500 us.  The
+ * default 1000 to 2000 us rests at 1500 us; the narrow servo the servo screen
+ * offers, 660 to 860 us, rests at 760 us.
+ */
+TEST_CASE(a_surface_rests_at_the_midpoint_of_its_own_endpoints)
+{
+    fresh();
+    CHECK(outputs_set_endpoints(&o, 1, 660u, 860u));
+    outputs_arm(&o, true, 1000u);
+    outputs_step(&o, 1000u + OUT_DEFAULT_TIMEOUT_MS);
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+    CHECK_EQ(outputs_pulse_us(&o, 0), 1500u);
+    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u);
+    CHECK_EQ(outputs_pulse_us(&o, 1), 760u);
+}
+
+/*
+ * The timeout reaches an uncommanded channel every pass and resolves to the
+ * rest it already sits at, so the bank keeps driving.  A wrong role is not
+ * beyond every command either: the throttle addresses channels by role and
+ * passes a surface by, and the CHANNELS page addresses them by index and
+ * reaches it.
+ */
+TEST_CASE(the_timeout_reaches_a_channel_and_leaves_it_driving)
+{
+    fresh();
+    outputs_arm(&o, true, 1000u);
+    const uint32_t late = 1000u + OUT_DEFAULT_TIMEOUT_MS;
+    outputs_step(&o, late);
+    CHECK(outputs_overdue(&o, 0, late));
+    CHECK(outputs_driving(&o));
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+
+    /* By role: channel 0 is a surface, so a throttle command passes it by. */
+    CHECK_EQ(outputs_set_role_channels(&o, OUT_ROLE_THROTTLE,
+                                       (uint8_t)OUT_MAX_CHANNELS, OUT_SPAN,
+                                       late),
+             0u);
+    outputs_step(&o, late + 1u);
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+
+    /* By index: the CHANNELS page reaches it whatever its role. */
+    uint16_t regs[LINK_CH_COUNT];
+    outputs_channels_defaults(regs);
+    regs[0] = 0u;
+    outputs_channels_apply_n(&o, regs, 0u, 1u, late + 1u);
+    outputs_step(&o, late + 2u);
+    CHECK(!outputs_overdue(&o, 0, late + 2u));
+    CHECK_EQ(outputs_actual(&o, 0), 0u);
+    CHECK_EQ(outputs_pulse_us(&o, 0), 1000u);
+}
+
+/*
+ * For the first OUT_DEFAULT_TIMEOUT_MS after an arm, a channel is at its last
+ * command rather than at its rest: outputs_arm() stamps every channel's
+ * clock, so a command given while disarmed is not overdue.
+ */
+TEST_CASE(an_arm_makes_a_disarmed_command_fresh_for_the_timeout)
+{
+    fresh();
+    outputs_set(&o, 0, 900u, 1000u);
+    outputs_step(&o, 1010u);
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);   /* not emitted */
+
+    outputs_arm(&o, true, 2000u);
+    outputs_step(&o, 2001u);
+    CHECK(!outputs_overdue(&o, 0, 2001u));
+    CHECK_EQ(outputs_actual(&o, 0), 900u);
+    CHECK_EQ(outputs_pulse_us(&o, 0), 1900u);
+
+    outputs_step(&o, 2000u + OUT_DEFAULT_TIMEOUT_MS - 1u);
+    CHECK_EQ(outputs_actual(&o, 0), 900u);
+
+    outputs_step(&o, 2000u + OUT_DEFAULT_TIMEOUT_MS);
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
 }
 
 /* Disarming goes to rest with no ramp: the reason a stop exists is that
@@ -790,6 +1069,10 @@ int main(void)
     RUN(re_arming_is_not_activity);
     RUN(the_role_decides_which_direction_is_safe);
     RUN(a_slow_slew_still_moves);
+    RUN(the_slew_rate_does_not_follow_the_step_cadence);
+    RUN(a_stationary_channel_earns_no_slew_credit);
+    RUN(a_long_step_is_not_truncated);
+    RUN(a_throttle_coming_down_does_not_wait_for_a_slew_step);
     RUN(a_pin_belongs_to_one_driver);
     RUN(a_reserved_pin_is_refused);
     RUN(the_outputs_page_refuses_a_pin_that_does_not_fit_the_field);
@@ -800,6 +1083,11 @@ int main(void)
     RUN(an_inverted_range_is_straightened);
     RUN(the_pulse_spans_the_endpoints);
     RUN(a_command_while_disarmed_is_remembered_and_not_emitted);
+    RUN(driving_is_armed_and_asks_nothing_about_commands);
+    RUN(a_re_arm_ramps_from_rest_when_the_channel_is_slewed);
+    RUN(a_surface_rests_at_the_midpoint_of_its_own_endpoints);
+    RUN(the_timeout_reaches_a_channel_and_leaves_it_driving);
+    RUN(an_arm_makes_a_disarmed_command_fresh_for_the_timeout);
     RUN(disarming_does_not_ramp);
     RUN(a_role_change_moves_rest);
     RUN(out_of_range_is_refused_everywhere);

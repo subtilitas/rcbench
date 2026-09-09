@@ -1538,11 +1538,12 @@ static void art_slice(void)
 
 /*
  * ARM and THROTTLE travel together, offset 0 and count 2, at every poll while
- * the link is up: the coprocessor's throttle channel stops driving after
- * OUT_DEFAULT_TIMEOUT_MS (500 ms) without a write, so the panel keeps writing
- * while armed.  CLEAR (register 2) is written on its own and only on an
- * explicit arm: a write that touches it must carry LINK_CLEAR_MAGIC, and it
- * lifts a latched failsafe, which no other write may do.
+ * the link is up: the coprocessor's throttle channel goes to its rest, which
+ * for a throttle is stopped, after OUT_DEFAULT_TIMEOUT_MS (500 ms) without a
+ * write, so the panel keeps writing while armed.  CLEAR (register 2) is
+ * written on its own and only on an explicit arm: a write that touches it
+ * must carry LINK_CLEAR_MAGIC, and it lifts a latched failsafe, which no
+ * other write may do.
  */
 
 static uint16_t pct_to_hundredths(float pct)
