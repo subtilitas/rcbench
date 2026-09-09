@@ -1135,9 +1135,26 @@ typedef struct {
     const char *text;
     size_t len;
     size_t pos;
-    size_t fail_after;   /* bytes to hand over before failing */
+    int    pass;         /* rewinds seen, so which pass is reading */
+    int    fail_pass;    /* the pass that fails, PASS_NONE for none */
+    size_t fail_after;   /* bytes into that pass before it fails */
     bool   failed;
 } failing_ctx_t;
+
+/*
+ * A pass is named by the rewind it starts with, because every pass starts
+ * with one and reads from byte 0.  log_csv_analyse sniffs the delimiter,
+ * measures the geometry, then scans the columns; log_csv_build rewinds once
+ * for its own read of the rows.  failing_arm puts the counter back before the
+ * first pass, so the numbers are per call.  Failing at an absolute byte
+ * offset instead would trip the earliest pass every time and leave the later
+ * ones unreachable.
+ */
+#define PASS_SNIFF     0
+#define PASS_GEOMETRY  1
+#define PASS_COLUMNS   2
+#define PASS_ROWS      0
+#define PASS_NONE      (-1)
 
 static size_t failing_read(void *vctx, char *buf, size_t max)
 {
@@ -1145,14 +1162,16 @@ static size_t failing_read(void *vctx, char *buf, size_t max)
     if (c->pos >= c->len) {
         return 0;               /* a genuine end of file */
     }
-    if (c->pos >= c->fail_after) {
-        c->failed = true;       /* data left, but the card stopped answering */
-        return 0;
+    if (c->pass == c->fail_pass) {
+        if (c->pos >= c->fail_after) {
+            c->failed = true;   /* data left, but the card stopped answering */
+            return 0;
+        }
+        size_t room = c->fail_after - c->pos;
+        if (max > room) { max = room; }
     }
     size_t left = c->len - c->pos;
-    size_t room = c->fail_after - c->pos;
     if (max > left) { max = left; }
-    if (max > room) { max = room; }
     memcpy(buf, c->text + c->pos, max);
     c->pos += max;
     return max;
@@ -1168,7 +1187,19 @@ static bool failing_rewind(void *vctx)
     failing_ctx_t *c = (failing_ctx_t *)vctx;
     c->pos = 0;
     c->failed = false;
+    c->pass++;
     return true;
+}
+
+/* Back to the top, with the failure placed on one pass of the call that
+ * follows.  fail_after is counted within that pass. */
+static void failing_arm(failing_ctx_t *c, int fail_pass, size_t fail_after)
+{
+    c->pos = 0;
+    c->pass = -1;
+    c->failed = false;
+    c->fail_pass = fail_pass;
+    c->fail_after = fail_after;
 }
 
 TEST_CASE(a_read_error_is_not_a_clean_end_of_file)
@@ -1181,28 +1212,66 @@ TEST_CASE(a_read_error_is_not_a_clean_end_of_file)
                               i / 100, (i % 100) * 10, 1000 + i);
     }
 
-    failing_ctx_t ctx = { text, n, 0, n, false };
+    failing_ctx_t ctx = { text, n, 0, 0, PASS_NONE, 0, false };
     log_source_t src = { failing_read, failing_rewind, failing_error, &ctx };
 
     /* Healthy first: the whole file is there. */
     log_analysis_t a;
+    failing_arm(&ctx, PASS_NONE, 0);
     CHECK_EQ(log_csv_analyse(&src, NULL, &a), LOG_OK);
     CHECK_EQ(a.row_count, 400);
 
-    /* Then the card gives up a quarter of the way in. */
-    ctx.fail_after = 1000;
-    CHECK(failing_rewind(&ctx));
+    /* Then the card gives up a quarter of the way into the geometry pass. */
+    failing_arm(&ctx, PASS_GEOMETRY, 1000);
     CHECK_EQ(log_csv_analyse(&src, NULL, &a), LOG_ERR_READ);
 
     /* And a failure during the build pass is refused too, rather than
      * returning a short array the screen would plot as the whole run. */
-    ctx.fail_after = n;
-    CHECK(failing_rewind(&ctx));
+    failing_arm(&ctx, PASS_NONE, 0);
     CHECK_EQ(log_csv_analyse(&src, NULL, &a), LOG_OK);
     int pick[1] = { 1 };
     log_data_t d;
-    ctx.fail_after = 1000;
+    failing_arm(&ctx, PASS_ROWS, 1000);
     CHECK_EQ(log_csv_build(&src, &a, pick, 1, &d), LOG_ERR_READ);
+}
+
+/*
+ * The column pass is where the unit, the range and the monotonic flag are
+ * settled, so a source that stops during it is refused for the same reason
+ * the other passes refuse one: the statistics would describe the readable
+ * part and nothing would say so.
+ *
+ * The fixture is a 40 s run logged at 10 Hz, its time column in milliseconds
+ * under a bare header.  With no unit to read, the unit is guessed from the
+ * span: 39,900 ms over the whole file reads as "ms", while the 3,000 ms of
+ * the 31 rows a failure 300 bytes in leaves reads as "s".  Accepting that
+ * hands the plot a time axis 1000x too long -- 39,900 s instead of 39.9 s --
+ * and nothing on the screen is drawn in UI_WARN.
+ */
+TEST_CASE(a_column_pass_that_fails_is_refused_like_the_others)
+{
+    static char text[8000];
+    size_t n = 0;
+    n += (size_t)snprintf(text + n, sizeof(text) - n, "time,rpm\n");
+    for (int i = 0; i < 400; ++i) {
+        n += (size_t)snprintf(text + n, sizeof(text) - n, "%d,%d\n",
+                              i * 100, 1000 + i);
+    }
+
+    failing_ctx_t ctx = { text, n, 0, 0, PASS_NONE, 0, false };
+    log_source_t src = { failing_read, failing_rewind, failing_error, &ctx };
+
+    /* Intact, the span settles the unit at milliseconds. */
+    log_analysis_t a;
+    failing_arm(&ctx, PASS_NONE, 0);
+    CHECK_EQ(log_csv_analyse(&src, NULL, &a), LOG_OK);
+    CHECK_EQ(a.row_count, 400);
+    CHECK(strcmp(a.time_unit, "ms") == 0);
+
+    /* The geometry pass reads the file whole; the column pass stops 300
+     * bytes in, at row 31 of 400. */
+    failing_arm(&ctx, PASS_COLUMNS, 300);
+    CHECK_EQ(log_csv_analyse(&src, NULL, &a), LOG_ERR_READ);
 }
 
 /*
@@ -1278,6 +1347,7 @@ int main(void)
     RUN(a_timestamp_is_not_a_number_with_a_unit);
     RUN(an_exponent_that_overflows_is_rejected);
     RUN(a_read_error_is_not_a_clean_end_of_file);
+    RUN(a_column_pass_that_fails_is_refused_like_the_others);
     RUN(a_row_too_long_for_the_store_is_counted_not_swallowed);
     return test_summary("logfile");
 }
