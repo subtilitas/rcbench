@@ -532,23 +532,41 @@ static atomic_uint s_lets_go;
  * A stale count is not a missing one.  Every value the schema allows is even
  * and inside 2 to 42, so it passes the far end's range check, sets
  * LINK_BN_RPM_OK, and reaches the plot and the CSV as a valid reading.  The
- * speed reported is the actual speed times actual poles over stale poles:
- * 21 times at the ends of the range, and 14.3 % low for an edit from 14
- * poles to 12.
+ * speed reported is the actual speed times the motor's poles over the count
+ * held: 14.3 % low for a 12-pole motor converted as 14, and a factor of 21
+ * at the ends of the range.
+ *
+ * The value travels beside the flag rather than being read from the settings
+ * model when the write goes out.  settings.c holds the values as plain
+ * floats and the settings screen writes them from app_main, so a control-task
+ * read of one is a data race with no ordering between the two; the flag
+ * alone does not order a second edit against a read already under way.
  */
 static atomic_bool s_poles_owed;
+static atomic_uint s_poles_value;
 
 /*
  * A setting the far end keeps a copy of has changed.
  *
  * The settings screen runs on app_main and the link belongs to the control
- * task, so this records the debt and returns; the write goes out from there.
- * Motor poles is the only setting the coprocessor holds a copy of.
+ * task, so this publishes the value and records the debt; the write goes out
+ * from there.  Motor poles is the only setting the coprocessor holds a copy
+ * of.
+ *
+ * The value is stored before the flag, so a control task that sees the debt
+ * sees at least this value and never an older one.
  */
+static void publish_poles(void)
+{
+    atomic_store(&s_poles_value,
+                 (unsigned)settings_get_int(SET_MOTOR_POLES));
+    atomic_store(&s_poles_owed, true);
+}
+
 static void settings_changed(setting_id_t id)
 {
     if (id == SET_MOTOR_POLES) {
-        atomic_store(&s_poles_owed, true);
+        publish_poles();
     }
 }
 
@@ -956,6 +974,10 @@ static bool bring_up(void)
      * the coprocessor the same way an edit made later is. */
     settings_set_observer(settings_changed);
     settings_init();
+    /* And once unconditionally: settings_init() fires the observer only for
+     * a value that differs from the schema default, and a bench left at the
+     * default still has to tell the far end what it is. */
+    publish_poles();
     settings_apply_ui();
 
     display_config_t dcfg = DISPLAY_CONFIG_DEFAULT();
@@ -1961,7 +1983,7 @@ static bool control_write(bool armed, link_msg_t *reply)
  */
 static bool control_write_poles(link_msg_t *reply)
 {
-    const uint16_t poles = (uint16_t)settings_get_int(SET_MOTOR_POLES);
+    const uint16_t poles = (uint16_t)atomic_load(&s_poles_value);
     return write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_MOTOR_POLES, 1u,
                       &poles, reply)
            && reply->op == LINK_OP_ACK;
@@ -2382,30 +2404,32 @@ static void service_arming(bool link_up)
             control_alert("servo output not released -- arm again");
         } else if (link_up) {
             /*
-             * Two exchanges, each of which can wait a second, and what the
+             * Three exchanges, each of which can wait a second, and what the
              * operator wants can change between them: the pump runs inside
-             * both and applies a stop, and a disarm can be posted while the
-             * clear is still on the wire.  Asked again before the write that
-             * actually arms, because after it the far end is driving and
-             * nothing here can take it back for the length of a timeout.
-             */
-            /*
-             * The pole count before the write that arms, not merely before
-             * the next poll.  This is the transaction that starts the far
-             * end sampling, and a coprocessor that begins with the old
-             * divisor puts a wrong speed into the run's sticky rpm_max,
-             * which no later correction removes.  A debt that cannot be paid
-             * does not refuse the arm: the count is a conversion, not an
-             * interlock, and a bench that will not arm because a setting
-             * failed to land is the worse failure.
+             * all of them and applies a stop, and a disarm can be posted
+             * while the clear is still on the wire.  Asked again before the
+             * write that actually arms, because after it the far end is
+             * driving and nothing here can take it back for the length of a
+             * timeout.
+             *
+             * The pole count goes first and again last.  It is the divisor
+             * the far end starts sampling with, and a run begun on the old
+             * one puts a wrong speed into its sticky rpm_max, which no later
+             * correction removes; an edit made while the clear was in flight
+             * raises the debt behind the first payment.  A debt that cannot
+             * be paid does not refuse the arm: the count is a conversion,
+             * not an interlock, and a bench that will not arm because a
+             * setting failed to land is the worse failure.
              */
             (void)poles_service();
             if (!control_clear_failsafe(&ack)) {
                 arming_refused(&s_arm);
                 control_alert("coprocessor refused to arm");
-            } else if (arming_stopped(&s_arm)
-                       || atomic_load(&s_disarm_request)) {
-                /* Stopped or disarmed while the clear was in flight.  No
+                break;
+            }
+            (void)poles_service();
+            if (arming_stopped(&s_arm) || atomic_load(&s_disarm_request)) {
+                /* Stopped or disarmed while one of those was in flight.  No
                  * alert: the operator asked for this and knows. */
                 arming_refused(&s_arm);
             } else if (!control_write(true, &ack)) {

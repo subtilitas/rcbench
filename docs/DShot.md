@@ -234,20 +234,24 @@ a bit.
 An ESC reports electrical periods and has no idea what it is bolted to, so
 mechanical rpm (revolutions per minute) needs the motor's magnet count. That is
 the one number the wire does not carry. The panel sends it from the `Motor
-poles` setting when a coprocessor starts answering and again whenever the
-setting changes, on the [CONTROL page](Link.md#page-map). A write that is not
-acknowledged stays owed and goes out again at the next 50 ms poll.
+poles` setting when a coprocessor starts answering, again whenever the setting
+changes, and again before the write that arms, on the
+[CONTROL page](Link.md#page-map). A write nobody answers stays owed and goes
+out again at the next 50 ms poll; one the coprocessor refuses is not retried,
+and waits for the next edit or link-up edge.
 
 Until it arrives the coprocessor reports no speed at all. A speed derived from a
 guessed pole count is a plausible number with nothing to mark it as wrong, which
 is worse than an empty field.
 
-That covers zero only. Any count between 2 and 42 is accepted and sets the rpm
-valid bit, so a coprocessor holding an out-of-date count reports the actual
-speed times the motor's poles over the count it holds. Fitting a 12-pole motor
-to a bench still holding 14 reads 14.3 % low; leaving 12 in place for a 14-pole
-motor reads 16.7 % high. The direction follows the edit, and the ends of the
-range are a factor of 21 either way: a 42-pole motor converted as 2 reads
+That covers zero only. Any even count between 2 and 42 is accepted and sets the
+rpm valid bit -- an odd one is refused, because a typo that reached the far end
+would put a plausible wrong speed on the screen -- so a coprocessor holding an
+out-of-date count reports the actual speed times the motor's poles over the
+count it holds. Fitting a 12-pole motor to a bench still holding 14 reads
+14.3 % low; leaving 12 in place for a 14-pole motor reads 16.7 % high. The
+direction follows the edit, and the ends of the range are a factor of 21
+either way: a 42-pole motor converted as 2 reads
 twenty-one times its speed, and a 2-pole motor converted as 42 reads a
 twenty-first of it. The ordinary edit is the one to watch, because a factor of
 21 is wrong on sight and 14 % is not.
