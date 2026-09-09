@@ -16,6 +16,17 @@ pieces are described rather than written -- the panel's debug touch address,
 the decoders and the recipes. Each says so where it is described, and they are
 listed together under *What is not built yet*.
 
+**A reading taken from a host is a reading at a moment.** Several of the
+numbers recorded here are power-on values that the act of using the bench
+changes: a GPIO's pull is what the pad comes up with and reads as `pn` once
+OpenOCD has driven the line, and the PCIe power policy is what boot left
+unless somebody has set it. Any such number is written with the condition it
+holds under, at the number rather than in a footnote, and `host/selftest.sh`
+prints what it finds beside the power-on value rather than asserting the
+documented one. A reading that disagrees is shown as a disagreement; it is not
+a failure, because after a check has run the disagreement is the expected
+state.
+
 ---
 
 ## What it is for
@@ -47,8 +58,150 @@ with a network address, and it is what an agent drives.
 **Kingst LA2016** — 16 channels, passive. Supported by libsigrok's
 `kingst-la2016` driver, which needs the field-programmable gate array (FPGA)
 bitstream extracted from the vendor's software: that extraction is a setup
-step and is the first thing to confirm, because without it the analyser
-enumerates and captures nothing.
+step, because without it the analyser enumerates and captures nothing.
+
+**Two separate gates, in this order: the driver, then the bitstream.** Neither
+substitutes for the other, and a bench that has cleared one has cleared one.
+
+The driver is not in libsigrok 0.5.2, which is the current release and what
+Debian 13 packages: `sigrok-cli --list-supported` on the bench host lists 162
+drivers and no `kingst-la2016`, and naming it prints
+`Driver kingst-la2016 not found.` So the packaged `sigrok-cli` cannot address
+this analyser at all, and the bench needs libsigrok built from git.
+
+`.github/workflows/testbench-sigrok.yml` is what builds it: libsigrok and
+sigrok-cli from git in a pinned `debian:trixie` container on an arm64 runner,
+so the result matches this host's ABI (application binary interface). It is
+`workflow_dispatch` and produces `sigrok-kingst-la2016-debian13-arm64.tar.gz`.
+The run fails unless the built binary lists `kingst-la2016` and the libsigrok
+it loads reports a commit that is a prefix of the cloned one -- a binary that
+lists the driver while loading 0.5.2 underneath would otherwise pass in CI and
+fail here. A second job unpacks the tarball in a container with no `-dev` and
+no sigrok package, installs only the recorded runtime closure, and repeats
+both checks plus a scan that touches libusb.
+
+**The workflow has never run.** `workflow_dispatch` needs the file on the
+default branch, so it cannot be dispatched from the branch that adds it: the
+repository's workflow list holds `ci.yml`, `docs.yml` and `release.yml` and
+not this one. The first execution comes after it merges.
+
+What is established is that it is well-formed and that its inputs exist. The
+YAML parses to two jobs and eighteen `run` bodies, every one of which passes
+`bash -n`, and no `${{ }}` expression is interpolated into any of them. Both
+pinned source commits resolve upstream -- libsigrok
+`0bc2487778e660f4d3116729b6f4aee2b1996bb0` of 2025-11-20 and sigrok-cli
+`f44dd91347e7ac797cefc23162b9fcf0b7329f1f` of 2024-08-26 -- and
+`src/hardware/kingst-la2016` is present at that libsigrok commit as `api.c`,
+`protocol.c` and `protocol.h`. Whether it builds is open, and so is whether
+the tarball installs on this host: the second job proves it in a container
+with no sigrok package, which is deliberately not the case this bench is.
+
+Clearing that gate means the driver exists. It says nothing about whether the
+analyser captures: the FX2 microcontroller firmware and the FPGA bitstreams
+are Kingst material with no redistribution grant, so the tarball carries
+`share/sigrok-firmware/README.txt` naming the five files and where the driver
+looks for them, and not the files. They are extracted from the vendor
+software with `sigrok-fwextract-kingst-la2016`. `host/selftest.sh` reports the
+two gates separately -- it asks the library what drivers it carries, then asks the
+instrument for samples -- so a missing driver reads as a missing driver, a
+missing bitstream as a capture that returns nothing, and neither as an
+unplugged instrument.
+
+**The prefix is `/opt/sigrok`, not `/usr/local`.** Debian's `libsigrok4t64`
+carries the soname `libsigrok.so.4` and so does the git build. With both on
+the default search path the loader picks by path order, and neither end
+reports a mismatch -- a Pi with the Debian package installed would quietly run
+0.5.2 and find no analyser. Under `/opt`, with a runpath to `/opt/sigrok/lib`
+linked into `sigrok-cli`, the two cannot meet, and the distribution's sigrok
+keeps working untouched.
+
+The tarball unpacks at `/` and holds `opt/sigrok` and nothing else, which the
+workflow asserts against the member list before upload. Installing it is:
+
+    sudo tar -C / -xzf sigrok-kingst-la2016-debian13-arm64.tar.gz
+    sudo apt-get install -y --no-install-recommends \
+        $(cat /opt/sigrok/RUNTIME-DEPENDS.txt)
+    sudo install -m 644 /opt/sigrok/share/sigrok-udev/60-libsigrok.rules \
+                        /opt/sigrok/share/sigrok-udev/61-libsigrok-plugdev.rules \
+                        /etc/udev/rules.d/
+    sudo udevadm control --reload
+    sudo udevadm trigger --subsystem-match=usb
+    sudo adduser "$USER" plugdev        # log out and back in to take effect
+    export PATH=/opt/sigrok/bin:$PATH
+
+**The packages are a step.** The tarball carries `sigrok-cli` and
+`libsigrok.so.4` and nothing else it links against. `RUNTIME-DEPENDS.txt` is
+the closure the build resolved, written from `ldd` and mapped to the Debian
+package that owns each library, so the second command installs exactly what
+the binary loads. Without it the executable can fail in the dynamic linker
+before `host/selftest.sh` gets a chance to say anything.
+
+**The udev rules are a step, and skipping them reads as no analyser.** The
+tarball leaves both rules under `/opt/sigrok/share/sigrok-udev`, which udev
+does not scan. Debian's libsigrok 0.5.2 ships rules that predate this driver
+and carry no entry for `77a1:01a2`, so the LA2016 gets no `ID_SIGROK` tag,
+`plugdev` membership grants nothing, and a scan run as a normal user returns
+no devices. That is the same reading as an unplugged instrument. Both files
+are needed and the numbers matter: `60-` tags the device and `61-` acts on the
+tag, so the order they sort in is what makes them work.
+
+The `plugdev` rule rather than the `uaccess` one, because `uaccess` grants
+access through systemd-logind to a user on a local seat and an SSH session has
+no seat. The bench is driven over SSH.
+
+**The `PATH` line is a step, not a suggestion.** The distribution's
+`sigrok-cli` is at `/usr/bin` and wins until `/opt/sigrok/bin` is put ahead of
+it, so between unpacking and that line the bench is still running 0.5.2. Make
+it permanent wherever this host keeps its environment; a shell that has not
+had it is a shell that measures with the wrong binary.
+
+**The licences travel with the binaries.** libsigrok and sigrok-cli are GNU
+General Public License version 3 or later, and the workflow publishes built
+binaries from a public repository. `/opt/sigrok/share/licences` carries each
+project's own licence text, copied out of the clone at the commit that was
+built, and `CORRESPONDING-SOURCE.txt` naming the two upstream URLs, the two
+commits, and the workflow file that holds the configure flags, the container
+image and the install steps. Nothing patches either project and no sigrok
+source is vendored into this repository, so the upstream commit is the whole
+of the source the binaries came from.
+
+**Which build is installed is recorded, and checked.** The manifest is at
+`/opt/sigrok/MANIFEST.txt`. Plain text, machine-readable keys first, one per
+line, colon-separated: `libsigrok-commit`, `sigrok-cli-commit`,
+`libsigrok-version`, `sigrok-cli-version`, `libsigrok-sha256`,
+`sigrok-cli-sha256`, `debian-version`, `prefix`, `built-utc`. Prose follows
+them.
+
+**The hashes are what decide.** A version string is not a build: two commits
+can carry one, so a comparison against `sigrok-cli-version` passes on a stale
+manifest and then attributes a commit to a library that did not produce the
+captures. `host/selftest.sh` compares the sha256 of the binary on `PATH` and
+of the libsigrok that is actually loaded -- resolved with `ldd`, because the
+library the dynamic linker finds need not be the one beside the binary. The
+version lines are printed as labels and nothing turns on them.
+
+Five readings come out of it:
+
+| What the selftest says | What it means |
+|---|---|
+| `libsigrok recorded: <version> at <commit>` | the manifest is there and names a build |
+| `sigrok provenance: unrecorded` | no manifest at that path, so which build is on `PATH` is unanswered. A distribution `sigrok-cli` reads as this |
+| `sigrok provenance: missing keys` | a manifest that cannot decide anything. Without it a truncated file passes, because an absent recorded hash equals an absent parsed one |
+| `sigrok-cli on PATH: <path>, not the recorded <prefix>/bin/sigrok-cli -- put <prefix>/bin ahead of it on PATH` | the tarball is unpacked and the `PATH` step has not been done. This is the expected state in between, not a broken install |
+| `libsigrok loaded: <path> is not the recorded build` | the binary is right and the library under it is not, which is the reading a stale manifest or a half-finished install gives |
+
+The fourth is why the distribution `sigrok-cli` is left installed rather than
+removed. A bench that only works once a package is gone is a bench that breaks
+on the next machine, so the two are made to coexist -- the prefix and the
+runpath keep them apart, and the `PATH` step decides which one a shell gets.
+The selftest names the step in the reading, so an operator who meets it
+between the two commands above sees a procedure that is not finished rather
+than a fault. `SIGROK_MANIFEST` overrides the path.
+
+The hashes are taken from the staged files that go into the tarball, not from
+the build tree. Hashing what was built rather than what ships would record one
+object and install another if anything strips or re-links between the two, and
+the bench would report a shadow on a correct install.
 
 **RP2350 board** — the same part as the bench coprocessor, in one of two roles
 per run:
@@ -162,24 +315,91 @@ The RP2350's BOOTSEL button is not available to an agent, so the board is
 flashed over SWD (serial wire debug) rather than by unplugging it, driven from
 the Pi's own pins through OpenOCD's `linuxgpiod` interface.
 
+**Untested end to end.** No RP2350 has been on these pins. The commands below
+run and are checked against the software installed on the bench host; what
+none of them has done is find a target.
+
 On a Raspberry Pi 5 the general-purpose input/output pins sit behind the RP1
 controller, so OpenOCD's older native Broadcom driver does not work and the
 character device is the route. Which device the 40-pin header is depends on
-the kernel and the firmware -- it has been `gpiochip4` and it has been
-`gpiochip0` -- so it is read from `gpiodetect` rather than assumed:
+the kernel and the firmware, so it is read rather than assumed. On the bench
+host -- Raspberry Pi 5 Model B Rev 1.1, kernel 6.18.34, Debian 13 --
+`gpiodetect` reports the header as `gpiochip0 [pinctrl-rp1]`, 54 lines.
+
+The OpenOCD on the bench host ships no `interface/linuxgpiod.cfg`. The driver
+is selected by name:
 
     gpiodetect                       # which chip carries the header
-    export SWD_GPIOCHIP=<n> SWD_SWCLK=25 SWD_SWDIO=24
-    openocd -f interface/linuxgpiod.cfg -f target/rp2350.cfg \
+    export SWD_GPIOCHIP=0 SWD_SWCLK=25 SWD_SWDIO=8
+    openocd -c "adapter driver linuxgpiod" \
             -c "adapter gpio swclk -chip $SWD_GPIOCHIP $SWD_SWCLK" \
             -c "adapter gpio swdio -chip $SWD_GPIOCHIP $SWD_SWDIO" \
-            -c "adapter speed 1000"
+            -f target/rp2350.cfg
 
-GPIO25 on header pin 22 is SWCLK and GPIO24 on header pin 18 is SWDIO, which
-is the pair Raspberry Pi's own instructions for debugging one Pi from another
-use. `testbench/WIRING.md` has the table. Any two free header GPIOs would work,
-since the lines are bit-banged rather than driven by a peripheral, but a bench
-is reproducible only if every assembler uses the same two.
+The driver is named before the GPIO assignments and `target/rp2350.cfg` after
+them, because the target file selects the transport. Checked against OpenOCD
+0.12.0+dev-snapshot (2026-02-16-16:07) on the bench host, which ships
+`target/rp2350.cfg` and carries the `linuxgpiod` driver but no
+`interface/linuxgpiod.cfg`.
+
+With `-c "init; exit"` appended and no target on the pins it reaches the
+driver and stops there:
+
+    Info : Linux GPIOD JTAG/SWD bitbang driver
+    Error: Error connecting DP: cannot read IDR
+
+That is the whole of what has been confirmed: it is the reading an empty
+header gives. It is not a diagnosis. A target that is present but miswired --
+the two leads swapped, one of them off, the ground not on the star, the wrong
+chip number -- gives the same error, so it separates "OpenOCD reached the
+pins" from "something answered" and nothing finer. A board on the pins has to
+replace it.
+
+That build also ships `interface/raspberrypi5-gpiod.cfg`, which resolves the
+chip number from the `/proc/device-tree/aliases` entry pointing at the RP1
+instead of taking it from a variable. It puts SWDIO on GPIO8 and SWCLK on
+GPIO11; this bench agrees on SWDIO and keeps SWCLK on GPIO25.
+
+SWCLK is GPIO25 on header pin 22, SWDIO is GPIO8 on header pin 24, and ground
+is pin 20. `testbench/WIRING.md` has the table. Any two free header GPIOs
+would work, since the lines are bit-banged rather than driven by a peripheral,
+but a bench is reproducible only if every assembler uses the same two.
+
+SWDIO is on GPIO8 for its default pull. **Power-on values, valid only on a
+line nothing has driven since boot** -- `pinctrl get 8,24,25` on the bench
+host:
+
+     8: no    pu | -- // GPIO8 = none
+    24: no    pd | -- // GPIO24 = none
+    25: no    pd | -- // GPIO25 = none
+
+`pu` on GPIO8 against `pd` on GPIO24 and GPIO25. Read across the whole header
+range on the same host, `pinctrl get 0-27` gives `pu` on GPIO0 to GPIO8 and
+`pd` on GPIO9 to GPIO27, so the split is at GPIO9 and the three lines above
+are not special cases.
+
+The SWD specification puts a pull-up on SWDIO at the target, so GPIO8 is the
+line that agrees with it, and OpenOCD's Pi 5 configuration puts SWDIO there
+for the same reason.
+
+**The condition is not decoration.** OpenOCD leaves the lines it drove as
+inputs with no pull, so on a host where the check above has run, `pinctrl`
+reports `pn` for GPIO8 and GPIO25 and not the values printed here. Reboot
+before reading a pull, or read a line the bench does not touch.
+`host/selftest.sh` prints the pull it finds for the two configured lines, with
+the power-on value and the host's uptime beside it, so a `pn` reads as a line
+that has been driven rather than as a contradiction of this table.
+
+**The choice is not a fix for an observed fault.** No target has been on
+either pin, so whether a pull-down on GPIO24 would have cost anything against
+the RP2350's own termination is unknown. Nothing is wired yet, which is the
+whole reason to spend a documentation change now rather than a rewiring later.
+
+**GPIO8 is SPI0 CE0.** With SPI enabled on the header the `spidev` driver
+claims the line and `linuxgpiod` cannot have it. SPI is off on the bench host
+-- no `/dev/spidev*`, no `dtparam=spi` in `/boot/firmware/config.txt` -- and
+stays off while SWD is on this pin. SWCLK on GPIO25 carries no such
+attachment.
 
 `host/selftest.sh` reads the same three variables, so the wiring is stated
 once and nothing in the scripts has to know it.
@@ -194,9 +414,30 @@ signals and the common ground.
 RP2350 expects. A target at another voltage needs a level translator that
 senses the target's rail, not a wire from this header.
 
-Start at 1,000 kHz and come down if a flash fails to verify; a bad clock on
-this interface looks like intermittent verification rather than a clean
-error.
+There is no clock to set. OpenOCD prints `Note: The adapter "linuxgpiod"
+doesn't support configurable speed` when the driver initialises, so an
+`adapter speed` line is accepted and has no effect. Its
+`interface/raspberrypi5-gpiod.cfg` puts the fixed rate at about 800 kHz for
+SWD writes and 360 kHz for reads; neither is measured on this host.
+
+A fixed rate is not the same as a suitable one, and nothing here has driven a
+target to find out. If a flash fails to verify, `adapter speed` is not the
+knob -- the PCIe policy below and a different adapter are the two things that
+can move the timing.
+
+Two host settings bear on it, both read on the bench host:
+
+- PCIe active-state power management reads `powersave` on the bench host.
+  That is a current value, not a fixed one: it is what boot leaves unless
+  somebody sets it, and setting it does not survive a reboot.
+  `host/selftest.sh` prints the policy it finds. OpenOCD's Pi 5 configuration
+  warns that under anything but `performance` the first few pulses are clocked
+  as fast as 20 MHz, and asks for:
+
+      echo performance | sudo tee /sys/module/pcie_aspm/parameters/policy
+
+- `libgpiod` is 2.2.1, so the option spellings in `WIRING.md` are the version 2
+  ones.
 
 The same applies to the bench's own coprocessor if it is to be reflashed
 between runs.
@@ -416,10 +657,18 @@ firmware and the decoder agree, and no more than that.
 
 ## Settled
 
-- **The analyser's bitstream is provided**, so libsigrok can drive the LA2016.
-  `host/selftest.sh` still asks, because the failure is silent: an analyser
-  without it enumerates, accepts a capture and returns nothing, which reads as
-  a quiet bench rather than a broken one.
+- **The analyser's bitstream is provided**, and it is not redistributed:
+  it is Kingst material with no grant, so it is extracted from the vendor
+  software onto the bench rather than shipped with the build.
+  `host/selftest.sh` still asks for it, because the failure is silent -- an
+  analyser without it enumerates, accepts a capture and returns nothing, which
+  reads as a quiet bench rather than a broken one. Having it settles the
+  second of the two gates under *The parts*, never the first.
+- **The driver is built in CI, to `/opt/sigrok`.**
+  `.github/workflows/testbench-sigrok.yml` builds libsigrok and sigrok-cli
+  from git for Debian 13 arm64 and records what it made in
+  `/opt/sigrok/MANIFEST.txt`. The prefix and the runpath are what keep it away
+  from the distribution's `libsigrok.so.4`, which carries the same soname.
 - **SWD over `linuxgpiod`**, three wires and no supply between the Pi and a
   board that has its own.
 - **The whole bench lives on the rig** — panel, display, touch and the CAN

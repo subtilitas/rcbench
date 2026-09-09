@@ -104,32 +104,86 @@ and the RP2350 has its own.
 | Pi GPIO | Header pin | To the RP2350 |
 |---|---|---|
 | GPIO25 | 22 | SWCLK |
-| GPIO24 | 18 | SWDIO |
+| GPIO8 | 24 | SWDIO |
 | ground | 20 | ground, already on the star |
 
-These are the pins Raspberry Pi's own instructions for debugging one Pi from
-another use, so the wiring can be checked against a second source. Any two free
-header GPIOs work -- the lines are bit-banged through `linuxgpiod`, not a
-peripheral -- but the bench is reproducible only if every assembler uses the
-same two, and `testbench/host/selftest.sh` reports whichever it is given.
+Count the pads. Pin 22 and pin 24 are two positions apart on the outer row,
+and pin 20 is the ground opposite pin 19.
+
+SWDIO is on GPIO8 because that pin comes up pulled up and GPIO24 comes up
+pulled down, and the SWD specification puts a pull-up on SWDIO. OpenOCD's own
+`interface/raspberrypi5-gpiod.cfg` puts SWDIO on GPIO8 for the same reason.
+**This is not a fix for anything observed.** No target has been on either pin,
+so whether a pull-down on GPIO24 would have cost anything is unknown; the pin
+that matches the specification is simply the one to wire while nothing is
+wired.
+
+Those pulls are power-on values and reading them back proves nothing once the
+check below has run -- OpenOCD leaves the lines it drove with no pull at all.
+`README.md` under *Flashing without hands* has the readings and the condition;
+`host/selftest.sh` prints what is on the pins now beside the power-on value.
+
+Any two free header GPIOs work -- the lines are bit-banged through
+`linuxgpiod`, not a peripheral -- but the bench is reproducible only if every
+assembler uses the same two, and `testbench/host/selftest.sh` reports
+whichever it is given.
+
+**GPIO8 is SPI0 CE0.** With SPI enabled on the header the `spidev` driver
+claims that line and `linuxgpiod` cannot have it. SPI is off on the bench host
+-- there is no `/dev/spidev*` and no `dtparam=spi` in `/boot/firmware/config.txt`
+-- and it stays off while SWD is on this pin.
+
+**Before the check**, put PCIe active-state power management into
+`performance`:
+
+    echo performance | sudo tee /sys/module/pcie_aspm/parameters/policy
+
+The RP1 sits behind PCIe, and OpenOCD's `interface/raspberrypi5-gpiod.cfg`
+warns that under any other policy the first few pulses can be clocked as fast
+as 20 MHz. Whether that costs a connection is unmeasured -- no target has been
+on these pins -- so this is a setting OpenOCD asks for and not a fault anyone
+has seen. It does not survive a reboot. `host/selftest.sh` prints the policy it
+finds.
 
 **Check**, with the RP2350 powered from its own supply:
 
     gpiodetect                      # which chip carries the 40-pin header
-    export SWD_GPIOCHIP=<n> SWD_SWCLK=25 SWD_SWDIO=24
-    openocd -f interface/linuxgpiod.cfg -f target/rp2350.cfg \
+    export SWD_GPIOCHIP=<n> SWD_SWCLK=25 SWD_SWDIO=8
+    openocd -c "adapter driver linuxgpiod" \
             -c "adapter gpio swclk -chip $SWD_GPIOCHIP $SWD_SWCLK" \
             -c "adapter gpio swdio -chip $SWD_GPIOCHIP $SWD_SWDIO" \
-            -c "adapter speed 1000" -c "init; exit"
+            -f target/rp2350.cfg -c "init; exit"
+
+The OpenOCD on the bench host, 0.12.0+dev-snapshot (2026-02-16-16:07), ships
+no `interface/linuxgpiod.cfg`, so the driver is named rather than sourced from
+a file. `target/rp2350.cfg` comes last because it selects the transport, and
+the GPIO assignments have to be in place first.
 
 The chip number stays a placeholder because it moves with the kernel and the
 firmware -- it has been `gpiochip4` and it has been `gpiochip0` -- which is
 what `gpiodetect` is for. The two GPIO numbers do not move.
 
-It should find a target and exit without complaint. If it half-works --
-connects sometimes, fails to verify a flash -- come down to 500 kHz before
-suspecting the wiring: on this interface a clock that is too fast looks like
-intermittent verification rather than an error.
+It should find a target and exit without complaint. With nothing on the pins
+it gets as far as `Linux GPIOD JTAG/SWD bitbang driver` and then
+`Error connecting DP: cannot read IDR`.
+
+**That error does not tell you the target is absent.** It is what an empty
+header reads as, and it is equally what a target reads as when SWCLK and SWDIO
+are swapped, when either lead is off, when the ground is not on the star, or
+when the chip number is wrong. Getting it means OpenOCD reached the pins and
+found nothing answering on them; which of those it is, is what the rest of
+this step is for. Recheck the two leads against the table above before
+concluding anything about the board.
+
+There is no clock to come down to. `linuxgpiod` runs at a fixed rate --
+OpenOCD prints `Note: The adapter "linuxgpiod" doesn't support configurable
+speed` -- so an `adapter speed` line changes nothing.
+
+That the rate is fixed does not make it suitable. It is not measured on this
+host, and the PCIe policy above can clock the first pulses far above it. If a
+connection half-works, the two things that can move the timing are that policy
+and a different adapter; neither is `adapter speed`. `README.md` under
+*Flashing without hands* has the pull readings for all three pins.
 
 ---
 
@@ -156,10 +210,7 @@ At this point in the order the boards are not running, so use the Pi: take a
 free header GPIO, drive it while the capture runs, and capture the probe that
 is on it.
 
-    while :; do
-        gpioset --mode=time --usec=100000 gpiochip<n> <line>=1
-        gpioset --mode=time --usec=100000 gpiochip<n> <line>=0
-    done &
+    gpioset -c gpiochip<n> -t 100ms <line>=1 &
     pulse=$!
     testbench/host/capture.sh probe D0 1m 2m 1.65
     kill "$pulse"
@@ -167,13 +218,16 @@ is on it.
 **The toggle runs during the capture, not before it.** One `gpioset` that
 ends before `capture.sh` starts puts the only transition outside the trace,
 and the channel then reads flat whether the lead is on the pin or not --
-which is the reading this check exists to rule out. The loop edges every
-100 ms and the capture spans 2 s, so about twenty edges land inside it. Each
-`gpioset` releases the line as it exits, so the trace has a short undriven
-gap between levels; the check asks only that the level change. `kill` ends
-the loop, and the `gpioset` still running exits within 100 ms on its own.
-libgpiod 2 spells these options differently -- read `gpioset --help` on the
-Pi before copying this.
+which is the reading this check exists to rule out. `-t 100ms` toggles the
+line every 100 ms and repeats until the process is killed, so the capture
+spans 2 s and about twenty edges land inside it. One process holds the line
+for the whole run, so the trace has no undriven gap; the check asks only that
+the level change.
+
+This is the libgpiod 2 spelling, checked against libgpiod 2.2.1 on the bench
+host. Version 1 wrote the same thing as `--mode=time --usec=` around a shell
+loop, and its options are not accepted here -- read `gpioset --help` on the Pi
+before copying this.
 
 **The channel has to change.** A trace that sits at one level says the probe
 is not on the pin, or the ground lead is not on the star -- and either of

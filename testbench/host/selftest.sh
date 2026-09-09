@@ -19,7 +19,109 @@ if ! command -v sigrok-cli >/dev/null; then
     bad "sigrok-cli" "not installed"
 else
     say "sigrok-cli" "$(sigrok-cli --version | head -1)"
-    scan=$(sigrok-cli --driver kingst-la2016 --scan 2>&1 | tail -n +2)
+
+    # Which sigrok is this?  The bench runs a libsigrok built from git,
+    # because the released 0.5.2 carries no kingst-la2016 driver, and a
+    # measurement read through an unnamed library version cannot be
+    # reproduced.  The build records what it made in a manifest, and
+    # unpacking the tarball at / puts it at the path below.  The prefix is
+    # /opt/sigrok rather than /usr/local because Debian's libsigrok4t64 and
+    # this build share the soname libsigrok.so.4: on one search path the
+    # loader picks by path order and neither end reports a mismatch.  It is
+    # data, not shell, so it is read with grep and never sourced.  What it
+    # is asked for is identity: the sha256 of the binary on PATH and of the
+    # libsigrok the dynamic linker actually loads.
+    : "${SIGROK_MANIFEST:=/opt/sigrok/MANIFEST.txt}"
+    manifest_get() {
+        grep -m1 "^$1:" "$SIGROK_MANIFEST" 2>/dev/null |
+            cut -d: -f2- | sed 's/^[[:space:]]*//'
+    }
+
+    if [ ! -r "$SIGROK_MANIFEST" ]; then
+        # An apt-installed sigrok-cli reads as this.  It is not the same
+        # fault as a missing driver: the driver may well be there and the
+        # question of which build produced it is simply unanswered.
+        bad "sigrok provenance" "unrecorded -- no manifest at $SIGROK_MANIFEST"
+    else
+        # Identity, not version.  Two commits can carry one version string, so
+        # a version comparison passes on a stale manifest and then attributes
+        # a commit to a library that did not produce the captures.  The
+        # hashes are what decide; the version lines are labels and nothing
+        # turns on them.
+        lib_sha=$(manifest_get libsigrok-sha256)
+        cli_sha=$(manifest_get sigrok-cli-sha256)
+        lib_commit=$(manifest_get libsigrok-commit)
+        cli_commit=$(manifest_get sigrok-cli-commit)
+        lib_version=$(manifest_get libsigrok-version)
+        cli_version=$(manifest_get sigrok-cli-version)
+
+        if [ -z "$lib_sha" ] || [ -z "$cli_sha" ] ||
+           [ -z "$lib_commit" ] || [ -z "$cli_commit" ]; then
+            bad "sigrok provenance" "manifest at $SIGROK_MANIFEST is missing keys"
+        else
+            say "libsigrok recorded" "${lib_version:-version not recorded} at $lib_commit"
+            say "sigrok-cli recorded" "${cli_version:-version not recorded} at $cli_commit"
+
+            # What runs is what the shell finds first, and what it loads is
+            # what the dynamic linker resolves -- which need not be the
+            # library sitting beside the binary.  Ask ld.so rather than
+            # assume.
+            cli_path=$(command -v sigrok-cli)
+            prefix=$(manifest_get prefix)
+            built_cli=${prefix:+$prefix/bin/sigrok-cli}
+            lib_path=$(ldd "$cli_path" 2>/dev/null |
+                       awk '$1 ~ /^libsigrok\.so/ {for (i=1;i<=NF;i++) if ($i=="=>") {print $(i+1); exit}}')
+
+            have=$(sha256sum "$cli_path" 2>/dev/null | cut -d' ' -f1)
+            if [ "$have" = "$cli_sha" ]; then
+                say "sigrok-cli on PATH" "$cli_path, hash matches the manifest"
+            elif [ -n "$built_cli" ] && [ -x "$built_cli" ]; then
+                # The expected state between unpacking the tarball and putting
+                # the prefix on PATH. The distribution's sigrok-cli sits in
+                # /usr/bin and wins until something puts $prefix/bin ahead of
+                # it, so this reads as a procedure that is not finished rather
+                # than as a broken install.
+                bad "sigrok-cli on PATH" \
+                    "$cli_path, not the recorded $built_cli -- put $prefix/bin ahead of it on PATH"
+            else
+                bad "sigrok-cli on PATH" \
+                    "$cli_path is not the recorded build, and $prefix/bin holds no sigrok-cli"
+            fi
+
+            if [ -z "$lib_path" ]; then
+                bad "libsigrok loaded" "ld.so resolves no libsigrok.so for $cli_path"
+            else
+                have=$(sha256sum "$lib_path" 2>/dev/null | cut -d' ' -f1)
+                if [ "$have" = "$lib_sha" ]; then
+                    say "libsigrok loaded" "$lib_path, hash matches the manifest"
+                else
+                    bad "libsigrok loaded" \
+                        "$lib_path is not the recorded build -- the captures would be read through a library the manifest does not describe"
+                fi
+            fi
+        fi
+    fi
+
+    # Ask the library what it carries before asking it to scan. The
+    # kingst-la2016 driver is not in libsigrok 0.5.2, which is the current
+    # release and what Debian packages; naming a driver libsigrok does not
+    # have prints "Driver kingst-la2016 not found." and reads exactly like an
+    # analyser that is unplugged.
+    #
+    # The list is captured and matched from a here-string, not piped into
+    # grep. grep -q exits at the first match, the writer takes SIGPIPE on its
+    # next write, and under pipefail that non-zero status becomes the
+    # pipeline's -- so the check would report the driver missing exactly when
+    # it is present. It needs the output after the entry to exceed the pipe
+    # buffer, 64 KB, which 13 kB of driver list does not reach today. A
+    # here-string is a file descriptor and cannot signal upstream at all.
+    drivers=$(sigrok-cli --list-supported 2>/dev/null) || drivers=
+    if ! grep -qE '^[[:space:]]+kingst-la2016([[:space:]]|$)' <<<"$drivers"; then
+        bad "kingst-la2016 driver" "not in this libsigrok -- see README, The parts"
+        scan=
+    else
+        scan=$(sigrok-cli --driver kingst-la2016 --scan 2>&1 | tail -n +2)
+    fi
     if [ -z "$scan" ]; then
         bad "LA2016" "not found by the kingst-la2016 driver"
     else
@@ -47,6 +149,62 @@ fi
 : "${SWD_SWCLK:=}"
 : "${SWD_SWDIO:=}"
 
+# PCIe active-state power management changes how fast the RP1's pins can be
+# reached. OpenOCD's interface/raspberrypi5-gpiod.cfg warns that with the
+# policy anything but "performance" the first few pulses can be clocked as
+# fast as 20 MHz, and asks for it to be switched. Whether that costs a
+# connection is unmeasured -- no target has been on these pins -- so this is
+# reported and does not fail the run.
+aspm=/sys/module/pcie_aspm/parameters/policy
+if [ -r "$aspm" ]; then
+    policy=$(sed 's/.*\[\([a-z]*\)\].*/\1/' "$aspm")
+    if [ "$policy" = performance ]; then
+        say "PCIe ASPM policy" "$policy"
+    else
+        say "PCIe ASPM policy" \
+            "$policy -- OpenOCD asks for performance: echo performance | sudo tee $aspm"
+    fi
+else
+    say "PCIe ASPM policy" "not readable at $aspm"
+fi
+
+# The pull a line comes up with is a power-on value and it does not survive
+# being driven: OpenOCD leaves the lines it used as inputs with no pull, so
+# pinctrl reports pn once a check has run. Report what is on the pins now,
+# with how long the host has been up, and name the power-on value beside it so
+# a disagreement is visible. On the RP1 that value is pull-up below GPIO9 and
+# pull-down from GPIO9 up -- read across GPIO0 to GPIO27 on the bench host,
+# with only the lines this bench drives reading otherwise. A disagreement is
+# expected after a run and does not fail anything.
+pull_now() {
+    pinctrl get "$1" 2>/dev/null |
+        awk -F'[|]' '{ n = split($1, f, " ")
+                       for (i = n; i >= 1; i--)
+                           if (f[i] == "pu" || f[i] == "pd" || f[i] == "pn") { print f[i]; exit } }'
+}
+
+if [ -n "$SWD_SWCLK" ] || [ -n "$SWD_SWDIO" ]; then
+    if ! command -v pinctrl >/dev/null; then
+        say "SWD pin pulls" "pinctrl not installed -- not read"
+    else
+        for pair in "SWCLK:${SWD_SWCLK:-}" "SWDIO:${SWD_SWDIO:-}"; do
+            role=${pair%%:*}
+            line=${pair#*:}
+            [ -n "$line" ] || continue
+            now=$(pull_now "$line")
+            [ "$line" -lt 9 ] && boot=pu || boot=pd
+            if [ -z "$now" ]; then
+                say "$role pull (GPIO$line)" "not readable"
+            elif [ "$now" = "$boot" ]; then
+                say "$role pull (GPIO$line)" "$now, the power-on value, $(uptime -p)"
+            else
+                say "$role pull (GPIO$line)" \
+                    "$now, power-on value is $boot -- this line has been driven since boot, $(uptime -p)"
+            fi
+        done
+    fi
+fi
+
 if ! command -v openocd >/dev/null; then
     bad "openocd" "not installed"
 elif [ -z "$SWD_GPIOCHIP" ] || [ -z "$SWD_SWCLK" ] || [ -z "$SWD_SWDIO" ]; then
@@ -54,10 +212,16 @@ elif [ -z "$SWD_GPIOCHIP" ] || [ -z "$SWD_SWCLK" ] || [ -z "$SWD_SWDIO" ]; then
     bad "RP2350 over SWD" "set SWD_GPIOCHIP, SWD_SWCLK and SWD_SWDIO -- gpiodetect says which chip"
 else
     say "openocd" "$(openocd --version 2>&1 | head -1)"
-    if openocd -f interface/linuxgpiod.cfg -f target/rp2350.cfg \
+    # OpenOCD 0.12.0+dev-snapshot (2026-02-16-16:07), the build on the bench
+    # host, ships no interface/linuxgpiod.cfg, so the driver is named.
+    # target/rp2350.cfg comes after the GPIO assignments: it selects the
+    # transport, which needs the pins already set. linuxgpiod has no
+    # configurable speed, so nothing sets one. With no target on the pins
+    # openocd exits 1 after "Error connecting DP: cannot read IDR".
+    if openocd -c "adapter driver linuxgpiod" \
                -c "adapter gpio swclk -chip $SWD_GPIOCHIP $SWD_SWCLK" \
                -c "adapter gpio swdio -chip $SWD_GPIOCHIP $SWD_SWDIO" \
-               -c "adapter speed 1000" \
+               -f target/rp2350.cfg \
                -c "init; exit" >/dev/null 2>&1; then
         say "RP2350 over SWD" "reachable on gpiochip$SWD_GPIOCHIP, clk $SWD_SWCLK, io $SWD_SWDIO"
     else
