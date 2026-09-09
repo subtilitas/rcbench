@@ -74,6 +74,22 @@ static heartbeat_mon_t s_beat;
 /* Requests this end has answered, published on the STATUS page. */
 static uint32_t s_frames;
 
+/*
+ * The pass's clock, read once at the top of the loop and used by everything
+ * the pass reaches -- including the page callbacks, which run inside
+ * can_service() and have no `now` of their own.
+ *
+ * Every timeout in this file is a wrap-safe unsigned subtraction of two
+ * timestamps.  A second reading of the clock inside a pass can be a
+ * millisecond ahead of the pass's own, and a stamp ahead of the `now` it is
+ * later compared against subtracts to 4,294,967,295 ms -- past every timeout
+ * there is.  A CHANNELS write stamped that way reads as stale in the same
+ * pass and is put back to rest; a save stamped that way skips the settle and
+ * the quiet-bus wait and takes its flash window inside the request burst it
+ * was meant to wait out.
+ */
+static uint32_t s_now_ms;
+
 static void identity_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     const iomcu_state_t *s = (const iomcu_state_t *)ctx;
@@ -136,7 +152,7 @@ static void save_outputs(const iomcu_state_t *s)
     out_store_t cfg;
     memcpy(cfg.slots, s->slots, sizeof(cfg.slots));
     memcpy(cfg.chan_cfg, s->chan_cfg, sizeof(cfg.chan_cfg));
-    out_store_save(&cfg, (uint32_t)to_ms_since_boot(get_absolute_time()));
+    out_store_save(&cfg, s_now_ms);
 }
 
 static void channels_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -161,8 +177,7 @@ static uint8_t channels_write(void *ctx, uint8_t off, uint8_t n,
      * timeout that returns an uncommanded output to rest is per channel
      * exactly so that one screen's traffic cannot hold another's output up.
      */
-    outputs_channels_apply_n(&s_outputs, s->channels, off, n,
-                             (uint32_t)to_ms_since_boot(get_absolute_time()));
+    outputs_channels_apply_n(&s_outputs, s->channels, off, n, s_now_ms);
     return 0u;
 }
 
@@ -258,8 +273,7 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
      */
     const uint16_t thr = (uint16_t)(((uint32_t)s->control[LINK_CT_THROTTLE]
                                      * OUT_SPAN) / LINK_THROTTLE_MAX);
-    const uint32_t now = (uint32_t)to_ms_since_boot(get_absolute_time());
-    (void)outputs_set(&s_outputs, CH_THROTTLE, thr, now);
+    (void)outputs_set(&s_outputs, CH_THROTTLE, thr, s_now_ms);
     /*
      * And the same command to the pins bound as motors.  CH_THROTTLE is off
      * the page and nothing renders it, so on its own it drives no pin: the
@@ -788,9 +802,7 @@ static void sample(void)
  */
 static void outputs_off(void)
 {
-    outputs_arm(&s_outputs,
-                false,
-                (uint32_t)to_ms_since_boot(get_absolute_time()));
+    outputs_arm(&s_outputs, false, s_now_ms);
 
     s_state.control[LINK_CT_ARM]      = 0;
     s_state.control[LINK_CT_THROTTLE] = 0;
@@ -860,6 +872,9 @@ int main(void)
     }
 
     const uint32_t now0 = (uint32_t)to_ms_since_boot(get_absolute_time());
+    /* Before anything that can reach a page callback: can_start() below opens
+     * the controller, and the first frame after it is dispatched with this. */
+    s_now_ms = now0;
     outputs_init(&s_outputs, now0);
     /*
      * The pins this build will not hand out, whatever the host asks for: the
@@ -924,8 +939,14 @@ int main(void)
          * is a wrap-safe unsigned subtraction, so a timestamp 1 ms ahead of
          * the `now` it is compared against reads as 4,294,967,295 ms of
          * silence, past every timeout there is.
+         *
+         * Published as s_now_ms for the same reason: the page callbacks run
+         * under can_service() below, they stamp the bank and the store, and
+         * a clock they read for themselves is a clock that can already be
+         * ahead of this one.
          */
         const uint32_t now = (uint32_t)to_ms_since_boot(get_absolute_time());
+        s_now_ms = now;
 
         /* Polled rather than interrupt-driven: the loop turns over far faster
          * than a frame takes to arrive, and the failsafe has to fire on time
