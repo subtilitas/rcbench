@@ -357,9 +357,16 @@ void outputs_hw_service(const outputs_t *o)
         return;
     }
     /*
-     * One question for the whole bank: is it armed and being commanded.
-     * Asking it per slot would let one output keep driving on a stale answer
-     * while another had already stopped.
+     * One question for the whole bank: is it armed.  Asking it per slot would
+     * let one output keep driving on a stale answer while another had already
+     * stopped.  Whether a channel is still being commanded is a separate
+     * question, per channel, and it is not asked here: what reaches a pin is
+     * outputs_actual(), whatever last wrote it.  The main loop calls
+     * outputs_step() immediately before this, so an overdue channel is at its
+     * rest by then, and what goes on the pin is that rest rather than nothing.
+     * outputs_off() calls this with no step in front of it and needs none: it
+     * disarms first, which puts every channel at its rest and makes drive
+     * false.
      */
     const bool drive = outputs_driving(o);
 
