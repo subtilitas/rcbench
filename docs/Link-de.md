@@ -161,9 +161,10 @@ Einstellung und vor dem Schreibvorgang, der scharfschaltet. Ein Schreibvorgang,
 den niemand beantwortet, bleibt offen und geht beim nächsten 50-ms-Poll
 erneut hinaus; einer, den der Coprozessor ablehnt, wird nicht wiederholt,
 denn dieselbe einmal abgelehnte Anfrage wird jedes Mal abgelehnt, und er
-wartet stattdessen auf die nächste Änderung oder die nächste Link-up-Flanke. Der Schutz bei null
-greift für eine nie gesendete Zahl, nicht für eine veraltete: jede Zahl, die
-die Einstellung zulässt, liegt im Bereich, den die Page annimmt.
+wartet stattdessen auf die nächste Änderung oder die nächste
+Link-up-Flanke. Der Schutz bei null greift für eine nie gesendete Zahl, nicht
+für eine veraltete: jede Zahl, die die Einstellung zulässt, liegt im Bereich,
+den die Page annimmt.
 
 Der Coprozessor verweigert einen Pin, den er nicht treiben darf — die
 Safety-Leitung, die Pins des CAN-Controllers und jede Nummer über dem letzten
