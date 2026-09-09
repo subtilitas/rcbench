@@ -1054,37 +1054,41 @@ int main(void)
          * one long window with a printf in the middle of it, and the pass
          * between them is what empties the receive buffers.
          */
-        bool reclaimed = false;
         if (step == OUT_STORE_IDLE && out_store_reclaim(driving, quiet)) {
-            reclaimed = true;
             printf("rcbench-iomcu: output store sector reclaimed, "
                    "window %lu us\n",
                    (unsigned long)out_store_last_erase_us());
         }
 
-        /*
-         * The clock is re-read across a flash window, and only across one.
-         *
-         * One clock per pass is the rule everywhere else, and it holds
-         * because a pass is short.  A window is not: an erase stops this core
-         * for about 19 ms, and every measurement below is of elapsed time --
-         * s_last_rx_ms is what the next pass's quiet-bus guard subtracts
-         * from, and stamping a frame collected after the window with a clock
-         * from before it would report 19 ms of quiet bus at the moment a
-         * frame was handled.  The next page program would then pass the 5 ms
-         * guard immediately and land in the same burst of requests, which is
-         * the collision the guard exists to prevent.
-         *
-         * link_dev_tick() has the same reason with a bigger margin: 19 ms
-         * against a 200 ms silence timeout.
-         */
-        if (step != OUT_STORE_IDLE || reclaimed) {
-            now = (uint32_t)to_ms_since_boot(get_absolute_time());
-            s_now_ms = now;
-        }
-
         can_report(now);
-        /* Again straight after the report: printing to a USB host can take
+
+        /*
+         * The clock is re-read here, once, and this is the only place a pass
+         * re-reads it.
+         *
+         * One clock per pass is the rule and it holds because a pass is
+         * short.  Two things in this one are not.  A flash window stops this
+         * core for about 19 ms with interrupts off.  can_report() prints to a
+         * USB host, which blocks for as long as the host takes.  Everything
+         * below measures elapsed time across whichever of them just ran:
+         * s_last_rx_ms is what the next pass's quiet-bus guard subtracts
+         * from, so a frame collected after one of them and stamped with a
+         * clock from before it reports a quiet bus at the moment a frame was
+         * handled.  The next page program then passes the 5 ms guard
+         * immediately and lands in the same burst of requests, which is the
+         * collision the guard exists to prevent.
+         *
+         * link_dev_tick() has the same reason with a bigger margin: tens of
+         * milliseconds against a 200 ms silence timeout.
+         *
+         * Unconditional rather than after a window only.  A timer read costs
+         * nothing beside either of the two, and a condition here is a list of
+         * what can block that has to be kept in step with the code above it.
+         */
+        now = (uint32_t)to_ms_since_boot(get_absolute_time());
+        s_now_ms = now;
+
+        /* Straight after the report: printing to a USB host can take
          * milliseconds, and the part holds two frames. */
         can_service(now);
 

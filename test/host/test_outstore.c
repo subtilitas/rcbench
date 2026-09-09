@@ -388,43 +388,55 @@ TEST_CASE(a_power_cut_during_an_erase_leaves_the_live_record)
 }
 
 /*
- * The sequence pair rejects every bit an erase could have lifted.
+ * A record that was not finished, in either direction, is rejected.
  *
- * An erase sets bits and never clears one, so the check has to catch a bit
- * set in either word, from any starting value.  Exhaustive over the 32 bit
- * positions of each word, for the sequence numbers a store actually holds
- * plus the two ends of the range.
+ * An erase sets bits and a program clears them, so a record caught in either
+ * holds fewer 0 bits than it was written with.  The count that says how many
+ * is itself held against its complement, and neither a set bit nor a cleared
+ * one can be paid for in that pair.  Exhaustive over the 32 bit positions of
+ * both words.
  */
-TEST_CASE(a_lifted_bit_breaks_the_sequence_pair)
+TEST_CASE(an_unfinished_write_is_rejected)
 {
-    static const uint32_t seqs[] = {
+    static const uint32_t counts[] = {
         0u, 1u, 2u, 17u, 255u, 256u, 0x0000FFFFuL, 0x12345678uL,
         0x7FFFFFFFuL, 0x80000000uL, 0xFFFFFFFEuL, 0xFFFFFFFFuL,
     };
-    for (size_t i = 0; i < sizeof(seqs) / sizeof(seqs[0]); ++i) {
-        const uint32_t seq = seqs[i];
-        const uint32_t inv = ~seq;
-        CHECK(out_store_seq_ok(seq, inv));
+    for (size_t i = 0; i < sizeof(counts) / sizeof(counts[0]); ++i) {
+        const uint32_t z = counts[i];
+        const uint32_t inv = ~z;
+        CHECK(out_store_intact(z, inv, z));
         for (unsigned b = 0; b < 32u; ++b) {
             const uint32_t bit = 1uL << b;
-            /* A bit an erase lifted in the sequence number. */
-            if ((seq & bit) == 0u) {
-                CHECK(!out_store_seq_ok(seq | bit, inv));
+            /* The count word, lifted by an erase or cleared by a program. */
+            if ((z & bit) == 0u) {
+                CHECK(!out_store_intact(z | bit, inv, z | bit));
+                CHECK(!out_store_intact(z | bit, inv, z));
+            } else {
+                CHECK(!out_store_intact(z & ~bit, inv, z & ~bit));
             }
-            /* And one it lifted in the complement. */
+            /* And the complement word. */
             if ((inv & bit) == 0u) {
-                CHECK(!out_store_seq_ok(seq, inv | bit));
+                CHECK(!out_store_intact(z, inv | bit, z));
+            } else {
+                CHECK(!out_store_intact(z, inv & ~bit, z));
             }
         }
+        /* The record's own bits, one short of what it claims: a program that
+         * did not finish, or an erase that had started. */
+        if (z > 0u) {
+            CHECK(!out_store_intact(z, inv, z - 1u));
+        }
+        CHECK(!out_store_intact(z, inv, z + 1u));
     }
-    /* A fully erased slot reads 0xFFFFFFFF in both, which is the pair a
-     * record can never be written with. */
-    CHECK(!out_store_seq_ok(0xFFFFFFFFuL, 0xFFFFFFFFuL));
+    /* A fully erased slot reads 0xFFFFFFFF in both words, which is a pair no
+     * record is ever written with. */
+    CHECK(!out_store_intact(0xFFFFFFFFuL, 0xFFFFFFFFuL, 0u));
 }
 
 int main(void)
 {
-    RUN(a_lifted_bit_breaks_the_sequence_pair);
+    RUN(an_unfinished_write_is_rejected);
     RUN(an_empty_store_writes_the_first_record);
     RUN(a_save_follows_the_live_record_in_its_own_sector);
     RUN(a_full_sector_moves_into_the_one_already_erased);

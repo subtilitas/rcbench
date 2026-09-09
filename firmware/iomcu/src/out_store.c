@@ -63,34 +63,46 @@ _Static_assert(STORE_SLOTS <= 255u,
  * the link's, because a half-written record and a corrupt frame are the same
  * problem and there is no reason for two answers to it.
  *
- * The checksum is not what protects the sequence number, though, and that is
- * the field that decides which record is the live one.  A power cut during
- * an erase leaves a record part way through it, and an erase only lifts bits
- * towards 0xFF -- so a superseded record can gain sequence bits and outrank
- * the record still wanted.  A 16-bit checksum makes that unlikely and not
- * impossible: the corrupted record has to happen to check out, which is one
- * chance in 65,536 per candidate, and only-set-bits leaves an enormous
- * number of candidates.  One in 65,536 of a power cut in a 19 ms window is
- * not a guarantee, and this is the field a guarantee was claimed for.
+ * The checksum is not what says the record is whole, though, and a power cut
+ * can leave one that is not.  Two ways, and they are opposites:
  *
- * So the sequence number is stored twice, the second time complemented.  An
- * erase can set a bit and cannot clear one, so a bit gained in seq would
- * have to be lost in seq_inv for the pair to still agree, and a bit gained
- * in seq_inv would have to be lost in seq.  Neither is something an erase
- * can do.  Any erase that has touched either field is therefore detected,
- * whatever the checksum says, and a partially erased record can never
- * outrank the live one.
+ *   During an erase.  Bits lift towards 0xFF, so a superseded record's
+ *   sequence number can grow past the live one's and outrank it.
+ *   During a program.  Bits fall towards their value, so a record whose
+ *   header has landed and whose configuration has not ranks above the record
+ *   before it and carries a configuration that is part 0xFF.
  *
- * The configuration is left to the checksum.  A superseded record whose cfg
- * is corrupted but whose seq is intact is still superseded, and the only
- * sector ever erased is one whose records are all below the live one.
+ * A 16-bit checksum makes each unlikely rather than impossible: the corrupted
+ * record has to happen to check out, which is one chance in 65,536 per
+ * candidate, over an enormous number of candidates.  This is the field a
+ * guarantee was claimed for, so it gets one.
+ *
+ * zeros is how many 0 bits the record holds from crc onwards, written with
+ * the record and stored beside its own complement.  Every partial write is
+ * then caught by arithmetic rather than by luck:
+ *
+ *   an erase sets bits, so a partly erased record holds fewer 0 bits than
+ *   zeros says;
+ *   a program clears bits, so a partly programmed record has not reached the
+ *   count yet either.
+ *
+ * Both are "fewer zeros than the record claims", and the claim cannot be
+ * faked: for zeros and zeros_inv to still exclusive-or to 0xFFFFFFFF, both
+ * words have to hold exactly what they were written with.  An erase would
+ * have to clear a bit to compensate for one it set, and a program would have
+ * to set one to compensate for one it cleared; neither can do the other's
+ * work.
+ *
+ * The checksum stays for what it is good at: a bit that changed for a reason
+ * other than an interrupted write.
  */
 typedef struct {
     uint32_t magic;
-    uint16_t crc;             /**< over every byte after this field */
+    uint32_t zeros;           /**< 0 bits from crc onwards, as written */
+    uint32_t zeros_inv;       /**< ~zeros; no partial write keeps the pair */
+    uint16_t crc;             /**< over every byte from version onwards */
     uint16_t version;
     uint32_t seq;
-    uint32_t seq_inv;         /**< ~seq; an erase cannot keep the pair */
     out_store_t cfg;
 } record_t;
 
@@ -145,6 +157,26 @@ static uint16_t record_crc(const record_t *r)
                     sizeof(*r) - offsetof(record_t, version));
 }
 
+/*
+ * The 0 bits from crc onwards: everything the record carries except the count
+ * itself and the magic that says the slot has been written at all.
+ */
+static uint32_t record_zeros(const record_t *r)
+{
+    const uint8_t *p = (const uint8_t *)(const void *)r
+                       + offsetof(record_t, crc);
+    const size_t n = sizeof(*r) - offsetof(record_t, crc);
+    uint32_t zeros = 0u;
+    for (size_t i = 0; i < n; ++i) {
+        uint8_t v = (uint8_t)~p[i];
+        while (v != 0u) {
+            zeros += (uint32_t)(v & 1u);
+            v = (uint8_t)(v >> 1);
+        }
+    }
+    return zeros;
+}
+
 static const record_t *record_at(uint8_t slot)
 {
     return (const record_t *)(const void *)
@@ -174,7 +206,8 @@ static void survey(out_store_rec_t *recs)
         recs[i].valid  = !erased
                          && r->magic == STORE_MAGIC
                          && r->version == STORE_VERSION
-                         && out_store_seq_ok(r->seq, r->seq_inv)
+                         && out_store_intact(r->zeros, r->zeros_inv,
+                                             record_zeros(r))
                          && r->crc == record_crc(r);
         recs[i].seq    = recs[i].valid ? r->seq : 0u;
     }
@@ -310,9 +343,11 @@ out_store_step_t out_store_tick(bool driving, uint32_t quiet_ms,
     r->magic   = STORE_MAGIC;
     r->version = STORE_VERSION;
     r->seq     = w.seq;
-    r->seq_inv = ~w.seq;
     r->cfg     = s_want;
     r->crc     = record_crc(r);
+    /* Last, because it counts everything above it. */
+    r->zeros     = record_zeros(r);
+    r->zeros_inv = ~r->zeros;
 
     s_last_program_us = program_record(w.at);
     s_last_record = w.at;

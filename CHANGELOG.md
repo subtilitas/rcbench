@@ -59,14 +59,18 @@ history is in git.
   bits towards 0xFF, and a record caught half way through one has to fail its
   check rather than outrank the record still wanted. A checksum alone makes
   that likely and not certain -- 65,535 chances in 65,536 per candidate, over
-  an enormous number of candidates reachable by setting bits alone -- so the
-  sequence number is stored twice, the second time complemented. An erase can
-  set a bit and cannot clear one, so a bit gained in either word breaks the
-  pair and no bit gained in the other can restore it: a partially erased
-  record is rejected deterministically rather than probably. The rule is
-  `out_store_seq_ok()` in `shared/outputs/out_store_map.c`, where the host
-  suite holds it against every bit position of both words. The record format
-  is version 3; a store written by an earlier build reads as unwritten, so the
+  an enormous number of candidates -- and the same is true of a program that
+  did not finish, which leaves a header that has landed above a configuration
+  that is part 0xFF. So each record carries the number of 0 bits it holds
+  from its checksum onwards, beside that number's own complement. An erase
+  sets bits and a program clears them, so either one interrupted leaves fewer
+  0 bits than the record claims, and the claim cannot be faked: keeping the
+  complement pair across a partial write would need a bit cleared to pay for
+  one that was set, or set to pay for one cleared, and no single flash
+  operation does both. The rule is `out_store_intact()` in
+  `shared/outputs/out_store_map.c`, where the host suite holds it against
+  every bit position of both words and against a count one either side of the
+  written one. The record format is version 3; a store written by an earlier build reads as unwritten, so the
   first boot on this build starts from the defaults -- no driver and no pin in
   any slot. The panel keeps no binding of its own and sends none unasked: it
   reads the pages back when the link comes up and shows nothing configured, so

@@ -135,7 +135,7 @@ int out_store_map_stale(const out_store_rec_t *recs, uint8_t sectors,
     return -1;
 }
 
-bool out_store_seq_ok(uint32_t seq, uint32_t seq_inv)
+bool out_store_intact(uint32_t zeros, uint32_t zeros_inv, uint32_t counted)
 {
-    return (seq ^ seq_inv) == 0xFFFFFFFFuL;
+    return (zeros ^ zeros_inv) == 0xFFFFFFFFuL && counted == zeros;
 }

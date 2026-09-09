@@ -32,18 +32,21 @@
  *   leaving.  With one sector configured there is nowhere else for the record
  *   to be and that guarantee is gone; the coprocessor configures two.
  *
- * The second guarantee needs a half-erased record to be rejected, and a
- * checksum is not enough for it.  An erase lifts bits towards 0xFF, so a
- * superseded record's sequence number can only grow -- and for the corrupted
- * record to be rejected it has to fail its check, which a 16-bit checksum
- * does with probability 65535/65536 per candidate rather than always.  The
- * number of candidates reachable by setting bits alone is enormous, so that
- * is a likelihood and not a guarantee.
+ * Both guarantees need a partly written record to be rejected, and a checksum
+ * is not enough for either.  An erase lifts bits towards 0xFF and a program
+ * clears them towards their value, so a record caught in one is a record with
+ * bits that are not what was written; for it to be rejected it has to fail
+ * its check, which a 16-bit checksum does with probability 65535/65536 per
+ * candidate rather than always.  The number of candidates is enormous, so
+ * that is a likelihood and not a guarantee.
  *
- * out_store_seq_ok() is what makes it one.  The caller stores the sequence
- * number twice, the second time complemented, and an erase cannot keep the
- * pair: a bit gained in one would have to be lost in the other, and losing a
- * bit is what an erase cannot do.
+ * out_store_intact() is what makes it one.  The caller writes the number of
+ * 0 bits the record holds, beside that number's own complement, and counts
+ * them back on the way in.  Every partial write leaves fewer 0 bits than the
+ * count says -- an erase because it set bits, a program because it has not
+ * finished clearing them -- and the count itself cannot be faked, because
+ * keeping a complement pair across a partial write would need a bit cleared
+ * to pay for one that was set, or set to pay for one that was cleared.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -111,16 +114,21 @@ int out_store_map_stale(const out_store_rec_t *recs, uint8_t sectors,
                         uint8_t per_sector);
 
 /**
- * Whether a record's sequence pair survived whatever happened to the flash.
+ * Whether a record was written whole and has stayed as it was written.
  *
- * @p seq_inv is written as ~@p seq.  A flash erase only ever sets bits, so
- * any bit an interrupted erase lifted in either word breaks the pair and
- * cannot be compensated for by a bit lifted in the other: the complement
- * would need a bit cleared, which no erase does.
+ * @p zeros is the number of 0 bits the record held when it was written, @p
+ * zeros_inv is ~@p zeros, and @p counted is the number of 0 bits it holds
+ * now.  The pair says the count itself is untouched; the count says the rest
+ * of the record is.
  *
- * This is a stronger check than the record's checksum and it answers a
- * narrower question.  It says nothing about the configuration -- that is the
- * checksum's -- and everything about whether this record may be ranked
- * against the others.
+ * A flash erase only sets bits and a program only clears them, so either one
+ * interrupted leaves a record with fewer 0 bits than it was written with.
+ * Neither can fake the pair: a bit set in @p zeros would have to be paid for
+ * by a bit cleared in @p zeros_inv, and a bit cleared by one set, and no
+ * single flash operation does both.
+ *
+ * This is a stronger check than the record's checksum, and it answers a
+ * different question.  The checksum says the bytes are the ones that were
+ * meant; this says the write that put them there finished.
  */
-bool out_store_seq_ok(uint32_t seq, uint32_t seq_inv);
+bool out_store_intact(uint32_t zeros, uint32_t zeros_inv, uint32_t counted);
