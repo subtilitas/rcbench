@@ -373,6 +373,62 @@ TEST_CASE(driving_is_armed_and_asks_nothing_about_commands)
 }
 
 /*
+ * A re-arm renders the slew's answer, not the command.
+ *
+ * outputs_arm() refreshes the clock and nothing else; the disarm before it
+ * put actual at rest.  With no slew the first step is the whole distance and
+ * the pin carries the remembered command for the whole timeout.  With a slew
+ * the pin carries a ramp from rest, and a rate too slow to cross the distance
+ * inside timeout_ms never gets there: the timeout returns the channel to rest
+ * with the command still standing.
+ */
+TEST_CASE(a_re_arm_ramps_from_rest_when_the_channel_is_slewed)
+{
+    fresh();
+    /* Channel 0 unslewed, channel 1 at 200 units a second: 100 units in the
+     * 500 ms timeout, against 400 units from rest to the command. */
+    CHECK(outputs_set_slew(&o, 1, 200u));
+
+    outputs_arm(&o, true, 1000u);
+    outputs_set(&o, 0, 900u, 1000u);
+    outputs_set(&o, 1, 900u, 1000u);
+    outputs_step(&o, 1001u);
+    CHECK_EQ(outputs_actual(&o, 0), 900u);
+    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u + 1u);
+
+    /* Disarmed, and still stepped: the loop calls outputs_step() every pass
+     * whether the bank is armed or not, so the slew's elapsed time does not
+     * count the disarmed gap in one lump. */
+    outputs_arm(&o, false, 1001u);
+    outputs_step(&o, 2000u);
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u);
+
+    /* Re-armed with both commands still standing.  The arm refreshes the
+     * clock and nothing else. */
+    outputs_arm(&o, true, 2000u);
+    outputs_step(&o, 2001u);
+    CHECK_EQ(outputs_actual(&o, 0), 900u);   /* the whole distance at once */
+    /* And one unit of it: the step is rounded up, so even a 1 ms pass moves.
+     * 200 units a second is 0.2 of a unit in 1 ms. */
+    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u + 1u);
+
+    /* One millisecond before the timeout.  498 ms more at 200 units a second
+     * is 100 units, so the ramp stands at 601 of the 900 commanded. */
+    outputs_step(&o, 2000u + OUT_DEFAULT_TIMEOUT_MS - 1u);
+    CHECK_EQ(outputs_actual(&o, 0), 900u);
+    CHECK_EQ(outputs_actual(&o, 1), 601u);
+
+    /* At the timeout both go to rest, the slewed one without ever having
+     * rendered what it was commanded.  The bank is still driving. */
+    outputs_step(&o, 2000u + OUT_DEFAULT_TIMEOUT_MS);
+    CHECK(outputs_overdue(&o, 1, 2000u + OUT_DEFAULT_TIMEOUT_MS));
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u);
+    CHECK(outputs_driving(&o));
+}
+
+/*
  * Rest is the midpoint of the channel's own endpoints, not 1500 us.  The
  * default 1000 to 2000 us rests at 1500 us; the narrow servo the servo screen
  * offers, 660 to 860 us, rests at 760 us.
@@ -917,6 +973,7 @@ int main(void)
     RUN(the_pulse_spans_the_endpoints);
     RUN(a_command_while_disarmed_is_remembered_and_not_emitted);
     RUN(driving_is_armed_and_asks_nothing_about_commands);
+    RUN(a_re_arm_ramps_from_rest_when_the_channel_is_slewed);
     RUN(a_surface_rests_at_the_midpoint_of_its_own_endpoints);
     RUN(the_timeout_reaches_a_channel_and_leaves_it_driving);
     RUN(an_arm_makes_a_disarmed_command_fresh_for_the_timeout);

@@ -284,8 +284,22 @@ uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
  * Rest is not where a channel sits for the first timeout_ms after an arm
  * either.  outputs_arm() stamps last_command_ms on all OUT_MAX_CHANNELS
  * channels, so a command given while disarmed is fresh again and is rendered
- * until it goes overdue: 500 ms of the last command the bank was left with,
- * at the default timeout.
+ * until it goes overdue.  What gets rendered in that time is the slew's
+ * answer, not the command:
+ *
+ *   slew_per_s 0   the first step is the whole distance, so the pin carries
+ *                  the last command the bank was left with for the whole
+ *                  timeout -- 500 ms at OUT_DEFAULT_TIMEOUT_MS
+ *   slew_per_s > 0 the disarm has already put actual at rest, so the pin
+ *                  carries a ramp from rest towards that command.  It
+ *                  arrives only if the distance is under
+ *                  slew_per_s * timeout_ms / 1000, half of slew_per_s at
+ *                  the default timeout; past that the timeout returns it to
+ *                  rest with the command never reached.  The timeout runs
+ *                  from the arm, not from the arrival.
+ *
+ * A throttle rests at 0, so its re-arm ramp is always upward and is slewed.
+ * A surface rests at the middle of its travel and ramps either way.
  *
  * What an ESC (electronic speed controller) does with the surface rest is a
  * question about the ESC.  A receiver output of 1500 us is about half
