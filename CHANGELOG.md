@@ -16,8 +16,10 @@ history is in git.
   is `2 * OUT_SPAN * pct / 100`, so every setting from 1% to 49% crossed at
   the same rate as 50%. The remainder is carried between steps instead: the
   rate is the one asked for, and a slew slower than one unit a step still
-  arrives rather than being truncated to nothing. `dt_ms` is capped at
-  60,000 ms so the multiply cannot overflow at the largest `slew_per_s`.
+  arrives rather than being truncated to nothing. The elapsed time is capped
+  at `1000 * OUT_SPAN / slew_per_s`, which is the interval past which one step
+  covers the whole span and arrives regardless, so the cap discards nothing
+  that could move the channel and the multiply still fits a `uint32_t`.
 - **The coprocessor armed on the previous pass's heartbeat.** `outputs_arm()`
   read the cached `s_beat.alive` and `heartbeat_poll()` ran after
   `outputs_hw_service()`, so a line that went past `HEARTBEAT_MAX_GAP_MS`

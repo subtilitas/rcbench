@@ -205,6 +205,33 @@ TEST_CASE(a_stationary_channel_earns_no_slew_credit)
 }
 
 /*
+ * A throttle coming down does not wait for a slew step.
+ *
+ * Reducing throttle is the safe direction, so it is not ramped -- and the
+ * step that rounds to zero must not delay it either.  At SPEED 1% the slew is
+ * 20 units a second, which is a fiftieth of a unit in the millisecond a pass
+ * takes, so a drop gated behind a non-zero step would wait up to 50 ms.
+ */
+TEST_CASE(a_throttle_coming_down_does_not_wait_for_a_slew_step)
+{
+    fresh();
+    CHECK(outputs_set_role(&o, 0, OUT_ROLE_THROTTLE));
+    CHECK(outputs_set_slew(&o, 0, 20u));
+    outputs_arm(&o, true, 1000u);
+    outputs_set(&o, 0, OUT_SPAN, 1000u);
+    /* Inside the timeout, so the ramp runs rather than the channel resting:
+     * 400 ms at 20 units a second is 8 units up from a throttle's rest of 0. */
+    outputs_step(&o, 1400u);
+    CHECK_EQ(outputs_actual(&o, 0), 8u);
+
+    /* One millisecond later, commanded to stop.  The slew step for that
+     * millisecond is zero; the drop happens anyway. */
+    outputs_set(&o, 0, 0u, 1401u);
+    outputs_step(&o, 1401u);
+    CHECK_EQ(outputs_actual(&o, 0), 0u);
+}
+
+/*
  * A long interval is not truncated.
  *
  * The elapsed time is capped only where a longer step would arrive anyway --
@@ -1045,6 +1072,7 @@ int main(void)
     RUN(the_slew_rate_does_not_follow_the_step_cadence);
     RUN(a_stationary_channel_earns_no_slew_credit);
     RUN(a_long_step_is_not_truncated);
+    RUN(a_throttle_coming_down_does_not_wait_for_a_slew_step);
     RUN(a_pin_belongs_to_one_driver);
     RUN(a_reserved_pin_is_refused);
     RUN(the_outputs_page_refuses_a_pin_that_does_not_fit_the_field);

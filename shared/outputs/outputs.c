@@ -312,6 +312,10 @@ void outputs_step(outputs_t *o, uint32_t now_ms)
          * and takes none of the others with it. */
         if (outputs_overdue(o, (uint8_t)i, now_ms)) {
             c->actual = c->rest;
+            /* And the part-unit with it: a channel that timed out and is
+             * commanded again starts from a whole unit, the same as one that
+             * was standing at its command. */
+            c->slew_rem = 0u;
             continue;
         }
         /* Immediate means immediate.  Testing the elapsed time first would
@@ -345,6 +349,20 @@ void outputs_step(outputs_t *o, uint32_t now_ms)
             c->slew_rem = 0u;
             continue;
         }
+        /*
+         * A throttle coming down is not ramped, and not waited for either.
+         * Reducing throttle is the safe direction, so it happens on the pass
+         * the command arrives whatever the elapsed time would have
+         * contributed -- below, a step that rounds to zero returns early, and
+         * putting the drop after that would delay it by up to
+         * 1000 / slew_per_s ms.  A surface has no safe direction and is
+         * ramped both ways.
+         */
+        if (c->command < c->actual && c->role == OUT_ROLE_THROTTLE) {
+            c->actual = c->command;
+            c->slew_rem = 0u;
+            continue;
+        }
         if (dt_ms == 0u) {
             continue;
         }
@@ -371,18 +389,13 @@ void outputs_step(outputs_t *o, uint32_t now_ms)
         if (c->command > c->actual) {
             const uint32_t next = (uint32_t)c->actual + step;
             c->actual = (next > c->command) ? c->command : (uint16_t)next;
-        } else if (c->command < c->actual) {
-            /* A throttle coming down is not ramped: reducing throttle is the
-             * safe direction.  A surface has no safe direction, so it is
-             * ramped both ways. */
-            if (c->role == OUT_ROLE_THROTTLE) {
-                c->actual = c->command;
-                c->slew_rem = 0u;
-            } else {
-                const uint32_t back = (uint32_t)c->actual - step;
-                c->actual = (c->actual < step || back < c->command)
-                            ? c->command : (uint16_t)back;
-            }
+        } else {
+            /* Below the command, and a surface: the throttle's own case
+             * returned above.  Equal returned above too, so this is a ramp
+             * down and not a no-op. */
+            const uint32_t back = (uint32_t)c->actual - step;
+            c->actual = (c->actual < step || back < c->command)
+                        ? c->command : (uint16_t)back;
         }
     }
 }
