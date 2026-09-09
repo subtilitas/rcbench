@@ -338,9 +338,21 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
      * for an extended one when the mantissa's top bit is clear and the type
      * nibble is not zero, which an ESC that normalises its exponent never
      * sends.
+     *
+     * The telemetry bit is set on every one of the repeats, and it is not
+     * decoration.  On a value of 1 to 47 the bit is what marks the frame as
+     * a command: the BLHeli_S family (Bluejay) discards a command whose
+     * telemetry bit is clear and zeroes its repeat counter with it, so ten
+     * frames without the bit never reach the six repeats its command handler
+     * counts and extended telemetry never comes on.  AM32 has no such gate
+     * and takes the command either way.  On a bidirectional pin the word is
+     * 0x01B5 with the bit and 0x01A4 without it -- a different payload and a
+     * different checksum nibble.  The bit's other meaning is a request on
+     * the separate serial telemetry wire; nothing on this bench reads that
+     * wire.
      */
     if (s->driver == OUT_DRIVER_DSHOT_BIDIR && st->edt_left > 0u) {
-        out_dshot_send(s->pin, (uint16_t)DSHOT_CMD_EDT_ENABLE, false);
+        out_dshot_send(s->pin, (uint16_t)DSHOT_CMD_EDT_ENABLE, true);
         if (--st->edt_left == 0u) {
             st->edt_asked = true;
         }
