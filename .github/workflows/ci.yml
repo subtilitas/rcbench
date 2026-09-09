@@ -28,6 +28,20 @@ jobs:
 
       - name: Install build dependencies
         run: |
+          # The runner image carries package lists this build never installs
+          # from, and apt-get update fails the whole step when any one of them
+          # serves a stale index: "Hash Sum mismatch" on
+          # dl.google.com/linux/chrome-stable stopped every apt job in this
+          # workflow on 2026-09-09, while the two container jobs passed
+          # because they install nothing through apt.  A toolchain install has
+          # no business depending on a browser's mirror being healthy.
+          #
+          # Matched by glob rather than by name: the image writes these as
+          # .list or as deb822 .sources depending on its version, and a name
+          # that misses leaves the failure exactly as it was.  -v so the log
+          # says what went, since a silent no-op here looks identical to a fix.
+          sudo rm -fv /etc/apt/sources.list.d/*google* \
+                      /etc/apt/sources.list.d/*microsoft* || true
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             cmake ninja-build gcc fonts-dejavu-core valgrind
@@ -164,6 +178,10 @@ jobs:
 
       - name: Install the analysers
         run: |
+          # Third-party lists this build never installs from; one serving a
+          # stale index fails the whole step.  See the note in the host job.
+          sudo rm -fv /etc/apt/sources.list.d/*google* \
+                      /etc/apt/sources.list.d/*microsoft* || true
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             cmake ninja-build cppcheck clang-tidy
@@ -259,6 +277,10 @@ jobs:
       # fails: ARM's 14.2 release, unpacked and put on PATH.
       - name: Install the ARM toolchain
         run: |
+          # Third-party lists this build never installs from; one serving a
+          # stale index fails the whole step.  See the note in the host job.
+          sudo rm -fv /etc/apt/sources.list.d/*google* \
+                      /etc/apt/sources.list.d/*microsoft* || true
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi \
