@@ -401,6 +401,12 @@ TEST_CASE(an_empty_read_back_does_not_clear_the_chosen_protocol)
     CHECK_EQ((int)outputs_screen_binding()->proto, bidir);
     tap_pin(7);
     CHECK_EQ((int)outbind_chosen_total(outputs_screen_binding()), 1);
+
+    /* And nothing at all leaves the screen as it was.  The caller passes what
+     * the far end gave it, and a link that answered nothing gives NULL. */
+    outputs_screen_set_binding(NULL);
+    CHECK_EQ((int)outputs_screen_binding()->proto, bidir);
+    CHECK_EQ((int)outbind_chosen_total(outputs_screen_binding()), 1);
 }
 
 int main(void)
