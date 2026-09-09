@@ -25,7 +25,9 @@ else
     # measurement read through an unnamed library version cannot be
     # reproduced.  The build records what it made in a manifest, and
     # unpacking the tarball into /usr/local puts it at the path below.  It is
-    # data, not shell, so it is read with grep and never sourced.
+    # data, not shell, so it is read with grep and never sourced.  What it
+    # is asked for is identity: the sha256 of the binary on PATH and of the
+    # libsigrok the dynamic linker actually loads.
     : "${SIGROK_MANIFEST:=/usr/local/share/doc/rcbench-sigrok/MANIFEST.txt}"
     manifest_get() {
         grep -m1 "^$1:" "$SIGROK_MANIFEST" 2>/dev/null |
@@ -38,22 +40,51 @@ else
         # question of which build produced it is simply unanswered.
         bad "sigrok provenance" "unrecorded -- no manifest at $SIGROK_MANIFEST"
     else
-        lib_version=$(manifest_get libsigrok-version)
+        # Identity, not version.  Two commits can carry one version string, so
+        # a version comparison passes on a stale manifest and then attributes
+        # a commit to a library that did not produce the captures.  The
+        # hashes are what decide; the version lines are labels and nothing
+        # turns on them.
+        lib_sha=$(manifest_get libsigrok-sha256)
+        cli_sha=$(manifest_get sigrok-cli-sha256)
         lib_commit=$(manifest_get libsigrok-commit)
+        cli_commit=$(manifest_get sigrok-cli-commit)
+        lib_version=$(manifest_get libsigrok-version)
         cli_version=$(manifest_get sigrok-cli-version)
-        if [ -z "$lib_version" ] || [ -z "$lib_commit" ] || [ -z "$cli_version" ]; then
+
+        if [ -z "$lib_sha" ] || [ -z "$cli_sha" ] ||
+           [ -z "$lib_commit" ] || [ -z "$cli_commit" ]; then
             bad "sigrok provenance" "manifest at $SIGROK_MANIFEST is missing keys"
         else
-            say "libsigrok" "$lib_version at $lib_commit"
-            # The apt package and the built one can both be on PATH.  What
-            # runs is what the shell finds first, which need not be what the
-            # manifest describes.
-            on_path=$(sigrok-cli --version | head -1 | awk '{print $2}')
-            if [ "$on_path" != "$cli_version" ]; then
-                bad "sigrok-cli on PATH" \
-                    "$on_path at $(command -v sigrok-cli), manifest records $cli_version"
+            say "libsigrok recorded" "${lib_version:-version not recorded} at $lib_commit"
+            say "sigrok-cli recorded" "${cli_version:-version not recorded} at $cli_commit"
+
+            # What runs is what the shell finds first, and what it loads is
+            # what the dynamic linker resolves -- which need not be the
+            # library sitting beside the binary.  Ask ld.so rather than
+            # assume.
+            cli_path=$(command -v sigrok-cli)
+            lib_path=$(ldd "$cli_path" 2>/dev/null |
+                       awk '$1 ~ /^libsigrok\.so/ {for (i=1;i<=NF;i++) if ($i=="=>") {print $(i+1); exit}}')
+
+            have=$(sha256sum "$cli_path" 2>/dev/null | cut -d' ' -f1)
+            if [ "$have" = "$cli_sha" ]; then
+                say "sigrok-cli on PATH" "$cli_path, hash matches the manifest"
             else
-                say "sigrok-cli on PATH" "$on_path, matches the manifest"
+                bad "sigrok-cli on PATH" \
+                    "$cli_path is not the recorded build -- another sigrok-cli is shadowing it"
+            fi
+
+            if [ -z "$lib_path" ]; then
+                bad "libsigrok loaded" "ld.so resolves no libsigrok.so for $cli_path"
+            else
+                have=$(sha256sum "$lib_path" 2>/dev/null | cut -d' ' -f1)
+                if [ "$have" = "$lib_sha" ]; then
+                    say "libsigrok loaded" "$lib_path, hash matches the manifest"
+                else
+                    bad "libsigrok loaded" \
+                        "$lib_path is not the recorded build -- the captures would be read through a library the manifest does not describe"
+                fi
             fi
         fi
     fi

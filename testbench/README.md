@@ -82,23 +82,31 @@ CI rather than on the Pi, and the tarball carries a manifest at
 `share/doc/rcbench-sigrok/MANIFEST.txt`, so unpacking it into `/usr/local`
 puts the file at `/usr/local/share/doc/rcbench-sigrok/MANIFEST.txt`. Plain
 text, one key per line, colon-separated: `libsigrok-commit`,
-`sigrok-cli-commit`, `libsigrok-version`, `sigrok-cli-version`,
-`debian-version`, `built-utc`.
+`sigrok-cli-commit`, `libsigrok-sha256`, `sigrok-cli-sha256`,
+`libsigrok-version`, `sigrok-cli-version`, `debian-version`, `built-utc`.
 
-`host/selftest.sh` reads it and prints the libsigrok version and commit beside
-the driver check, so the version a capture is read through is named in the
-same output as the capture. Three readings come out of it:
+**The hashes are what decide.** A version string is not a build: two commits
+can carry one, so a comparison against `sigrok-cli-version` passes on a stale
+manifest and then attributes a commit to a library that did not produce the
+captures. `host/selftest.sh` compares the sha256 of the binary on `PATH` and
+of the libsigrok that is actually loaded -- resolved with `ldd`, because the
+library the dynamic linker finds need not be the one beside the binary. The
+version lines are printed as labels and nothing turns on them.
+
+Five readings come out of it:
 
 | What the selftest says | What it means |
 |---|---|
-| `libsigrok <version> at <commit>` | the manifest is there and names the build |
-| `sigrok provenance: unrecorded` | no manifest at that path, so which build is on PATH is unanswered. A distribution `sigrok-cli` reads as this |
-| `sigrok-cli on PATH: <a>, manifest records <b>` | the binary the shell finds is not the one the manifest describes -- the distribution package shadowing the built one |
+| `libsigrok recorded: <version> at <commit>` | the manifest is there and names a build |
+| `sigrok provenance: unrecorded` | no manifest at that path, so which build is on `PATH` is unanswered. A distribution `sigrok-cli` reads as this |
+| `sigrok provenance: missing keys` | a manifest that cannot decide anything. Without it a truncated file passes, because an absent recorded hash equals an absent parsed one |
+| `sigrok-cli on PATH: <path> is not the recorded build` | the binary the shell finds is not the one the manifest describes -- the distribution package shadowing the built one |
+| `libsigrok loaded: <path> is not the recorded build` | the binary is right and the library under it is not, which is the reading a stale manifest or a half-finished install gives |
 
-The last is the reason the distribution `sigrok-cli` is left installed rather
-than removed: a bench that only works once a package is gone is a bench that
-breaks on the next machine, so the shadowing is a step the procedure states
-and the selftest catches. `SIGROK_MANIFEST` overrides the path.
+The fourth is the reason the distribution `sigrok-cli` is left installed
+rather than removed: a bench that only works once a package is gone is a bench
+that breaks on the next machine, so the shadowing is a step the procedure
+states and the selftest catches. `SIGROK_MANIFEST` overrides the path.
 
 **RP2350 board** — the same part as the bench coprocessor, in one of two roles
 per run:
@@ -315,8 +323,12 @@ There is no clock to set. OpenOCD prints `Note: The adapter "linuxgpiod"
 doesn't support configurable speed` when the driver initialises, so an
 `adapter speed` line is accepted and has no effect. Its
 `interface/raspberrypi5-gpiod.cfg` puts the fixed rate at about 800 kHz for
-SWD writes and 360 kHz for reads; neither is measured on this host. If a flash
-fails to verify, the clock is not the knob.
+SWD writes and 360 kHz for reads; neither is measured on this host.
+
+A fixed rate is not the same as a suitable one, and nothing here has driven a
+target to find out. If a flash fails to verify, `adapter speed` is not the
+knob -- the PCIe policy below and a different adapter are the two things that
+can move the timing.
 
 Two host settings bear on it, both read on the bench host:
 

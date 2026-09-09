@@ -177,9 +177,13 @@ concluding anything about the board.
 
 There is no clock to come down to. `linuxgpiod` runs at a fixed rate --
 OpenOCD prints `Note: The adapter "linuxgpiod" doesn't support configurable
-speed` -- so an `adapter speed` line changes nothing, and half-working is a
-wiring or a pull question rather than a clock one. `README.md` under *Flashing
-without hands* has the pull readings for all three pins.
+speed` -- so an `adapter speed` line changes nothing.
+
+That the rate is fixed does not make it suitable. It is not measured on this
+host, and the PCIe policy above can clock the first pulses far above it. If a
+connection half-works, the two things that can move the timing are that policy
+and a different adapter; neither is `adapter speed`. `README.md` under
+*Flashing without hands* has the pull readings for all three pins.
 
 ---
 
