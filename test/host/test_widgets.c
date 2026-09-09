@@ -275,6 +275,10 @@ TEST_CASE(a_stopped_plot_still_counts_the_call)
     push(&p, 1.0f, 1.0f);
     const uint32_t pushes = p.pushes, rev = p.revision;
 
+    /* And nothing at all is refused rather than dereferenced. */
+    ui_plot_set_running(NULL, true);
+    ui_plot_clear(NULL);
+
     ui_plot_set_running(&p, false);
     CHECK(p.revision != rev);                 /* the state is drawn */
     const uint32_t rev_stopped = p.revision;
