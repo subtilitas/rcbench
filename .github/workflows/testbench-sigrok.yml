@@ -900,9 +900,37 @@ jobs:
             echo "GPLv3-or-later. The licence texts and the corresponding-source"
             echo "note are in the tarball under share/licences."
           } > notes.md
-          gh release create "$TAG" "$tarball" "$dir/SHA256SUMS" \
+          # Created as a draft, filled, then published, so a run whose upload
+          # fails leaves nothing anyone can download half of.  A rerun of this
+          # workflow keeps the same run id and so the same tag, and
+          # `gh release create` fails on a tag that already has a release --
+          # which would also make a transient upload failure unrecoverable.
+          # Creating only when absent and uploading with --clobber makes the
+          # step repeatable.
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$SHA" \
+              --draft \
+              --title "sigrok for the LA2016, Debian 13 arm64" \
+              --notes-file notes.md
+          fi
+          gh release upload "$TAG" "$tarball" "$dir/SHA256SUMS" \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          # --latest=false, explicitly.  The default is "automatic based on
+          # date and version", and it does take the badge: the first bench
+          # release published took Latest from v0.8.1, which is where somebody
+          # goes for a panel image.  These are auxiliary bench artifacts and
+          # never the product.
+          gh release edit "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
-            --target "$SHA" \
-            --title "sigrok for the LA2016, Debian 13 arm64" \
+            --draft=false --latest=false \
             --notes-file notes.md
-          echo "published $TAG"
+          # Asserted rather than assumed, because the failure is silent and
+          # lands on a page an operator reads rather than in this log.
+          latest=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          if [ "$latest" = "$TAG" ]; then
+            echo "$TAG took the Latest release; it must not" >&2
+            exit 1
+          fi
+          echo "published $TAG; Latest is $latest"
