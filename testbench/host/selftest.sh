@@ -124,6 +124,43 @@ else
     say "PCIe ASPM policy" "not readable at $aspm"
 fi
 
+# The pull a line comes up with is a power-on value and it does not survive
+# being driven: OpenOCD leaves the lines it used as inputs with no pull, so
+# pinctrl reports pn once a check has run. Report what is on the pins now,
+# with how long the host has been up, and name the power-on value beside it so
+# a disagreement is visible. On the RP1 that value is pull-up below GPIO9 and
+# pull-down from GPIO9 up -- read across GPIO0 to GPIO27 on the bench host,
+# with only the lines this bench drives reading otherwise. A disagreement is
+# expected after a run and does not fail anything.
+pull_now() {
+    pinctrl get "$1" 2>/dev/null |
+        awk -F'[|]' '{ n = split($1, f, " ")
+                       for (i = n; i >= 1; i--)
+                           if (f[i] == "pu" || f[i] == "pd" || f[i] == "pn") { print f[i]; exit } }'
+}
+
+if [ -n "$SWD_SWCLK" ] || [ -n "$SWD_SWDIO" ]; then
+    if ! command -v pinctrl >/dev/null; then
+        say "SWD pin pulls" "pinctrl not installed -- not read"
+    else
+        for pair in "SWCLK:${SWD_SWCLK:-}" "SWDIO:${SWD_SWDIO:-}"; do
+            role=${pair%%:*}
+            line=${pair#*:}
+            [ -n "$line" ] || continue
+            now=$(pull_now "$line")
+            [ "$line" -lt 9 ] && boot=pu || boot=pd
+            if [ -z "$now" ]; then
+                say "$role pull (GPIO$line)" "not readable"
+            elif [ "$now" = "$boot" ]; then
+                say "$role pull (GPIO$line)" "$now, the power-on value, $(uptime -p)"
+            else
+                say "$role pull (GPIO$line)" \
+                    "$now, power-on value is $boot -- this line has been driven since boot, $(uptime -p)"
+            fi
+        done
+    fi
+fi
+
 if ! command -v openocd >/dev/null; then
     bad "openocd" "not installed"
 elif [ -z "$SWD_GPIOCHIP" ] || [ -z "$SWD_SWCLK" ] || [ -z "$SWD_SWDIO" ]; then

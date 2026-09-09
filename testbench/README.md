@@ -16,6 +16,17 @@ pieces are described rather than written -- the panel's debug touch address,
 the decoders and the recipes. Each says so where it is described, and they are
 listed together under *What is not built yet*.
 
+**A reading taken from a host is a reading at a moment.** Several of the
+numbers recorded here are power-on values that the act of using the bench
+changes: a GPIO's pull is what the pad comes up with and reads as `pn` once
+OpenOCD has driven the line, and the PCIe power policy is what boot left
+unless somebody has set it. Any such number is written with the condition it
+holds under, at the number rather than in a footnote, and `host/selftest.sh`
+prints what it finds beside the power-on value rather than asserting the
+documented one. A reading that disagrees is shown as a disagreement; it is not
+a failure, because after a check has run the disagreement is the expected
+state.
+
 ---
 
 ## What it is for
@@ -251,19 +262,30 @@ is pin 20. `testbench/WIRING.md` has the table. Any two free header GPIOs
 would work, since the lines are bit-banged rather than driven by a peripheral,
 but a bench is reproducible only if every assembler uses the same two.
 
-SWDIO is on GPIO8 for its default pull. On a freshly booted bench host
-`pinctrl get 8,24,25` reports:
+SWDIO is on GPIO8 for its default pull. **Power-on values, valid only on a
+line nothing has driven since boot** -- `pinctrl get 8,24,25` on the bench
+host:
 
      8: no    pu | -- // GPIO8 = none
     24: no    pd | -- // GPIO24 = none
     25: no    pd | -- // GPIO25 = none
 
-`pu` on GPIO8 against `pd` on GPIO24 and GPIO25, which is the RP1's split at
-GPIO9. The SWD specification puts a pull-up on SWDIO at the target, so GPIO8
-is the line that agrees with it, and OpenOCD's Pi 5 configuration puts SWDIO
-there for the same reason. Read the pulls before OpenOCD has run: it leaves
-the lines it drove as inputs with no pull, and `pinctrl` then reports `pn`
-rather than the power-on value.
+`pu` on GPIO8 against `pd` on GPIO24 and GPIO25. Read across the whole header
+range on the same host, `pinctrl get 0-27` gives `pu` on GPIO0 to GPIO8 and
+`pd` on GPIO9 to GPIO27, so the split is at GPIO9 and the three lines above
+are not special cases.
+
+The SWD specification puts a pull-up on SWDIO at the target, so GPIO8 is the
+line that agrees with it, and OpenOCD's Pi 5 configuration puts SWDIO there
+for the same reason.
+
+**The condition is not decoration.** OpenOCD leaves the lines it drove as
+inputs with no pull, so on a host where the check above has run, `pinctrl`
+reports `pn` for GPIO8 and GPIO25 and not the values printed here. Reboot
+before reading a pull, or read a line the bench does not touch.
+`host/selftest.sh` prints the pull it finds for the two configured lines, with
+the power-on value and the host's uptime beside it, so a `pn` reads as a line
+that has been driven rather than as a contradiction of this table.
 
 **The choice is not a fix for an observed fault.** No target has been on
 either pin, so whether a pull-down on GPIO24 would have cost anything against
@@ -298,9 +320,12 @@ fails to verify, the clock is not the knob.
 
 Two host settings bear on it, both read on the bench host:
 
-- PCIe active-state power management is `powersave`. OpenOCD's Pi 5
-  configuration warns that the first few pulses are then clocked as fast as
-  20 MHz, and asks for `performance`:
+- PCIe active-state power management reads `powersave` on the bench host.
+  That is a current value, not a fixed one: it is what boot leaves unless
+  somebody sets it, and setting it does not survive a reboot.
+  `host/selftest.sh` prints the policy it finds. OpenOCD's Pi 5 configuration
+  warns that under anything but `performance` the first few pulses are clocked
+  as fast as 20 MHz, and asks for:
 
       echo performance | sudo tee /sys/module/pcie_aspm/parameters/policy
 

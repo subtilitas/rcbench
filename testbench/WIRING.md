@@ -116,7 +116,12 @@ pulled down, and the SWD specification puts a pull-up on SWDIO. OpenOCD's own
 **This is not a fix for anything observed.** No target has been on either pin,
 so whether a pull-down on GPIO24 would have cost anything is unknown; the pin
 that matches the specification is simply the one to wire while nothing is
-wired. `README.md` under *Flashing without hands* has the readings.
+wired.
+
+Those pulls are power-on values and reading them back proves nothing once the
+check below has run -- OpenOCD leaves the lines it drove with no pull at all.
+`README.md` under *Flashing without hands* has the readings and the condition;
+`host/selftest.sh` prints what is on the pins now beside the power-on value.
 
 Any two free header GPIOs work -- the lines are bit-banged through
 `linuxgpiod`, not a peripheral -- but the bench is reproducible only if every
