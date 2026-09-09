@@ -14,6 +14,8 @@
 
 #include "greatest.h"
 
+#include "link_pages.h"
+#include "outputs_pages.h"
 #include "outputs_screen.h"
 #include "ui_theme.h"
 
@@ -409,9 +411,104 @@ TEST_CASE(an_empty_read_back_does_not_clear_the_chosen_protocol)
     CHECK_EQ((int)outbind_chosen_total(outputs_screen_binding()), 1);
 }
 
+/*
+ * A protocol being started while another is already bound survives the
+ * read-back as well.
+ *
+ * A page carries pins, and the protocol read back out of one is the lowest
+ * that holds a pin -- there is nowhere on the page to say which one is being
+ * edited.  A protocol just chosen holds no pin yet, so the read-back names
+ * the one already bound and, landing whole, moves the screen off the choice
+ * within one poll.  A bench wired for an ESC and then for servos meets this
+ * on its second protocol.
+ */
+TEST_CASE(a_second_protocol_survives_the_read_back)
+{
+    fresh();
+    const int dshot = proto_row("DSHOT600");
+    const int servo = proto_row("SERVO PWM");
+
+    choose_named("DSHOT600");
+    tap_pin(7);
+    CHECK_EQ((int)outbind_chosen_total(outputs_screen_binding()), 1);
+
+    /* The second protocol, with no pin of its own yet. */
+    choose_named("SERVO PWM");
+    CHECK_EQ((int)outputs_screen_binding()->proto, servo);
+
+    /* What the far end answers: the page this binding renders to, read back
+     * through the code the panel reads it with, rather than a page written
+     * here to say what this test wants said. */
+    uint16_t slots[LINK_OS_COUNT], cc[LINK_CC_COUNT];
+    (void)outbind_to_slots(outputs_screen_binding(), slots);
+    outbind_to_chan_cfg(outputs_screen_binding(), cc, 1000u, 2000u);
+    outbind_t back;
+    CHECK(outbind_from_slots(&back, OUTBIND_BOARD_PICO_HEADER, slots, cc));
+    CHECK_EQ((int)back.proto, dshot);      /* the page can say nothing else */
+    outputs_screen_set_binding(&back);
+
+    /* Still the protocol being worked in, so its first pin can be ticked. */
+    CHECK_EQ((int)outputs_screen_binding()->proto, servo);
+    tap_pin(13);
+    CHECK_EQ((int)outbind_chosen(outputs_screen_binding()), 1);
+    CHECK_EQ((int)outbind_chosen_total(outputs_screen_binding()), 2);
+}
+
+/*
+ * A change of board takes the protocol with it.
+ *
+ * outbind_set_board() clears the selection because a pin index means a
+ * different pin -- or no pin -- in another catalogue.  A protocol chosen for
+ * the hardware that was there is worth no more than the pins were, and
+ * keeping it would let the first tap on the board now in front of the
+ * operator bind under it.
+ */
+TEST_CASE(a_change_of_board_takes_the_protocol_with_it)
+{
+    fresh();
+    choose_named("DSHOT600");
+    CHECK_EQ(outputs_screen_binding()->proto, proto_row("DSHOT600"));
+
+    outbind_t other;
+    outbind_init(&other);
+    outbind_set_board(&other, (uint16_t)(OUTBIND_BOARD_PICO_HEADER + 1u));
+    CHECK_EQ((int)other.proto, 0);
+    outputs_screen_set_binding(&other);
+
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    CHECK_EQ((int)outbind_chosen_total(outputs_screen_binding()), 0);
+}
+
+/*
+ * A protocol somebody names still lands, over the one on screen.
+ *
+ * The rule turns on what a page could have said.  A caller naming a protocol
+ * the pins do not name is not a page -- it is the screen being posed, or told
+ * what to show at start-up -- and what it names is the choice.
+ */
+TEST_CASE(a_protocol_named_from_outside_lands_over_the_one_on_screen)
+{
+    fresh();
+    const int ppm = proto_row("PPM");
+    choose_named("DSHOT600");
+    tap_pin(7);
+
+    /* PPM with the DShot pin still bound: no page renders to this, because
+     * the protocol a page names is the lowest one holding a pin. */
+    outbind_t b = *outputs_screen_binding();
+    outbind_set_proto(&b, (uint8_t)ppm);
+    CHECK(b.proto != outbind_wire_proto(&b));
+    outputs_screen_set_binding(&b);
+
+    CHECK_EQ(outputs_screen_binding()->proto, ppm);
+}
+
 int main(void)
 {
     RUN(an_empty_read_back_does_not_clear_the_chosen_protocol);
+    RUN(a_protocol_named_from_outside_lands_over_the_one_on_screen);
+    RUN(a_second_protocol_survives_the_read_back);
+    RUN(a_change_of_board_takes_the_protocol_with_it);
     RUN(the_protocol_list_opens_and_a_choice_closes_it);
     RUN(an_open_list_can_be_left_without_choosing);
     RUN(a_release_away_from_the_press_does_nothing);

@@ -84,33 +84,43 @@ void outputs_screen_set_binding(const outbind_t *b)
         return;
     }
     /*
-     * An empty binding carries no protocol, so it must not take one away.
+     * Which protocol is being edited is this screen's, and the wire does not
+     * carry it.
      *
      * Picking a protocol posts the binding and the panel reads it straight
      * back, which is what keeps the screen from showing something the far end
-     * is not doing.  But a protocol with no pins configures nothing, so what
-     * comes back is empty -- and outbind_from_slots() renders empty as OFF,
-     * which is indistinguishable from an operator who chose OFF.  Letting it
-     * land whole put the picker back to OFF the instant a protocol was
-     * chosen, and no pin could be ticked at all, because OFF takes none.
+     * is not doing.  But a page carries pins, and outbind_from_slots() names
+     * a protocol from them -- the lowest one holding a pin, or OFF when none
+     * does.  A protocol with no pins yet is not on that page at all, so the
+     * read-back names something else and, landing whole, took the choice away
+     * within one poll.  With nothing bound it named OFF, and OFF takes no
+     * pins, so no pin could be ticked at all: that is every first boot on a
+     * store the coprocessor reads as unwritten.  With one protocol bound and
+     * a second being started it named the first, so a bench wired for an ESC
+     * could never add a servo.
      *
-     * That is every first boot on a store the coprocessor reads as unwritten.
+     * So a protocol equal to what the pins already say is not a claim about
+     * which one is being edited, and the screen keeps its own.  Any other is
+     * somebody naming one -- how the screen is told what to show at start-up,
+     * and how a caller poses it -- and it lands.
      */
-    const uint8_t chosen = s.bind.proto;
+    const uint16_t had_board = s.bind.board;
+    const uint8_t  chosen    = s.bind.proto;
     /*
-     * Only when it says OFF as well.  A caller that names a protocol and no
-     * pins is expressing a choice -- the screen is told that at start-up, and
-     * an operator's own pick reaches the far end that way.  What carries no
-     * choice is OFF with nothing bound, which is exactly what an empty page
-     * renders as.
+     * Except across a change of board, where nothing carries over.  A pin
+     * index means a different pin in another catalogue, which is why
+     * outbind_set_board() clears the selection, and a protocol chosen for the
+     * hardware that was there is no better than the pins were.
      */
-    const bool says_nothing = (outbind_chosen_total(b) == 0u && b->proto == 0u);
+    const bool keep = (chosen != 0u)
+                   && (b->board == had_board)
+                   && (b->proto == outbind_wire_proto(b));
 
     s.bind = *b;
     /* Read off the wire or restored, so it is trimmed before it is drawn
      * rather than trusted to mean something on this board. */
     outbind_trim(&s.bind);
-    if (says_nothing) {
+    if (keep) {
         outbind_set_proto(&s.bind, chosen);
     }
     touched();

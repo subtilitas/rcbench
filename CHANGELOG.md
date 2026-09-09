@@ -9,23 +9,30 @@ history is in git.
 ### Fixed
 
 - **No output could be bound at all on 0.8.0.** Choosing a protocol on
-  SETTINGS/OUTPUTS put the picker straight back to `OFF`, and `OFF` takes no
+  SETTINGS/OUTPUTS put the screen straight back to `OFF`, and `OFF` takes no
   pins, so nothing could be ticked and no binding could be made. Picking a
   protocol posts the binding and the panel reads it straight back, so a lost
   acknowledgement cannot leave the screen showing what the coprocessor is not
-  doing. A protocol with no pins configures nothing, so what comes back is
-  empty -- and an empty binding renders as `OFF`, which is indistinguishable
-  from an operator who chose it. The read-back landed whole and took the
-  choice away. An empty binding no longer sets the protocol, because it does
-  not carry one. Reported from a bench on the first boot after 0.8.0, which is
-  when it always happens: the record format changed, so every store reads as
-  unwritten and every operator starts at `OFF`. Only `OFF` with nothing bound is
-  treated as carrying no choice: a caller that names a protocol and no pins is
-  expressing one, which is how a screen is told what to show at start-up. PICK
-  A PIN is fixed with it, and by ownership rather than by the same rule twice
-  -- it has no protocol control and only reads one to know which group a tap
-  joins, so it now takes what the OUTPUTS screen reconciled instead of what
-  came off the wire.
+  doing. But a page carries pins, and the protocol read back out of one is the
+  lowest that holds a pin -- there is nowhere on a page to say which protocol
+  is being edited. A protocol just chosen holds none, so the read-back named
+  something else and, landing whole, took the choice away within one poll.
+  Reported from a bench on the first boot after 0.8.0, which is when it always
+  happens: the record format changed, so every store reads as unwritten and
+  every operator starts at `OFF`.
+
+  Which protocol is being edited is the screen's, and a protocol equal to what
+  the pins already say is no longer treated as a claim about it. Two more
+  cases go with the first. A second protocol started while one is bound is not
+  on the page either, so a bench wired for an ESC could not then add a servo;
+  and editing the higher of two bound protocols was dragged back to the lower
+  one at every poll. A protocol named by something that is not a page -- the
+  screen being posed, or told what to show at start-up -- still lands. A
+  change of board takes the protocol with it, as it already took the pins,
+  because a protocol chosen for the hardware that was there is worth no more
+  than a pin index into its catalogue. PICK A PIN follows: it has no protocol
+  control and only reads one to know which group a tap joins, so it takes what
+  the OUTPUTS screen reconciled rather than what came off the wire.
 
 ## 0.8.0 - 2026-09-09
 
