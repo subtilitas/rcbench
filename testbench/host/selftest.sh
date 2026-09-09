@@ -65,7 +65,8 @@ elif [ -z "$SWD_GPIOCHIP" ] || [ -z "$SWD_SWCLK" ] || [ -z "$SWD_SWDIO" ]; then
     bad "RP2350 over SWD" "set SWD_GPIOCHIP, SWD_SWCLK and SWD_SWDIO -- gpiodetect says which chip"
 else
     say "openocd" "$(openocd --version 2>&1 | head -1)"
-    # OpenOCD 0.12.0 ships no interface/linuxgpiod.cfg, so the driver is named.
+    # OpenOCD 0.12.0+dev-snapshot (2026-02-16-16:07), the build on the bench
+    # host, ships no interface/linuxgpiod.cfg, so the driver is named.
     # target/rp2350.cfg comes after the GPIO assignments: it selects the
     # transport, which needs the pins already set. linuxgpiod has no
     # configurable speed, so nothing sets one. With no target on the pins

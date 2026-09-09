@@ -49,14 +49,22 @@ with a network address, and it is what an agent drives.
 bitstream extracted from the vendor's software: that extraction is a setup
 step, because without it the analyser enumerates and captures nothing.
 
-The driver comes before the bitstream. It is not in libsigrok 0.5.2, which is
-the current release and what Debian 13 packages: `sigrok-cli --list-supported`
-on the bench host lists 162 drivers and no `kingst-la2016`, and naming it
-prints `Driver kingst-la2016 not found.` So the packaged `sigrok-cli` cannot
-drive this analyser at all, and the bench needs libsigrok built from git.
-`host/selftest.sh` asks the library what it carries before it scans, so a
-missing driver reads as a missing driver rather than as an unplugged
-instrument.
+**Two separate gates, in this order: the driver, then the bitstream.** Neither
+substitutes for the other, and a bench that has cleared one has cleared one.
+
+The driver is not in libsigrok 0.5.2, which is the current release and what
+Debian 13 packages: `sigrok-cli --list-supported` on the bench host lists 162
+drivers and no `kingst-la2016`, and naming it prints
+`Driver kingst-la2016 not found.` So the packaged `sigrok-cli` cannot address
+this analyser at all, and the bench needs libsigrok built from git.
+
+Clearing that gate means the driver exists. It says nothing about whether the
+analyser captures: the bitstream comes out of the vendor's software and no
+build of libsigrok can supply it. `host/selftest.sh` reports the two
+separately -- it asks the library what drivers it carries, then asks the
+instrument for samples -- so a missing driver reads as a missing driver, a
+missing bitstream as a capture that returns nothing, and neither as an
+unplugged instrument.
 
 **RP2350 board** — the same part as the bench coprocessor, in one of two roles
 per run:
@@ -181,8 +189,8 @@ the kernel and the firmware, so it is read rather than assumed. On the bench
 host -- Raspberry Pi 5 Model B Rev 1.1, kernel 6.18.34, Debian 13 --
 `gpiodetect` reports the header as `gpiochip0 [pinctrl-rp1]`, 54 lines.
 
-There is no `interface/linuxgpiod.cfg` in OpenOCD 0.12.0. The driver is
-selected by name:
+The OpenOCD on the bench host ships no `interface/linuxgpiod.cfg`. The driver
+is selected by name:
 
     gpiodetect                       # which chip carries the header
     export SWD_GPIOCHIP=0 SWD_SWCLK=25 SWD_SWDIO=24
@@ -206,7 +214,7 @@ driver and stops there:
 That is the whole of what has been confirmed. `cannot read IDR` is the
 no-target reading; a board on the pins has to replace it.
 
-OpenOCD 0.12.0 also ships `interface/raspberrypi5-gpiod.cfg`, which resolves
+That build also ships `interface/raspberrypi5-gpiod.cfg`, which resolves
 the chip number from the `/proc/device-tree/aliases` entry pointing at the RP1
 instead of taking it from a variable. It assigns SWDIO to GPIO8 and SWCLK to
 GPIO11, not the pair below.
@@ -476,9 +484,9 @@ firmware and the decoder agree, and no more than that.
 - **The analyser's bitstream is provided.** `host/selftest.sh` still asks,
   because the failure is silent: an analyser without it enumerates, accepts a
   capture and returns nothing, which reads as a quiet bench rather than a
-  broken one. The bitstream is not what stands in the way today -- the
-  packaged libsigrok has no `kingst-la2016` driver, which is above under
-  *The parts*.
+  broken one. Having it settles the second of the two gates under *The parts*
+  and not the first: the packaged libsigrok carries no `kingst-la2016` driver,
+  and that one is open.
 - **SWD over `linuxgpiod`**, three wires and no supply between the Pi and a
   board that has its own.
 - **The whole bench lives on the rig** — panel, display, touch and the CAN

@@ -122,9 +122,10 @@ same two, and `testbench/host/selftest.sh` reports whichever it is given.
             -c "adapter gpio swdio -chip $SWD_GPIOCHIP $SWD_SWDIO" \
             -f target/rp2350.cfg -c "init; exit"
 
-OpenOCD 0.12.0 ships no `interface/linuxgpiod.cfg`, so the driver is named
-rather than sourced from a file. `target/rp2350.cfg` comes last because it
-selects the transport, and the GPIO assignments have to be in place first.
+The OpenOCD on the bench host, 0.12.0+dev-snapshot (2026-02-16-16:07), ships
+no `interface/linuxgpiod.cfg`, so the driver is named rather than sourced from
+a file. `target/rp2350.cfg` comes last because it selects the transport, and
+the GPIO assignments have to be in place first.
 
 The chip number stays a placeholder because it moves with the kernel and the
 firmware -- it has been `gpiochip4` and it has been `gpiochip0` -- which is
