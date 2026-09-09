@@ -223,6 +223,27 @@ jobs:
           }
           check_tag
 
+          # Nothing leaves a draft behind.  Creating one is several API calls
+          # and an upload can fail part way through, and a draft left for this
+          # tag makes every retry fail with "release already exists".  The
+          # trap runs on any exit before the publish succeeds.
+          #
+          # It removes a draft and never a release: if the publish went
+          # through and something later failed, what is there is public and is
+          # not this step's to delete.
+          published=0
+          cleanup() {
+            if [ "$published" = 1 ]; then
+              return 0
+            fi
+            if [ "$(gh release view "$TAG" --repo "$REPO" \
+                      --json isDraft -q .isDraft 2>/dev/null)" = "true" ]; then
+              echo "removing the draft for $TAG"
+              gh release delete "$TAG" --repo "$REPO" --yes >/dev/null 2>&1 || true
+            fi
+          }
+          trap cleanup EXIT
+
           # --verify-tag, because a tag gh has to invent is created from the
           # default branch: without it a dispatch for a tag nobody pushed
           # would attach these images to whatever main happened to be.
@@ -233,11 +254,9 @@ jobs:
             --generate-notes \
             --draft
 
-          # The assets are up.  If the tag moved while they were uploading,
-          # the draft is removed rather than published; deleting a release
-          # leaves the tag alone, which is the operator's to sort out.
-          if ! check_tag; then
-            gh release delete "$TAG" --repo "$REPO" --yes
-            exit 1
-          fi
+          # The assets are up.  If the tag moved while they were uploading the
+          # trap takes the draft away; the tag itself is left alone, because
+          # where it should point is the operator's decision.
+          check_tag
           gh release edit "$TAG" --repo "$REPO" --draft=false
+          published=1
