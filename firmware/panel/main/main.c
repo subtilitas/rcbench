@@ -778,9 +778,9 @@ static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
          * and a replacement card is not found until the panel restarts.
          *
          * Not unmounted from here.  This runs on the task that renders, and
-         * the control task writes the run log on the same volume: unmounting
-         * under an open handle frees the SPI bus beneath a write on the other
-         * core.  Putting that right means one task owning the card's
+         * the runlog task writes the run log on the same volume: unmounting
+         * under an open handle frees the SPI bus beneath a write from another
+         * task.  Putting that right means one task owning the card's
          * lifetime, which is a change of its own; see STATUS.md.
          */
         return -1;
@@ -1077,9 +1077,11 @@ static bool bring_up(void)
  * row -- so rows cross to a task of its own and every fopen, fwrite, fsync
  * and fclose happens there.
  *
- * That task also holds the only open handle on the card while a run is going.
- * Anything that unmounts the card or frees SPI2 (Serial Peripheral Interface)
- * has to stop it first; nothing in this build unmounts.
+ * That task holds the run's handle.  It is not the only handle on the card:
+ * the viewer opens a log from the task that renders, so a card that is
+ * unmounted or whose SPI2 (Serial Peripheral Interface) bus is freed would
+ * pull the floor from under either of them.  Nothing in this build unmounts,
+ * which is what makes that safe rather than any sequencing between the two.
  */
 
 /*
@@ -1118,6 +1120,13 @@ typedef struct {
 #define LOG_NOTE_MAX   208
 #define LOG_NOTE_Q_LEN 4
 
+/*
+ * How many run numbers a failing create is given before the run is called
+ * unrecorded.  The scan above starts past every number the card holds, so a
+ * refused create is the volume answering and not a name collision.
+ */
+#define LOG_OPEN_TRIES 3u
+
 static QueueHandle_t s_log_q;    /**< control task -> logger, one row each */
 static QueueHandle_t s_note_q;   /**< control task -> logger, one line each */
 
@@ -1130,11 +1139,12 @@ static QueueHandle_t s_note_q;   /**< control task -> logger, one line each */
  * next one.  A number rather than a flag, so that two runs are two runs even
  * when the logger never saw the gap between them.  Written by the control
  * task on the arming edge, read by the logger; atomic because the two are
- * pinned to different cores.
+ * different tasks and either can be preempted mid-word.  Both are pinned to
+ * core 1, the control task at priority 10 and the logger at 3, so the
+ * preemption that matters is the control task taking the core back.
  */
 static atomic_uint s_log_arm_now;
-/* Rows the queue would not take, counted by the control task and reported
- * when the run closes. */
+
 /*
  * The run's rows, counted by the task that posts them.
  *
@@ -1258,7 +1268,8 @@ static void log_open(uint32_t arm)
     }
     /*
      * Numbered, not timestamped: no clock on this board survives a power
-     * cycle, so every file would be dated 1970-01-01.  The number is the
+     * cycle, so every file would carry the FAT (File Allocation Table) epoch,
+     * 1980-01-01.  The number is the
      * only order the card carries, and the viewer reads it back with
      * log_run_number() to decide which runs it can still show once a card
      * holds more of them than the screen does; log_run_name() is the one
@@ -1291,6 +1302,12 @@ static void log_open(uint32_t arm)
         s_log_next = (highest >= LOG_RUN_FIRST) ? highest + 1 : LOG_RUN_FIRST;
         s_log_numbered = true;
     }
+    /*
+     * A volume that refuses one free number refuses them all, and each try is
+     * two card transactions on this task.  Walking to LOG_RUN_LAST would be
+     * 999 of them before the operator is told the run is not recorded.
+     */
+    unsigned refused = 0u;
     for (int i = s_log_next; i <= LOG_RUN_LAST && s_log_file == NULL; ++i) {
         char name[LOG_RUN_NAME_MAX];
         char path[64];
@@ -1316,6 +1333,9 @@ static void log_open(uint32_t arm)
             ESP_LOGI(TAG, "logging to %s", path);
         } else {
             atomic_store(&s_log_open_run, 0u);
+            if (++refused >= LOG_OPEN_TRIES) {
+                break;   /* the volume, not this name */
+            }
         }
     }
     if (s_log_file == NULL) {

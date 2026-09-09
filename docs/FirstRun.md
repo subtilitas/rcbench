@@ -264,7 +264,9 @@ newest and least proven things are all mine and all only compiler-checked:
 
 The first two are inert on a coprocessor that reports no photograph, which is
 the quickest way to rule them out. The third is inert with no card in the
-slot, and does nothing until the bench is armed.
+slot. With a card it appends a line to `RCBENCH.LOG` whenever a fault is
+raised, armed or not; the run file is what waits for an arm, and for the
+first row after it.
 
 ---
 

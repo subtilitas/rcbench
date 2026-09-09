@@ -266,15 +266,22 @@ einer eigenen Task. Eine SD-Karte (Secure Digital) darf sich für einen Schreibv
 250 ms Zeit nehmen, und die Task, die die Sicherheitsleitung schlägt, hat eine
 Obergrenze von 150 ms.
 
-Vier Meldungen sagen, was die Karte mit einem Lauf gemacht hat. Jede erscheint
-im Band:
+Acht Meldungen sagen, was die Karte mit einem Lauf gemacht hat. Jede
+erscheint im Band:
 
 | Meldung | Was passiert ist |
 |---|---|
-| `the card fell behind -- the log has gaps` | Zeilen wurden verworfen; die Zeitspalte der Datei zeigt, wo |
+| `no card -- this run is not recorded` | nichts ist gemountet, der Lauf wurde nie geöffnet |
+| `card unreadable -- run not recorded` | die Karte ließ sich nicht auflisten, es war keine Laufnummer wählbar |
+| `card full or unwritable -- run not recorded` | es ließ sich keine Laufnummer anlegen |
 | `the card did not keep up -- run not recorded` | jede Zeile wurde verworfen, es gibt für diesen Lauf gar keine Datei |
+| `the card fell behind -- the log has gaps` | einzelne Zeilen wurden verworfen; die Zeitspalte der Datei zeigt, wo |
 | `the card stopped taking rows -- run not recorded past here` | ein Schreibvorgang ist mitten im Lauf fehlgeschlagen, jede weitere Zeile wird abgewiesen |
+| `the card stopped taking rows -- the log is short` | derselbe Fehler, beim Schließen des Laufs noch einmal gemeldet |
 | `the card failed on the last write -- the log is short` | das Schließen ist fehlgeschlagen, die Zeilen seit dem letzten Festschreiben fehlen in der Datei |
+
+Bei den ersten vier gibt es keine Datei zu suchen. Bei den letzten vier gibt
+es eine, und sie hört zu früh auf.
 
 Ein Lauf, der gerade geschrieben wird, erscheint nicht in LOGS. Die Länge einer
 Datei steht in ihrem Verzeichniseintrag und wird beim Schließen geschrieben, ein
