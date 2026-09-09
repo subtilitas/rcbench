@@ -234,12 +234,18 @@ a bit.
 An ESC reports electrical periods and has no idea what it is bolted to, so
 mechanical rpm (revolutions per minute) needs the motor's magnet count. That is
 the one number the wire does not carry. The panel sends it from the `Motor
-poles` setting when the coprocessor answers, on the [CONTROL
-page](Link.md#page-map).
+poles` setting when a coprocessor starts answering and again whenever the
+setting changes, on the [CONTROL page](Link.md#page-map). A write that is not
+acknowledged stays owed and goes out again at the next 50 ms poll.
 
 Until it arrives the coprocessor reports no speed at all. A speed derived from a
 guessed pole count is a plausible number with nothing to mark it as wrong, which
 is worse than an empty field.
+
+That covers zero only. Any count between 2 and 42 is accepted and sets the rpm
+valid bit, so a coprocessor holding an out-of-date count reports the actual
+speed times actual poles over the count it holds: 21 times at the ends of the
+range, and 14.3 % low for 14 poles converted as 12.
 
 ### Extended telemetry
 

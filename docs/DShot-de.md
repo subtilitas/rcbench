@@ -229,12 +229,20 @@ gegen eine Antwort mit 4,75 und 5,25 Abtastungen je Bit.
 Ein ESC meldet elektrische Perioden und weiß nicht, woran er angeschraubt ist;
 mechanische rpm (Revolutions per Minute) brauchen also die Magnetzahl des
 Motors. Das ist die eine Zahl, die die Leitung nicht trägt. Das Panel sendet sie
-aus der Einstellung `Motor poles`, sobald der Coprozessor antwortet, auf der
-[CONTROL-Page](Link-de.md#page-map).
+aus der Einstellung `Motor poles`, sobald ein Coprozessor zu antworten beginnt,
+und erneut bei jeder Änderung der Einstellung, auf der
+[CONTROL-Page](Link-de.md#page-map). Ein Schreibvorgang, der nicht quittiert
+wird, bleibt offen und geht beim nächsten 50-ms-Poll erneut hinaus.
 
 Bis sie eintrifft, meldet der Coprozessor überhaupt keine Drehzahl. Eine aus
 einer geratenen Polzahl abgeleitete Drehzahl ist eine plausible Zahl ohne
 Kennzeichnung, dass sie falsch ist, und das ist schlimmer als ein leeres Feld.
+
+Das gilt nur für null. Jede Zahl zwischen 2 und 42 wird angenommen und setzt
+das Gültig-Bit der Drehzahl. Ein Coprozessor mit einer veralteten Zahl meldet
+also die tatsächliche Drehzahl mal tatsächliche Polzahl geteilt durch die
+gehaltene Zahl: das 21-Fache an den Enden des Bereichs und 14,3 % zu wenig,
+wenn 14 Pole als 12 umgerechnet werden.
 
 ### Extended Telemetry
 

@@ -519,6 +519,39 @@ static atomic_bool s_servo_release_request;
  * one would otherwise put back what it let go of.
  */
 static atomic_uint s_lets_go;
+
+/*
+ * The pole count the coprocessor holds, and whether it is current.
+ *
+ * Nothing refreshes the register: the far end keeps whatever it was last
+ * handed until something writes it again.  So a change to the setting is a
+ * debt, in the shape a disarm and a servo release use -- a write nobody
+ * answered must not lose it until the next link-up edge, which on a link
+ * that stays up never comes.
+ *
+ * A stale count is not a missing one.  Every value the schema allows is even
+ * and inside 2 to 42, so it passes the far end's range check, sets
+ * LINK_BN_RPM_OK, and reaches the plot and the CSV as a valid reading.  The
+ * speed reported is the actual speed times actual poles over stale poles:
+ * 21 times at the ends of the range, and 14.3 % low for an edit from 14
+ * poles to 12.
+ */
+static atomic_bool s_poles_owed;
+
+/*
+ * A setting the far end keeps a copy of has changed.
+ *
+ * The settings screen runs on app_main and the link belongs to the control
+ * task, so this records the debt and returns; the write goes out from there.
+ * Motor poles is the only setting the coprocessor holds a copy of.
+ */
+static void settings_changed(setting_id_t id)
+{
+    if (id == SET_MOTOR_POLES) {
+        atomic_store(&s_poles_owed, true);
+    }
+}
+
 /* False until the control task owns the safety state; bring-up polls the
  * link before that, with nothing to service. */
 static bool s_pump_live;
@@ -919,6 +952,9 @@ static bool bring_up(void)
      */
     const settings_store_t *store = settings_nvs_store();
     settings_set_store(store);
+    /* Installed before the load, so the count the store returns is owed to
+     * the coprocessor the same way an edit made later is. */
+    settings_set_observer(settings_changed);
     settings_init();
     settings_apply_ui();
 
@@ -1914,8 +1950,8 @@ static bool control_write(bool armed, link_msg_t *reply)
 }
 
 /*
- * The magnet count of the motor under test, sent once when the coprocessor
- * answers.
+ * The magnet count of the motor under test, read from the setting at the
+ * moment of the write.
  *
  * A bidirectional DShot ESC (electronic speed controller) reports electrical
  * periods and has no idea what it is bolted to, so this is the one number the
@@ -1929,6 +1965,27 @@ static bool control_write_poles(link_msg_t *reply)
     return write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_MOTOR_POLES, 1u,
                       &poles, reply)
            && reply->op == LINK_OP_ACK;
+}
+
+/*
+ * Pay the debt, when one is owed and only then.
+ *
+ * The flag is taken before the write and put back when the write did not
+ * land, so a value edited during the transaction is sent again rather than
+ * dropped, and a poll nobody answered costs one more poll rather than the
+ * change.  Returns whether the far end holds the current count.
+ */
+static bool poles_service(void)
+{
+    if (!atomic_exchange(&s_poles_owed, false)) {
+        return true;
+    }
+    link_msg_t pr;
+    if (control_write_poles(&pr)) {
+        return true;
+    }
+    atomic_store(&s_poles_owed, true);
+    return false;
 }
 
 static bool control_clear_failsafe(link_msg_t *reply)
@@ -2994,6 +3051,18 @@ static bool poll_bench(bench_state_t *bench)
             arming_stop_from_far_end(&s_arm);
             control_alert("coprocessor disarmed -- arm again");
         }
+        /*
+         * And the pole count, when an edit or a write that did not land
+         * leaves one owed.  This is the only path an edit made while the
+         * link is up has to the far end: nothing else writes the register,
+         * and correcting it otherwise takes a link-down edge -- the cable, a
+         * coprocessor reset or a panel reboot.  STOP and a re-arm do not
+         * produce one.
+         *
+         * Costs a transaction only while the debt stands, which is one poll
+         * per edit.
+         */
+        (void)poles_service();
     }
     return answered;
 }
@@ -3225,10 +3294,18 @@ static void link_came_up(const link_msg_t *reply)
      */
     art_begin(s_board);
 
-    /* On the edge, not every poll: it does not change while the link is up,
-     * so a write per poll would cost a transaction for nothing. */
-    link_msg_t pr;
-    if (!control_write_poles(&pr)) {
+    /*
+     * The pole count.  A coprocessor that has just started holds zero, and
+     * one whose cable came back holds whatever it was last told, so the edge
+     * sends it either way.
+     *
+     * The warning is here rather than in the payer.  A refusal means the
+     * register is not in that coprocessor's build, which is a fact about the
+     * board that just answered and worth one line per edge; the retry at
+     * every poll would repeat it twenty times a second.
+     */
+    atomic_store(&s_poles_owed, true);
+    if (!poles_service()) {
         ESP_LOGW(TAG, "coprocessor did not take the pole count -- rpm will "
                       "read empty");
     }

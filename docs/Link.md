@@ -147,7 +147,11 @@ MOTOR_POLES is the magnet count of the motor under test, even and between 2 and
 electrical periods and has no idea what it is bolted to, so this is the one
 number the wire has to carry for the coprocessor to report a mechanical speed;
 at zero it reports no speed rather than one derived from a guess. The panel
-sends it from the `Motor poles` setting when the coprocessor answers.
+sends it from the `Motor poles` setting when a coprocessor starts answering and
+again whenever the setting changes; a write the coprocessor does not
+acknowledge stays owed and goes out again at the next 50 ms poll. The guard at
+zero covers a count never sent and not one that is out of date: every count the
+setting allows is inside the range the page takes.
 
 The coprocessor refuses a pin it must not drive -- the safety line, the CAN
 controller's pins, and any number above the last GPIO the part has -- and a
