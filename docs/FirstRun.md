@@ -107,7 +107,7 @@ one:
 |---|---|
 | Panel end | **GPIO6**, on **J8** (a three-pin header carrying 3V3, GND, GPIO6) |
 | Coprocessor end | **GP3** |
-| Through | the retriggerable monostable on the daughterboard |
+| Through | the retriggerable monostable, once one exists. It is on no board, so the bring-up bench runs a direct wire and has no hardware backstop: a panel that crashes with the line stuck high leaves the outputs driving |
 
 Without this wire the coprocessor refuses every arm, and that is the interlock
 working, not a fault.

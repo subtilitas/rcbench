@@ -112,7 +112,7 @@ und der Multiplexer wählt eines aus:
 |---|---|
 | Panel-Seite | **GPIO6**, an **J8** (dreipolige Stiftleiste mit 3V3, GND, GPIO6) |
 | Koprozessor-Seite | **GP3** |
-| Dazwischen | das retriggerbare Monoflop auf der Tochterplatine |
+| Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Aufbau-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene: Ein Panel, das mit hängengebliebener Leitung abstürzt, lässt die Ausgänge weiter treiben |
 
 Ohne diesen Draht verweigert der Koprozessor jedes Arm, und das ist die
 Verriegelung, die arbeitet — kein Fehler.
