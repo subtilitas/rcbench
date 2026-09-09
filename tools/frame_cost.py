@@ -96,8 +96,8 @@ INCLUDES = [
     "shared/sbus/include",
 ]
 
-MODES = ["frame", "frame-idle", "sim", "throttle", "chrome", "overview",
-         "servo", "servo-grip",
+MODES = ["frame", "frame-idle", "held", "sim", "throttle", "chrome",
+         "overview", "servo", "servo-grip",
          "analyser", "logs", "settings", "battery", "balance",
          "programmer", "balance-sim", "settings-sim", "battery-sim",
          "analyser-chrome", "logs-chrome", "settings-chrome",

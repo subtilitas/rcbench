@@ -7,8 +7,8 @@
  * legend prints each series' full scale beside its name, and the focused
  * series prints its full scale and zero inside the plot in its own colour.
  *
- * State lives in the caller's struct rather than in file statics, so the
- * motor bench, the servo bench and the analyser each own a plot.
+ * State lives in the caller's struct rather than in file statics, so a screen
+ * that wants a plot owns one.  The motor bench is the only one that does.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -52,15 +52,37 @@ typedef struct {
     float span_s;    /**< the width of the time base, for the axis label   */
 
     /**
-     * Samples pushed since init.
+     * Whether the trace advances.
+     *
+     * A stopped plot holds what it has: ui_plot_push() counts the call and
+     * drops the sample, and ui_plot_update_scales() leaves the scales where
+     * they are.  Stopping is what makes the plot a record of something that
+     * has ended rather than a window that slides over it.
+     */
+    bool running;
+
+    /**
+     * Calls to ui_plot_push(), whether or not the plot took the sample.
      *
      * A screen keeps the count it last drew into each framebuffer and skips
-     * the plot when it has not moved.  The panel refreshes at 39 Hz and
-     * samples arrive at 20 Hz, so about half of all frames would otherwise
-     * repaint an identical 762 x 212 px region into the PSRAM (pseudo-static
-     * random-access memory) the LCD (liquid-crystal display) scans out of.
+     * the readouts beside the plot when it has not moved.  The samples a
+     * stopped plot declines are still new numbers for those, so this counts
+     * the call: what the plot would draw is `revision`.
      */
     uint32_t pushes;
+
+    /**
+     * Bumped when what ui_plot_render() would draw changes: an accepted
+     * push, a clear, or a change of running state.
+     *
+     * A screen keys the plot on this and the readouts on `pushes`.  The panel
+     * refreshes at 39 Hz and samples arrive at 20 Hz, so about half of all
+     * frames would otherwise repaint an identical 762 x 212 px region into
+     * the PSRAM (pseudo-static random-access memory) the LCD (liquid-crystal
+     * display) scans out of -- and a stopped plot would repaint every one of
+     * them.
+     */
+    uint32_t revision;
 } ui_plot_t;
 
 /**
@@ -75,8 +97,22 @@ float ui_plot_nice_ceil(float v);
 void ui_plot_init(ui_plot_t *p, const ui_plot_series_t *series, int count,
                   float span_s);
 
-/** Push one sample per series, newest last.  @p values must have `count`. */
+/** Push one sample per series, newest last.  @p values must have `count`.
+ *  A stopped plot counts the call and drops the sample. */
 void ui_plot_push(ui_plot_t *p, const float *values);
+
+/**
+ * Start or stop the trace.  Stopping holds it; starting does not clear it.
+ *
+ * Two calls rather than one setter that also empties the ring: this widget
+ * has no idea what a run is, and a start that silently wiped the samples
+ * would be a trap for the next caller that wanted to resume one.
+ */
+void ui_plot_set_running(ui_plot_t *p, bool running);
+
+/** Drop every sample and return each scale to its floor.  Keeps the series,
+ *  the time base, the focus and what is hidden. */
+void ui_plot_clear(ui_plot_t *p);
 
 /** Newest is @p back = 0.  Returns 0 for samples that have not arrived. */
 float ui_plot_sample(const ui_plot_t *p, int series, int back);

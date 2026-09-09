@@ -6,6 +6,23 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- **The Motor & ESC plot advanced whether or not the bench was armed**, so a
+  run scrolled off the left edge about 27 s after it ended and there was no
+  way to hold it. Reported from a bench. The run clock above the plot already
+  holds the last run's length once it stops; the plot threw away the trace of
+  the same run, and the CSV file it corresponds to closes on the same edge, so
+  the two described different intervals. The trace now advances only while the
+  bench is armed: arming clears it, disarming holds it as it stood. The panel
+  tag reads `TELEMETRY HELD` while it holds a run and `TELEMETRY IDLE` over
+  `no run recorded` before the first arm, the right axis reads `END` rather
+  than `NOW`, and the plot is framed -- a held plot that looked live would be
+  a worse defect than the one being fixed. The readouts, the TABLE pane, the
+  totals and the temperature strip stay live at all times. What is given up:
+  a disarmed bench has no rolling trace, so the current falling after a STOP
+  is on the readouts and not on the plot.
+
 ## 0.8.1 - 2026-09-09
 
 No output could be bound on 0.8.0. Choosing a protocol on SETTINGS/OUTPUTS put

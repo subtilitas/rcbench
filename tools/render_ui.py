@@ -80,6 +80,7 @@ SCREENS = {
     # breaks one theme is caught.
     "overview-light": ("overview-light.png", "overview", "light"),
     "motor":      ("motor.png",      "motor",      "dark"),
+    "motor-held": ("motor-held.png", "motor-held", "dark"),
     "servo":      ("servo.png",      "servo",      "dark"),
     "analyser":   ("analyser.png",   "analyser",   "dark"),
     "logs":       ("logs.png",       "logs",       "dark"),

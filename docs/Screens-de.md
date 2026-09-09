@@ -60,6 +60,34 @@ Zwei Spalten. Der Plot und das Gas nehmen die linke, die vier Anzeigen und
 die Bedienelemente eine Leiste auf der rechten, damit das Ablesen der Werte
 und das Bedienen des Gases nicht um denselben Teil des Bildschirms
 konkurrieren.
+### Der Plot zeigt einen Lauf
+
+![Motor und ESC, Telemetrie angehalten](img/motor-held.png)
+
+Die Kurve ist die Aufzeichnung eines Laufs. Sie läuft nur, solange der
+Prüfstand scharf ist: das Scharfschalten löscht sie, das Entschärfen hält sie
+so an, wie sie stand. Die Beschriftung der Fläche liest `LIVE TELEMETRY`,
+solange sie läuft, `TELEMETRY HELD`, solange sie einen Lauf hält, und
+`TELEMETRY IDLE` vor dem ersten Scharfschalten, wenn im Plot
+`no run recorded` steht. Die rechte Achsenbeschriftung liest `NOW`, solange
+sie läuft, und `END` dort, wo eine gehaltene stehen geblieben ist. Die
+Anzeigen, die TABLE-Seite, die Summen und die Temperaturleiste sind
+jederzeit live, ob scharf oder nicht.
+
+Das Fenster ist 534 Spalten breit bei 20 Abtastungen je Sekunde, also 26,7 s.
+Ein längerer Lauf hält seine letzten 26,7 s; was davor liegt, steht in der
+CSV-Datei und nicht auf dem Bildschirm.
+
+Die Kurve endet beim Entschärfen, nicht wenn der Motor steht. Das Entschärfen
+kommandiert null Gas, und die Luftschraube läuft danach aus. Dieses Auslaufen
+steht auf den Anzeigen und nicht im Plot, und auch nicht in der CSV-Datei, die
+an derselben Flanke schliesst.
+
+Das Scharfschalten löscht den Plot, und ein eingerasteter Stopp wird durch
+Scharfschalten gelöst -- die Kurve eines Laufs, den ein STOP beendet hat,
+überlebt es also nicht, den Prüfstand wieder benutzbar zu machen. Ein
+Scharfschalten schreibt eine CSV-Datei, und der Log-Viewer stellt sie dar.
+
 
 Der Streifen über beiden Spalten trägt die Abfragerate, die Fehlerzahl des
 Links (CRC-Fehler und Resyncs zusammengezählt; CRC: Cyclic Redundancy Check)

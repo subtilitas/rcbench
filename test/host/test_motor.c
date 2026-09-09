@@ -913,6 +913,87 @@ TEST_CASE(an_unanswered_bench_does_not_show_numbers)
     free(blank);
 }
 
+/*
+ * The run boundary: what the plot does across an arm and a disarm.
+ *
+ * The trace is the record of a run, so it advances only while the bench is
+ * armed.  Arming clears it -- a run's trace is that run's -- and disarming
+ * holds it, which is what stops a finished run scrolling off the left edge
+ * 26.7 s later with no way to keep it.
+ */
+TEST_CASE(the_plot_records_one_run)
+{
+    fresh();
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+
+    /* Before the first arm there is no run to show. */
+    CHECK_EQ((int)motor_screen_plot_state(), (int)MOTOR_PLOT_EMPTY);
+    CHECK_EQ(motor_screen_plot_samples(), 0);
+
+    /* A disarmed bench goes on delivering samples and the plot takes none. */
+    for (int i = 0; i < 10; ++i) {
+        motor_screen_push(&b);
+    }
+    CHECK_EQ((int)motor_screen_plot_state(), (int)MOTOR_PLOT_EMPTY);
+    CHECK_EQ(motor_screen_plot_samples(), 0);
+
+    motor_screen_set_armed(true);
+    CHECK_EQ((int)motor_screen_plot_state(), (int)MOTOR_PLOT_RECORDING);
+    for (int i = 0; i < 25; ++i) {
+        b.rpm = (float)(100 * i);
+        motor_screen_push(&b);
+    }
+    CHECK_EQ(motor_screen_plot_samples(), 25);
+
+    /* The run ends.  The trace stays exactly as long as it was. */
+    motor_screen_set_armed(false);
+    CHECK_EQ((int)motor_screen_plot_state(), (int)MOTOR_PLOT_HELD);
+    CHECK_EQ(motor_screen_plot_samples(), 25);
+    for (int i = 0; i < 40; ++i) {
+        motor_screen_push(&b);
+    }
+    CHECK_EQ(motor_screen_plot_samples(), 25);
+    CHECK_EQ((int)motor_screen_plot_state(), (int)MOTOR_PLOT_HELD);
+
+    /* And the next run is its own, not this one continued. */
+    motor_screen_set_armed(true);
+    CHECK_EQ((int)motor_screen_plot_state(), (int)MOTOR_PLOT_RECORDING);
+    CHECK_EQ(motor_screen_plot_samples(), 0);
+    motor_screen_push(&b);
+    CHECK_EQ(motor_screen_plot_samples(), 1);
+}
+
+/*
+ * Leaving the screen asks the bench to disarm; it does not end the run by
+ * itself.
+ *
+ * leave() posts DISARM and writes the screen's own armed flag false, while
+ * the application goes on reporting the bench as armed until its state
+ * catches up.  Clearing on that flag would erase the run at the moment of
+ * asking to end it -- and on a link that has stopped answering, that is the
+ * run worth keeping.
+ */
+TEST_CASE(leaving_the_screen_does_not_erase_the_run)
+{
+    fresh();
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    motor_screen_set_armed(true);
+    for (int i = 0; i < 12; ++i) {
+        motor_screen_push(&b);
+    }
+
+    scr->leave();
+    CHECK_EQ((int)motor_screen_plot_state(), (int)MOTOR_PLOT_RECORDING);
+    CHECK_EQ(motor_screen_plot_samples(), 12);
+
+    /* The bench answers the disarm a poll later, and that is what holds it. */
+    motor_screen_set_armed(false);
+    CHECK_EQ((int)motor_screen_plot_state(), (int)MOTOR_PLOT_HELD);
+    CHECK_EQ(motor_screen_plot_samples(), 12);
+}
+
 int main(void)
 {
     RUN(a_finger_that_leaves_arm_arms_nothing);
@@ -944,5 +1025,7 @@ int main(void)
     RUN(the_release_after_a_hold_does_not_disarm);
     RUN(the_arm_button_fades_across_the_hold);
     RUN(an_unanswered_bench_does_not_show_numbers);
+    RUN(the_plot_records_one_run);
+    RUN(leaving_the_screen_does_not_erase_the_run);
     return test_summary("motor");
 }

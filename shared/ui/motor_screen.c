@@ -135,9 +135,20 @@ static struct {
     bool          armed;
     motor_cmd_t   pending;
     unsigned      drawn_mask;
+    /* The arm state of the bench itself, which is what bounds a run.  Kept
+     * apart from `armed`: that one also carries a disarm this screen has
+     * asked for and not yet been answered on. */
+    bool          bench_armed;
     /* The push count last painted into each framebuffer; UINT32_MAX
      * means "no paint recorded", which is not a count push can reach. */
     uint32_t      drawn_push[2];
+    /* And the plot revision, which moves for fewer reasons: a stopped plot
+     * takes no samples, so a disarmed bench repaints its readouts and leaves
+     * the trace alone. */
+    uint32_t      drawn_plot[2];
+    /* The telemetry tag last painted, 0xFF for none.  It changes on an arm
+     * edge rather than with the numbers, so it cannot ride drawn_push. */
+    uint8_t       drawn_title[2];
     /* Bumped by anything that changes a button's or the tab row's
      * appearance.  The throttle carries its own, because a drag moves it on
      * every frame and repainting the buttons with it costs the row's full
@@ -171,6 +182,10 @@ void motor_invalidate(void)
     s.drawn_thr[1]  = UINT32_MAX;
     s.drawn_arm[0]  = UINT32_MAX;
     s.drawn_arm[1]  = UINT32_MAX;
+    s.drawn_plot[0] = UINT32_MAX;
+    s.drawn_plot[1] = UINT32_MAX;
+    s.drawn_title[0] = 0xFFu;
+    s.drawn_title[1] = 0xFFu;
 }
 
 /* The palette is not a compile-time constant -- it changes with the theme --
@@ -197,8 +212,15 @@ static void reset(void)
     s.drawn_thr[1]  = UINT32_MAX;
     s.drawn_arm[0]  = UINT32_MAX;
     s.drawn_arm[1]  = UINT32_MAX;
+    s.drawn_plot[0] = UINT32_MAX;
+    s.drawn_plot[1] = UINT32_MAX;
+    s.drawn_title[0] = 0xFFu;
+    s.drawn_title[1] = 0xFFu;
     ui_plot_init(&s.plot, k_series, S_COUNT,
                  (float)PLOT_W / SAMPLE_HZ);
+    /* A screen that has just reset has no run behind it and no bench in
+     * front of it, so the trace does not advance until one arms. */
+    ui_plot_set_running(&s.plot, false);
     ui_tabs_init(&s.tabs, k_tab_labels, MOTOR_PANE_COUNT,
                  (gfx_rect_t){ LEFT_X, TAB_Y, TAB_W, TAB_H });
 
@@ -253,13 +275,6 @@ bool motor_screen_poll_cmd(motor_cmd_t *out)
     return true;
 }
 
-void motor_screen_set(const bench_state_t *b)
-{
-    if (b != NULL) {
-        s.bench = *b;
-    }
-}
-
 void motor_screen_push(const bench_state_t *b)
 {
     if (b == NULL) {
@@ -270,6 +285,19 @@ void motor_screen_push(const bench_state_t *b)
     ui_plot_push(&s.plot, v);
     ui_plot_update_scales(&s.plot, PLOT_W);
 }
+
+motor_plot_state_t motor_screen_plot_state(void)
+{
+    /* Read off the widget rather than off the arm state: what the operator
+     * is looking at is what the plot holds, and the two part company for one
+     * sample at either edge of a run. */
+    if (s.plot.running) {
+        return MOTOR_PLOT_RECORDING;
+    }
+    return (s.plot.filled > 0) ? MOTOR_PLOT_HELD : MOTOR_PLOT_EMPTY;
+}
+
+int motor_screen_plot_samples(void) { return s.plot.filled; }
 
 void motor_screen_cancel_arm(void)
 {
@@ -296,6 +324,23 @@ void motor_screen_cancel_arm(void)
 
 void motor_screen_set_armed(bool armed)
 {
+    /*
+     * The run boundary follows the bench, not `s.armed`.  leave() writes
+     * `s.armed` false for a disarm this screen has only asked for, while the
+     * application goes on reporting the bench as armed until its own state
+     * catches up.  Hanging the clear on `s.armed` would erase the run at the
+     * moment of asking to end it.
+     */
+    if (s.bench_armed != armed) {
+        s.bench_armed = armed;
+        if (armed) {
+            /* A run's trace is that run's.  Cleared at the arm rather than
+             * at the disarm, so the last run stays readable until the next
+             * one starts. */
+            ui_plot_clear(&s.plot);
+        }
+        ui_plot_set_running(&s.plot, armed);
+    }
     if (s.armed != armed) {
         s.armed = armed;
         if (armed) {
@@ -745,6 +790,28 @@ static void draw_totals(gfx_canvas_t *c)
                 GFX_ALIGN_RIGHT);
 }
 
+/*
+ * What the panel above the plot is called.
+ *
+ * The tag names what the panel is showing, so the TABLE pane reads
+ * LIVE TELEMETRY whatever the plot is doing: that pane repaints on every
+ * sample and is live on a disarmed bench.  All three strings are 14
+ * characters, so ui_panel_header() lays out the same tab for each and one
+ * repaints over another in place.
+ */
+enum { TAG_LIVE = 0, TAG_HELD, TAG_IDLE };
+static const char *const k_tag[] = {
+    "LIVE TELEMETRY", "TELEMETRY HELD", "TELEMETRY IDLE"
+};
+
+static uint8_t telemetry_tag(void)
+{
+    if (s.tabs.selected != MOTOR_PANE_PLOT || s.plot.running) {
+        return (uint8_t)TAG_LIVE;
+    }
+    return (uint8_t)((s.plot.filled > 0) ? TAG_HELD : TAG_IDLE);
+}
+
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
@@ -754,15 +821,26 @@ static void render(gfx_canvas_t *c, int buffer_index)
     /* Chrome per framebuffer, not per frame; the rest only when its counter
      * moves.  tools/frame_cost.py measures the two cases as the `chrome` and
      * `frame-idle` modes. */
+    const uint8_t tag = telemetry_tag();
     if ((s.drawn_mask & bit) == 0) {
         gfx_clear(c, ui_theme_color(UI_C_BG));
         ui_panel(c, (gfx_rect_t){ LEFT_X, UP_Y, LEFT_W, UP_H },
-                 "LIVE TELEMETRY", ui_theme_color(UI_C_ACCENT));
+                 k_tag[tag], ui_theme_color(UI_C_ACCENT));
         ui_panel(c, (gfx_rect_t){ LEFT_X, LO_Y, LEFT_W, LO_H },
                  "THROTTLE", ui_theme_color(UI_C_ACCENT));
         ui_panel(c, (gfx_rect_t){ RIGHT_X, LO_Y, RIGHT_W, LO_H },
                  "CONTROL", ui_theme_color(UI_C_ACCENT));
         s.drawn_mask |= bit;
+        s.drawn_title[buf] = tag;
+    }
+
+    /* Outside the pane branch, so an arm or a disarm repaints the tag on
+     * whichever pane is up.  All three strings are the same length, so this
+     * redraws the header's tab over itself without a clear. */
+    if (s.drawn_title[buf] != tag) {
+        s.drawn_title[buf] = tag;
+        ui_panel_header(c, (gfx_rect_t){ LEFT_X, UP_Y, LEFT_W, UP_H },
+                        k_tag[tag], ui_theme_color(UI_C_ACCENT));
     }
 
     if (s.drawn_ctrl[buf] != s.ctrl_rev
@@ -782,10 +860,16 @@ static void render(gfx_canvas_t *c, int buffer_index)
      * whose last paint was two samples ago still needs one even when the
      * other is current.
      */
-    if (s.drawn_push[buf] != s.plot.pushes) {
-        s.drawn_push[buf] = s.plot.pushes;
-
-        if (s.tabs.selected == MOTOR_PANE_PLOT) {
+    /*
+     * The plot on its own gate.  A stopped plot takes no samples, so its
+     * revision stands still while the readouts beside it go on moving --
+     * which is most of the time, since a bench spends longer between runs
+     * than in them.
+     */
+    const bool data_moved = (s.drawn_push[buf] != s.plot.pushes);
+    if (s.tabs.selected == MOTOR_PANE_PLOT) {
+        if (s.drawn_plot[buf] != s.plot.revision) {
+            s.drawn_plot[buf] = s.plot.revision;
             /* Cleared first: the legend prints each channel's full scale,
              * that scale autoranges, and a shorter number drawn over a
              * longer one leaves the tail of the old one behind. */
@@ -795,15 +879,26 @@ static void render(gfx_canvas_t *c, int buffer_index)
                                   (gfx_rect_t){ PLOT_X, LEG_Y, PLOT_W, LEG_H });
             ui_plot_render(&s.plot, c,
                            (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H });
-        } else {
-            gfx_fill_rect(c, LEFT_X + 1, UP_Y + TITLE_H, LEFT_W - 2,
-                          UP_H - TITLE_H - 1 - UI_CHAMFER,
-                          ui_theme_color(UI_C_PANEL));
-            gfx_fill_rect(c, LEFT_X + 1, UP_Y + UP_H - 1 - UI_CHAMFER,
-                          LEFT_W - 2 - UI_CHAMFER, UI_CHAMFER,
-                          ui_theme_color(UI_C_PANEL));
-            draw_table(c);
+            /* An empty stopped plot is not a plot of zeroes.  The widget has
+             * no idea what a run is, so the sentence belongs here. */
+            if (!s.plot.running && s.plot.filled == 0) {
+                gfx_text_in(c, (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H },
+                            "no run recorded", &gfx_font_8x16,
+                            ui_theme_color(UI_C_TEXT_FAINT), 1,
+                            GFX_ALIGN_CENTER);
+            }
         }
+    } else if (data_moved) {
+        gfx_fill_rect(c, LEFT_X + 1, UP_Y + TITLE_H, LEFT_W - 2,
+                      UP_H - TITLE_H - 1 - UI_CHAMFER,
+                      ui_theme_color(UI_C_PANEL));
+        gfx_fill_rect(c, LEFT_X + 1, UP_Y + UP_H - 1 - UI_CHAMFER,
+                      LEFT_W - 2 - UI_CHAMFER, UI_CHAMFER,
+                      ui_theme_color(UI_C_PANEL));
+        draw_table(c);
+    }
+    if (data_moved) {
+        s.drawn_push[buf] = s.plot.pushes;
         draw_derived(c);
         draw_heroes(c);
         draw_totals(c);
