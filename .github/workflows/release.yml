@@ -201,17 +201,27 @@ jobs:
           # force-moved after the version job leaves these images built from
           # the pinned commit and the release attached to the tag's new
           # target.  --verify-tag does not cover it -- it asks whether the tag
-          # exists, not where it points -- so the last thing before publishing
-          # is to ask the remote where it points now.
-          peeled=$(git ls-remote "https://github.com/$REPO.git" \
-                     "refs/tags/$TAG^{}" | cut -f1)
-          [ -n "$peeled" ] || peeled=$(git ls-remote \
-                     "https://github.com/$REPO.git" "refs/tags/$TAG" | cut -f1)
-          if [ "$peeled" != "$SHA" ]; then
-            echo "::error::$TAG points at ${peeled:-nothing}; these images are $SHA"
-            exit 1
-          fi
-          echo "$TAG still points at $SHA"
+          # exists, not where it points -- so the remote is asked where it
+          # points now.
+          #
+          # Twice, and the second time is the one that counts.  Creating a
+          # release is a draft, then the asset uploads, then the publish, so a
+          # single check before all three leaves a window as long as the
+          # uploads.  The release is created as a draft, the tag is checked
+          # again once the assets are up, and only then is it made public --
+          # which narrows the window to the one call that publishes.
+          check_tag() {
+            peeled=$(git ls-remote "https://github.com/$REPO.git" \
+                       "refs/tags/$TAG^{}" | cut -f1)
+            [ -n "$peeled" ] || peeled=$(git ls-remote \
+                       "https://github.com/$REPO.git" "refs/tags/$TAG" | cut -f1)
+            if [ "$peeled" != "$SHA" ]; then
+              echo "::error::$TAG points at ${peeled:-nothing}; these images are $SHA"
+              return 1
+            fi
+            echo "$TAG points at $SHA"
+          }
+          check_tag
 
           # --verify-tag, because a tag gh has to invent is created from the
           # default branch: without it a dispatch for a tag nobody pushed
@@ -220,4 +230,14 @@ jobs:
             --repo "$REPO" \
             --title "$TAG" \
             --verify-tag \
-            --generate-notes
+            --generate-notes \
+            --draft
+
+          # The assets are up.  If the tag moved while they were uploading,
+          # the draft is removed rather than published; deleting a release
+          # leaves the tag alone, which is the operator's to sort out.
+          if ! check_tag; then
+            gh release delete "$TAG" --repo "$REPO" --yes
+            exit 1
+          fi
+          gh release edit "$TAG" --repo "$REPO" --draft=false
