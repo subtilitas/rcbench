@@ -148,10 +148,12 @@ electrical periods and has no idea what it is bolted to, so this is the one
 number the wire has to carry for the coprocessor to report a mechanical speed;
 at zero it reports no speed rather than one derived from a guess. The panel
 sends it from the `Motor poles` setting when a coprocessor starts answering and
-again whenever the setting changes; a write the coprocessor does not
-acknowledge stays owed and goes out again at the next 50 ms poll. The guard at
-zero covers a count never sent and not one that is out of date: every count the
-setting allows is inside the range the page takes.
+again whenever the setting changes, and before the write that arms. A write
+nobody answers stays owed and goes out again at the next 50 ms poll; a write
+the coprocessor refuses is not retried, because the same request refused once
+is refused every time, and it waits for the next edit or link-up edge instead.
+The guard at zero covers a count never sent and not one that is out of date:
+every count the setting allows is inside the range the page takes.
 
 The coprocessor refuses a pin it must not drive -- the safety line, the CAN
 controller's pins, and any number above the last GPIO the part has -- and a

@@ -2389,6 +2389,17 @@ static void service_arming(bool link_up)
              * actually arms, because after it the far end is driving and
              * nothing here can take it back for the length of a timeout.
              */
+            /*
+             * The pole count before the write that arms, not merely before
+             * the next poll.  This is the transaction that starts the far
+             * end sampling, and a coprocessor that begins with the old
+             * divisor puts a wrong speed into the run's sticky rpm_max,
+             * which no later correction removes.  A debt that cannot be paid
+             * does not refuse the arm: the count is a conversion, not an
+             * interlock, and a bench that will not arm because a setting
+             * failed to land is the worse failure.
+             */
+            (void)poles_service();
             if (!control_clear_failsafe(&ack)) {
                 arming_refused(&s_arm);
                 control_alert("coprocessor refused to arm");
