@@ -199,6 +199,218 @@ TEST_CASE(map_y_is_the_right_way_up_and_clamps)
     CHECK_EQ(ui_plot_map_y(&p, 0, -5.0f, 100, 200), 100 + 199);
 }
 
+/*
+ * A stopped plot holds what it has.
+ *
+ * The trace is the record of a run, so it stops when the run does.  A push
+ * that arrives after it is counted -- the readouts beside the plot are live
+ * whether the trace is or not -- and dropped.
+ */
+TEST_CASE(a_stopped_plot_does_not_advance)
+{
+    ui_plot_t p;
+    ui_plot_init(&p, k_series, 2, 24.0f);
+    for (int i = 1; i <= 5; ++i) {
+        push(&p, (float)i, 0.0f);
+    }
+    CHECK_EQ(p.filled, 5);
+
+    ui_plot_set_running(&p, false);
+    for (int i = 0; i < 5; ++i) {
+        push(&p, 99.0f, 99.0f);
+    }
+    CHECK_EQ(p.filled, 5);
+    CHECK_EQ(ui_plot_sample(&p, 0, 0), 5.0f);   /* still the last live one */
+    CHECK_EQ(ui_plot_sample(&p, 0, 5), 0.0f);   /* and nothing beyond it   */
+}
+
+/*
+ * And keeps its scales.
+ *
+ * The shrink hysteresis counts calls rather than samples, so a caller that
+ * stopped pushing but went on updating the scales would rescale a frozen
+ * trace SHRINK_HOLD calls later: the axis moving under a picture that cannot
+ * change.  Held in the widget, where no caller can forget it.
+ */
+TEST_CASE(a_stopped_plot_keeps_its_scales)
+{
+    ui_plot_t p;
+    ui_plot_init(&p, k_series, 2, 24.0f);
+
+    /* A spike grows the scale, then twenty ordinary samples carry it out of
+     * the ten-sample window the scales are computed over.  The shrink is now
+     * owed but not yet due: it takes SHRINK_HOLD consecutive calls. */
+    push(&p, 50.0f, 0.0f);
+    ui_plot_update_scales(&p, 10);
+    const float grown = p.scale[0];
+    CHECK(grown >= 50.0f);
+    for (int i = 0; i < 20; ++i) {
+        push(&p, 1.0f, 0.0f);
+    }
+    for (int i = 0; i < 5; ++i) {           /* well short of SHRINK_HOLD */
+        ui_plot_update_scales(&p, 10);
+    }
+    CHECK_EQ(p.scale[0], grown);
+
+    /*
+     * Now the run ends.  The ring is frozen, so the picture cannot change --
+     * but the shrink counts calls rather than samples, and a caller that goes
+     * on updating the scales would rescale a held trace SHRINK_HOLD calls
+     * later: the axis moving under a picture that cannot move with it.
+     */
+    ui_plot_set_running(&p, false);
+    for (int i = 0; i < 2 * 60 + 5; ++i) {  /* twice SHRINK_HOLD and more */
+        push(&p, 1.0f, 0.0f);
+        ui_plot_update_scales(&p, 10);
+    }
+    CHECK_EQ(p.scale[0], grown);
+}
+
+/* The call is counted whether or not the sample is taken, and the picture's
+ * revision moves only when the picture would. */
+TEST_CASE(a_stopped_plot_still_counts_the_call)
+{
+    ui_plot_t p;
+    ui_plot_init(&p, k_series, 2, 24.0f);
+    push(&p, 1.0f, 1.0f);
+    const uint32_t pushes = p.pushes, rev = p.revision;
+
+    ui_plot_set_running(&p, false);
+    CHECK(p.revision != rev);                 /* the state is drawn */
+    const uint32_t rev_stopped = p.revision;
+
+    push(&p, 2.0f, 2.0f);
+    CHECK_EQ((int)(p.pushes - pushes), 1);    /* counted */
+    CHECK_EQ(p.revision, rev_stopped);        /* and drew nothing */
+
+    ui_plot_set_running(&p, false);           /* no edge, no change */
+    CHECK_EQ(p.revision, rev_stopped);
+
+    ui_plot_clear(&p);
+    CHECK(p.revision != rev_stopped);
+}
+
+/* Clearing empties the trace and returns the scales to their floors, and
+ * keeps everything that describes the plot rather than the run. */
+TEST_CASE(clearing_empties_the_plot_and_the_scales)
+{
+    ui_plot_t p;
+    ui_plot_init(&p, k_series, 2, 24.0f);
+    ui_plot_touch_series(&p, 1);
+    for (int i = 0; i < 40; ++i) {
+        push(&p, 40.0f, 9.0f);
+    }
+    ui_plot_update_scales(&p, 100);
+    CHECK(p.scale[0] > k_series[0].floor);
+
+    ui_plot_clear(&p);
+    CHECK_EQ(p.filled, 0);
+    CHECK_EQ(ui_plot_sample(&p, 0, 0), 0.0f);
+    CHECK_EQ(p.scale[0], k_series[0].floor);
+    CHECK_EQ(p.scale[1], k_series[1].floor);
+    CHECK_EQ(p.focus, 1);                     /* not a property of the run */
+    CHECK_EQ(p.span_s, 24.0f);
+    CHECK(p.running);                         /* clearing does not stop it */
+}
+
+/*
+ * A held plot is drawn differently from a running one, and the difference
+ * stays inside the plot's own rectangle.
+ *
+ * A frozen picture that reads as live would be a worse fault than the one
+ * holding it fixes, and a mark outside the rect would survive the next clear
+ * and label a running plot as held.
+ */
+TEST_CASE(a_stopped_plot_marks_its_right_edge)
+{
+    const gfx_rect_t body = { 40, 10, 700, 220 };
+    ui_plot_t p;
+    ui_plot_init(&p, k_series, 2, 24.0f);
+    for (int i = 0; i < 60; ++i) {
+        push(&p, 20.0f, 3.0f);
+    }
+    ui_plot_update_scales(&p, 700);
+
+    canvas();
+    ui_plot_render(&p, &cv, body);
+    static gfx_color_t live[W * H];
+    memcpy(live, fb, sizeof(live));
+
+    ui_plot_set_running(&p, false);
+    canvas();
+    ui_plot_render(&p, &cv, body);
+
+    int differing = 0, on_top_row = 0;
+    for (int y = 0; y < H; ++y) {
+        for (int x = 0; x < W; ++x) {
+            if (fb[y * W + x] == live[y * W + x]) {
+                continue;
+            }
+            ++differing;
+            /* Every difference is inside the plot's own rectangle. */
+            CHECK(x >= body.x && x < body.x + body.w);
+            CHECK(y >= body.y && y < body.y + body.h);
+            if (y == body.y) {
+                ++on_top_row;
+            }
+        }
+    }
+    CHECK(differing > 0);
+    CHECK(on_top_row > 0);          /* the frame */
+}
+
+/* The frame is drawn under the traces, so the newest column -- the one a held
+ * plot exists to show -- is not painted over. */
+TEST_CASE(a_held_frame_does_not_cover_the_newest_sample)
+{
+    const gfx_rect_t body = { 40, 10, 700, 220 };
+    ui_plot_t p;
+    ui_plot_init(&p, k_series, 2, 24.0f);
+    push(&p, 10.0f, 0.0f);
+    p.scale[0] = 10.0f;             /* so the sample maps to the top row */
+    ui_plot_set_running(&p, false);
+
+    canvas();
+    ui_plot_render(&p, &cv, body);
+    CHECK_EQ(fb[body.y * W + (body.x + body.w - 1)], k_series[0].color);
+}
+
+/* NOW while it advances, END where a held one stopped, and neither on a plot
+ * that has no samples to have an edge. */
+TEST_CASE(the_right_edge_label_follows_the_running_state)
+{
+    const gfx_rect_t body = { 40, 10, 700, 220 };
+    const gfx_rect_t label = { (int16_t)(body.x + body.w - 60),
+                               (int16_t)(body.y + body.h - 19), 56, 16 };
+    ui_plot_t p;
+    ui_plot_init(&p, k_series, 2, 24.0f);
+
+    int lit = 0;
+    canvas();
+    ui_plot_render(&p, &cv, body);     /* empty, running: NOW */
+    for (int y = label.y; y < label.y + label.h; ++y) {
+        for (int x = label.x; x < label.x + label.w; ++x) {
+            if (fb[y * W + x] != ui_theme_color(UI_C_PANEL_SUNK)) {
+                ++lit;
+            }
+        }
+    }
+    CHECK(lit > 0);
+
+    ui_plot_set_running(&p, false);
+    lit = 0;
+    canvas();
+    ui_plot_render(&p, &cv, body);     /* empty, stopped: nothing */
+    for (int y = label.y; y < label.y + label.h; ++y) {
+        for (int x = label.x; x < label.x + label.w; ++x) {
+            if (fb[y * W + x] != ui_theme_color(UI_C_PANEL_SUNK)) {
+                ++lit;
+            }
+        }
+    }
+    CHECK_EQ(lit, 0);
+}
+
 TEST_CASE(the_plot_and_hero_render_without_running_off_the_canvas)
 {
     canvas();
@@ -653,6 +865,13 @@ int main(void)
     RUN(the_scale_ladder_has_its_fine_steps);
     RUN(the_ring_holds_its_history_and_wraps);
     RUN(a_non_finite_sample_cannot_poison_the_plot);
+    RUN(a_stopped_plot_does_not_advance);
+    RUN(a_stopped_plot_keeps_its_scales);
+    RUN(a_stopped_plot_still_counts_the_call);
+    RUN(clearing_empties_the_plot_and_the_scales);
+    RUN(a_stopped_plot_marks_its_right_edge);
+    RUN(a_held_frame_does_not_cover_the_newest_sample);
+    RUN(the_right_edge_label_follows_the_running_state);
     RUN(the_scale_grows_at_once_and_shrinks_slowly);
     RUN(the_scale_never_falls_below_the_series_floor);
     RUN(a_legend_tap_cycles_focus_then_hidden);
