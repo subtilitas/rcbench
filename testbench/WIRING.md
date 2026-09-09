@@ -44,6 +44,28 @@ board's ground pad: under an ohm. Between the star point and any signal pad:
 open. A signal pad that reads a few ohms to ground is a lead in the wrong
 hole, and it is easier to find now than after power.
 
+### Where the power comes from
+
+Every check from here on says "powered" or "unpowered", so the supplies are
+part of the wiring rather than something assumed:
+
+| | |
+|---|---|
+| The Pi | its own supply |
+| The RP2350 | its own USB, from the Pi or a charger. **Not from the Pi's 3.3 V pin** -- see the next step |
+| The coprocessor | its own USB |
+| The panel | its own USB-C, on the socket it is flashed from |
+| Relay coils | their own supply, through the driver |
+| The servo and ESC rails | their own supplies, switched by the monostable's power path and never from a board's rail |
+
+Four separate USB supplies is the ordinary case, and the grounds meet only at
+the star point above.
+
+**Unpowered means all of them.** A board still on USB while its neighbour is
+being rewired is the one that finds a lead in the wrong hole the expensive
+way. Take the supplies off at the point each step says so, not the ground
+leads: the star is what makes the measurements above mean anything.
+
 ---
 
 ## 2. SWD, from the Pi to the RP2350
@@ -329,15 +351,25 @@ Two probes settle it, and the second is the decisive one.
 edges. Both should go inactive within the window. No firmware runs on those
 nodes, so what they do is the hardware's doing.
 
-**Probe the control, not the rail.** The output enable is a logic line and
-takes a lead directly. The servo and ESC power are not: the servo rail is
-8.4 V and an ESC pack is higher still, and every analyser lead on this bench
-is a direct connection with a series resistor -- `capture.sh`'s threshold
-argument sets a comparator level, it does not attenuate anything. An LA2016
-input is rated to 5 V. So take the **switch's control node** -- the gate or
-enable pin of whatever passes that rail -- which is logic and says the same
-thing: the switch is being told to open. If the rail itself has to be seen,
-that is a scope with a probe rated for it, not this analyser.
+**Two instruments, and both are needed.**
+
+*The analyser, on logic only.* The output enable takes a lead directly. The
+servo and ESC power do not: the servo rail is 8.4 V and an ESC pack is higher,
+every analyser lead here is a direct connection with a series resistor, and
+`capture.sh`'s threshold argument sets a comparator level rather than
+attenuating anything. An LA2016 input is rated to 5 V. So the analyser takes
+the **switch's control node** -- the gate or enable pin of whatever passes the
+rail -- which is logic and carries the timing.
+
+*A rated instrument, on the rail.* The control node says the switch was told
+to open. It does not say the rail went down: a switch that is bypassed,
+miswired or failed short deasserts its gate exactly the same way. `docs/Safety.md`
+requires the **power path** to be gated, so the verdict needs the switched
+side measured with something rated for it -- a scope with an appropriate
+probe, or a meter -- and it has to read de-energised.
+
+Passing the first without the second is the interlock's own failure mode: the
+control side correct and the power still on.
 
 *The differential test.* Keep the firmware happy and starve only the hardware.
 
@@ -388,9 +420,14 @@ otherwise using:
 
 **Open the monostable's trigger branch while this is running**, not before it.
 The window is measured from the last edge into the trigger, so that edge and
-the enable falling have to be in one trace. D3 is the trigger node; it carries
-edges until the link comes out and none after, and it is what makes the number
-measurable rather than assumed.
+the enable falling have to be in one trace.
+
+**Probe D3 on the monostable's side of that link, not on the junction.** The
+channel map puts D3 at the GPIO6/GP3 node, and GP22 goes on driving that node
+throughout -- a probe there keeps edging after the link comes out and gives no
+last edge at all. What has to go quiet is the monostable's own input, which is
+what the link disconnects. Move the lead, or put a second one there and
+capture it instead.
 
 The coprocessor keeps seeing GP22 on the junction throughout, so firmware
 stays happy and D0 keeps toggling. Only the interlock is starved, which is the
@@ -402,7 +439,7 @@ question:
 | | |
 |---|---|
 | D0, the raw pin | **toggling.** This is the precondition, not the evidence: it says the arm worked, the binding took and the pin is wired. Flat here and the test proved nothing -- a bench with no interlock at all would look identical |
-| D3, the trigger | edges, then none. The last one is where the window starts, and without it in the trace there is no window to measure against |
+| D3, the monostable's trigger input | edges, then none. The last one is where the window starts, and without it in the trace there is no window to measure against. Past the removable link, not on the junction: the junction keeps edging from GP22 |
 | the enable | deasserted, within 150 ms of that last edge |
 | the load side | quiet |
 
