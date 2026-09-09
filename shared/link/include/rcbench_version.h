@@ -25,7 +25,7 @@
 #define RCBENCH_STRINGIFY_(x) #x
 #define RCBENCH_STRINGIFY(x)  RCBENCH_STRINGIFY_(x)
 
-/** "0.8.0", for anything that prints it rather than sends it. */
+/** "0.8.1", for anything that prints it rather than sends it. */
 #define RCBENCH_VERSION_STRING              \
     RCBENCH_STRINGIFY(RCBENCH_VERSION_MAJOR) "." \
     RCBENCH_STRINGIFY(RCBENCH_VERSION_MINOR) "." \
