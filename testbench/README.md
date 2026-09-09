@@ -169,11 +169,17 @@ the kernel and the firmware -- it has been `gpiochip4` and it has been
 `gpiochip0` -- so it is read from `gpiodetect` rather than assumed:
 
     gpiodetect                       # which chip carries the header
-    export SWD_GPIOCHIP=<n> SWD_SWCLK=<pin> SWD_SWDIO=<pin>
+    export SWD_GPIOCHIP=<n> SWD_SWCLK=25 SWD_SWDIO=24
     openocd -f interface/linuxgpiod.cfg -f target/rp2350.cfg \
             -c "adapter gpio swclk -chip $SWD_GPIOCHIP $SWD_SWCLK" \
             -c "adapter gpio swdio -chip $SWD_GPIOCHIP $SWD_SWDIO" \
             -c "adapter speed 1000"
+
+GPIO25 on header pin 22 is SWCLK and GPIO24 on header pin 18 is SWDIO, which
+is the pair Raspberry Pi's own instructions for debugging one Pi from another
+use. `testbench/WIRING.md` has the table. Any two free header GPIOs would work,
+since the lines are bit-banged rather than driven by a peripheral, but a bench
+is reproducible only if every assembler uses the same two.
 
 `host/selftest.sh` reads the same three variables, so the wiring is stated
 once and nothing in the scripts has to know it.
@@ -386,10 +392,11 @@ firmware and the decoder agree, and no more than that.
 ## What is here
 
     testbench/
-      README.md      this
+      README.md      this: what the bench is for, and why each part is there
+      WIRING.md      what to connect, in order, with a check after each step
       host/          the scripts the Pi runs: capture, decode, self-test
       decoders/      protocol decoders, and their offline verification
-      captures/      run artefacts, not committed
+      captures/      run artefacts, not committed; reference/ is
 
 ---
 
