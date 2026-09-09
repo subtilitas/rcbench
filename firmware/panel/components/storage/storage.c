@@ -226,10 +226,21 @@ int storage_walk(const char *dir, const char *suffixes,
      * nothing on it, and the screen would tell the operator their logs had
      * vanished rather than that the card had.
      */
-    errno = 0;
     int matched = 0;
-    struct dirent *e;
-    while ((e = readdir(d)) != NULL) {
+    for (;;) {
+        /*
+         * Cleared immediately before every call, because only this call's
+         * answer is being read.  Clearing it once per matched entry instead
+         * leaves whatever tick(), visit() or stat() set standing across every
+         * entry the filters reject, and the end-of-directory NULL then reads
+         * as a failure: a directory that was read whole is reported as no
+         * volume, and the run-number scan refuses to record a run over it.
+         */
+        errno = 0;
+        struct dirent *e = readdir(d);
+        if (e == NULL) {
+            break;
+        }
         /* Per entry read, before any filter.  What the filters reject never
          * reaches the visitor, and a root of unrelated files is the case that
          * takes longest with nothing else running. */
@@ -267,7 +278,6 @@ int storage_walk(const char *dir, const char *suffixes,
         if (visit != NULL) {
             visit(&cur, ctx);
         }
-        errno = 0;              /* only the last readdir's answer counts */
     }
     const int err = errno;
     closedir(d);
