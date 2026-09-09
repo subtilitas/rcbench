@@ -128,6 +128,18 @@ claims that line and `linuxgpiod` cannot have it. SPI is off on the bench host
 -- there is no `/dev/spidev*` and no `dtparam=spi` in `/boot/firmware/config.txt`
 -- and it stays off while SWD is on this pin.
 
+**Before the check**, put PCIe active-state power management into
+`performance`:
+
+    echo performance | sudo tee /sys/module/pcie_aspm/parameters/policy
+
+The RP1 sits behind PCIe, and OpenOCD's `interface/raspberrypi5-gpiod.cfg`
+warns that under any other policy the first few pulses can be clocked as fast
+as 20 MHz. Whether that costs a connection is unmeasured -- no target has been
+on these pins -- so this is a setting OpenOCD asks for and not a fault anyone
+has seen. It does not survive a reboot. `host/selftest.sh` prints the policy it
+finds.
+
 **Check**, with the RP2350 powered from its own supply:
 
     gpiodetect                      # which chip carries the 40-pin header
@@ -148,8 +160,15 @@ what `gpiodetect` is for. The two GPIO numbers do not move.
 
 It should find a target and exit without complaint. With nothing on the pins
 it gets as far as `Linux GPIOD JTAG/SWD bitbang driver` and then
-`Error connecting DP: cannot read IDR`, which is the reading that means no
-target rather than bad wiring.
+`Error connecting DP: cannot read IDR`.
+
+**That error does not tell you the target is absent.** It is what an empty
+header reads as, and it is equally what a target reads as when SWCLK and SWDIO
+are swapped, when either lead is off, when the ground is not on the star, or
+when the chip number is wrong. Getting it means OpenOCD reached the pins and
+found nothing answering on them; which of those it is, is what the rest of
+this step is for. Recheck the two leads against the table above before
+concluding anything about the board.
 
 There is no clock to come down to. `linuxgpiod` runs at a fixed rate --
 OpenOCD prints `Note: The adapter "linuxgpiod" doesn't support configurable

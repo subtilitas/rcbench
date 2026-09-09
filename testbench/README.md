@@ -234,8 +234,12 @@ driver and stops there:
     Info : Linux GPIOD JTAG/SWD bitbang driver
     Error: Error connecting DP: cannot read IDR
 
-That is the whole of what has been confirmed. `cannot read IDR` is the
-no-target reading; a board on the pins has to replace it.
+That is the whole of what has been confirmed: it is the reading an empty
+header gives. It is not a diagnosis. A target that is present but miswired --
+the two leads swapped, one of them off, the ground not on the star, the wrong
+chip number -- gives the same error, so it separates "OpenOCD reached the
+pins" from "something answered" and nothing finer. A board on the pins has to
+replace it.
 
 That build also ships `interface/raspberrypi5-gpiod.cfg`, which resolves the
 chip number from the `/proc/device-tree/aliases` entry pointing at the RP1

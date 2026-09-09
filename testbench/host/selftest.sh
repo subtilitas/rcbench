@@ -63,8 +63,16 @@ else
     # release and what Debian packages; naming a driver libsigrok does not
     # have prints "Driver kingst-la2016 not found." and reads exactly like an
     # analyser that is unplugged.
-    if ! sigrok-cli --list-supported 2>/dev/null |
-         grep -qE '^[[:space:]]+kingst-la2016[[:space:]]'; then
+    #
+    # The list is captured and matched from a here-string, not piped into
+    # grep. grep -q exits at the first match, the writer takes SIGPIPE on its
+    # next write, and under pipefail that non-zero status becomes the
+    # pipeline's -- so the check would report the driver missing exactly when
+    # it is present. It needs the output after the entry to exceed the pipe
+    # buffer, 64 KB, which 13 kB of driver list does not reach today. A
+    # here-string is a file descriptor and cannot signal upstream at all.
+    drivers=$(sigrok-cli --list-supported 2>/dev/null) || drivers=
+    if ! grep -qE '^[[:space:]]+kingst-la2016([[:space:]]|$)' <<<"$drivers"; then
         bad "kingst-la2016 driver" "not in this libsigrok -- see README, The parts"
         scan=
     else
@@ -96,6 +104,25 @@ fi
 : "${SWD_GPIOCHIP:=}"
 : "${SWD_SWCLK:=}"
 : "${SWD_SWDIO:=}"
+
+# PCIe active-state power management changes how fast the RP1's pins can be
+# reached. OpenOCD's interface/raspberrypi5-gpiod.cfg warns that with the
+# policy anything but "performance" the first few pulses can be clocked as
+# fast as 20 MHz, and asks for it to be switched. Whether that costs a
+# connection is unmeasured -- no target has been on these pins -- so this is
+# reported and does not fail the run.
+aspm=/sys/module/pcie_aspm/parameters/policy
+if [ -r "$aspm" ]; then
+    policy=$(sed 's/.*\[\([a-z]*\)\].*/\1/' "$aspm")
+    if [ "$policy" = performance ]; then
+        say "PCIe ASPM policy" "$policy"
+    else
+        say "PCIe ASPM policy" \
+            "$policy -- OpenOCD asks for performance: echo performance | sudo tee $aspm"
+    fi
+else
+    say "PCIe ASPM policy" "not readable at $aspm"
+fi
 
 if ! command -v openocd >/dev/null; then
     bad "openocd" "not installed"
