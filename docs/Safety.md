@@ -36,10 +36,16 @@ the margin is what survives a task that is late, and nothing is gained by
 removing it.
 
 The monostable is on no board. On the bring-up bench the edges reach the
-coprocessor's GP3 by a direct wire from J8, which is what lets that bench arm;
-what a direct wire cannot do is the one thing the monostable is for, because a
-panel that crashes with the line stuck high leaves the outputs driving. Until
-the part is fitted, firmware at both ends is the whole of the interlock.
+coprocessor's GP3 by a direct wire from J8, which is what lets that bench arm.
+
+What the direct wire cannot cover is the case the monostable exists for: the
+coprocessor's own firmware wedging. Nothing then polls the monitor, so nothing
+disarms, and the bank goes on driving whatever the panel does. A panel that
+crashes on its own is already covered by the monitor below -- no edge for
+HEARTBEAT_MAX_GAP_MS and the loop disarms -- and that is the case the wire
+handles. The monostable is the one that does not need the coprocessor's
+firmware to be running. Until it is fitted, firmware at both ends is the whole
+of the interlock.
 
 ## Heartbeat monitor
 

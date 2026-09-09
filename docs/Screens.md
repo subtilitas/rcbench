@@ -132,9 +132,11 @@ than as a modelled number.
 Drag anywhere on the sweep to command a position. The solid arm is the measured
 position; the faint arm is the commanded position. The gap between them is the
 servo's own lag. The rings around the tip pulse while the servo is being
-driven. Releasing the sweep returns the surfaces to centre; the pins stay
-bound to whatever SETTINGS/OUTPUTS bound them to and keep driving, and a
-disarm -- or leaving the screen, which disarms -- is what stops the edges.
+driven. Lifting the finger does not let go: the screen keeps saying the last
+position every SERVO_HOLD_MS, so a servo stays where it was put. **RELEASE**,
+the button, is what returns the surfaces to centre -- and even that leaves the
+pins bound and driving, at the middle of their travel. A disarm, or leaving
+the screen, which disarms, is what stops the edges.
 
 The screen drives the channels the binding marks as surfaces, not a fixed pin
 and not a fixed protocol. PPM's eight channels are surfaces too, so a bound

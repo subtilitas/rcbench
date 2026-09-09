@@ -39,10 +39,17 @@ verspäteten Task überlebt.
 
 Das Monoflop ist auf keiner Platine. Auf dem Aufbau-Prüfstand erreichen die
 Flanken über eine direkte Leitung von J8 den GP3 des Koprozessors, weshalb
-dieser Prüfstand scharfschalten kann. Was eine direkte Leitung nicht leisten
-kann, ist genau das, wofür das Monoflop da ist: Ein Panel, das mit
-hängengebliebener Leitung abstürzt, lässt die Ausgänge weiter treiben. Solange
-das Bauteil fehlt, ist die Firmware an beiden Enden die gesamte Verriegelung.
+dieser Prüfstand scharfschalten kann.
+
+Was die direkte Leitung nicht abdeckt, ist der Fall, für den das Monoflop da
+ist: Die Firmware des Koprozessors selbst hängt. Dann fragt nichts mehr den
+Monitor ab, also entschärft auch nichts, und die Bank treibt weiter, was immer
+das Panel tut. Ein Panel, das für sich abstürzt, ist bereits abgedeckt -- der
+Monitor unten sieht HEARTBEAT_MAX_GAP_MS lang keine Flanke und die Schleife
+entschärft --, und das ist der Fall, den die Leitung erledigt. Das Monoflop
+ist der Fall, der nicht davon abhängt, dass die Firmware des Koprozessors
+läuft. Solange es fehlt, ist die Firmware an beiden Enden die gesamte
+Verriegelung.
 
 ## Heartbeat-Überwachung
 

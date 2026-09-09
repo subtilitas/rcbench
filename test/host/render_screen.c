@@ -215,7 +215,7 @@ static void pose_splash(void)
     splash_screen_set(SPLASH_STEP_TOUCH,    SPLASH_OK,   "GT911 5pt");
     splash_screen_set(SPLASH_STEP_STORAGE,  SPLASH_WARN, "no card");
     splash_screen_set(SPLASH_STEP_SETTINGS, SPLASH_OK,   "NVS");
-    splash_screen_set(SPLASH_STEP_LINK,     SPLASH_OK,   "256k 8N1");
+    splash_screen_set(SPLASH_STEP_LINK,     SPLASH_OK,   "CAN 1 Mbit/s");
     /* Built from the constants rather than typed: the coprocessor line went
      * from 1.0 to 3.0 and gained a firmware field with this string untouched,
      * so the screenshot on the wiki showed a protocol two majors old. */
