@@ -522,7 +522,7 @@ window it would be measuring; span is what this capture needs, and 1 us
 resolution on a 150 ms window is already finer than the number is worth
 quoting to.
 
-D0 aliases at 1 MHz: a DShot600 bit is 1.67 us and is sampled about twice,
+D0 aliases at 1 MHz: a DShot600 bit is 1.67 us and is sampled once or twice,
 so the trace shows the pin changing without being decodable. Changing is all
 this capture asks of it.
 
@@ -539,6 +539,13 @@ rate has to out-sample whatever D0 is carrying, and DShot600 is the fastest
 this bench binds. 2m samples at 24 MHz is 83 ms, which is 83 DShot frames at
 the coprocessor's 1,000 Hz update rate and four servo frames at 50 Hz, so a
 leak that repeats at all repeats inside it.
+
+**`capture.sh` warns that D15 never changed, and here that warning is the
+result.** The script prints `warning: never changed: D15 -- probe, threshold
+or ground` for any channel that holds one level, because a flat channel is
+usually a lead off its pin. This is the one capture where flat is what is
+being asked for: D0 in the same trace is what separates a quiet gate from a
+dead lead, which is why it is captured alongside.
 
 **Probe D3 on the monostable's side of that link, not on the junction.** The
 channel map puts D3 at the GPIO6/GP3 node, and GP22 goes on driving that node
