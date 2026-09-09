@@ -3,7 +3,7 @@
 <sub>**English** · [Deutsch](FirstRun-de.md)</sub>
 
 Both boards powered with the heartbeat wire fitted, and every number below
-read on an instrument. Written for 0.8.0. A servo and a motor have run from
+read on an instrument. Written for 0.8.1. A servo and a motor have run from
 the panel on the bring-up bench; what nothing here has done is put a scope or
 an analyser on a pin, so every step says what "good" looks like and what to
 write down when it is not.

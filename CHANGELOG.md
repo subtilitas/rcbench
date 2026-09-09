@@ -4,7 +4,12 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
-## Unreleased
+## 0.8.1 - 2026-09-09
+
+No output could be bound on 0.8.0. Choosing a protocol on SETTINGS/OUTPUTS put
+the screen back to `OFF` within one poll, and `OFF` takes no pins, so no pin
+could be ticked and no binding could be made. PICK A PIN had the same cause.
+There is no workaround on 0.8.0.
 
 ### Fixed
 
