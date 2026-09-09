@@ -98,8 +98,9 @@ bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
         return false;
     }
 
-    /* A NACK answers the request it refuses and carries its own offset back;
-     * DATA and ACK have to fall inside the window that was asked for. */
+    /* A NACK answers the request it refuses and names the fragment it
+     * refuses; DATA and ACK have to fall inside the window that was asked
+     * for. */
     const bool answers_read  = (h->op == LINK_OP_READ
                                 && part->op == LINK_OP_DATA);
     const bool answers_write = (h->op == LINK_OP_WRITE
@@ -113,10 +114,34 @@ bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
     }
 
     if (refuses) {
-        if (part->offset != h->offset) {
+        /*
+         * A write wider than LINK_CAN_REGS_PER_FRAME (4) goes out as several
+         * fragments at increasing offsets, and the far end refuses whichever
+         * fragment it will not take.  So a write's refusal belongs to this
+         * transaction when it names a register inside the window -- the same
+         * coverage rule the acknowledgements below are matched by.  A read
+         * is one request with one offset, and its refusal carries that
+         * offset back.
+         *
+         * A refusal counted as a mismatch costs its reason.  The transaction
+         * then runs to LINK_HOST_TIMEOUT_MS (1000 ms), and the caller reads
+         * the silence as a dead link: firmware/panel/main/main.c maps a
+         * refusal to OUTPUTS_REFUSED and a timeout to OUTPUTS_NO_LINK, which
+         * sends the operator to the cable instead of to the values sent.
+         */
+        const bool mine = (h->op == LINK_OP_WRITE)
+                              ? (part->offset >= h->offset
+                                 && (uint16_t)part->offset
+                                        < (uint16_t)h->offset
+                                              + (uint16_t)h->count)
+                              : (part->offset == h->offset);
+        if (!mine) {
             ++h->mismatches;
             return false;
         }
+        /* The refusal ends the transaction; the fragments the far end
+         * already took stay applied, because the transport has no
+         * rollback. */
         *whole = *part;
         answered(h, now_ms, true);
         return true;

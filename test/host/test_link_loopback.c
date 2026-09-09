@@ -33,6 +33,10 @@ typedef struct {
     uint16_t control[LINK_CT_COUNT];
     uint16_t bench[LINK_BN_COUNT];
     uint16_t wide[WIDE_COUNT];
+    /* The first register of the wide page the far end will not take, so a
+     * fragment of a wide write can be refused at a chosen offset.  WIDE_COUNT
+     * refuses nothing. */
+    uint8_t  refuse_from;
 } state_t;
 
 static state_t   g;
@@ -67,7 +71,11 @@ static void wide_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 static uint8_t wide_write(void *ctx, uint8_t off, uint8_t n,
                           const uint16_t *in)
 {
-    memcpy(((state_t *)ctx)->wide + off, in, (size_t)n * 2u);
+    state_t *st = (state_t *)ctx;
+    if (off >= st->refuse_from) {
+        return LINK_NACK_BAD_RANGE;
+    }
+    memcpy(st->wide + off, in, (size_t)n * 2u);
     return 0;
 }
 
@@ -148,6 +156,7 @@ static void fresh(void)
     }
     g.identity[LINK_ID_PROTOCOL_MAJOR] = LINK_PROTOCOL_MAJOR;
     g.identity[LINK_ID_PROTOCOL_MINOR] = LINK_PROTOCOL_MINOR;
+    g.refuse_from = (uint8_t)WIDE_COUNT;   /* takes the whole page */
     link_dev_init(&dev, k_pages, 4, &g, 0);
     link_host_init(&host, 0);
 }
@@ -319,6 +328,121 @@ TEST_CASE(a_write_wider_than_a_frame_is_answered_by_its_pieces)
     CHECK_EQ(host.replies, 1u);
 }
 
+/*
+ * A wide write whose later fragment is refused.
+ *
+ * Pins that the refusal answers the transaction and carries its reason back.
+ * The request goes out as eight frames at offsets 0, 4 ... 28; this far end
+ * takes the first four and answers BAD_RANGE at offsets 16, 20, 24 and 28,
+ * which is what a coprocessor whose page is 16 registers wide does to a
+ * panel that thinks it is 32.  Matching a refusal only against the
+ * transaction's own offset drops it, and the transaction then runs to
+ * LINK_HOST_TIMEOUT_MS (1000 ms) with the reason lost:
+ * firmware/panel/main/main.c maps a refusal to OUTPUTS_REFUSED and a timeout
+ * to OUTPUTS_NO_LINK, so the reason decides whether the operator is sent to
+ * the pins chosen or to the cable.
+ */
+TEST_CASE(a_refusal_of_a_later_fragment_answers_the_write)
+{
+    fresh();
+    g.refuse_from = 16;          /* the far end's page ends here */
+
+    link_msg_t req, got;
+    uint16_t v[WIDE_COUNT];
+    const uint8_t wide = (uint8_t)WIDE_COUNT;
+    for (uint8_t i = 0; i < wide; ++i) {
+        v[i] = (uint16_t)(0x200 + i);
+    }
+
+    CHECK(link_host_write(&host, LINK_PAGE_OUTPUTS, 0, wide, v, 0, &req));
+    CHECK(exchange_answering_every_frame(&req, 100, &got));
+
+    CHECK_EQ(got.op, LINK_OP_NACK);
+    CHECK_EQ(got.regs[0], LINK_NACK_BAD_RANGE);
+    CHECK_EQ(got.offset, 16);    /* and says which fragment was refused */
+    CHECK_EQ(host.nacks, 1u);
+    CHECK_EQ(host.replies, 1u);
+    CHECK(!host.pending);
+
+    /* The refusal is the answer, so no clock is still running against this
+     * transaction: at 1099 ms the host has neither abandoned a request nor
+     * reported the link down.  A transaction left unanswered reaches
+     * LINK_HOST_TIMEOUT_MS from the request at 0 ms and fires both. */
+    CHECK(!link_host_tick(&host, 100 + LINK_HOST_TIMEOUT_MS - 1u));
+    CHECK_EQ(host.timeouts, 0u);
+
+    /* The three frames still behind it answer a transaction that is over:
+     * refusals at offsets 20, 24 and 28, arriving with nothing outstanding,
+     * are counted as strays. */
+    CHECK_EQ(host.mismatches, 3u);
+
+    /* The fragments the far end took stay applied.  The transport has no
+     * rollback, and the refusal does not undo them. */
+    for (uint8_t i = 0; i < 16; ++i) {
+        CHECK_EQ(g.wide[i], (uint16_t)(0x200 + i));
+    }
+    for (uint8_t i = 16; i < wide; ++i) {
+        CHECK_EQ(g.wide[i], 0);
+    }
+}
+
+/*
+ * The edges of that matching, which a write's refusal must not widen past
+ * and a read's must not widen at all.
+ *
+ * Pins three strays: a refusal naming a register outside the window, a
+ * refusal of another page, and a refusal naming a register inside a read's
+ * window but not the offset the read asked at.  A read goes out as one
+ * frame with one offset, so nothing about it is fragmented.  This case is
+ * the guard on the fix rather than the proof of it: it holds with the
+ * transaction's own offset demanded and with the window matched, and fails
+ * on a fix that widens the read path too.
+ */
+TEST_CASE(a_refusal_at_an_unrelated_offset_is_a_stray)
+{
+    fresh();
+    link_msg_t req, got;
+    const uint16_t v[2] = { 0, 1234 };
+
+    /* A write of two registers at offset 0.  Offset 8 is outside it. */
+    CHECK(link_host_write(&host, LINK_PAGE_CONTROL, 0, 2, v, 0, &req));
+    link_msg_t stray = { 0 };
+    stray.op      = LINK_OP_NACK;
+    stray.page    = LINK_PAGE_CONTROL;
+    stray.offset  = 8;
+    stray.count   = 1;
+    stray.regs[0] = LINK_NACK_BAD_VALUE;
+    CHECK(!link_host_accept(&host, &stray, 100, &got));
+    CHECK_EQ(host.mismatches, 1u);
+    CHECK_EQ(host.nacks, 0u);
+    CHECK(host.pending);         /* still waiting for its own answer */
+
+    /* Another page's refusal is a stray wherever it points. */
+    stray.page   = LINK_PAGE_BENCH;
+    stray.offset = 0;
+    CHECK(!link_host_accept(&host, &stray, 100, &got));
+    CHECK_EQ(host.mismatches, 2u);
+    CHECK(host.pending);
+    link_host_abandon(&host);
+
+    /* A 13-register read is one request at one offset.  A refusal naming
+     * offset 4 answers nothing this host asked. */
+    CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, LINK_BN_COUNT, 0, &req));
+    stray.page   = LINK_PAGE_BENCH;
+    stray.offset = 4;
+    CHECK(!link_host_accept(&host, &stray, 200, &got));
+    CHECK_EQ(host.mismatches, 3u);
+    CHECK(host.pending);
+
+    /* The offset it was asked at answers it. */
+    stray.offset = 0;
+    CHECK(link_host_accept(&host, &stray, 200, &got));
+    CHECK_EQ(got.op, LINK_OP_NACK);
+    CHECK_EQ(got.regs[0], LINK_NACK_BAD_VALUE);
+    CHECK_EQ(host.nacks, 1u);
+    CHECK(!host.pending);
+}
+
 /* And a piece that belongs to no window is still a stray. */
 TEST_CASE(an_acknowledgement_outside_the_window_is_refused)
 {
@@ -460,6 +584,8 @@ int main(void)
     RUN(a_window_inside_a_page_answers_with_that_window);
     RUN(a_write_is_acknowledged_with_what_was_stored);
     RUN(a_write_wider_than_a_frame_is_answered_by_its_pieces);
+    RUN(a_refusal_of_a_later_fragment_answers_the_write);
+    RUN(a_refusal_at_an_unrelated_offset_is_a_stray);
     RUN(an_acknowledgement_outside_the_window_is_refused);
     RUN(a_refusal_answers_and_says_why);
     RUN(a_lost_piece_leaves_the_request_unanswered);
