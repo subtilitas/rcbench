@@ -66,7 +66,16 @@ part of the wiring rather than something assumed:
 | The servo and ESC rails | their own supplies, switched by the monostable's power path and never from a board's rail |
 
 Four separate USB supplies is the ordinary case, and the grounds meet only at
-the star point above.
+the star point above -- **except while a target board is on a data cable to
+the Pi.** Step 4's loader check and section 9 need those cables, and each one
+ties that board's ground to the Pi's through the shell, in parallel with its
+star lead.
+
+That is tolerable because those two are functional checks -- does the board
+restart, does it enumerate -- and not measurements. **Do not take an analyser
+or scope reading while a target is on a data cable to the Pi**, or use an
+isolated USB adapter for it. A second return path is not visible in a capture;
+it is visible as noise nobody can source.
 
 **Unpowered means all of them.** A board still on USB while its neighbour is
 being rewired is the one that finds a lead in the wrong hole the expensive
@@ -380,19 +389,28 @@ ESC pack is.
 **A meter is not enough.** It says the rail is down by the time you look,
 which is a different claim from down within 150 ms: a switch with a slow gate
 drive, a rail with a bulk capacitor, or a load light enough not to discharge
-one, all read zero eventually and miss the deadline. The rail goes on a scope
-channel triggered from the same edge as the trace above -- the last edge into
-the monostable's trigger.
+one, all read zero eventually and miss the deadline.
 
-**Both rails, and to a stated voltage.** Two things make that measurement mean
-something:
+**Two channels on one scope, triggered on the rail.** The monostable's trigger
+input goes on one channel and the switched rail on the other, and the scope
+triggers on the **rail crossing its threshold downward**, with at least 200 ms
+of pre-trigger. Triggering on a heartbeat edge cannot work: every edge is
+identical and no ordinary edge trigger knows which one is the last, so the
+instrument fires on an arbitrary one and the rail's fall lands outside the
+record. Triggering on the rail and looking backwards puts the last trigger
+edge in the same capture, and the interval between them is the number.
 
-- *A threshold, not "off".* Leaving the regulation band is not being
-  de-energised: a servo holds position and an ESC stays armed well below
-  nominal. The number is the time from the trigger edge to the rail falling
-  **below the load's own minimum operating voltage**, which is the servo's or
-  the ESC's datasheet figure and belongs written next to the capture. Above
-  that voltage the load is still powered, whatever the rail is called.
+**Both rails, and to a voltage the load is known to stop at.** Two things make
+that measurement mean something:
+
+- *A threshold the load actually respects.* Leaving the regulation band is not
+  being de-energised, and neither is the datasheet's minimum operating
+  voltage: that is the bottom of *guaranteed* operation, and a servo or an ESC
+  below it may go on holding, twitching or producing torque rather than
+  stopping. The honest threshold is the voltage at which **this** load is
+  measured to stop -- run it down on the bench and find it -- and until that
+  measurement exists, a conservative near-zero figure. Nothing between the two
+  is a claim about the load.
 - *A load on it.* An unloaded rail with a bulk capacitor decays slowly and
   measures whatever the capacitor decides. Take it with the servo or the ESC
   connected -- the bench's own load, in the state the interlock exists for.
@@ -453,7 +471,13 @@ Then capture **after the gate** -- the load-facing side of the gated output,
 and the monostable's output-enable -- on whichever channels the run is not
 otherwise using:
 
-    testbench/host/capture.sh interlock D0,D3,D14,D15 1m 4m 1.65
+    testbench/host/capture.sh interlock D0,D3,D14,D15 24m 4m 1.65
+
+24 MHz, not 1 MHz. The output under test may be DShot600, whose zero-bit high
+is about 0.63 us: sampled once a microsecond, narrow activity leaking through
+a failed gate falls between samples and the load side is reported quiet. The
+rate has to out-sample whatever D0 is carrying, and DShot600 is the fastest
+this bench binds.
 
 **Open the monostable's trigger branch while this is running**, not before it.
 The window is measured from the last edge into the trigger, so that edge and
