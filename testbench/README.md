@@ -66,6 +66,29 @@ instrument for samples -- so a missing driver reads as a missing driver, a
 missing bitstream as a capture that returns nothing, and neither as an
 unplugged instrument.
 
+**Which build is installed is recorded, and checked.** The library is built in
+CI rather than on the Pi, and the tarball carries a manifest at
+`share/doc/rcbench-sigrok/MANIFEST.txt`, so unpacking it into `/usr/local`
+puts the file at `/usr/local/share/doc/rcbench-sigrok/MANIFEST.txt`. Plain
+text, one key per line, colon-separated: `libsigrok-commit`,
+`sigrok-cli-commit`, `libsigrok-version`, `sigrok-cli-version`,
+`debian-version`, `built-utc`.
+
+`host/selftest.sh` reads it and prints the libsigrok version and commit beside
+the driver check, so the version a capture is read through is named in the
+same output as the capture. Three readings come out of it:
+
+| What the selftest says | What it means |
+|---|---|
+| `libsigrok <version> at <commit>` | the manifest is there and names the build |
+| `sigrok provenance: unrecorded` | no manifest at that path, so which build is on PATH is unanswered. A distribution `sigrok-cli` reads as this |
+| `sigrok-cli on PATH: <a>, manifest records <b>` | the binary the shell finds is not the one the manifest describes -- the distribution package shadowing the built one |
+
+The last is the reason the distribution `sigrok-cli` is left installed rather
+than removed: a bench that only works once a package is gone is a bench that
+breaks on the next machine, so the shadowing is a step the procedure states
+and the selftest catches. `SIGROK_MANIFEST` overrides the path.
+
 **RP2350 board** — the same part as the bench coprocessor, in one of two roles
 per run:
 

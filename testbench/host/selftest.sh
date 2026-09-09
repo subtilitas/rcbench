@@ -19,6 +19,45 @@ if ! command -v sigrok-cli >/dev/null; then
     bad "sigrok-cli" "not installed"
 else
     say "sigrok-cli" "$(sigrok-cli --version | head -1)"
+
+    # Which sigrok is this?  The bench runs a libsigrok built from git,
+    # because the released 0.5.2 carries no kingst-la2016 driver, and a
+    # measurement read through an unnamed library version cannot be
+    # reproduced.  The build records what it made in a manifest, and
+    # unpacking the tarball into /usr/local puts it at the path below.  It is
+    # data, not shell, so it is read with grep and never sourced.
+    : "${SIGROK_MANIFEST:=/usr/local/share/doc/rcbench-sigrok/MANIFEST.txt}"
+    manifest_get() {
+        grep -m1 "^$1:" "$SIGROK_MANIFEST" 2>/dev/null |
+            cut -d: -f2- | sed 's/^[[:space:]]*//'
+    }
+
+    if [ ! -r "$SIGROK_MANIFEST" ]; then
+        # An apt-installed sigrok-cli reads as this.  It is not the same
+        # fault as a missing driver: the driver may well be there and the
+        # question of which build produced it is simply unanswered.
+        bad "sigrok provenance" "unrecorded -- no manifest at $SIGROK_MANIFEST"
+    else
+        lib_version=$(manifest_get libsigrok-version)
+        lib_commit=$(manifest_get libsigrok-commit)
+        cli_version=$(manifest_get sigrok-cli-version)
+        if [ -z "$lib_version" ] || [ -z "$lib_commit" ] || [ -z "$cli_version" ]; then
+            bad "sigrok provenance" "manifest at $SIGROK_MANIFEST is missing keys"
+        else
+            say "libsigrok" "$lib_version at $lib_commit"
+            # The apt package and the built one can both be on PATH.  What
+            # runs is what the shell finds first, which need not be what the
+            # manifest describes.
+            on_path=$(sigrok-cli --version | head -1 | awk '{print $2}')
+            if [ "$on_path" != "$cli_version" ]; then
+                bad "sigrok-cli on PATH" \
+                    "$on_path at $(command -v sigrok-cli), manifest records $cli_version"
+            else
+                say "sigrok-cli on PATH" "$on_path, matches the manifest"
+            fi
+        fi
+    fi
+
     # Ask the library what it carries before asking it to scan. The
     # kingst-la2016 driver is not in libsigrok 0.5.2, which is the current
     # release and what Debian packages; naming a driver libsigrok does not
