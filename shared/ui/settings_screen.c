@@ -94,6 +94,17 @@ static struct {
 
     bool     chrome_valid[MAX_FBS];
     setting_cat_t drawn_cat;
+
+    /*
+     * The save button's three inputs as the last frame drew them.  The
+     * write is taken by settings_save_tick() outside this screen, so a
+     * pending write completing -- or being refused -- moves them with no
+     * touch to invalidate the cached framebuffers.  Without this, a
+     * refusal keeps drawing WHEN IDLE until something else repaints.
+     */
+    bool     drawn_dirty;
+    bool     drawn_asked;
+    bool     drawn_failed;
 } s;
 
 void settings_screen_invalidate(void)
@@ -250,6 +261,12 @@ static void leave(void)
 
 static void tick(float dt_s)
 {
+    if (s.drawn_dirty != settings_dirty()
+        || s.drawn_asked != settings_save_asked()
+        || s.drawn_failed != settings_save_failed()) {
+        settings_screen_invalidate();
+    }
+
     if (s.hit_kind != HIT_MINUS && s.hit_kind != HIT_PLUS) {
         s.held_for = 0.0f;
         s.repeating = false;
@@ -469,6 +486,9 @@ static void draw_categories(gfx_canvas_t *c)
     const bool dirty  = settings_dirty();
     const bool asked  = settings_save_asked();
     const bool failed = settings_save_failed();
+    s.drawn_dirty  = dirty;
+    s.drawn_asked  = asked;
+    s.drawn_failed = failed;
     const char *label = !dirty ? "SAVED"
                         : asked ? "WHEN IDLE"
                         : failed ? "NOT SAVED" : "SAVE";

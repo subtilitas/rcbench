@@ -197,24 +197,38 @@ static void notify_changed(int id, float before)
 
 void settings_reset(setting_cat_t cat)
 {
+    /*
+     * Only an actual change is an edit.  A category already holding its
+     * defaults is reset to what it has, and calling that an edit would
+     * retire a standing save failure while the values whose write failed
+     * are still the ones in memory.
+     */
+    bool moved = false;
     for (int i = 0; i < SETTING_COUNT; ++i) {
         if (k_defs[i].cat == cat) {
             float before = s.values[i];
             s.values[i] = k_defs[i].def;
+            moved = moved || (s.values[i] != before);
             notify_changed(i, before);
         }
     }
-    mark_dirty();
+    if (moved) {
+        mark_dirty();
+    }
 }
 
 void settings_reset_all(void)
 {
+    bool moved = false;
     for (int i = 0; i < SETTING_COUNT; ++i) {
         float before = s.values[i];
         s.values[i] = k_defs[i].def;
+        moved = moved || (s.values[i] != before);
         notify_changed(i, before);
     }
-    mark_dirty();
+    if (moved) {
+        mark_dirty();
+    }
 }
 
 void settings_set_store(const settings_store_t *store)

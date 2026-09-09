@@ -879,6 +879,64 @@ TEST_CASE(the_idle_save_reports_a_refusal)
     CHECK(settings_save_failed());
 }
 
+/*
+ * A reset that changes nothing is not an edit.  A category already holding
+ * its defaults is reset to what it has; treating that as an edit would drop
+ * NOT SAVED while the values whose write was refused are still the ones in
+ * memory and nothing has been written since.
+ */
+TEST_CASE(a_reset_that_changes_nothing_keeps_the_failure)
+{
+    fresh_model();
+    settings_set_store(&s_refusing_store);
+    settings_init();
+
+    settings_set(SET_MOTOR_POLES, 12.0f);
+    CHECK(!settings_save());
+    CHECK(settings_save_failed());
+
+    /* APP holds its defaults, so this moves nothing. */
+    settings_reset(SET_CAT_APP);
+    CHECK(settings_save_failed());
+
+    /* ESC / BENCH holds the edited pole count, so this does move something
+     * and is an edit like any other. */
+    settings_reset(SET_CAT_ESC);
+    CHECK(!settings_save_failed());
+    CHECK(settings_dirty());
+}
+
+/*
+ * The write is taken outside this screen, by settings_save_tick() in the
+ * panel's render loop, so a pending write completing or being refused moves
+ * the button's state with no touch to invalidate the cached framebuffers.
+ * The screen has to notice that itself, or a refusal goes on drawing
+ * WHEN IDLE until something else repaints.
+ */
+TEST_CASE(a_refused_pending_write_repaints_the_button)
+{
+    fresh_screen();
+    settings_set_store(&s_refusing_store);
+    settings_init();
+
+    settings_set(SET_MOTOR_POLES, 12.0f);
+    settings_request_save();
+    CHECK(settings_save_asked());
+
+    /* Drawn once as WHEN IDLE, with the chrome cached for this buffer. */
+    ui_router_render(&s_c, 0);
+    static gfx_color_t before[(size_t)W * H];
+    memcpy(before, s_fb, sizeof(before));
+
+    /* The write is taken and refused, away from any touch. */
+    CHECK(!settings_save_tick(true));
+    CHECK(settings_save_failed());
+
+    ui_router_tick(0.05f);
+    ui_router_render(&s_c, 0);
+    CHECK(memcmp(before, s_fb, sizeof(before)) != 0);
+}
+
 int main(void)
 {
     RUN(defaults_come_from_the_schema);
@@ -911,5 +969,7 @@ int main(void)
     RUN(a_successful_save_retires_an_earlier_failure);
     RUN(an_edit_retires_an_earlier_failure);
     RUN(the_idle_save_reports_a_refusal);
+    RUN(a_reset_that_changes_nothing_keeps_the_failure);
+    RUN(a_refused_pending_write_repaints_the_button);
     return test_summary("settings");
 }

@@ -318,7 +318,7 @@ screen is in:
 | `SAVED` | Nothing is unwritten. The button is inert. |
 | `SAVE` | Something is unwritten. Pressing it asks for a write. |
 | `WHEN IDLE` | A write has been asked for and is waiting for a moment to happen in. |
-| `NOT SAVED` | The store refused the write. The values stand on the screen and are not on the medium; the next boot loads what was there before. Pressing it tries again. |
+| `NOT SAVED` | The store refused the write. What reached the medium is not known from the screen: a refusal on one key leaves the keys written before it committed, so the next boot can load a mix of the new values and the old. Pressing it tries again. |
 
 ![A changed value, with SAVE offered](img/setup-dirty.png)
 
@@ -331,9 +331,12 @@ the label goes to `SAVED` as fast as the eye follows the press. Armed, the
 request stands as `WHEN IDLE` until the bench is disarmed.
 
 A store that refuses leaves the label at `NOT SAVED` in the danger colour
-until the next successful write or the next edit. A panel whose NVS could not
-be brought up at all refuses every write of the session, and says so once more
-on the splash as `NVS unavailable`.
+until the next successful write or the next edit. A refusal does not undo what
+was already written: the values are set key by key and a failure part way
+through leaves the earlier keys committed, so the medium can hold a mix of the
+new values and the old. The screen cannot say which. A panel whose NVS could
+not be brought up at all refuses every write of the session, writes nothing,
+and says so once more on the splash as `NVS unavailable`.
 
 Values not saved are kept until the panel is switched off. Leaving the screen
 writes nothing.
