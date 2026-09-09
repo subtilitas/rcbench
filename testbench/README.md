@@ -206,6 +206,13 @@ Building it:
              --prefix=/opt/sigrok LDFLAGS=-Wl,-rpath,/opt/sigrok/lib \
         && make -j"$(nproc)" && sudo make install )
 
+**The package list is not tested on a host that has never had sigrok on it.**
+The sequence above has been walked on the bench host, which already carried
+the runtime libraries and both udev rules, so what it proves is the compile,
+the configure flags, the driver being built in and the runpath. Whether a
+first-time follower meets a package this list omits is unknown, and finding
+out needs a machine that has never had sigrok installed.
+
 `--enable-kingst-la2016` explicitly: the default is a check, under which
 configure records `kingst-la2016 no (missing: libusb)` in its summary and the
 build succeeds without the driver. With the flag a missing dependency is an
