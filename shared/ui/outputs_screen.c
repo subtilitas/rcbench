@@ -97,13 +97,20 @@ void outputs_screen_set_binding(const outbind_t *b)
      * That is every first boot on a store the coprocessor reads as unwritten.
      */
     const uint8_t chosen = s.bind.proto;
-    const bool far_end_empty = (outbind_chosen_total(b) == 0u);
+    /*
+     * Only when it says OFF as well.  A caller that names a protocol and no
+     * pins is expressing a choice -- the screen is told that at start-up, and
+     * an operator's own pick reaches the far end that way.  What carries no
+     * choice is OFF with nothing bound, which is exactly what an empty page
+     * renders as.
+     */
+    const bool says_nothing = (outbind_chosen_total(b) == 0u && b->proto == 0u);
 
     s.bind = *b;
     /* Read off the wire or restored, so it is trimmed before it is drawn
      * rather than trusted to mean something on this board. */
     outbind_trim(&s.bind);
-    if (far_end_empty) {
+    if (says_nothing) {
         outbind_set_proto(&s.bind, chosen);
     }
     touched();

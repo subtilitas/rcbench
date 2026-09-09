@@ -19,7 +19,12 @@ history is in git.
   choice away. An empty binding no longer sets the protocol, because it does
   not carry one. Reported from a bench on the first boot after 0.8.0, which is
   when it always happens: the record format changed, so every store reads as
-  unwritten and every operator starts at `OFF`.
+  unwritten and every operator starts at `OFF`. Both views take the rule: the
+  panel hands one read-back to the OUTPUTS screen and to PICK A PIN, so fixing
+  one would have left whichever the operator reached second unable to add a
+  pin. And only `OFF` with nothing bound is treated as carrying no choice --
+  a caller that names a protocol and no pins is expressing one, which is how
+  the screen is told what to show at start-up.
 
 ## 0.8.0 - 2026-09-09
 

@@ -71,13 +71,34 @@ const outbind_t *picker_screen_binding(void) { return &s.bind; }
 
 void picker_screen_set_binding(const outbind_t *b)
 {
-    if (b != NULL) {
-        s.bind = *b;
-        /* Read off the wire or restored, so it is trimmed before it is drawn
-         * rather than trusted to mean something on this board. */
-        outbind_trim(&s.bind);
-        touched();
+    if (b == NULL) {
+        return;
     }
+    /*
+     * An empty binding carries no protocol, so it must not take one away.
+     * The same rule as outputs_screen_set_binding(), for the same reason and
+     * from the same source: the panel hands one read-back to both views, so a
+     * protocol kept in one and dropped in the other would leave whichever
+     * screen the operator reached second unable to add a pin.
+     */
+    const uint8_t chosen = s.bind.proto;
+    /*
+     * Only when it says OFF as well.  A caller that names a protocol and no
+     * pins is expressing a choice -- the screen is told that at start-up, and
+     * an operator's own pick reaches the far end that way.  What carries no
+     * choice is OFF with nothing bound, which is exactly what an empty page
+     * renders as.
+     */
+    const bool says_nothing = (outbind_chosen_total(b) == 0u && b->proto == 0u);
+
+    s.bind = *b;
+    /* Read off the wire or restored, so it is trimmed before it is drawn
+     * rather than trusted to mean something on this board. */
+    outbind_trim(&s.bind);
+    if (says_nothing) {
+        outbind_set_proto(&s.bind, chosen);
+    }
+    touched();
 }
 
 void picker_screen_set_apply(picker_apply_fn fn) { s.apply = fn; }

@@ -455,8 +455,39 @@ TEST_CASE(null_events_are_refused_rather_than_dereferenced)
     CHECK_EQ(s_applied, 0);
 }
 
+/*
+ * The picker keeps the operator's protocol when an empty binding arrives.
+ *
+ * The panel hands one read-back to both views, so this is the same rule as
+ * outputs_screen's and has to hold here too: an empty binding renders as OFF,
+ * OFF takes no pins, and a picker put back to OFF cannot add one.  Fixing it
+ * in one view and not the other leaves whichever screen the operator reaches
+ * second unable to bind anything.
+ */
+TEST_CASE(an_empty_read_back_does_not_clear_the_chosen_protocol)
+{
+    fresh();                                 /* leaves SERVO PWM chosen */
+    CHECK_EQ((int)picker_screen_binding()->proto, 1);
+
+    /* What an empty page renders as: OFF, and nothing bound. */
+    outbind_t empty;
+    outbind_init(&empty);
+    outbind_set_board(&empty, BOARD);
+    outbind_set_proto(&empty, 0u);
+    CHECK_EQ((int)outbind_chosen_total(&empty), 0);
+    CHECK_EQ((int)empty.proto, 0);
+    picker_screen_set_binding(&empty);
+
+    CHECK_EQ((int)picker_screen_binding()->proto, 1);
+
+    /* And with the protocol still there, a pin can be added. */
+    outbind_t b = *picker_screen_binding();
+    CHECK(outbind_can_add(&b, idx(4u)));
+}
+
 int main(void)
 {
+    RUN(an_empty_read_back_does_not_clear_the_chosen_protocol);
     RUN(a_button_binds_the_pad_it_is_wired_to);
     RUN(every_button_binds_its_own_pin_and_no_other);
     RUN(a_reserved_pin_has_no_button_to_press);
