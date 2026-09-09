@@ -80,6 +80,22 @@ fail here. A second job unpacks the tarball in a container with no `-dev` and
 no sigrok package, installs only the recorded runtime closure, and repeats
 both checks plus a scan that touches libusb.
 
+**The workflow has never run.** `workflow_dispatch` needs the file on the
+default branch, so it cannot be dispatched from the branch that adds it: the
+repository's workflow list holds `ci.yml`, `docs.yml` and `release.yml` and
+not this one. The first execution comes after it merges.
+
+What is established is that it is well-formed and that its inputs exist. The
+YAML parses to two jobs and eighteen `run` bodies, every one of which passes
+`bash -n`, and no `${{ }}` expression is interpolated into any of them. Both
+pinned source commits resolve upstream -- libsigrok
+`0bc2487778e660f4d3116729b6f4aee2b1996bb0` of 2025-11-20 and sigrok-cli
+`f44dd91347e7ac797cefc23162b9fcf0b7329f1f` of 2024-08-26 -- and
+`src/hardware/kingst-la2016` is present at that libsigrok commit as `api.c`,
+`protocol.c` and `protocol.h`. Whether it builds is open, and so is whether
+the tarball installs on this host: the second job proves it in a container
+with no sigrok package, which is deliberately not the case this bench is.
+
 Clearing that gate means the driver exists. It says nothing about whether the
 analyser captures: the FX2 microcontroller firmware and the FPGA bitstreams
 are Kingst material with no redistribution grant, so the tarball carries
