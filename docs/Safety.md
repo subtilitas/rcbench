@@ -106,6 +106,12 @@ unpowered or unplugged panel reads as a line that is not edging.
   track id the controller reuses, so a later contact that began elsewhere is
   taken for the missing release. HOME and STOP are the router's own gesture
   and it cancels those itself.
+- Cancelling an armed bench's disarm still disarms. Abandoning a gesture asks
+  for nothing, and on an armed bench that is the wrong direction for one of
+  them: disarming is a press, so its release is the whole command, and a
+  release lost to a full queue is a disarm the operator made and the bench
+  never saw. Arming has already sent its command by the time the finger
+  lifts, so an arm cancelled part way asks for nothing, which is correct.
 - The throttle moves by how far a finger travels, not to where it lands. A
   press on the track commands nothing, so a touch at the far end cannot ask
   for full travel in one contact. Sliders that command nothing dangerous, such

@@ -1030,6 +1030,18 @@ static void leave(void)
  */
 static void cancel(void)
 {
+    /*
+     * Abandoning a gesture asks for nothing, and on an armed bench that is
+     * the wrong direction for one of them.  Disarming is a press: the
+     * release is the whole command, so a release that went missing is a
+     * DISARM the operator made and the bench never saw, and dropping it
+     * silently leaves the outputs driving until somebody notices.  Arming
+     * has already sent its command by the time the finger lifts, so an arm
+     * gesture cancelled part way asks for nothing, which is correct.
+     */
+    if (s.armed && s.pressed == 1 && !s.arm.fired) {
+        post(MOTOR_CMD_DISARM, 0.0f);
+    }
     ui_slider_release(&s.slider);
     ui_hold_reset(&s.arm);
     s.pressed    = 0;

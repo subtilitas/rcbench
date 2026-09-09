@@ -120,6 +120,15 @@ Panel als Leitung ohne Flanken gelesen wird.
   Track-ID, die der Controller wiederverwendet -- ein späterer Kontakt, der
   woanders begann, wird dann für das fehlende Release gehalten. HOME und STOP
   sind die eigene Geste des Routers, und er bricht sie selbst ab.
+- Wird bei einem scharfen Prüfstand ein Disarm abgebrochen, wird trotzdem
+  entschärft. Eine Geste abzubrechen kommandiert nichts, und bei einem
+  scharfen Prüfstand ist das für eine von ihnen die falsche Richtung: Das
+  Entschärfen ist ein Druck, sein Release ist also das ganze Kommando, und
+  ein Release, das eine volle Queue verschluckt hat, ist ein Entschärfen,
+  das der Bediener gemacht und der Prüfstand nie gesehen hat. Das
+  Scharfschalten hat sein Kommando schon abgesetzt, wenn der Finger abhebt,
+  ein halb abgebrochenes Scharfschalten kommandiert also nichts, und das ist
+  richtig so.
 - Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
   Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, sodass
   eine Berührung am Ende nicht mit einem Kontakt den vollen Weg anfordern kann.

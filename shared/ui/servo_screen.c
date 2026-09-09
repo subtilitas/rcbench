@@ -1000,6 +1000,13 @@ static void leave(void)
  */
 static void cancel(void)
 {
+    /* Disarming is a press, so its release is the whole command: one that
+     * went missing is a DISARM the operator made and the bench never saw.
+     * Arming has already sent its command by the time the finger lifts, so
+     * cancelling one part way asks for nothing, which is correct. */
+    if (s.armed && s.arm_down && !s.arm.fired) {
+        post(SERVO_CMD_DISARM, 0);
+    }
     ui_slider_release(&s.speed);
     ui_hold_reset(&s.arm);
     s.arm_down = false;
