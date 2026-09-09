@@ -69,6 +69,15 @@ uint8_t outputs_role_channels(const uint16_t *slots, const uint16_t *chan_cfg,
 /* --- CHANNELS: what each output is asked for.  Clamped, not refused, because
  *     a command arrives many times a second from a host that may be mid-drag. */
 void    outputs_channels_defaults(uint16_t *regs);
+/*
+ * The page as a mirror of the bank, for the two moments the bank is the
+ * authority and the page is not: at boot, and after a failsafe.  Zero is not
+ * the answer at either -- zero is a throttle's rest and a surface's low
+ * endpoint, so a zero-filled page applied as commands asks every surface for
+ * its endpoint.  Filling the page from the bank leaves a channel nobody has
+ * commanded reading back at its role's rest, which is where it sits.
+ */
+void    outputs_channels_from_bank(const outputs_t *o, uint16_t *regs);
 uint8_t outputs_channels_write(uint16_t *regs, uint8_t off, uint8_t n,
                                const uint16_t *in);
 void    outputs_channels_apply(outputs_t *o, const uint16_t *regs,

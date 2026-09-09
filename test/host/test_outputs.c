@@ -963,6 +963,110 @@ TEST_CASE(a_channel_range_outside_the_page_is_refused_rather_than_wrapped)
  * These are the numbers the pico-sdk's PWM_GPIO_SLICE_NUM produces, and the
  * coprocessor's PWM driver decides from them which pins may be bound at once.
  */
+/*
+ * The coprocessor's boot order, in the calls firmware/iomcu/src/main.c makes:
+ * the pages get their defaults, the bank is initialised, the configuration is
+ * applied, and the channels page is filled from the bank rather than applied
+ * to it.  A surface nobody has commanded is then asked for its centre, and
+ * the first arm holds it there.
+ *
+ * The page's default is zero, which is a throttle's rest and a surface's low
+ * endpoint.  Applied as commands it asks a bound surface for its endpoint,
+ * and outputs_arm() restamps every channel's clock, so the staleness timeout
+ * cannot return it to centre for a further OUT_DEFAULT_TIMEOUT_MS.
+ */
+TEST_CASE(boot_arms_an_uncommanded_surface_at_its_centre)
+{
+    fresh_pages();
+    chan_cfg[LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE;
+    chan_cfg[LINK_CC_MIN_US] = 1000u;
+    chan_cfg[LINK_CC_MAX_US] = 2000u;
+    outputs_chan_cfg_apply(&o, chan_cfg);
+
+    slots[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
+    slots[LINK_OS_PIN]     = 9u;
+    slots[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(0, 1);
+    slots[LINK_OS_RATE_HZ] = 50u;
+    outputs_slots_apply(&o, slots);
+
+    outputs_channels_from_bank(&o, chans);
+    CHECK_EQ(chans[0], OUT_SPAN / 2u);
+
+    outputs_arm(&o, true, 2000u);
+    outputs_step(&o, 2001u);
+    CHECK_EQ(outputs_pulse_us(&o, 0), 1500u);
+
+    /* And it is still there at the far side of the timeout, so nothing has
+     * merely been hidden by the staleness rest arriving. */
+    outputs_step(&o, 2000u + OUT_DEFAULT_TIMEOUT_MS + 1u);
+    CHECK_EQ(outputs_pulse_us(&o, 0), 1500u);
+}
+
+/*
+ * The same bench with a narrow servo: 660..860 us, where the low endpoint is
+ * the servo's hard stop.  Centre is 760 us and that is where an uncommanded
+ * channel arms.
+ */
+TEST_CASE(a_narrow_servo_arms_at_its_centre_not_its_stop)
+{
+    fresh_pages();
+    chan_cfg[LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE;
+    chan_cfg[LINK_CC_MIN_US] = 660u;
+    chan_cfg[LINK_CC_MAX_US] = 860u;
+    outputs_chan_cfg_apply(&o, chan_cfg);
+    outputs_channels_from_bank(&o, chans);
+
+    outputs_arm(&o, true, 2000u);
+    outputs_step(&o, 2001u);
+    CHECK_EQ(outputs_pulse_us(&o, 0), 760u);
+}
+
+/*
+ * What the mirror exists to avoid, kept as a case so it is not reintroduced:
+ * a zero-filled page applied as commands puts a surface at its endpoint, and
+ * an arm holds it there for the whole timeout.
+ */
+TEST_CASE(a_zero_page_applied_as_commands_reaches_the_endpoint)
+{
+    fresh_pages();
+    chan_cfg[LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE;
+    chan_cfg[LINK_CC_MIN_US] = 1000u;
+    chan_cfg[LINK_CC_MAX_US] = 2000u;
+    outputs_chan_cfg_apply(&o, chan_cfg);
+
+    outputs_channels_apply(&o, chans, 1500u);   /* chans is all zero */
+    outputs_arm(&o, true, 2000u);
+    outputs_step(&o, 2001u);
+    CHECK_EQ(outputs_pulse_us(&o, 0), 1000u);
+
+    /* The arm restamped the clock, so the rest does not arrive until a whole
+     * timeout after the arm rather than after the command. */
+    outputs_step(&o, 2000u + OUT_DEFAULT_TIMEOUT_MS - 1u);
+    CHECK_EQ(outputs_pulse_us(&o, 0), 1000u);
+    outputs_step(&o, 2000u + OUT_DEFAULT_TIMEOUT_MS);
+    CHECK_EQ(outputs_pulse_us(&o, 0), 1500u);
+}
+
+/* A throttle's rest is zero, so the mirror leaves it there. */
+TEST_CASE(the_mirror_leaves_a_throttle_at_zero)
+{
+    fresh_pages();
+    CHECK_EQ(outputs_set_role(&o, 0, OUT_ROLE_THROTTLE), true);
+    outputs_channels_from_bank(&o, chans);
+    CHECK_EQ(chans[0], 0u);
+    CHECK_EQ(outputs_command(&o, 0), 0u);
+}
+
+/* Neither argument is trusted. */
+TEST_CASE(the_mirror_refuses_a_null_side)
+{
+    fresh_pages();
+    outputs_channels_from_bank(NULL, chans);
+    outputs_channels_from_bank(&o, NULL);
+    CHECK_EQ(outputs_command(NULL, 0), 0u);
+    CHECK_EQ(outputs_command(&o, (uint8_t)OUT_MAX_CHANNELS), 0u);
+}
+
 TEST_CASE(the_pwm_fold_puts_each_pin_on_a_named_slice_and_channel)
 {
     static const struct { uint8_t pin, slice, chan; } k[] = {
@@ -1101,6 +1205,11 @@ int main(void)
     RUN(the_range_register_packs_first_and_count);
     RUN(a_channel_command_is_clamped_in_place);
     RUN(writing_off_a_page_end_is_refused);
+    RUN(boot_arms_an_uncommanded_surface_at_its_centre);
+    RUN(a_narrow_servo_arms_at_its_centre_not_its_stop);
+    RUN(a_zero_page_applied_as_commands_reaches_the_endpoint);
+    RUN(the_mirror_leaves_a_throttle_at_zero);
+    RUN(the_mirror_refuses_a_null_side);
     RUN(the_pwm_fold_puts_each_pin_on_a_named_slice_and_channel);
     RUN(two_header_pins_sixteen_apart_are_one_compare_register);
     RUN(the_only_pins_sharing_a_compare_register_are_the_folded_pairs);
