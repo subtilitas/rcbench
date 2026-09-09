@@ -125,6 +125,14 @@ Panel als Leitung ohne Flanken gelesen wird.
   Track-ID, die der Controller wiederverwendet -- ein späterer Kontakt, der
   woanders begann, wird dann für das fehlende Release gehalten. HOME und STOP
   sind die eigene Geste des Routers, und er bricht sie selbst ab.
+- Bricht der Touch-Strom ab, während STOP gehalten wird, wird gestoppt. Der
+  Control-Task besitzt diesen Druck unabhängig von den Screens, und das
+  Release, das den Prüfstand gestoppt hätte, kann genau das verlorene Event
+  sein -- oder es kommt an und passt zu keinem der beiden Besitzer, weil die
+  Render-Seite den Druck des Bands beim selben Verlust abbricht. Sonst würde
+  nichts stoppen, und der Bediener hat STOP bereits gedrückt. Was das aufgibt:
+  Ein Druck, der auf STOP begann und vor dem Abheben davon weggeführt worden
+  wäre, kommandiert heute nichts und stoppt stattdessen.
 - Wird bei einem scharfen Prüfstand ein Disarm abgebrochen, wird trotzdem
   entschärft. Eine Geste abzubrechen kommandiert nichts, und bei einem
   scharfen Prüfstand ist das für eine von ihnen die falsche Richtung: Das

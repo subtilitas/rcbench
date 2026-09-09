@@ -107,6 +107,14 @@ unpowered or unplugged panel reads as a line that is not edging.
   track id the controller reuses, so a later contact that began elsewhere is
   taken for the missing release. HOME and STOP are the router's own gesture
   and it cancels those itself.
+- A touch stream that breaks while STOP is held stops the bench. The control
+  task owns that press independently of the screens, and the release that
+  would have stopped the bench may be the event that went missing -- or it may
+  arrive and satisfy neither owner, because the render side cancels the band's
+  press for the same loss. Nothing else would stop it, and the operator has
+  already pressed STOP. What this gives up: a press that began on STOP and
+  would have been carried off it before lifting, which asks for nothing today,
+  stops the bench instead.
 - Cancelling an armed bench's disarm still disarms. Abandoning a gesture asks
   for nothing, and on an armed bench that is the wrong direction for one of
   them: disarming is a press, so its release is the whole command, and a

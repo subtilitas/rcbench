@@ -618,10 +618,38 @@ static bool s_pump_live;
 static void stop_press_check_lost(void)
 {
     const unsigned drv_lost = touch_lost();
-    if (drv_lost != s_stop_lost_seen) {
-        s_stop_lost_seen = drv_lost;
-        s_stop_press = false;
+    if (drv_lost == s_stop_lost_seen) {
+        return;
     }
+    s_stop_lost_seen = drv_lost;
+    if (!s_stop_press) {
+        return;
+    }
+    /*
+     * A STOP press was standing when the stream broke, so this stops.
+     *
+     * Dropping the ownership on its own is the wrong direction here, and it
+     * is the same inversion cancelling a disarm has: for every other gesture
+     * abandoning it asks for nothing, and for this one abandoning it is the
+     * failure.  The release that would have stopped the bench may be the
+     * event that went missing, or it may still arrive and satisfy neither
+     * owner, because the render side cancels the band's press for the same
+     * loss.  Either way nothing else would stop the bench, and the operator
+     * has already pressed STOP.
+     *
+     * What this gives up: a press that began on STOP and would have been
+     * carried off it before lifting, which asks for nothing today, stops the
+     * bench instead.  That is the direction to be wrong in.
+     *
+     * No marker is set.  s_stop_counted says the router will latch a stop
+     * this task already applied, and the router's press is gone, so it
+     * raises nothing to consume it -- the marker would stand and swallow the
+     * next stop that genuinely needs the backstop.  If the router does raise
+     * one, the stop is applied twice, which latches the same way once does.
+     */
+    s_stop_press = false;
+    arming_stop(&s_arm);
+    control_alert("touch lost while STOP was held -- stopped");
 }
 
 static void control_pump(void)
