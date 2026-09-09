@@ -38,9 +38,16 @@ jobs:
           # are built from the branch and labelled with the tag.
           ref: ${{ inputs.tag || github.ref }}
 
+      # Every expression in this file reaches a script through the environment
+      # and none is interpolated into one.  A ref name is attacker-controlled
+      # text and git allows $, ( and ) in one, so a tag substituted straight
+      # into a shell assignment runs whatever it was named -- before the
+      # comparison below could reject it, with this job's write-scoped token
+      # and checkout's persisted credentials in reach.
       - name: Compare
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
-          TAG="${{ inputs.tag || github.ref_name }}"
           H=shared/link/include/rcbench_version.h
           maj=$(sed -n 's/^#define RCBENCH_VERSION_MAJOR *//p' "$H")
           min=$(sed -n 's/^#define RCBENCH_VERSION_MINOR *//p' "$H")
@@ -154,10 +161,12 @@ jobs:
           path: artifacts
 
       - name: Package
-        run: |
+        env:
           # The dispatch input first: on a manual run the ref name is the
           # branch, so taking it first would name the archives after one.
-          TAG="${{ inputs.tag || github.ref_name }}"
+          # Through the environment, for the reason the version job gives.
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
           mkdir -p dist
           # One archive per processor: they are flashed by different tools
           # over different cables, and the UF2 (USB flashing format) image
@@ -173,13 +182,14 @@ jobs:
       - name: Publish the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+          REPO: ${{ github.repository }}
         run: |
-          TAG="${{ inputs.tag || github.ref_name }}"
           # --verify-tag, because a tag gh has to invent is created from the
           # default branch: without it a dispatch for a tag nobody pushed
           # would attach these images to whatever main happened to be.
           gh release create "$TAG" dist/*.zip dist/SHA256SUMS \
-            --repo "${{ github.repository }}" \
+            --repo "$REPO" \
             --title "$TAG" \
             --verify-tag \
             --generate-notes
