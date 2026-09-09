@@ -162,7 +162,16 @@ elektrische Perioden und weiß nicht, woran er angeschraubt ist; das ist also di
 eine Zahl, die die Leitung tragen muss, damit der Coprozessor eine mechanische
 Drehzahl melden kann. Bei null meldet er keine Drehzahl statt einer aus einer
 Schätzung abgeleiteten. Das Panel sendet sie aus der Einstellung `Motor poles`,
-sobald der Coprozessor antwortet.
+sobald ein Coprozessor zu antworten beginnt, erneut bei jeder Änderung der
+Einstellung und erneut vor dem Schreibvorgang, der scharfschaltet, sofern eine
+Änderung noch offen ist. Ein Schreibvorgang,
+den niemand beantwortet, bleibt offen und geht beim nächsten 50-ms-Poll
+erneut hinaus; einer, den der Coprozessor ablehnt, wird nicht wiederholt,
+denn dieselbe einmal abgelehnte Anfrage wird jedes Mal abgelehnt, und er
+wartet stattdessen auf die nächste Änderung oder die nächste
+Link-up-Flanke. Der Schutz bei null greift für eine nie gesendete Zahl, nicht
+für eine veraltete: jede Zahl, die die Einstellung zulässt, liegt im Bereich,
+den die Page annimmt.
 
 Der Coprozessor verweigert einen Pin, den er nicht treiben darf — die
 Safety-Leitung, die Pins des CAN-Controllers und jede Nummer über dem letzten

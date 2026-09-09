@@ -229,12 +229,31 @@ gegen eine Antwort mit 4,75 und 5,25 Abtastungen je Bit.
 Ein ESC meldet elektrische Perioden und weiß nicht, woran er angeschraubt ist;
 mechanische rpm (Revolutions per Minute) brauchen also die Magnetzahl des
 Motors. Das ist die eine Zahl, die die Leitung nicht trägt. Das Panel sendet sie
-aus der Einstellung `Motor poles`, sobald der Coprozessor antwortet, auf der
-[CONTROL-Page](Link-de.md#page-map).
+aus der Einstellung `Motor poles`, sobald ein Coprozessor zu antworten beginnt,
+erneut bei jeder Änderung der Einstellung und erneut vor dem Schreibvorgang,
+der scharfschaltet, sofern eine Änderung noch offen ist, auf der
+[CONTROL-Page](Link-de.md#page-map). Ein
+Schreibvorgang, den niemand beantwortet, bleibt offen und geht beim nächsten
+50-ms-Poll erneut hinaus; einen, den der Coprozessor ablehnt, wiederholt sie
+nicht, er wartet auf die nächste Änderung oder die nächste Link-up-Flanke.
 
 Bis sie eintrifft, meldet der Coprozessor überhaupt keine Drehzahl. Eine aus
 einer geratenen Polzahl abgeleitete Drehzahl ist eine plausible Zahl ohne
 Kennzeichnung, dass sie falsch ist, und das ist schlimmer als ein leeres Feld.
+
+Das gilt nur für null. Jede gerade Zahl zwischen 2 und 42 wird angenommen und
+setzt das Gültig-Bit der Drehzahl -- eine ungerade wird abgelehnt, denn ein
+Tippfehler, der bis zum anderen Ende käme, würde eine plausible falsche
+Drehzahl auf den Bildschirm bringen. Ein Coprozessor mit einer veralteten Zahl
+meldet
+also die tatsächliche Drehzahl mal die Polzahl des Motors geteilt durch die
+gehaltene Zahl. Ein 12-poliger Motor an einem Prüfstand, der noch 14 hält,
+liest 14,3 % zu wenig; bleibt 12 stehen und der Motor hat 14 Pole, liest er
+16,7 % zu viel. Die Richtung folgt der Änderung, und die Enden des Bereichs
+sind in beide Richtungen ein Faktor 21: ein 42-poliger Motor, der als 2
+umgerechnet wird, liest das Einundzwanzigfache seiner Drehzahl, ein 2-poliger
+als 42 ein Einundzwanzigstel. Zu beachten ist die gewöhnliche Änderung, denn
+einen Faktor 21 sieht man sofort und 14 % nicht.
 
 ### Extended Telemetry
 

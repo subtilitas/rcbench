@@ -10,6 +10,7 @@
 
 #include <math.h>
 
+#include "link_pages.h"
 #include "settings.h"
 #include "settings_screen.h"
 #include "ui_screen.h"
@@ -93,6 +94,22 @@ static void observer(setting_id_t id)
 {
     ++s_observed;
     s_last_observed = id;
+}
+
+/* The pole count is the one setting the coprocessor keeps a copy of, so a
+ * notification for it is what the panel turns into a write.  Counted apart
+ * from the rest, because settings_init() notifies every id in one sweep. */
+static int s_poles_seen;
+static int s_poles_value;
+
+static void poles_observer(setting_id_t id)
+{
+    ++s_observed;
+    s_last_observed = id;
+    if (id == SET_MOTOR_POLES) {
+        ++s_poles_seen;
+        s_poles_value = settings_get_int(SET_MOTOR_POLES);
+    }
 }
 
 static void fresh_model(void)
@@ -361,6 +378,124 @@ TEST_CASE(observer_fires_only_on_real_changes)
     settings_set_observer(NULL);
 }
 
+/*
+ * The pole count reaches the observer by every path an operator has to it.
+ *
+ * The coprocessor holds a copy of this number and converts eRPM with it; the
+ * register is written and never refreshed, so the notification is the only
+ * signal the panel gets that the copy is out of date.  A path that changes
+ * the value without notifying leaves the far end converting with the old
+ * count, and a stale count is in range, so the speed carries a valid bit.
+ * A path that notifies without changing anything spends a link transaction
+ * for nothing.
+ */
+TEST_CASE(a_pole_count_edit_reaches_the_observer)
+{
+    fresh_model();
+    s_poles_seen = 0;
+    settings_set_observer(poles_observer);
+
+    /* Setting it to what it already holds is not an edit. */
+    s_observed = 0;
+    settings_set(SET_MOTOR_POLES, settings_get(SET_MOTOR_POLES));
+    CHECK_EQ(s_observed, 0);
+    CHECK_EQ(s_poles_seen, 0);
+
+    settings_set(SET_MOTOR_POLES, 12);
+    CHECK_EQ(settings_get_int(SET_MOTOR_POLES), 12);
+    CHECK_EQ(s_observed, 1);
+    CHECK_EQ(s_last_observed, SET_MOTOR_POLES);
+    CHECK_EQ(s_poles_seen, 1);
+
+    /* The screen's own key: one step of the schema's 2. */
+    settings_adjust(SET_MOTOR_POLES, 1);
+    CHECK_EQ(settings_get_int(SET_MOTOR_POLES), 14);
+    CHECK_EQ(s_poles_seen, 2);
+
+    /* A key press at the end of the range moves nothing and owes nothing. */
+    settings_set(SET_MOTOR_POLES, settings_def(SET_MOTOR_POLES)->max);
+    s_poles_seen = 0;
+    settings_adjust(SET_MOTOR_POLES, 1);
+    CHECK_EQ(settings_get_int(SET_MOTOR_POLES),
+             (long)settings_def(SET_MOTOR_POLES)->max);
+    CHECK_EQ(s_poles_seen, 0);
+
+    /* RESET on the ESC category is an edit of the pole count as well. */
+    settings_reset(SET_CAT_ESC);
+    CHECK_EQ(settings_get_int(SET_MOTOR_POLES),
+             (long)settings_def(SET_MOTOR_POLES)->def);
+    CHECK_EQ(s_poles_seen, 1);
+
+    settings_set_observer(NULL);
+}
+
+/*
+ * And once at startup, with the value the store returned.
+ *
+ * A coprocessor that has just started holds zero in the register, so the
+ * stored count has to go out like an edit rather than be assumed to be over
+ * there already.  The load writes the values behind
+ * the model's own setter, so the notification an observer acts on has to
+ * come after it: a sweep that ran before the load would report the schema
+ * default, which is the wrong number in the same way a stale one is.
+ */
+TEST_CASE(startup_delivers_the_stored_pole_count)
+{
+    fresh_model();
+    settings_set_store(&s_mem_store);
+    settings_set(SET_MOTOR_POLES, 10);
+    settings_save();
+
+    s_poles_seen = 0;
+    s_poles_value = 0;
+    settings_set_observer(poles_observer);
+    settings_init();
+    CHECK_EQ(settings_get_int(SET_MOTOR_POLES), 10);
+    CHECK(s_poles_seen >= 1);
+    CHECK_EQ(s_poles_value, 10);
+
+    settings_set_observer(NULL);
+    settings_set_store(NULL);
+}
+
+/*
+ * Every count the schema can produce is one the CONTROL page takes.
+ *
+ * The coprocessor refuses an odd count and anything outside
+ * LINK_POLES_MIN..LINK_POLES_MAX, and reads zero as "nobody has said".  A
+ * value the far end refuses is a write that never lands, and a refusal is
+ * not retried -- the same request refused once is refused every time -- so
+ * the count already over there goes on converting eRPM until the next edit.
+ * A schema that could reach zero would also put the panel's writes inside
+ * the far end's no-speed guard, which covers a count never sent and not a
+ * stale one.
+ */
+TEST_CASE(every_pole_count_the_schema_allows_is_one_the_link_takes)
+{
+    fresh_model();
+    const setting_def_t *d = settings_def(SET_MOTOR_POLES);
+    CHECK(d->step > 0.0f);
+
+    for (float v = d->min; v <= d->max; v += d->step) {
+        settings_set(SET_MOTOR_POLES, v);
+        int p = settings_get_int(SET_MOTOR_POLES);
+        CHECK(p >= (int)LINK_POLES_MIN);
+        CHECK(p <= (int)LINK_POLES_MAX);
+        CHECK_EQ(p % 2, 0);
+    }
+
+    /* And what a stale store or a wild write coerces to, for the same
+     * reason: the panel sends whatever the model holds. */
+    const float wild[] = { 0.0f, -5.0f, 1.0f, 15.0f, 43.0f, 9999.0f };
+    for (size_t i = 0; i < sizeof(wild) / sizeof(wild[0]); ++i) {
+        settings_set(SET_MOTOR_POLES, wild[i]);
+        int p = settings_get_int(SET_MOTOR_POLES);
+        CHECK(p >= (int)LINK_POLES_MIN);
+        CHECK(p <= (int)LINK_POLES_MAX);
+        CHECK_EQ(p % 2, 0);
+    }
+}
+
 TEST_CASE(reset_restores_one_category_only)
 {
     fresh_model();
@@ -520,6 +655,43 @@ TEST_CASE(plus_and_minus_change_the_setting_under_them)
     tap(PLUS_X + BTN_W / 2, row_y(1));
     CHECK(settings_get_int(ids[1]) != row1);
     CHECK_EQ(settings_get_int(ids[0]), before);
+}
+
+/*
+ * The operator's own path: the key under Motor poles on SETUP.
+ *
+ * The model, the screen and the observer are one chain, and the panel hangs
+ * the write to the coprocessor off the far end of it.  A break anywhere in
+ * that chain leaves the panel with nothing to hang the write on, which is
+ * the defect this guards, seen from where the finger is.
+ */
+TEST_CASE(the_poles_key_notifies_once_per_press)
+{
+    fresh_screen();
+    setting_id_t ids[64];
+    int n = settings_in_category(SET_CAT_ESC, ids, 64);
+    int poles_row = -1;
+    for (int i = 0; i < n; ++i) {
+        if (ids[i] == SET_MOTOR_POLES) { poles_row = i; }
+    }
+    CHECK(poles_row >= 0);
+
+    s_poles_seen = 0;
+    s_observed = 0;
+    settings_set_observer(poles_observer);
+
+    int before = settings_get_int(SET_MOTOR_POLES);
+    tap(PLUS_X + BTN_W / 2, row_y(poles_row));
+    CHECK_EQ(settings_get_int(SET_MOTOR_POLES) - before,
+             (long)settings_def(SET_MOTOR_POLES)->step);
+    CHECK_EQ(s_poles_seen, 1);
+    CHECK_EQ(s_observed, 1);
+
+    tap(MINUS_X + BTN_W / 2, row_y(poles_row));
+    CHECK_EQ(settings_get_int(SET_MOTOR_POLES), before);
+    CHECK_EQ(s_poles_seen, 2);
+
+    settings_set_observer(NULL);
 }
 
 TEST_CASE(changing_the_theme_from_the_screen_takes_effect)
@@ -949,12 +1121,16 @@ int main(void)
     RUN(value_text_renders_every_type);
     RUN(store_round_trips_and_coerces_stale_values);
     RUN(observer_fires_only_on_real_changes);
+    RUN(a_pole_count_edit_reaches_the_observer);
+    RUN(startup_delivers_the_stored_pole_count);
+    RUN(every_pole_count_the_schema_allows_is_one_the_link_takes);
     RUN(reset_restores_one_category_only);
     RUN(bad_ids_are_survivable);
     RUN(theme_switch_changes_the_palette);
     RUN(brightness_and_contrast_are_clamped_and_monotonic);
     RUN(screen_switches_category_and_renders);
     RUN(plus_and_minus_change_the_setting_under_them);
+    RUN(the_poles_key_notifies_once_per_press);
     RUN(changing_the_theme_from_the_screen_takes_effect);
     RUN(a_drag_scrolls_instead_of_pressing);
     RUN(holding_a_key_repeats_with_acceleration);
