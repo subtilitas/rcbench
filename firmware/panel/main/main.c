@@ -1357,6 +1357,13 @@ static void log_open(uint32_t arm)
          * the deletion changes nothing until the panel restarts.  It costs a
          * directory read per failed run, and a failed run is already a run
          * that is not being recorded.
+         *
+         * It rescues the card that stays in the slot.  It cannot rescue the
+         * one taken out to be edited on a computer: storage_mounted() is
+         * cleared only by storage_deinit(), so a swapped card leaves a stale
+         * mount and the walk reads the volume that is gone.  That is the open
+         * item in STATUS.md, and until it is closed a deletion made off the
+         * bench needs the panel restarted.
          */
         s_log_numbered = false;
         ESP_LOGW(TAG, "no log file could be opened; the run is not recorded");
