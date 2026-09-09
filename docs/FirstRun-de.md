@@ -59,7 +59,7 @@ idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor
 
 Der Koprozessor-Build gibt seine eigene Größenprüfung aus:
 
-    -- rcbench: image 269828 bytes, 6% of the 4190208 bytes a four-megabyte
+    -- rcbench: image 272040 bytes, 6% of the 4186112 bytes a four-megabyte
        module leaves below the store
 
 **Achtung:** das Modul für das Bring-up ist ein Waveshare RP2350-CAN mit

@@ -34,6 +34,25 @@ history is in git.
   a queue the control task never waits on. A card that falls behind the run
   costs rows, which are counted and reported on the panel when the run closes,
   rather than costing the heartbeat.
+- **A save on the OUTPUTS screen cost CAN (Controller Area Network) frames.**
+  The coprocessor erased and programmed one flash sector per save, which held
+  interrupts off for a measured 19,174 to 19,186 us; a frame is about 130 us
+  at 1 Mbit/s and the XL2515 holds two, so the receive buffers overran in step
+  with the saves -- the count climbed from 2 to 8 across nine of them -- and
+  the bus reported no error, because the frames arrived and nobody collected
+  them. A lost request costs the panel `LINK_HOST_TIMEOUT_MS` (1000 ms) of
+  waiting and 1000 ms of silence latches the coprocessor's 200 ms failsafe, so
+  one lost frame ends as `FAULT 01`. The store is now two sectors of sixteen
+  record slots: a save programs one page, and a sector is erased only once
+  every record in it is superseded, which is one erase per sixteen saves.
+  That erase is taken ahead of the save that needs it: at boot before the CAN
+  controller is started, where every sector there is to reclaim is taken and
+  nothing can arrive to be lost, and otherwise on the pass after the save that
+  leaves a sector behind. Both windows wait for `OUT_STORE_QUIET_MS` (5 ms) of
+  silence, which is a minimum quiet time rather than a promise of where in the
+  panel's 50 ms poll cycle the window opens. A settled save takes its
+  window without a gap after `OUT_STORE_GAP_WAIT_MS` (1000 ms), so a busy bus
+  cannot postpone a binding for ever.
 - **SPEED below 50% moved the servo horn at 50%.** `outputs_step()` rounded
   each slew increment up -- `(slew_per_s * dt_ms + 999) / 1000` -- so a step
   delivered at least one span unit whatever the rate said, and the
@@ -73,6 +92,50 @@ history is in git.
   register saying whether a slot is bound, so an unbound slot reads back like a
   driving one. That is recorded as an open item rather than fixed here: it
   needs a bit on the page and a screen that draws it.
+
+### Changed
+
+- **A power cut during a save leaves the binding from before it.** A record is
+  only ever programmed into an erased slot, and a sector is only ever erased
+  while the live record is in the other one, so the record being written can
+  be torn without taking the previous one with it. The store's checksum covers
+  the record's sequence number as well as its configuration: an erase lifts
+  bits towards 0xFF, and a record caught half way through one has to fail its
+  check rather than outrank the record still wanted. A checksum alone makes
+  that likely and not certain -- 65,535 chances in 65,536 per candidate, over
+  an enormous number of candidates -- and the same is true of a program that
+  did not finish, which leaves a header that has landed above a configuration
+  that is part 0xFF. So each record carries the number of 0 bits it holds
+  from its checksum onwards, beside that number's own complement. An erase
+  sets bits and a program clears them, so either one interrupted leaves fewer
+  0 bits than the record claims, and the claim cannot be faked: keeping the
+  complement pair across a partial write would need a bit cleared to pay for
+  one that was set, or set to pay for one cleared, and no single flash
+  operation does both. The rule is `out_store_intact()` in
+  `shared/outputs/out_store_map.c`, where the host suite holds it against
+  every bit position of both words and against a count one either side of the
+  written one. The record format is version 3; a store written by an earlier build reads as unwritten, so the
+  first boot on this build starts from the defaults -- no driver and no pin in
+  any slot. The panel keeps no binding of its own and sends none unasked: it
+  reads the pages back when the link comes up and shows nothing configured, so
+  the binding is set again on the OUTPUTS screen, and that save writes the
+  first version 3 record.
+- The coprocessor times the erase and the page program separately and prints
+  four lines: `outputs saved, record <n>, program window <n> us`, `output
+  store sector erased, window <n> us`, `output store sector reclaimed, window
+  <n> us` and `output store sector reclaimed at boot, window <n> us`. Neither
+  window is measured on hardware: the 19,174 to 19,186 us above is an erase
+  and a page program inside one window, from the store this replaces.
+- The coprocessor's store takes the last two sectors of the first 4 MB rather
+  than the last one, so the image size check falls from 4,190,208 to
+  4,186,112 bytes.
+
+### Added
+
+- `test_outstore`, the forty-fourth host binary: where a save goes in the
+  store, which sector can be erased and what a power cut in either leaves
+  behind, in `shared/outputs/out_store_map.c`. The rules are on the host
+  because the board has one copy of the sector and the cases need many.
 
 ## 0.7.0 - 2026-09-08
 

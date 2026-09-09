@@ -74,6 +74,26 @@ static heartbeat_mon_t s_beat;
 /* Requests this end has answered, published on the STATUS page. */
 static uint32_t s_frames;
 
+/*
+ * The pass's clock, used by everything the pass reaches -- including the page
+ * callbacks, which run inside can_service() and have no `now` of their own.
+ *
+ * Read at the top of the loop and once more before its tail, and nowhere
+ * else.  The second read is there because two things in a pass can stop this
+ * core for longer than a pass lasts: a flash window, and a printf to a USB
+ * host.  See the loop for why that matters to what is measured after them.
+ *
+ * Every timeout in this file is a wrap-safe unsigned subtraction of two
+ * timestamps.  A second reading of the clock inside a pass can be a
+ * millisecond ahead of the pass's own, and a stamp ahead of the `now` it is
+ * later compared against subtracts to 4,294,967,295 ms -- past every timeout
+ * there is.  A CHANNELS write stamped that way reads as stale in the same
+ * pass and is put back to rest; a save stamped that way skips the settle and
+ * the quiet-bus wait and takes its flash window inside the request burst it
+ * was meant to wait out.
+ */
+static uint32_t s_now_ms;
+
 static void identity_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     const iomcu_state_t *s = (const iomcu_state_t *)ctx;
@@ -136,7 +156,7 @@ static void save_outputs(const iomcu_state_t *s)
     out_store_t cfg;
     memcpy(cfg.slots, s->slots, sizeof(cfg.slots));
     memcpy(cfg.chan_cfg, s->chan_cfg, sizeof(cfg.chan_cfg));
-    out_store_save(&cfg, (uint32_t)to_ms_since_boot(get_absolute_time()));
+    out_store_save(&cfg, s_now_ms);
 }
 
 static void channels_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -161,8 +181,7 @@ static uint8_t channels_write(void *ctx, uint8_t off, uint8_t n,
      * timeout that returns an uncommanded output to rest is per channel
      * exactly so that one screen's traffic cannot hold another's output up.
      */
-    outputs_channels_apply_n(&s_outputs, s->channels, off, n,
-                             (uint32_t)to_ms_since_boot(get_absolute_time()));
+    outputs_channels_apply_n(&s_outputs, s->channels, off, n, s_now_ms);
     return 0u;
 }
 
@@ -258,8 +277,7 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
      */
     const uint16_t thr = (uint16_t)(((uint32_t)s->control[LINK_CT_THROTTLE]
                                      * OUT_SPAN) / LINK_THROTTLE_MAX);
-    const uint32_t now = (uint32_t)to_ms_since_boot(get_absolute_time());
-    (void)outputs_set(&s_outputs, CH_THROTTLE, thr, now);
+    (void)outputs_set(&s_outputs, CH_THROTTLE, thr, s_now_ms);
     /*
      * And the same command to the pins bound as motors.  CH_THROTTLE is off
      * the page and nothing renders it, so on its own it drives no pin: the
@@ -269,7 +287,8 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
      * bound beside a motor is left alone.
      */
     (void)outputs_set_role_channels(&s_outputs, OUT_ROLE_THROTTLE,
-                                    (uint8_t)LINK_OUT_CHANNELS, thr, now);
+                                    (uint8_t)LINK_OUT_CHANNELS, thr,
+                                    s_now_ms);
     return 0;
 }
 
@@ -495,6 +514,18 @@ static bool     s_can_up;
 static uint32_t s_can_echoes;
 static uint32_t s_can_overflows;
 
+/*
+ * When a frame was last taken out of the controller.
+ *
+ * can_service() empties both receive buffers every pass, so where this is
+ * read it is the age of the last frame on the bus rather than of the last one
+ * collected.  The flash windows are opened against it: this core answers
+ * nothing while it writes, and the two buffers hold 260 us of frames.  Zero
+ * until the first frame, so a board that has heard nothing since boot reads
+ * as a quiet bus, which is what it has.
+ */
+static uint32_t s_last_rx_ms;
+
 static void can_start(void)
 {
     s_can_up = xl2515_init(IOMCU_CAN_BITRATE);
@@ -519,6 +550,7 @@ static void can_service(uint32_t now)
     }
     link_can_frame_t in, out;
     while (xl2515_recv(&in)) {
+        s_last_rx_ms = now;
         if (can_selftest_echo(&in, &out)) {
             if (xl2515_send(&out)) {
                 ++s_can_echoes;
@@ -775,9 +807,7 @@ static void sample(void)
  */
 static void outputs_off(void)
 {
-    outputs_arm(&s_outputs,
-                false,
-                (uint32_t)to_ms_since_boot(get_absolute_time()));
+    outputs_arm(&s_outputs, false, s_now_ms);
 
     s_state.control[LINK_CT_ARM]      = 0;
     s_state.control[LINK_CT_THROTTLE] = 0;
@@ -848,6 +878,9 @@ int main(void)
     }
 
     const uint32_t now0 = (uint32_t)to_ms_since_boot(get_absolute_time());
+    /* Before anything that can reach a page callback: can_start() below opens
+     * the controller, and the first frame after it is dispatched with this. */
+    s_now_ms = now0;
     outputs_init(&s_outputs, now0);
     /*
      * The pins this build will not hand out, whatever the host asks for: the
@@ -874,6 +907,33 @@ int main(void)
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 
     heartbeat_init();
+
+    /*
+     * The store's spare sectors, erased before the controller is started.
+     * Nothing can arrive yet, so these are the windows in the run that cost no
+     * frame at all, and the first save after them is a page program.
+     *
+     * A loop, because out_store_reclaim() erases one sector per call and a
+     * store can have more than one to take: a store whose sectors all hold
+     * records this build cannot read -- an earlier record version -- has one
+     * per sector.  Left to the main loop the second of those would be a 19 ms
+     * window with the controller already up.
+     *
+     * Bounded by the store's shape, not by the flash answering.
+     * flash_range_erase() reports nothing, so a sector that will not erase is
+     * surveyed as not erased and offered again; a loop that ended only when
+     * the store came back clean would spin here for ever, before can_start(),
+     * with no CAN controller and no failsafe. Past this bound the sector
+     * falls to the main loop, which costs a window per pass and keeps the
+     * bench answering.
+     */
+    for (unsigned i = 0; i < OUT_STORE_SECTORS
+                         && out_store_reclaim(false, OUT_STORE_QUIET_MS); ++i) {
+        printf("rcbench-iomcu: output store sector reclaimed at boot, "
+               "window %lu us\n",
+               (unsigned long)out_store_last_erase_us());
+    }
+
     can_start();
     memset(&s_bench, 0, sizeof(s_bench));
 
@@ -885,8 +945,14 @@ int main(void)
          * is a wrap-safe unsigned subtraction, so a timestamp 1 ms ahead of
          * the `now` it is compared against reads as 4,294,967,295 ms of
          * silence, past every timeout there is.
+         *
+         * Published as s_now_ms for the same reason: the page callbacks run
+         * under can_service() below, they stamp the bank and the store, and
+         * a clock they read for themselves is a clock that can already be
+         * ahead of this one.
          */
-        const uint32_t now = (uint32_t)to_ms_since_boot(get_absolute_time());
+        uint32_t now = (uint32_t)to_ms_since_boot(get_absolute_time());
+        s_now_ms = now;
 
         /* Polled rather than interrupt-driven: the loop turns over far faster
          * than a frame takes to arrive, and the failsafe has to fire on time
@@ -943,30 +1009,105 @@ int main(void)
         }
 
         /*
-         * A deferred save, once nothing is driving and the writes have
-         * stopped.  Writing flash stops this core with interrupts off for
-         * longer than the heartbeat's window, so it cannot happen while an
-         * output is live: the monitor loses its edges across the write and
-         * has to re-acquire.  The gate is outputs_driving(), which is the
-         * bank's armed flag, so what the save waits for is a disarm.  It also
-         * waits for the pages to stop arriving, so CHAN_CFG and OUTPUTS are
-         * saved as the pair they are.
+         * A deferred save, once nothing is driving, the writes have stopped
+         * and the bus has gone quiet.
+         *
+         * Writing flash stops this core with interrupts off -- an erase and a
+         * program together measured 19,178 us on the bring-up module -- and
+         * what that costs is CAN frames: the controller holds two, about
+         * 130 us each, and this loop collects none of them while the window is
+         * open.  A frame lost there can be the CONTROL write that disarms, and this
+         * loop steps no output while the window is open either, so the save
+         * waits for a disarm: out_store_tick() is gated on outputs_driving(),
+         * which is the bank's armed flag.
+         *
+         * The heartbeat is not what bounds the window.  The line edges every
+         * HEARTBEAT_PERIOD_MS (20 ms) and is sampled by this loop, so an edge
+         * inside a 19 ms window is timestamped when the loop resumes rather
+         * than lost, and the stretched interval stays far under
+         * HEARTBEAT_MAX_GAP_MS (150 ms).  The interval after it can read short
+         * instead: under HEARTBEAT_MIN_GAP_MS (4 ms) the monitor rejects it
+         * and drops the line until HEARTBEAT_GOOD_RUN (4) good intervals have
+         * run, about 80 ms.  That is derived from the periods, not measured on
+         * hardware.
+         *
+         * The save also waits for the pages to stop arriving, so CHAN_CFG and
+         * OUTPUTS are saved as the pair they are.  How long since a frame
+         * arrived is what keeps the window out of a run of the panel's poll
+         * transactions: a minimum quiet time, which says nothing about how
+         * much of the gap after it is left.
          */
-        if (out_store_tick(outputs_driving(&s_outputs), now)) {
+        const uint32_t quiet = (uint32_t)(now - s_last_rx_ms);
+        const bool driving = outputs_driving(&s_outputs);
+        const out_store_step_t step = out_store_tick(driving, quiet, now);
+        switch (step) {
+        case OUT_STORE_WROTE:
             /*
              * Printed because it is the number that decides whether a save
-             * is survivable: this core answers nothing while it writes, and
-             * the monitor calls the beat dead at 150 ms while the link calls
-             * the host silent at 200 ms.  A window past those makes the
-             * board fault itself and the panel say NO LINK over a good
-             * cable.
+             * costs a frame: this core answers nothing while it writes, the
+             * controller holds two frames of about 130 us each, and a request
+             * lost there costs the panel 1000 ms of waiting, which is past
+             * this end's 200 ms silence failsafe.
              */
-            printf("rcbench-iomcu: outputs saved, flash window %lu us\n",
-                   (unsigned long)out_store_last_window_us());
+            printf("rcbench-iomcu: outputs saved, record %u, "
+                   "program window %lu us\n",
+                   (unsigned)out_store_last_record(),
+                   (unsigned long)out_store_last_program_us());
+            break;
+        case OUT_STORE_ERASED:
+            printf("rcbench-iomcu: output store sector erased, "
+                   "window %lu us\n",
+                   (unsigned long)out_store_last_erase_us());
+            break;
+        case OUT_STORE_IDLE:
+        default:
+            break;
+        }
+        /*
+         * And the erase for the save after next, taken now rather than in
+         * front of the save that will need it.  Now is the pass after the
+         * record that left a sector behind, with the bus quiet: one save in
+         * sixteen leaves one, and the other fifteen find nothing to do.
+         *
+         * Only on a pass that wrote nothing: two windows in one pass would be
+         * one long window with a printf in the middle of it, and the pass
+         * between them is what empties the receive buffers.
+         */
+        if (step == OUT_STORE_IDLE && out_store_reclaim(driving, quiet)) {
+            printf("rcbench-iomcu: output store sector reclaimed, "
+                   "window %lu us\n",
+                   (unsigned long)out_store_last_erase_us());
         }
 
         can_report(now);
-        /* Again straight after the report: printing to a USB host can take
+
+        /*
+         * The clock is re-read here, once, and this is the only place a pass
+         * re-reads it.
+         *
+         * One clock per pass is the rule and it holds because a pass is
+         * short.  Two things in this one are not.  A flash window stops this
+         * core for about 19 ms with interrupts off.  can_report() prints to a
+         * USB host, which blocks for as long as the host takes.  Everything
+         * below measures elapsed time across whichever of them just ran:
+         * s_last_rx_ms is what the next pass's quiet-bus guard subtracts
+         * from, so a frame collected after one of them and stamped with a
+         * clock from before it reports a quiet bus at the moment a frame was
+         * handled.  The next page program then passes the 5 ms guard
+         * immediately and lands in the same burst of requests, which is the
+         * collision the guard exists to prevent.
+         *
+         * link_dev_tick() has the same reason with a bigger margin: tens of
+         * milliseconds against a 200 ms silence timeout.
+         *
+         * Unconditional rather than after a window only.  A timer read costs
+         * nothing beside either of the two, and a condition here is a list of
+         * what can block that has to be kept in step with the code above it.
+         */
+        now = (uint32_t)to_ms_since_boot(get_absolute_time());
+        s_now_ms = now;
+
+        /* Straight after the report: printing to a USB host can take
          * milliseconds, and the part holds two frames. */
         can_service(now);
     }

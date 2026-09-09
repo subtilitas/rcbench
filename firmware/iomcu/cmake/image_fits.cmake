@@ -24,7 +24,7 @@ file(SIZE "${IMAGE}" size)
 if(size GREATER LIMIT)
     message(FATAL_ERROR
         "the image is ${size} bytes and the smallest module this build runs "
-        "on holds ${LIMIT} bytes before the output store's sector. Either "
+        "on holds ${LIMIT} bytes below the output store's two sectors. Either "
         "the artwork or the code has outgrown it.")
 endif()
 
