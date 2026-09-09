@@ -24,11 +24,14 @@ else
     # because the released 0.5.2 carries no kingst-la2016 driver, and a
     # measurement read through an unnamed library version cannot be
     # reproduced.  The build records what it made in a manifest, and
-    # unpacking the tarball into /usr/local puts it at the path below.  It is
+    # unpacking the tarball at / puts it at the path below.  The prefix is
+    # /opt/sigrok rather than /usr/local because Debian's libsigrok4t64 and
+    # this build share the soname libsigrok.so.4: on one search path the
+    # loader picks by path order and neither end reports a mismatch.  It is
     # data, not shell, so it is read with grep and never sourced.  What it
     # is asked for is identity: the sha256 of the binary on PATH and of the
     # libsigrok the dynamic linker actually loads.
-    : "${SIGROK_MANIFEST:=/usr/local/share/doc/rcbench-sigrok/MANIFEST.txt}"
+    : "${SIGROK_MANIFEST:=/opt/sigrok/MANIFEST.txt}"
     manifest_get() {
         grep -m1 "^$1:" "$SIGROK_MANIFEST" 2>/dev/null |
             cut -d: -f2- | sed 's/^[[:space:]]*//'
@@ -64,15 +67,25 @@ else
             # library sitting beside the binary.  Ask ld.so rather than
             # assume.
             cli_path=$(command -v sigrok-cli)
+            prefix=$(manifest_get prefix)
+            built_cli=${prefix:+$prefix/bin/sigrok-cli}
             lib_path=$(ldd "$cli_path" 2>/dev/null |
                        awk '$1 ~ /^libsigrok\.so/ {for (i=1;i<=NF;i++) if ($i=="=>") {print $(i+1); exit}}')
 
             have=$(sha256sum "$cli_path" 2>/dev/null | cut -d' ' -f1)
             if [ "$have" = "$cli_sha" ]; then
                 say "sigrok-cli on PATH" "$cli_path, hash matches the manifest"
+            elif [ -n "$built_cli" ] && [ -x "$built_cli" ]; then
+                # The expected state between unpacking the tarball and putting
+                # the prefix on PATH. The distribution's sigrok-cli sits in
+                # /usr/bin and wins until something puts $prefix/bin ahead of
+                # it, so this reads as a procedure that is not finished rather
+                # than as a broken install.
+                bad "sigrok-cli on PATH" \
+                    "$cli_path, not the recorded $built_cli -- put $prefix/bin ahead of it on PATH"
             else
                 bad "sigrok-cli on PATH" \
-                    "$cli_path is not the recorded build -- another sigrok-cli is shadowing it"
+                    "$cli_path is not the recorded build, and $prefix/bin holds no sigrok-cli"
             fi
 
             if [ -z "$lib_path" ]; then

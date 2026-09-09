@@ -69,21 +69,54 @@ drivers and no `kingst-la2016`, and naming it prints
 `Driver kingst-la2016 not found.` So the packaged `sigrok-cli` cannot address
 this analyser at all, and the bench needs libsigrok built from git.
 
+`.github/workflows/testbench-sigrok.yml` is what builds it: libsigrok and
+sigrok-cli from git in a pinned `debian:trixie` container on an arm64 runner,
+so the result matches this host's ABI (application binary interface). It is
+`workflow_dispatch` and produces `sigrok-kingst-la2016-debian13-arm64.tar.gz`.
+The run fails unless the built binary lists `kingst-la2016` and the libsigrok
+it loads reports a commit that is a prefix of the cloned one -- a binary that
+lists the driver while loading 0.5.2 underneath would otherwise pass in CI and
+fail here. A second job unpacks the tarball in a container with no `-dev` and
+no sigrok package, installs only the recorded runtime closure, and repeats
+both checks plus a scan that touches libusb.
+
 Clearing that gate means the driver exists. It says nothing about whether the
-analyser captures: the bitstream comes out of the vendor's software and no
-build of libsigrok can supply it. `host/selftest.sh` reports the two
-separately -- it asks the library what drivers it carries, then asks the
+analyser captures: the FX2 microcontroller firmware and the FPGA bitstreams
+are Kingst material with no redistribution grant, so the tarball carries
+`share/sigrok-firmware/README.txt` naming the five files and where the driver
+looks for them, and not the files. They are extracted from the vendor
+software with `sigrok-fwextract-kingst-la2016`. `host/selftest.sh` reports the
+two gates separately -- it asks the library what drivers it carries, then asks the
 instrument for samples -- so a missing driver reads as a missing driver, a
 missing bitstream as a capture that returns nothing, and neither as an
 unplugged instrument.
 
-**Which build is installed is recorded, and checked.** The library is built in
-CI rather than on the Pi, and the tarball carries a manifest at
-`share/doc/rcbench-sigrok/MANIFEST.txt`, so unpacking it into `/usr/local`
-puts the file at `/usr/local/share/doc/rcbench-sigrok/MANIFEST.txt`. Plain
-text, one key per line, colon-separated: `libsigrok-commit`,
-`sigrok-cli-commit`, `libsigrok-sha256`, `sigrok-cli-sha256`,
-`libsigrok-version`, `sigrok-cli-version`, `debian-version`, `built-utc`.
+**The prefix is `/opt/sigrok`, not `/usr/local`.** Debian's `libsigrok4t64`
+carries the soname `libsigrok.so.4` and so does the git build. With both on
+the default search path the loader picks by path order, and neither end
+reports a mismatch -- a Pi with the Debian package installed would quietly run
+0.5.2 and find no analyser. Under `/opt`, with a runpath to `/opt/sigrok/lib`
+linked into `sigrok-cli`, the two cannot meet, and the distribution's sigrok
+keeps working untouched.
+
+The tarball unpacks at `/` and holds `opt/sigrok` and nothing else, which the
+workflow asserts against the member list before upload. Installing it is:
+
+    sudo tar -C / -xzf sigrok-kingst-la2016-debian13-arm64.tar.gz
+    export PATH=/opt/sigrok/bin:$PATH
+
+**The `PATH` line is a step, not a suggestion.** The distribution's
+`sigrok-cli` is at `/usr/bin` and wins until `/opt/sigrok/bin` is put ahead of
+it, so between unpacking and that line the bench is still running 0.5.2. Make
+it permanent wherever this host keeps its environment; a shell that has not
+had it is a shell that measures with the wrong binary.
+
+**Which build is installed is recorded, and checked.** The manifest is at
+`/opt/sigrok/MANIFEST.txt`. Plain text, machine-readable keys first, one per
+line, colon-separated: `libsigrok-commit`, `sigrok-cli-commit`,
+`libsigrok-version`, `sigrok-cli-version`, `libsigrok-sha256`,
+`sigrok-cli-sha256`, `debian-version`, `prefix`, `built-utc`. Prose follows
+them.
 
 **The hashes are what decide.** A version string is not a build: two commits
 can carry one, so a comparison against `sigrok-cli-version` passes on a stale
@@ -100,13 +133,21 @@ Five readings come out of it:
 | `libsigrok recorded: <version> at <commit>` | the manifest is there and names a build |
 | `sigrok provenance: unrecorded` | no manifest at that path, so which build is on `PATH` is unanswered. A distribution `sigrok-cli` reads as this |
 | `sigrok provenance: missing keys` | a manifest that cannot decide anything. Without it a truncated file passes, because an absent recorded hash equals an absent parsed one |
-| `sigrok-cli on PATH: <path> is not the recorded build` | the binary the shell finds is not the one the manifest describes -- the distribution package shadowing the built one |
+| `sigrok-cli on PATH: <path>, not the recorded <prefix>/bin/sigrok-cli -- put <prefix>/bin ahead of it on PATH` | the tarball is unpacked and the `PATH` step has not been done. This is the expected state in between, not a broken install |
 | `libsigrok loaded: <path> is not the recorded build` | the binary is right and the library under it is not, which is the reading a stale manifest or a half-finished install gives |
 
-The fourth is the reason the distribution `sigrok-cli` is left installed
-rather than removed: a bench that only works once a package is gone is a bench
-that breaks on the next machine, so the shadowing is a step the procedure
-states and the selftest catches. `SIGROK_MANIFEST` overrides the path.
+The fourth is why the distribution `sigrok-cli` is left installed rather than
+removed. A bench that only works once a package is gone is a bench that breaks
+on the next machine, so the two are made to coexist -- the prefix and the
+runpath keep them apart, and the `PATH` step decides which one a shell gets.
+The selftest names the step in the reading, so an operator who meets it
+between the two commands above sees a procedure that is not finished rather
+than a fault. `SIGROK_MANIFEST` overrides the path.
+
+The hashes are taken from the staged files that go into the tarball, not from
+the build tree. Hashing what was built rather than what ships would record one
+object and install another if anything strips or re-links between the two, and
+the bench would report a shadow on a correct install.
 
 **RP2350 board** — the same part as the bench coprocessor, in one of two roles
 per run:
@@ -562,12 +603,18 @@ firmware and the decoder agree, and no more than that.
 
 ## Settled
 
-- **The analyser's bitstream is provided.** `host/selftest.sh` still asks,
-  because the failure is silent: an analyser without it enumerates, accepts a
-  capture and returns nothing, which reads as a quiet bench rather than a
-  broken one. Having it settles the second of the two gates under *The parts*
-  and not the first: the packaged libsigrok carries no `kingst-la2016` driver,
-  and that one is open.
+- **The analyser's bitstream is provided**, and it is not redistributed:
+  it is Kingst material with no grant, so it is extracted from the vendor
+  software onto the bench rather than shipped with the build.
+  `host/selftest.sh` still asks for it, because the failure is silent -- an
+  analyser without it enumerates, accepts a capture and returns nothing, which
+  reads as a quiet bench rather than a broken one. Having it settles the
+  second of the two gates under *The parts*, never the first.
+- **The driver is built in CI, to `/opt/sigrok`.**
+  `.github/workflows/testbench-sigrok.yml` builds libsigrok and sigrok-cli
+  from git for Debian 13 arm64 and records what it made in
+  `/opt/sigrok/MANIFEST.txt`. The prefix and the runpath are what keep it away
+  from the distribution's `libsigrok.so.4`, which carries the same soname.
 - **SWD over `linuxgpiod`**, three wires and no supply between the Pi and a
   board that has its own.
 - **The whole bench lives on the rig** — panel, display, touch and the CAN
