@@ -69,36 +69,22 @@ drivers and no `kingst-la2016`, and naming it prints
 `Driver kingst-la2016 not found.` So the packaged `sigrok-cli` cannot address
 this analyser at all, and the bench needs libsigrok built from git.
 
-`.github/workflows/testbench-sigrok.yml` is what builds it: libsigrok and
-sigrok-cli from git in a pinned `debian:trixie` container on an arm64 runner,
-so the result matches this host's ABI (application binary interface). It is
-`workflow_dispatch` and produces `sigrok-kingst-la2016-debian13-arm64.tar.gz`.
-The run fails unless the built binary lists `kingst-la2016` and the libsigrok
-it loads reports a commit that is a prefix of the cloned one -- a binary that
-lists the driver while loading 0.5.2 underneath would otherwise pass in CI and
-fail here. A second job unpacks the tarball in a container with no `-dev` and
-no sigrok package, installs only the recorded runtime closure, and repeats
-both checks plus a scan that touches libusb.
+It is built on this host, from pinned commits, into `/opt/sigrok`. The
+commands are under *Building it* below. Building here rather than elsewhere is
+the short path: the packages are one `apt-get`, the result matches this host's
+ABI (application binary interface) because it was compiled against it, and
+there is no artifact to publish, fetch or verify in between.
 
-**The workflow has run and the tarball exists.** Three jobs: the build, a
-verify that unpacks the tarball in a container holding no `-dev` and no sigrok
-package and repeats the assertions there, and a publish that attaches it to a
-release. Run 34371857987 on 2026-09-09 built and verified it from libsigrok
+**Built on the bench host.** libsigrok
 `0bc2487778e660f4d3116729b6f4aee2b1996bb0` of 2025-11-20 and sigrok-cli
-`f44dd91347e7ac797cefc23162b9fcf0b7329f1f` of 2024-08-26, producing
-libsigrok 0.6.0-git and sigrok-cli 0.8.0-git against Debian 13.6.
+`f44dd91347e7ac797cefc23162b9fcf0b7329f1f` of 2024-08-26, giving libsigrok
+0.6.0-git and sigrok-cli 0.8.0-git against Debian 13.6. Commits rather than a
+branch: master carries no release tag and no promise about its interface, so
+a measurement recorded against "master" cannot be reproduced.
 
-The run fails unless the built binary lists `kingst-la2016` and the libsigrok
-it loads reports a commit that is a prefix of the cloned SHA -- a binary that
-lists the driver and loads Debian's 0.5.2 underneath would otherwise pass in
-CI and fail on the bench.
-
-**The tarball installs on this host and the analyser captures.** Measured on
-the bench host on 2026-09-09 from the release of run 34375102951, with the
-distribution's `sigrok-cli` 0.7.2 and `libsigrok4t64` 0.5.2 installed
-throughout. The verify job proves the tarball in a container with no sigrok
-package, which is deliberately not the case this bench is; this is the case
-that was open.
+**The build runs beside the distribution's sigrok, and the analyser
+captures.** Measured on the bench host on 2026-09-09, with the distribution's
+`sigrok-cli` 0.7.2 and `libsigrok4t64` 0.5.2 installed throughout.
 
 | | |
 | --- | --- |
@@ -107,8 +93,7 @@ that was open.
 | capture | 948 lines from 1000 samples at 1 MHz |
 
 The runpath decides against Debian's library on the default search path, which
-is the whole reason for the `/opt` prefix and could not be tested anywhere the
-distribution's package is absent.
+is the whole reason for the `/opt` prefix.
 
 **The FX2 firmware upload is confirmed at the USB descriptor level rather than
 inferred.** Before a scan the analyser reports `iManufacturer 0` and
@@ -177,10 +162,9 @@ anything the coprocessor produced, which is what this bench exists for.
 
 Clearing that gate means the driver exists. It says nothing about whether the
 analyser captures: the FX2 microcontroller firmware and the FPGA bitstreams
-are Kingst material with no redistribution grant, so the tarball carries
-`share/sigrok-firmware/README.txt` naming the files and where the driver
-looks for them, and not the files. They are extracted from the vendor
-software with `sigrok-fwextract-kingst-la2016`, a Python script from
+are Kingst material with no redistribution grant and are not in this
+repository. They are extracted from the vendor software on the bench with
+`sigrok-fwextract-kingst-la2016`, a Python script from
 sigrok-util that needs no build. The vendor's download page is `/en/download`.
 KingstVIS v3.6.6 yields 18 files rather than the five the extractor's man page
 documents against v3.5.0, and all 18 are installed because which one an
@@ -202,45 +186,46 @@ reports a mismatch -- a Pi with the Debian package installed would quietly run
 linked into `sigrok-cli`, the two cannot meet, and the distribution's sigrok
 keeps working untouched.
 
-The tarball unpacks at `/` and holds `opt/sigrok` and nothing else, which the
-workflow asserts against the member list before upload. Installing it is:
+Building it:
 
-    curl -LO https://github.com/subtilitas/rcbench/releases/download/<tag>/sigrok-kingst-la2016-debian13-arm64.tar.gz
-    curl -LO https://github.com/subtilitas/rcbench/releases/download/<tag>/SHA256SUMS
-    sha256sum -c SHA256SUMS
-    sudo tar -C / -xzf sigrok-kingst-la2016-debian13-arm64.tar.gz
     sudo apt-get install -y --no-install-recommends \
-        $(cat /opt/sigrok/RUNTIME-DEPENDS.txt)
-    sudo install -m 644 /opt/sigrok/share/sigrok-udev/60-libsigrok.rules \
-                        /opt/sigrok/share/sigrok-udev/61-libsigrok-plugdev.rules \
+        build-essential git ca-certificates \
+        autoconf automake libtool pkg-config autoconf-archive \
+        libglib2.0-dev libzip-dev zlib1g-dev libusb-1.0-0-dev \
+        libsigrokdecode-dev
+    git clone https://github.com/sigrokproject/libsigrok.git
+    git -C libsigrok checkout --detach 0bc2487778e660f4d3116729b6f4aee2b1996bb0
+    ( cd libsigrok && ./autogen.sh \
+        && ./configure --prefix=/opt/sigrok --disable-bindings \
+                       --enable-kingst-la2016 \
+        && make -j"$(nproc)" && sudo make install )
+    git clone https://github.com/sigrokproject/sigrok-cli.git
+    git -C sigrok-cli checkout --detach f44dd91347e7ac797cefc23162b9fcf0b7329f1f
+    ( cd sigrok-cli && ./autogen.sh \
+        && PKG_CONFIG_PATH=/opt/sigrok/lib/pkgconfig ./configure \
+             --prefix=/opt/sigrok LDFLAGS=-Wl,-rpath,/opt/sigrok/lib \
+        && make -j"$(nproc)" && sudo make install )
+
+`--enable-kingst-la2016` explicitly: the default is a check, under which
+configure records `kingst-la2016 no (missing: libusb)` in its summary and the
+build succeeds without the driver. With the flag a missing dependency is an
+error instead. `--disable-bindings` switches off the C++, Python, Ruby and
+Java bindings in one flag; nothing on the bench imports libsigrok.
+
+Then the rules, the group and the path:
+
+    sudo install -m 644 libsigrok/contrib/60-libsigrok.rules \
+                        libsigrok/contrib/61-libsigrok-plugdev.rules \
                         /etc/udev/rules.d/
     sudo udevadm control --reload
     sudo udevadm trigger --subsystem-match=usb
     sudo adduser "$USER" plugdev        # log out and back in to take effect
     export PATH=/opt/sigrok/bin:$PATH
 
-**It comes from a release, not from a workflow artifact.** Actions artifacts
-need a token even on a public repository -- the download endpoint answers 401
-without one -- so a bench with no login cannot fetch one, and an artifact
-expires. The workflow attaches the tarball and its `SHA256SUMS` to a release
-tagged `testbench-sigrok-<run id>`, and release assets are public,
-unauthenticated and permanent. The tag does not begin with `v`, so it does not
-trigger the firmware release workflow.
-
-Check the download against the `SHA256SUMS` attached beside it rather than
-against a sum computed here: a sum computed from a bad download matches
-itself.
-
-**The packages are a step.** The tarball carries `sigrok-cli` and
-`libsigrok.so.4` and nothing else it links against. `RUNTIME-DEPENDS.txt` is
-the closure the build resolved, written from `ldd` and mapped to the Debian
-package that owns each library, so the second command installs exactly what
-the binary loads. Without it the executable can fail in the dynamic linker
-before `host/selftest.sh` gets a chance to say anything.
-
-**The udev rules are a step, and skipping them reads as no analyser.** The
-tarball leaves both rules under `/opt/sigrok/share/sigrok-udev`, which udev
-does not scan. Debian's libsigrok 0.5.2 ships rules that predate this driver
+**The udev rules are a step, and skipping them reads as no analyser.**
+`make install` places none of them: they are in the source tree's `contrib`
+only, which is why they are copied by hand above. Debian's libsigrok 0.5.2
+ships rules that predate this driver
 and carry no entry for `77a1`, so the LA2016 gets no `ID_SIGROK` tag and
 neither the `uaccess` nor the `plugdev` rule fires. Measured on the bench
 host: the device node stays `crw-rw-r-- root root`, read-only for the
@@ -262,22 +247,29 @@ it, so between unpacking and that line the bench is still running 0.5.2. Make
 it permanent wherever this host keeps its environment; a shell that has not
 had it is a shell that measures with the wrong binary.
 
-**The licences travel with the binaries.** libsigrok and sigrok-cli are GNU
-General Public License version 3 or later, and the workflow publishes built
-binaries from a public repository. `/opt/sigrok/share/licences` carries each
-project's own licence text, copied out of the clone at the commit that was
-built, and `CORRESPONDING-SOURCE.txt` naming the two upstream URLs, the two
-commits, and the workflow file that holds the configure flags, the container
-image and the install steps. Nothing patches either project and no sigrok
-source is vendored into this repository, so the upstream commit is the whole
-of the source the binaries came from.
+**Which build is installed is recorded, and checked.** `host/selftest.sh`
+reads a manifest at `/opt/sigrok/MANIFEST.txt`. Plain text, machine-readable
+keys first, one per line, colon-separated: `libsigrok-commit`,
+`sigrok-cli-commit`, `libsigrok-version`, `sigrok-cli-version`,
+`libsigrok-sha256`, `sigrok-cli-sha256`, `debian-version`, `prefix`,
+`built-utc`. Write it after installing, from the files that were installed:
 
-**Which build is installed is recorded, and checked.** The manifest is at
-`/opt/sigrok/MANIFEST.txt`. Plain text, machine-readable keys first, one per
-line, colon-separated: `libsigrok-commit`, `sigrok-cli-commit`,
-`libsigrok-version`, `sigrok-cli-version`, `libsigrok-sha256`,
-`sigrok-cli-sha256`, `debian-version`, `prefix`, `built-utc`. Prose follows
-them.
+    sudo tee /opt/sigrok/MANIFEST.txt >/dev/null <<EOF
+    libsigrok-commit: $(git -C libsigrok rev-parse HEAD)
+    sigrok-cli-commit: $(git -C sigrok-cli rev-parse HEAD)
+    libsigrok-version: $(/opt/sigrok/bin/sigrok-cli --version | sed -n 's/.*rt: \([^ )]*\).*/\1/p' | head -1)
+    sigrok-cli-version: $(/opt/sigrok/bin/sigrok-cli --version | head -1 | awk '{print $2}')
+    libsigrok-sha256: $(sha256sum /opt/sigrok/lib/libsigrok.so.4 | cut -d' ' -f1)
+    sigrok-cli-sha256: $(sha256sum /opt/sigrok/bin/sigrok-cli | cut -d' ' -f1)
+    debian-version: $(cat /etc/debian_version)
+    prefix: /opt/sigrok
+    built-utc: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+    EOF
+
+The versions are read out of the binary rather than composed from a tag, so
+the recorded string is what the binary prints. The hashes are taken from the
+installed files rather than from the build tree: anything that strips or
+re-links between the two would otherwise record one object and run another.
 
 **The hashes are what decide.** A version string is not a build: two commits
 can carry one, so a comparison against `sigrok-cli-version` passes on a stale
@@ -294,7 +286,7 @@ Five readings come out of it:
 | `libsigrok recorded: <version> at <commit>` | the manifest is there and names a build |
 | `sigrok provenance: unrecorded` | no manifest at that path, so which build is on `PATH` is unanswered. A distribution `sigrok-cli` reads as this |
 | `sigrok provenance: missing keys` | a manifest that cannot decide anything. Without it a truncated file passes, because an absent recorded hash equals an absent parsed one |
-| `sigrok-cli on PATH: <path>, not the recorded <prefix>/bin/sigrok-cli -- put <prefix>/bin ahead of it on PATH` | the tarball is unpacked and the `PATH` step has not been done. This is the expected state in between, not a broken install |
+| `sigrok-cli on PATH: <path>, not the recorded <prefix>/bin/sigrok-cli -- put <prefix>/bin ahead of it on PATH` | the build is installed and the `PATH` step has not been done. This is the expected state in between, not a broken install |
 | `libsigrok loaded: <path> is not the recorded build` | the binary is right and the library under it is not, which is the reading a stale manifest or a half-finished install gives |
 
 The fourth is why the distribution `sigrok-cli` is left installed rather than
@@ -305,10 +297,10 @@ The selftest names the step in the reading, so an operator who meets it
 between the two commands above sees a procedure that is not finished rather
 than a fault. `SIGROK_MANIFEST` overrides the path.
 
-The hashes are taken from the staged files that go into the tarball, not from
-the build tree. Hashing what was built rather than what ships would record one
-object and install another if anything strips or re-links between the two, and
-the bench would report a shadow on a correct install.
+The hashes are taken from the installed files, not from the build tree.
+Hashing what was built rather than what runs would record one object and
+install another if anything strips or re-links between the two, and the bench
+would report a shadow on a correct install.
 
 **RP2350 board** — the same part as the bench coprocessor, in one of two roles
 per run:
@@ -771,11 +763,10 @@ firmware and the decoder agree, and no more than that.
   analyser without it enumerates, accepts a capture and returns nothing, which
   reads as a quiet bench rather than a broken one. Having it settles the
   second of the two gates under *The parts*, never the first.
-- **The driver is built in CI, to `/opt/sigrok`.**
-  `.github/workflows/testbench-sigrok.yml` builds libsigrok and sigrok-cli
-  from git for Debian 13 arm64 and records what it made in
-  `/opt/sigrok/MANIFEST.txt`. The prefix and the runpath are what keep it away
-  from the distribution's `libsigrok.so.4`, which carries the same soname.
+- **The driver is built on the bench host, to `/opt/sigrok`**, from pinned
+  commits, and what was built is recorded in `/opt/sigrok/MANIFEST.txt`. The
+  prefix and the runpath are what keep it away from the distribution's
+  `libsigrok.so.4`, which carries the same soname.
 - **SWD over `linuxgpiod`**, three wires and no supply between the Pi and a
   board that has its own.
 - **The whole bench lives on the rig** — panel, display, touch and the CAN
