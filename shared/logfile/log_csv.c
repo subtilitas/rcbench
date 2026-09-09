@@ -718,6 +718,13 @@ static log_err_t scan_columns(log_source_t *src, char delimiter,
         }
         ++seen;
     }
+    if (reader.failed) {
+        /* Column statistics over the rows that arrived describe a file that
+         * is not the one on the card: the unit, the range and the monotonic
+         * flag all come from a fraction of it, and nothing downstream can
+         * tell them from the whole. */
+        return LOG_ERR_READ;
+    }
 
     for (int c = 0; c < out->n_columns; ++c) {
         log_column_t *col = &out->columns[c];

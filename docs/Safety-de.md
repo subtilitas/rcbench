@@ -162,6 +162,14 @@ Panel als Leitung ohne Flanken gelesen wird.
   bereits auf die Ruhelage gestellt und er rampt von dort, höchstens
   `slew_per_s * 500 / 1000` weit, bevor der Timeout ihn zurückholt. In beiden
   Fällen treibt er, und beendet wird das durch ein Entschärfen.
+- Die Einstellung `Ramp limit`, 5 bis 300 %/s, gilt für die Gas-Bank des
+  Panels. Diese Bank ist der modellierte Prüfstand: ihr geslewter Wert wird
+  vom Telemetrie-Simulator gelesen und sonst von nichts, und nur solange der
+  Link unten ist. Einem antwortenden Koprozessor wird stattdessen das rohe
+  Kommando geschickt, und `outbind_to_chan_cfg()` schreibt für keinen Kanal
+  einen Slew, ein als Throttle gebundener Pin springt also im nächsten
+  1-ms-Durchlauf darauf. Ob das physische Gas gerampt werden soll, ist ein
+  offener Punkt; heute begrenzt nichts seine Rate.
 
 ## Heartbeat statt Enable-Pegel
 

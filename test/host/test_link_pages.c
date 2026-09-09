@@ -15,6 +15,8 @@
 
 #include "link_dev.h"
 #include "link_pages.h"
+#include "outputs.h"
+#include "outputs_pages.h"
 #include "rcbench_version.h"
 
 /* A stand-in for the coprocessor's own state. */
@@ -197,6 +199,66 @@ TEST_CASE(a_value_the_page_rejects_is_refused_with_a_reason)
     CHECK_EQ(g.control[LINK_CT_THROTTLE], 0);
 }
 
+/*
+ * A write is all or nothing: a frame whose later register is refused stores
+ * none of its earlier ones.
+ *
+ * A frame carries up to four registers (LINK_CAN_REGS_PER_FRAME), so a
+ * handler that validated and stored in one pass would answer NACK with the
+ * registers ahead of the refusal already committed, and a read-back would
+ * show a page nobody accepted.  The case above sets count = 1, the one width
+ * where a single-pass handler cannot half-apply.
+ *
+ * These pin the rule on the two page handlers that live in shared/.  The
+ * CONTROL page's handler is in firmware/iomcu/src/main.c, which this suite
+ * does not compile, so no host test reaches it.
+ */
+TEST_CASE(a_refused_chan_cfg_write_stores_none_of_its_registers)
+{
+    uint16_t regs[LINK_CC_COUNT];
+    outputs_chan_cfg_defaults(regs);
+    /*
+     * One channel, four registers.  The role and the slew differ from the
+     * defaults so a half-applied write shows, and the minimum is 100 us,
+     * below the LINK_CC_FLOOR_US of 500 us.
+     */
+    const uint16_t in[LINK_CC_STRIDE] = {
+        [LINK_CC_ROLE]   = LINK_CC_ROLE_THROTTLE,
+        [LINK_CC_SLEW]   = 250u,
+        [LINK_CC_MIN_US] = 100u,
+        [LINK_CC_MAX_US] = 2000u,
+    };
+    CHECK_EQ(outputs_chan_cfg_write(regs, 0, LINK_CC_STRIDE, in),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(regs[LINK_CC_ROLE], LINK_CC_ROLE_SURFACE);
+    CHECK_EQ(regs[LINK_CC_SLEW], 0u);
+    CHECK_EQ(regs[LINK_CC_MIN_US], LINK_CC_DEFAULT_MIN);
+    CHECK_EQ(regs[LINK_CC_MAX_US], LINK_CC_DEFAULT_MAX);
+}
+
+TEST_CASE(a_refused_slots_write_stores_none_of_its_registers)
+{
+    uint16_t regs[LINK_OS_COUNT];
+    outputs_slots_defaults(regs);
+    /*
+     * Four registers across a slot boundary: slot 0's rate, then slot 1's
+     * driver, pin and range.  The pin is 64, one above OUT_MAX_PIN, so the
+     * refusal falls on the third register of the four and two accepted ones
+     * precede it.
+     */
+    const uint16_t in[4] = {
+        50u,                            /* slot 0, LINK_OS_RATE_HZ */
+        (uint16_t)LINK_DRIVER_PWM,      /* slot 1, LINK_OS_DRIVER  */
+        (uint16_t)(OUT_MAX_PIN + 1u),   /* slot 1, LINK_OS_PIN     */
+        LINK_OS_RANGE_OF(1, 1),         /* slot 1, LINK_OS_RANGE   */
+    };
+    CHECK_EQ(outputs_slots_write(regs, LINK_OS_RATE_HZ, 4, in),
+             LINK_NACK_BAD_VALUE);
+    for (unsigned i = 0; i < LINK_OS_COUNT; ++i) {
+        CHECK_EQ(regs[i], 0u);
+    }
+}
+
 /* DATA, ACK (acknowledge) and NACK (negative acknowledge) are the
  * coprocessor's own vocabulary.  Receiving one means something is talking
  * that should be listening. */
@@ -258,6 +320,8 @@ int main(void)
     RUN(a_window_past_the_end_of_a_page_is_refused);
     RUN(writing_a_read_only_page_is_refused);
     RUN(a_value_the_page_rejects_is_refused_with_a_reason);
+    RUN(a_refused_chan_cfg_write_stores_none_of_its_registers);
+    RUN(a_refused_slots_write_stores_none_of_its_registers);
     RUN(the_coprocessor_refuses_to_be_spoken_to_in_its_own_voice);
     RUN(every_request_is_answered);
     RUN(the_version_string_says_what_the_numbers_say);

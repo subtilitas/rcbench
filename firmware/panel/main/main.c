@@ -69,7 +69,38 @@
  * measured in percent.
  */
 #define PANEL_CH_THROTTLE     0u
-#define PANEL_THROTTLE_RAMP   ((uint16_t)(OUT_SPAN * 55u / 100u))   /* 55 %/s */
+
+/*
+ * The ramp comes from the `Ramp limit` setting, 5 to 300 %/s.  It governs
+ * this bank, which is the modelled bench: the value it slews to is read by
+ * telemetry_sim_step() and by nothing else, and only while the link is down.
+ *
+ * A coprocessor that is answering renders the raw command instead.  The
+ * CONTROL page carries what the slider asked for, and outbind_to_chan_cfg()
+ * writes no LINK_CC_SLEW for any channel, so a pin bound as a throttle steps
+ * to it.  docs/Safety.md states that; whether it should is an open item in
+ * STATUS.md, and nothing here decides it.
+ */
+static atomic_uint s_throttle_ramp;
+
+/*
+ * Published by app_main, which owns the settings model, and read by the
+ * control task on the other core.  The values themselves are plain floats
+ * written by the settings screen, so the control task must not read them: an
+ * atomic carries the converted number across instead, and gives the two
+ * cores the ordering a bare float does not.
+ */
+static void publish_throttle_ramp(void)
+{
+    const int pct = settings_get_int(SET_OUT_RAMP);
+    const uint32_t per_s = ((uint32_t)OUT_SPAN * (uint32_t)pct) / 100u;
+    atomic_store(&s_throttle_ramp, (unsigned)per_s);
+}
+
+static uint16_t panel_throttle_ramp(void)
+{
+    return (uint16_t)atomic_load(&s_throttle_ramp);
+}
 
 /*
  * The servo bench's output is whichever channels the operator bound as
@@ -663,6 +694,10 @@ static void control_pump(void)
      * link's wait, where arming_step() does not. */
     arming_touch_poll(&s_arm, now_ms());
 
+    /* The setting can change under this loop, and a ramp read once at
+     * start-up would be the one the panel booted with.  The value read here
+     * is the one app_main last published, not the settings model itself. */
+    (void)outputs_set_slew(&s_out, PANEL_CH_THROTTLE, panel_throttle_ramp());
     outputs_step(&s_out, now_ms());
     /*
      * Not gated on the link.  The heartbeat asserts that the processor owning
@@ -2210,12 +2245,16 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     telemetry_sim_init(sim, NULL);
     /*
      * The panel's throttle is a channel in an output bank, under the same
-     * arming, slew and staleness rules as the coprocessor's outputs, so the
-     * two ends cannot answer those questions differently.
+     * arming and staleness rules as the coprocessor's outputs.  The slew is
+     * not shared: this bank takes the `Ramp limit` setting and a bound
+     * throttle channel on the coprocessor takes none, so the two ends do
+     * answer that one differently.  Only this bank's answer is read, and
+     * only while the link is down.
      */
     outputs_init(&s_out, now_ms());
     (void)outputs_set_role(&s_out, PANEL_CH_THROTTLE, OUT_ROLE_THROTTLE);
-    (void)outputs_set_slew(&s_out, PANEL_CH_THROTTLE, PANEL_THROTTLE_RAMP);
+    publish_throttle_ramp();
+    (void)outputs_set_slew(&s_out, PANEL_CH_THROTTLE, panel_throttle_ramp());
     arming_init(&s_arm, now_ms(),
                 HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS + HEARTBEAT_PERIOD_MS);
     s_pump_live = true;
@@ -4026,6 +4065,9 @@ void app_main(void)
          * -- the next frame is one.
          */
         (void)settings_save_tick(!armed && !s_artbusy && !s_keeping);
+        /* And the ramp, from the task that owns the values, for the control
+         * task to read on its next pump. */
+        publish_throttle_ramp();
 
         gfx_canvas_t *c = display_canvas();
         const int64_t draw_start = esp_timer_get_time();

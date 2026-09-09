@@ -234,25 +234,21 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
                              const uint16_t *in)
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
+    /*
+     * Every register of the frame is validated before any of them is stored,
+     * so a refused write leaves the page as it was and lifts no latched
+     * failsafe.  A frame carries up to four registers, and a single pass that
+     * stored as it went would commit the ones ahead of the refusal while
+     * answering NACK -- a CLEAR among them takes the link out of failsafe,
+     * which link_dev.h says needs an explicit clear.
+     */
     for (uint8_t i = 0; i < n; ++i) {
         const uint8_t reg = (uint8_t)(off + i);
         if (reg == LINK_CT_THROTTLE && in[i] > LINK_THROTTLE_MAX) {
             return LINK_NACK_BAD_VALUE;
         }
-        if (reg == LINK_CT_CLEAR) {
-            if (in[i] != LINK_CLEAR_MAGIC) {
-                return LINK_NACK_BAD_VALUE;
-            }
-            /*
-             * The clock of this pass, as recorded by the dispatcher, not a
-             * fresh read.  A fresh read is later than the `now` that
-             * link_dev_tick() receives a few lines further on, and the
-             * wrap-safe comparison there reads a timestamp in the future as
-             * 4,294,967,295 ms of silence, which re-arms the failsafe
-             * immediately.
-             */
-            link_dev_clear_failsafe(&s_dev, s_dev.last_request_ms);
-            continue;
+        if (reg == LINK_CT_CLEAR && in[i] != LINK_CLEAR_MAGIC) {
+            return LINK_NACK_BAD_VALUE;
         }
         /* Refusing to arm while in failsafe is the coprocessor's decision:
          * the panel is not the authority on whether it is safe here. */
@@ -267,6 +263,21 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
             && (in[i] < LINK_POLES_MIN || in[i] > LINK_POLES_MAX
                 || (in[i] % 2u) != 0u)) {
             return LINK_NACK_BAD_VALUE;
+        }
+    }
+    for (uint8_t i = 0; i < n; ++i) {
+        const uint8_t reg = (uint8_t)(off + i);
+        if (reg == LINK_CT_CLEAR) {
+            /*
+             * The clock of this pass, as recorded by the dispatcher, not a
+             * fresh read.  A fresh read is later than the `now` that
+             * link_dev_tick() receives a few lines further on, and the
+             * wrap-safe comparison there reads a timestamp in the future as
+             * 4,294,967,295 ms of silence, which re-arms the failsafe
+             * immediately.
+             */
+            link_dev_clear_failsafe(&s_dev, s_dev.last_request_ms);
+            continue;
         }
         s->control[reg] = in[i];
     }
@@ -901,7 +912,17 @@ int main(void)
     (void)outputs_set_role(&s_outputs, CH_THROTTLE, OUT_ROLE_THROTTLE);
     outputs_chan_cfg_apply(&s_outputs, s_state.chan_cfg);
     outputs_slots_apply(&s_outputs, s_state.slots);
-    outputs_channels_apply(&s_outputs, s_state.channels, now0);
+    /*
+     * The page takes its values from the bank, not the other way round.
+     * Nobody has commanded anything yet, and the defaults above filled the
+     * page with zero -- which is a throttle's rest and a surface's low
+     * endpoint.  Applied as commands, that asks every bound surface for its
+     * endpoint, and outputs_arm() restamps the clock, so the staleness
+     * timeout cannot return it to centre for a further 500 ms.  A servo
+     * bound beside a motor would drive its stop for that long on every arm
+     * until something commanded it.
+     */
+    outputs_channels_from_bank(&s_outputs, s_state.channels);
     outputs_hw_init();
     outputs_hw_apply(&s_outputs);
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);

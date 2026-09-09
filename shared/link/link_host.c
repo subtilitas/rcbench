@@ -4,6 +4,15 @@
 
 #include "link_host.h"
 
+/*
+ * For LINK_CAN_REGS_PER_FRAME, to tell a refusal of a fragment this
+ * transaction sent from one naming a register between two fragment starts.
+ * The header stays transport-agnostic; only this file knows the link is CAN,
+ * which STATUS.md records as a constraint of the design rather than a layer
+ * waiting to be swapped.
+ */
+#include "link_can.h"
+
 #include <string.h>
 
 static bool elapsed(uint32_t now, uint32_t then, uint32_t ms)
@@ -98,8 +107,9 @@ bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
         return false;
     }
 
-    /* A NACK answers the request it refuses and carries its own offset back;
-     * DATA and ACK have to fall inside the window that was asked for. */
+    /* A NACK answers the request it refuses and names the fragment it
+     * refuses; DATA and ACK have to fall inside the window that was asked
+     * for. */
     const bool answers_read  = (h->op == LINK_OP_READ
                                 && part->op == LINK_OP_DATA);
     const bool answers_write = (h->op == LINK_OP_WRITE
@@ -113,10 +123,40 @@ bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
     }
 
     if (refuses) {
-        if (part->offset != h->offset) {
+        /*
+         * A write wider than LINK_CAN_REGS_PER_FRAME (4) goes out as several
+         * fragments, and the far end refuses whichever fragment it will not
+         * take.  So a write's refusal belongs to this transaction when it
+         * names a fragment this transaction sent: inside the window, and on
+         * a fragment start.  Nothing was transmitted at the offsets between
+         * two starts, so a refusal naming one answers some other request and
+         * is a mismatch like any other.  A read is one request with one
+         * offset, and its refusal carries that offset back.
+         *
+         * A refusal counted as a mismatch costs its reason.  The transaction
+         * then runs to LINK_HOST_TIMEOUT_MS (1000 ms), and the caller reads
+         * the silence as a dead link: firmware/panel/main/main.c maps a
+         * refusal to OUTPUTS_REFUSED and a timeout to OUTPUTS_NO_LINK, which
+         * sends the operator to the cable instead of to the values sent.
+         */
+        bool mine;
+        if (h->op != LINK_OP_WRITE) {
+            mine = (part->offset == h->offset);
+        } else if (part->offset < h->offset
+                   || (uint16_t)part->offset
+                          >= (uint16_t)h->offset + (uint16_t)h->count) {
+            mine = false;
+        } else {
+            const uint16_t into = (uint16_t)(part->offset - h->offset);
+            mine = (into % LINK_CAN_REGS_PER_FRAME) == 0u;
+        }
+        if (!mine) {
             ++h->mismatches;
             return false;
         }
+        /* The refusal ends the transaction; the fragments the far end
+         * already took stay applied, because the transport has no
+         * rollback. */
         *whole = *part;
         answered(h, now_ms, true);
         return true;

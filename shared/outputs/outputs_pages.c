@@ -200,6 +200,16 @@ void outputs_channels_defaults(uint16_t *regs)
     }
 }
 
+void outputs_channels_from_bank(const outputs_t *o, uint16_t *regs)
+{
+    if (o == NULL || regs == NULL) {
+        return;
+    }
+    for (unsigned c = 0; c < LINK_CH_COUNT; ++c) {
+        regs[c] = outputs_command(o, (uint8_t)c);
+    }
+}
+
 uint8_t outputs_channels_write(uint16_t *regs, uint8_t off, uint8_t n,
                                const uint16_t *in)
 {
