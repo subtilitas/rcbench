@@ -56,24 +56,41 @@ _Static_assert(STORE_SLOTS <= 255u,
                "the store has more slots than a slot index holds");
 
 #define STORE_MAGIC    0x7263626FuL    /* "rcbo" */
-#define STORE_VERSION  2u
+#define STORE_VERSION  3u
 
 /*
  * One flash page holds a record, so a save is one program.  The checksum is
  * the link's, because a half-written record and a corrupt frame are the same
  * problem and there is no reason for two answers to it.
  *
- * It covers the sequence number as well as the configuration, and the
- * sequence number is what decides which record is the live one.  An erase
- * lifts bits towards 0xFF, so a record caught half way through one can only
- * have a higher sequence number than it was written with; covering it makes
- * that record fail its check rather than outrank the record still wanted.
+ * The checksum is not what protects the sequence number, though, and that is
+ * the field that decides which record is the live one.  A power cut during
+ * an erase leaves a record part way through it, and an erase only lifts bits
+ * towards 0xFF -- so a superseded record can gain sequence bits and outrank
+ * the record still wanted.  A 16-bit checksum makes that unlikely and not
+ * impossible: the corrupted record has to happen to check out, which is one
+ * chance in 65,536 per candidate, and only-set-bits leaves an enormous
+ * number of candidates.  One in 65,536 of a power cut in a 19 ms window is
+ * not a guarantee, and this is the field a guarantee was claimed for.
+ *
+ * So the sequence number is stored twice, the second time complemented.  An
+ * erase can set a bit and cannot clear one, so a bit gained in seq would
+ * have to be lost in seq_inv for the pair to still agree, and a bit gained
+ * in seq_inv would have to be lost in seq.  Neither is something an erase
+ * can do.  Any erase that has touched either field is therefore detected,
+ * whatever the checksum says, and a partially erased record can never
+ * outrank the live one.
+ *
+ * The configuration is left to the checksum.  A superseded record whose cfg
+ * is corrupted but whose seq is intact is still superseded, and the only
+ * sector ever erased is one whose records are all below the live one.
  */
 typedef struct {
     uint32_t magic;
     uint16_t crc;             /**< over every byte after this field */
     uint16_t version;
     uint32_t seq;
+    uint32_t seq_inv;         /**< ~seq; an erase cannot keep the pair */
     out_store_t cfg;
 } record_t;
 
@@ -157,6 +174,7 @@ static void survey(out_store_rec_t *recs)
         recs[i].valid  = !erased
                          && r->magic == STORE_MAGIC
                          && r->version == STORE_VERSION
+                         && out_store_seq_ok(r->seq, r->seq_inv)
                          && r->crc == record_crc(r);
         recs[i].seq    = recs[i].valid ? r->seq : 0u;
     }
@@ -292,6 +310,7 @@ out_store_step_t out_store_tick(bool driving, uint32_t quiet_ms,
     r->magic   = STORE_MAGIC;
     r->version = STORE_VERSION;
     r->seq     = w.seq;
+    r->seq_inv = ~w.seq;
     r->cfg     = s_want;
     r->crc     = record_crc(r);
 

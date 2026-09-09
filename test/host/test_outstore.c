@@ -387,8 +387,44 @@ TEST_CASE(a_power_cut_during_an_erase_leaves_the_live_record)
     CHECK_EQ(out_store_map_stale(recs, SECTORS, PER_SECTOR), 1);
 }
 
+/*
+ * The sequence pair rejects every bit an erase could have lifted.
+ *
+ * An erase sets bits and never clears one, so the check has to catch a bit
+ * set in either word, from any starting value.  Exhaustive over the 32 bit
+ * positions of each word, for the sequence numbers a store actually holds
+ * plus the two ends of the range.
+ */
+TEST_CASE(a_lifted_bit_breaks_the_sequence_pair)
+{
+    static const uint32_t seqs[] = {
+        0u, 1u, 2u, 17u, 255u, 256u, 0x0000FFFFuL, 0x12345678uL,
+        0x7FFFFFFFuL, 0x80000000uL, 0xFFFFFFFEuL, 0xFFFFFFFFuL,
+    };
+    for (size_t i = 0; i < sizeof(seqs) / sizeof(seqs[0]); ++i) {
+        const uint32_t seq = seqs[i];
+        const uint32_t inv = ~seq;
+        CHECK(out_store_seq_ok(seq, inv));
+        for (unsigned b = 0; b < 32u; ++b) {
+            const uint32_t bit = 1uL << b;
+            /* A bit an erase lifted in the sequence number. */
+            if ((seq & bit) == 0u) {
+                CHECK(!out_store_seq_ok(seq | bit, inv));
+            }
+            /* And one it lifted in the complement. */
+            if ((inv & bit) == 0u) {
+                CHECK(!out_store_seq_ok(seq, inv | bit));
+            }
+        }
+    }
+    /* A fully erased slot reads 0xFFFFFFFF in both, which is the pair a
+     * record can never be written with. */
+    CHECK(!out_store_seq_ok(0xFFFFFFFFuL, 0xFFFFFFFFuL));
+}
+
 int main(void)
 {
+    RUN(a_lifted_bit_breaks_the_sequence_pair);
     RUN(an_empty_store_writes_the_first_record);
     RUN(a_save_follows_the_live_record_in_its_own_sector);
     RUN(a_full_sector_moves_into_the_one_already_erased);

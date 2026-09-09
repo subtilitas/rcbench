@@ -32,10 +32,18 @@
  *   leaving.  With one sector configured there is nowhere else for the record
  *   to be and that guarantee is gone; the coprocessor configures two.
  *
- * The second guarantee needs the caller's checksum to cover the sequence
- * number.  An erase lifts bits towards 0xFF, so a half-erased record's
- * sequence number can only grow, and a record that outranks the live one has
- * to fail its check rather than win the comparison below.
+ * The second guarantee needs a half-erased record to be rejected, and a
+ * checksum is not enough for it.  An erase lifts bits towards 0xFF, so a
+ * superseded record's sequence number can only grow -- and for the corrupted
+ * record to be rejected it has to fail its check, which a 16-bit checksum
+ * does with probability 65535/65536 per candidate rather than always.  The
+ * number of candidates reachable by setting bits alone is enormous, so that
+ * is a likelihood and not a guarantee.
+ *
+ * out_store_seq_ok() is what makes it one.  The caller stores the sequence
+ * number twice, the second time complemented, and an erase cannot keep the
+ * pair: a bit gained in one would have to be lost in the other, and losing a
+ * bit is what an erase cannot do.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -101,3 +109,18 @@ bool out_store_map_write(const out_store_rec_t *recs, uint8_t sectors,
  */
 int out_store_map_stale(const out_store_rec_t *recs, uint8_t sectors,
                         uint8_t per_sector);
+
+/**
+ * Whether a record's sequence pair survived whatever happened to the flash.
+ *
+ * @p seq_inv is written as ~@p seq.  A flash erase only ever sets bits, so
+ * any bit an interrupted erase lifted in either word breaks the pair and
+ * cannot be compensated for by a bit lifted in the other: the complement
+ * would need a bit cleared, which no erase does.
+ *
+ * This is a stronger check than the record's checksum and it answers a
+ * narrower question.  It says nothing about the configuration -- that is the
+ * checksum's -- and everything about whether this record may be ranked
+ * against the others.
+ */
+bool out_store_seq_ok(uint32_t seq, uint32_t seq_inv);

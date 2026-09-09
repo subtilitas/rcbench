@@ -134,3 +134,8 @@ int out_store_map_stale(const out_store_rec_t *recs, uint8_t sectors,
     }
     return -1;
 }
+
+bool out_store_seq_ok(uint32_t seq, uint32_t seq_inv)
+{
+    return (seq ^ seq_inv) == 0xFFFFFFFFuL;
+}

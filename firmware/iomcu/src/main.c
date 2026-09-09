@@ -946,7 +946,7 @@ int main(void)
          * a clock they read for themselves is a clock that can already be
          * ahead of this one.
          */
-        const uint32_t now = (uint32_t)to_ms_since_boot(get_absolute_time());
+        uint32_t now = (uint32_t)to_ms_since_boot(get_absolute_time());
         s_now_ms = now;
 
         /* Polled rather than interrupt-driven: the loop turns over far faster
@@ -1054,10 +1054,33 @@ int main(void)
          * one long window with a printf in the middle of it, and the pass
          * between them is what empties the receive buffers.
          */
+        bool reclaimed = false;
         if (step == OUT_STORE_IDLE && out_store_reclaim(driving, quiet)) {
+            reclaimed = true;
             printf("rcbench-iomcu: output store sector reclaimed, "
                    "window %lu us\n",
                    (unsigned long)out_store_last_erase_us());
+        }
+
+        /*
+         * The clock is re-read across a flash window, and only across one.
+         *
+         * One clock per pass is the rule everywhere else, and it holds
+         * because a pass is short.  A window is not: an erase stops this core
+         * for about 19 ms, and every measurement below is of elapsed time --
+         * s_last_rx_ms is what the next pass's quiet-bus guard subtracts
+         * from, and stamping a frame collected after the window with a clock
+         * from before it would report 19 ms of quiet bus at the moment a
+         * frame was handled.  The next page program would then pass the 5 ms
+         * guard immediately and land in the same burst of requests, which is
+         * the collision the guard exists to prevent.
+         *
+         * link_dev_tick() has the same reason with a bigger margin: 19 ms
+         * against a 200 ms silence timeout.
+         */
+        if (step != OUT_STORE_IDLE || reclaimed) {
+            now = (uint32_t)to_ms_since_boot(get_absolute_time());
+            s_now_ms = now;
         }
 
         can_report(now);

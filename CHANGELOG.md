@@ -57,8 +57,16 @@ history is in git.
   be torn without taking the previous one with it. The store's checksum covers
   the record's sequence number as well as its configuration: an erase lifts
   bits towards 0xFF, and a record caught half way through one has to fail its
-  check rather than outrank the record still wanted. The record format is
-  version 2; a store written by an earlier build reads as unwritten, so the
+  check rather than outrank the record still wanted. A checksum alone makes
+  that likely and not certain -- 65,535 chances in 65,536 per candidate, over
+  an enormous number of candidates reachable by setting bits alone -- so the
+  sequence number is stored twice, the second time complemented. An erase can
+  set a bit and cannot clear one, so a bit gained in either word breaks the
+  pair and no bit gained in the other can restore it: a partially erased
+  record is rejected deterministically rather than probably. The rule is
+  `out_store_seq_ok()` in `shared/outputs/out_store_map.c`, where the host
+  suite holds it against every bit position of both words. The record format
+  is version 3; a store written by an earlier build reads as unwritten, so the
   first boot on this build starts from the defaults -- no driver and no pin in
   any slot. The panel keeps no binding of its own and sends none unasked: it
   reads the pages back when the link comes up and shows nothing configured, so
