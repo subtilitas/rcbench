@@ -635,21 +635,10 @@ static void control_pump(void)
         /*
          * The screen still sees every event: it draws the press.
          *
-         * A full queue gives up its oldest entry rather than refusing the
-         * new one, which is what the GT911's own event queue and the
-         * command queue already do.  The direction matters here more than
-         * anywhere else on the panel: the last event of a gesture is its
-         * release, so refusing the newest is refusing the release.  A
-         * release the screen never sees leaves it holding a press that is
-         * no longer on the glass, and ui_hold_tick() completes that hold on
-         * the frame timer -- an ARM with nothing on the panel.  The screen
-         * also stops accepting DISARM until a contact arrives carrying the
-         * same track id.
-         *
          * A still finger emits nothing, so filling 32 slots takes either
          * coordinate wobble on the held contact or a second one; a palm
          * resting on the glass reaches it in about 90 ms of undrained
-         * frame.
+         * frame.  What happens when it does fill is below.
          */
         bool routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
         if (!routed) {
@@ -657,7 +646,9 @@ static void control_pump(void)
              * The consumer is behind.  Drop the oldest and take the newest,
              * which is what the GT911's own event queue and the command
              * queue do -- but which of the two is lost is not what makes
-             * this safe.
+             * this safe, and a screen that never sees a release goes on
+             * holding a press that is no longer on the glass whichever way
+             * the queue is emptied.
              *
              * No choice here is safe on its own.  A release that never
              * arrives leaves a screen holding a press; a DOWN that never
