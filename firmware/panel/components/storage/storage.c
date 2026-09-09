@@ -6,8 +6,8 @@
 
 #include <ctype.h>
 #include <dirent.h>
+#include <errno.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -199,20 +199,10 @@ static bool suffix_matches(const char *name, const char *suffixes)
     return false;
 }
 
-static int compare_entries(const void *a, const void *b)
+int storage_walk(const char *dir, const char *suffixes,
+                 storage_visit_fn visit, void *ctx, storage_tick_fn tick)
 {
-    const storage_entry_t *x = (const storage_entry_t *)a;
-    const storage_entry_t *y = (const storage_entry_t *)b;
-    if (x->is_dir != y->is_dir) {
-        return x->is_dir ? -1 : 1;
-    }
-    return strcasecmp(x->name, y->name);
-}
-
-int storage_list(const char *dir, const char *suffixes, storage_entry_t *out,
-                 int max_entries)
-{
-    if (!s.mounted || out == NULL || max_entries <= 0) {
+    if (!s.mounted) {
         return -1;
     }
 
@@ -228,9 +218,35 @@ int storage_list(const char *dir, const char *suffixes, storage_entry_t *out,
         return -1;
     }
 
-    int n = 0;
-    struct dirent *e;
-    while (n < max_entries && (e = readdir(d)) != NULL) {
+    /*
+     * readdir() returns NULL for two different things: the end of the
+     * directory, and a read that failed.  A card pulled part way through a
+     * listing takes the second, and without errno the two are the same
+     * answer -- so a card that has gone would be reported as a card with
+     * nothing on it, and the screen would tell the operator their logs had
+     * vanished rather than that the card had.
+     */
+    int matched = 0;
+    for (;;) {
+        /*
+         * Cleared immediately before every call, because only this call's
+         * answer is being read.  Clearing it once per matched entry instead
+         * leaves whatever tick(), visit() or stat() set standing across every
+         * entry the filters reject, and the end-of-directory NULL then reads
+         * as a failure: a directory that was read whole is reported as no
+         * volume, and the run-number scan refuses to record a run over it.
+         */
+        errno = 0;
+        struct dirent *e = readdir(d);
+        if (e == NULL) {
+            break;
+        }
+        /* Per entry read, before any filter.  What the filters reject never
+         * reaches the visitor, and a root of unrelated files is the case that
+         * takes longest with nothing else running. */
+        if (tick != NULL) {
+            tick();
+        }
         if (e->d_name[0] == '.') {
             continue; /* ".", ".." and the metadata files a Mac leaves behind */
         }
@@ -246,22 +262,40 @@ int storage_list(const char *dir, const char *suffixes, storage_entry_t *out,
             continue;
         }
 
-        memcpy(out[n].name, e->d_name, len + 1u);
-        out[n].is_dir = is_dir;
-        out[n].size = 0;
-
-        if (!is_dir) {
-            char full[STORAGE_NAME_MAX * 3];
-            int w = snprintf(full, sizeof(full), "%s/%s", path, e->d_name);
-            struct stat st;
-            if (w > 0 && (size_t)w < sizeof(full) && stat(full, &st) == 0) {
-                out[n].size = (uint32_t)st.st_size;
-            }
+        storage_entry_t cur;
+        memcpy(cur.name, e->d_name, len + 1u);
+        cur.is_dir = is_dir;
+        /*
+         * No size here.  A stat() is another path lookup through the same
+         * single-sector directory window, and the walk sees every matching
+         * name on the card while its caller keeps a bounded few: on a card
+         * holding hundreds of runs that is hundreds of synchronous card
+         * transactions on the task that renders and handles touch.
+         * storage_size() fills in the ones that are kept.
+         */
+        cur.size = 0;
+        ++matched;
+        if (visit != NULL) {
+            visit(&cur, ctx);
         }
-        ++n;
     }
+    const int err = errno;
     closedir(d);
+    if (err != 0) {
+        ESP_LOGW(TAG, "listing %s stopped: %s", path, strerror(err));
+        return -1;              /* no volume, not an empty one */
+    }
 
-    qsort(out, (size_t)n, sizeof(out[0]), compare_entries);
-    return n;
+    return matched;
+}
+
+uint32_t storage_size(const char *dir, const char *name)
+{
+    if (name == NULL || !s.mounted) {
+        return 0u;
+    }
+    char full[STORAGE_NAME_MAX * 3];
+    storage_path(dir, name, full, sizeof(full));
+    struct stat st;
+    return (stat(full, &st) == 0) ? (uint32_t)st.st_size : 0u;
 }

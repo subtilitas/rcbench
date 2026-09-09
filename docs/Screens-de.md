@@ -242,8 +242,18 @@ plotten:
 Der Reader für CSV (Comma-Separated Values) akzeptiert Dezimalkomma und
 Dezimalpunkt, eine Einheitenzeile und Zeilen ungleicher Länge; die
 Importansicht zeigt, was er entschieden hat, bevor die Datei geplottet wird.
-Vom Prüfstand aufgezeichnete Läufe werden als `BENCHnnn.CSV` im
-Wurzelverzeichnis der Karte abgelegt.
+Vom Prüfstand aufgezeichnete Läufe werden als `BENCH001.CSV` bis
+`BENCH999.CSV` im Wurzelverzeichnis der Karte abgelegt.
+
+Die Liste fasst 48 Einträge, die Karte bis zu 999 Läufe. Passen nicht alle
+hinein, behält die Liste die neuesten Läufe, und ihr Reiter zeigt
+`48 OF 137 FILES` statt `FILES`: ein Lauf, der in der Liste fehlt, ist dann
+einer, für den die Liste zu kurz war, und nicht einer, der nie geschrieben
+wurde. Was neu heißt, steht in der Nummer im Namen: die Panel-Platine hat
+keine Uhr, die einen Stromausfall übersteht, deshalb trägt jede Datei auf der
+Karte das Datum 1980-01-01. Ein Lauf geht einer Datei vor, die der Prüfstand
+nicht geschrieben hat, also listet eine Karte mit 48 oder mehr Läufen keine
+andere Datei mehr. Alte Läufe am Rechner löschen, um eine zurückzuholen.
 
 ## Setup
 

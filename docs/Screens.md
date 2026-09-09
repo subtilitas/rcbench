@@ -226,7 +226,16 @@ Browse the card, open a file, check what the import detected, then plot:
 The CSV (comma-separated values) reader accepts decimal comma and decimal
 point, a units row and ragged rows; the import view shows what it decided
 before the file is plotted. Runs recorded by the bench are written as
-`BENCHnnn.CSV` in the card's root directory.
+`BENCH001.CSV` to `BENCH999.CSV` in the card's root directory.
+
+The list holds 48 entries and a card holds up to 999 runs. When there are more
+than fit, the list keeps the newest runs and its tab reads `48 OF 137 FILES`
+instead of `FILES`, so a run that is missing from the list is a run the list
+was too short for rather than a run that was never written. The number in the
+name is what newest means: the panel has no clock that survives a power cycle,
+so every file on the card is dated 1980-01-01. A run outranks a file the bench
+did not write, so a card holding 48 or more runs lists no other file. Delete
+old runs on a computer to get one back.
 
 ## Setup
 

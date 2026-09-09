@@ -42,7 +42,17 @@ typedef struct {
 } log_viewer_file_t;
 
 typedef struct {
-    /** Fill @p out; return the count, or -1 when there is no volume at all. */
+    /**
+     * Fill @p out with at most @p max_entries entries and return how many the
+     * volume holds, or -1 when there is no volume at all.
+     *
+     * The count may be larger than @p max_entries: a card takes up to 999
+     * runs, and the screen shows what fits and says how many there are.  A
+     * count above @p max_entries means all @p max_entries were written, and
+     * they are the ones worth keeping -- newest run first, see log_select.h.
+     * The first @p max_entries in directory order would hide every run made
+     * after the card passed that many files.
+     */
     int (*list)(log_viewer_file_t *out, int max_entries, void *ctx);
     /** Open a listed name as a rewindable source; false if it fails to open. */
     bool (*open)(const char *name, log_source_t *src, void *ctx);

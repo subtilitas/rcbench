@@ -43,6 +43,8 @@
 #include "link_bringup.h"
 #include "link_host.h"
 #include "link_pages.h"
+#include "log_name.h"
+#include "log_select.h"
 #include "log_writer.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
@@ -52,6 +54,7 @@
 #include "settings.h"
 #include "settings_screen.h"
 #include "splash_screen.h"
+#include "log_viewer_screen.h"
 #include "storage.h"
 #include "telemetry_sim.h"
 #include "outputs.h"
@@ -177,7 +180,20 @@ static bool              s_bus_ok = true;   /* until the test says otherwise */
  */
 #define LINK_LOST_SCREEN_MS 4000u
 
-static uint32_t s_link_lost_ms;      /* when it went, 0 while it is up   */
+/*
+ * When the link went, 0 while it is up.
+ *
+ * Atomic because the two ends are different tasks: the control task stamps
+ * and clears it, and the render task reads it to decide whether to open the
+ * diagnosis screen and to say how long the link has been down.  A plain
+ * uint32_t read across those is a data race whatever the silicon does with an
+ * aligned word, and copying it to a local does not make the load itself
+ * defined.
+ *
+ * Relaxed ordering is enough.  Nothing is published through this timestamp:
+ * it orders no other write, and every reader wants the value alone.
+ */
+static atomic_uint s_link_lost_ms;   /* when it went, 0 while it is up   */
 static bool     s_link_lost_shown;   /* the screen has had its turn      */
 /*
  * Two counts, because they answer two questions.  The per-outage one sits on
@@ -632,6 +648,190 @@ static void pump(void)
  */
 #define IDENTITY_WAIT_MS 3000u
 
+
+/* ------------------------------------------------------- the card, listed */
+
+/*
+ * The log viewer's side of the SD card.
+ *
+ * The viewer knows about names, sizes and a rewindable source; it knows
+ * nothing about a mount point or a suffix filter, and it is built by the host
+ * suite against a fake card.  This is the only place the two meet, and
+ * without it the viewer has no list function at all -- which it reports as no
+ * card, whatever is actually mounted.
+ */
+#define CARD_DIR      ""          /* the root of the mount point */
+/*
+ * What the viewer can actually open.  Every file it lists is handed to
+ * log_csv_analyse(), and nothing in the tree decodes a Betaflight blackbox
+ * log, so offering .bfl here would list files that fail to open.  The screen
+ * says the same thing; the two are kept together deliberately.
+ */
+#define CARD_SUFFIXES ".csv"
+
+/* The file the viewer currently has open, so close() has something to close.
+ * One at a time: the viewer opens a log, reads it and closes it before it
+ * opens another. */
+static FILE *s_card_file;
+
+/*
+ * One directory entry on its way into the viewer's list.
+ *
+ * The card takes LOG_RUN_LAST runs and the list holds LOG_VIEWER_MAX_FILES of
+ * them, so which of them arrive is a decision rather than a side effect of
+ * where the read stopped: every entry is offered to log_select_keep(), which
+ * holds the newest runs.
+ */
+typedef struct {
+    log_viewer_file_t *out;
+    int max;
+    int held;
+    int files;      /* what the card holds that this viewer could open */
+} card_pick_t;
+
+static void card_take(const storage_entry_t *entry, void *ctx)
+{
+    card_pick_t *pick = (card_pick_t *)ctx;
+    /*
+     * Files only.  storage_walk() offers directories whatever the suffix
+     * filter says, because a filter is about names and a directory has no
+     * extension to match -- but this viewer cannot enter one, so a directory
+     * row is a row that says "is a folder" and nothing else.  Letting them
+     * compete for a bounded list means 48 folders sorted early can fill it
+     * and leave the card's only log unreachable.
+     */
+    if (entry->is_dir) {
+        return;
+    }
+    ++pick->files;
+    /* Field by field rather than a block copy of the structure: the two
+     * agree today and neither owns the other's layout.  The name is copied
+     * whole and terminated by hand, so one that filled its array without a
+     * terminator ends here rather than running off the end. */
+    _Static_assert(sizeof(pick->out->name) == sizeof(entry->name),
+                   "the viewer's name field and the card's are one size");
+    log_viewer_file_t f;
+    memcpy(f.name, entry->name, sizeof(f.name));
+    f.name[sizeof(f.name) - 1u] = '\0';
+    f.size   = entry->size;
+    f.is_dir = entry->is_dir;
+    pick->held = log_select_keep(pick->out, pick->held, pick->max, &f);
+}
+
+static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
+{
+    (void)ctx;
+    /*
+     * A card put in after the panel booted is mounted here, on the way past.
+     * The only other storage_init() runs in the splash sequence, so without
+     * this the RESCAN button that the empty screen tells the operator to
+     * press could never find a card and a reboot would be the only way in.
+     * Mounting when something is already mounted returns at once.
+     */
+    if (!storage_mounted()) {
+        (void)storage_init();
+    }
+    /*
+     * No card is -1 and an empty card is 0, and the viewer says different
+     * things about them.  storage_walk() cannot open the root of a volume
+     * that is not mounted, so the two already arrive apart; asking
+     * storage_mounted() first makes that true by construction rather than by
+     * how a failure happened to surface.
+     */
+    if (!storage_mounted()) {
+        return -1;
+    }
+    card_pick_t pick = { out, max_entries, 0, 0 };
+    /* No tick: this runs on the task that renders, which has no safety line
+     * to hold and nothing to pump. */
+    const int total = storage_walk(CARD_DIR, CARD_SUFFIXES, card_take, &pick,
+                                   NULL);
+    if (total < 0) {
+        /*
+         * Mounted, and yet its root will not open: the card it was mounted
+         * from has been taken out or swapped.  Nothing clears that flag on
+         * its own -- only storage_deinit() does -- so the mount stays stale
+         * and a replacement card is not found until the panel restarts.
+         *
+         * Not unmounted from here.  This runs on the task that renders, and
+         * the control task writes the run log on the same volume: unmounting
+         * under an open handle frees the SPI bus beneath a write on the other
+         * core.  Putting that right means one task owning the card's
+         * lifetime, which is a change of its own; see STATUS.md.
+         */
+        return -1;
+    }
+    /*
+     * Sizes last, and only for what was kept.  The walk carries names alone
+     * because a size is a path lookup of its own; asking for one per entry on
+     * a card holding hundreds of runs would put hundreds of card transactions
+     * on the task that renders and handles touch, to fill a column for
+     * entries the list has already dropped.
+     */
+    for (int i = 0; i < pick.held; ++i) {
+        if (!out[i].is_dir) {
+            out[i].size = storage_size(CARD_DIR, out[i].name);
+        }
+    }
+    /* Held in rank order while the card is read, drawn in name order. */
+    log_select_sort(out, pick.held);
+    /*
+     * Files, not entries.  The number goes to the tab that says how much of
+     * the card is on the list, and counting folders there would say a card
+     * holds more than the list can ever show while the list is complete.
+     */
+    return pick.files;     /* what the card holds; pick.held were written */
+}
+
+static bool card_open(const char *name, log_source_t *src, void *ctx)
+{
+    (void)ctx;
+    if (name == NULL || src == NULL) {
+        return false;
+    }
+    /* Whatever was open is closed first.  A viewer that opened a second log
+     * without closing the first would leak the handle, and there are few. */
+    if (s_card_file != NULL) {
+        fclose(s_card_file);
+        s_card_file = NULL;
+    }
+    char path[STORAGE_NAME_MAX + sizeof(STORAGE_MOUNT_POINT) + 2];
+    storage_path(CARD_DIR, name, path, sizeof(path));
+    s_card_file = fopen(path, "rb");
+    if (s_card_file == NULL) {
+        /* Listed and then gone, or unreadable.  The viewer says so; there is
+         * nothing here to retry. */
+        ESP_LOGW(TAG, "could not open %s", path);
+        return false;
+    }
+    log_source_stdio(src, s_card_file);
+    return true;
+}
+
+static void card_close(void *ctx)
+{
+    (void)ctx;
+    if (s_card_file != NULL) {
+        fclose(s_card_file);
+        s_card_file = NULL;
+    }
+}
+
+static const char *card_volume(void *ctx)
+{
+    (void)ctx;
+    return storage_card_name();
+}
+
+static const log_viewer_io_t k_card_io = {
+    .list   = card_list,
+    .open   = card_open,
+    .close  = card_close,
+    .volume = card_volume,
+    .ctx    = NULL,
+};
+
+
 /*
  * Ask the coprocessor who it is, repeatedly, for IDENTITY_WAIT_MS.
  *
@@ -707,6 +907,9 @@ static bool bring_up(void)
      * missing card is a warning the operator reads on the way past rather
      * than a boot failure. */
     (void)storage_init();
+    /* And the viewer is told how to reach it.  Without this it has no way to
+     * list anything and reports no card whatever is mounted. */
+    log_viewer_set_io(&k_card_io);
     splash_screen_set(SPLASH_STEP_STORAGE,
                       storage_mounted() ? SPLASH_OK : SPLASH_WARN,
                       storage_status());
@@ -851,7 +1054,33 @@ static bool        s_log_run;
  * holding 400 runs cost 400 opens at the arming edge; after the first one it
  * starts from what it found.
  */
-static int         s_log_next = 1;
+static int         s_log_next = LOG_RUN_FIRST;
+/* Whether s_log_next has been put above what the card already holds.  Once
+ * per boot: after that this end has written every number it handed out. */
+static bool        s_log_numbered;
+
+/*
+ * The highest run number on the card, for the visitor below.
+ *
+ * This runs on the control task, which is the task that beats the safety line
+ * and hit-tests STOP, and a populated root takes longer to read than
+ * HEARTBEAT_MAX_GAP_MS (150 ms).  The walk is given control_pump as its tick
+ * so the line is served per directory entry, the way the probe loop it
+ * replaced pumped per name.  Not here: the filters reject dot-names, wrong
+ * suffixes and over-long names before this is reached, so a root of unrelated
+ * files would be read with nothing running.
+ */
+static void log_highest(const storage_entry_t *entry, void *ctx)
+{
+    int *highest = (int *)ctx;
+    if (entry->is_dir) {
+        return;
+    }
+    const int n = log_run_number(entry->name);
+    if (n > *highest) {
+        *highest = n;
+    }
+}
 static log_writer_t s_log;
 static float        s_log_t;
 
@@ -890,11 +1119,46 @@ static void log_start(void)
         control_alert("no card -- this run is not recorded");
         return;
     }
-    /* Numbered, not timestamped: no clock on this board survives a power
-     * cycle, so every file would be dated 1970-01-01. */
-    for (int i = s_log_next; i < 1000 && s_log_file == NULL; ++i) {
+    /*
+     * Numbered, not timestamped: no clock on this board survives a power
+     * cycle, so every file would be dated 1970-01-01.  The number is the
+     * only order the card carries, and the viewer reads it back with
+     * log_run_number() to decide which runs it can still show once a card
+     * holds more of them than the screen does; log_run_name() is the one
+     * place the name is built.
+     *
+     * Above every number the card already carries, not in the first gap.
+     * A gap is what deleting an old run on a computer leaves, and a run
+     * written into one is the newest run wearing the oldest number: the
+     * viewer would rank it last and drop it from a full list, hiding the
+     * experiment just recorded.  One directory read settles it, which is
+     * also cheaper than the probes it replaces -- a card holding 400 runs
+     * cost 400 opens before the first free number.
+     */
+    if (!s_log_numbered) {
+        int highest = LOG_RUN_FIRST - 1;
+        if (storage_walk(CARD_DIR, CARD_SUFFIXES, log_highest, &highest,
+                         control_pump) < 0) {
+            /*
+             * The card would not list.  Falling through would number this run
+             * from 1 and take the first gap, which is the numbering this scan
+             * exists to prevent: the run would be recorded and then rank as
+             * the oldest on the card, and a full list would hide it.  A run
+             * the operator is told is not recorded is better than one that
+             * records itself out of sight.
+             */
+            ESP_LOGW(TAG, "the card would not list; this run is not recorded");
+            control_alert("card unreadable -- run not recorded");
+            return;
+        }
+        s_log_next = (highest >= LOG_RUN_FIRST) ? highest + 1 : LOG_RUN_FIRST;
+        s_log_numbered = true;
+    }
+    for (int i = s_log_next; i <= LOG_RUN_LAST && s_log_file == NULL; ++i) {
+        char name[LOG_RUN_NAME_MAX];
         char path[64];
-        snprintf(path, sizeof(path), "/sdcard/BENCH%03d.CSV", i);
+        log_run_name(name, sizeof(name), i);
+        storage_path(CARD_DIR, name, path, sizeof(path));
         control_pump();
         FILE *probe = fopen(path, "r");
         if (probe != NULL) {
@@ -1385,9 +1649,16 @@ static void link_lost_report(busfault_report_t *r)
     memset(r, 0, sizeof(*r));
     r->kind       = BUSFAULT_LINK_LOST;
     r->bus        = bus_state();
-    r->down_s     = s_link_lost_ms == 0u
+    /*
+     * The timestamp is read once.  The control task clears it on the other
+     * core the moment the link answers, and a second read that caught the
+     * zero would make this now_ms() / 1000 -- the uptime, printed as how
+     * long the link has been down.
+     */
+    const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
+    r->down_s     = lost_ms == 0u
                         ? 0u
-                        : (uint32_t)(now_ms() - s_link_lost_ms) / 1000u;
+                        : (uint32_t)(now_ms() - lost_ms) / 1000u;
     r->recoveries = s_recoveries;
     r->polls      = s_host.polls;
     r->timeouts   = s_host.timeouts;
@@ -1473,14 +1744,17 @@ static void link_report(void)
      * fault is one nobody can read down a column, and the reading that most
      * needs a timestamp is the one where the controller would not answer.
      */
+    /* Read once, like every other reader of it: the control task can clear
+     * it between the test and the subtraction. */
+    const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
     char row[208];
     snprintf(row, sizeof(row),
              "t=%lus link=down for %lus  bus=%s tx_err=%s rx_err=%s "
              "bus_err=%s rejoins=%lu/%lu  polls=%lu replies=%lu timeouts=%lu",
              (unsigned long)(now_ms() / 1000u),
-             (unsigned long)(s_link_lost_ms == 0u
+             (unsigned long)(lost_ms == 0u
                                  ? 0u
-                                 : (now_ms() - s_link_lost_ms) / 1000u),
+                                 : (now_ms() - lost_ms) / 1000u),
              !have_bus ? "not running" : (off ? "OFF" : "on"),
              have_bus ? u32(n1, sizeof(n1), tec) : "?",
              have_bus ? u32(n2, sizeof(n2), rec) : "?",
@@ -2649,12 +2923,12 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
          * only shown from there.
          */
         if (answered) {
-            s_link_lost_ms    = 0;
+            atomic_store(&s_link_lost_ms, 0u);
             s_link_lost_shown = false;
             s_recoveries      = 0;   /* the next outage counts its own */
         } else if (*link_up) {
             /* The edge: it was up until this poll. */
-            s_link_lost_ms = now_ms();
+            atomic_store(&s_link_lost_ms, now_ms());
         }
         /*
          * A sample exists only if the bench page was read.  A poll that timed
@@ -2855,6 +3129,15 @@ static void control_task(void *arg)
  * its screen by the time it gets here, so a refused send is a discarded
  * disarm or a throttle that never arrives.
  */
+/*
+ * Take what the screens have decided and hand it to the control task.
+ *
+ * Called after every touch event as well as once a pass, because a screen's
+ * enter() can be long: a command recorded by the screen being left must not
+ * wait behind the work of the screen being entered.
+ */
+static void flush_screen_commands(uint32_t stops_now);
+
 static void send_cmd(const panel_cmd_t *pc)
 {
     /*
@@ -2893,6 +3176,24 @@ static void send_cmd(const panel_cmd_t *pc)
     (void)xQueueReceive(s_cmd_q, &stale, 0);
     if (xQueueSend(s_cmd_q, pc, 0) != pdTRUE) {
         ESP_LOGW(TAG, "control queue full; a command was lost");
+    }
+}
+
+static void flush_screen_commands(uint32_t stops_now)
+{
+    motor_cmd_t mc;
+    while (motor_screen_poll_cmd(&mc)) {
+        panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
+                           .stops = stops_now,
+                           .lets_go = atomic_load(&s_lets_go) };
+        send_cmd(&pc);
+    }
+    servo_cmd_t sv;
+    if (servo_screen_take(&sv)) {
+        panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
+                           .stops = stops_now,
+                           .lets_go = atomic_load(&s_lets_go) };
+        send_cmd(&pc);
     }
 }
 
@@ -3016,7 +3317,33 @@ void app_main(void)
         /* What the control task saw of the panel. */
         touch_event_t evt;
         while (xQueueReceive(s_touch_q, &evt, 0) == pdTRUE) {
+            const ui_screen_id_t before = ui_router_current();
             ui_router_event(&evt);
+            /*
+             * A navigation, and only a navigation, is taken out before the
+             * next event is dispatched.
+             *
+             * Leaving a bench screen records a disarm, and entering a screen
+             * runs its enter() there and then -- the log viewer's reads the
+             * card's whole root directory.  Two taps in one drain, HOME and
+             * then LOGS, would otherwise leave the disarm sitting in the
+             * screen while the walk ran, and the output stays live for as
+             * long as that takes.
+             *
+             * Not after every event.  The servo screen holds one pending
+             * command and lets the next overwrite it, so a drag's queued
+             * MOVEs collapse to where the finger is now.  Taking each one out
+             * as it arrives turns that into a queue of positions the finger
+             * has already left, and the horn follows them one link exchange
+             * at a time.  A navigation is the one thing that cannot be
+             * coalesced away, and nothing else here needs to jump the queue.
+             *
+             * STOP is unaffected either way: the control task hit-tests its
+             * band itself.
+             */
+            if (ui_router_current() != before) {
+                flush_screen_commands(stops_now);
+            }
         }
 
         /* What the screens decided, back to the control task. */
@@ -3052,20 +3379,7 @@ void app_main(void)
         outputs_screen_set_result(
             (outputs_result_t)atomic_load(&s_outputs_result));
 
-        motor_cmd_t mc;
-        while (motor_screen_poll_cmd(&mc)) {
-            panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
-                               .stops = stops_now,
-                               .lets_go = atomic_load(&s_lets_go) };
-            send_cmd(&pc);
-        }
-        servo_cmd_t sv;
-        if (servo_screen_take(&sv)) {
-            panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
-                               .stops = stops_now,
-                               .lets_go = atomic_load(&s_lets_go) };
-            send_cmd(&pc);
-        }
+        flush_screen_commands(stops_now);
         /*
          * Whether a STOP is on screen to press.  The control task hit-tests
          * the band's rectangle and cannot see which screen is up.
@@ -3156,9 +3470,16 @@ void app_main(void)
          * STOP, and a bench with something spinning must not have its stop
          * button covered by a diagnosis.  Armed, the alert band already says
          * the link is gone, and the screen waits for the disarm.
+         *
+         * The timestamp is read once and tested twice.  The control task
+         * clears it on the other core the moment the link answers, and a
+         * second read that caught the zero would test now_ms() - 0, the
+         * uptime, against LINK_LOST_SCREEN_MS: past 4000 ms of uptime that
+         * passes, and the screen takes over on a link that is up.
          */
-        if (!armed && s_link_lost_ms != 0u && !s_link_lost_shown
-            && (uint32_t)(now_ms() - s_link_lost_ms) >= LINK_LOST_SCREEN_MS
+        const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
+        if (!armed && lost_ms != 0u && !s_link_lost_shown
+            && (uint32_t)(now_ms() - lost_ms) >= LINK_LOST_SCREEN_MS
             && ui_router_current() != SCREEN_SPLASH
             && ui_router_current() != SCREEN_BUSFAULT) {
             busfault_report_t r;

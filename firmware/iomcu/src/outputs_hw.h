@@ -19,6 +19,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "dshot.h"
 #include "outputs.h"
 
 /** Forget every binding.  Call once, before the first apply. */
@@ -55,5 +56,19 @@ bool outputs_hw_bound(uint8_t slot);
  * when no ESC has ever answered.
  */
 bool outputs_hw_erpm(uint32_t *erpm, uint32_t *age_ms);
+
+/**
+ * The last extended-telemetry reading of @p kind, and how long ago in
+ * milliseconds.
+ *
+ * Raw: the payload byte as the ESC sent it, because the units belong to the
+ * frame type and not to this file.  Returns false for a kind no reply has
+ * carried, which is every kind on an ESC that does not do extended telemetry
+ * and all of them until one has been asked and has answered.
+ *
+ * Each kind carries its own age.  They do not arrive together: speed comes
+ * back on every frame and the rest are interleaved between them.
+ */
+bool outputs_hw_edt(dshot_telem_kind_t kind, uint16_t *value, uint32_t *age_ms);
 
 #endif /* RCBENCH_OUTPUTS_HW_H */
