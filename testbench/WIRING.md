@@ -104,19 +104,34 @@ and the RP2350 has its own.
 | Pi GPIO | Header pin | To the RP2350 |
 |---|---|---|
 | GPIO25 | 22 | SWCLK |
-| GPIO24 | 18 | SWDIO |
+| GPIO8 | 24 | SWDIO |
 | ground | 20 | ground, already on the star |
 
-These are the pins Raspberry Pi's own instructions for debugging one Pi from
-another use, so the wiring can be checked against a second source. Any two free
-header GPIOs work -- the lines are bit-banged through `linuxgpiod`, not a
-peripheral -- but the bench is reproducible only if every assembler uses the
-same two, and `testbench/host/selftest.sh` reports whichever it is given.
+Count the pads. Pin 22 and pin 24 are two positions apart on the outer row,
+and pin 20 is the ground opposite pin 19.
+
+SWDIO is on GPIO8 because that pin comes up pulled up and GPIO24 comes up
+pulled down, and the SWD specification puts a pull-up on SWDIO. OpenOCD's own
+`interface/raspberrypi5-gpiod.cfg` puts SWDIO on GPIO8 for the same reason.
+**This is not a fix for anything observed.** No target has been on either pin,
+so whether a pull-down on GPIO24 would have cost anything is unknown; the pin
+that matches the specification is simply the one to wire while nothing is
+wired. `README.md` under *Flashing without hands* has the readings.
+
+Any two free header GPIOs work -- the lines are bit-banged through
+`linuxgpiod`, not a peripheral -- but the bench is reproducible only if every
+assembler uses the same two, and `testbench/host/selftest.sh` reports
+whichever it is given.
+
+**GPIO8 is SPI0 CE0.** With SPI enabled on the header the `spidev` driver
+claims that line and `linuxgpiod` cannot have it. SPI is off on the bench host
+-- there is no `/dev/spidev*` and no `dtparam=spi` in `/boot/firmware/config.txt`
+-- and it stays off while SWD is on this pin.
 
 **Check**, with the RP2350 powered from its own supply:
 
     gpiodetect                      # which chip carries the 40-pin header
-    export SWD_GPIOCHIP=<n> SWD_SWCLK=25 SWD_SWDIO=24
+    export SWD_GPIOCHIP=<n> SWD_SWCLK=25 SWD_SWDIO=8
     openocd -c "adapter driver linuxgpiod" \
             -c "adapter gpio swclk -chip $SWD_GPIOCHIP $SWD_SWCLK" \
             -c "adapter gpio swdio -chip $SWD_GPIOCHIP $SWD_SWDIO" \
@@ -140,7 +155,7 @@ There is no clock to come down to. `linuxgpiod` runs at a fixed rate --
 OpenOCD prints `Note: The adapter "linuxgpiod" doesn't support configurable
 speed` -- so an `adapter speed` line changes nothing, and half-working is a
 wiring or a pull question rather than a clock one. `README.md` under *Flashing
-without hands* has the pull-up note on GPIO24.
+without hands* has the pull readings for all three pins.
 
 ---
 

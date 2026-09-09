@@ -216,7 +216,7 @@ The OpenOCD on the bench host ships no `interface/linuxgpiod.cfg`. The driver
 is selected by name:
 
     gpiodetect                       # which chip carries the header
-    export SWD_GPIOCHIP=0 SWD_SWCLK=25 SWD_SWDIO=24
+    export SWD_GPIOCHIP=0 SWD_SWCLK=25 SWD_SWDIO=8
     openocd -c "adapter driver linuxgpiod" \
             -c "adapter gpio swclk -chip $SWD_GPIOCHIP $SWD_SWCLK" \
             -c "adapter gpio swdio -chip $SWD_GPIOCHIP $SWD_SWDIO" \
@@ -237,23 +237,40 @@ driver and stops there:
 That is the whole of what has been confirmed. `cannot read IDR` is the
 no-target reading; a board on the pins has to replace it.
 
-That build also ships `interface/raspberrypi5-gpiod.cfg`, which resolves
-the chip number from the `/proc/device-tree/aliases` entry pointing at the RP1
-instead of taking it from a variable. It assigns SWDIO to GPIO8 and SWCLK to
-GPIO11, not the pair below.
+That build also ships `interface/raspberrypi5-gpiod.cfg`, which resolves the
+chip number from the `/proc/device-tree/aliases` entry pointing at the RP1
+instead of taking it from a variable. It puts SWDIO on GPIO8 and SWCLK on
+GPIO11; this bench agrees on SWDIO and keeps SWCLK on GPIO25.
 
-GPIO25 on header pin 22 is SWCLK and GPIO24 on header pin 18 is SWDIO, which
-is the pair Raspberry Pi's own instructions for debugging one Pi from another
-use. `testbench/WIRING.md` has the table. Any two free header GPIOs would work,
-since the lines are bit-banged rather than driven by a peripheral, but a bench
-is reproducible only if every assembler uses the same two.
+SWCLK is GPIO25 on header pin 22, SWDIO is GPIO8 on header pin 24, and ground
+is pin 20. `testbench/WIRING.md` has the table. Any two free header GPIOs
+would work, since the lines are bit-banged rather than driven by a peripheral,
+but a bench is reproducible only if every assembler uses the same two.
 
-Both of those lines come up pulled down: `pinctrl get 24,25` on the bench host
-reports `pd` for each, against `pu` on GPIO8. The SWD specification puts a
-pull-up on SWDIO at the target, which is why OpenOCD's own Pi 5 configuration
-moved SWDIO onto GPIO8. Whether an adapter pull-down against the RP2350's own
-termination costs anything here is untested, and is one of the things a target
-on these pins would answer. GPIO8 is the fallback if it does.
+SWDIO is on GPIO8 for its default pull. On a freshly booted bench host
+`pinctrl get 8,24,25` reports:
+
+     8: no    pu | -- // GPIO8 = none
+    24: no    pd | -- // GPIO24 = none
+    25: no    pd | -- // GPIO25 = none
+
+`pu` on GPIO8 against `pd` on GPIO24 and GPIO25, which is the RP1's split at
+GPIO9. The SWD specification puts a pull-up on SWDIO at the target, so GPIO8
+is the line that agrees with it, and OpenOCD's Pi 5 configuration puts SWDIO
+there for the same reason. Read the pulls before OpenOCD has run: it leaves
+the lines it drove as inputs with no pull, and `pinctrl` then reports `pn`
+rather than the power-on value.
+
+**The choice is not a fix for an observed fault.** No target has been on
+either pin, so whether a pull-down on GPIO24 would have cost anything against
+the RP2350's own termination is unknown. Nothing is wired yet, which is the
+whole reason to spend a documentation change now rather than a rewiring later.
+
+**GPIO8 is SPI0 CE0.** With SPI enabled on the header the `spidev` driver
+claims the line and `linuxgpiod` cannot have it. SPI is off on the bench host
+-- no `/dev/spidev*`, no `dtparam=spi` in `/boot/firmware/config.txt` -- and
+stays off while SWD is on this pin. SWCLK on GPIO25 carries no such
+attachment.
 
 `host/selftest.sh` reads the same three variables, so the wiring is stated
 once and nothing in the scripts has to know it.
