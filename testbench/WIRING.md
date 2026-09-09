@@ -128,13 +128,30 @@ Its ground lead to the star point. One probe on anything that is switching --
 the heartbeat is the easiest, once the boards run -- and the rest left off
 until the step that uses them.
 
-**Check.**
+**Check, one: the instrument.**
 
     testbench/host/selftest.sh
 
 It reports what it found rather than a pass. The line that matters is the
-capture: an analyser that enumerates but returns nothing has no bitstream,
-and that failure otherwise looks like a quiet bench.
+capture: an analyser that enumerates but returns nothing has no bitstream, and
+that failure otherwise looks like a quiet bench.
+
+**Check, two: the lead.** The capture above passes with the probe off, the
+ground lead off, or both -- it asks the device for samples and reports that
+samples arrived, and a floating input produces samples like any other. So
+drive something known and require the channel to follow it.
+
+At this point in the order the boards are not running, so use the Pi: take a
+free header GPIO, toggle it by hand, and capture the probe that is on it.
+
+    gpioset --mode=time --sec=1 gpiochip<n> <line>=1   # or the pin held high
+    testbench/host/capture.sh probe D0 1m 2m 1.65
+
+**The channel has to change.** A trace that sits at one level says the probe
+is not on the pin, or the ground lead is not on the star -- and either of
+those is a bench where every later capture reads quiet and every later step is
+diagnosed as the thing being measured. Repeat it for each probe as that probe
+is placed, rather than once for the first one.
 
 ---
 
