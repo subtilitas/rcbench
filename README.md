@@ -12,9 +12,13 @@ RP2350 coprocessor (measurement, outputs, and every protocol with timing
 requirements), connected over CAN (Controller Area Network) at 1 Mbit/s.
 
 **Status: under construction.** The panel boots, every screen exists, and the
-CAN link runs on hardware. No output produces a signal, and most measurements
-wait on parts that are not fitted. Screens showing simulated values are marked
-SIMULATION.
+CAN link runs on hardware. The output drivers are built and an armed bank
+drives every bound pin at its role's rest whether or not anything commands it;
+a motor and a servo have each been run from the panel on a bring-up bench.
+What is unmeasured is the timing on an instrument -- no bit width, frame
+period or reply delay in this tree has been seen on a scope or an analyser.
+Most other measurements wait on parts that are not fitted. Screens showing
+simulated values are marked SIMULATION.
 
 [STATUS.md](STATUS.md) records what is built, what is open and what is not
 planned.
@@ -30,10 +34,11 @@ single press.
 
 Three stop mechanisms are designed in: a heartbeat whose absence removes the
 outputs, the coprocessor's own link watchdog, and a STOP command over the link.
-The heartbeat requires a retriggerable monostable that is on no board, and the
-line between the panel's J8 and the coprocessor's GP3 is not fitted either, so
-a coprocessor that is connected refuses every arm. The STOP command over the
-link is written and not run on hardware.
+The line between the panel's J8 and the coprocessor's GP3 is fitted on the
+bring-up bench, so arming works there. The heartbeat's retriggerable
+monostable is on no board, so firmware at both ends is the only thing gating
+the outputs and there is no hardware backstop behind it. The STOP command over
+the link is written and not run on hardware.
 [Safety](https://github.com/subtilitas/rcbench/wiki/Safety) specifies all
 three.
 
@@ -45,7 +50,7 @@ Institute of Technology) licence's "without warranty of any kind" applies.
 | Screen | Function | State |
 | --- | --- | --- |
 | Motor & ESC | voltage, current, consumption, RPM (revolutions per minute) and temperatures plotted live | screen built; values simulated |
-| Servo | commanded and measured position; installed-limit search; two-servo synchronisation | screen built and commanding over the link; no output driver |
+| Servo | commanded and measured position; installed-limit search; two-servo synchronisation | screen built and commanding over the link; drives the pins bound as surfaces, run on a bring-up bench, timing unmeasured |
 | Analyser | sixteen receiver channels with history, the digital channels, LIVE / FRAME LOST / FAILSAFE / SILENT | S.BUS decoder built; PIO (programmable input/output) receiver not written |
 | Programmer | BLHeli_S, AM32, ESCape32, VESC and Hitec parameter tables | screen built; no protocol on a wire |
 | Balance | blade count, correction mass and angle, sensor placement guides | screen built; sensors not fitted |

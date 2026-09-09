@@ -3,7 +3,7 @@
 <sub>**English** · [Deutsch](FirstRun-de.md)</sub>
 
 For the first time both boards are powered with the heartbeat wire fitted.
-Written for 0.7.0. Nothing below has been done before, so
+Written for 0.8.0. Nothing below has been done before, so
 every step says what "good" looks like and what to write down when it is not.
 
 Work down the list. Each step assumes the one above it passed.
@@ -182,11 +182,14 @@ Nothing is wired to an output yet. This step tests the interlock, not a pin.
 6. **Cover the touch panel / let touch die** → after **500 ms** of silence
    arming is blocked.
 
-Every one of these is host-tested. **None has been seen on hardware.**
+Every one of these is host-tested. **None of the numbers below has been seen
+on an instrument.** A servo and a motor have since been run from the panel on
+a bring-up bench, so a pin does drive; what no scope or analyser has read is
+any pulse width, frame period or reply delay in this tree.
 
 ---
 
-## 6. First pin driven — ever
+## 6. First pin on an instrument
 
 Use a **servo**, not the ESC. A servo is the forgiving case and the one the
 scope reads most easily.
@@ -194,6 +197,12 @@ scope reads most easily.
 **Pins free for an output:** GP0, GP1, GP2, GP4, GP5, GP6, GP7, GP13, GP14,
 GP15 and up.
 **Reserved and refused:** GP3 (heartbeat), GP8–GP12 (CAN).
+**Refused as a second PWM pin:** a pin whose PWM compare register is already
+taken by a bound pin. On the RP2350 the slice is `(pin / 2) modulo 8` below
+GP32 and the channel is the pin's low bit, so GP0 and GP16, GP1 and GP17, GP2
+and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22 are pairs that share one
+compare register. The second of a pair is refused rather than muxed onto the
+first one's pulse width.
 
 On the panel: **Setup → OUTPUTS**, choose `SERVO PWM`, tick one pin. Or
 **Setup → PICK A PIN** for the board picture — grounds are marked `G`, rails

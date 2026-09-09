@@ -132,7 +132,12 @@ than as a modelled number.
 Drag anywhere on the sweep to command a position. The solid arm is the measured
 position; the faint arm is the commanded position. The gap between them is the
 servo's own lag. The rings around the tip pulse while the servo is being
-driven. Releasing the sweep clears the output slot.
+driven. Releasing the sweep returns the surfaces to centre; the pins stay
+bound to whatever SETTINGS/OUTPUTS bound them to and keep driving, and a
+disarm -- or leaving the screen, which disarms -- is what stops the edges.
+
+The screen drives the channels the binding marks as surfaces, not a fixed pin.
+With nothing bound as SERVO PWM it commands nothing and no pin moves.
 
 SPEED is the rate the bench may move the output, in degrees a second of the
 horn's travel, not a speed for the drawing alone. At 100% the command goes

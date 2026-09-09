@@ -11,9 +11,15 @@ SD-Karte) und ein RP2350-Koprozessor (Messung, Ausgänge und jedes Protokoll mit
 Zeitanforderungen), verbunden über CAN (Controller Area Network) mit 1 Mbit/s.
 
 **Stand: im Aufbau.** Das Panel bootet, jeder Bildschirm existiert, und der
-CAN-Link läuft auf Hardware. Kein Ausgang erzeugt ein Signal, und die
-meisten Messungen warten auf Bauteile, die nicht bestückt sind. Bildschirme mit
-simulierten Werten sind mit SIMULATION markiert.
+CAN-Link läuft auf Hardware. Die Ausgangstreiber sind gebaut, und eine
+scharfgeschaltete Bank treibt jeden gebundenen Pin auf der Ruhelage seiner
+Rolle, ob etwas ihn kommandiert oder nicht; ein Motor und ein Servo sind je
+vom Panel aus auf einem Aufbau-Prüfstand gelaufen. Nicht gemessen ist das
+Timing an einem Messgerät -- keine Bitbreite, keine Rahmenperiode und keine
+Antwortverzögerung in diesem Baum ist auf einem Oszilloskop oder einem
+Logikanalysator gesehen worden. Die übrigen Messungen warten auf Bauteile, die
+nicht bestückt sind. Bildschirme mit simulierten Werten sind mit SIMULATION
+markiert.
 
 [STATUS.md](STATUS.md) (englisch) hält fest, was gebaut ist, was offen ist und
 was nicht geplant ist.
@@ -29,11 +35,12 @@ Finger abhebt. Entschärfen und STOP sind ein einzelner Druck.
 
 Drei Stoppmechanismen sind vorgesehen: ein Heartbeat, dessen Ausbleiben die
 Ausgänge abschaltet, der Link-Watchdog des Koprozessors und ein STOP-Kommando
-über den Link. Der Heartbeat braucht ein retriggerbares Monoflop, das auf
-keiner Platine vorhanden ist, und auch die Leitung zwischen J8 des Panels und
-GP3 des Koprozessors ist nicht bestückt: ein angeschlossener Koprozessor
-verweigert deshalb jedes Scharfschalten. Das STOP-Kommando über den Link ist
-geschrieben und nicht auf Hardware gelaufen.
+über den Link. Die Leitung zwischen J8 des Panels und GP3 des
+Koprozessors ist auf dem Aufbau-Prüfstand bestückt, dort funktioniert das
+Scharfschalten. Das retriggerbare Monoflop des Heartbeats ist auf keiner
+Platine vorhanden, die Ausgänge hängen also allein an der Firmware an beiden
+Enden, ohne Hardware-Rückfallebene dahinter. Das STOP-Kommando über den Link
+ist geschrieben und nicht auf Hardware gelaufen.
 [Sicherheit](https://github.com/subtilitas/rcbench/wiki/Safety-de) spezifiziert
 alle drei.
 
@@ -45,7 +52,7 @@ warranty of any kind" der MIT-Lizenz gilt.
 | Bildschirm | Funktion | Stand |
 | --- | --- | --- |
 | Motor & ESC | Spannung, Strom, Verbrauch, Drehzahl und Temperaturen live geplottet | Bildschirm gebaut; Werte simuliert |
-| Servo | befohlene und gemessene Stellung; Suche nach der eingebauten Endlage; Abgleich zweier Servos | Bildschirm gebaut und steuert über den Link; kein Ausgangstreiber |
+| Servo | befohlene und gemessene Stellung; Suche nach der eingebauten Endlage; Abgleich zweier Servos | Bildschirm gebaut und steuert über den Link; treibt die als Ruderflächen gebundenen Pins, auf einem Aufbau-Prüfstand gelaufen, Timing ungemessen |
 | Analyser | sechzehn Empfängerkanäle mit Verlauf, die Digitalkanäle, LIVE / FRAME LOST / FAILSAFE / SILENT | S.BUS-Decoder gebaut; PIO-Empfänger (Programmable Input/Output) nicht geschrieben |
 | Programmierer | Parametertabellen für BLHeli_S, AM32, ESCape32, VESC und Hitec | Bildschirm gebaut; kein Protokoll auf einer Leitung |
 | Auswuchten | Blattzahl, Korrekturmasse und -winkel, Anleitungen zur Sensorplatzierung | Bildschirm gebaut; Sensoren nicht bestückt |

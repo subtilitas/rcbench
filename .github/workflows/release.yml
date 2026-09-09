@@ -23,7 +23,32 @@ env:
   PICO_SDK_TAG: '2.3.0'
 
 jobs:
+  # The tag is the only thing that says which version this is, and the images
+  # carry their own.  A tag pushed without moving rcbench_version.h would
+  # publish a v0.8.0 archive holding a 0.7.0 image, and the panel prints what
+  # the coprocessor reports rather than what the archive was called.
+  version:
+    name: The tag matches the images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Compare
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          H=shared/link/include/rcbench_version.h
+          maj=$(sed -n 's/^#define RCBENCH_VERSION_MAJOR *//p' "$H")
+          min=$(sed -n 's/^#define RCBENCH_VERSION_MINOR *//p' "$H")
+          pat=$(sed -n 's/^#define RCBENCH_VERSION_PATCH *//p' "$H")
+          want="v$maj.$min.$pat"
+          echo "tag $TAG, images $want"
+          [ "$TAG" = "$want" ] || {
+            echo "::error::$TAG does not match $want in $H"
+            exit 1
+          }
+
   panel:
+    needs: [version]
     name: Panel image
     runs-on: ubuntu-latest
     steps:
@@ -54,6 +79,7 @@ jobs:
 
   iomcu:
     name: Coprocessor image
+    needs: [version]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -109,7 +135,9 @@ jobs:
 
       - name: Package
         run: |
-          TAG="${GITHUB_REF_NAME:-${{ inputs.tag }}}"
+          # The dispatch input first: on a manual run the ref name is the
+          # branch, so taking it first would name the archives after one.
+          TAG="${{ inputs.tag || github.ref_name }}"
           mkdir -p dist
           # One archive per processor: they are flashed by different tools
           # over different cables, and the UF2 (USB flashing format) image
@@ -126,7 +154,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${GITHUB_REF_NAME:-${{ inputs.tag }}}"
+          TAG="${{ inputs.tag || github.ref_name }}"
           gh release create "$TAG" dist/*.zip dist/SHA256SUMS \
             --repo "${{ github.repository }}" \
             --title "$TAG" \

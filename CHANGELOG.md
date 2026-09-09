@@ -8,23 +8,71 @@ history is in git.
 
 ## 0.8.0 - 2026-09-09
 
-Bidirectional DShot leaves the pin inverted, which it never has, so an ESC
-answers it for the first time. A save on the OUTPUTS screen no longer stops
-the coprocessor answering for 19 ms, which is what turned every binding change
-into `FAULT 01`. The run log is written by a task of its own rather than by
-the one that beats the safety line, and is committed as the run goes rather
-than at the disarm. SPEED on the servo screen renders a rate below 50% that
-differs from 50%.
+Bidirectional DShot leaves the pin inverted, which it never has. Whether an
+ESC answers is untested: no output driver in this tree has been put against an
+ESC on a wire. A save on the OUTPUTS screen costs one page program rather than
+an erase and a program, so the erase that stops the coprocessor answering for
+about 19 ms falls to one save in sixteen and is taken in a quiet window
+instead of under the save. Neither window has been measured on this build, so
+whether a save can still cost a CAN frame -- and with it `FAULT 01` -- is
+open. The run log is written by a task of its own rather than by the one that
+beats the safety line, and is committed as the run goes rather than at the
+disarm. SPEED on the servo screen renders a rate below 50% that differs from
+50%.
 
-Two things change what a bench does after it is flashed. The link protocol is
-3.0, so both images have to be flashed together -- the panel refuses to arm
-against a coprocessor that speaks another major. And the output store's record
-format is version 3, so the first boot on this build starts from no binding at
-all: the pins are ticked again on SETTINGS/OUTPUTS, and that save writes the
-first version 3 record.
+Several things change what a bench does after it is flashed, and each needs
+something from the operator or shows them something new:
+
+- **The link protocol is 3.0**, so both images go on together. The panel
+  refuses to arm against a coprocessor that speaks another major.
+- **The output store's record format is version 3**, so the first boot starts
+  from no binding at all. The pins are ticked again on SETTINGS/OUTPUTS, and
+  that save writes the first version 3 record.
+- **The SERVO screen drives the channels the binding marks as surfaces**
+  rather than channel 0 on GP2. With the store reset above, it drives nothing
+  until a pin is bound as SERVO PWM.
+- **The coprocessor sends `DSHOT_CMD_EDT_ENABLE` to the ESC on every edge into
+  driving**, ten frames at the 1,000 Hz update rate. An ESC that ignores
+  command 13 is unaffected; one that acts on it starts reporting extended
+  telemetry.
+- **The bench shows the ESC's own voltage, current, power and temperature**,
+  which it never did. `MOT` stays blank unless the ESC reports a second
+  temperature, where it used to read `0C`.
+- **The run log writes an empty cell** where nothing measured a quantity,
+  where it used to write a number. A reader that treated 0 as a measurement
+  sees a gap instead.
 
 ### Fixed
 
+- **Bidirectional DShot never inverted the pin.** `out_dshot_bind()` set the
+  pad's output override and then called `dshot_bidir_tx_program_init()`, which
+  begins with `pio_gpio_init()` -- `gpio_set_function()` -- which assigns the
+  pad's control register whole rather than masking it. `OUTOVER` is one of the
+  fields it zeroes, so the inversion was wiped before a frame went out. Every
+  `DSHOT300 BIDIR` and `DSHOT600 BIDIR` frame therefore left in plain-DShot
+  polarity carrying the complemented bidirectional checksum, which is wrong
+  polarity for one reading and a wrong checksum for the other. The pull-up
+  survived, because pulls live in the pad block, so the line still idled high
+  and the fault read as a protocol no ESC accepts rather than as a pin that
+  was never inverted. Plain DShot was untouched, which is why one protocol on
+  the same pin ran a motor and the other did nothing. The override goes on
+  after the init now, and the bind reads `io_bank0_hw->io[pin].ctrl` back and
+  refuses rather than driving a line whose polarity it could not set. Not run
+  on hardware: no ESC has been on a pin, so whether one answers is still open.
+- **The servo horn drove a fixed pin rather than the binding.**
+  `write_servo()` wrote channel 0, slot 0 and pin GP2 whatever the operator
+  had bound, and slot 0 is where the first pin ticked on SETTINGS/OUTPUTS
+  goes, so the horn took that binding over. With a DShot motor on the lowest
+  pin the slot write is refused because its pin is already taken, the channel
+  writes stand, and the motor's channel is left at half travel. The screen
+  drives the channels the binding marks as surfaces now, by the same walk the
+  binding itself makes, and writes no slot at all.
+- **The LOGS screen could not reach the card.** `log_viewer_set_io()` was
+  called by two tests and by nothing in `firmware/panel/`, so the viewer took
+  its no-volume branch and showed "No card" whatever was in the slot, and
+  RESCAN re-entered the same branch. It is given an adapter over the storage
+  component, and RESCAN mounts a card put in after boot, which the only
+  `storage_init()` at the time -- in the splash -- could not.
 - **A power cut during a run left a 0-byte CSV (comma-separated values)
   file.** The run log was written and never committed, and closed only on the
   disarm edge. FAT (file allocation table) keeps a file's length in its
@@ -47,8 +95,12 @@ first version 3 record.
   HEARTBEAT_MAX_GAP_MS (150 ms) and the coprocessor fails safe after 200 ms of
   link silence, while the SD specification allows a card 250 ms to finish one
   single-block write: a card that paused was a dropped heartbeat, not a late
-  row. Every card access is now on the `runlog` task, and rows cross to it on
-  a queue the control task never waits on. A card that falls behind the run
+  row. Every card access the run log makes is on the `runlog` task now, and
+  rows cross to it on
+  a queue the control task never waits on. The LOGS screen's own reads are not
+  on it: the viewer opens a run from the task that renders, which is why the
+  logger publishes the run it has open and the viewer leaves that one alone. A
+  card that falls behind the run
   costs rows, which are counted and reported on the panel when the run closes,
   rather than costing the heartbeat.
 - **A save on the OUTPUTS screen cost CAN (Controller Area Network) frames.**
@@ -79,7 +131,8 @@ first version 3 record.
   the same rate as 50%. The remainder is carried between steps instead: the
   rate is the one asked for, and a slew slower than one unit a step still
   arrives rather than being truncated to nothing. The elapsed time is capped
-  at `1000 * OUT_SPAN / slew_per_s`, which is the interval past which one step
+  at `1000 * OUT_SPAN / slew_per_s + 1` ms, which is the interval past which
+  one step
   covers the whole span and arrives regardless, so the cap discards nothing
   that could move the channel and the multiply still fits a `uint32_t`.
 - **The coprocessor armed on the previous pass's heartbeat.** `outputs_arm()`
@@ -112,6 +165,40 @@ first version 3 record.
 
 ### Changed
 
+- **The link protocol is 3.0.** `LINK_BN_TEMP_OK` used to gate both the ESC
+  and the motor temperature, so an ESC that reports one turned `MOT --` into
+  `MOT 0C`; it now validates the ESC's alone and `LINK_BN_TEMP_MOT_OK` (bit 4)
+  validates the motor's. That is a meaning change on an existing bit rather
+  than an addition, which is what moves the major. The panel refuses to arm
+  against a coprocessor whose major differs, so both images go on together.
+- **The bench page carries the ESC's own measurements.** Voltage, current,
+  power and ESC temperature were zeroed every sample and had no source at all;
+  the coprocessor publishes them from extended DShot telemetry now, on a
+  2,000 ms staleness window against 200 ms for speed. There is no measurement
+  front end on the coprocessor, so these are the ESC's numbers and not the
+  bench's.
+- **`DSHOT_CMD_EDT_ENABLE` goes out on every edge into driving**, ten frames
+  at the 1,000 Hz update rate, because extended telemetry has to be asked for.
+  The case this cannot survive is an ESC that ignores command 13 and does not
+  normalise its exponent: some of its speed frames would be read as
+  temperature or voltage. One that normalises is safe either way. Unmeasured.
+- **`SET_TELEM_SRC`, `SET_OUT_PROTO`, `SET_OUT_PIN` and `SET_TELEM_HZ` are
+  gone** from SETTINGS / ESC & BENCH. They had no consumer anywhere in the
+  tree: the output protocol and pin come from the OUTPUTS page, and the
+  telemetry source and rate were read by nothing. Settings are stored in
+  non-volatile storage by name, so removing them orphans four keys and
+  disturbs nothing else.
+- **A run takes one number above the highest the card holds**, rather than the
+  lowest free one. A gap left by deleting a run on a computer is not filled,
+  because a run written into one is the newest run wearing the oldest number
+  and a full list would rank it last and drop it. A card already holding
+  `BENCH999.CSV` therefore records nothing until a run is deleted, where
+  before it would have taken a gap.
+- **The run log writes an empty cell for a quantity nothing measured.** Each
+  column carries the valid flag that says whether anything measured it, and a
+  field with no flag set is written empty rather than as `0`, so the reader
+  refuses it instead of guessing. A reader that treated `0` as a measurement
+  sees a gap now.
 - **A power cut during a save leaves the binding from before it.** A record is
   only ever programmed into an erased slot, and a sector is only ever erased
   while the live record is in the other one, so the record being written can
@@ -149,6 +236,19 @@ first version 3 record.
 
 ### Added
 
+- **`testbench/`, the measurement bench.** A Raspberry Pi 5, a Kingst LA2016
+  logic analyser and an RP2350 board, wired so this project's protocol claims
+  can be measured rather than asserted. `testbench/README.md` says what it is
+  for and why each part is there; `testbench/WIRING.md` is what to connect, in
+  order, with a check after every step. **Nothing on it has been run**: the
+  hardware is being assembled, the channel map is a proposal to be checked
+  against the wiring as built, and the decoders and recipes are described
+  rather than written. Two tap points are stated as unknown rather than
+  guessed -- where the panel's I2C bus is brought out, and where RXCAN can be
+  probed between the XL2515 and its transceiver.
+- **The LOGS screen reads a run off the card**, which is what the viewer was
+  written against a fake for. It lists `.csv` runs, opens one and analyses it;
+  a `.bfl` decoder does not exist, so the empty line says `.csv` only.
 - `test_outstore`, the forty-fourth host binary: where a save goes in the
   store, which sector can be erased and what a power cut in either leaves
   behind, in `shared/outputs/out_store_map.c`. The rules are on the host
