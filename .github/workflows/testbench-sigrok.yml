@@ -175,10 +175,27 @@ jobs:
           done
           git config --global --add safe.directory '*'
           mkdir -p src
+          # The ref is resolved to a commit before HEAD is detached.  A fresh
+          # clone carries one local branch and exposes every other as
+          # origin/<name> only, and `git checkout --detach <name>` on one of
+          # those does not fall back to the remote-tracking ref: git's guess
+          # for a missing local branch is equivalent to `checkout -b --track`,
+          # which --detach refuses.  It exits with
+          #   fatal: '--detach' cannot be used with '-b/-B/--orphan'
+          # so a branch name -- which the input description permits -- fails
+          # where a commit or a tag works.  Trying the ref first and
+          # origin/<ref> second takes commits, tags, and branch names alike.
+          detach() {
+            local dir=$1 ref=$2 sha
+            sha=$(git -C "$dir" rev-parse --verify --quiet "${ref}^{commit}") \
+              || sha=$(git -C "$dir" rev-parse --verify --quiet "origin/${ref}^{commit}") \
+              || { echo "$dir: no commit, tag or branch named $ref" >&2; return 1; }
+            git -C "$dir" checkout --detach "$sha"
+          }
           git clone https://github.com/sigrokproject/libsigrok.git src/libsigrok
-          git -C src/libsigrok checkout --detach "$LIBSIGROK_REF"
+          detach src/libsigrok "$LIBSIGROK_REF"
           git clone https://github.com/sigrokproject/sigrok-cli.git src/sigrok-cli
-          git -C src/sigrok-cli checkout --detach "$SIGROK_CLI_REF"
+          detach src/sigrok-cli "$SIGROK_CLI_REF"
           echo "libsigrok_sha=$(git -C src/libsigrok rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       # --enable-kingst-la2016 explicitly: the default is enable_all_drivers=

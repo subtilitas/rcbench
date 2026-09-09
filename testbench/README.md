@@ -119,7 +119,35 @@ The tarball unpacks at `/` and holds `opt/sigrok` and nothing else, which the
 workflow asserts against the member list before upload. Installing it is:
 
     sudo tar -C / -xzf sigrok-kingst-la2016-debian13-arm64.tar.gz
+    sudo apt-get install -y --no-install-recommends \
+        $(cat /opt/sigrok/RUNTIME-DEPENDS.txt)
+    sudo install -m 644 /opt/sigrok/share/sigrok-udev/60-libsigrok.rules \
+                        /opt/sigrok/share/sigrok-udev/61-libsigrok-plugdev.rules \
+                        /etc/udev/rules.d/
+    sudo udevadm control --reload
+    sudo udevadm trigger --subsystem-match=usb
+    sudo adduser "$USER" plugdev        # log out and back in to take effect
     export PATH=/opt/sigrok/bin:$PATH
+
+**The packages are a step.** The tarball carries `sigrok-cli` and
+`libsigrok.so.4` and nothing else it links against. `RUNTIME-DEPENDS.txt` is
+the closure the build resolved, written from `ldd` and mapped to the Debian
+package that owns each library, so the second command installs exactly what
+the binary loads. Without it the executable can fail in the dynamic linker
+before `host/selftest.sh` gets a chance to say anything.
+
+**The udev rules are a step, and skipping them reads as no analyser.** The
+tarball leaves both rules under `/opt/sigrok/share/sigrok-udev`, which udev
+does not scan. Debian's libsigrok 0.5.2 ships rules that predate this driver
+and carry no entry for `77a1:01a2`, so the LA2016 gets no `ID_SIGROK` tag,
+`plugdev` membership grants nothing, and a scan run as a normal user returns
+no devices. That is the same reading as an unplugged instrument. Both files
+are needed and the numbers matter: `60-` tags the device and `61-` acts on the
+tag, so the order they sort in is what makes them work.
+
+The `plugdev` rule rather than the `uaccess` one, because `uaccess` grants
+access through systemd-logind to a user on a local seat and an SSH session has
+no seat. The bench is driven over SSH.
 
 **The `PATH` line is a step, not a suggestion.** The distribution's
 `sigrok-cli` is at `/usr/bin` and wins until `/opt/sigrok/bin` is put ahead of
