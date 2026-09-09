@@ -606,18 +606,27 @@ static void stop_press_check_lost(void)
     s_stop_lost_seen = lost;
 
     /*
-     * The marker first, and unconditionally.  It says the router will latch
-     * a stop this task already applied, and something has to consume it --
-     * but the render loop cancels the band's press on this same loss, before
-     * it dispatches anything, so the router raises no request whether or not
-     * the release is still queued.  A marker left standing is consumed by
-     * the next stop that genuinely needs the backstop, and that stop is then
-     * ignored.
+     * The marker says the router will latch a stop this task already
+     * applied, and something has to consume it.  After a loss nothing will:
+     * the render loop cancels the band's press before it dispatches
+     * anything, so no request follows, and a marker left standing is
+     * consumed by the next stop that genuinely needs the backstop -- which
+     * is then ignored, and the bench keeps driving.
      *
-     * Which entry was lost does not enter into it: after any loss there is
-     * no request coming.
+     * Unless a request is already raised.  Cancellation cannot retract one
+     * the router latched before the loss, and that request will consume the
+     * marker on the next pass exactly as it should.  Clearing it here would
+     * make that pass stop a second time for one press.
+     *
+     * The two are read in that order, so the residual is a request raised
+     * between the load and the store -- a release dispatched in the same
+     * frame as the loss, ahead of the cancellation that answers it. That
+     * resolves to a stop applied twice, which latches the same way one
+     * does. The other direction is a stop that never happens.
      */
-    atomic_store(&s_stop_counted, false);
+    if (!atomic_load(&s_stop_request)) {
+        atomic_store(&s_stop_counted, false);
+    }
 
     if (!s_stop_press) {
         return;
