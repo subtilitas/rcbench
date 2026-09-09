@@ -31,24 +31,84 @@
 typedef struct {
     bool     bound;
     uint32_t next_us;      /* DShot only: when the next frame is due */
+    /*
+     * Extended telemetry, which an ESC only sends after it has been asked.
+     *
+     * edt_left counts the repeats still owed: a command is an ordinary frame
+     * and an ESC tells one from a glitch by counting them, so it is sent
+     * DSHOT_CMD_REPEATS times before anything else goes out.  Zero with
+     * edt_asked set means the asking is done and the replies may carry the
+     * other frame types.
+     *
+     * The two have different lifetimes and that is the point.  edt_left is
+     * owed again on every edge into driving, because extended telemetry is a
+     * runtime setting an ESC forgets when it loses power and an ESC can be
+     * swapped between runs.  edt_asked follows the binding instead: an ESC
+     * that keeps power keeps the setting across a disarm, so a run that
+     * started by reading replies as periods again would take an interleaved
+     * temperature or current frame for a speed.
+     */
+    uint8_t  edt_left;
+    bool     edt_asked;
 } slot_state_t;
 
 static out_slot_t   s_shadow[OUT_MAX_SLOTS];
 static slot_state_t s_state[OUT_MAX_SLOTS];
 
-/* The last reading any bidirectional ESC gave, with the clock it arrived on.
- * One motor is under test at a time, so one reading is the whole of it. */
-static bool     s_have_erpm;
-static uint32_t s_erpm;
-static uint32_t s_erpm_ms;
+/*
+ * The last readings an ESC gave, with the clock each arrived on.
+ *
+ * Per slot, not per bank.  The binding allows eight outputs and any of them
+ * may be bidirectional, and one set of readings shared between them would
+ * publish a speed from one motor beside a voltage from another -- and a power
+ * that is the product of two different ESCs.  Which slot is published is
+ * decided in one place, by reporting_slot().
+ *
+ * Each kind keeps its own clock.  An ESC interleaves the extended frames
+ * between eRPM ones, so temperature arrives far less often than speed does,
+ * and one age for all of them would either throw away good readings or keep
+ * stale ones.
+ */
+typedef struct {
+    bool     have_erpm;
+    uint32_t erpm;
+    uint32_t erpm_ms;
+    bool     have_edt[DSHOT_TELEM_KINDS];
+    uint16_t edt[DSHOT_TELEM_KINDS];
+    uint32_t edt_ms[DSHOT_TELEM_KINDS];
+} telem_t;
+
+static telem_t s_telem[OUT_MAX_SLOTS];
+
+/*
+ * The slot whose readings the bench publishes: the lowest-numbered bound
+ * bidirectional output.
+ *
+ * Defined rather than "whichever answered last", so the numbers on the screen
+ * belong to one motor and stay with it. A bench running two ESCs reports the
+ * first; the page carries one set of readings and choosing between them here
+ * is the only place that choice can be made once.
+ */
+static int reporting_slot(void)
+{
+    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+        if (s_state[i].bound
+            && s_shadow[i].driver == OUT_DRIVER_DSHOT_BIDIR) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
+
+/* Defined with the rendering, which is what decides when a run has ended. */
+static void forget_telem(void);
+static void forget_slot_telem(unsigned slot);
 
 void outputs_hw_init(void)
 {
     memset(s_shadow, 0, sizeof(s_shadow));
     memset(s_state, 0, sizeof(s_state));
-    s_have_erpm = false;
-    s_erpm      = 0u;
-    s_erpm_ms   = 0u;
+    forget_telem();
 }
 
 bool outputs_hw_bound(uint8_t slot)
@@ -112,6 +172,15 @@ void outputs_hw_apply(const outputs_t *o)
     bool moved[OUT_MAX_SLOTS];
     for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
         moved[i] = !(same(&s_shadow[i], &o->slot[i]) && s_state[i].bound);
+        if (moved[i]) {
+            /* Whatever this slot's ESC said belongs to a binding that is
+             * going away, and so does whether that ESC was ever asked for
+             * extended telemetry.  Cleared for a slot that was never bound
+             * too: a failed bind leaves no output but the readings from
+             * before it would otherwise still be published. */
+            forget_slot_telem(i);
+            s_state[i].edt_asked = false;
+        }
         if (moved[i] && s_state[i].bound) {
             unbind(&s_shadow[i]);
             s_state[i].bound = false;
@@ -126,17 +195,71 @@ void outputs_hw_apply(const outputs_t *o)
             continue;
         }
         /*
-         * A slot the silicon cannot serve is left unbound.  The OUTPUTS page
-         * still reads back what was asked for, so the disagreement between
-         * the page and what is driving is visible from the panel, which is
-         * the same way a slot the bank refused already behaves.
+         * A slot the silicon cannot serve is left unbound, which is the same
+         * way a slot the bank refused already behaves.  The OUTPUTS page
+         * still reads back what was asked for and no register on it says
+         * whether a slot is bound, so the panel draws an unbound slot exactly
+         * as it draws a driving one and the operator meets it as a lead that
+         * does not move.
          */
         s_state[i].bound   = bind(&s_shadow[i]);
         s_state[i].next_us = time_us_32();
+        /* A pin that has just been taken has told its ESC nothing yet. */
+        s_state[i].edt_left  = (uint8_t)DSHOT_CMD_REPEATS;
+        s_state[i].edt_asked = false;
     }
 }
 
 /* ------------------------------------------------------------ rendering */
+
+/*
+ * One reply, filed under what it turned out to be.
+ *
+ * Each kind keeps its own arrival clock because they do not arrive at one
+ * rate: speed comes back on every frame and the extended kinds are
+ * interleaved between them, a few a second at most.
+ */
+static void record_telem(unsigned slot, const dshot_telem_t *t)
+{
+    if (slot >= OUT_MAX_SLOTS) {
+        return;
+    }
+    telem_t *c = &s_telem[slot];
+    const uint32_t now = (uint32_t)to_ms_since_boot(get_absolute_time());
+    if (t->kind == DSHOT_TELEM_ERPM) {
+        c->erpm      = t->erpm;
+        c->erpm_ms   = now;
+        c->have_erpm = true;
+        return;
+    }
+    if ((unsigned)t->kind < (unsigned)DSHOT_TELEM_KINDS) {
+        c->edt[t->kind]      = t->value;
+        c->edt_ms[t->kind]   = now;
+        c->have_edt[t->kind] = true;
+    }
+}
+
+/*
+ * Drop everything an ESC said.
+ *
+ * At the end of a run, because the next run need not be the same ESC: one can
+ * be unplugged and another fitted between two arms, and a reading that
+ * outlived its sender would be published as the new one's for as long as its
+ * staleness window lasts -- and would seed that run's peaks on the way past.
+ */
+static void forget_telem(void)
+{
+    memset(s_telem, 0, sizeof(s_telem));
+}
+
+/* The same, for one slot: what it is bound to has changed, so what its ESC
+ * said belongs to an output that is no longer there. */
+static void forget_slot_telem(unsigned slot)
+{
+    if (slot < OUT_MAX_SLOTS) {
+        memset(&s_telem[slot], 0, sizeof(s_telem[slot]));
+    }
+}
 
 static void service_ppm(const outputs_t *o, const out_slot_t *s, bool drive)
 {
@@ -154,7 +277,7 @@ static void service_ppm(const outputs_t *o, const out_slot_t *s, bool drive)
 }
 
 static void service_dshot(const outputs_t *o, const out_slot_t *s,
-                          slot_state_t *st, bool drive)
+                          slot_state_t *st, unsigned slot, bool drive)
 {
     /*
      * The reply to the previous frame is read before the next one is sent.
@@ -163,10 +286,8 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
      */
     if (s->driver == OUT_DRIVER_DSHOT_BIDIR) {
         dshot_telem_t t;
-        if (out_dshot_poll(s->pin, &t) && t.kind == DSHOT_TELEM_ERPM) {
-            s_erpm      = t.erpm;
-            s_erpm_ms   = to_ms_since_boot(get_absolute_time());
-            s_have_erpm = true;
+        if (out_dshot_poll(s->pin, st->edt_asked, &t)) {
+            record_telem(slot, &t);
         }
     }
 
@@ -180,6 +301,21 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
          * 36 after it was armed again.
          */
         st->next_us = time_us_32();
+        /*
+         * And the ask is owed again.  Extended telemetry is a runtime setting
+         * an ESC forgets when it loses power, and an ESC can be swapped on a
+         * bench between one run and the next; asking again costs ten frames
+         * at the start of a run and nothing after that.
+         *
+         * What is not forgotten is that it was asked.  The setting lives in
+         * the ESC, and an ESC that keeps power keeps it across this bench's
+         * disarm: reading the next run's first replies as periods would take
+         * an interleaved temperature or current frame for a speed, and a
+         * current of 120 A decodes as 8,900 rpm -- a number nobody questions,
+         * latched into the run's peak.  edt_asked follows the binding, not
+         * the run; only a slot that moves or a restart clears it.
+         */
+        st->edt_left = (uint8_t)DSHOT_CMD_REPEATS;
         return;
     }
     const uint32_t now = time_us_32();
@@ -187,6 +323,29 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
         return;                              /* not due yet, wrap-safe */
     }
     st->next_us = now + DSHOT_PERIOD_US;
+
+    /*
+     * The ask goes first, before any throttle.  A command is an ordinary
+     * frame and an ESC tells one from a glitch by counting repeats, so this
+     * takes the first DSHOT_CMD_REPEATS frames of a run: ten at
+     * DSHOT_UPDATE_HZ, which is 10 ms.  DSHOT_CMD_EDT_ENABLE is in the
+     * command range, so nothing turns while it is being sent, and a throttle
+     * the operator has already asked for arrives 10 ms later than it would
+     * have.
+     *
+     * An ESC that does not know the command ignores it and keeps sending
+     * periods.  Those still read as periods: this decoder only takes a frame
+     * for an extended one when the mantissa's top bit is clear and the type
+     * nibble is not zero, which an ESC that normalises its exponent never
+     * sends.
+     */
+    if (s->driver == OUT_DRIVER_DSHOT_BIDIR && st->edt_left > 0u) {
+        out_dshot_send(s->pin, (uint16_t)DSHOT_CMD_EDT_ENABLE, false);
+        if (--st->edt_left == 0u) {
+            st->edt_asked = true;
+        }
+        return;
+    }
 
     const uint16_t command = outputs_actual(o, s->first_channel);
     out_dshot_send(s->pin, dshot_throttle(command, OUT_SPAN), false);
@@ -219,7 +378,7 @@ void outputs_hw_service(const outputs_t *o)
             break;
         case OUT_DRIVER_DSHOT:
         case OUT_DRIVER_DSHOT_BIDIR:
-            service_dshot(o, s, &s_state[i], drive);
+            service_dshot(o, s, &s_state[i], i, drive);
             break;
         case OUT_DRIVER_NONE:
         case OUT_DRIVER_COUNT:
@@ -227,14 +386,47 @@ void outputs_hw_service(const outputs_t *o)
             break;
         }
     }
+
+    /*
+     * The end of a run, and after the loop rather than before it: a
+     * bidirectional slot reads the reply to its last frame on the way to
+     * stopping, so a cache cleared first is repopulated by that reply with a
+     * fresh timestamp and the run's final reading outlives the run.
+     *
+     * Asked once for the bank rather than per slot: the cache is one motor's
+     * and the slots share it, so a slot that happened not to be driving must
+     * not clear what another one just heard.
+     */
+    static bool s_was_driving;
+    if (s_was_driving && !drive) {
+        forget_telem();
+    }
+    s_was_driving = drive;
 }
 
 bool outputs_hw_erpm(uint32_t *erpm, uint32_t *age_ms)
 {
-    if (!s_have_erpm || erpm == NULL || age_ms == NULL) {
+    const int slot = reporting_slot();
+    if (slot < 0 || erpm == NULL || age_ms == NULL
+        || !s_telem[slot].have_erpm) {
         return false;
     }
-    *erpm   = s_erpm;
-    *age_ms = (uint32_t)(to_ms_since_boot(get_absolute_time()) - s_erpm_ms);
+    *erpm   = s_telem[slot].erpm;
+    *age_ms = (uint32_t)(to_ms_since_boot(get_absolute_time())
+                         - s_telem[slot].erpm_ms);
+    return true;
+}
+
+bool outputs_hw_edt(dshot_telem_kind_t kind, uint16_t *value, uint32_t *age_ms)
+{
+    const int slot = reporting_slot();
+    if (slot < 0 || (unsigned)kind >= (unsigned)DSHOT_TELEM_KINDS
+        || value == NULL || age_ms == NULL
+        || !s_telem[slot].have_edt[kind]) {
+        return false;
+    }
+    *value  = s_telem[slot].edt[kind];
+    *age_ms = (uint32_t)(to_ms_since_boot(get_absolute_time())
+                         - s_telem[slot].edt_ms[kind]);
     return true;
 }

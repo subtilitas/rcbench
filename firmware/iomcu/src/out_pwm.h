@@ -7,10 +7,15 @@
  * on it: the part has twelve slices and twenty-four channels, more outputs
  * than this bench has connectors.
  *
- * The one thing a caller has to know is that a slice is two channels sharing
- * one counter.  Two pins on the same slice run at the same frame rate,
- * whatever the second one asked for, so a second binding with a different
- * rate is refused rather than quietly retimed.
+ * What a caller has to know is how GPIO (general-purpose input/output)
+ * numbers fold onto them.  A slice is two channels sharing one counter, so
+ * two pins on the same slice run at the same frame rate whatever the second
+ * one asked for, and a second binding with a different rate is refused rather
+ * than quietly retimed.  Below that, a channel is one compare register: pins
+ * 16 apart under GP32 -- GP0 and GP16 -- and pins 8 apart above it -- GP32 and
+ * GP40 -- are the same channel of the same slice and cannot hold two pulse
+ * widths, so the second of such a pair is refused outright.  out_pwm_map.h
+ * has the fold and the host suite tests it.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,10 +28,15 @@
 /**
  * Take @p pin at @p rate_hz frames a second.
  *
- * Refuses a pin that is already bound to a different rate's slice, and a rate
- * whose period does not fit the counter.  Binding an already-bound pin at the
- * same rate succeeds and changes nothing, so a reconfiguration that did not
- * move a slot does not glitch its output.
+ * Refuses a pin whose compare register another bound pin already holds, a pin
+ * that is already bound to a different rate's slice, a pin the package does
+ * not have, and a rate whose period does not fit the counter.  Binding an
+ * already-bound pin at the same rate succeeds and changes nothing, so a
+ * reconfiguration that did not move a slot does not glitch its output.
+ *
+ * A refused bind leaves the slot unbound and the OUTPUTS page reading back
+ * what was asked for.  Nothing on the wire reports whether a slot is bound,
+ * so an unbound slot is not distinguishable from a bound one at the panel.
  */
 bool out_pwm_bind(uint8_t pin, uint16_t rate_hz);
 

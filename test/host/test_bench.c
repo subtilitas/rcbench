@@ -133,6 +133,91 @@ TEST_CASE(resetting_peaks_does_not_invent_a_collapsed_pack)
     CHECK_EQ(b.voltage, 24.0f);   /* the live reading is not disturbed */
 }
 
+/*
+ * The case that made this a function rather than four comparisons: a run that
+ * starts before any voltage has arrived.
+ *
+ * The extended-telemetry frames an ESC sends carry voltage a few times a
+ * second while the bench samples at fifty, so the reset that opens a run
+ * usually happens with the field still empty.  A floor seeded from that empty
+ * field is zero, and no real reading is ever below it, so the whole run
+ * reports a pack that collapsed to nothing.
+ */
+TEST_CASE(a_run_that_starts_before_the_first_voltage_still_finds_its_floor)
+{
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+
+    /* Armed, and nothing has answered yet. */
+    bench_state_reset_peaks(&b);
+    CHECK(!b.sag_seeded);
+    bench_state_track_peaks(&b);
+    CHECK_EQ(b.voltage_min, 0.0f);   /* still nothing to say */
+
+    /* The first voltage arrives.  It is the floor, not a reading above it. */
+    b.voltage = 24.0f;
+    b.flags  |= (uint16_t)LINK_BN_VOLTAGE_OK;
+    bench_state_track_peaks(&b);
+    CHECK_EQ(b.voltage_min, 24.0f);
+    CHECK(b.sag_seeded);
+
+    /* And it sags from there. */
+    b.voltage = 21.5f;
+    bench_state_track_peaks(&b);
+    CHECK_EQ(b.voltage_min, 21.5f);
+
+    b.voltage = 23.0f;
+    bench_state_track_peaks(&b);
+    CHECK_EQ(b.voltage_min, 21.5f);   /* a recovery is not a new floor */
+}
+
+/*
+ * A field with no valid bit is not a measurement of zero.  Tracking one would
+ * put a current peak of zero beside a sag floor of zero and call both of them
+ * results.
+ */
+TEST_CASE(peaks_ignore_the_fields_nothing_answered_for)
+{
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.voltage = 24.0f;
+    b.flags   = (uint16_t)LINK_BN_VOLTAGE_OK;
+    bench_state_reset_peaks(&b);
+
+    /* Current never answered, so its peak stays where the reset left it even
+     * though the live field reads high. */
+    b.current = 55.0f;
+    bench_state_track_peaks(&b);
+    CHECK_EQ(b.current_max, 0.0f);
+
+    b.flags |= (uint16_t)LINK_BN_CURRENT_OK;
+    bench_state_track_peaks(&b);
+    CHECK_EQ(b.current_max, 55.0f);
+
+    /* And the voltage floor was a measurement from the start, because the
+     * reset happened with a valid reading in hand. */
+    CHECK_EQ(b.voltage_min, 24.0f);
+
+    /*
+     * Power and speed carry no valid bit of their own.  Power is a product
+     * that stays at zero unless both halves arrived, and speed is empty when
+     * no reply carried one, so a zero cannot raise either peak.
+     */
+    b.power = 1320.0f;
+    b.rpm   = 24500.0f;
+    bench_state_track_peaks(&b);
+    CHECK_EQ(b.power_max, 1320.0f);
+    CHECK_EQ(b.rpm_max, 24500.0f);
+
+    b.power = 900.0f;
+    b.rpm   = 10000.0f;
+    bench_state_track_peaks(&b);
+    CHECK_EQ(b.power_max, 1320.0f);   /* a peak is not the live reading */
+    CHECK_EQ(b.rpm_max, 24500.0f);
+
+    bench_state_track_peaks(NULL);    /* refused rather than dereferenced */
+}
+
 /* ------------------------------------------------------------ the simulator */
 
 /* Every value the simulator produces carries LINK_BN_SIMULATED. */
@@ -262,6 +347,8 @@ int main(void)
     RUN(an_out_of_range_value_clamps_rather_than_wraps);
     RUN(a_partial_page_leaves_the_rest_alone);
     RUN(resetting_peaks_does_not_invent_a_collapsed_pack);
+    RUN(a_run_that_starts_before_the_first_voltage_still_finds_its_floor);
+    RUN(peaks_ignore_the_fields_nothing_answered_for);
     RUN(the_simulator_flags_everything_it_produces);
     RUN(the_model_sags_under_load);
     RUN(current_grows_faster_than_throttle);

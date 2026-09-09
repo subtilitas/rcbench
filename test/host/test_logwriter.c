@@ -158,6 +158,49 @@ TEST_CASE(the_header_carries_the_units_and_no_row_is_wasted)
 }
 
 /* The numbers themselves, to the precision they were printed at. */
+/*
+ * A quantity nothing measured is an empty cell, not a zero.
+ *
+ * The bench has fields with no sensor behind them -- the motor's temperature
+ * has none at all, and voltage and current only arrive if an ESC sends
+ * extended telemetry. Writing 0 for those would put a measurement in the
+ * permanent record where there was none, and the log outlives the run and the
+ * operator's memory of what was fitted. log_parse_with() refuses an empty
+ * cell rather than guessing, so an empty column reads back as absent.
+ */
+TEST_CASE(a_column_nothing_measured_is_empty_rather_than_zero)
+{
+    fresh(-1);
+    log_writer_t w = writer();
+
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    /* An ESC answered with its own temperature and nothing else -- which is
+     * every ESC, since none of them knows the motor's. */
+    b.flags = (uint16_t)(LINK_BN_RPM_OK | LINK_BN_TEMP_OK);
+    b.rpm = 11419.0f;
+    b.temp_esc = 46.3f;
+    b.temp_motor = 0.0f;
+    b.voltage = 0.0f;
+    CHECK(log_writer_row(&w, 1.0f, &b));
+
+    /* The row after the header: time;voltage;current;power;rpm;esc;motor;
+     * charge;energy */
+    const char *p = strchr(g_mem.buf, '\n');
+    CHECK(p != NULL);
+    ++p;
+
+    char got[160];
+    snprintf(got, sizeof(got), "%s", p);
+    char *nl = strchr(got, '\n');
+    if (nl != NULL) { *nl = '\0'; }
+
+    /* Voltage, current and power answered for nothing; the motor's
+     * temperature has no sensor.  Four empty cells, and the ones that did
+     * answer carry numbers. */
+    CHECK_STR_EQ(got, "1.000;;;;11419;46.3;;0;0.00");
+}
+
 TEST_CASE(the_values_survive_the_round_trip)
 {
     fresh(-1);
@@ -165,6 +208,11 @@ TEST_CASE(the_values_survive_the_round_trip)
 
     bench_state_t b;
     memset(&b, 0, sizeof(b));
+    /* A bench where everything answered.  The flags are what say so, and a
+     * column whose flag is clear is written empty. */
+    b.flags = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
+                         | LINK_BN_RPM_OK | LINK_BN_TEMP_OK
+                         | LINK_BN_TEMP_MOT_OK);
     b.voltage = 24.31f; b.current = 68.14f; b.power = 1656.0f;
     b.rpm = 13581.0f;   b.temp_esc = 46.3f; b.temp_motor = 58.9f;
     b.charge_mah = 1843.0f; b.energy_wh = 44.72f;
@@ -469,6 +517,7 @@ int main(void)
 {
     RUN(a_written_run_reads_back);
     RUN(the_header_carries_the_units_and_no_row_is_wasted);
+    RUN(a_column_nothing_measured_is_empty_rather_than_zero);
     RUN(the_values_survive_the_round_trip);
     RUN(a_non_finite_reading_is_written_as_an_absent_cell);
     RUN(the_header_is_written_once_and_without_being_asked);

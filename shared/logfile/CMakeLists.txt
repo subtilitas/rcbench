@@ -6,10 +6,15 @@
 # The CSV (comma-separated values) reader never holds the file: the source is
 # a read/rewind callback, analysis is two streaming passes, and only the
 # columns being plotted become arrays.
+#
+# A run log's name carries its order.  The board has no clock that survives a
+# power cycle, so BENCHnnn.CSV is the only age on the card; the logger writes
+# that name and the viewer reads it back, both through log_name.c.
 set(SRCS
     log_numbers.c
     log_csv.c
     log_fields.c
+    log_name.c
 )
 
 if(ESP_PLATFORM)

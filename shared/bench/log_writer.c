@@ -98,15 +98,29 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
         return false;
     }
 
-    static const struct { int decimals; size_t offset; } k_cols[] = {
-        { 2, offsetof(bench_state_t, voltage) },
-        { 2, offsetof(bench_state_t, current) },
-        { 0, offsetof(bench_state_t, power) },
-        { 0, offsetof(bench_state_t, rpm) },
-        { 1, offsetof(bench_state_t, temp_esc) },
-        { 1, offsetof(bench_state_t, temp_motor) },
-        { 0, offsetof(bench_state_t, charge_mah) },
-        { 2, offsetof(bench_state_t, energy_wh) },
+    /*
+     * Each measured column carries the flag that says whether anything
+     * measured it.  A field with no flag set is written empty rather than as
+     * a number: log_parse_with() refuses an empty cell instead of guessing,
+     * so an empty column reads as absent, while a 0 reads as a measurement.
+     * The bench has quantities nothing measures -- a motor temperature has no
+     * sensor at all -- and a run's permanent record must not report them as
+     * zero any more than the screen may draw them as zero.
+     *
+     * Power carries both halves because it is their product.  Charge and
+     * energy carry none: they are accumulators this file does not own, and
+     * zero is where they legitimately start.
+     */
+    static const struct { int decimals; size_t offset; uint16_t flag; } k_cols[] = {
+        { 2, offsetof(bench_state_t, voltage),    LINK_BN_VOLTAGE_OK },
+        { 2, offsetof(bench_state_t, current),    LINK_BN_CURRENT_OK },
+        { 0, offsetof(bench_state_t, power),
+             (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK) },
+        { 0, offsetof(bench_state_t, rpm),        LINK_BN_RPM_OK },
+        { 1, offsetof(bench_state_t, temp_esc),   LINK_BN_TEMP_OK },
+        { 1, offsetof(bench_state_t, temp_motor), LINK_BN_TEMP_MOT_OK },
+        { 0, offsetof(bench_state_t, charge_mah), 0u },
+        { 2, offsetof(bench_state_t, energy_wh),  0u },
     };
 
     char line[160];
@@ -120,6 +134,10 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
             return false;
         }
         line[n++] = LOG_WRITER_SEP;
+        const uint16_t need = k_cols[i].flag;
+        if (need != 0u && (b->flags & need) != need) {
+            continue;               /* nothing measured it: an empty cell */
+        }
         float v;
         memcpy(&v, (const char *)b + k_cols[i].offset, sizeof(v));
         n += fmt(line + n, sizeof(line) - (size_t)n, v, k_cols[i].decimals);

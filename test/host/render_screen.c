@@ -89,7 +89,7 @@ static const struct {
 } k_card[] = {
     { "BENCH_2026-08-22_1.CSV", 18422 },
     { "BENCH_2026-08-22_2.CSV", 9210 },
-    { "LOG00015.BFL", 1048576 },
+    { "SWEEP_1200KV.CSV", 15104 },
     { "SWEEP_920KV.CSV", 4096 },
 };
 

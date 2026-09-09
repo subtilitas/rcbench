@@ -13,9 +13,11 @@
  * property of the bench, not of the protocol, and it is in outputs_hw.c with
  * everything else that is timed against the loop.
  *
- * Extended telemetry is never enabled, so every reply is read as an
- * electrical period.  Turning it on means sending DSHOT_CMD_EDT_ENABLE ten
- * times and then telling the decoder, and nothing does either yet.
+ * Extended telemetry is asked for by the caller, not here: this file has no
+ * frame rate of its own and a command has to be repeated on one.  outputs_hw.c
+ * sends DSHOT_CMD_EDT_ENABLE DSHOT_CMD_REPEATS times on the edge into driving
+ * and then passes edt to out_dshot_poll(), which is the only thing that tells
+ * an extended frame from an electrical period.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -71,7 +73,13 @@ void out_dshot_stop(uint8_t pin);
  * failed its checksum, and always on a plain DShot pin.  A false is not an
  * error to report: an ESC that does not do bidirectional DShot simply never
  * answers, and that is what it looks like.
+ *
+ * @p edt says whether this ESC was asked for extended telemetry and is
+ * expected to have accepted it.  It cannot be read off the wire, and getting
+ * it wrong only matters for an ESC that does not normalise its exponent: one
+ * that does either sets the mantissa's top bit, which reads as a period, or
+ * leaves the type nibble at zero, which reads as a period too.
  */
-bool out_dshot_poll(uint8_t pin, dshot_telem_t *out);
+bool out_dshot_poll(uint8_t pin, bool edt, dshot_telem_t *out);
 
 #endif /* RCBENCH_OUT_DSHOT_H */

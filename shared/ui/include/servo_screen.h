@@ -1,5 +1,6 @@
 /*
- * The servo bench: one output, commanded by dragging its horn.
+ * The servo bench: the outputs the binding marks as surfaces, commanded
+ * together by dragging one horn.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -12,7 +13,13 @@ typedef enum {
     SERVO_CMD_NONE = 0,
     SERVO_CMD_POSITION,   /**< value is the pulse width in microseconds */
     SERVO_CMD_CENTRE,
-    SERVO_CMD_RELEASE,    /**< stop driving the output                  */
+    /**
+     * Let go of the output: the surfaces the bench drives return to centre,
+     * which is where a surface rests.  The pins stay bound to what the
+     * OUTPUTS screen bound them to; this screen commands channels and owns no
+     * wiring of its own.
+     */
+    SERVO_CMD_RELEASE,
     SERVO_CMD_ARM,        /**< the two-second hold, as on MOTOR & ESC    */
     /**
      * Let go of the output and disarm.

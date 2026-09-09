@@ -44,6 +44,8 @@
 #include "link_bringup.h"
 #include "link_host.h"
 #include "link_pages.h"
+#include "log_name.h"
+#include "log_select.h"
 #include "log_writer.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
@@ -53,9 +55,11 @@
 #include "settings.h"
 #include "settings_screen.h"
 #include "splash_screen.h"
+#include "log_viewer_screen.h"
 #include "storage.h"
 #include "telemetry_sim.h"
 #include "outputs.h"
+#include "outputs_pages.h"
 
 /*
  * The panel's throttle, as a channel in an output bank.
@@ -68,13 +72,16 @@
 #define PANEL_THROTTLE_RAMP   ((uint16_t)(OUT_SPAN * 55u / 100u))   /* 55 %/s */
 
 /*
- * The servo bench's output: bank and wire channel 0, slot 0, on GP2.  The
- * panel owns these: the driver, the pin and the range travel on the OUTPUTS
- * and CHAN_CFG pages, and the coprocessor holds no servo-specific constant.
+ * The servo bench's output is whichever channels the operator bound as
+ * surfaces, and this file names no pin.  The wiring is described once, on the
+ * OUTPUTS screen, and the horn asks the binding which channels carry it; a
+ * pin named here as well would be a second record of the same wiring, and the
+ * two would disagree the first time the operator rebound one.
+ *
+ * The slots stay the operator's.  This screen writes channels and never the
+ * OUTPUTS page, so no drag can take a pin away from what it was bound to, and
+ * no channel the binding marked a motor is written by a servo horn.
  */
-#define SERVO_CH        0u
-#define SERVO_SLOT      0u
-#define SERVO_PIN       2u
 /*
  * How often the servo's position is said again, against the far end's
  * OUT_DEFAULT_TIMEOUT_MS of 500 ms.  Five times the margin, and one
@@ -133,6 +140,9 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
  * with the rest of the servo's wire handling. */
 static void servo_let_go(void);
 static void servo_service(bool link_up);
+/* Defined with the rest of the link's reads; the OUTPUTS screen's write asks
+ * for one straight afterwards. */
+static void read_outputs_binding(void);
 static bool disarm_here(bool link_up);
 
 static uint32_t now_ms(void)
@@ -171,7 +181,20 @@ static bool              s_bus_ok = true;   /* until the test says otherwise */
  */
 #define LINK_LOST_SCREEN_MS 4000u
 
-static uint32_t s_link_lost_ms;      /* when it went, 0 while it is up   */
+/*
+ * When the link went, 0 while it is up.
+ *
+ * Atomic because the two ends are different tasks: the control task stamps
+ * and clears it, and the render task reads it to decide whether to open the
+ * diagnosis screen and to say how long the link has been down.  A plain
+ * uint32_t read across those is a data race whatever the silicon does with an
+ * aligned word, and copying it to a local does not make the load itself
+ * defined.
+ *
+ * Relaxed ordering is enough.  Nothing is published through this timestamp:
+ * it orders no other write, and every reader wants the value alone.
+ */
+static atomic_uint s_link_lost_ms;   /* when it went, 0 while it is up   */
 static bool     s_link_lost_shown;   /* the screen has had its turn      */
 /*
  * Two counts, because they answer two questions.  The per-outage one sits on
@@ -440,12 +463,12 @@ static uint32_t    s_disarm_since;
 static servo_cmd_t s_servo_held;
 static uint32_t    s_servo_next_ms;
 /*
- * A slot the far end still has and this end has finished with.
+ * A position the far end still holds and this end has finished with.
  *
  * Kept as a debt rather than written and forgotten: a screen left while the
- * link is down cannot send the release, and the far end keeps both the slot
- * and the channel command through a failsafe.  A later arm -- from either
- * screen -- would then drive the servo to where it was before.
+ * link is down cannot send the release, and the far end keeps the channel
+ * command through a failsafe.  A later arm -- from either screen -- would then
+ * drive the surface to where it was before.
  */
 static bool        s_servo_release_owed;
 static uint16_t  s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
@@ -626,6 +649,190 @@ static void pump(void)
  */
 #define IDENTITY_WAIT_MS 3000u
 
+
+/* ------------------------------------------------------- the card, listed */
+
+/*
+ * The log viewer's side of the SD card.
+ *
+ * The viewer knows about names, sizes and a rewindable source; it knows
+ * nothing about a mount point or a suffix filter, and it is built by the host
+ * suite against a fake card.  This is the only place the two meet, and
+ * without it the viewer has no list function at all -- which it reports as no
+ * card, whatever is actually mounted.
+ */
+#define CARD_DIR      ""          /* the root of the mount point */
+/*
+ * What the viewer can actually open.  Every file it lists is handed to
+ * log_csv_analyse(), and nothing in the tree decodes a Betaflight blackbox
+ * log, so offering .bfl here would list files that fail to open.  The screen
+ * says the same thing; the two are kept together deliberately.
+ */
+#define CARD_SUFFIXES ".csv"
+
+/* The file the viewer currently has open, so close() has something to close.
+ * One at a time: the viewer opens a log, reads it and closes it before it
+ * opens another. */
+static FILE *s_card_file;
+
+/*
+ * One directory entry on its way into the viewer's list.
+ *
+ * The card takes LOG_RUN_LAST runs and the list holds LOG_VIEWER_MAX_FILES of
+ * them, so which of them arrive is a decision rather than a side effect of
+ * where the read stopped: every entry is offered to log_select_keep(), which
+ * holds the newest runs.
+ */
+typedef struct {
+    log_viewer_file_t *out;
+    int max;
+    int held;
+    int files;      /* what the card holds that this viewer could open */
+} card_pick_t;
+
+static void card_take(const storage_entry_t *entry, void *ctx)
+{
+    card_pick_t *pick = (card_pick_t *)ctx;
+    /*
+     * Files only.  storage_walk() offers directories whatever the suffix
+     * filter says, because a filter is about names and a directory has no
+     * extension to match -- but this viewer cannot enter one, so a directory
+     * row is a row that says "is a folder" and nothing else.  Letting them
+     * compete for a bounded list means 48 folders sorted early can fill it
+     * and leave the card's only log unreachable.
+     */
+    if (entry->is_dir) {
+        return;
+    }
+    ++pick->files;
+    /* Field by field rather than a block copy of the structure: the two
+     * agree today and neither owns the other's layout.  The name is copied
+     * whole and terminated by hand, so one that filled its array without a
+     * terminator ends here rather than running off the end. */
+    _Static_assert(sizeof(pick->out->name) == sizeof(entry->name),
+                   "the viewer's name field and the card's are one size");
+    log_viewer_file_t f;
+    memcpy(f.name, entry->name, sizeof(f.name));
+    f.name[sizeof(f.name) - 1u] = '\0';
+    f.size   = entry->size;
+    f.is_dir = entry->is_dir;
+    pick->held = log_select_keep(pick->out, pick->held, pick->max, &f);
+}
+
+static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
+{
+    (void)ctx;
+    /*
+     * A card put in after the panel booted is mounted here, on the way past.
+     * The only other storage_init() runs in the splash sequence, so without
+     * this the RESCAN button that the empty screen tells the operator to
+     * press could never find a card and a reboot would be the only way in.
+     * Mounting when something is already mounted returns at once.
+     */
+    if (!storage_mounted()) {
+        (void)storage_init();
+    }
+    /*
+     * No card is -1 and an empty card is 0, and the viewer says different
+     * things about them.  storage_walk() cannot open the root of a volume
+     * that is not mounted, so the two already arrive apart; asking
+     * storage_mounted() first makes that true by construction rather than by
+     * how a failure happened to surface.
+     */
+    if (!storage_mounted()) {
+        return -1;
+    }
+    card_pick_t pick = { out, max_entries, 0, 0 };
+    /* No tick: this runs on the task that renders, which has no safety line
+     * to hold and nothing to pump. */
+    const int total = storage_walk(CARD_DIR, CARD_SUFFIXES, card_take, &pick,
+                                   NULL);
+    if (total < 0) {
+        /*
+         * Mounted, and yet its root will not open: the card it was mounted
+         * from has been taken out or swapped.  Nothing clears that flag on
+         * its own -- only storage_deinit() does -- so the mount stays stale
+         * and a replacement card is not found until the panel restarts.
+         *
+         * Not unmounted from here.  This runs on the task that renders, and
+         * the control task writes the run log on the same volume: unmounting
+         * under an open handle frees the SPI bus beneath a write on the other
+         * core.  Putting that right means one task owning the card's
+         * lifetime, which is a change of its own; see STATUS.md.
+         */
+        return -1;
+    }
+    /*
+     * Sizes last, and only for what was kept.  The walk carries names alone
+     * because a size is a path lookup of its own; asking for one per entry on
+     * a card holding hundreds of runs would put hundreds of card transactions
+     * on the task that renders and handles touch, to fill a column for
+     * entries the list has already dropped.
+     */
+    for (int i = 0; i < pick.held; ++i) {
+        if (!out[i].is_dir) {
+            out[i].size = storage_size(CARD_DIR, out[i].name);
+        }
+    }
+    /* Held in rank order while the card is read, drawn in name order. */
+    log_select_sort(out, pick.held);
+    /*
+     * Files, not entries.  The number goes to the tab that says how much of
+     * the card is on the list, and counting folders there would say a card
+     * holds more than the list can ever show while the list is complete.
+     */
+    return pick.files;     /* what the card holds; pick.held were written */
+}
+
+static bool card_open(const char *name, log_source_t *src, void *ctx)
+{
+    (void)ctx;
+    if (name == NULL || src == NULL) {
+        return false;
+    }
+    /* Whatever was open is closed first.  A viewer that opened a second log
+     * without closing the first would leak the handle, and there are few. */
+    if (s_card_file != NULL) {
+        fclose(s_card_file);
+        s_card_file = NULL;
+    }
+    char path[STORAGE_NAME_MAX + sizeof(STORAGE_MOUNT_POINT) + 2];
+    storage_path(CARD_DIR, name, path, sizeof(path));
+    s_card_file = fopen(path, "rb");
+    if (s_card_file == NULL) {
+        /* Listed and then gone, or unreadable.  The viewer says so; there is
+         * nothing here to retry. */
+        ESP_LOGW(TAG, "could not open %s", path);
+        return false;
+    }
+    log_source_stdio(src, s_card_file);
+    return true;
+}
+
+static void card_close(void *ctx)
+{
+    (void)ctx;
+    if (s_card_file != NULL) {
+        fclose(s_card_file);
+        s_card_file = NULL;
+    }
+}
+
+static const char *card_volume(void *ctx)
+{
+    (void)ctx;
+    return storage_card_name();
+}
+
+static const log_viewer_io_t k_card_io = {
+    .list   = card_list,
+    .open   = card_open,
+    .close  = card_close,
+    .volume = card_volume,
+    .ctx    = NULL,
+};
+
+
 /*
  * Ask the coprocessor who it is, repeatedly, for IDENTITY_WAIT_MS.
  *
@@ -701,6 +908,9 @@ static bool bring_up(void)
      * missing card is a warning the operator reads on the way past rather
      * than a boot failure. */
     (void)storage_init();
+    /* And the viewer is told how to reach it.  Without this it has no way to
+     * list anything and reports no card whatever is mounted. */
+    log_viewer_set_io(&k_card_io);
     splash_screen_set(SPLASH_STEP_STORAGE,
                       storage_mounted() ? SPLASH_OK : SPLASH_WARN,
                       storage_status());
@@ -912,11 +1122,36 @@ static FILE        *s_log_file;
  */
 static uint32_t     s_log_arm;
 /*
- * Where the numbering got to.  The scan is a linear probe from 1, so a card
- * holding 400 runs costs 400 opens at the first arming edge; after that it
- * starts from what it found.
+ * Where the numbering got to.  One directory read at the first arming edge
+ * puts it above every number the card already carries; after that it starts
+ * from what it handed out last.
  */
-static int          s_log_next = 1;
+static int          s_log_next = LOG_RUN_FIRST;
+/* Whether s_log_next has been put above what the card already holds.  Once
+ * per boot: after that this end has written every number it handed out. */
+static bool         s_log_numbered;
+
+/*
+ * The highest run number on the card, for the visitor below.
+ *
+ * This runs on the runlog task, so the directory read costs the card's own
+ * latency and nothing else: the control task beats the safety line and
+ * hit-tests STOP on its own schedule while this runs.  The walk therefore
+ * takes no tick.  What it does cost is the first row of a run, which waits
+ * in the queue until the scan finishes; a card holding 400 runs is one
+ * directory read, not 400 opens.
+ */
+static void log_highest(const storage_entry_t *entry, void *ctx)
+{
+    int *highest = (int *)ctx;
+    if (entry->is_dir) {
+        return;
+    }
+    const int n = log_run_number(entry->name);
+    if (n > *highest) {
+        *highest = n;
+    }
+}
 static log_writer_t s_log;
 static uint32_t     s_log_last_row_ms;
 
@@ -974,11 +1209,46 @@ static void log_open(uint32_t arm)
         control_alert("no card -- this run is not recorded");
         return;
     }
-    /* Numbered, not timestamped: no clock on this board survives a power
-     * cycle, so every file would be dated 1970-01-01. */
-    for (int i = s_log_next; i < 1000 && s_log_file == NULL; ++i) {
+    /*
+     * Numbered, not timestamped: no clock on this board survives a power
+     * cycle, so every file would be dated 1970-01-01.  The number is the
+     * only order the card carries, and the viewer reads it back with
+     * log_run_number() to decide which runs it can still show once a card
+     * holds more of them than the screen does; log_run_name() is the one
+     * place the name is built.
+     *
+     * Above every number the card already carries, not in the first gap.
+     * A gap is what deleting an old run on a computer leaves, and a run
+     * written into one is the newest run wearing the oldest number: the
+     * viewer would rank it last and drop it from a full list, hiding the
+     * experiment just recorded.  One directory read settles it, which is
+     * also cheaper than the probes it replaces -- a card holding 400 runs
+     * cost 400 opens before the first free number.
+     */
+    if (!s_log_numbered) {
+        int highest = LOG_RUN_FIRST - 1;
+        if (storage_walk(CARD_DIR, CARD_SUFFIXES, log_highest, &highest,
+                         NULL) < 0) {
+            /*
+             * The card would not list.  Falling through would number this run
+             * from 1 and take the first gap, which is the numbering this scan
+             * exists to prevent: the run would be recorded and then rank as
+             * the oldest on the card, and a full list would hide it.  A run
+             * the operator is told is not recorded is better than one that
+             * records itself out of sight.
+             */
+            ESP_LOGW(TAG, "the card would not list; this run is not recorded");
+            control_alert("card unreadable -- run not recorded");
+            return;
+        }
+        s_log_next = (highest >= LOG_RUN_FIRST) ? highest + 1 : LOG_RUN_FIRST;
+        s_log_numbered = true;
+    }
+    for (int i = s_log_next; i <= LOG_RUN_LAST && s_log_file == NULL; ++i) {
+        char name[LOG_RUN_NAME_MAX];
         char path[64];
-        snprintf(path, sizeof(path), "/sdcard/BENCH%03d.CSV", i);
+        log_run_name(name, sizeof(name), i);
+        storage_path(CARD_DIR, name, path, sizeof(path));
         FILE *probe = fopen(path, "r");
         if (probe != NULL) {
             fclose(probe);
@@ -1580,9 +1850,16 @@ static void link_lost_report(busfault_report_t *r)
     memset(r, 0, sizeof(*r));
     r->kind       = BUSFAULT_LINK_LOST;
     r->bus        = bus_state();
-    r->down_s     = s_link_lost_ms == 0u
+    /*
+     * The timestamp is read once.  The control task clears it on the other
+     * core the moment the link answers, and a second read that caught the
+     * zero would make this now_ms() / 1000 -- the uptime, printed as how
+     * long the link has been down.
+     */
+    const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
+    r->down_s     = lost_ms == 0u
                         ? 0u
-                        : (uint32_t)(now_ms() - s_link_lost_ms) / 1000u;
+                        : (uint32_t)(now_ms() - lost_ms) / 1000u;
     r->recoveries = s_recoveries;
     r->polls      = s_host.polls;
     r->timeouts   = s_host.timeouts;
@@ -1668,14 +1945,17 @@ static void link_report(void)
      * fault is one nobody can read down a column, and the reading that most
      * needs a timestamp is the one where the controller would not answer.
      */
+    /* Read once, like every other reader of it: the control task can clear
+     * it between the test and the subtraction. */
+    const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
     char row[208];
     snprintf(row, sizeof(row),
              "t=%lus link=down for %lus  bus=%s tx_err=%s rx_err=%s "
              "bus_err=%s rejoins=%lu/%lu  polls=%lu replies=%lu timeouts=%lu",
              (unsigned long)(now_ms() / 1000u),
-             (unsigned long)(s_link_lost_ms == 0u
+             (unsigned long)(lost_ms == 0u
                                  ? 0u
-                                 : (now_ms() - s_link_lost_ms) / 1000u),
+                                 : (now_ms() - lost_ms) / 1000u),
              !have_bus ? "not running" : (off ? "OFF" : "on"),
              have_bus ? u32(n1, sizeof(n1), tec) : "?",
              have_bus ? u32(n2, sizeof(n2), rec) : "?",
@@ -1785,9 +2065,9 @@ static void service_disarm(bool link_up)
         owed = true;
     }
 
-    /* Whichever of the two it was, the slot it let go of is cleared here.
-     * The release alone used to leave that to the end of the drain, behind
-     * whatever else was queued. */
+    /* Whichever of the two it was, the position it let go of is settled
+     * here rather than at the end of the drain, behind whatever else is
+     * queued. */
     if (owed) {
         servo_service(link_up);
     }
@@ -1812,7 +2092,7 @@ static void service_arming(bool link_up)
      * Every stop lets go of what was being driven, whether or not the bench
      * was armed and whichever thing raised it -- a press, the far end, touch
      * that stopped answering.  A bench that was not armed still had a servo
-     * held, and nothing else would have released it: the slot would go on
+     * held, and nothing else would have released it: the position would go on
      * being refreshed every 100 ms, over the top of an outputs binding made
      * later.
      */
@@ -1863,18 +2143,18 @@ static void service_arming(bool link_up)
         throttle_to_zero();
         servo_let_go();
         /*
-         * And the slot goes before the arm does, not after it.  The far end
-         * applies ARM and stamps every channel's clock before it steps its
-         * outputs, so a slot still bound at that moment renders its stale
-         * command for as long as the release takes to arrive.
+         * And the surfaces are centred before the arm, not after it.  The far
+         * end applies ARM and stamps every channel's clock before it steps its
+         * outputs, so a channel still holding a position at that moment
+         * renders it for as long as the centre takes to arrive.
          */
         servo_service(link_up);
         if (link_up && s_servo_release_owed) {
             /*
-             * The release did not land, so the far end still has the slot and
-             * the command in it.  Arming now would render that command before
-             * anything else reached it, so the arm is refused and the debt
-             * stays; the next attempt starts by paying it.
+             * The release did not land, so the far end still holds the
+             * position.  Arming now would render it before anything else
+             * reached it, so the arm is refused and the debt stays; the next
+             * attempt starts by paying it.
              *
              * Only while there is a link.  With none, the debt cannot be paid
              * by anybody and nothing at the far end is being armed either, so
@@ -1960,6 +2240,82 @@ static void write_output_binding(const outbind_t *bind)
 }
 
 /*
+ * Which channels the horn drives: the ones the binding marks as surfaces.
+ *
+ * Written and read by the control task alone, which is the only task that
+ * puts anything on the wire, and refreshed from the binding read back in
+ * read_outputs_binding().
+ *
+ * Zero is a bench with nothing bound as a surface, and then the horn drives
+ * nothing.  Falling back to a channel number instead is how this screen came
+ * to command whatever was bound first, which on a bench with an ESC on the
+ * lowest pin is the motor.
+ */
+static uint8_t s_servo_channels;
+
+/*
+ * Whether that mask is an answer at all.
+ *
+ * Empty and unknown are different benches.  Empty is a binding that was read
+ * and names no surface -- a bench carrying only a motor, which must still
+ * arm.  Unknown is a binding nobody has read, or one whose write did not come
+ * back: the far end may be rendering surfaces this end cannot name, and
+ * treating that as empty would let a release report success without settling
+ * them and let the arm that follows drive them.
+ *
+ * False until a binding has been read from the far end.  Nothing this end
+ * merely sent counts: a write whose acknowledgement was lost was applied over
+ * there all the same.
+ */
+static bool s_servo_known;
+
+/*
+ * And whether the last position actually reached any of them.
+ *
+ * Separate from s_servo_channels because the two can differ: a write that
+ * failed part way through leaves some surfaces holding a position and not
+ * others.  It says a release is owed, not where the release goes -- that is
+ * always the channels bound as surfaces now, because a channel that has
+ * stopped being one must not be written by this screen.
+ */
+static uint8_t s_servo_written;
+
+/* The channels of one run, as bits. */
+static uint8_t servo_run_bits(uint8_t first, uint8_t count)
+{
+    uint8_t bits = 0u;
+    for (uint8_t c = first; c < first + count; ++c) {
+        bits |= (uint8_t)(1u << c);
+    }
+    return bits;
+}
+
+/*
+ * The next run of set channels in @p mask at or after @p from.
+ *
+ * Runs rather than single channels: a binding's surfaces are contiguous
+ * unless a motor sits between them, and each exchange on this wire can wait a
+ * second.  Returns false when there is no run left.
+ */
+static bool servo_next_run(uint8_t mask, uint8_t from, uint8_t *first,
+                           uint8_t *count)
+{
+    uint8_t i = from;
+    while (i < LINK_OUT_CHANNELS && (mask & (uint8_t)(1u << i)) == 0u) {
+        ++i;
+    }
+    if (i >= LINK_OUT_CHANNELS) {
+        return false;
+    }
+    *first = i;
+    while (i < LINK_OUT_CHANNELS && (mask & (uint8_t)(1u << i)) != 0u) {
+        ++i;
+    }
+    *count = (uint8_t)(i - *first);
+    return true;
+}
+
+/*
  * One servo command, as configuration and pulse.
  */
 /* Whether the operator has asked, since this began, for the thing being
@@ -1975,23 +2331,86 @@ static bool servo_countermanded(void)
 static bool write_servo(const servo_cmd_t sv)
 {
     link_msg_t reply;
+    /*
+     * Every command, a release included, goes to the channels the binding
+     * marks as surfaces now -- never to the ones this process wrote earlier.
+     *
+     * A channel that has stopped being a surface is not this screen's to
+     * settle, and centring it would be the defect this file just stopped
+     * committing from the other side: mid-travel is a surface's rest and half
+     * power on a throttle, so a channel rebound as a motor between the drag
+     * and the release would be commanded to half throttle.  What settles it
+     * instead is the rebinding itself, which carries the new role and the
+     * rest that goes with it, or the unbinding, after which no slot renders
+     * the channel at all.
+     *
+     * Reaching what this process never wrote is deliberate: after a panel
+     * restart the far end still holds whatever it was left at, and centring a
+     * surface that is not holding anything costs nothing.
+     */
+    /*
+     * An unknown binding is not an empty one.  Returning true here would pay
+     * a release that settled nothing and let the bench arm onto surfaces the
+     * far end is still rendering; returning false keeps the debt, and
+     * ARMING_ACT_ARM refuses the arm and says so.  It is paid as soon as a
+     * read succeeds, which the poll loop retries every second.
+     */
+    if (!s_servo_known) {
+        return false;
+    }
+    const uint8_t mask = s_servo_channels;
+    /*
+     * Nothing is bound as a surface, or nothing is holding a position, so
+     * there is nothing to say.  True rather than false: a false here would
+     * leave a release owed for ever, and ARMING_ACT_ARM refuses to arm while
+     * one is -- a bench with only a motor on it would stop arming.
+     */
+    if (mask == 0u) {
+        return true;
+    }
+    uint8_t first = 0u, count = 0u;
     if (sv.kind == SERVO_CMD_RELEASE) {
-        /* Stop driving: clear the slot.  The channel keeps its last command,
-         * but with nothing rendering it that is inert.
+        /*
+         * Stop holding the surfaces where the horn put them: each is
+         * commanded to the centre it rests at.  The slots are the operator's,
+         * written from the OUTPUTS screen, and are not touched -- a screen
+         * that cleared one would take away the wiring the operator described,
+         * and on a bench where a motor holds the lowest pin it would take
+         * away the motor's.
          *
          * Whether the far end took it is returned rather than assumed: a
-         * write that did not land leaves the slot bound, and the caller's
-         * record of owing the release is the only thing that would notice. */
-        uint16_t slot[LINK_OS_STRIDE] = { LINK_DRIVER_NONE, 0, 0, 0 };
-        return write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
-                          &reply)
-               && reply.op == LINK_OP_ACK;
+         * write that did not land leaves the surface where it was, and the
+         * caller's record of owing the release is the only thing that would
+         * notice.
+         */
+        uint16_t centre[LINK_OUT_CHANNELS];
+        for (uint8_t i = 0; i < LINK_OUT_CHANNELS; ++i) {
+            centre[i] = (uint16_t)(LINK_CH_SPAN / 2u);
+        }
+        for (uint8_t at = 0u; servo_next_run(mask, at, &first, &count);
+             at = (uint8_t)(first + count)) {
+            if (!write_regs(&s_host, LINK_PAGE_CHANNELS, first, count,
+                            &centre[first], &reply)
+                || reply.op != LINK_OP_ACK) {
+                return false;
+            }
+            /* Settled, so no longer holding anything.  Run by run, because a
+             * later one can still fail and the debt is what is left. */
+            s_servo_written &= (uint8_t)~servo_run_bits(first, count);
+        }
+        /*
+         * And nothing is held anywhere else either.  A bit left over names a
+         * channel that has stopped being a surface, which this screen must
+         * not write and whose own rebinding has already given it a rest;
+         * keeping it would owe a release that no write can ever pay.
+         */
+        s_servo_written = 0u;
+        return true;
     } else {
         /*
          * Configuration and command, sent whole every time.  The coprocessor
          * may have reset since the last write, so the range the pulse is
-         * clamped against and the driver that renders it are restated with
-         * each pulse.
+         * clamped against is restated with each pulse.
          */
         /*
          * The endpoints the screen named, not this file's.  A narrow servo
@@ -2005,63 +2424,68 @@ static bool write_servo(const servo_cmd_t sv)
                            && sv.max_us <= LINK_CC_CEILING_US;
         const uint16_t min_us = named ? sv.min_us : (uint16_t)SERVO_MIN_US;
         const uint16_t max_us = named ? sv.max_us : (uint16_t)SERVO_MAX_US;
-        uint16_t cfg[LINK_CC_STRIDE] = {
-            [LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE,
+        const uint16_t span = us_to_span(sv.value_us, min_us, max_us);
+
+        /*
+         * Only the channels the binding marked surfaces are written, and the
+         * role written to them is the one they already carry.  A write that
+         * reached further would be this screen deciding what a channel is
+         * for, and a motor channel told it is a surface rests at mid-travel,
+         * which on a throttle is half power.
+         */
+        uint16_t cfg[LINK_CC_COUNT];
+        uint16_t cmd[LINK_OUT_CHANNELS];
+        for (uint8_t i = 0; i < LINK_OUT_CHANNELS; ++i) {
+            uint16_t *r = &cfg[(size_t)i * LINK_CC_STRIDE];
+            r[LINK_CC_ROLE] = LINK_CC_ROLE_SURFACE;
             /* What the screen's SPEED means at this end: the rate the bench
              * is allowed to move the output, rather than a number that only
              * changed the drawing. */
-            [LINK_CC_SLEW]   = sv.slew_per_s,
-            [LINK_CC_MIN_US] = min_us,
-            [LINK_CC_MAX_US] = max_us,
-        };
-        uint16_t slot[LINK_OS_STRIDE] = {
-            [LINK_OS_DRIVER]  = LINK_DRIVER_PWM,
-            [LINK_OS_PIN]     = SERVO_PIN,
-            [LINK_OS_RANGE]   = LINK_OS_RANGE_OF(SERVO_CH, 1),
-            [LINK_OS_RATE_HZ] = 50u,
-        };
-        const uint16_t span = us_to_span(sv.value_us, min_us, max_us);
+            r[LINK_CC_SLEW]   = sv.slew_per_s;
+            r[LINK_CC_MIN_US] = min_us;
+            r[LINK_CC_MAX_US] = max_us;
+            cmd[i] = span;
+        }
         /*
-         * What the channel is, then what it is to do, and only then the slot
-         * that renders it.  Each is its own transaction and the far end steps
-         * its outputs between them, so a slot bound before the position had
-         * arrived would drive whatever channel 0 was holding -- the position
-         * from before the last release, or the surface rest of mid-travel
-         * once that has gone stale -- and would keep driving it if the
-         * position write then failed.  Binding last means the pin is either
-         * unbound or already carrying what was asked for.
+         * What the channel is, then what it is to do.  Each is its own
+         * transaction and the far end steps its outputs between them, so a
+         * range that had not arrived would clamp the pulse against the one
+         * before it: a narrow servo selected against a standard configuration
+         * renders 1500 us, past its 860 us maximum.  The 100 ms refresh is
+         * the retry.
          *
-         * All three are required.  The endpoints travel with the command, so
-         * a CHAN_CFG that was refused or timed out leaves the far end
-         * clamping against the range it had before: a narrow servo selected
-         * against a standard configuration renders 1500 us, past its 860 us
-         * maximum. The 100 ms refresh is the retry.
+         * Both waits can take a second and the pump runs inside them, so a
+         * stop can be applied and a disarm posted between one and the next.
+         * Giving up part way leaves the surfaces already written holding what
+         * was asked for, and the next refresh or the release settles them;
+         * no pin changes hands either way, because no slot is written here.
          */
-        if (!write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_STRIDE, cfg,
-                        &reply)
-            || reply.op != LINK_OP_ACK) {
-            return false;
+        for (uint8_t at = 0u; servo_next_run(mask, at, &first, &count);
+             at = (uint8_t)(first + count)) {
+            if (!write_regs(&s_host, LINK_PAGE_CHAN_CFG,
+                            (uint8_t)(first * LINK_CC_STRIDE),
+                            (uint8_t)(count * LINK_CC_STRIDE),
+                            &cfg[(size_t)first * LINK_CC_STRIDE], &reply)
+                || reply.op != LINK_OP_ACK) {
+                return false;
+            }
+            if (servo_countermanded()) {
+                return false;
+            }
+            if (!write_regs(&s_host, LINK_PAGE_CHANNELS, first, count,
+                            &cmd[first], &reply)
+                || reply.op != LINK_OP_ACK) {
+                return false;
+            }
+            /* Landed, so this run is holding a position and a release owes
+             * it a centre.  Recorded before the next run is attempted: one
+             * that fails must not lose what an earlier one did. */
+            s_servo_written |= servo_run_bits(first, count);
+            if (servo_countermanded()) {
+                return false;
+            }
         }
-        /*
-         * Each of these waits up to a second and the pump runs inside them,
-         * so a stop can be applied and a disarm posted between one and the
-         * next.  The slot is bound by the last write, so giving up here
-         * leaves the pin unbound rather than driving what nobody wants any
-         * more.
-         */
-        if (servo_countermanded()) {
-            return false;
-        }
-        if (!write_page(&s_host, LINK_PAGE_CHANNELS, 1u, &span, &reply)
-            || reply.op != LINK_OP_ACK) {
-            return false;
-        }
-        if (servo_countermanded()) {
-            return false;
-        }
-        return write_page(&s_host, LINK_PAGE_OUTPUTS, LINK_OS_STRIDE, slot,
-                          &reply)
-               && reply.op == LINK_OP_ACK;
+        return true;
     }
 }
 
@@ -2127,11 +2551,11 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
 {
     if (sv.kind == SERVO_CMD_ARM) {
         /*
-         * The slot goes first, whether or not this process cached one.  After
-         * a panel restart the far end can still hold slot 0 and the command
-         * in it, and arming would render that: the same reason DISARM and
-         * RELEASE ask unconditionally.  The arm itself waits for the clear --
-         * see ARMING_ACT_ARM.
+         * The surfaces are centred first, whether or not this process cached
+         * a position.  After a panel restart the far end can still hold the
+         * command from before it, and arming would render that: the same
+         * reason DISARM and RELEASE ask unconditionally.  The arm itself
+         * waits for it -- see ARMING_ACT_ARM.
          */
         s_servo_held.kind = SERVO_CMD_NONE;
         s_servo_release_owed = true;
@@ -2151,11 +2575,10 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
     }
     if (sv.kind == SERVO_CMD_DISARM) {
         /*
-         * Asked for by this screen, so the slot goes whether or not this
-         * process cached a position for it -- the far end keeps its slots
-         * across a panel restart, and the screen promises to let go of the
-         * pin.  A stop from anywhere else stays conditional: it must not
-         * quietly clear a slot 0 the OUTPUTS screen bound.
+         * Asked for by this screen, so the surfaces are centred whether or not
+         * this process cached a position for them -- the far end keeps its
+         * channel commands across a panel restart, and the screen promises to
+         * let go of the output.
          */
         s_servo_held.kind = SERVO_CMD_NONE;
         s_servo_release_owed = true;
@@ -2165,10 +2588,10 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
     }
     if (sv.kind == SERVO_CMD_RELEASE) {
         /*
-         * Asked for, so the slot is cleared whether or not this process
-         * remembers binding it: after a panel restart, or with slot 0 bound
-         * from the OUTPUTS screen, the far end holds a slot this end has
-         * never written, and the button says it releases the output.
+         * Asked for, so the surfaces are centred whether or not this process
+         * remembers commanding them: after a panel restart the far end holds
+         * a position this end never wrote, and the button says it releases
+         * the output.
          */
         s_servo_held.kind = SERVO_CMD_NONE;
         s_servo_release_owed = true;
@@ -2179,10 +2602,10 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
     s_servo_next_ms = now_ms() + SERVO_HOLD_MS;
     if (link_up && write_servo(sv)) {
         /*
-         * The slot is bound again, by this write, to this position: an older
-         * release still owed for it is void.  Paying it afterwards would
-         * clear what was just asked for and leave the pin dead until the
-         * next refresh.  A write that failed leaves the debt where it was.
+         * The surfaces are holding this position now, so an older release
+         * still owed for them is void.  Paying it afterwards would centre
+         * what was just asked for and leave the output at rest until the next
+         * refresh.  A write that failed leaves the debt where it was.
          */
         s_servo_release_owed = false;
     }
@@ -2193,15 +2616,19 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
  * throttle, and for the same reason: a disarm that leaves a position behind
  * is an arm that steps straight back to it.
  *
- * The far end keeps the slot and the channel command through a disarm and a
- * failsafe, and outputs_arm() stamps every channel's clock, so on the next
- * arm the servo is neither overdue nor at rest -- it is at its old position,
- * with nobody having touched anything.  So the slot has to go, and until it
- * can the release is owed.
+ * The far end keeps the channel command through a disarm and a failsafe, and
+ * outputs_arm() stamps every channel's clock, so on the next arm the surface
+ * is neither overdue nor at rest -- it is at its old position, with nobody
+ * having touched anything.  So the position has to be returned to centre, and
+ * until it can be the release is owed.
+ *
+ * Owed for what was written rather than for what the screen is holding: a
+ * position that landed and then stopped being held is still out there, and it
+ * is the far end's copy that arms the bench into it.
  */
 static void servo_let_go(void)
 {
-    if (s_servo_held.kind != SERVO_CMD_NONE) {
+    if (s_servo_held.kind != SERVO_CMD_NONE || s_servo_written != 0u) {
         s_servo_release_owed = true;
     }
     s_servo_held.kind = SERVO_CMD_NONE;
@@ -2271,7 +2698,7 @@ static void drain_commands(bool link_up, bench_state_t *bench)
          * An arm would clear that stop's own latch; a position or a throttle
          * would put back what the stop had just let go of -- and a stop from
          * touch dying or from the far end has no queued STOP behind it to
-         * release the slot a second time.
+         * settle the surfaces a second time.
          *
          * Only what drives.  A disarm, a release or a binding asked for
          * before the stop still means what it meant.
@@ -2306,17 +2733,27 @@ static void drain_commands(bool link_up, bench_state_t *bench)
             }
             write_output_binding(&pc.bind);
             /*
-             * A binding that landed says what every slot is, slot 0
-             * included, so an older release still owed for that slot is
-             * void: paying it afterwards would clear a binding the screen
-             * has just been told was written, and the far end would keep
-             * the cleared page.  A binding that did not land changes
-             * nothing and the debt stands.
+             * What the horn may drive has changed, and what this end sent is
+             * not the answer: a write whose acknowledgement was lost was
+             * applied over there all the same, so a result of NO LINK does
+             * not mean the old binding still stands.  The mask goes unknown
+             * and the far end is asked, here rather than at the next link-up
+             * edge -- the operator can bind a servo and walk straight to the
+             * screen that drives it, and a read that fails is retried by the
+             * poll loop.
+             *
+             * The debt is not voided.  A binding writes the roles and the
+             * slots and not the commands, so a surface the horn left
+             * somewhere is still there afterwards and still owes a centre.
+             * The release goes to whatever is a surface under the new
+             * binding: a channel this binding turned into a motor carries the
+             * rest its new role brought with it, and a servo horn writing to
+             * it would undo exactly that.  What stops here is the holding --
+             * the screen's position was for the wiring just replaced.
              */
-            if (atomic_load(&s_outputs_result) == (int)OUTPUTS_OK) {
-                s_servo_held.kind = SERVO_CMD_NONE;
-                s_servo_release_owed = false;
-            }
+            s_servo_known = false;
+            servo_let_go();
+            read_outputs_binding();
             continue;
         }
         if (pc.kind == PANEL_CMD_SERVO) {
@@ -2368,10 +2805,10 @@ static bool poll_bench(bench_state_t *bench)
     if (answered) {
         link_msg_t ack = { 0 };
         /*
-         * Not while a servo slot is still bound at the far end and owed a
-         * release.  A bank armed with no link -- the simulator, or a cable
-         * pulled -- reaches this the moment one answers, and the far end
-         * would render the slot's old command before the clear arrived.
+         * Not while a surface at the far end is still holding a position and
+         * owed a release.  A bank armed with no link -- the simulator, or a
+         * cable pulled -- reaches this the moment one answers, and the far end
+         * would render that old command before the centre arrived.
          * servo_service() pays the debt every pass, so this holds for one.
          */
         const bool armed = outputs_armed(&s_out) && !s_servo_release_owed;
@@ -2517,6 +2954,20 @@ static void read_outputs_binding(void)
         && poll_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, &ccr)
         && ccr.op != LINK_OP_NACK
         && outbind_from_slots(&got, s_board, orr.regs, ccr.regs)) {
+        /*
+         * Which channels the horn may drive, from the pages themselves rather
+         * than from the binding they were read into.  A binding names one
+         * role per slot -- outbind_from_slots() takes a slot's role from its
+         * first channel -- so a multi-channel slot whose channels disagree
+         * would put a throttle in the surfaces' mask, and the horn would
+         * command it.  The pages answer per channel.
+         *
+         * Held unlocked because the control task is the only one that touches
+         * it, and it is the only task that writes the wire.
+         */
+        s_servo_channels = outputs_role_channels(orr.regs, ccr.regs,
+                                                 OUT_ROLE_SURFACE);
+        s_servo_known    = true;
         if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
             s_outputs_read = got;
             s_outputs_read_fresh = true;
@@ -2532,6 +2983,14 @@ static void read_outputs_binding(void)
         outbind_t none;
         outbind_init(&none);
         outbind_set_board(&none, s_board);
+        /*
+         * A binding that would not read is unknown, not empty.  The horn
+         * drives nothing either way, but the release stays owed: the far end
+         * may still be rendering surfaces from before this panel started, and
+         * nothing here can name them to settle them.
+         */
+        s_servo_channels = 0u;
+        s_servo_known    = false;
         if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
             s_outputs_read = none;
             s_outputs_read_fresh = true;
@@ -2675,12 +3134,12 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
          * only shown from there.
          */
         if (answered) {
-            s_link_lost_ms    = 0;
+            atomic_store(&s_link_lost_ms, 0u);
             s_link_lost_shown = false;
             s_recoveries      = 0;   /* the next outage counts its own */
         } else if (*link_up) {
             /* The edge: it was up until this poll. */
-            s_link_lost_ms = now_ms();
+            atomic_store(&s_link_lost_ms, now_ms());
         }
         /*
          * A sample exists only if the bench page was read.  A poll that timed
@@ -2704,6 +3163,16 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
         if (*link_up && (uint32_t)(now_ms() - *last_status) >= 500u) {
             *last_status = now_ms();
             read_status_counters();
+            /*
+             * And the binding, while it is unknown.  Without a retry an
+             * output page that would not read once leaves the servo screen
+             * unable to name a channel, and the release it owes unpayable,
+             * until the next link-up edge -- which on a link that stays up
+             * never comes.  Once it is known this costs nothing.
+             */
+            if (!s_servo_known) {
+                read_outputs_binding();
+            }
         }
 
         /*
@@ -2871,6 +3340,15 @@ static void control_task(void *arg)
  * its screen by the time it gets here, so a refused send is a discarded
  * disarm or a throttle that never arrives.
  */
+/*
+ * Take what the screens have decided and hand it to the control task.
+ *
+ * Called after every touch event as well as once a pass, because a screen's
+ * enter() can be long: a command recorded by the screen being left must not
+ * wait behind the work of the screen being entered.
+ */
+static void flush_screen_commands(uint32_t stops_now);
+
 static void send_cmd(const panel_cmd_t *pc)
 {
     /*
@@ -2909,6 +3387,24 @@ static void send_cmd(const panel_cmd_t *pc)
     (void)xQueueReceive(s_cmd_q, &stale, 0);
     if (xQueueSend(s_cmd_q, pc, 0) != pdTRUE) {
         ESP_LOGW(TAG, "control queue full; a command was lost");
+    }
+}
+
+static void flush_screen_commands(uint32_t stops_now)
+{
+    motor_cmd_t mc;
+    while (motor_screen_poll_cmd(&mc)) {
+        panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
+                           .stops = stops_now,
+                           .lets_go = atomic_load(&s_lets_go) };
+        send_cmd(&pc);
+    }
+    servo_cmd_t sv;
+    if (servo_screen_take(&sv)) {
+        panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
+                           .stops = stops_now,
+                           .lets_go = atomic_load(&s_lets_go) };
+        send_cmd(&pc);
     }
 }
 
@@ -3044,7 +3540,33 @@ void app_main(void)
         /* What the control task saw of the panel. */
         touch_event_t evt;
         while (xQueueReceive(s_touch_q, &evt, 0) == pdTRUE) {
+            const ui_screen_id_t before = ui_router_current();
             ui_router_event(&evt);
+            /*
+             * A navigation, and only a navigation, is taken out before the
+             * next event is dispatched.
+             *
+             * Leaving a bench screen records a disarm, and entering a screen
+             * runs its enter() there and then -- the log viewer's reads the
+             * card's whole root directory.  Two taps in one drain, HOME and
+             * then LOGS, would otherwise leave the disarm sitting in the
+             * screen while the walk ran, and the output stays live for as
+             * long as that takes.
+             *
+             * Not after every event.  The servo screen holds one pending
+             * command and lets the next overwrite it, so a drag's queued
+             * MOVEs collapse to where the finger is now.  Taking each one out
+             * as it arrives turns that into a queue of positions the finger
+             * has already left, and the horn follows them one link exchange
+             * at a time.  A navigation is the one thing that cannot be
+             * coalesced away, and nothing else here needs to jump the queue.
+             *
+             * STOP is unaffected either way: the control task hit-tests its
+             * band itself.
+             */
+            if (ui_router_current() != before) {
+                flush_screen_commands(stops_now);
+            }
         }
 
         /* What the screens decided, back to the control task. */
@@ -3080,20 +3602,7 @@ void app_main(void)
         outputs_screen_set_result(
             (outputs_result_t)atomic_load(&s_outputs_result));
 
-        motor_cmd_t mc;
-        while (motor_screen_poll_cmd(&mc)) {
-            panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
-                               .stops = stops_now,
-                               .lets_go = atomic_load(&s_lets_go) };
-            send_cmd(&pc);
-        }
-        servo_cmd_t sv;
-        if (servo_screen_take(&sv)) {
-            panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
-                               .stops = stops_now,
-                               .lets_go = atomic_load(&s_lets_go) };
-            send_cmd(&pc);
-        }
+        flush_screen_commands(stops_now);
         /*
          * Whether a STOP is on screen to press.  The control task hit-tests
          * the band's rectangle and cannot see which screen is up.
@@ -3184,9 +3693,16 @@ void app_main(void)
          * STOP, and a bench with something spinning must not have its stop
          * button covered by a diagnosis.  Armed, the alert band already says
          * the link is gone, and the screen waits for the disarm.
+         *
+         * The timestamp is read once and tested twice.  The control task
+         * clears it on the other core the moment the link answers, and a
+         * second read that caught the zero would test now_ms() - 0, the
+         * uptime, against LINK_LOST_SCREEN_MS: past 4000 ms of uptime that
+         * passes, and the screen takes over on a link that is up.
          */
-        if (!armed && s_link_lost_ms != 0u && !s_link_lost_shown
-            && (uint32_t)(now_ms() - s_link_lost_ms) >= LINK_LOST_SCREEN_MS
+        const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
+        if (!armed && lost_ms != 0u && !s_link_lost_shown
+            && (uint32_t)(now_ms() - lost_ms) >= LINK_LOST_SCREEN_MS
             && ui_router_current() != SCREEN_SPLASH
             && ui_router_current() != SCREEN_BUSFAULT) {
             busfault_report_t r;
