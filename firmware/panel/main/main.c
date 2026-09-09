@@ -519,6 +519,12 @@ static atomic_bool s_servo_release_request;
  * one would otherwise put back what it let go of.
  */
 static atomic_uint s_lets_go;
+/*
+ * Touch events the control task had to evict to make room, counted so the
+ * frame log can say whether the render loop has ever fallen far enough
+ * behind for it to happen.  Nonzero on a bench is the condition below.
+ */
+static atomic_uint s_touch_evicted;
 /* False until the control task owns the safety state; bring-up polls the
  * link before that, with nothing to service. */
 static bool s_pump_live;
@@ -577,8 +583,33 @@ static void control_pump(void)
                 counted_here = true;
             }
         }
-        /* The screen still sees every event: it draws the press. */
-        const bool routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
+        /*
+         * The screen still sees every event: it draws the press.
+         *
+         * A full queue gives up its oldest entry rather than refusing the
+         * new one, which is what the GT911's own event queue and the
+         * command queue already do.  The direction matters here more than
+         * anywhere else on the panel: the last event of a gesture is its
+         * release, so refusing the newest is refusing the release.  A
+         * release the screen never sees leaves it holding a press that is
+         * no longer on the glass, and ui_hold_tick() completes that hold on
+         * the frame timer -- an ARM with nothing on the panel.  The screen
+         * also stops accepting DISARM until a contact arrives carrying the
+         * same track id.
+         *
+         * A still finger emits nothing, so filling 32 slots takes either
+         * coordinate wobble on the held contact or a second one; a palm
+         * resting on the glass reaches it in about 90 ms of undrained
+         * frame.
+         */
+        bool routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
+        if (!routed) {
+            touch_event_t stale;
+            if (xQueueReceive(s_touch_q, &stale, 0) == pdTRUE) {
+                atomic_fetch_add(&s_touch_evicted, 1u);
+                routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
+            }
+        }
         /*
          * The router will latch this same release and the backstop would
          * then stop the bench a second time, so a stop applied here is
@@ -3952,9 +3983,10 @@ void app_main(void)
          * frame budget being spent.  Printed every 300 frames.
          */
         if (++frames % 300u == 0u) {
-            ESP_LOGI(TAG, "%.1f fps  DRAW %u us  WAIT %u us",
+            ESP_LOGI(TAG, "%.1f fps  DRAW %u us  WAIT %u us  TOUCHEVICT %u",
                      (double)display_fps(), (unsigned)draw_us,
-                     (unsigned)display_last_wait_us());
+                     (unsigned)display_last_wait_us(),
+                     atomic_load(&s_touch_evicted));
         }
     }
 }

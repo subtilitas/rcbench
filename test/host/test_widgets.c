@@ -790,6 +790,23 @@ TEST_CASE(the_formatters_round_and_pad_as_the_readouts_expect)
  * to it, and what happens when the state it asked for goes away under a
  * press that is still down.
  */
+/*
+ * Time passing the way frames deliver it.  ui_hold_tick() credits at most
+ * UI_HOLD_MAX_CREDIT_S per call, so a test that wants a hold to complete has
+ * to advance the way the panel does rather than in one jump.
+ */
+static bool hold_advance(ui_hold_t *h, float seconds)
+{
+    const float step = UI_HOLD_MAX_CREDIT_S / 2.0f;
+    bool fired = false;
+    for (float t = 0.0f; t + step <= seconds + step / 2.0f; t += step) {
+        if (ui_hold_tick(h, step)) {
+            fired = true;
+        }
+    }
+    return fired;
+}
+
 TEST_CASE(a_hold_fires_once_and_only_when_it_is_held)
 {
     ui_hold_t h;
@@ -799,8 +816,8 @@ TEST_CASE(a_hold_fires_once_and_only_when_it_is_held)
     CHECK(!ui_hold_tick(&h, UI_HOLD_S * 2.0f));
 
     ui_hold_begin(&h);
-    CHECK(!ui_hold_tick(&h, UI_HOLD_S / 2.0f));
-    CHECK(ui_hold_tick(&h, UI_HOLD_S / 2.0f));
+    CHECK(!hold_advance(&h, UI_HOLD_S / 2.0f));
+    CHECK(hold_advance(&h, UI_HOLD_S / 2.0f));
     /* It does not fire again under the same press. */
     CHECK(!ui_hold_tick(&h, UI_HOLD_S));
     /* The fill stops at the end of the fade rather than running past it. */
@@ -816,15 +833,51 @@ TEST_CASE(a_finger_that_leaves_the_control_ends_the_hold)
     ui_hold_t h;
     ui_hold_reset(&h);
     ui_hold_begin(&h);
-    CHECK(!ui_hold_tick(&h, UI_HOLD_S / 2.0f));
+    CHECK(!hold_advance(&h, UI_HOLD_S / 2.0f));
     CHECK(ui_hold_leave(&h));
     CHECK(!ui_hold_tick(&h, UI_HOLD_S * 2.0f));   /* and it does not resume */
 
     /* Once it has fired, the press is waiting for its release instead. */
     ui_hold_reset(&h);
     ui_hold_begin(&h);
-    CHECK(ui_hold_tick(&h, UI_HOLD_S));
+    CHECK(hold_advance(&h, UI_HOLD_S));
     CHECK(!ui_hold_leave(&h));
+}
+
+/*
+ * One frame cannot buy a whole hold.  A frame's duration is measured at its
+ * top and applied at its end, so a frame that dispatched the press it then
+ * credits would arm on a press milliseconds old.  The cap puts at least
+ * UI_HOLD_S / UI_HOLD_MAX_CREDIT_S frames between a press and its firing.
+ */
+TEST_CASE(one_late_frame_cannot_complete_a_hold)
+{
+    ui_hold_t h;
+    ui_hold_reset(&h);
+    ui_hold_begin(&h);
+
+    /* A 2.5 s frame, which is longer than the hold itself. */
+    CHECK(!ui_hold_tick(&h, 2.5f));
+    CHECK_EQ((int)(h.held_s * 1000.0f), (int)(UI_HOLD_MAX_CREDIT_S * 1000.0f));
+
+    /* Seven more of them, and only the eighth reaches UI_HOLD_S.  Bounded
+     * rather than a while loop: without the cap the first frame fires and
+     * every later one answers false, which a while loop would spin on. */
+    int fired_on = 0;
+    for (int frame = 2; frame <= 64; ++frame) {
+        if (ui_hold_tick(&h, 2.5f)) {
+            fired_on = frame;
+            break;
+        }
+    }
+    CHECK_EQ(fired_on, (int)(UI_HOLD_S / UI_HOLD_MAX_CREDIT_S));
+
+    /* A frame of no time, and a frame of negative time, credit nothing. */
+    ui_hold_reset(&h);
+    ui_hold_begin(&h);
+    CHECK(!ui_hold_tick(&h, 0.0f));
+    CHECK(!ui_hold_tick(&h, -5.0f));
+    CHECK_EQ((int)(h.held_s * 1000.0f), 0);
 }
 
 TEST_CASE(a_state_that_goes_away_under_a_press_ends_the_gesture)
@@ -832,7 +885,7 @@ TEST_CASE(a_state_that_goes_away_under_a_press_ends_the_gesture)
     ui_hold_t h;
     ui_hold_reset(&h);
     ui_hold_begin(&h);
-    CHECK(ui_hold_tick(&h, UI_HOLD_S));
+    CHECK(hold_advance(&h, UI_HOLD_S));
     ui_hold_reached(&h);
     CHECK_EQ(h.flash_left, UI_HOLD_FLASH_FRAMES);
     /* Reaching it keeps the firing: the finger is still down on the press
@@ -896,6 +949,7 @@ int main(void)
     RUN(the_formatters_round_and_pad_as_the_readouts_expect);
     RUN(a_hold_fires_once_and_only_when_it_is_held);
     RUN(a_finger_that_leaves_the_control_ends_the_hold);
+    RUN(one_late_frame_cannot_complete_a_hold);
     RUN(a_state_that_goes_away_under_a_press_ends_the_gesture);
     RUN(the_hold_refuses_a_null_rather_than_following_it);
     return test_summary("widgets");

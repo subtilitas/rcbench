@@ -88,6 +88,16 @@ Panel als Leitung ohne Flanken gelesen wird.
 - Das Scharfschalten ist ein zwei Sekunden langes Halten auf ARM, und das
   Kommando geht ab, wenn das Halten durchgelaufen ist, nicht wenn der Finger
   abhebt. Das Entschärfen ist ein Druck.
+- Einem Halten werden höchstens 250 ms pro Frame gutgeschrieben, es erstreckt
+  sich also über mindestens acht Frames mit stehendem Druck. Die Dauer eines
+  Frames wird an seinem Anfang gemessen und an seinem Ende angewendet; ohne
+  die Obergrenze schreibt ein einzelner verspäteter Frame einem Halten Zeit
+  gut, das entstand, während derselbe Frame seine Touch-Events zustellte.
+- Eine volle Touch-Queue gibt ihren ältesten Eintrag her, statt den neuen
+  abzuweisen. Das letzte Event einer Geste ist ihr Release, und ein Release,
+  das der Screen nie sieht, lässt ihn einen Druck halten, der nicht mehr auf
+  dem Glas ist. Das Frame-Log führt die Zahl der verdrängten Events als
+  `TOUCHEVICT`.
 - Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
   Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, sodass
   eine Berührung am Ende nicht mit einem Kontakt den vollen Weg anfordern kann.

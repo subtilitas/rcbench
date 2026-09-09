@@ -298,6 +298,25 @@ bool ui_hold_tick(ui_hold_t *h, float dt_s)
     if (h == NULL || !h->down || h->fired) {
         return false;
     }
+    /*
+     * A frame is credited with the time it took, and a late frame took a
+     * long time.  The duration is measured at the top of the frame and
+     * applied at the end of it, so a frame that dispatched the press it is
+     * now crediting would hand a hold begun this frame the whole of the
+     * previous frame's stall -- an arm two seconds after a press that is
+     * milliseconds old.
+     *
+     * UI_HOLD_MAX_CREDIT_S caps what one frame can be worth, so a hold
+     * always spans at least UI_HOLD_S / UI_HOLD_MAX_CREDIT_S frames with
+     * the press standing.  A bench drawing at its ordinary rate is far
+     * below the cap and is not slowed by it.
+     */
+    if (dt_s > UI_HOLD_MAX_CREDIT_S) {
+        dt_s = UI_HOLD_MAX_CREDIT_S;
+    }
+    if (dt_s < 0.0f) {
+        dt_s = 0.0f;
+    }
     h->held_s += dt_s;
     if (h->held_s < UI_HOLD_S) {
         return false;

@@ -79,6 +79,14 @@ unpowered or unplugged panel reads as a line that is not edging.
 - STOP latches. The bench stays disarmed until it is armed again.
 - Arming is a two-second hold on ARM, and the command goes when the hold
   completes rather than when the finger lifts. Disarming is a press.
+- A hold is credited at most 250 ms per frame, so it spans at least eight
+  frames with the press standing. A frame's duration is measured at its top
+  and applied at its end, and without the cap one late frame credits a hold
+  that began while that same frame was dispatching its touch events.
+- A full touch queue gives up its oldest entry rather than refusing the new
+  one. The last event of a gesture is its release, and a release the screen
+  never sees leaves it holding a press that is no longer on the glass. The
+  frame log carries the count of evicted events as `TOUCHEVICT`.
 - The throttle moves by how far a finger travels, not to where it lands. A
   press on the track commands nothing, so a touch at the far end cannot ask
   for full travel in one contact. Sliders that command nothing dangerous, such
