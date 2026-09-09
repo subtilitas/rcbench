@@ -6,6 +6,23 @@ history is in git.
 
 ## Unreleased
 
+## 0.8.0 - 2026-09-09
+
+Bidirectional DShot leaves the pin inverted, which it never has, so an ESC
+answers it for the first time. A save on the OUTPUTS screen no longer stops
+the coprocessor answering for 19 ms, which is what turned every binding change
+into `FAULT 01`. The run log is written by a task of its own rather than by
+the one that beats the safety line, and is committed as the run goes rather
+than at the disarm. SPEED on the servo screen renders a rate below 50% that
+differs from 50%.
+
+Two things change what a bench does after it is flashed. The link protocol is
+3.0, so both images have to be flashed together -- the panel refuses to arm
+against a coprocessor that speaks another major. And the output store's record
+format is version 3, so the first boot on this build starts from no binding at
+all: the pins are ticked again on SETTINGS/OUTPUTS, and that save writes the
+first version 3 record.
+
 ### Fixed
 
 - **A power cut during a run left a 0-byte CSV (comma-separated values)
