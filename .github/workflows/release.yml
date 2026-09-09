@@ -30,6 +30,13 @@ jobs:
   version:
     name: The tag matches the images
     runs-on: ubuntu-latest
+    # Resolved once, here, and every job below builds this SHA rather than
+    # fetching the tag again.  A tag can be force-moved while a run is in
+    # flight, and four independent fetches of a moving ref can each land on a
+    # different commit -- with every one of them passing the check below,
+    # because each checks the version in the commit it happened to get.
+    outputs:
+      sha: ${{ steps.pin.outputs.sha }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -62,6 +69,13 @@ jobs:
             exit 1
           }
 
+      - name: Pin
+        id: pin
+        run: |
+          sha=$(git rev-parse HEAD)
+          echo "the tag is $sha, and every job below builds it"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
   panel:
     needs: [version]
     name: Panel image
@@ -69,13 +83,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          # The tag, not the ref the run started from, and qualified as a tag.
-          # On a manual dispatch the run's own ref is a branch, and a bare name
-          # handed to checkout resolves as a branch before a tag -- so a branch
-          # sharing the tag's name would be built and published under it.
-          # --verify-tag does not catch that: it only asks whether the tag
-          # exists, not whether this is what was built.
-          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
+          # The commit the version job pinned, not the tag again.
+          ref: ${{ needs.version.outputs.sha }}
 
       - name: Build
         uses: espressif/esp-idf-ci-action@v1
@@ -107,13 +116,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          # The tag, not the ref the run started from, and qualified as a tag.
-          # On a manual dispatch the run's own ref is a branch, and a bare name
-          # handed to checkout resolves as a branch before a tag -- so a branch
-          # sharing the tag's name would be built and published under it.
-          # --verify-tag does not catch that: it only asks whether the tag
-          # exists, not whether this is what was built.
-          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
+          # The commit the version job pinned, not the tag again.
+          ref: ${{ needs.version.outputs.sha }}
 
       # Ubuntu's packaged toolchain rather than ARM's tarball: one line, and
       # the RP2350's Cortex-M33 needs nothing newer.  Fallback if the package
@@ -155,18 +159,13 @@ jobs:
 
   publish:
     name: Package and publish
-    needs: [panel, iomcu]
+    needs: [version, panel, iomcu]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
-          # The tag, not the ref the run started from, and qualified as a tag.
-          # On a manual dispatch the run's own ref is a branch, and a bare name
-          # handed to checkout resolves as a branch before a tag -- so a branch
-          # sharing the tag's name would be built and published under it.
-          # --verify-tag does not catch that: it only asks whether the tag
-          # exists, not whether this is what was built.
-          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
+          # The commit the version job pinned, not the tag again.
+          ref: ${{ needs.version.outputs.sha }}
 
       - uses: actions/download-artifact@v7
         with:

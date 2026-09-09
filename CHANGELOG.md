@@ -62,8 +62,10 @@ something from the operator or shows them something new:
   was never inverted. Plain DShot was untouched, which is why one protocol on
   the same pin ran a motor and the other did nothing. The override goes on
   after the init now, and the bind reads `io_bank0_hw->io[pin].ctrl` back and
-  refuses rather than driving a line whose polarity it could not set. Not run
-  on hardware: no ESC has been on a pin, so whether one answers is still open.
+  refuses rather than driving a line whose polarity it could not set. The
+  inverted path itself is not run on hardware: an ESC has been on the pin for
+  plain DShot and none has been asked for a bidirectional reply, so whether
+  one answers is still open.
 - **The servo horn drove a fixed pin rather than the binding.**
   `write_servo()` wrote channel 0, slot 0 and pin GP2 whatever the operator
   had bound, and slot 0 is where the first pin ticked on SETTINGS/OUTPUTS
