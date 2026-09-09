@@ -224,9 +224,11 @@ tree.
 then. Lifting the finger does not stop the output: the screen holds the
 position it was given and says it again every **100 ms** (`SERVO_HOLD_MS`),
 against the coprocessor's **500 ms** (`OUT_DEFAULT_TIMEOUT_MS`), so a servo
-stays where it was put. What stops it is **RELEASE**, a disarm, a STOP, or
-leaving the screen — each clears the slot. Check on the scope that the pulses
-stop when RELEASE is pressed.
+stays where it was put. **RELEASE** returns the surfaces to centre; it does
+not clear the slot and the pin keeps pulsing. What stops the edges is a
+disarm, a STOP, or leaving the screen, which disarms. Check on the scope that
+RELEASE moves the pulse to the middle of the channel's travel and that a
+disarm is what stops it.
 
 A channel nobody is refreshing does still go to rest after 500 ms, which is
 what happens to a bound pin the servo screen is not holding.

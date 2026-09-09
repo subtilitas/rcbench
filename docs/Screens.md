@@ -136,8 +136,10 @@ driven. Releasing the sweep returns the surfaces to centre; the pins stay
 bound to whatever SETTINGS/OUTPUTS bound them to and keep driving, and a
 disarm -- or leaving the screen, which disarms -- is what stops the edges.
 
-The screen drives the channels the binding marks as surfaces, not a fixed pin.
-With nothing bound as SERVO PWM it commands nothing and no pin moves.
+The screen drives the channels the binding marks as surfaces, not a fixed pin
+and not a fixed protocol. PPM's eight channels are surfaces too, so a bound
+PPM output moves with this screen exactly as a bound SERVO PWM one does. With
+no surface channel bound at all it commands nothing and no pin moves.
 
 SPEED is the rate the bench may move the output, in degrees a second of the
 horn's travel, not a speed for the drawing alone. At 100% the command goes

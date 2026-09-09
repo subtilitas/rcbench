@@ -9,8 +9,9 @@ history is in git.
 ## 0.8.0 - 2026-09-09
 
 Bidirectional DShot leaves the pin inverted, which it never has. Whether an
-ESC answers is untested: no output driver in this tree has been put against an
-ESC on a wire. A save on the OUTPUTS screen costs one page program rather than
+ESC answers it is untested: plain DShot has run a motor on the bring-up bench,
+and nothing bidirectional -- no inverted frame, no reply, no telemetry -- has
+been put against an ESC. A save on the OUTPUTS screen costs one page program rather than
 an erase and a program, so the erase that stops the coprocessor answering for
 about 19 ms falls to one save in sixteen and is taken in a quiet window
 instead of under the save. Neither window has been measured on this build, so
@@ -32,9 +33,12 @@ something from the operator or shows them something new:
   rather than channel 0 on GP2. With the store reset above, it drives nothing
   until a pin is bound as SERVO PWM.
 - **The coprocessor sends `DSHOT_CMD_EDT_ENABLE` to the ESC on every edge into
-  driving**, ten frames at the 1,000 Hz update rate. An ESC that ignores
-  command 13 is unaffected; one that acts on it starts reporting extended
-  telemetry.
+  driving**, ten frames at the 1,000 Hz update rate. Nothing acknowledges it,
+  so the bench reads replies as extended telemetry afterwards whether the ESC
+  agreed or not. One that acts on the command reports temperature, voltage and
+  current. One that ignores it *and* does not normalise its exponent has some
+  of its speed frames read as temperature or voltage -- the case under Changed
+  below, and the reason to watch the first readings on a new ESC.
 - **The bench shows the ESC's own voltage, current, power and temperature**,
   which it never did. `MOT` stays blank unless the ESC reports a second
   temperature, where it used to read `0C`.

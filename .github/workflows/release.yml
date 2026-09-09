@@ -32,6 +32,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          # The tag, not the ref the run started from.  On a manual
+          # dispatch that ref is a branch, so without this the images
+          # are built from the branch and labelled with the tag.
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Compare
         run: |
@@ -53,6 +58,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          # The tag, not the ref the run started from.  On a manual
+          # dispatch that ref is a branch, so without this the images
+          # are built from the branch and labelled with the tag.
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Build
         uses: espressif/esp-idf-ci-action@v1
@@ -83,6 +93,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          # The tag, not the ref the run started from.  On a manual
+          # dispatch that ref is a branch, so without this the images
+          # are built from the branch and labelled with the tag.
+          ref: ${{ inputs.tag || github.ref }}
 
       # Ubuntu's packaged toolchain rather than ARM's tarball: one line, and
       # the RP2350's Cortex-M33 needs nothing newer.  Fallback if the package
@@ -128,6 +143,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          # The tag, not the ref the run started from.  On a manual
+          # dispatch that ref is a branch, so without this the images
+          # are built from the branch and labelled with the tag.
+          ref: ${{ inputs.tag || github.ref }}
 
       - uses: actions/download-artifact@v7
         with:
@@ -155,7 +175,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ inputs.tag || github.ref_name }}"
+          # --verify-tag, because a tag gh has to invent is created from the
+          # default branch: without it a dispatch for a tag nobody pushed
+          # would attach these images to whatever main happened to be.
           gh release create "$TAG" dist/*.zip dist/SHA256SUMS \
             --repo "${{ github.repository }}" \
             --title "$TAG" \
+            --verify-tag \
             --generate-notes

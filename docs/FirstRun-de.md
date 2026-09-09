@@ -3,7 +3,7 @@
 <sub>[English](FirstRun.md) · **Deutsch**</sub>
 
 Für das erste Mal, dass beide Platinen mit gestecktem Heartbeat-Draht mit
-Strom versorgt werden. Geschrieben für 0.7.0. Nichts davon wurde je gemacht,
+Strom versorgt werden. Geschrieben für 0.8.0. Nichts davon wurde je gemacht,
 also sagt jeder Schritt, wie „gut“ aussieht und was aufzuschreiben ist, wenn
 es das nicht tut.
 
@@ -191,7 +191,11 @@ Verriegelung, nicht einen Pin.
 6. **Touch abdecken / sterben lassen** → nach **500 ms** Stille ist Armen
    gesperrt.
 
-Jeder dieser Punkte ist host-getestet. **Keiner wurde auf Hardware gesehen.**
+Jeder dieser Punkte ist host-getestet. **Keine der Zahlen unten wurde an
+einem Messgerät gesehen.** Ein Servo und ein Motor sind seither auf einem
+Aufbau-Prüfstand vom Panel aus gelaufen, ein Pin treibt also; was kein
+Oszilloskop und kein Logikanalysator gelesen hat, ist irgendeine Impulsbreite,
+Rahmenperiode oder Antwortverzögerung in diesem Baum.
 
 ---
 
@@ -225,9 +229,11 @@ sagt, und nur dann. Den Finger zu heben stoppt den Ausgang nicht: der
 Bildschirm hält die gegebene Stellung und wiederholt sie alle **100 ms**
 (`SERVO_HOLD_MS`) gegen die **500 ms** des Koprozessors
 (`OUT_DEFAULT_TIMEOUT_MS`), ein Servo bleibt also stehen, wo es hingestellt
-wurde. Es stoppt durch **RELEASE**, Unscharfschalten, STOP oder das Verlassen
-des Bildschirms — jedes davon löscht den Slot. Am Oszilloskop prüfen, dass die
-Impulse bei RELEASE aufhören.
+wurde. **RELEASE** führt die Ruderflächen auf die Mitte zurück; es löscht den
+Slot nicht, und der Pin pulst weiter. Beendet werden die Flanken durch
+Unscharfschalten, STOP oder das Verlassen des Bildschirms, was entschärft. Am
+Oszilloskop prüfen, dass RELEASE den Impuls in die Mitte des Kanalwegs führt
+und dass ein Unscharfschalten ihn beendet.
 
 Ein Kanal, den niemand auffrischt, geht nach 500 ms weiterhin in seine
 Ruhelage; das betrifft einen gebundenen Pin, den der Servo-Bildschirm nicht

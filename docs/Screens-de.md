@@ -146,8 +146,11 @@ Flanken durch ein Entschärfen -- oder durch das Verlassen des Bildschirms, was
 entschärft.
 
 Der Bildschirm treibt die Kanäle, die die Bindung als Ruderflächen markiert,
-und keinen festen Pin. Ist nichts als SERVO PWM gebunden, kommandiert er nichts
-und kein Pin bewegt sich.
+und weder einen festen Pin noch ein festes Protokoll. Die acht Kanäle von PPM
+sind ebenfalls Ruderflächen, ein gebundener PPM-Ausgang bewegt sich also mit
+diesem Bildschirm genau wie ein gebundener SERVO-PWM-Ausgang. Ist überhaupt
+kein Ruderflächen-Kanal gebunden, kommandiert er nichts und kein Pin bewegt
+sich.
 
 SPEED ist die Geschwindigkeit, mit der der Prüfstand den Ausgang bewegen
 darf, und nicht nur eine Geschwindigkeit für die Zeichnung. Bei 100 % geht
