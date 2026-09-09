@@ -199,7 +199,7 @@ Rahmenperiode oder Antwortverzögerung in diesem Baum.
 
 ---
 
-## 6. Erster je getriebener Pin
+## 6. Erster Pin an einem Messgerät
 
 Ein **Servo** nehmen, nicht den ESC. Ein Servo ist der gutmütige Fall und der,
 den das Oszilloskop am leichtesten liest.
@@ -207,6 +207,14 @@ den das Oszilloskop am leichtesten liest.
 **Freie Pins für einen Output:** GP0, GP1, GP2, GP4, GP5, GP6, GP7, GP13,
 GP14, GP15 und aufwärts.
 **Reserviert und verweigert:** GP3 (Heartbeat), GP8–GP12 (CAN).
+**Als zweiter PWM-Pin verweigert:** ein Pin, dessen PWM-Compare-Register schon
+von einem gebundenen Pin belegt ist. Auf dem RP2350 ist die Slice unterhalb
+von GP32 `(Pin / 2) modulo 8` und der Kanal das niedrigste Bit des Pins, also
+teilen sich GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und
+GP21, GP6 und GP22 je ein Compare-Register. Der zweite eines Paares wird
+verweigert, statt auf die Pulsbreite des ersten gemuxt zu werden. Die
+OUTPUTS-Seite führt kein Bit mit, das „gebunden“ sagt, der Bildschirm sieht
+also weiter konfiguriert aus, während die Leitung keinen Impuls liefert.
 
 Am Panel: **Setup → OUTPUTS**, `SERVO PWM` wählen, einen Pin anhaken. Oder
 **Setup → PICK A PIN** für das Platinenbild — Massen sind mit `G` markiert,

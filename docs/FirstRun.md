@@ -202,7 +202,8 @@ taken by a bound pin. On the RP2350 the slice is `(pin / 2) modulo 8` below
 GP32 and the channel is the pin's low bit, so GP0 and GP16, GP1 and GP17, GP2
 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22 are pairs that share one
 compare register. The second of a pair is refused rather than muxed onto the
-first one's pulse width.
+first one's pulse width. The OUTPUTS page carries no bit saying "bound", so
+the screen goes on looking configured while the lead produces no pulse.
 
 On the panel: **Setup → OUTPUTS**, choose `SERVO PWM`, tick one pin. Or
 **Setup → PICK A PIN** for the board picture — grounds are marked `G`, rails

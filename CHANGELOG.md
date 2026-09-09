@@ -30,8 +30,9 @@ something from the operator or shows them something new:
   from no binding at all. The pins are ticked again on SETTINGS/OUTPUTS, and
   that save writes the first version 3 record.
 - **The SERVO screen drives the channels the binding marks as surfaces**
-  rather than channel 0 on GP2. With the store reset above, it drives nothing
-  until a pin is bound as SERVO PWM.
+  rather than channel 0 on GP2. Any surface channel counts, so a bound PPM
+  output moves with it as a SERVO PWM one does. With the store reset above it
+  drives nothing until something is bound as a surface.
 - **The coprocessor sends `DSHOT_CMD_EDT_ENABLE` to the ESC on every edge into
   driving**, ten frames at the 1,000 Hz update rate. Nothing acknowledges it,
   so the bench reads replies as extended telemetry afterwards whether the ESC
