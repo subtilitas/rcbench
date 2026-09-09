@@ -108,6 +108,12 @@ Ein NACK trägt seinen Grund in Register 0:
 | 4 | BAD_VALUE |
 | 5 | NOT_ARMED |
 
+Ein Write gilt ganz oder gar nicht. Jedes Register eines Frames wird geprüft,
+bevor eines davon gespeichert wird; ein NACK lässt die Page also genau so, wie
+sie war: keines der bis zu vier Register eines Frames wird übernommen, und
+keine Nebenwirkung eines Registers läuft. Das Aufheben eines eingerasteten
+Failsafe ist eine solche Nebenwirkung.
+
 ### Page Map
 
 | Page | Name | Zugriff | Register |
