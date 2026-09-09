@@ -251,8 +251,26 @@ lines to the same bus -- SDA to the RP2350's GP20 and SCL to GP21, open drain,
 adding no pull-up. The emulator answers at 0x14; the real controller stays at
 0x5D and is not disturbed.
 
+**Which two lines on the panel.** `BOARD_I2C_PIN_SDA` is GPIO8 and
+`BOARD_I2C_PIN_SCL` is GPIO9, on `I2C_NUM_0` at `BOARD_I2C_FREQ_HZ`
+(400,000 Hz) -- `firmware/panel/components/board/include/board_pins.h`. That
+is the bus; **where it is brought out is not documented in this tree.** No
+page here gives a connector, a pad or a pin order for it, so this step and
+every step after it wait on that being established against the board in hand
+and written down beside the J8 heartbeat pin. Guessing a pad and finding out
+later means every capture in this section was of something else.
+
+400 kHz is also what sets the capture rate below: 4 MHz is ten samples a bit.
+
 **Do not probe this bus with the Pi.** The panel is the master. A second
 master is a fault, not a measurement.
+
+**And take the panel's data cable off first.** Section 4 put one on to check
+the loader, and section 1 rules out an analyser reading while a target is on a
+data cable to the Pi: the USB shell grounds the panel a second time, in
+parallel with its star lead, and the return path that creates is not visible
+in a capture -- it is visible as noise nobody can source. Unplug it, or put an
+isolated USB adapter in it, before either capture below.
 
 **Check, one: the tap.** Capture SCL and SDA while the panel starts. 2m
 samples at 4 MHz is 0.5 s, and the panel's first transaction is somewhere in
@@ -293,13 +311,26 @@ to find the start of a cycle. The line it was told to pull is the line that
 moves. If the 5 ms pull appears on SCL the leads are swapped; if neither moves,
 the lead is not on the bus. Do this before the panel's touch is in use -- a
 line held low during a transaction costs that transaction, which is a missed
-touch sample and nothing worse.---
+touch sample and nothing worse.
+
+---
 
 ## 6. The link
 
 **The bus first, then the probes.** CANH to CANH and CANL to CANL between the
 two transceivers, with 120 Ω at both ends -- `docs/Link.md` gives the
-termination and the 1 Mbit/s rate. Without the pair and its terminators a
+termination and the 1 Mbit/s rate.
+
+**Twisted, short, and away from the motor leads.** The two wires are twisted
+together over their whole run, each board's branch off the bus stays under
+30 cm, and the bus as a whole stays under 5 m. Those are the three the panel
+itself prints when its self-test comes back corrupt or lossy
+(`shared/ui/busfault_screen.c`), and a bench built from loose jumper leads
+meets none of them by default: 60 Ω across the pair says both terminators are
+fitted and says nothing about reflections or about a servo lead run beside the
+pair. A bus that is marginal this way passes every check in this section and
+fails as intermittent frame loss later, which is the fault this bench exists
+to measure rather than to have. Without the pair and its terminators a
 transmitter gets no acknowledgement, retries, and goes bus-off: the capture
 below would show nothing and the panel's start-up self-test would fail, and
 neither would be telling you about the probes.
