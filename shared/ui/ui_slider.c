@@ -103,8 +103,9 @@ void ui_slider_release(ui_slider_t *s)
  * Not the value under the finger: this control commands a throttle, and a
  * press that lands where the finger happens to touch would command whatever
  * is under it.  Touching the right-hand end of the track would ask for full
- * travel, which the output bank's slew would then ramp to.  A press moves
- * nothing; only a drag does, and it moves by the distance dragged.
+ * travel, and a throttle bound on the coprocessor carries no slew, so the
+ * next 1 ms pass renders it.  A press moves nothing; only a drag does, and
+ * it moves by the distance dragged.
  */
 static bool by_delta(ui_slider_t *s, int x)
 {
