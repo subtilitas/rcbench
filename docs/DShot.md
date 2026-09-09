@@ -244,8 +244,13 @@ is worse than an empty field.
 
 That covers zero only. Any count between 2 and 42 is accepted and sets the rpm
 valid bit, so a coprocessor holding an out-of-date count reports the actual
-speed times actual poles over the count it holds: 21 times at the ends of the
-range, and 14.3 % low for 14 poles converted as 12.
+speed times the motor's poles over the count it holds. Fitting a 12-pole motor
+to a bench still holding 14 reads 14.3 % low; leaving 12 in place for a 14-pole
+motor reads 16.7 % high. The direction follows the edit, and the ends of the
+range are a factor of 21 either way: a 42-pole motor converted as 2 reads
+twenty-one times its speed, and a 2-pole motor converted as 42 reads a
+twenty-first of it. The ordinary edit is the one to watch, because a factor of
+21 is wrong on sight and 14 % is not.
 
 ### Extended telemetry
 

@@ -240,9 +240,14 @@ Kennzeichnung, dass sie falsch ist, und das ist schlimmer als ein leeres Feld.
 
 Das gilt nur für null. Jede Zahl zwischen 2 und 42 wird angenommen und setzt
 das Gültig-Bit der Drehzahl. Ein Coprozessor mit einer veralteten Zahl meldet
-also die tatsächliche Drehzahl mal tatsächliche Polzahl geteilt durch die
-gehaltene Zahl: das 21-Fache an den Enden des Bereichs und 14,3 % zu wenig,
-wenn 14 Pole als 12 umgerechnet werden.
+also die tatsächliche Drehzahl mal die Polzahl des Motors geteilt durch die
+gehaltene Zahl. Ein 12-poliger Motor an einem Prüfstand, der noch 14 hält,
+liest 14,3 % zu wenig; bleibt 12 stehen und der Motor hat 14 Pole, liest er
+16,7 % zu viel. Die Richtung folgt der Änderung, und die Enden des Bereichs
+sind in beide Richtungen ein Faktor 21: ein 42-poliger Motor, der als 2
+umgerechnet wird, liest das Einundzwanzigfache seiner Drehzahl, ein 2-poliger
+als 42 ein Einundzwanzigstel. Zu beachten ist die gewöhnliche Änderung, denn
+einen Faktor 21 sieht man sofort und 14 % nicht.
 
 ### Extended Telemetry
 
