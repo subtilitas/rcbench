@@ -47,9 +47,20 @@ output, and the first scope or analyser ground lead attached becomes the
 return path for a motor's current.
 
 **Check.** With everything unpowered, measure between the star point and each
-board's ground pad: under an ohm. Between the star point and any signal pad:
-open. A signal pad that reads a few ohms to ground is a lead in the wrong
-hole, and it is easier to find now than after power.
+board's ground pad: under an ohm. Between the star point and any signal pad
+that is not deliberately biased: open. A signal pad that reads a few ohms to
+ground is a lead in the wrong hole, and it is easier to find now than after
+power.
+
+**Deliberately biased is not the same as shorted.** The relay driver in
+section 4 holds its input down when nothing is driving it, so that pad reads
+its pull-down to ground rather than open -- tens of kilohms, and it is
+supposed to. So is any other input given a defined inactive level. What this
+check is looking for is single-digit ohms, which is a lead in the wrong hole;
+a resistance in the kilohms is a bias, and taking it out to make this check
+pass would leave the relay's coil free to follow a floating pin. Write down
+what each biased pad is expected to read before measuring, so the reading is
+compared against a number rather than against a habit.
 
 ### Where the power comes from
 
@@ -237,6 +248,11 @@ not accept a download.
 - Close BOOT, pulse RESET, release RESET, release BOOT: the board comes up in
   its loader. The coprocessor appears as a mass-storage device; the panel
   accepts a serial download.
+- **Pulse RESET again, and confirm the board is running.** Releasing BOOT
+  does not leave the loader: the coprocessor stays a mass-storage device
+  until it is reset, and its application is what section 6 and everything
+  after it capture. A board left in its loader shows no CAN traffic at all,
+  which reads as a wiring fault on a bus that is wired correctly.
 
 If a board will not start at all after this step, the contact is closed when
 it should be open: check the coil polarity and that the relay is not the
@@ -269,8 +285,17 @@ master is a fault, not a measurement.
 the loader, and section 1 rules out an analyser reading while a target is on a
 data cable to the Pi: the USB shell grounds the panel a second time, in
 parallel with its star lead, and the return path that creates is not visible
-in a capture -- it is visible as noise nobody can source. Unplug it, or put an
-isolated USB adapter in it, before either capture below.
+in a capture -- it is visible as noise nobody can source.
+
+**But that socket is also where the panel's power comes from.** The supply
+table gives the panel its own USB-C, on the socket it is flashed from, which
+is the socket section 4's data cable is in. Pulling that cable takes the
+panel's power with it, and a capture of an unpowered panel is a flat trace
+that no amount of pulsing RESET will change. So it is a swap, not an unplug:
+move that socket to its own USB supply, or to a charge-only cable, or leave
+the data cable in through an isolated USB adapter. Whichever of the three,
+the panel is powered and its ground returns only through the star lead before
+either capture below.
 
 **Check, one: the tap.** Capture SCL and SDA while the panel starts. 2m
 samples at 4 MHz is 0.5 s, and the panel's first transaction is somewhere in
@@ -349,6 +374,13 @@ Then four leads on the coprocessor's SPI to the XL2515 -- SCK on GP10 pad 14, MO
 on GP11 pad 15, MISO on GP12 pad 16, CS on GP9 pad 12 -- and one on RXCAN
 between the controller and its transceiver.
 
+**RXCAN is a net here and not yet a point.** The four SPI leads name a pin and
+a pad each; this one names the wire between two parts, and no page in this
+tree gives the XL2515 pin, the transceiver pin or a test pad for it. It has
+to be established against the boards in hand and written down, the same way
+the panel's I2C tap in section 5 does. Getting it wrong is not obvious in the
+capture: TXCAN carries traffic too, so the opposite direction reads as a
+plausible trace of the wrong half of the exchange.
 Not the controller's INT pin. `firmware/iomcu/src/xl2515.c` writes zero to
 CANINTE and polls CANINTF, so INT never asserts and a probe there measures
 nothing.
