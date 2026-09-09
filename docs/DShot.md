@@ -235,10 +235,10 @@ An ESC reports electrical periods and has no idea what it is bolted to, so
 mechanical rpm (revolutions per minute) needs the motor's magnet count. That is
 the one number the wire does not carry. The panel sends it from the `Motor
 poles` setting when a coprocessor starts answering, again whenever the setting
-changes, and again before the write that arms, on the
-[CONTROL page](Link.md#page-map). A write nobody answers stays owed and goes
-out again at the next 50 ms poll; one the coprocessor refuses is not retried,
-and waits for the next edit or link-up edge.
+changes, and again before the write that arms if a change is still owed, on
+the [CONTROL page](Link.md#page-map). A write nobody answers stays owed and
+goes out again at the next 50 ms poll; one the coprocessor refuses is not
+retried, and waits for the next edit or link-up edge.
 
 Until it arrives the coprocessor reports no speed at all. A speed derived from a
 guessed pole count is a plausible number with nothing to mark it as wrong, which

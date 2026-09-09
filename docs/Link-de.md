@@ -157,7 +157,8 @@ eine Zahl, die die Leitung tragen muss, damit der Coprozessor eine mechanische
 Drehzahl melden kann. Bei null meldet er keine Drehzahl statt einer aus einer
 Schätzung abgeleiteten. Das Panel sendet sie aus der Einstellung `Motor poles`,
 sobald ein Coprozessor zu antworten beginnt, erneut bei jeder Änderung der
-Einstellung und vor dem Schreibvorgang, der scharfschaltet. Ein Schreibvorgang,
+Einstellung und erneut vor dem Schreibvorgang, der scharfschaltet, sofern eine
+Änderung noch offen ist. Ein Schreibvorgang,
 den niemand beantwortet, bleibt offen und geht beim nächsten 50-ms-Poll
 erneut hinaus; einer, den der Coprozessor ablehnt, wird nicht wiederholt,
 denn dieselbe einmal abgelehnte Anfrage wird jedes Mal abgelehnt, und er

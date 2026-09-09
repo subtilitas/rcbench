@@ -448,11 +448,12 @@ TEST_CASE(startup_delivers_the_stored_pole_count)
  *
  * The coprocessor refuses an odd count and anything outside
  * LINK_POLES_MIN..LINK_POLES_MAX, and reads zero as "nobody has said".  A
- * value the far end refuses is a write that never lands: the panel keeps
- * owing it, and the count already over there goes on converting eRPM.  A
- * schema that could reach zero would also put the panel's writes inside the
- * far end's no-speed guard, which covers a count never sent and not a stale
- * one.
+ * value the far end refuses is a write that never lands, and a refusal is
+ * not retried -- the same request refused once is refused every time -- so
+ * the count already over there goes on converting eRPM until the next edit.
+ * A schema that could reach zero would also put the panel's writes inside
+ * the far end's no-speed guard, which covers a count never sent and not a
+ * stale one.
  */
 TEST_CASE(every_pole_count_the_schema_allows_is_one_the_link_takes)
 {
