@@ -19,7 +19,18 @@ if ! command -v sigrok-cli >/dev/null; then
     bad "sigrok-cli" "not installed"
 else
     say "sigrok-cli" "$(sigrok-cli --version | head -1)"
-    scan=$(sigrok-cli --driver kingst-la2016 --scan 2>&1 | tail -n +2)
+    # Ask the library what it carries before asking it to scan. The
+    # kingst-la2016 driver is not in libsigrok 0.5.2, which is the current
+    # release and what Debian packages; naming a driver libsigrok does not
+    # have prints "Driver kingst-la2016 not found." and reads exactly like an
+    # analyser that is unplugged.
+    if ! sigrok-cli --list-supported 2>/dev/null |
+         grep -qE '^[[:space:]]+kingst-la2016[[:space:]]'; then
+        bad "kingst-la2016 driver" "not in this libsigrok -- see README, The parts"
+        scan=
+    else
+        scan=$(sigrok-cli --driver kingst-la2016 --scan 2>&1 | tail -n +2)
+    fi
     if [ -z "$scan" ]; then
         bad "LA2016" "not found by the kingst-la2016 driver"
     else

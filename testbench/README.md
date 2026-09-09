@@ -47,8 +47,16 @@ with a network address, and it is what an agent drives.
 **Kingst LA2016** — 16 channels, passive. Supported by libsigrok's
 `kingst-la2016` driver, which needs the field-programmable gate array (FPGA)
 bitstream extracted from the vendor's software: that extraction is a setup
-step and is the first thing to confirm, because without it the analyser
-enumerates and captures nothing.
+step, because without it the analyser enumerates and captures nothing.
+
+The driver comes before the bitstream. It is not in libsigrok 0.5.2, which is
+the current release and what Debian 13 packages: `sigrok-cli --list-supported`
+on the bench host lists 162 drivers and no `kingst-la2016`, and naming it
+prints `Driver kingst-la2016 not found.` So the packaged `sigrok-cli` cannot
+drive this analyser at all, and the bench needs libsigrok built from git.
+`host/selftest.sh` asks the library what it carries before it scans, so a
+missing driver reads as a missing driver rather than as an unplugged
+instrument.
 
 **RP2350 board** — the same part as the bench coprocessor, in one of two roles
 per run:
@@ -465,10 +473,12 @@ firmware and the decoder agree, and no more than that.
 
 ## Settled
 
-- **The analyser's bitstream is provided**, so libsigrok can drive the LA2016.
-  `host/selftest.sh` still asks, because the failure is silent: an analyser
-  without it enumerates, accepts a capture and returns nothing, which reads as
-  a quiet bench rather than a broken one.
+- **The analyser's bitstream is provided.** `host/selftest.sh` still asks,
+  because the failure is silent: an analyser without it enumerates, accepts a
+  capture and returns nothing, which reads as a quiet bench rather than a
+  broken one. The bitstream is not what stands in the way today -- the
+  packaged libsigrok has no `kingst-la2016` driver, which is above under
+  *The parts*.
 - **SWD over `linuxgpiod`**, three wires and no supply between the Pi and a
   board that has its own.
 - **The whole bench lives on the rig** — panel, display, touch and the CAN
