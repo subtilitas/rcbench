@@ -676,6 +676,22 @@ static void pump(void)
 static FILE *s_card_file;
 
 /*
+ * The run the logger has open, as a run number, or 0 for none.
+ *
+ * Written by the runlog task and read by the task that renders.  A run whose
+ * file is still open is not a run this viewer can read: FAT keeps a file's
+ * length in its directory entry and f_close is what writes it, so the size
+ * the walk sees is the size at the last commit and the rows since then are
+ * not in it.  The viewer would show a run that is still growing as a
+ * finished one, and the operator has no way to tell the two apart.
+ *
+ * So it is left out of the list until the logger closes it, which is one
+ * pass of the logger after the queue drains.  A stalled card makes that
+ * window long, which is exactly when the difference matters.
+ */
+static atomic_uint s_log_open_run;
+
+/*
  * One directory entry on its way into the viewer's list.
  *
  * The card takes LOG_RUN_LAST runs and the list holds LOG_VIEWER_MAX_FILES of
@@ -702,6 +718,13 @@ static void card_take(const storage_entry_t *entry, void *ctx)
      * and leave the card's only log unreachable.
      */
     if (entry->is_dir) {
+        return;
+    }
+    /* And not the run the logger still has open; see s_log_open_run.  Not
+     * counted either: a card whose only file is that run has nothing this
+     * viewer can show, which is what an empty list says. */
+    const unsigned open_run = atomic_load(&s_log_open_run);
+    if (open_run != 0u && log_run_number(entry->name) == (int)open_run) {
         return;
     }
     ++pick->files;
@@ -795,6 +818,16 @@ static bool card_open(const char *name, log_source_t *src, void *ctx)
     if (s_card_file != NULL) {
         fclose(s_card_file);
         s_card_file = NULL;
+    }
+    /*
+     * Refused if the logger has that run open, even though card_list() left
+     * it out: a name can reach here from a list taken before the run started
+     * -- the screen holds its list until the next RESCAN.
+     */
+    const unsigned open_run = atomic_load(&s_log_open_run);
+    if (open_run != 0u && log_run_number(name) == (int)open_run) {
+        ESP_LOGW(TAG, "%s is still being written", name);
+        return false;
     }
     char path[STORAGE_NAME_MAX + sizeof(STORAGE_MOUNT_POINT) + 2];
     storage_path(CARD_DIR, name, path, sizeof(path));
@@ -1102,7 +1135,18 @@ static QueueHandle_t s_note_q;   /**< control task -> logger, one line each */
 static atomic_uint s_log_arm_now;
 /* Rows the queue would not take, counted by the control task and reported
  * when the run closes. */
-static atomic_uint s_log_lost;
+/*
+ * By the arming's parity, not one counter.
+ *
+ * A re-arm can happen before the logger has drained and closed the run
+ * before it -- a stalled card is exactly when that happens, and exactly when
+ * there are drops to report.  One counter reset on the arming edge would
+ * erase the closing run's count and then charge the new run's drops to the
+ * old run's file.  Consecutive armings always differ in parity (see the
+ * counter's wrap below), so two slots hold every pair that can be in flight
+ * at once.
+ */
+static atomic_uint s_log_lost[2];
 
 /* The control task's own: the arming it numbers rows with, and whether it
  * has seen the bank arm.  The counter never takes the value 0, because 0 is
@@ -1257,6 +1301,9 @@ static void log_open(uint32_t arm)
         s_log_file = fopen(path, "w");
         if (s_log_file != NULL) {
             s_log_next = i + 1;
+            /* Before the first row: from here until log_close() the viewer
+             * leaves this run alone. */
+            atomic_store(&s_log_open_run, (unsigned)i);
             ESP_LOGI(TAG, "logging to %s", path);
         }
     }
@@ -1272,14 +1319,21 @@ static void log_open(uint32_t arm)
 
 static void log_close(void)
 {
+    /* Read before the run is let go of: the dropped-row count is kept by the
+     * arming's parity, and s_log_arm is what says which slot. */
+    const uint32_t arm = s_log_arm;
     s_log_arm = 0u;
     if (s_log_file == NULL) {
         return;
     }
-    const unsigned lost = (unsigned)atomic_load(&s_log_lost);
+    const unsigned lost = (unsigned)atomic_load(&s_log_lost[arm & 1u]);
     if (log_writer_failed(&s_log)) {
         ESP_LOGW(TAG, "the log is short: a write failed after %u rows",
                  (unsigned)s_log.rows);
+        /* On the band as well as the console.  A write that failed mid-run
+         * is the difference between an experiment and half of one, and the
+         * operator at the bench has no console. */
+        control_alert("the card stopped taking rows -- the log is short");
     } else if (lost > 0u) {
         ESP_LOGW(TAG, "%u rows written and %u dropped: the card did not keep "
                       "up with the run", (unsigned)s_log.rows, lost);
@@ -1291,6 +1345,9 @@ static void log_close(void)
      * f_close, so the rows since the last fsync are kept by this. */
     fclose(s_log_file);
     s_log_file = NULL;
+    /* And only now is the run something the viewer may read: the length of a
+     * FAT file lives in its directory entry, and f_close is what writes it. */
+    atomic_store(&s_log_open_run, 0u);
 }
 
 /* One line appended to the fault log, opened and closed around it so that
@@ -1347,7 +1404,16 @@ static void log_task(void *arg)
             log_open(row.arm);
         }
         if (got && s_log_file != NULL) {
+            /* A failed write latches the writer and every later row is
+             * rejected, so the run stops being recorded at this point rather
+             * than at the disarm.  Said on the edge, so the operator can stop
+             * and see to the card while the run still means something. */
+            const bool was_failed = log_writer_failed(&s_log);
             (void)log_writer_row(&s_log, row.t_s, &row.bench);
+            if (!was_failed && log_writer_failed(&s_log)) {
+                control_alert("the card stopped taking rows -- run not "
+                              "recorded past here");
+            }
             s_log_last_row_ms = now_ms();
         }
 
@@ -1393,7 +1459,7 @@ static void log_post(float t_s, const bench_state_t *b)
     }
     const log_row_t row = { .arm = s_log_arm_ctr, .t_s = t_s, .bench = *b };
     if (xQueueSend(s_log_q, &row, 0) != pdTRUE) {
-        atomic_fetch_add(&s_log_lost, 1u);
+        atomic_fetch_add(&s_log_lost[row.arm & 1u], 1u);
     }
 }
 
@@ -2786,10 +2852,14 @@ static void log_follow_arming(void)
      * the level goes up so the logger cannot see a run half started.  Zero
      * means no run, so the count skips it on the one wrap in 2^32 arms. */
     s_log_t = 0.0f;
-    atomic_store(&s_log_lost, 0u);
+    /* Two, not one: 0 means no run, and 1 would share the parity of the
+     * 0xFFFFFFFF before it and put two live armings in one slot. */
     if (++s_log_arm_ctr == 0u) {
-        s_log_arm_ctr = 1u;
+        s_log_arm_ctr = 2u;
     }
+    /* This arming's slot only.  The other slot belongs to the run the logger
+     * may still be closing. */
+    atomic_store(&s_log_lost[s_log_arm_ctr & 1u], 0u);
     atomic_store(&s_log_arm_now, s_log_arm_ctr);
 }
 

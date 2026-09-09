@@ -14,8 +14,13 @@ history is in git.
   directory entry, and `fwrite` alone never writes that entry, so the whole
   run was lost whatever the data sectors held. The file is committed every 20
   rows or 1000 ms of run, whichever comes first, with `fflush` followed by
-  `fsync`. A power cut costs at most 20 rows, spanning less than 1.0 s of the
-  run.
+  `fsync`. What a power cut costs is that commit interval plus the queue
+  between the control task and the logger: at most 19 uncommitted rows in the
+  writer and at most `LOG_Q_LEN` (64) in the queue. With a card keeping up the
+  queue is empty and the cost is under 1.0 s of run; with a card stalled it is
+  83 rows, 4.15 s at the panel's 20 Hz sample rate. Past 64 queued rows the
+  control task drops them and counts them, so the loss stops growing there and
+  is reported when the run closes.
 - **The run log put SD (Secure Digital) card writes on the safety line.** Row
   writes, the file-name scan and the close ran on the control task, which
   drives the heartbeat on GPIO6 and reads STOP. That task's ceiling is

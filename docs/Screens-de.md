@@ -256,8 +256,11 @@ nicht geschrieben hat, also listet eine Karte mit 48 oder mehr Läufen keine
 andere Datei mehr. Alte Läufe am Rechner löschen, um eine zurückzuholen.
 
 Ein Lauf wird alle 20 Zeilen oder 1000 ms Laufzeit auf die Karte festgeschrieben,
-je nachdem, was zuerst eintritt: Ein Stromausfall mitten im Lauf kostet damit
-höchstens 1000 ms davon, der Rest der Datei bleibt lesbar. Geschrieben wird von
+je nachdem, was zuerst eintritt. Ein Stromausfall mitten im Lauf kostet die
+Zeilen seit diesem Festschreiben und die Zeilen, die noch in der Queue zwischen
+der Control-Task und der Karten-Task stehen: unter 1,0 s Laufzeit, solange die
+Karte mitkommt, und 83 Zeilen, 4,15 s bei den 20 Hz des Panels, wenn die Karte
+hängt und die Queue voll ist. Der Rest der Datei bleibt in beiden Fällen lesbar. Geschrieben wird von
 einer eigenen Task. Eine SD-Karte (Secure Digital) darf sich für einen Schreibvorgang
 250 ms Zeit nehmen, und die Task, die die Sicherheitsleitung schlägt, hat eine
 Obergrenze von 150 ms. Kommt die Karte dem Lauf nicht nach, meldet das Panel beim

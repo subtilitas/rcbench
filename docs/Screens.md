@@ -238,8 +238,11 @@ did not write, so a card holding 48 or more runs lists no other file. Delete
 old runs on a computer to get one back.
 
 A run is committed to the card every 20 rows or 1000 ms of run, whichever
-comes first, so power lost mid-run costs at most 1000 ms of it and the rest of
-the file is readable. The card is written by a task of its own: an SD (Secure
+comes first. Power lost mid-run costs the rows since that commit and the rows
+still in the queue between the control task and the card's own task: under
+1.0 s of run while the card keeps up, and 83 rows, 4.15 s at the panel's 20 Hz
+sample rate, if the card has stalled and the queue is full. The rest of the
+file is readable either way. The card is written by a task of its own: an SD (Secure
 Digital) card is allowed 250 ms to finish a write, and the task that beats the
 safety line has a ceiling of 150 ms. If that task falls behind the run, the
 panel says `the card fell behind -- the log has gaps` when the run closes and
