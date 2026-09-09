@@ -12,8 +12,12 @@ on:
         description: 'Tag to package'
         required: true
 
+# Keyed on the tag, not on the ref the run started from.  A tag push and a
+# manual dispatch for the same tag have different refs -- one is the tag, the
+# other a branch -- so keying on the ref lets two runs for one release overlap,
+# and the second one's cleanup would take the first one's draft away.
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 permissions:
@@ -227,6 +231,9 @@ jobs:
           # and an upload can fail part way through, and a draft left for this
           # tag makes every retry fail with "release already exists".  The
           # trap runs on any exit before the publish succeeds.
+          #
+          # Any draft for this tag is this run's: the concurrency group above
+          # is the tag, so no second run for the same release is in flight.
           #
           # It removes a draft and never a release: if the publish went
           # through and something later failed, what is there is public and is

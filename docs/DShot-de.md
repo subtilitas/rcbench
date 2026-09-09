@@ -242,12 +242,19 @@ Ein ESC, dem Command 13 gesendet wurde, schiebt zwischen die Drehzahl-Frames
 Frames für Temperatur, Spannung, Strom, Stress und Status, markiert durch das
 oberste Nibble der Nutzdaten.
 
-Der Prüfstand sendet dieses Command nicht, jede Antwort wird also als Periode
-gelesen. Aus den Bits allein sind die beiden nicht zu unterscheiden: das Nibble,
-das einen Extended-Frame markiert, ist in einem Drehzahl-Frame ein gewöhnlicher
+Der Prüfstand sendet dieses Command bei jeder Flanke ins Treiben, zehn Frames
+bei 1.000 Hz, also in den ersten 10 ms eines Scharfschaltens. Quittiert wird es
+nicht, danach werden Antworten als Extended Telemetry gelesen, ob der ESC
+zugestimmt hat oder nicht.
+
+Aus den Bits allein sind die beiden nicht zu unterscheiden: das Nibble, das
+einen Extended-Frame markiert, ist in einem Drehzahl-Frame ein gewöhnlicher
 Exponent mit Mantisse, und nur ein ESC mit eingeschalteter Extended Telemetry
 garantiert die Normalisierung, die sie trennt. Der Decoder nimmt den Modus
-deshalb als Argument entgegen, statt ihn zu erschließen.
+deshalb als Argument entgegen, statt ihn zu erschließen. Ein ESC, der Command
+13 ignoriert **und** nicht normalisiert, bekommt deshalb einzelne
+Drehzahl-Frames als Temperatur oder Spannung gelesen -- ungemessen, und der
+Grund, die ersten Anzeigen an einem neuen ESC zu prüfen.
 
 ## Was auf der Leitung nicht bestätigt ist
 

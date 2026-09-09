@@ -2,9 +2,11 @@
 
 <sub>**English** · [Deutsch](FirstRun-de.md)</sub>
 
-For the first time both boards are powered with the heartbeat wire fitted.
-Written for 0.8.0. Nothing below has been done before, so
-every step says what "good" looks like and what to write down when it is not.
+Both boards powered with the heartbeat wire fitted, and every number below
+read on an instrument. Written for 0.8.0. A servo and a motor have run from
+the panel on the bring-up bench; what nothing here has done is put a scope or
+an analyser on a pin, so every step says what "good" looks like and what to
+write down when it is not.
 
 Work down the list. Each step assumes the one above it passed.
 
@@ -32,9 +34,10 @@ Work down the list. Each step assumes the one above it passed.
 bidirectional DShot, a bench supply with current limit, and the USB cable for
 each board.
 
-**Do not connect a motor to the ESC yet.** Step 5 is the first time a pin has
-ever been driven by this firmware; the first thing to look at is the scope,
-not a propeller.
+**Do not connect a motor to the ESC yet.** Step 5 drives no pin at all -- it
+is the interlock, and no output is the passing result. Step 6 is the first pin
+on an instrument, and the first thing to look at there is the scope, not a
+propeller.
 
 **Current limit:** set it low enough that a shorted output trips it rather
 than burning a track.

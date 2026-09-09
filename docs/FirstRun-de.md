@@ -2,10 +2,12 @@
 
 <sub>[English](FirstRun.md) · **Deutsch**</sub>
 
-Für das erste Mal, dass beide Platinen mit gestecktem Heartbeat-Draht mit
-Strom versorgt werden. Geschrieben für 0.8.0. Nichts davon wurde je gemacht,
-also sagt jeder Schritt, wie „gut“ aussieht und was aufzuschreiben ist, wenn
-es das nicht tut.
+Beide Platinen mit gestecktem Heartbeat-Draht unter Strom, und jede Zahl unten
+an einem Messgerät gelesen. Geschrieben für 0.8.0. Ein Servo und ein Motor
+sind auf dem Aufbau-Prüfstand vom Panel aus gelaufen; was hier nichts getan
+hat, ist ein Oszilloskop oder einen Logikanalysator an einen Pin zu legen.
+Deshalb sagt jeder Schritt, wie „gut“ aussieht und was aufzuschreiben ist,
+wenn es das nicht tut.
 
 Die Liste von oben nach unten abarbeiten. Jeder Schritt setzt voraus, dass
 der darüber bestanden hat.
@@ -18,9 +20,10 @@ der darüber bestanden hat.
 DShot spricht, ein Labornetzteil mit Strombegrenzung und das USB-Kabel für
 jede Platine.
 
-**Noch keinen Motor an den ESC.** Schritt 5 ist das erste Mal, dass diese
-Firmware je einen Pin getrieben hat; das Erste, worauf man schaut, ist das
-Oszilloskop und kein Propeller.
+**Noch keinen Motor an den ESC.** Schritt 5 treibt überhaupt keinen Pin -- er
+ist die Verriegelung, und kein Ausgang ist dort das bestandene Ergebnis.
+Schritt 6 ist der erste Pin an einem Messgerät, und dort schaut man zuerst auf
+das Oszilloskop und nicht auf einen Propeller.
 
 **Strombegrenzung:** so niedrig, dass ein kurzgeschlossener Output sie
 auslöst, statt eine Leiterbahn zu verbrennen.
