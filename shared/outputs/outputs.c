@@ -287,6 +287,9 @@ void outputs_all_off(outputs_t *o)
     }
     for (unsigned i = 0; i < OUT_MAX_CHANNELS; ++i) {
         o->channel[i].actual = o->channel[i].rest;
+        /* And the part-unit the slew was carrying: a run starts from a whole
+         * unit, not from wherever the last one stopped. */
+        o->channel[i].slew_rem = 0u;
     }
 }
 
@@ -322,10 +325,32 @@ void outputs_step(outputs_t *o, uint32_t now_ms)
             continue;
         }
         /*
-         * Rounded up, so a slew slow enough that a step lands under one unit
-         * still moves.  Truncating there gives an output that never arrives.
+         * The remainder is carried, not rounded away and not rounded up.
+         *
+         * Truncating each step on its own stops a slew slower than one unit
+         * a step from ever moving.  Rounding each step up instead delivers at
+         * least one unit per call whatever slew_per_s says, and the
+         * coprocessor's loop steps about once a millisecond, so every rate
+         * under 1000 units a second rendered as 1000 -- SPEED on the servo
+         * screen is 2 * OUT_SPAN * pct / 100, so every setting from 1% to 49%
+         * moved the horn at the same rate as 50%.
+         *
+         * Carrying the thousandths does both: the rate the caller asked for,
+         * and a slow slew that always arrives.
+         *
+         * dt_ms is capped so the multiply cannot overflow a uint32_t at the
+         * largest slew_per_s (65,535 * 60,000 is 3.93e9).  A channel that has
+         * not been stepped for a minute has been overdue for all but the
+         * first OUT_DEFAULT_TIMEOUT_MS of it and is at rest already.
          */
-        const uint32_t step = ((uint32_t)c->slew_per_s * dt_ms + 999u) / 1000u;
+        const uint32_t span_ms = (dt_ms > 60000u) ? 60000u : dt_ms;
+        const uint32_t num = (uint32_t)c->slew_per_s * span_ms
+                             + (uint32_t)c->slew_rem;
+        const uint32_t step = num / 1000u;
+        c->slew_rem = (uint16_t)(num - step * 1000u);
+        if (step == 0u) {
+            continue;
+        }
 
         if (c->command > c->actual) {
             const uint32_t next = (uint32_t)c->actual + step;

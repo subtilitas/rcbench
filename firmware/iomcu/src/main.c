@@ -894,6 +894,23 @@ int main(void)
         can_service(now);
 
         /*
+         * Two independent watchdogs, and both before the bank is armed.  The
+         * link watchdog says the panel has stopped talking; this one says the
+         * panel has stopped running.  A panel wedged mid-frame can still have
+         * an interrupt answering polls, so the link watchdog alone would not
+         * fire.
+         *
+         * Polled first because silence generates no event: s_beat.alive is
+         * only as fresh as the last heartbeat_poll(), and arming on last
+         * pass's answer renders one more service of every output after the
+         * line has already gone past HEARTBEAT_MAX_GAP_MS (150 ms).
+         */
+        const bool was_beating = s_beat.alive;
+        if (!heartbeat_poll(now) && was_beating) {
+            outputs_off();   /* fires on the edge only */
+        }
+
+        /*
          * Arming is the coprocessor's judgement: the panel asks and this end
          * decides, recomputed every pass from what only this end knows.
          * outputs_arm() is idempotent and does not stamp the clock, so
@@ -915,17 +932,6 @@ int main(void)
         if ((uint32_t)(now - last_sample) >= 20u) {
             sample();
             last_sample = now;
-        }
-
-        /*
-         * Two independent watchdogs.  The link watchdog says the panel has
-         * stopped talking; this one says the panel has stopped running.  A
-         * panel wedged mid-frame can still have an interrupt answering polls,
-         * so the link watchdog alone would not fire.
-         */
-        const bool was_beating = s_beat.alive;
-        if (!heartbeat_poll(now) && was_beating) {
-            outputs_off();   /* fires on the edge only */
         }
 
         /*

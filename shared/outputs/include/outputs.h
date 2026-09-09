@@ -97,6 +97,7 @@ typedef struct {
     uint16_t   actual;       /**< what the slew has reached                */
     uint16_t   rest;         /**< where it goes when it is not driving     */
     uint16_t   slew_per_s;   /**< span units per second; 0 is immediate    */
+    uint16_t   slew_rem;     /**< thousandths carried between steps        */
     uint16_t   min_us;       /**< what a pulse driver renders 0 as         */
     uint16_t   max_us;       /**< and OUT_SPAN                             */
     uint32_t   last_command_ms;
@@ -254,7 +255,10 @@ uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
  *   is settled by the end holding the wire before it calls outputs_arm(): the
  *   coprocessor recomputes it every pass from the ARM register, its link
  *   failsafe and its heartbeat monitor, so a bank armed there already carries
- *   a trusted beat.
+ *   a beat that was judged this pass.  "This pass" is the whole of the
+ *   guarantee: silence is noticed by a poll, so the line can have been dead
+ *   for up to one pass of that loop before the poll says so, and the
+ *   monostable is what covers that gap in hardware.
  *
  *   A command arriving.  That is per channel, outputs_overdue(), and it
  *   decides what a channel renders rather than whether it renders.
@@ -287,19 +291,29 @@ uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
  * until it goes overdue.  What gets rendered in that time is the slew's
  * answer, not the command:
  *
- *   slew_per_s 0   the first step is the whole distance, so the pin carries
- *                  the last command the bank was left with for the whole
+ *   slew_per_s 0   the first step is the whole distance, so the bank
+ *                  carries the last command it was left with for the whole
  *                  timeout -- 500 ms at OUT_DEFAULT_TIMEOUT_MS
- *   slew_per_s > 0 the disarm has already put actual at rest, so the pin
+ *   slew_per_s > 0 the disarm has already put actual at rest, so the bank
  *                  carries a ramp from rest towards that command.  It
  *                  arrives only if the distance is under
  *                  slew_per_s * timeout_ms / 1000, half of slew_per_s at
  *                  the default timeout; past that the timeout returns it to
  *                  rest with the command never reached.  The timeout runs
- *                  from the arm, not from the arrival.
+ *                  from the arm, not from the arrival.  That bound holds
+ *                  however often the caller steps, because outputs_step()
+ *                  carries the part-unit between steps rather than rounding
+ *                  each one up.
  *
  * A throttle rests at 0, so its re-arm ramp is always upward and is slewed.
  * A surface rests at the middle of its travel and ramps either way.
+ *
+ * The bank is what carries it; the pin can lag.  A driver with a setup
+ * sequence sends that first: firmware/iomcu/src/outputs_hw.c sends
+ * DSHOT_CMD_EDT_ENABLE for DSHOT_CMD_REPEATS (10) frames on the edge into
+ * driving for a bidirectional DShot slot, which at the coprocessor's
+ * 1,000 Hz update rate is the first 10 ms of the arm.  The command reaches
+ * that ESC after them.
  *
  * What an ESC (electronic speed controller) does with the surface rest is a
  * question about the ESC.  A receiver output of 1500 us is about half

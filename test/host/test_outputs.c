@@ -163,8 +163,39 @@ TEST_CASE(a_slow_slew_still_moves)
     outputs_arm(&o, true, 1000u);
     outputs_set(&o, 0, 1000u, 1000u);
     const uint16_t was = outputs_actual(&o, 0);
-    outputs_step(&o, 1001u);                /* a millisecond */
-    CHECK(outputs_actual(&o, 0) > was);
+    /* A millisecond is a thousandth of a unit: carried, not yet moved. */
+    outputs_step(&o, 1001u);
+    CHECK_EQ(outputs_actual(&o, 0), was);
+    /* And a thousand of those milliseconds is the unit.  Stepped one at a
+     * time, so it is the carry that gets there and not one long step.  The
+     * command is refreshed each pass to keep the channel out of its own
+     * timeout, which is what a host driving an output does. */
+    for (uint32_t t = 1002u; t <= 2000u; ++t) {
+        outputs_set(&o, 0, 1000u, t);
+        outputs_step(&o, t);
+    }
+    CHECK_EQ(outputs_actual(&o, 0), (uint16_t)(was + 1u));
+}
+
+/*
+ * How often the caller steps does not change the rate.
+ *
+ * Rounding each step up on its own would deliver at least one unit per call,
+ * so 200 units a second rendered as 1000 whenever the caller stepped every
+ * millisecond -- which is what the coprocessor's loop does, and what made
+ * every SPEED from 1% to 49% on the servo screen move the horn at 50%.
+ */
+TEST_CASE(the_slew_rate_does_not_follow_the_step_cadence)
+{
+    fresh();
+    CHECK(outputs_set_slew(&o, 0, 200u));
+    outputs_arm(&o, true, 1000u);
+    for (uint32_t t = 1001u; t <= 1400u; ++t) {
+        outputs_set(&o, 0, 1000u, t);
+        outputs_step(&o, t);
+    }
+    /* 400 ms at 200 units a second is 80 units, up from the 500 rest. */
+    CHECK_EQ(outputs_actual(&o, 0), 580u);
 }
 
 /*
@@ -394,7 +425,8 @@ TEST_CASE(a_re_arm_ramps_from_rest_when_the_channel_is_slewed)
     outputs_set(&o, 1, 900u, 1000u);
     outputs_step(&o, 1001u);
     CHECK_EQ(outputs_actual(&o, 0), 900u);
-    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u + 1u);
+    /* 200 units a second is a fifth of a unit in a millisecond: carried. */
+    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u);
 
     /* Disarmed, and still stepped: the loop calls outputs_step() every pass
      * whether the bank is armed or not, so the slew's elapsed time does not
@@ -409,15 +441,17 @@ TEST_CASE(a_re_arm_ramps_from_rest_when_the_channel_is_slewed)
     outputs_arm(&o, true, 2000u);
     outputs_step(&o, 2001u);
     CHECK_EQ(outputs_actual(&o, 0), 900u);   /* the whole distance at once */
-    /* And one unit of it: the step is rounded up, so even a 1 ms pass moves.
-     * 200 units a second is 0.2 of a unit in 1 ms. */
-    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u + 1u);
+    CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u);
 
-    /* One millisecond before the timeout.  498 ms more at 200 units a second
-     * is 100 units, so the ramp stands at 601 of the 900 commanded. */
+    /* One millisecond before the timeout.  499 ms at 200 units a second is
+     * 99 units and 800 thousandths, so the ramp stands at 599 of the 900
+     * commanded -- inside the header's bound of slew_per_s * timeout_ms /
+     * 1000, which is 100 units here. */
     outputs_step(&o, 2000u + OUT_DEFAULT_TIMEOUT_MS - 1u);
     CHECK_EQ(outputs_actual(&o, 0), 900u);
-    CHECK_EQ(outputs_actual(&o, 1), 601u);
+    CHECK_EQ(outputs_actual(&o, 1), 599u);
+    CHECK(outputs_actual(&o, 1) - OUT_SPAN / 2u
+          <= 200u * OUT_DEFAULT_TIMEOUT_MS / 1000u);
 
     /* At the timeout both go to rest, the slewed one without ever having
      * rendered what it was commanded.  The bank is still driving. */
@@ -962,6 +996,7 @@ int main(void)
     RUN(re_arming_is_not_activity);
     RUN(the_role_decides_which_direction_is_safe);
     RUN(a_slow_slew_still_moves);
+    RUN(the_slew_rate_does_not_follow_the_step_cadence);
     RUN(a_pin_belongs_to_one_driver);
     RUN(a_reserved_pin_is_refused);
     RUN(the_outputs_page_refuses_a_pin_that_does_not_fit_the_field);
