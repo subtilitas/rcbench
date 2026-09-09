@@ -15,6 +15,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>          /* fsync(), which is what commits a row to FAT */
 
 #include "driver/gpio.h"
 #include "driver/temperature_sensor.h"
@@ -675,6 +676,22 @@ static void pump(void)
 static FILE *s_card_file;
 
 /*
+ * The run the logger has open, as a run number, or 0 for none.
+ *
+ * Written by the runlog task and read by the task that renders.  A run whose
+ * file is still open is not a run this viewer can read: FAT keeps a file's
+ * length in its directory entry and f_close is what writes it, so the size
+ * the walk sees is the size at the last commit and the rows since then are
+ * not in it.  The viewer would show a run that is still growing as a
+ * finished one, and the operator has no way to tell the two apart.
+ *
+ * So it is left out of the list until the logger closes it, which is one
+ * pass of the logger after the queue drains.  A stalled card makes that
+ * window long, which is exactly when the difference matters.
+ */
+static atomic_uint s_log_open_run;
+
+/*
  * One directory entry on its way into the viewer's list.
  *
  * The card takes LOG_RUN_LAST runs and the list holds LOG_VIEWER_MAX_FILES of
@@ -701,6 +718,13 @@ static void card_take(const storage_entry_t *entry, void *ctx)
      * and leave the card's only log unreachable.
      */
     if (entry->is_dir) {
+        return;
+    }
+    /* And not the run the logger still has open; see s_log_open_run.  Not
+     * counted either: a card whose only file is that run has nothing this
+     * viewer can show, which is what an empty list says. */
+    const unsigned open_run = atomic_load(&s_log_open_run);
+    if (open_run != 0u && log_run_number(entry->name) == (int)open_run) {
         return;
     }
     ++pick->files;
@@ -754,9 +778,9 @@ static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
          * and a replacement card is not found until the panel restarts.
          *
          * Not unmounted from here.  This runs on the task that renders, and
-         * the control task writes the run log on the same volume: unmounting
-         * under an open handle frees the SPI bus beneath a write on the other
-         * core.  Putting that right means one task owning the card's
+         * the runlog task writes the run log on the same volume: unmounting
+         * under an open handle frees the SPI bus beneath a write from another
+         * task.  Putting that right means one task owning the card's
          * lifetime, which is a change of its own; see STATUS.md.
          */
         return -1;
@@ -794,6 +818,16 @@ static bool card_open(const char *name, log_source_t *src, void *ctx)
     if (s_card_file != NULL) {
         fclose(s_card_file);
         s_card_file = NULL;
+    }
+    /*
+     * Refused if the logger has that run open, even though card_list() left
+     * it out: a name can reach here from a list taken before the run started
+     * -- the screen holds its list until the next RESCAN.
+     */
+    const unsigned open_run = atomic_load(&s_log_open_run);
+    if (open_run != 0u && log_run_number(name) == (int)open_run) {
+        ESP_LOGW(TAG, "%s is still being written", name);
+        return false;
     }
     char path[STORAGE_NAME_MAX + sizeof(STORAGE_MOUNT_POINT) + 2];
     storage_path(CARD_DIR, name, path, sizeof(path));
@@ -1033,55 +1067,156 @@ static bool bring_up(void)
  * A run is written while the bench is armed and closed when it disarms; that
  * is the bench's definition of a run.  The file format is the one the log
  * viewer reads, and a host test writes a run and parses it back.
- */
-static FILE       *s_log_file;
-
-/*
- * Whether a run is open, which is not the same as whether a file is.
  *
- * A card that is full or unwritable leaves s_log_file NULL, and the arming
- * edge was read from that pointer: with the bench armed and the open
- * failing, every pass of the control loop looked like a fresh arm and ran
- * the whole scan again -- card work on the task that drives the heartbeat,
- * once per CONTROL_PERIOD_MS, for as long as the bench stayed armed. The run
- * is its own flag, so a failed open is a run without a log rather than a
- * retry.
+ * The control task touches no file.  It beats the safety line, its ceiling is
+ * HEARTBEAT_MAX_GAP_MS (150 ms) and the coprocessor calls the link silent
+ * after 200 ms, while the SD (Secure Digital) specification allows a card
+ * 250 ms to finish a single-block write before a host may give it up.  How
+ * long this board's card takes is not measured.  A card write on that task is
+ * therefore a dropped heartbeat and a coprocessor that fails safe, not a late
+ * row -- so rows cross to a task of its own and every fopen, fwrite, fsync
+ * and fclose happens there.
+ *
+ * That task holds the run's handle.  It is not the only handle on the card:
+ * the viewer opens a log from the task that renders, so a card that is
+ * unmounted or whose SPI2 (Serial Peripheral Interface) bus is freed would
+ * pull the floor from under either of them.  Nothing in this build unmounts,
+ * which is what makes that safe rather than any sequencing between the two.
  */
-static bool        s_log_run;
 
 /*
- * Where the numbering got to.  The scan is a linear probe from 1, so a card
- * holding 400 runs cost 400 opens at the arming edge; after the first one it
- * starts from what it found.
+ * One sample on its way to the card, filled by the control task.
+ *
+ * It carries which arming it belongs to, because that is the only thing that
+ * says which file it goes in: a disarm and an arm inside one pass of the
+ * logger would otherwise put two runs in one file, with a time column that
+ * goes backwards halfway down.
  */
-static int         s_log_next = LOG_RUN_FIRST;
+typedef struct {
+    uint32_t      arm;
+    float         t_s;
+    bench_state_t bench;
+} log_row_t;
+
+/*
+ * Sixty-four rows is 3.2 s of run at PANEL_SAMPLE_HZ, against the 250 ms an
+ * SD card may take over one write: a card that pauses costs no rows.
+ */
+#define LOG_Q_LEN      64
+/*
+ * How long the logger waits for a row before looking at the run again.  It
+ * bounds how long after the disarm the file is closed and how often a run
+ * whose rows have stopped is offered a commit.
+ */
+#define LOG_TICK_MS    20u
+/*
+ * A run whose rows have stopped -- the far end gone quiet with the bench
+ * still armed -- is committed anyway once this long has passed since the last
+ * row, so its tail is not held for the rest of the run.
+ */
+#define LOG_QUIET_MS   1000u
+/* The report link_report() writes to the card, and how many may be in
+ * flight.  The report is made every 5 s at its fastest. */
+#define LOG_NOTE_MAX   208
+#define LOG_NOTE_Q_LEN 4
+
+/*
+ * How many run numbers a failing create is given before the run is called
+ * unrecorded.  The scan above starts past every number the card holds, so a
+ * refused create is the volume answering and not a name collision.
+ */
+#define LOG_OPEN_TRIES 3u
+
+static QueueHandle_t s_log_q;    /**< control task -> logger, one row each */
+static QueueHandle_t s_note_q;   /**< control task -> logger, one line each */
+
+/*
+ * Which arming is being recorded, or 0 for none.
+ *
+ * A level rather than a queued event, for the reason send_cmd() gives for the
+ * disarm: a queue drops its oldest entry when it is full, and an arm or a
+ * disarm that was dropped would lose a run or leave a file open across the
+ * next one.  A number rather than a flag, so that two runs are two runs even
+ * when the logger never saw the gap between them.  Written by the control
+ * task on the arming edge, read by the logger; atomic because the two are
+ * different tasks and either can be preempted mid-word.  Both are pinned to
+ * core 1, the control task at priority 10 and the logger at 3, so the
+ * preemption that matters is the control task taking the core back.
+ */
+static atomic_uint s_log_arm_now;
+
+/*
+ * The run's rows, counted by the task that posts them.
+ *
+ * Not shared with the logger, and not per arming in any table: the control
+ * task is the one that drops a row, it is the one that knows which arming it
+ * was dropping from, and it sees the disarm edge exactly.  Handing the count
+ * across to be reported at the close instead needs a slot per arming in
+ * flight, and a stalled card is what puts three of them in flight -- the run
+ * whose rows are still queued, and two the operator has run since.
+ *
+ * So the count is reported where it is kept, on the disarm edge.  The logger
+ * reports what the logger knows: rows written, and a write that failed.
+ */
+static uint32_t    s_log_run_lost;
+static uint32_t    s_log_run_sent;
+
+/* The control task's own: the arming it numbers rows with, and whether it
+ * has seen the bank arm.  The counter never takes the value 0, because 0 is
+ * what s_log_arm_now says for no run at all. */
+static uint32_t    s_log_arm_ctr;
+static bool        s_log_armed;
+
+/* The logger task's own, from here down: nothing else reads or writes them. */
+static FILE        *s_log_file;
+/*
+ * Which arming this task has a run open for, or 0 for none.  Not the same
+ * question as whether a file is open: a card that is full or unwritable
+ * leaves s_log_file NULL, and reading the run's existence off that pointer
+ * would make every pass look like a fresh arm and run the whole file-name
+ * scan again for as long as the bench stayed armed.  A failed open is a run
+ * without a log, not a retry.
+ */
+static uint32_t     s_log_arm;
+/*
+ * Where the numbering got to.  One directory read at the first arming edge
+ * puts it above every number the card already carries; after that it starts
+ * from what it handed out last.
+ */
+static int          s_log_next = LOG_RUN_FIRST;
 /* Whether s_log_next has been put above what the card already holds.  Once
  * per boot: after that this end has written every number it handed out. */
-static bool        s_log_numbered;
+static bool         s_log_numbered;
 
 /*
  * The highest run number on the card, for the visitor below.
  *
- * This runs on the control task, which is the task that beats the safety line
- * and hit-tests STOP, and a populated root takes longer to read than
- * HEARTBEAT_MAX_GAP_MS (150 ms).  The walk is given control_pump as its tick
- * so the line is served per directory entry, the way the probe loop it
- * replaced pumped per name.  Not here: the filters reject dot-names, wrong
- * suffixes and over-long names before this is reached, so a root of unrelated
- * files would be read with nothing running.
+ * This runs on the runlog task, so the directory read costs the card's own
+ * latency and nothing else: the control task beats the safety line and
+ * hit-tests STOP on its own schedule while this runs.  The walk therefore
+ * takes no tick.  What it does cost is the first row of a run, which waits
+ * in the queue until the scan finishes; a card holding 400 runs is one
+ * directory read, not 400 opens.
  */
 static void log_highest(const storage_entry_t *entry, void *ctx)
 {
     int *highest = (int *)ctx;
-    if (entry->is_dir) {
-        return;
-    }
+    /*
+     * Directories count.  The viewer skips them because it cannot open one,
+     * but this is about which numbers are taken, and a directory called
+     * BENCH003.CSV takes that number as surely as a file does: fopen refuses
+     * it in both modes, so a run numbered into it would be a run that cannot
+     * be created.  Numbering above it costs a number and nothing else.
+     */
     const int n = log_run_number(entry->name);
     if (n > *highest) {
         *highest = n;
     }
 }
 static log_writer_t s_log;
+static uint32_t     s_log_last_row_ms;
+
+/* The control task's: the timestamp the next row carries. */
 static float        s_log_t;
 
 static int file_write(void *ctx, const void *data, size_t len)
@@ -1091,28 +1226,44 @@ static int file_write(void *ctx, const void *data, size_t len)
 }
 
 /*
- * Open the run's file.  Called on the arming edge, from the task that drives
- * the heartbeat and reads STOP.
+ * Make the rows the file already holds survive a power cut.
  *
- * Every probe is a card transaction, and the loop can make hundreds of them.
- * The heartbeat's ceiling is HEARTBEAT_MAX_GAP_MS (150 ms) and STOP has to
- * be seen within a frame of the press, so control_pump() runs between
- * probes -- the same reason exchange() pumps while it waits for a reply.
+ * fflush() moves them out of the C library's buffer and no further.  FAT
+ * (file allocation table) keeps a file's length in its directory entry and
+ * writes that entry on f_sync, so a file that has only been fflushed reads as
+ * 0 bytes after a power cut whatever its data sectors hold -- the whole run
+ * lost.  fsync() is the call that reaches f_sync.
+ *
+ * log_writer_row() calls this every LOG_WRITER_FLUSH_ROWS (20) rows or
+ * LOG_WRITER_FLUSH_S (1.0 s) of run, whichever comes first, which at
+ * PANEL_SAMPLE_HZ is the same instant.
  */
-static void log_start(void)
+static bool file_flush(void *ctx)
 {
-    if (s_log_file != NULL) {
-        return;
-    }
+    FILE *f = (FILE *)ctx;
+    return fflush(f) == 0 && fsync(fileno(f)) == 0;
+}
+
+/*
+ * Open the run's file, on the logger task.
+ *
+ * Every probe is a card transaction and the loop can make hundreds of them,
+ * which is why the scan is here and not on the task that beats the safety
+ * line.  It runs when the run's first row arrives, one sample interval
+ * (50 ms) after the arm.
+ */
+static void log_open(uint32_t arm)
+{
+    s_log_arm         = arm;
+    s_log_file        = NULL;
+    s_log_last_row_ms = now_ms();
+
     /*
      * Said, not swallowed, and said on the panel rather than to a console.
      *
-     * The retry is gated on the run now, so a card that is not there at the
-     * arming edge means this run is not recorded and nothing tries again
-     * until the next arm.  That is the right behaviour -- polling a missing
-     * card from the task that drives the heartbeat is what this change is
-     * removing -- but it has to be visible, and the panel's console is not
-     * reachable on every bench.
+     * A card that is not there when the run's first row arrives means this
+     * run is not recorded and nothing tries again until the next arm, so it
+     * has to be visible: the panel's console is not reachable on every bench.
      */
     if (!storage_mounted()) {
         ESP_LOGW(TAG, "no card mounted; this run is not recorded");
@@ -1121,7 +1272,8 @@ static void log_start(void)
     }
     /*
      * Numbered, not timestamped: no clock on this board survives a power
-     * cycle, so every file would be dated 1970-01-01.  The number is the
+     * cycle, so every file would carry the FAT (File Allocation Table) epoch,
+     * 1980-01-01.  The number is the
      * only order the card carries, and the viewer reads it back with
      * log_run_number() to decide which runs it can still show once a card
      * holds more of them than the screen does; log_run_name() is the one
@@ -1138,7 +1290,7 @@ static void log_start(void)
     if (!s_log_numbered) {
         int highest = LOG_RUN_FIRST - 1;
         if (storage_walk(CARD_DIR, CARD_SUFFIXES, log_highest, &highest,
-                         control_pump) < 0) {
+                         NULL) < 0) {
             /*
              * The card would not list.  Falling through would number this run
              * from 1 and take the first gap, which is the numbering this scan
@@ -1154,21 +1306,40 @@ static void log_start(void)
         s_log_next = (highest >= LOG_RUN_FIRST) ? highest + 1 : LOG_RUN_FIRST;
         s_log_numbered = true;
     }
+    /*
+     * A volume that refuses one free number refuses them all, and each try is
+     * two card transactions on this task.  Walking to LOG_RUN_LAST would be
+     * 999 of them before the operator is told the run is not recorded.
+     */
+    unsigned refused = 0u;
     for (int i = s_log_next; i <= LOG_RUN_LAST && s_log_file == NULL; ++i) {
         char name[LOG_RUN_NAME_MAX];
         char path[64];
         log_run_name(name, sizeof(name), i);
         storage_path(CARD_DIR, name, path, sizeof(path));
-        control_pump();
         FILE *probe = fopen(path, "r");
         if (probe != NULL) {
             fclose(probe);
             continue;
         }
+        /*
+         * Claimed before the file exists, not after it does.  fopen makes the
+         * directory entry visible, and the task that renders can walk the
+         * card between the two calls: it would find a run with no marker
+         * against it, cache its size and analyse it while the logger is
+         * about to start appending.  Cleared again if the open fails, so a
+         * card that refuses every number leaves no run claimed.
+         */
+        atomic_store(&s_log_open_run, (unsigned)i);
         s_log_file = fopen(path, "w");
         if (s_log_file != NULL) {
             s_log_next = i + 1;
             ESP_LOGI(TAG, "logging to %s", path);
+        } else {
+            atomic_store(&s_log_open_run, 0u);
+            if (++refused >= LOG_OPEN_TRIES) {
+                break;   /* the volume, not this name */
+            }
         }
     }
     if (s_log_file == NULL) {
@@ -1176,24 +1347,177 @@ static void log_start(void)
         control_alert("card full or unwritable -- run not recorded");
         return;
     }
-    const log_sink_t sink = { file_write, s_log_file };
+    const log_sink_t sink = { .write = file_write, .flush = file_flush,
+                              .ctx = s_log_file };
     log_writer_init(&s_log, &sink);
-    s_log_t = 0.0f;
 }
 
-static void log_stop(void)
+static void log_close(void)
 {
+    s_log_arm = 0u;
     if (s_log_file == NULL) {
         return;
     }
-    if (log_writer_failed(&s_log)) {
+    const bool failed = log_writer_failed(&s_log);
+    if (failed) {
         ESP_LOGW(TAG, "the log is short: a write failed after %u rows",
                  (unsigned)s_log.rows);
-    } else {
+        /* On the band as well as the console.  A write that failed mid-run
+         * is the difference between an experiment and half of one, and the
+         * operator at the bench has no console.  Dropped rows are the control
+         * task's to report; see log_follow_arming(). */
+        control_alert("the card stopped taking rows -- the log is short");
+    }
+    /*
+     * The close is the last commit and the largest one: FATFS writes the
+     * directory entry in f_close, so every row the writer has not committed
+     * is kept by this call and by nothing else.  A card that fails here fails
+     * silently otherwise: the file is left at its last committed length and
+     * the viewer, which reads it as soon as s_log_open_run is cleared, shows
+     * a complete-looking run that stops early.
+     */
+    const unsigned uncommitted = (unsigned)log_writer_pending(&s_log);
+    if (fclose(s_log_file) != 0) {
+        ESP_LOGW(TAG, "the log did not close: %u rows are not in it",
+                 uncommitted);
+        if (!failed) {
+            control_alert("the card failed on the last write -- the log is "
+                          "short");
+        }
+    } else if (!failed) {
         ESP_LOGI(TAG, "%u rows written", (unsigned)s_log.rows);
     }
-    fclose(s_log_file);
     s_log_file = NULL;
+    /*
+     * And only now is the run something the viewer may read.  The length of a
+     * FAT file lives in its directory entry, and f_close is what writes it --
+     * so this is cleared after the call whether or not the call succeeded: a
+     * failed close has still given up the handle, and holding the run back
+     * for ever would hide the rows that did reach the card.
+     */
+    atomic_store(&s_log_open_run, 0u);
+}
+
+/* One line appended to the fault log, opened and closed around it so that
+ * each line is on the card before the next fault can happen. */
+static void log_note(const char *line)
+{
+    if (!storage_mounted()) {
+        return;
+    }
+    FILE *f = fopen("/sdcard/RCBENCH.LOG", "a");
+    if (f == NULL) {
+        return;
+    }
+    fputs(line, f);
+    fputc('\n', f);
+    fclose(f);
+}
+
+/*
+ * Everything that touches the card.
+ *
+ * On the control task's core and below it in priority: the control task
+ * blocks for CONTROL_PERIOD_MS (5 ms) every pass and inside every receive
+ * window of a link exchange, and this runs in those gaps.  It touches no
+ * PSRAM, so it does not share bandwidth with the display's bounce-buffer
+ * refill on the other core.
+ */
+static void log_task(void *arg)
+{
+    (void)arg;
+
+    for (;;) {
+        log_row_t row;
+        const bool got =
+            (xQueueReceive(s_log_q, &row, pdMS_TO_TICKS(LOG_TICK_MS))
+             == pdTRUE);
+
+        /*
+         * A row belongs to the arming it was sampled in, and that is what
+         * decides its file.  A row for an arming this task has no file for
+         * ends the run it does have open and starts one for that arming --
+         * which is what keeps two runs out of one file when the bench is
+         * disarmed and armed again faster than a pass, whether or not this
+         * task ever saw the level between them go down.
+         *
+         * A file is opened by the first row and never by the arm, so a run
+         * that produces no row leaves no empty CSV (comma-separated values)
+         * file behind and costs the card nothing.
+         */
+        if (got && row.arm != s_log_arm) {
+            if (s_log_arm != 0u) {
+                log_close();
+            }
+            log_open(row.arm);
+        }
+        /*
+         * A failed write latches the writer and every later row is rejected,
+         * so the run stops being recorded at that point rather than at the
+         * disarm.  Said on the edge, so the operator can stop and see to the
+         * card while the run still means something -- and the edge is taken
+         * around both calls that can fail, because a run whose rows have
+         * paused fails at the commit and would otherwise be latched before
+         * the next row could notice.
+         */
+        const bool was_failed = log_writer_failed(&s_log);
+
+        if (got && s_log_file != NULL) {
+            (void)log_writer_row(&s_log, row.t_s, &row.bench);
+            s_log_last_row_ms = now_ms();
+        }
+
+        /* A run whose rows have stopped is committed anyway.  Not once the
+         * writer has failed: the card is gone and an fsync a pass is work for
+         * nothing. */
+        if (s_log_file != NULL && !log_writer_failed(&s_log)
+            && log_writer_pending(&s_log) > 0u
+            && (uint32_t)(now_ms() - s_log_last_row_ms) >= LOG_QUIET_MS) {
+            (void)log_writer_commit(&s_log);
+        }
+
+        if (s_log_file != NULL && !was_failed && log_writer_failed(&s_log)) {
+            control_alert("the card stopped taking rows -- run not "
+                          "recorded past here");
+        }
+
+        /*
+         * And the end of the run, which is the only thing the level decides.
+         * The close waits for the queue: the rows sampled in front of the
+         * disarm are still in it and they belong in this file.
+         */
+        if (s_log_arm != 0u && atomic_load(&s_log_arm_now) != s_log_arm
+            && uxQueueMessagesWaiting(s_log_q) == 0u) {
+            log_close();
+        }
+
+        char note[LOG_NOTE_MAX];
+        while (xQueueReceive(s_note_q, note, 0) == pdTRUE) {
+            log_note(note);
+        }
+    }
+}
+
+/*
+ * A row on its way to the card, from the control task, without waiting.
+ *
+ * A full queue is the card falling behind the run.  The row is dropped and
+ * counted rather than waited for: waiting here would put the card's latency
+ * back on the safety line by a longer road.  The newest row is the one
+ * dropped, so what the file holds is the run up to the stall, and its time
+ * column shows the gap.
+ */
+static void log_post(float t_s, const bench_state_t *b)
+{
+    if (s_log_q == NULL) {
+        return;
+    }
+    const log_row_t row = { .arm = s_log_arm_ctr, .t_s = t_s, .bench = *b };
+    if (xQueueSend(s_log_q, &row, 0) == pdTRUE) {
+        ++s_log_run_sent;
+    } else {
+        ++s_log_run_lost;
+    }
 }
 
 /* ---------------------------------------------------- asking the far end */
@@ -1598,26 +1922,26 @@ static bool control_clear_failsafe(link_msg_t *reply)
  * Printed every 5 s while the link is down and every 60 s while it is up.
  */
 /*
- * The same report, appended to the card.
+ * The same report, on its way to the card.
  *
  * A tester can send a file; a tester cannot send a console this board does
  * not have.  Only while the link is down and only at link_report()'s 5 s
- * cadence, so the volume is a few hundred bytes a minute, and the write is
- * SPI to the card rather than internal flash -- it does not close the cache
- * the way a settings save does.
+ * cadence, so the volume is a few hundred bytes a minute.
+ *
+ * Handed to the logger task rather than written here.  This runs on the task
+ * that beats the safety line, and an append is three card transactions --
+ * open, write, close -- each of which can block for as long as the card
+ * takes.  A queue that is full drops the line: a report is worth less than
+ * the beat, and the next one is 5 s away.
  */
 static void debug_log(const char *line)
 {
-    if (!storage_mounted()) {
+    if (s_note_q == NULL) {
         return;
     }
-    FILE *f = fopen("/sdcard/RCBENCH.LOG", "a");
-    if (f == NULL) {
-        return;
-    }
-    fputs(line, f);
-    fputc('\n', f);
-    fclose(f);
+    char note[LOG_NOTE_MAX];
+    snprintf(note, sizeof(note), "%s", line);
+    (void)xQueueSend(s_note_q, note, 0);
 }
 
 /* A number, or "?" when it could not be read: the column keeps its place. */
@@ -2567,20 +2891,48 @@ static void drain_commands(bool link_up, bench_state_t *bench)
 
 /*
  * A run is one arming: the log opens when the bank arms and closes when it
- * disarms.  s_log_file is the record of which of the two happened last.
+ * disarms.  s_log_armed is the record of which of the two happened last, and
+ * s_log_arm_now is the level the logger follows; nothing here opens or
+ * writes a file.
  */
 static void log_follow_arming(void)
 {
     const bool armed_now = outputs_armed(&s_out);
-    if (armed_now == s_log_run) {
+    if (armed_now == s_log_armed) {
         return;
     }
-    s_log_run = armed_now;
-    if (armed_now) {
-        log_start();
-    } else {
-        log_stop();
+    s_log_armed = armed_now;
+    if (!armed_now) {
+        atomic_store(&s_log_arm_now, 0u);
+        /*
+         * The run's rows, answered here because the run has just ended and
+         * this task has both numbers.  Every row of a run is posted between
+         * the two edges, so the counts are final at this point whatever the
+         * card is still doing with the queue.
+         *
+         * A run that got nothing through is the one the logger cannot report
+         * at all: no row of it ever reached the logger, so no file was opened
+         * and no close will happen for it.  That is the case a full queue
+         * left over from the run before produces, and it is the case where an
+         * operator would otherwise look for a CSV that is not there.
+         */
+        if (s_log_run_lost > 0u && s_log_run_sent == 0u) {
+            control_alert("the card did not keep up -- run not recorded");
+        } else if (s_log_run_lost > 0u) {
+            control_alert("the card fell behind -- the log has gaps");
+        }
+        return;
     }
+    /* The run's clock, its row counts and its number, all set before the
+     * level goes up so the logger cannot see a run half started.  Zero means
+     * no run, so the count skips it on the one wrap in 2^32 arms. */
+    s_log_t = 0.0f;
+    s_log_run_lost = 0u;
+    s_log_run_sent = 0u;
+    if (++s_log_arm_ctr == 0u) {
+        s_log_arm_ctr = 1u;
+    }
+    atomic_store(&s_log_arm_now, s_log_arm_ctr);
 }
 
 /*
@@ -2994,9 +3346,9 @@ static void advance_model_and_log(bool link_up, float emitted,
             telemetry_sim_step(sim, emitted, 1.0f / PANEL_SAMPLE_HZ, bench);
             *new_sample = true;
         }
-        if (*new_sample && s_log_file != NULL) {
+        if (*new_sample && s_log_armed) {
             s_log_t += 1.0f / PANEL_SAMPLE_HZ;
-            (void)log_writer_row(&s_log, s_log_t, bench);
+            log_post(s_log_t, bench);
         }
     }
 }
@@ -3242,12 +3594,15 @@ void app_main(void)
     s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_event_t));
     s_cmd_q     = xQueueCreate(CMD_Q_LEN, sizeof(panel_cmd_t));
     s_sample_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(bench_state_t));
+    s_log_q     = xQueueCreate(LOG_Q_LEN, sizeof(log_row_t));
+    s_note_q    = xQueueCreate(LOG_NOTE_Q_LEN, LOG_NOTE_MAX);
     s_snap_lock = xSemaphoreCreateMutex();
     /* Zero is a temperature; the snapshot starts unread, so the strip shows
      * "--" until the control task has published one. */
     s_snap.mcu_temp_c = NAN;
     ESP_ERROR_CHECK((s_touch_q != NULL && s_cmd_q != NULL
-                     && s_sample_q != NULL && s_snap_lock != NULL)
+                     && s_sample_q != NULL && s_log_q != NULL
+                     && s_note_q != NULL && s_snap_lock != NULL)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
     if (!healthy) {
@@ -3260,6 +3615,15 @@ void app_main(void)
      */
     ESP_ERROR_CHECK(xTaskCreatePinnedToCore(control_task, "control", 6144,
                                             NULL, 10, NULL, 1) == pdPASS
+                    ? ESP_OK : ESP_ERR_NO_MEM);
+
+    /*
+     * And the card, on the same core and below it: a card write must not be
+     * able to delay the safety line, so it runs in the gaps the control task
+     * leaves rather than beside it on the core the renderer uses.
+     */
+    ESP_ERROR_CHECK(xTaskCreatePinnedToCore(log_task, "runlog", 4096,
+                                            NULL, 3, NULL, 1) == pdPASS
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
     uint32_t frames  = 0;

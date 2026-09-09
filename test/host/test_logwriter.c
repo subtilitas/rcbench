@@ -23,6 +23,9 @@ typedef struct {
     char   buf[64 * 1024];
     size_t len;
     int    fail_after;   /**< -1 never; else fail once this many bytes are in */
+    int    commits;      /**< how many times the sink was told to keep it */
+    size_t kept;         /**< bytes the last commit made durable */
+    bool   commit_fails;
 } mem_sink_t;
 
 static int mem_write(void *ctx, const void *data, size_t len)
@@ -39,6 +42,21 @@ static int mem_write(void *ctx, const void *data, size_t len)
     return (int)len;
 }
 
+/*
+ * What a card does at a commit, in the only part a host can model: bytes
+ * written before it survive a power cut, bytes written after it do not.
+ */
+static bool mem_flush(void *ctx)
+{
+    mem_sink_t *m = (mem_sink_t *)ctx;
+    if (m->commit_fails) {
+        return false;
+    }
+    ++m->commits;
+    m->kept = m->len;
+    return true;
+}
+
 static mem_sink_t g_mem;
 
 static void fresh(int fail_after)
@@ -49,7 +67,18 @@ static void fresh(int fail_after)
 
 static log_writer_t writer(void)
 {
-    const log_sink_t sink = { mem_write, &g_mem };
+    const log_sink_t sink = { .write = mem_write, .flush = mem_flush,
+                              .ctx = &g_mem };
+    log_writer_t w;
+    log_writer_init(&w, &sink);
+    return w;
+}
+
+/* The same sink with nothing to commit to, which is what memory really is. */
+static log_writer_t writer_without_commit(void)
+{
+    const log_sink_t sink = { .write = mem_write, .flush = NULL,
+                              .ctx = &g_mem };
     log_writer_t w;
     log_writer_init(&w, &sink);
     return w;
@@ -300,6 +329,34 @@ TEST_CASE(a_failing_sink_latches_and_stops)
     CHECK_EQ((int)w.rows, wrote);
 }
 
+/*
+ * A commit after a failure is refused, however willing the sink is.
+ *
+ * The write failed and the file has a hole in it; a flush that succeeds
+ * afterwards would clear the pending count and hand the caller a true, which
+ * is a caller being told an incomplete file is safely on the card.  The
+ * caller here is the panel's end-of-run commit, and what it does with a true
+ * is report the run as written.
+ */
+TEST_CASE(a_commit_after_a_failure_is_refused)
+{
+    fresh(400);   /* fail once about four hundred bytes are in */
+    log_writer_t w = writer();
+    const int wrote = write_run(&w, 200);
+    CHECK(wrote > 0);
+    CHECK(log_writer_failed(&w));
+
+    /* The sink is willing again -- a card that answers after a stall -- and
+     * rows are still pending from before the failure. */
+    g_mem.fail_after   = -1;
+    g_mem.commit_fails = false;
+    CHECK(!log_writer_commit(&w));
+    CHECK(log_writer_failed(&w));
+    /* And it does not clear the count on the way past, so nothing downstream
+     * can read the writer as up to date. */
+    CHECK(log_writer_pending(&w) > 0u);
+}
+
 /* What it produced before failing must still parse: a truncated log is a
  * short log, not a corrupt one. */
 TEST_CASE(what_survived_a_failure_still_reads)
@@ -330,6 +387,158 @@ TEST_CASE(a_writer_with_no_sink_fails_rather_than_crashes)
     CHECK(log_writer_failed(&w));
     log_writer_init(NULL, NULL);           /* survivable */
     CHECK(!log_writer_row(NULL, 0.0f, &b));
+    CHECK(!log_writer_commit(NULL));
+    CHECK_EQ((int)log_writer_pending(NULL), 0);
+}
+
+/* ------------------------------------------------- what a power cut costs */
+
+/*
+ * The bound the rule exists for: at no point in a run is more than
+ * LOG_WRITER_FLUSH_ROWS of it uncommitted, and no uncommitted row is older
+ * than LOG_WRITER_FLUSH_S.
+ *
+ * Driven at the panel's 20 Hz, where 20 rows and 1.0 s are the same instant.
+ */
+TEST_CASE(no_more_than_one_interval_of_a_run_is_ever_uncommitted)
+{
+    fresh(-1);
+    log_writer_t w = writer();
+
+    telemetry_sim_t sim;
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    telemetry_sim_init(&sim, NULL);
+
+    float oldest_uncommitted = 0.0f;
+    for (int i = 1; i <= 200; ++i) {
+        const float t = (float)i * 0.05f;
+        telemetry_sim_step(&sim, 50.0f, 0.05f, &b);
+        if (log_writer_pending(&w) == 0u) {
+            oldest_uncommitted = t;     /* this row starts the next batch */
+        }
+        CHECK(log_writer_row(&w, t, &b));
+        CHECK(log_writer_pending(&w) <= LOG_WRITER_FLUSH_ROWS);
+        if (log_writer_pending(&w) > 0u) {
+            CHECK((t - oldest_uncommitted) <= LOG_WRITER_FLUSH_S);
+        }
+    }
+    /* Ten seconds of run at one commit a second. */
+    CHECK_EQ(g_mem.commits, 10);
+    CHECK_EQ((int)log_writer_pending(&w), 0);
+    CHECK(!log_writer_failed(&w));
+    /* And every byte written is a byte kept, because the run ended on one. */
+    CHECK_EQ((int)g_mem.kept, (int)g_mem.len);
+}
+
+/*
+ * A power cut is what the sink kept, and it parses.  Twenty-nine rows in, the
+ * first twenty are on the card and the other nine are not.
+ */
+TEST_CASE(what_a_power_cut_leaves_is_a_short_run_and_not_an_empty_file)
+{
+    fresh(-1);
+    log_writer_t w = writer();
+    write_run(&w, 29);
+    CHECK_EQ(g_mem.commits, 1);
+    CHECK(g_mem.kept > 0);
+    CHECK(g_mem.kept < g_mem.len);      /* the tail did not survive */
+
+    log_source_t src;
+    log_mem_ctx_t ctx;
+    log_source_memory(&src, &ctx, g_mem.buf, g_mem.kept);
+    log_csv_opts_t opts;
+    log_csv_opts_default(&opts);
+    log_analysis_t an;
+    CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
+    CHECK_EQ(an.row_count, 20);         /* the rows the commit covered */
+    CHECK_EQ(an.delimiter, ';');
+    CHECK_EQ(an.ragged_rows, 0);
+}
+
+/*
+ * Rows slower than 20 Hz are committed on the clock rather than on the count,
+ * so a run whose samples arrive every 300 ms does not carry ten seconds of
+ * itself uncommitted.
+ */
+TEST_CASE(a_slow_run_is_committed_on_the_clock_rather_than_on_the_count)
+{
+    fresh(-1);
+    log_writer_t w = writer();
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+
+    for (int i = 1; i <= 3; ++i) {
+        CHECK(log_writer_row(&w, (float)i * 0.3f, &b));
+    }
+    CHECK_EQ(g_mem.commits, 0);            /* 0.9 s, three rows: not yet */
+    CHECK_EQ((int)log_writer_pending(&w), 3);
+
+    CHECK(log_writer_row(&w, 1.2f, &b));   /* 1.2 s since the last commit */
+    CHECK_EQ(g_mem.commits, 1);
+    CHECK_EQ((int)log_writer_pending(&w), 0);
+}
+
+/* A run that has gone quiet is committed by hand, and an empty one is not: a
+ * commit with nothing pending is a card transaction that buys nothing. */
+TEST_CASE(a_commit_by_hand_keeps_the_tail_and_an_empty_one_costs_nothing)
+{
+    fresh(-1);
+    log_writer_t w = writer();
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+
+    CHECK(log_writer_commit(&w));          /* nothing written yet */
+    CHECK_EQ(g_mem.commits, 0);
+
+    CHECK(log_writer_row(&w, 0.05f, &b));
+    CHECK_EQ((int)log_writer_pending(&w), 1);
+    CHECK(log_writer_commit(&w));
+    CHECK_EQ(g_mem.commits, 1);
+    CHECK_EQ((int)g_mem.kept, (int)g_mem.len);
+
+    CHECK(log_writer_commit(&w));          /* and again changes nothing */
+    CHECK_EQ(g_mem.commits, 1);
+    CHECK(!log_writer_failed(&w));
+}
+
+/*
+ * A commit the sink refuses is the card gone.  It latches like a failed
+ * write, because rows the sink will not keep are rows the file has lost.
+ */
+TEST_CASE(a_commit_the_sink_refuses_latches_the_writer)
+{
+    fresh(-1);
+    log_writer_t w = writer();
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+
+    CHECK(log_writer_row(&w, 0.05f, &b));
+    g_mem.commit_fails = true;
+    CHECK(!log_writer_commit(&w));
+    CHECK(log_writer_failed(&w));
+    CHECK(!log_writer_row(&w, 0.10f, &b));
+    CHECK_EQ((int)w.rows, 1);
+}
+
+/* A sink with nothing to commit to writes the same file. */
+TEST_CASE(a_sink_that_needs_no_commit_still_writes_the_whole_run)
+{
+    fresh(-1);
+    log_writer_t w = writer_without_commit();
+    CHECK_EQ(write_run(&w, 120), 120);
+    CHECK(!log_writer_failed(&w));
+    CHECK_EQ(g_mem.commits, 0);
+    CHECK_EQ((int)log_writer_pending(&w), 0);
+
+    log_source_t src;
+    log_mem_ctx_t ctx;
+    log_source_memory(&src, &ctx, g_mem.buf, g_mem.len);
+    log_csv_opts_t opts;
+    log_csv_opts_default(&opts);
+    log_analysis_t an;
+    CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
+    CHECK_EQ(an.row_count, 120);
 }
 
 int main(void)
@@ -341,7 +550,14 @@ int main(void)
     RUN(a_non_finite_reading_is_written_as_an_absent_cell);
     RUN(the_header_is_written_once_and_without_being_asked);
     RUN(a_failing_sink_latches_and_stops);
+    RUN(a_commit_after_a_failure_is_refused);
     RUN(what_survived_a_failure_still_reads);
     RUN(a_writer_with_no_sink_fails_rather_than_crashes);
+    RUN(no_more_than_one_interval_of_a_run_is_ever_uncommitted);
+    RUN(what_a_power_cut_leaves_is_a_short_run_and_not_an_empty_file);
+    RUN(a_slow_run_is_committed_on_the_clock_rather_than_on_the_count);
+    RUN(a_commit_by_hand_keeps_the_tail_and_an_empty_one_costs_nothing);
+    RUN(a_commit_the_sink_refuses_latches_the_writer);
+    RUN(a_sink_that_needs_no_commit_still_writes_the_whole_run);
     return test_summary("logwriter");
 }

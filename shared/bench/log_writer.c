@@ -41,6 +41,43 @@ void log_writer_init(log_writer_t *w, const log_sink_t *sink)
     }
 }
 
+/*
+ * Tell the sink to keep what it has been given.
+ *
+ * A writer that has already failed is refused before anything is attempted.
+ * The file has a hole in it from the row that failed, and a flush that
+ * succeeds after that would clear the pending count and report a commit --
+ * which is a caller being told an incomplete file is safely on the card.
+ * Once failed, always failed; the file is closed and said to be short.
+ *
+ * Nothing to commit is success, not a transaction: on a card an empty commit
+ * costs a directory write and buys nothing.
+ */
+static bool commit(log_writer_t *w)
+{
+    if (w->failed) {
+        return false;
+    }
+    if (w->pending == 0u) {
+        return true;
+    }
+    if (w->sink.flush != NULL && !w->sink.flush(w->sink.ctx)) {
+        w->failed = true;
+        return false;
+    }
+    w->pending     = 0u;
+    w->committed_s = w->last_s;
+    return true;
+}
+
+bool log_writer_commit(log_writer_t *w)
+{
+    if (w == NULL) {
+        return false;
+    }
+    return commit(w);
+}
+
 bool log_writer_header(log_writer_t *w)
 {
     if (w == NULL || w->header_done) {
@@ -120,5 +157,18 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
         return false;
     }
     ++w->rows;
+    ++w->pending;
+    w->last_s = t_s;
+
+    /*
+     * Committed on rows or on the run's own clock, whichever comes first.
+     * The clock bound is what holds when rows arrive slower than 20 Hz --
+     * the far end answering every other poll, say -- where waiting for
+     * LOG_WRITER_FLUSH_ROWS would leave more than a second of run at risk.
+     */
+    if (w->pending >= LOG_WRITER_FLUSH_ROWS
+        || (t_s - w->committed_s) >= LOG_WRITER_FLUSH_S) {
+        return commit(w);
+    }
     return true;
 }

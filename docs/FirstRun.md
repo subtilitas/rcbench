@@ -254,14 +254,19 @@ builds. Record real values for each:
 | Output goes to mid-travel after ½ s | Working as intended — nothing wrote to that channel, so it went to its rest: mid-travel for a servo, zero for a motor. The pulses continue while the bench is armed |
 | Pulses stop altogether | Not the timeout. Something released the pin, disarmed, or stopped the bench |
 
-**If the bench misbehaves in a way that points at the panel**, the two newest
-and least proven things are both mine and both only compiler-checked:
+**If the bench misbehaves in a way that points at the panel**, the three
+newest and least proven things are all mine and all only compiler-checked:
 
-- the **flash keeper task** (`artkeep`), and
-- the **artwork slice** inside the control task's poll loop.
+- the **flash keeper task** (`artkeep`),
+- the **artwork slice** inside the control task's poll loop, and
+- the **run log task** (`runlog`), which owns every write to the SD (Secure
+  Digital) card.
 
-Both are inert on a coprocessor that reports no photograph, which is the
-quickest way to rule them out.
+The first two are inert on a coprocessor that reports no photograph, which is
+the quickest way to rule them out. The third is inert with no card in the
+slot. With a card it appends a line to `RCBENCH.LOG` whenever a fault is
+raised, armed or not; the run file is what waits for an arm, and for the
+first row after it.
 
 ---
 

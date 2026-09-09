@@ -237,6 +237,35 @@ so every file on the card is dated 1980-01-01. A run outranks a file the bench
 did not write, so a card holding 48 or more runs lists no other file. Delete
 old runs on a computer to get one back.
 
+A run is committed to the card every 20 rows or 1000 ms of run, whichever
+comes first. Power lost mid-run costs the rows the commit has not finished
+with and the rows still in the queue between the control task and the card's
+own task: under 1.0 s of run while the card keeps up, and 84 rows, 4.20 s at
+the panel's 20 Hz sample rate, if the card has stalled and the queue is full.
+The rest of the file is readable either way. The card is written by a task of its own: an SD (Secure
+Digital) card is allowed 250 ms to finish a write, and the task that beats the
+safety line has a ceiling of 150 ms.
+
+Eight messages say what a card did to a run. Each appears on the band:
+
+| Message | What happened |
+|---|---|
+| `no card -- this run is not recorded` | nothing is mounted, so the run was never opened |
+| `card unreadable -- run not recorded` | the card would not list, so a run number could not be chosen |
+| `card full or unwritable -- run not recorded` | no run number could be created |
+| `the card did not keep up -- run not recorded` | every row was dropped, so there is no file for this run at all |
+| `the card fell behind -- the log has gaps` | some rows were dropped; the file's time column shows where |
+| `the card stopped taking rows -- run not recorded past here` | a write failed mid-run; every later row is rejected |
+| `the card stopped taking rows -- the log is short` | the same failure, said again when the run closes |
+| `the card failed on the last write -- the log is short` | the close failed, so the rows since the last commit are not in the file |
+
+The first four mean there is no file to look for. The last four mean there is
+one and it stops early.
+
+A run being written is not offered in LOGS. A file's length lives in its
+directory entry and is written when the file is closed, so a run still open
+would list at its last committed length and read as a finished one.
+
 ## Setup
 
 ![Setup](img/setup.png)

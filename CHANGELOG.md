@@ -8,6 +8,32 @@ history is in git.
 
 ### Fixed
 
+- **A power cut during a run left a 0-byte CSV (comma-separated values)
+  file.** The run log was written and never committed, and closed only on the
+  disarm edge. FAT (file allocation table) keeps a file's length in its
+  directory entry, and `fwrite` alone never writes that entry, so the whole
+  run was lost whatever the data sectors held. The file is committed every 20
+  rows or 1000 ms of run, whichever comes first, with `fflush` followed by
+  `fsync`. What a power cut costs is that commit interval plus the queue
+  between the control task and the logger: at most `LOG_WRITER_FLUSH_ROWS`
+  (20) uncommitted rows in the writer and at most `LOG_Q_LEN` (64) in the
+  queue. Twenty and not nineteen -- the count reaches 20 before the commit is
+  attempted and is cleared only once it succeeds, so those rows are not
+  durable for as long as the card takes. With a card keeping up the queue is
+  empty and the cost is under 1.0 s of run; with a card stalled it is 84 rows,
+  4.20 s at the panel's 20 Hz sample rate. Past 64 queued rows the control
+  task drops them and counts them, so the loss stops growing there and is
+  reported when the run closes.
+- **The run log put SD (Secure Digital) card writes on the safety line.** Row
+  writes, the file-name scan and the close ran on the control task, which
+  drives the heartbeat on GPIO6 and reads STOP. That task's ceiling is
+  HEARTBEAT_MAX_GAP_MS (150 ms) and the coprocessor fails safe after 200 ms of
+  link silence, while the SD specification allows a card 250 ms to finish one
+  single-block write: a card that paused was a dropped heartbeat, not a late
+  row. Every card access is now on the `runlog` task, and rows cross to it on
+  a queue the control task never waits on. A card that falls behind the run
+  costs rows, which are counted and reported on the panel when the run closes,
+  rather than costing the heartbeat.
 - **A save on the OUTPUTS screen cost CAN (Controller Area Network) frames.**
   The coprocessor erased and programmed one flash sector per save, which held
   interrupts off for a measured 19,174 to 19,186 us; a frame is about 130 us

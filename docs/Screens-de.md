@@ -255,6 +255,39 @@ Karte das Datum 1980-01-01. Ein Lauf geht einer Datei vor, die der Prüfstand
 nicht geschrieben hat, also listet eine Karte mit 48 oder mehr Läufen keine
 andere Datei mehr. Alte Läufe am Rechner löschen, um eine zurückzuholen.
 
+Ein Lauf wird alle 20 Zeilen oder 1000 ms Laufzeit auf die Karte festgeschrieben,
+je nachdem, was zuerst eintritt. Ein Stromausfall mitten im Lauf kostet die
+Zeilen, mit denen das Festschreiben noch nicht fertig ist, und die Zeilen, die
+noch in der Queue zwischen der Control-Task und der Karten-Task stehen: unter
+1,0 s Laufzeit, solange die Karte mitkommt, und 84 Zeilen, 4,20 s bei den 20 Hz
+des Panels, wenn die Karte hängt und die Queue voll ist. Der Rest der Datei
+bleibt in beiden Fällen lesbar. Geschrieben wird von
+einer eigenen Task. Eine SD-Karte (Secure Digital) darf sich für einen Schreibvorgang
+250 ms Zeit nehmen, und die Task, die die Sicherheitsleitung schlägt, hat eine
+Obergrenze von 150 ms.
+
+Acht Meldungen sagen, was die Karte mit einem Lauf gemacht hat. Jede
+erscheint im Band:
+
+| Meldung | Was passiert ist |
+|---|---|
+| `no card -- this run is not recorded` | nichts ist gemountet, der Lauf wurde nie geöffnet |
+| `card unreadable -- run not recorded` | die Karte ließ sich nicht auflisten, es war keine Laufnummer wählbar |
+| `card full or unwritable -- run not recorded` | es ließ sich keine Laufnummer anlegen |
+| `the card did not keep up -- run not recorded` | jede Zeile wurde verworfen, es gibt für diesen Lauf gar keine Datei |
+| `the card fell behind -- the log has gaps` | einzelne Zeilen wurden verworfen; die Zeitspalte der Datei zeigt, wo |
+| `the card stopped taking rows -- run not recorded past here` | ein Schreibvorgang ist mitten im Lauf fehlgeschlagen, jede weitere Zeile wird abgewiesen |
+| `the card stopped taking rows -- the log is short` | derselbe Fehler, beim Schließen des Laufs noch einmal gemeldet |
+| `the card failed on the last write -- the log is short` | das Schließen ist fehlgeschlagen, die Zeilen seit dem letzten Festschreiben fehlen in der Datei |
+
+Bei den ersten vier gibt es keine Datei zu suchen. Bei den letzten vier gibt
+es eine, und sie hört zu früh auf.
+
+Ein Lauf, der gerade geschrieben wird, erscheint nicht in LOGS. Die Länge einer
+Datei steht in ihrem Verzeichniseintrag und wird beim Schließen geschrieben, ein
+noch offener Lauf stünde also mit seiner zuletzt festgeschriebenen Länge in der
+Liste und läse sich wie ein fertiger.
+
 ## Setup
 
 ![Setup](img/setup.png)
