@@ -907,16 +907,37 @@ jobs:
           # which would also make a transient upload failure unrecoverable.
           # Creating only when absent and uploading with --clobber makes the
           # step repeatable.
-          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          draft=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
+                    --json isDraft --jq .isDraft 2>/dev/null || echo absent)
+          if [ "$draft" = absent ]; then
             gh release create "$TAG" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$SHA" \
               --draft \
               --title "sigrok for the LA2016, Debian 13 arm64" \
               --notes-file notes.md
+            draft=true
           fi
-          gh release upload "$TAG" "$tarball" "$dir/SHA256SUMS" \
-            --repo "$GITHUB_REPOSITORY" --clobber
+          if [ "$draft" = true ]; then
+            # Still a draft, so nobody can be downloading these: --clobber
+            # deletes each existing asset before uploading its replacement,
+            # which is safe here and is how a half-finished attempt is
+            # recovered.
+            gh release upload "$TAG" "$tarball" "$dir/SHA256SUMS" \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            # Already published.  --clobber would delete a file the public can
+            # download and leave the release without it if the upload then
+            # failed, so an existing asset is left alone and only a missing
+            # one is added.  A rerun over a complete release does nothing.
+            have=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
+                     --json assets --jq '.assets[].name')
+            for f in "$tarball" "$dir/SHA256SUMS"; do
+              if ! printf '%s\n' "$have" | grep -qxF "$(basename "$f")"; then
+                gh release upload "$TAG" "$f" --repo "$GITHUB_REPOSITORY"
+              fi
+            done
+          fi
           # --latest=false, explicitly.  The default is "automatic based on
           # date and version", and it does take the badge: the first bench
           # release published took Latest from v0.8.1, which is where somebody
