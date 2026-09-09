@@ -80,28 +80,38 @@ fail here. A second job unpacks the tarball in a container with no `-dev` and
 no sigrok package, installs only the recorded runtime closure, and repeats
 both checks plus a scan that touches libusb.
 
-**The workflow has never run.** `workflow_dispatch` needs the file on the
-default branch, so it cannot be dispatched from the branch that adds it: the
-repository's workflow list holds `ci.yml`, `docs.yml` and `release.yml` and
-not this one. The first execution comes after it merges.
-
-What is established is that it is well-formed and that its inputs exist. The
-YAML parses to two jobs and eighteen `run` bodies, every one of which passes
-`bash -n`, and no `${{ }}` expression is interpolated into any of them. Both
-pinned source commits resolve upstream -- libsigrok
+**The workflow has run and the tarball exists.** Three jobs: the build, a
+verify that unpacks the tarball in a container holding no `-dev` and no sigrok
+package and repeats the assertions there, and a publish that attaches it to a
+release. Run 34371857987 on 2026-09-09 built and verified it from libsigrok
 `0bc2487778e660f4d3116729b6f4aee2b1996bb0` of 2025-11-20 and sigrok-cli
-`f44dd91347e7ac797cefc23162b9fcf0b7329f1f` of 2024-08-26 -- and
-`src/hardware/kingst-la2016` is present at that libsigrok commit as `api.c`,
-`protocol.c` and `protocol.h`. Whether it builds is open, and so is whether
-the tarball installs on this host: the second job proves it in a container
-with no sigrok package, which is deliberately not the case this bench is.
+`f44dd91347e7ac797cefc23162b9fcf0b7329f1f` of 2024-08-26, producing
+libsigrok 0.6.0-git and sigrok-cli 0.8.0-git against Debian 13.6.
+
+The run fails unless the built binary lists `kingst-la2016` and the libsigrok
+it loads reports a commit that is a prefix of the cloned SHA -- a binary that
+lists the driver and loads Debian's 0.5.2 underneath would otherwise pass in
+CI and fail on the bench.
+
+Open: whether the tarball installs on this host. The verify job proves it in a
+container with no sigrok package, which is deliberately not the case this
+bench is -- the distribution's `sigrok-cli` stays installed here, and the
+`PATH` step is what decides which one runs.
 
 Clearing that gate means the driver exists. It says nothing about whether the
 analyser captures: the FX2 microcontroller firmware and the FPGA bitstreams
 are Kingst material with no redistribution grant, so the tarball carries
-`share/sigrok-firmware/README.txt` naming the five files and where the driver
+`share/sigrok-firmware/README.txt` naming the files and where the driver
 looks for them, and not the files. They are extracted from the vendor
-software with `sigrok-fwextract-kingst-la2016`. `host/selftest.sh` reports the
+software with `sigrok-fwextract-kingst-la2016`, a Python script from
+sigrok-util that needs no build. The vendor's download page is `/en/download`.
+KingstVIS v3.6.6 yields 18 files rather than the five the extractor's man page
+documents against v3.5.0, and all 18 are installed because which one an
+analyser needs is decided at scan time from two EEPROM bytes. The five the man
+page documents come out of v3.6.6 with identical sizes and CRC-32 values.
+Installed to `/usr/share/sigrok-firmware`, which is in the default
+`XDG_DATA_DIRS`, so a libsigrok under `/opt/sigrok` finds them without
+`SIGROK_FIRMWARE_DIR` being set. `host/selftest.sh` reports the
 two gates separately -- it asks the library what drivers it carries, then asks the
 instrument for samples -- so a missing driver reads as a missing driver, a
 missing bitstream as a capture that returns nothing, and neither as an
@@ -118,7 +128,8 @@ keeps working untouched.
 The tarball unpacks at `/` and holds `opt/sigrok` and nothing else, which the
 workflow asserts against the member list before upload. Installing it is:
 
-    gh run download <run-id> -n sigrok-kingst-la2016-debian13-arm64
+    curl -LO https://github.com/subtilitas/rcbench/releases/download/<tag>/sigrok-kingst-la2016-debian13-arm64.tar.gz
+    curl -LO https://github.com/subtilitas/rcbench/releases/download/<tag>/SHA256SUMS
     sha256sum -c SHA256SUMS
     sudo tar -C / -xzf sigrok-kingst-la2016-debian13-arm64.tar.gz
     sudo apt-get install -y --no-install-recommends \
@@ -131,13 +142,17 @@ workflow asserts against the member list before upload. Installing it is:
     sudo adduser "$USER" plugdev        # log out and back in to take effect
     export PATH=/opt/sigrok/bin:$PATH
 
-**The artifact is a zip holding the tarball and its `SHA256SUMS`.** An
-artifact uploaded unarchived cannot be fetched: both `actions/download-artifact`
-and `gh run download` expect a zip and fail on a bare file with `zip: not a
-valid zip file`. The zip does not alter the tarball's bytes, and the checksum
-line is there to confirm that rather than to be taken on trust -- check it
-against the file's own `SHA256SUMS` rather than against a sum computed here,
-because a sum computed from a bad download matches itself.
+**It comes from a release, not from a workflow artifact.** Actions artifacts
+need a token even on a public repository -- the download endpoint answers 401
+without one -- so a bench with no login cannot fetch one, and an artifact
+expires. The workflow attaches the tarball and its `SHA256SUMS` to a release
+tagged `testbench-sigrok-<run id>`, and release assets are public,
+unauthenticated and permanent. The tag does not begin with `v`, so it does not
+trigger the firmware release workflow.
+
+Check the download against the `SHA256SUMS` attached beside it rather than
+against a sum computed here: a sum computed from a bad download matches
+itself.
 
 **The packages are a step.** The tarball carries `sigrok-cli` and
 `libsigrok.so.4` and nothing else it links against. `RUNTIME-DEPENDS.txt` is
@@ -149,9 +164,14 @@ before `host/selftest.sh` gets a chance to say anything.
 **The udev rules are a step, and skipping them reads as no analyser.** The
 tarball leaves both rules under `/opt/sigrok/share/sigrok-udev`, which udev
 does not scan. Debian's libsigrok 0.5.2 ships rules that predate this driver
-and carry no entry for `77a1:01a2`, so the LA2016 gets no `ID_SIGROK` tag,
-`plugdev` membership grants nothing, and a scan run as a normal user returns
-no devices. That is the same reading as an unplugged instrument. Both files
+and carry no entry for `77a1`, so the LA2016 gets no `ID_SIGROK` tag and
+neither the `uaccess` nor the `plugdev` rule fires. Measured on the bench
+host: the device node stays `crw-rw-r-- root root`, read-only for the
+operator, against a driver that has to write to it to upload the FX2
+firmware. With the shipped rules installed, reloaded and triggered, the node
+is `root:plugdev` with `uaccess` and opening it `O_RDWR` succeeds; no replug
+is needed. Without them a scan as a normal user returns no devices, which is
+the same reading as an unplugged instrument. Both files
 are needed and the numbers matter: `60-` tags the device and `61-` acts on the
 tag, so the order they sort in is what makes them work.
 
