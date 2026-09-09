@@ -577,6 +577,38 @@ TEST_CASE(another_pages_answer_is_not_this_pages_answer)
     CHECK(host.pending);
 }
 
+/*
+ * A refusal naming a register between two fragment starts belongs to some
+ * other request.  A 32-register write goes out at offsets 0, 4 ... 28, so a
+ * NACK at offset 2 was never any fragment of it: accepting one would end the
+ * transaction and hand the caller a reason that came from somewhere else.
+ */
+TEST_CASE(a_refusal_off_a_fragment_start_is_not_this_write)
+{
+    fresh();
+    const uint8_t wide = (uint8_t)WIDE_COUNT;
+    uint16_t v[LINK_MAX_REGS];
+    link_msg_t req;
+    for (uint8_t i = 0; i < wide; ++i) {
+        v[i] = (uint16_t)(0x100 + i);
+    }
+    CHECK(link_host_write(&host, LINK_PAGE_OUTPUTS, 0, wide, v, 0, &req));
+
+    link_msg_t nack = { .op = LINK_OP_NACK, .page = LINK_PAGE_OUTPUTS,
+                        .offset = 2, .count = 1 };
+    nack.regs[0] = LINK_NACK_BAD_VALUE;
+    link_msg_t got;
+    CHECK(!link_host_accept(&host, &nack, 10u, &got));
+    CHECK_EQ(host.mismatches, 1u);
+    CHECK(host.pending);
+
+    /* The fragment start beside it is one this write sent, and answers it. */
+    nack.offset = LINK_CAN_REGS_PER_FRAME;
+    CHECK(link_host_accept(&host, &nack, 11u, &got));
+    CHECK_EQ(got.op, LINK_OP_NACK);
+    CHECK(!host.pending);
+}
+
 int main(void)
 {
     RUN(a_page_wider_than_a_frame_comes_back_whole);
@@ -592,5 +624,6 @@ int main(void)
     RUN(a_reply_to_an_abandoned_question_is_refused);
     RUN(the_devices_watchdog_still_runs_on_can);
     RUN(another_pages_answer_is_not_this_pages_answer);
+    RUN(a_refusal_off_a_fragment_start_is_not_this_write);
     return test_summary("link_loopback");
 }
