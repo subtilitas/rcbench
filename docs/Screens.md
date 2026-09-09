@@ -244,9 +244,20 @@ still in the queue between the control task and the card's own task: under
 sample rate, if the card has stalled and the queue is full. The rest of the
 file is readable either way. The card is written by a task of its own: an SD (Secure
 Digital) card is allowed 250 ms to finish a write, and the task that beats the
-safety line has a ceiling of 150 ms. If that task falls behind the run, the
-panel says `the card fell behind -- the log has gaps` when the run closes and
-the file's time column shows where the gap is.
+safety line has a ceiling of 150 ms.
+
+Four messages say what a card did to a run. Each appears on the band:
+
+| Message | What happened |
+|---|---|
+| `the card fell behind -- the log has gaps` | rows were dropped; the file's time column shows where |
+| `the card did not keep up -- run not recorded` | every row was dropped, so there is no file for this run at all |
+| `the card stopped taking rows -- run not recorded past here` | a write failed mid-run; every later row is rejected |
+| `the card failed on the last write -- the log is short` | the close failed, so up to 19 rows are not in the file |
+
+A run being written is not offered in LOGS. A file's length lives in its
+directory entry and is written when the file is closed, so a run still open
+would list at its last committed length and read as a finished one.
 
 ## Setup
 
