@@ -104,8 +104,9 @@ Panel als Leitung ohne Flanken gelesen wird.
   leert die Queue vom anderen Kern, das Prüfen eines Eintrags entscheidet
   also nicht, welcher entfernt wird. Stattdessen wird der Verlust gezählt,
   und der Frame, der ihn bemerkt, sagt dem obersten Screen, dass sein Bild
-  vom Glas veraltet ist; der Screen verwirft jede laufende Geste, was nichts
-  kommandiert, genau wie ein frühes Loslassen. Beide Queues werden gezählt --
+  vom Glas veraltet ist; der Screen verwirft jede laufende Geste. Das
+  kommandiert nichts, genau wie ein frühes Loslassen, mit der einen Ausnahme
+  weiter unten. Beide Queues werden gezählt --
   die Event-Queue des Treibers verwirft ihren ältesten Eintrag aus demselben
   Grund -- und die Zahl wird nach dem Leeren und vor dem Tick des Frames
   gelesen, ein Event, das während des Durchlaufs verloren geht, wird also in

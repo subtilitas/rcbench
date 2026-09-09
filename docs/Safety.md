@@ -92,8 +92,9 @@ unpowered or unplugged panel reads as a line that is not edging.
   render task drains the queue from the other core, so inspecting an entry
   does not decide which one is removed. The loss is counted instead, and the
   frame that observes it tells the screen on top that its record of the glass
-  is stale; the screen drops any gesture in progress, which asks for nothing,
-  exactly as letting go early does. Both queues are counted -- the driver's
+  is stale; the screen drops any gesture in progress. That asks for nothing,
+  exactly as letting go early does, with the one exception below. Both queues
+  are counted -- the driver's
   own event queue evicts its oldest for the same reason -- and the count is
   read after the drain and before the frame's tick, so an event lost while
   the loop is running is answered in that frame rather than the next. The
