@@ -287,6 +287,9 @@ void outputs_all_off(outputs_t *o)
     }
     for (unsigned i = 0; i < OUT_MAX_CHANNELS; ++i) {
         o->channel[i].actual = o->channel[i].rest;
+        /* And the part-unit the slew was carrying: a run starts from a whole
+         * unit, not from wherever the last one stopped. */
+        o->channel[i].slew_rem = 0u;
     }
 }
 
@@ -309,6 +312,10 @@ void outputs_step(outputs_t *o, uint32_t now_ms)
          * and takes none of the others with it. */
         if (outputs_overdue(o, (uint8_t)i, now_ms)) {
             c->actual = c->rest;
+            /* And the part-unit with it: a channel that timed out and is
+             * commanded again starts from a whole unit, the same as one that
+             * was standing at its command. */
+            c->slew_rem = 0u;
             continue;
         }
         /* Immediate means immediate.  Testing the elapsed time first would
@@ -318,29 +325,77 @@ void outputs_step(outputs_t *o, uint32_t now_ms)
             c->actual = c->command;
             continue;
         }
+        /*
+         * The remainder is carried, not rounded away and not rounded up.
+         *
+         * Truncating each step on its own stops a slew slower than one unit
+         * a step from ever moving.  Rounding each step up instead delivers at
+         * least one unit per call whatever slew_per_s says, and the
+         * coprocessor's loop steps about once a millisecond, so every rate
+         * under 1000 units a second rendered as 1000 -- SPEED on the servo
+         * screen is 2 * OUT_SPAN * pct / 100, so every setting from 1% to 49%
+         * moved the horn at the same rate as 50%.
+         *
+         * Carrying the thousandths does both: the rate the caller asked for,
+         * and a slow slew that always arrives.
+         *
+         * A channel already at its command earns nothing.  Time spent
+         * standing still is not credit towards the next command: keeping it
+         * would let a channel sit for a second at 1 unit a second and then
+         * move a whole unit on the first millisecond of the next command,
+         * which is the rate limit not being one.
+         */
+        if (c->command == c->actual) {
+            c->slew_rem = 0u;
+            continue;
+        }
+        /*
+         * A throttle coming down is not ramped, and not waited for either.
+         * Reducing throttle is the safe direction, so it happens on the pass
+         * the command arrives whatever the elapsed time would have
+         * contributed -- below, a step that rounds to zero returns early, and
+         * putting the drop after that would delay it by up to
+         * 1000 / slew_per_s ms.  A surface has no safe direction and is
+         * ramped both ways.
+         */
+        if (c->command < c->actual && c->role == OUT_ROLE_THROTTLE) {
+            c->actual = c->command;
+            c->slew_rem = 0u;
+            continue;
+        }
         if (dt_ms == 0u) {
             continue;
         }
         /*
-         * Rounded up, so a slew slow enough that a step lands under one unit
-         * still moves.  Truncating there gives an output that never arrives.
+         * The elapsed time is capped where capping it can discard nothing.
+         *
+         * A step of OUT_SPAN covers any distance a channel can be from its
+         * command, so any longer interval than that arrives all the same, and
+         * the remainder is cleared on arrival by the branch above.  What the
+         * cap buys is a product that stays inside a uint32_t without a 64-bit
+         * divide in the coprocessor's loop: slew_per_s * cap is at most
+         * 1000 * OUT_SPAN + slew_per_s.
          */
-        const uint32_t step = ((uint32_t)c->slew_per_s * dt_ms + 999u) / 1000u;
+        const uint32_t cap = (1000u * (uint32_t)OUT_SPAN) / c->slew_per_s + 1u;
+        const uint32_t span_ms = (dt_ms > cap) ? cap : dt_ms;
+        const uint32_t num = (uint32_t)c->slew_per_s * span_ms
+                             + (uint32_t)c->slew_rem;
+        const uint32_t step = num / 1000u;
+        c->slew_rem = (uint16_t)(num - step * 1000u);
+        if (step == 0u) {
+            continue;
+        }
 
         if (c->command > c->actual) {
             const uint32_t next = (uint32_t)c->actual + step;
             c->actual = (next > c->command) ? c->command : (uint16_t)next;
-        } else if (c->command < c->actual) {
-            /* A throttle coming down is not ramped: reducing throttle is the
-             * safe direction.  A surface has no safe direction, so it is
-             * ramped both ways. */
-            if (c->role == OUT_ROLE_THROTTLE) {
-                c->actual = c->command;
-            } else {
-                const uint32_t back = (uint32_t)c->actual - step;
-                c->actual = (c->actual < step || back < c->command)
-                            ? c->command : (uint16_t)back;
-            }
+        } else {
+            /* Below the command, and a surface: the throttle's own case
+             * returned above.  Equal returned above too, so this is a ramp
+             * down and not a no-op. */
+            const uint32_t back = (uint32_t)c->actual - step;
+            c->actual = (c->actual < step || back < c->command)
+                        ? c->command : (uint16_t)back;
         }
     }
 }

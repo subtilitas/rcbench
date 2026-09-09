@@ -834,11 +834,12 @@ int main(void)
     /*
      * Then what was saved, over the defaults.  This configures the outputs;
      * it does not drive them.  Every driver is gated by outputs_driving(),
-     * which wants the bench armed, the heartbeat trusted and a command
-     * arriving, so a restored binding claims its pins and holds them at idle
-     * until somebody arms.  The channels are not restored: a command is not
-     * a configuration, and a bench that came back holding the last throttle
-     * it was given is exactly what must not happen.
+     * which is the bank's armed flag, and this end sets that flag only while
+     * the ARM register is set, the link is out of failsafe and the heartbeat
+     * is trusted, so a restored binding claims its pins and holds them at
+     * idle until somebody arms.  The channels are not restored: a command is
+     * not a configuration, and a bench that came back holding the last
+     * throttle it was given is exactly what must not happen.
      */
     out_store_t saved;
     if (out_store_load(&saved)) {
@@ -893,6 +894,31 @@ int main(void)
         can_service(now);
 
         /*
+         * Two independent watchdogs, and both before the bank is armed.  The
+         * link watchdog says the panel has stopped talking; this one says the
+         * panel has stopped running.  A panel wedged mid-frame can still have
+         * an interrupt answering polls, so the link watchdog alone would not
+         * fire.
+         *
+         * Both are polled here rather than left to the end of the pass,
+         * because silence generates no event: s_beat.alive and s_dev.failsafe
+         * are only as fresh as the last call that looked, and arming on last
+         * pass's answer renders one more service of every output after the
+         * line has gone past HEARTBEAT_MAX_GAP_MS (150 ms) or the link past
+         * its own silence timeout.
+         *
+         * After can_service() above, so a frame that arrived this pass has
+         * already cleared the silence before it is judged.
+         */
+        const bool was_beating = s_beat.alive;
+        if (!heartbeat_poll(now) && was_beating) {
+            outputs_off();   /* fires on the edge only */
+        }
+        if (link_dev_tick(&s_dev, now)) {
+            outputs_off();   /* fires on the edge only */
+        }
+
+        /*
          * Arming is the coprocessor's judgement: the panel asks and this end
          * decides, recomputed every pass from what only this end knows.
          * outputs_arm() is idempotent and does not stamp the clock, so
@@ -917,24 +943,14 @@ int main(void)
         }
 
         /*
-         * Two independent watchdogs.  The link watchdog says the panel has
-         * stopped talking; this one says the panel has stopped running.  A
-         * panel wedged mid-frame can still have an interrupt answering polls,
-         * so the link watchdog alone would not fire.
-         */
-        const bool was_beating = s_beat.alive;
-        if (!heartbeat_poll(now) && was_beating) {
-            outputs_off();   /* fires on the edge only */
-        }
-
-        /*
          * A deferred save, once nothing is driving and the writes have
          * stopped.  Writing flash stops this core with interrupts off for
          * longer than the heartbeat's window, so it cannot happen while an
-         * output is live; the monitor loses its edges across the write and
-         * has to re-acquire, which is why it waits for the bench to be idle
-         * rather than merely disarmed.  It also waits for the pages to stop
-         * arriving, so CHAN_CFG and OUTPUTS are saved as the pair they are.
+         * output is live: the monitor loses its edges across the write and
+         * has to re-acquire.  The gate is outputs_driving(), which is the
+         * bank's armed flag, so what the save waits for is a disarm.  It also
+         * waits for the pages to stop arriving, so CHAN_CFG and OUTPUTS are
+         * saved as the pair they are.
          */
         if (out_store_tick(outputs_driving(&s_outputs), now)) {
             /*
@@ -953,9 +969,5 @@ int main(void)
         /* Again straight after the report: printing to a USB host can take
          * milliseconds, and the part holds two frames. */
         can_service(now);
-
-        if (link_dev_tick(&s_dev, now)) {
-            outputs_off();   /* fires on the edge only */
-        }
     }
 }

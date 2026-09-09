@@ -34,6 +34,24 @@ history is in git.
   a queue the control task never waits on. A card that falls behind the run
   costs rows, which are counted and reported on the panel when the run closes,
   rather than costing the heartbeat.
+- **SPEED below 50% moved the servo horn at 50%.** `outputs_step()` rounded
+  each slew increment up -- `(slew_per_s * dt_ms + 999) / 1000` -- so a step
+  delivered at least one span unit whatever the rate said, and the
+  coprocessor's loop steps about once a millisecond. Every `slew_per_s` under
+  1,000 units a second therefore rendered as 1,000. SPEED on the servo screen
+  is `2 * OUT_SPAN * pct / 100`, so every setting from 1% to 49% crossed at
+  the same rate as 50%. The remainder is carried between steps instead: the
+  rate is the one asked for, and a slew slower than one unit a step still
+  arrives rather than being truncated to nothing. The elapsed time is capped
+  at `1000 * OUT_SPAN / slew_per_s`, which is the interval past which one step
+  covers the whole span and arrives regardless, so the cap discards nothing
+  that could move the channel and the multiply still fits a `uint32_t`.
+- **The coprocessor armed on the previous pass's heartbeat.** `outputs_arm()`
+  read the cached `s_beat.alive` and `heartbeat_poll()` ran after
+  `outputs_hw_service()`, so a line that went past `HEARTBEAT_MAX_GAP_MS`
+  (150 ms) got one more service of every output before the poll noticed.
+  Silence generates no event, so the poll is what notices it: it runs first
+  now, and the arm below it uses this pass's answer.
 
 - **Two servo pins 16 apart drove from one pulse width.** On the RP2350 a PWM
   (pulse-width modulation) channel is one compare register, and GPIO

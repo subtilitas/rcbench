@@ -87,6 +87,32 @@ Panel als Leitung ohne Flanken gelesen wird.
   Werts (0x5AFE) auf die Control-Page verlassen.
 - Bei Überstrom, Übertemperatur, Stall-Timeout und totem Link handelt der
   Koprozessor aus eigener Befugnis und meldet den Fehler beim nächsten Poll.
+- Ein scharfer Prüfstand treibt jeden gebundenen Pin, ob ihn etwas
+  kommandiert oder nicht. Ein Kanal, der 500 ms lang kein Kommando bekommt,
+  wird auf der Ruhelage seiner Rolle ausgegeben: gestoppt bei throttle,
+  zentriert bei surface. Zentriert ist die Mitte der Endpunkte dieses Kanals
+  — 1500 us über den voreingestellten 1000 bis 2000 us, 760 us über den 660
+  bis 860 us eines schmalen Servos. Das Timeout legt den Kanal auf diese
+  Ruhelage und lässt den Pin weiter treiben; beendet werden die Flanken durch
+  Entschärfen.
+- 1500 us an einem Empfängerausgang sind etwa halbes Gas. Was ein ESC tut,
+  der noch keinen Puls gesehen hat und dann 1500 us bekommt, ist an diesem
+  Prüfstand nicht gemessen: er kann mit etwa halbem Gas laufen, und er kann
+  das Scharfschalten verweigern, bis er einen Stopp gesehen hat. Ein Pin, der
+  als Servoausgang gebunden ist, kann daher einen laufenden Motor führen.
+- Das Gas erreicht einen Kanal mit der Rolle surface nicht, weil es die Pins
+  kommandiert, die die Bindung als Motoren führt. Ein Schreiben auf die
+  CHANNELS-Page erreicht ihn, weil diese Page Kanäle über den Index adressiert
+  und nicht über die Rolle.
+- In den ersten 500 ms nach dem Scharfschalten steht ein Kanal nicht auf
+  seiner Ruhelage. Das Scharfschalten stempelt die Uhr jedes Kanals, sodass
+  ein Kommando, das im entschärften Zustand gegeben wurde, nicht überfällig
+  ist und ausgegeben wird, bis es überfällig wird. Was ausgegeben wird, hängt
+  vom Slew des Kanals ab: ohne Slew ist der erste Schritt die ganze Strecke,
+  der Kanal steht also auf diesem Kommando; mit Slew hat das Entschärfen ihn
+  bereits auf die Ruhelage gestellt und er rampt von dort, höchstens
+  `slew_per_s * 500 / 1000` weit, bevor der Timeout ihn zurückholt. In beiden
+  Fällen treibt er, und beendet wird das durch ein Entschärfen.
 
 ## Heartbeat statt Enable-Pegel
 
