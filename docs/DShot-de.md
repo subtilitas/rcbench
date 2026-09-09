@@ -253,8 +253,14 @@ deshalb als Argument entgegen, statt ihn zu erschließen.
 
 Die Implementierung ist aus der veröffentlichten Beschreibung des Protokolls
 geschrieben. Alles Folgende wird von der Host-Suite gegen Frames geprüft, die
-derselbe Code baut; das belegt die Arithmetik und nicht die Leitung. Nichts
-davon war an einem Oszilloskop oder an einem ESC an diesem Prüfstand:
+derselbe Code baut; das belegt die Arithmetik und nicht die Leitung.
+
+Eines steht nicht auf dieser Liste. **Einfaches DShot hat auf dem
+Aufbau-Prüfstand einen Motor vom Panel aus laufen lassen**, damit liegt sein
+Bit-Timing innerhalb der Toleranz dieses einen ESC -- gegen einen ESC, ohne
+Messgerät am Pin, also ein Indiz und keine Messung. Nichts hiervon war an
+einem Oszilloskop, und jeder bidirektionale Punkt unten ist in jeder Hinsicht
+unbestätigt:
 
 - die Antwortrate von fünf Vierteln der DShot-Rate;
 - die Konvention für das führende Bit des Group Code;

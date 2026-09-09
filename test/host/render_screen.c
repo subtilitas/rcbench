@@ -12,6 +12,9 @@
  */
 
 #include <stdio.h>
+
+#include "link_pages.h"
+#include "rcbench_version.h"
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -206,13 +209,21 @@ static ui_screen_id_t id_of(const char *name)
  * every step answered, one of them with a warning. */
 static void pose_splash(void)
 {
-    splash_screen_set(SPLASH_STEP_BOARD,    SPLASH_OK,   "CH422G");
+    splash_screen_set(SPLASH_STEP_BOARD,    SPLASH_OK,
+                      "CH422G, panel fw " RCBENCH_VERSION_STRING);
     splash_screen_set(SPLASH_STEP_DISPLAY,  SPLASH_OK,   "800x480 39Hz");
     splash_screen_set(SPLASH_STEP_TOUCH,    SPLASH_OK,   "GT911 5pt");
     splash_screen_set(SPLASH_STEP_STORAGE,  SPLASH_WARN, "no card");
     splash_screen_set(SPLASH_STEP_SETTINGS, SPLASH_OK,   "NVS");
     splash_screen_set(SPLASH_STEP_LINK,     SPLASH_OK,   "256k 8N1");
-    splash_screen_set(SPLASH_STEP_IOMCU,    SPLASH_OK,   "proto 1.0 hw 0");
+    /* Built from the constants rather than typed: the coprocessor line went
+     * from 1.0 to 3.0 and gained a firmware field with this string untouched,
+     * so the screenshot on the wiki showed a protocol two majors old. */
+    char iomcu[48];
+    snprintf(iomcu, sizeof(iomcu), "proto %u.%u fw %s",
+             (unsigned)LINK_PROTOCOL_MAJOR, (unsigned)LINK_PROTOCOL_MINOR,
+             RCBENCH_VERSION_STRING);
+    splash_screen_set(SPLASH_STEP_IOMCU,    SPLASH_OK,   iomcu);
 }
 
 int main(int argc, char **argv)

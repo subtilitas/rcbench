@@ -894,9 +894,14 @@ static bool bring_up(void)
 
     /* The panel's own build, on the first line it draws.  It is the host, so
      * it publishes no identity page; without this the only version anywhere
-     * on the bench would be the coprocessor's. */
+     * on the bench would be the coprocessor's.
+     *
+     * "panel fw" and not "fw": the CH422G beside it is the I2C expander, a
+     * fixed-function part with no firmware of its own, and a line reading
+     * "CH422G fw 0.8.0" says the expander is running a build that does not
+     * exist. */
     splash_screen_set(SPLASH_STEP_BOARD, SPLASH_OK,
-                      "CH422G fw " RCBENCH_VERSION_STRING);
+                      "CH422G, panel fw " RCBENCH_VERSION_STRING);
 
     /*
      * Schema defaults, then the values the NVS (non-volatile storage) store
