@@ -627,7 +627,12 @@ jobs:
           ls -l dist
           # Recorded without the dist/ prefix so "sha256sum -c SHA256SUMS"
           # works from any directory holding the tarball.
-          ( cd dist && sha256sum "$TARBALL" ) | tee logs/SHA256SUMS
+          # Written into dist/ so it is uploaded with the tarball rather than
+          # into the separate logs artifact: a checksum that does not travel
+          # with the file it describes is a checksum nobody runs.  Recorded
+          # without the dist/ prefix so "sha256sum -c SHA256SUMS" works from
+          # whatever directory the file is unpacked into.
+          ( cd dist && sha256sum "$TARBALL" ) | tee dist/SHA256SUMS logs/SHA256SUMS
           tar -tzf "dist/$TARBALL" > logs/tarball-contents.txt
           wc -l < logs/tarball-contents.txt
           # grep -v, not grep -qv: the exit status of "quiet" combined with
@@ -659,16 +664,16 @@ jobs:
       - uses: actions/upload-artifact@v7
         id: upload-tarball
         with:
-          # archive: false uploads the tarball as itself rather than wrapping
-          # it in a zip, so the file that lands on the Pi is the file packed
-          # here.  action.yml states that with archive: false the name of the
-          # uploaded file becomes the artifact name, so name: is set to that
-          # same string: the artifact is called
-          # sigrok-kingst-la2016-debian13-arm64.tar.gz whichever of the two
-          # rules applies.
-          name: ${{ env.TARBALL }}
-          path: dist/${{ env.TARBALL }}
-          archive: false
+          # Zipped, which is the only shape the download side can read.  An
+          # artifact uploaded with archive: false is stored as the bare file,
+          # and both actions/download-artifact and `gh run download` expect a
+          # zip and fail on it with "zip: not a valid zip file" -- so an
+          # unarchived artifact cannot be fetched by the job below or by the
+          # bench.  The zip wraps the tarball without altering its bytes: what
+          # comes out of the unzip is the file packed here, which SHA256SUMS
+          # is there to confirm.
+          name: sigrok-kingst-la2016-debian13-arm64
+          path: dist
           if-no-files-found: error
 
       # The digest goes where the operator already is.  The install compares
@@ -718,12 +723,12 @@ jobs:
     steps:
       - uses: actions/download-artifact@v7
         with:
-          name: ${{ env.TARBALL }}
+          name: sigrok-kingst-la2016-debian13-arm64
 
-      # The artifact is stored unarchived, so what lands is the tarball.  The
-      # find covers the case where the download places it inside a directory
-      # named after the artifact, which is the same shape the install has to
-      # handle on the Pi.
+      # The action unzips into the working directory, so the tarball and its
+      # SHA256SUMS land beside each other.  The find covers the download
+      # placing them inside a directory named after the artifact, which is the
+      # same shape the bench has to handle.
       - name: Unpack the tarball at /
         run: |
           set -euo pipefail
@@ -733,7 +738,9 @@ jobs:
             echo "no regular file named $TARBALL in the download" >&2
             exit 1
           fi
-          sha256sum "$tarball"
+          # Checked, not printed.  This is the same command the bench runs,
+          # so a zip that altered the bytes fails here rather than there.
+          ( cd "$(dirname "$tarball")" && sha256sum -c SHA256SUMS )
           tar -C / -xzf "$tarball"
           cat "$PREFIX/MANIFEST.txt"
 
