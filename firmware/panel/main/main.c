@@ -1301,13 +1301,21 @@ static void log_open(uint32_t arm)
             fclose(probe);
             continue;
         }
+        /*
+         * Claimed before the file exists, not after it does.  fopen makes the
+         * directory entry visible, and the task that renders can walk the
+         * card between the two calls: it would find a run with no marker
+         * against it, cache its size and analyse it while the logger is
+         * about to start appending.  Cleared again if the open fails, so a
+         * card that refuses every number leaves no run claimed.
+         */
+        atomic_store(&s_log_open_run, (unsigned)i);
         s_log_file = fopen(path, "w");
         if (s_log_file != NULL) {
             s_log_next = i + 1;
-            /* Before the first row: from here until log_close() the viewer
-             * leaves this run alone. */
-            atomic_store(&s_log_open_run, (unsigned)i);
             ESP_LOGI(TAG, "logging to %s", path);
+        } else {
+            atomic_store(&s_log_open_run, 0u);
         }
     }
     if (s_log_file == NULL) {
@@ -1419,17 +1427,19 @@ static void log_task(void *arg)
             }
             log_open(row.arm);
         }
+        /*
+         * A failed write latches the writer and every later row is rejected,
+         * so the run stops being recorded at that point rather than at the
+         * disarm.  Said on the edge, so the operator can stop and see to the
+         * card while the run still means something -- and the edge is taken
+         * around both calls that can fail, because a run whose rows have
+         * paused fails at the commit and would otherwise be latched before
+         * the next row could notice.
+         */
+        const bool was_failed = log_writer_failed(&s_log);
+
         if (got && s_log_file != NULL) {
-            /* A failed write latches the writer and every later row is
-             * rejected, so the run stops being recorded at this point rather
-             * than at the disarm.  Said on the edge, so the operator can stop
-             * and see to the card while the run still means something. */
-            const bool was_failed = log_writer_failed(&s_log);
             (void)log_writer_row(&s_log, row.t_s, &row.bench);
-            if (!was_failed && log_writer_failed(&s_log)) {
-                control_alert("the card stopped taking rows -- run not "
-                              "recorded past here");
-            }
             s_log_last_row_ms = now_ms();
         }
 
@@ -1440,6 +1450,11 @@ static void log_task(void *arg)
             && log_writer_pending(&s_log) > 0u
             && (uint32_t)(now_ms() - s_log_last_row_ms) >= LOG_QUIET_MS) {
             (void)log_writer_commit(&s_log);
+        }
+
+        if (s_log_file != NULL && !was_failed && log_writer_failed(&s_log)) {
+            control_alert("the card stopped taking rows -- run not "
+                          "recorded past here");
         }
 
         /*
