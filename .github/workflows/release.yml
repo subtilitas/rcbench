@@ -128,6 +128,10 @@ jobs:
       # fails: ARM's 14.2 release, unpacked and put on PATH.
       - name: Install the ARM toolchain
         run: |
+          # Third-party lists this build never installs from; one serving a
+          # stale index fails the whole step.  See the note in the host job.
+          sudo rm -fv /etc/apt/sources.list.d/*google* \
+                      /etc/apt/sources.list.d/*microsoft* || true
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi \
