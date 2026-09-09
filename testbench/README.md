@@ -206,12 +206,17 @@ Building it:
              --prefix=/opt/sigrok LDFLAGS=-Wl,-rpath,/opt/sigrok/lib \
         && make -j"$(nproc)" && sudo make install )
 
+The sequence takes about 82 seconds on the bench host: 10 s for the packages,
+72 s cumulative through libsigrok, 82 s through sigrok-cli.
+
 **The package list is not tested on a host that has never had sigrok on it.**
 The sequence above has been walked on the bench host, which already carried
 the runtime libraries and both udev rules, so what it proves is the compile,
-the configure flags, the driver being built in and the runpath. Whether a
-first-time follower meets a package this list omits is unknown, and finding
-out needs a machine that has never had sigrok installed.
+the configure flags, the driver being built in and the runpath -- the
+configure summary prints `kingst-la2016................... yes` and the built
+library lists the driver. Whether a first-time follower meets a package this
+list omits is unknown, and finding out needs a machine that has never had
+sigrok installed.
 
 `--enable-kingst-la2016` explicitly: the default is a check, under which
 configure records `kingst-la2016 no (missing: libusb)` in its summary and the
@@ -277,6 +282,17 @@ The versions are read out of the binary rather than composed from a tag, so
 the recorded string is what the binary prints. The hashes are taken from the
 installed files rather than from the build tree: anything that strips or
 re-links between the two would otherwise record one object and run another.
+
+**The manifest belongs to one installation.** Two builds of the same commits
+with the same flags do not produce the same bytes -- build paths, timestamps
+and a different compiler all reach the binary -- so no two benches record the
+same hashes. Measured: a second build of `0bc24877` and `f44dd91` on this host
+gave a `sigrok-cli` of `8be9ed02c5595b68...` against the `6c8febc235aec1de...`
+of another build of the same commits. That is why the manifest is written from
+the installed files after installing, and it is why a hash mismatch between two
+correct benches must not be settled by copying one bench's manifest to the
+other. Doing that makes the check pass for a build it does not describe, which
+is the one failure it exists to catch. Build the manifest where the build is.
 
 **The hashes are what decide.** A version string is not a build: two commits
 can carry one, so a comparison against `sigrok-cli-version` passes on a stale
