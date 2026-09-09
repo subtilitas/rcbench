@@ -35,9 +35,16 @@ fault: edges that are not there, an I²C device that answers intermittently, a
 capture full of noise.
 
 Choose one point. The Pi's ground, the two boards' grounds, the analyser's
-ground lead, the relay driver's ground and the camera's mount if it is
-conductive all return to it, each with its own lead. Not a chain from one
-board to the next.
+ground lead, the relay driver's ground, **the servo supply's return and the
+ESC pack's return**, and the camera's mount if it is conductive all return to
+it, each with its own lead. Not a chain from one board to the next.
+
+The two load returns are on that list for the same reason as the rest and one
+of its own: a servo or an ESC on its own supply has no reference to the pin
+driving it unless the returns meet. Without that the pulse has no defined
+level at the load, the output checks fail for a reason that looks like the
+output, and the first scope or analyser ground lead attached becomes the
+return path for a motor's current.
 
 **Check.** With everything unpowered, measure between the star point and each
 board's ground pad: under an ohm. Between the star point and any signal pad:
@@ -361,15 +368,24 @@ attenuating anything. An LA2016 input is rated to 5 V. So the analyser takes
 the **switch's control node** -- the gate or enable pin of whatever passes the
 rail -- which is logic and carries the timing.
 
-*A rated instrument, on the rail.* The control node says the switch was told
-to open. It does not say the rail went down: a switch that is bypassed,
-miswired or failed short deasserts its gate exactly the same way. `docs/Safety.md`
-requires the **power path** to be gated, so the verdict needs the switched
-side measured with something rated for it -- a scope with an appropriate
-probe, or a meter -- and it has to read de-energised.
+*A scope on the rail, on the same trigger.* The control node says the switch
+was told to open. It does not say the rail went down: a switch that is
+bypassed, miswired or failed short deasserts its gate exactly the same way.
+`docs/Safety.md` requires the **power path** to be gated, so the verdict is
+measured on the switched side, with a probe rated for 8.4 V or whatever the
+ESC pack is.
 
-Passing the first without the second is the interlock's own failure mode: the
-control side correct and the power still on.
+**A meter is not enough.** It says the rail is down by the time you look,
+which is a different claim from down within 150 ms: a switch with a slow
+gate drive, a rail with a bulk capacitor, or a load light enough not to
+discharge one, all read zero eventually and fail the deadline. So the rail
+goes on a scope channel triggered from the same edge as the trace above --
+the last edge into the monostable's trigger -- and the time from that edge to
+the rail leaving its band is the number the check produces.
+
+Passing the control side without the rail is the interlock's own failure mode:
+the switch told to open and the power still on. Passing the rail without a
+timebase is the same failure with a slower clock.
 
 *The differential test.* Keep the firmware happy and starve only the hardware.
 
