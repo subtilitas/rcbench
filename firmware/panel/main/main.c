@@ -424,6 +424,18 @@ static uint8_t     *s_keepbuf;      /* the keeper's, once handed over */
 static art_entry_t  s_keepentry;
 static volatile bool s_keeping;
 
+/*
+ * A touch event and the number of the send that queued it.  A GT911 track id
+ * is eight bits and the controller reuses them, so an id alone cannot say
+ * which entry is which: an older release carrying a recycled id would be
+ * taken for the one a marker refers to.  The sequence is unique for the life
+ * of the run and is written by the one task that sends.
+ */
+typedef struct {
+    touch_event_t evt;
+    uint32_t      seq;
+} touch_slot_t;
+
 static QueueHandle_t     s_touch_q;   /**< control task -> app_main */
 static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
 /*
@@ -539,9 +551,12 @@ static atomic_bool s_stop_request;
 /* Set when the pump applied a stop for a press the router will also latch,
  * so the backstop does not stop the bench twice for one press. */
 static atomic_bool s_stop_counted;
-/* The release s_stop_counted refers to, so an eviction can tell that one
- * from any other. */
-static atomic_uint s_stop_counted_id;
+/* The sequence of the release s_stop_counted refers to, so an eviction can
+ * tell that one entry from any other. */
+static atomic_uint s_stop_counted_seq;
+/* Every send gets the next one.  Written only by the control task, which is
+ * the only sender, so it needs no atomic. */
+static uint32_t s_touch_seq;
 /* The driver's loss count this task has already answered, for its own STOP
  * ownership.  Touched only by the control task. */
 static unsigned s_stop_lost_seen;
@@ -589,8 +604,37 @@ static bool s_pump_live;
  * its failsafe.  The loop that owns STOP really is still running during that
  * wait; this is what makes the line say so.
  */
+/*
+ * This task's own record of a STOP press.  It owns s_stop_press
+ * independently of the screens, and the driver's queue can drop that press's
+ * release before this loop ever sees it: the controller then reuses the
+ * track id, and a contact that begins elsewhere and lifts over STOP
+ * satisfies the release branch and stops a run nobody asked to stop.
+ *
+ * Only the driver's count is watched.  This task is the one that evicts from
+ * s_touch_q, and it does so after the event has already been through that
+ * branch, so its own losses cannot orphan this press.
+ */
+static void stop_press_check_lost(void)
+{
+    const unsigned drv_lost = touch_lost();
+    if (drv_lost != s_stop_lost_seen) {
+        s_stop_lost_seen = drv_lost;
+        s_stop_press = false;
+    }
+}
+
 static void control_pump(void)
 {
+    /*
+     * A driver loss recorded before this pass is answered before the events
+     * it left behind are looked at.  Those events were captured around the
+     * one that went missing: a contact reusing the track id of a STOP press
+     * whose release the driver dropped would otherwise lift over STOP inside
+     * this very loop and abort a run nobody asked to abort.
+     */
+    stop_press_check_lost();
+
     touch_event_t evt;
     bool saw_touch = false;
     while (touch_wait_event(&evt, 0)) {
@@ -640,7 +684,8 @@ static void control_pump(void)
          * resting on the glass reaches it in about 90 ms of undrained
          * frame.  What happens when it does fill is below.
          */
-        bool routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
+        const touch_slot_t slot = { evt, ++s_touch_seq };
+        bool routed = (xQueueSend(s_touch_q, &slot, 0) == pdTRUE);
         if (!routed) {
             /*
              * The consumer is behind.  Drop the oldest and take the newest,
@@ -664,12 +709,16 @@ static void control_pump(void)
              * screen drops the gesture, and which event went missing stops
              * mattering.
              */
-            touch_event_t stale;
+            touch_slot_t stale;
             const bool dropped =
                 (xQueueReceive(s_touch_q, &stale, 0) == pdTRUE);
-            if (dropped) {
-                routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
-            }
+            /*
+             * Retried whether or not that took anything.  The render task can
+             * empty this queue between the failed send and the receive, and
+             * then there is room without anything having been evicted --
+             * discarding the new event there would lose one for no reason.
+             */
+            routed = (xQueueSend(s_touch_q, &slot, 0) == pdTRUE);
             /*
              * Only when an event actually went.  The render task can drain
              * this queue between the failed send and the receive, in which
@@ -690,9 +739,8 @@ static void control_pump(void)
              * the queue, the router raises its request, and the stop is
              * applied a second time for one press.
              */
-            if (dropped && stale.type == TOUCH_EVENT_UP
-                && atomic_load(&s_stop_counted)
-                && stale.point.id == atomic_load(&s_stop_counted_id)) {
+            if (dropped && atomic_load(&s_stop_counted)
+                && stale.seq == atomic_load(&s_stop_counted_seq)) {
                 atomic_store(&s_stop_counted, false);
             }
         }
@@ -705,7 +753,7 @@ static void control_pump(void)
          * would be ignored.
          */
         if (counted_here && routed) {
-            atomic_store(&s_stop_counted_id, evt.point.id);
+            atomic_store(&s_stop_counted_seq, slot.seq);
             atomic_store(&s_stop_counted, true);
         }
     }
@@ -714,23 +762,8 @@ static void control_pump(void)
      * not since the last touch.  An untouched panel is healthy; a controller
      * that has stopped answering is not.
      */
-    /*
-     * And this task's own record of a STOP press.  It owns s_stop_press
-     * independently of the screens, and the driver's queue can drop the
-     * release before this loop ever sees it: the controller then reuses the
-     * track id, and a contact that begins elsewhere and lifts over STOP
-     * satisfies the branch above and stops a run nobody asked to stop.
-     *
-     * Only the driver's count is watched here.  This task is the one that
-     * evicts from s_touch_q, and it does so after the event has already
-     * been through the branch above, so its own losses cannot orphan this
-     * press.
-     */
-    const unsigned drv_lost = touch_lost();
-    if (drv_lost != s_stop_lost_seen) {
-        s_stop_lost_seen = drv_lost;
-        s_stop_press = false;
-    }
+    /* And again, for a loss that arrived while the loop above was running. */
+    stop_press_check_lost();
 
     if (saw_touch || touch_age_ms() < 200u) {
         arming_touch_seen(&s_arm, now_ms());
@@ -3758,7 +3791,7 @@ void app_main(void)
 
     const bool healthy = bring_up();
 
-    s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_event_t));
+    s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_slot_t));
     s_cmd_q     = xQueueCreate(CMD_Q_LEN, sizeof(panel_cmd_t));
     s_sample_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(bench_state_t));
     s_log_q     = xQueueCreate(LOG_Q_LEN, sizeof(log_row_t));
@@ -3903,8 +3936,9 @@ void app_main(void)
         }
 
         /* What the control task saw of the panel. */
-        touch_event_t evt;
-        while (xQueueReceive(s_touch_q, &evt, 0) == pdTRUE) {
+        touch_slot_t slot;
+        while (xQueueReceive(s_touch_q, &slot, 0) == pdTRUE) {
+            const touch_event_t evt = slot.evt;
             const ui_screen_id_t before = ui_router_current();
             ui_router_event(&evt);
             /*
