@@ -93,10 +93,45 @@ it loads reports a commit that is a prefix of the cloned SHA -- a binary that
 lists the driver and loads Debian's 0.5.2 underneath would otherwise pass in
 CI and fail on the bench.
 
-Open: whether the tarball installs on this host. The verify job proves it in a
-container with no sigrok package, which is deliberately not the case this
-bench is -- the distribution's `sigrok-cli` stays installed here, and the
-`PATH` step is what decides which one runs.
+**The tarball installs on this host and the analyser captures.** Measured on
+the bench host on 2026-09-09 from the release of run 34375102951, with the
+distribution's `sigrok-cli` 0.7.2 and `libsigrok4t64` 0.5.2 installed
+throughout. The verify job proves the tarball in a container with no sigrok
+package, which is deliberately not the case this bench is; this is the case
+that was open.
+
+| | |
+| --- | --- |
+| `ldd /opt/sigrok/bin/sigrok-cli` | `libsigrok.so.4 => /opt/sigrok/lib/libsigrok.so.4` |
+| scan | `kingst-la2016:conn=1.5 - Kingst LA2016 with 18 channels: CH0..CH15 PWM1 PWM2` |
+| capture | 948 lines from 1000 samples at 1 MHz |
+
+The runpath decides against Debian's library on the default search path, which
+is the whole reason for the `/opt` prefix and could not be tested anywhere the
+distribution's package is absent.
+
+**The FX2 firmware upload is confirmed at the USB descriptor level rather than
+inferred.** Before a scan the analyser reports `iManufacturer 0` and
+`iProduct 0`, the un-programmed FX2. After one it reports `iManufacturer 1
+Kingst` and `iProduct 2 Kingst Logic Analyzer`. So the blobs extracted from
+KingstVIS v3.6.6 are what the driver uploaded, and the CRC-32 cross-check
+against the values the extractor's man page documents for v3.5.0 holds as far
+as a working instrument.
+
+Two readings that are not faults and are not explained here:
+
+A capture returns more than it is asked for. 1000 samples at 1 MHz returned
+3746 bits per channel across 59 lines. Where the rounding happens is not
+chased. `host/selftest.sh` asks only for at least one line, so this has never
+mattered to it; a recipe that assumes it gets the sample count it asked for
+would be wrong.
+
+Every channel read zero, with two distinct line patterns and no `1` anywhere.
+That is unconnected probes on pulled-low inputs and is what it should be, so
+the data path is proven and the inputs responding to a real edge is not. The
+device offers `PWM1` and `PWM2` as a signal generator, so one jumper from
+`PWM1` to `CH0` would close that loop at a known frequency. Not wired: it is a
+physical change to the bench.
 
 Clearing that gate means the driver exists. It says nothing about whether the
 analyser captures: the FX2 microcontroller firmware and the FPGA bitstreams
