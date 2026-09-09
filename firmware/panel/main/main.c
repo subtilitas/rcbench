@@ -180,7 +180,20 @@ static bool              s_bus_ok = true;   /* until the test says otherwise */
  */
 #define LINK_LOST_SCREEN_MS 4000u
 
-static uint32_t s_link_lost_ms;      /* when it went, 0 while it is up   */
+/*
+ * When the link went, 0 while it is up.
+ *
+ * Atomic because the two ends are different tasks: the control task stamps
+ * and clears it, and the render task reads it to decide whether to open the
+ * diagnosis screen and to say how long the link has been down.  A plain
+ * uint32_t read across those is a data race whatever the silicon does with an
+ * aligned word, and copying it to a local does not make the load itself
+ * defined.
+ *
+ * Relaxed ordering is enough.  Nothing is published through this timestamp:
+ * it orders no other write, and every reader wants the value alone.
+ */
+static atomic_uint s_link_lost_ms;   /* when it went, 0 while it is up   */
 static bool     s_link_lost_shown;   /* the screen has had its turn      */
 /*
  * Two counts, because they answer two questions.  The per-outage one sits on
@@ -1636,9 +1649,16 @@ static void link_lost_report(busfault_report_t *r)
     memset(r, 0, sizeof(*r));
     r->kind       = BUSFAULT_LINK_LOST;
     r->bus        = bus_state();
-    r->down_s     = s_link_lost_ms == 0u
+    /*
+     * The timestamp is read once.  The control task clears it on the other
+     * core the moment the link answers, and a second read that caught the
+     * zero would make this now_ms() / 1000 -- the uptime, printed as how
+     * long the link has been down.
+     */
+    const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
+    r->down_s     = lost_ms == 0u
                         ? 0u
-                        : (uint32_t)(now_ms() - s_link_lost_ms) / 1000u;
+                        : (uint32_t)(now_ms() - lost_ms) / 1000u;
     r->recoveries = s_recoveries;
     r->polls      = s_host.polls;
     r->timeouts   = s_host.timeouts;
@@ -1724,14 +1744,17 @@ static void link_report(void)
      * fault is one nobody can read down a column, and the reading that most
      * needs a timestamp is the one where the controller would not answer.
      */
+    /* Read once, like every other reader of it: the control task can clear
+     * it between the test and the subtraction. */
+    const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
     char row[208];
     snprintf(row, sizeof(row),
              "t=%lus link=down for %lus  bus=%s tx_err=%s rx_err=%s "
              "bus_err=%s rejoins=%lu/%lu  polls=%lu replies=%lu timeouts=%lu",
              (unsigned long)(now_ms() / 1000u),
-             (unsigned long)(s_link_lost_ms == 0u
+             (unsigned long)(lost_ms == 0u
                                  ? 0u
-                                 : (now_ms() - s_link_lost_ms) / 1000u),
+                                 : (now_ms() - lost_ms) / 1000u),
              !have_bus ? "not running" : (off ? "OFF" : "on"),
              have_bus ? u32(n1, sizeof(n1), tec) : "?",
              have_bus ? u32(n2, sizeof(n2), rec) : "?",
@@ -2900,12 +2923,12 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
          * only shown from there.
          */
         if (answered) {
-            s_link_lost_ms    = 0;
+            atomic_store(&s_link_lost_ms, 0u);
             s_link_lost_shown = false;
             s_recoveries      = 0;   /* the next outage counts its own */
         } else if (*link_up) {
             /* The edge: it was up until this poll. */
-            s_link_lost_ms = now_ms();
+            atomic_store(&s_link_lost_ms, now_ms());
         }
         /*
          * A sample exists only if the bench page was read.  A poll that timed
@@ -3447,9 +3470,16 @@ void app_main(void)
          * STOP, and a bench with something spinning must not have its stop
          * button covered by a diagnosis.  Armed, the alert band already says
          * the link is gone, and the screen waits for the disarm.
+         *
+         * The timestamp is read once and tested twice.  The control task
+         * clears it on the other core the moment the link answers, and a
+         * second read that caught the zero would test now_ms() - 0, the
+         * uptime, against LINK_LOST_SCREEN_MS: past 4000 ms of uptime that
+         * passes, and the screen takes over on a link that is up.
          */
-        if (!armed && s_link_lost_ms != 0u && !s_link_lost_shown
-            && (uint32_t)(now_ms() - s_link_lost_ms) >= LINK_LOST_SCREEN_MS
+        const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
+        if (!armed && lost_ms != 0u && !s_link_lost_shown
+            && (uint32_t)(now_ms() - lost_ms) >= LINK_LOST_SCREEN_MS
             && ui_router_current() != SCREEN_SPLASH
             && ui_router_current() != SCREEN_BUSFAULT) {
             busfault_report_t r;

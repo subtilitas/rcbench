@@ -6,6 +6,29 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- **Two servo pins 16 apart drove from one pulse width.** On the RP2350 a PWM
+  (pulse-width modulation) channel is one compare register, and GPIO
+  (general-purpose input/output) numbers fold onto the 12 slices: GP0 to GP31
+  take slice (pin / 2) modulo 8, GP32 to GP47 take slice 8 + (pin / 2) modulo
+  4, and the channel is the low bit of the pin number. `out_pwm_bind()`
+  compared slices and not channels, so the second pin of a folded pair was
+  accepted whenever it asked for the frame rate the first one runs at, and
+  muxing it put both pads on one compare register: two leads, one pulse width,
+  and only the pin written last saying what it is. Six such pairs are free on
+  the coprocessor's header -- GP0 and GP16, GP1 and GP17, GP2 and GP18, GP4 and
+  GP20, GP5 and GP21, GP6 and GP22 -- and the pin arrives from the OUTPUTS
+  page, so ticking two of them on the outputs screen reaches it. The second pin
+  of a pair is refused. The fold is `shared/outputs/out_pwm_map.c`, where the
+  host suite holds it against the pico-sdk's own mapping, and `out_pwm_bind()`
+  compares the two on every bind rather than assuming they agree.
+
+  A refused bind leaves the slot unbound, and the OUTPUTS page carries no
+  register saying whether a slot is bound, so an unbound slot reads back like a
+  driving one. That is recorded as an open item rather than fixed here: it
+  needs a bit on the page and a screen that draws it.
+
 ## 0.7.0 - 2026-09-08
 
 The servo screen can drive a servo. Arming existed only on MOTOR & ESC and
