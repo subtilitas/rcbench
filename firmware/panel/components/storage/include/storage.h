@@ -79,6 +79,12 @@ typedef void (*storage_visit_fn)(const storage_entry_t *entry, void *ctx);
  *                  everything.  Applied to files; directories always match
  * @param visit     called with a borrowed entry that does not outlive the
  *                  call; NULL counts the matches without reporting them
+ * @param tick      called once per directory entry read, before any filter,
+ *                  or NULL.  A caller on a task with a deadline passes the
+ *                  thing that meets it: the filters reject dot-names, wrong
+ *                  suffixes and over-long names without reaching @p visit, so
+ *                  a root of unrelated files is read with nothing else
+ *                  running.  It takes no argument and must be cheap.
  * @return the number of matching entries, or -1 when the directory cannot be
  *         opened or read to its end.
  */
@@ -92,8 +98,10 @@ typedef void (*storage_visit_fn)(const storage_entry_t *entry, void *ctx);
  */
 uint32_t storage_size(const char *dir, const char *name);
 
+typedef void (*storage_tick_fn)(void);
+
 int storage_walk(const char *dir, const char *suffixes, storage_visit_fn visit,
-                 void *ctx);
+                 void *ctx, storage_tick_fn tick);
 
 /** Full path for a name inside @p dir, ready for fopen(). */
 void storage_path(const char *dir, const char *name, char *out, size_t out_size);

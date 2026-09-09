@@ -729,7 +729,10 @@ static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
         return -1;
     }
     card_pick_t pick = { out, max_entries, 0, 0 };
-    const int total = storage_walk(CARD_DIR, CARD_SUFFIXES, card_take, &pick);
+    /* No tick: this runs on the task that renders, which has no safety line
+     * to hold and nothing to pump. */
+    const int total = storage_walk(CARD_DIR, CARD_SUFFIXES, card_take, &pick,
+                                   NULL);
     if (total < 0) {
         /*
          * Mounted, and yet its root will not open: the card it was mounted
@@ -1048,14 +1051,14 @@ static bool        s_log_numbered;
  *
  * This runs on the control task, which is the task that beats the safety line
  * and hit-tests STOP, and a populated root takes longer to read than
- * HEARTBEAT_MAX_GAP_MS (150 ms).  So it pumps per entry, the same way the
- * probe loop it replaced pumped per name: a scan that ran to completion
- * without pumping would drop the coprocessor into failsafe as the run began
- * and leave STOP unread until it finished.
+ * HEARTBEAT_MAX_GAP_MS (150 ms).  The walk is given control_pump as its tick
+ * so the line is served per directory entry, the way the probe loop it
+ * replaced pumped per name.  Not here: the filters reject dot-names, wrong
+ * suffixes and over-long names before this is reached, so a root of unrelated
+ * files would be read with nothing running.
  */
 static void log_highest(const storage_entry_t *entry, void *ctx)
 {
-    control_pump();
     int *highest = (int *)ctx;
     if (entry->is_dir) {
         return;
@@ -1121,7 +1124,8 @@ static void log_start(void)
      */
     if (!s_log_numbered) {
         int highest = LOG_RUN_FIRST - 1;
-        if (storage_walk(CARD_DIR, CARD_SUFFIXES, log_highest, &highest) < 0) {
+        if (storage_walk(CARD_DIR, CARD_SUFFIXES, log_highest, &highest,
+                         control_pump) < 0) {
             /*
              * The card would not list.  Falling through would number this run
              * from 1 and take the first gap, which is the numbering this scan

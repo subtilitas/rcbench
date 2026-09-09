@@ -200,7 +200,7 @@ static bool suffix_matches(const char *name, const char *suffixes)
 }
 
 int storage_walk(const char *dir, const char *suffixes,
-                 storage_visit_fn visit, void *ctx)
+                 storage_visit_fn visit, void *ctx, storage_tick_fn tick)
 {
     if (!s.mounted) {
         return -1;
@@ -230,6 +230,12 @@ int storage_walk(const char *dir, const char *suffixes,
     int matched = 0;
     struct dirent *e;
     while ((e = readdir(d)) != NULL) {
+        /* Per entry read, before any filter.  What the filters reject never
+         * reaches the visitor, and a root of unrelated files is the case that
+         * takes longest with nothing else running. */
+        if (tick != NULL) {
+            tick();
+        }
         if (e->d_name[0] == '.') {
             continue; /* ".", ".." and the metadata files a Mac leaves behind */
         }
