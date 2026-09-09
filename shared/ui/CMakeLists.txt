@@ -24,6 +24,7 @@ set(SRCS
     battery_screen.c
     programmer_screen.c
     log_viewer_screen.c
+    log_select.c
     settings_screen.c
     outputs_screen.c
     picker_screen.c

@@ -8,7 +8,10 @@
  * card is mounted.
  *
  * Everything above this file works in names and sizes, not paths and FILE
- * pointers, so a screen can be driven from a fake list on the host.
+ * pointers, so a screen can be driven from a fake list on the host.  This
+ * file holds no policy either: it reads a directory to its end and reports
+ * what is in it, and which entries a caller with less room than that keeps,
+ * and in what order, is decided in shared/ where the host suite tests it.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -57,17 +60,48 @@ const char *storage_card_name(void);
 /** What went wrong, for the splash line.  "" when all is well. */
 const char *storage_status(void);
 
+/** Called once per matching entry, in the order the volume holds them. */
+typedef void (*storage_visit_fn)(const storage_entry_t *entry, void *ctx);
+
 /**
- * List a directory.
+ * Walk a directory, handing every matching entry to @p visit.
+ *
+ * The whole directory is read, and nothing here decides what is worth
+ * keeping: a caller with room for fewer entries than the card holds chooses
+ * which ones as they arrive.  It cannot be done by stopping the read early.
+ * FAT (File Allocation Table) hands entries back in the order its directory
+ * table holds them, which is creation order until a file is deleted and its
+ * slot filled again, so the first entries read are the oldest files and
+ * everything written after that is never seen.
  *
  * @param dir       relative to the mount point; "" or "/" for the root
  * @param suffixes  space-separated, lower case, e.g. ".csv .txt"; NULL takes
- *                  everything
- * @return the number of entries written, or -1 when the directory cannot be
- *         opened.  Directories sort first, then names, case-insensitively.
+ *                  everything.  Applied to files; directories always match
+ * @param visit     called with a borrowed entry that does not outlive the
+ *                  call; NULL counts the matches without reporting them
+ * @param tick      called once per directory entry read, before any filter,
+ *                  or NULL.  A caller on a task with a deadline passes the
+ *                  thing that meets it: the filters reject dot-names, wrong
+ *                  suffixes and over-long names without reaching @p visit, so
+ *                  a root of unrelated files is read with nothing else
+ *                  running.  It takes no argument and must be cheap.
+ * @return the number of matching entries, or -1 when the directory cannot be
+ *         opened or read to its end.
  */
-int storage_list(const char *dir, const char *suffixes, storage_entry_t *out,
-                 int max_entries);
+/**
+ * The size of one file, in bytes.
+ *
+ * Separate from the walk because a size costs a path lookup of its own, and a
+ * caller that keeps a bounded few of what the walk offers should pay for
+ * those and no more. Zero for a name that will not stat, which is what an
+ * entry that has gone between the walk and this call looks like.
+ */
+uint32_t storage_size(const char *dir, const char *name);
+
+typedef void (*storage_tick_fn)(void);
+
+int storage_walk(const char *dir, const char *suffixes, storage_visit_fn visit,
+                 void *ctx, storage_tick_fn tick);
 
 /** Full path for a name inside @p dir, ready for fopen(). */
 void storage_path(const char *dir, const char *name, char *out, size_t out_size);
