@@ -900,13 +900,21 @@ int main(void)
          * an interrupt answering polls, so the link watchdog alone would not
          * fire.
          *
-         * Polled first because silence generates no event: s_beat.alive is
-         * only as fresh as the last heartbeat_poll(), and arming on last
+         * Both are polled here rather than left to the end of the pass,
+         * because silence generates no event: s_beat.alive and s_dev.failsafe
+         * are only as fresh as the last call that looked, and arming on last
          * pass's answer renders one more service of every output after the
-         * line has already gone past HEARTBEAT_MAX_GAP_MS (150 ms).
+         * line has gone past HEARTBEAT_MAX_GAP_MS (150 ms) or the link past
+         * its own silence timeout.
+         *
+         * After can_service() above, so a frame that arrived this pass has
+         * already cleared the silence before it is judged.
          */
         const bool was_beating = s_beat.alive;
         if (!heartbeat_poll(now) && was_beating) {
+            outputs_off();   /* fires on the edge only */
+        }
+        if (link_dev_tick(&s_dev, now)) {
             outputs_off();   /* fires on the edge only */
         }
 
@@ -961,9 +969,5 @@ int main(void)
         /* Again straight after the report: printing to a USB host can take
          * milliseconds, and the part holds two frames. */
         can_service(now);
-
-        if (link_dev_tick(&s_dev, now)) {
-            outputs_off();   /* fires on the edge only */
-        }
     }
 }

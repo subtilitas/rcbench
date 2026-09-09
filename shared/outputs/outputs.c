@@ -321,9 +321,6 @@ void outputs_step(outputs_t *o, uint32_t now_ms)
             c->actual = c->command;
             continue;
         }
-        if (dt_ms == 0u) {
-            continue;
-        }
         /*
          * The remainder is carried, not rounded away and not rounded up.
          *
@@ -338,12 +335,31 @@ void outputs_step(outputs_t *o, uint32_t now_ms)
          * Carrying the thousandths does both: the rate the caller asked for,
          * and a slow slew that always arrives.
          *
-         * dt_ms is capped so the multiply cannot overflow a uint32_t at the
-         * largest slew_per_s (65,535 * 60,000 is 3.93e9).  A channel that has
-         * not been stepped for a minute has been overdue for all but the
-         * first OUT_DEFAULT_TIMEOUT_MS of it and is at rest already.
+         * A channel already at its command earns nothing.  Time spent
+         * standing still is not credit towards the next command: keeping it
+         * would let a channel sit for a second at 1 unit a second and then
+         * move a whole unit on the first millisecond of the next command,
+         * which is the rate limit not being one.
          */
-        const uint32_t span_ms = (dt_ms > 60000u) ? 60000u : dt_ms;
+        if (c->command == c->actual) {
+            c->slew_rem = 0u;
+            continue;
+        }
+        if (dt_ms == 0u) {
+            continue;
+        }
+        /*
+         * The elapsed time is capped where capping it can discard nothing.
+         *
+         * A step of OUT_SPAN covers any distance a channel can be from its
+         * command, so any longer interval than that arrives all the same, and
+         * the remainder is cleared on arrival by the branch above.  What the
+         * cap buys is a product that stays inside a uint32_t without a 64-bit
+         * divide in the coprocessor's loop: slew_per_s * cap is at most
+         * 1000 * OUT_SPAN + slew_per_s.
+         */
+        const uint32_t cap = (1000u * (uint32_t)OUT_SPAN) / c->slew_per_s + 1u;
+        const uint32_t span_ms = (dt_ms > cap) ? cap : dt_ms;
         const uint32_t num = (uint32_t)c->slew_per_s * span_ms
                              + (uint32_t)c->slew_rem;
         const uint32_t step = num / 1000u;
@@ -361,6 +377,7 @@ void outputs_step(outputs_t *o, uint32_t now_ms)
              * ramped both ways. */
             if (c->role == OUT_ROLE_THROTTLE) {
                 c->actual = c->command;
+                c->slew_rem = 0u;
             } else {
                 const uint32_t back = (uint32_t)c->actual - step;
                 c->actual = (c->actual < step || back < c->command)

@@ -178,6 +178,52 @@ TEST_CASE(a_slow_slew_still_moves)
 }
 
 /*
+ * Standing still earns no credit towards the next command.
+ *
+ * The remainder is carried between steps, so a channel left at its command
+ * would otherwise bank a thousandth of a unit per millisecond and spend it
+ * the moment a command arrives -- a rate limit that is not one for the first
+ * step after any pause.
+ */
+TEST_CASE(a_stationary_channel_earns_no_slew_credit)
+{
+    fresh();
+    CHECK(outputs_set_slew(&o, 0, 1u));   /* one unit a second */
+    outputs_arm(&o, true, 1000u);
+    /* Commanded to where it already is, for 999 ms. */
+    for (uint32_t t = 1001u; t <= 1999u; ++t) {
+        outputs_set(&o, 0, OUT_SPAN / 2u, t);
+        outputs_step(&o, t);
+    }
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+
+    /* Then asked to move.  One millisecond at one unit a second is a
+     * thousandth of a unit, and none of the 999 before it counts. */
+    outputs_set(&o, 0, OUT_SPAN, 2000u);
+    outputs_step(&o, 2000u);
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+}
+
+/*
+ * A long interval is not truncated.
+ *
+ * The elapsed time is capped only where a longer step would arrive anyway --
+ * OUT_SPAN units covers any distance a channel can be from its command -- so
+ * an interval well past a minute still delivers every unit it is worth.
+ */
+TEST_CASE(a_long_step_is_not_truncated)
+{
+    fresh();
+    CHECK(outputs_set_slew(&o, 0, 1u));   /* one unit a second */
+    outputs_arm(&o, true, 1000u);
+    outputs_step(&o, 1000u);
+    /* 61 seconds, with the command refreshed so the channel is not overdue. */
+    outputs_set(&o, 0, OUT_SPAN, 62000u);
+    outputs_step(&o, 62000u);
+    CHECK_EQ(outputs_actual(&o, 0), (uint16_t)(OUT_SPAN / 2u + 61u));
+}
+
+/*
  * How often the caller steps does not change the rate.
  *
  * Rounding each step up on its own would deliver at least one unit per call,
@@ -997,6 +1043,8 @@ int main(void)
     RUN(the_role_decides_which_direction_is_safe);
     RUN(a_slow_slew_still_moves);
     RUN(the_slew_rate_does_not_follow_the_step_cadence);
+    RUN(a_stationary_channel_earns_no_slew_credit);
+    RUN(a_long_step_is_not_truncated);
     RUN(a_pin_belongs_to_one_driver);
     RUN(a_reserved_pin_is_refused);
     RUN(the_outputs_page_refuses_a_pin_that_does_not_fit_the_field);
