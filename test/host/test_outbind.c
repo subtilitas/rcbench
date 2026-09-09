@@ -1807,6 +1807,7 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     uint16_t regs[LINK_OS_COUNT];
     CHECK_EQ(outbind_chosen(NULL), 0);
+    CHECK_EQ(outbind_wire_proto(NULL), 0);
     CHECK(!outbind_toggle(NULL, 0));
     CHECK(!outbind_can_add(NULL, 0));
     outbind_init(NULL);
