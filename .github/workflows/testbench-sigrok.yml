@@ -377,13 +377,20 @@ jobs:
 
           Neither is in this tarball.  Both are Kingst material with no redistribution
           grant.  They are extracted from the vendor software KingstVIS with
-          sigrok-fwextract-kingst-la2016 from sigrok-util:
+          sigrok-fwextract-kingst-la2016 from sigrok-util, which is a Python script and
+          needs no build:
 
-            tar -xzf KingstVIS_v3.5.0_linux.tar.gz KingstVIS
+            tar -xzf KingstVIS_v3.6.6_linux.tar.gz KingstVIS
             sigrok-fwextract-kingst-la2016 KingstVIS/KingstVIS
 
-          The extractor's man page records what KingstVIS v3.5.0 yields -- five files,
-          with these sizes and CRC-32 values:
+          The vendor's download page is /en/download.  KingstVIS v3.6.6 is the version
+          extracted on the bench host and it yields 18 files, not the five the
+          extractor's man page documents against v3.5.0.  All 18 are installed, because
+          which one an analyser needs is decided at scan time.
+
+          The five the man page documents come out of v3.6.6 with identical sizes and
+          CRC-32 values, so the vendor has not touched those blobs between the two
+          versions and these numbers still identify them:
 
             kingst-la-01a2.fw                   5430 bytes  crc32=720551a9
             kingst-la2016a1-fpga.bitstream    178362 bytes  crc32=7cc894fa
@@ -398,9 +405,9 @@ jobs:
           0x09/0x00 select la1016a1, and 0x03/0x00 selects la1016.  Copy all extracted
           bitstreams here rather than choosing one.
 
-          The la2016a2 stem is in the driver but is not among the five files KingstVIS
-          v3.5.0 produces.  Which KingstVIS version emits it is unknown here, and the
-          extractor's behaviour on versions after 3.5.0 is untested.  An analyser whose
+          The la2016a2 stem is in the driver and is not among the five the man page
+          documents.  Whether it is among the other 13 that v3.6.6 produces is not
+          recorded here.  An analyser whose
           EEPROM reports 0x0b/0x10 therefore enumerates and then finds no bitstream.
 
           libsigrok searches, in this order, per sr_resourcepaths_get() in resource.c:
@@ -827,3 +834,74 @@ jobs:
             echo "the shipped sigrok-cli carries no runpath for $PREFIX/lib" >&2
             exit 1
           fi
+
+  # Release assets are public and unauthenticated; Actions artifacts are not,
+  # even on a public repository -- the zip endpoint answers 401 without a
+  # token, so a bench with no login cannot fetch one.  A release is also
+  # permanent, where an artifact expires.
+  #
+  # The tag carries the run id rather than a date or the source commits: two
+  # runs on one day would collide, and so would a rebuild of the same pins.
+  # It does not start with "v", so the firmware release workflow, which
+  # triggers on tags: ['v*'], does not fire on it.
+  publish:
+    name: Publish the tarball as a release
+    needs: [build, verify]
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: sigrok-kingst-la2016-debian13-arm64
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: testbench-sigrok-${{ github.run_id }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          tarball=$(find . -name "$TARBALL" -type f | head -1)
+          if [ -z "$tarball" ]; then
+            echo "no regular file named $TARBALL in the download" >&2
+            exit 1
+          fi
+          dir=$(dirname "$tarball")
+          ( cd "$dir" && sha256sum -c SHA256SUMS )
+          # Read out of the tarball rather than passed between jobs, so the
+          # notes describe the file that is being attached.
+          man=$(tar -xzOf "$tarball" opt/sigrok/MANIFEST.txt)
+          key() { printf '%s\n' "$man" | sed -n "s/^$1: //p" | head -1; }
+          {
+            echo "libsigrok and sigrok-cli built from git for Debian 13 arm64,"
+            echo "carrying the kingst-la2016 driver that libsigrok 0.5.2 does not."
+            echo
+            echo '| | |'
+            echo '| --- | --- |'
+            echo "| libsigrok | \`$(key libsigrok-commit)\` |"
+            echo "| sigrok-cli | \`$(key sigrok-cli-commit)\` |"
+            echo "| libsigrok version | $(key libsigrok-version) |"
+            echo "| sigrok-cli version | $(key sigrok-cli-version) |"
+            echo "| Debian | $(key debian-version) |"
+            echo "| prefix | $(key prefix) |"
+            echo "| built | $(key built-utc) |"
+            echo
+            echo "Install and verify: testbench/README.md, under *The parts*."
+            echo "Unpacks at / and holds /opt/sigrok only. Check it with"
+            echo '`sha256sum -c SHA256SUMS` against the file attached here.'
+            echo
+            echo "The FPGA bitstreams and the FX2 firmware are not included."
+            echo "They are Kingst material with no redistribution grant and are"
+            echo "extracted from the vendor software on the bench; a build"
+            echo "carrying the driver does not mean the analyser captures."
+            echo
+            echo "GPLv3-or-later. The licence texts and the corresponding-source"
+            echo "note are in the tarball under share/licences."
+          } > notes.md
+          gh release create "$TAG" "$tarball" "$dir/SHA256SUMS" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$SHA" \
+            --title "sigrok for the LA2016, Debian 13 arm64" \
+            --notes-file notes.md
+          echo "published $TAG"
