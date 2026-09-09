@@ -37,8 +37,12 @@ bei 150 ms und liegt innerhalb des 200-ms-Link-Failsafes des Koprozessors,
 statt auf die neue Periode zu schrumpfen: die Reserve ist das, was einen
 verspäteten Task überlebt.
 
-Das Monoflop ist auf keiner Platine. Die Flanken erreichen J8 und sonst
-nichts.
+Das Monoflop ist auf keiner Platine. Auf dem Aufbau-Prüfstand erreichen die
+Flanken über eine direkte Leitung von J8 den GP3 des Koprozessors, weshalb
+dieser Prüfstand scharfschalten kann. Was eine direkte Leitung nicht leisten
+kann, ist genau das, wofür das Monoflop da ist: Ein Panel, das mit
+hängengebliebener Leitung abstürzt, lässt die Ausgänge weiter treiben. Solange
+das Bauteil fehlt, ist die Firmware an beiden Enden die gesamte Verriegelung.
 
 ## Heartbeat-Überwachung
 

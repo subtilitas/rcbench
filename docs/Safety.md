@@ -35,7 +35,11 @@ coprocessor's 200 ms link failsafe, rather than tightening to the new period:
 the margin is what survives a task that is late, and nothing is gained by
 removing it.
 
-The monostable is on no board. The edges reach J8 and nothing else.
+The monostable is on no board. On the bring-up bench the edges reach the
+coprocessor's GP3 by a direct wire from J8, which is what lets that bench arm;
+what a direct wire cannot do is the one thing the monostable is for, because a
+panel that crashes with the line stuck high leaves the outputs driving. Until
+the part is fitted, firmware at both ends is the whole of the interlock.
 
 ## Heartbeat monitor
 
