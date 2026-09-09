@@ -318,6 +318,7 @@ screen is in:
 | `SAVED` | Nothing is unwritten. The button is inert. |
 | `SAVE` | Something is unwritten. Pressing it asks for a write. |
 | `WHEN IDLE` | A write has been asked for and is waiting for a moment to happen in. |
+| `NOT SAVED` | The store refused the write. The values stand on the screen and are not on the medium; the next boot loads what was there before. Pressing it tries again. |
 
 ![A changed value, with SAVE offered](img/setup-dirty.png)
 
@@ -328,6 +329,11 @@ on the first frame at which the bench is disarmed and no board photograph is
 being fetched or stored. On the settings screen that is the next frame, and
 the label goes to `SAVED` as fast as the eye follows the press. Armed, the
 request stands as `WHEN IDLE` until the bench is disarmed.
+
+A store that refuses leaves the label at `NOT SAVED` in the danger colour
+until the next successful write or the next edit. A panel whose NVS could not
+be brought up at all refuses every write of the session, and says so once more
+on the splash as `NVS unavailable`.
 
 Values not saved are kept until the panel is switched off. Leaving the screen
 writes nothing.
