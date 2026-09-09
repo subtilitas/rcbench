@@ -126,6 +126,7 @@ rcbench/
   docs/                   the wiki source, English and German
   tools/                  render_ui · coverage · check_docs · frame_cost
                           gen_font · gen_board_art · wiki_links
+                          check_sanitizers
   hardware/               board design record: README, STATUS, docs/
   testbench/              the measurement bench: README, WIRING, host scripts,
                           decoders. Nothing on it has been run

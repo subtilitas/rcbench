@@ -60,6 +60,12 @@ jobs:
       # (comma-separated values), CAN (Controller Area Network), OpenYGE and
       # S.BUS are fed malformed input by design.  A separate build directory
       # because the flags differ.
+      # A test executable instrumented against uninstrumented libraries
+      # builds and passes while checking almost nothing, so the flags are
+      # proved to reach shared/ before the run that would report success.
+      - name: Sanitizers reach the code under test
+        run: python3 tools/check_sanitizers.py --check
+
       - name: Unit tests under sanitizers
         run: |
           cmake -S test/host -B test/host/build-san -DCMAKE_BUILD_TYPE=Debug \

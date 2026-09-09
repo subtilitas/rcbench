@@ -10,6 +10,33 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 option(ENABLE_COVERAGE "Build with gcov instrumentation" OFF)
 
+# -Wconversion is the one that earns its place: this code does arithmetic on
+# pixel coordinates and register widths, and a silent narrowing there is a
+# wrong number rather than a crash.
+set(STRICT -Wall -Wextra -Werror -Wshadow -Wconversion -Wno-sign-conversion)
+
+# ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer), for the
+# runtime faults -Werror cannot see: a parser fed a hostile frame reading off
+# the end of a buffer, a signed shift overflowing, an unaligned access.  This
+# is a separate CI (continuous integration) job from the -Werror one, and it
+# drops -Werror: UBSan's instrumentation makes GCC re-issue -Wconversion on
+# shift expressions whose casts are correct, and those false positives would
+# fail the build before a single test ran.  The warnings print; the enforcing
+# -Werror lives in the ordinary job.
+#
+# These flags are set before the add_subdirectory() calls below, because a
+# directory takes its copy of COMPILE_OPTIONS as it is added.  Set after the
+# copy, they reach the test executables and none of the shared code those
+# tests exercise, which is the half the sanitizers are here for.
+option(ENABLE_SANITIZERS "Build the suite under AddressSanitizer + UBSan" OFF)
+if(ENABLE_SANITIZERS)
+    list(REMOVE_ITEM STRICT -Werror)
+    set(SAN -fsanitize=address,undefined -fno-sanitize-recover=all
+            -fno-omit-frame-pointer -g)
+    add_compile_options(${SAN})
+    add_link_options(${SAN})
+endif()
+
 set(SHARED "${CMAKE_CURRENT_SOURCE_DIR}/../../shared")
 
 # Each module's CMakeLists answers to whichever build system is asking; out
@@ -49,28 +76,6 @@ set(UNDER_TEST
     rcbench_dshot
     rcbench_ppm
 )
-
-# -Wconversion is the one that earns its place: this code does arithmetic on
-# pixel coordinates and register widths, and a silent narrowing there is a
-# wrong number rather than a crash.
-set(STRICT -Wall -Wextra -Werror -Wshadow -Wconversion -Wno-sign-conversion)
-
-# ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer), for the
-# runtime faults -Werror cannot see: a parser fed a hostile frame reading off
-# the end of a buffer, a signed shift overflowing, an unaligned access.  This
-# is a separate CI (continuous integration) job from the -Werror one, and it
-# drops -Werror: UBSan's instrumentation makes GCC re-issue -Wconversion on
-# shift expressions whose casts are correct, and those false positives would
-# fail the build before a single test ran.  The warnings print; the enforcing
-# -Werror lives in the ordinary job.
-option(ENABLE_SANITIZERS "Build the suite under AddressSanitizer + UBSan" OFF)
-if(ENABLE_SANITIZERS)
-    list(REMOVE_ITEM STRICT -Werror)
-    set(SAN -fsanitize=address,undefined -fno-sanitize-recover=all
-            -fno-omit-frame-pointer -g)
-    add_compile_options(${SAN})
-    add_link_options(${SAN})
-endif()
 
 foreach(lib ${UNDER_TEST})
     target_compile_options(${lib} PRIVATE ${STRICT})
