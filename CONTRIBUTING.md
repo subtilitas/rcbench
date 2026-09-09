@@ -57,6 +57,7 @@ python3 tools/check_docs.py           # links, translations, SPDX, the suite lis
 python3 tools/render_ui.py --check    # the committed screenshots match
 python3 tools/frame_cost.py --check-doc
 python3 tools/gen_font.py --check
+python3 tools/check_sanitizers.py     # sanitizers reach shared/
 
 cppcheck --error-exitcode=1 --std=c11 --enable=warning,style,performance,portability \
          --inline-suppr --suppressions-list=.cppcheck-suppress --check-level=exhaustive \

@@ -1,7 +1,7 @@
-# The tools/ directory: six single-purpose scripts, each with a --check mode
-# that CI (continuous integration) runs.  Held to the same standard as the C:
-# no unused imports, no shadowed builtins, no bare excepts, and a line length
-# that matches the rest of the tree.
+# The tools/ directory: eight single-purpose scripts, each with a --check
+# mode that CI (continuous integration) runs.  Held to the same standard as
+# the C: no unused imports, no shadowed builtins, no bare excepts, and a line
+# length that matches the rest of the tree.
 line-length = 79
 target-version = "py310"
 
