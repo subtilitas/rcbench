@@ -104,11 +104,15 @@ Panel als Leitung ohne Flanken gelesen wird.
   kommandiert, die die Bindung als Motoren führt. Ein Schreiben auf die
   CHANNELS-Page erreicht ihn, weil diese Page Kanäle über den Index adressiert
   und nicht über die Rolle.
-- In den ersten 500 ms nach dem Scharfschalten steht ein Kanal auf seinem
-  letzten Kommando und nicht auf seiner Ruhelage. Das Scharfschalten stempelt
-  die Uhr jedes Kanals, sodass ein Kommando, das im entschärften Zustand
-  gegeben wurde, nicht überfällig ist und ausgegeben wird, bis es überfällig
-  wird.
+- In den ersten 500 ms nach dem Scharfschalten steht ein Kanal nicht auf
+  seiner Ruhelage. Das Scharfschalten stempelt die Uhr jedes Kanals, sodass
+  ein Kommando, das im entschärften Zustand gegeben wurde, nicht überfällig
+  ist und ausgegeben wird, bis es überfällig wird. Was ausgegeben wird, hängt
+  vom Slew des Kanals ab: ohne Slew ist der erste Schritt die ganze Strecke,
+  der Kanal steht also auf diesem Kommando; mit Slew hat das Entschärfen ihn
+  bereits auf die Ruhelage gestellt und er rampt von dort, höchstens
+  `slew_per_s * 500 / 1000` weit, bevor der Timeout ihn zurückholt. In beiden
+  Fällen treibt er, und beendet wird das durch ein Entschärfen.
 
 ## Heartbeat statt Enable-Pegel
 

@@ -92,10 +92,14 @@ unpowered or unplugged panel reads as a line that is not edging.
 - The throttle does not reach a channel bound as a surface, because it
   commands the pins the binding calls motors. A write to the CHANNELS page
   does, because that page addresses channels by index rather than by role.
-- For the first 500 ms after an arm, a channel is at its last command rather
-  than at its rest. Arming stamps every channel's clock, so a command given
-  while the bench was disarmed is not overdue and is rendered until it goes
-  overdue.
+- For the first 500 ms after an arm, a channel is not at its rest. Arming
+  stamps every channel's clock, so a command given while the bench was
+  disarmed is not overdue and is rendered until it goes overdue. What is
+  rendered depends on the channel's slew: with no slew the first step is the
+  whole distance, so the channel is at that command; with a slew set, the
+  disarm has already put it at rest and it ramps from there, covering at most
+  `slew_per_s * 500 / 1000` before the timeout takes it back. Either way it is
+  driving, and a disarm is what stops it.
 
 ## Heartbeat rather than enable level
 
