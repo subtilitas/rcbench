@@ -80,21 +80,23 @@ fail here. A second job unpacks the tarball in a container with no `-dev` and
 no sigrok package, installs only the recorded runtime closure, and repeats
 both checks plus a scan that touches libusb.
 
-**The workflow has never run.** `workflow_dispatch` needs the file on the
-default branch, so it cannot be dispatched from the branch that adds it: the
-repository's workflow list holds `ci.yml`, `docs.yml` and `release.yml` and
-not this one. The first execution comes after it merges.
-
-What is established is that it is well-formed and that its inputs exist. The
-YAML parses to two jobs and eighteen `run` bodies, every one of which passes
-`bash -n`, and no `${{ }}` expression is interpolated into any of them. Both
-pinned source commits resolve upstream -- libsigrok
+**The workflow has run and the tarball exists.** Three jobs: the build, a
+verify that unpacks the tarball in a container holding no `-dev` and no sigrok
+package and repeats the assertions there, and a publish that attaches it to a
+release. Run 34371857987 on 2026-09-09 built and verified it from libsigrok
 `0bc2487778e660f4d3116729b6f4aee2b1996bb0` of 2025-11-20 and sigrok-cli
-`f44dd91347e7ac797cefc23162b9fcf0b7329f1f` of 2024-08-26 -- and
-`src/hardware/kingst-la2016` is present at that libsigrok commit as `api.c`,
-`protocol.c` and `protocol.h`. Whether it builds is open, and so is whether
-the tarball installs on this host: the second job proves it in a container
-with no sigrok package, which is deliberately not the case this bench is.
+`f44dd91347e7ac797cefc23162b9fcf0b7329f1f` of 2024-08-26, producing
+libsigrok 0.6.0-git and sigrok-cli 0.8.0-git against Debian 13.6.
+
+The run fails unless the built binary lists `kingst-la2016` and the libsigrok
+it loads reports a commit that is a prefix of the cloned SHA -- a binary that
+lists the driver and loads Debian's 0.5.2 underneath would otherwise pass in
+CI and fail on the bench.
+
+Open: whether the tarball installs on this host. The verify job proves it in a
+container with no sigrok package, which is deliberately not the case this
+bench is -- the distribution's `sigrok-cli` stays installed here, and the
+`PATH` step is what decides which one runs.
 
 Clearing that gate means the driver exists. It says nothing about whether the
 analyser captures: the FX2 microcontroller firmware and the FPGA bitstreams

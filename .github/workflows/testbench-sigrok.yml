@@ -406,9 +406,10 @@ jobs:
           bitstreams here rather than choosing one.
 
           The la2016a2 stem is in the driver and is not among the five the man page
-          documents.  Whether it is among the other 13 that v3.6.6 produces is not
-          recorded here.  An analyser whose
-          EEPROM reports 0x0b/0x10 therefore enumerates and then finds no bitstream.
+          documents.  Which of the other 13 files v3.6.6 produces is not recorded here,
+          so whether an analyser reporting 0x0b/0x10 finds its bitstream is unknown --
+          not absent.  Installing all 18 covers it either way, and the scan log names
+          the file the driver asked for.
 
           libsigrok searches, in this order, per sr_resourcepaths_get() in resource.c:
 
