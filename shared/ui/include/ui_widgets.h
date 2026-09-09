@@ -162,6 +162,14 @@ bool ui_hold_leave(ui_hold_t *h);
  *  release consumes: a release that fired is not also a press. */
 bool ui_hold_end(ui_hold_t *h);
 
+/**
+ * What one frame is worth to a hold: @p dt_s, capped at
+ * UI_HOLD_MAX_CREDIT_S and floored at zero. Used by ui_hold_tick() and by
+ * any screen that keeps its own hold timer, so a late frame cannot complete
+ * a gesture that began inside it.
+ */
+float ui_hold_credit(float dt_s);
+
 /** Time passed. True on the one frame the hold completes, and never again
  *  until the press is lifted and made afresh. */
 bool ui_hold_tick(ui_hold_t *h, float dt_s);

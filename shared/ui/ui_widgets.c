@@ -260,6 +260,28 @@ void ui_hold_reset(ui_hold_t *h)
     h->flash_left = 0;
 }
 
+float ui_hold_credit(float dt_s)
+{
+    /*
+     * A frame is credited with the time it took, and a late frame took a
+     * long time.  The duration is measured at the top of the frame and
+     * applied at the end of it, so a frame that dispatched the press it is
+     * now crediting would hand a hold begun this frame the whole of that
+     * frame's stall -- an arm two seconds after a press milliseconds old.
+     *
+     * UI_HOLD_MAX_CREDIT_S caps what one frame is worth, so a hold spans at
+     * least UI_HOLD_S / UI_HOLD_MAX_CREDIT_S frames with the press standing.
+     * A bench drawing at its ordinary rate is far below the cap.
+     *
+     * Every hold in the tree goes through here, including the ones that keep
+     * their own timer rather than a ui_hold_t.
+     */
+    if (dt_s > UI_HOLD_MAX_CREDIT_S) {
+        return UI_HOLD_MAX_CREDIT_S;
+    }
+    return (dt_s < 0.0f) ? 0.0f : dt_s;
+}
+
 void ui_hold_begin(ui_hold_t *h)
 {
     if (h == NULL) {
@@ -298,26 +320,7 @@ bool ui_hold_tick(ui_hold_t *h, float dt_s)
     if (h == NULL || !h->down || h->fired) {
         return false;
     }
-    /*
-     * A frame is credited with the time it took, and a late frame took a
-     * long time.  The duration is measured at the top of the frame and
-     * applied at the end of it, so a frame that dispatched the press it is
-     * now crediting would hand a hold begun this frame the whole of the
-     * previous frame's stall -- an arm two seconds after a press that is
-     * milliseconds old.
-     *
-     * UI_HOLD_MAX_CREDIT_S caps what one frame can be worth, so a hold
-     * always spans at least UI_HOLD_S / UI_HOLD_MAX_CREDIT_S frames with
-     * the press standing.  A bench drawing at its ordinary rate is far
-     * below the cap and is not slowed by it.
-     */
-    if (dt_s > UI_HOLD_MAX_CREDIT_S) {
-        dt_s = UI_HOLD_MAX_CREDIT_S;
-    }
-    if (dt_s < 0.0f) {
-        dt_s = 0.0f;
-    }
-    h->held_s += dt_s;
+    h->held_s += ui_hold_credit(dt_s);
     if (h->held_s < UI_HOLD_S) {
         return false;
     }

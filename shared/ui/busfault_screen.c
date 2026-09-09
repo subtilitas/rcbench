@@ -275,7 +275,7 @@ static void event(const touch_event_t *evt)
 static void tick(float dt_s)
 {
     if (s.pressed && !s.fired) {
-        s.held_s += dt_s;
+        s.held_s += ui_hold_credit(dt_s);
         if (s.held_s >= UI_HOLD_S) {
             /*
              * The hold is the acknowledgement: it completes here rather than

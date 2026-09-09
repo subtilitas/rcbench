@@ -82,11 +82,17 @@ unpowered or unplugged panel reads as a line that is not edging.
 - A hold is credited at most 250 ms per frame, so it spans at least eight
   frames with the press standing. A frame's duration is measured at its top
   and applied at its end, and without the cap one late frame credits a hold
-  that began while that same frame was dispatching its touch events.
-- A full touch queue gives up its oldest entry rather than refusing the new
-  one. The last event of a gesture is its release, and a release the screen
-  never sees leaves it holding a press that is no longer on the glass. The
-  frame log carries the count of evicted events as `TOUCHEVICT`.
+  that began while that same frame was dispatching its touch events. Both
+  the arming hold and the bus-fault acknowledgement take the cap.
+- A full touch queue never throws away a release. A press and a release are
+  the ends of a gesture; a movement is a position that the next one
+  supersedes, and a drag is measured from where it began, so a movement that
+  never arrives costs an intermediate frame and no travel. The queue
+  therefore gives up its oldest entry only when that entry is a movement, or
+  when the arriving event is itself a release. Otherwise the arriving event
+  is the one refused. A release the screen never sees leaves it holding a
+  press that is no longer on the glass. The frame log carries both counts as
+  `TOUCH <evicted>/<dropped>`.
 - The throttle moves by how far a finger travels, not to where it lands. A
   press on the track commands nothing, so a touch at the far end cannot ask
   for full travel in one contact. Sliders that command nothing dangerous, such

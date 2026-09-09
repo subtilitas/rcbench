@@ -92,12 +92,18 @@ Panel als Leitung ohne Flanken gelesen wird.
   sich also über mindestens acht Frames mit stehendem Druck. Die Dauer eines
   Frames wird an seinem Anfang gemessen und an seinem Ende angewendet; ohne
   die Obergrenze schreibt ein einzelner verspäteter Frame einem Halten Zeit
-  gut, das entstand, während derselbe Frame seine Touch-Events zustellte.
-- Eine volle Touch-Queue gibt ihren ältesten Eintrag her, statt den neuen
-  abzuweisen. Das letzte Event einer Geste ist ihr Release, und ein Release,
-  das der Screen nie sieht, lässt ihn einen Druck halten, der nicht mehr auf
-  dem Glas ist. Das Frame-Log führt die Zahl der verdrängten Events als
-  `TOUCHEVICT`.
+  gut, das entstand, während derselbe Frame seine Touch-Events zustellte. Das
+  Halten zum Scharfschalten und die Quittierung des Bus-Fault nehmen beide
+  diese Obergrenze.
+- Eine volle Touch-Queue wirft nie ein Release weg. Ein Druck und ein Release
+  sind die Enden einer Geste; eine Bewegung ist eine Position, die die
+  nächste ersetzt, und ein Drag wird von seinem Anfang aus gemessen, eine
+  Bewegung, die nie ankommt, kostet also einen Zwischenframe und keinen Weg.
+  Die Queue gibt ihren ältesten Eintrag daher nur her, wenn dieser eine
+  Bewegung ist oder wenn das ankommende Event selbst ein Release ist. Sonst
+  wird das ankommende Event abgewiesen. Ein Release, das der Screen nie
+  sieht, lässt ihn einen Druck halten, der nicht mehr auf dem Glas ist. Das
+  Frame-Log führt beide Zahlen als `TOUCH <verdrängt>/<abgewiesen>`.
 - Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
   Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, sodass
   eine Berührung am Ende nicht mit einem Kontakt den vollen Weg anfordern kann.

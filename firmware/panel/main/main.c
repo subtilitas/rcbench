@@ -520,11 +520,14 @@ static atomic_bool s_servo_release_request;
  */
 static atomic_uint s_lets_go;
 /*
- * Touch events the control task had to evict to make room, counted so the
+ * Touch events the control task could not deliver whole, counted so the
  * frame log can say whether the render loop has ever fallen far enough
  * behind for it to happen.  Nonzero on a bench is the condition below.
+ * Evicted is an event taken off the head to make room; dropped is a new one
+ * refused so that a queued release could stay.
  */
 static atomic_uint s_touch_evicted;
+static atomic_uint s_touch_dropped;
 /* False until the control task owns the safety state; bring-up polls the
  * link before that, with nothing to service. */
 static bool s_pump_live;
@@ -604,10 +607,34 @@ static void control_pump(void)
          */
         bool routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
         if (!routed) {
-            touch_event_t stale;
-            if (xQueueReceive(s_touch_q, &stale, 0) == pdTRUE) {
-                atomic_fetch_add(&s_touch_evicted, 1u);
-                routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
+            /*
+             * A MOVE is a position, and the next one supersedes it:
+             * ui_slider's by_delta() measures a drag from its own origin, so
+             * a MOVE that never arrives costs an intermediate frame and no
+             * travel.  A DOWN and an UP are the ends of a gesture and are
+             * not replaceable, so a MOVE is the only class this throws away
+             * while one of them is waiting.
+             */
+            touch_event_t head;
+            const bool have_head =
+                (xQueuePeek(s_touch_q, &head, 0) == pdTRUE);
+            const bool head_spare = have_head
+                                    && head.type == TOUCH_EVENT_MOVE;
+            const bool new_spare = (evt.type != TOUCH_EVENT_UP);
+
+            if (have_head && !head_spare && new_spare) {
+                /*
+                 * The oldest is a DOWN or an UP and the newcomer can be
+                 * spared.  A press that never registers is inert; a release
+                 * that never arrives leaves a screen holding a gesture.
+                 */
+                atomic_fetch_add(&s_touch_dropped, 1u);
+            } else if (have_head) {
+                touch_event_t stale;
+                if (xQueueReceive(s_touch_q, &stale, 0) == pdTRUE) {
+                    atomic_fetch_add(&s_touch_evicted, 1u);
+                    routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
+                }
             }
         }
         /*
@@ -3983,10 +4010,12 @@ void app_main(void)
          * frame budget being spent.  Printed every 300 frames.
          */
         if (++frames % 300u == 0u) {
-            ESP_LOGI(TAG, "%.1f fps  DRAW %u us  WAIT %u us  TOUCHEVICT %u",
+            ESP_LOGI(TAG,
+                     "%.1f fps  DRAW %u us  WAIT %u us  TOUCH %u/%u",
                      (double)display_fps(), (unsigned)draw_us,
                      (unsigned)display_last_wait_us(),
-                     atomic_load(&s_touch_evicted));
+                     atomic_load(&s_touch_evicted),
+                     atomic_load(&s_touch_dropped));
         }
     }
 }
