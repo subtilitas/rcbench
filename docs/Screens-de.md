@@ -139,8 +139,20 @@ Wert.
 An beliebiger Stelle auf dem Bogen ziehen, um eine Stellung zu befehlen. Der
 kräftige Arm ist die gemessene Stellung, der blasse Arm die befohlene. Der
 Abstand zwischen beiden ist die Verzögerung des Servos selbst. Die Ringe um
-die Spitze pulsieren, solange das Servo angesteuert wird. Loslassen des Bogens
-löscht den Ausgangs-Slot.
+die Spitze pulsieren, solange das Servo angesteuert wird. Den Finger zu heben
+lässt noch nicht los: Der Bildschirm wiederholt die letzte Stellung alle
+SERVO_HOLD_MS, ein Servo bleibt also stehen, wo es hingestellt wurde. Erst
+**RELEASE**, die Schaltfläche, führt die Ruderflächen auf die Mitte zurück --
+und auch dann bleiben die Pins gebunden und treiben weiter, auf der Mitte
+ihres Wegs. Beendet werden die Flanken durch ein Entschärfen oder durch das
+Verlassen des Bildschirms, was entschärft.
+
+Der Bildschirm treibt die Kanäle, die die Bindung als Ruderflächen markiert,
+und weder einen festen Pin noch ein festes Protokoll. Die acht Kanäle von PPM
+sind ebenfalls Ruderflächen, ein gebundener PPM-Ausgang bewegt sich also mit
+diesem Bildschirm genau wie ein gebundener SERVO-PWM-Ausgang. Ist überhaupt
+kein Ruderflächen-Kanal gebunden, kommandiert er nichts und kein Pin bewegt
+sich.
 
 SPEED ist die Geschwindigkeit, mit der der Prüfstand den Ausgang bewegen
 darf, und nicht nur eine Geschwindigkeit für die Zeichnung. Bei 100 % geht

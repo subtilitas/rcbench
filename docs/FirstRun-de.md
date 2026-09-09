@@ -2,10 +2,12 @@
 
 <sub>[English](FirstRun.md) · **Deutsch**</sub>
 
-Für das erste Mal, dass beide Platinen mit gestecktem Heartbeat-Draht mit
-Strom versorgt werden. Geschrieben für 0.7.0. Nichts davon wurde je gemacht,
-also sagt jeder Schritt, wie „gut“ aussieht und was aufzuschreiben ist, wenn
-es das nicht tut.
+Beide Platinen mit gestecktem Heartbeat-Draht unter Strom, und jede Zahl unten
+an einem Messgerät gelesen. Geschrieben für 0.8.0. Ein Servo und ein Motor
+sind auf dem Aufbau-Prüfstand vom Panel aus gelaufen; was hier nichts getan
+hat, ist ein Oszilloskop oder einen Logikanalysator an einen Pin zu legen.
+Deshalb sagt jeder Schritt, wie „gut“ aussieht und was aufzuschreiben ist,
+wenn es das nicht tut.
 
 Die Liste von oben nach unten abarbeiten. Jeder Schritt setzt voraus, dass
 der darüber bestanden hat.
@@ -18,9 +20,10 @@ der darüber bestanden hat.
 DShot spricht, ein Labornetzteil mit Strombegrenzung und das USB-Kabel für
 jede Platine.
 
-**Noch keinen Motor an den ESC.** Schritt 5 ist das erste Mal, dass diese
-Firmware je einen Pin getrieben hat; das Erste, worauf man schaut, ist das
-Oszilloskop und kein Propeller.
+**Noch keinen Motor an den ESC.** Schritt 5 treibt überhaupt keinen Pin -- er
+ist die Verriegelung, und kein Ausgang ist dort das bestandene Ergebnis.
+Schritt 6 ist der erste Pin an einem Messgerät, und dort schaut man zuerst auf
+das Oszilloskop und nicht auf einen Propeller.
 
 **Strombegrenzung:** so niedrig, dass ein kurzgeschlossener Output sie
 auslöst, statt eine Leiterbahn zu verbrennen.
@@ -112,7 +115,7 @@ und der Multiplexer wählt eines aus:
 |---|---|
 | Panel-Seite | **GPIO6**, an **J8** (dreipolige Stiftleiste mit 3V3, GND, GPIO6) |
 | Koprozessor-Seite | **GP3** |
-| Dazwischen | das retriggerbare Monoflop auf der Tochterplatine |
+| Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Aufbau-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene. Die Leitung deckt ein Panel ab, das aufhört zu schlagen, solange der Koprozessor gesund ist: Er entschärft nach 150 ms Stille. Unabgedeckt bleibt ein Panel, das aufhört zu schlagen, während der Koprozessor nicht handeln kann -- dann nimmt nichts die Ausgänge weg, und genau das täte das Monoflop ohne jede Firmware |
 
 Ohne diesen Draht verweigert der Koprozessor jedes Arm, und das ist die
 Verriegelung, die arbeitet — kein Fehler.
@@ -191,11 +194,15 @@ Verriegelung, nicht einen Pin.
 6. **Touch abdecken / sterben lassen** → nach **500 ms** Stille ist Armen
    gesperrt.
 
-Jeder dieser Punkte ist host-getestet. **Keiner wurde auf Hardware gesehen.**
+Jeder dieser Punkte ist host-getestet. **Keine der Zahlen unten wurde an
+einem Messgerät gesehen.** Ein Servo und ein Motor sind seither auf einem
+Aufbau-Prüfstand vom Panel aus gelaufen, ein Pin treibt also; was kein
+Oszilloskop und kein Logikanalysator gelesen hat, ist irgendeine Impulsbreite,
+Rahmenperiode oder Antwortverzögerung in diesem Baum.
 
 ---
 
-## 6. Erster je getriebener Pin
+## 6. Erster Pin an einem Messgerät
 
 Ein **Servo** nehmen, nicht den ESC. Ein Servo ist der gutmütige Fall und der,
 den das Oszilloskop am leichtesten liest.
@@ -203,6 +210,14 @@ den das Oszilloskop am leichtesten liest.
 **Freie Pins für einen Output:** GP0, GP1, GP2, GP4, GP5, GP6, GP7, GP13,
 GP14, GP15 und aufwärts.
 **Reserviert und verweigert:** GP3 (Heartbeat), GP8–GP12 (CAN).
+**Als zweiter PWM-Pin verweigert:** ein Pin, dessen PWM-Compare-Register schon
+von einem gebundenen Pin belegt ist. Auf dem RP2350 ist die Slice unterhalb
+von GP32 `(Pin / 2) modulo 8` und der Kanal das niedrigste Bit des Pins, also
+teilen sich GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und
+GP21, GP6 und GP22 je ein Compare-Register. Der zweite eines Paares wird
+verweigert, statt auf die Pulsbreite des ersten gemuxt zu werden. Die
+OUTPUTS-Seite führt kein Bit mit, das „gebunden“ sagt, der Bildschirm sieht
+also weiter konfiguriert aus, während die Leitung keinen Impuls liefert.
 
 Am Panel: **Setup → OUTPUTS**, `SERVO PWM` wählen, einen Pin anhaken. Oder
 **Setup → PICK A PIN** für das Platinenbild — Massen sind mit `G` markiert,
@@ -225,9 +240,11 @@ sagt, und nur dann. Den Finger zu heben stoppt den Ausgang nicht: der
 Bildschirm hält die gegebene Stellung und wiederholt sie alle **100 ms**
 (`SERVO_HOLD_MS`) gegen die **500 ms** des Koprozessors
 (`OUT_DEFAULT_TIMEOUT_MS`), ein Servo bleibt also stehen, wo es hingestellt
-wurde. Es stoppt durch **RELEASE**, Unscharfschalten, STOP oder das Verlassen
-des Bildschirms — jedes davon löscht den Slot. Am Oszilloskop prüfen, dass die
-Impulse bei RELEASE aufhören.
+wurde. **RELEASE** führt die Ruderflächen auf die Mitte zurück; es löscht den
+Slot nicht, und der Pin pulst weiter. Beendet werden die Flanken durch
+Unscharfschalten, STOP oder das Verlassen des Bildschirms, was entschärft. Am
+Oszilloskop prüfen, dass RELEASE den Impuls in die Mitte des Kanalwegs führt
+und dass ein Unscharfschalten ihn beendet.
 
 Ein Kanal, den niemand auffrischt, geht nach 500 ms weiterhin in seine
 Ruhelage; das betrifft einen gebundenen Pin, den der Servo-Bildschirm nicht

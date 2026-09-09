@@ -12,8 +12,12 @@ on:
         description: 'Tag to package'
         required: true
 
+# Keyed on the tag, not on the ref the run started from.  A tag push and a
+# manual dispatch for the same tag have different refs -- one is the tag, the
+# other a branch -- so keying on the ref lets two runs for one release overlap,
+# and the second one's cleanup would take the first one's draft away.
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 permissions:
@@ -23,11 +27,68 @@ env:
   PICO_SDK_TAG: '2.3.0'
 
 jobs:
+  # The tag is the only thing that says which version this is, and the images
+  # carry their own.  A tag pushed without moving rcbench_version.h would
+  # publish a v0.8.0 archive holding a 0.7.0 image, and the panel prints what
+  # the coprocessor reports rather than what the archive was called.
+  version:
+    name: The tag matches the images
+    runs-on: ubuntu-latest
+    # Resolved once, here, and every job below builds this SHA rather than
+    # fetching the tag again.  A tag can be force-moved while a run is in
+    # flight, and four independent fetches of a moving ref can each land on a
+    # different commit -- with every one of them passing the check below,
+    # because each checks the version in the commit it happened to get.
+    outputs:
+      sha: ${{ steps.pin.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The tag, not the ref the run started from, and qualified as a tag.
+          # On a manual dispatch the run's own ref is a branch, and a bare name
+          # handed to checkout resolves as a branch before a tag -- so a branch
+          # sharing the tag's name would be built and published under it.
+          # --verify-tag does not catch that: it only asks whether the tag
+          # exists, not whether this is what was built.
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
+
+      # Every expression in this file reaches a script through the environment
+      # and none is interpolated into one.  A ref name is attacker-controlled
+      # text and git allows $, ( and ) in one, so a tag substituted straight
+      # into a shell assignment runs whatever it was named -- before the
+      # comparison below could reject it, with this job's write-scoped token
+      # and checkout's persisted credentials in reach.
+      - name: Compare
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          H=shared/link/include/rcbench_version.h
+          maj=$(sed -n 's/^#define RCBENCH_VERSION_MAJOR *//p' "$H")
+          min=$(sed -n 's/^#define RCBENCH_VERSION_MINOR *//p' "$H")
+          pat=$(sed -n 's/^#define RCBENCH_VERSION_PATCH *//p' "$H")
+          want="v$maj.$min.$pat"
+          echo "tag $TAG, images $want"
+          [ "$TAG" = "$want" ] || {
+            echo "::error::$TAG does not match $want in $H"
+            exit 1
+          }
+
+      - name: Pin
+        id: pin
+        run: |
+          sha=$(git rev-parse HEAD)
+          echo "the tag is $sha, and every job below builds it"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
   panel:
+    needs: [version]
     name: Panel image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          # The commit the version job pinned, not the tag again.
+          ref: ${{ needs.version.outputs.sha }}
 
       - name: Build
         uses: espressif/esp-idf-ci-action@v1
@@ -54,9 +115,13 @@ jobs:
 
   iomcu:
     name: Coprocessor image
+    needs: [version]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          # The commit the version job pinned, not the tag again.
+          ref: ${{ needs.version.outputs.sha }}
 
       # Ubuntu's packaged toolchain rather than ARM's tarball: one line, and
       # the RP2350's Cortex-M33 needs nothing newer.  Fallback if the package
@@ -98,18 +163,25 @@ jobs:
 
   publish:
     name: Package and publish
-    needs: [panel, iomcu]
+    needs: [version, panel, iomcu]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          # The commit the version job pinned, not the tag again.
+          ref: ${{ needs.version.outputs.sha }}
 
       - uses: actions/download-artifact@v7
         with:
           path: artifacts
 
       - name: Package
+        env:
+          # The dispatch input first: on a manual run the ref name is the
+          # branch, so taking it first would name the archives after one.
+          # Through the environment, for the reason the version job gives.
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
-          TAG="${GITHUB_REF_NAME:-${{ inputs.tag }}}"
           mkdir -p dist
           # One archive per processor: they are flashed by different tools
           # over different cables, and the UF2 (USB flashing format) image
@@ -125,9 +197,73 @@ jobs:
       - name: Publish the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ needs.version.outputs.sha }}
         run: |
-          TAG="${GITHUB_REF_NAME:-${{ inputs.tag }}}"
+          # The pin holds for every checkout and not for the tag itself: a tag
+          # force-moved after the version job leaves these images built from
+          # the pinned commit and the release attached to the tag's new
+          # target.  --verify-tag does not cover it -- it asks whether the tag
+          # exists, not where it points -- so the remote is asked where it
+          # points now.
+          #
+          # Twice, and the second time is the one that counts.  Creating a
+          # release is a draft, then the asset uploads, then the publish, so a
+          # single check before all three leaves a window as long as the
+          # uploads.  The release is created as a draft, the tag is checked
+          # again once the assets are up, and only then is it made public --
+          # which narrows the window to the one call that publishes.
+          check_tag() {
+            peeled=$(git ls-remote "https://github.com/$REPO.git" \
+                       "refs/tags/$TAG^{}" | cut -f1)
+            [ -n "$peeled" ] || peeled=$(git ls-remote \
+                       "https://github.com/$REPO.git" "refs/tags/$TAG" | cut -f1)
+            if [ "$peeled" != "$SHA" ]; then
+              echo "::error::$TAG points at ${peeled:-nothing}; these images are $SHA"
+              return 1
+            fi
+            echo "$TAG points at $SHA"
+          }
+          check_tag
+
+          # Nothing leaves a draft behind.  Creating one is several API calls
+          # and an upload can fail part way through, and a draft left for this
+          # tag makes every retry fail with "release already exists".  The
+          # trap runs on any exit before the publish succeeds.
+          #
+          # Any draft for this tag is this run's: the concurrency group above
+          # is the tag, so no second run for the same release is in flight.
+          #
+          # It removes a draft and never a release: if the publish went
+          # through and something later failed, what is there is public and is
+          # not this step's to delete.
+          published=0
+          cleanup() {
+            if [ "$published" = 1 ]; then
+              return 0
+            fi
+            if [ "$(gh release view "$TAG" --repo "$REPO" \
+                      --json isDraft -q .isDraft 2>/dev/null)" = "true" ]; then
+              echo "removing the draft for $TAG"
+              gh release delete "$TAG" --repo "$REPO" --yes >/dev/null 2>&1 || true
+            fi
+          }
+          trap cleanup EXIT
+
+          # --verify-tag, because a tag gh has to invent is created from the
+          # default branch: without it a dispatch for a tag nobody pushed
+          # would attach these images to whatever main happened to be.
           gh release create "$TAG" dist/*.zip dist/SHA256SUMS \
-            --repo "${{ github.repository }}" \
+            --repo "$REPO" \
             --title "$TAG" \
-            --generate-notes
+            --verify-tag \
+            --generate-notes \
+            --draft
+
+          # The assets are up.  If the tag moved while they were uploading the
+          # trap takes the draft away; the tag itself is left alone, because
+          # where it should point is the operator's decision.
+          check_tag
+          gh release edit "$TAG" --repo "$REPO" --draft=false
+          published=1

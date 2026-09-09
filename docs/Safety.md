@@ -35,7 +35,23 @@ coprocessor's 200 ms link failsafe, rather than tightening to the new period:
 the margin is what survives a task that is late, and nothing is gained by
 removing it.
 
-The monostable is on no board. The edges reach J8 and nothing else.
+The monostable is on no board. On the bring-up bench the edges reach the
+coprocessor's GP3 by a direct wire from J8, which is what lets that bench arm.
+
+The monostable is retriggered by the panel's edges and removes the outputs
+when they stop. What it adds over the direct wire is that it does this without
+the coprocessor's firmware doing anything. Three cases, and the middle one is
+the gap:
+
+| | Direct wire and firmware | With the monostable |
+|---|---|---|
+| The panel stops beating, the coprocessor is healthy | disarms after HEARTBEAT_MAX_GAP_MS | the same, and sooner or later by its own timing |
+| The panel stops beating and the coprocessor cannot act -- wedged, or not servicing its monitor | nothing disarms; the bank goes on driving | the outputs are removed anyway |
+| The panel is healthy and the coprocessor misbehaves | the panel's STOP and the link watchdog are what is left | **no help**: the panel is still beating, so the monostable stays energised |
+
+The third row is not a case the monostable is for, and no hardware in this
+design covers it. Until the part is fitted, the second row is uncovered too,
+and firmware at both ends is the whole of the interlock.
 
 ## Heartbeat monitor
 

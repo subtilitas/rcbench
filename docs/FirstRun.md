@@ -2,9 +2,11 @@
 
 <sub>**English** · [Deutsch](FirstRun-de.md)</sub>
 
-For the first time both boards are powered with the heartbeat wire fitted.
-Written for 0.7.0. Nothing below has been done before, so
-every step says what "good" looks like and what to write down when it is not.
+Both boards powered with the heartbeat wire fitted, and every number below
+read on an instrument. Written for 0.8.0. A servo and a motor have run from
+the panel on the bring-up bench; what nothing here has done is put a scope or
+an analyser on a pin, so every step says what "good" looks like and what to
+write down when it is not.
 
 Work down the list. Each step assumes the one above it passed.
 
@@ -32,9 +34,10 @@ Work down the list. Each step assumes the one above it passed.
 bidirectional DShot, a bench supply with current limit, and the USB cable for
 each board.
 
-**Do not connect a motor to the ESC yet.** Step 5 is the first time a pin has
-ever been driven by this firmware; the first thing to look at is the scope,
-not a propeller.
+**Do not connect a motor to the ESC yet.** Step 5 drives no pin at all -- it
+is the interlock, and no output is the passing result. Step 6 is the first pin
+on an instrument, and the first thing to look at there is the scope, not a
+propeller.
 
 **Current limit:** set it low enough that a shorted output trips it rather
 than burning a track.
@@ -107,7 +110,7 @@ one:
 |---|---|
 | Panel end | **GPIO6**, on **J8** (a three-pin header carrying 3V3, GND, GPIO6) |
 | Coprocessor end | **GP3** |
-| Through | the retriggerable monostable on the daughterboard |
+| Through | the retriggerable monostable, once one exists. It is on no board, so the bring-up bench runs a direct wire and has no hardware backstop. The wire covers a panel that stops beating while the coprocessor is healthy: it disarms after 150 ms of silence. What is uncovered is a panel that stops beating while the coprocessor cannot act -- nothing then removes the outputs, and that is what the monostable would do without any firmware |
 
 Without this wire the coprocessor refuses every arm, and that is the interlock
 working, not a fault.
@@ -182,11 +185,14 @@ Nothing is wired to an output yet. This step tests the interlock, not a pin.
 6. **Cover the touch panel / let touch die** → after **500 ms** of silence
    arming is blocked.
 
-Every one of these is host-tested. **None has been seen on hardware.**
+Every one of these is host-tested. **None of the numbers below has been seen
+on an instrument.** A servo and a motor have since been run from the panel on
+a bring-up bench, so a pin does drive; what no scope or analyser has read is
+any pulse width, frame period or reply delay in this tree.
 
 ---
 
-## 6. First pin driven — ever
+## 6. First pin on an instrument
 
 Use a **servo**, not the ESC. A servo is the forgiving case and the one the
 scope reads most easily.
@@ -194,6 +200,13 @@ scope reads most easily.
 **Pins free for an output:** GP0, GP1, GP2, GP4, GP5, GP6, GP7, GP13, GP14,
 GP15 and up.
 **Reserved and refused:** GP3 (heartbeat), GP8–GP12 (CAN).
+**Refused as a second PWM pin:** a pin whose PWM compare register is already
+taken by a bound pin. On the RP2350 the slice is `(pin / 2) modulo 8` below
+GP32 and the channel is the pin's low bit, so GP0 and GP16, GP1 and GP17, GP2
+and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22 are pairs that share one
+compare register. The second of a pair is refused rather than muxed onto the
+first one's pulse width. The OUTPUTS page carries no bit saying "bound", so
+the screen goes on looking configured while the lead produces no pulse.
 
 On the panel: **Setup → OUTPUTS**, choose `SERVO PWM`, tick one pin. Or
 **Setup → PICK A PIN** for the board picture — grounds are marked `G`, rails
@@ -215,9 +228,11 @@ tree.
 then. Lifting the finger does not stop the output: the screen holds the
 position it was given and says it again every **100 ms** (`SERVO_HOLD_MS`),
 against the coprocessor's **500 ms** (`OUT_DEFAULT_TIMEOUT_MS`), so a servo
-stays where it was put. What stops it is **RELEASE**, a disarm, a STOP, or
-leaving the screen — each clears the slot. Check on the scope that the pulses
-stop when RELEASE is pressed.
+stays where it was put. **RELEASE** returns the surfaces to centre; it does
+not clear the slot and the pin keeps pulsing. What stops the edges is a
+disarm, a STOP, or leaving the screen, which disarms. Check on the scope that
+RELEASE moves the pulse to the middle of the channel's travel and that a
+disarm is what stops it.
 
 A channel nobody is refreshing does still go to rest after 500 ms, which is
 what happens to a bound pin the servo screen is not holding.

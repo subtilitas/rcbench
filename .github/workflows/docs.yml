@@ -35,15 +35,21 @@ jobs:
       # created over the API (application programming interface), only by
       # adding one page in the Wiki tab.  Without this message the job fails
       # with a bare "Repository not found".
+      # Through the environment, not interpolated into the script: a secret
+      # substituted into a command line is a secret in the shell's trace and
+      # in anything that echoes the command.
       - name: Clone the wiki
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
           if ! git clone \
-            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git" \
+            "https://x-access-token:$TOKEN@github.com/$REPO.wiki.git" \
             wiki 2>clone.log
           then
             cat clone.log
             echo
-            echo "::error::The wiki has no pages yet, so ${{ github.repository }}.wiki.git does not exist."
+            echo "::error::The wiki has no pages yet, so $REPO.wiki.git does not exist."
             echo "::error::Create one page by hand in the repository's Wiki tab, then re-run this workflow."
             exit 1
           fi
@@ -64,6 +70,8 @@ jobs:
         run: python3 source/tools/wiki_links.py wiki
 
       - name: Commit and push
+        env:
+          SHA: ${{ github.sha }}
         working-directory: wiki
         run: |
           git config user.name  "github-actions[bot]"
@@ -73,7 +81,7 @@ jobs:
             echo "wiki already matches docs/"
             exit 0
           fi
-          git commit -m "docs: sync from ${{ github.sha }}"
+          git commit -m "docs: sync from $SHA"
           # A page edited in the wiki UI (user interface) while this runs
           # would otherwise fail the push.
           git pull --rebase

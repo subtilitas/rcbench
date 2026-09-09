@@ -1,8 +1,9 @@
 # Where rcbench stands
 
-The running record: what exists, what is open, what is settled. The suite list,
-the module tree, the coverage table and every link are held to the tree by
-`tools/check_docs.py` and `tools/coverage.py`.
+The running record: what exists, what is open, what is settled. The suite
+list, the coverage table, the compile table and every link are held to the
+tree by `tools/check_docs.py` and `tools/coverage.py`. The directory sketch
+below is not: nothing checks it, so read it as a map and not as an inventory.
 
 [README.md](README.md) is the front page; the
 [wiki](https://github.com/subtilitas/rcbench/wiki) is the manual.
@@ -95,18 +96,18 @@ is taken in a gap ahead of the save that needs it.
 | Logger | built: a run is written while armed, in the format the viewer reads. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full |
 | Board, display, GT911, SD card | built; the panel boots and reports each step on the splash |
 | Shell: band, router, splash, menu, simulation watermark | built |
-| Motor & ESC (electronic speed controller) screen | built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the throttle are written to the coprocessor's control page at every 50 ms poll while the link is up; an arm writes CLEAR first and a NACK leaves the panel disarmed. Not run on hardware |
+| Motor & ESC (electronic speed controller) screen | built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the throttle are written to the coprocessor's control page at every 50 ms poll while the link is up; an arm writes CLEAR first and a NACK leaves the panel disarmed. An arm and a throttle have gone through it on the bring-up bench and run a motor; the paths a session has to provoke -- a NACK, a STOP mid-throttle, a link pulled while armed -- have not |
 | Servo screen | built; writes `CHAN_CFG`, `OUTPUTS` and `CHANNELS` over the link |
 | Analyser, programmer, balance, battery screens | built, rendered from models |
 | Link codec, page map, dispatcher, both watchdogs, CAN framing | built and tested on the host |
 | CAN drivers (TWAI on the panel, XL2515 on the coprocessor) and the echo self-test | built; run on hardware at 1 Mbit/s with zero errors at either end |
 | Bring-up diagnosis, both ends' counters compared | built |
 | Heartbeat generator and monitor | built and driven at both ends; the monostable is not fitted |
-| Coprocessor firmware | answers the identity, status, control, bench and three output pages; fails safe at 200 ms. It publishes only what it measures, which is rpm from a bidirectional DShot ESC and nothing else until a front end is fitted |
-| Output drivers (PWM, PPM, DShot, bidirectional DShot) | built; the frame arithmetic, the group code, the reply sampler and the GPIO-to-PWM-slice fold are host-tested, the PIO programs and the backends compile and are not run on hardware. [Reference](docs/DShot.md) |
+| Coprocessor firmware | answers the identity, status, control, bench and three output pages; fails safe at 200 ms. It publishes what the ESC reports over extended DShot telemetry -- speed, voltage, current, power and the ESC's own temperature -- and nothing the bench measures itself, because no measurement front end is fitted |
+| Output drivers (PWM, PPM, DShot, bidirectional DShot) | built; the frame arithmetic, the group code, the reply sampler and the GPIO-to-PWM-slice fold are host-tested. PWM has swung a servo and plain DShot has run a motor from the panel on the bring-up bench, with no instrument on either pin. PPM and bidirectional DShot have driven nothing. [Reference](docs/DShot.md) |
 | S.BUS decoder | built and tested; the PIO (programmable input/output) receiver is not written |
 | Motor pole count over the link | the panel sends `Motor poles` on the CONTROL page when the coprocessor answers; with none sent the coprocessor reports no speed rather than one derived from a guess |
-| Outputs screen | built and tested on the host: a protocol list and a pin grid behind the Setup screen's OUTPUTS key, writing `CHAN_CFG` and `OUTPUTS` on every change and reading the binding back from the coprocessor. Reserved pins are shown and refused. Not run on hardware |
+| Outputs screen | built and tested on the host: a protocol list and a pin grid behind the Setup screen's OUTPUTS key, writing `CHAN_CFG` and `OUTPUTS` on every change and reading the binding back from the coprocessor. Reserved pins are shown and refused. Run on hardware: the bindings behind the servo and motor runs were made here, and the nine saves that produced `FAULT 01` were an operator ticking pins on it |
 | Output binding in the coprocessor's flash | built, not run on hardware: the last two sectors of the first 4 MB as 32 record slots, restored at boot, saved once the bank is idle and the bus quiet. A save is one page program; a sector erase falls to one per sixteen saves and is taken ahead of the save that needs it, or at boot. The placement rules are host-tested in `test_outstore`; `firmware/iomcu/src/out_store.c` and `firmware/iomcu/src/main.c` compile and have not run on a board. What has run on hardware is the single-sector store this one replaces: eight of its saves printed an erase-and-program window of 19,174 to 19,186 us. The offset is deliberately the 4 MB module's rather than the 16 MB board file's. A record written by an earlier build reads as unwritten, so the first boot on this build starts from the defaults -- no driver and no pin in any slot -- and the binding is gone until an operator sets it again on the OUTPUTS screen |
 | Other receiver buses | not started |
 | Servo limit search, servo synchronisation | built and tested against a modelled servo |
@@ -118,16 +119,19 @@ is taken in a gap ahead of the save that needs it.
 
 ```
 rcbench/
-  README.md  README-de.md  STATUS.md  CONTRIBUTING.md  SECURITY.md
-  LICENSE  NOTICE  .gitattributes  .gitignore
+  README.md  README-de.md  STATUS.md  CHANGELOG.md  CONTRIBUTING.md
+  SECURITY.md  LICENSE  NOTICE  .gitattributes  .gitignore
   .github/workflows/      ci · docs · release
   .clang-tidy  .cppcheck-suppress  ruff.toml  codecov.yml
   docs/                   the wiki source, English and German
   tools/                  render_ui · coverage · check_docs · frame_cost
-                          gen_font · wiki_links
+                          gen_font · gen_board_art · wiki_links
   hardware/               board design record: README, STATUS, docs/
+  testbench/              the measurement bench: README, WIRING, host scripts,
+                          decoders. Nothing on it has been run
 
   shared/                 pure C: no ESP-IDF, no pico-sdk, no FreeRTOS types
+    artwork/              the board picture, stored and fetched over the link
     gfx/                  rasteriser and three fonts
     touch/                coordinate and event mapping
     ui/                   theme · widgets · icons · router · screens
@@ -148,10 +152,11 @@ rcbench/
   firmware/panel/         ESP-IDF
     main/                 main.c · selftest.c
     components/           board · display · gt911 · storage · can_twai
+                          settings_nvs · art_flash
     sdkconfig.defaults  partitions.csv
 
   firmware/iomcu/         pico-sdk
-    src/                  main.c · xl2515.c
+    src/                  main.c · xl2515.c · out_store · art_rp2350_can
                           out_pwm · out_ppm · out_dshot · outputs_hw
                           ppm.pio · dshot.pio
     include/iomcu_pins.h
@@ -280,8 +285,8 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 
 | Item | State | Needs |
 | --- | --- | --- |
-| The control page on hardware | the NVS round trip has run: a save writes and the next boot reports what it loaded. The control page has not. The coprocessor's NOT_ARMED refusal has been seen, but as the answer to an arm it refused for want of the heartbeat line, so the failsafe clear and an accepted ARM are still host-tested at the shared/ level only | the heartbeat line above, then a session with both boards: arm, stop, unplug the link, arm again |
-| Output drivers on hardware | all four are written and none has been seen on a pin. What a host test cannot reach: every bit timing, the DMA ring that plays a PPM frame, the PIO turnaround from a bidirectional DShot frame to its reply, and whether an ESC answers at all | an oscilloscope, a servo, and an ESC that does bidirectional DShot. [What is unconfirmed](docs/DShot.md#what-has-not-been-confirmed-on-a-wire) |
+| The control page under measurement | the NVS round trip has run, and the control page has since carried an accepted ARM: with the heartbeat wire fitted, a servo has been swung and a motor run from the panel. What that does not cover is the paths a session has to provoke rather than pass through -- the failsafe clear, a STOP mid-throttle, the link unplugged while armed, and an arm refused for each of its three reasons | a session with both boards that provokes them one at a time, and writes down what the band said |
+| Output drivers on hardware | a servo has been swung and a motor run from the panel on the bring-up bench, so a pin drives; what nothing has seen is any timing on an instrument. What a host test cannot reach: every bit timing, the DMA ring that plays a PPM frame, the PIO turnaround from a bidirectional DShot frame to its reply, and whether an ESC answers at all | an oscilloscope, a servo, and an ESC that does bidirectional DShot. [What is unconfirmed](docs/DShot.md#what-has-not-been-confirmed-on-a-wire) |
 | The flash save costs CAN frames | measured on the bring-up module: eight erase-and-program windows printed 19,174 to 19,186 us, and the XL2515's overrun count climbed from 2 to 8 while nine saves were taken. A frame at 1 Mbit/s is about 130 us and the controller holds two, so 19 ms is about 150 frame times, or seventy times over the 260 us the two buffers hold, with nobody emptying them; the bus reports no error, because the frames arrived and nobody collected them. A lost request costs the panel LINK_HOST_TIMEOUT_MS (1000 ms) of waiting, and 1000 ms of silence latches this end's 200 ms failsafe, so one lost frame is enough for `FAULT 01`. What the store does about it is above, and none of that has run on a board; what it does not do is get under the 260 us the two buffers hold. The 19 ms is an erase and a page program inside one window, which is what the store this replaces printed: neither half of it is measured on its own. The program is the window every save still pays, and 256 bytes against the erase's 4,096 puts it one to two orders of magnitude below 19 ms on serial NOR flash, or roughly 200 to 2,000 us against a 260 us budget | a board: the page program and erase windows from the console lines, the overrun count across sixteen saves, the heartbeat after a window, and a power cut mid-save |
 | The capability word is read once, at boot | `s_capabilities` is taken from the identity page during bring-up and never again, so a coprocessor that arrives after boot, or is swapped for one with different parts fitted, leaves the menu marked from the wrong word. The board identity beside it comes from the identity page that opens each link, so it follows a swap; this word does not, because it is written at boot and read by the render task, and moving the write into the control task adds a cross-task race | the same snapshot treatment the bench numbers already get |
 | A card swapped while running is not re-mounted | `storage_mounted()` is cleared only by `storage_deinit()`, so a card removed after boot leaves a stale mount and RESCAN keeps reading the old volume. The viewer does not unmount to recover: it lists from the render task while the `runlog` task writes the run log to the same volume, and unmounting under an open handle frees the SPI bus beneath a write from another task | one task owning the card's lifetime, so a remount can be sequenced against the writer |
@@ -294,11 +299,12 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | S.BUS receiver | decoder built; the inverted 8E2 receiver at 100 kbaud is a PIO program that is not written | PIO program |
 | Measurement front end | INA238 (motor), INA745A (servo rail), BQ25887 (pack) and TPS55288 (servo supply) selected; no schematic | [hardware record](hardware/STATUS.md) |
 | Monostable | not on any board | hardware |
+| The release publishes without waiting for CI | `release.yml` and `ci.yml` both trigger on a `v*` tag and run in parallel. `release.yml`'s publish job needs only its own two build jobs, so the host suite, the sanitizer run, the coverage floors, clang-tidy, cppcheck, ruff, `check_docs.py`, the frame-cost ceilings and the screenshot check cannot stop `gh release create`. Both files build the two images with the same steps, so the artefacts are the ones CI would have built; what is unguarded is everything CI checks that is not a build. A tag added a `version` job that refuses a tag not matching `rcbench_version.h`, which is the narrow case that was worth making structural | a `workflow_run` trigger on a successful CI run for tag refs, or the host suite folded into `release.yml` as a job the builds need. Until then: confirm CI is green on the commit before pushing the tag |
 | OpenYGE wire facts | seven items want a capture: rpm scale, CRC (cyclic redundancy check) seed, frame length, legacy header, turnaround, parameter indices, `status2` | an ESC and a logic analyser; [list](docs/OpenYGE.md#8-what-to-measure-before-trusting-this-page) |
 | The bench in a browser | serving the interface to a browser on another machine is open; a browser on the panel is not planned. There is no network stack in the tree: no Wi-Fi bring-up, no sockets, no HTTP (Hypertext Transfer Protocol), and Wi-Fi costs internal RAM and CPU time on a board whose frame budget is spent. The safety line is a heartbeat, and a remote client cannot hold one: a browser that stops answering is indistinguishable from one whose user is idle | a read-only client (numbers, plots and logs out; arming, throttle and STOP stay at the panel), and before any code, a written answer to how a remote session proves it is still present |
 | No ESC reports its kV | the ESC screen shows the rated kV, what the motor turns per volt, and the ratio of the two as EFF, an estimate documented as such in [Screens](docs/Screens.md). The rated value is read from the connected ESC when it reports one and from `SET_MOTOR_KV` when it does not; nothing calls `motor_screen_set_esc_kv()` yet, so it is whatever the operator entered, and zero draws the field empty | an ESC parameter set on the link. The OpenYGE cache is built and unconnected; BLHeli_32's parameters are not published |
-| The heartbeat line is not fitted | the panel drives GPIO6 on J8 and the coprocessor reads GP3 with a pull-down; nothing joins them. The coprocessor therefore refuses every arm with `LINK_NACK_NOT_ARMED` while it is connected, which is the interlock working rather than a fault. Arming succeeds with the coprocessor unplugged, because the panel then has nothing to ask | a wire from J8's GPIO6 to the coprocessor's GP3, or the monostable fitted between them. This is what blocks arming on a complete bench |
-| The control task is not run on hardware | touch, STOP, arming, the outputs, the link and the heartbeat run in a task on the core that does not draw, and none of it is exercised outside a build: `main.c` is not in the host suite. The `runlog` task beside it, which owns every write to the card, is in the same position. A multi-agent review found six defects in it, including a heartbeat that stopped for up to 1000 ms on an unanswered poll and a splash tap that latched STOP; those are fixed, and the rules it drives are now in `shared/safety/arming.c` under `test_arming` | a session with both boards: arm, drag the throttle while the screen is busy, press STOP, unplug the link, and confirm the heartbeat's period on a scope at J8. ESP-IDF warns that a second core touching PSRAM shares bandwidth with the bounce-buffer refill and can starve it into the screen shift already seen on this board; the control task touches no framebuffer, which is the reason to expect it is clear, not evidence that it is |
+| The heartbeat has no hardware backstop | the wire from J8's GPIO6 to the coprocessor's GP3 is fitted on the bring-up bench, and arming succeeds there: a motor and a servo have each been run from the panel. What is not fitted is the retriggerable monostable the wire is supposed to pass through, so firmware at both ends is the only thing gating the outputs. The wire covers a panel that stops beating while the coprocessor is healthy: the monitor sees no edge for HEARTBEAT_MAX_GAP_MS (150 ms) and the loop disarms. Uncovered is a panel that stops beating while the coprocessor cannot act -- nothing then removes the outputs. That is what the monostable does, retriggered by the panel's edges and needing no firmware. A healthy panel beside a misbehaving coprocessor is covered by neither, and by no hardware in this design | the monostable specified in [Safety](docs/Safety.md), on a board. `testbench/WIRING.md` carries the specification and deliberately no part numbers |
+| The control task has no test of its own | touch, STOP, arming, the outputs, the link and the heartbeat run in a task on the core that does not draw. It has run on hardware -- an arm, a throttle and a servo command have all gone through it -- but nothing exercises it deliberately: `main.c` is not in the host suite. The `runlog` task beside it, which owns every write to the card, is in the same position. A multi-agent review found six defects in it, including a heartbeat that stopped for up to 1000 ms on an unanswered poll and a splash tap that latched STOP; those are fixed, and the rules it drives are now in `shared/safety/arming.c` under `test_arming` | a session with both boards: arm, drag the throttle while the screen is busy, press STOP, unplug the link, and confirm the heartbeat's period on a scope at J8. ESP-IDF warns that a second core touching PSRAM shares bandwidth with the bounce-buffer refill and can starve it into the screen shift already seen on this board; the control task touches no framebuffer, which is the reason to expect it is clear, not evidence that it is |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The refill interrupt is masked for the length of the write, so the bounce buffer starves and the driver restarts the DMA at the next VBlank | nothing, unless the disturbance proves unacceptable. `CONFIG_SPI_FLASH_AUTO_SUSPEND` would remove it (the module's flash is 0x46 4018, an XMC die ESP-IDF grants `SPI_FLASH_CHIP_CAP_SUSPEND`), but ESP-IDF warns against it for a workload with an interrupt every 512 us |
 | Interface language | about 430 user-visible strings are literals in ten screens, 168 of them the programmer's parameter names and help | an X-macro string table with one ID per string, a table per language, and a fallback to English; deferred until the screens stop changing |
 
@@ -367,13 +373,14 @@ kept outside the repository; the specification in
 | --- | --- |
 | 1. Foundation: tree, ported modules with tests, tools and CI, link codec, heartbeat, coprocessor skeleton, screens | done |
 | 2. The link on hardware | done 2026-08-28: 1 Mbit/s, zero errors at either end |
-| 3. Measured numbers: ESC telemetry or bidirectional DShot, and the current sensor | open. Parts selected, nothing fitted. OpenYGE is pursued in a separate repository; what returns is a source that fills `bench_state` |
+| 3. Measured numbers: ESC telemetry or bidirectional DShot, and the current sensor | extended DShot telemetry fills `bench_state` with the ESC's own voltage, current, power, speed and temperature, and is not run against an ESC. The bench's own current sensor is selected and not fitted. OpenYGE is pursued in a separate repository |
 | 4. Recording: the logger, and the viewer reads what the bench wrote | done |
-| 5. Outputs: the control page from the panel, then PWM, then the sum-signal protocols | drivers built and host-tested, not run on hardware. The panel's settings do not yet configure a slot |
+| 5. Outputs: the control page from the panel, then PWM, then the sum-signal protocols | drivers built and host-tested; a servo and a motor have run from the panel, with no timing seen on an instrument. SETTINGS/OUTPUTS configures a slot |
 | 6. Receiver buses, one decoder at a time | S.BUS decoded; the PIO receiver and the other buses open |
 | 7. Programming: BLHeli_S and AM32, Hitec on the servo side | screen built; no protocol on a wire |
 
-Next: the heartbeat wire, then a session with both boards and a servo on a pin
--- the control page, an arm, a stop, and a pulse on a scope. After that the
-settings screen writing the output pages, so a slot can be configured without
-a hand-built frame.
+Next: an instrument on a pin. Every bit timing in this tree was written from a
+specification and exercised only against frames the same code builds, and a
+servo turning is not a frame period. `testbench/` is what answers that -- the
+bench is being assembled and nothing on it has been run. After that, the
+monostable, which is the one safety element specified and on no board.

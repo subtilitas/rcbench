@@ -277,8 +277,13 @@ unless both arrived.
 
 The implementation is written from the published description of the protocol.
 Everything below is exercised by the host suite against frames the same code
-builds, which proves the arithmetic and not the wire. None of it has been put
-on an oscilloscope or against an ESC on this bench:
+builds, which proves the arithmetic and not the wire.
+
+One thing is not on this list. **Plain DShot has run a motor from the panel on
+the bring-up bench**, which puts its bit timing inside that one ESC's
+tolerance -- against one ESC, with no instrument on the pin, so it is evidence
+and not a measurement. Nothing here has been on an oscilloscope, and every
+bidirectional item below is unconfirmed in every sense:
 
 - the reply rate of five quarters of the DShot rate;
 - the leading-bit convention of the group code;

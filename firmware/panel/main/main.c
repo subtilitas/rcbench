@@ -894,9 +894,14 @@ static bool bring_up(void)
 
     /* The panel's own build, on the first line it draws.  It is the host, so
      * it publishes no identity page; without this the only version anywhere
-     * on the bench would be the coprocessor's. */
+     * on the bench would be the coprocessor's.
+     *
+     * "panel fw" and not "fw": the CH422G beside it is the I2C expander, a
+     * fixed-function part with no firmware of its own, and a line reading
+     * "CH422G fw 0.8.0" says the expander is running a build that does not
+     * exist. */
     splash_screen_set(SPLASH_STEP_BOARD, SPLASH_OK,
-                      "CH422G fw " RCBENCH_VERSION_STRING);
+                      "CH422G, panel fw " RCBENCH_VERSION_STRING);
 
     /*
      * Schema defaults, then the values the NVS (non-volatile storage) store
@@ -1343,6 +1348,24 @@ static void log_open(uint32_t arm)
         }
     }
     if (s_log_file == NULL) {
+        /*
+         * And the numbering is asked again next time.  It is latched for the
+         * boot so a card holding hundreds of runs is read once, which is
+         * right while runs are being written -- but a run that could not be
+         * opened has written no number, and the operator's answer to a full
+         * card is to delete one.  Without this the scan never runs again and
+         * the deletion changes nothing until the panel restarts.  It costs a
+         * directory read per failed run, and a failed run is already a run
+         * that is not being recorded.
+         *
+         * It rescues the card that stays in the slot.  It cannot rescue the
+         * one taken out to be edited on a computer: storage_mounted() is
+         * cleared only by storage_deinit(), so a swapped card leaves a stale
+         * mount and the walk reads the volume that is gone.  That is the open
+         * item in STATUS.md, and until it is closed a deletion made off the
+         * bench needs the panel restarted.
+         */
+        s_log_numbered = false;
         ESP_LOGW(TAG, "no log file could be opened; the run is not recorded");
         control_alert("card full or unwritable -- run not recorded");
         return;
