@@ -126,12 +126,54 @@ chased. `host/selftest.sh` asks only for at least one line, so this has never
 mattered to it; a recipe that assumes it gets the sample count it asked for
 would be wrong.
 
-Every channel read zero, with two distinct line patterns and no `1` anywhere.
-That is unconnected probes on pulled-low inputs and is what it should be, so
-the data path is proven and the inputs responding to a real edge is not. The
-device offers `PWM1` and `PWM2` as a signal generator, so one jumper from
-`PWM1` to `CH0` would close that loop at a known frequency. Not wired: it is a
-physical change to the bench.
+**The loop is closed and the analyser measures.** A jumper from `PWM1` to
+`CH0` uses the device's own generator as the source. Sampling at 200 MHz,
+4,000,000 samples per run:
+
+| Commanded | Measured | Error | Duty | Cycles |
+| --- | --- | --- | --- | ---: |
+| 1 kHz | 1000.0 Hz | +0.000% | 50.00% | 19 |
+| 10 kHz | 10000.0 Hz | +0.000% | 50.00% | 199 |
+| 100 kHz | 100000.0 Hz | -0.000% | 50.00% | 2000 |
+| 1 MHz | 1000000.0 Hz | +0.000% | 50.00% | 20008 |
+
+**Those figures are against the device's own timebase and nothing else.** The
+period standard deviation is 0.0 ns on every run, and that is a tell rather
+than a quality figure: the generator and the sample clock come off the same
+FPGA oscillator, so every period lands on an exact number of samples --
+1 kHz is precisely 200,000 samples at 200 MHz. What is proven is the capture
+path, the timing arithmetic and the duty resolution. A wrong crystal cannot be
+detected this way, because both halves would be wrong together. Absolute
+accuracy is untested; it needs an external reference and none has been
+applied. This is the same trap as a decoder written from the specification the
+firmware was written from: agreement for the same wrong reason.
+
+Duty cycle at 100 kHz, which is the half a self-agreeing clock cannot
+manufacture -- a ratio does not depend on the timebase being right:
+
+| Commanded | Measured | High |
+| --- | --- | --- |
+| 10% | 10.00% | 1000 ns of 10000 ns |
+| 25% | 25.00% | 2500 ns |
+| 50% | 50.00% | 5000 ns |
+| 75% | 75.00% | 7500 ns |
+| 90% | 90.00% | 9000 ns |
+
+Two things about driving `PWM1` from `sigrok-cli`, both of which present as
+absent hardware:
+
+`--channel-group PWM1` makes `samplerate` "not applicable", so one invocation
+cannot both set the stimulus and choose a sample rate, and the capture then
+runs at the 200 MHz default without saying so. Setting 1 kHz and capturing a
+0.51 ms window yields one edge on `CH0`, which reads as a dead output and is
+half a period of the default.
+
+The `PWM1` configuration does not survive the invocation. `--set` followed by
+a separate capture reads back `enabled` off and `output_frequency` 1000.
+Stimulus and capture have to be one command.
+
+The analyser has measured a signal it generated itself. It has not measured
+anything the coprocessor produced, which is what this bench exists for.
 
 Clearing that gate means the driver exists. It says nothing about whether the
 analyser captures: the FX2 microcontroller firmware and the FPGA bitstreams
