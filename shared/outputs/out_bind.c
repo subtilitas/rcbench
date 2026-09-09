@@ -629,6 +629,19 @@ uint8_t outbind_chosen(const outbind_t *b)
     return count_pins(b->pins[proto], outbind_pin_count(b->board));
 }
 
+uint8_t outbind_wire_proto(const outbind_t *b)
+{
+    if (b == NULL) {
+        return 0u;
+    }
+    for (uint8_t g = 1; g < OUTBIND_PROTOS; ++g) {
+        if (b->pins[g] != 0u) {
+            return g;
+        }
+    }
+    return 0u;
+}
+
 uint8_t outbind_chosen_total(const outbind_t *b)
 {
     if (b == NULL) {
@@ -977,13 +990,7 @@ bool outbind_from_slots(outbind_t *b, uint16_t board, const uint16_t *regs,
      * anything on it opens on something the operator can see the pins of,
      * and the choice does not depend on which slot happened to be first.
      */
-    b->proto = 0u;
-    for (uint8_t g = 1; g < OUTBIND_PROTOS; ++g) {
-        if (b->pins[g] != 0u) {
-            b->proto = g;
-            break;
-        }
-    }
+    b->proto = outbind_wire_proto(b);
 
     /*
      * The whole of "is this a page this screen can show": render the binding

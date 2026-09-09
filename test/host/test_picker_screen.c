@@ -16,6 +16,7 @@
 #include "greatest.h"
 
 #include "link_pages.h"
+#include "outputs_screen.h"
 #include "picker_screen.h"
 #include "ui_theme.h"
 
@@ -455,8 +456,48 @@ TEST_CASE(null_events_are_refused_rather_than_dereferenced)
     CHECK_EQ(s_applied, 0);
 }
 
+/*
+ * The picker can add a pin after the operator has chosen a protocol on the
+ * outputs screen, with nothing bound anywhere.
+ *
+ * The protocol belongs to the outputs screen: this screen has no control for
+ * one and only reads it to know which group a tap joins.  So the panel hands
+ * the picker what the outputs screen reconciled, not what came off the wire --
+ * an empty page renders as OFF, and a picker left on OFF refuses every pin.
+ *
+ * This walks the sequence firmware/panel/main/main.c performs, which is not
+ * itself in this suite.
+ */
+TEST_CASE(the_picker_follows_the_protocol_chosen_on_the_outputs_screen)
+{
+    fresh();
+
+    /* What the operator picked, on the other screen. */
+    outbind_t picked;
+    outbind_init(&picked);
+    outbind_set_board(&picked, BOARD);
+    outbind_set_proto(&picked, 4u);              /* DSHOT600 */
+    outputs_screen_set_binding(&picked);
+
+    /* What the coprocessor answers with an empty store: OFF, nothing bound. */
+    outbind_t empty;
+    outbind_init(&empty);
+    outbind_set_board(&empty, BOARD);
+    CHECK_EQ((int)outbind_chosen_total(&empty), 0);
+    CHECK_EQ((int)empty.proto, 0);
+
+    /* main.c: the outputs screen first, then the picker from its result. */
+    outputs_screen_set_binding(&empty);
+    picker_screen_set_binding(outputs_screen_binding());
+
+    CHECK_EQ((int)picker_screen_binding()->proto, 4);
+    outbind_t b = *picker_screen_binding();
+    CHECK(outbind_can_add(&b, idx(4u)));
+}
+
 int main(void)
 {
+    RUN(the_picker_follows_the_protocol_chosen_on_the_outputs_screen);
     RUN(a_button_binds_the_pad_it_is_wired_to);
     RUN(every_button_binds_its_own_pin_and_no_other);
     RUN(a_reserved_pin_has_no_button_to_press);

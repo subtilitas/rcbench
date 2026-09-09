@@ -80,13 +80,50 @@ const outbind_t *outputs_screen_binding(void) { return &s.bind; }
 
 void outputs_screen_set_binding(const outbind_t *b)
 {
-    if (b != NULL) {
-        s.bind = *b;
-        /* Read off the wire or restored, so it is trimmed before it is drawn
-         * rather than trusted to mean something on this board. */
-        outbind_trim(&s.bind);
-        touched();
+    if (b == NULL) {
+        return;
     }
+    /*
+     * Which protocol is being edited is this screen's, and the wire does not
+     * carry it.
+     *
+     * Picking a protocol posts the binding and the panel reads it straight
+     * back, which is what keeps the screen from showing something the far end
+     * is not doing.  But a page carries pins, and outbind_from_slots() names
+     * a protocol from them -- the lowest one holding a pin, or OFF when none
+     * does.  A protocol with no pins yet is not on that page at all, so the
+     * read-back names something else and, landing whole, took the choice away
+     * within one poll.  With nothing bound it named OFF, and OFF takes no
+     * pins, so no pin could be ticked at all: that is every first boot on a
+     * store the coprocessor reads as unwritten.  With one protocol bound and
+     * a second being started it named the first, so a bench wired for an ESC
+     * could never add a servo.
+     *
+     * So a protocol equal to what the pins already say is not a claim about
+     * which one is being edited, and the screen keeps its own.  Any other is
+     * somebody naming one -- how the screen is told what to show at start-up,
+     * and how a caller poses it -- and it lands.
+     */
+    const uint16_t had_board = s.bind.board;
+    const uint8_t  chosen    = s.bind.proto;
+    /*
+     * Except across a change of board, where nothing carries over.  A pin
+     * index means a different pin in another catalogue, which is why
+     * outbind_set_board() clears the selection, and a protocol chosen for the
+     * hardware that was there is no better than the pins were.
+     */
+    const bool keep = (chosen != 0u)
+                   && (b->board == had_board)
+                   && (b->proto == outbind_wire_proto(b));
+
+    s.bind = *b;
+    /* Read off the wire or restored, so it is trimmed before it is drawn
+     * rather than trusted to mean something on this board. */
+    outbind_trim(&s.bind);
+    if (keep) {
+        outbind_set_proto(&s.bind, chosen);
+    }
+    touched();
 }
 
 void outputs_screen_set_apply(outputs_apply_fn fn) { s.apply = fn; }

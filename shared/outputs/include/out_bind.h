@@ -344,6 +344,18 @@ void outbind_set_board(outbind_t *b, uint16_t board);
 uint8_t outbind_chosen(const outbind_t *b);
 
 /**
+ * The protocol a page rendered from this selection reads back as: the
+ * lowest-numbered one holding a pin, or OFF when nothing does.
+ *
+ * Which protocol is being edited is not on the wire.  A page carries pins,
+ * and outbind_from_slots() has to name a protocol from them, so it names this
+ * one.  A screen that has just been handed a binding uses this to tell the
+ * two apart: a protocol equal to it says only what the pins already said,
+ * and any other is somebody's choice.
+ */
+uint8_t outbind_wire_proto(const outbind_t *b);
+
+/**
  * Add or remove a pin, in the protocol being edited.
  *
  * Refuses a reserved pin, an index off the end, one more pin than the
