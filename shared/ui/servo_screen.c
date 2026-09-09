@@ -991,6 +991,21 @@ static void leave(void)
     ++s.arm_rev;
 }
 
+/*
+ * Touch events were lost between two frames, so this screen's record of what
+ * is on the glass cannot be trusted.  Drop the gesture rather than let a
+ * hold that completes on a timer finish on a contact that may have gone.
+ * Nothing is commanded here: a gesture abandoned part way asks for nothing,
+ * which is what letting go early already does.
+ */
+static void cancel(void)
+{
+    ui_slider_release(&s.speed);
+    ui_hold_reset(&s.arm);
+    s.arm_down = false;
+    ++s.arm_rev;
+}
+
 static const ui_screen_t k_screen = {
     .title  = "SERVO",
     .reset  = reset,
@@ -998,6 +1013,7 @@ static const ui_screen_t k_screen = {
     .leave  = leave,
     .tick   = tick,
     .event  = event,
+    .cancel = cancel,
     .render = render,
 };
 

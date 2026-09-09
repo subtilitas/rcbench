@@ -520,14 +520,12 @@ static atomic_bool s_servo_release_request;
  */
 static atomic_uint s_lets_go;
 /*
- * Touch events the control task could not deliver whole, counted so the
- * frame log can say whether the render loop has ever fallen far enough
- * behind for it to happen.  Nonzero on a bench is the condition below.
- * Evicted is an event taken off the head to make room; dropped is a new one
- * refused so that a queued release could stay.
+ * Touch events the control task could not deliver, counted so the frame log
+ * can say whether the render loop has ever fallen far enough behind for it
+ * to happen, and so the frame that observes a loss can cancel the gesture in
+ * progress.  Nonzero on a bench is the condition below.
  */
-static atomic_uint s_touch_evicted;
-static atomic_uint s_touch_dropped;
+static atomic_uint s_touch_lost;
 /* False until the control task owns the safety state; bring-up polls the
  * link before that, with nothing to service. */
 static bool s_pump_live;
@@ -608,34 +606,30 @@ static void control_pump(void)
         bool routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
         if (!routed) {
             /*
-             * A MOVE is a position, and the next one supersedes it:
-             * ui_slider's by_delta() measures a drag from its own origin, so
-             * a MOVE that never arrives costs an intermediate frame and no
-             * travel.  A DOWN and an UP are the ends of a gesture and are
-             * not replaceable, so a MOVE is the only class this throws away
-             * while one of them is waiting.
+             * The consumer is behind.  Drop the oldest and take the newest,
+             * which is what the GT911's own event queue and the command
+             * queue do -- but which of the two is lost is not what makes
+             * this safe.
+             *
+             * No choice here is safe on its own.  A release that never
+             * arrives leaves a screen holding a press; a DOWN that never
+             * arrives orphans the release that follows it; and a MOVE is not
+             * spare either, because the MOVE where a finger leaves ARM is
+             * what abandons the hold, and the position after it is back
+             * inside the button.  The render task drains this queue from the
+             * other core, so even inspecting the head first decides nothing:
+             * the entry classified is not necessarily the entry removed.
+             *
+             * So the loss is recorded instead, and the frame that observes
+             * it tells the screen its record of the glass is stale.  The
+             * screen drops the gesture, and which event went missing stops
+             * mattering.
              */
-            touch_event_t head;
-            const bool have_head =
-                (xQueuePeek(s_touch_q, &head, 0) == pdTRUE);
-            const bool head_spare = have_head
-                                    && head.type == TOUCH_EVENT_MOVE;
-            const bool new_spare = (evt.type != TOUCH_EVENT_UP);
-
-            if (have_head && !head_spare && new_spare) {
-                /*
-                 * The oldest is a DOWN or an UP and the newcomer can be
-                 * spared.  A press that never registers is inert; a release
-                 * that never arrives leaves a screen holding a gesture.
-                 */
-                atomic_fetch_add(&s_touch_dropped, 1u);
-            } else if (have_head) {
-                touch_event_t stale;
-                if (xQueueReceive(s_touch_q, &stale, 0) == pdTRUE) {
-                    atomic_fetch_add(&s_touch_evicted, 1u);
-                    routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
-                }
+            touch_event_t stale;
+            if (xQueueReceive(s_touch_q, &stale, 0) == pdTRUE) {
+                routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
             }
+            atomic_fetch_add(&s_touch_lost, 1u);
         }
         /*
          * The router will latch this same release and the backstop would
@@ -3708,6 +3702,9 @@ void app_main(void)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
     uint32_t frames  = 0;
+    /* The loss count this loop has already answered.  It only rises, so a
+     * difference is one or more events the screens never saw. */
+    unsigned lost_seen = atomic_load(&s_touch_lost);
     uint32_t last_us = (uint32_t)esp_timer_get_time();
     bool     was_armed = false;
     uint32_t last_stops = 0;
@@ -3799,7 +3796,24 @@ void app_main(void)
         }
         servo_screen_set_armed(armed_now);
 
-        /* What the control task saw of the panel. */
+        /*
+         * What the control task saw of the panel -- and whether it saw more
+         * than it could hand over.  Read before the drain, so an event lost
+         * while this loop runs is answered by the next frame rather than
+         * missed: the count only rises.
+         */
+        const unsigned lost_now = atomic_load(&s_touch_lost);
+        if (lost_now != lost_seen) {
+            /*
+             * At least one event never reached the screens, so their record
+             * of what is on the glass is stale.  A gesture that completes on
+             * a timer -- the arming hold, the fault acknowledgement -- would
+             * otherwise finish on a contact that has gone.  Cancelling asks
+             * for nothing, which is what letting go early already does.
+             */
+            lost_seen = lost_now;
+            ui_router_cancel_gestures();
+        }
         touch_event_t evt;
         while (xQueueReceive(s_touch_q, &evt, 0) == pdTRUE) {
             const ui_screen_id_t before = ui_router_current();
@@ -4011,11 +4025,10 @@ void app_main(void)
          */
         if (++frames % 300u == 0u) {
             ESP_LOGI(TAG,
-                     "%.1f fps  DRAW %u us  WAIT %u us  TOUCH %u/%u",
+                     "%.1f fps  DRAW %u us  WAIT %u us  TOUCHLOST %u",
                      (double)display_fps(), (unsigned)draw_us,
                      (unsigned)display_last_wait_us(),
-                     atomic_load(&s_touch_evicted),
-                     atomic_load(&s_touch_dropped));
+                     atomic_load(&s_touch_lost));
         }
     }
 }

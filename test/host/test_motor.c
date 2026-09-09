@@ -994,6 +994,36 @@ TEST_CASE(leaving_the_screen_does_not_erase_the_run)
     CHECK_EQ(motor_screen_plot_samples(), 12);
 }
 
+/*
+ * The panel could not hand over every touch event, so this screen's record
+ * of what is on the glass is stale.  A hold that completes on the frame
+ * timer would otherwise arm the bench on a finger that has already gone --
+ * the release it is waiting for is one of the events that went missing.
+ *
+ * Cancelling asks for nothing, which is what letting go early already does,
+ * and it must not leave the button stuck: a fresh press arms as usual.
+ */
+TEST_CASE(a_cancelled_gesture_does_not_arm)
+{
+    fresh();
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS / 4);
+
+    scr->cancel();
+    tick_for(HOLD_TICKS * 2);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    /* The contact that was down is gone as far as this screen is concerned,
+     * so its release commands nothing either. */
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    tick_for(HOLD_TICKS);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    /* And nothing is stuck: a fresh press still arms. */
+    hold_arm();
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+}
+
 int main(void)
 {
     RUN(a_finger_that_leaves_arm_arms_nothing);
@@ -1027,5 +1057,6 @@ int main(void)
     RUN(an_unanswered_bench_does_not_show_numbers);
     RUN(the_plot_records_one_run);
     RUN(leaving_the_screen_does_not_erase_the_run);
+    RUN(a_cancelled_gesture_does_not_arm);
     return test_summary("motor");
 }

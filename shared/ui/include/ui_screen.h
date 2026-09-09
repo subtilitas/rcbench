@@ -56,6 +56,16 @@ typedef struct {
     void (*tick)(float dt_s);
     /** Coordinates are relative to the screen's own area, not the panel. */
     void (*event)(const touch_event_t *evt);
+    /**
+     * The touch stream broke: at least one event between the last frame and
+     * this one never reached this screen.  Drop any gesture in progress.
+     *
+     * A screen whose controls all act on a release can leave this NULL --
+     * losing an event there costs a highlight.  A screen with a gesture that
+     * completes on a timer cannot: a press whose release went missing goes
+     * on being held, and the timer finishes it with nothing on the glass.
+     */
+    void (*cancel)(void);
     void (*render)(gfx_canvas_t *c, int buffer_index);
 } ui_screen_t;
 
@@ -72,6 +82,13 @@ const char *ui_router_title(ui_screen_id_t id);
 
 void ui_router_tick(float dt_s);
 void ui_router_event(const touch_event_t *evt);
+
+/**
+ * Tell the screen on top that touch events were lost, so a gesture that
+ * completes on a timer cannot finish on a contact that is no longer there.
+ * Called once per frame in which the panel could not deliver every event.
+ */
+void ui_router_cancel_gestures(void);
 void ui_router_render(gfx_canvas_t *c, int buffer_index);
 
 /** Repaint every screen's cached chrome into every framebuffer. */

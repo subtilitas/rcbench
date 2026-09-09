@@ -241,6 +241,14 @@ void ui_router_event(const touch_event_t *evt)
     }
 }
 
+void ui_router_cancel_gestures(void)
+{
+    const ui_screen_t *scr = screen_for(s.current);
+    if (scr != NULL && scr->cancel != NULL) {
+        scr->cancel();
+    }
+}
+
 void ui_router_set_alert(const char *text)
 {
     if (text == NULL) {

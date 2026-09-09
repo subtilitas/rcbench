@@ -517,6 +517,19 @@ static void render(gfx_canvas_t *c, int buffer_index)
     flash_advance();
 }
 
+/*
+ * Touch events were lost between two frames, so this screen's record of what
+ * is on the glass cannot be trusted.  Drop the gesture rather than let a
+ * hold that completes on a timer finish on a contact that may have gone.
+ * Nothing is commanded here: a gesture abandoned part way asks for nothing,
+ * which is what letting go early already does.
+ */
+static void cancel(void)
+{
+    s.pressed = false;
+    s.held_s  = 0.0f;
+}
+
 static const ui_screen_t k_screen = {
     .title  = "CAN BUS FAULT",
     .reset  = reset,
@@ -524,6 +537,7 @@ static const ui_screen_t k_screen = {
     .leave  = NULL,
     .tick   = tick,
     .event  = event,
+    .cancel = cancel,
     .render = render,
 };
 

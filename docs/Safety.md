@@ -84,15 +84,18 @@ unpowered or unplugged panel reads as a line that is not edging.
   and applied at its end, and without the cap one late frame credits a hold
   that began while that same frame was dispatching its touch events. Both
   the arming hold and the bus-fault acknowledgement take the cap.
-- A full touch queue never throws away a release. A press and a release are
-  the ends of a gesture; a movement is a position that the next one
-  supersedes, and a drag is measured from where it began, so a movement that
-  never arrives costs an intermediate frame and no travel. The queue
-  therefore gives up its oldest entry only when that entry is a movement, or
-  when the arriving event is itself a release. Otherwise the arriving event
-  is the one refused. A release the screen never sees leaves it holding a
-  press that is no longer on the glass. The frame log carries both counts as
-  `TOUCH <evicted>/<dropped>`.
+- A frame that lost touch events cancels the gesture in progress. A full
+  touch queue drops its oldest entry to take the newest, and no choice there
+  is safe on its own: a release that never arrives leaves a screen holding a
+  press, a press that never arrives orphans the release after it, and the
+  movement where a finger leaves a button is what abandons the hold. The
+  render task drains the queue from the other core, so inspecting an entry
+  does not decide which one is removed. The loss is counted instead, and the
+  frame that observes it tells the screen on top that its record of the glass
+  is stale; the screen drops any gesture in progress, which asks for nothing,
+  exactly as letting go early does. MOTOR & ESC, SERVO and CAN BUS FAULT are
+  the screens with a gesture that completes on a timer, and each implements
+  it. The frame log carries the count as `TOUCHLOST`.
 - The throttle moves by how far a finger travels, not to where it lands. A
   press on the track commands nothing, so a touch at the far end cannot ask
   for full travel in one contact. Sliders that command nothing dangerous, such

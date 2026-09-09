@@ -124,6 +124,27 @@ TEST_CASE(one_late_frame_cannot_acknowledge_a_fault)
     CHECK_EQ(frames, (int)(UI_HOLD_S / UI_HOLD_MAX_CREDIT_S));
 }
 
+/*
+ * The same for the acknowledgement: a screen that says the bench cannot be
+ * trusted must not be dismissed by a gesture whose events were lost. The
+ * hold completes on the frame timer, so without the cancel it would
+ * acknowledge on a contact the screen can no longer account for.
+ */
+TEST_CASE(a_cancelled_gesture_acknowledges_nothing)
+{
+    fresh();
+    down(ack_cx(), ack_cy());
+    hold(HOLD_TICKS / 4);
+
+    scr()->cancel();
+    hold(HOLD_TICKS * 2);
+    CHECK(!busfault_screen_take_ack());
+
+    up(ack_cx(), ack_cy());
+    hold(HOLD_TICKS);
+    CHECK(!busfault_screen_take_ack());
+}
+
 TEST_CASE(a_tap_acknowledges_nothing)
 {
     /* The whole point of the hold: a touch that could have been a sleeve
@@ -362,5 +383,6 @@ int main(void)
     RUN(the_two_faults_do_not_share_a_heading);
     RUN(the_button_fills_towards_the_colour_it_settles_on);
     RUN(one_late_frame_cannot_acknowledge_a_fault);
+    RUN(a_cancelled_gesture_acknowledges_nothing);
     return test_summary("busfault_screen");
 }

@@ -95,15 +95,20 @@ Panel als Leitung ohne Flanken gelesen wird.
   gut, das entstand, während derselbe Frame seine Touch-Events zustellte. Das
   Halten zum Scharfschalten und die Quittierung des Bus-Fault nehmen beide
   diese Obergrenze.
-- Eine volle Touch-Queue wirft nie ein Release weg. Ein Druck und ein Release
-  sind die Enden einer Geste; eine Bewegung ist eine Position, die die
-  nächste ersetzt, und ein Drag wird von seinem Anfang aus gemessen, eine
-  Bewegung, die nie ankommt, kostet also einen Zwischenframe und keinen Weg.
-  Die Queue gibt ihren ältesten Eintrag daher nur her, wenn dieser eine
-  Bewegung ist oder wenn das ankommende Event selbst ein Release ist. Sonst
-  wird das ankommende Event abgewiesen. Ein Release, das der Screen nie
-  sieht, lässt ihn einen Druck halten, der nicht mehr auf dem Glas ist. Das
-  Frame-Log führt beide Zahlen als `TOUCH <verdrängt>/<abgewiesen>`.
+- Ein Frame, der Touch-Events verloren hat, bricht die laufende Geste ab.
+  Eine volle Touch-Queue verwirft ihren ältesten Eintrag, um den neuesten
+  aufzunehmen, und keine Wahl dort ist für sich sicher: Ein Release, das nie
+  ankommt, lässt einen Screen einen Druck halten, ein Druck, der nie ankommt,
+  macht das Release danach elternlos, und die Bewegung, mit der ein Finger
+  eine Taste verlässt, ist das, was das Halten aufgibt. Der Render-Task
+  leert die Queue vom anderen Kern, das Prüfen eines Eintrags entscheidet
+  also nicht, welcher entfernt wird. Stattdessen wird der Verlust gezählt,
+  und der Frame, der ihn bemerkt, sagt dem obersten Screen, dass sein Bild
+  vom Glas veraltet ist; der Screen verwirft jede laufende Geste, was nichts
+  kommandiert, genau wie ein frühes Loslassen. MOTOR & ESC, SERVO und
+  CAN BUS FAULT sind die Screens mit einer Geste, die auf einem Timer
+  fertig wird, und jeder setzt das um. Das Frame-Log führt die Zahl als
+  `TOUCHLOST`.
 - Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
   Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, sodass
   eine Berührung am Ende nicht mit einem Kontakt den vollen Weg anfordern kann.
