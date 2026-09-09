@@ -142,10 +142,27 @@ samples arrived, and a floating input produces samples like any other. So
 drive something known and require the channel to follow it.
 
 At this point in the order the boards are not running, so use the Pi: take a
-free header GPIO, toggle it by hand, and capture the probe that is on it.
+free header GPIO, drive it while the capture runs, and capture the probe that
+is on it.
 
-    gpioset --mode=time --sec=1 gpiochip<n> <line>=1   # or the pin held high
+    while :; do
+        gpioset --mode=time --usec=100000 gpiochip<n> <line>=1
+        gpioset --mode=time --usec=100000 gpiochip<n> <line>=0
+    done &
+    pulse=$!
     testbench/host/capture.sh probe D0 1m 2m 1.65
+    kill "$pulse"
+
+**The toggle runs during the capture, not before it.** One `gpioset` that
+ends before `capture.sh` starts puts the only transition outside the trace,
+and the channel then reads flat whether the lead is on the pin or not --
+which is the reading this check exists to rule out. The loop edges every
+100 ms and the capture spans 2 s, so about twenty edges land inside it. Each
+`gpioset` releases the line as it exits, so the trace has a short undriven
+gap between levels; the check asks only that the level change. `kill` ends
+the loop, and the `gpioset` still running exits within 100 ms on its own.
+libgpiod 2 spells these options differently -- read `gpioset --help` on the
+Pi before copying this.
 
 **The channel has to change.** A trace that sits at one level says the probe
 is not on the pin, or the ground lead is not on the star -- and either of
@@ -486,19 +503,42 @@ undoes the arm on the way. In order:
 
 Then capture **after the gate** -- the load-facing side of the gated output,
 and the monostable's output-enable -- on whichever channels the run is not
-otherwise using:
+otherwise using. The map in `testbench/README.md` gives channels 14 and 15 to
+SBUS and a spare, and neither is in this run, so the two interlock leads take
+them: **D14 the output-enable, D15 the load-facing side.**
 
-    testbench/host/capture.sh interlock D0,D3,D14,D15 24m 4m 1.65
+Two captures, because the two questions want opposite settings.
+
+**One: the window.** 1 MHz over 4m samples, which is 4 s:
+
+    testbench/host/capture.sh interlock-window D0,D3,D14,D15 1m 4m 1.65
+
+**Open the monostable's trigger branch while this one is running**, not
+before it. The window is measured from the last edge into the trigger, so
+that edge and the enable falling have to be in one trace, and the branch has
+to come out inside the first 3.8 s for the 150 ms after it to still be in the
+trace. 24 MHz over the same 4m samples covers 167 ms, which is less than the
+window it would be measuring; span is what this capture needs, and 1 us
+resolution on a 150 ms window is already finer than the number is worth
+quoting to.
+
+D0 aliases at 1 MHz: a DShot600 bit is 1.67 us and is sampled about twice,
+so the trace shows the pin changing without being decodable. Changing is all
+this capture asks of it.
+
+**Two: the load side, once it is quiet.** The branch stays out, so the enable
+stays down and the gate stays closed for as long as it is left out. That is a
+steady state rather than a transient, so it is sampled on its own:
+
+    testbench/host/capture.sh interlock-quiet D0,D15 24m 2m 1.65
 
 24 MHz, not 1 MHz. The output under test may be DShot600, whose zero-bit high
 is about 0.63 us: sampled once a microsecond, narrow activity leaking through
 a failed gate falls between samples and the load side is reported quiet. The
 rate has to out-sample whatever D0 is carrying, and DShot600 is the fastest
-this bench binds.
-
-**Open the monostable's trigger branch while this is running**, not before it.
-The window is measured from the last edge into the trigger, so that edge and
-the enable falling have to be in one trace.
+this bench binds. 2m samples at 24 MHz is 83 ms, which is 83 DShot frames at
+the coprocessor's 1,000 Hz update rate and four servo frames at 50 Hz, so a
+leak that repeats at all repeats inside it.
 
 **Probe D3 on the monostable's side of that link, not on the junction.** The
 channel map puts D3 at the GPIO6/GP3 node, and GP22 goes on driving that node
@@ -511,15 +551,14 @@ The coprocessor keeps seeing GP22 on the junction throughout, so firmware
 stays happy and D0 keeps toggling. Only the interlock is starved, which is the
 whole point of the test.
 
-Four things have to be in the one capture, and each answers a different
-question:
+Four things have to be seen, and each answers a different question:
 
-| | |
-|---|---|
-| D0, the raw pin | **toggling.** This is the precondition, not the evidence: it says the arm worked, the binding took and the pin is wired. Flat here and the test proved nothing -- a bench with no interlock at all would look identical |
-| D3, the monostable's trigger input | edges, then none. The last one is where the window starts, and without it in the trace there is no window to measure against. Past the removable link, not on the junction: the junction keeps edging from GP22 |
-| the enable | deasserted, within 150 ms of that last edge |
-| the load side | quiet |
+| | Where | What it has to show |
+|---|---|---|
+| D0, the raw pin | both captures | **changing.** This is the precondition, not the evidence: it says the arm worked, the binding took and the pin is wired. Flat here and the test proved nothing -- a bench with no interlock at all would look identical |
+| D3, the monostable's trigger input | the window capture | edges, then none. The last one is where the window starts, and without it in the trace there is no window to measure against. Past the removable link, not on the junction: the junction keeps edging from GP22 |
+| D14, the enable | the window capture | deasserted, within 150 ms of that last edge |
+| D15, the load side | both captures | it stops in the window capture, and the 24 MHz one is what says it is quiet rather than carrying something too narrow for 1 MHz to see |
 
 An actively driven input, blocked downstream, is the whole of the claim.
 Leaving D0 out of the capture turns a failed arm into a passing interlock
