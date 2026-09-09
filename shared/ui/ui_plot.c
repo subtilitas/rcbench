@@ -50,9 +50,10 @@ void ui_plot_init(ui_plot_t *p, const ui_plot_series_t *series, int count,
     if (count > UI_PLOT_MAX_SERIES) {
         count = UI_PLOT_MAX_SERIES;
     }
-    p->count  = count;
-    p->span_s = span_s;
-    p->focus  = -1;
+    p->count   = count;
+    p->span_s  = span_s;
+    p->focus   = -1;
+    p->running = true;
     for (int i = 0; i < count; ++i) {
         p->series[i]      = series[i];
         p->scale[i]       = series[i].floor > 0.0f ? series[i].floor : 1.0f;
@@ -65,17 +66,55 @@ void ui_plot_push(ui_plot_t *p, const float *values)
     if (p == NULL || values == NULL) {
         return;
     }
+    /* Counted before the sample is taken or dropped: the numbers beside a
+     * plot are live whether or not the trace is, and a caller that skips them
+     * on a stopped plot would freeze the readouts with it. */
+    ++p->pushes;
+    if (!p->running) {
+        return;
+    }
     for (int k = 0; k < p->count; ++k) {
         /* A non-finite reading is stored as zero, so it cannot poison the
          * scale; the trace dips to zero at that sample. */
         const float v = values[k];
         p->ring[k][p->head] = isfinite(v) ? v : 0.0f;
     }
-    ++p->pushes;
     p->head = (p->head + 1) % UI_PLOT_HISTORY;
     if (p->filled < UI_PLOT_HISTORY) {
         ++p->filled;
     }
+    ++p->revision;
+}
+
+void ui_plot_set_running(ui_plot_t *p, bool running)
+{
+    if (p == NULL || p->running == running) {
+        return;
+    }
+    p->running = running;
+    /* The state is drawn, so a change of it is a change of the picture. */
+    ++p->revision;
+}
+
+void ui_plot_clear(ui_plot_t *p)
+{
+    if (p == NULL) {
+        return;
+    }
+    /*
+     * The ring is left as it is.  Every reader is bounded by `filled` --
+     * ui_plot_sample(), the render loop and ui_plot_update_scales() -- so
+     * zeroing 19,200 bytes buys nothing, on a frame that is also sending an
+     * arm command.
+     */
+    p->head   = 0;
+    p->filled = 0;
+    for (int k = 0; k < p->count; ++k) {
+        p->scale[k]       = p->series[k].floor > 0.0f ? p->series[k].floor
+                                                      : 1.0f;
+        p->shrink_hold[k] = SHRINK_HOLD;
+    }
+    ++p->revision;
 }
 
 float ui_plot_sample(const ui_plot_t *p, int series, int back)
@@ -93,7 +132,15 @@ float ui_plot_sample(const ui_plot_t *p, int series, int back)
 
 void ui_plot_update_scales(ui_plot_t *p, int visible_samples)
 {
-    if (p == NULL) {
+    /*
+     * A stopped plot keeps its scales as well as its samples.  The shrink
+     * hold counts calls, not samples, so a caller that stopped pushing but
+     * kept calling this would reshape a frozen trace SHRINK_HOLD calls
+     * later -- the axis moving under a picture that cannot change.  Held
+     * here rather than at the caller, where every caller would have to
+     * remember it.
+     */
+    if (p == NULL || !p->running) {
         return;
     }
     int n = (p->filled < visible_samples) ? p->filled : visible_samples;
@@ -215,6 +262,18 @@ void ui_plot_render(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
         gfx_fill_rect(c, r.x, y, r.w, 1, ui_theme_color(UI_C_GRID));
     }
 
+    /*
+     * A held trace is framed, drawn under the traces rather than over them.
+     * The newest column sits at r.x + r.w - 1 and a clipped peak rides r.y,
+     * and those are the pixels a held plot exists to show.
+     *
+     * Inside r, because this function clears only r: a frame drawn one pixel
+     * outside would survive the next clear and mark a running plot as held.
+     */
+    if (!p->running && p->filled > 0) {
+        gfx_draw_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_ACCENT));
+    }
+
     const int cols = (r.w < UI_PLOT_HISTORY) ? r.w : UI_PLOT_HISTORY;
 
     for (int k = 0; k < p->count; ++k) {
@@ -267,8 +326,13 @@ void ui_plot_render(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
     snprintf(axis, sizeof(axis), "-%.0fs", (double)p->span_s);
     gfx_text(c, r.x + 4, r.y + r.h - 19, axis, &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 60),
-                                 (int16_t)(r.y + r.h - 19), 56, 16 },
-                "NOW", &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT), 1,
-                GFX_ALIGN_RIGHT);
+    /* NOW while the trace advances, END where a held one stopped.  Nothing at
+     * all on a plot with no samples: there is no edge to name. */
+    const char *right = p->running ? "NOW" : (p->filled > 0 ? "END" : NULL);
+    if (right != NULL) {
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 60),
+                                     (int16_t)(r.y + r.h - 19), 56, 16 },
+                    right, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT), 1,
+                    GFX_ALIGN_RIGHT);
+    }
 }

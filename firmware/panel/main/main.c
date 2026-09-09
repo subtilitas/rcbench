@@ -3699,7 +3699,26 @@ void app_main(void)
             (void)motor_screen_poll_cmd(&follow);   /* not a command */
         }
         was_armed = armed_now;
-        motor_screen_set_armed(armed_now);
+        /*
+         * The arm edge before this frame's samples and the disarm edge after
+         * them, so a queued sample lands on the side of the run boundary it
+         * was captured on.  The queue holds SAMPLE_Q_LEN samples, and this
+         * ordering is what decides where a run's trace begins and ends: the
+         * arm clears the plot, so an arm reported after the drain would wipe
+         * the samples the drain had just recorded into the new run.
+         */
+        if (armed_now) {
+            motor_screen_set_armed(true);
+        }
+        /* One sample, one plot column, however many frames it took to get
+         * here: the queue holds what this loop was too busy to draw. */
+        bench_state_t queued;
+        while (xQueueReceive(s_sample_q, &queued, 0) == pdTRUE) {
+            motor_screen_push(&queued);
+        }
+        if (!armed_now) {
+            motor_screen_set_armed(false);
+        }
         servo_screen_set_armed(armed_now);
 
         /* What the control task saw of the panel. */
@@ -3820,13 +3839,6 @@ void app_main(void)
         /* The armed state this frame acted on, read before the touch was
          * dispatched; the band shows what the screens were told. */
         const bool armed = armed_now;
-        /* One sample, one plot column, however many frames it took to get
-         * here: the queue holds what this loop was too busy to draw. */
-        bench_state_t sample;
-        while (xQueueReceive(s_sample_q, &sample, 0) == pdTRUE) {
-            motor_screen_push(&sample);
-        }
-
         const ui_bench_status_t status = {
             .link_up     = link_up,
             .armed       = armed,
