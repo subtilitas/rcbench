@@ -247,6 +247,17 @@ bei 1.000 Hz, also in den ersten 10 ms eines Scharfschaltens. Quittiert wird es
 nicht, danach werden Antworten als Extended Telemetry gelesen, ob der ESC
 zugestimmt hat oder nicht.
 
+Jeder der zehn Frames trägt das Telemetry-Bit gesetzt. Bei einem Wert von 1
+bis 47 markiert dieses Bit den Frame für die BLHeli_S-Familie (Bluejay) als
+Command: sie verwirft ein Command mit gelöschtem Telemetry-Bit und setzt dabei
+ihren Wiederholungszähler zurück, sodass zehn Frames ohne das Bit nie die
+sechs Wiederholungen erreichen, die ihr Command-Handler zählt. AM32 hat diese
+Sperre nicht und nimmt beide Frames an. An einem bidirektionalen Pin lautet
+der Frame mit dem Bit `0x01B5` und ohne es `0x01A4` -- andere Nutzdaten und
+ein anderes Prüfsummen-Nibble. `test_dshot_frame` hält dieses Wort fest. Die
+zweite Bedeutung des Bits ist eine Anforderung auf der separaten seriellen
+Telemetry-Leitung, die auf diesem Prüfstand niemand liest.
+
 Aus den Bits allein sind die beiden nicht zu unterscheiden: das Nibble, das
 einen Extended-Frame markiert, ist in einem Drehzahl-Frame ein gewöhnlicher
 Exponent mit Mantisse, und nur ein ESC mit eingeschalteter Extended Telemetry
@@ -274,6 +285,11 @@ unbestätigt:
 - die Turnaround-Verzögerung, und ob 30 µs das ist, was ein ESC tatsächlich
   wartet;
 - die Frame-Typen der Extended Telemetry und ihre Einheiten;
+- ob der Hinweis "mindestens 35 ms warten" in der Spezifikation zu Command 13
+  oder zu Command 12 (Save Settings) gehört. Die Tabelle lässt beide Lesarten
+  zu, und der Prüfstand wartet in keinem Fall: das Throttle folgt der zehnten
+  Wiederholung beim nächsten 1-ms-Takt. Das klärt der Text der Spezifikation
+  und keine Platine;
 - jedes Bit-Timing, gegen die Toleranz eines echten ESC statt gegen die
   Spezifikation.
 
