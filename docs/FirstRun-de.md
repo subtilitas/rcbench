@@ -3,7 +3,7 @@
 <sub>[English](FirstRun.md) · **Deutsch**</sub>
 
 Beide Platinen mit gestecktem Heartbeat-Draht unter Strom, und jede Zahl unten
-an einem Messgerät gelesen. Geschrieben für 0.8.0. Ein Servo und ein Motor
+an einem Messgerät gelesen. Geschrieben für 0.8.1. Ein Servo und ein Motor
 sind auf dem Aufbau-Prüfstand vom Panel aus gelaufen; was hier nichts getan
 hat, ist ein Oszilloskop oder einen Logikanalysator an einen Pin zu legen.
 Deshalb sagt jeder Schritt, wie „gut“ aussieht und was aufzuschreiben ist,
