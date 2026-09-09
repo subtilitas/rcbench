@@ -75,7 +75,7 @@ history is in git.
   any slot. The panel keeps no binding of its own and sends none unasked: it
   reads the pages back when the link comes up and shows nothing configured, so
   the binding is set again on the OUTPUTS screen, and that save writes the
-  first version 2 record.
+  first version 3 record.
 - The coprocessor times the erase and the page program separately and prints
   four lines: `outputs saved, record <n>, program window <n> us`, `output
   store sector erased, window <n> us`, `output store sector reclaimed, window

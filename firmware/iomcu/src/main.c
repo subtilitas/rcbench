@@ -75,9 +75,13 @@ static heartbeat_mon_t s_beat;
 static uint32_t s_frames;
 
 /*
- * The pass's clock, read once at the top of the loop and used by everything
- * the pass reaches -- including the page callbacks, which run inside
- * can_service() and have no `now` of their own.
+ * The pass's clock, used by everything the pass reaches -- including the page
+ * callbacks, which run inside can_service() and have no `now` of their own.
+ *
+ * Read at the top of the loop and once more before its tail, and nowhere
+ * else.  The second read is there because two things in a pass can stop this
+ * core for longer than a pass lasts: a flash window, and a printf to a USB
+ * host.  See the loop for why that matters to what is measured after them.
  *
  * Every timeout in this file is a wrap-safe unsigned subtraction of two
  * timestamps.  A second reading of the clock inside a pass can be a

@@ -505,10 +505,13 @@ sixteen therefore cost one page program and no erase. How long a page program
 takes on the module's flash is not measured; the console line printed after
 each save carries it.
 
-A power cut during a save leaves the binding from before it. The record being
-written fails its checksum and the record before it is still the newest good
-one, and the sector being erased is never the one holding the record still
-wanted.
+A power cut during a save leaves the binding from before it. Each record
+carries the number of 0 bits it holds, beside that number complemented. An
+erase sets bits and a program clears them, so a record caught in either holds
+fewer 0 bits than it claims, and the claim cannot survive a partial write in
+either direction. The record being written is therefore rejected rather than
+probably rejected, the record before it is still the newest good one, and the
+sector being erased is never the one holding the record still wanted.
 
 A page the screen cannot describe — two protocols at once, a rate no entry
 offers, a pin that is not on the header — reads back as nothing configured
