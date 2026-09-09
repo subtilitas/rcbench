@@ -155,6 +155,16 @@ it, so between unpacking and that line the bench is still running 0.5.2. Make
 it permanent wherever this host keeps its environment; a shell that has not
 had it is a shell that measures with the wrong binary.
 
+**The licences travel with the binaries.** libsigrok and sigrok-cli are GNU
+General Public License version 3 or later, and the workflow publishes built
+binaries from a public repository. `/opt/sigrok/share/licences` carries each
+project's own licence text, copied out of the clone at the commit that was
+built, and `CORRESPONDING-SOURCE.txt` naming the two upstream URLs, the two
+commits, and the workflow file that holds the configure flags, the container
+image and the install steps. Nothing patches either project and no sigrok
+source is vendored into this repository, so the upstream commit is the whole
+of the source the binaries came from.
+
 **Which build is installed is recorded, and checked.** The manifest is at
 `/opt/sigrok/MANIFEST.txt`. Plain text, machine-readable keys first, one per
 line, colon-separated: `libsigrok-commit`, `sigrok-cli-commit`,

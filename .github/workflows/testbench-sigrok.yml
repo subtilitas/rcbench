@@ -418,6 +418,63 @@ jobs:
             sigrok-cli -l 4 --driver kingst-la2016 --scan 2>&1 | grep -i bitstream
           EOF
 
+      # libsigrok and sigrok-cli are GPLv3-or-later, and this job publishes
+      # built binaries from a public repository.  GPLv3 section 6 wants the
+      # corresponding source to accompany the object code or a written offer to
+      # stand with it, and "corresponding source" includes the scripts that
+      # control compilation.  All three parts travel in the tarball: each
+      # project's own licence text, the upstream URL with the exact commit the
+      # binary was built from, and the path to the workflow that built it,
+      # which is public in the same repository as this file.
+      #
+      # The licence files are copied out of the clones rather than written
+      # here, so a project that changes its licence ships the one it actually
+      # carries at the commit that was built.
+      - name: Stage the licences and the corresponding-source note
+        run: |
+          set -euo pipefail
+          mkdir -p "$STAGE$PREFIX/share/licences"
+          for proj in libsigrok sigrok-cli; do
+            found=
+            for name in COPYING COPYING.LESSER LICENSE LICENCE; do
+              if [ -f "src/$proj/$name" ]; then
+                install -m 644 "src/$proj/$name" \
+                        "$STAGE$PREFIX/share/licences/$proj.$name"
+                found=yes
+              fi
+            done
+            if [ -z "$found" ]; then
+              echo "$proj carries no licence file at this commit" >&2
+              exit 1
+            fi
+          done
+          {
+            echo "Corresponding source for the binaries in this tarball."
+            echo
+            echo "libsigrok and sigrok-cli are GNU General Public License"
+            echo "version 3 or later. Their licence texts are beside this file."
+            echo
+            echo "The binaries are built from unmodified upstream source at"
+            echo "these commits. Nothing in rcbench patches either project, and"
+            echo "no sigrok source is vendored into that repository."
+            echo
+            echo "  libsigrok   https://github.com/sigrokproject/libsigrok"
+            echo "              $(git -C src/libsigrok rev-parse HEAD)"
+            echo "  sigrok-cli  https://github.com/sigrokproject/sigrok-cli"
+            echo "              $(git -C src/sigrok-cli rev-parse HEAD)"
+            echo
+            echo "Fetch either with:"
+            echo "  git clone <url> && git -C <dir> checkout --detach <commit>"
+            echo
+            echo "The scripts that control compilation and installation are"
+            echo ".github/workflows/testbench-sigrok.yml in"
+            echo "https://github.com/subtilitas/rcbench -- the configure flags,"
+            echo "the container image and the install steps are all in that one"
+            echo "file. MANIFEST.txt beside this file records the base image"
+            echo "digest and the package versions the build linked against."
+          } > "$STAGE$PREFIX/share/licences/CORRESPONDING-SOURCE.txt"
+          cat "$STAGE$PREFIX/share/licences/CORRESPONDING-SOURCE.txt"
+
       # The runtime closure, computed rather than guessed.  The install on the
       # Pi reads this file, so Debian's sigrok-cli and its libsigrok4t64 0.5.2
       # never have to be installed to obtain a set of libraries that is already
@@ -537,6 +594,7 @@ jobs:
             readelf -d "$STAGE$PREFIX/bin/sigrok-cli" | grep -E 'RUNPATH|RPATH' \
               | sed 's/^/  /' || echo "  none"
             echo
+            echo "Licences and corresponding source: share/licences"
             echo "Firmware: not included, see share/sigrok-firmware/README.txt"
             echo "udev rules: share/sigrok-udev, not installed by this tarball"
             echo "Runtime packages the Pi needs: RUNTIME-DEPENDS.txt"
@@ -586,6 +644,9 @@ jobs:
                       opt/sigrok/share/sigrok-udev/60-libsigrok.rules \
                       opt/sigrok/share/sigrok-udev/61-libsigrok-plugdev.rules \
                       opt/sigrok/share/sigrok-firmware/README.txt \
+                      opt/sigrok/share/licences/CORRESPONDING-SOURCE.txt \
+                      opt/sigrok/share/licences/libsigrok.COPYING \
+                      opt/sigrok/share/licences/sigrok-cli.COPYING \
                       opt/sigrok/RUNTIME-DEPENDS.txt \
                       opt/sigrok/MANIFEST.txt; do
             if ! grep -qx "$want" logs/tarball-contents.txt; then
