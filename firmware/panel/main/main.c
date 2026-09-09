@@ -1970,10 +1970,17 @@ static bool control_write_poles(link_msg_t *reply)
 /*
  * Pay the debt, when one is owed and only then.
  *
- * The flag is taken before the write and put back when the write did not
- * land, so a value edited during the transaction is sent again rather than
- * dropped, and a poll nobody answered costs one more poll rather than the
- * change.  Returns whether the far end holds the current count.
+ * The flag is taken before the write, so a value edited during the
+ * transaction is owed again rather than dropped.
+ *
+ * A write nobody answered is put back and costs one more poll.  A write the
+ * far end refused is not: the same request refused once is refused every
+ * time, and a debt that stands through a refusal is a control write on every
+ * 50 ms poll for as long as the link is up, against a coprocessor that has
+ * already said no -- the missing-register case link_came_up() names is
+ * exactly that. A refusal waits for a new edit or the next link-up edge.
+ *
+ * Returns whether the far end holds the current count.
  */
 static bool poles_service(void)
 {
@@ -1981,8 +1988,13 @@ static bool poles_service(void)
         return true;
     }
     link_msg_t pr;
+    memset(&pr, 0, sizeof(pr));
     if (control_write_poles(&pr)) {
         return true;
+    }
+    if (pr.op == LINK_OP_NACK) {
+        control_alert("coprocessor refused the pole count");
+        return false;
     }
     atomic_store(&s_poles_owed, true);
     return false;
@@ -3034,6 +3046,24 @@ static bool poll_bench(bench_state_t *bench)
          * servo_service() pays the debt every pass, so this holds for one.
          */
         const bool armed = outputs_armed(&s_out) && !s_servo_release_owed;
+        /*
+         * The pole count before the arm, when an edit or a write that did
+         * not land leaves one owed.  This is the only path an edit made
+         * while the link is up has to the far end: nothing else writes the
+         * register, and correcting it otherwise takes a link-down edge --
+         * the cable, a coprocessor reset or a panel reboot.  STOP and a
+         * re-arm do not produce one.
+         *
+         * Ahead of the ARM write because an operator can edit the count
+         * while disarmed and arm before the next poll: drain_commands()
+         * takes the arm first, and a coprocessor that begins sampling with
+         * the old divisor puts a wrong speed into the run's sticky rpm_max,
+         * which no later correction removes.
+         *
+         * Costs a transaction only while the debt stands, which is one poll
+         * per edit.
+         */
+        (void)poles_service();
         if (!control_write(armed, &ack) && armed && ack.op == LINK_OP_NACK) {
             /*
              * The coprocessor is in failsafe or has lost the heartbeat.  A
@@ -3051,18 +3081,6 @@ static bool poll_bench(bench_state_t *bench)
             arming_stop_from_far_end(&s_arm);
             control_alert("coprocessor disarmed -- arm again");
         }
-        /*
-         * And the pole count, when an edit or a write that did not land
-         * leaves one owed.  This is the only path an edit made while the
-         * link is up has to the far end: nothing else writes the register,
-         * and correcting it otherwise takes a link-down edge -- the cable, a
-         * coprocessor reset or a panel reboot.  STOP and a re-arm do not
-         * produce one.
-         *
-         * Costs a transaction only while the debt stands, which is one poll
-         * per edit.
-         */
-        (void)poles_service();
     }
     return answered;
 }
