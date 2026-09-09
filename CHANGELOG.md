@@ -4,6 +4,8 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
+## Unreleased
+
 ## 0.8.1 - 2026-09-09
 
 No output could be bound on 0.8.0. Choosing a protocol on SETTINGS/OUTPUTS put
