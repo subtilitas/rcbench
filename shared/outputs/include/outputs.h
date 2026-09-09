@@ -241,6 +241,13 @@ void outputs_all_off(outputs_t *o);
 
 uint16_t outputs_actual(const outputs_t *o, uint8_t ch);
 
+/**
+ * What @p ch is being asked for, as against outputs_actual()'s where the
+ * slew and the staleness timeout have got it to.  A channel nobody has
+ * commanded is asking for its role's rest.
+ */
+uint16_t outputs_command(const outputs_t *o, uint8_t ch);
+
 /** What a pulse driver should emit for @p ch, in microseconds. */
 uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
 

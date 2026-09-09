@@ -901,7 +901,17 @@ int main(void)
     (void)outputs_set_role(&s_outputs, CH_THROTTLE, OUT_ROLE_THROTTLE);
     outputs_chan_cfg_apply(&s_outputs, s_state.chan_cfg);
     outputs_slots_apply(&s_outputs, s_state.slots);
-    outputs_channels_apply(&s_outputs, s_state.channels, now0);
+    /*
+     * The page takes its values from the bank, not the other way round.
+     * Nobody has commanded anything yet, and the defaults above filled the
+     * page with zero -- which is a throttle's rest and a surface's low
+     * endpoint.  Applied as commands, that asks every bound surface for its
+     * endpoint, and outputs_arm() restamps the clock, so the staleness
+     * timeout cannot return it to centre for a further 500 ms.  A servo
+     * bound beside a motor would drive its stop for that long on every arm
+     * until something commanded it.
+     */
+    outputs_channels_from_bank(&s_outputs, s_state.channels);
     outputs_hw_init();
     outputs_hw_apply(&s_outputs);
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
