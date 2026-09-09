@@ -99,16 +99,22 @@ esp_err_t board_exio_write(uint8_t mask)
 /*
  * One bit of the expander, read-modify-write against the shadow.
  *
- * Not locked, because nothing reaches it from more than one task.  Every
- * caller runs during bring-up on app_main, before the control task is
- * created: board_backlight() from display_init(), board_touch_reset_sequence()
- * from the touch bring-up, board_sd_cs() from storage_init(), and
+ * Not locked, because every caller is on app_main.  During bring-up that is
+ * board_backlight() from display_init(), board_touch_reset_sequence() from
+ * the touch bring-up, board_sd_cs() from storage_init(), and
  * board_select_can() from can_twai_start().  board_lcd_reset() and
  * storage_deinit() have no callers at all.
  *
- * Rendering is on app_main too, not a task of its own; the only tasks this
- * firmware creates are the control task and the artwork keeper, and neither
- * touches the expander after bring-up.
+ * One of them also runs long after bring-up: the log viewer's card_list()
+ * calls storage_init() from the render loop when a card is put in after boot,
+ * and that reaches board_sd_cs().  Rendering is on app_main, not a task of
+ * its own, so the shadow still has one writer -- but "before the control task
+ * is created" stopped being the reason, and the reason is what a later caller
+ * would be checked against.
+ *
+ * No task this firmware creates touches the expander.  One that did would
+ * need this to take a lock, and would need it before the first call rather
+ * than after a lost update.
  *
  * The bit that makes this worth stating is BOARD_EXIO_USB_SEL, which drives
  * the FSUSB42UMX between native USB and the CAN transceiver.  A lost update

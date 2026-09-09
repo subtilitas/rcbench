@@ -60,8 +60,8 @@
  * Consecutive good intervals before the line is called alive.
  *
  * Four, which is two full toggles: enough that a glitch pair cannot do it,
- * few enough that arming does not wait a perceptible time. At the panel's
- * rate this is a little over a tenth of a second.
+ * few enough that arming does not wait a perceptible time. Four intervals at
+ * HEARTBEAT_PERIOD_MS is 80 ms.
  */
 #define HEARTBEAT_GOOD_RUN    4u
 

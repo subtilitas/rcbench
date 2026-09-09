@@ -2,9 +2,10 @@
  * Run log names on the card, and which entries a bounded list keeps.
  *
  * A run is written to the card's root as BENCH001.CSV to BENCH999.CSV.  The
- * panel takes the lowest free number, so a higher number is a later run --
- * except after a file is deleted and its number handed out again, which is
- * the one case where that order is wrong.
+ * panel takes one above the highest number the card already holds, so a
+ * higher number is a later run without exception -- a gap left by a deleted
+ * file is not filled, because a run written into one would be the newest run
+ * wearing the oldest number and would rank last in a full list.
  *
  * Nothing else about an entry's age is readable on this bench.  The board
  * carries no clock that survives a power cycle, so every file the panel
