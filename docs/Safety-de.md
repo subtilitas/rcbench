@@ -133,7 +133,11 @@ Panel als Leitung ohne Flanken gelesen wird.
   das der Bediener gemacht und der Prüfstand nie gesehen hat. Das
   Scharfschalten hat sein Kommando schon abgesetzt, wenn der Finger abhebt,
   ein halb abgebrochenes Scharfschalten kommandiert also nichts, und das ist
-  richtig so.
+  richtig so. Ein Abbruch verwirft außerdem ein Scharfschalten, das der
+  Screen bereits abgesetzt hat und die Anwendung noch nicht abgeholt hat --
+  ein Kommando wird im Frame nach dem absetzenden weitergereicht, und der
+  Frame, der einen Verlust bemerkt, bricht vor diesem Weiterreichen ab. Ein
+  abgesetztes Entschärfen bleibt.
 - Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
   Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, sodass
   eine Berührung am Ende nicht mit einem Kontakt den vollen Weg anfordern kann.
