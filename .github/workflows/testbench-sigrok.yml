@@ -907,51 +907,68 @@ jobs:
           # which would also make a transient upload failure unrecoverable.
           # Creating only when absent and uploading with --clobber makes the
           # step repeatable.
-          draft=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
-                    --json isDraft --jq .isDraft 2>/dev/null || echo absent)
-          if [ "$draft" = absent ]; then
-            gh release create "$TAG" \
-              --repo "$GITHUB_REPOSITORY" \
-              --target "$SHA" \
-              --draft \
-              --title "sigrok for the LA2016, Debian 13 arm64" \
-              --notes-file notes.md
-            draft=true
-          fi
-          if [ "$draft" = true ]; then
-            # Still a draft, so nobody can be downloading these: --clobber
-            # deletes each existing asset before uploading its replacement,
-            # which is safe here and is how a half-finished attempt is
-            # recovered.
+          # Three states, three actions.  A rerun regenerates the tarball --
+          # the manifest carries a new built-utc and run attempt, and a branch
+          # input can resolve to a different commit -- so the files in hand are
+          # never the published ones, and mixing the two generations is the
+          # failure to avoid: a new tarball beside an old SHA256SUMS makes the
+          # documented `sha256sum -c SHA256SUMS` fail on the bench and read as
+          # a corrupt download.
+          state=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
+                    --json isDraft --jq 'if .isDraft then "draft" else "published" end' \
+                    2>/dev/null || echo absent)
+          case "$state" in
+            absent)
+              gh release create "$TAG" \
+                --repo "$GITHUB_REPOSITORY" \
+                --target "$SHA" \
+                --draft \
+                --title "sigrok for the LA2016, Debian 13 arm64" \
+                --notes-file notes.md
+              ;;
+            draft)
+              echo "a draft of $TAG exists; replacing its assets"
+              ;;
+            published)
+              # Finished and public.  Nothing here rewrites it: not the
+              # assets, which somebody may be downloading, and not the notes,
+              # which would then describe a tarball that is not attached.
+              have=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
+                       --json assets --jq '.assets[].name' | sort)
+              want=$(printf '%s\n' "$(basename "$tarball")" SHA256SUMS | sort)
+              if [ "$have" != "$want" ]; then
+                echo "$TAG is published and its assets are not the pair this" >&2
+                echo "workflow attaches, so this run cannot complete it without" >&2
+                echo "mixing two builds.  Delete the release and run again." >&2
+                printf 'attached:\n%s\nexpected:\n%s\n' "$have" "$want" >&2
+                exit 1
+              fi
+              echo "$TAG is already published and complete; leaving it alone"
+              ;;
+          esac
+
+          if [ "$state" != published ]; then
+            # A draft: nobody can be downloading these, so --clobber is safe
+            # and is how a half-finished attempt is recovered.
             gh release upload "$TAG" "$tarball" "$dir/SHA256SUMS" \
               --repo "$GITHUB_REPOSITORY" --clobber
-          else
-            # Already published.  --clobber would delete a file the public can
-            # download and leave the release without it if the upload then
-            # failed, so an existing asset is left alone and only a missing
-            # one is added.  A rerun over a complete release does nothing.
-            have=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
-                     --json assets --jq '.assets[].name')
-            for f in "$tarball" "$dir/SHA256SUMS"; do
-              if ! printf '%s\n' "$have" | grep -qxF "$(basename "$f")"; then
-                gh release upload "$TAG" "$f" --repo "$GITHUB_REPOSITORY"
-              fi
-            done
+            # --latest=false, explicitly.  The default is "automatic based on
+            # date and version", and it does take the badge: the first bench
+            # release published took Latest from v0.8.1, which is where
+            # somebody goes for a panel image.  These are auxiliary bench
+            # artifacts and never the product.
+            gh release edit "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --draft=false --latest=false \
+              --notes-file notes.md
           fi
-          # --latest=false, explicitly.  The default is "automatic based on
-          # date and version", and it does take the badge: the first bench
-          # release published took Latest from v0.8.1, which is where somebody
-          # goes for a panel image.  These are auxiliary bench artifacts and
-          # never the product.
-          gh release edit "$TAG" \
-            --repo "$GITHUB_REPOSITORY" \
-            --draft=false --latest=false \
-            --notes-file notes.md
-          # Asserted rather than assumed, because the failure is silent and
-          # lands on a page an operator reads rather than in this log.
+
+          # Asserted every run, including one that changed nothing: the badge
+          # can move for reasons outside this workflow, and the failure is
+          # silent and lands on a page an operator reads rather than in a log.
           latest=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
           if [ "$latest" = "$TAG" ]; then
-            echo "$TAG took the Latest release; it must not" >&2
+            echo "$TAG holds the Latest release; it must not" >&2
             exit 1
           fi
-          echo "published $TAG; Latest is $latest"
+          echo "$TAG published; Latest is $latest"
