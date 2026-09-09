@@ -68,8 +68,9 @@ Interrupt des CAN-Controllers (Controller Area Network)) und jede Nummer über
 dem letzten GPIO (General-Purpose Input/Output), den das Bauteil hat — 29 beim
 RP2350A des Bring-up-Moduls, 47 beim RP2350B, den die endgültige Platine
 braucht. Ein verweigerter Slot bleibt ungebunden. Die Page liest weiterhin
-zurück, was gefordert wurde, ein nicht treibender Slot ist also als Widerspruch
-zwischen Page und Output sichtbar.
+zurück, was gefordert wurde, und kein Register auf ihr sagt, ob ein Slot
+gebunden ist: ein ungebundener Slot liest sich genau wie ein treibender. Beim
+Bediener kommt eine Leitung an, die sich nicht bewegt.
 
 Ein PIO-Block (Programmable Input/Output) adressiert 32 Pins ab Basis 0 oder 16,
 festgelegt, solange der Block ein Programm hält. Welcher Block einen bestimmten
@@ -94,6 +95,20 @@ Ein Slice sind zwei Kanäle an einem Zähler, zwei Pins auf demselben Slice lauf
 also mit derselben Frame Rate. Eine zweite Bindung, die auf einem belegten Slice
 eine andere Rate verlangt, wird verweigert statt umgestellt: Umstellen würde
 einen Output verschieben, den niemand angefasst hat.
+
+GPIO-Nummern falten sich auf die 12 Slices. GP0 bis GP31 nehmen Slice
+(Pin / 2) modulo 8, GP32 bis GP47 nehmen Slice 8 + (Pin / 2) modulo 4, und der
+Kanal ist in beiden Bereichen das unterste Bit der Pinnummer. Zwei Pins mit
+Abstand 16 unterhalb von GP32 sind damit derselbe Kanal desselben Slice,
+oberhalb von GP32 ist der Abstand 8. Ein Kanal ist ein Compare-Register und ein
+Compare-Register ist eine Pulsweite, der zweite Pin eines solchen Paars wird
+also verweigert statt gebunden: Ihn zu binden würde ihn auf die Pulsweite des
+ersten Pins legen, und eine Leitung folgte der anderen, ohne dass ein
+Bildschirm es sagt.
+
+Sechs dieser Paare sind auf dem Header, den der Koprozessor anbietet, beide
+frei: GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21,
+GP6 und GP22. Jeder Pin eines Paars ist benutzbar, beide zusammen nicht.
 
 ## PPM
 
@@ -256,6 +271,7 @@ davon war an einem Oszilloskop oder an einem ESC an diesem Prüfstand:
 | Frames, Group Code, Prüfsumme, Drehzahl, Sampler | `shared/dshot/` |
 | PPM-Frame-Layout | `shared/ppm/` |
 | Weg, Rolle, Ruhelage, Slew, Arming, Timeout | `shared/outputs/` |
+| Welchen PWM-Slice und -Kanal ein GPIO erreicht | `shared/outputs/out_pwm_map.c` |
 | PIO-Programme | `firmware/iomcu/src/ppm.pio`, `dshot.pio` |
 | Backends für Hardware-PWM, PPM und DShot | `firmware/iomcu/src/out_*.c` |
 | Bindung der Bank an die Pins | `firmware/iomcu/src/outputs_hw.c` |

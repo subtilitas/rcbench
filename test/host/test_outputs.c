@@ -13,6 +13,7 @@
 
 #include "outputs.h"
 #include "outputs_pages.h"
+#include "out_pwm_map.h"
 #include "link_pages.h"
 
 static outputs_t o;
@@ -792,6 +793,107 @@ TEST_CASE(a_channel_range_outside_the_page_is_refused_rather_than_wrapped)
     CHECK(!outputs_overdue(&b, 0, 10u));
 }
 
+/* ------------------------------------------- the RP2350's PWM pin fold */
+
+/*
+ * The slice and channel each GPIO reaches, stated rather than recomputed.
+ * These are the numbers the pico-sdk's PWM_GPIO_SLICE_NUM produces, and the
+ * coprocessor's PWM driver decides from them which pins may be bound at once.
+ */
+TEST_CASE(the_pwm_fold_puts_each_pin_on_a_named_slice_and_channel)
+{
+    static const struct { uint8_t pin, slice, chan; } k[] = {
+        {  0u,  0u, 0u }, {  1u,  0u, 1u }, {  2u,  1u, 0u }, {  3u,  1u, 1u },
+        { 14u,  7u, 0u }, { 15u,  7u, 1u },
+        /* The fold: GP16 lands back on slice 0 channel A, where GP0 is. */
+        { 16u,  0u, 0u }, { 17u,  0u, 1u }, { 22u,  3u, 0u }, { 28u,  6u, 0u },
+        { 31u,  7u, 1u },
+        /* Above GP31 four slices serve sixteen pins, so it folds at eight. */
+        { 32u,  8u, 0u }, { 33u,  8u, 1u }, { 39u, 11u, 1u },
+        { 40u,  8u, 0u }, { 47u, 11u, 1u },
+    };
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        CHECK_EQ(out_pwm_slice_of(k[i].pin), k[i].slice);
+        CHECK_EQ(out_pwm_channel_of(k[i].pin), k[i].chan);
+    }
+    /* Twelve slices of two channels is what the arithmetic has to reach. */
+    CHECK_EQ(out_pwm_slice_of(38u), OUT_PWM_SLICES - 1u);
+    CHECK_EQ(out_pwm_channel_of(39u), OUT_PWM_CHANNELS - 1u);
+}
+
+/*
+ * The pairs that share one compare register, which is one pulse width.
+ *
+ * Every pair named here is two free pins of the coprocessor's own header, so
+ * an operator ticking pins on the OUTPUTS page can reach all six.
+ */
+TEST_CASE(two_header_pins_sixteen_apart_are_one_compare_register)
+{
+    static const uint8_t k_collide[][2] = {
+        {  0u, 16u }, {  1u, 17u }, {  2u, 18u },
+        {  4u, 20u }, {  5u, 21u }, {  6u, 22u },
+    };
+    for (unsigned i = 0; i < sizeof(k_collide) / sizeof(k_collide[0]); ++i) {
+        CHECK(out_pwm_same_compare(k_collide[i][0], k_collide[i][1]));
+        CHECK(out_pwm_same_compare(k_collide[i][1], k_collide[i][0]));
+        CHECK(out_pwm_same_slice(k_collide[i][0], k_collide[i][1]));
+    }
+
+    /* The two channels of one slice: one wrap, two compare registers, so a
+     * shared frame rate and two independent pulse widths. */
+    static const uint8_t k_slice_only[][2] = {
+        {  0u,  1u }, {  2u, 19u }, {  6u,  7u }, { 13u, 28u }, { 26u, 27u },
+    };
+    for (unsigned i = 0; i < sizeof(k_slice_only) / sizeof(k_slice_only[0]);
+         ++i) {
+        CHECK(out_pwm_same_slice(k_slice_only[i][0], k_slice_only[i][1]));
+        CHECK(!out_pwm_same_compare(k_slice_only[i][0], k_slice_only[i][1]));
+    }
+
+    /* Different slices share nothing at all. */
+    CHECK(!out_pwm_same_slice(0u, 2u));
+    CHECK(!out_pwm_same_compare(0u, 2u));
+    CHECK(!out_pwm_same_slice(31u, 32u));
+
+    /* A pin against itself is the same register, which is what makes
+     * rebinding a pin already bound a question about the pin, not the fold. */
+    CHECK(out_pwm_same_compare(7u, 7u));
+}
+
+/*
+ * The whole fold as one rule: below GP32 a collision is exactly sixteen pins
+ * apart, at and above it exactly eight, and nothing crosses between the two
+ * ranges.  Stated as the distance rather than as the slice arithmetic, so a
+ * wrong divisor or a wrong mask fails here instead of agreeing with itself.
+ */
+TEST_CASE(the_only_pins_sharing_a_compare_register_are_the_folded_pairs)
+{
+    for (unsigned a = 0; a < OUT_PWM_GPIOS; ++a) {
+        for (unsigned b = a + 1u; b < OUT_PWM_GPIOS; ++b) {
+            const bool folded = (b < 32u) ? (b - a == 16u)
+                                          : (a >= 32u && b - a == 8u);
+            if (out_pwm_same_compare((uint8_t)a, (uint8_t)b) != folded) {
+                T_FAIL("GP%u and GP%u: compare sharing is %d, want %d",
+                       a, b, (int)out_pwm_same_compare((uint8_t)a, (uint8_t)b),
+                       (int)folded);
+            }
+        }
+    }
+}
+
+/* A pin the part does not have reaches no register, so it shares none. */
+TEST_CASE(a_pin_past_the_bank_reaches_no_slice)
+{
+    CHECK_EQ(out_pwm_slice_of((uint8_t)OUT_PWM_GPIOS), OUT_PWM_NONE);
+    CHECK_EQ(out_pwm_channel_of((uint8_t)OUT_PWM_GPIOS), OUT_PWM_NONE);
+    CHECK_EQ(out_pwm_slice_of(255u), OUT_PWM_NONE);
+    CHECK(!out_pwm_same_slice((uint8_t)OUT_PWM_GPIOS, 0u));
+    CHECK(!out_pwm_same_slice(0u, (uint8_t)OUT_PWM_GPIOS));
+    CHECK(!out_pwm_same_compare((uint8_t)OUT_PWM_GPIOS,
+                                (uint8_t)OUT_PWM_GPIOS));
+    CHECK(!out_pwm_same_compare(255u, 0u));
+}
+
 int main(void)
 {
     RUN(a_channel_write_keeps_only_the_channels_it_named_alive);
@@ -831,5 +933,9 @@ int main(void)
     RUN(the_range_register_packs_first_and_count);
     RUN(a_channel_command_is_clamped_in_place);
     RUN(writing_off_a_page_end_is_refused);
+    RUN(the_pwm_fold_puts_each_pin_on_a_named_slice_and_channel);
+    RUN(two_header_pins_sixteen_apart_are_one_compare_register);
+    RUN(the_only_pins_sharing_a_compare_register_are_the_folded_pairs);
+    RUN(a_pin_past_the_bank_reaches_no_slice);
     return test_summary("outputs");
 }
