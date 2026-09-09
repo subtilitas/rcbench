@@ -80,8 +80,10 @@ gated on the bank being armed, which the coprocessor grants only while the ARM
 register is set, the link is out of failsafe and the heartbeat is trusted --
 and channel commands are not restored, so a bench never comes back holding the
 throttle it was last given.
-The save waits for the bank to stop driving, because writing flash stops the
-core for longer than the heartbeat's window.
+The save waits for the bank to stop driving and then for a gap in the
+traffic, because writing flash stops the core answering: two sectors of
+sixteen record slots spend one sector erase per sixteen saves, and that erase
+is taken in a gap ahead of the save that needs it.
 
 ## State
 
@@ -105,7 +107,7 @@ core for longer than the heartbeat's window.
 | S.BUS decoder | built and tested; the PIO (programmable input/output) receiver is not written |
 | Motor pole count over the link | the panel sends `Motor poles` on the CONTROL page when the coprocessor answers; with none sent the coprocessor reports no speed rather than one derived from a guess |
 | Outputs screen | built and tested on the host: a protocol list and a pin grid behind the Setup screen's OUTPUTS key, writing `CHAN_CFG` and `OUTPUTS` on every change and reading the binding back from the coprocessor. Reserved pins are shown and refused. Not run on hardware |
-| Output binding in the coprocessor's flash | built: the last sector of the first 4 MB, restored at boot, saved once the bank is idle. Not run on hardware, and the sector offset is deliberately the 4 MB module's rather than the 16 MB board file's |
+| Output binding in the coprocessor's flash | built, not run on hardware: the last two sectors of the first 4 MB as 32 record slots, restored at boot, saved once the bank is idle and the bus quiet. A save is one page program; a sector erase falls to one per sixteen saves and is taken ahead of the save that needs it, or at boot. The placement rules are host-tested in `test_outstore`; `firmware/iomcu/src/out_store.c` and `firmware/iomcu/src/main.c` compile and have not run on a board. What has run on hardware is the single-sector store this one replaces: eight of its saves printed an erase-and-program window of 19,174 to 19,186 us. The offset is deliberately the 4 MB module's rather than the 16 MB board file's. A record written by an earlier build reads as unwritten, so the first boot on this build starts from the defaults -- no driver and no pin in any slot -- and the binding is gone until an operator sets it again on the OUTPUTS screen |
 | Other receiver buses | not started |
 | Servo limit search, servo synchronisation | built and tested against a modelled servo |
 | OpenYGE codec | built and tested; not wired in. The implementation is pursued in a separate repository |
@@ -134,6 +136,7 @@ rcbench/
     link/                 page protocol · CAN framing · watchdogs · diagnosis
     bench/                bench_state · telemetry simulator · log writer
     outputs/              channels · driver table · arming, slew and staleness
+                          · where a saved binding goes in flash
     safety/               heartbeat generator and monitor · arming policy
     servo/                limit and synchronisation searches · servo model
     can/                  bit timing · MCP2515 registers · echo self-test
@@ -181,12 +184,13 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release |
 
-The host suite is 43 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 44 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_bench`, `test_motor`, `test_servo`,
 `test_analyser`, `test_programmer`, `test_balance`, `test_battery`,
 `test_settings`, `test_logfile`, `test_link_crc`, `test_link_pages`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
-`test_link_can`, `test_link_artxfer`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_can_timing`, `test_can_selftest`,
+`test_link_can`, `test_link_artxfer`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outstore`,
+`test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_servo_limit`,
 `test_servo_sync`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_openyge_frame`, `test_openyge_status`,
@@ -264,9 +268,10 @@ chrome-cached screen to 2,000.
 | `shared/outputs/outputs_pages.c` | 131 | 122 | 93.1% |
 | `shared/outputs/out_bind.c` | 462 | 450 | 97.4% |
 | `shared/outputs/out_pwm_map.c` | 15 | 15 | 100.0% |
+| `shared/outputs/out_store_map.c` | 68 | 68 | 100.0% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
 | `shared/bench/log_writer.c` | 46 | 42 | 91.3% |
-| **total** | **9816** | **9390** | **95.7%** |
+| **total** | **9884** | **9458** | **95.7%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -277,7 +282,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | --- | --- | --- |
 | The control page on hardware | the NVS round trip has run: a save writes and the next boot reports what it loaded. The control page has not. The coprocessor's NOT_ARMED refusal has been seen, but as the answer to an arm it refused for want of the heartbeat line, so the failsafe clear and an accepted ARM are still host-tested at the shared/ level only | the heartbeat line above, then a session with both boards: arm, stop, unplug the link, arm again |
 | Output drivers on hardware | all four are written and none has been seen on a pin. What a host test cannot reach: every bit timing, the DMA ring that plays a PPM frame, the PIO turnaround from a bidirectional DShot frame to its reply, and whether an ESC answers at all | an oscilloscope, a servo, and an ESC that does bidirectional DShot. [What is unconfirmed](docs/DShot.md#what-has-not-been-confirmed-on-a-wire) |
-| Flash on the coprocessor is not exercised | the store is written from a build that has never run: the erase and program window, the heartbeat re-acquiring after it, and the sector surviving a power cycle are all unmeasured. The window now measures itself and the coprocessor prints it after every save, because it is the number that decides whether a save is survivable: this core answers nothing while it writes, the monitor calls the beat dead at 150 ms and the link calls the host silent at 200 ms | a board, a power cycle, and a scope on the heartbeat across a save |
+| The flash save costs CAN frames | measured on the bring-up module: eight erase-and-program windows printed 19,174 to 19,186 us, and the XL2515's overrun count climbed from 2 to 8 while nine saves were taken. A frame at 1 Mbit/s is about 130 us and the controller holds two, so 19 ms is about 150 frame times, or seventy times over the 260 us the two buffers hold, with nobody emptying them; the bus reports no error, because the frames arrived and nobody collected them. A lost request costs the panel LINK_HOST_TIMEOUT_MS (1000 ms) of waiting, and 1000 ms of silence latches this end's 200 ms failsafe, so one lost frame is enough for `FAULT 01`. What the store does about it is above, and none of that has run on a board; what it does not do is get under the 260 us the two buffers hold. The 19 ms is an erase and a page program inside one window, which is what the store this replaces printed: neither half of it is measured on its own. The program is the window every save still pays, and 256 bytes against the erase's 4,096 puts it one to two orders of magnitude below 19 ms on serial NOR flash, or roughly 200 to 2,000 us against a 260 us budget | a board: the page program and erase windows from the console lines, the overrun count across sixteen saves, the heartbeat after a window, and a power cut mid-save |
 | The capability word is read once, at boot | `s_capabilities` is taken from the identity page during bring-up and never again, so a coprocessor that arrives after boot, or is swapped for one with different parts fitted, leaves the menu marked from the wrong word. The board identity beside it comes from the identity page that opens each link, so it follows a swap; this word does not, because it is written at boot and read by the render task, and moving the write into the control task adds a cross-task race | the same snapshot treatment the bench numbers already get |
 | A card swapped while running is not re-mounted | `storage_mounted()` is cleared only by `storage_deinit()`, so a card removed after boot leaves a stale mount and RESCAN keeps reading the old volume. The viewer does not unmount to recover: it lists from the render task while the control task writes the run log to the same volume, and unmounting under an open handle frees the SPI bus beneath a write on the other core | one task owning the card's lifetime, so a remount can be sequenced against the writer |
 | The browse list shows 48 of a card's entries | a card takes 999 runs and the list holds `LOG_VIEWER_MAX_FILES`, so it keeps the newest runs -- by the number in `BENCHnnn.CSV`, the only age on a card whose every FAT timestamp is 1980-01-01 -- and its tab says how many entries the card holds. A run is the only entry with a known age, so on a card holding 48 or more runs nothing else is listed: an imported `SWEEP.CSV` is outranked by every run and cannot be reached | a second page, or a filter on the browse list |
