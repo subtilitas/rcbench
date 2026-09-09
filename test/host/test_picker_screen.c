@@ -16,6 +16,7 @@
 #include "greatest.h"
 
 #include "link_pages.h"
+#include "outputs_screen.h"
 #include "picker_screen.h"
 #include "ui_theme.h"
 
@@ -456,38 +457,47 @@ TEST_CASE(null_events_are_refused_rather_than_dereferenced)
 }
 
 /*
- * The picker keeps the operator's protocol when an empty binding arrives.
+ * The picker can add a pin after the operator has chosen a protocol on the
+ * outputs screen, with nothing bound anywhere.
  *
- * The panel hands one read-back to both views, so this is the same rule as
- * outputs_screen's and has to hold here too: an empty binding renders as OFF,
- * OFF takes no pins, and a picker put back to OFF cannot add one.  Fixing it
- * in one view and not the other leaves whichever screen the operator reaches
- * second unable to bind anything.
+ * The protocol belongs to the outputs screen: this screen has no control for
+ * one and only reads it to know which group a tap joins.  So the panel hands
+ * the picker what the outputs screen reconciled, not what came off the wire --
+ * an empty page renders as OFF, and a picker left on OFF refuses every pin.
+ *
+ * This walks the sequence firmware/panel/main/main.c performs, which is not
+ * itself in this suite.
  */
-TEST_CASE(an_empty_read_back_does_not_clear_the_chosen_protocol)
+TEST_CASE(the_picker_follows_the_protocol_chosen_on_the_outputs_screen)
 {
-    fresh();                                 /* leaves SERVO PWM chosen */
-    CHECK_EQ((int)picker_screen_binding()->proto, 1);
+    fresh();
 
-    /* What an empty page renders as: OFF, and nothing bound. */
+    /* What the operator picked, on the other screen. */
+    outbind_t picked;
+    outbind_init(&picked);
+    outbind_set_board(&picked, BOARD);
+    outbind_set_proto(&picked, 4u);              /* DSHOT600 */
+    outputs_screen_set_binding(&picked);
+
+    /* What the coprocessor answers with an empty store: OFF, nothing bound. */
     outbind_t empty;
     outbind_init(&empty);
     outbind_set_board(&empty, BOARD);
-    outbind_set_proto(&empty, 0u);
     CHECK_EQ((int)outbind_chosen_total(&empty), 0);
     CHECK_EQ((int)empty.proto, 0);
-    picker_screen_set_binding(&empty);
 
-    CHECK_EQ((int)picker_screen_binding()->proto, 1);
+    /* main.c: the outputs screen first, then the picker from its result. */
+    outputs_screen_set_binding(&empty);
+    picker_screen_set_binding(outputs_screen_binding());
 
-    /* And with the protocol still there, a pin can be added. */
+    CHECK_EQ((int)picker_screen_binding()->proto, 4);
     outbind_t b = *picker_screen_binding();
     CHECK(outbind_can_add(&b, idx(4u)));
 }
 
 int main(void)
 {
-    RUN(an_empty_read_back_does_not_clear_the_chosen_protocol);
+    RUN(the_picker_follows_the_protocol_chosen_on_the_outputs_screen);
     RUN(a_button_binds_the_pad_it_is_wired_to);
     RUN(every_button_binds_its_own_pin_and_no_other);
     RUN(a_reserved_pin_has_no_button_to_press);

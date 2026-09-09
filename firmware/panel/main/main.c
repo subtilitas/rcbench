@@ -3759,10 +3759,20 @@ void app_main(void)
             xSemaphoreGive(s_snap_lock);
         }
         if (have) {
-            /* Both views of one binding: whichever is on screen, the other
-             * is showing the same thing when the operator reaches it. */
+            /*
+             * Both views of one binding: whichever is on screen, the other is
+             * showing the same thing when the operator reaches it.
+             *
+             * The outputs screen first, and the picker takes what came out of
+             * it rather than what came off the wire.  The protocol is that
+             * screen's to choose -- the picker has no control for it and only
+             * reads it to know which group a tap joins -- and an empty page
+             * carries no protocol at all, so handing the picker the raw read
+             * would leave it on OFF and unable to add a pin, however the
+             * outputs screen had reconciled it.
+             */
             outputs_screen_set_binding(&got);
-            picker_screen_set_binding(&got);
+            picker_screen_set_binding(outputs_screen_binding());
         }
         outputs_screen_set_result(
             (outputs_result_t)atomic_load(&s_outputs_result));
