@@ -80,13 +80,33 @@ const outbind_t *outputs_screen_binding(void) { return &s.bind; }
 
 void outputs_screen_set_binding(const outbind_t *b)
 {
-    if (b != NULL) {
-        s.bind = *b;
-        /* Read off the wire or restored, so it is trimmed before it is drawn
-         * rather than trusted to mean something on this board. */
-        outbind_trim(&s.bind);
-        touched();
+    if (b == NULL) {
+        return;
     }
+    /*
+     * An empty binding carries no protocol, so it must not take one away.
+     *
+     * Picking a protocol posts the binding and the panel reads it straight
+     * back, which is what keeps the screen from showing something the far end
+     * is not doing.  But a protocol with no pins configures nothing, so what
+     * comes back is empty -- and outbind_from_slots() renders empty as OFF,
+     * which is indistinguishable from an operator who chose OFF.  Letting it
+     * land whole put the picker back to OFF the instant a protocol was
+     * chosen, and no pin could be ticked at all, because OFF takes none.
+     *
+     * That is every first boot on a store the coprocessor reads as unwritten.
+     */
+    const uint8_t chosen = s.bind.proto;
+    const bool far_end_empty = (outbind_chosen_total(b) == 0u);
+
+    s.bind = *b;
+    /* Read off the wire or restored, so it is trimmed before it is drawn
+     * rather than trusted to mean something on this board. */
+    outbind_trim(&s.bind);
+    if (far_end_empty) {
+        outbind_set_proto(&s.bind, chosen);
+    }
+    touched();
 }
 
 void outputs_screen_set_apply(outputs_apply_fn fn) { s.apply = fn; }

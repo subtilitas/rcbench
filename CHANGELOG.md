@@ -6,6 +6,21 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- **No output could be bound at all on 0.8.0.** Choosing a protocol on
+  SETTINGS/OUTPUTS put the picker straight back to `OFF`, and `OFF` takes no
+  pins, so nothing could be ticked and no binding could be made. Picking a
+  protocol posts the binding and the panel reads it straight back, so a lost
+  acknowledgement cannot leave the screen showing what the coprocessor is not
+  doing. A protocol with no pins configures nothing, so what comes back is
+  empty -- and an empty binding renders as `OFF`, which is indistinguishable
+  from an operator who chose it. The read-back landed whole and took the
+  choice away. An empty binding no longer sets the protocol, because it does
+  not carry one. Reported from a bench on the first boot after 0.8.0, which is
+  when it always happens: the record format changed, so every store reads as
+  unwritten and every operator starts at `OFF`.
+
 ## 0.8.0 - 2026-09-09
 
 Bidirectional DShot leaves the pin inverted, which it never has. Whether an

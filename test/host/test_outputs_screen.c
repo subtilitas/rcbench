@@ -364,8 +364,48 @@ TEST_CASE(null_events_are_refused_rather_than_dereferenced)
     CHECK(scr()->title != NULL);
 }
 
+/*
+ * A protocol the operator has just picked survives an empty binding arriving
+ * from the far end.
+ *
+ * Picking a protocol posts the binding, and the panel reads it straight back
+ * so a lost acknowledgement cannot leave the screen showing something the
+ * coprocessor is not doing.  With nothing bound yet -- every first boot after
+ * the record format changed -- what comes back is empty, and an empty binding
+ * says nothing about which protocol is being worked in: OFF there is
+ * indistinguishable from "nothing is configured".  Letting it land wholesale
+ * puts the picker back to OFF the instant a protocol is chosen, and no pin
+ * can ever be ticked, because OFF takes none.
+ */
+TEST_CASE(an_empty_read_back_does_not_clear_the_chosen_protocol)
+{
+    fresh();
+    const int bidir = proto_row("DSHOT600 BIDIR");
+
+    /* The operator picks a protocol on the screen.  Nothing is ticked yet,
+     * which is the only way to reach a first pin: OFF takes none. */
+    choose_named("DSHOT600 BIDIR");
+    CHECK_EQ((int)outputs_screen_binding()->proto, bidir);
+
+    /* Picking posts the binding, and the panel reads it straight back.  With
+     * an empty store -- every first boot on this build -- what comes back is
+     * empty, and an empty binding says nothing about which protocol is being
+     * worked in. */
+    outbind_t empty;
+    outbind_init(&empty);
+    outbind_set_board(&empty, OUTBIND_BOARD_PICO_HEADER);
+    CHECK_EQ((int)outbind_chosen_total(&empty), 0);
+    outputs_screen_set_binding(&empty);
+
+    /* Still the operator's protocol, so a pin can be ticked at all. */
+    CHECK_EQ((int)outputs_screen_binding()->proto, bidir);
+    tap_pin(7);
+    CHECK_EQ((int)outbind_chosen_total(outputs_screen_binding()), 1);
+}
+
 int main(void)
 {
+    RUN(an_empty_read_back_does_not_clear_the_chosen_protocol);
     RUN(the_protocol_list_opens_and_a_choice_closes_it);
     RUN(an_open_list_can_be_left_without_choosing);
     RUN(a_release_away_from_the_press_does_nothing);
