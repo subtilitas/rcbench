@@ -254,9 +254,18 @@ adding no pull-up. The emulator answers at 0x14; the real controller stays at
 **Do not probe this bus with the Pi.** The panel is the master. A second
 master is a fault, not a measurement.
 
-**Check, one: the tap.** Capture SCL and SDA while the panel starts:
+**Check, one: the tap.** Capture SCL and SDA while the panel starts. 2m
+samples at 4 MHz is 0.5 s, and the panel's first transaction is somewhere in
+a start-up nobody can time to half a second, so the capture is triggered on
+the first clock edge rather than started and hoped over:
 
-    testbench/host/capture.sh touch-boot D9,D10 4m 2m 1.65
+    testbench/host/capture.sh touch-boot D9,D10 4m 2m 1.65 D9=f
+
+Start it, then pulse RESET on the panel -- section 4 wired that contact, so it
+is one relay away. The trigger is what makes the order safe: sigrok waits at
+the first falling SCL and the 0.5 s runs from there, so a reset five seconds
+late costs nothing. Without it the window has to be hit by hand, and a miss
+reads as a bus with nothing on it.
 
 Decoded as I²C, it shows the panel addressing 0x5D and the real controller
 answering. That is the correct result today: the panel does not yet ask for
@@ -268,15 +277,23 @@ emulator unplugged, or with its two leads swapped, and the fault would then
 surface only when the panel starts probing 0x14 -- one firmware change and
 many steps later.
 
-So make the emulator prove each lead, one at a time, while the panel is idle:
-have it pull SDA low for a few milliseconds, then release it and pull SCL low.
+So make the emulator prove each lead, one at a time, while the panel is idle.
+**A repeating stimulus, not one pass of it**: a single pull is over before
+`capture.sh` is asked for samples, and the trace then reads as a bus with
+nothing on it whichever way the leads are wired. Have the emulator loop --
+SDA low 5 ms, release, SCL low 20 ms, release, once every 200 ms -- and leave
+it looping until the capture returns.
 
-    testbench/host/capture.sh touch-leads D9,D10 4m 2m 1.65
+    testbench/host/capture.sh touch-leads D9,D10 1m 2m 1.65
 
-The line it was told to pull is the line that moves. If pulling SDA moves SCL,
-the leads are swapped; if neither moves, the lead is not on the bus. Do this
-before the panel's touch is in use -- a line held low during a transaction
-costs that transaction, which is a missed touch sample and nothing worse.---
+1 MHz over 2m samples is 2 s, which holds ten cycles, so no phase of the loop
+can fall outside it. The two pulls are different lengths so that one of them
+on its own says which line it is: 5 ms is SDA and 20 ms is SCL, without having
+to find the start of a cycle. The line it was told to pull is the line that
+moves. If the 5 ms pull appears on SCL the leads are swapped; if neither moves,
+the lead is not on the bus. Do this before the panel's touch is in use -- a
+line held low during a transaction costs that transaction, which is a missed
+touch sample and nothing worse.---
 
 ## 6. The link
 
@@ -517,9 +534,13 @@ Two captures, because the two questions want opposite settings.
 before it. The window is measured from the last edge into the trigger, so
 that edge and the enable falling have to be in one trace, and the branch has
 to come out inside the first 3.8 s for the 150 ms after it to still be in the
-trace. 24 MHz over the same 4m samples covers 167 ms, which is less than the
-window it would be measuring; span is what this capture needs, and 1 us
-resolution on a 150 ms window is already finer than the number is worth
+trace. 24 MHz over the same 4m samples covers 167 ms, which is 17 ms more
+than the 150 ms window and not less -- and 17 ms is the whole budget for
+reaching the link by hand and for the two or three 20 ms heartbeat edges
+before the pull that make the last one readable as the last one. There is no
+trigger to align the trace on: the pull is a hand on a link, and a trigger on
+D3 falling fires on every heartbeat edge. Span is what this capture needs, and
+1 us resolution on a 150 ms window is already finer than the number is worth
 quoting to.
 
 D0 aliases at 1 MHz: a DShot600 bit is 1.67 us and is sampled once or twice,
