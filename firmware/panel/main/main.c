@@ -1201,9 +1201,13 @@ static bool         s_log_numbered;
 static void log_highest(const storage_entry_t *entry, void *ctx)
 {
     int *highest = (int *)ctx;
-    if (entry->is_dir) {
-        return;
-    }
+    /*
+     * Directories count.  The viewer skips them because it cannot open one,
+     * but this is about which numbers are taken, and a directory called
+     * BENCH003.CSV takes that number as surely as a file does: fopen refuses
+     * it in both modes, so a run numbered into it would be a run that cannot
+     * be created.  Numbering above it costs a number and nothing else.
+     */
     const int n = log_run_number(entry->name);
     if (n > *highest) {
         *highest = n;

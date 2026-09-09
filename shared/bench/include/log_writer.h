@@ -83,8 +83,22 @@ bool log_writer_header(log_writer_t *w);
 
 /**
  * Append one sample at @p t_s seconds, and commit when the row completes an
- * interval.  False means the row did not go in, or it went in and the commit
- * that followed it failed; log_writer_failed() then stays true either way.
+ * interval.
+ *
+ * False means one of two things, and log_writer_failed() tells them apart:
+ *
+ *   A write or the commit after it failed.  log_writer_failed() is true and
+ *   stays true, and every later row is refused: the file has a hole in it
+ *   and no amount of card answering again makes it whole.
+ *
+ *   The arguments were refused -- @p w or @p b NULL, or @p t_s not finite.
+ *   Nothing was attempted and nothing is latched.  That is a caller with a
+ *   bug rather than a card that has gone, and ending a run over it would
+ *   throw away a recording for a reason the card had no part in.
+ *
+ * So a caller that watches only the latch has to check the return as well if
+ * it can pass either of those.  The panel cannot: its row carries a struct by
+ * value and a time that only ever increases by 1/PANEL_SAMPLE_HZ.
  */
 bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b);
 
