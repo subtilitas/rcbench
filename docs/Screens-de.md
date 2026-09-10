@@ -347,6 +347,7 @@ Zuständen:
 | `SAVED` | Nichts ist ungeschrieben. Die Taste ist inaktiv. |
 | `SAVE` | Etwas ist ungeschrieben. Ein Druck fordert das Schreiben an. |
 | `WHEN IDLE` | Das Schreiben ist angefordert und wartet auf einen Moment dafür. |
+| `NOT SAVED` | Der Store hat das Schreiben abgelehnt. Was auf das Medium gelangt ist, geht aus dem Bildschirm nicht hervor: Eine Ablehnung bei einem Key lässt die davor geschriebenen Keys committed, der nächste Boot kann also eine Mischung aus neuen und alten Werten laden. Ein Druck versucht es erneut. |
 
 ![Ein geänderter Wert, SAVE angeboten](img/setup-dirty.png)
 
@@ -358,6 +359,16 @@ Prüfstand disarmed ist und kein Platinenfoto geholt oder abgelegt wird. Auf
 dem Einstellungs-Bildschirm ist das der nächste Frame, und die Beschriftung
 steht auf `SAVED`, so schnell wie das Auge dem Druck folgt. Armed steht die
 Anforderung als `WHEN IDLE`, bis der Prüfstand disarmed wird.
+
+Ein Store, der ablehnt, lässt die Beschriftung in der Danger-Farbe auf
+`NOT SAVED` stehen, bis das nächste erfolgreiche Schreiben oder die nächste
+Änderung kommt. Eine Ablehnung macht nicht rückgängig, was schon geschrieben
+wurde: Die Werte werden Key für Key gesetzt, und ein Fehlschlag mittendrin
+lässt die früheren Keys committed, das Medium kann also eine Mischung aus
+neuen und alten Werten halten. Der Bildschirm kann nicht sagen, welche. Ein
+Panel, dessen NVS gar nicht hochkam, lehnt jedes Schreiben der Sitzung ab,
+schreibt nichts und sagt das zusätzlich einmal auf dem Splash als
+`NVS unavailable`.
 
 Nicht gespeicherte Werte bleiben, bis das Panel ausgeschaltet wird. Das
 Verlassen des Bildschirms schreibt nichts.

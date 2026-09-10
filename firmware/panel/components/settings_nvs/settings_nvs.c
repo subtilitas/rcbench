@@ -43,28 +43,49 @@ static bool nvs_load(float *values, int count)
     return found > 0;
 }
 
-static void nvs_save(const float *values, int count)
+static bool nvs_save(const float *values, int count)
 {
     nvs_handle_t h;
     esp_err_t err = nvs_open(NAMESPACE, NVS_READWRITE, &h);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "nvs_open: %s", esp_err_to_name(err));
-        return;
+        return false;
     }
+    /*
+     * Every key is checked.  A refused nvs_set_i32() leaves that key holding
+     * what the last successful save wrote, so an unchecked one commits a set
+     * that is part new and part old and reads back cleanly at the next boot.
+     */
+    bool wrote = true;
     for (int i = 0; i < count; ++i) {
         const setting_def_t *d = settings_def((setting_id_t)i);
         if (!d || !d->key) {
             continue;
         }
-        (void)nvs_set_i32(h, d->key, (int32_t)(values[i] * 1000.0f));
+        esp_err_t set = nvs_set_i32(h, d->key,
+                                    (int32_t)(values[i] * 1000.0f));
+        if (set != ESP_OK) {
+            ESP_LOGE(TAG, "nvs_set_i32(%s): %s", d->key,
+                     esp_err_to_name(set));
+            wrote = false;
+        }
     }
+    /*
+     * nvs_commit() answers ESP_OK for any valid handle on this version of
+     * ESP-IDF, so it cannot report what the writes above did.  It is still
+     * checked, because that is a property of the version and not of the
+     * interface.
+     */
     err = nvs_commit(h);
     nvs_close(h);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "nvs_commit: %s", esp_err_to_name(err));
-    } else {
+        return false;
+    }
+    if (wrote) {
         ESP_LOGI(TAG, "settings saved");
     }
+    return wrote;
 }
 
 static const settings_store_t s_store = { nvs_load, nvs_save };

@@ -115,9 +115,21 @@ static struct {
     float values[SETTING_COUNT];
     bool  dirty;
     bool     save_asked;   /* asked for, not yet taken */
+    bool     save_failed;  /* the last attempt did not reach the medium */
     const settings_store_t *store;
     settings_observer_fn observer;
 } s;
+
+/*
+ * Something changed and is not on the medium.  A new edit is also a fresh
+ * attempt, so it retires any earlier failure: that failure described values
+ * these no longer are.
+ */
+static void mark_dirty(void)
+{
+    s.dirty = true;
+    s.save_failed = false;
+}
 
 static float clampf(float v, float lo, float hi)
 {
@@ -185,24 +197,38 @@ static void notify_changed(int id, float before)
 
 void settings_reset(setting_cat_t cat)
 {
+    /*
+     * Only an actual change is an edit.  A category already holding its
+     * defaults is reset to what it has, and calling that an edit would
+     * retire a standing save failure while the values whose write failed
+     * are still the ones in memory.
+     */
+    bool moved = false;
     for (int i = 0; i < SETTING_COUNT; ++i) {
         if (k_defs[i].cat == cat) {
             float before = s.values[i];
             s.values[i] = k_defs[i].def;
+            moved = moved || (s.values[i] != before);
             notify_changed(i, before);
         }
     }
-    s.dirty = true;
+    if (moved) {
+        mark_dirty();
+    }
 }
 
 void settings_reset_all(void)
 {
+    bool moved = false;
     for (int i = 0; i < SETTING_COUNT; ++i) {
         float before = s.values[i];
         s.values[i] = k_defs[i].def;
+        moved = moved || (s.values[i] != before);
         notify_changed(i, before);
     }
-    s.dirty = true;
+    if (moved) {
+        mark_dirty();
+    }
 }
 
 void settings_set_store(const settings_store_t *store)
@@ -228,6 +254,7 @@ void settings_init(void)
         }
     }
     s.dirty = false;
+    s.save_failed = false;
 
     if (s.observer) {
         for (int i = 0; i < SETTING_COUNT; ++i) {
@@ -262,7 +289,7 @@ void settings_set(setting_id_t id, float value)
         return;
     }
     s.values[id] = v;
-    s.dirty = true;
+    mark_dirty();
     if (s.observer) {
         s.observer(id);
     }
@@ -342,13 +369,31 @@ bool settings_dirty(void)
     return s.dirty;
 }
 
-void settings_save(void)
+bool settings_save(void)
 {
-    if (s.store && s.store->save) {
-        s.store->save(s.values, SETTING_COUNT);
+    const bool wrote = s.store && s.store->save
+                       && s.store->save(s.values, SETTING_COUNT);
+    /*
+     * The request is answered either way, so a failure returns the button
+     * to SAVE and the operator can try again without first nudging a value.
+     * What a failure does not do is clear dirty: the medium does not hold
+     * these values, and saying SAVED would be a lie the next boot exposes.
+     *
+     * No store at all is a failure and not a no-op.  A NULL store reaches
+     * settings_save() on a panel whose NVS could not be brought up, and
+     * that panel must not report a write it has nowhere to make.
+     */
+    s.save_asked  = false;
+    s.save_failed = !wrote;
+    if (wrote) {
+        s.dirty = false;
     }
-    s.dirty = false;
-    s.save_asked = false;
+    return wrote;
+}
+
+bool settings_save_failed(void)
+{
+    return s.save_failed;
 }
 
 void settings_request_save(void)
@@ -379,6 +424,5 @@ bool settings_save_tick(bool safe)
         s.save_asked = false;
         return false;
     }
-    settings_save();
-    return true;
+    return settings_save();
 }
