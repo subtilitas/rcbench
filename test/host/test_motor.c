@@ -1026,6 +1026,32 @@ TEST_CASE(a_cancelled_gesture_does_not_arm)
 }
 
 /*
+ * The tab row holds a press between DOWN and UP, and the release is what
+ * switches the pane.  A cancel abandons that press: the track id it owned
+ * is one the controller reuses, so a later contact that began elsewhere and
+ * lifts over the tab must not be taken for the missing release.
+ */
+TEST_CASE(a_cancelled_tab_press_does_not_switch_the_pane)
+{
+    fresh();
+    scr->render(&cv, 0);
+    gfx_color_t *plot = malloc((size_t)W * H * sizeof(gfx_color_t));
+    memcpy(plot, fb, (size_t)W * H * sizeof(gfx_color_t));
+
+    ev(99, 11, TOUCH_EVENT_DOWN, 1);    /* the TABLE tab */
+    scr->cancel();
+    ev(99, 11, TOUCH_EVENT_UP, 1);      /* a recycled id, lifting there */
+    scr->render(&cv, 0);
+    CHECK_EQ(memcmp(plot, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
+
+    /* And the row is not stuck: a fresh tap switches as usual. */
+    tap(99, 11);
+    scr->render(&cv, 0);
+    CHECK(memcmp(plot, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
+    free(plot);
+}
+
+/*
  * Abandoning a gesture asks for nothing, and on an armed bench that is the
  * wrong direction for one of them.  Disarming is a press, so its release is
  * the whole command: a release lost to a full touch queue is a DISARM the
@@ -1125,6 +1151,7 @@ int main(void)
     RUN(the_plot_records_one_run);
     RUN(leaving_the_screen_does_not_erase_the_run);
     RUN(a_cancelled_gesture_does_not_arm);
+    RUN(a_cancelled_tab_press_does_not_switch_the_pane);
     RUN(a_cancelled_disarm_still_disarms);
     RUN(a_cancelled_arm_asks_for_nothing);
     RUN(a_cancel_drops_an_arm_the_hold_already_posted);

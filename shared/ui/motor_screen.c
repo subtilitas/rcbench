@@ -1055,6 +1055,9 @@ static void cancel(void)
     }
     ui_slider_release(&s.slider);
     ui_hold_reset(&s.arm);
+    /* And the tab row: a press it kept would take a later contact's release
+     * for its own and switch the pane. */
+    ui_tabs_cancel(&s.tabs);
     s.pressed    = 0;
     s.have_press = false;
     ++s.ctrl_rev;
