@@ -24,7 +24,7 @@ assumption to be replaced from the chosen part's datasheet.
 | --- | --- |
 | Input | edges on panel GPIO6 (general-purpose input/output pin 6), header J8 (3V3, GND, GPIO6), 3.3 V logic, one edge every 20 ms |
 | Trigger | both edges, rising and falling. A single-edge trigger sees a 40 ms period and a worst case of 300 ms, and the window cannot cover that |
-| Window | the enable node falls no sooner than 155 ms and no later than 185 ms after the last edge, at every corner of drift over 0 to 50 °C; set to 170 ms on test |
+| Window | the enable node falls no sooner than 155 ms and no later than 185 ms after the last edge, at every corner of drift over 0 to 50 °C and a rail of 3.3 V ±3 %; set to 170 ms on test |
 | Deadline | the output buffer is disabled and every power switch is open within 200 ms of the last edge |
 | Output | one enable node, high while retriggered, low otherwise, feeding both gates |
 | Gates | the output enable of the buffer between the RP2350 and the output connector, and a high-side switch on each of the servo rail and the ESC pack |
@@ -140,8 +140,13 @@ Wiring:
 | Q output | to the OR gate | to the OR gate |
 
 A part with one trigger input of fixed polarity per half takes an inverter in
-front of one half; the inverter is in the trigger path and, unpowered, leaves
-that half untriggered, which is the safe direction.
+front of one half. The inverter's output carries a 100 kΩ pull to the level
+that does not trigger that half's input (low for a rising-edge input, high
+for a falling-edge input), so an inverter that is absent, unpowered or has
+lost its supply while the monostable is powered leaves the input held at
+its inactive level rather than floating. Without the pull, a high-impedance
+inverter output is an input that can pick up edges, which is not the safe
+direction. Test steps 2 and 3 cover the held level.
 
 The OR gate's output is the enable node. It is a push-pull logic output, so
 the enable node's pull-down acts only when the gate is unpowered or the node
@@ -464,11 +469,21 @@ capacitors, the ambient temperature and the rail voltage.
 
 **2. Static, no edges.** Panel's branch open, GP22 tri-stated. Record the
 voltage at the trigger input, each Q output, the enable node, the buffer's
-enable pin, and each switched rail with its load connected. Pass: trigger
-input, Q outputs and enable node below 0.4 V; the buffer's outputs high
-impedance (each connector signal line at its pull-down level, below 0.4 V);
-each rail below the voltage its load is measured to stop at, or below 0.5 V
-until that voltage is measured.
+enable pin, the output of the inverter where one is fitted, and each
+switched rail with its load connected. Pass: trigger input, Q outputs and
+enable node below 0.4 V; the inverter's output at its non-triggering level
+(below 0.4 V or above 2.9 V, whichever the half needs), and the same with
+the inverter not fitted; each rail below the voltage its load is measured
+to stop at, or below 0.5 V until that voltage is measured.
+
+Then the buffer's high impedance, which a voltage reading cannot show: a
+disabled buffer that drives low and a high-impedance one both read the
+pull-down's 0 V. Apply a 4.7 kΩ resistor from each connector signal line to
+3.3 V in turn. Pass: the line rises above 2.0 V (2.24 V with the 10 kΩ
+pull-down) and returns below 0.4 V when the resistor is removed. A line that
+stays below 0.4 V under the resistor is being driven low by the buffer, and
+the buffer is not disabled. Step 12 repeats this with the coprocessor
+driving the buffer's input.
 
 **3. Static, unpowered, panel silent.** Repeat step 2 with the 3.3 V supply
 to the monostable and the OR gate removed and the rails' supplies present.
@@ -490,26 +505,37 @@ series resistor is missing or too small.
 **5. Power-up.** Panel's branch open, GP22 tri-stated. Capture the 3.3 V rail
 on channel 1 and the enable node on channel 2, the scope triggered on the
 rail rising through 1 V, 500 ms of record. Apply power. Ten times. Then ten
-times more with the panel's branch closed and the panel holding the line at
-a level with no edges (the panel not yet running its control task, or the
-junction held from GP22). Pass: the enable node never crosses 1.65 V in any
-of the twenty records. A pulse of one window on the enable node after the
-rail settles is the clear release triggering, and the part is excluded.
+times more with the line held at a level with no edges, in one of two ways
+and never both: the panel's branch closed and the panel holding the line
+(the panel powered and not yet running its control task) with GP22
+tri-stated; or the panel's branch open and the junction held from GP22.
+GP22 on the junction with the panel's branch closed is two push-pull
+drivers on one node, the contention `testbench/WIRING.md` section 7 opens
+the branch to prevent. Pass: the enable node never crosses 1.65 V in any of
+the twenty records. A pulse of one window on the enable node after the rail
+settles is the clear release triggering, and the part is excluded.
 
 **6. Held, edges arriving.** Junction driven at one edge every 20 ms (GP22 per
 `testbench/WIRING.md`, or a 3.3 V square wave at 25 Hz, panel's branch
 open). Capture the enable node for 60 s. Pass: no falling edge on the
 enable node in 60 s; each Q output shows no gap.
 
-**7. The window, on the scope.** Trigger input on channel 1, probed on the
-monostable's side of its link. Enable node on channel 2. Scope triggered on
-channel 2 falling through 1.65 V, 200 ms or more of pre-trigger. Open the
-monostable's link. Read the interval from the last edge on channel 1 to the
-crossing on channel 2. Repeat ten times: five with a rising last edge, five
-with a falling last edge (the link opens at an arbitrary phase, so sort the
-captures by what channel 1 shows and keep going until each polarity has
-five). Record every interval, the ambient temperature and the supply
-voltage. Pass: every interval between 155 ms and 185 ms.
+**7. The window, on the scope.** Panel's branch open, the monostable's link
+closed, the junction driven from GP22 or a generator as in step 6. Trigger
+input on channel 1, probed at the monostable's input. Enable node on
+channel 2. Scope triggered on channel 2 falling through 1.65 V, 200 ms or
+more of pre-trigger. Stop the source with its output held at its final
+level: high for a rising last edge, low for a falling one. Read the
+interval from the last edge on channel 1 to the crossing on channel 2.
+Repeat ten times: five stopped high, five stopped low. Record every
+interval, the ambient temperature and the supply voltage. Pass: every
+interval between 155 ms and 185 ms.
+
+Opening the monostable's link, as `testbench/WIRING.md` section 7 does,
+gives a falling last edge only: the pull-down on the monostable's side
+makes the opening itself a falling edge whenever the line is high, and
+when the line is low the last edge was already falling. That capture is
+valid for the falling polarity and is not a way to get the rising one.
 
 **8. Each half.** Repeat step 7 with channel 2 on each Q output in turn,
 three captures each: half A from the last rising edge, half B from the last
@@ -536,14 +562,35 @@ between 15 ms and 45 ms, which is a window between 155 ms and 185 ms; record
 the minimum and maximum. Then one edge every 150 ms for 60 s. Pass: no
 falling edge on the enable node.
 
-**11. Temperature.** Not measured. Steps 7 and 10 at 0 °C and 50 °C on the
-timing network would confirm the drift table; until then the corners are
-calculated, not measured.
+**11. The corners.** Not measured. The drift table's k term combines
+temperature with supply, and the family's datasheet graphs k rather than
+bounding it, so temperature alone cannot confirm the table. Steps 7 and 10
+run at each of five combinations: 25 °C at 3.3 V, and 0 °C and 50 °C each
+at the rail's permitted minimum and maximum, 3.2 V and 3.4 V, with the
+temperature applied to the timing network and the part. Pass: every
+interval between 155 ms and 185 ms at every combination. Record which
+combination gives the shortest and the longest window; those are the two
+the datasheet's k graph should predict, and a unit whose extremes lie
+elsewhere has a drift term the table does not carry. Until this is run
+the corners are calculated, not measured.
+
+**12. Buffer high impedance, input driven.** The differential setup of
+`testbench/WIRING.md` section 7: panel's branch open, GP22 driving the
+junction so the firmware stays alive, the monostable's link open so the
+enable is down, the bench armed and the output under test commanded away
+from rest, so the buffer's input is toggling. Apply the 4.7 kΩ resistor
+from the connector signal line to 3.3 V as in step 2. Pass: the line sits
+above 2.0 V with no edge on it (analyser at 24 MHz, 2m samples, as the
+quiet capture in the wiring guide), and returns below 0.4 V without the
+resistor. Edges on the line are a buffer that is not disabled; a line held
+low is a buffer driving low while disabled.
 
 What to record, per built unit: the part and its datasheet k, clear-release
 behaviour and I_off specification, the measured C and the fitted R per half,
 the ten intervals of step 7, the six of step 8, the rail figures of step 9,
-the minimum and maximum of step 10, ambient temperature and supply voltage.
+the minimum and maximum of step 10, the five combinations of step 11 with
+their intervals, the two readings of step 12 per line, ambient temperature
+and supply voltage.
 
 ## Limitations
 
