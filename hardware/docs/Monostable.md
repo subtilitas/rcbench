@@ -5,10 +5,11 @@ The hardware backstop behind the heartbeat. A retriggerable monostable IC
 triggered by every edge on the panel's safety line and holds an enable node
 high only while edges keep arriving. The enable node gates the coprocessor's
 output enable and the servo and ESC (electronic speed controller) power path.
-When the edges stop, the outputs are removed within 200 ms with no firmware at
-either end in the path. [Safety](../../docs/Safety.md) says why the line
-carries edges and what this circuit covers; this page says what the circuit
-has to be so it can be designed and checked.
+When the edges stop, the drive is removed and the power switches are open
+within 200 ms, with no firmware at either end in the path.
+[Safety](../../docs/Safety.md) says why the line carries edges and what this
+circuit covers; this page says what the circuit has to be so it can be
+designed and checked.
 
 **No part number appears on this page.** [The README](../README.md) rules
 that a part is not chosen until it is available at a vendor, and no part has
@@ -23,11 +24,14 @@ assumption to be replaced from the chosen part's datasheet.
 | --- | --- |
 | Input | edges on panel GPIO6 (general-purpose input/output pin 6), header J8 (3V3, GND, GPIO6), 3.3 V logic, one edge every 20 ms |
 | Trigger | both edges, rising and falling. A single-edge trigger sees a 40 ms period and a worst case of 300 ms, and the window cannot cover that |
-| Window | no shorter than 155 ms and no longer than 200 ms at every corner of component tolerance and temperature |
+| Window | the enable node falls no sooner than 155 ms and no later than 185 ms after the last edge, at every corner of drift over 0 to 50 °C; set to 170 ms on test |
+| Deadline | the output buffer is disabled and every power switch is open within 200 ms of the last edge |
 | Output | one enable node, high while retriggered, low otherwise, feeding both gates |
 | Gates | the output enable of the buffer between the RP2350 and the output connector, and a high-side switch on each of the servo rail and the ESC pack |
-| Fail-safe direction | unpowered, undriven, unbuilt, or an open trigger line means both gates disabled |
+| Fail-safe direction | unpowered, undriven, unbuilt, an open trigger line, and the panel driving into an unpowered circuit all mean both gates disabled |
+| Power-up | the enable node stays low through the 3.3 V ramp until edges arrive |
 | Not defeatable | no programmable element in the path from GPIO6 to either gate |
+| Fault model | absence of anything, and any single timing element out of tolerance, is disabled; a logic output or a switch failed conducting is not covered, see [Fault model](#fault-model) |
 | Supply | the coprocessor board's 3.3 V rail; ground common with J8's GND |
 
 ## Input
@@ -52,6 +56,21 @@ The monostable does not check any of those. It retriggers on any edge and
 expires a window after the last one. The firmware check exists because of that
 difference; see [With the firmware monitor](#with-the-firmware-monitor).
 
+The panel is powered on its own USB and beats whether or not the coprocessor
+board has power. The trigger input therefore sees 3.3 V edges while the
+circuit's own 3.3 V rail may be absent. Two requirements follow:
+
+- The trigger input is specified for partial power-down: a datasheet limit
+  on the input current with V_I above V_CC and V_CC = 0 V (the I_off
+  specification), which means no diode from the input to the supply pin. An
+  input without that specification is back-powered by the panel through its
+  protection diode, runs the IC from the heartbeat, and can assert Q.
+- A 4.7 kΩ series resistor between the junction and the trigger input, on
+  the monostable's side of its removable link. It bounds any current into
+  an unpowered input to 0.7 mA at 3.3 V. With the 100 kΩ pull-down behind
+  it the high level at the input is 3.15 V, above a 74HC-class V_IH of
+  2.31 V at 3.3 V.
+
 ## Timing budget
 
 | Item | Value | Where it comes from |
@@ -61,16 +80,30 @@ difference; see [With the firmware monitor](#with-the-firmware-monitor).
 | Edge interval seen by a single-edge trigger | 40 ms | the level toggles once per period |
 | Longest interval the firmware accepts | 150 ms | `HEARTBEAT_MAX_GAP_MS` |
 | Margin for one late control-task pass | 5 ms | one pass of the task that emits the edge |
-| Window, lower bound at every corner | 155 ms | 150 ms + 5 ms: the monostable never drops out on a heartbeat the firmware accepts |
-| Window, upper bound at every corner | 200 ms | the coprocessor's link failsafe; the backstop is not slower than the link |
-| Window, nominal in the worked example | 176 ms | [Timing network](#timing-network) |
+| Enable node, lower bound at every corner | 155 ms | 150 ms + 5 ms: the monostable never drops out on a heartbeat the firmware accepts |
+| Enable node, set point | 170 ms | set on test, see [Timing network](#timing-network) |
+| Enable node, upper bound at every corner | 185 ms | the deadline less the downstream budget |
+| Buffer disabled after the enable node falls | under 1 µs | a logic output-enable; not in the budget |
+| Power switch open after the enable node falls | 5 ms | budget for the driver and the switch; a relay whose release time exceeds it is not a candidate |
+| Reserve | 10 ms | between the switch opening and the deadline |
+| Deadline: drive removed, switches open | 200 ms | the coprocessor's link failsafe; the backstop is not slower than the link |
 | Coprocessor link failsafe | 200 ms | silence on the CAN (Controller Area Network) link |
 
 The order of events after the last edge at t = 0, with a healthy coprocessor:
-the firmware monitor disarms at 150 ms; the enable node falls between 157 ms
-and 197 ms in the worked example; the link failsafe fires at 200 ms after the
-last frame. With a coprocessor that cannot act, the second event is the only
-one, and the outputs are still gone before 200 ms.
+the firmware monitor disarms at 150 ms; the enable node falls between 155 ms
+and 185 ms; the buffer is high impedance within 1 µs of that and every switch
+is open within 5 ms of it, so by 190 ms at the latest; the link failsafe
+fires at 200 ms after the last frame. With a coprocessor that cannot act, the
+middle events are the only ones, and the drive is gone before 200 ms.
+
+The switched rail's fall from the switch opening to the voltage its load
+stops at is not in the budget. It depends on the load's own input
+capacitance and its idle current: an ESC with 470 µF behind its connector
+and a 50 mA idle draw takes about 230 ms from 25 V to 0.5 V, a servo with
+10 µF and the same draw takes about 2 ms. The signal gate is the fast path,
+and it is what removes a command; the open switch is the second barrier,
+and the time its rail takes to decay is measured and recorded, not
+specified.
 
 The window's lower bound is above the longest accepted gap so that the two
 watchers on the wire never disagree in the wrong order: a gap the firmware
@@ -100,9 +133,9 @@ Wiring:
 
 | Node | Half A | Half B |
 | --- | --- | --- |
-| Rising-edge trigger input | the heartbeat line | held at its inactive level |
-| Falling-edge trigger input | held at its inactive level | the heartbeat line |
-| Clear input | inactive | inactive |
+| Rising-edge trigger input | the heartbeat line, through the 4.7 kΩ series resistor | held at its inactive level |
+| Falling-edge trigger input | held at its inactive level | the heartbeat line, through the same resistor |
+| Clear input | the power-on reset network, shared | the same network |
 | Timing network | R, C as below | R, C as below, same values |
 | Q output | to the OR gate | to the OR gate |
 
@@ -114,7 +147,7 @@ The OR gate's output is the enable node. It is a push-pull logic output, so
 the enable node's pull-down acts only when the gate is unpowered or the node
 is unbuilt. A diode-OR into the pull-down is the alternative combining
 element; it is not the design because a Schottky drop of 0.3 V leaves 3.0 V
-on the node, and a 74HC-class input needs 2.3 V at 3.3 V, so the margin is
+on the node, and a 74HC-class input needs 2.31 V at 3.3 V, so the margin is
 spent on the diode.
 
 Why the OR of two windows behaves like one window triggered on both edges:
@@ -124,12 +157,54 @@ interval earlier and expires sooner. So the enable falls one window after the
 last edge of either polarity, and a gap between any two consecutive edges is
 covered as long as it is shorter than the window.
 
-A half that has failed silent (an open trigger input, a dead output) makes
-the surviving half a single-edge trigger: it sees 40 ms between its edges and
-still holds the node up on a nominal heartbeat, and it drops out whenever two
-consecutive intervals together exceed the window, which is the safe
-direction. The test procedure
-measures each half on its own for that reason.
+### Power-up
+
+Both clear inputs are held active through the 3.3 V ramp by one power-on
+reset network: 100 kΩ from the rail to the clear inputs, 1 µF from the clear
+inputs to ground, and a diode across the resistor so the capacitor empties
+when the rail drops. The clear inputs are active for about 100 ms after the
+rail reaches 3.3 V, long after the monostable's own supply-rise requirement,
+and Q is low throughout. The datasheet has to state that Q is low while
+clear is active; every retriggerable monostable of this class does.
+
+The release of clear is itself a trigger on some parts: the common '123-type
+dual monostable fires a full pulse when clear goes inactive while its trigger
+inputs sit at their armed levels, and in this circuit one half or the other
+always does, whichever level the heartbeat line holds. **A part whose clear
+release can trigger is excluded**; the '423-type behaviour, where clear
+release never triggers, is required and is stated in the datasheet. Until a
+part is chosen this is the constraint that decides between otherwise
+identical families.
+
+The coprocessor's outputs are off at boot and it refuses to arm before four
+good intervals, so a power-up pulse would drive nothing today. The circuit
+does not rely on that: the requirement is no pulse.
+
+### Fault model
+
+What the circuit covers is absence: no supply, no drive, no wire, no part,
+an open link, and any single timing element (R, C, or one half's k) outside
+its tolerance. In every one of those cases the enable node is low or falls
+early, which is the safe direction. A half that has failed silent (an open
+trigger input, a dead Q) makes the surviving half a single-edge trigger: it
+holds the node up on a nominal heartbeat and drops out whenever two
+consecutive intervals together exceed the window.
+
+What it does not cover is a part failed conducting: a Q output stuck high, an
+OR gate output stuck high, a buffer enable shorted to its active level, a
+switch failed short. Any single-channel interlock has those points, and the
+OR of two halves has two Q outputs where a single monostable has one. The
+test procedure measures each half's own fall for that reason, and the rail
+measurement in `testbench/WIRING.md` section 7 exists for the shorted switch.
+
+The alternative that covers a stuck-high output is two channels in series:
+each channel its own both-edge detector and its own monostable, the two Q
+outputs combined by an AND gate, each channel fed every 20 ms so its window
+is the one on this page. Either channel then removes the enable on its own.
+It costs two edge detectors with their own timing analysis and an AND gate,
+and the AND gate's output is the remaining single point. It is not this
+design; it is recorded here as the decision to take if a stuck-high output
+is brought into the fault model.
 
 ## Timing network
 
@@ -142,45 +217,67 @@ part's family, given in its datasheet, together with a graph of how it moves
 with supply voltage and temperature. Values of k in common families lie
 between about 0.3 and 1.0, so R and C cannot be chosen before the part is.
 
-**Assumed for the worked example: k = 0.45 at 3.3 V and 25 °C, with a spread
-of ±5 % over supply and temperature.** The value is what the widespread
-74HC-class dual retriggerable monostable with paired trigger inputs quotes;
-the spread is an assumption, since datasheets of this class graph k against
-supply rather than stating a limit. Both are replaced from the chosen part's
-datasheet before the values are final, and the corner table is recomputed.
+A fixed R and C do not put the window inside the band. A ±5 % capacitor, a
+k that moves ±5 % with supply and temperature, a ±1 % resistor and the
+timing pin's input leakage together span more than the 155 ms to 185 ms the
+band allows (the product of the worst cases is a ratio of about 1.35 between the
+longest and shortest window; the band is a ratio of 1.19). So the window is
+**set on test**: C is fitted, the window is measured, and R is selected from
+the E96 series to put the enable node at 170 ms. That calibrates out the
+initial tolerance of C, of k and of the leakage at the setting temperature;
+what is left is drift.
 
-Worked values for the band:
+**Assumed for the worked values: k = 0.45 at 3.3 V and 25 °C, moving ±3 %
+over a supply of 3.3 V ±3 % and 0 to 50 °C.** The value is what the
+widespread 74HC-class dual retriggerable monostable with paired trigger
+inputs quotes; the drift is an assumption, since datasheets of this class
+graph k against supply rather than stating a limit. Both are replaced from
+the chosen part's datasheet before the values are final, and the drift table
+is recomputed.
+
+Worked values:
 
 | | Value | Tolerance | Notes |
 | --- | ---: | ---: | --- |
-| R | 392 kΩ | ±1 %, ±100 ppm/°C | E96 metal film. The E24 neighbour 390 kΩ gives 175.5 ms nominal and meets the lower bound by 0.5 ms; not preferred |
-| C | 1 µF | ±5 %, ±30 ppm/°C | C0G/NP0 ceramic or polypropylene film. Not X7R, X5R or electrolytic: ±15 % over temperature, a voltage coefficient and leakage that eats the timing current |
-| k | 0.45 | ±5 % | assumed; from the datasheet |
-| t, nominal | 176.4 ms | | 0.45 × 392 kΩ × 1 µF |
+| C | 3.3 µF | ±5 %, −200 ppm/°C | polypropylene film. Not X7R, X5R or electrolytic: ±15 % over temperature, a voltage coefficient and leakage that eats the timing current. C0G ceramic is preferred where the part's timing range allows a value it exists in |
+| R | 115 kΩ nominal, selected between 102 kΩ and 127 kΩ | ±1 %, ±100 ppm/°C | E96 metal film. The selection range covers C at ±5 % and k at ±5 % from the assumed values; one E96 step moves the window by 2.4 %, 4 ms |
+| k | 0.45 | assumed | from the datasheet |
+| t, nominal | 170.8 ms | | 0.45 × 115 kΩ × 3.3 µF, before selection |
+| Timing current | 29 µA at 3.3 V | | 3.3 V / 115 kΩ; the leakage bound below is 3.5 % of it |
+| Timing-pin leakage | 1 µA at 85 °C, assumed 0.5 µA at 50 °C | assumed | the 85 °C figure is the class's datasheet limit; the 50 °C figure is an assumption, and the datasheet's 25 °C figure with the leakage's doubling per 10 °C replaces it |
 
-Corner analysis over 0 to 50 °C ambient (±25 °C from 25 °C, the range the
-bench is assumed to be used in; not analysed outside it):
+Drift after setting, over 0 to 50 °C (±25 °C from the 25 °C setting
+temperature, the range the bench is assumed to be used in; not analysed
+outside it):
 
-| Corner | R | C | k | t | Margin |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Minimum | 387.1 kΩ (−1 % −0.25 %) | 0.949 µF (−5 % −0.08 %) | 0.4275 | 157.0 ms | 2.0 ms above 155 ms |
-| Nominal | 392 kΩ | 1.000 µF | 0.45 | 176.4 ms | |
-| Maximum | 396.9 kΩ (+1 % +0.25 %) | 1.051 µF (+5 % +0.08 %) | 0.4725 | 197.1 ms | 2.9 ms below 200 ms |
+| Term | Bound | Basis |
+| --- | ---: | --- |
+| Setting | ±1.5 % | half an E96 step, 1.2 %, plus 0.3 % for reading the crossing on the scope |
+| R over temperature | ±0.25 % | 100 ppm/°C × 25 °C |
+| C over temperature | ±0.5 % | 200 ppm/°C × 25 °C, polypropylene |
+| k over supply and temperature | ±3 % | assumed; from the datasheet |
+| Leakage change over temperature | ±2 % | 0.5 µA × 115 kΩ = 58 mV against 3.3 V; assumed, see above |
+| Sum | ±7.25 % | linear sum of the bounds, the worst case for terms that can all move one way |
 
-The corners are products of the three worst cases, which is the exact worst
-case for a product of independent terms. The margins are 2.0 ms and 2.9 ms
-with the assumed k spread; a datasheet k spread wider than ±5 % or a
-capacitor looser than ±5 % breaks the band and calls for a ±2 % capacitor or
-a capacitor measured before fitting. Propagation delay from trigger edge to Q
-and through the OR gate is below 1 µs and is not in the budget.
+| Corner | Window | Margin |
+| --- | ---: | ---: |
+| Minimum | 157.7 ms | 2.7 ms above 155 ms |
+| Set point | 170 ms | |
+| Maximum | 182.3 ms | 2.7 ms below 185 ms |
+
+The margins are 2.7 ms each way with the assumed k drift and leakage. A
+datasheet k drift wider than ±3 % or a leakage above the assumption breaks
+the band; the responses are a lower R with a larger C (the leakage term
+scales with R), a capacitor with a smaller temperature coefficient, or a part
+with a stated k limit. Propagation delay from trigger edge to Q and through
+the OR gate is below 1 µs and is not in the budget.
 
 Rules for the split between R and C, whatever the part:
 
 - R stays inside the part's permitted external resistor range, and between
-  100 kΩ and 1 MΩ, so the timing current at 3.3 V is 3 to 33 µA, large
-  against a timing pin's input leakage of up to 1 µA at the top of the
-  temperature range. For k = 0.45 and a 176 ms window that puts C between
-  0.39 µF and 3.9 µF.
+  50 kΩ and 150 kΩ, so the timing current at 3.3 V is 22 to 66 µA and the
+  1 µA leakage bound is at most 4.5 % of it. For k = 0.45 and a 170 ms window
+  that puts C between 2.5 µF and 7.6 µF.
 - C stays inside the part's permitted external capacitor range and in a
   dielectric with a stated temperature coefficient.
 - The timing components sit at the part's pins, and the timing node has no
@@ -215,12 +312,11 @@ switch is open when its control input is undriven and when the 3.3 V logic
 supply is absent: an enhancement-mode MOSFET (metal-oxide-semiconductor
 field-effect transistor) with a gate-to-source resistor satisfies that, as
 does a normally-open relay; a normally-closed contact or a depletion-mode
-device does not.
+device does not. The switch is open within 5 ms of the enable node falling.
 
-The rail has to fall to the voltage its load stops at within the window, with
-the load connected; the bulk capacitance on the switched side sets how fast
-it falls and is part of the design. `testbench/WIRING.md` section 7 gives the
-measurement and why a meter cannot make it.
+The switched side of each rail decays through its load once the switch is
+open. `testbench/WIRING.md` section 7 gives the measurement, why a meter
+cannot make it, and why the rail is measured and not only the control node.
 
 **Polarity.** The enable node is active high: the monostable's true Q output
 is low at rest and high while retriggered, so the OR of the Q outputs is high
@@ -235,11 +331,13 @@ Every state the circuit can be left in reads as disabled:
 | --- | --- |
 | Trigger line open (a link out, the panel unplugged) | a 100 kΩ pull-down on the trigger input; no edges, both halves expire |
 | Trigger line stuck at either level | no edges; both halves expire |
-| Monostable unpowered | its Q outputs are undriven; the OR gate is unpowered; a 100 kΩ pull-down on the enable node holds it low |
+| Monostable unpowered, panel silent | its Q outputs are undriven; the OR gate is unpowered; a 100 kΩ pull-down on the enable node holds it low |
+| Monostable unpowered, panel beating | the partial-power-down input and the 4.7 kΩ series resistor keep the heartbeat from powering the IC; the pull-downs as above |
 | Enable node unbuilt or a lead off | the same pull-down |
 | Output enable undriven | the pull-down (active-high enable) or the pull-up (active-low enable) at the device's pin |
 | Switch control undriven or logic supply absent | the gate-to-source resistor or the relay coil |
-| Power-up | Q is low until the first trigger; the firmware side additionally needs four good intervals before it arms |
+| 3.3 V ramp | the power-on reset network holds clear active for about 100 ms; the release does not trigger |
+| Powered, no edge yet | Q is low until the first trigger; the firmware side additionally needs four good intervals before it arms |
 
 The RP2350 pulls GP3 down in firmware (`firmware/iomcu/src/main.c`). That
 pull-down is not in this circuit's fail-safe list: it is set by firmware,
@@ -247,11 +345,11 @@ and this circuit is the thing that must hold when firmware does not.
 
 ## Not defeatable
 
-The path from J8 to either gate is GPIO6, the trigger inputs, the timing
-networks, the Q outputs, the OR gate, the enable node, and the gates. No
-processor, no register and no firmware is in it. The coprocessor's GP3 is an
-input on the same node: it listens so the firmware can judge the line, and it
-cannot remove the enable or add to it.
+The path from J8 to either gate is GPIO6, the series resistor, the trigger
+inputs, the timing networks, the Q outputs, the OR gate, the enable node, and
+the gates. No processor, no register and no firmware is in it. The
+coprocessor's GP3 is an input on the same node: it listens so the firmware
+can judge the line, and it cannot remove the enable or add to it.
 
 A coprocessor that drove GP3 with edges would retrigger the monostable
 against the panel's push-pull drive. That is the third row of the table in
@@ -267,8 +365,9 @@ branch, meeting at a junction with GP3. `testbench/WIRING.md` section 7 uses
 them: the panel's link opens so the RP2350 can drive the junction from GP22
 without contention (the panel drives push-pull), and the monostable's link
 opens while a capture runs so the last trigger edge and the enable falling
-are in one trace. The trigger pull-down sits on the monostable's side of its
-link, so an open link is a low trigger and not a floating one.
+are in one trace. The series resistor and the trigger pull-down sit on the
+monostable's side of its link, so an open link is a low trigger and not a
+floating one.
 
 ## With the firmware monitor
 
@@ -295,10 +394,15 @@ Nothing below has been run; every result is "not measured" until it is.
 Instruments: a two-channel oscilloscope with at least 200 ms of pre-trigger
 record, the analyser and `capture.sh` from `testbench/`, and a probe rated for
 the ESC pack voltage. The captures of `testbench/WIRING.md` section 7 apply;
-what follows is what to measure on this circuit and what passes.
+what follows is what to measure on this circuit and what passes. Every
+crossing of a logic node is read at 1.65 V.
 
-**1. Before power.** Measure R and C with a meter before fitting and record
-them. Compute the expected window from the datasheet's k.
+**1. Setting.** Fit C and a starting R of 115 kΩ. Measure the window by
+step 6 with three captures. Compute R for 170 ms from the measured value
+(the window is proportional to R), select the nearest E96 value, fit it, and
+measure again. Pass: three captures between 167.5 ms and 172.5 ms at 20 to
+30 °C ambient with the rail at 3.3 V ±1 %. Record the fitted R, the measured
+C, the ambient temperature and the rail voltage.
 
 **2. Static, no edges.** Panel's branch open, GP22 tri-stated. Record the
 voltage at the trigger input, each Q output, the enable node, the buffer's
@@ -308,16 +412,35 @@ impedance (each connector signal line at its pull-down level, below 0.4 V);
 each rail below the voltage its load is measured to stop at, or below 0.5 V
 until that voltage is measured.
 
-**3. Static, unpowered.** Repeat step 2 with the 3.3 V supply to the
-monostable and the OR gate removed and the rails' supplies present. Pass: the
-same figures.
+**3. Static, unpowered, panel silent.** Repeat step 2 with the 3.3 V supply
+to the monostable and the OR gate removed and the rails' supplies present.
+Pass: the same figures.
 
-**4. Held, edges arriving.** Junction driven at one edge every 20 ms (GP22 per
+**4. Unpowered, panel beating.** The 3.3 V supply to the monostable and the
+OR gate removed, the rails' supplies present, the panel's branch closed and
+the panel beating (an edge every 20 ms on the junction). Record the voltage
+at the monostable's supply pin, each Q output and the enable node, and
+capture the enable node for 60 s. Pass: supply pin below 0.3 V, Q outputs
+and enable node below 0.4 V, no edge on the enable node in 60 s, each rail
+as in step 2. A supply pin above 0.3 V is the heartbeat back-powering the
+part through its input, and the part is not one with the I_off
+specification.
+
+**5. Power-up.** Panel's branch open, GP22 tri-stated. Capture the 3.3 V rail
+on channel 1 and the enable node on channel 2, the scope triggered on the
+rail rising through 1 V, 500 ms of record. Apply power. Ten times. Then ten
+times more with the panel's branch closed and the panel holding the line at
+a level with no edges (the panel not yet running its control task, or the
+junction held from GP22). Pass: the enable node never crosses 1.65 V in any
+of the twenty records. A pulse of one window on the enable node after the
+rail settles is the clear release triggering, and the part is excluded.
+
+**6. Held, edges arriving.** Junction driven at one edge every 20 ms (GP22 per
 `testbench/WIRING.md`, or a 3.3 V square wave at 25 Hz, panel's branch
 open). Capture the enable node for 60 s. Pass: no falling edge on the
 enable node in 60 s; each Q output shows no gap.
 
-**5. The window, on the scope.** Trigger input on channel 1, probed on the
+**7. The window, on the scope.** Trigger input on channel 1, probed on the
 monostable's side of its link. Enable node on channel 2. Scope triggered on
 channel 2 falling through 1.65 V, 200 ms or more of pre-trigger. Open the
 monostable's link. Read the interval from the last edge on channel 1 to the
@@ -325,36 +448,40 @@ crossing on channel 2. Repeat ten times: five with a rising last edge, five
 with a falling last edge (the link opens at an arbitrary phase, so sort the
 captures by what channel 1 shows and keep going until each polarity has
 five). Record every interval, the ambient temperature and the supply
-voltage. Pass: every interval between 155 ms and 200 ms.
+voltage. Pass: every interval between 155 ms and 185 ms.
 
-**6. Each half.** Repeat step 5 with channel 2 on each Q output in turn,
+**8. Each half.** Repeat step 7 with channel 2 on each Q output in turn,
 three captures each. Pass: each half's interval from its own last edge
-between 155 ms and 200 ms. Record the difference between the halves; two
-capacitors at opposite ends of ±5 % put it at up to 18 ms.
+between 155 ms and 185 ms. Record the difference between the halves; two
+capacitors at opposite ends of ±5 % put it at up to 18 ms before setting,
+and step 1 sets each half's R on its own.
 
-**7. The rails.** Repeat step 5 with channel 2 on each switched rail in turn,
-the scope triggered on the rail falling through the load's stop voltage, the
-load connected. Pass: each rail crosses its stop voltage within 200 ms of the
-last edge. Record the voltage used as the threshold and whether it is
-measured or the 0.5 V placeholder.
+**9. The switches and the rails.** Repeat step 7 with channel 2 on each
+switch's control node in turn, then on each switched rail in turn with the
+load connected, the scope triggered on the rail falling through the load's
+stop voltage. Pass: each control node reaches its open level within 5 ms of
+the enable node falling, and each rail leaves regulation (falls by 5 % of
+its set voltage) within 190 ms of the last edge. Record the time from the
+last edge to the rail crossing the load's stop voltage, the voltage used as
+the threshold, whether it is measured or the 0.5 V placeholder, and the
+load. That time is recorded, not passed or failed: it belongs to the load's
+capacitance and idle current.
 
-**8. The band, driven.** Junction driven at one edge every 210 ms from the
-generator. The enable node then falls for 210 ms minus the window on every
+**10. The band, driven.** Junction driven at one edge every 200 ms from the
+generator. The enable node then falls for 200 ms minus the window on every
 cycle. Capture 100 cycles with the analyser at 1 MHz. Pass: every low pulse
-between 10 ms and 55 ms, which is a window between 155 ms and 200 ms; record
+between 15 ms and 45 ms, which is a window between 155 ms and 185 ms; record
 the minimum and maximum. Then one edge every 150 ms for 60 s. Pass: no
 falling edge on the enable node.
 
-**9. Temperature.** Not measured. Steps 5 and 8 at 0 °C and 50 °C on the
-timing network would confirm the corner table; until then the corners are
+**11. Temperature.** Not measured. Steps 7 and 10 at 0 °C and 50 °C on the
+timing network would confirm the drift table; until then the corners are
 calculated, not measured.
 
-What to record, per built unit: the part and its datasheet k, the measured R
-and C, the ten intervals of step 5, the six of step 6, the two rail figures
-of step 7, the minimum and maximum of step 8, ambient temperature and supply
-voltage. A unit whose step 5 minimum is below 160 ms with the assumed k has
-either a k below the assumption or a capacitor at the bottom of its band, and
-R goes up one E96 step (+2.4 %, about 4 ms) with the analysis redone.
+What to record, per built unit: the part and its datasheet k, clear-release
+behaviour and I_off specification, the measured C and the fitted R per half,
+the ten intervals of step 7, the six of step 8, the rail figures of step 9,
+the minimum and maximum of step 10, ambient temperature and supply voltage.
 
 ## Limitations
 
@@ -362,11 +489,15 @@ R goes up one E96 step (+2.4 %, about 4 ms) with the analysis redone.
   [With the firmware monitor](#with-the-firmware-monitor).
 - A healthy panel beside a misbehaving coprocessor is not covered, by this
   circuit or by any hardware in the design.
+- A logic output or a switch failed conducting is not covered; see
+  [Fault model](#fault-model).
+- The switched rail's decay to the load's stop voltage is not bounded; it is
+  measured with the load.
 - Bidirectional DShot answers on the same wire it is driven on, so the
   element carrying the output enable has to pass the reply direction while
   enabled. Which element does that is not specified.
-- The window's lower margin is 2.0 ms at the calculated corner. It rests on
-  the assumed k spread.
+- The window's margins are 2.7 ms each way at the calculated corners. They
+  rest on the assumed k drift and leakage.
 
 ## Not specified
 
@@ -379,5 +510,5 @@ R goes up one E96 step (+2.4 %, about 4 ms) with the analysis redone.
 - The connector between J8 and the trigger input, and the connector the
   gated outputs leave by.
 - The temperature range outside 0 to 50 °C.
-- The bulk capacitance on each switched rail, which sets how fast the rail
-  falls once the switch opens.
+- Two channels in series, if a stuck-high output is brought into the fault
+  model.

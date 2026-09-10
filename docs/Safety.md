@@ -28,12 +28,13 @@ monostable that stays energised only while edges keep arriving. A crash, a
 wedged task, a reset, a brown-out and an unplugged cable then all produce the
 same result: no edges, no output, independent of firmware at both ends.
 
-Monostable window: no shorter than 155 ms and no longer than 200 ms at every
-corner of component tolerance and temperature, 176 ms nominal. The heartbeat
-comes from the panel's control task, which runs every 5 ms on the core that
-does not draw, so its period does not depend on what a frame costs. The
-window sits above the 150 ms the firmware accepts between edges, with 5 ms
-for a late task, and inside the coprocessor's 200 ms link failsafe.
+Monostable window: the enable falls no sooner than 155 ms and no later than
+185 ms after the last edge at every corner of drift, set to 170 ms on test,
+and the drive is removed and the power switches are open within 200 ms. The
+heartbeat comes from the panel's control task, which runs every 5 ms on the
+core that does not draw, so its period does not depend on what a frame
+costs. The window sits above the 150 ms the firmware accepts between edges,
+with 5 ms for a late task, and inside the coprocessor's 200 ms link failsafe.
 
 The monostable is on no board. Its specification is in `hardware/`:
 [Monostable](https://github.com/subtilitas/rcbench/blob/main/hardware/docs/Monostable.md),

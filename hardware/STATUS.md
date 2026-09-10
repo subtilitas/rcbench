@@ -17,7 +17,7 @@ monostable behind the heartbeat is specified and not built.
 | Servo rail | two output settings | up to 5.5 V for LV (low-voltage) servos and up to 8.4 V for HV (high-voltage) servos, 4 to 8 A. The converter input is a design choice, not part of the requirement: 12 V or more delivers the full 8 A at 8.4 V; a 5 V input delivers about 4 A. [Power](docs/Power.md) |
 | Charge current | 2 A, one BQ25887 | 3 A is the top of the requirement's range, not a requirement; 2 A with 400 mA per-cell balancing stands. [Power](docs/Power.md) |
 | Stock source | the vendor's own API (application programming interface) | a mirror reported 1046 of a part the vendor reported 29 of, oversold. [Sourcing](docs/Sourcing.md) |
-| Monostable | a dual retriggerable monostable, one half per heartbeat edge, outputs OR-ed; window 155 to 200 ms at every corner, 176 ms nominal from 392 kΩ and 1 µF at an assumed k of 0.45 | both edges keep the trigger interval at 20 ms; a single-edge trigger sees up to 300 ms between legal edges. Specified, not built, no part. [Monostable](docs/Monostable.md) |
+| Monostable | a dual retriggerable monostable, one half per heartbeat edge, outputs OR-ed; the enable falls 155 to 185 ms after the last edge at every corner of drift, set to 170 ms on test with R selected against a 3.3 µF film capacitor at an assumed k of 0.45; the drive is removed within 200 ms | both edges keep the trigger interval at 20 ms; a single-edge trigger sees up to 300 ms between legal edges. A fixed R and C do not fit the band, so the window is set on test. Specified, not built, no part. [Monostable](docs/Monostable.md) |
 
 ## Open
 
@@ -27,7 +27,7 @@ monostable behind the heartbeat is specified and not built.
 | 300 A shunt | Class settled: busbar type, 50 to 100 µΩ, 4.5 to 9 W at 300 A. The largest four-terminal SMD (surface-mount device) parts stop at 0.2 mΩ and would dissipate 18 W. | part number, footprint, supplier |
 | Converter input | 12 V or more for 8 A at 8.4 V. Connector and heatsink follow from it. | input connector, heatsink |
 | Layout | Isolation, a 300 A path and a 3.3 V I²C bus on one board, connectors, thermal. | the shunt first |
-| Monostable parts | Specified without a part: [Monostable](docs/Monostable.md) assumes k = 0.45 ±5 % and needs the chosen part's datasheet to confirm the corner table. The switch on the 300 A pack path is its own decision. | a dual retriggerable monostable available at both vendors, then the two switches |
+| Monostable parts | Specified without a part: [Monostable](docs/Monostable.md) assumes k = 0.45 with ±3 % drift and 0.5 µA of timing-pin leakage at 50 °C, and needs the chosen part's datasheet for those, for a clear release that does not trigger, and for the I_off specification on the trigger input. The switch on the 300 A pack path is its own decision. | a dual retriggerable monostable available at both vendors, then the two switches |
 
 ## Not planned
 

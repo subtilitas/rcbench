@@ -30,13 +30,15 @@ Absturz, hängender Task, Reset, Brown-out und abgestecktes Kabel führen dann
 zum selben Ergebnis: keine Flanken, kein Ausgang, unabhängig von der Firmware
 an beiden Enden.
 
-Fenster des Monoflops: nicht kürzer als 155 ms und nicht länger als 200 ms
-an jeder Ecke von Bauteiltoleranz und Temperatur, nominell 176 ms. Der
-Heartbeat kommt aus dem Control-Task des Panels, der alle 5 ms auf dem Kern
-läuft, der nicht zeichnet, und dessen Periode damit nicht davon abhängt, was
-ein Frame kostet. Das Fenster liegt über den 150 ms, die die Firmware
-zwischen zwei Flanken akzeptiert, mit 5 ms Reserve für einen verspäteten
-Task, und innerhalb des 200-ms-Link-Failsafes des Koprozessors.
+Fenster des Monoflops: das Enable fällt frühestens 155 ms und spätestens
+185 ms nach der letzten Flanke, an jeder Ecke der Drift, beim Abgleich auf
+170 ms gesetzt; die Ansteuerung ist weg und die Leistungsschalter sind
+innerhalb von 200 ms offen. Der Heartbeat kommt aus dem Control-Task des
+Panels, der alle 5 ms auf dem Kern läuft, der nicht zeichnet, und dessen
+Periode damit nicht davon abhängt, was ein Frame kostet. Das Fenster liegt
+über den 150 ms, die die Firmware zwischen zwei Flanken akzeptiert, mit 5 ms
+Reserve für einen verspäteten Task, und innerhalb des 200-ms-Link-Failsafes
+des Koprozessors.
 
 Das Monoflop ist auf keiner Platine. Seine Spezifikation liegt in
 `hardware/`:
