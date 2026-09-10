@@ -610,31 +610,47 @@ reaches its open level within 5 ms of the trigger in every event.
 *The switch at its operating current.* A switch turns off slower with
 more current through it (a MOSFET's gate charge against its driver, a
 relay's arc), so the 5 ms budget is passed at the rated current and not
-below it. Enable node on channel 1, the switched rail on channel 2, a
-resistive or electronic load in constant-current mode drawing the rated
-current with no capacitance across it, the scope triggered on channel 1
-falling through 1.65 V, 10 ms of pre-trigger and 50 ms of record. Five
-events per figure. The figures: the servo rail at 8 A at 8.4 V and at 4 A
-at 5.5 V ([Power](Power.md)); the ESC path at the switch's rated current
-and the pack voltage, neither of which is chosen ([Not
-specified](#not-specified): the switch on the 300 A path is its own
-decision), so the ESC figures are entered when it is. Pass: the rail falls
-by 5 % of its set voltage within 5 ms of the trigger in every event; with
-no capacitance on the load the crossing is the switch itself.
+below it. The measured quantity is the current through the switch, not the
+rail voltage: a rail that has drooped by 5 % on a resistive load is a
+switch still passing 95 % of the current, and a rail on a constant-current
+load says even less. Channel 2 is therefore a current measurement on the
+switched side, one of two ways:
+
+- a DC-capable current probe (a Hall-effect clamp) around the switched-side
+  supply lead, between the switch and the load;
+- a shunt in the switched-side return lead, its load end at the star
+  ground so channel 2 reads across it single-ended: 100 mΩ at 2 W for the
+  servo rail, which gives 800 mV at 8 A and 8 mV at 1 % of it, a level a
+  scope reads at 5 mV per division with averaging off. The ESC path's shunt
+  follows the switch's rating and is not chosen.
+
+Enable node on channel 1, the current on channel 2, a resistive or
+electronic load in constant-current mode drawing the rated current with
+no capacitance across it, the scope triggered on channel 1 falling through
+1.65 V, 10 ms of pre-trigger and 50 ms of record. Five events per figure.
+The figures: the servo rail at 8 A at 8.4 V and at 4 A at 5.5 V
+([Power](Power.md)); the ESC path at the switch's rated current and the
+pack voltage, neither of which is chosen ([Not specified](#not-specified):
+the switch on the 300 A path is its own decision), so the ESC figures are
+entered when it is. Pass: the current falls below 1 % of the rated figure
+(80 mA at 8 A, 40 mA at 4 A) within 5 ms of the trigger in every event, and
+stays there for the rest of the record. A current that settles above 1 % is
+a switch that is not off, whatever the rail reads.
 
 *Preliminary, at 1 A, against the last edge.* Before a load at the rated
 current is available: a resistor drawing 1 A at the set voltage in place
-of the bench's load, trigger input on channel 1, the switched rail on
-channel 2, the scope triggered on channel 2 falling by 5 % of the set
-voltage, 250 ms of pre-trigger (the last edge is at most 185 ms plus 5 ms
-before the trigger). Five events. Pass: the rail leaves regulation within
-190 ms of the last edge in every event. This checks the chain from the
-last edge to the switch at a current the switch is not rated for, and does
-not stand in for the measurement above. The bench's load is not used for
-either figure: a load with capacitance behind its connector delays the 5 %
-crossing by C × 0.05 × V / I, 11.8 ms for the page's example of 470 µF at
-25 V with 50 mA of idle draw, which puts a compliant switch past the
-figure.
+of the bench's load, the same current measurement on channel 2 (10 mV at
+1 % across the 100 mΩ shunt), trigger input on channel 1, the scope
+triggered on channel 2 falling through 50 % of its steady level, 250 ms of
+pre-trigger (the last edge is at most 185 ms plus 5 ms before the
+trigger). Five events. Pass: the current falls below 10 mA within 190 ms
+of the last edge in every event. This checks the chain from the last edge
+to the switch at a current the switch is not rated for, and does not stand
+in for the measurement above. The bench's load is not used for either
+figure: a load with capacitance behind its connector keeps current flowing
+into it after the switch opens, 11.8 ms to a 5 % change for the page's
+example of 470 µF at 25 V with 50 mA of idle draw, and the rail's own decay
+is the separate recorded capture below.
 
 *The rail, recorded: the bench's load.* The same capture with the servo or
 the ESC connected and at least 1 s of record after the trigger. Record the
@@ -691,8 +707,9 @@ meet the powered-off isolation rule. This is the buffer's row of step 3.
 
 What to record, per built unit: the part and its datasheet k, clear-release
 behaviour and I_off specification, the measured C and the fitted R per half,
-the ten intervals of step 7, the six of step 8, the rail figures of step 9
-for the resistive load and for the bench's load, the minimum and maximum of
+the ten intervals of step 7, the six of step 8, the current figures of
+step 9 at the rated load and at 1 A with the instrument used, the rail
+figures for the bench's load, the minimum and maximum of
 step 10, the five combinations of step 11 with their intervals, the two
 readings of step 12 and the three of step 13 per line, ambient temperature
 and supply voltage.
