@@ -1243,8 +1243,8 @@ multi-agent review of the result found twenty more.
 
 - The throttle moves by the distance a finger travels rather than to where it
   lands: a press on the track commands nothing, so a touch at the far end
-  cannot ask for full travel in one contact. Sliders that command nothing
-  dangerous keep tap-to-set.
+  asks for nothing, and a drag asks for its travel. Sliders that command
+  nothing dangerous keep tap-to-set.
 - A disarm returns the throttle to zero.
 - An armed bench carries the danger red. ARM fades from green to red over
   350 ms while held and flashes once for 180 ms as the arm takes effect.
