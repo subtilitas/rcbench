@@ -499,253 +499,201 @@ is added to this circuit is an open decision listed under
 ## Test procedure
 
 Nothing below has been run; every result is "not measured" until it is.
-Instruments: a two-channel oscilloscope with at least 200 ms of pre-trigger
-record, the analyser and `capture.sh` from `testbench/`, and a probe rated for
-the ESC pack voltage. The captures of `testbench/WIRING.md` section 7 apply;
-what follows is what to measure on this circuit and what passes. Every
-crossing of a logic node is read at 1.65 V.
+The bench mechanics are in `testbench/WIRING.md` and are not repeated: the
+star ground, the two removable links, GP22 as the heartbeat source with the
+panel's branch open, the analyser's channel map and `capture.sh`. Logic
+nodes are read at 1.65 V. Each step states the property it establishes,
+the quantity measured and where the probe goes, the pass figure and where
+it comes from, and what is recorded. A delay measured against the enable
+node has the enable node in the same trace, because the window varies from
+event to event.
 
-**1. Setting, one half at a time.** Fit both capacitors and a starting R of
-115 kΩ in each half. Measure half A's window by step 8: channel 2 on
-half A's own Q output, the interval from the last rising edge on channel 1
-to Q falling, three captures. Half A's Q does not depend on half B, so the
-other half needs no attention. Compute R_A for 170 ms from the mean (the
-window is proportional to R), select the nearest E96 value, fit it, and
-measure again. Repeat for half B on its own Q output from the last falling
-edge. Pass: three captures per half between 167.5 ms and 172.5 ms at 20 to
-30 °C ambient with the rail at 3.3 V ±1 %. Record R_A, R_B, the measured
-capacitors, the ambient temperature and the rail voltage.
+**1. Setting.** Property: each half's window is at the set point.
+Measure: each half's own Q output, from that half's last edge (rising for
+A, falling for B) to Q falling, as in step 8; Q_A does not depend on
+half B. R for 170 ms is proportional to the measured window; the nearest
+E96 value is fitted and the measurement repeated. Pass: 167.5 ms to
+172.5 ms (the ±1.5 % setting term of the drift table), three captures per
+half, at 20 to 30 °C with the rail at 3.3 V ±1 %. Record: R_A, R_B, the
+measured capacitors, the temperature, the rail voltage.
 
-**2. Static, no edges.** Panel's branch open, GP22 tri-stated. Record the
-voltage at the trigger input, each Q output, the enable node, the buffer's
-enable pin, the output of the inverter where one is fitted, and each
-switched rail with its load connected. Pass: trigger input, Q outputs and
-enable node below 0.4 V; the inverter's output at its non-triggering level
-(below 0.4 V or above 2.9 V, whichever the half needs), and the same with
-the inverter not fitted; each rail below the voltage its load is measured
-to stop at, or below 0.5 V until that voltage is measured.
+**2. Static, no edges.** Property: with no edges every node of the
+interlock reads disabled. Measure, with the panel's branch open and GP22
+tri-stated: the trigger input, both Q outputs, the enable node, the
+buffer's enable pin, the trigger-path inverter's output where one is
+fitted (with it fitted and with it removed), and each switched rail with
+its load connected. Pass: the logic nodes below 0.4 V; the inverter's
+output at the level its half's truth table needs (below 0.4 V or above
+2.9 V); each rail below its load's stop voltage, or below 0.5 V until that
+voltage is measured. Then the buffer's high impedance, which a voltage
+cannot show because a buffer driving low reads the pull-down's 0 V too: a
+4.7 kΩ resistor from each connector line to 3.3 V. Pass: above 2.0 V with
+it (2.24 V against the 10 kΩ pull-down), below 0.4 V without it. Record:
+every voltage.
 
-Then the buffer's high impedance, which a voltage reading cannot show: a
-disabled buffer that drives low and a high-impedance one both read the
-pull-down's 0 V. Apply a 4.7 kΩ resistor from each connector signal line to
-3.3 V in turn. Pass: the line rises above 2.0 V (2.24 V with the 10 kΩ
-pull-down) and returns below 0.4 V when the resistor is removed. A line that
-stays below 0.4 V under the resistor is being driven low by the buffer, and
-the buffer is not disabled. Step 12 repeats this with the coprocessor
-driving the buffer's input.
+**3. Each device unpowered alone, everything upstream live.** Property:
+the [powered-off isolation](#powered-off-isolation) rule holds device by
+device. Measure, with one device's supply lead lifted and everything
+upstream of it powered and active, for 60 s: that device's supply pin, and
+only the outputs that device controls. Pass: the supply pin below 0.3 V (a
+back-powered device sits a diode drop below its input's high level), and:
 
-**3. Each device unpowered alone, everything upstream live.** First the
-whole circuit: repeat step 2 with the 3.3 V supply to the monostable and
-the OR gate removed and the rails' supplies present. Pass: the same
-figures. Then one device at a time, its supply lead lifted and everything
-upstream of it powered and active, for 60 s each with the enable node
-captured:
-
-| Device unpowered | Upstream state | Pass |
+| Device unpowered | Upstream state | The outputs it controls, and their pass |
 | --- | --- | --- |
-| The monostable, and any part in the trigger path | the panel's branch closed, the panel beating | supply pin below 0.3 V; Q outputs and enable node below 0.4 V; no edge on the enable node |
-| The OR gate | the monostable powered and retriggered from GP22 with the panel's branch open, so both Q outputs are high | supply pin below 0.3 V; enable node below 0.4 V; no edge on it; the buffer's lines pass the 4.7 kΩ pull test of step 2 and each switch control node is at its open level |
-| The inverter on an active-low enable, and each switch driver | the enable node high (the monostable and the OR gate powered and retriggered) | supply pin below 0.3 V; the buffer's enable pin at its disabled level; the switch control node at its open level |
-| The buffer or translator | the RP2350 powered and toggling, the enable node high | step 13 |
+| The monostable | the panel beating on its closed branch | both Q and the enable node below 0.4 V, no edge on the enable node |
+| A trigger-path inverter | the panel beating | the Q of the half it feeds below 0.4 V. The other half is still retriggered and the enable node stays high, which is correct |
+| The OR gate | both Q high (the monostable retriggered) | the enable node below 0.4 V with no edge; the buffer's lines pass the pull test of step 2; each switch control node at its open level |
+| The enable inverter, or one switch driver | the enable node high | its own output only: the buffer's enable pin at its disabled level, or that switch's control node at its open level |
+| The buffer or translator | the RP2350 toggling, the enable node high | step 13 |
 
-A supply pin above 0.3 V is the device being back-powered through an
-input, and it is not one that meets the powered-off isolation rule.
+Also the whole circuit unpowered with the panel silent: step 2's figures.
 
-**4. Unpowered, panel beating.** The coprocessor board's 3.3 V rail removed,
-which takes the monostable, the OR gate and the RP2350 with it, the load
-rails' supplies present, the panel's branch closed and the panel beating (an
-edge every 20 ms on the junction). Record the voltage at the board's 3.3 V
-rail, at the monostable's supply pin, at the inverter's supply pin where
-one is fitted, at GP3, at each Q output and at the enable node, and capture
-the enable node for 60 s. Pass: board rail and every supply pin below
-0.3 V, Q outputs and enable node below 0.4 V, no edge on the enable node in
-60 s, each load rail as in step 2. A supply pin above 0.3 V is the
-heartbeat back-powering that part through its input, and the part is not
-one with the I_off specification; a board rail above 0.3 V is
-the heartbeat back-powering the RP2350 through GP3, and the GP3 branch's
-series resistor is missing or too small.
+**4. Unpowered board, panel beating.** Property: a beating panel cannot
+power an unpowered coprocessor board through GP3 or through the trigger.
+Measure, with the board's 3.3 V rail removed, the load rails present and
+the panel beating on its closed branch, for 60 s: the board's rail, each
+supply pin on the isolation list, GP3, both Q, the enable node. Pass: the
+rail and every supply pin below 0.3 V; Q and the enable node below 0.4 V;
+no edge on the enable node; each load rail as in step 2. A rail above
+0.3 V is the heartbeat back-powering the RP2350 through GP3 (the GP3
+branch's series resistor missing or too small); a supply pin above 0.3 V
+is back-powering through that device's input.
 
-**5. Power-up.** Panel's branch open, GP22 tri-stated. Capture the 3.3 V rail
-on channel 1 and the enable node on channel 2, the scope triggered on the
-rail rising through 1 V, 500 ms of record. Apply power. Ten times. Then ten
-times with the line held low and ten with it held high through the ramp,
-from a source that is not on the rail being applied: GP22 is on that rail
-and is unpowered or an input until the RP2350 boots, so it cannot hold
-anything during the ramp. Low: the panel's branch closed, the panel powered
-and not yet running its control task, which holds GPIO6 low
-(`heartbeat_gen_init()` starts held low), GP22 tri-stated. High: the
-panel's branch open and the junction held at 3.3 V from a generator or a
-bench supply through 4.7 kΩ. Both levels are needed because a clear
-release that triggers does so on one half or the other depending on the
-level the line holds. Pass: the enable node never crosses 1.65 V in any of
-the thirty records. A pulse of one window on the enable node after the
-rail settles is the clear release triggering, and the part is excluded.
+**5. Power-up.** Property: no pulse on the enable node through a 3.3 V
+ramp. Measure: the enable node for 500 ms from the rail passing 1 V, ten
+ramps with no source on the line, ten with the line held low and ten with
+it held high. The held level comes from a source that is not on the rail
+being applied: low from the panel on its closed branch before its control
+task runs (`heartbeat_gen_init()` holds the line low); high from a
+generator or a bench supply through 4.7 kΩ on the junction with the
+panel's branch open. GP22 is on the rail being applied and cannot hold
+anything. Both levels, because a clear release that triggers does so on
+one half or the other according to the level the line holds. Pass: the
+enable node never crosses 1.65 V in any of the thirty records; a pulse of
+one window after the rail settles is the clear release triggering, and the
+part is excluded. This covers a fast ramp only, which is the RC network's
+limit.
 
-**6. Held, edges arriving.** Junction driven at one edge every 20 ms (GP22 per
-`testbench/WIRING.md`, or a 3.3 V square wave at 25 Hz, panel's branch
-open). Capture the enable node for 60 s. Pass: no falling edge on the
-enable node in 60 s; each Q output shows no gap.
+**6. Held.** Property: retriggering at the nominal rate never lets the
+enable fall. Measure: the enable node and both Q for 60 s with an edge
+every 20 ms from GP22. Pass: no falling edge on the enable node, no gap on
+either Q.
 
-**7. The window, on the scope.** Panel's branch open, the monostable's link
-closed, the junction driven from GP22 or a generator as in step 6. Trigger
-input on channel 1, probed at the monostable's input. Enable node on
-channel 2. Scope triggered on channel 2 falling through 1.65 V, 200 ms or
-more of pre-trigger. Stop the source with its output held at its final
-level: high for a rising last edge, low for a falling one. Read the
-interval from the last edge on channel 1 to the crossing on channel 2.
-Repeat ten times: five stopped high, five stopped low. Record every
-interval, the ambient temperature and the supply voltage. Pass: every
-interval between 155 ms and 185 ms.
+**7. The window.** Property: the enable falls 155 ms to 185 ms after the
+last edge of either polarity. Measure: the interval from the last edge at
+the monostable's input to the enable node falling, with the heartbeat
+source stopped holding its final level: high for a rising last edge, low
+for a falling one. Opening the monostable's link instead gives a falling
+last edge only, because the pull-down on its side makes the opening an
+edge. Ten events, five stopped high and five stopped low. Pass: every
+interval 155 ms to 185 ms, the band. Record: each interval, the
+temperature, the rail voltage.
 
-Opening the monostable's link, as `testbench/WIRING.md` section 7 does,
-gives a falling last edge only: the pull-down on the monostable's side
-makes the opening itself a falling edge whenever the line is high, and
-when the line is low the last edge was already falling. That capture is
-valid for the falling polarity and is not a way to get the rising one.
+**8. Each half.** Property: each half meets the band on its own, and the
+setting of step 1 holds. Measure: each Q output from its own last edge (A
+rising, B falling), three events each. Pass: 155 ms to 185 ms, and after
+setting within 2.5 ms of 170 ms; before setting, capacitors at opposite
+ends of ±5 % put the halves up to 18 ms apart.
 
-**8. Each half.** Repeat step 7 with channel 2 on each Q output in turn,
-three captures each: half A from the last rising edge, half B from the last
-falling edge. Pass: each half's interval from its own last edge between
-155 ms and 185 ms. This is the measurement step 1 sets each half's R from;
-before setting, two capacitors at opposite ends of ±5 % put the halves up
-to 18 ms apart, and after it each is within 2.5 ms of 170 ms.
+**9. The switches and the rails.** Per switch, each measured quantity in
+one trace with the enable node.
 
-**9. The switches and the rails.** Two captures per switch, with the source
-stopped as in step 7 and the load connected. The window varies from event
-to event, so a delay measured against the enable node has to have the
-enable node in the same trace.
+*The driver.* Property: the 5 ms budget. Measure: the switch's control
+node against the enable node, five events. Pass: at its open level within
+5 ms of the enable falling.
 
-*The 5 ms budget.* Enable node on channel 1, the switch's control node on
-channel 2, the scope triggered on channel 1 falling through 1.65 V, 10 ms
-of pre-trigger and 50 ms of record. Five events. Pass: the control node
-reaches its open level within 5 ms of the trigger in every event.
+*Off at the rated current.* Property: the switch is off, which a rail
+voltage cannot show: a rail drooped by 5 % on a resistive load is a switch
+still passing 95 % of the current. Measure: the current through the switch
+with a DC current probe on the switched-side lead, a resistive or
+electronic load at the rated figure with no capacitance across it, five
+events per figure. The figures: 8 A at 8.4 V and 4 A at 5.5 V on the servo
+rail ([Power](Power.md)); the ESC path at its switch's rated current and
+the pack voltage, neither chosen ([Not specified](#not-specified)). Pass,
+two parts: within 5 ms of the enable falling the current is below 20 mA,
+the floor of a clamp resolving 0.2 % of an 8 A range; and the steady
+leakage with the switch open, read with a meter in series in the
+switched-side lead at the rail voltage with the load connected, is below
+the off limit. The off limit is an absolute current and not a fraction of
+the test load: the idle current of the lightest load the rail can carry,
+below which the load draws more than the switch leaks and the rail
+collapses. It is 5 mA on each rail as a placeholder until the lightest
+load's idle current is measured; a small servo idles in the 5 to 10 mA
+range (not measured) and the page's ESC example idles at 50 mA. A shunt is
+not used at 8 A: 10 mΩ gives 0.8 mV at 80 mA, unreadable single-ended, and
+100 mΩ burns 6.4 W and drops 0.8 V of an 8.4 V rail.
 
-*The switch at its operating current.* A switch turns off slower with
-more current through it (a MOSFET's gate charge against its driver, a
-relay's arc), so the 5 ms budget is passed at the rated current and not
-below it. The measured quantity is the current through the switch, not the
-rail voltage: a rail that has drooped by 5 % on a resistive load is a
-switch still passing 95 % of the current, and a rail on a constant-current
-load says even less. Channel 2 is therefore a current measurement on the
-switched side, one of two ways:
+*Preliminary, at 1 A, against the last edge.* Before a rated load is
+available: a resistor drawing 1 A at the set voltage, a 100 mΩ shunt rated
+2 W in the switched-side return at the star ground (0.1 W, 100 mV burden,
+1 mV at 10 mA), five events. Pass: below 10 mA within 190 ms of the last
+edge, and the steady leakage below the off limit by meter. This does not
+stand in for the rated measurement.
 
-- at the rated current, a DC-capable current probe (a Hall-effect clamp)
-  around the switched-side supply lead, between the switch and the load,
-  with a resolution of 0.2 % of the rated figure or better (16 mA at 8 A),
-  so the 1 % threshold is five resolution steps above zero. A shunt is not
-  used here: 1 % of 8 A across a shunt whose burden and dissipation are
-  acceptable at 8 A (10 mΩ: 80 mV, 0.64 W) is 0.8 mV, below what a scope
-  resolves single-ended, and a shunt large enough to read (100 mΩ) burns
-  6.4 W and drops 0.8 V of an 8.4 V rail;
-- at 1 A only, the preliminary check below, a 100 mΩ shunt rated 2 W
-  (0.1 W dissipated, 100 mV burden, 1 mV at 1 %) in the switched-side
-  return lead, its load end at the star ground so channel 2 reads across it
-  single-ended at 1 mV per division. The ESC path's instrument follows the
-  switch's rating and is not chosen.
+*The rail, recorded.* With the bench's own load connected: the time from
+the last edge to the rail leaving regulation, the time to the load's stop
+voltage, the threshold used (measured, or the 0.5 V placeholder), the
+load. Neither time is passed or failed; both belong to the load's
+capacitance and idle current. The record covers the decay, at least 1 s
+after the last edge, and a decay longer than the record is recorded as
+such with the record length. The example of 470 µF at 25 V with 50 mA of
+idle draw reaches its stop voltage about 230 ms after the switch opens,
+up to about 420 ms after the last edge. The bench's load is not used for
+the pass figures above: its capacitance keeps current flowing after the
+switch opens, 11.8 ms to a 5 % change in the example.
 
-Enable node on channel 1, the current on channel 2, a resistive or
-electronic load in constant-current mode drawing the rated current with
-no capacitance across it, the scope triggered on channel 1 falling through
-1.65 V, 10 ms of pre-trigger and 50 ms of record. Five events per figure.
-The figures: the servo rail at 8 A at 8.4 V and at 4 A at 5.5 V
-([Power](Power.md)); the ESC path at the switch's rated current and the
-pack voltage, neither of which is chosen ([Not specified](#not-specified):
-the switch on the 300 A path is its own decision), so the ESC figures are
-entered when it is. Pass: the current falls below 1 % of the rated figure
-(80 mA at 8 A, 40 mA at 4 A) within 5 ms of the trigger in every event, and
-stays there for the rest of the record. A current that settles above 1 % is
-a switch that is not off, whatever the rail reads.
+**10. The band, driven.** Property: the window is inside the band under
+continuous retriggering and above the 150 ms the firmware accepts.
+Measure: the enable node with an edge every 200 ms, which makes it fall
+for 200 ms minus the window on every cycle, 100 cycles on the analyser at
+1 MHz; then with an edge every 150 ms for 60 s. Pass: every low pulse
+15 ms to 45 ms, which is 155 ms to 185 ms; no falling edge at 150 ms.
+Record: the minimum and maximum.
 
-*Preliminary, at 1 A, against the last edge.* Before a load at the rated
-current is available: a resistor drawing 1 A at the set voltage in place
-of the bench's load, the same current measurement on channel 2 (10 mV at
-1 % across the 100 mΩ shunt), trigger input on channel 1, the scope
-triggered on channel 2 falling through 50 % of its steady level, 250 ms of
-pre-trigger (the last edge is at most 185 ms plus 5 ms before the
-trigger). Five events. Pass: the current falls below 10 mA within 190 ms
-of the last edge in every event. This checks the chain from the last edge
-to the switch at a current the switch is not rated for, and does not stand
-in for the measurement above. The bench's load is not used for either
-figure: a load with capacitance behind its connector keeps current flowing
-into it after the switch opens, 11.8 ms to a 5 % change for the page's
-example of 470 µF at 25 V with 50 mA of idle draw, and the rail's own decay
-is the separate recorded capture below.
+**11. The corners.** Not measured. Property: the drift table holds over
+supply and temperature; its k term combines both, and the family graphs k
+rather than bounding it. Measure: steps 7 and 10 at 25 °C and 3.3 V, and
+at 0 °C and 50 °C each at 3.2 V and 3.4 V, the temperature applied to the
+timing network and the part. Pass: 155 ms to 185 ms at every combination.
+Record: which combination gives the shortest and the longest window, for
+comparison with the datasheet's k graph; extremes elsewhere are a drift
+term the table does not carry.
 
-*The rail, recorded: the bench's load.* The same capture with the servo or
-the ESC connected and at least 1 s of record after the trigger. Record the
-time from the last edge to the rail leaving regulation, the time to the
-rail crossing the load's stop voltage, the voltage used as the threshold,
-whether it is measured or the 0.5 V placeholder, and the load. Neither
-time is passed or failed: both belong to the load's capacitance and idle
-current, and the example above puts the second at about 230 ms. A decay
-that has not reached the stop voltage when the record ends is recorded as
-longer than the record, with the record length; the trigger is on the rail
-leaving regulation and not on the stop voltage for this reason, since a
-trigger at the stop voltage needs pre-trigger history covering the whole
-decay and the last edge before it.
+**12. Buffer disabled, input driven.** Two properties.
 
-**10. The band, driven.** Junction driven at one edge every 200 ms from the
-generator. The enable node then falls for 200 ms minus the window on every
-cycle. Capture 100 cycles with the analyser at 1 MHz. Pass: every low pulse
-between 15 ms and 45 ms, which is a window between 155 ms and 185 ms; record
-the minimum and maximum. Then one edge every 150 ms for 60 s. Pass: no
-falling edge on the enable node.
+*High impedance.* With the enable node low and the buffer's input toggling
+(the bench armed and commanded away from rest under the wiring guide's
+differential setup, the monostable's link open, GP22 keeping the firmware
+alive), the pull test of step 2 on the connector line. Pass: above 2.0 V
+with no edge at 24 MHz, below 0.4 V without the pull. Edges are a buffer
+that is not disabled; a held-low line is one driving low.
 
-**11. The corners.** Not measured. The drift table's k term combines
-temperature with supply, and the family's datasheet graphs k rather than
-bounding it, so temperature alone cannot confirm the table. Steps 7 and 10
-run at each of five combinations: 25 °C at 3.3 V, and 0 °C and 50 °C each
-at the rail's permitted minimum and maximum, 3.2 V and 3.4 V, with the
-temperature applied to the timing network and the part. Pass: every
-interval between 155 ms and 185 ms at every combination. Record which
-combination gives the shortest and the longest window; those are the two
-the datasheet's k graph should predict, and a unit whose extremes lie
-elsewhere has a drift term the table does not carry. Until this is run
-the corners are calculated, not measured.
+*Disable latency*, counted in the budget as under 1 µs and measured here.
+The buffer's input has to be toggling when the enable falls, and stopping
+the heartbeat also stops it at GP3, so the firmware disarms at 150 ms and
+idles the coprocessor's pin before the enable can fall. So the buffer's
+input is driven by a generator at 300 kHz (the DShot600 transition rate)
+in place of the coprocessor's pin, which is left unbound so it does not
+drive, and the heartbeat is stopped as in step 7. Measure: the connector
+line against the enable node on a scope of at least 100 MHz, five events.
+Pass: the last driven transition within 1 µs after the enable falls, and
+none after it. A line that keeps toggling is a buffer whose enable is not
+the enable node. Record: the five latencies per line.
 
-**12. Buffer high impedance, input driven.** The differential setup of
-`testbench/WIRING.md` section 7: panel's branch open, GP22 driving the
-junction so the firmware stays alive, the monostable's link open so the
-enable is down, the bench armed and the output under test commanded away
-from rest, so the buffer's input is toggling. Apply the 4.7 kΩ resistor
-from the connector signal line to 3.3 V as in step 2. Pass: the line sits
-above 2.0 V with no edge on it (analyser at 24 MHz, 2m samples, as the
-quiet capture in the wiring guide), and returns below 0.4 V without the
-resistor. Edges on the line are a buffer that is not disabled; a line held
-low is a buffer driving low while disabled.
+**13. Buffer supply removed, input driven.** Property: the isolation rule
+on the buffer. Measure: the buffer's supply pin and the connector line,
+with the buffer's supply lead lifted, the RP2350 toggling and the enable
+node high. Pass: the supply pin below 0.3 V; the pull test as in step 12
+(above 2.0 V with no edge, below 0.4 V without). This is the buffer's row
+of step 3.
 
-Then the disable latency, which the budget counts as under 1 µs and which
-is measured here rather than taken from a datasheet. The same setup with
-the monostable's link closed and the source stopped as in step 7, so the
-enable falls while the input toggles. Enable node on channel 1, the
-connector signal line on channel 2, a scope of at least 100 MHz bandwidth
-(a DShot600 bit is 1.67 µs and its edges are the transitions being
-resolved), triggered on channel 1 falling through 1.65 V, 5 µs of
-pre-trigger and 20 µs of record. Five events. Pass: the last driven
-transition on channel 2 lies within 1 µs after the trigger, and no
-transition follows it in the record. A transition later than 1 µs is a
-buffer slower than the budget; one that keeps toggling is a buffer whose
-enable is not the enable node.
-
-**13. Buffer supply removed, input driven.** The setup of step 12 with the
-monostable's link closed, so the enable node is high, and the buffer's
-supply lead lifted while the RP2350 stays powered, armed and toggling.
-Record the buffer's supply pin. Apply the 4.7 kΩ resistor from the
-connector signal line to 3.3 V. Pass: supply pin below 0.3 V, the line
-above 2.0 V with no edge on it at 24 MHz, and below 0.4 V without the
-resistor. A supply pin above 0.3 V or edges on the line are the RP2350
-back-powering the buffer through its data inputs, and the buffer does not
-meet the powered-off isolation rule. This is the buffer's row of step 3.
-
-What to record, per built unit: the part and its datasheet k, clear-release
-behaviour and I_off specification, the measured C and the fitted R per half,
-the ten intervals of step 7, the six of step 8, the current figures of
-step 9 at the rated load and at 1 A with the instrument used, the rail
-figures for the bench's load, the five disable latencies of step 12 per
-line, the minimum and maximum of
-step 10, the five combinations of step 11 with their intervals, the two
-readings of step 12 and the three of step 13 per line, ambient temperature
-and supply voltage.
+**Record, per built unit.** The part, its datasheet k, its clear-release
+behaviour and its I_off specification; C and R per half; the ten intervals
+of step 7 and the six of step 8; the current figures of step 9 with the
+instrument, the leakage by meter, and the rail figures for the bench's
+load; the minimum and maximum of step 10; the five combinations of
+step 11; the pull-test readings of steps 12 and 13 and the latencies of
+step 12, per line; the temperature and the rail voltage.
 
 ## Limitations
 

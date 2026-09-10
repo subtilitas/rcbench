@@ -575,8 +575,13 @@ designed and not before.
 
 **Two channels on one scope, triggered on the rail.** The monostable's trigger
 input goes on one channel and the switched rail on the other, and the scope
-triggers on the **rail crossing its threshold downward**, with at least 200 ms
-of pre-trigger. Triggering on a heartbeat edge cannot work: every edge is
+triggers on the **rail crossing its threshold downward**, with pre-trigger
+sized from the decay and not from the window: the stop-voltage crossing
+lies up to about 420 ms after the last edge for the 470 µF, 25 V, 50 mA
+example in `hardware/docs/Monostable.md`, so 500 ms or more, or the
+trigger is taken on the rail leaving regulation as that page's step 9 does,
+with 250 ms before it and the decay after it. Triggering on a heartbeat
+edge cannot work: every edge is
 identical and no ordinary edge trigger knows which one is the last, so the
 instrument fires on an arbitrary one and the rail's fall lands outside the
 record. Triggering on the rail and looking backwards puts the last trigger
