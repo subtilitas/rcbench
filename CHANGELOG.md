@@ -19,8 +19,9 @@ history is in git.
   holds the press: each screen drops the gesture in progress, which asks
   for nothing. A DISARM that cancellation posts is forwarded in the same
   frame. Every control that holds state between a press and its release
-  cancels, including the tab rows of MOTOR & ESC, ANALYSER and BALANCE,
-  because a press left latched owns a track id the controller reuses. The
+  cancels, including the log viewer's buttons and rows and the tab rows of
+  MOTOR & ESC, ANALYSER and BALANCE, because a press left latched owns a
+  track id the controller reuses. The
   frame log carries the two counts as `TOUCHLOST <panel>/<driver>`.
   - Two controls are the exception, because asking for nothing is their
     failure. Cancelling an armed bench's disarm still disarms: disarming is
