@@ -241,6 +241,34 @@ void ui_router_event(const touch_event_t *evt)
     }
 }
 
+void ui_router_cancel_gestures(void)
+{
+    /*
+     * The band's own press first: HOME and STOP are the router's gesture,
+     * not the screen's, and a band press left latched owns its track id.
+     * The GT911 reuses ids, so a later contact that began on the screen
+     * would be taken for this one's release and act on where it lifts.
+     */
+    s.band_press = false;
+
+    /*
+     * Every screen, not the one on top.  The loss is observed after the
+     * frame's events were dispatched, and one of those events can have
+     * navigated: a HOME release that survived the loss leaves the screen
+     * that took the earlier events holding its press, and the screen now on
+     * top holding nothing.  A screen off the top keeps its gesture state
+     * until it is entered again, so a tab press whose release went missing
+     * would meet a recycled id on the next visit.  Cancelling a screen with
+     * no gesture in progress asks for nothing, so every screen is told.
+     */
+    for (int id = 0; id < SCREEN_COUNT; ++id) {
+        const ui_screen_t *scr = screen_for((ui_screen_id_t)id);
+        if (scr != NULL && scr->cancel != NULL) {
+            scr->cancel();
+        }
+    }
+}
+
 void ui_router_set_alert(const char *text)
 {
     if (text == NULL) {

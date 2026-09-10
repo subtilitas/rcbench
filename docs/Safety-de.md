@@ -89,6 +89,76 @@ Panel als Leitung ohne Flanken gelesen wird.
 - Das Scharfschalten ist ein zwei Sekunden langes Halten auf ARM, und das
   Kommando geht ab, wenn das Halten durchgelaufen ist, nicht wenn der Finger
   abhebt. Das Entschärfen ist ein Druck.
+- Einem Halten werden höchstens 250 ms pro Frame gutgeschrieben, es erstreckt
+  sich also über mindestens acht Frames mit stehendem Druck. Die Dauer eines
+  Frames wird an seinem Anfang gemessen und an seinem Ende angewendet; ohne
+  die Obergrenze schreibt ein einzelner verspäteter Frame einem Halten Zeit
+  gut, das entstand, während derselbe Frame seine Touch-Events zustellte. Das
+  Halten zum Scharfschalten und die Quittierung des Bus-Fault nehmen beide
+  diese Obergrenze.
+- Ein Frame, der Touch-Events verloren hat, bricht die laufende Geste ab.
+  Eine volle Touch-Queue verwirft ihren ältesten Eintrag, um den neuesten
+  aufzunehmen, und keine Wahl dort ist für sich sicher: Ein Release, das nie
+  ankommt, lässt einen Screen einen Druck halten, ein Druck, der nie ankommt,
+  macht das Release danach elternlos, und die Bewegung, mit der ein Finger
+  eine Taste verlässt, ist das, was das Halten aufgibt. Der Render-Task
+  leert die Queue vom anderen Kern, das Prüfen eines Eintrags entscheidet
+  also nicht, welcher entfernt wird. Stattdessen wird der Verlust gezählt,
+  und der Frame, der ihn bemerkt, sagt jedem Screen, dass sein Bild vom
+  Glas veraltet ist, nicht nur dem obersten, weil ein Event, das den Verlust
+  überlebt hat, vom Screen mit dem Druck weg navigiert haben kann; jeder
+  Screen verwirft jede laufende Geste. Das
+  kommandiert nichts, genau wie ein frühes Loslassen, mit der einen Ausnahme
+  weiter unten. Beide Queues werden gezählt -- die Event-Queue des Treibers
+  verwirft ihren ältesten Eintrag aus demselben Grund -- und die Zahl wird
+  zweimal gelesen: bevor die Events dieses Frames zugestellt werden, damit
+  die Überlebenden rund um das fehlende Event nicht auf einem veralteten
+  Bild handeln, und erneut vor dem Tick des Frames, damit ein Event, das
+  während des Durchlaufs verloren geht, in diesem Frame beantwortet wird und
+  nicht erst im nächsten. Das Frame-Log führt beide Zahlen als
+  `TOUCHLOST <Panel>/<Treiber>`. Der Control-Task verwirft aus demselben
+  Grund seinen eigenen Vermerk eines STOP-Drucks bei einem Verlust im
+  Treiber: Er besitzt diesen Druck unabhängig von den Screens.
+- Jedes Bedienelement, das zwischen Druck und Release Zustand hält, bricht
+  ab. MOTOR & ESC, SERVO und CAN BUS FAULT haben eine Geste, die auf einem
+  Timer fertig wird, ein verlorenes Release schaltet dort also von selbst
+  scharf oder quittiert; die Kacheln der Übersicht, die Zellen des Outputs-
+  und des Picker-Bildschirms, die Tasten des Einstellungs-Bildschirms, die
+  Tasten und Zeilen des Log-Viewers und die Tab-Zeilen von MOTOR & ESC,
+  ANALYSER und BALANCE wirken stattdessen
+  auf das Release, und ein gehaltener Druck besitzt eine
+  Track-ID, die der Controller wiederverwendet -- ein späterer Kontakt, der
+  woanders begann, wird dann für das fehlende Release gehalten. HOME und STOP
+  sind die eigene Geste des Routers, und er bricht sie selbst ab.
+- Bricht der Touch-Strom ab, während STOP gehalten wird, wird gestoppt. Der
+  Control-Task besitzt diesen Druck unabhängig von den Screens, und das
+  Release, das den Prüfstand gestoppt hätte, kann genau das verlorene Event
+  sein -- oder es kommt an und passt zu keinem der beiden Besitzer, weil die
+  Render-Seite den Druck des Bands beim selben Verlust abbricht. Sonst würde
+  nichts stoppen, und der Bediener hat STOP bereits gedrückt. Was das aufgibt:
+  Ein Druck, der auf STOP begann und vor dem Abheben davon weggeführt worden
+  wäre, kommandiert heute nichts und stoppt stattdessen.
+- Wird bei einem scharfen Prüfstand ein Disarm abgebrochen, wird trotzdem
+  entschärft. Eine Geste abzubrechen kommandiert nichts, und bei einem
+  scharfen Prüfstand ist das für eine von ihnen die falsche Richtung: Das
+  Entschärfen ist ein Druck, sein Release ist also das ganze Kommando, und
+  ein Release, das eine volle Queue verschluckt hat, ist ein Entschärfen,
+  das der Bediener gemacht und der Prüfstand nie gesehen hat. Das
+  Scharfschalten hat sein Kommando schon abgesetzt, wenn der Finger abhebt,
+  ein halb abgebrochenes Scharfschalten kommandiert also nichts, und das ist
+  richtig so. Ein Abbruch verwirft außerdem ein Scharfschalten, das der
+  Screen bereits abgesetzt hat und die Anwendung noch nicht abgeholt hat --
+  ein Kommando wird im Frame nach dem absetzenden weitergereicht, und der
+  Frame, der einen Verlust bemerkt, bricht vor diesem Weiterreichen ab. Ein
+  Scharfschalten, das schon beim Control-Task liegt, trägt den Zählerstand
+  der verlorenen Touch-Events, unter dem es abgesetzt wurde: der Control-Task
+  verwirft ein Scharfschalten, dessen Zähler sich bewegt hat, und sieht
+  noch einmal nach, sobald der scharfe Snapshot an die Screens übergeben
+  ist, weil die Transaktionen dazwischen zwei Sekunden dauern können; ein
+  Verlust zwischen den beiden Blicken entschärft sofort, und einen Verlust
+  nach dem zweiten sehen die Screens gegen einen scharfen Prüfstand. Über
+  einen Verlust hinweg schaltet also nichts scharf. Ein abgesetztes
+  Entschärfen bleibt.
 - Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
   Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, eine
   Berührung am Ende fordert also nichts an; ein Drag über den ganzen Track

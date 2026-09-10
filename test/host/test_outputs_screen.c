@@ -148,6 +148,33 @@ TEST_CASE(an_open_list_can_be_left_without_choosing)
     CHECK_EQ(s_applied, was + 1);
 }
 
+/*
+ * A cell press applies its binding change on the release, so a press left
+ * latched after a lost event is a change waiting for any release that lands
+ * on the cell.  The GT911 reuses track ids, so that release need not belong
+ * to the same contact.
+ */
+TEST_CASE(a_cancelled_press_applies_nothing)
+{
+    fresh();
+    choose_named("SERVO PWM");
+    const int was = s_applied;
+
+    int x, y;
+    cell_centre(0, &x, &y);
+    press_at(x, y);
+    scr()->cancel();
+
+    release_at(x, y);
+    CHECK_EQ(outbind_chosen(outputs_screen_binding()), 0);
+    CHECK_EQ(s_applied, was);
+
+    /* And nothing is stuck: a fresh press and release still applies. */
+    press_at(x, y);
+    release_at(x, y);
+    CHECK_EQ(s_applied, was + 1);
+}
+
 TEST_CASE(a_release_away_from_the_press_does_nothing)
 {
     fresh();
@@ -522,5 +549,6 @@ int main(void)
     RUN(the_binding_survives_being_set_from_outside);
     RUN(a_protocol_index_from_outside_cannot_run_off_the_table);
     RUN(null_events_are_refused_rather_than_dereferenced);
+    RUN(a_cancelled_press_applies_nothing);
     return test_summary("outputs_screen");
 }

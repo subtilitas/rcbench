@@ -494,6 +494,19 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
 }
 
+/*
+ * Touch events were lost between two frames, so this screen's record of what
+ * is on the glass cannot be trusted.  A hit held open acts on its release,
+ * and the GT911 reuses track ids: a later contact that began somewhere else
+ * would be taken for this one's release and apply a change nobody asked for.
+ */
+static void cancel(void)
+{
+    s.hit_kind  = HIT_NONE;
+    s.hit_index = -1;
+    outputs_screen_invalidate();
+}
+
 static const ui_screen_t s_screen = {
     .title  = "OUTPUTS",
     .reset  = reset,
@@ -501,6 +514,7 @@ static const ui_screen_t s_screen = {
     .leave  = leave,
     .tick   = NULL,
     .event  = event,
+    .cancel = cancel,
     .render = render,
 };
 

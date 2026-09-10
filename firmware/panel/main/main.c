@@ -359,6 +359,17 @@ typedef struct {
     uint32_t         stops;
     /** And how many times it had been told to let go; see s_lets_go. */
     uint32_t         lets_go;
+    /**
+     * And the loss count the render side had last acted on when it queued
+     * this; see touch_losses().  An arm completes a hold, and a hold that completed
+     * on a contact whose events went missing is an arm the operator may
+     * not have made.  The render side cancels what it still holds when it
+     * observes a loss, but an arm already handed over is past its reach:
+     * this count is what both sides observe, so the arm is dropped here
+     * when the count has moved since it was queued.  Only an arm: a loss
+     * makes no throttle or position suspect, and a disarm is never dropped.
+     */
+    uint32_t         touch_lost;
 } panel_cmd_t;
 
 /*
@@ -540,6 +551,9 @@ static atomic_bool s_stop_request;
 /* Set when the pump applied a stop for a press the router will also latch,
  * so the backstop does not stop the bench twice for one press. */
 static atomic_bool s_stop_counted;
+/* The driver's loss count this task has already answered, for its own STOP
+ * ownership.  Touched only by the control task. */
+static unsigned s_stop_lost_seen;
 static atomic_bool s_disarm_request;
 static atomic_bool s_servo_release_request;
 /*
@@ -551,6 +565,37 @@ static atomic_bool s_servo_release_request;
  * one would otherwise put back what it let go of.
  */
 static atomic_uint s_lets_go;
+/*
+ * Touch events the control task could not deliver, counted so the frame log
+ * can say whether the render loop has ever fallen far enough behind for it
+ * to happen, and so the frame that observes a loss can cancel the gesture in
+ * progress.  Nonzero on a bench is the condition below.
+ */
+static atomic_uint s_touch_lost;
+
+/*
+ * Events neither queue could hand over, since boot.  Both are counted: the
+ * driver's own queue drops its oldest when this task is behind, and this
+ * task's queue drops its oldest when the render loop is.  A gesture that
+ * loses an event to either is in the same state.
+ */
+static unsigned touch_losses(void)
+{
+    return atomic_load(&s_touch_lost) + touch_lost();
+}
+
+/*
+ * The loss count the arm now in progress was queued under.  Checked once
+ * when the command is taken and again after the bank has armed: the touch
+ * task counts on its own clock, so a loss can land between the first check
+ * and the arm, and the render side, seeing a bench its snapshot still calls
+ * disarmed, would cancel nothing and post no disarm.  A count that moved by
+ * the second check disarms here.
+ */
+static unsigned s_arm_touch_lost;
+/* An arm applied this pass, so the second look is owed once the armed
+ * snapshot is out. */
+static bool s_arm_recheck_owed;
 
 /*
  * The pole count the coprocessor holds, and whether it is current.
@@ -617,8 +662,89 @@ static bool s_pump_live;
  * its failsafe.  The loop that owns STOP really is still running during that
  * wait; this is what makes the line say so.
  */
+/*
+ * This task's own record of a STOP press.  It owns s_stop_press
+ * independently of the screens, and the driver's queue can drop that press's
+ * release before this loop ever sees it: the controller then reuses the
+ * track id, and a contact that begins elsewhere and lifts over STOP
+ * satisfies the release branch and stops a run nobody asked to stop.
+ *
+ * Only the driver's count is watched.  This task is the one that evicts from
+ * s_touch_q, and it does so after the event has already been through that
+ * branch, so its own losses cannot orphan this press.
+ */
+static void stop_press_check_lost(void)
+{
+    const unsigned lost = touch_losses();
+    if (lost == s_stop_lost_seen) {
+        return;
+    }
+    s_stop_lost_seen = lost;
+
+    /*
+     * The marker says the router will latch a stop this task already
+     * applied, and something has to consume it.  After a loss nothing will:
+     * the render loop cancels the band's press before it dispatches
+     * anything, so no request follows, and a marker left standing is
+     * consumed by the next stop that genuinely needs the backstop -- which
+     * is then ignored, and the bench keeps driving.
+     *
+     * Unless a request is already raised.  Cancellation cannot retract one
+     * the router latched before the loss, and that request will consume the
+     * marker on the next pass exactly as it should.  Clearing it here would
+     * make that pass stop a second time for one press.
+     *
+     * The two are read in that order, so the residual is a request raised
+     * between the load and the store -- a release dispatched in the same
+     * frame as the loss, ahead of the cancellation that answers it. That
+     * resolves to a stop applied twice, which latches the same way one
+     * does. The other direction is a stop that never happens.
+     */
+    if (!atomic_load(&s_stop_request)) {
+        atomic_store(&s_stop_counted, false);
+    }
+
+    if (!s_stop_press) {
+        return;
+    }
+    /*
+     * A STOP press was standing when the stream broke, so this stops.
+     *
+     * Dropping the ownership on its own is the wrong direction here, and it
+     * is the same inversion cancelling a disarm has: for every other gesture
+     * abandoning it asks for nothing, and for this one abandoning it is the
+     * failure.  The release that would have stopped the bench may be the
+     * event that went missing, or it may still arrive and satisfy neither
+     * owner, because the render side cancels the band's press for the same
+     * loss.  Either way nothing else would stop the bench, and the operator
+     * has already pressed STOP.
+     *
+     * What this gives up: a press that began on STOP and would have been
+     * carried off it before lifting, which asks for nothing today, stops the
+     * bench instead.  That is the direction to be wrong in.
+     *
+     * No marker is set.  s_stop_counted says the router will latch a stop
+     * this task already applied, and the router's press is gone, so it
+     * raises nothing to consume it -- the marker would stand and swallow the
+     * next stop that genuinely needs the backstop.  If the router does raise
+     * one, the stop is applied twice, which latches the same way once does.
+     */
+    s_stop_press = false;
+    arming_stop(&s_arm);
+    control_alert("touch lost while STOP was held -- stopped");
+}
+
 static void control_pump(void)
 {
+    /*
+     * A driver loss recorded before this pass is answered before the events
+     * it left behind are looked at.  Those events were captured around the
+     * one that went missing: a contact reusing the track id of a STOP press
+     * whose release the driver dropped would otherwise lift over STOP inside
+     * this very loop and abort a run nobody asked to abort.
+     */
+    stop_press_check_lost();
+
     touch_event_t evt;
     bool saw_touch = false;
     while (touch_wait_event(&evt, 0)) {
@@ -660,8 +786,61 @@ static void control_pump(void)
                 counted_here = true;
             }
         }
-        /* The screen still sees every event: it draws the press. */
-        const bool routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
+        /*
+         * The screen still sees every event: it draws the press.
+         *
+         * A still finger emits nothing, so filling 32 slots takes either
+         * coordinate wobble on the held contact or a second one; a palm
+         * resting on the glass reaches it in about 90 ms of undrained
+         * frame.  What happens when it does fill is below.
+         */
+        bool routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
+        if (!routed) {
+            /*
+             * The consumer is behind.  Drop the oldest and take the newest,
+             * which is what the GT911's own event queue and the command
+             * queue do -- but which of the two is lost is not what makes
+             * this safe, and a screen that never sees a release goes on
+             * holding a press that is no longer on the glass whichever way
+             * the queue is emptied.
+             *
+             * No choice here is safe on its own.  A release that never
+             * arrives leaves a screen holding a press; a DOWN that never
+             * arrives orphans the release that follows it; and a MOVE is not
+             * spare either, because the MOVE where a finger leaves ARM is
+             * what abandons the hold, and the position after it is back
+             * inside the button.  The render task drains this queue from the
+             * other core, so even inspecting the head first decides nothing:
+             * the entry classified is not necessarily the entry removed.
+             *
+             * So the loss is recorded instead, and the frame that observes
+             * it tells the screen its record of the glass is stale.  The
+             * screen drops the gesture, and which event went missing stops
+             * mattering.
+             */
+            touch_event_t stale;
+            const bool dropped =
+                (xQueueReceive(s_touch_q, &stale, 0) == pdTRUE);
+            /*
+             * Retried whether or not that took anything.  The render task can
+             * empty this queue between the failed send and the receive, and
+             * then there is room without anything having been evicted --
+             * discarding the new event there would lose one for no reason.
+             */
+            routed = (xQueueSend(s_touch_q, &evt, 0) == pdTRUE);
+            /*
+             * Only when an event actually went.  The render task can drain
+             * this queue between the failed send and the receive, in which
+             * case nothing was evicted and the retry succeeds -- counting
+             * that would cancel a gesture that is still on the glass, and on
+             * an armed bench a cancelled disarm gesture posts a disarm.
+             */
+            if (dropped || !routed) {
+                atomic_fetch_add(&s_touch_lost, 1u);
+            }
+            /* The marker is answered by stop_press_check_lost(), which
+             * runs at the end of this pass and sees the count this raised. */
+        }
         /*
          * The router will latch this same release and the backstop would
          * then stop the bench a second time, so a stop applied here is
@@ -679,6 +858,9 @@ static void control_pump(void)
      * not since the last touch.  An untouched panel is healthy; a controller
      * that has stopped answering is not.
      */
+    /* And again, for a loss that arrived while the loop above was running. */
+    stop_press_check_lost();
+
     if (saw_touch || touch_age_ms() < 200u) {
         arming_touch_seen(&s_arm, now_ms());
     }
@@ -2348,6 +2530,33 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
 }
 
 /*
+ * The second look at the loss count, after the armed snapshot is published.
+ *
+ * The first look was taken when the arm was accepted from the queue, and
+ * the exchanges between that and the arm can take two seconds.  A loss in
+ * that time is one the render side answers by cancelling what it holds --
+ * and it holds nothing for a bench its snapshot still calls disarmed, so
+ * no disarm comes from there.  The count is compared again here, and here
+ * rather than right after the arm: the render side's snapshot turns armed
+ * at publish_snapshot(), so a loss before this look is answered here by a
+ * disarm, and a loss after it is seen by the render side against an armed
+ * bench and answered there.  No loss falls between the two.  The operator
+ * repeats the hold.
+ */
+static void arm_recheck_losses(bool link_up)
+{
+    if (!s_arm_recheck_owed) {
+        return;
+    }
+    s_arm_recheck_owed = false;
+    if (touch_losses() == s_arm_touch_lost) {
+        return;
+    }
+    (void)disarm_here(link_up);
+    control_alert("touch lost while arming -- arm again");
+}
+
+/*
  * The latched stop, and then the act the arming policy asks for.
  *
  * link_up is passed in because an arm and a disarm are written to the
@@ -2528,9 +2737,11 @@ static void service_arming(bool link_up)
                 control_alert("coprocessor refused to arm");
             } else {
                 outputs_arm(&s_out, true, now_ms());
+                s_arm_recheck_owed = true;
             }
         } else {
             outputs_arm(&s_out, true, now_ms());
+            s_arm_recheck_owed = true;
         }
         break;
     }
@@ -3056,6 +3267,25 @@ static void drain_commands(bool link_up, bench_state_t *bench)
             && (pc.stops != arming_stop_count(&s_arm)
                 || pc.lets_go != atomic_load(&s_lets_go))) {
             continue;
+        }
+        /*
+         * Nothing arms across a touch loss.  The hold that posted this arm
+         * may have completed on a contact whose release went missing, and
+         * the render side can cancel only what it has not yet handed over;
+         * this arm was, so the loss count it carries is compared here with
+         * the one both tasks read.  A count that moved is a loss between
+         * the asking and the arriving, and the arm is dropped.  The
+         * operator repeats the hold.
+         */
+        const bool arms = (pc.kind == PANEL_CMD_MOTOR
+                           && pc.motor.kind == MOTOR_CMD_ARM)
+                          || (pc.kind == PANEL_CMD_SERVO
+                              && pc.servo.kind == SERVO_CMD_ARM);
+        if (arms && pc.touch_lost != touch_losses()) {
+            continue;
+        }
+        if (arms) {
+            s_arm_touch_lost = pc.touch_lost;
         }
         if (pc.kind == PANEL_CMD_STOP) {
             arming_stop(&s_arm);
@@ -3711,6 +3941,9 @@ static void control_task(void *arg)
 
         /* --- hand the screen what it draws -------------------------------- */
         publish_snapshot(&bench, link_up, new_sample);
+        /* And only now the second look at the loss count for an arm applied
+         * this pass; see arm_recheck_losses(). */
+        arm_recheck_losses(link_up);
 
         vTaskDelay(pdMS_TO_TICKS(CONTROL_PERIOD_MS));
     }
@@ -3728,7 +3961,7 @@ static void control_task(void *arg)
  * enter() can be long: a command recorded by the screen being left must not
  * wait behind the work of the screen being entered.
  */
-static void flush_screen_commands(uint32_t stops_now);
+static void flush_screen_commands(uint32_t stops_now, unsigned lost_seen);
 
 static void send_cmd(const panel_cmd_t *pc)
 {
@@ -3771,20 +4004,29 @@ static void send_cmd(const panel_cmd_t *pc)
     }
 }
 
-static void flush_screen_commands(uint32_t stops_now)
+/*
+ * @p lost_seen is the loss count the frame's cancellation last acted on,
+ * not the count at this moment: a loss between that decision and this
+ * flush is one no cancellation has answered, and a command stamped with
+ * the count of the moment would carry it past the control task's check.
+ * Stamped with the older count, it fails that check and is dropped there.
+ */
+static void flush_screen_commands(uint32_t stops_now, unsigned lost_seen)
 {
     motor_cmd_t mc;
     while (motor_screen_poll_cmd(&mc)) {
         panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
                            .stops = stops_now,
-                           .lets_go = atomic_load(&s_lets_go) };
+                           .lets_go = atomic_load(&s_lets_go),
+                           .touch_lost = lost_seen };
         send_cmd(&pc);
     }
     servo_cmd_t sv;
     if (servo_screen_take(&sv)) {
         panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
                            .stops = stops_now,
-                           .lets_go = atomic_load(&s_lets_go) };
+                           .lets_go = atomic_load(&s_lets_go),
+                           .touch_lost = lost_seen };
         send_cmd(&pc);
     }
 }
@@ -3866,6 +4108,9 @@ void app_main(void)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
     uint32_t frames  = 0;
+    /* The loss count this loop has already answered.  It only rises, so a
+     * difference is one or more events the screens never saw. */
+    unsigned lost_seen = touch_losses();
     uint32_t last_us = (uint32_t)esp_timer_get_time();
     bool     was_armed = false;
     uint32_t last_stops = 0;
@@ -3957,6 +4202,20 @@ void app_main(void)
         }
         servo_screen_set_armed(armed_now);
 
+        /*
+         * A loss already recorded before this frame began is answered
+         * first.  The events still in the queue were captured around the
+         * one that went missing, and dispatching them into a screen whose
+         * record of the glass is stale is what the cancellation exists to
+         * prevent: a queued movement on a reused track id commands a servo
+         * position, an orphan release applies a binding change, and
+         * cancelling afterwards cannot take either back.
+         */
+        if (touch_losses() != lost_seen) {
+            lost_seen = touch_losses();
+            ui_router_cancel_gestures();
+        }
+
         /* What the control task saw of the panel. */
         touch_event_t evt;
         while (xQueueReceive(s_touch_q, &evt, 0) == pdTRUE) {
@@ -3985,7 +4244,7 @@ void app_main(void)
              * band itself.
              */
             if (ui_router_current() != before) {
-                flush_screen_commands(stops_now);
+                flush_screen_commands(stops_now, lost_seen);
             }
         }
 
@@ -4032,7 +4291,7 @@ void app_main(void)
         outputs_screen_set_result(
             (outputs_result_t)atomic_load(&s_outputs_result));
 
-        flush_screen_commands(stops_now);
+        flush_screen_commands(stops_now, lost_seen);
         /*
          * Whether a STOP is on screen to press.  The control task hit-tests
          * the band's rectangle and cannot see which screen is up.
@@ -4134,6 +4393,42 @@ void app_main(void)
             s_link_lost_shown = true;
             ui_router_goto(SCREEN_BUSFAULT);
         }
+        /*
+         * Whether every touch event of this frame reached the screens.
+         *
+         * Read after the drain and before the tick, because both queues can
+         * lose an event while this loop is running: the control task refills
+         * s_touch_q from the other core, and the driver's own queue drops
+         * its oldest when nobody collects it.  Sampling before the drain
+         * would leave a loss that happened during it unanswered until the
+         * next frame, and a hold already near two seconds completes in this
+         * one.
+         *
+         * Both counts only rise, so a difference is one or more events the
+         * screens never saw, and their record of what is on the glass is
+         * stale.  A gesture that completes on a timer -- the arming hold,
+         * the fault acknowledgement -- would otherwise finish on a contact
+         * that has gone.  Cancelling asks for nothing, which is what letting
+         * go early already does; a press dispatched in this frame and then
+         * cancelled costs the operator a repeat of the gesture.
+         */
+        const unsigned lost_now = touch_losses();
+        if (lost_now != lost_seen) {
+            lost_seen = lost_now;
+            ui_router_cancel_gestures();
+            /*
+             * And what the cancellation posted goes now, not next frame.
+             * This frame's flush has already run, so a DISARM a bench
+             * screen posts here -- the one direction in which abandoning a
+             * gesture must command something -- would otherwise wait
+             * behind the render and the flip for a whole further frame,
+             * and a lost event is what a stalled renderer produces.
+             * Nothing else can be pending: the flush above took this
+             * frame's events, the cancellation drops any ARM, and the tick
+             * has not run.
+             */
+            flush_screen_commands(stops_now, lost_seen);
+        }
         ui_router_tick(dt_s);
 
         /*
@@ -4171,9 +4466,11 @@ void app_main(void)
          * frame budget being spent.  Printed every 300 frames.
          */
         if (++frames % 300u == 0u) {
-            ESP_LOGI(TAG, "%.1f fps  DRAW %u us  WAIT %u us",
+            ESP_LOGI(TAG,
+                     "%.1f fps  DRAW %u us  WAIT %u us  TOUCHLOST %u/%u",
                      (double)display_fps(), (unsigned)draw_us,
-                     (unsigned)display_last_wait_us());
+                     (unsigned)display_last_wait_us(),
+                     atomic_load(&s_touch_lost), touch_lost());
         }
     }
 }

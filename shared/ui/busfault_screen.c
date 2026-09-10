@@ -275,7 +275,7 @@ static void event(const touch_event_t *evt)
 static void tick(float dt_s)
 {
     if (s.pressed && !s.fired) {
-        s.held_s += dt_s;
+        s.held_s += ui_hold_credit(dt_s);
         if (s.held_s >= UI_HOLD_S) {
             /*
              * The hold is the acknowledgement: it completes here rather than
@@ -517,6 +517,23 @@ static void render(gfx_canvas_t *c, int buffer_index)
     flash_advance();
 }
 
+/*
+ * Touch events were lost between two frames, so this screen's record of what
+ * is on the glass cannot be trusted.  Drop the gesture rather than let a
+ * hold that completes on a timer finish on a contact that may have gone.
+ * Nothing is commanded here: a gesture abandoned part way asks for nothing,
+ * which is what letting go early already does.
+ */
+static void cancel(void)
+{
+    s.pressed = false;
+    s.held_s  = 0.0f;
+    /* And the id it owned: without this every later press is refused until
+     * one arrives carrying the id whose release went missing, and the
+     * operator cannot acknowledge the fault or leave the screen. */
+    s.have_press = false;
+}
+
 static const ui_screen_t k_screen = {
     .title  = "CAN BUS FAULT",
     .reset  = reset,
@@ -524,6 +541,7 @@ static const ui_screen_t k_screen = {
     .leave  = NULL,
     .tick   = tick,
     .event  = event,
+    .cancel = cancel,
     .render = render,
 };
 

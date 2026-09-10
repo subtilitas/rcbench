@@ -97,6 +97,54 @@ static unsigned heading_face(void)
 static int ack_cx(void) { return ACK_X + 300; }
 static int ack_cy(void) { return ACK_Y + ACK_H / 2; }
 
+/*
+ * This screen keeps its own hold timer rather than a ui_hold_t, so it takes
+ * the per-frame credit cap through ui_hold_credit().  Without it a single
+ * late frame -- one that dispatched the press it then credits -- would
+ * acknowledge a fault from a touch milliseconds old, which is the gesture
+ * this screen exists to refuse.
+ */
+TEST_CASE(one_late_frame_cannot_acknowledge_a_fault)
+{
+    fresh();
+    down(ack_cx(), ack_cy());
+
+    /* A frame longer than the hold itself credits only the cap. */
+    scr()->tick(UI_HOLD_S * 1.5f);
+    CHECK(!busfault_screen_take_ack());
+
+    /* And it takes the whole eight of them to get there. */
+    int frames = 1;
+    for (; frames < 64; ++frames) {
+        if (busfault_screen_take_ack()) {
+            break;
+        }
+        scr()->tick(UI_HOLD_S * 1.5f);
+    }
+    CHECK_EQ(frames, (int)(UI_HOLD_S / UI_HOLD_MAX_CREDIT_S));
+}
+
+/*
+ * The same for the acknowledgement: a screen that says the bench cannot be
+ * trusted must not be dismissed by a gesture whose events were lost. The
+ * hold completes on the frame timer, so without the cancel it would
+ * acknowledge on a contact the screen can no longer account for.
+ */
+TEST_CASE(a_cancelled_gesture_acknowledges_nothing)
+{
+    fresh();
+    down(ack_cx(), ack_cy());
+    hold(HOLD_TICKS / 4);
+
+    scr()->cancel();
+    hold(HOLD_TICKS * 2);
+    CHECK(!busfault_screen_take_ack());
+
+    up(ack_cx(), ack_cy());
+    hold(HOLD_TICKS);
+    CHECK(!busfault_screen_take_ack());
+}
+
 TEST_CASE(a_tap_acknowledges_nothing)
 {
     /* The whole point of the hold: a touch that could have been a sleeve
@@ -334,5 +382,7 @@ int main(void)
     RUN(a_lost_link_is_acknowledged_the_same_way);
     RUN(the_two_faults_do_not_share_a_heading);
     RUN(the_button_fills_towards_the_colour_it_settles_on);
+    RUN(one_late_frame_cannot_acknowledge_a_fault);
+    RUN(a_cancelled_gesture_acknowledges_nothing);
     return test_summary("busfault_screen");
 }

@@ -222,6 +222,36 @@ TEST_CASE(a_hold_on_arm_asks_to_arm_exactly_once)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
+/*
+ * The panel could not hand over every touch event, so this screen's record
+ * of what is on the glass is stale.  The arming hold completes on the frame
+ * timer, so without the cancel it would arm the bench on a finger that has
+ * already gone -- the release it is waiting for is one of the events that
+ * went missing.  Cancelling asks for nothing, which is what letting go early
+ * already does, and it must leave nothing stuck.
+ */
+TEST_CASE(a_cancelled_gesture_does_not_arm)
+{
+    fresh();
+    arm_press();
+    held(UI_HOLD_S / 4.0f);
+
+    scr->cancel();
+    held(UI_HOLD_S * 2.0f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+
+    /* The contact that was down is gone as far as this screen is concerned,
+     * so its release asks for nothing either. */
+    arm_release();
+    held(UI_HOLD_S);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+
+    /* And a fresh press still arms. */
+    arm_press();
+    held(UI_HOLD_S + 0.2f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
+}
+
 TEST_CASE(a_short_press_on_arm_asks_for_nothing)
 {
     fresh();
@@ -667,5 +697,6 @@ int main(void)
     RUN(leaving_disarms_and_lets_go_of_the_output);
     RUN(trim_shifts_the_pulse_and_not_the_angle);
     RUN(feedback_is_shown_rather_than_travelled_to);
+    RUN(a_cancelled_gesture_does_not_arm);
     return test_summary("servo");
 }

@@ -995,6 +995,128 @@ TEST_CASE(leaving_the_screen_does_not_erase_the_run)
     CHECK_EQ(motor_screen_plot_samples(), 12);
 }
 
+/*
+ * The panel could not hand over every touch event, so this screen's record
+ * of what is on the glass is stale.  A hold that completes on the frame
+ * timer would otherwise arm the bench on a finger that has already gone --
+ * the release it is waiting for is one of the events that went missing.
+ *
+ * Cancelling asks for nothing, which is what letting go early already does,
+ * and it must not leave the button stuck: a fresh press arms as usual.
+ */
+TEST_CASE(a_cancelled_gesture_does_not_arm)
+{
+    fresh();
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS / 4);
+
+    scr->cancel();
+    tick_for(HOLD_TICKS * 2);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    /* The contact that was down is gone as far as this screen is concerned,
+     * so its release commands nothing either. */
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    tick_for(HOLD_TICKS);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+
+    /* And nothing is stuck: a fresh press still arms. */
+    hold_arm();
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+}
+
+/*
+ * The tab row holds a press between DOWN and UP, and the release is what
+ * switches the pane.  A cancel abandons that press: the track id it owned
+ * is one the controller reuses, so a later contact that began elsewhere and
+ * lifts over the tab must not be taken for the missing release.
+ */
+TEST_CASE(a_cancelled_tab_press_does_not_switch_the_pane)
+{
+    fresh();
+    scr->render(&cv, 0);
+    gfx_color_t *plot = malloc((size_t)W * H * sizeof(gfx_color_t));
+    memcpy(plot, fb, (size_t)W * H * sizeof(gfx_color_t));
+
+    ev(99, 11, TOUCH_EVENT_DOWN, 1);    /* the TABLE tab */
+    scr->cancel();
+    ev(99, 11, TOUCH_EVENT_UP, 1);      /* a recycled id, lifting there */
+    scr->render(&cv, 0);
+    CHECK_EQ(memcmp(plot, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
+
+    /* And the row is not stuck: a fresh tap switches as usual. */
+    tap(99, 11);
+    scr->render(&cv, 0);
+    CHECK(memcmp(plot, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
+    free(plot);
+}
+
+/*
+ * Abandoning a gesture asks for nothing, and on an armed bench that is the
+ * wrong direction for one of them.  Disarming is a press, so its release is
+ * the whole command: a release lost to a full touch queue is a DISARM the
+ * operator made and the bench never saw, and dropping it silently leaves the
+ * outputs driving.  Arming has already sent its command by the time the
+ * finger lifts, so an arm cancelled part way asks for nothing.
+ */
+TEST_CASE(a_cancelled_disarm_still_disarms)
+{
+    fresh();
+    hold_arm();
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+    motor_screen_set_armed(true);
+
+    /* The press that disarms, and then the events stop arriving. */
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    scr->cancel();
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_DISARM);
+}
+
+/* And the other direction stays as it was: an arm abandoned part way asks
+ * for nothing, because the hold is the gesture and it never completed. */
+TEST_CASE(a_cancelled_arm_asks_for_nothing)
+{
+    fresh();
+    motor_screen_set_armed(false);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS / 4);
+    scr->cancel();
+    tick_for(HOLD_TICKS * 2);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+}
+
+/*
+ * A hold that completes on the same frame a touch event is lost has already
+ * posted its arm by the time the next frame observes the loss.  A command is
+ * forwarded on the frame after the one that posted it, and the frame that
+ * observes a loss cancels before that forwarding, so the arm is dropped here
+ * rather than reaching the bench.  A disarm is kept: it is the direction that
+ * fails safe.
+ */
+TEST_CASE(a_cancel_drops_an_arm_the_hold_already_posted)
+{
+    fresh();
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS);
+
+    /* The hold fired and the arm is waiting to be collected. */
+    scr->cancel();
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+}
+
+/* And the other way: a disarm waiting to be collected survives a cancel,
+ * because losing it leaves an armed bench driving. */
+TEST_CASE(a_cancel_keeps_a_disarm_already_posted)
+{
+    fresh();
+    motor_screen_set_armed(true);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+
+    scr->cancel();
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_DISARM);
+}
+
 int main(void)
 {
     RUN(a_finger_that_leaves_arm_arms_nothing);
@@ -1028,5 +1150,11 @@ int main(void)
     RUN(an_unanswered_bench_does_not_show_numbers);
     RUN(the_plot_records_one_run);
     RUN(leaving_the_screen_does_not_erase_the_run);
+    RUN(a_cancelled_gesture_does_not_arm);
+    RUN(a_cancelled_tab_press_does_not_switch_the_pane);
+    RUN(a_cancelled_disarm_still_disarms);
+    RUN(a_cancelled_arm_asks_for_nothing);
+    RUN(a_cancel_drops_an_arm_the_hold_already_posted);
+    RUN(a_cancel_keeps_a_disarm_already_posted);
     return test_summary("motor");
 }

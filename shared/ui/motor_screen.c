@@ -1021,6 +1021,51 @@ static void leave(void)
     ++s.arm_rev;
 }
 
+/*
+ * Touch events were lost between two frames, so this screen's record of what
+ * is on the glass cannot be trusted.  Drop the gesture rather than let a
+ * hold that completes on a timer finish on a contact that may have gone.
+ * Nothing is commanded here: a gesture abandoned part way asks for nothing,
+ * which is what letting go early already does.
+ */
+static void cancel(void)
+{
+    /*
+     * Abandoning a gesture asks for nothing, and on an armed bench that is
+     * the wrong direction for one of them.  Disarming is a press: the
+     * release is the whole command, so a release that went missing is a
+     * DISARM the operator made and the bench never saw, and dropping it
+     * silently leaves the outputs driving until somebody notices.  Arming
+     * has already sent its command by the time the finger lifts, so an arm
+     * gesture cancelled part way asks for nothing, which is correct.
+     */
+    if (s.armed && s.pressed == 1 && !s.arm.fired) {
+        post(MOTOR_CMD_DISARM, 0.0f);
+    }
+    /*
+     * And an arm this screen has posted but the application has not yet
+     * collected.  A command is forwarded on the frame after the one that
+     * posted it, and the frame that observes a loss cancels before that
+     * forwarding, so an arm completed by a hold whose contact had already
+     * gone is dropped here rather than reaching the bench.  An arm already
+     * collected is past this screen's reach; it carries the loss count it
+     * was posted under, and the control task drops one whose count has
+     * moved.  A disarm is kept: it is the direction that fails safe.
+     */
+    if (s.pending.kind == MOTOR_CMD_ARM) {
+        s.pending.kind = MOTOR_CMD_NONE;
+    }
+    ui_slider_release(&s.slider);
+    ui_hold_reset(&s.arm);
+    /* And the tab row: a press it kept would take a later contact's release
+     * for its own and switch the pane. */
+    ui_tabs_cancel(&s.tabs);
+    s.pressed    = 0;
+    s.have_press = false;
+    ++s.ctrl_rev;
+    ++s.arm_rev;
+}
+
 static const ui_screen_t k_screen = {
     .title  = "MOTOR & ESC",
     .reset  = reset,
@@ -1028,6 +1073,7 @@ static const ui_screen_t k_screen = {
     .leave  = leave,
     .tick   = tick,
     .event  = event,
+    .cancel = cancel,
     .render = render,
 };
 
