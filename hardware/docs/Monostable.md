@@ -29,6 +29,7 @@ assumption to be replaced from the chosen part's datasheet.
 | Output | one enable node, high while retriggered, low otherwise, feeding both gates |
 | Gates | the output enable of the buffer between the RP2350 and the output connector, and a high-side switch on each of the servo rail and the ESC pack |
 | Fail-safe direction | unpowered, undriven, unbuilt, an open trigger line, and the panel driving into an unpowered circuit all mean both gates disabled |
+| Powered-off isolation | every logic device in the interlock whose input can be driven while its own supply is absent has I_off inputs or a series isolation resistor sized for its input protection, and the static tests remove each device's supply alone with everything upstream live; see [Powered-off isolation](#powered-off-isolation) |
 | Power-up | the enable node stays low through the 3.3 V ramp until edges arrive |
 | Not defeatable | no programmable element in the path from GPIO6 to either gate |
 | Fault model | absence of anything is disabled, and so is a timing element that shortens a window; a timing element that lengthens a window or opens, and a logic output or a switch failed conducting, are not covered, see [Fault model](#fault-model) |
@@ -58,18 +59,43 @@ difference; see [With the firmware monitor](#with-the-firmware-monitor).
 
 The panel is powered on its own USB and beats whether or not the coprocessor
 board has power. The trigger input therefore sees 3.3 V edges while the
-circuit's own 3.3 V rail may be absent. Two requirements follow:
+circuit's own 3.3 V rail may be absent. That is one instance of a rule that
+covers every logic device in the path.
 
-- The trigger input is specified for partial power-down: a datasheet limit
-  on the input current with V_I above V_CC and V_CC = 0 V (the I_off
-  specification), which means no diode from the input to the supply pin. An
-  input without that specification is back-powered by the panel through its
-  protection diode, runs the IC from the heartbeat, and can assert Q.
-- A 4.7 kΩ series resistor between the junction and the trigger input, on
-  the monostable's side of its removable link. It bounds any current into
-  an unpowered input to 0.7 mA at 3.3 V. With the 100 kΩ pull-down behind
-  it the high level at the input is 3.15 V, above a 74HC-class V_IH of
-  2.31 V at 3.3 V.
+### Powered-off isolation
+
+An ordinary CMOS input has a protection diode to its supply pin. Drive that
+input while the device's own supply is absent (a lifted supply lead, a
+board rail that is down, a device whose supply comes up later than its
+neighbour's) and the diode conducts: the device runs from its input, its
+outputs are driven, and the pull-downs that are supposed to hold its
+outputs' nodes low cannot override a driven output. The interlock's safe
+state depends on every unpowered device being silent, so:
+
+**Every logic device in the interlock whose input can be driven while its
+own supply is absent has, on every such input, the I_off specification (a
+datasheet limit on the input current with V_I above V_CC and V_CC = 0 V,
+which means no diode from the input to the supply pin), or a series
+isolation resistor sized for its input protection: at most 1 mA into the
+input at 3.3 V, so 4.7 kΩ or more.** The devices and what drives them:
+
+| Device | Driven while unpowered by | Isolation |
+| --- | --- | --- |
+| The monostable, or any both-edge part in front of it | the panel, through the trigger line | I_off, and the 4.7 kΩ series resistor in the trigger branch |
+| Any inverter in the trigger path | the panel | I_off, behind the same series resistor |
+| The OR gate | a Q output of a powered monostable, when only the OR gate's supply is lost | I_off on both inputs |
+| The inverter on an active-low output enable, and the logic input of each switch driver | the enable node, from a powered OR gate | I_off, or a 4.7 kΩ series resistor from the enable node |
+| The output buffer or translator | the RP2350's pins and the enable node | I_off on every input on its RP2350 side, the data inputs and the enable |
+
+The series resistor in the trigger branch sits between the junction and the
+trigger input, on the monostable's side of its removable link. It bounds any
+current into an unpowered input to 0.7 mA at 3.3 V, and with the 100 kΩ
+pull-down behind it the high level at the input is 3.15 V, above a
+74HC-class V_IH of 2.31 V at 3.3 V.
+
+The rule is tested device by device: test step 3 removes each device's
+supply alone with everything upstream of it live, and passes only with the
+device's supply pin below 0.3 V and its outputs at their pull levels.
 
 ## Timing budget
 
@@ -140,14 +166,10 @@ Wiring:
 | Q output | to the OR gate | to the OR gate |
 
 A part with one trigger input of fixed polarity per half takes an inverter in
-front of one half. The inverter's input then sees the live heartbeat while
-the coprocessor's rail may be absent, exactly as the monostable's input
-does, so it meets the same two requirements: the I_off specification, and a
-place behind the 4.7 kΩ series resistor, which bounds the current into it
-to 0.7 mA. An inverter without the I_off specification is back-powered by
-the panel through its protection diode and can hand the interlock a supply
-the output pull below does nothing about. Test step 4 records its supply
-pin. The inverter's output carries a 100 kΩ pull to the level
+front of one half. Its input sees the live heartbeat while the
+coprocessor's rail may be absent, so it is on the list in
+[Powered-off isolation](#powered-off-isolation). The inverter's output
+carries a 100 kΩ pull to the level
 that does not trigger that half's input (low for a rising-edge input, high
 for a falling-edge input), so an inverter that is absent, unpowered or has
 lost its supply while the monostable is powered leaves the input held at
@@ -335,15 +357,14 @@ device's enable is taken from the enable node:
   its default;
 - an active-low enable takes the node through an inverter and carries a
   pull-up (10 kΩ) of its own, so an unpowered inverter and an undriven node
-  both read as disabled.
+  both read as disabled. The inverter's input is driven by the enable node
+  while its own supply may be absent, so it is on the list in
+  [Powered-off isolation](#powered-off-isolation).
 
-Every input on the buffer's RP2350 side, the data inputs and the enable,
-carries the I_off specification, and the buffer's supply is the same 3.3 V
-rail as the rest of the circuit. A buffer whose supply lead is lost while
-the RP2350 is powered and toggling is otherwise back-powered through its
-data inputs' protection diodes, and a back-powered buffer's outputs are not
-high impedance; the connector pull-downs cannot override a driven output.
-Test step 13 removes the buffer's supply alone with the input toggling.
+The buffer is on the same list: its data inputs are driven by the RP2350
+and its enable by the OR gate while its own supply may be absent, and a
+back-powered buffer's outputs are not high impedance. Test step 13 removes
+the buffer's supply alone with the input toggling.
 
 The buffer covers GP0, GP1 and GP2. The binding catalogue in
 `shared/outputs/out_bind.c` offers more: GP4 to GP7, GP13 to GP22 and GP26
@@ -391,10 +412,9 @@ Every state the circuit can be left in reads as disabled:
 | Trigger line open (a link out, the panel unplugged) | a 100 kΩ pull-down on the trigger input; no edges, both halves expire |
 | Trigger line stuck at either level | no edges; both halves expire |
 | Monostable unpowered, panel silent | its Q outputs are undriven; the OR gate is unpowered; a 100 kΩ pull-down on the enable node holds it low |
-| Monostable unpowered, panel beating | the partial-power-down input and the 4.7 kΩ series resistor keep the heartbeat from powering the IC; the pull-downs as above |
+| Any one logic device unpowered, everything upstream of it live: the monostable with the panel beating, the OR gate with a Q high, an inverter or a switch driver with the enable node high, the buffer with the RP2350 toggling | the [powered-off isolation](#powered-off-isolation) rule: I_off inputs or the series resistor, so the device stays silent; the pull-downs then hold its outputs' nodes |
 | Coprocessor board unpowered, panel beating | the 4.7 kΩ series resistor in the GP3 branch bounds the current into the RP2350's pad to 0.7 mA; how far that raises the board's 3.3 V rail is not measured, and test step 4 measures it |
 | Monostable absent or a Q lead off, OR gate powered | the 100 kΩ pull-down at each OR input |
-| Buffer or translator unpowered, RP2350 powered and toggling | the I_off specification on every input on its RP2350 side; its outputs are undriven and the 10 kΩ connector pull-downs hold the lines |
 | Enable node unbuilt or a lead off | the same pull-down |
 | Output enable undriven | the pull-down (active-high enable) or the pull-up (active-low enable) at the device's pin |
 | Switch control undriven or logic supply absent | the gate-to-source resistor or the relay coil |
@@ -501,9 +521,22 @@ stays below 0.4 V under the resistor is being driven low by the buffer, and
 the buffer is not disabled. Step 12 repeats this with the coprocessor
 driving the buffer's input.
 
-**3. Static, unpowered, panel silent.** Repeat step 2 with the 3.3 V supply
-to the monostable and the OR gate removed and the rails' supplies present.
-Pass: the same figures.
+**3. Each device unpowered alone, everything upstream live.** First the
+whole circuit: repeat step 2 with the 3.3 V supply to the monostable and
+the OR gate removed and the rails' supplies present. Pass: the same
+figures. Then one device at a time, its supply lead lifted and everything
+upstream of it powered and active, for 60 s each with the enable node
+captured:
+
+| Device unpowered | Upstream state | Pass |
+| --- | --- | --- |
+| The monostable, and any part in the trigger path | the panel's branch closed, the panel beating | supply pin below 0.3 V; Q outputs and enable node below 0.4 V; no edge on the enable node |
+| The OR gate | the monostable powered and retriggered from GP22 with the panel's branch open, so both Q outputs are high | supply pin below 0.3 V; enable node below 0.4 V; no edge on it; the buffer's lines pass the 4.7 kΩ pull test of step 2 and each switch control node is at its open level |
+| The inverter on an active-low enable, and each switch driver | the enable node high (the monostable and the OR gate powered and retriggered) | supply pin below 0.3 V; the buffer's enable pin at its disabled level; the switch control node at its open level |
+| The buffer or translator | the RP2350 powered and toggling, the enable node high | step 13 |
+
+A supply pin above 0.3 V is the device being back-powered through an
+input, and it is not one that meets the powered-off isolation rule.
 
 **4. Unpowered, panel beating.** The coprocessor board's 3.3 V rail removed,
 which takes the monostable, the OR gate and the RP2350 with it, the load
@@ -574,19 +607,34 @@ channel 2, the scope triggered on channel 1 falling through 1.65 V, 10 ms
 of pre-trigger and 50 ms of record. Five events. Pass: the control node
 reaches its open level within 5 ms of the trigger in every event.
 
-*The rail, pass or fail: a resistive load.* The rail's fall after the switch
-opens is the load's discharge, and a load with capacitance behind its
-connector delays the 5 % crossing by C × 0.05 × V / I: 11.8 ms for the
-page's example of 470 µF at 25 V with 50 mA of idle draw, which puts a
-compliant switch past 190 ms. So the switch is passed on a load that has no
-capacitance: a resistor drawing at least 1 A at the rail's set voltage,
-connected in place of the bench's load. Trigger input on channel 1, the
-switched rail on channel 2, the scope triggered on channel 2 falling by 5 %
-of the set voltage, 250 ms of pre-trigger (the last edge is at most 185 ms
-plus 5 ms before the trigger). Five events. Pass: the rail leaves
-regulation within 190 ms of the last edge in every event; with the
-resistive load the crossing follows the switch within 1 ms, so this is the
-switch's own turn-off measured a second way, against the last edge.
+*The switch at its operating current.* A switch turns off slower with
+more current through it (a MOSFET's gate charge against its driver, a
+relay's arc), so the 5 ms budget is passed at the rated current and not
+below it. Enable node on channel 1, the switched rail on channel 2, a
+resistive or electronic load in constant-current mode drawing the rated
+current with no capacitance across it, the scope triggered on channel 1
+falling through 1.65 V, 10 ms of pre-trigger and 50 ms of record. Five
+events per figure. The figures: the servo rail at 8 A at 8.4 V and at 4 A
+at 5.5 V ([Power](Power.md)); the ESC path at the switch's rated current
+and the pack voltage, neither of which is chosen ([Not
+specified](#not-specified): the switch on the 300 A path is its own
+decision), so the ESC figures are entered when it is. Pass: the rail falls
+by 5 % of its set voltage within 5 ms of the trigger in every event; with
+no capacitance on the load the crossing is the switch itself.
+
+*Preliminary, at 1 A, against the last edge.* Before a load at the rated
+current is available: a resistor drawing 1 A at the set voltage in place
+of the bench's load, trigger input on channel 1, the switched rail on
+channel 2, the scope triggered on channel 2 falling by 5 % of the set
+voltage, 250 ms of pre-trigger (the last edge is at most 185 ms plus 5 ms
+before the trigger). Five events. Pass: the rail leaves regulation within
+190 ms of the last edge in every event. This checks the chain from the
+last edge to the switch at a current the switch is not rated for, and does
+not stand in for the measurement above. The bench's load is not used for
+either figure: a load with capacitance behind its connector delays the 5 %
+crossing by C × 0.05 × V / I, 11.8 ms for the page's example of 470 µF at
+25 V with 50 mA of idle draw, which puts a compliant switch past the
+figure.
 
 *The rail, recorded: the bench's load.* The same capture with the servo or
 the ESC connected and at least 1 s of record after the trigger. Record the
@@ -638,8 +686,8 @@ Record the buffer's supply pin. Apply the 4.7 kΩ resistor from the
 connector signal line to 3.3 V. Pass: supply pin below 0.3 V, the line
 above 2.0 V with no edge on it at 24 MHz, and below 0.4 V without the
 resistor. A supply pin above 0.3 V or edges on the line are the RP2350
-back-powering the buffer through its data inputs, and the buffer is not
-one with the I_off specification on those inputs.
+back-powering the buffer through its data inputs, and the buffer does not
+meet the powered-off isolation rule. This is the buffer's row of step 3.
 
 What to record, per built unit: the part and its datasheet k, clear-release
 behaviour and I_off specification, the measured C and the fitted R per half,
