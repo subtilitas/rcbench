@@ -18,8 +18,11 @@ history is in git.
   860 us servo it is 660 us, which is that servo's hard stop, reached in one
   step because the default slew is zero. It repeated on every arm until
   something commanded that channel. Arming from SERVO was unaffected: that
-  path centres the surfaces first. The page now takes its values from the
-  bank, so a channel nobody has commanded reads back at its role's rest.
+  path centres the surfaces first. At boot the page now takes its values from
+  the bank, so a channel nobody has commanded reads back at its role's rest.
+  A failsafe still resets the page to zero: after one, an uncommanded surface
+  rests at its centre and reads back as its low endpoint until something
+  commands it.
 
 - **A refused settings write reported SAVED.** The store's save callback
   returned nothing, so the model cleared the dirty flag whatever happened and
@@ -27,7 +30,10 @@ history is in git.
   noticed. A panel whose NVS could not be brought up reported a save for
   every press of the session. The callback returns a status; a refusal keeps
   the values dirty and shows NOT SAVED; every key of the NVS write is
-  checked. On this version of ESP-IDF `nvs_commit()` answers OK for any valid
+  checked. A refusal part way through leaves the keys written before it
+  committed, so the next boot can load a mix of the new values and the old,
+  and the screen cannot say which. On this version of ESP-IDF `nvs_commit()`
+  answers OK for any valid
   handle, so the console line that said "settings saved" printed even when
   every key had failed, and now prints only when every key was taken.
 
@@ -48,10 +54,13 @@ history is in git.
   the schema allows is non-zero, so a stale count reaches the plot and the
   CSV carrying a valid bit. Fitting a 12-pole motor to a bench still holding
   14 reads 14.3 % low. An edit is now owed to the far end and paid at the
-  next poll, and again before the write that arms -- a run begun on the old
-  divisor puts a wrong speed into its sticky peak, which no later correction
-  removes. A write nobody answers stays owed; one the coprocessor refuses is
-  not retried.
+  next poll, and, when it is still outstanding, once more before the write
+  that arms -- a run begun on the old divisor puts a wrong speed into its
+  sticky peak, which no later correction removes. An edit landing in the few
+  instructions between that payment and the arming write reaches the far end
+  at the next 50 ms poll, so up to 50 ms of that run is converted with the
+  previous count; STATUS.md carries the window as an open item. A write
+  nobody answers stays owed; one the coprocessor refuses is not retried.
 
 - **Extended DShot telemetry was requested with the command frame's telemetry
   bit clear.** On a value of 1 to 47 that bit is what marks the frame as a
@@ -78,23 +87,16 @@ history is in git.
   tree; the panel's throttle bank used a compile-time constant that merely
   equalled its default. It now sets the slew on the panel's own bank, which
   is the modelled bench. A coprocessor that is answering is sent the raw
-  command; nothing rate-limits the physical throttle, which STATUS.md carries
-  as an open item.
+  command and a pin bound as a throttle steps to it on the next 1 ms pass.
+  That is by decision, recorded in STATUS.md under Not planned: the bank
+  ramps a throttle upward only, so a ramp on the wire would slow the rise and
+  nothing else, and no single touch asks for 0 to 100 %.
 
 - **The version header documented the wrong string.** `rcbench_version.h`
   described `RCBENCH_VERSION_STRING` as "0.8.0" while the defines above it
   make 0.8.1. The macro composes its value from those defines, so the comment
   compiled; `check_docs.py` compared only the numeric defines and could not
   see the line. It reads the comment now.
-
-### Changed
-
-- **The sanitizer job instruments the code it tests.** The flags were applied
-  after the shared libraries were added, and a directory takes its copy of
-  the compile options as it is added, so the 44 test executables were
-  instrumented and the 67 shared translation units they exercise were not.
-  Every UBSan check in `shared/` was absent. `tools/check_sanitizers.py`
-  fails the build if that returns.
 
 - **The Motor & ESC plot advanced whether or not the bench was armed**, so a
   run scrolled off the left edge about 27 s after it ended and there was no
@@ -110,6 +112,15 @@ history is in git.
   totals and the temperature strip stay live at all times. What is given up:
   a disarmed bench has no rolling trace, so the current falling after a STOP
   is on the readouts and not on the plot.
+
+### Changed
+
+- **The sanitizer job instruments the code it tests.** The flags were applied
+  after the shared libraries were added, and a directory takes its copy of
+  the compile options as it is added, so the 44 test executables were
+  instrumented and the 67 shared translation units they exercise were not.
+  Every UBSan check in `shared/` was absent. `tools/check_sanitizers.py`
+  fails the build if that returns.
 
 ## 0.8.1 - 2026-09-09
 

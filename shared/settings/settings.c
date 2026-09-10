@@ -59,7 +59,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "out_max_us", "Full pulse", "Width at 100 % throttle", "us",
         SET_CAT_ESC, SET_TYPE_INT, 1400, 2400, 10, 2000, NULL, 0 },
     [SET_OUT_RAMP] = {
-        "out_ramp", "Ramp limit", "How fast the output chases the command", "%/s",
+        "out_ramp", "Ramp limit", "How fast the modelled bench chases the command", "%/s",
         SET_CAT_ESC, SET_TYPE_INT, 5, 300, 5, 55, NULL, 0 },
 
     [SET_THEME] = {

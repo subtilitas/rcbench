@@ -136,8 +136,10 @@ Panel als Leitung ohne Flanken gelesen wird.
   Link unten ist. Einem antwortenden Koprozessor wird stattdessen das rohe
   Kommando geschickt, und `outbind_to_chan_cfg()` schreibt für keinen Kanal
   einen Slew, ein als Throttle gebundener Pin springt also im nächsten
-  1-ms-Durchlauf darauf. Ob das physische Gas gerampt werden soll, ist ein
-  offener Punkt; heute begrenzt nichts seine Rate.
+  1-ms-Durchlauf darauf. Das physische Gas wird nicht gerampt, per
+  Entscheidung: die Bank rampt ein Throttle nur aufwärts, ein Ramp auf dem
+  Draht würde also nur den Anstieg verlangsamen und sonst nichts. [STATUS.md,
+  Not planned](https://github.com/subtilitas/rcbench/blob/main/STATUS.md#not-planned).
 
 ## Heartbeat statt Enable-Pegel
 

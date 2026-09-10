@@ -121,8 +121,10 @@ unpowered or unplugged panel reads as a line that is not edging.
   telemetry simulator and by nothing else, and only while the link is down. A
   coprocessor that is answering is sent the raw command instead, and
   `outbind_to_chan_cfg()` writes no slew for any channel, so a pin bound as a
-  throttle steps to it on the next 1 ms pass. Whether the physical throttle
-  should be ramped is an open item; nothing rate-limits it today.
+  throttle steps to it on the next 1 ms pass. The physical throttle is not
+  ramped, by decision: the bank ramps a throttle upward only, so a ramp on
+  the wire would slow the rise and nothing else. [STATUS.md, Not
+  planned](https://github.com/subtilitas/rcbench/blob/main/STATUS.md#not-planned).
 
 ## Heartbeat rather than enable level
 
