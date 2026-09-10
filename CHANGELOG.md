@@ -6,6 +6,16 @@ history is in git.
 
 ## Unreleased
 
+## 0.8.2 - 2026-09-10
+
+Ten defects found in review of 0.8.1 and one reported from a bench. Three
+reach a pin: a servo bound beside a motor drove its low endpoint for 500 ms
+on every arm from MOTOR & ESC, a CONTROL write refused on one register kept
+the registers ahead of it, and the extended-telemetry enable went out
+without the bit that marks it as a command. The Motor & ESC plot holds the
+last run instead of scrolling it away. The link protocol is 3.0, unchanged,
+so either image goes on alone.
+
 ### Fixed
 
 - **A servo bound beside a motor drove its low endpoint for 500 ms on every
