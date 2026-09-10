@@ -106,8 +106,8 @@ unpowered or unplugged panel reads as a line that is not edging.
   MOTOR & ESC, SERVO and CAN BUS FAULT have a gesture that completes on a
   timer, so a lost release there arms or acknowledges on its own; the
   overview's tiles, the outputs and picker screens' cells, the settings
-  screen's keys and the tab rows of MOTOR & ESC, ANALYSER and BALANCE act on
-  the release instead, and a press left latched owns a
+  screen's keys, the log viewer's buttons and rows and the tab rows of
+  MOTOR & ESC, ANALYSER and BALANCE act on the release instead, and a press left latched owns a
   track id the controller reuses, so a later contact that began elsewhere is
   taken for the missing release. HOME and STOP are the router's own gesture
   and it cancels those itself.
