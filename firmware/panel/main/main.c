@@ -593,6 +593,9 @@ static unsigned touch_losses(void)
  * the second check disarms here.
  */
 static unsigned s_arm_touch_lost;
+/* An arm applied this pass, so the second look is owed once the armed
+ * snapshot is out. */
+static bool s_arm_recheck_owed;
 
 /*
  * The pole count the coprocessor holds, and whether it is current.
@@ -2527,19 +2530,25 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
 }
 
 /*
- * The second look at the loss count, after the bank has armed.
+ * The second look at the loss count, after the armed snapshot is published.
  *
  * The first look was taken when the arm was accepted from the queue, and
- * the exchanges between that and here can take two seconds.  A loss in
+ * the exchanges between that and the arm can take two seconds.  A loss in
  * that time is one the render side answers by cancelling what it holds --
  * and it holds nothing for a bench its snapshot still calls disarmed, so
- * no disarm comes from there.  The count is compared again here, after the
- * arm, so a loss that landed anywhere between the two looks disarms; one
- * that lands after this look is seen by the render side against an armed
- * bench and answered as a disarm there.  The operator repeats the hold.
+ * no disarm comes from there.  The count is compared again here, and here
+ * rather than right after the arm: the render side's snapshot turns armed
+ * at publish_snapshot(), so a loss before this look is answered here by a
+ * disarm, and a loss after it is seen by the render side against an armed
+ * bench and answered there.  No loss falls between the two.  The operator
+ * repeats the hold.
  */
 static void arm_recheck_losses(bool link_up)
 {
+    if (!s_arm_recheck_owed) {
+        return;
+    }
+    s_arm_recheck_owed = false;
     if (touch_losses() == s_arm_touch_lost) {
         return;
     }
@@ -2728,11 +2737,11 @@ static void service_arming(bool link_up)
                 control_alert("coprocessor refused to arm");
             } else {
                 outputs_arm(&s_out, true, now_ms());
-                arm_recheck_losses(link_up);
+                s_arm_recheck_owed = true;
             }
         } else {
             outputs_arm(&s_out, true, now_ms());
-            arm_recheck_losses(link_up);
+            s_arm_recheck_owed = true;
         }
         break;
     }
@@ -3932,6 +3941,9 @@ static void control_task(void *arg)
 
         /* --- hand the screen what it draws -------------------------------- */
         publish_snapshot(&bench, link_up, new_sample);
+        /* And only now the second look at the loss count for an arm applied
+         * this pass; see arm_recheck_losses(). */
+        arm_recheck_losses(link_up);
 
         vTaskDelay(pdMS_TO_TICKS(CONTROL_PERIOD_MS));
     }

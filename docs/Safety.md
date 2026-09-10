@@ -128,10 +128,11 @@ unpowered or unplugged panel reads as a line that is not edging.
   cancel also drops an arm the screen has posted and the application has not
   yet collected, and an arm already handed to the control task carries the
   count of lost touch events it was posted under: the control task drops an
-  arm whose count has moved, and looks again once the bank has armed, since
-  the exchanges between the two can take two seconds; a loss between the
-  two looks disarms at once. Nothing arms across a loss. A posted disarm
-  stays.
+  arm whose count has moved, and looks again once the armed snapshot has
+  been handed to the screens, since the exchanges between the two can take
+  two seconds; a loss between the two looks disarms at once, and a loss
+  after the second is seen by the screens against an armed bench. Nothing
+  arms across a loss. A posted disarm stays.
 - The throttle moves by how far a finger travels, not to where it lands. A
   press on the track commands nothing, so a touch at the far end asks for
   nothing; a drag across the whole track asks for the whole span, and one

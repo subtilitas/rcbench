@@ -153,10 +153,12 @@ Panel als Leitung ohne Flanken gelesen wird.
   Scharfschalten, das schon beim Control-Task liegt, trägt den Zählerstand
   der verlorenen Touch-Events, unter dem es abgesetzt wurde: der Control-Task
   verwirft ein Scharfschalten, dessen Zähler sich bewegt hat, und sieht
-  nach dem Scharfschalten der Bank noch einmal nach, weil die Transaktionen
-  dazwischen zwei Sekunden dauern können; ein Verlust zwischen den beiden
-  Blicken entschärft sofort. Über einen Verlust hinweg schaltet also nichts
-  scharf. Ein abgesetztes Entschärfen bleibt.
+  noch einmal nach, sobald der scharfe Snapshot an die Screens übergeben
+  ist, weil die Transaktionen dazwischen zwei Sekunden dauern können; ein
+  Verlust zwischen den beiden Blicken entschärft sofort, und einen Verlust
+  nach dem zweiten sehen die Screens gegen einen scharfen Prüfstand. Über
+  einen Verlust hinweg schaltet also nichts scharf. Ein abgesetztes
+  Entschärfen bleibt.
 - Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
   Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, eine
   Berührung am Ende fordert also nichts an; ein Drag über den ganzen Track

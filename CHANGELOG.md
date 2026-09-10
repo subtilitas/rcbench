@@ -36,8 +36,10 @@ history is in git.
     completed by a hold whose contact was lost is dropped before it reaches
     the bench. An arm already handed to the control task carries the count
     of lost touch events it was posted under, and the control task drops an
-    arm whose count has moved, and looks again once the bank has armed, so
-    a loss anywhere between the posting and the arming retires it. A hold
+    arm whose count has moved, and looks again once the armed snapshot has
+    been handed to the screens, so a loss anywhere between the posting and
+    that handover retires it and a later one is seen against an armed
+    bench. A hold
     is credited at most 250 ms per frame, so one late
     frame cannot complete a hold that began while it was dispatching the
     press.
