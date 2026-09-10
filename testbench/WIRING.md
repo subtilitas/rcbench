@@ -24,7 +24,7 @@ used for any of them.
 | Two 120 Ω terminators | one at each end of the CAN pair. Two in parallel are the 60 Ω the pair should measure |
 | Level translation | for any line that leaves the 3.3 V island: a translator that senses the target's rail, not a divider chosen once |
 | A camera and a mount | rigid enough that it does not move between sessions; the calibration is only valid while it does not |
-| The monostable | required by `docs/Safety.md`, on no board, **and not specified anywhere in this tree**. It cannot be built from this guide. What it has to do is below; what it is made of is a decision nobody has taken |
+| The monostable | required by `docs/Safety.md`, on no board, and specified in [hardware/docs/Monostable.md](../hardware/docs/Monostable.md): the both-edge trigger, the timing network, the two gates and the test procedure with its pass figures, with deliberately no part number. It is built from that page and tested by it; this guide carries the bench mechanics only |
 
 ---
 
@@ -278,11 +278,12 @@ the heartbeat junction with an edge every 20 ms inside step 7 alone.
 **The panel's link is open before it drives; the monostable's stays closed.**
 The panel drives its end push-pull, so that node carries one driver at a time
 or it carries contention, and opening the panel's branch is what makes room.
-The monostable's branch is not in the way -- it only listens -- and it has to
-stay closed so the interlock is still being fed when the capture starts.
-Opening it early is what makes the window unmeasurable: step 7 takes it out
-while the capture runs, so the last trigger edge and the enable falling are in
-one trace. GP22 is tri-stated before either link is closed again.
+The monostable's branch is not in the way -- it only listens -- and it stays
+closed so the interlock is being fed. The window itself is measured as
+`hardware/docs/Monostable.md` step 7 says, by stopping the source at its final
+level and not by opening this link: the pull-down on the monostable's side
+makes the opening an edge of its own. GP22 is tri-stated before either link is
+closed again.
 
 The relays are at GP16 to GP19 rather than at the start of the header so that
 GP0 to GP15 stay free for the analyser leads and for a stimulus generator this
@@ -482,145 +483,66 @@ monostable gates the coprocessor's output enable and the servo and ESC power
 path; GP3 sees the line as well so the firmware can judge it. `docs/Safety.md`
 sets this out and `docs/FirstRun.md` step 3 routes the wire through it.
 
-**The circuit does not exist yet.** `docs/Safety.md` requires it and says it
-is on no board; no page in this tree gives a part, a timing network, a trigger
-polarity, or the two gates. So this guide cannot be followed to build it, and
-an assembler improvising one may well produce something that stays enabled
-after the edges stop -- which is the failure it exists to prevent.
-
-What it has to do, so that a circuit can be designed against it and checked:
-
-| | |
-|---|---|
-| Input | edges from the panel's GPIO6 on J8, nominally one every 20 ms, which is a 40 ms cycle: `heartbeat_gen_step()` toggles the level once per period |
-| Behaviour | retriggerable: asserted while edges keep arriving, deasserted no later than the window after the last one |
-| Window | about 150 ms. Above the 20 ms period with margin for a late task, and below the coprocessor's 200 ms link failsafe |
-| Gates | two, both downstream of the coprocessor's pins: its output enable, and the servo and ESC power path |
-| Fail-safe direction | unpowered, undriven or unbuilt means disabled. A failure of the interlock cannot be a bench that keeps driving |
-| Not defeatable | no firmware at either end is in the path, which is the whole point |
-| Two links, both removable | one in the panel's GPIO6 branch and one in the monostable's trigger branch, meeting at a junction with the coprocessor's GP3. The differential test needs to split that node three ways, and the panel drives GPIO6 push-pull, so it cannot simply be joined |
-
-Part numbers are deliberately absent: `hardware/README.md` says a part is not
-chosen until it is available at a vendor, and this belongs in `hardware/` as
-its own page rather than being improvised inside a wiring guide.
+**The circuit is specified and not built.**
+[hardware/docs/Monostable.md](../hardware/docs/Monostable.md) is the
+specification: the input, the timing budget and network, the two gates, the
+fail-safe rules, the fault model, and the test procedure with its pass
+figures, and deliberately no part (`hardware/README.md` says a part is not
+chosen until it is available at a vendor). Build it from that page and test
+it by that page. This guide carries no copy of its figures: what the circuit
+has to do, what passes, which polarity a last edge has and in what order the
+captures run are that page's, and a figure found here that disagrees with it
+is this guide's error. What this section carries is the bench: the node, the
+links, the leads and the tooling.
 
 A direct wire is the failure this bench must not build. It satisfies the
 firmware's heartbeat monitor, so every check in this guide would pass, and the
 one thing the interlock exists for -- a panel that has crashed, wedged, reset
 or browned out taking the outputs down without asking firmware at either end
--- would be absent. The window is about 150 ms, inside the coprocessor's
-200 ms link failsafe.
+-- would be absent.
 
 A servo or an ESC signal line that runs at 5 V goes through the translator on
 its way to anything at 3.3 V. The analyser can watch a 5 V line directly with
 its threshold set for it, which is a per-run setting and an argument to
 `capture.sh` rather than something left where the last run put it.
 
-**Check, one.** The heartbeat with nothing else running:
+**Check.** The heartbeat with nothing else running:
 
     testbench/host/capture.sh heartbeat D3 1m 2m 1.65
 
-An edge every 20 ms, so a 40 ms cycle: 20 ms high then 20 ms low. A gap longer
-than 150 ms is what the monostable and the coprocessor both act on, and should
-not be there on a healthy panel.
+An edge every 20 ms, so a 40 ms cycle: 20 ms high then 20 ms low.
 
-**Check, two: the interlock, and only the interlock.** Stopping the edges is
-not a test on its own. `firmware/iomcu/src/main.c` polls the same line and
-calls `outputs_off()` when it has been quiet for HEARTBEAT_MAX_GAP_MS
-(150 ms) -- the same threshold, by design, since both watch the same wire. So
-an output that stops when the edges stop proves nothing: a bench with no
-monostable at all passes that.
+**The node and its two links.** The heartbeat is one node: the panel's
+GPIO6, the coprocessor's GP3 and the monostable's trigger all meet on it. The
+panel drives its end **push-pull** (`firmware/panel/main/main.c`), so a
+second driver on that node is contention rather than a test -- a corrupted
+reading at best and a damaged pin at worst. Two removable links split it: one
+in the panel's branch and one in the monostable's trigger branch, meeting at
+the junction with GP3. The series resistors and the pull-down on the
+monostable's side of its link and in the GP3 branch are the circuit's, not
+the bench's; the page places them.
 
-Two probes settle it, and the second is the decisive one.
+**Feeding the firmware from GP22.** With the panel's branch open, GP22 drives
+the junction with one edge every 20 ms -- a 40 ms cycle, not a 40 ms edge
+spacing and not a 20 ms cycle -- so `heartbeat_poll()` on the coprocessor
+never expires. Twice that rate is rejected by the monitor's 4 ms floor only
+well beyond it, so a wrong reading here is injected rather than caught. GP22
+is an input at every other moment (section 4) and is tri-stated before either
+link is closed again. It sits on the coprocessor's own rail, so it holds
+nothing while that rail powers up; the page's power-up test takes its held
+level from the panel or a generator.
 
-*The part itself.* Put leads on the monostable's own outputs and stop the
-edges. Both should go inactive within the window. No firmware runs on those
-nodes, so what they do is the hardware's doing.
-
-**Two instruments, and both are needed.**
-
-*The analyser, on logic only.* The output enable takes a lead directly. The
-servo and ESC power do not: the servo rail is 8.4 V and an ESC pack is higher,
-every analyser lead here is a direct connection with a series resistor, and
-`capture.sh`'s threshold argument sets a comparator level rather than
-attenuating anything. An LA2016 input is rated to 5 V. So the analyser takes
-the **switch's control node** -- the gate or enable pin of whatever passes the
-rail -- which is logic and carries the timing.
-
-*A scope on the rail, on the same trigger.* The control node says the switch
-was told to open. It does not say the rail went down: a switch that is
-bypassed, miswired or failed short deasserts its gate exactly the same way.
-`docs/Safety.md` requires the **power path** to be gated, so the verdict is
-measured on the switched side, with a probe rated for 8.4 V or whatever the
-ESC pack is.
-
-**A meter is not enough.** It says the rail is down by the time you look,
-which is a different claim from down within 150 ms: a switch with a slow gate
-drive, a rail with a bulk capacitor, or a load light enough not to discharge
-one, all read zero eventually and miss the deadline.
-
-**Two channels on one scope, triggered on the rail.** The monostable's trigger
-input goes on one channel and the switched rail on the other, and the scope
-triggers on the **rail crossing its threshold downward**, with at least 200 ms
-of pre-trigger. Triggering on a heartbeat edge cannot work: every edge is
-identical and no ordinary edge trigger knows which one is the last, so the
-instrument fires on an arbitrary one and the rail's fall lands outside the
-record. Triggering on the rail and looking backwards puts the last trigger
-edge in the same capture, and the interval between them is the number.
-
-**Both rails, and to a voltage the load is known to stop at.** Two things make
-that measurement mean something:
-
-- *A threshold the load actually respects.* Leaving the regulation band is not
-  being de-energised, and neither is the datasheet's minimum operating
-  voltage: that is the bottom of *guaranteed* operation, and a servo or an ESC
-  below it may go on holding, twitching or producing torque rather than
-  stopping. The honest threshold is the voltage at which **this** load is
-  measured to stop -- run it down on the bench and find it -- and until that
-  measurement exists, a conservative near-zero figure. Nothing between the two
-  is a claim about the load.
-- *A load on it.* An unloaded rail with a bulk capacitor decays slowly and
-  measures whatever the capacitor decides. Take it with the servo or the ESC
-  connected -- the bench's own load, in the state the interlock exists for.
-
-The servo rail and the ESC pack are separate supplies, so each has its own
-switch and each is its own claim. Measuring one proves nothing about the
-other: a bypassed or failed-short switch on the unmeasured rail leaves that
-load powered through a check that passed. Capture both, or repeat the whole
-measurement for each.
-
-Passing the control side without the rail is the interlock's own failure mode:
-the switch told to open and the power still on. Passing the rail without a
-timebase is the same failure with a slower clock, and passing one rail is the
-same failure on the other one.
-
-*The differential test.* Keep the firmware happy and starve only the hardware.
-
-The heartbeat is one node: the panel's GPIO6, the coprocessor's GP3 and the
-monostable's trigger all meet on it. The panel drives its end **push-pull**
-(`firmware/panel/main/main.c`), so a second driver on that node is contention
-rather than a test -- a corrupted reading at best and a damaged pin at worst.
-
-Split it before injecting anything, which is what the two links are for:
-
-1. **Open the panel's branch.** Nothing of the panel's is driving now, so the
-   next step is not contention.
-2. **Have the RP2350 drive the junction from GP22** with one edge every
-   20 ms -- a 40 ms cycle, not a 40 ms edge spacing and not a 20 ms cycle --
-   so `heartbeat_poll()` on the coprocessor never expires. Twice that rate is
-   rejected by the monitor's 4 ms floor only well beyond it, so a wrong
-   reading here is injected rather than caught.
-
-The monostable's trigger branch stays **closed** for now, and that is the
-change that makes the test measurable. Both the firmware and the interlock are
-being fed at this point, which is the state the run has to start from: the
-enable asserted, the load side live, and edges on the trigger to measure a
-window from. Opening that branch first instead leaves nothing in the trace but
-an enable that is already down, and an enable that fell in 120 ms, one that
-took four seconds and one that was never asserted at all are the same picture.
-
-Firmware is being told the panel is alive, and so is the interlock -- until the
-capture is running and the branch comes out.
+**Where the leads go.** The map in `testbench/README.md` gives channels 14
+and 15 to SBUS and a spare, and neither is in this run, so the two interlock
+leads take them: **D14 the enable node, D15 the load-facing side** of the
+gated output. D0 is the raw pin. D3 goes on the monostable's side of its
+link, not on the junction: the junction keeps edging from GP22, and the
+monostable's own input is what goes quiet. The analyser takes logic only. The
+switch's control node -- the gate or enable pin of whatever passes the rail --
+is logic and carries the timing; the switched rails are 8.4 V and the ESC
+pack, above an LA2016 input's 5 V rating, so they take the scope with a probe
+rated for them, and the current through a switch takes the current probe the
+page names, where it says.
 
 **Bind first, then arm.** Binding is done on SETTINGS/OUTPUTS, and both bench
 screens disarm as they are left (`shared/ui/motor_screen.c`,
@@ -635,96 +557,44 @@ undoes the arm on the way. In order:
    is what makes the trace unambiguous, since a DShot zero-throttle frame and
    a 1500 us centre pulse are both edges and neither is distinctive.
 
-Then capture **after the gate** -- the load-facing side of the gated output,
-and the monostable's output-enable -- on whichever channels the run is not
-otherwise using. The map in `testbench/README.md` gives channels 14 and 15 to
-SBUS and a spare, and neither is in this run, so the two interlock leads take
-them: **D14 the output-enable, D15 the load-facing side.**
-
-Two captures, because the two questions want opposite settings.
-
-**One: the window.** 1 MHz over 4m samples, which is 4 s:
+**The captures.** Two `capture.sh` runs, whose settings are the bench's own:
 
     testbench/host/capture.sh interlock-window D0,D3,D14,D15 1m 4m 1.65
-
-**Open the monostable's trigger branch while this one is running**, not
-before it. The window is measured from the last edge into the trigger, so
-that edge and the enable falling have to be in one trace, and the branch has
-to come out inside the first 3.8 s for the 150 ms after it to still be in the
-trace. 24 MHz over the same 4m samples covers 167 ms, which is 17 ms more
-than the 150 ms window and not less -- and 17 ms is the whole budget for
-reaching the link by hand and for the two or three 20 ms heartbeat edges
-before the pull that make the last one readable as the last one. There is no
-trigger to align the trace on: the pull is a hand on a link, and a trigger on
-D3 falling fires on every heartbeat edge. Span is what this capture needs, and
-1 us resolution on a 150 ms window is already finer than the number is worth
-quoting to.
-
-D0 aliases at 1 MHz: a DShot600 bit is 1.67 us and is sampled once or twice,
-so the trace shows the pin changing without being decodable. Changing is all
-this capture asks of it.
-
-**Two: the load side, once it is quiet.** The branch stays out, so the enable
-stays down and the gate stays closed for as long as it is left out. That is a
-steady state rather than a transient, so it is sampled on its own:
-
     testbench/host/capture.sh interlock-quiet D0,D15 24m 2m 1.65
 
-24 MHz, not 1 MHz. The output under test may be DShot600, whose zero-bit high
-is about 0.63 us: sampled once a microsecond, narrow activity leaking through
-a failed gate falls between samples and the load side is reported quiet. The
-rate has to out-sample whatever D0 is carrying, and DShot600 is the fastest
-this bench binds. 2m samples at 24 MHz is 83 ms, which is 83 DShot frames at
-the coprocessor's 1,000 Hz update rate and four servo frames at 50 Hz, so a
-leak that repeats at all repeats inside it.
+The first spans 4 s at 1 MHz, so a window and the edges before it fit in one
+trace; there is no trigger to align it on, since the stimulus stopping is a
+hand on a source and a trigger on D3 fires on every edge, and 1 us resolution
+is finer than a window is worth quoting to. The second samples at 24 MHz:
+DShot600's zero-bit high is about 0.63 us, and 1 MHz sampling reports narrow
+leakage through a failed gate as quiet; 2m samples is 83 ms, which is 83
+DShot frames at the coprocessor's 1,000 Hz update rate and four servo frames
+at 50 Hz, so a leak that repeats at all repeats inside it. D0 aliases at
+1 MHz and only has to be seen changing. `capture.sh` prints `warning: never
+changed: D15 -- probe, threshold or ground` for a flat channel, because a
+flat channel is usually a lead off its pin; on the quiet capture flat is the
+result, and D0 in the same trace is what separates a quiet gate from a dead
+lead. Which node has to show what, and the figures, are the page's steps 7,
+9 and 12.
 
-**`capture.sh` warns that D15 never changed, and here that warning is the
-result.** The script prints `warning: never changed: D15 -- probe, threshold
-or ground` for any channel that holds one level, because a flat channel is
-usually a lead off its pin. This is the one capture where flat is what is
-being asked for: D0 in the same trace is what separates a quiet gate from a
-dead lead, which is why it is captured alongside.
+D0 keeps toggling throughout every interlock capture. It is the input to the
+gate, not the output of it; expecting it to stop reads as a failed interlock
+on a bench that is wired correctly, and leaving it out of the capture turns a
+failed arm into a passing interlock test.
 
-**Probe D3 on the monostable's side of that link, not on the junction.** The
-channel map puts D3 at the GPIO6/GP3 node, and GP22 goes on driving that node
-throughout -- a probe there keeps edging after the link comes out and gives no
-last edge at all. What has to go quiet is the monostable's own input, which is
-what the link disconnects. Move the lead, or put a second one there and
-capture it instead.
-
-The coprocessor keeps seeing GP22 on the junction throughout, so firmware
-stays happy and D0 keeps toggling. Only the interlock is starved, which is the
-whole point of the test.
-
-Four things have to be seen, and each answers a different question:
-
-| | Where | What it has to show |
-|---|---|---|
-| D0, the raw pin | both captures | **changing.** This is the precondition, not the evidence: it says the arm worked, the binding took and the pin is wired. Flat here and the test proved nothing -- a bench with no interlock at all would look identical |
-| D3, the monostable's trigger input | the window capture | edges, then none. The last one is where the window starts, and without it in the trace there is no window to measure against. Past the removable link, not on the junction: the junction keeps edging from GP22 |
-| D14, the enable | the window capture | deasserted, within 150 ms of that last edge |
-| D15, the load side | both captures | it stops in the window capture, and the 24 MHz one is what says it is quiet rather than carrying something too narrow for 1 MHz to see |
-
-An actively driven input, blocked downstream, is the whole of the claim.
-Leaving D0 out of the capture turns a failed arm into a passing interlock
-test.
-
-D0 keeps toggling throughout, and expecting it to stop is the mistake that
-reads as a failed interlock on a bench that is wired correctly. It is the
-input to the gate, not the output of it.
-
-**Putting the heartbeat back, in this order.** The test leaves GP22 driving
-the junction and both links open, which is not a state to walk away from: the
-first power-up in section 9 cannot acquire a heartbeat with the panel's branch
-open, and closing that branch while GP22 still drives is the push-pull
-contention this section opened by warning about -- the panel's GPIO6 against
-the RP2350's output, at whatever levels the two happen to be on.
+**Putting the heartbeat back, in this order.** The captures leave GP22
+driving the junction and the panel's branch open, which is not a state to
+walk away from: the first power-up in section 9 cannot acquire a heartbeat
+with the panel's branch open, and closing that branch while GP22 still drives
+is the push-pull contention this section opened by warning about -- the
+panel's GPIO6 against the RP2350's output, at whatever levels the two happen
+to be on.
 
 1. **Disarm the bench**, so nothing is driving an output while the interlock
    is about to change state.
 2. **Tri-state GP22.** Not "drive it high" and not "drive it low": an input,
    off the node entirely. This is the step that makes the next two safe.
-3. **Close the monostable's trigger branch.**
+3. **Close the monostable's trigger branch**, if a capture opened it.
 4. **Close the panel's branch.**
 
 The heartbeat is one node again, with one driver on it. Section 9 expects
