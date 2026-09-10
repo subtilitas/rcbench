@@ -62,9 +62,18 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-coprocessor transmits only in answer to a request. Protocol version 3.0. The
-major version is register 0 of page 0; the panel refuses to arm when it differs
-from its own.
+coprocessor transmits only in answer to a request. Protocol version 4.0. The
+major version is register 0 of page 0. The major moves when a register
+changes meaning or a page is renumbered; the minor moves when a page or a
+register is added at the end, which an older panel can ignore.
+
+A coprocessor reporting a protocol major other than the panel's is treated as
+absent: the link stays down, the splash screen marks the coprocessor step
+failed beside the version it reported, the panel logs both majors and raises
+the alert `protocol mismatch -- will not arm`, and no write reaches the
+coprocessor. Its outputs stay off, and the panel runs as it does with no
+coprocessor connected. A panel and a coprocessor on different sides of a
+major bump are therefore flashed together.
 
 ### Identifier
 
@@ -113,7 +122,7 @@ Clearing a latched failsafe is such a side effect.
 | ---: | --- | --- | --- |
 | 0x00 | IDENTITY | read | protocol major, protocol minor, firmware major, minor, patch, hardware revision, capabilities bitmap |
 | 0x01 | STATUS | read | state (0 idle, 1 armed, 2 failsafe), faults bitmap, uptime in ms (two registers), requests accepted (two registers), XL2515 receive error counter, XL2515 transmit error counter |
-| 0x10 | CONTROL | read, write | ARM (non-zero arms), THROTTLE (0..10000, hundredths of a percent, and it commands every channel CHAN_CFG marks a throttle), CLEAR (write 0x5AFE to leave failsafe), MOTOR_POLES |
+| 0x10 | CONTROL | read, write | ARM (non-zero arms), THROTTLE (0..10000, hundredths of a percent, and it commands every channel CHAN_CFG marks a throttle), MOTOR_POLES, CLEAR (write 0x5AFE to leave failsafe). Registers 0 to 2 are the frame that arms |
 | 0x11 | LIMITS | | declared, not served |
 | 0x12 | FAILSAFE | | declared, not served |
 | 0x13 | CHANNELS | read, write | one command per output channel, 0..1000 of the channel's travel; eight channels |
@@ -152,9 +161,9 @@ MOTOR_POLES is the magnet count of the motor under test, even and between 2 and
 electrical periods and has no idea what it is bolted to, so this is the one
 number the wire has to carry for the coprocessor to report a mechanical speed;
 at zero it reports no speed rather than one derived from a guess. The panel
-sends it from the `Motor poles` setting when a coprocessor starts answering and
-again whenever the setting changes, and again before the write that arms if a
-change is still owed. A write
+sends it from the `Motor poles` setting when a coprocessor starts answering,
+again whenever the setting changes, and in the frame that arms whether or not
+a change is owed. A write
 nobody answers stays owed and goes out again at the next 50 ms poll; a write
 the coprocessor refuses is not retried, because the same request refused once
 is refused every time, and it waits for the next edit or link-up edge instead.
@@ -172,6 +181,17 @@ are refused with BAD_VALUE. A command outside its range is clamped. Two slots
 on one pin, or two slots rendering the same channel, are refused. Arming is
 decided by the coprocessor: a write of ARM is refused with NOT_ARMED while the
 link is in failsafe or the heartbeat is not trusted.
+
+An arm from the panel is two transactions. CLEAR travels first and alone: the
+coprocessor checks ARM against its failsafe before it applies a CLEAR from the
+same frame, so a frame carrying both is refused with NOT_ARMED whenever the
+clear was needed. Then ARM, THROTTLE and MOTOR_POLES go as one three-register
+frame from offset 0, so the coprocessor starts the run on the pole count the
+panel sent or does not start it. Every 50 ms poll after that writes ARM and
+THROTTLE; a pole count edited during a run goes on a write of its own at the
+next poll. The rules of the page -- the throttle range, the pole count, the
+CLEAR magic, ARM refused in failsafe, and a refusal storing nothing -- are
+`shared/link/link_control.c`, under `test_link_pages`.
 
 ### Bit timing
 

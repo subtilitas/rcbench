@@ -68,8 +68,19 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der Koprozessor sendet nur als Antwort auf eine Anfrage.
-Protokollversion 3.0. Die Major-Version ist Register 0 der Page 0; das Panel
-verweigert das Schärfen, wenn sie von seiner eigenen abweicht.
+Protokollversion 4.0. Die Major-Version ist Register 0 der Page 0. Die Major
+ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
+umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
+hinzukommt, was ein älteres Panel ignorieren kann.
+
+Ein Koprozessor, der eine andere Protokoll-Major meldet als das Panel, gilt
+als abwesend: der Link bleibt unten, der Splash-Screen markiert den
+Koprozessor-Schritt als fehlgeschlagen neben der gemeldeten Version, das
+Panel protokolliert beide Majors und meldet `protocol mismatch -- will not
+arm`, und kein Write erreicht den Koprozessor. Seine Ausgänge bleiben aus,
+und das Panel läuft wie ohne angeschlossenen Koprozessor. Panel und
+Koprozessor auf verschiedenen Seiten eines Major-Sprungs werden deshalb
+zusammen geflasht.
 
 ### Identifier
 
@@ -120,7 +131,7 @@ Failsafe ist eine solche Nebenwirkung.
 | ---: | --- | --- | --- |
 | 0x00 | IDENTITY | lesen | Protokoll major, Protokoll minor, Firmware major, minor, patch, Hardware-Revision, Capabilities-Bitmap |
 | 0x01 | STATUS | lesen | Zustand (0 idle, 1 armed, 2 failsafe), Fault-Bitmap, Uptime in ms (zwei Register), angenommene Anfragen (zwei Register), Empfangsfehlerzähler des XL2515, Sendefehlerzähler des XL2515 |
-| 0x10 | CONTROL | lesen, schreiben | ARM (ungleich null schärft), THROTTLE (0..10000, Hundertstel Prozent, und kommandiert jeden Kanal, den CHAN_CFG als Throttle führt), CLEAR (0x5AFE schreiben, um das Failsafe zu verlassen), MOTOR_POLES |
+| 0x10 | CONTROL | lesen, schreiben | ARM (ungleich null schärft), THROTTLE (0..10000, Hundertstel Prozent, und kommandiert jeden Kanal, den CHAN_CFG als Throttle führt), MOTOR_POLES, CLEAR (0x5AFE schreiben, um das Failsafe zu verlassen). Register 0 bis 2 sind der Frame, der scharfschaltet |
 | 0x11 | LIMITS | | deklariert, nicht bedient |
 | 0x12 | FAILSAFE | | deklariert, nicht bedient |
 | 0x13 | CHANNELS | lesen, schreiben | ein Kommando je Ausgangskanal, 0..1000 des Kanalwegs; acht Kanäle |
@@ -163,8 +174,8 @@ eine Zahl, die die Leitung tragen muss, damit der Coprozessor eine mechanische
 Drehzahl melden kann. Bei null meldet er keine Drehzahl statt einer aus einer
 Schätzung abgeleiteten. Das Panel sendet sie aus der Einstellung `Motor poles`,
 sobald ein Coprozessor zu antworten beginnt, erneut bei jeder Änderung der
-Einstellung und erneut vor dem Schreibvorgang, der scharfschaltet, sofern eine
-Änderung noch offen ist. Ein Schreibvorgang,
+Einstellung und im Frame, der scharfschaltet, ob eine Änderung offen ist oder
+nicht. Ein Schreibvorgang,
 den niemand beantwortet, bleibt offen und geht beim nächsten 50-ms-Poll
 erneut hinaus; einer, den der Coprozessor ablehnt, wird nicht wiederholt,
 denn dieselbe einmal abgelehnte Anfrage wird jedes Mal abgelehnt, und er
@@ -187,6 +198,19 @@ oder zwei Slots, die denselben Kanal ausgeben, werden abgewiesen. Über das
 Schärfen entscheidet der Koprozessor: ein Schreiben von ARM wird mit
 NOT_ARMED abgewiesen, solange der Link im Failsafe ist oder dem Heartbeat
 nicht vertraut wird.
+
+Ein Schärfen vom Panel sind zwei Transaktionen. CLEAR geht zuerst und allein:
+der Koprozessor prüft ARM gegen sein Failsafe, bevor er ein CLEAR aus
+demselben Frame anwendet, also wird ein Frame mit beidem genau dann mit
+NOT_ARMED abgewiesen, wenn das Clear nötig war. Danach gehen ARM, THROTTLE
+und MOTOR_POLES als ein Frame mit drei Registern ab Offset 0, sodass der
+Koprozessor den Lauf mit der Polzahl beginnt, die das Panel gesendet hat,
+oder ihn nicht beginnt. Jeder Poll alle 50 ms danach schreibt ARM und
+THROTTLE; eine während eines Laufs geänderte Polzahl geht beim nächsten Poll
+in einem eigenen Write. Die Regeln der Page -- der Throttle-Bereich, die
+Polzahl, die CLEAR-Magic, ARM im Failsafe abgewiesen, und dass eine
+Ablehnung nichts speichert -- stehen in `shared/link/link_control.c`, unter
+`test_link_pages`.
 
 ### Bit Timing
 
