@@ -360,8 +360,8 @@ typedef struct {
     /** And how many times it had been told to let go; see s_lets_go. */
     uint32_t         lets_go;
     /**
-     * And how many touch events had been lost when it queued this; see
-     * touch_losses().  An arm completes a hold, and a hold that completed
+     * And the loss count the render side had last acted on when it queued
+     * this; see touch_losses().  An arm completes a hold, and a hold that completed
      * on a contact whose events went missing is an arm the operator may
      * not have made.  The render side cancels what it still holds when it
      * observes a loss, but an arm already handed over is past its reach:
@@ -3949,7 +3949,7 @@ static void control_task(void *arg)
  * enter() can be long: a command recorded by the screen being left must not
  * wait behind the work of the screen being entered.
  */
-static void flush_screen_commands(uint32_t stops_now);
+static void flush_screen_commands(uint32_t stops_now, unsigned lost_seen);
 
 static void send_cmd(const panel_cmd_t *pc)
 {
@@ -3992,14 +3992,21 @@ static void send_cmd(const panel_cmd_t *pc)
     }
 }
 
-static void flush_screen_commands(uint32_t stops_now)
+/*
+ * @p lost_seen is the loss count the frame's cancellation last acted on,
+ * not the count at this moment: a loss between that decision and this
+ * flush is one no cancellation has answered, and a command stamped with
+ * the count of the moment would carry it past the control task's check.
+ * Stamped with the older count, it fails that check and is dropped there.
+ */
+static void flush_screen_commands(uint32_t stops_now, unsigned lost_seen)
 {
     motor_cmd_t mc;
     while (motor_screen_poll_cmd(&mc)) {
         panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
                            .stops = stops_now,
                            .lets_go = atomic_load(&s_lets_go),
-                           .touch_lost = touch_losses() };
+                           .touch_lost = lost_seen };
         send_cmd(&pc);
     }
     servo_cmd_t sv;
@@ -4007,7 +4014,7 @@ static void flush_screen_commands(uint32_t stops_now)
         panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
                            .stops = stops_now,
                            .lets_go = atomic_load(&s_lets_go),
-                           .touch_lost = touch_losses() };
+                           .touch_lost = lost_seen };
         send_cmd(&pc);
     }
 }
@@ -4225,7 +4232,7 @@ void app_main(void)
              * band itself.
              */
             if (ui_router_current() != before) {
-                flush_screen_commands(stops_now);
+                flush_screen_commands(stops_now, lost_seen);
             }
         }
 
@@ -4272,7 +4279,7 @@ void app_main(void)
         outputs_screen_set_result(
             (outputs_result_t)atomic_load(&s_outputs_result));
 
-        flush_screen_commands(stops_now);
+        flush_screen_commands(stops_now, lost_seen);
         /*
          * Whether a STOP is on screen to press.  The control task hit-tests
          * the band's rectangle and cannot see which screen is up.
@@ -4408,7 +4415,7 @@ void app_main(void)
              * frame's events, the cancellation drops any ARM, and the tick
              * has not run.
              */
-            flush_screen_commands(stops_now);
+            flush_screen_commands(stops_now, lost_seen);
         }
         ui_router_tick(dt_s);
 
