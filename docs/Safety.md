@@ -9,7 +9,7 @@ behaviours that are deliberate.
 
 | Mechanism | Covers | State |
 | --- | --- | --- |
-| Heartbeat stops | the panel is wedged, reset, browned out or unplugged; a pressed STOP | generated and monitored at both ends; the monostable it gates is not fitted |
+| Heartbeat stops | the panel is wedged, reset, browned out or unplugged; a pressed STOP | generated and monitored at both ends; the monostable it gates is specified and not fitted |
 | Coprocessor silence watchdog, 200 ms | the link is dead in either direction | built and tested |
 | STOP command over the link | a deliberate stop, acknowledged and reported | written; not run on hardware |
 
@@ -28,14 +28,17 @@ monostable that stays energised only while edges keep arriving. A crash, a
 wedged task, a reset, a brown-out and an unplugged cable then all produce the
 same result: no edges, no output, independent of firmware at both ends.
 
-Monostable window: about 150 ms. The heartbeat comes from the panel's control
-task, which runs every 5 ms on the core that does not draw, so its period does
-not depend on what a frame costs. The window stays at 150 ms, inside the
-coprocessor's 200 ms link failsafe, rather than tightening to the new period:
-the margin is what survives a task that is late, and nothing is gained by
-removing it.
+Monostable window: no shorter than 155 ms and no longer than 200 ms at every
+corner of component tolerance and temperature, 176 ms nominal. The heartbeat
+comes from the panel's control task, which runs every 5 ms on the core that
+does not draw, so its period does not depend on what a frame costs. The
+window sits above the 150 ms the firmware accepts between edges, with 5 ms
+for a late task, and inside the coprocessor's 200 ms link failsafe.
 
-The monostable is on no board. On the bring-up bench the edges reach the
+The monostable is on no board. Its specification is in `hardware/`:
+[Monostable](https://github.com/subtilitas/rcbench/blob/main/hardware/docs/Monostable.md),
+with the timing network, the two gates and the test procedure, and
+deliberately no part number. On the bring-up bench the edges reach the
 coprocessor's GP3 by a direct wire from J8, which is what lets that bench arm.
 
 The monostable is retriggered by the panel's edges and removes the outputs

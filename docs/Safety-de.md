@@ -9,7 +9,7 @@ und welche Verhaltensweisen Absicht sind.
 
 | Mechanismus | Deckt ab | Stand |
 | --- | --- | --- |
-| Der Heartbeat bleibt aus | das Panel hängt, ist resettet, hat einen Brown-out oder ist abgesteckt; ein gedrücktes STOP | an beiden Enden erzeugt und überwacht; das Monoflop, das er steuert, ist nicht bestückt |
+| Der Heartbeat bleibt aus | das Panel hängt, ist resettet, hat einen Brown-out oder ist abgesteckt; ein gedrücktes STOP | an beiden Enden erzeugt und überwacht; das Monoflop, das er steuert, ist spezifiziert und nicht bestückt |
 | Stille-Watchdog des Koprozessors, 200 ms | der Link ist in einer der beiden Richtungen tot | gebaut und getestet |
 | STOP-Kommando über den Link | ein bewusster Stopp, quittiert und gemeldet | geschrieben; nicht auf Hardware gelaufen |
 
@@ -30,16 +30,21 @@ Absturz, hängender Task, Reset, Brown-out und abgestecktes Kabel führen dann
 zum selben Ergebnis: keine Flanken, kein Ausgang, unabhängig von der Firmware
 an beiden Enden.
 
-Fenster des Monoflops: etwa 150 ms. Der Heartbeat kommt aus dem Control-Task
-des Panels, der alle 5 ms auf dem Kern läuft, der nicht zeichnet, und dessen
-Periode damit nicht davon abhängt, was ein Frame kostet. Das Fenster bleibt
-bei 150 ms und liegt innerhalb des 200-ms-Link-Failsafes des Koprozessors,
-statt auf die neue Periode zu schrumpfen: die Reserve ist das, was einen
-verspäteten Task überlebt.
+Fenster des Monoflops: nicht kürzer als 155 ms und nicht länger als 200 ms
+an jeder Ecke von Bauteiltoleranz und Temperatur, nominell 176 ms. Der
+Heartbeat kommt aus dem Control-Task des Panels, der alle 5 ms auf dem Kern
+läuft, der nicht zeichnet, und dessen Periode damit nicht davon abhängt, was
+ein Frame kostet. Das Fenster liegt über den 150 ms, die die Firmware
+zwischen zwei Flanken akzeptiert, mit 5 ms Reserve für einen verspäteten
+Task, und innerhalb des 200-ms-Link-Failsafes des Koprozessors.
 
-Das Monoflop ist auf keiner Platine. Auf dem Aufbau-Prüfstand erreichen die
-Flanken über eine direkte Leitung von J8 den GP3 des Koprozessors, weshalb
-dieser Prüfstand scharfschalten kann.
+Das Monoflop ist auf keiner Platine. Seine Spezifikation liegt in
+`hardware/`:
+[Monostable](https://github.com/subtilitas/rcbench/blob/main/hardware/docs/Monostable.md)
+(englisch), mit dem Zeitglied, den beiden Gates und der Prüfprozedur, und
+bewusst ohne Bauteilnummer. Auf dem Aufbau-Prüfstand erreichen die Flanken
+über eine direkte Leitung von J8 den GP3 des Koprozessors, weshalb dieser
+Prüfstand scharfschalten kann.
 
 Das Monoflop wird von den Flanken des Panels nachgetriggert und nimmt die
 Ausgänge weg, wenn diese ausbleiben. Was es gegenüber der direkten Leitung

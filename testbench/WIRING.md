@@ -24,7 +24,7 @@ used for any of them.
 | Two 120 Ω terminators | one at each end of the CAN pair. Two in parallel are the 60 Ω the pair should measure |
 | Level translation | for any line that leaves the 3.3 V island: a translator that senses the target's rail, not a divider chosen once |
 | A camera and a mount | rigid enough that it does not move between sessions; the calibration is only valid while it does not |
-| The monostable | required by `docs/Safety.md`, on no board, **and not specified anywhere in this tree**. It cannot be built from this guide. What it has to do is below; what it is made of is a decision nobody has taken |
+| The monostable | required by `docs/Safety.md`, on no board, and specified in [hardware/docs/Monostable.md](../hardware/docs/Monostable.md): the both-edge trigger, the timing network, the two gates and the test, with deliberately no part number. It is built from that page, not from this guide. What it has to do is summarised below |
 
 ---
 
@@ -482,33 +482,34 @@ monostable gates the coprocessor's output enable and the servo and ESC power
 path; GP3 sees the line as well so the firmware can judge it. `docs/Safety.md`
 sets this out and `docs/FirstRun.md` step 3 routes the wire through it.
 
-**The circuit does not exist yet.** `docs/Safety.md` requires it and says it
-is on no board; no page in this tree gives a part, a timing network, a trigger
-polarity, or the two gates. So this guide cannot be followed to build it, and
-an assembler improvising one may well produce something that stays enabled
-after the edges stop -- which is the failure it exists to prevent.
+**The circuit is specified and not built.** `docs/Safety.md` requires it and
+says it is on no board;
+[hardware/docs/Monostable.md](../hardware/docs/Monostable.md) gives the
+timing network, the trigger polarity, the two gates and the test procedure,
+and deliberately no part. Build it from that page. An assembler improvising
+one may well produce something that stays enabled after the edges stop --
+which is the failure it exists to prevent.
 
-What it has to do, so that a circuit can be designed against it and checked:
+What it has to do, in summary; the specification is the page above:
 
 | | |
 |---|---|
-| Input | edges from the panel's GPIO6 on J8, nominally one every 20 ms, which is a 40 ms cycle: `heartbeat_gen_step()` toggles the level once per period |
+| Input | edges from the panel's GPIO6 on J8, nominally one every 20 ms, which is a 40 ms cycle: `heartbeat_gen_step()` toggles the level once per period. Both edges retrigger |
 | Behaviour | retriggerable: asserted while edges keep arriving, deasserted no later than the window after the last one |
-| Window | about 150 ms. Above the 20 ms period with margin for a late task, and below the coprocessor's 200 ms link failsafe |
+| Window | 155 to 200 ms at every corner of tolerance and temperature, 176 ms nominal. Above the 150 ms the firmware accepts between edges with margin for a late task, and below the coprocessor's 200 ms link failsafe |
 | Gates | two, both downstream of the coprocessor's pins: its output enable, and the servo and ESC power path |
 | Fail-safe direction | unpowered, undriven or unbuilt means disabled. A failure of the interlock cannot be a bench that keeps driving |
 | Not defeatable | no firmware at either end is in the path, which is the whole point |
 | Two links, both removable | one in the panel's GPIO6 branch and one in the monostable's trigger branch, meeting at a junction with the coprocessor's GP3. The differential test needs to split that node three ways, and the panel drives GPIO6 push-pull, so it cannot simply be joined |
 
-Part numbers are deliberately absent: `hardware/README.md` says a part is not
-chosen until it is available at a vendor, and this belongs in `hardware/` as
-its own page rather than being improvised inside a wiring guide.
+Part numbers are deliberately absent from that page too: `hardware/README.md`
+says a part is not chosen until it is available at a vendor.
 
 A direct wire is the failure this bench must not build. It satisfies the
 firmware's heartbeat monitor, so every check in this guide would pass, and the
 one thing the interlock exists for -- a panel that has crashed, wedged, reset
 or browned out taking the outputs down without asking firmware at either end
--- would be absent. The window is about 150 ms, inside the coprocessor's
+-- would be absent. The window is 155 to 200 ms, inside the coprocessor's
 200 ms link failsafe.
 
 A servo or an ESC signal line that runs at 5 V goes through the translator on
@@ -521,8 +522,8 @@ its threshold set for it, which is a per-run setting and an argument to
     testbench/host/capture.sh heartbeat D3 1m 2m 1.65
 
 An edge every 20 ms, so a 40 ms cycle: 20 ms high then 20 ms low. A gap longer
-than 150 ms is what the monostable and the coprocessor both act on, and should
-not be there on a healthy panel.
+than 150 ms is what the coprocessor acts on, and the monostable's window
+follows it by 5 to 50 ms; neither should be there on a healthy panel.
 
 **Check, two: the interlock, and only the interlock.** Stopping the edges is
 not a test on its own. `firmware/iomcu/src/main.c` polls the same line and
@@ -650,14 +651,14 @@ Two captures, because the two questions want opposite settings.
 **Open the monostable's trigger branch while this one is running**, not
 before it. The window is measured from the last edge into the trigger, so
 that edge and the enable falling have to be in one trace, and the branch has
-to come out inside the first 3.8 s for the 150 ms after it to still be in the
-trace. 24 MHz over the same 4m samples covers 167 ms, which is 17 ms more
-than the 150 ms window and not less -- and 17 ms is the whole budget for
-reaching the link by hand and for the two or three 20 ms heartbeat edges
-before the pull that make the last one readable as the last one. There is no
-trigger to align the trace on: the pull is a hand on a link, and a trigger on
-D3 falling fires on every heartbeat edge. Span is what this capture needs, and
-1 us resolution on a 150 ms window is already finer than the number is worth
+to come out inside the first 3.8 s for the 200 ms the window may take to
+still be in the trace. 24 MHz over the same 4m samples covers 167 ms, which
+is less than the 200 ms the window is allowed, before any budget for reaching
+the link by hand and for the two or three 20 ms heartbeat edges before the
+pull that make the last one readable as the last one. There is no trigger to
+align the trace on: the pull is a hand on a link, and a trigger on D3 falling
+fires on every heartbeat edge. Span is what this capture needs, and 1 us
+resolution on a 176 ms window is already finer than the number is worth
 quoting to.
 
 D0 aliases at 1 MHz: a DShot600 bit is 1.67 us and is sampled once or twice,
@@ -702,7 +703,7 @@ Four things have to be seen, and each answers a different question:
 |---|---|---|
 | D0, the raw pin | both captures | **changing.** This is the precondition, not the evidence: it says the arm worked, the binding took and the pin is wired. Flat here and the test proved nothing -- a bench with no interlock at all would look identical |
 | D3, the monostable's trigger input | the window capture | edges, then none. The last one is where the window starts, and without it in the trace there is no window to measure against. Past the removable link, not on the junction: the junction keeps edging from GP22 |
-| D14, the enable | the window capture | deasserted, within 150 ms of that last edge |
+| D14, the enable | the window capture | deasserted, between 155 ms and 200 ms after that last edge |
 | D15, the load side | both captures | it stops in the window capture, and the 24 MHz one is what says it is quiet rather than carrying something too narrow for 1 MHz to see |
 
 An actively driven input, blocked downstream, is the whole of the claim.

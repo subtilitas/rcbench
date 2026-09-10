@@ -8,6 +8,7 @@ depends on.
 | --- | --- |
 | [Power](docs/Power.md) | the four ICs (integrated circuits) of the power path, with the alternatives and the stock at two vendors |
 | [Sourcing](docs/Sourcing.md) | how to obtain a stock figure from a vendor's own API (application programming interface), and which sources are not reliable |
+| [Monostable](docs/Monostable.md) | the retriggerable monostable behind the heartbeat: input, timing budget, the RC (resistor-capacitor) network with worked values, the two gates, the fail-safe direction and the test procedure. Specified, not built; no part number |
 | [Where things stand](STATUS.md) | decided, open, not planned, and the order of work |
 
 ## Rules
