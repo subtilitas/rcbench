@@ -140,7 +140,14 @@ Wiring:
 | Q output | to the OR gate | to the OR gate |
 
 A part with one trigger input of fixed polarity per half takes an inverter in
-front of one half. The inverter's output carries a 100 kΩ pull to the level
+front of one half. The inverter's input then sees the live heartbeat while
+the coprocessor's rail may be absent, exactly as the monostable's input
+does, so it meets the same two requirements: the I_off specification, and a
+place behind the 4.7 kΩ series resistor, which bounds the current into it
+to 0.7 mA. An inverter without the I_off specification is back-powered by
+the panel through its protection diode and can hand the interlock a supply
+the output pull below does nothing about. Test step 4 records its supply
+pin. The inverter's output carries a 100 kΩ pull to the level
 that does not trigger that half's input (low for a rising-edge input, high
 for a falling-edge input), so an inverter that is absent, unpowered or has
 lost its supply while the monostable is powered leaves the input held at
@@ -493,12 +500,13 @@ Pass: the same figures.
 which takes the monostable, the OR gate and the RP2350 with it, the load
 rails' supplies present, the panel's branch closed and the panel beating (an
 edge every 20 ms on the junction). Record the voltage at the board's 3.3 V
-rail, at the monostable's supply pin, at GP3, at each Q output and at the
-enable node, and capture the enable node for 60 s. Pass: board rail and
-supply pin below 0.3 V, Q outputs and enable node below 0.4 V, no edge on
-the enable node in 60 s, each load rail as in step 2. A supply pin above
-0.3 V is the heartbeat back-powering the part through its input, and the
-part is not one with the I_off specification; a board rail above 0.3 V is
+rail, at the monostable's supply pin, at the inverter's supply pin where
+one is fitted, at GP3, at each Q output and at the enable node, and capture
+the enable node for 60 s. Pass: board rail and every supply pin below
+0.3 V, Q outputs and enable node below 0.4 V, no edge on the enable node in
+60 s, each load rail as in step 2. A supply pin above 0.3 V is the
+heartbeat back-powering that part through its input, and the part is not
+one with the I_off specification; a board rail above 0.3 V is
 the heartbeat back-powering the RP2350 through GP3, and the GP3 branch's
 series resistor is missing or too small.
 
@@ -544,16 +552,31 @@ falling edge. Pass: each half's interval from its own last edge between
 before setting, two capacitors at opposite ends of ±5 % put the halves up
 to 18 ms apart, and after it each is within 2.5 ms of 170 ms.
 
-**9. The switches and the rails.** Repeat step 7 with channel 2 on each
-switch's control node in turn, then on each switched rail in turn with the
-load connected, the scope triggered on the rail falling through the load's
-stop voltage. Pass: each control node reaches its open level within 5 ms of
-the enable node falling, and each rail leaves regulation (falls by 5 % of
-its set voltage) within 190 ms of the last edge. Record the time from the
-last edge to the rail crossing the load's stop voltage, the voltage used as
-the threshold, whether it is measured or the 0.5 V placeholder, and the
-load. That time is recorded, not passed or failed: it belongs to the load's
-capacitance and idle current.
+**9. The switches and the rails.** Two captures per switch, with the source
+stopped as in step 7 and the load connected. The window varies from event
+to event, so a delay measured against the enable node has to have the
+enable node in the same trace.
+
+*The 5 ms budget.* Enable node on channel 1, the switch's control node on
+channel 2, the scope triggered on channel 1 falling through 1.65 V, 10 ms
+of pre-trigger and 50 ms of record. Five events. Pass: the control node
+reaches its open level within 5 ms of the trigger in every event.
+
+*The rail.* Trigger input on channel 1, the switched rail on channel 2, the
+scope triggered on channel 2 falling by 5 % of the rail's set voltage,
+250 ms of pre-trigger (the last edge is at most 185 ms plus 5 ms before the
+trigger) and at least 1 s after it. Five events. Pass: the rail leaves
+regulation within 190 ms of the last edge in every event. From the same
+trace, record the time from the last edge to the rail crossing the load's
+stop voltage, the voltage used as the threshold, whether it is measured or
+the 0.5 V placeholder, and the load. That time is recorded, not passed or
+failed: it belongs to the load's capacitance and idle current, and the
+page's own example of 470 µF at 25 V with 50 mA of idle draw puts it at
+about 230 ms. A decay that has not reached the stop voltage when the record
+ends is recorded as longer than the record, with the record length; the
+trigger is on the rail leaving regulation and not on the stop voltage for
+this reason, since a trigger at the stop voltage needs pre-trigger history
+covering the whole decay and the last edge before it.
 
 **10. The band, driven.** Junction driven at one edge every 200 ms from the
 generator. The enable node then falls for 200 ms minus the window on every
