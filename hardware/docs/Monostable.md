@@ -337,6 +337,14 @@ device's enable is taken from the enable node:
   pull-up (10 kΩ) of its own, so an unpowered inverter and an undriven node
   both read as disabled.
 
+Every input on the buffer's RP2350 side, the data inputs and the enable,
+carries the I_off specification, and the buffer's supply is the same 3.3 V
+rail as the rest of the circuit. A buffer whose supply lead is lost while
+the RP2350 is powered and toggling is otherwise back-powered through its
+data inputs' protection diodes, and a back-powered buffer's outputs are not
+high impedance; the connector pull-downs cannot override a driven output.
+Test step 13 removes the buffer's supply alone with the input toggling.
+
 The buffer covers GP0, GP1 and GP2. The binding catalogue in
 `shared/outputs/out_bind.c` offers more: GP4 to GP7, GP13 to GP22 and GP26
 to GP28 are free for an output on the RP2350-CAN board, and `docs/FirstRun.md`
@@ -386,6 +394,7 @@ Every state the circuit can be left in reads as disabled:
 | Monostable unpowered, panel beating | the partial-power-down input and the 4.7 kΩ series resistor keep the heartbeat from powering the IC; the pull-downs as above |
 | Coprocessor board unpowered, panel beating | the 4.7 kΩ series resistor in the GP3 branch bounds the current into the RP2350's pad to 0.7 mA; how far that raises the board's 3.3 V rail is not measured, and test step 4 measures it |
 | Monostable absent or a Q lead off, OR gate powered | the 100 kΩ pull-down at each OR input |
+| Buffer or translator unpowered, RP2350 powered and toggling | the I_off specification on every input on its RP2350 side; its outputs are undriven and the 10 kΩ connector pull-downs hold the lines |
 | Enable node unbuilt or a lead off | the same pull-down |
 | Output enable undriven | the pull-down (active-high enable) or the pull-up (active-low enable) at the device's pin |
 | Switch control undriven or logic supply absent | the gate-to-source resistor or the relay coil |
@@ -513,15 +522,18 @@ series resistor is missing or too small.
 **5. Power-up.** Panel's branch open, GP22 tri-stated. Capture the 3.3 V rail
 on channel 1 and the enable node on channel 2, the scope triggered on the
 rail rising through 1 V, 500 ms of record. Apply power. Ten times. Then ten
-times more with the line held at a level with no edges, in one of two ways
-and never both: the panel's branch closed and the panel holding the line
-(the panel powered and not yet running its control task) with GP22
-tri-stated; or the panel's branch open and the junction held from GP22.
-GP22 on the junction with the panel's branch closed is two push-pull
-drivers on one node, the contention `testbench/WIRING.md` section 7 opens
-the branch to prevent. Pass: the enable node never crosses 1.65 V in any of
-the twenty records. A pulse of one window on the enable node after the rail
-settles is the clear release triggering, and the part is excluded.
+times with the line held low and ten with it held high through the ramp,
+from a source that is not on the rail being applied: GP22 is on that rail
+and is unpowered or an input until the RP2350 boots, so it cannot hold
+anything during the ramp. Low: the panel's branch closed, the panel powered
+and not yet running its control task, which holds GPIO6 low
+(`heartbeat_gen_init()` starts held low), GP22 tri-stated. High: the
+panel's branch open and the junction held at 3.3 V from a generator or a
+bench supply through 4.7 kΩ. Both levels are needed because a clear
+release that triggers does so on one half or the other depending on the
+level the line holds. Pass: the enable node never crosses 1.65 V in any of
+the thirty records. A pulse of one window on the enable node after the
+rail settles is the clear release triggering, and the part is excluded.
 
 **6. Held, edges arriving.** Junction driven at one edge every 20 ms (GP22 per
 `testbench/WIRING.md`, or a 3.3 V square wave at 25 Hz, panel's branch
@@ -562,21 +574,32 @@ channel 2, the scope triggered on channel 1 falling through 1.65 V, 10 ms
 of pre-trigger and 50 ms of record. Five events. Pass: the control node
 reaches its open level within 5 ms of the trigger in every event.
 
-*The rail.* Trigger input on channel 1, the switched rail on channel 2, the
-scope triggered on channel 2 falling by 5 % of the rail's set voltage,
-250 ms of pre-trigger (the last edge is at most 185 ms plus 5 ms before the
-trigger) and at least 1 s after it. Five events. Pass: the rail leaves
-regulation within 190 ms of the last edge in every event. From the same
-trace, record the time from the last edge to the rail crossing the load's
-stop voltage, the voltage used as the threshold, whether it is measured or
-the 0.5 V placeholder, and the load. That time is recorded, not passed or
-failed: it belongs to the load's capacitance and idle current, and the
-page's own example of 470 µF at 25 V with 50 mA of idle draw puts it at
-about 230 ms. A decay that has not reached the stop voltage when the record
-ends is recorded as longer than the record, with the record length; the
-trigger is on the rail leaving regulation and not on the stop voltage for
-this reason, since a trigger at the stop voltage needs pre-trigger history
-covering the whole decay and the last edge before it.
+*The rail, pass or fail: a resistive load.* The rail's fall after the switch
+opens is the load's discharge, and a load with capacitance behind its
+connector delays the 5 % crossing by C × 0.05 × V / I: 11.8 ms for the
+page's example of 470 µF at 25 V with 50 mA of idle draw, which puts a
+compliant switch past 190 ms. So the switch is passed on a load that has no
+capacitance: a resistor drawing at least 1 A at the rail's set voltage,
+connected in place of the bench's load. Trigger input on channel 1, the
+switched rail on channel 2, the scope triggered on channel 2 falling by 5 %
+of the set voltage, 250 ms of pre-trigger (the last edge is at most 185 ms
+plus 5 ms before the trigger). Five events. Pass: the rail leaves
+regulation within 190 ms of the last edge in every event; with the
+resistive load the crossing follows the switch within 1 ms, so this is the
+switch's own turn-off measured a second way, against the last edge.
+
+*The rail, recorded: the bench's load.* The same capture with the servo or
+the ESC connected and at least 1 s of record after the trigger. Record the
+time from the last edge to the rail leaving regulation, the time to the
+rail crossing the load's stop voltage, the voltage used as the threshold,
+whether it is measured or the 0.5 V placeholder, and the load. Neither
+time is passed or failed: both belong to the load's capacitance and idle
+current, and the example above puts the second at about 230 ms. A decay
+that has not reached the stop voltage when the record ends is recorded as
+longer than the record, with the record length; the trigger is on the rail
+leaving regulation and not on the stop voltage for this reason, since a
+trigger at the stop voltage needs pre-trigger history covering the whole
+decay and the last edge before it.
 
 **10. The band, driven.** Junction driven at one edge every 200 ms from the
 generator. The enable node then falls for 200 ms minus the window on every
@@ -608,11 +631,22 @@ quiet capture in the wiring guide), and returns below 0.4 V without the
 resistor. Edges on the line are a buffer that is not disabled; a line held
 low is a buffer driving low while disabled.
 
+**13. Buffer supply removed, input driven.** The setup of step 12 with the
+monostable's link closed, so the enable node is high, and the buffer's
+supply lead lifted while the RP2350 stays powered, armed and toggling.
+Record the buffer's supply pin. Apply the 4.7 kΩ resistor from the
+connector signal line to 3.3 V. Pass: supply pin below 0.3 V, the line
+above 2.0 V with no edge on it at 24 MHz, and below 0.4 V without the
+resistor. A supply pin above 0.3 V or edges on the line are the RP2350
+back-powering the buffer through its data inputs, and the buffer is not
+one with the I_off specification on those inputs.
+
 What to record, per built unit: the part and its datasheet k, clear-release
 behaviour and I_off specification, the measured C and the fitted R per half,
-the ten intervals of step 7, the six of step 8, the rail figures of step 9,
-the minimum and maximum of step 10, the five combinations of step 11 with
-their intervals, the two readings of step 12 per line, ambient temperature
+the ten intervals of step 7, the six of step 8, the rail figures of step 9
+for the resistive load and for the bench's load, the minimum and maximum of
+step 10, the five combinations of step 11 with their intervals, the two
+readings of step 12 and the three of step 13 per line, ambient temperature
 and supply voltage.
 
 ## Limitations
