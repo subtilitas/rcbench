@@ -813,8 +813,8 @@ static void sample(void)
 
 /*
  * The failsafe edge: disarm the one bank every output goes through, then
- * clear the pages so what the panel reads back agrees with what the outputs
- * are doing.
+ * bring the pages into line with it so what the panel reads back is what the
+ * bank holds.
  */
 static void outputs_off(void)
 {
@@ -822,9 +822,16 @@ static void outputs_off(void)
 
     s_state.control[LINK_CT_ARM]      = 0;
     s_state.control[LINK_CT_THROTTLE] = 0;
-    /* The channels page is what a read shows the panel; the bank is already at
-     * rest from the disarm above, so the two agree only if this agrees too. */
-    outputs_channels_defaults(s_state.channels);
+    /*
+     * The channels page is what a read shows the panel, and it is filled from
+     * the bank for the same reason boot fills it that way: zero is a
+     * throttle's rest and a surface's low endpoint, so a zeroed page reports
+     * a surface nobody commanded at its stop while the pin rests at centre.
+     * The bank's commands survive a disarm, so a channel that was commanded
+     * reads back what it was asked for, and ARM = 0 beside it says nothing
+     * renders it.
+     */
+    outputs_channels_from_bank(&s_outputs, s_state.channels);
     /* And the pins, now rather than at the top of the next pass: a failsafe
      * that waits for the loop to come round is a failsafe with a latency. */
     outputs_hw_service(&s_outputs);
