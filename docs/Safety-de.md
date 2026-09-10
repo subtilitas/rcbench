@@ -89,10 +89,12 @@ Panel als Leitung ohne Flanken gelesen wird.
   Kommando geht ab, wenn das Halten durchgelaufen ist, nicht wenn der Finger
   abhebt. Das Entschärfen ist ein Druck.
 - Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
-  Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, sodass
-  eine Berührung am Ende nicht mit einem Kontakt den vollen Weg anfordern kann.
-  Slider, die nichts Gefährliches kommandieren, etwa die Sweep-Geschwindigkeit
-  des Servobildschirms, behalten Tap-to-set.
+  Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, eine
+  Berührung am Ende fordert also nichts an; ein Drag über den ganzen Track
+  fordert den ganzen Weg an, und einer, der innerhalb eines 50-ms-Polls
+  abgeschlossen ist, ist ein Sprung von 0 auf 100 % am Pin. Slider, die
+  nichts Gefährliches kommandieren, etwa die Sweep-Geschwindigkeit des
+  Servobildschirms, behalten Tap-to-set.
 - Ein Entschärfen setzt das Gas auf null, damit ein Scharfschalten bei null
   beginnt und nicht dort, wo der letzte Lauf aufgehört hat.
 - Das Verlassen eines Prüfstandsbildschirms entschärft.
@@ -136,8 +138,10 @@ Panel als Leitung ohne Flanken gelesen wird.
   Link unten ist. Einem antwortenden Koprozessor wird stattdessen das rohe
   Kommando geschickt, und `outbind_to_chan_cfg()` schreibt für keinen Kanal
   einen Slew, ein als Throttle gebundener Pin springt also im nächsten
-  1-ms-Durchlauf darauf. Ob das physische Gas gerampt werden soll, ist ein
-  offener Punkt; heute begrenzt nichts seine Rate.
+  1-ms-Durchlauf darauf. Das physische Gas wird nicht gerampt, per
+  Entscheidung: die Bank rampt ein Throttle nur aufwärts, ein Ramp auf dem
+  Draht würde also nur den Anstieg verlangsamen und sonst nichts. [STATUS.md,
+  Not planned](https://github.com/subtilitas/rcbench/blob/main/STATUS.md#not-planned).
 
 ## Heartbeat statt Enable-Pegel
 

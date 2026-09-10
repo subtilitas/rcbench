@@ -78,8 +78,9 @@
  * A coprocessor that is answering renders the raw command instead.  The
  * CONTROL page carries what the slider asked for, and outbind_to_chan_cfg()
  * writes no LINK_CC_SLEW for any channel, so a pin bound as a throttle steps
- * to it.  docs/Safety.md states that; whether it should is an open item in
- * STATUS.md, and nothing here decides it.
+ * to it.  That is by decision, recorded in STATUS.md under Not planned: the
+ * bank ramps a throttle upward only, so a ramp on the wire would slow the
+ * rise and nothing else.  docs/Safety.md states both.
  */
 static atomic_uint s_throttle_ramp;
 

@@ -90,9 +90,9 @@ die, read from the ESP32-S3's sensor: it is the display board's temperature,
 not the coprocessor's.
 
 The throttle moves by how far a finger travels, not to where it lands. A press
-on the track commands nothing, so a touch at the far end cannot ask for full
-travel in one contact. `-1` and `+1` at the ends of the track step one
-percentage point.
+on the track commands nothing, so a touch at the far end asks for nothing; a
+drag across the whole track asks for the whole span, and the pin follows it
+unramped. `-1` and `+1` at the ends of the track step one percentage point.
 
 ARM is a hold. The fill fades from green to the danger red across two
 seconds, and the bench arms when the fade completes; letting go before then
