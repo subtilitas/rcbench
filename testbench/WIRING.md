@@ -560,13 +560,18 @@ ESC pack is.
 which is a different claim from the switch open within 200 ms of the last
 edge: a switch with a slow gate drive, a rail with a bulk capacitor, or a
 load light enough not to discharge one, all read zero eventually and miss
-the deadline. Two figures come out of the rail trace, and they are not the
-same claim. The one with a pass figure is the switch opening: the rail
-leaves regulation, falling by 5 % of its set voltage, within 200 ms of the
-last edge. The one recorded without a pass figure is the time from the last
-edge to the load's stop voltage; it belongs to the load's own capacitance
-and idle current, and it gets a figure once the switched-side bulk
-capacitance is designed and not before.
+the deadline. Two figures come out of the switched side, and they are not
+the same claim. The one with a pass figure is the switch opening, and it
+is a current, not a voltage: a rail that has drooped by 5 % on a resistive
+load is a switch still passing 95 % of the current. The current through
+the switch, read with a DC current probe on the switched-side lead (or, at
+1 A, a 100 mΩ shunt in the return at the star ground), falls below 1 % of
+the load current within 200 ms of the last edge, and the figures and the
+instrument are in `hardware/docs/Monostable.md` step 9. The one recorded
+without a pass figure is the time from the last edge to the load's stop
+voltage on the rail; it belongs to the load's own capacitance and idle
+current, and it gets a figure once the switched-side bulk capacitance is
+designed and not before.
 
 **Two channels on one scope, triggered on the rail.** The monostable's trigger
 input goes on one channel and the switched rail on the other, and the scope

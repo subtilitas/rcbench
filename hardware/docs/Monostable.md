@@ -109,7 +109,7 @@ device's supply pin below 0.3 V and its outputs at their pull levels.
 | Enable node, lower bound at every corner | 155 ms | 150 ms + 5 ms: the monostable never drops out on a heartbeat the firmware accepts |
 | Enable node, set point | 170 ms | set on test, see [Timing network](#timing-network) |
 | Enable node, upper bound at every corner | 185 ms | the deadline less the downstream budget |
-| Buffer disabled after the enable node falls | under 1 µs | a logic output-enable; not in the budget |
+| Buffer disabled after the enable node falls | under 1 µs | a logic output-enable; measured in test step 12, not in the budget |
 | Power switch open after the enable node falls | 5 ms | budget for the driver and the switch; a relay whose release time exceeds it is not a candidate |
 | Reserve | 10 ms | between the switch opening and the deadline |
 | Deadline: drive removed, switches open | 200 ms | the coprocessor's link failsafe; the backstop is not slower than the link |
@@ -159,8 +159,16 @@ Wiring:
 
 | Node | Half A | Half B |
 | --- | --- | --- |
-| Rising-edge trigger input | the heartbeat line, through the 4.7 kΩ series resistor | held at its inactive level |
-| Falling-edge trigger input | held at its inactive level | the heartbeat line, through the same resistor |
+| Rising-edge trigger input (B on the '123-class part) | the heartbeat line, through the 4.7 kΩ series resistor | held high: the enabling level, since a falling edge on A is accepted only while B is high |
+| Falling-edge trigger input (A on the '123-class part) | held low: the enabling level, since a rising edge on B is accepted only while A is low | the heartbeat line, through the same resistor |
+
+The unused trigger input of each half is held at the level that enables
+the other input, taken from the part's truth table, and not at a level
+that merely does not trigger: on the '123-class part a rising edge on B is
+accepted only while A is low and a falling edge on A only while B is high,
+so a half whose spare input is parked at the wrong level never asserts. The
+selected part's truth table governs the levels, and the wiring is checked
+against it before the board is laid out.
 | Clear input | the power-on reset network, shared | the same network |
 | Timing network | R, C as below | R, C as below, same values |
 | Q output | to the OR gate | to the OR gate |
@@ -198,8 +206,13 @@ covered as long as it is shorter than the window.
 
 Both clear inputs are held active through the 3.3 V ramp by one power-on
 reset network: 100 kΩ from the rail to the clear inputs, 1 µF from the clear
-inputs to ground, and a diode across the resistor so the capacitor empties
-when the rail drops. The clear inputs are active for about 100 ms after the
+inputs to ground, and a diode across the resistor with its anode at the
+clear node and its cathode at the rail. That orientation is reverse-biased
+while the rail is up, so the capacitor charges through the resistor on
+power-up, and conducts when the rail falls, so the capacitor empties into
+the falling rail and the next ramp starts from a discharged network. The
+other orientation bypasses the resistor on power-up and clear never
+holds. The clear inputs are active for about 100 ms after the
 rail reaches 3.3 V on a fast ramp, long after the monostable's own
 supply-rise requirement, and Q is low throughout. The datasheet has to state
 that Q is low while clear is active; every retriggerable monostable of this
@@ -616,13 +629,19 @@ switch still passing 95 % of the current, and a rail on a constant-current
 load says even less. Channel 2 is therefore a current measurement on the
 switched side, one of two ways:
 
-- a DC-capable current probe (a Hall-effect clamp) around the switched-side
-  supply lead, between the switch and the load;
-- a shunt in the switched-side return lead, its load end at the star
-  ground so channel 2 reads across it single-ended: 100 mΩ at 2 W for the
-  servo rail, which gives 800 mV at 8 A and 8 mV at 1 % of it, a level a
-  scope reads at 5 mV per division with averaging off. The ESC path's shunt
-  follows the switch's rating and is not chosen.
+- at the rated current, a DC-capable current probe (a Hall-effect clamp)
+  around the switched-side supply lead, between the switch and the load,
+  with a resolution of 0.2 % of the rated figure or better (16 mA at 8 A),
+  so the 1 % threshold is five resolution steps above zero. A shunt is not
+  used here: 1 % of 8 A across a shunt whose burden and dissipation are
+  acceptable at 8 A (10 mΩ: 80 mV, 0.64 W) is 0.8 mV, below what a scope
+  resolves single-ended, and a shunt large enough to read (100 mΩ) burns
+  6.4 W and drops 0.8 V of an 8.4 V rail;
+- at 1 A only, the preliminary check below, a 100 mΩ shunt rated 2 W
+  (0.1 W dissipated, 100 mV burden, 1 mV at 1 %) in the switched-side
+  return lead, its load end at the star ground so channel 2 reads across it
+  single-ended at 1 mV per division. The ESC path's instrument follows the
+  switch's rating and is not chosen.
 
 Enable node on channel 1, the current on channel 2, a resistive or
 electronic load in constant-current mode drawing the rated current with
@@ -695,6 +714,19 @@ quiet capture in the wiring guide), and returns below 0.4 V without the
 resistor. Edges on the line are a buffer that is not disabled; a line held
 low is a buffer driving low while disabled.
 
+Then the disable latency, which the budget counts as under 1 µs and which
+is measured here rather than taken from a datasheet. The same setup with
+the monostable's link closed and the source stopped as in step 7, so the
+enable falls while the input toggles. Enable node on channel 1, the
+connector signal line on channel 2, a scope of at least 100 MHz bandwidth
+(a DShot600 bit is 1.67 µs and its edges are the transitions being
+resolved), triggered on channel 1 falling through 1.65 V, 5 µs of
+pre-trigger and 20 µs of record. Five events. Pass: the last driven
+transition on channel 2 lies within 1 µs after the trigger, and no
+transition follows it in the record. A transition later than 1 µs is a
+buffer slower than the budget; one that keeps toggling is a buffer whose
+enable is not the enable node.
+
 **13. Buffer supply removed, input driven.** The setup of step 12 with the
 monostable's link closed, so the enable node is high, and the buffer's
 supply lead lifted while the RP2350 stays powered, armed and toggling.
@@ -709,7 +741,8 @@ What to record, per built unit: the part and its datasheet k, clear-release
 behaviour and I_off specification, the measured C and the fitted R per half,
 the ten intervals of step 7, the six of step 8, the current figures of
 step 9 at the rated load and at 1 A with the instrument used, the rail
-figures for the bench's load, the minimum and maximum of
+figures for the bench's load, the five disable latencies of step 12 per
+line, the minimum and maximum of
 step 10, the five combinations of step 11 with their intervals, the two
 readings of step 12 and the three of step 13 per line, ambient temperature
 and supply voltage.
