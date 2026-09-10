@@ -13,6 +13,7 @@
 
 #include "greatest.h"
 
+#include "link_control.h"
 #include "link_dev.h"
 #include "link_pages.h"
 #include "outputs.h"
@@ -24,6 +25,7 @@ typedef struct {
     uint16_t identity[LINK_ID_COUNT];
     uint16_t control[LINK_CT_COUNT];
     int      clears;
+    bool     may_arm;   /* out of failsafe and the heartbeat trusted */
 } fake_dev_t;
 
 static fake_dev_t g;
@@ -40,26 +42,19 @@ static void control_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     memcpy(out, f->control + off, (size_t)n * sizeof(uint16_t));
 }
 
+/* The coprocessor's handler is this: the page's rules from shared/, and a
+ * clear acted on when the rules say the frame carried one. */
 static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
                              const uint16_t *in)
 {
     fake_dev_t *f = (fake_dev_t *)ctx;
-    for (uint8_t i = 0; i < n; ++i) {
-        const uint8_t reg = (uint8_t)(off + i);
-        if (reg == LINK_CT_THROTTLE && in[i] > LINK_THROTTLE_MAX) {
-            return LINK_NACK_BAD_VALUE;
-        }
-        if (reg == LINK_CT_CLEAR) {
-            if (in[i] != LINK_CLEAR_MAGIC) {
-                return LINK_NACK_BAD_VALUE;
-            }
-            ++f->clears;
-            f->control[reg] = 0;   /* the magic is an action, not a setting */
-            continue;
-        }
-        f->control[reg] = in[i];
+    bool cleared = false;
+    const uint8_t nack = link_control_write(f->control, off, n, in,
+                                            f->may_arm, &cleared);
+    if (nack == 0u && cleared) {
+        ++f->clears;
     }
-    return 0;
+    return nack;
 }
 
 static const link_page_t k_pages[] = {
@@ -75,6 +70,7 @@ static void fresh(void)
     g.identity[LINK_ID_PROTOCOL_MAJOR] = LINK_PROTOCOL_MAJOR;
     g.identity[LINK_ID_PROTOCOL_MINOR] = LINK_PROTOCOL_MINOR;
     g.identity[LINK_ID_HARDWARE]       = 3;
+    g.may_arm = true;
     link_dev_init(&dev, k_pages, 2, &g, 0);
 }
 
@@ -209,9 +205,9 @@ TEST_CASE(a_value_the_page_rejects_is_refused_with_a_reason)
  * show a page nobody accepted.  The case above sets count = 1, the one width
  * where a single-pass handler cannot half-apply.
  *
- * These pin the rule on the two page handlers that live in shared/.  The
- * CONTROL page's handler is in firmware/iomcu/src/main.c, which this suite
- * does not compile, so no host test reaches it.
+ * These pin the rule on the two output page handlers; the CONTROL page's
+ * handler is link_control_write(), which the arming-frame cases below hold
+ * to it.
  */
 TEST_CASE(a_refused_chan_cfg_write_stores_none_of_its_registers)
 {
@@ -256,6 +252,123 @@ TEST_CASE(a_refused_slots_write_stores_none_of_its_registers)
              LINK_NACK_BAD_VALUE);
     for (unsigned i = 0; i < LINK_OS_COUNT; ++i) {
         CHECK_EQ(regs[i], 0u);
+    }
+}
+
+/*
+ * The frame that arms: ARM, THROTTLE and MOTOR_POLES from offset 0, three
+ * registers in one CAN frame.  The count is the divisor the far end starts
+ * sampling with, and a run begun on the wrong one puts a wrong speed into
+ * its sticky rpm_max, so it travels in the same frame as the arm and lands
+ * with it or not at all.
+ */
+TEST_CASE(the_arming_frame_applies_arm_throttle_and_poles_together)
+{
+    fresh();
+    link_msg_t w = { 0 };
+    w.op = LINK_OP_WRITE; w.page = LINK_PAGE_CONTROL;
+    w.offset = LINK_CT_ARM; w.count = 3;
+    w.regs[0] = 1; w.regs[1] = 2500; w.regs[2] = 14;
+
+    link_msg_t r;
+    CHECK(ask(&w, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+    CHECK_EQ(g.control[LINK_CT_ARM], 1);
+    CHECK_EQ(g.control[LINK_CT_THROTTLE], 2500);
+    CHECK_EQ(g.control[LINK_CT_MOTOR_POLES], 14);
+    CHECK_EQ(g.clears, 0);
+}
+
+/* An odd count is a typo, and a frame carrying one arms nothing: ARM is
+ * checked after the count in register order, and a single pass that stored
+ * as it went would leave the bench armed on a refused write. */
+TEST_CASE(an_arming_frame_with_a_bad_pole_count_arms_nothing)
+{
+    fresh();
+    link_msg_t w = { 0 };
+    w.op = LINK_OP_WRITE; w.page = LINK_PAGE_CONTROL;
+    w.offset = LINK_CT_ARM; w.count = 3;
+    w.regs[0] = 1; w.regs[1] = 2500; w.regs[2] = 7;
+
+    link_msg_t r;
+    CHECK(ask(&w, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_BAD_VALUE);
+    CHECK_EQ(g.control[LINK_CT_ARM], 0);
+    CHECK_EQ(g.control[LINK_CT_THROTTLE], 0);
+    CHECK_EQ(g.control[LINK_CT_MOTOR_POLES], 0);
+    CHECK_EQ(g.clears, 0);
+}
+
+static bool write_control(uint8_t off, uint8_t count, const uint16_t *regs,
+                          link_msg_t *reply)
+{
+    link_msg_t w = { 0 };
+    w.op = LINK_OP_WRITE; w.page = LINK_PAGE_CONTROL;
+    w.offset = off; w.count = count;
+    memcpy(w.regs, regs, (size_t)count * sizeof(uint16_t));
+    return ask(&w, reply);
+}
+
+/* Whether the bench may arm is the coprocessor's answer, not the panel's:
+ * while the link is in failsafe or the heartbeat is not trusted, ARM is
+ * refused with its own reason, and nothing in the frame beside it lands. */
+TEST_CASE(arm_is_refused_with_not_armed_while_the_bench_may_not_arm)
+{
+    fresh();
+    g.may_arm = false;
+    const uint16_t frame[LINK_CT_ARM_FRAME] = { 1, 2500, 14 };
+    link_msg_t r;
+    CHECK(write_control(LINK_CT_ARM, LINK_CT_ARM_FRAME, frame, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_NOT_ARMED);
+    CHECK_EQ(g.control[LINK_CT_ARM], 0);
+    CHECK_EQ(g.control[LINK_CT_THROTTLE], 0);
+    CHECK_EQ(g.control[LINK_CT_MOTOR_POLES], 0);
+
+    /* ARM = 0 is a disarm and is never refused. */
+    const uint16_t disarm[2] = { 0, 0 };
+    CHECK(write_control(LINK_CT_ARM, 2, disarm, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+}
+
+/* CLEAR is an action: the magic runs it and is not stored, anything else is
+ * refused, and a refused clear clears nothing. */
+TEST_CASE(clear_takes_the_magic_and_nothing_else)
+{
+    fresh();
+    link_msg_t r;
+    const uint16_t wrong = (uint16_t)(LINK_CLEAR_MAGIC + 1u);
+    CHECK(write_control(LINK_CT_CLEAR, 1, &wrong, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_BAD_VALUE);
+    CHECK_EQ(g.clears, 0);
+
+    const uint16_t magic = LINK_CLEAR_MAGIC;
+    CHECK(write_control(LINK_CT_CLEAR, 1, &magic, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+    CHECK_EQ(g.clears, 1);
+    CHECK_EQ(g.control[LINK_CT_CLEAR], 0);
+}
+
+/* Zero, and every even count from LINK_POLES_MIN to LINK_POLES_MAX; the
+ * odd ones and the ones past either end are refused. */
+TEST_CASE(a_pole_count_is_zero_or_even_and_within_range)
+{
+    fresh();
+    link_msg_t r;
+    const uint16_t ok[] = { 0, LINK_POLES_MIN, 14, LINK_POLES_MAX };
+    for (size_t i = 0; i < sizeof(ok) / sizeof(ok[0]); ++i) {
+        CHECK(write_control(LINK_CT_MOTOR_POLES, 1, &ok[i], &r));
+        CHECK_EQ(r.op, LINK_OP_ACK);
+        CHECK_EQ(g.control[LINK_CT_MOTOR_POLES], ok[i]);
+    }
+    const uint16_t bad[] = { 1, 15, (uint16_t)(LINK_POLES_MAX + 2u) };
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        CHECK(write_control(LINK_CT_MOTOR_POLES, 1, &bad[i], &r));
+        CHECK_EQ(r.op, LINK_OP_NACK);
+        CHECK_EQ(r.regs[0], LINK_NACK_BAD_VALUE);
+        CHECK_EQ(g.control[LINK_CT_MOTOR_POLES], LINK_POLES_MAX);
     }
 }
 
@@ -322,6 +435,11 @@ int main(void)
     RUN(a_value_the_page_rejects_is_refused_with_a_reason);
     RUN(a_refused_chan_cfg_write_stores_none_of_its_registers);
     RUN(a_refused_slots_write_stores_none_of_its_registers);
+    RUN(the_arming_frame_applies_arm_throttle_and_poles_together);
+    RUN(an_arming_frame_with_a_bad_pole_count_arms_nothing);
+    RUN(arm_is_refused_with_not_armed_while_the_bench_may_not_arm);
+    RUN(clear_takes_the_magic_and_nothing_else);
+    RUN(a_pole_count_is_zero_or_even_and_within_range);
     RUN(the_coprocessor_refuses_to_be_spoken_to_in_its_own_voice);
     RUN(every_request_is_answered);
     RUN(the_version_string_says_what_the_numbers_say);

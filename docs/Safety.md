@@ -16,7 +16,8 @@ behaviours that are deliberate.
 A pressed STOP stops the heartbeat, disarms the panel's own output model
 and writes ARM = 0 to the control page. While the link is up the panel
 writes ARM and THROTTLE at every 50 ms poll; an explicit arm writes CLEAR
-(0x5AFE) first, and a NACK from the coprocessor leaves the panel disarmed.
+(0x5AFE) on its own, then ARM, THROTTLE and MOTOR_POLES in one frame, and a
+NACK from the coprocessor to either leaves the panel disarmed.
 
 ## Required external circuit: the monostable
 

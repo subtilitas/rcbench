@@ -16,8 +16,9 @@ und welche Verhaltensweisen Absicht sind.
 Ein gedrücktes STOP stoppt den Heartbeat, entschärft das eigene
 Ausgangsmodell des Panels und schreibt ARM = 0 auf die Control-Page. Bei
 stehendem Link schreibt das Panel ARM und THROTTLE mit jedem Poll alle 50 ms;
-ein bewusstes Schärfen schreibt zuerst CLEAR (0x5AFE), und ein NACK des
-Koprozessors lässt das Panel entschärft.
+ein bewusstes Schärfen schreibt zuerst CLEAR (0x5AFE) allein, dann ARM,
+THROTTLE und MOTOR_POLES in einem Frame, und ein NACK des Koprozessors auf
+eines von beiden lässt das Panel entschärft.
 
 ## Vorausgesetzte externe Schaltung: das Monoflop
 

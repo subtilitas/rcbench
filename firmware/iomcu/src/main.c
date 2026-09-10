@@ -25,6 +25,7 @@
 #include "bench_state.h"
 #include "can_selftest.h"
 #include "heartbeat.h"
+#include "link_control.h"
 #include "link_dev.h"
 #include "link_pages.h"
 #include "dshot.h"
@@ -235,51 +236,29 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
     /*
-     * Every register of the frame is validated before any of them is stored,
-     * so a refused write leaves the page as it was and lifts no latched
-     * failsafe.  A frame carries up to four registers, and a single pass that
-     * stored as it went would commit the ones ahead of the refusal while
-     * answering NACK -- a CLEAR among them takes the link out of failsafe,
-     * which link_dev.h says needs an explicit clear.
+     * The page's rules are link_control_write()'s, host-tested: every
+     * register of the frame is validated before any is stored, so a refused
+     * write leaves the page as it was and lifts no latched failsafe.  What
+     * is decided here is whether the bench may arm -- the coprocessor's
+     * call, not the panel's -- and what a clear does.
      */
-    for (uint8_t i = 0; i < n; ++i) {
-        const uint8_t reg = (uint8_t)(off + i);
-        if (reg == LINK_CT_THROTTLE && in[i] > LINK_THROTTLE_MAX) {
-            return LINK_NACK_BAD_VALUE;
-        }
-        if (reg == LINK_CT_CLEAR && in[i] != LINK_CLEAR_MAGIC) {
-            return LINK_NACK_BAD_VALUE;
-        }
-        /* Refusing to arm while in failsafe is the coprocessor's decision:
-         * the panel is not the authority on whether it is safe here. */
-        if (reg == LINK_CT_ARM && in[i] != 0
-            && (s_dev.failsafe || !s_beat.alive)) {
-            return LINK_NACK_NOT_ARMED;
-        }
-        /* Zero means nobody has said; anything else is an even count in the
-         * range a motor comes in.  An odd count is a typo, and accepting one
-         * would put a plausible wrong speed on the screen. */
-        if (reg == LINK_CT_MOTOR_POLES && in[i] != 0u
-            && (in[i] < LINK_POLES_MIN || in[i] > LINK_POLES_MAX
-                || (in[i] % 2u) != 0u)) {
-            return LINK_NACK_BAD_VALUE;
-        }
+    bool cleared = false;
+    const uint8_t nack = link_control_write(s->control, off, n, in,
+                                            !s_dev.failsafe && s_beat.alive,
+                                            &cleared);
+    if (nack != 0u) {
+        return nack;
     }
-    for (uint8_t i = 0; i < n; ++i) {
-        const uint8_t reg = (uint8_t)(off + i);
-        if (reg == LINK_CT_CLEAR) {
-            /*
-             * The clock of this pass, as recorded by the dispatcher, not a
-             * fresh read.  A fresh read is later than the `now` that
-             * link_dev_tick() receives a few lines further on, and the
-             * wrap-safe comparison there reads a timestamp in the future as
-             * 4,294,967,295 ms of silence, which re-arms the failsafe
-             * immediately.
-             */
-            link_dev_clear_failsafe(&s_dev, s_dev.last_request_ms);
-            continue;
-        }
-        s->control[reg] = in[i];
+    if (cleared) {
+        /*
+         * The clock of this pass, as recorded by the dispatcher, not a
+         * fresh read.  A fresh read is later than the `now` that
+         * link_dev_tick() receives a few lines further on, and the
+         * wrap-safe comparison there reads a timestamp in the future as
+         * 4,294,967,295 ms of silence, which re-arms the failsafe
+         * immediately.
+         */
+        link_dev_clear_failsafe(&s_dev, s_dev.last_request_ms);
     }
     /*
      * The throttle rides the control page rather than the CHANNELS page, so
