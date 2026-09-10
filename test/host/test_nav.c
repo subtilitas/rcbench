@@ -286,6 +286,38 @@ TEST_CASE(a_cancelled_tile_press_navigates_nowhere)
     CHECK_EQ(ui_router_current(), SCREEN_MOTOR);
 }
 
+/*
+ * The loss is observed after the frame's events were dispatched, and one of
+ * them can have navigated.  The screen that took the earlier events is then
+ * off the top with its press still latched, and a cancel that reached only
+ * the screen on top would leave it there for the next visit, where a
+ * recycled id lifting over the tab would switch the pane.
+ */
+TEST_CASE(a_cancel_reaches_a_screen_left_during_the_frame)
+{
+    fresh();
+    to_overview();
+    ui_router_goto(SCREEN_ANALYSER);
+    ui_router_render(&cv, 0);
+    gfx_color_t *before = malloc((size_t)W * H * sizeof(gfx_color_t));
+    memcpy(before, fb, (size_t)W * H * sizeof(gfx_color_t));
+
+    touch(200, UI_BAND_H + 20, TOUCH_EVENT_DOWN, 2);   /* the second tab */
+    ui_router_goto(SCREEN_OVERVIEW);                    /* a HOME that survived */
+    ui_router_cancel_gestures();
+
+    ui_router_goto(SCREEN_ANALYSER);
+    touch(200, UI_BAND_H + 20, TOUCH_EVENT_UP, 2);      /* a recycled id */
+    ui_router_render(&cv, 0);
+    CHECK_EQ(memcmp(before, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
+
+    /* And the row is not stuck. */
+    tap(200, UI_BAND_H + 20);
+    ui_router_render(&cv, 0);
+    CHECK(memcmp(before, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
+    free(before);
+}
+
 TEST_CASE(a_tile_navigates_and_a_slip_does_not)
 {
     fresh();
@@ -855,5 +887,6 @@ int main(void)
     RUN(the_menu_marks_what_is_not_fitted);
     RUN(cancelling_gestures_lets_go_of_the_band);
     RUN(a_cancelled_tile_press_navigates_nowhere);
+    RUN(a_cancel_reaches_a_screen_left_during_the_frame);
     return test_summary("nav");
 }

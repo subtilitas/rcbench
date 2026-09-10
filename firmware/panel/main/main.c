@@ -4332,6 +4332,18 @@ void app_main(void)
         if (lost_now != lost_seen) {
             lost_seen = lost_now;
             ui_router_cancel_gestures();
+            /*
+             * And what the cancellation posted goes now, not next frame.
+             * This frame's flush has already run, so a DISARM a bench
+             * screen posts here -- the one direction in which abandoning a
+             * gesture must command something -- would otherwise wait
+             * behind the render and the flip for a whole further frame,
+             * and a lost event is what a stalled renderer produces.
+             * Nothing else can be pending: the flush above took this
+             * frame's events, the cancellation drops any ARM, and the tick
+             * has not run.
+             */
+            flush_screen_commands(stops_now);
         }
         ui_router_tick(dt_s);
 

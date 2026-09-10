@@ -14,9 +14,11 @@ history is in git.
   holding a press, a press that never arrives orphans the release after it,
   and the movement where a finger leaves a button is what abandons the hold.
   The loss is counted now, in the panel's queue and the driver's, and the
-  frame that observes it tells the screen on top that its record of the
-  glass is stale: the screen drops the gesture in progress, which asks for
-  nothing. Every control that holds state between a press and its release
+  frame that observes it tells every screen that its record of the glass is
+  stale, since a surviving event can have navigated away from the one that
+  holds the press: each screen drops the gesture in progress, which asks
+  for nothing. A DISARM that cancellation posts is forwarded in the same
+  frame. Every control that holds state between a press and its release
   cancels, including the tab rows of MOTOR & ESC, ANALYSER and BALANCE,
   because a press left latched owns a track id the controller reuses. The
   frame log carries the two counts as `TOUCHLOST <panel>/<driver>`.

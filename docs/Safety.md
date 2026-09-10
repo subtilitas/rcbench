@@ -92,8 +92,10 @@ unpowered or unplugged panel reads as a line that is not edging.
   movement where a finger leaves a button is what abandons the hold. The
   render task drains the queue from the other core, so inspecting an entry
   does not decide which one is removed. The loss is counted instead, and the
-  frame that observes it tells the screen on top that its record of the glass
-  is stale; the screen drops any gesture in progress. That asks for nothing,
+  frame that observes it tells every screen that its record of the glass is
+  stale, not only the one on top, because an event that survived the loss
+  can have navigated away from the screen holding the press; each screen
+  drops any gesture in progress. That asks for nothing,
   exactly as letting go early does, with the one exception below. Both queues
   are counted -- the driver's
   own event queue evicts its oldest for the same reason -- and the count is
