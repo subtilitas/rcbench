@@ -51,7 +51,7 @@ typedef enum {
  * bump the minor when a page or a register is added at the end, which an
  * older host can ignore.
  */
-#define LINK_PROTOCOL_MAJOR 3u
+#define LINK_PROTOCOL_MAJOR 4u
 #define LINK_PROTOCOL_MINOR 0u
 
 /* ----------------------------------------------------------------- outputs */
@@ -486,10 +486,19 @@ typedef enum {
 } link_pad_kind_t;
 
 /* ----------------------------------------------------------------- control */
+/*
+ * ARM, THROTTLE and MOTOR_POLES are registers 0 to 2 so that the write that
+ * arms carries all three in one CAN (Controller Area Network) frame.  The
+ * count is the divisor the far end starts sampling with; a run begun on a
+ * stale one puts a wrong speed into the bench page's sticky rpm_max, and a
+ * frame is all-or-nothing at the far end, so the run starts on the count
+ * that was sent or does not start.  CLEAR sits behind them: the far end
+ * checks ARM against its failsafe before it applies a CLEAR from the same
+ * frame, so the clear is its own transaction ahead of the arm.
+ */
 enum {
     LINK_CT_ARM        = 0, /**< non-zero asks for ARMED                    */
     LINK_CT_THROTTLE   = 1, /**< 0..10000, hundredths of a percent          */
-    LINK_CT_CLEAR      = 2, /**< write LINK_CLEAR_MAGIC to leave FAILSAFE   */
     /*
      * The magnet count of the motor under test, so an electrical speed can
      * be turned into a mechanical one.  It is the one number bidirectional
@@ -498,9 +507,13 @@ enum {
      * nobody has said, and rpm (revolutions per minute) is then not reported
      * rather than reported wrong.
      */
-    LINK_CT_MOTOR_POLES = 3,
+    LINK_CT_MOTOR_POLES = 2,
+    LINK_CT_CLEAR      = 3, /**< write LINK_CLEAR_MAGIC to leave FAILSAFE   */
     LINK_CT_COUNT      = 4,
 };
+
+/** The registers the frame that arms carries, from LINK_CT_ARM. */
+#define LINK_CT_ARM_FRAME 3u
 
 /** Even, and between these; zero is the fourth legal value, meaning unknown. */
 #define LINK_POLES_MIN  2u

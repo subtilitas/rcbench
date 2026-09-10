@@ -598,11 +598,6 @@ static unsigned touch_losses(void)
 static atomic_bool s_poles_owed;
 static atomic_uint s_poles_value;
 
-/* Exchanges one poles_service() will take before giving the rest to the next
- * poll.  Two: one for the debt it was called for, one for an edit made while
- * that one was on the wire. */
-#define POLES_SERVICE_TRIES 2u
-
 /*
  * A setting the far end keeps a copy of has changed.
  *
@@ -2144,10 +2139,11 @@ static void art_slice(void)
  * ARM and THROTTLE travel together, offset 0 and count 2, at every poll while
  * the link is up: the coprocessor's throttle channel goes to its rest, which
  * for a throttle is stopped, after OUT_DEFAULT_TIMEOUT_MS (500 ms) without a
- * write, so the panel keeps writing while armed.  CLEAR (register 2) is
- * written on its own and only on an explicit arm: a write that touches it
- * must carry LINK_CLEAR_MAGIC, and it lifts a latched failsafe, which no
- * other write may do.
+ * write, so the panel keeps writing while armed.  The write that arms is
+ * the same window widened to three, taking MOTOR_POLES (register 2) with
+ * it.  CLEAR (register 3) is written on its own and only on an explicit
+ * arm: a write that touches it must carry LINK_CLEAR_MAGIC, and it lifts a
+ * latched failsafe, which no other write may do.
  */
 
 static uint16_t pct_to_hundredths(float pct)
@@ -2161,13 +2157,58 @@ static uint16_t pct_to_hundredths(float pct)
     return (uint16_t)((pct * 100.0f) + 0.5f);
 }
 
-/* True when the coprocessor acknowledged; a NACK (negative acknowledge) or
- * no answer is false. */
+/*
+ * ARM and THROTTLE, the write every 50 ms poll and every disarm makes.
+ *
+ * Two registers rather than the three the frame that arms carries.  This
+ * write keeps a running bench running and stops a stopping one, and the
+ * pole count is neither: while a run is on, an edit to it is a correction
+ * paid on its own transaction by poles_service(), and a disarm has nothing
+ * to convert.  Kept apart so a count the far end refuses -- or one that has
+ * not changed -- never stands between the throttle and the wire.
+ *
+ * True when the coprocessor acknowledged; a NACK (negative acknowledge) or
+ * no answer is false.
+ */
 static bool control_write(bool armed, link_msg_t *reply)
 {
     const uint16_t regs[2] = { armed ? 1u : 0u, s_throttle_hundredths };
     return write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_ARM, 2u, regs, reply)
            && reply->op == LINK_OP_ACK;
+}
+
+/*
+ * The frame that arms: ARM, THROTTLE and MOTOR_POLES, registers 0 to 2 of
+ * the control page in one CAN frame, all-or-nothing at the far end.
+ *
+ * The count travels with the arm because it is the divisor the far end
+ * starts sampling with: a run begun on a stale one puts a wrong speed into
+ * its sticky rpm_max, which no later correction removes.  In the same frame
+ * the run starts on the count that was sent, or does not start.
+ *
+ * The debt is taken before the value is loaded.  An edit landing after the
+ * load raises it again on its own and is paid at the next poll, which is
+ * right: the run started on the value that went out, and the poll corrects
+ * it.  A write that does not land gives the debt back if one was taken, so
+ * the next poll pays it.  The count cannot refuse an arm on its own: every
+ * value the setting allows is inside the range the page takes, and a
+ * coprocessor whose page differs never links up (see probe_identity()).
+ */
+static bool control_arm(link_msg_t *reply)
+{
+    const bool owed = atomic_exchange(&s_poles_owed, false);
+    const uint16_t regs[LINK_CT_ARM_FRAME] = {
+        [LINK_CT_ARM]         = 1u,
+        [LINK_CT_THROTTLE]    = s_throttle_hundredths,
+        [LINK_CT_MOTOR_POLES] = (uint16_t)atomic_load(&s_poles_value),
+    };
+    const bool ok = write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_ARM,
+                               LINK_CT_ARM_FRAME, regs, reply)
+                    && reply->op == LINK_OP_ACK;
+    if (!ok && owed) {
+        atomic_store(&s_poles_owed, true);
+    }
+    return ok;
 }
 
 /*
@@ -2206,39 +2247,28 @@ static bool control_write_poles(link_msg_t *reply)
 static bool poles_service(void)
 {
     /*
-     * Up to POLES_SERVICE_TRIES exchanges, because each one can wait
-     * LINK_HOST_TIMEOUT_MS and an edit made while it is on the wire raises
-     * the debt again behind the value already loaded.  Answering that here
-     * rather than at the next poll matters on the arming path: the far end
-     * would otherwise start sampling on the old divisor and put a wrong
-     * speed into the run's sticky rpm_max, which no later correction
-     * removes.
-     *
-     * Bounded rather than a loop until the debt clears: an operator holding
-     * a key down raises it faster than the wire can answer, and a bench that
-     * will not arm while a finger rests on a settings key is the worse
-     * failure.  What remains after the last try is a window a few
-     * instructions wide, and it closes at the next 50 ms poll.  Closing it
-     * entirely means carrying the count in the transaction that arms; that
-     * is a change to the shape of the arming write and is recorded as an
-     * open item rather than made here.
+     * One exchange, which can wait LINK_HOST_TIMEOUT_MS.  An edit made while
+     * it is on the wire raises the debt again behind the value already
+     * loaded and is paid at the next 50 ms poll; nothing waits on it here,
+     * because the write that arms carries the count itself (control_arm())
+     * and this is the path for a count edited at any other time.  A loop
+     * until the debt clears would let an operator holding a key down keep
+     * the control task on the wire for as long as the finger rests.
      */
-    for (unsigned try = 0; try < POLES_SERVICE_TRIES; ++try) {
-        if (!atomic_exchange(&s_poles_owed, false)) {
-            return true;
-        }
-        link_msg_t pr;
-        memset(&pr, 0, sizeof(pr));
-        if (!control_write_poles(&pr)) {
-            if (pr.op == LINK_OP_NACK) {
-                control_alert("coprocessor refused the pole count");
-                return false;
-            }
-            atomic_store(&s_poles_owed, true);
+    if (!atomic_exchange(&s_poles_owed, false)) {
+        return true;
+    }
+    link_msg_t pr;
+    memset(&pr, 0, sizeof(pr));
+    if (!control_write_poles(&pr)) {
+        if (pr.op == LINK_OP_NACK) {
+            control_alert("coprocessor refused the pole count");
             return false;
         }
+        atomic_store(&s_poles_owed, true);
+        return false;
     }
-    return !atomic_load(&s_poles_owed);
+    return true;
 }
 
 static bool control_clear_failsafe(link_msg_t *reply)
@@ -2627,35 +2657,31 @@ static void service_arming(bool link_up)
             control_alert("servo output not released -- arm again");
         } else if (link_up) {
             /*
-             * Three exchanges, each of which can wait a second, and what the
-             * operator wants can change between them: the pump runs inside
-             * all of them and applies a stop, and a disarm can be posted
-             * while the clear is still on the wire.  Asked again before the
-             * write that actually arms, because after it the far end is
-             * driving and nothing here can take it back for the length of a
-             * timeout.
+             * Two exchanges: CLEAR on its own, then the frame that arms.
+             * Each can wait a second, and what the operator wants can change
+             * between them: the pump runs inside both and applies a stop,
+             * and a disarm can be posted while the clear is still on the
+             * wire.  Asked again before the write that actually arms,
+             * because after it the far end is driving and nothing here can
+             * take it back for the length of a timeout.
              *
-             * The pole count goes first and again last.  It is the divisor
-             * the far end starts sampling with, and a run begun on the old
-             * one puts a wrong speed into its sticky rpm_max, which no later
-             * correction removes; an edit made while the clear was in flight
-             * raises the debt behind the first payment.  A debt that cannot
-             * be paid does not refuse the arm: the count is a conversion,
-             * not an interlock, and a bench that will not arm because a
-             * setting failed to land is the worse failure.
+             * CLEAR travels first and alone.  The far end checks ARM against
+             * its failsafe before it applies a CLEAR from the same frame, so
+             * a frame carrying both is refused with NOT_ARMED exactly when
+             * the clear was needed.  The frame that arms carries ARM,
+             * THROTTLE and the pole count together, so the run starts on the
+             * count that was sent or does not start; control_arm() says why.
              */
-            (void)poles_service();
             if (!control_clear_failsafe(&ack)) {
                 arming_refused(&s_arm);
                 control_alert("coprocessor refused to arm");
                 break;
             }
-            (void)poles_service();
             if (arming_stopped(&s_arm) || atomic_load(&s_disarm_request)) {
-                /* Stopped or disarmed while one of those was in flight.  No
+                /* Stopped or disarmed while the clear was in flight.  No
                  * alert: the operator asked for this and knows. */
                 arming_refused(&s_arm);
-            } else if (!control_write(true, &ack)) {
+            } else if (!control_arm(&ack)) {
                 arming_refused(&s_arm);
                 control_alert("coprocessor refused to arm");
             } else {
@@ -3305,18 +3331,13 @@ static bool poll_bench(bench_state_t *bench)
          */
         const bool armed = outputs_armed(&s_out) && !s_servo_release_owed;
         /*
-         * The pole count before the arm, when an edit or a write that did
-         * not land leaves one owed.  This is the only path an edit made
-         * while the link is up has to the far end: nothing else writes the
-         * register, and correcting it otherwise takes a link-down edge --
-         * the cable, a coprocessor reset or a panel reboot.  STOP and a
-         * re-arm do not produce one.
-         *
-         * Ahead of the ARM write because an operator can edit the count
-         * while disarmed and arm before the next poll: drain_commands()
-         * takes the arm first, and a coprocessor that begins sampling with
-         * the old divisor puts a wrong speed into the run's sticky rpm_max,
-         * which no later correction removes.
+         * The pole count, when an edit or a write that did not land leaves
+         * one owed.  Between arms this is the path an edit takes to the far
+         * end: nothing else writes the register while the link stays up, and
+         * the write that arms carries the count of its own accord
+         * (control_arm()).  STOP and a re-arm produce no link-down edge, so
+         * without this a count edited on a live link would wait for the
+         * cable, a coprocessor reset or a panel reboot.
          *
          * Costs a transaction only while the debt stands, which is one poll
          * per edit.

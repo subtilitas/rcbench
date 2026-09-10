@@ -35,6 +35,27 @@ history is in git.
     frame cannot complete a hold that began while it was dispatching the
     press.
 
+### Changed
+
+- **The link protocol is 4.0.** The write that arms carries ARM, THROTTLE and
+  MOTOR_POLES as one three-register frame from offset 0 of the CONTROL page,
+  so the coprocessor starts a run on the pole count the panel sent or does not
+  start it: a frame is all-or-nothing at the far end, and a count edited
+  between the panel's last pole write and its ARM write no longer reaches the
+  coprocessor one 50 ms poll into the run, where the run's sticky `rpm_max`
+  kept the speed the old divisor produced. MOTOR_POLES is register 2 of the
+  page and CLEAR is register 3; a register changing meaning is a major. CLEAR
+  stays a write of its own ahead of the arm, because the coprocessor checks
+  ARM against its failsafe before it applies a CLEAR from the same frame. The
+  page's rules -- the throttle range, a pole count even and 2 to 42 or zero,
+  the CLEAR magic, ARM refused in failsafe, a refusal storing nothing -- are
+  `shared/link/link_control.c`, shared by the coprocessor and the host suite,
+  under `test_link_pages`.
+  - A panel and a coprocessor on different sides of the bump do not arm. The
+    panel treats a coprocessor reporting another protocol major as absent,
+    keeps the link down and raises `protocol mismatch -- will not arm`, so
+    both images go on together.
+
 ## 0.8.2 - 2026-09-10
 
 Ten defects found in review of 0.8.1 and one reported from a bench. Three
