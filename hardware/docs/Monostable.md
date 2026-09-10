@@ -31,7 +31,7 @@ assumption to be replaced from the chosen part's datasheet.
 | Fail-safe direction | unpowered, undriven, unbuilt, an open trigger line, and the panel driving into an unpowered circuit all mean both gates disabled |
 | Power-up | the enable node stays low through the 3.3 V ramp until edges arrive |
 | Not defeatable | no programmable element in the path from GPIO6 to either gate |
-| Fault model | absence of anything, and any single timing element out of tolerance, is disabled; a logic output or a switch failed conducting is not covered, see [Fault model](#fault-model) |
+| Fault model | absence of anything is disabled, and so is a timing element that shortens a window; a timing element that lengthens a window or opens, and a logic output or a switch failed conducting, are not covered, see [Fault model](#fault-model) |
 | Supply | the coprocessor board's 3.3 V rail; ground common with J8's GND |
 
 ## Input
@@ -145,7 +145,10 @@ that half untriggered, which is the safe direction.
 
 The OR gate's output is the enable node. It is a push-pull logic output, so
 the enable node's pull-down acts only when the gate is unpowered or the node
-is unbuilt. A diode-OR into the pull-down is the alternative combining
+is unbuilt. Each OR input carries a 100 kΩ pull-down of its own: an absent
+monostable, a dead Q output or a lifted lead then reads as that half expired
+rather than as a floating CMOS input, which the pull-down on the gate's
+output cannot reach. A diode-OR into the pull-down is the alternative combining
 element; it is not the design because a Schottky drop of 0.3 V leaves 3.0 V
 on the node, and a 74HC-class input needs 2.31 V at 3.3 V, so the margin is
 spent on the diode.
@@ -163,9 +166,18 @@ Both clear inputs are held active through the 3.3 V ramp by one power-on
 reset network: 100 kΩ from the rail to the clear inputs, 1 µF from the clear
 inputs to ground, and a diode across the resistor so the capacitor empties
 when the rail drops. The clear inputs are active for about 100 ms after the
-rail reaches 3.3 V, long after the monostable's own supply-rise requirement,
-and Q is low throughout. The datasheet has to state that Q is low while
-clear is active; every retriggerable monostable of this class does.
+rail reaches 3.3 V on a fast ramp, long after the monostable's own
+supply-rise requirement, and Q is low throughout. The datasheet has to state
+that Q is low while clear is active; every retriggerable monostable of this
+class does.
+
+The RC network has no threshold of its own. On a slow ramp or a shallow
+brownout the clear input follows the rail and can release before the supply
+is stable, and a clear input rising slowly can violate the part's input
+transition-time limit. A reset supervisor with a stated threshold and delay
+does not have those gaps. Which of the two the circuit uses is an open
+decision, listed under [Not specified](#not-specified); the RC network is
+the placeholder until it is taken, and test step 5 covers a fast ramp only.
 
 The release of clear is itself a trigger on some parts: the common '123-type
 dual monostable fires a full pulse when clear goes inactive while its trigger
@@ -183,15 +195,23 @@ does not rely on that: the requirement is no pulse.
 ### Fault model
 
 What the circuit covers is absence: no supply, no drive, no wire, no part,
-an open link, and any single timing element (R, C, or one half's k) outside
-its tolerance. In every one of those cases the enable node is low or falls
-early, which is the safe direction. A half that has failed silent (an open
-trigger input, a dead Q) makes the surviving half a single-edge trigger: it
-holds the node up on a nominal heartbeat and drops out whenever two
-consecutive intervals together exceed the window.
+an open link. It also covers a timing element that shortens a window: R or C
+low in value, a shorted C, one half's k low. In every one of those cases the
+enable node is low or falls early, which is the safe direction. A half that
+has failed silent (an open trigger input, a dead Q) makes the surviving half
+a single-edge trigger: it holds the node up on a nominal heartbeat and drops
+out whenever two consecutive intervals together exceed the window.
 
-What it does not cover is a part failed conducting: a Q output stuck high, an
-OR gate output stuck high, a buffer enable shorted to its active level, a
+What it does not cover is a timing element that lengthens a window. R or C
+risen in value expires late: 18 % above the set point is past the 200 ms
+deadline. An open R never charges C, so that half's Q stays high from its
+next trigger for as long as the part is powered, and the OR passes it while
+the healthy half expires. The two-channel alternative below masks a single
+long or open element; this design does not, and whether that is accepted is
+an open decision listed under [Not specified](#not-specified).
+
+Also not covered is a part failed conducting: a Q output stuck high, an OR
+gate output stuck high, a buffer enable shorted to its active level, a
 switch failed short. Any single-channel interlock has those points, and the
 OR of two halves has two Q outputs where a single monostable has one. The
 test procedure measures each half's own fall for that reason, and the rail
@@ -200,11 +220,13 @@ measurement in `testbench/WIRING.md` section 7 exists for the shorted switch.
 The alternative that covers a stuck-high output is two channels in series:
 each channel its own both-edge detector and its own monostable, the two Q
 outputs combined by an AND gate, each channel fed every 20 ms so its window
-is the one on this page. Either channel then removes the enable on its own.
-It costs two edge detectors with their own timing analysis and an AND gate,
-and the AND gate's output is the remaining single point. It is not this
-design; it is recorded here as the decision to take if a stuck-high output
-is brought into the fault model.
+is the one on this page. Either channel then removes the enable on its own,
+so a stuck-high Q, a long timing element or an open R in one channel is
+masked by the other. It costs two edge detectors with their own timing
+analysis and an AND gate, and the AND gate's output is the remaining single
+point. It is not this design; it is recorded here as the decision to take if
+a stuck-high output or a long timing failure is brought into the fault
+model.
 
 ## Timing network
 
@@ -303,6 +325,23 @@ device's enable is taken from the enable node:
   pull-up (10 kΩ) of its own, so an unpowered inverter and an undriven node
   both read as disabled.
 
+The buffer covers GP0, GP1 and GP2. The binding catalogue in
+`shared/outputs/out_bind.c` offers more: GP4 to GP7, GP13 to GP22 and GP26
+to GP28 are free for an output on the RP2350-CAN board, and `docs/FirstRun.md`
+lists them. A pin bound there is driven by the coprocessor with nothing
+between it and whatever is wired to it, so the claim that the drive is
+removed holds for the gated connector only. Which of the two closes the
+difference, a buffer on every bindable pin or a catalogue limited to the
+gated pins, is an open decision listed under [Not specified](#not-specified).
+
+The 10 kΩ pull-down is the idle for a servo pulse and for plain DShot.
+Bidirectional DShot idles high: `firmware/iomcu/src/out_dshot.c` releases
+the line for the ESC's reply and its pull-up of about 50 kΩ holds the idle,
+and a 10 kΩ pull-down against that pull-up holds the line at about 0.55 V,
+which is low, so the receiver cannot find the reply's first falling edge.
+The bias on a channel that carries bidirectional DShot is an open decision
+listed under [Not specified](#not-specified).
+
 **Power path.** A high-side switch on each rail that reaches a load: the
 servo rail (up to 8.4 V, 4 to 8 A, [Power](Power.md)) and the ESC pack. Each
 switch has a control input driven from the enable node through whatever level
@@ -333,6 +372,8 @@ Every state the circuit can be left in reads as disabled:
 | Trigger line stuck at either level | no edges; both halves expire |
 | Monostable unpowered, panel silent | its Q outputs are undriven; the OR gate is unpowered; a 100 kΩ pull-down on the enable node holds it low |
 | Monostable unpowered, panel beating | the partial-power-down input and the 4.7 kΩ series resistor keep the heartbeat from powering the IC; the pull-downs as above |
+| Coprocessor board unpowered, panel beating | the 4.7 kΩ series resistor in the GP3 branch bounds the current into the RP2350's pad to 0.7 mA; how far that raises the board's 3.3 V rail is not measured, and test step 4 measures it |
+| Monostable absent or a Q lead off, OR gate powered | the 100 kΩ pull-down at each OR input |
 | Enable node unbuilt or a lead off | the same pull-down |
 | Output enable undriven | the pull-down (active-high enable) or the pull-up (active-low enable) at the device's pin |
 | Switch control undriven or logic supply absent | the gate-to-source resistor or the relay coil |
@@ -369,6 +410,17 @@ are in one trace. The series resistor and the trigger pull-down sit on the
 monostable's side of its link, so an open link is a low trigger and not a
 floating one.
 
+The GP3 branch has the same exposure as the trigger branch: with the
+coprocessor board unpowered and the panel beating, the junction drives GP3
+at 3.3 V into an RP2350 pad whose protection path leads to the board's IOVDD
+(the I/O supply), and the RP2350 is not specified as tolerating an input
+above an absent IOVDD. A 4.7 kΩ series resistor in the GP3 branch, on GP3's
+side of the junction, bounds that current to 0.7 mA. With the firmware
+pull-down of about 50 kΩ behind it the high level at GP3 is 3.0 V, above the
+RP2350's V_IH of 2.0 V at 3.3 V. Whether 0.7 mA raises the board's rail
+enough to power anything is not measured; test step 4 measures the rail with
+the panel beating.
+
 ## With the firmware monitor
 
 The coprocessor checks the same wire in firmware because the monostable
@@ -380,13 +432,15 @@ the case the firmware cannot: a coprocessor that is wedged or not servicing
 its monitor while the panel has stopped. Both exist for those two reasons,
 and neither replaces the other.
 
-The monostable does not latch. When edges resume, the enable node returns
-within one propagation delay of the first edge. What latches is the
-coprocessor's arm: the firmware monitor disarms on the gap, and nothing
-re-arms without an operator. A coprocessor wedged with its outputs driving,
-beside a panel that stops and then resumes beating, has its outputs
-re-enabled when the edges return. A latch that needs an operator action to
-release is not part of this design.
+As specified on this page the monostable does not latch. When edges resume,
+the enable node returns within one propagation delay of the first edge. What
+latches is the coprocessor's arm: the firmware monitor disarms on the gap,
+and nothing re-arms without an operator. A coprocessor wedged with its
+outputs driving, beside a panel that stops and then resumes beating, has its
+outputs re-enabled when the edges return, and `STATUS.md` holds that every
+stop latches. Whether a hardware latch that only an operator action clears
+is added to this circuit is an open decision listed under
+[Not specified](#not-specified).
 
 ## Test procedure
 
@@ -397,12 +451,16 @@ the ESC pack voltage. The captures of `testbench/WIRING.md` section 7 apply;
 what follows is what to measure on this circuit and what passes. Every
 crossing of a logic node is read at 1.65 V.
 
-**1. Setting.** Fit C and a starting R of 115 kΩ. Measure the window by
-step 6 with three captures. Compute R for 170 ms from the measured value
-(the window is proportional to R), select the nearest E96 value, fit it, and
-measure again. Pass: three captures between 167.5 ms and 172.5 ms at 20 to
-30 °C ambient with the rail at 3.3 V ±1 %. Record the fitted R, the measured
-C, the ambient temperature and the rail voltage.
+**1. Setting, one half at a time.** Fit both capacitors and a starting R of
+115 kΩ in each half. Measure half A's window by step 8: channel 2 on
+half A's own Q output, the interval from the last rising edge on channel 1
+to Q falling, three captures. Half A's Q does not depend on half B, so the
+other half needs no attention. Compute R_A for 170 ms from the mean (the
+window is proportional to R), select the nearest E96 value, fit it, and
+measure again. Repeat for half B on its own Q output from the last falling
+edge. Pass: three captures per half between 167.5 ms and 172.5 ms at 20 to
+30 °C ambient with the rail at 3.3 V ±1 %. Record R_A, R_B, the measured
+capacitors, the ambient temperature and the rail voltage.
 
 **2. Static, no edges.** Panel's branch open, GP22 tri-stated. Record the
 voltage at the trigger input, each Q output, the enable node, the buffer's
@@ -416,15 +474,18 @@ until that voltage is measured.
 to the monostable and the OR gate removed and the rails' supplies present.
 Pass: the same figures.
 
-**4. Unpowered, panel beating.** The 3.3 V supply to the monostable and the
-OR gate removed, the rails' supplies present, the panel's branch closed and
-the panel beating (an edge every 20 ms on the junction). Record the voltage
-at the monostable's supply pin, each Q output and the enable node, and
-capture the enable node for 60 s. Pass: supply pin below 0.3 V, Q outputs
-and enable node below 0.4 V, no edge on the enable node in 60 s, each rail
-as in step 2. A supply pin above 0.3 V is the heartbeat back-powering the
-part through its input, and the part is not one with the I_off
-specification.
+**4. Unpowered, panel beating.** The coprocessor board's 3.3 V rail removed,
+which takes the monostable, the OR gate and the RP2350 with it, the load
+rails' supplies present, the panel's branch closed and the panel beating (an
+edge every 20 ms on the junction). Record the voltage at the board's 3.3 V
+rail, at the monostable's supply pin, at GP3, at each Q output and at the
+enable node, and capture the enable node for 60 s. Pass: board rail and
+supply pin below 0.3 V, Q outputs and enable node below 0.4 V, no edge on
+the enable node in 60 s, each load rail as in step 2. A supply pin above
+0.3 V is the heartbeat back-powering the part through its input, and the
+part is not one with the I_off specification; a board rail above 0.3 V is
+the heartbeat back-powering the RP2350 through GP3, and the GP3 branch's
+series resistor is missing or too small.
 
 **5. Power-up.** Panel's branch open, GP22 tri-stated. Capture the 3.3 V rail
 on channel 1 and the enable node on channel 2, the scope triggered on the
@@ -451,10 +512,11 @@ five). Record every interval, the ambient temperature and the supply
 voltage. Pass: every interval between 155 ms and 185 ms.
 
 **8. Each half.** Repeat step 7 with channel 2 on each Q output in turn,
-three captures each. Pass: each half's interval from its own last edge
-between 155 ms and 185 ms. Record the difference between the halves; two
-capacitors at opposite ends of ±5 % put it at up to 18 ms before setting,
-and step 1 sets each half's R on its own.
+three captures each: half A from the last rising edge, half B from the last
+falling edge. Pass: each half's interval from its own last edge between
+155 ms and 185 ms. This is the measurement step 1 sets each half's R from;
+before setting, two capacitors at opposite ends of ±5 % put the halves up
+to 18 ms apart, and after it each is within 2.5 ms of 170 ms.
 
 **9. The switches and the rails.** Repeat step 7 with channel 2 on each
 switch's control node in turn, then on each switched rail in turn with the
@@ -485,17 +547,23 @@ the minimum and maximum of step 10, ambient temperature and supply voltage.
 
 ## Limitations
 
-- The monostable does not latch; see
-  [With the firmware monitor](#with-the-firmware-monitor).
+- As specified, the monostable does not latch; see
+  [With the firmware monitor](#with-the-firmware-monitor) and the open
+  decision below.
 - A healthy panel beside a misbehaving coprocessor is not covered, by this
   circuit or by any hardware in the design.
-- A logic output or a switch failed conducting is not covered; see
+- A timing element that lengthens a window or opens, and a logic output or
+  a switch failed conducting, are not covered; see
   [Fault model](#fault-model).
+- The power-on reset network holds clear through a fast ramp only; a slow
+  ramp or a brownout is not covered by it.
 - The switched rail's decay to the load's stop voltage is not bounded; it is
   measured with the load.
-- Bidirectional DShot answers on the same wire it is driven on, so the
-  element carrying the output enable has to pass the reply direction while
-  enabled. Which element does that is not specified.
+- The gated buffer covers GP0 to GP2; the binding catalogue offers more
+  pins, which are not gated.
+- The 10 kΩ connector-side pull-down holds a bidirectional DShot line low
+  during the ESC's reply, and the element carrying the output enable has to
+  pass that reply while enabled. Neither is resolved.
 - The window's margins are 2.7 ms each way at the calculated corners. They
   rest on the assumed k drift and leakage.
 
@@ -510,5 +578,46 @@ the minimum and maximum of step 10, ambient temperature and supply voltage.
 - The connector between J8 and the trigger input, and the connector the
   gated outputs leave by.
 - The temperature range outside 0 to 50 °C.
-- Two channels in series, if a stuck-high output is brought into the fault
-  model.
+
+### Open decisions
+
+Each of these is a design decision the project owner takes. The page
+records the point, the two ways it can go and what each costs, and takes
+neither.
+
+- **Long timing-element failures.** Either the single-channel OR design
+  stands, with a fault model that excludes an R or C risen in value and an
+  open R (a half that then holds the enable up while the other expires), at
+  no extra cost; or the two-channel AND design replaces it, masking any
+  single long, open or stuck-high element, at the cost of two both-edge
+  detectors with their own timing analysis, an AND gate whose output is the
+  remaining single point, and a second setting procedure.
+- **A hardware latch.** Either the enable returns on the first resumed edge,
+  as specified, and the latch is the coprocessor's arm in firmware, which
+  leaves a wedged coprocessor's outputs re-enabled when a stalled panel
+  resumes; or a latch set by the first expiry and cleared only by an
+  operator action is added, which honours `STATUS.md`'s rule that every stop
+  latches, at the cost of a clear input that is a new path into the
+  interlock, a control for it, and a bring-up bench that needs that control
+  pressed after every stall.
+- **The clear network.** Either the RC network stands (a resistor, a
+  capacitor, a diode, no threshold), covering a fast ramp and not a slow
+  ramp or a brownout; or a reset supervisor with a stated threshold and
+  delay holds clear through any ramp and any brownout below its threshold,
+  at the cost of a part that has to be chosen by the README's rule and a
+  threshold that has to suit the monostable's minimum supply.
+- **Which pins are gated.** Either every bindable pin (GP0 to GP2, GP4 to
+  GP7, GP13 to GP22, GP26 to GP28) passes through a gated buffer, so the
+  drive is removed wherever an operator binds an output, at the cost of
+  buffers for 20 pins and a connector that carries them; or the binding
+  catalogue is limited to the gated pins, which is a firmware change outside
+  this page and leaves the other pins free for the bench's own use.
+- **Bias on a bidirectional DShot channel.** Either the bias is selected
+  per protocol, a pull-up for bidirectional DShot and a pull-down otherwise,
+  which puts a protocol-dependent element on the connector side and asks who
+  selects it, since firmware is not in this path; or the gated interface
+  itself presents a high idle when disabled, an open-drain stage with a
+  pull-up on the ESC side, which suits bidirectional DShot and changes the
+  idle for a servo pulse and plain DShot from low to high, a level both
+  protocols read as no signal but which is not measured on any ESC or servo
+  here.

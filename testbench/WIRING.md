@@ -529,9 +529,9 @@ follows it by 5 to 35 ms; neither should be there on a healthy panel.
 **Check, two: the interlock, and only the interlock.** Stopping the edges is
 not a test on its own. `firmware/iomcu/src/main.c` polls the same line and
 calls `outputs_off()` when it has been quiet for HEARTBEAT_MAX_GAP_MS
-(150 ms) -- the same threshold, by design, since both watch the same wire. So
-an output that stops when the edges stop proves nothing: a bench with no
-monostable at all passes that.
+(150 ms) -- a few tens of milliseconds ahead of the monostable, on the same
+wire. So an output that stops when the edges stop proves nothing: a bench
+with no monostable at all passes that.
 
 Two probes settle it, and the second is the decisive one.
 
@@ -557,9 +557,16 @@ measured on the switched side, with a probe rated for 8.4 V or whatever the
 ESC pack is.
 
 **A meter is not enough.** It says the rail is down by the time you look,
-which is a different claim from down within 150 ms: a switch with a slow gate
-drive, a rail with a bulk capacitor, or a load light enough not to discharge
-one, all read zero eventually and miss the deadline.
+which is a different claim from the switch open within 200 ms of the last
+edge: a switch with a slow gate drive, a rail with a bulk capacitor, or a
+load light enough not to discharge one, all read zero eventually and miss
+the deadline. Two figures come out of the rail trace, and they are not the
+same claim. The one with a pass figure is the switch opening: the rail
+leaves regulation, falling by 5 % of its set voltage, within 200 ms of the
+last edge. The one recorded without a pass figure is the time from the last
+edge to the load's stop voltage; it belongs to the load's own capacitance
+and idle current, and it gets a figure once the switched-side bulk
+capacitance is designed and not before.
 
 **Two channels on one scope, triggered on the rail.** The monostable's trigger
 input goes on one channel and the switched rail on the other, and the scope
@@ -571,7 +578,7 @@ record. Triggering on the rail and looking backwards puts the last trigger
 edge in the same capture, and the interval between them is the number.
 
 **Both rails, and to a voltage the load is known to stop at.** Two things make
-that measurement mean something:
+the recorded decay mean something:
 
 - *A threshold the load actually respects.* Leaving the regulation band is not
   being de-energised, and neither is the datasheet's minimum operating
