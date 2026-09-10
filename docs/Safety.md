@@ -80,9 +80,11 @@ unpowered or unplugged panel reads as a line that is not edging.
 - Arming is a two-second hold on ARM, and the command goes when the hold
   completes rather than when the finger lifts. Disarming is a press.
 - The throttle moves by how far a finger travels, not to where it lands. A
-  press on the track commands nothing, so a touch at the far end cannot ask
-  for full travel in one contact. Sliders that command nothing dangerous, such
-  as the servo screen's sweep speed, keep tap-to-set.
+  press on the track commands nothing, so a touch at the far end asks for
+  nothing; a drag across the whole track asks for the whole span, and one
+  completed inside a 50 ms poll is a 0 to 100 % step at the pin. Sliders that
+  command nothing dangerous, such as the servo screen's sweep speed, keep
+  tap-to-set.
 - A disarm returns the throttle to zero, so an arm starts from nothing rather
   than from where the last run left it.
 - Leaving a bench screen disarms.

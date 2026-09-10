@@ -96,9 +96,10 @@ eigene Die des Panels, gelesen vom Sensor des ESP32-S3: die Temperatur der
 Displayplatine, nicht die des Koprozessors.
 
 Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
-Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, sodass
-eine Berührung am Ende nicht mit einem Kontakt den vollen Weg anfordern kann.
-`-1` und `+1` an den Enden des Tracks schalten um einen Prozentpunkt.
+Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, eine
+Berührung am Ende fordert also nichts an; ein Drag über den ganzen Track
+fordert den ganzen Weg an, und der Pin folgt ihm ohne Rampe. `-1` und `+1` an
+den Enden des Tracks schalten um einen Prozentpunkt.
 
 ARM wird gehalten. Die Füllung blendet über zwei Sekunden von Grün ins
 Gefahrenrot, und der Prüfstand schaltet scharf, wenn die Blende
