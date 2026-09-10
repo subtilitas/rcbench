@@ -8,6 +8,94 @@ history is in git.
 
 ### Fixed
 
+- **A servo bound beside a motor drove its low endpoint for 500 ms on every
+  arm from MOTOR & ESC.** The coprocessor filled the CHANNELS page with zero
+  at boot and applied it to the output bank as commands. Zero is a throttle's
+  rest and a surface's low endpoint, so every channel bound as a surface was
+  asked for its endpoint; arming stamps every channel's clock, so the 500 ms
+  staleness rest could not return it to centre until a whole timeout after
+  the arm. On the default range that is 1000 us held for 500 ms; on a 660 to
+  860 us servo it is 660 us, which is that servo's hard stop, reached in one
+  step because the default slew is zero. It repeated on every arm until
+  something commanded that channel. Arming from SERVO was unaffected: that
+  path centres the surfaces first. The page now takes its values from the
+  bank, so a channel nobody has commanded reads back at its role's rest.
+
+- **A refused settings write reported SAVED.** The store's save callback
+  returned nothing, so the model cleared the dirty flag whatever happened and
+  the button was drawn inert, which prevented the retry that would have
+  noticed. A panel whose NVS could not be brought up reported a save for
+  every press of the session. The callback returns a status; a refusal keeps
+  the values dirty and shows NOT SAVED; every key of the NVS write is
+  checked. On this version of ESP-IDF `nvs_commit()` answers OK for any valid
+  handle, so the console line that said "settings saved" printed even when
+  every key had failed, and now prints only when every key was taken.
+
+- **An analysis pass that stopped reading was reported as a clean read.** The
+  second of the CSV log's three passes finalised its column statistics
+  without checking whether the source had failed, so a card that stopped
+  answering part way gave a row count, a unit and a time axis derived from
+  the rows that arrived. On a 40 s run logged in milliseconds under a bare
+  header, a failure 300 bytes in leaves 31 of 400 rows, whose span reads as
+  seconds -- and a later successful build then plots 39,900 s. Nothing on the
+  import screen was drawn as a warning.
+
+- **A pole count edited while the coprocessor was answering never reached
+  it.** It was sent only when the link came up, so the far end went on
+  converting with the value it was handed at boot: setup showed the new
+  number, the Motor screen and the run's CSV carried the old one. The guard
+  that reports no speed when none was sent covers zero only, and every count
+  the schema allows is non-zero, so a stale count reaches the plot and the
+  CSV carrying a valid bit. Fitting a 12-pole motor to a bench still holding
+  14 reads 14.3 % low. An edit is now owed to the far end and paid at the
+  next poll, and again before the write that arms -- a run begun on the old
+  divisor puts a wrong speed into its sticky peak, which no later correction
+  removes. A write nobody answers stays owed; one the coprocessor refuses is
+  not retried.
+
+- **Extended DShot telemetry was requested with the command frame's telemetry
+  bit clear.** On a value of 1 to 47 that bit is what marks the frame as a
+  command for the BLHeli_S family, which discards a command without it and
+  zeroes its repeat counter, so the ten repeats never accumulated to the six
+  its handler counts. AM32 has no such gate. Where it landed, temperature,
+  voltage, current, stress, status and power stayed empty for the life of the
+  bench.
+
+- **A CONTROL write refused on one register kept the registers ahead of it.**
+  The coprocessor's handler validated and stored in one pass, so a rejected
+  write left part of itself applied -- including a CLEAR, which lifts a
+  latched link failsafe while the panel is told the write failed. It now
+  validates the whole frame before storing any of it, which is what the
+  output page handlers already do.
+
+- **A refusal naming a later fragment of a wide write was discarded.** The
+  host matched a NACK only against the transaction's starting offset, so the
+  transaction waited out its 1000 ms timeout and lost the reason -- which
+  turns "the coprocessor refused these pins" into "there is no link" on the
+  outputs screen. Latent on a matched pair, reachable across a firmware skew.
+
+- **The Ramp limit setting governed nothing.** It was read by no path in the
+  tree; the panel's throttle bank used a compile-time constant that merely
+  equalled its default. It now sets the slew on the panel's own bank, which
+  is the modelled bench. A coprocessor that is answering is sent the raw
+  command; nothing rate-limits the physical throttle, which STATUS.md carries
+  as an open item.
+
+- **The version header documented the wrong string.** `rcbench_version.h`
+  described `RCBENCH_VERSION_STRING` as "0.8.0" while the defines above it
+  make 0.8.1. The macro composes its value from those defines, so the comment
+  compiled; `check_docs.py` compared only the numeric defines and could not
+  see the line. It reads the comment now.
+
+### Changed
+
+- **The sanitizer job instruments the code it tests.** The flags were applied
+  after the shared libraries were added, and a directory takes its copy of
+  the compile options as it is added, so the 44 test executables were
+  instrumented and the 67 shared translation units they exercise were not.
+  Every UBSan check in `shared/` was absent. `tools/check_sanitizers.py`
+  fails the build if that returns.
+
 - **The Motor & ESC plot advanced whether or not the bench was armed**, so a
   run scrolled off the left edge about 27 s after it ended and there was no
   way to hold it. Reported from a bench. The run clock above the plot already
