@@ -1022,6 +1022,34 @@ TEST_CASE(a_narrow_servo_arms_at_its_centre_not_its_stop)
 }
 
 /*
+ * The failsafe edge fills the page the same way.  The disarm puts every pin
+ * at rest and leaves the commands in place, and the page says what the bank
+ * holds: a channel nobody commanded reads its centre, and a channel that was
+ * commanded reads what it was asked for.  A zeroed page would report the
+ * first at its low endpoint while the pin rested at centre.
+ */
+TEST_CASE(a_failsafe_leaves_an_uncommanded_surface_reading_its_centre)
+{
+    fresh_pages();
+    chan_cfg[LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE;
+    chan_cfg[LINK_CC_MIN_US] = 1000u;
+    chan_cfg[LINK_CC_MAX_US] = 2000u;
+    outputs_chan_cfg_apply(&o, chan_cfg);
+    outputs_channels_from_bank(&o, chans);
+
+    outputs_arm(&o, true, 2000u);
+    CHECK(outputs_set(&o, 0, 800u, 2000u));
+    outputs_step(&o, 2001u);
+    CHECK_EQ(outputs_pulse_us(&o, 0), 1800u);
+
+    outputs_arm(&o, false, 2100u);      /* the failsafe edge */
+    outputs_channels_from_bank(&o, chans);
+    CHECK_EQ(chans[0], 800u);
+    CHECK_EQ(chans[1], OUT_SPAN / 2u);
+    CHECK_EQ(outputs_actual(&o, 0), OUT_SPAN / 2u);
+}
+
+/*
  * What the mirror exists to avoid, kept as a case so it is not reintroduced:
  * a zero-filled page applied as commands puts a surface at its endpoint, and
  * an arm holds it there for the whole timeout.
