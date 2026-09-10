@@ -94,7 +94,9 @@ history is in git.
   command and a pin bound as a throttle steps to it on the next 1 ms pass.
   That is by decision, recorded in STATUS.md under Not planned: the bank
   ramps a throttle upward only, so a ramp on the wire would slow the rise and
-  nothing else, and no single touch asks for 0 to 100 %.
+  nothing else. A tap moves the slider by 1 %; a swipe across the whole track
+  inside one 50 ms poll is a 0 to 100 % step at the pin, and only the ESC's
+  own ramp is under it.
 
 - **The version header documented the wrong string.** `rcbench_version.h`
   described `RCBENCH_VERSION_STRING` as "0.8.0" while the defines above it
