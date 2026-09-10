@@ -585,6 +585,16 @@ static unsigned touch_losses(void)
 }
 
 /*
+ * The loss count the arm now in progress was queued under.  Checked once
+ * when the command is taken and again after the bank has armed: the touch
+ * task counts on its own clock, so a loss can land between the first check
+ * and the arm, and the render side, seeing a bench its snapshot still calls
+ * disarmed, would cancel nothing and post no disarm.  A count that moved by
+ * the second check disarms here.
+ */
+static unsigned s_arm_touch_lost;
+
+/*
  * The pole count the coprocessor holds, and whether it is current.
  *
  * Nothing refreshes the register: the far end keeps whatever it was last
@@ -2517,6 +2527,27 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
 }
 
 /*
+ * The second look at the loss count, after the bank has armed.
+ *
+ * The first look was taken when the arm was accepted from the queue, and
+ * the exchanges between that and here can take two seconds.  A loss in
+ * that time is one the render side answers by cancelling what it holds --
+ * and it holds nothing for a bench its snapshot still calls disarmed, so
+ * no disarm comes from there.  The count is compared again here, after the
+ * arm, so a loss that landed anywhere between the two looks disarms; one
+ * that lands after this look is seen by the render side against an armed
+ * bench and answered as a disarm there.  The operator repeats the hold.
+ */
+static void arm_recheck_losses(bool link_up)
+{
+    if (touch_losses() == s_arm_touch_lost) {
+        return;
+    }
+    (void)disarm_here(link_up);
+    control_alert("touch lost while arming -- arm again");
+}
+
+/*
  * The latched stop, and then the act the arming policy asks for.
  *
  * link_up is passed in because an arm and a disarm are written to the
@@ -2697,9 +2728,11 @@ static void service_arming(bool link_up)
                 control_alert("coprocessor refused to arm");
             } else {
                 outputs_arm(&s_out, true, now_ms());
+                arm_recheck_losses(link_up);
             }
         } else {
             outputs_arm(&s_out, true, now_ms());
+            arm_recheck_losses(link_up);
         }
         break;
     }
@@ -3241,6 +3274,9 @@ static void drain_commands(bool link_up, bench_state_t *bench)
                               && pc.servo.kind == SERVO_CMD_ARM);
         if (arms && pc.touch_lost != touch_losses()) {
             continue;
+        }
+        if (arms) {
+            s_arm_touch_lost = pc.touch_lost;
         }
         if (pc.kind == PANEL_CMD_STOP) {
             arming_stop(&s_arm);
