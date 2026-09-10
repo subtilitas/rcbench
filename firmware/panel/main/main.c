@@ -359,6 +359,17 @@ typedef struct {
     uint32_t         stops;
     /** And how many times it had been told to let go; see s_lets_go. */
     uint32_t         lets_go;
+    /**
+     * And how many touch events had been lost when it queued this; see
+     * touch_losses().  An arm completes a hold, and a hold that completed
+     * on a contact whose events went missing is an arm the operator may
+     * not have made.  The render side cancels what it still holds when it
+     * observes a loss, but an arm already handed over is past its reach:
+     * this count is what both sides observe, so the arm is dropped here
+     * when the count has moved since it was queued.  Only an arm: a loss
+     * makes no throttle or position suspect, and a disarm is never dropped.
+     */
+    uint32_t         touch_lost;
 } panel_cmd_t;
 
 /*
@@ -3215,6 +3226,22 @@ static void drain_commands(bool link_up, bench_state_t *bench)
                 || pc.lets_go != atomic_load(&s_lets_go))) {
             continue;
         }
+        /*
+         * Nothing arms across a touch loss.  The hold that posted this arm
+         * may have completed on a contact whose release went missing, and
+         * the render side can cancel only what it has not yet handed over;
+         * this arm was, so the loss count it carries is compared here with
+         * the one both tasks read.  A count that moved is a loss between
+         * the asking and the arriving, and the arm is dropped.  The
+         * operator repeats the hold.
+         */
+        const bool arms = (pc.kind == PANEL_CMD_MOTOR
+                           && pc.motor.kind == MOTOR_CMD_ARM)
+                          || (pc.kind == PANEL_CMD_SERVO
+                              && pc.servo.kind == SERVO_CMD_ARM);
+        if (arms && pc.touch_lost != touch_losses()) {
+            continue;
+        }
         if (pc.kind == PANEL_CMD_STOP) {
             arming_stop(&s_arm);
             outputs_arm(&s_out, false, now_ms());
@@ -3935,14 +3962,16 @@ static void flush_screen_commands(uint32_t stops_now)
     while (motor_screen_poll_cmd(&mc)) {
         panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
                            .stops = stops_now,
-                           .lets_go = atomic_load(&s_lets_go) };
+                           .lets_go = atomic_load(&s_lets_go),
+                           .touch_lost = touch_losses() };
         send_cmd(&pc);
     }
     servo_cmd_t sv;
     if (servo_screen_take(&sv)) {
         panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
                            .stops = stops_now,
-                           .lets_go = atomic_load(&s_lets_go) };
+                           .lets_go = atomic_load(&s_lets_go),
+                           .touch_lost = touch_losses() };
         send_cmd(&pc);
     }
 }

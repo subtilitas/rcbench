@@ -34,7 +34,10 @@ history is in git.
     command is collected on the frame after the one that posts it, and the
     frame that observes a loss cancels before that collection, so an arm
     completed by a hold whose contact was lost is dropped before it reaches
-    the bench. A hold is credited at most 250 ms per frame, so one late
+    the bench. An arm already handed to the control task carries the count
+    of lost touch events it was posted under, and the control task drops an
+    arm whose count has moved, so a loss between the posting and the taking
+    retires it too. A hold is credited at most 250 ms per frame, so one late
     frame cannot complete a hold that began while it was dispatching the
     press.
 

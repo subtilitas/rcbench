@@ -1047,8 +1047,10 @@ static void cancel(void)
      * collected.  A command is forwarded on the frame after the one that
      * posted it, and the frame that observes a loss cancels before that
      * forwarding, so an arm completed by a hold whose contact had already
-     * gone is dropped here rather than reaching the bench.  A disarm is
-     * kept: it is the direction that fails safe.
+     * gone is dropped here rather than reaching the bench.  An arm already
+     * collected is past this screen's reach; it carries the loss count it
+     * was posted under, and the control task drops one whose count has
+     * moved.  A disarm is kept: it is the direction that fails safe.
      */
     if (s.pending.kind == MOTOR_CMD_ARM) {
         s.pending.kind = MOTOR_CMD_NONE;

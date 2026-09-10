@@ -124,7 +124,12 @@ unpowered or unplugged panel reads as a line that is not edging.
   them: disarming is a press, so its release is the whole command, and a
   release lost to a full queue is a disarm the operator made and the bench
   never saw. Arming has already sent its command by the time the finger
-  lifts, so an arm cancelled part way asks for nothing, which is correct.
+  lifts, so an arm cancelled part way asks for nothing, which is correct. A
+  cancel also drops an arm the screen has posted and the application has not
+  yet collected, and an arm already handed to the control task carries the
+  count of lost touch events it was posted under: the control task drops an
+  arm whose count has moved, so nothing arms across a loss. A posted disarm
+  stays.
 - The throttle moves by how far a finger travels, not to where it lands. A
   press on the track commands nothing, so a touch at the far end asks for
   nothing; a drag across the whole track asks for the whole span, and one

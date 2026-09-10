@@ -150,7 +150,11 @@ Panel als Leitung ohne Flanken gelesen wird.
   Screen bereits abgesetzt hat und die Anwendung noch nicht abgeholt hat --
   ein Kommando wird im Frame nach dem absetzenden weitergereicht, und der
   Frame, der einen Verlust bemerkt, bricht vor diesem Weiterreichen ab. Ein
-  abgesetztes Entschärfen bleibt.
+  Scharfschalten, das schon beim Control-Task liegt, trägt den Zählerstand
+  der verlorenen Touch-Events, unter dem es abgesetzt wurde: der Control-Task
+  verwirft ein Scharfschalten, dessen Zähler sich bewegt hat, über einen
+  Verlust hinweg schaltet also nichts scharf. Ein abgesetztes Entschärfen
+  bleibt.
 - Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
   Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, eine
   Berührung am Ende fordert also nichts an; ein Drag über den ganzen Track
