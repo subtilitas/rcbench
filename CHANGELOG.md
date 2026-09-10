@@ -8,6 +8,13 @@ history is in git.
 
 ### Fixed
 
+- **A failsafe reset the CHANNELS page to zero.** The failsafe edge disarms
+  the bank and filled the page with the same zero boot used to, so after one
+  an uncommanded surface rested at its centre and read back as its low
+  endpoint until something commanded it. The page is filled from the bank on
+  that edge too: an uncommanded channel reads its rest, and a commanded one
+  reads what it was asked for, with ARM = 0 beside it.
+
 - **The Motor & ESC plot advanced whether or not the bench was armed**, so a
   run scrolled off the left edge about 27 s after it ended and there was no
   way to hold it. Reported from a bench. The run clock above the plot already
