@@ -20,9 +20,13 @@ history is in git.
   something commanded that channel. Arming from SERVO was unaffected: that
   path centres the surfaces first. At boot the page now takes its values from
   the bank, so a channel nobody has commanded reads back at its role's rest.
-  A failsafe still resets the page to zero: after one, an uncommanded surface
-  rests at its centre and reads back as its low endpoint until something
-  commands it.
+
+- **A failsafe reset the CHANNELS page to zero.** The failsafe edge disarms
+  the bank and filled the page with the same zero boot used to, so after one
+  an uncommanded surface rested at its centre and read back as its low
+  endpoint until something commanded it. The page is filled from the bank on
+  that edge too: an uncommanded channel reads its rest, and a commanded one
+  reads what it was asked for, with ARM = 0 beside it.
 
 - **A refused settings write reported SAVED.** The store's save callback
   returned nothing, so the model cleared the dirty flag whatever happened and
@@ -33,9 +37,9 @@ history is in git.
   checked. A refusal part way through leaves the keys written before it
   committed, so the next boot can load a mix of the new values and the old,
   and the screen cannot say which. On this version of ESP-IDF `nvs_commit()`
-  answers OK for any valid
-  handle, so the console line that said "settings saved" printed even when
-  every key had failed, and now prints only when every key was taken.
+  answers OK for any valid handle, so the console line that said "settings
+  saved" printed even when every key had failed, and now prints only when
+  every key was taken.
 
 - **An analysis pass that stopped reading was reported as a clean read.** The
   second of the CSV log's three passes finalised its column statistics
