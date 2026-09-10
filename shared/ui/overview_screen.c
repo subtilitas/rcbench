@@ -187,6 +187,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
 static void cancel(void)
 {
     s.have_press = false;
+    /* And the tile drawn pressed: with no contact to release it, it would
+     * stay pressed on the glass until something else redrew the screen. */
+    s.pressed    = -1;
+    s.drawn_mask = 0;
 }
 
 static const ui_screen_t k_screen = {

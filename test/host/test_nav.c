@@ -275,8 +275,17 @@ TEST_CASE(the_setup_screen_opens_both_views_of_the_outputs)
 TEST_CASE(a_cancelled_tile_press_navigates_nowhere)
 {
     to_overview();
+    ui_router_render(&cv, 0);
+    gfx_color_t *idle = malloc((size_t)W * H * sizeof(gfx_color_t));
+    memcpy(idle, fb, (size_t)W * H * sizeof(gfx_color_t));
+
     touch(110, UI_BAND_H + 90, TOUCH_EVENT_DOWN, 3);
     ui_router_cancel_gestures();
+
+    /* No contact is left to release the tile, so it is not drawn pressed. */
+    ui_router_render(&cv, 0);
+    CHECK_EQ(memcmp(idle, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
+    free(idle);
 
     touch(110, UI_BAND_H + 90, TOUCH_EVENT_UP, 3);
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
