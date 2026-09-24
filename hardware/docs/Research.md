@@ -1,13 +1,13 @@
 # IO board component research, round 1
 
 The plan for the multi-agent research that selects the IO board's integrated
-circuits (ICs). **It has not run.** It runs as three workflows. The first
-starts when the owner accepts this page and has answered questions S1, S3 and
-S8. The second starts on a function when every
-[blocking question](#blocking-answered-before-the-second-workflow) that
-function depends on is answered. The
+circuits (ICs). **It has not run.** It runs as six tasks, each a workflow of
+at most 32 agents (owner, 2026-09-24). The first starts when the owner accepts
+this page and has answered questions S1, S3 and S8. A research task starts
+when every [blocking question](#blocking-answered-before-the-research-tasks)
+its categories depend on is answered. The
 [decisions that wait on the research](#decided-on-the-researchs-output) are
-taken between the second and the third.
+taken before the last task.
 
 The IO board is the coprocessor board: the RP2354B, the CAN (Controller Area
 Network) link to the display, the outputs, the receiver inputs, the sensor
@@ -45,6 +45,7 @@ Owner decisions of 2026-09-24:
 | Sensor inputs | load cells for thrust and torque, a phase-wire rpm (revolutions per minute) clip, motor temperature, a magnetic rpm pickup, and the encoder (quadrature A and B plus an index pulse, ABI), which is the encoder in the pin budget of `firmware/iomcu/CMakeLists.txt` |
 | Where the research runs | the owner's server, 48 CPUs (central processing units) |
 | Checking | every finding is countered by a critic |
+| Size of a task | at most 32 agents per task |
 
 The stock figures in [Power](Power.md) are dated 2026-09-01 and state that they
 are not valid after it. Round 1 takes them again.
@@ -164,44 +165,46 @@ reachability, not a finding, and has no critic. P1's findings go to the
 owner, who answers them. Each agent returns a fixed schema, so a critic
 compares like with like.
 
+A task is one workflow run of at most 32 agents. The workflow script counts
+the agents a task plans before it starts, refuses a task over 32, and moves
+work that does not fit into a follow-up task, which it logs.
+
 ```text
-first workflow
-P0  reachability (1)
-P1  requirement critic (1 per category)
+T1  P0 reachability (1), P1 requirement critic (1 per category)      14
                                  -- the owner answers what P1 returns
-second workflow
-P0  reachability again (1)
-P2  discover and qualify (1 per category)
- -> P3 search critic (1 per category)
- -> P2 qualifies what P3 found and re-ranks, once (1 per category)
- -> P4 verify (2 per verified part)          in this order per category,
-                                             no wait between categories
-P5  cross-category checks (1) and its critic (1)   waits for every category
-P6  completeness (1) and its critic (1)       gaps go back to P2, at most 2 extra passes
+T2  group A: R1 R2 R3 R4        P0 (1), then per category:           21
+T3  group B: R5 R6 R7 R8          P2 discover and qualify (1)        21
+T4  group C: R9 R10 R11 R12 R13   P3 search critic (1)               26
+                                  P2 re-rank with P3's finds (1)
+                                  P4 stock and lifecycle verifier (1)
+                                  P4 datasheet and pin verifier (1)
+T5  P5 cross-category checks (1) and its critic (1),                  4
+    P6 completeness (1) and its critic (1)
+                                 -- gaps become follow-up research tasks
                                  -- the owner decides Q4 and Q8
-third workflow
-P7  write the pages (1) and a page critic (1)
+T6  P7 write the pages (1) and a page critic (1)                      2
 ```
+
+T2, T3 and T4 are independent of each other and run in any order. Within a
+task, the categories run side by side, and each category runs P2, P3, the
+re-rank and P4 in that order.
 
 | Phase | Agents | Does | Returns |
 | --- | --- | --- | --- |
-| P0 | 1 | fetches one known page from every host in [Prerequisites](#prerequisites), and downloads one copy of the jlcparts database with its snapshot date. Runs at the start of the first and the second workflow | reachable or not, per host. The run stops if JLCPCB's API, the jlcparts database or the second vendor of S3 is unreachable. A category is held while a manufacturer whose parts it seeds has an unreachable site, because the lifecycle gate cannot be read |
+| P0 | 1 | fetches one known page from every host in [Prerequisites](#prerequisites), and downloads one copy of the jlcparts database with its snapshot date. Runs at the start of T1 and of each research task | reachable or not, per host. The task stops if JLCPCB's API, the jlcparts database or the second vendor of S3 is unreachable. A category is held while a manufacturer whose parts it seeds has an unreachable site, because the lifecycle gate cannot be read |
 | P1 | 1 per category | reads the category's lines in [the specification](IOBoard.md) and every source they cite, and tries to refute each value: does it follow from its source, is the unit right, is it an owner decision or an assumption. Lists, for each function, the requirement values P2 needs to qualify a part (voltage, current, range, resolution, rate, accuracy) that the specification does not state | each value marked sourced, owner decision or assumption, and each missing value. Every assumption and every missing value is a question to the owner; P2 does not start on a function with one unanswered |
-| P2 | 1 per category | lists candidates from allowlisted manufacturers in the jlcparts copy; drops those that miss a requirement value; for up to five survivors records part number, manufacturer, LCSC number, package, every requirement value against the datasheet's, placements per board, JLCPCB stock, presale, library type and price, second-vendor stock, incoming quantity and lead time, the lifecycle fields above, pin-compatible alternates, and whether a driver exists under `shared/` | a ranked shortlist with the reason for each rank, and every candidate dropped with the reason |
-| P3 | 1 per category | searches for part families P2 did not consider, from the same allowlist, and re-reads each reason P2 gave for dropping a candidate | missed candidates and exclusions that do not hold. Both go through P2's qualification once, and P2 re-ranks, before P4 starts on that category |
-| P4 | 2 per verified part | two independent verifiers, each told to refute. One re-reads stock and lifecycle at the primary sources. One re-reads every requirement value in the datasheet, and for an alternate, the pin-for-pin match to the part it stands in for. Verified: the first-ranked part of each function, and the alternate that satisfies sourcing rule 5 for it when the second source is an alternate rather than a second vendor. Any other candidate is verified only when every part ranked above it is refuted, one at a time. A part stays when neither verifier refutes it | confirmed or refuted, with the evidence |
+| P2 | 1 per category | lists candidates from allowlisted manufacturers in the jlcparts copy; drops those that miss a requirement value; for up to five survivors per function records part number, manufacturer, LCSC number, package, every requirement value against the datasheet's, placements per board, JLCPCB stock, presale, library type and price, second-vendor stock, incoming quantity and lead time, the lifecycle fields above, pin-compatible alternates, and whether a driver exists under `shared/` | a ranked shortlist per function with the reason for each rank, and every candidate dropped with the reason |
+| P3 | 1 per category | searches for part families P2 did not consider, from the same allowlist, and re-reads each reason P2 gave for dropping a candidate | missed candidates and exclusions that do not hold |
+| Re-rank | 1 per category | qualifies what P3 returned as P2 does, and re-ranks each function's shortlist | the final ranking per function |
+| P4 | 2 per category | two independent verifiers, each told to refute, each covering every verified part of the category. One re-reads stock and lifecycle at the primary sources. One re-reads every requirement value in the datasheet, and for an alternate, the pin-for-pin match to the part it stands in for. Verified: the first-ranked part of each function, and the alternate that satisfies sourcing rule 5 for it when the second source is an alternate rather than a second vendor. A part stays when neither verifier refutes it. A refuted part sends the next-ranked candidate to a new pair of verifiers, inside the task while it stays at or under 32 agents, otherwise in a follow-up task | confirmed or refuted, with the evidence, per part |
 | P5 | 1, and 1 critic | the resource budget of the whole board against the RP2354B, from the RP2350 datasheet and R1's errata: 48 GPIO; the rule that a PIO (programmable input/output) block sees GPIO 0 to 31 or 16 to 47 only; 12 PIO state machines in 3 blocks and each block's instruction memory; DMA (direct memory access) channels, two per PPM (pulse-position modulation) output (`firmware/iomcu/src/out_ppm.c`); 12 PWM (pulse-width modulation) slices, where two pins on one slice and channel conflict (`shared/outputs/include/out_pwm_map.h`); the 8 ADC inputs; the SPI, I²C and UART (universal asynchronous receiver-transmitter) controllers with their pin options. Plain DShot takes one state machine and bidirectional DShot two adjacent ones in one block (`firmware/iomcu/src/out_dshot.h`). The receiver buses and the programmer take a number of state machines the tree does not state: no receiver PIO program is written ([Receivers](../../docs/Receivers.md)) and no programmer protocol has run on a wire; P5 states the count it assumes for each, and whether a bus uses a hardware UART instead. 8 bidirectional DShot outputs alone take 16 state machines against 12, so P5 returns the output combinations the board supports. P5 budgets both alternatives of Q4 and Q8, checks the I²C address map and the current per rail, checks that R4's buffer enable and R3's enable node agree in polarity, and applies the allowlist over the whole list. The critic re-derives each conflict and looks for ones the first agent missed | conflicts, each naming the parts involved; the supported output combinations |
-| P6 | 1, and 1 critic | every specification line has a part or is marked "not round 1"; every figure has a date and a source; every assumption P1 flagged is answered. The critic re-reads the specification line by line against the evidence and looks for gaps P6 did not report | gaps, fed back to P2 |
-| P7 | 1, and 1 critic | writes the outputs below from the evidence P2 to P4 returned, the budget and combinations P5 returned, and the owner's decisions on Q4 and Q8. The critic checks every figure and every stated combination on the pages against that evidence and every sentence against the writing rules in [CONTRIBUTING.md](../../CONTRIBUTING.md#writing), runs `python3 tools/check_docs.py` and `ruff check tools/`, and runs `tools/jlc_stock.py --check` once against the new `Parts.md` | the pages, a list of corrections applied, and the three check results |
+| P6 | 1, and 1 critic | every specification line has a part or is marked "not round 1"; every figure has a date and a source; every assumption P1 flagged is answered. The critic re-reads the specification line by line against the evidence and looks for gaps P6 did not report | gaps. Each gap becomes a follow-up research task of at most 32 agents; at most 2 rounds of them |
+| P7 | 1, and 1 critic | writes the outputs below from the evidence the research tasks returned, the budget and combinations P5 returned, and the owner's decisions on Q4 and Q8. The critic checks every figure and every stated combination on the pages against that evidence and every sentence against the writing rules in [CONTRIBUTING.md](../../CONTRIBUTING.md#writing), runs `python3 tools/check_docs.py` and `ruff check tools/`, and runs `tools/jlc_stock.py --check` once against the new `Parts.md` | the pages, a list of corrections applied, and the three check results |
 
-Size. The category rows name 44 to 48 functions: R1 4, R2 1 or 2, R3 7, R4 4,
-R5 8, R6 4, R7 1 or 2, R8 4, R9 1, R10 1 or 2, R11 5, R12 3, R13 1 or 2.
-P0 2, P1 13, P2 13, P3 13, the re-rank 13, P4 88 to 96 for the first-ranked
-parts plus up to 96 for alternates that serve as a second source, P5 2, P6 2,
-P7 2. About 150 to 250 agents, before any extra pass P6 sends back and any
-runner-up a refutation sends to P4. One part that serves several functions,
-such as one IC for reverse polarity, overvoltage and inrush, lowers the
-count.
+Size. T1 14, T2 21, T3 21, T4 26, T5 4, T6 2: 88 agents in six tasks, the
+largest 26. The 6 to 11 agents each research task keeps free take P3's finds
+and the verifiers a refutation calls for. Follow-up tasks add to the total and
+stay at 32 each.
 
 ## Outputs
 
@@ -253,8 +256,7 @@ count.
    commits to that branch. Nothing is pushed to `main`, and a pull request is
    opened only when the owner asks for one.
 6. **The workflow script and its schemas.** Not written. They are written from
-   this page, reviewed by the owner, and committed before the first workflow
-   runs.
+   this page, reviewed by the owner, and committed before T1 runs.
 7. **The display's current draw** on the link cable at the voltage of F6, peak
    and steady, measured on the bring-up bench before R5 runs. Not measured.
 8. **The owner's answers** to the questions below.
@@ -263,14 +265,15 @@ count.
 ## Questions for the owner
 
 Answered on 2026-09-24: power, motor current, servo current, the sensor
-inputs, where the research runs and the checking rule, recorded under
-[Scope](#scope). A proposed answer is not an answer: the workflows read the
+inputs, where the research runs, the checking rule and the size of a task,
+recorded under
+[Scope](#scope). A proposed answer is not an answer: the tasks read the
 Answer column only.
 
 ### Sourcing
 
-S1, S3 and S8 block the first workflow. The other sourcing questions block the
-second.
+S1, S3 and S8 block T1. The other sourcing questions block the research
+tasks.
 
 | ID | Question | Proposed answer | Answer (owner, date) |
 | --- | --- | --- | --- |
@@ -281,13 +284,13 @@ second.
 | S5 | Which lifecycle states pass? | active only; preview fails; a longevity commitment is recorded and not required | |
 | S6 | Are extended-library parts acceptable? Each unique one adds a loading fee per order. | yes; basic preferred where two parts are otherwise equal | |
 | S7 | How many boards in the first build, and are the parts bought into the personal library ahead of the order? A part in the personal library is not substituted between quote and build. | owner to state | |
-| S8 | May the run use about 150 to 250 agents, plus the passes P6 sends back? | yes | |
+| S8 | May the run use six tasks of at most 32 agents, 88 agents in all, plus the follow-up tasks P6 and refutations call for? | yes | |
 
 ### Specification
 
-#### Blocking: answered before the second workflow
+#### Blocking: answered before the research tasks
 
-Each question blocks the functions that depend on it, not the whole run.
+Each question blocks the research task whose categories depend on it, not the whole run.
 
 | ID | Question | Proposed answer | Answer (owner, date) |
 | --- | --- | --- | --- |
@@ -311,9 +314,9 @@ Each question blocks the functions that depend on it, not the whole run.
 
 #### Decided on the research's output
 
-These stay open while the research runs. The second workflow reports the
+These stay open while the research runs. The research tasks report the
 alternatives with their figures, and P5 budgets both. The owner decides before
-the third workflow.
+T6.
 
 | ID | Decision | Reported by |
 | --- | --- | --- |
