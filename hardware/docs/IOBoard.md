@@ -1,46 +1,548 @@
 # IO board specification
 
-What the IO board has to do, with the numbers the tree already fixes. The IO
-board is the coprocessor board. It carries everything with a deadline:
-outputs, receiver inputs, sensor front ends, the power path and the CAN
-(Controller Area Network) link to the display. The display is the ESP32-S3
+What the IO (input/output) board has to do, with the numbers the tree already
+fixes. The IO board is the coprocessor board. It carries everything with a
+deadline: outputs, receiver inputs, sensor front ends, the power path and the
+CAN (Controller Area Network) link to the display. The display is the ESP32-S3
 panel in `firmware/panel/`.
 
 **Status: draft.** No schematic and no part list exist. Parts are selected
 by [the round 1 research](Research.md), which has not run. A line marked
 _open_ waits on a question in that page.
 
+Sources are files and lines in the tree. The heartbeat monostable is specified
+in pull request #167 at commit 23c82ca, which is not merged; it is cited as
+pull request #167. R1 to R13, S1 to S8, F1 to F16, Q4, Q7, Q8 and P0 to P7 are
+the research categories, questions and phases in [Research](Research.md). A
+source given as "owner, 2026-09-24" is a decision recorded there.
+
 State of each line:
 
 | State | Meaning |
 | --- | --- |
-| built | runs on the bring-up module (Waveshare RP2350-CAN) and moves to the IO board unchanged |
+| built | runs on the bring-up module (Waveshare RP2350-CAN). The firmware moves to the IO board; the pin map, the board file and the flash offsets change with the RP2354B |
 | decided | a part or a value is chosen and recorded |
 | required | the tree needs it; no part chosen |
-| open | a question to the owner decides it |
+| open | a question to the owner decides it; the line names the question |
 
 ## Summary
 
 | Function | Value | State |
 | --- | --- | --- |
-| Microcontroller | RP2354B: RP2350B die and 2 MB QSPI (quad serial peripheral interface) NOR flash in one QFN-80 (quad flat no-lead) 10 × 10 mm package, 48 GPIO (general-purpose input/output), 8 ADC (analogue-to-digital converter) inputs, 520 kB SRAM (static RAM) | decided |
-| Link to the display | classic CAN at 1 Mbit/s, 29-bit identifiers, protocol 4.0. Every signal that reaches an RP2354B pin is at 3.3 V logic; a 5 V output on bank 0 takes a 2.2 kΩ series resistor, because the 5 V rail can come up before 3.3 V ([STATUS.md](../../STATUS.md#constraints)) | built |
-| Display supply | through the link cable, voltage and current open (F6) | open |
-| Safety | heartbeat input, retriggerable monostable with a 150 ms window gating the outputs and the servo and ESC (electronic speed controller) power | required |
+| Microcontroller | RP2354B: RP2350B die and 2 MB QSPI (quad serial peripheral interface) NOR flash in one QFN-80 (quad flat no-lead) 10 × 10 mm package, 48 GPIO (general-purpose input/output), 8 ADC (analogue-to-digital converter) inputs, 520 kB SRAM (static random-access memory) | decided |
+| Pin ratings | every signal that reaches an RP2354B pin is at 3.3 V logic. GPIO0 to 39 are fault tolerant: 5.5 V only while IOVDD (the input/output supply) is at 3.3 V, and 3.63 V while IOVDD is at 0 V. GPIO40 to 47, the ADC inputs, are rated at IOVDD + 0.5 V and are not fault tolerant (RP2350 datasheet, Table 1430, build 2024-08-08, read from a copy). The 2.2 kΩ series resistor in [STATUS.md](../../STATUS.md#constraints) does not hold a pin within that rating, so a 5 V output that can drive before 3.3 V is up is translated to 3.3 V | required (R1 confirms) |
+| Link to the display | classic CAN at 1 Mbit/s, 29-bit identifiers, protocol 4.0, run on the bring-up module with its controller on SPI (Serial Peripheral Interface) behind a 3.3 V transceiver. R2 selects the IO board's controller and transceiver. The module's controller holds 2 received frames against a 19 ms flash stall (Q8) | protocol built; controller and transceiver required (R2) |
+| Display supply | through the link cable, from the selected source (owner, 2026-09-24). Voltage open (F6); current not measured | decided; voltage open (F6) |
+| Safety | heartbeat input and a retriggerable monostable triggered on both edges. The enable falls 155 to 185 ms after the last edge, set to 170 ms on test, and gates the outputs and the servo and ESC (electronic speed controller) power. The output buffer is disabled and every power switch is open within 200 ms of the last edge (pull request #167). The ESC pack switch (F7) and its rating (F2, F15), the two-channel design (F10), a hardware latch (F11), the clear network (F12), the gated pins (F13) and the bias of a bidirectional DShot line (F14) are open | required; F2, F7, F10 to F15 open |
 | Outputs: PWM (pulse-width modulation) and DShot | 8 slots, 8 channels. A servo has swung and a motor has run from the panel on the bring-up bench; no pulse width, frame period or bit time has been seen on an instrument | built |
 | Outputs: PPM (pulse-position modulation) and bidirectional DShot | written and host-tested; neither has driven anything on hardware ([STATUS.md](../../STATUS.md#state)) | required |
 | Programming connector | one connector for every programmer: the one-wire bootloader at 19,200 baud half duplex (BLHeli_S, AM32), the ESCape32 text CLI (command-line interface), VESC's framed packets at 115,200 baud, and the Hitec D-series servo protocol | required |
-| Receiver inputs | S.BUS, iBUS, SUMD, CRSF, SRXL2, JETI EX Bus, one pin each | required |
-| Servo supply | two settings, up to 5.5 V and up to 8.4 V, 4 to 8 A, TPS55288 | decided |
-| Servo sockets | 8, each with a supply switch, a current monitor and a voltage ceiling set in hardware | required |
-| Motor current and voltage | INA238, 85 V bus; onboard shunt up to 150 A with a temperature sensor beside it; external-shunt input for 300 A and above | decided |
-| Cell monitor | 1 to 14 cells on the balance lead | required |
-| Board power | 12 to 24 V DC input or the bench's own 2S pack, selected automatically. The pack is disconnected in hardware below a discharge floor (F9) | decided; floor open |
-| Pack charger | 2S, 2 A, balancing | open (R7) |
-| Vibration | analogue accelerometer and a once-per-revolution index pulse on one timebase; the sensor and converter resolve the 167 Hz fundamental at 10,000 rpm (revolutions per minute), and a fused IMU (inertial measurement unit) streaming at 100 Hz does not ([Balancing](../../docs/Balance.md)) | required |
-| Rotation | optical index, magnetic pickup, phase-wire clip, ESC telemetry, the encoder (quadrature A and B plus index, ABI) | required |
-| Temperature | ESC (from its telemetry), motor (sensor open, F5), onboard shunt | required |
-| Thrust and torque | load cells, channel count open (F3) | required |
-| External sensors | I²C (Inter-Integrated Circuit) ports, count open (Q7) | required |
-| Non-volatile store | output binding: 32 record slots in 2 flash sectors, or an FRAM (ferroelectric RAM) (Q8) | open |
-| Debug | SWD (Serial Wire Debug), USB (Universal Serial Bus) boot, UART (universal asynchronous receiver-transmitter) console | required |
+| Receiver inputs | S.BUS, iBUS, SUMD, CRSF, SRXL2, JETI EX Bus, one pin each ([Receivers](../../docs/Receivers.md)) | required |
+| ESC telemetry | extended DShot telemetry on the bidirectional DShot reply; OpenYGE on its own half-duplex UART (universal asynchronous receiver-transmitter) line at 115,200 baud 8N1 (8 data bits, no parity, 1 stop bit) | required |
+| Servo supply | two settings, up to 5.5 V and up to 8.4 V, 4 to 8 A, TPS55288, from the 12 to 24 V DC (direct current) input or the 2S (two cells in series) pack | decided |
+| Servo sockets | 8, each with a supply switch and a current monitor (owner, 2026-09-24). A voltage ceiling set in hardware is open (F16) | decided; ceiling open (F16) |
+| Motor current and voltage | INA238, bus input rated to 85 V; the highest pack voltage is open (F15). Onboard shunt up to 150 A with a temperature sensor beside it; external-shunt input for 300 A and above | decided; one or two INA238 open (F1), continuous or peak open (F2), pack voltage open (F15) |
+| Cell monitor | 1 to 14 cells on the balance lead, the range `SET_PACK_CELLS` takes | required |
+| Board power | 12 to 24 V DC input or the bench's own 2S pack, selected automatically. The pack is disconnected in hardware below a discharge floor (F9). The pack path carries 8.9 A at 8.4 V and 11.3 A at 6.6 V from the servo supply alone | decided; floor open (F9) |
+| Pack charger | 2S, balancing. The charging source and the charge current are not stated (F8); R7 selects the part | open (F8) |
+| Vibration | an analogue sensor, piezo or analogue accelerometer, and a once-per-revolution index pulse on one timebase. The sensor and converter resolve the 167 Hz fundamental at 10,000 rpm (revolutions per minute), and a fused IMU (inertial measurement unit) streaming at 100 Hz does not ([Balancing](../../docs/Balance.md)). The converter is open (Q4) | required; converter open (Q4) |
+| Rotation | optical index, magnetic pickup, phase-wire clip, ESC telemetry, and the encoder, ABI (quadrature A and B plus an index pulse). The encoder's level, supply and count rate are open (F4) | required; encoder open (F4) |
+| Temperature | ESC (from its telemetry), motor (sensor open, F5), onboard shunt | required; motor sensor open (F5) |
+| Thrust and torque | load cells; channel count and excitation open (F3) | required; channels open (F3) |
+| External sensors | I²C (Inter-Integrated Circuit) ports; count and voltage open (Q7) | open (Q7) |
+| Non-volatile store | output binding: 32 record slots in 2 flash sectors, or an I²C FRAM (ferroelectric random-access memory) or EEPROM (electrically erasable programmable read-only memory) | open (Q8) |
+| Debug | SWD (Serial Wire Debug); firmware load over the USB (Universal Serial Bus) boot loader; the console on USB CDC (communications device class) only, with no UART console | USB load and console built; SWD required |
+| Board description | a board number, a pin catalogue, a shape page, a pads page, and printed pad numbers the panel shows | required |
+| Test access | test points for the bench's analyser and scope and for the interlock test of pull request #167; relay contacts across BOOT and RESET | required |
+
+## Microcontroller, flash and debug
+
+The RP2354B runs every function on the IO board that has a deadline. Its 2 MB
+of in-package flash holds the firmware image and the output binding, unless Q8
+moves the binding to an I²C FRAM or EEPROM. The core executes from that flash.
+Every erase and every page program therefore holds interrupts off, and the core
+answers nothing while it runs. Firmware loads over the RP2354B's own USB, and
+the console is on USB only. Two dry contacts, BOOT and RESET, let the
+measurement bench restart the board and put it in its USB loader with nobody
+at it. SWD is the bench's route when it reflashes the coprocessor between
+runs.
+
+Three places in the coprocessor build assume more than 2 MB of flash: the
+board file, the output store's offset and the post-link image-size check. All
+three change before the first IO board build (`hardware/docs/Research.md:54-61`).
+The board number, the reserved pins and the pin catalogue are compiled into
+the image, so the IO board carries its own pin header and a new row in the
+board table. The converter for the accelerometer (Q4): see
+[Measurement](#measurement).
+
+| Requirement | Value | Source | State |
+| --- | --- | --- | --- |
+| Microcontroller | RP2354B: RP2350B die and 2 MB QSPI NOR flash (Winbond W25Q16JV) in one QFN-80 10 × 10 mm package; 48 GPIO, 8 ADC inputs, 520 kB SRAM on the die, no PSRAM (pseudo-static random-access memory) in the package | `hardware/docs/Research.md:30`, `STATUS.md:298` | decided |
+| Pin ratings | every signal that reaches an RP2354B pin is at 3.3 V logic. GPIO0 to 39 are fault tolerant: rated at 5.5 V only while IOVDD is at 3.3 V, and at 3.63 V while IOVDD is at 0 V. GPIO40 to 47, the 8 ADC inputs, are rated at IOVDD + 0.5 V and are not fault tolerant. Below 3.63 V with IOVDD at 0 V a fault-tolerant pin draws very little current, so a series resistor drops almost no voltage and does not hold the pin within its rating. A 5 V output that can drive before the 3.3 V rail is up is translated to 3.3 V. R1 confirms the ratings for the RP2354B. The tree and pull request #167 state the tolerance differently: see [Conflicts in the tree](#conflicts-in-the-tree) | RP2350 datasheet, build 2024-08-08, Table 1430 and the pin type table, read from a copy; R1; `STATUS.md:317-319` | required |
+| Pin budget | 27 to 32 GPIO for the servo outputs, servo inputs, ESC channels, one-wire programming lines, the host link, CAN, I²C, the encoder, the load gates and the safety line. A Pico 2 brings out 26 | `firmware/iomcu/CMakeLists.txt:8-13`, `docs/Building.md:119-120` | required |
+| PIO (programmable input/output) reach | a PIO block sees 32 GPIO from a base of 0 or 16, for all 4 of its state machines, and changes the base only while it holds no program. 3 blocks, 12 state machines. GP32 to GP47 are reachable only from a block based at 16. A pin no free block reaches is refused. The pin map is partitioned by block before the schematic | `firmware/iomcu/include/iomcu_pins.h:6-10`, `docs/DShot.md:68-71`, `hardware/docs/Research.md:193` | required |
+| PWM slices | 12 slices of 2 channels. The two channels of a slice share one frame rate. GP0 to GP31 take slice (pin / 2) modulo 8, GP32 to GP47 take slice 8 + (pin / 2) modulo 4, and the channel is the pin's low bit. Two pins 16 apart below GP32, or 8 apart from GP32 up, share one compare register and cannot both carry PWM. The firmware leaves the second pin unbound, and the OUTPUTS page reads it back as asked for | `shared/outputs/include/out_pwm_map.h:4-16`, `docs/DShot.md:85-97`, `STATUS.md:297` | required |
+| Pins the firmware refuses | the heartbeat input and the CAN controller's pins, compiled into the image. On the bring-up module the controller is on SPI and takes 5 pins, its interrupt, its chip select and 3 SPI lines: with the heartbeat, GP3 and GP8 to GP12, 6 pins. Also every pin at or above `NUM_BANK0_GPIOS`: 30 on the RP2350A, 48 on the RP2350B. The output bank refuses a slot on any of them, and the CATALOGUE page marks each pin's holder. The numbers move with the IO board's pin map, and R2's controller sets its count of CAN pins | `firmware/iomcu/include/iomcu_pins.h:1-4`, `firmware/iomcu/include/iomcu_pins.h:25-34`, `firmware/iomcu/include/iomcu_pins.h:43-100`, `docs/Link.md:133`, `docs/Link.md:173-176`, `STATUS.md:110` | built |
+| Crystal and core regulator | 12 MHz crystal and core regulator inductor, selected in R1. The 3.3 V supply: see [Power](#power) | R1, `hardware/docs/Research.md:21` | required |
+| Clock accuracy | the bidirectional DShot decoder is host-tested at 4.75 and 5.25 samples a bit against a nominal 5, and the tree gives an ESC's crystal as a percent or two from the bench's. The CAN bit rate is exact to the controller's clock. The tolerance of the RP2354B's crystal and of the CAN controller's clock is not stated; R1 and R2 state them | `docs/DShot.md:221-230`, `docs/Link.md:196-209`, `shared/can/include/can_timing.h:17-21` | required |
+| Firmware build | pico-sdk 2.0 or newer (CI (continuous integration) builds 2.3.0), platform `rp2350`, ARM GNU toolchain 14.2: any `arm-none-eabi` release targeting Cortex-M33 | `docs/Building.md:70-74`, `firmware/iomcu/CMakeLists.txt:17-19` | built |
+| Board header | a pico-sdk board header that states 2 MB of flash and no PSRAM. The default board file, `pimoroni_pico_plus2_rp2350`, states 16 MB. The compile-time check on the store compares against the board header's size, so it fails the build only under a header that states less than 4 MB. The tree has no board file for the IO board | `firmware/iomcu/CMakeLists.txt:5-16`, `firmware/iomcu/src/out_store.c:41-54`, `STATUS.md:298`, `hardware/docs/Research.md:59-60` | required |
+| Image size limit | 2,088,960 bytes: 2 MB less the store's two 4,096-byte sectors. The post-link check holds 4,186,112 bytes (4 MB less 8 kB), which passes an image that reaches into the store's two sectors. The build's size line in the docs reads 272,040 bytes. The module's board picture in the image is 206,000 bytes | `firmware/iomcu/CMakeLists.txt:103-112`, `hardware/docs/Research.md:61-66`, `docs/FirstRun.md:60-63`, `firmware/iomcu/src/art_rp2350_can.c:1-19` | required |
+| Output binding store | 32 record slots of one 256-byte page each, in the last 2 sectors of 4,096 bytes of the 2 MB (of the first 4 MB in the module build). A save waits for the bank to stop driving, 400 ms of settle and 5 ms of bus quiet (1,000 ms at most), then programs one page. One sector erase per 16 saves, taken at boot before CAN starts or in a later gap. The code compiles and has not run on a board. The alternative is an I²C FRAM or EEPROM | `firmware/iomcu/src/out_store.c:19-39`, `firmware/iomcu/src/out_store.h:28-46`, `firmware/iomcu/src/out_store.h:97-130`, `firmware/iomcu/src/main.c:918-944`, `STATUS.md:111`, `hardware/docs/Research.md:60`, Q8 | open (Q8) |
+| Flash write window | every erase and every page program runs with interrupts off: no CAN frame is collected and no output is stepped for its length. An erase and a page program in one window measured 19,174 to 19,186 µs on the bring-up module, whose flash is a different part. The page program alone is not measured; `STATUS.md` puts it at roughly 200 to 2,000 µs. The W25Q16JV datasheet (revision D, 2016-08-12, read from a copy) gives a 4 kB sector erase of 45 ms typical and 400 ms maximum, and a 256-byte page program of 0.4 ms typical and 3 ms maximum; R1 reads the figures from Winbond's own datasheet. The frames the CAN controller holds through a window: see [Link and safety](#link-and-safety) | `firmware/iomcu/src/out_store.c:216-250`, `firmware/iomcu/src/out_store.h:15-27`, `firmware/iomcu/src/out_store.h:44-48`, `STATUS.md:292`, `hardware/docs/Research.md:68-74` | open (Q8) |
+| Store endurance | 100,000 erase cycles a sector, as the store's arithmetic takes it. 32 slots give about 3.2 million saves. The in-package flash's rated endurance is not stated in the tree | `shared/outputs/include/out_store_map.h:82-84` | required |
+| USB port | one USB device port on the RP2354B's own USB pins, for the mass-storage loader and the console. Its protection is selected in R1 | `docs/Building.md:113-114`, `firmware/iomcu/CMakeLists.txt:92-99`, R1 | required |
+| Firmware load | `rcbench-iomcu.uf2`, a UF2 (USB Flashing Format) file, copied to the USB mass-storage drive while the part is held in BOOTSEL | `docs/Building.md:113-114`, `STATUS.md:106` | built |
+| Console | USB CDC only. UART output is disabled, so no diagnostic lands on a UART pin. A status line every 3 s: CAN state, bit rate, requests served, self-test echoes, the controller's transmit and receive error counts and its error flags. A print blocks for as long as the USB host takes, and the module's CAN controller holds 2 frames | `firmware/iomcu/CMakeLists.txt:92-99`, `firmware/iomcu/src/main.c:593-636`, `firmware/iomcu/src/main.c:1091-1119`, `docs/Bringup.md:22-25`, `STATUS.md:104` | built |
+| SWD | SWCLK and SWDIO, the SWD clock and data lines, and ground, with no supply wire from the adapter. The bench drives both lines at 3.3 V from a Raspberry Pi 5 through OpenOCD's `linuxgpiod` driver and `target/rp2350.cfg`. That wiring is drawn for the bench's own RP2350 board. The bench page applies the same to the coprocessor if the bench reflashes it between runs. No RP2350 has been on these pins | `testbench/README.md:434-442`, `testbench/README.md:529-537`, `testbench/README.md:564-565`, `testbench/WIRING.md:98-108` | required |
+| SWDIO bias | the SWD specification puts a pull-up on SWDIO at the target, and the bench host's SWDIO line is chosen to agree with it. Whether the RP2354B's own termination provides that pull-up is not stated | `testbench/README.md:503-505`, `testbench/README.md:515-518` | required |
+| BOOT and RESET | a BOOT button and a RESET button, each a dry contact to ground, with a relay contact across each. A relay coil unpowered is a button not pressed, and both open is the running state. BOOT closed, RESET pulsed, RESET released, BOOT released puts the board in its USB loader as a mass-storage device, where it stays until RESET is pulsed again. What a reset does to the link: see [Link and safety](#link-and-safety) | `testbench/README.md:664-683`, `testbench/WIRING.md:240-247`, `testbench/WIRING.md:297-309` | required |
+| Board identity | a board number compiled into the image and reported in register 5 of the identity page (0x00). Numbers are appended and never renumbered: 0 is an unknown board, 1 the Pico-header module. The IO board appends a number and a row in `k_boards` | `firmware/iomcu/include/iomcu_pins.h:25-34`, `shared/link/include/link_pages.h:25`, `shared/link/include/link_pages.h:153-163`, `shared/outputs/include/out_bind.h:56-64`, `shared/outputs/out_bind.c:58-61` | required |
+| Capability word | register 6 of the identity page, bits 0 to 8: ESC drive, ESC telemetry, servo PWM, servo current, pack volts and amps, receiver bus, vibration and index pulse, cell monitor, programming. The module build sets ESC drive, ESC telemetry and servo PWM. Each other bit is set when its part is fitted or its program is written. A screen whose bit is clear runs from the model and is marked MODELLED | `shared/link/include/link_pages.h:165-183`, `firmware/iomcu/src/main.c:839-853`, `docs/Link.md:145-148` | required |
+| Pin catalogue | up to 32 pins, one register each: GPIO in 6 bits, printed pad number 1 to 63 in 6 bits (0 means no pin), holder in 4 bits (0 free, 1 heartbeat, 2 CAN, 3 flash, 4 debug, 5 sensor, 15 other). A pin a sensor holds is one the bench may not drive. Served on page 0x24 for a panel that has no row for the board | `shared/link/include/link_pages.h:40`, `shared/link/include/link_pages.h:278-328`, `docs/Link.md:133` | required |
+| Printed pad numbers | the pad number printed beside each brought-out pin is the number the catalogue reports and the panel shows | `docs/Screens.md:455-457`, `shared/outputs/out_bind.c:18-20` | required |
+
+### Not known
+
+- The RP2354B quantity held in the owner's personal library is not stated in the tree (prerequisite 9, `hardware/docs/Research.md:261`; S7).
+- Which RP2354B pins the BOOT and RESET contacts pull to ground is not stated in the tree (R1).
+- Whether OpenOCD's `target/rp2350.cfg`, the one target the bench names, reaches the RP2354B and programs its in-package flash is not stated in the tree (R1).
+- Whether 27 to 32 GPIO also covers the sensor inputs (owner, 2026-09-24: load cells, phase-wire rpm clip, motor temperature, magnetic rpm pickup) and the 8 servo current monitors is not stated in the tree. P5 counts the whole board against 48 GPIO (`hardware/docs/Research.md:193`).
+- `OUTBIND_PINS`, the most pins any board in the build brings out, is 26 (`shared/outputs/include/out_bind.h:66-67`). The outputs screen lays its pin cells out in 4 columns of 7, 28 cells (`shared/ui/outputs_screen.c:28-41`). The catalogue carries up to 32. How the panel lists an IO board that brings out 27 to 32 pins is not stated.
+- The erase and page-program times of the in-package flash are not measured on a board. Q8 decides between the flash and an FRAM or EEPROM, from R2 (frames each CAN controller holds through a stall) and R12.
+- Emptying the CAN controller from a routine held in SRAM during a flash window is not written (`firmware/iomcu/src/out_store.h:49-52`).
+- The overrun count across 16 saves, the heartbeat after a flash window and a power cut during a save are not measured (`STATUS.md:292`).
+- SWD from the bench host has not reached any RP2350. Its fixed rate of about 800 kHz for writes and 360 kHz for reads is not measured. The bench host can clock the first pulses as fast as 20 MHz, and whether that costs a connection is not measured (`testbench/README.md:440-442`, `testbench/README.md:539-557`, `testbench/WIRING.md:141-146`).
+- The USB connector type is not stated in the tree. Connectors are selected in round 2 (`hardware/docs/Research.md:22`).
+- The IO board's board number is not assigned: the tree lists 0 and 1 only (`shared/outputs/include/out_bind.h:61-64`).
+- How the IO board finds which front ends are fitted, to set its capability bits, is not stated. The panel reads the word once, at boot (`STATUS.md:293`).
+- Whether the IO board image carries a board picture, and its size, is not stated. The module's picture is 206,000 bytes. The tree gives three durations for its first fetch: see [Conflicts in the tree](#conflicts-in-the-tree).
+- Nothing in the tree writes a firmware image over the link or reserves flash for one. The link's bulk class names moving a firmware image (`shared/link/include/link_can.h:74-77`).
+
+## Link and safety
+
+The IO board is one of the two nodes on a classic CAN bus to the display.
+Every command and every reading crosses it, and the coprocessor transmits only
+in answer to a request. On the bring-up module the CAN controller sits on SPI
+behind a 3.3 V transceiver. R2 chooses the IO board's controller and
+transceiver.
+
+The display's safety line carries edges, one every 20 ms, not a level. Two
+watchers sit on it. Firmware on the coprocessor rejects intervals outside 4 to
+150 ms and runs on the bring-up module. A retriggerable monostable removes the
+output drive and opens the servo and ESC power switches when the edges stop,
+with no firmware in the path. Pull request #167 specifies the monostable. It
+is on no board. R3 chooses its parts to the text of pull request #167 at commit
+23c82ca (`hardware/docs/Research.md:147`, `hardware/docs/Research.md:239-249`).
+A healthy display beside a misbehaving coprocessor is covered by no hardware in
+this design.
+
+| Requirement | Value | Source | State |
+| --- | --- | --- | --- |
+| Bus | classic CAN without FD (flexible data rate), 1 Mbit/s, 29-bit identifiers only, protocol 4.0; two nodes, the display and the IO board. CAN only: no RS485 (Recommended Standard 485) transceiver, direction circuit or turnaround. Run on the bring-up module at 1 Mbit/s with zero errors at either end, 2026-08-28 | `docs/Link.md:12`, `docs/Link.md:65`, `firmware/iomcu/src/xl2515.c:105-110`, `STATUS.md:338-339`, `STATUS.md:103`, `STATUS.md:393` | built |
+| Bit timing | exactly 1 Mbit/s; both ends sample at 75 % of the bit; a rate the clock cannot make exactly is refused | `docs/Link.md:196-209`, `shared/can/include/can_timing.h:17-21`, `STATUS.md:103` | built |
+| Controller clock | makes 1 Mbit/s exactly with the sample point at 75 %. The module's controller halves its crystal and needs at least 8 quanta a bit, so it takes a 16 MHz crystal; 8 MHz caps the bus at 500 kbit/s | `docs/Link.md:17`, `docs/Link.md:205-209`, `firmware/iomcu/include/iomcu_pins.h:50-54`, `STATUS.md:315-316` | required |
+| Controller interface | SPI at 10 MHz, mode 0, and an active-low interrupt line with a pull-up: 5 GPIO. The driver in the tree is written for the MCP2515 register map and polls; the interrupt line never asserts | `firmware/iomcu/include/iomcu_pins.h:45-65`, `firmware/iomcu/src/xl2515.c:63-74`, `firmware/iomcu/src/xl2515.c:113`, `shared/can/include/mcp2515.h:1-2`, `testbench/WIRING.md:438-440`, `STATUS.md:103` | built |
+| Received frames held through a flash stall | the module's controller holds 2 frames, 260 µs at 1 Mbit/s, a frame being about 130 µs. A flash window (see [Microcontroller, flash and debug](#microcontroller-flash-and-debug)) is about 150 frame times, and the overrun count climbed from 2 to 8 across nine saves. One lost frame is enough for FAULT 01. The store in the tree saves only with the bank idle and the bus quiet, and has not run on a board. R2 reports how many frames each candidate controller holds against the frames the panel sends in a stall | `STATUS.md:292`, `STATUS.md:111`, R2 | open (Q8) |
+| Error reporting | transmit and receive error counters, the error flag register and a receive-overflow flag, readable by the coprocessor. The STATUS page carries the two counters. The self-test status frame carries the two counters, the flag register and an overflow count | `docs/Link.md:124`, `firmware/iomcu/src/main.c:787-790`, `shared/can/include/can_selftest.h:127-135`, `firmware/iomcu/src/xl2515.c:192-215`, `STATUS.md:104` | built |
+| Echo self-test | the coprocessor echoes probe frames on page 0x7E at all times. The display runs the test for 1200 ms at every start-up; its transmit error counter reaching 128 means the coprocessor is not on the bus | `docs/Bringup.md:18-20`, `docs/Bringup.md:43-45`, `docs/Bringup.md:88-90`, `shared/can/include/can_selftest.h:38-40`, `STATUS.md:103` | built |
+| Acknowledgement | the IO board is the only other node. With no node acknowledging, the coprocessor unpowered or reset, the display's controller reaches bus-off in about 4 ms at 1 Mbit/s and takes up to about 3 s to return | `docs/Link.md:36-48`, `firmware/iomcu/src/xl2515.c:105-110` | built |
+| Transceiver logic level | a 3.3 V transceiver, or one with its logic-supply (VIO) pin at 3.3 V, so its receive output stays within the pin ratings in [Microcontroller, flash and debug](#microcontroller-flash-and-debug). The module's transceiver is a 3.3 V part | R2, `docs/Link.md:15`, `STATUS.md:317` | required |
+| Termination | 120 Ω at each end of the bus, one at the IO board's end; about 60 Ω across CANH and CANL, the bus's high and low lines, with the bench unpowered | `docs/Link.md:16`, `testbench/WIRING.md:417-419` | decided |
+| Link cable | CANH and CANL twisted over the whole run, away from motor leads; the bus under 5 m; each board's branch under 30 cm. The panel's fault screen names a connector only nearly seated as a cause of lost frames. The cable also carries the display's supply: see [Power](#power) | `shared/ui/busfault_screen.c:208-217`, `testbench/WIRING.md:403-407`, owner, 2026-09-24 | required |
+| Link-silence failsafe | 200 ms without a request, counted from the first request; latches; left only by a write of 0x5AFE to CLEAR on the control page. The display escalates after 1 s. It has fired on the module as FAULT 01; the clear is not provoked on hardware | `docs/Link.md:29-32`, `docs/Link.md:141-143`, `shared/link/include/link_dev.h:25-31`, `shared/link/include/link_host.h:25-29`, `docs/Safety.md:13`, `STATUS.md:110`, `STATUS.md:290` | built |
+| Stop over the link | a pressed STOP writes ARM = 0 to the control page; written, not run on hardware. The panel is the only place a STOP button exists; the IO board has no STOP input | `docs/Safety.md:14`, `docs/Safety.md:16-17`, `docs/Safety.md:92-93` | required |
+| Heartbeat source | display GPIO6 on header J8, whose three pins are 3V3, GND (ground) and GPIO6; a 3.3 V push-pull output. One edge every 20 ms, a 40 ms cycle; the period is not confirmed on a scope. The line goes low at once when the display is not fit to run | `docs/Safety.md:24-26`, `firmware/panel/main/main.c:256-266`, `testbench/WIRING.md:599-602`, `shared/safety/include/heartbeat.h:37-45`, `shared/safety/include/heartbeat.h:79-90`, `testbench/WIRING.md:495`, `STATUS.md:105`, `STATUS.md:309`, pull request #167 | built |
+| Heartbeat monitor in firmware | 4 to 150 ms between edges accepted; the line trusted after 4 good intervals (80 ms), distrusted on one bad interval or one silent window. Input pulled down, sampled in the main loop, which turns over faster than 4 ms outside a flash window. ARM refused while the line is not trusted; the bank disarmed on the pass that trust is lost; STATUS fault bit 4 set while it is not trusted | `shared/safety/include/heartbeat.h:47-66`, `docs/Safety.md:63-76`, `firmware/iomcu/src/main.c:458-476`, `firmware/iomcu/src/main.c:767-768`, `firmware/iomcu/src/main.c:986-989`, `firmware/iomcu/src/main.c:1022-1023`, `docs/Link.md:139-140`, `docs/Link.md:181-183`, `STATUS.md:105` | built |
+| Monostable topology | a dual retriggerable monostable, one half per edge polarity, the two outputs combined by an OR gate into one enable node, high while retriggered. The two-channel design with an AND gate is the alternative, and the owner decides between them | pull request #167, R3, F10 | required; design open (F10) |
+| Trigger | both edges. A single-edge trigger sees a 40 ms period and a worst case of 300 ms, which the window cannot cover | pull request #167 | required |
+| Window | the enable node falls 155 ms to 185 ms after the last edge at every corner of 0 to 50 °C and 3.3 V ±3 %, set to 170 ms on test. The lower bound is the firmware's 150 ms plus 5 ms for one late control-task pass. Other pages give 150 ms: see [Conflicts in the tree](#conflicts-in-the-tree) | pull request #167 | required |
+| Timing network | window = k × R × C, set on test: C fitted, the window measured, R selected from the E96 series, between 50 kΩ and 150 kΩ, to put the enable node at 170 ms. C in a dielectric with a stated temperature coefficient. The timing components at the part's pins; the timing node has no other connection, and carries no test point, because a probe on it changes the window | pull request #167 | required |
+| Deadline | output buffer disabled and every power switch open within 200 ms of the last edge, no slower than the coprocessor's 200 ms link failsafe. The switched rail's fall to its load's stop voltage is outside the budget: measured with the load and recorded, not specified | pull request #167 | required |
+| Output gate | the enable of the buffer or level translator between the RP2354B's output pins and the output connector. Disabled: outputs at high impedance under 1 µs after the enable node falls, and each connector line pulled down by 10 kΩ. The enable pin carries its own 10 kΩ pull to its disabled level. On a line that carries bidirectional DShot the pull-down is open (F14), and which pins pass the gate is open (F13): both in [Outputs, programming, receiver inputs and ESC telemetry](#outputs-programming-receiver-inputs-and-esc-telemetry). A pin bound as a servo output can carry a running motor | pull request #167, `docs/Safety.md:26-30`, `docs/Safety.md:106-110`, `STATUS.md:303` | required |
+| Servo rail gate | a high-side switch on the servo rail (up to 8.4 V, 4 to 8 A), open within 5 ms of the enable node falling, and open with its control input undriven or the 3.3 V supply absent. Off-state leakage under 5 mA, a placeholder until a load's idle current is measured | pull request #167, R3, `hardware/docs/Power.md:26-28` | required |
+| ESC pack gate, onboard 150 A path | a high-side switch with the servo rail gate's opening time, fail-open rule and leakage limit, rated for the pack voltage of F15 with margin and the current of F2. Its technology is open; the proposed answer is a MOSFET (metal-oxide-semiconductor field-effect transistor) array and its driver on the IO board | pull request #167, R3, F2, F7, F15 | open (F7) |
+| ESC pack gate, external path of 300 A and above | a contactor or MOSFET module driven from the IO board, or the signal gate alone. The proposed answer is a driven external module whose driver output is on the IO board | F7 | open (F7) |
+| Fail-safe direction | unpowered, undriven, unbuilt, an open trigger line and the display driving into an unpowered circuit all leave both gates disabled. 100 kΩ pull-downs hold the trigger input, each OR input and the enable node low | pull request #167, `testbench/WIRING.md:499` | required |
+| Powered-off isolation | every logic input in the interlock that can be driven while its own supply is absent has I_off (a datasheet limit on input current with the device's supply at 0 V) or a series resistor of 4.7 kΩ or more, at most 1 mA at 3.3 V. The monostable's trigger inputs take both. The output buffer takes I_off on every input on the RP2354B side and on its enable. A switch driver's logic input takes I_off or a 4.7 kΩ series resistor from the enable node. Tested by removing each device's supply alone with everything upstream live | pull request #167, R3, R4 | required |
+| Heartbeat node | one node, three branches: the display's GPIO6, an RP2354B input and the trigger input. A removable link in the display's branch and one in the trigger branch. A 4.7 kΩ series resistor in the trigger branch and one in the RP2354B branch, each holding current into an unpowered input to 0.7 mA at 3.3 V. The trigger's series resistor and 100 kΩ pull-down sit on the monostable's side of its link, so an open link is a low trigger | pull request #167, `testbench/WIRING.md:501` | required |
+| Power-up | the enable node stays low through the 3.3 V ramp until edges arrive. The clear release never triggers (the '423 behaviour); a part whose clear release fires a pulse is excluded | pull request #167, R3 | required |
+| Clear network | a resistor-capacitor network, which covers a fast 3.3 V ramp only, or a reset supervisor with a stated threshold and delay. The proposed answer is a reset supervisor | pull request #167, F12 | open (F12) |
+| Latch | as specified, the enable returns on the first resumed edge, and the latch is the coprocessor's arm in firmware. A hardware latch set by the first expiry and cleared only by an operator action is the alternative. `STATUS.md:340` holds that every stop latches | pull request #167, F11, `STATUS.md:340` | open (F11) |
+| Not defeatable | no processor, register or firmware in the path from GPIO6 to either gate. The RP2354B input listens and cannot add to the enable or remove it | pull request #167, `testbench/WIRING.md:500` | required |
+| Interlock supply | the IO board's 3.3 V rail, over which the window is specified at 3.3 V ±3 %; ground common with J8's GND | pull request #167 | required |
+
+### Not known
+
+- The IO board's CAN controller and transceiver are not chosen. How many received frames each candidate holds against a 19 ms stall at 1 Mbit/s is reported by R2 and decided in Q8.
+- Whether the IO board's CAN controller uses the MCP2515 register map the driver in the tree is written for: not decided. R2 chooses the controller.
+- The heartbeat monitor after a flash window: an interval read short after a 19 ms window drops the line's trust for about 80 ms. This is derived from the periods and not measured on hardware (`firmware/iomcu/src/main.c:1031-1039`; `STATUS.md:292`).
+- Whether the IO board's terminator is fitted, switchable or external: not stated in the tree. The bring-up module's [photograph](../../firmware/iomcu/artwork/rp2350-can.png) shows a 3-position screw terminal beside a slide switch; no page describes either. R2, and round 2 (`hardware/docs/Research.md:22`).
+- The link cable's connector and pin order: not stated in the tree. Round 2 selects connectors (`hardware/docs/Research.md:22`).
+- Whether the heartbeat runs in the link cable or on its own lead from J8, and the connector at the IO board: not stated in the tree. Pull request #167 lists the connector between J8 and the trigger input as not specified.
+- Whether the IO board may draw anything from J8's 3V3 pin: not stated in the tree. No question asks it.
+- Whether the display keeps a supply of its own while the IO board is unpowered: not stated in the tree (see [Conflicts in the tree](#conflicts-in-the-tree)). How far 0.7 mA into an unpowered RP2354B input raises the board's 3.3 V rail is not measured; test step 4 of pull request #167 measures it.
+- The time from IO board power-up to its CAN controller acknowledging frames: not measured. With one supply for both boards (owner, 2026-09-24), it runs against the display's 1200 ms start-up self-test (`docs/Bringup.md:43-45`). No question asks it.
+- The failsafe clear, a STOP during a throttle command, the link unplugged while armed, and an arm refused for each of its three reasons: not provoked on hardware (`STATUS.md:290`). A session with both boards settles them.
+- Where the monostable sits, on the IO board or on a board of its own: not specified in pull request #167. R3 places it in the IO board's research (`hardware/docs/Research.md:147`). Other pages place it on a daughterboard: see [Conflicts in the tree](#conflicts-in-the-tree).
+- A timing element that lengthens a window or opens, and a monostable output, OR output or switch failed conducting: not covered by the single-channel design. The two-channel design masks a stuck-high output, a long timing element or an open resistor in one channel (F10).
+- The chosen part's timing constant k, its drift, and the timing-pin leakage: assumed (k = 0.45 at 3.3 V and 25 °C, ±3 % drift; 0.5 µA at 50 °C). The window's margins of 2.7 ms each way rest on them. R3 replaces them from the datasheet.
+- The servo rail gate as one switch on the rail (pull request #167) or as the 8 per-socket supply switches (owner, 2026-09-24): not stated in the tree. R3 and R6.
+- The fall of a switched rail to its load's stop voltage: not bounded. An ESC with 470 µF and 50 mA of idle draw takes about 230 ms from 25 V to 0.5 V (pull request #167). Each load's stop voltage is not measured, and 0.5 V stands in. Measured with the load (`testbench/WIRING.md:571-584`).
+- Behaviour outside 0 to 50 °C: not analysed (pull request #167).
+- Hardware cover for a healthy display beside a misbehaving coprocessor: none in the design (`docs/Safety.md:51-54`). No question asks for it.
+- The coprocessor image enables no watchdog timer of the RP2350: no call to one appears under `firmware/iomcu/`. The link and heartbeat checks in `firmware/iomcu/src/main.c:970-992` watch the panel, not the coprocessor. A wedged coprocessor beside a beating display is covered by no hardware (`docs/Safety.md:51-54`). No question asks it.
+
+## Outputs, programming, receiver inputs and ESC telemetry
+
+This part carries every signal between the RP2354B and a servo, an ESC, a
+programmer or a receiver. It has 8 output slots, one programming connector, one
+pin per receiver bus and a half-duplex serial line for OpenYGE ESC telemetry
+and parameters. Each output slot is one pin, driven as servo PWM, PPM, DShot or
+bidirectional DShot. The outputs leave the board through the output gate of the
+heartbeat monostable ([Link and safety](#link-and-safety)); which pins pass it
+is open (F13).
+
+Some lines carry both directions on one wire. Bidirectional DShot releases the
+line after each frame and reads the ESC's reply on the same pin. The one-wire
+bootloader and OpenYGE are half duplex. A one-way buffer on such a line blocks
+the receive direction. PIO reach and the PWM slices limit the pin map: see
+[Microcontroller, flash and debug](#microcontroller-flash-and-debug).
+
+| Requirement | Value | Source | State |
+| --- | --- | --- | --- |
+| Output slots | 8 slots and 8 channels, shared by every driver; one pin per slot. PPM carries up to 8 channels on its one pin and fills the channel budget alone. A ninth slot needs a minor protocol version and a second page. The coprocessor on the bring-up module answers the three output pages. The 8 servo sockets: see [Power](#power) | `shared/link/include/link_pages.h:69-75`, `shared/outputs/out_bind.c:789-798`, `STATUS.md:106`, `STATUS.md:110` | built |
+| Servo PWM | hardware PWM slice, 1 MHz counter, 1 µs resolution; frame rate 40 to 400 Hz; pulse 500 to 2500 µs, refused outside; default range 1000 to 2000 µs; SERVO PWM and MOTOR PWM bind at 50 Hz. A servo has swung from the panel. No pulse width or frame period has been read on an instrument | `docs/DShot.md:73-83`, `shared/link/include/link_pages.h:107-110`, `shared/outputs/out_bind.c:561-564`, `STATUS.md:107` | built |
+| PPM | 1 pin, up to 8 channels; 300 µs marks; sync gap at least 3000 µs; channel ceiling 2500 µs. 8 channels need 23.3 ms, so the bind rate is 40 Hz and 50 Hz is refused. Driver range 20 to 50 Hz. Polarity is a pad inversion. 1 PIO state machine and 2 DMA (direct memory access) channels. Has driven nothing on hardware | `docs/DShot.md:103-129`, `shared/outputs/outputs.c:19-24`, `shared/outputs/out_bind.c:545-551`, `firmware/iomcu/src/out_ppm.c:183-195`, `STATUS.md:107` | required |
+| Plain DShot | 16-bit frame; a 0 is high for 37.5% of the bit period, a 1 for 75%. 1 PIO state machine at 8 times the bit rate, 4.8 MHz for DShot600. Frames at 1 kHz. Bind list DSHOT300 and DSHOT600; driver range 150 to 1200 kbit/s. The line idles low. Has run a motor from the panel, with no instrument on the pin | `docs/DShot.md:131-166`, `docs/DShot.md:307-310`, `shared/outputs/outputs.c:25-29`, `shared/outputs/out_bind.c:566-567`, `firmware/iomcu/src/outputs_hw.c:19-28`, `firmware/iomcu/src/out_dshot.h:4`, `firmware/iomcu/src/out_dshot.c:255-259`, `STATUS.md:107` | built |
+| Fastest edges on an output | DShot600, the fastest rate the bench binds: a 1.67 µs bit whose zero-bit high is about 0.63 µs. The DShot driver itself accepts up to 1200 kbit/s | `testbench/WIRING.md:663`, `testbench/WIRING.md:673-677`, `shared/outputs/out_bind.c:566-569`, `shared/outputs/outputs.c:25-29` | required |
+| Bidirectional DShot | the plain frame with the line inverted and the checksum complemented. After a 27 µs frame the pin is released, and the ESC answers about 30 µs later with 21 bits at five quarters of the DShot rate. The reply is sampled 5 times a bit. Inversion is the pad's output override; the pull-up holds the idle high. 2 state machines: the receiver on the one above the transmitter, in the same PIO block. Has driven nothing on hardware | `docs/DShot.md:173-230`, `firmware/iomcu/src/out_dshot.h:4-9`, `firmware/iomcu/src/out_dshot.h:32-42`, `firmware/iomcu/src/out_dshot.c:71-92`, `firmware/iomcu/src/out_dshot.c:162-198`, `STATUS.md:107`, `STATUS.md:291` | required |
+| Reply path | the ESC's reply travels from the connector back to the same RP2354B pin. A one-way buffer on the line blocks it. The element that carries the output enable passes the reply while enabled; pull request #167 records this as not resolved | `docs/DShot.md:180-184`, R4, pull request #167 | required |
+| Level translation | 3.3 V at the RP2354B pin to servo and ESC signal levels. Servo and ESC signal lines are commonly 5 V. A line that leaves the 3.3 V island goes through a translator that senses the target's rail, not a divider chosen once. A one-wire programming line idles high through a pull-up at the device's own supply | `testbench/WIRING.md:25`, `testbench/README.md:410-414`, R4 | required |
+| Idle bias on an output line | low for servo PWM, PPM and plain DShot; high for bidirectional DShot, on the pad pull-up of about 50 kΩ. A 10 kΩ connector-side pull-down against that pull-up holds the line at about 0.55 V, and the reply's first falling edge is lost. An unbound or released output pin is a plain input and drives nothing, so the line's own bias sets its level. The bias of a bidirectional DShot line through the gated buffer: selected per protocol, a pull-up for bidirectional DShot and a pull-down otherwise, or an open-drain stage with a pull-up that idles high for every protocol | `firmware/iomcu/src/out_ppm.c:94-101`, `firmware/iomcu/src/out_ppm.c:125-127`, `firmware/iomcu/src/out_pwm.c:172-175`, `firmware/iomcu/src/out_dshot.c:94-111`, `firmware/iomcu/src/out_dshot.c:249-260`, pull request #167, F14 | open (F14) |
+| Pins behind the gate | either every bindable pin passes a gated buffer, or the binding catalogue is limited to the gated pins. On the bring-up module the specified buffer covers GP0 to GP2. The proposed answer is every pin that reaches an ESC or a servo: the 8 output sockets and the programming connector | pull request #167, F13 | open (F13) |
+| PIO state machines | plain DShot takes 1, bidirectional DShot 2 adjacent ones in one block, PPM 1, out of the 12. The receiver buses and the programmer take a number the tree does not state: no receiver PIO program is written and no programmer protocol has run on a wire. P5 states the count it assumes, and whether a bus uses a hardware UART instead. 8 bidirectional DShot outputs alone take 16 state machines against 12, so P5 returns the output combinations the board supports | `hardware/docs/Research.md:193`, `firmware/iomcu/src/out_dshot.h:4-6`, `firmware/iomcu/src/out_ppm.c:183-184` | required |
+| PIO instruction memory | the programs of all the state machines in one block share that block's instruction memory, and P5 counts it beside the state machines. The length of the DShot, PPM, receiver and programmer programs is not stated in this specification | `hardware/docs/Research.md:193`, `firmware/iomcu/src/dshot.pio`, `firmware/iomcu/src/ppm.pio` | required |
+| Serial servo protocols out | S.BUS and other serial protocols on an output, one PIO program each. No driver number for them exists on the OUTPUTS page | `docs/Manifest.md:31`, `shared/link/include/link_pages.h:134-151` | required |
+| Programming connector | one connector shared by the programmer's five entries: BLHeli_S, AM32, ESCape32, VESC and Hitec D-series, over four wire protocols. The screen is built; no protocol has run on a wire | `shared/ui/programmer_screen.c:4-8`, `shared/ui/programmer_screen.c:237-248`, `STATUS.md:398` | required |
+| One-wire bootloader | BLHeli_S and AM32; 19,200 baud, half duplex, on a PIO state machine | `docs/Manifest.md:29`, `shared/ui/programmer_screen.c:237-241` | required |
+| ESCape32 | text CLI over the ESC's signal line. The programmer screen states no baud; the test bench's proposed channel map puts ESCape32 on the one-wire programmer line at 19,200 baud | `shared/ui/programmer_screen.c:242-243`, `testbench/README.md:396` | required |
+| VESC | framed packets at 115,200 baud; the wire that carries them is not stated in the tree | `shared/ui/programmer_screen.c:244-245` | required |
+| Hitec D-series servos | the published Hitec D-series protocol; electrical form and baud not stated in the tree | `shared/ui/programmer_screen.c:246-247`, `docs/Manifest.md:32` | required |
+| Receiver buses | S.BUS, iBUS, SUMD, CRSF, SRXL2 and JETI EX Bus. Each is one signal wire plus ground into an RP2354B pin; the tree states that no external parts are needed | `docs/Receivers.md:10-16` | required |
+| S.BUS input | inverted 8E2 (8 data bits, even parity, 2 stop bits) UART at 100 kbaud, received by a PIO program that is not written. 25-byte frames every 7 ms or 14 ms, each taking 3 ms. The decoder frames on a gap of 2000 µs and needs a timestamp per byte; it is host-tested | `docs/Receivers.md:12`, `shared/sbus/include/sbus.h:4-17`, `shared/sbus/include/sbus.h:53-60`, `STATUS.md:301` | required |
+| iBUS, SUMD, CRSF, SRXL2 and JETI EX Bus inputs | UART, normal or inverted; not started | `docs/Receivers.md:13`, `STATUS.md:112` | required |
+| Receiver data on the link | no link page carries receiver channels, frame counts or bus state. The S.BUS decoder is linked into the panel and the host suite, not the coprocessor image, and the analyser screen is fed on the panel. The receiver wire lands on an RP2354B pin | `docs/Building.md:60-65`, `docs/Link.md:121-137`, `shared/ui/include/analyser_screen.h:27`, `docs/Receivers.md:15-16` | required |
+| S.BUS2 telemetry slots | not answered: replying in the 325 µs slot without colliding with the receiver's own sensors is out of scope | `STATUS.md:348-349` | decided |
+| Telemetry on the bidirectional DShot wire | no pin beyond the output. An electrical period on every reply, a thousand a second at 1 kHz. Temperature in °C, voltage at 0.25 V per count and current at 1 A per count, once command 13 has gone out 10 times (10 ms). Speed goes stale after 200 ms, the others after 2000 ms. Not run against an ESC | `docs/DShot.md:197-202`, `docs/DShot.md:259-299`, `shared/dshot/include/dshot.h:129-133`, `firmware/iomcu/src/outputs_hw.c:19-28`, `STATUS.md:394` | required |
+| ESCs reported | one: the lowest-numbered bound bidirectional DShot slot | `firmware/iomcu/src/outputs_hw.c:83-101` | required |
+| OpenYGE line | UART at 115,200 baud 8N1, half duplex on one wire; one master and up to 127 addressed ESCs; about 20 Hz. A UART of its own: a hardware UART with its transmit and receive pins tied through a resistor, or a PIO soft UART; not the CAN link. One poll is 3.99 ms plus the ESC's turnaround, 8% of the line at 50 ms. Codec host-tested, not wired in | `docs/OpenYGE.md:17-42`, `STATUS.md:114` | required |
+
+### Not known
+
+- The signal level at the output connectors, the programming connector, the receiver inputs and the OpenYGE line is not stated for the IO board. R4. The RP2354B's own pin ratings are in [Microcontroller, flash and debug](#microcontroller-flash-and-debug).
+- Which element passes the bidirectional DShot reply through the output gate while the gate is enabled. Pull request #167 states the need and records it as not resolved. R3 and R4.
+- Whether the receiver pins and the OpenYGE line pass the output gate. The proposed answer to F13 names the output sockets and the programming connector only.
+- Whether the programming line shares an output line. If it does, the 10 kΩ connector-side pull-down of pull request #167 sits against the pull-up the programmed device holds the line high with. Not stated in the tree. R4.
+- What the pin budget's "servo inputs" and "host link" connect to, and how many one-wire programming lines it counts (`firmware/iomcu/CMakeLists.txt:9-12`). The programmer screen puts every protocol on one connector (`shared/ui/programmer_screen.c:6-7`). The budget names no receiver input and no ESC telemetry line. P5.
+- The DShot bit rate the output path is specified for. The bind list offers 300 and 600 kbit/s; the driver accepts 150 to 1200 kbit/s. The rate of the motor run on the bring-up bench is not stated in the tree. R4.
+- Every output timing on a wire. No pulse width, frame period, jitter, DShot bit time, PPM frame or bidirectional turnaround has been seen on an instrument, and whether an ESC answers bidirectional DShot is not known (`docs/DShot.md:301-324`, `STATUS.md:291`). A measurement on the bring-up bench settles it, not a question.
+- Whether the ESC signal ports are separate from the 8 servo sockets, and how the 8 output slots divide between them. The pin budget names servo outputs and ESC channels as separate groups (`firmware/iomcu/CMakeLists.txt:8-13`); the output pages carry 8 slots in total (`shared/link/include/link_pages.h:69-72`). No question asks it.
+- Which driver each output runs on a board marked soldered, and what selects it. The outputs screen refuses every change on such a board (`shared/outputs/out_bind.c:810-818`). Not stated in the tree; no question asks it.
+- The wire VESC uses at 115,200 baud and how many lines it needs on the programming connector, and the electrical form and baud of Hitec D-series. Not stated in the tree for the IO board. R4.
+- The baud of iBUS, SUMD, CRSF, SRXL2 and JETI EX Bus; whether the bench transmits on a receiver pin (EX Bus telemetry is in scope, `docs/Manifest.md:37-39`); how many receiver pins the board has; whether it powers the receiver. `docs/Receivers.md:15-16` names signal and ground only, and `docs/Receivers.md:29` names receiver power as a cause of a silent bus. R4, and R5 for the receiver's power.
+- Which serial protocols besides S.BUS the outputs generate (`docs/Manifest.md:31`), and whether OneShot and MultiShot are required: the MOTOR screen stub lists them (`shared/ui/stub_screen.c:31`), and no driver number exists for them. No question asks it.
+- An input for the ESC's separate serial telemetry wire. Nothing on the bench reads that wire (`docs/DShot.md:278-279`), and the MOTOR screen stub lists KISS telemetry (`shared/ui/stub_screen.c:34`). Whether the board carries one is not stated; no question asks it.
+- For OpenYGE: the resistor between transmit and receive, the idle level, the pull-up and the number of ports are not stated. The ESC's turnaround is not measured (`docs/OpenYGE.md:360-361`). Which ESC telemetry protocols beyond OpenYGE are supported is an open decision (`docs/OpenYGE.md:400-403`). R4.
+- Whether a programming session switches the ESC's or the servo's supply to enter a bootloader is not stated in the tree (`shared/ui/programmer_screen.c:237-248`). The ESC pack switch follows the monostable, and the socket switches follow the load gates. R4.
+
+## Power
+
+The IO board runs from a 12 to 24 V DC input when one is present. Otherwise it
+runs from the bench's own 2S pack. The selection is automatic. The selected
+source runs the IO board and, through the link cable, the display. A hardware
+disconnect removes the pack below a discharge floor, and F9 sets that floor.
+From the selected source the board makes the 3.3 V logic rail, a 5 V rail and
+the servo rail. It charges the pack from the source that F8 names.
+
+The servo rail comes from the TPS55288 buck-boost converter and feeds 8
+sockets. Each socket has its own supply switch and its own current monitor.
+The servo procedures that read the socket monitors are written and host-tested
+against a modelled servo. The coprocessor image does not call them
+(`firmware/iomcu/CMakeLists.txt:38-41`). Round 1 of the research re-checks the
+TPS55288 and selects the integrated circuits of R1, R3 and R5 to R8, the
+converter's inductor and sense resistor, and the switch of the ESC pack. Round
+2 selects the other passives, the overvoltage protection and the connectors.
+Round 3 covers the thermal design and the busbar, mounting and cabling of the
+external 300 A path (`hardware/docs/Research.md:17-23`).
+
+The switches on the servo rail and the ESC pack, their timing and the
+interlock supply: see [Link and safety](#link-and-safety).
+
+| Requirement | Value | Source | State |
+| --- | --- | --- | --- |
+| DC input | 12 to 24 V; runs the IO board and the display when present | owner, 2026-09-24; `hardware/STATUS.md:19` | decided |
+| Pack input | the bench's own 2S pack; runs the IO board and the display when the DC input is absent | owner, 2026-09-24; `hardware/STATUS.md:19` | decided |
+| Source selection | automatic: the DC input when present, the pack otherwise | owner, 2026-09-24; `hardware/STATUS.md:19` | decided |
+| Pack voltage range | from the discharge floor of F9 to the pack's full charge. The cell chemistry is open. R6 checks the servo converter across that range | F9, R6 | open (F9) |
+| Pack path current | the pack path carries the servo supply's input current: 8.4 V at 8 A is 67 W, and at the 90 % efficiency in Power.md that is 8.9 A from a pack at 8.4 V and 11.3 A at 6.6 V, before the logic rails and the display. R5 sizes the selection and the disconnect for it | R5, `hardware/docs/Power.md:63-64` | required |
+| Pack disconnect | in hardware, below the discharge floor | owner, 2026-09-24; `hardware/docs/Research.md:42`; `hardware/STATUS.md:19` | decided |
+| Pack disconnect hysteresis | the load returning after a disconnect does not reconnect the pack; hysteresis width not stated | R5 | required |
+| Discharge floor | not decided. A pack-voltage floor does not bound one cell: a pack at 6.6 V can hold cells at 3.0 V and 3.6 V, and a per-cell floor reads the pack's balance lead. The proposed answer is 3.3 V a cell (6.6 V for the pack), a candidate for 4.2 V lithium-ion cells with no source in the tree | F9 | open (F9) |
+| Pack reconnect | the proposed answer reconnects only when the DC input or the charger is present | F9 | open (F9) |
+| Reverse-polarity protection | on the board's power input | R5 | required |
+| Overvoltage protection | on the board's power input; threshold not stated | R5, `hardware/docs/Research.md:22` | required |
+| Inrush limiting | on the board's power input; limit not stated | R5 | required |
+| Display supply | through the link cable, from the selected source | owner, 2026-09-24 | decided |
+| Display supply voltage | the proposed answer is 5 V | F6 | open (F6) |
+| Display current | not measured. Prerequisite 7 measures it on the bring-up bench, peak and steady, at the voltage of F6, before R5 runs | `hardware/docs/Research.md:258-259` | required |
+| Logic rail | 3.3 V, from a logic buck. R1 names the 3.3 V supply and R5 the logic buck: see [Conflicts in the tree](#conflicts-in-the-tree) | R1, R5 | required |
+| 5 V rail | loads and current not stated | R5 | required |
+| Power indicator | an LED (light-emitting diode) on the IO board that shows it has power. The first check on the panel's bus-fault screen sends the operator to "its own LED, not the panel's" | `shared/ui/busfault_screen.c:158`, `shared/ui/busfault_screen.c:201` | required |
+| Load gates at reset | each socket supply switch is open, and the servo converter is off, while the RP2354B pin that drives it is an input: through a reset, a reflash and with the RP2354B unpowered. A resistor holds each control input at its inactive level. This applies the tree's fail-safe rule, which `testbench/WIRING.md:22` states for the bench's relay drivers. Whether a GPIO drives the converter's enable is not stated in the tree | `CONTRIBUTING.md:33-34`, `testbench/WIRING.md:22`, `firmware/iomcu/CMakeLists.txt:8-13` | required |
+| Servo supply | TPS55288 buck-boost converter; output voltage and current limit set over I²C | `hardware/STATUS.md:22`, `hardware/docs/Power.md:15` | decided |
+| Servo rail voltage | two settings, set from software: up to 5.5 V for low-voltage servos, up to 8.4 V for high-voltage servos | `hardware/STATUS.md:25`, `hardware/docs/Power.md:26-28` | decided |
+| Servo rail current | 4 to 8 A; the current limit follows the voltage setting | `hardware/STATUS.md:25`, `hardware/docs/Power.md:26-28` | decided |
+| Servo converter input from the DC input | 12 to 24 V. The converter input is designed for 12 V or more, which delivers the full 8 A | `hardware/docs/Power.md:61-66`, `hardware/STATUS.md:36` | decided |
+| Servo converter input from the pack | the TPS55288 takes 2.7–36 V. 8 A at 8.4 V from the pack is not checked; R6 checks the converter from the floor of F9 to full charge, including its inductor current at the low end | `hardware/docs/Power.md:34`, `hardware/STATUS.md:25`, R6 | required |
+| Converter current-limit sense resistor | 6.3 mΩ in a 1 W part: full-scale limit 10.1 A in 79 mA steps, 0.40 W at 8 A; R6 selects the part | `hardware/docs/Power.md:46-53`, R6 | decided |
+| Servo sockets | 8 | owner, 2026-09-24; `hardware/STATUS.md:21` | decided |
+| Socket supply switch | one per socket, 8, for up to 8.4 V; R6 selects the part | owner, 2026-09-24; R6 | decided |
+| Signal-only mode | per socket, supply pin disconnected | `shared/ui/stub_screen.c:57` | required |
+| Socket voltage ceiling | a low and a high ceiling per socket, each set in hardware. Whether it is required, its value, and whether it follows the rail setting (5.5 V or 8.4 V) or the socket are open | `shared/ui/stub_screen.c:56`, F16 | open (F16) |
+| Socket current monitor | one per socket, 8, beside the socket's supply switch; candidates in Power.md (R8) | owner, 2026-09-24; `hardware/STATUS.md:33` | decided |
+| Socket current on the link | no link page carries a socket's current. Bit 3 of the capability word marks a monitor per output as fitted and carries no reading. The servo procedures that act on the current are built for the coprocessor and are not called in its image | `docs/Link.md:121-137`, `shared/link/include/link_pages.h:177`, `firmware/iomcu/CMakeLists.txt:38-41` | required |
+| Servo current ceiling | 3.0 A per servo, checked at every sample; exceeding it aborts at once | `docs/Servo.md:35`, `shared/servo/servo_limit.c:60` | required |
+| Stall timeout | above 1.0 A for 400 ms aborts | `docs/Servo.md:36`, `shared/servo/servo_limit.c:61-62` | required |
+| Bind detection in the limit search | current above 1.8 times the free-running baseline and at least 0.15 A above it, averaged over 80 ms after a 120 ms settle | `docs/Servo.md:21-26`, `shared/servo/servo_limit.c:56-59` | required |
+| Synchroniser current ceiling | 4.0 A for the pair | `docs/Servo.md:68-69`, `shared/servo/servo_sync.c:37` | required |
+| Synchroniser minimum | accepted when the current varies by at least 0.08 A across the scan, averaged over 100 ms per point | `docs/Servo.md:65-68`, `shared/servo/servo_sync.c:35-36` | required |
+| Pack charger | 2S, with balancing; R7 selects the part | `hardware/STATUS.md:32`, R7 | required |
+| Charge source | the proposed answer is the DC input; USB-C not required | F8 | open (F8) |
+| Charge current | the tree states no requirement. Power.md records 2 A for a USB input and calls 3 A the top of the requirement's range, not a requirement. The proposed answer is 2 A from the DC input | `hardware/docs/Power.md:74`, `hardware/docs/Power.md:87-88`, F8 | open (F8) |
+| Balance current | not chosen; 400 mA per cell balances within one charge, 50 mA overnight; candidates in Power.md (R7) | `hardware/docs/Power.md:76`, `hardware/docs/Power.md:96`, R7 | required |
+| Bench pack balance lead | the charger balances the 2S pack cell by cell, so the pack's balance lead reaches the IO board beside its power leads. Whether it shares the balance-lead input of the 1 to 14 cell monitor is not stated. One charger candidate in Power.md reads an NTC (negative temperature coefficient thermistor); whether the pack carries one is not stated | `hardware/docs/Power.md:70-78`, `hardware/STATUS.md:32`, R7 | required |
+
+### Not known
+
+- The two single-die charger candidates in Power.md take a USB-level input, 3.9–6.2 V and 4–5.75 V, and neither takes 12 V (`hardware/docs/Power.md:75`; `hardware/docs/Power.md:83-85`). The 3 A split recorded there pairs a charger with a 3.6–24 V input and a separate balancing part (`hardware/docs/Power.md:90-97`). R7.
+- Whether the charger needs a power path is not stated. Power.md records that a power path lets the bench start from a flat pack, and one of the two single-die candidates has none (`hardware/docs/Power.md:77`; `hardware/docs/Power.md:82-83`; R7).
+- The DC input connector, its current rating and the servo converter's heatsink (`hardware/STATUS.md:36`; `hardware/STATUS.md:56`). Round 2 selects the connectors and round 3 covers the thermal design (`hardware/docs/Research.md:22-23`).
+- The 2S pack's connector: not stated in the tree. R5, and round 2.
+- The overvoltage threshold, the inrush limit and the lowest input voltage the board runs from (R5).
+- The current on each rail is not stated in the tree. P5 checks current per rail (`hardware/docs/Research.md:193`).
+- The order in which the IO board's 5 V and 3.3 V rails come up is not stated. `STATUS.md:317-319` states that the 3.3 V rail comes up after the 5 V rail on a module build (R5).
+- The 3.3 V ramp time on the IO board is not stated. The clear network of F12 depends on it.
+- The converter's inductor (R6). The resistor at its current-limit (ILIM) pin, which sets the average inductor current limit, up to 16 A (`hardware/docs/Power.md:51-53`). That resistor is not in the round 1 list, so round 2 selects it (`hardware/docs/Research.md:21-22`).
+- The current rating of each socket and of its switch: not stated in the tree (R6).
+- The range, resolution and sample rate each socket monitor needs are not stated. The procedures act on 3.0 A, 0.15 A and 0.08 A. The host model assumes 0.02 A peak-to-peak sensor noise (`shared/servo/servo_sim.c:22`; `shared/servo/include/servo_sim.h:60`), and no servo has been measured (R8).
+- The socket monitor part (candidates in Power.md, R8). The I²C addresses of 8 socket monitors beside the other devices on the bus (P5, `hardware/docs/Research.md:193`).
+- Whether a monitor on the servo rail stays beside the 8 socket monitors. Power.md records one monitor on the servo rail, ≤15 V and 8 A (`hardware/docs/Power.md:17`), and `docs/Manifest.md:28` lists it as selected. R8.
+- The number of GPIO the socket switches take is not stated. The pin budget names "the load gates" (`firmware/iomcu/CMakeLists.txt:8-13`), and P5 counts them.
+- Whether the IO board's USB port powers the logic when neither the DC input nor the pack is present is not stated (R5).
+- Reverse-polarity, overvoltage and inrush protection on the ESC pack path, up to 150 A on the board at the pack voltage of F15, is not stated in the tree. R5 scopes the board's power input only (`hardware/docs/Research.md:149`), and R3 the pack switch (`hardware/docs/Research.md:147`). No question asks it.
+- The display is flashed, and its console read, over its own USB-C (`testbench/WIRING.md:75`; `docs/Link.md:19-23`). Whether the link-cable supply and a connected USB-C may power the display at the same time is not stated (F6).
+
+## Measurement
+
+The IO board measures the motor current, the pack voltage, the cells on the
+balance lead, rotation, vibration, temperatures, thrust and torque. It also
+reads sensors on external I²C ports. The coprocessor publishes voltage,
+current, power, rpm, the ESC's and the motor's temperatures, charge and energy
+on the BENCH page (0x20). Voltage, current, rpm and each temperature carry a
+valid bit. No link page carries the cells, vibration, thrust or torque. The
+display draws a quantity that nothing measures as an empty field. The bring-up
+module has no measurement front end. There the coprocessor reports only what an
+ESC sends: speed from bidirectional DShot replies, and voltage, current and
+temperature from extended DShot telemetry. Neither path has run against an ESC.
+No quantity in this section has been measured on hardware.
+
+The onboard shunt carries up to 150 A on the same board as the 3.3 V I²C bus.
+A current of 300 A or more flows through an external shunt, and only its sense
+leads reach the board. The highest pack voltage is open (F15). The
+accelerometer and the index pulse are sampled on one timebase. The vibration
+path resolves the 167 Hz fundamental at 10,000 rpm. The capability bits and the
+pin catalogue's sensor holder: see
+[Microcontroller, flash and debug](#microcontroller-flash-and-debug).
+
+| Requirement | Value | Source | State |
+| --- | --- | --- | --- |
+| Motor current and voltage monitor | INA238 on the IO board: 16 bit, bus input rated to 85 V. Shunt full scale ±163.84 mV or ±40.96 mV, LSB (least significant bit) 5 µV or 1.25 µV. The pack voltage it has to take is open | owner, 2026-09-24; `hardware/docs/Power.md:124-139`; F15 | decided; pack voltage open (F15) |
+| Monitor footprint | one footprint takes the INA228 or the INA238. DEVICE_ID at register 0x3F reads 0x2281 for the INA228 and 0x2381 for the INA238. No driver for either part exists in the tree | `hardware/STATUS.md:24`, `hardware/docs/Sourcing.md:66-72`, `docs/Manifest.md:28` | decided |
+| Charge and energy | from the monitor's own charge and energy accumulators; charge in mAh, energy in 0.1 Wh steps | `hardware/docs/Power.md:111`, `hardware/docs/Power.md:137-139`, `shared/link/include/link_pages.h:236-237` | decided |
+| Current measurement method | a shunt. A hall-effect sensor on the 300 A path is not planned, because of its gain and offset drift on the bench's primary measurement | `hardware/STATUS.md:41-43` | decided |
+| Onboard shunt current | up to 150 A | owner, 2026-09-24; `hardware/STATUS.md:20` | decided |
+| Onboard shunt duty | continuous or peak, and for how long. The connector that takes it is a round 2 question | F2 | open (F2) |
+| Onboard shunt value and part | not chosen. At 150 A a 100 µΩ shunt dissipates 2.25 W and a 200 µΩ shunt 4.5 W. Selected in R8 | `hardware/STATUS.md:34`, R8, F2 | required |
+| Onboard shunt temperature | a temperature sensor beside the onboard shunt. Part not chosen (R8) | owner, 2026-09-24; R8 | required |
+| External shunt input | an off-board shunt for 300 A and above, connected to the IO board by its sense leads | owner, 2026-09-24; `hardware/STATUS.md:35` | decided |
+| External shunt class | busbar type, 50 to 100 µΩ, 4.5 to 9 W at 300 A. Part number not chosen; candidates in Power.md (R8) | `hardware/docs/Power.md:141-151`, `hardware/STATUS.md:35` | decided |
+| Resolution on the external shunt | 100 µΩ: 30 mV at 300 A, 73% of ±40.96 mV, LSB 12.5 mA. 50 µΩ: 15 mV, 37%, LSB 25 mA | `hardware/docs/Power.md:141-146` | required |
+| External shunt sense connection | Kelvin-sensed, with a resistor-capacitor filter on IN+ and IN− against switching edges | `hardware/docs/Power.md:150-151` | required |
+| Monitors for the two shunt positions | one INA238 switched between them, or one for each. The proposed answer is one for each, told apart by I²C address | F1 | open (F1) |
+| Voltage measurement point | the pack, not the motor terminals. The ESC's conduction and switching losses fall inside the rpm-per-volt figure | `docs/Screens.md:131-134` | decided |
+| Voltage and current on the link | BENCH page: voltage in 10 mV steps, 0 to 655.35 V; current in 10 mA steps, 0 to 655.35 A; power in W; 16-bit registers | `shared/link/include/link_pages.h:229-244`, `docs/Link.md:129` | decided |
+| Rpm, charge and power on the link | 1 rpm, 1 mAh and 1 W per count. Every unsigned BENCH register stops at 65,535 counts. A negative value is sent as 0 | `shared/bench/bench_state.c:21-28`, `shared/bench/bench_state.c:79-90` | decided |
+| Sampling | the coprocessor samples the bench numbers every 20 ms (50 Hz), faster than the display's 50 ms poll. The lowest voltage and the highest current, power and rpm of a run are kept on the coprocessor, reset on the edge into driving | `firmware/iomcu/src/main.c:1011-1016`, `firmware/iomcu/src/main.c:743-754`, `shared/link/include/link_pages.h:238-241`, `docs/Link.md:167` | required |
+| Valid bits | voltage, current, rpm, the ESC's temperature and the motor's temperature each carry a valid bit, set only when a sensor answered. Power stays empty unless voltage and current both arrived. Charge and energy carry no valid bit. The display draws a field nothing measures as empty. The tree disagrees on the SIMULATED bit: see [Conflicts in the tree](#conflicts-in-the-tree) | `shared/link/include/link_pages.h:246-276`, `firmware/iomcu/src/main.c:736-741`, `docs/Screens.md:145-150` | decided |
+| Fault action | the coprocessor acts on overcurrent and over-temperature on its own authority and reports the fault at the next poll (faults bitmap bits 1 and 2). The firmware sets only bit 0 (link silent) and bit 4 (heartbeat) | `docs/Safety.md:97-98`, `docs/Link.md:139-140`, `firmware/iomcu/src/main.c:763-770` | required |
+| Stall action | the coprocessor acts on a stall timeout on its own authority and reports faults bit 3. The rpm source, threshold and time for a motor stall are not stated in the tree. The firmware does not set bit 3. The servo stall timeout: see [Power](#power) | `docs/Safety.md:97-98`, `docs/Link.md:139-141`, `firmware/iomcu/src/main.c:763-770` | required |
+| Cell monitor | 1 to 14 cells on the balance lead | `shared/settings/settings.c:39-41`, `shared/ui/include/battery_screen.h:11-14`, `shared/link/include/link_pages.h:181` | required |
+| Cell monitor quantities | per cell: voltage, and resistance under load. Per pack: capacity and drawn mAh | `shared/ui/include/battery_screen.h:13-20` | required |
+| Load condition | the spread is measured under load. At rest a weak cell reads like the others | `docs/Screens.md:248`, `shared/ui/battery_screen.c:302-307` | required |
+| Spread verdict | the widest gap between two cells: HEALTHY below 30 mV, WATCH from 30 mV, REPLACE from 60 mV | `shared/ui/battery_screen.c:43-47`, `docs/Screens.md:243-246` | decided |
+| Plot scale floor | the display's divergence plot is never scaled below 12 mV at full deflection. The display prints the pack mean to 0.001 V | `shared/ui/battery_screen.c:33-41`, `shared/ui/battery_screen.c:288` | decided |
+| Rotation from the ESC | the electrical speed from the period in a bidirectional DShot reply, divided by MOTOR_POLES / 2. MOTOR_POLES is even, 2 to 42; at 0 no speed is reported. A reply older than 200 ms is not reported | `firmware/iomcu/src/main.c:663`, `firmware/iomcu/src/main.c:700-707`, `docs/Link.md:159-163`, `STATUS.md:107` | required |
+| Optical index | one pulse per revolution from a pen line on the motor bell, read from below. Optional. The phase reference for balancing, and an rpm source | `docs/Balance.md:8-13`, `docs/Balance.md:32-37`, `shared/settings/settings.c:99-101`, `shared/ui/stub_screen.c:33` | required |
+| Magnetic pickup | an rpm input | owner, 2026-09-24; `shared/ui/stub_screen.c:33` | required |
+| Phase-wire clip | an rpm input on a motor phase wire, rated for the pack voltage of F15 | owner, 2026-09-24; R11 | required; rating open (F15) |
+| Encoder | ABI, counted in the 27 to 32 GPIO pin budget | owner, 2026-09-24; `firmware/iomcu/CMakeLists.txt:8-13` | required |
+| Encoder signal | single-ended at 3.3 V or 5 V, or differential RS-422 (Recommended Standard 422). Supply voltage, highest count rate and the shaft it measures: not stated | F4 | open (F4) |
+| Vibration sensor | an analogue sensor, piezo or analogue accelerometer, into the coprocessor's ADC | `docs/Balance.md:57-63` | required |
+| Vibration bandwidth | resolves the 167 Hz fundamental at 10,000 rpm. A fused IMU streaming at 100 Hz does not | `docs/Balance.md:60-63` | required |
+| Vibration delay | a constant delay cancels; its variation counts. An analogue sensor: about 15 µs, under 1° at 10,000 rpm. A fused IMU: about 5 ms, 300° at 10,000 rpm | `docs/Balance.md:65-69` | required |
+| Timebase | the accelerometer and the index pulse are sampled on one timebase on the coprocessor | `docs/Manifest.md:30`, `STATUS.md:26` | required |
+| Sensing axis | one axis, across the shaft. A three-axis part mounted flat on a firewall has two axes in that plane; one is used | `docs/Balance.md:45-48`, `shared/ui/balance_screen.c:218-219`, `shared/ui/balance_screen.c:330-336` | required |
+| Converter for the accelerometer | the RP2354B's ADC with a reference, or an external ADC. R10 reports the effective number of bits and the sampling rate of each | Q4, R10 | open (Q4) |
+| Front ends on the ADC inputs | a front end that drives one of the 8 ADC inputs keeps it within its rating (see [Microcontroller, flash and debug](#microcontroller-flash-and-debug)) while the RP2354B's 3.3 V rail is down and the front end's supply is up | R11 | required |
+| Servo measured position | the servo screen draws a measured horn position beside the commanded one; the gap between them is the servo's lag. Two servos that agree with each other and are both wrong need the accelerometer or inspection. An accelerometer on the control surface sees two axes, so a vertical hinge line reads zero across its throw. No input is specified for the position, and no question asks for one | `docs/Screens.md:156-158`, `shared/ui/include/servo_screen.h:66-67`, `shared/ui/stub_screen.c:37-43`, `docs/Servo.md:79-80` | required |
+| ESC temperature | from the ESC's extended DShot telemetry, in whole degrees Celsius. Not reported 2000 ms after the last reading | `firmware/iomcu/src/main.c:673`, `firmware/iomcu/src/main.c:709-735`, `docs/DShot.md:294-299`, `STATUS.md:394` | required |
+| ESC voltage and current | from extended DShot telemetry, 0.25 V and 1 A per count. Not reported 2000 ms after the last reading. The only voltage and current source on the bring-up module | `firmware/iomcu/src/main.c:709-727`, `docs/DShot.md:294-299`, `STATUS.md:394` | required |
+| Motor temperature input | on the IO board, reported apart from the ESC's temperature | owner, 2026-09-24; `shared/link/include/link_pages.h:259-269` | required |
+| Motor temperature sensor | thermocouple, negative temperature coefficient thermistor or infrared, and the channel count: not decided | F5 | open (F5) |
+| Temperatures on the link | ESC and motor in 0.1 °C steps, signed, each with its own valid bit | `shared/link/include/link_pages.h:234-235`, `shared/link/include/link_pages.h:251-269` | decided |
+| Thrust and torque | load cells, with a bridge ADC and excitation (R13) | owner, 2026-09-24; R13 | required |
+| Load-cell channels and excitation | thrust, and torque on one or two cells; excitation voltage not decided | F3 | open (F3) |
+| I²C bus for sensors | external current sensors are on the coprocessor's I²C bus. The display's bus is reserved for its touch controller and input/output expander. I²C is in the pin budget | `docs/Manifest.md:14`, `docs/Manifest.md:28`, `firmware/iomcu/CMakeLists.txt:8-13` | required |
+| External I²C ports | count and voltage not decided | Q7 | open (Q7) |
+| Motor monitor address | set by its A0 and A1 pins. The display's INA228 address setting offers 0x40, 0x41, 0x44 and 0x45 | `shared/settings/settings.c:29`, `shared/settings/settings.c:90-92` | required |
+
+### Not known
+
+- Whether the onboard shunt is Kelvin-sensed and filtered like the external shunt: not stated in the tree (R8).
+- Whether the shunts sit on the high side or the low side of the motor supply: not stated in the tree (R8).
+- Where the monitor's bus-voltage input connects when the external shunt is in use: not stated in the tree. The voltage is measured at the pack (`docs/Screens.md:131-134`; R8).
+- The external shunt's part number: round 1, R8 (`hardware/docs/Research.md:21`). Its sense-lead connector: round 2 (`hardware/docs/Research.md:22`). The 300 A path's mechanical, thermal and layout constraints: round 3 (`hardware/docs/Research.md:23`).
+- The whole-board I²C address map is drawn up in P5 (`hardware/docs/Research.md:193`).
+- The shared footprint's full pin order: `hardware/docs/Sourcing.md:68-69` names eight pins for a 10-pin package (`hardware/docs/Power.md:18`); the bus-voltage pin and IN+ are not listed. The datasheet check is P4's pin-for-pin match (`hardware/docs/Research.md:192`).
+- Whether the INA238's ALERT pin reaches the coprocessor for the overcurrent action: not stated in the tree (R8, P5).
+- The overcurrent and over-temperature thresholds, and which temperature the over-temperature action watches: not stated. The LIMITS page (0x11) is declared and not served (`docs/Link.md:126`). No question covers them.
+- The accuracy of the pack voltage and the motor current: not stated in the tree (R8, R10).
+- Whether a negative current is measured: not stated. The BENCH current register sends a negative value as 0 A (`shared/bench/bench_state.c:21-28`).
+- Which source fills the BENCH voltage and current registers when the motor monitor and the ESC's telemetry both report: not stated. The page has one register for each (`shared/link/include/link_pages.h:230-231`). The ESC's figures and the bench's shunt are called independent measurements (`docs/OpenYGE.md:380-381`). No question covers it.
+- The front end's sample rate: not stated. The tree gives two figures for the samples a poll sees: see [Conflicts in the tree](#conflicts-in-the-tree).
+- How the shunt value reaches the coprocessor: not stated. No link register carries it (`docs/Link.md:121-137`). The display's Shunt setting cannot take the external shunt's class: see [Conflicts in the tree](#conflicts-in-the-tree).
+- The coprocessor's I²C bus speed: not stated. The one I²C speed setting is labelled as the display's bus: see [Conflicts in the tree](#conflicts-in-the-tree).
+- Which register carries the onboard shunt's temperature: not stated. The BENCH page has ESC and motor temperatures only (`shared/link/include/link_pages.h:229-244`; R8).
+- The IO board's own temperature: no register carries it. The die temperature on the display is the ESP32-S3's (`docs/Screens.md:86-90`). No question covers it.
+- The cell monitor's part, its resolution and accuracy per cell, the balance-lead connector sizes, protection against a mis-plugged lead, and how cell samples align with the current for per-cell resistance under load: not stated (R9).
+- The link page for cell voltages: none is defined (`docs/Link.md:121-137`).
+- The highest rpm the rotation inputs and the vibration path follow: not stated. 10,000 rpm is an example (`docs/Balance.md:60-69`; R11). The BENCH rpm register stops at 65,535 rpm (`shared/bench/bench_state.c:21-28`).
+- Which source fills the BENCH rpm register when more than one rotation input is present: not stated in the tree. No question covers it.
+- Which rotation input covers the coast-down after a disarm: not stated (R11). The readouts show the coast-down (`docs/Screens.md:76-79`). DShot frames stop at the disarm (`firmware/iomcu/src/outputs_hw.c:294-295`), and the ESC's speed is not reported 200 ms after its last reply (`firmware/iomcu/src/main.c:663`).
+- Whether the magnetic pickup and phase-wire clip readings use MOTOR_POLES: not stated in the tree (R11).
+- The optical index sensor's type, supply and output; the magnetic pickup's type, supply and output; the phase-wire clip's conditioning and isolation from the 3.3 V logic: not stated (R11).
+- Which processor's GPIO the display's Tacho pin setting names: not stated. Its range does not match the RP2354B: see [Conflicts in the tree](#conflicts-in-the-tree).
+- The accelerometer's part, the number of axes wired, the sample rate, and the lead and connector from the rig arm or firewall to the IO board: not stated. The accelerometer sits flat on the firewall and the index mark on the motor's bell (`docs/Balance.md:45-51`). R11; the converter is Q4 and R10.
+- How many of the 8 ADC inputs the analogue front ends take: not stated. P5 counts them (`hardware/docs/Research.md:193`).
+- The thrust and torque ranges: not stated (F3, R13). No BENCH register carries thrust or torque (`shared/link/include/link_pages.h:229-244`).
+- No capability bit covers the magnetic pickup, the phase-wire clip, the encoder, motor temperature or the load cells (`shared/link/include/link_pages.h:173-183`). No question covers it.
+- What the isolation between the 150 A path and the 3.3 V I²C bus on one board consists of: not defined (`hardware/STATUS.md:37`; round 3, `hardware/docs/Research.md:23`).
+
+## Connectors and test access
+
+The IO board's connectors carry the link cable to the display, the heartbeat
+line from the panel's header J8, 8 servo sockets, the programming connector,
+the receiver inputs, the OpenYGE telemetry line, the sensor leads, the balance
+lead, the USB port, the SWD lines, the BOOT and RESET contacts, the 12 to 24 V
+DC input, the bench's own 2S pack and the ESC pack path. The outputs are
+soldered to their connectors. The panel finds a pad from three link pages: the
+catalogue, the shape and the pads. No connector part is chosen. Round 2 of the
+research selects connectors. Round 3 covers mechanical design and layout
+constraints.
+
+Test access serves the bench in `testbench/`: a logic analyser of 16 channels
+with inputs rated to 5 V, and a scope for the rails above 5 V. The bench is
+being assembled. No pulse width, frame period or reply delay in the tree has
+been read on an instrument. The interlock test of pull request #167 reads the
+monostable's nodes, both sides of a gated output, the control node of each rail
+switch and each switched rail. Each analyser lead on the bench carries a series
+resistor of a few hundred ohms. Every ground returns to one star point, so no
+probe ground carries a load's return current. No research category or question
+covers test access.
+
+Held in other sections:
+
+- The USB port, SWD, BOOT and RESET, the board number, the pin catalogue and the printed pad numbers: see [Microcontroller, flash and debug](#microcontroller-flash-and-debug).
+- The link cable, its termination, the heartbeat node and the monostable's timing node: see [Link and safety](#link-and-safety).
+- The programming connector, the receiver inputs and the OpenYGE line: see [Outputs, programming, receiver inputs and ESC telemetry](#outputs-programming-receiver-inputs-and-esc-telemetry).
+- The DC input, the servo sockets and the power indicator: see [Power](#power).
+- The shunt inputs, the sensor inputs, the balance lead and the external I²C ports: see [Measurement](#measurement).
+
+| Requirement | Value | Source | State |
+| --- | --- | --- | --- |
+| Wires per output lead | 3: signal, ground and rail | `docs/Screens.md:524-529`, `shared/link/include/link_pages.h:448-451` | required |
+| Soldered outputs | each output pin is fixed to its connector, and the coprocessor configures itself. A board whose `k_boards` row is marked `fixed` is shown and not offered: the panel shows the read-back and offers no edit. A board the panel learns from the catalogue page is never marked soldered, so the IO board shows as soldered only on a panel built with the IO board's row in `k_boards` | `docs/DShot.md:15-17`, `docs/DShot.md:48-51`, `shared/outputs/include/out_bind.h:116-124`, `shared/outputs/out_bind.c:253-258`, `STATUS.md:72-73` | required |
+| Pad layout the panel can draw | two rows on one pitch, numbered from pad 1 along one edge and back along the other. Outline, pitch and row inset in 0.01 mm. The bring-up module: 51.00 × 21.00 mm, 40 pads on 2.54 mm, 20 a side. A board with no shape page is listed and not drawn | `docs/Link.md:134`, `shared/link/include/link_pages.h:345-363`, `shared/outputs/out_bind.c:63-72` | required |
+| Grounds and rails on the pads page | up to 32 pads that are not pins, each a ground, a rail or neither. A rail's voltage is in 0.1 V steps up to 25.5 V; 0 on a rail means not a fixed voltage. The panel marks a ground G, a fixed rail by its voltage (5V0, 3V3) and an input rail PWR | `docs/Link.md:137`, `shared/link/include/link_pages.h:461-486`, `docs/Screens.md:524-529` | required |
+| CAN polarity | CANH to CANH and CANL to CANL. A crossed pair measures the same 60 Ω and carries no frame. The panel's first hint on a silent bus asks whether CANH and CANL are swapped. The IO board's link connector marks CANH and CANL | `testbench/WIRING.md:456-466`, `shared/link/link_bringup.c:124` | required |
+| Protection on external lines | ESD (electrostatic discharge) and overvoltage protection on the output, programming, receiver, sensor, balance-lead, link and heartbeat connectors is selected in round 2, and the USB protection in R1. No hardware on the board limits a shorted output: the first run relies on a bench supply's current limit | `hardware/docs/Research.md:22`, R1, `docs/FirstRun.md:42-43` | required |
+| ESC telemetry line | the OpenYGE line leaves by a connector that is not stated, and whether it shares the ESC's output lead is not stated. The bench's analyser map carries a telemetry receive wire from the ESC on channel 13 | `docs/OpenYGE.md:17-42`, `testbench/README.md:397` | required |
+| Silkscreen | each connector's pin names and the CAN logic test points can be read in a close photograph. The bench photographs the coprocessor and its transceiver close enough to identify the receive line, and a connector whose silkscreen cannot be read is photographed again | `testbench/WIRING.md:802-808` | required |
+| Logic probe levels | a logic test point carries 5 V or less. An analyser input is rated to 5 V and is read at 1.65 V for 3.3 V logic and 2.5 V for 5 V. The servo rail (8.4 V) and the ESC pack go to a scope | `testbench/WIRING.md:542-548`, `testbench/host/capture.sh:11-15` | required |
+| CAN logic test points | RXCAN and TXCAN, the receive and transmit lines between the CAN controller and its transceiver, at logic level. No page names a pin or pad for RXCAN on the bring-up module. The controller's interrupt pin there is not a probe point: the driver polls and the pin never asserts | `testbench/WIRING.md:431-440`, `testbench/WIRING.md:470-471`, `testbench/README.md:365-367`, `testbench/README.md:392`, `testbench/README.md:399` | required |
+| Analyser channel map | 16 channels. 3 outputs (0 to 2), the heartbeat (3), the CAN controller's SPI on the bring-up module (4 to 7), RXCAN (8), the panel's touch bus (9 and 10), the DShot reply at the ESC end (11), the programmer line (12), telemetry receive from the ESC (13), S.BUS (14), TXCAN or spare (15). The map is a proposal, to be checked against the wiring as built; the page counts it as 15 | `testbench/README.md:380-408` | required |
+| Monostable test points | the monostable's two outputs, its trigger input on the monostable's side of its link, and the enable node. Logic nodes are read at 1.65 V | `testbench/WIRING.md:536-538`, `testbench/WIRING.md:688-693`, pull request #167 | required |
+| Gated output test points | both sides of a gated output: the RP2354B pin and the connector line. The buffer's enable pin is a third point. The connector line also takes a 4.7 kΩ pull to 3.3 V for the high-impedance check | `testbench/WIRING.md:638-642`, `testbench/WIRING.md:701-706`, pull request #167 | required |
+| Rail switch control nodes | the gate or enable pin of the switch on the servo rail and of the switch on the ESC pack, for the analyser | `testbench/WIRING.md:546-548`, pull request #167 | required |
+| Switched rails | the switched side of the servo rail and of the ESC pack, for a scope probe rated for 8.4 V or the ESC pack's voltage, with the load connected. The switched-side lead takes a DC current probe, and a meter in series for the steady leakage | `testbench/WIRING.md:550-555`, `testbench/WIRING.md:582-590`, pull request #167 | required |
+| Supply removal for the isolation tests | test step 3 lifts the supply lead of each device on the powered-off isolation list alone, for 60 s, with everything upstream live. Step 13 lifts the buffer's supply lead with its input toggling. Step 4 removes the board's rail with the load rails present | pull request #167 | required |
+| Star ground | a ground pad for the star lead. Unpowered: under 1 Ω from the star to each board ground pad, open to each signal pad that is not biased. The servo supply's return and the ESC pack's return each reach the star by their own lead | `testbench/WIRING.md:37-53` | required |
+| Biased pads | the expected resistance to ground of each biased pad is written down before the ground check. On a gated output line that is the 10 kΩ connector-side pull-down | `testbench/WIRING.md:55-63`, pull request #167 | required |
+| Measurement on USB | no analyser or scope reading while the board is on a USB data cable to the bench host: the cable's shell is a second ground return. An isolated USB adapter otherwise | `testbench/WIRING.md:79-89` | required |
+
+### Not known
+
+- The part for every connector, including the connector the gated outputs leave by, which pull request #167 leaves unspecified. Round 2 of [the research](Research.md) selects connectors; round 3 covers mechanical design and layout constraints.
+- Where the test points sit, and whether each carries a series resistor of its own. No research category or question covers test access. The bench puts a few hundred ohms in each analyser lead (`testbench/WIRING.md:23`).
+- How one device's supply is removed alone for test steps 3, 4 and 13: whether the board provides a way to open it or the lead is lifted by hand. Pull request #167 says "supply lead lifted" and no more. No question covers it.
+- Whether the connector layout fits two rows on one pitch. A layout that does not fit is listed and not drawn (`docs/Link.md:134`). Settled by the layout, round 3.
+- How the pads page states the servo rail, which has two settings, up to 5.5 V and up to 8.4 V. Not stated in the tree. A rail above 25.5 V has no value on the pads page (`shared/link/include/link_pages.h:476-479`); the ESC pack voltage is open (F15).
+- The encoder, load-cell and motor temperature connectors wait on F4, F3 and F5.
+- Whether RXCAN and TXCAN are reachable on the IO board. R2 selects the controller and the transceiver, and one R2 seed is a controller and transceiver in one package (`hardware/docs/Research.md:146`).
+- How the bench's stimulus and responder board reaches the IO board's output, programming and receiver connectors. `testbench/README.md:331-339` gives the roles; `testbench/WIRING.md:287-289` names a stimulus generator the guide does not describe.
+- Whether the board carries a status LED beside the power indicator. Not stated in the tree, and no question covers it.
+
+## Conflicts in the tree
+
+Places where two sources in the tree, or the tree and pull request #167, state
+different things. Each entry names both sources. Where this page follows one
+of them, the entry says which and why.
+
+- **Monostable window.** `docs/Safety.md:32-37`, `STATUS.md:325`, `testbench/WIRING.md:497` and `testbench/WIRING.md:511-512` give about 150 ms. Pull request #167 has the enable node fall 155 to 185 ms after the last edge, set to 170 ms on test, with a 200 ms deadline; there 150 ms is `HEARTBEAT_MAX_GAP_MS`, the longest gap the firmware accepts, and a window at 150 ms would drop the enable on a gap the firmware forgives. This page follows pull request #167, the specification R3 builds to.
+- **Interlock test pass figure.** `testbench/WIRING.md:705` passes the interlock test when the enable is deasserted within 150 ms of the last edge. Under pull request #167 the enable falls no sooner than 155 ms, so a correct build fails that check; test step 7 of pull request #167 passes 155 to 185 ms.
+- **Switched rail deadline.** `testbench/WIRING.md:557-560` treats the switched rail being down within 150 ms as the deadline. Pull request #167 leaves the rail's decay out of the timing budget, measured and recorded, not specified; its ESC example with 470 µF and a 50 mA idle draw needs up to 420 ms after the last edge (test step 9).
+- **Order of the two watchers.** `docs/Safety.md:49` lets the monostable act "sooner or later by its own timing" than the firmware. Pull request #167 fixes the order: the firmware disarms at 150 ms, then the enable node falls between 155 and 185 ms.
+- **Pin tolerance.** `testbench/README.md:410` says the RP2350's pins are not 5 V tolerant. `STATUS.md:317-319` admits a 5 V transceiver output on bank 0 through a 2.2 kΩ series resistor. Pull request #167 says the RP2350 is not specified as tolerating an input above an absent IOVDD. The RP2350 datasheet (build 2024-08-08, Table 1430, read from a copy) rates GPIO0 to 39 at 5.5 V while IOVDD is at 3.3 V and at 3.63 V while IOVDD is at 0 V, and GPIO40 to 47 at IOVDD + 0.5 V. This page follows the datasheet; R1 confirms it for the RP2354B, and P1 checks the statement in pull request #167 against it (R3).
+- **Where the monostable sits, and the heartbeat's path.** `firmware/iomcu/include/iomcu_pins.h:36-38` and `docs/FirstRun.md:113` route the heartbeat to GP3 through the monostable. `firmware/iomcu/src/main.c:451` and `firmware/panel/main/main.c:251` place the monostable on a daughterboard. Pull request #167 puts GP3 on the node beside the trigger input, as a listener, and leaves the board unspecified; R3 (`hardware/docs/Research.md:147`) places the monostable in the IO board's research. This page follows pull request #167 for the node and lists the board as not known.
+- **Heartbeat source.** `firmware/iomcu/src/main.c:456` describes the source as a 39 Hz render loop, and `firmware/panel/main/main.c:249-250` as one GPIO write per frame. `shared/safety/include/heartbeat.h:37-45` and `docs/Safety.md:32-34` put the generator in the 5 ms control task with an edge every 20 ms. This page follows `heartbeat.h`.
+- **The display's power.** Pull request #167 states that the panel is powered on its own USB and beats whether or not the coprocessor board has power, and `testbench/WIRING.md:74-75` powers each board from its own USB. The owner decision of 2026-09-24 (`hardware/docs/Research.md:42`, `hardware/STATUS.md:19`) powers the display through the link cable. The powered-off isolation rule of pull request #167 applies either way.
+- **Where the servo rail comes from.** `testbench/WIRING.md:77` feeds the servo and ESC rails from their own supplies, never from a board's rail. `hardware/STATUS.md:22` and `hardware/STATUS.md:25` make the servo rail on the IO board with the TPS55288.
+- **The pack voltage.** `hardware/docs/Power.md:18` sizes the motor monitor for 65 V. F15 (`hardware/docs/Research.md:308`) states that the 65 V has no source in the tree, and pull request #167 (test step 9) says the ESC path's pack voltage is not chosen. 85 V is the INA238's bus rating (`hardware/docs/Power.md:128`). This page treats the pack voltage as open (F15).
+- **The current through the board.** `hardware/docs/Power.md:18`, `hardware/docs/Power.md:157` and pull request #167 (Not specified) put a 300 A path on the pack and beside the I²C bus. The owner decision (`hardware/STATUS.md:20`) puts up to 150 A through the board and 300 A and above through an external shunt reached by its sense leads. This page follows the owner decision.
+- **The per-socket voltage ceiling.** `shared/ui/stub_screen.c:56` lists "Socket ceilings: low and high voltage, each set in hardware". F16 (`hardware/docs/Research.md:309`) states that no source in the tree gives it. This page marks it open (F16).
+- **The servo rail monitor.** `hardware/docs/Power.md:17` and `docs/Manifest.md:28` record one monitor on the servo rail. The owner decision (`hardware/STATUS.md:21`) puts one on each of 8 sockets, with the part open (`hardware/STATUS.md:33`). `hardware/docs/Power.md:20-22` gives the cost of an INA238 in both positions as 0.9 mA of resolution, while its own figures give the INA238 with a 5 mΩ shunt a 0.25 mA LSB against about 1.2 mA for the rail monitor (`hardware/docs/Power.md:101-103`, `hardware/docs/Power.md:119-120`).
+- **The noise on the motor wire.** `hardware/docs/Power.md:146` says 25 mA of resolution on 300 A is below the noise a running ESC puts on the wire. `hardware/STATUS.md:44-47` says that noise is not measured.
+- **The charge current.** `hardware/docs/Power.md:87-88` calls 3 A the top of the requirement's range. F8 (`hardware/docs/Research.md:301`) says the tree states no requirement. This page treats the charge current as open (F8).
+- **The 3.3 V supply.** R1 (`hardware/docs/Research.md:145`) selects the 3.3 V supply, and R5 (`hardware/docs/Research.md:149`) the logic buck. Two categories claim one rail.
+- **The SIMULATED bit.** `docs/Link.md:156-157` says a coprocessor without a measurement front end sets BENCH flag bit 7 and the panel draws SIMULATION. `firmware/iomcu/src/main.c:649` and `STATUS.md:62-64` say the bit is never set by a coprocessor that answers. The Valid bits row in [Measurement](#measurement) follows the firmware.
+- **The filter on the shunt's sense inputs.** `hardware/docs/Power.md:150` expands the filter's two letters as radio control. The filter is a resistor-capacitor filter, the expansion F12 (`hardware/docs/Research.md:305`) and pull request #167 give the same letters.
+- **Samples a poll sees.** `shared/link/include/link_pages.h:226-227` and `firmware/iomcu/src/main.c:678-679` say the panel sees one poll in fifty of the coprocessor's samples. `firmware/iomcu/src/main.c:1011-1016` samples every 20 ms and the panel polls every 50 ms (`docs/Link.md:167`), 2.5 samples a poll.
+- **The DShot frame rate against the poll.** `docs/DShot.md:165` and `firmware/iomcu/src/outputs_hw.c:23-24` say 1 kHz is twenty times the panel's poll rate. The panel polls every 50 ms (`docs/Link.md:167`), and `firmware/iomcu/src/outputs_hw.c:26` speaks of a bench that samples fifty.
+- **The first fetch of the board picture.** `shared/link/include/link_pages.h:393-396` and `docs/Screens.md:519-521` give about ten seconds. `docs/FirstRun.md:137` gives about a minute for the first link-up, and `docs/FirstRun.md:154-155` tens of seconds of extra traffic. The minute may cover more than the picture.
+- **Receiver framing.** `STATUS.md:13-16` and `STATUS.md:23` put receiver framing and the receiver buses on the coprocessor. `docs/Building.md:63` and `firmware/iomcu/CMakeLists.txt:32-43` build the S.BUS decoder for the panel and the host suite, not the coprocessor.
+- **A released PWM pin.** `firmware/iomcu/src/out_pwm.h:43` says a released pin is left low. `firmware/iomcu/src/out_pwm.c:172-175` returns it to a plain input with no drive, so the line's bias sets its level.
+- **The display's monitor settings.** `shared/settings/settings.c:87-95` name the INA228 in the enable, address and shunt settings; the decided motor monitor is the INA238 (`hardware/STATUS.md:23`). The Shunt setting takes 0.1 to 20 mΩ (`shared/settings/settings.c:93-95`), and the external shunt class is 50 to 100 µΩ (`hardware/STATUS.md:35`), so a 50 µΩ shunt cannot be entered.
+- **The Tacho pin setting.** `shared/settings/settings.c:102-104` takes −1 to 48. The RP2354B's GPIO are 0 to 47 (`hardware/docs/Research.md:193`).
+- **The I²C speed setting.** `shared/settings/settings.c:105-107` labels the one I²C speed setting "Shared with the touch controller", the display's bus. `docs/Manifest.md:28` reserves the display's bus for the touch controller and the input/output expander and puts the external current sensors on the coprocessor's bus.
+- **The analyser channel count.** `testbench/README.md:405` says the map is 15. Its table lists 16 rows, 0 to 15, with 15 as TXCAN or spare (`testbench/README.md:382-399`).
