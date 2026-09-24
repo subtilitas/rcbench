@@ -27,14 +27,15 @@ State of each line:
 | Link to the display | classic CAN at 1 Mbit/s, 29-bit identifiers, protocol 4.0. Every signal that reaches an RP2354B pin is at 3.3 V logic; a 5 V output on bank 0 takes a 2.2 kΩ series resistor, because the 5 V rail can come up before 3.3 V ([STATUS.md](../../STATUS.md#constraints)) | built |
 | Display supply | through the link cable, voltage and current open (F6) | open |
 | Safety | heartbeat input, retriggerable monostable with a 150 ms window gating the outputs and the servo and ESC (electronic speed controller) power | required |
-| Outputs | 8 slots, 8 channels: PWM (pulse-width modulation), PPM (pulse-position modulation), DShot, bidirectional DShot | built |
+| Outputs: PWM (pulse-width modulation) and DShot | 8 slots, 8 channels. A servo has swung and a motor has run from the panel on the bring-up bench; no pulse width, frame period or bit time has been seen on an instrument | built |
+| Outputs: PPM (pulse-position modulation) and bidirectional DShot | written and host-tested; neither has driven anything on hardware ([STATUS.md](../../STATUS.md#state)) | required |
 | Programming connector | one connector for every programmer: the one-wire bootloader at 19,200 baud half duplex (BLHeli_S, AM32), the ESCape32 text CLI (command-line interface), VESC's framed packets at 115,200 baud, and the Hitec D-series servo protocol | required |
 | Receiver inputs | S.BUS, iBUS, SUMD, CRSF, SRXL2, JETI EX Bus, one pin each | required |
 | Servo supply | two settings, up to 5.5 V and up to 8.4 V, 4 to 8 A, TPS55288 | decided |
 | Servo sockets | 8, each with a supply switch, a current monitor and a voltage ceiling set in hardware | required |
 | Motor current and voltage | INA238, 85 V bus; onboard shunt up to 150 A with a temperature sensor beside it; external-shunt input for 300 A and above | decided |
 | Cell monitor | 1 to 14 cells on the balance lead | required |
-| Board power | 12 to 24 V DC input or the bench's own 2S pack, selected automatically | decided |
+| Board power | 12 to 24 V DC input or the bench's own 2S pack, selected automatically. The pack is disconnected in hardware below a discharge floor (F9) | decided; floor open |
 | Pack charger | 2S, 2 A, balancing | open (R7) |
 | Vibration | analogue accelerometer and a once-per-revolution index pulse on one timebase; the sensor and converter resolve the 167 Hz fundamental at 10,000 rpm (revolutions per minute), and a fused IMU (inertial measurement unit) streaming at 100 Hz does not ([Balancing](../../docs/Balance.md)) | required |
 | Rotation | optical index, magnetic pickup, phase-wire clip, ESC telemetry, the encoder (quadrature A and B plus index, ABI) | required |

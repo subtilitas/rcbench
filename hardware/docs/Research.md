@@ -15,7 +15,9 @@ has to do; this page lists how its parts are found.
 
 Round 1 selects the ICs, plus the few parts that fix an IC's surroundings:
 the RP2354B's crystal and regulator inductor, the servo supply's inductor and
-sense resistor, and the onboard and external motor shunts.
+sense resistor, the onboard and external motor shunts, and the MOSFETs
+(metal-oxide-semiconductor field-effect transistors) of the ESC (electronic
+speed controller) pack switch.
 
 | Round | Selects |
 | --- | --- |
@@ -107,9 +109,9 @@ requirement values each agent checks against are in
 | --- | --- | --- |
 | R1 | RP2354B and its support: the part itself, 12 MHz crystal, core regulator inductor, 3.3 V supply, USB (Universal Serial Bus) protection | RP2354B; the inductor and crystal the RP2350 hardware design guide names |
 | R2 | CAN controller and transceiver. Every output that reaches an RP2354B pin is at 3.3 V logic: a 3.3 V part, or a transceiver with a logic-supply (VIO) pin at 3.3 V. A 5 V output on RP2350 bank 0 takes a 2.2 kΩ series resistor on RO, because the 5 V rail can come up before 3.3 V ([STATUS.md](../../STATUS.md#constraints)). The controller holds received frames through a flash stall (Q8) | MCP2515, MCP2518FD, MCP251863 (controller and transceiver in one package); TCAN1042V, TCAN334, SN65HVD230, TJA1051T/3, TJA1462 |
-| R3 | Safety gate, to the monostable specification in pull request #167 (`hardware/docs/Monostable.md`, not merged): a dual retriggerable monostable whose clear release does not trigger (the '423 behaviour), the OR gate, the output buffer with its enable, the power-on reset or supervisor, and the high-side switches on the servo rail and on the ESC (electronic speed controller) pack, open within 5 ms of the enable falling. Every logic input driven while its own supply is absent needs I_off (a specified input leakage limit at V_CC = 0 V) | 74HC423, 74HCT423; 74LVC1G32; 74LVC8T245, 74LVC245A; TPS3839; TPS48110, LTC7001, 2ED4820 for the ESC pack's MOSFETs (metal-oxide-semiconductor field-effect transistors) |
+| R3 | Safety gate, to the monostable specification in pull request #167 (`hardware/docs/Monostable.md`, not merged): a dual retriggerable monostable whose clear release does not trigger (the '423 behaviour), the OR gate, the output buffer with its enable, the power-on reset or supervisor, and the high-side switches on the servo rail and on the ESC pack, open within 5 ms of the enable falling. For the onboard 150 A path the switch is a MOSFET array and its driver; the MOSFETs are qualified here for the 65 V bus with margin, 150 A (continuous or peak per F2), safe operating area during turn-off, turn-off within the 5 ms budget, and current sharing and heat across the array. Every logic input driven while its own supply is absent needs I_off (a specified input leakage limit at V_CC = 0 V) | 74HC423, 74HCT423; 74LVC1G32; 74LVC8T245, 74LVC245A; TPS3839; TPS48110, LTC7001, 2ED4820 as drivers; 80 V and 100 V N-channel MOSFETs from Infineon, onsemi, Nexperia, Vishay and Texas Instruments |
 | R4 | Output and input buffering: 3.3 V to servo and ESC signal levels; bidirectional lines for bidirectional DShot; the programming connector, which carries the one-wire bootloader at 19,200 baud (BLHeli_S, AM32), the ESCape32 text CLI (command-line interface), VESC's framed packets at 115,200 baud and the Hitec D-series servo protocol (`shared/ui/programmer_screen.c`); receiver inputs | LSF0108, 74LVC1T45, SN74LXC1T45; series resistance and clamps |
-| R5 | Board power input and protection: reverse polarity, overvoltage, inrush, automatic selection between the 12 to 24 V DC input and the 2S pack, logic buck, 5 V rail, the display's supply on the link cable | LM74700, LM66200, TPS2663, TPS25947; LMR36015, TPS62933, TPS563300 |
+| R5 | Board power input and protection: reverse polarity, overvoltage, inrush, automatic selection between the 12 to 24 V DC input and the 2S pack, a hardware disconnect of the pack below the discharge floor of F9 with hysteresis so the load returning does not reconnect it, logic buck, 5 V rail, the display's supply on the link cable | LM74700, LM66200, TPS3700, BQ29700, TPS2663, TPS25947; LMR36015, TPS62933, TPS563300 |
 | R6 | Servo supply: the TPS55288 re-checked from both inputs (12 to 24 V and 6.0 to 8.4 V), its inductor and sense resistor, per-socket supply switches, the per-socket voltage ceiling set in hardware | TPS55288; TPS22990, TPS22918, TPS2595 |
 | R7 | Pack charger for the 2S pack, with balancing, charging from the source question F8 names | BQ25887, BQ25798 with BQ76907 or BQ29209, MP2672A |
 | R8 | Current and voltage monitors: the motor monitor with the onboard 150 A shunt and the external-shunt input, the temperature sensor at the onboard shunt, one monitor per servo socket | INA238, INA228, INA236, INA3221, INA745A; TMP117, TMP1075 |
@@ -224,6 +226,7 @@ Every sourcing question blocks P2.
 | F6 | The display's supply on the link cable: which voltage, and which connector for the cable? The display's current draw is not measured. | 5 V; the current is measured on the bring-up bench before R5 sizes the rail |
 | F7 | The monostable specification requires a high-side switch on the ESC pack. On the onboard 150 A path it is a MOSFET array and a driver IC on the IO board. What switches the external 300 A path: a contactor or MOSFET module driven from the IO board, or the signal gate alone? | a driven external module; the IO board carries its driver output |
 | F8 | Which source charges the 2S pack: the 12 to 24 V DC input, USB-C, or both? The BQ25887 takes 3.9 to 6.2 V only ([Power](Power.md)), so a DC-input charger is a different part. | the DC input; USB-C not required |
+| F9 | The 2S pack's discharge floor: the pack voltage below which the hardware disconnects it. | 6.6 V, 3.3 V a cell, reconnecting only when the DC input or the charger is present |
 | Q7 | How many external I²C ports, at which voltage? | owner to state |
 
 #### Decided on the research's output
