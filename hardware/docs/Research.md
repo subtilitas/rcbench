@@ -38,7 +38,7 @@ Owner decisions of 2026-09-24:
 | Power | a 12 to 24 V DC input runs the IO board and the display when present; the bench's own 2S pack runs both otherwise; the selection is automatic. The display is powered through the link cable |
 | Motor current | the INA238 is on the IO board. An onboard shunt carries up to 150 A, with a temperature sensor beside it. An external shunt, for 300 A and above, connects to the IO board by its sense leads |
 | Servo current | one current monitor per socket, 8 sockets, beside the per-socket supply switch |
-| Sensor inputs | load cells for thrust and torque, a phase-wire rpm (revolutions per minute) clip, motor temperature, a magnetic rpm pickup, and an ABI encoder (quadrature A and B, plus an index pulse) |
+| Sensor inputs | load cells for thrust and torque, a phase-wire rpm (revolutions per minute) clip, motor temperature, a magnetic rpm pickup, and the encoder (quadrature A and B plus an index pulse, ABI), which is the encoder in the pin budget of `firmware/iomcu/CMakeLists.txt` |
 
 The stock figures in [Power](Power.md) are dated 2026-09-01 and state that they
 are not valid after it. Round 1 takes them again.
@@ -110,38 +110,45 @@ requirement values each agent checks against are in
 | R8 | Current and voltage monitors: the motor monitor with the onboard 150 A shunt and the external-shunt input, the temperature sensor at the onboard shunt, one monitor per servo socket | INA238, INA228, INA236, INA3221, INA745A; TMP117, TMP1075 |
 | R9 | Cell monitor on the balance lead, 1 to 14 cells (the range `SET_PACK_CELLS` and the battery screen take) | BQ76952, BQ76942, ADBMS6948, LTC6813 |
 | R10 | ADC and reference (question Q4): the RP2354B's own ADC with an external reference, or an external converter | REF3033, LM4040; ADS131M04, ADS1115, ADS112C04 |
-| R11 | Rotation and vibration front ends: accelerometer, optical index pulse, magnetic pickup, phase-wire rpm clip rated for the pack voltage, ABI encoder input | ADXL1002, ADXL1005, IIS3DWB; TLV3201, TLV7011; AM26LV32, SN65LBC175 |
+| R11 | Rotation and vibration front ends: accelerometer, optical index pulse, magnetic pickup, phase-wire rpm clip rated for the pack voltage, the encoder input (ABI) | ADXL1002, ADXL1005, IIS3DWB; TLV3201, TLV7011; AM26LV32, SN65LBC175 |
 | R12 | Motor temperature (question F5), external I²C (Inter-Integrated Circuit) ports and the non-volatile store (questions Q7, Q8) | MCP9600, MAX31856, MLX90614; TCA9548A, PCA9615, TCA9617A; FM24CL16B, MB85RC256V, 24LC256 |
 | R13 | Load cells for thrust and torque: bridge ADC and excitation (question F3) | ADS1232, ADS1234, ADS124S08, AD7124-4 |
 
 ## Agent layout
 
-A workflow of five phases. Each research agent returns a fixed schema, so
-the phases after it compare like with like.
+Every agent's output is checked by a critic that did not produce it and is
+told to refute it. Nothing reaches a page on one agent's word. Each agent
+returns a fixed schema, so a critic compares like with like.
 
 ```text
-P0 reachability (1)
-P1 discover and qualify (1 per category) --+-- P2 verify (2 per shortlisted part), pipelined per category
-                                           |
-P3 cross-category checks (1) <-------------+ waits for every category
-P4 completeness critic (1) -- sends gaps back to P1, at most 2 extra passes
-P5 write the pages (1)
+P0  reachability (1)
+P1  requirement critic (1 per category)       -- the owner reviews what it flags
+P2  discover and qualify (1 per category)
+      +-- P3 search critic (1 per category)    pipelined per category,
+      +-- P4 verify (2 per shortlisted part)   no wait between categories
+P5  cross-category checks (1) and its critic (1)   waits for every category
+P6  completeness critic (1)                   gaps go back to P2, at most 2 extra passes
+P7  write the pages (1) and a page critic (1)
 ```
+
+P0 and P1 run first, as a workflow of their own. The owner reads what P1
+flags; P2 onward runs after that.
 
 | Phase | Agents | Does | Returns |
 | --- | --- | --- | --- |
 | P0 | 1 | fetches one known page from every host in [Prerequisites](#prerequisites) | reachable or not, per host; the run stops if JLCPCB's API or the jlcparts database is unreachable |
-| P1 | 1 per category | reads its lines of the specification; lists candidates from allowlisted manufacturers in jlcparts; drops those that miss a requirement value; for up to five survivors records part number, manufacturer, LCSC number, package, every requirement value against the datasheet's, JLCPCB stock, presale, library type and price, second-vendor stock, incoming quantity and lead time, the lifecycle fields above, pin-compatible alternates, and whether a driver exists under `shared/` | a ranked shortlist with the reason for each rank |
-| P2 | 2 per shortlisted part | two independent verifiers, each told to refute. One re-reads stock and lifecycle at the primary sources. One re-reads every requirement value in the datasheet. A part stays when neither refutes it; a refuted first choice sends the runner-up to verification | confirmed or refuted, with the evidence |
-| P3 | 1 | pin budget against the RP2354B's 48 GPIO and the rule that a PIO (programmable input/output) block sees GPIO 0 to 31 or 16 to 47 only; the I²C address map; current per rail; the allowlist over the whole list | conflicts, each naming the parts involved |
-| P4 | 1 | every specification line has a part or is marked "not round 1"; every figure has a date and a source | gaps, fed back to P1 |
-| P5 | 1 | writes the outputs below | the pages |
+| P1 | 1 per category | reads the category's lines in [the specification](IOBoard.md) and every source they cite, and tries to refute each value: does it follow from its source, is the unit right, is it an owner decision or an assumption | each value marked sourced, owner decision or assumption; every assumption is a question to the owner |
+| P2 | 1 per category | lists candidates from allowlisted manufacturers in jlcparts; drops those that miss a requirement value; for up to five survivors records part number, manufacturer, LCSC number, package, every requirement value against the datasheet's, JLCPCB stock, presale, library type and price, second-vendor stock, incoming quantity and lead time, the lifecycle fields above, pin-compatible alternates, and whether a driver exists under `shared/` | a ranked shortlist with the reason for each rank, and every candidate dropped with the reason |
+| P3 | 1 per category | searches for part families P2 did not consider, from the same allowlist, and re-reads each reason P2 gave for dropping a candidate | missed candidates, which go through P2's qualification once; exclusions that do not hold |
+| P4 | 2 per shortlisted part | two independent verifiers, each told to refute. One re-reads stock and lifecycle at the primary sources. One re-reads every requirement value in the datasheet. A part stays when neither refutes it; a refuted first choice sends the runner-up to verification | confirmed or refuted, with the evidence |
+| P5 | 1, and 1 critic | pin budget against the RP2354B's 48 GPIO and the rule that a PIO (programmable input/output) block sees GPIO 0 to 31 or 16 to 47 only; the I²C address map; current per rail; the allowlist over the whole list. The critic re-derives each conflict and looks for ones the first agent missed | conflicts, each naming the parts involved |
+| P6 | 1 | every specification line has a part or is marked "not round 1"; every figure has a date and a source; every assumption P1 flagged is answered | gaps, fed back to P2 |
+| P7 | 1, and 1 critic | writes the outputs below. The critic checks every figure on the pages against the evidence P2 to P4 returned, and every sentence against the writing rules in [CONTRIBUTING.md](../../CONTRIBUTING.md#writing) | the pages, and a list of corrections applied |
 
-Size: 13 categories give 1 + 13 + 26 to 52 + 3 agents, about 43 with one
-verified part per category and about 69 with the alternate verified too
-(question S8). A category that needs several parts (R5, R8, R11) verifies each
-of them, so the real count is higher by a few. This container runs two agents at a time, so the run time grows
-with the count. Not measured.
+Size, for 13 categories and about 20 parts across them (R5, R8 and R11 need
+several each): P0 1, P1 13, P2 13, P3 13, P4 40 with one verified part per
+function or 80 with the alternate verified too, P5 2, P6 1, P7 2. About 85 or
+125 agents (question S8), before any extra pass P6 sends back.
 
 ## Outputs
 
@@ -155,17 +162,23 @@ with the count. Not measured.
 
 ## Prerequisites
 
-1. **Network access.** On 2026-09-24 this session's container was refused
-   (HTTP 403 at the egress proxy) for `jlcpcb.com`, `www.lcsc.com`,
-   `yaqwsx.github.io`, `www.ti.com` and `www.raspberrypi.com`. Web search was
-   reachable, and [Sourcing](Sourcing.md) does not accept a search summary as a
-   stock source. The research session needs, at minimum: `jlcpcb.com`,
+1. **Where it runs.** On the owner's server: 48 CPUs, 128 GB RAM. A workflow
+   runs min(16, CPUs − 2) agents at once, so 16 there. This session's
+   container has 4 CPUs and runs 2.
+2. **Network access from that server.** P0 checks each host and stops the run
+   when one it cannot do without is unreachable. At minimum: `jlcpcb.com`,
    `www.lcsc.com`, `yaqwsx.github.io`, `datasheets.raspberrypi.com`,
    `www.raspberrypi.com`, the second vendor's site (question S3), and each
-   allowlisted manufacturer's site. The alternative is the environment's full
-   network access level.
-2. **The owner's answers** to the questions below.
-3. **The RP2354B quantity** in the owner's personal library.
+   allowlisted manufacturer's site. For the record: on 2026-09-24 this
+   session's cloud container was refused (HTTP 403 at its egress proxy) for
+   `jlcpcb.com`, `www.lcsc.com`, `yaqwsx.github.io`, `www.ti.com` and
+   `www.raspberrypi.com`. Web search was reachable, and
+   [Sourcing](Sourcing.md) does not accept a search summary as a stock
+   source.
+3. **The repository** checked out on the server at the branch that carries
+   this page, so every agent reads the same specification.
+4. **The owner's answers** to the questions below.
+5. **The RP2354B quantity** in the owner's personal library.
 
 ## Questions for the owner
 
@@ -183,7 +196,7 @@ inputs, recorded under [Scope](#scope). The rest are open.
 | S5 | Which lifecycle states pass? | active only; preview fails; a longevity commitment is recorded and not required |
 | S6 | Are extended-library parts acceptable? Each unique one adds a loading fee per order. | yes; basic preferred where two parts are otherwise equal |
 | S7 | How many boards in the first build, and are the parts bought into the personal library ahead of the order? A part in the personal library is not substituted between quote and build. | owner to state |
-| S8 | How many agents may the run use? | about 43: one verified part per category, alternates recorded unverified |
+| S8 | How many agents may the run use? | about 85: one verified part per function, alternates recorded unverified |
 
 ### Specification
 
@@ -192,7 +205,7 @@ inputs, recorded under [Scope](#scope). The rest are open.
 | F1 | One INA238 switched between the onboard shunt and the external-shunt input, or one INA238 for each? | one for each: no switch sits in a sense path, and the firmware reads whichever is wired. The DEVICE_ID check in [Sourcing](Sourcing.md) already tells the two part types apart; the two positions differ by I²C address |
 | F2 | Is 150 A on the onboard shunt continuous or a peak, and for how long? Which connector takes it? | owner to state. At 150 A a 100 µΩ shunt dissipates 2.25 W and a 200 µΩ shunt 4.5 W |
 | F3 | How many load-cell channels (thrust, torque on one or two cells), and what excitation voltage? | owner to state |
-| F4 | ABI encoder: single-ended at 3.3 V or 5 V, or differential RS-422? Its supply voltage, the highest count rate, and what it measures (servo output shaft, motor shaft)? | owner to state |
+| F4 | The encoder: single-ended at 3.3 V or 5 V, or differential RS-422? Its supply voltage, the highest count rate, and what it measures (servo output shaft, motor shaft)? | owner to state |
 | F5 | Motor temperature: thermocouple, NTC (negative temperature coefficient thermistor) or infrared, and how many channels? | owner to state |
 | F6 | The display's supply on the link cable: which voltage, and which connector for the cable? The display's current draw is not measured. | 5 V; the current is measured on the bring-up bench before R5 sizes the rail |
 | F7 | The monostable specification requires a high-side switch on the ESC pack. On the onboard 150 A path it is a MOSFET array and a driver IC on the IO board. What switches the external 300 A path: a contactor or MOSFET module driven from the IO board, or the signal gate alone? | a driven external module; the IO board carries its driver output |

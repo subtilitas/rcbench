@@ -37,7 +37,7 @@ State of each line:
 | Board power | 12 to 24 V DC input or the bench's own 2S pack, selected automatically | decided |
 | Pack charger | 2S, 2 A, balancing | open (R7) |
 | Vibration | analogue accelerometer and a once-per-revolution index pulse on one timebase | required |
-| Rotation | optical index, magnetic pickup, phase-wire clip, ESC telemetry, ABI encoder (A, B and index) | required |
+| Rotation | optical index, magnetic pickup, phase-wire clip, ESC telemetry, the encoder (quadrature A and B plus index, ABI) | required |
 | Temperature | ESC (from its telemetry), motor (sensor open, F5), onboard shunt | required |
 | Thrust and torque | load cells, channel count open (F3) | required |
 | External sensors | I²C (Inter-Integrated Circuit) ports, count open (Q7) | required |
