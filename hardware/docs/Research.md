@@ -2,7 +2,9 @@
 
 The plan for the multi-agent research that selects the IO board's integrated
 circuits (ICs). **It has not run.** It starts when the owner accepts this page
-and has answered the [questions](#questions-for-the-owner).
+and has answered the [blocking questions](#blocking-answered-before-p2-starts).
+The [decisions that wait on the research](#decided-on-the-researchs-output)
+stay open while it runs.
 
 The IO board is the coprocessor board: the RP2354B, the CAN (Controller Area
 Network) link to the display, the outputs, the receiver inputs, the sensor
@@ -45,11 +47,14 @@ are not valid after it. Round 1 takes them again.
 
 ### Consequence of the RP2354B's 2 MB flash
 
-`firmware/iomcu/src/out_store.c` places the output binding in the last two
-sectors of the first 4 MB and asserts `STORE_SIZE_BYTES <=
-PICO_FLASH_SIZE_BYTES`. A board file with 2 MB fails that assertion at
-compile time. The store moves to the top of 2 MB before the first IO board
-build. The coprocessor image and the board picture share the same 2 MB; the
+Two places in the coprocessor build assume 4 MB of flash, and both move to
+2 MB before the first IO board build:
+
+| Place | Assumes | With 2 MB |
+| --- | --- | --- |
+| `firmware/iomcu/src/out_store.c` | the output binding in the last two sectors of the first 4 MB; asserts `STORE_SIZE_BYTES <= PICO_FLASH_SIZE_BYTES` | fails to compile, which is the safe direction |
+| `firmware/iomcu/CMakeLists.txt` | the post-link check `image_fits.cmake` with `-DLIMIT=4186112`, 4 MB less 8 kB | passes an image that reaches into the store's two sectors, and a later save erases firmware. The limit becomes 2,088,960 bytes, 2 MB less 8 kB |
+ The coprocessor image and the board picture share the same 2 MB; the
 picture of the bring-up module is 143,762 bytes.
 
 ## Sourcing rules
@@ -103,10 +108,10 @@ requirement values each agent checks against are in
 | R1 | RP2354B and its support: the part itself, 12 MHz crystal, core regulator inductor, 3.3 V supply, USB (Universal Serial Bus) protection | RP2354B; the inductor and crystal the RP2350 hardware design guide names |
 | R2 | CAN controller and transceiver | MCP2515, MCP2518FD, MCP251863 (controller and transceiver in one package); TCAN1042V, TCAN334, SN65HVD230, TJA1051T/3, TJA1462 |
 | R3 | Safety gate, to the monostable specification in pull request #167 (`hardware/docs/Monostable.md`, not merged): a dual retriggerable monostable whose clear release does not trigger (the '423 behaviour), the OR gate, the output buffer with its enable, the power-on reset or supervisor, and the high-side switches on the servo rail and on the ESC (electronic speed controller) pack, open within 5 ms of the enable falling. Every logic input driven while its own supply is absent needs I_off (a specified input leakage limit at V_CC = 0 V) | 74HC423, 74HCT423; 74LVC1G32; 74LVC8T245, 74LVC245A; TPS3839; TPS48110, LTC7001, 2ED4820 for the ESC pack's MOSFETs (metal-oxide-semiconductor field-effect transistors) |
-| R4 | Output and input buffering: 3.3 V to servo and ESC signal levels, bidirectional lines for bidirectional DShot and one-wire programming, receiver inputs | LSF0108, 74LVC1T45, SN74LXC1T45; series resistance and clamps |
+| R4 | Output and input buffering: 3.3 V to servo and ESC signal levels; bidirectional lines for bidirectional DShot; the programming connector, which carries the one-wire bootloader at 19,200 baud (BLHeli_S, AM32), the ESCape32 text CLI (command-line interface), VESC's framed packets at 115,200 baud and the Hitec D-series servo protocol (`shared/ui/programmer_screen.c`); receiver inputs | LSF0108, 74LVC1T45, SN74LXC1T45; series resistance and clamps |
 | R5 | Board power input and protection: reverse polarity, overvoltage, inrush, automatic selection between the 12 to 24 V DC input and the 2S pack, logic buck, 5 V rail, the display's supply on the link cable | LM74700, LM66200, TPS2663, TPS25947; LMR36015, TPS62933, TPS563300 |
 | R6 | Servo supply: the TPS55288 re-checked from both inputs (12 to 24 V and 6.0 to 8.4 V), its inductor and sense resistor, per-socket supply switches, the per-socket voltage ceiling set in hardware | TPS55288; TPS22990, TPS22918, TPS2595 |
-| R7 | Pack charger: charging the 2S pack from the DC input, from USB-C, or both, with balancing | BQ25887, BQ25798 with BQ76907 or BQ29209, MP2672A |
+| R7 | Pack charger for the 2S pack, with balancing, charging from the source question F8 names | BQ25887, BQ25798 with BQ76907 or BQ29209, MP2672A |
 | R8 | Current and voltage monitors: the motor monitor with the onboard 150 A shunt and the external-shunt input, the temperature sensor at the onboard shunt, one monitor per servo socket | INA238, INA228, INA236, INA3221, INA745A; TMP117, TMP1075 |
 | R9 | Cell monitor on the balance lead, 1 to 14 cells (the range `SET_PACK_CELLS` and the battery screen take) | BQ76952, BQ76942, ADBMS6948, LTC6813 |
 | R10 | ADC and reference (question Q4): the RP2354B's own ADC with an external reference, or an external converter | REF3033, LM4040; ADS131M04, ADS1115, ADS112C04 |
@@ -140,8 +145,8 @@ flags; P2 onward runs after that.
 | P1 | 1 per category | reads the category's lines in [the specification](IOBoard.md) and every source they cite, and tries to refute each value: does it follow from its source, is the unit right, is it an owner decision or an assumption | each value marked sourced, owner decision or assumption; every assumption is a question to the owner |
 | P2 | 1 per category | lists candidates from allowlisted manufacturers in jlcparts; drops those that miss a requirement value; for up to five survivors records part number, manufacturer, LCSC number, package, every requirement value against the datasheet's, JLCPCB stock, presale, library type and price, second-vendor stock, incoming quantity and lead time, the lifecycle fields above, pin-compatible alternates, and whether a driver exists under `shared/` | a ranked shortlist with the reason for each rank, and every candidate dropped with the reason |
 | P3 | 1 per category | searches for part families P2 did not consider, from the same allowlist, and re-reads each reason P2 gave for dropping a candidate | missed candidates, which go through P2's qualification once; exclusions that do not hold |
-| P4 | 2 per shortlisted part | two independent verifiers, each told to refute. One re-reads stock and lifecycle at the primary sources. One re-reads every requirement value in the datasheet. A part stays when neither refutes it; a refuted first choice sends the runner-up to verification | confirmed or refuted, with the evidence |
-| P5 | 1, and 1 critic | pin budget against the RP2354B's 48 GPIO and the rule that a PIO (programmable input/output) block sees GPIO 0 to 31 or 16 to 47 only; the I²C address map; current per rail; the allowlist over the whole list. The critic re-derives each conflict and looks for ones the first agent missed | conflicts, each naming the parts involved |
+| P4 | 2 per verified part | two independent verifiers, each told to refute. One re-reads stock and lifecycle at the primary sources. One re-reads every requirement value in the datasheet. The first-ranked part of each function is verified; the second-ranked too when question S8 takes the larger run. Any other candidate is verified only when every part ranked above it is refuted, one at a time. A part stays when neither verifier refutes it | confirmed or refuted, with the evidence |
+| P5 | 1, and 1 critic | the resource budget of the whole board against the RP2354B: 48 GPIO; the rule that a PIO (programmable input/output) block sees GPIO 0 to 31 or 16 to 47 only; 12 PIO state machines in 3 blocks, where plain DShot takes one, bidirectional DShot two adjacent ones in one block (`firmware/iomcu/src/out_dshot.h`), and each receiver bus and the programmer one; the instruction memory of each block; DMA (direct memory access) channels, two per PPM output (`firmware/iomcu/src/out_ppm.c`); 12 PWM slices, where two pins on one slice and channel conflict (`shared/outputs/include/out_pwm_map.h`). Then the I²C address map, current per rail, and the allowlist over the whole list. Where the budget cannot hold every output as bidirectional DShot beside the receivers and the programmer, the specification states which combinations the board supports. The critic re-derives each conflict and looks for ones the first agent missed | conflicts, each naming the parts involved; the supported output combinations |
 | P6 | 1 | every specification line has a part or is marked "not round 1"; every figure has a date and a source; every assumption P1 flagged is answered | gaps, fed back to P2 |
 | P7 | 1, and 1 critic | writes the outputs below. The critic checks every figure on the pages against the evidence P2 to P4 returned, and every sentence against the writing rules in [CONTRIBUTING.md](../../CONTRIBUTING.md#writing) | the pages, and a list of corrections applied |
 
@@ -155,10 +160,10 @@ function or 80 with the alternate verified too, P5 2, P6 1, P7 2. About 85 or
 | File | Content |
 | --- | --- |
 | `hardware/docs/IOBoard.md` | the specification, with the chosen part on each line |
-| `hardware/docs/Parts.md` | one row per part: function, part number, manufacturer, LCSC number, package, JLCPCB stock, presale and library type with the date, second source, lifecycle status, longevity, alternate |
+| `hardware/docs/Parts.md` | one row per part: function, part number, manufacturer, LCSC number, package, JLCPCB stock, presale and library type with the date, the quantity held in the owner's personal library with the date it was stated, second source, lifecycle status, longevity, alternate |
 | `hardware/docs/Power.md` and one page per category group in its form | the choice, the alternatives, the stock, the reason |
 | `hardware/STATUS.md` | the decided and open tables |
-| `tools/jlc_stock.py` | re-queries JLCPCB's API for every LCSC number in `Parts.md`; `--check` exits 1 when a part is missing, under the stock threshold, or oversold. Run by hand before an order, not in CI (continuous integration): a stock count moving is not a defect in the tree |
+| `tools/jlc_stock.py` | re-queries JLCPCB's API for every LCSC number in `Parts.md`; `--check` exits 1 when a part is missing, under the stock threshold, or oversold. A row marked as held in the owner's personal library is not held to the public count: it carries the quantity the owner stated and the date, the tool checks that quantity against the build quantity, and prints those rows apart from the rest. Run by hand before an order, not in CI (continuous integration): a stock count moving is not a defect in the tree |
 
 ## Prerequisites
 
@@ -187,6 +192,8 @@ inputs, recorded under [Scope](#scope). The rest are open.
 
 ### Sourcing
 
+Every sourcing question blocks P2.
+
 | ID | Question | Proposed answer |
 | --- | --- | --- |
 | S1 | Which manufacturers are allowed? | ICs: Analog Devices (with Maxim and Linear), Infineon (with Cypress), Microchip, Nexperia, NXP, onsemi, Raspberry Pi, Renesas, ROHM, STMicroelectronics, Texas Instruments, Toshiba, Diodes Incorporated, Vishay. Undecided: Monolithic Power Systems, Richtek, Silergy, SG Micro, 3PEAK, Nisshinbo, Torex, Allegro, Melexis, Bosch Sensortec, ams OSRAM |
@@ -200,6 +207,8 @@ inputs, recorded under [Scope](#scope). The rest are open.
 
 ### Specification
 
+#### Blocking: answered before P2 starts
+
 | ID | Question | Proposed answer |
 | --- | --- | --- |
 | F1 | One INA238 switched between the onboard shunt and the external-shunt input, or one INA238 for each? | one for each: no switch sits in a sense path, and the firmware reads whichever is wired. The DEVICE_ID check in [Sourcing](Sourcing.md) already tells the two part types apart; the two positions differ by I²C address |
@@ -209,6 +218,15 @@ inputs, recorded under [Scope](#scope). The rest are open.
 | F5 | Motor temperature: thermocouple, NTC (negative temperature coefficient thermistor) or infrared, and how many channels? | owner to state |
 | F6 | The display's supply on the link cable: which voltage, and which connector for the cable? The display's current draw is not measured. | 5 V; the current is measured on the bring-up bench before R5 sizes the rail |
 | F7 | The monostable specification requires a high-side switch on the ESC pack. On the onboard 150 A path it is a MOSFET array and a driver IC on the IO board. What switches the external 300 A path: a contactor or MOSFET module driven from the IO board, or the signal gate alone? | a driven external module; the IO board carries its driver output |
-| Q4 | The RP2354B's ADC with a reference, or an external ADC for the accelerometer? | the owner decides after R10 reports ENOB (effective number of bits) against the balance measurement |
+| F8 | Which source charges the 2S pack: the 12 to 24 V DC input, USB-C, or both? The BQ25887 takes 3.9 to 6.2 V only ([Power](Power.md)), so a DC-input charger is a different part. | the DC input; USB-C not required |
 | Q7 | How many external I²C ports, at which voltage? | owner to state |
-| Q8 | The output binding in the RP2354B's flash, or in an I²C FRAM (ferroelectric RAM)? A flash erase and program measured 19 ms on the bring-up module and loses CAN frames ([STATUS.md](../../STATUS.md#open-items)). | FRAM, or a CAN controller with a deeper receive FIFO (first-in, first-out buffer); R2 and R12 report both |
+
+#### Decided on the research's output
+
+These stay open while the research runs. The research reports the
+alternatives with their figures; the owner decides before P7 writes the pages.
+
+| ID | Decision | Reported by |
+| --- | --- | --- |
+| Q4 | The RP2354B's ADC with a reference, or an external ADC for the accelerometer | R10: ENOB (effective number of bits) and sampling rate of each against the balance measurement |
+| Q8 | The output binding in the RP2354B's flash, or in an I²C FRAM (ferroelectric RAM). A flash erase and program measured 19 ms on the bring-up module and loses CAN frames ([STATUS.md](../../STATUS.md#open-items)) | R2: how many received frames each CAN controller holds against a 19 ms stall at 1 Mbit/s. R12: FRAM and EEPROM candidates |

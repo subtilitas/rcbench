@@ -28,7 +28,7 @@ State of each line:
 | Display supply | through the link cable, voltage and current open (F6) | open |
 | Safety | heartbeat input, retriggerable monostable with a 150 ms window gating the outputs and the servo and ESC (electronic speed controller) power | required |
 | Outputs | 8 slots, 8 channels: PWM (pulse-width modulation), PPM (pulse-position modulation), DShot, bidirectional DShot | built |
-| ESC programming | one-wire half duplex at 19,200 baud | required |
+| Programming connector | one connector for every programmer: the one-wire bootloader at 19,200 baud half duplex (BLHeli_S, AM32), the ESCape32 text CLI (command-line interface), VESC's framed packets at 115,200 baud, and the Hitec D-series servo protocol | required |
 | Receiver inputs | S.BUS, iBUS, SUMD, CRSF, SRXL2, JETI EX Bus, one pin each | required |
 | Servo supply | two settings, up to 5.5 V and up to 8.4 V, 4 to 8 A, TPS55288 | decided |
 | Servo sockets | 8, each with a supply switch, a current monitor and a voltage ceiling set in hardware | required |
