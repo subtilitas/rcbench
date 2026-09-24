@@ -24,7 +24,7 @@ State of each line:
 | Function | Value | State |
 | --- | --- | --- |
 | Microcontroller | RP2354B: RP2350B die and 2 MB QSPI (quad serial peripheral interface) NOR flash in one QFN-80 (quad flat no-lead) 10 × 10 mm package, 48 GPIO (general-purpose input/output), 8 ADC (analogue-to-digital converter) inputs, 520 kB SRAM (static RAM) | decided |
-| Link to the display | classic CAN at 1 Mbit/s, 29-bit identifiers, protocol 4.0 | built |
+| Link to the display | classic CAN at 1 Mbit/s, 29-bit identifiers, protocol 4.0. Every signal that reaches an RP2354B pin is at 3.3 V logic; a 5 V output on bank 0 takes a 2.2 kΩ series resistor, because the 5 V rail can come up before 3.3 V ([STATUS.md](../../STATUS.md#constraints)) | built |
 | Display supply | through the link cable, voltage and current open (F6) | open |
 | Safety | heartbeat input, retriggerable monostable with a 150 ms window gating the outputs and the servo and ESC (electronic speed controller) power | required |
 | Outputs | 8 slots, 8 channels: PWM (pulse-width modulation), PPM (pulse-position modulation), DShot, bidirectional DShot | built |
@@ -36,7 +36,7 @@ State of each line:
 | Cell monitor | 1 to 14 cells on the balance lead | required |
 | Board power | 12 to 24 V DC input or the bench's own 2S pack, selected automatically | decided |
 | Pack charger | 2S, 2 A, balancing | open (R7) |
-| Vibration | analogue accelerometer and a once-per-revolution index pulse on one timebase | required |
+| Vibration | analogue accelerometer and a once-per-revolution index pulse on one timebase; the sensor and converter resolve the 167 Hz fundamental at 10,000 rpm (revolutions per minute), and a fused IMU (inertial measurement unit) streaming at 100 Hz does not ([Balancing](../../docs/Balance.md)) | required |
 | Rotation | optical index, magnetic pickup, phase-wire clip, ESC telemetry, the encoder (quadrature A and B plus index, ABI) | required |
 | Temperature | ESC (from its telemetry), motor (sensor open, F5), onboard shunt | required |
 | Thrust and torque | load cells, channel count open (F3) | required |

@@ -15,7 +15,7 @@ has to do; this page lists how its parts are found.
 
 Round 1 selects the ICs, plus the few parts that fix an IC's surroundings:
 the RP2354B's crystal and regulator inductor, the servo supply's inductor and
-sense resistor, and the motor shunt.
+sense resistor, and the onboard and external motor shunts.
 
 | Round | Selects |
 | --- | --- |
@@ -106,7 +106,7 @@ requirement values each agent checks against are in
 | ID | Category | Seeds |
 | --- | --- | --- |
 | R1 | RP2354B and its support: the part itself, 12 MHz crystal, core regulator inductor, 3.3 V supply, USB (Universal Serial Bus) protection | RP2354B; the inductor and crystal the RP2350 hardware design guide names |
-| R2 | CAN controller and transceiver | MCP2515, MCP2518FD, MCP251863 (controller and transceiver in one package); TCAN1042V, TCAN334, SN65HVD230, TJA1051T/3, TJA1462 |
+| R2 | CAN controller and transceiver. Every output that reaches an RP2354B pin is at 3.3 V logic: a 3.3 V part, or a transceiver with a logic-supply (VIO) pin at 3.3 V. A 5 V output on RP2350 bank 0 takes a 2.2 kΩ series resistor on RO, because the 5 V rail can come up before 3.3 V ([STATUS.md](../../STATUS.md#constraints)). The controller holds received frames through a flash stall (Q8) | MCP2515, MCP2518FD, MCP251863 (controller and transceiver in one package); TCAN1042V, TCAN334, SN65HVD230, TJA1051T/3, TJA1462 |
 | R3 | Safety gate, to the monostable specification in pull request #167 (`hardware/docs/Monostable.md`, not merged): a dual retriggerable monostable whose clear release does not trigger (the '423 behaviour), the OR gate, the output buffer with its enable, the power-on reset or supervisor, and the high-side switches on the servo rail and on the ESC (electronic speed controller) pack, open within 5 ms of the enable falling. Every logic input driven while its own supply is absent needs I_off (a specified input leakage limit at V_CC = 0 V) | 74HC423, 74HCT423; 74LVC1G32; 74LVC8T245, 74LVC245A; TPS3839; TPS48110, LTC7001, 2ED4820 for the ESC pack's MOSFETs (metal-oxide-semiconductor field-effect transistors) |
 | R4 | Output and input buffering: 3.3 V to servo and ESC signal levels; bidirectional lines for bidirectional DShot; the programming connector, which carries the one-wire bootloader at 19,200 baud (BLHeli_S, AM32), the ESCape32 text CLI (command-line interface), VESC's framed packets at 115,200 baud and the Hitec D-series servo protocol (`shared/ui/programmer_screen.c`); receiver inputs | LSF0108, 74LVC1T45, SN74LXC1T45; series resistance and clamps |
 | R5 | Board power input and protection: reverse polarity, overvoltage, inrush, automatic selection between the 12 to 24 V DC input and the 2S pack, logic buck, 5 V rail, the display's supply on the link cable | LM74700, LM66200, TPS2663, TPS25947; LMR36015, TPS62933, TPS563300 |
@@ -145,25 +145,26 @@ flags; P2 onward runs after that.
 | P1 | 1 per category | reads the category's lines in [the specification](IOBoard.md) and every source they cite, and tries to refute each value: does it follow from its source, is the unit right, is it an owner decision or an assumption | each value marked sourced, owner decision or assumption; every assumption is a question to the owner |
 | P2 | 1 per category | lists candidates from allowlisted manufacturers in jlcparts; drops those that miss a requirement value; for up to five survivors records part number, manufacturer, LCSC number, package, every requirement value against the datasheet's, JLCPCB stock, presale, library type and price, second-vendor stock, incoming quantity and lead time, the lifecycle fields above, pin-compatible alternates, and whether a driver exists under `shared/` | a ranked shortlist with the reason for each rank, and every candidate dropped with the reason |
 | P3 | 1 per category | searches for part families P2 did not consider, from the same allowlist, and re-reads each reason P2 gave for dropping a candidate | missed candidates, which go through P2's qualification once; exclusions that do not hold |
-| P4 | 2 per verified part | two independent verifiers, each told to refute. One re-reads stock and lifecycle at the primary sources. One re-reads every requirement value in the datasheet. The first-ranked part of each function is verified; the second-ranked too when question S8 takes the larger run. Any other candidate is verified only when every part ranked above it is refuted, one at a time. A part stays when neither verifier refutes it | confirmed or refuted, with the evidence |
+| P4 | 2 per verified part | two independent verifiers, each told to refute. One re-reads stock and lifecycle at the primary sources. One re-reads every requirement value in the datasheet, and for an alternate, the pin-for-pin match to the part it stands in for. Verified: the first-ranked part of each function, and the alternate that satisfies sourcing rule 5 for it, when the second source is an alternate rather than a second vendor. Any other candidate is verified only when every part ranked above it is refuted, one at a time. A part stays when neither verifier refutes it | confirmed or refuted, with the evidence |
 | P5 | 1, and 1 critic | the resource budget of the whole board against the RP2354B: 48 GPIO; the rule that a PIO (programmable input/output) block sees GPIO 0 to 31 or 16 to 47 only; 12 PIO state machines in 3 blocks, where plain DShot takes one, bidirectional DShot two adjacent ones in one block (`firmware/iomcu/src/out_dshot.h`), and each receiver bus and the programmer one; the instruction memory of each block; DMA (direct memory access) channels, two per PPM output (`firmware/iomcu/src/out_ppm.c`); 12 PWM slices, where two pins on one slice and channel conflict (`shared/outputs/include/out_pwm_map.h`). Then the I²C address map, current per rail, and the allowlist over the whole list. Where the budget cannot hold every output as bidirectional DShot beside the receivers and the programmer, the specification states which combinations the board supports. The critic re-derives each conflict and looks for ones the first agent missed | conflicts, each naming the parts involved; the supported output combinations |
 | P6 | 1 | every specification line has a part or is marked "not round 1"; every figure has a date and a source; every assumption P1 flagged is answered | gaps, fed back to P2 |
-| P7 | 1, and 1 critic | writes the outputs below. The critic checks every figure on the pages against the evidence P2 to P4 returned, and every sentence against the writing rules in [CONTRIBUTING.md](../../CONTRIBUTING.md#writing) | the pages, and a list of corrections applied |
+| P7 | 1, and 1 critic | writes the outputs below from the evidence P2 to P4 returned and the resource budget and supported output combinations P5 returned. The critic checks every figure and every stated combination on the pages against that evidence, and every sentence against the writing rules in [CONTRIBUTING.md](../../CONTRIBUTING.md#writing) | the pages, and a list of corrections applied |
 
-Size, for 13 categories and about 20 parts across them (R5, R8 and R11 need
-several each): P0 1, P1 13, P2 13, P3 13, P4 40 with one verified part per
-function or 80 with the alternate verified too, P5 2, P6 1, P7 2. About 85 or
-125 agents (question S8), before any extra pass P6 sends back.
+Size, for 13 categories and about 20 functions across them (R5, R8 and R11
+need several each): P0 1, P1 13, P2 13, P3 13, P4 40 for the first-ranked
+parts plus 2 for each alternate that serves as a second source, so 40 to 80,
+P5 2, P6 1, P7 2. About 85 to 125 agents, before any extra pass P6 sends back
+and any runner-up a refutation sends to P4.
 
 ## Outputs
 
 | File | Content |
 | --- | --- |
 | `hardware/docs/IOBoard.md` | the specification, with the chosen part on each line |
-| `hardware/docs/Parts.md` | one row per part: function, part number, manufacturer, LCSC number, package, JLCPCB stock, presale and library type with the date, the quantity held in the owner's personal library with the date it was stated, second source, lifecycle status, longevity, alternate |
+| `hardware/docs/Parts.md` | one row per part: function, part number, manufacturer, LCSC number, package, JLCPCB stock, presale and library type with the date, placements per board, the quantity held in the owner's personal library with the date it was stated, second source, lifecycle status, longevity, alternate |
 | `hardware/docs/Power.md` and one page per category group in its form | the choice, the alternatives, the stock, the reason |
 | `hardware/STATUS.md` | the decided and open tables |
-| `tools/jlc_stock.py` | re-queries JLCPCB's API for every LCSC number in `Parts.md`; `--check` exits 1 when a part is missing, under the stock threshold, or oversold. A row marked as held in the owner's personal library is not held to the public count: it carries the quantity the owner stated and the date, the tool checks that quantity against the build quantity, and prints those rows apart from the rest. Run by hand before an order, not in CI (continuous integration): a stock count moving is not a defect in the tree |
+| `tools/jlc_stock.py` | re-queries JLCPCB's API for every LCSC number in `Parts.md` and needs the build quantity; `--check` exits 1 when a part is missing, oversold, or under its need. A part's need is boards × placements per board, and the public stock gate is the larger of that and question S4's threshold. A row marked as held in the owner's personal library is not held to the public count: the tool checks the quantity the owner stated against boards × placements, and prints those rows apart from the rest. Run by hand before an order, not in CI (continuous integration): a stock count moving is not a defect in the tree |
 
 ## Prerequisites
 
@@ -181,7 +182,11 @@ function or 80 with the alternate verified too, P5 2, P6 1, P7 2. About 85 or
    [Sourcing](Sourcing.md) does not accept a search summary as a stock
    source.
 3. **The repository** checked out on the server at the branch that carries
-   this page, so every agent reads the same specification.
+   this page, so every agent reads the same specification. That branch also
+   carries `hardware/docs/Monostable.md` from pull request #167, merged into
+   `main` and brought in, before R3 runs: R3's requirements are that page,
+   and P1 reads every source it cites. Until then R3 is held and the other
+   categories run.
 4. **The owner's answers** to the questions below.
 5. **The RP2354B quantity** in the owner's personal library.
 
@@ -197,13 +202,13 @@ Every sourcing question blocks P2.
 | ID | Question | Proposed answer |
 | --- | --- | --- |
 | S1 | Which manufacturers are allowed? | ICs: Analog Devices (with Maxim and Linear), Infineon (with Cypress), Microchip, Nexperia, NXP, onsemi, Raspberry Pi, Renesas, ROHM, STMicroelectronics, Texas Instruments, Toshiba, Diodes Incorporated, Vishay. Undecided: Monolithic Power Systems, Richtek, Silergy, SG Micro, 3PEAK, Nisshinbo, Torex, Allegro, Melexis, Bosch Sensortec, ams OSRAM |
-| S2 | Does S1 apply to the passives in round 2 as well? | owner to state before round 2; round 1 selects no passives beyond the inductors, crystal and shunts in [Scope](#scope) |
+| S2 | Which makers are allowed for the parts that are not ICs? Round 1 selects the RP2354B's crystal and regulator inductor, the servo supply's inductor and sense resistor, and both shunts; round 2 selects every other passive. | round 1 and round 2 alike: the S1 list, plus Murata, TDK, Würth Elektronik, Coilcraft, Bourns, Isabellenhütte, KEMET, Panasonic, Yageo, Samsung Electro-Mechanics, Abracon, Epson and NDK |
 | S3 | Is a second vendor still required, as [the hardware README](../README.md) states, or is JLCPCB alone the source? | keep the rule: a pin-compatible alternate at JLCPCB, or the same part at Digi-Key |
 | S4 | What is the stock threshold? | 10 times the parts needed for the first build, and never under 100 |
 | S5 | Which lifecycle states pass? | active only; preview fails; a longevity commitment is recorded and not required |
 | S6 | Are extended-library parts acceptable? Each unique one adds a loading fee per order. | yes; basic preferred where two parts are otherwise equal |
 | S7 | How many boards in the first build, and are the parts bought into the personal library ahead of the order? A part in the personal library is not substituted between quote and build. | owner to state |
-| S8 | How many agents may the run use? | about 85: one verified part per function, alternates recorded unverified |
+| S8 | May the run use 85 to 125 agents, plus the passes P6 sends back? | yes |
 
 ### Specification
 
