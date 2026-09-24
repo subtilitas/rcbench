@@ -6,6 +6,8 @@ depends on.
 
 | Page | Content |
 | --- | --- |
+| [IO board](docs/IOBoard.md) | the specification of the coprocessor board: what it does, with the numbers the tree fixes (draft) |
+| [Research](docs/Research.md) | the plan for round 1 of the component research, its sourcing rules and the open questions |
 | [Power](docs/Power.md) | the four ICs (integrated circuits) of the power path, with the alternatives and the stock at two vendors |
 | [Sourcing](docs/Sourcing.md) | how to obtain a stock figure from a vendor's own API (application programming interface), and which sources are not reliable |
 | [Where things stand](STATUS.md) | decided, open, not planned, and the order of work |
