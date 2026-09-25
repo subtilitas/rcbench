@@ -382,7 +382,8 @@ No quantity in this section has been measured on hardware.
 
 The onboard shunt carries up to 150 A on the same board as the 3.3 V I²C bus.
 A current above 150 A, to 300 A and more, flows through an external shunt, and
-only its sense leads reach the board. The onboard shunt's 150 A is continuous (F2). The ESC
+only its sense leads reach the board. The two paths replace each other: a test
+is cabled through one of them, never both (owner, 2026-09-25). The onboard shunt's 150 A is continuous (F2). The ESC
 pack has up to 16 cells, 67.2 V at 4.2 V a cell (F15). The
 accelerometer and the index pulse are sampled on one timebase. The vibration
 path resolves the 167 Hz fundamental at 10,000 rpm. The capability bits and the
