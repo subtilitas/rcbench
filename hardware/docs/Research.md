@@ -27,6 +27,16 @@ has to do; this page lists how its parts are found.
 | 2 | passives; ESD (electrostatic discharge) and overvoltage protection on the signal, sensor, balance-lead, link and heartbeat connectors (the power input's protection is R5, in round 1); connectors; crystals and inductors not fixed in round 1 |
 | 3 | mechanical, thermal, layout constraints; the busbar, mounting and cabling of the external 300 A path, whose shunt is in round 1 |
 
+Not in any round: the link pages and coprocessor code that carry a
+measurement or a function from the IO board to the display. The specification
+lists each as required: receiver data, socket currents and the servo
+procedures, cell readings, vibration, thrust and torque. They are firmware
+work. P6 marks such a line "hardware selected, link open" and does not return
+it as a gap. Two questions from the same lines do reach round 1, because they
+choose hardware or fix a value: which sensor gives the servo's measured
+position (R11), and which source fills the BENCH voltage, current and rpm
+registers when more than one reports. P1 asks the owner both.
+
 Fixed inputs. Round 1 checks them for stock, lifecycle and a second source.
 A fixed input that fails a check is reported to the owner, not re-selected:
 
