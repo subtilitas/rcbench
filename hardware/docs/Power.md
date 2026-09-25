@@ -23,6 +23,11 @@ resolution.
 
 ## Servo supply: TPS55288
 
+The owner chose the TPS55285 on 2026-09-25: 12 are held in the personal
+library. The rail runs to 6.35 A, and the DC input is 12 to 20 V to stay
+inside its 22 V input rating ([where things stand](../STATUS.md#decided)).
+The comparison below is kept as the record of the alternatives.
+
 The servo rail has two output settings: up to 5.5 V for LV (low-voltage)
 servos and up to 8.4 V for HV (high-voltage) servos, at 4 to 8 A. Both are
 set from software, and the current limit follows the voltage setting.

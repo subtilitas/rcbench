@@ -48,11 +48,11 @@ State of each line:
 | Programming connector | one connector for every programmer: the one-wire bootloader at 19,200 baud half duplex (BLHeli_S, AM32), the ESCape32 text CLI (command-line interface), VESC's framed packets at 115,200 baud, and the Hitec D-series servo protocol | required |
 | Receiver inputs | S.BUS, iBUS, SUMD, CRSF, SRXL2, JETI EX Bus. Each bus is one signal wire plus ground into an RP2354B pin ([Receivers](../../docs/Receivers.md)). How many receiver pins the board brings out is not stated | required |
 | ESC telemetry | extended DShot telemetry on the bidirectional DShot reply; OpenYGE on its own half-duplex UART (universal asynchronous receiver-transmitter) line at 115,200 baud 8N1 (8 data bits, no parity, 1 stop bit) | required |
-| Servo supply | two settings, up to 5.5 V and up to 8.4 V, 4 to 8 A, TPS55288, from the 12 to 24 V DC (direct current) input or the 2S (two cells in series) pack. 8 A at 8.4 V from the pack is not checked (R6) | decided; from the pack required (R6) |
+| Servo supply | two settings, up to 5.5 V and up to 8.4 V, 4 to 6.35 A, TPS55285 (owner, 2026-09-25), from the 12 to 20 V DC (direct current) input or the 2S (two cells in series) pack. 6.35 A at 8.4 V from the pack is not checked (R6) | decided; from the pack required (R6) |
 | Servo sockets | 8, each with a supply switch and a current monitor (owner, 2026-09-24). A voltage ceiling set in hardware is open (F16) | decided; ceiling open (F16) |
 | Motor current and voltage | INA238, bus input rated to 85 V; the highest pack voltage is open (F15). Onboard shunt up to 150 A with a temperature sensor beside it; external-shunt input for 300 A and above | decided; one or two INA238 open (F1), continuous or peak open (F2), pack voltage open (F15) |
 | Cell monitor | 1 to 16 cells on the balance lead, for the 16-cell pack of F15. `SET_PACK_CELLS` and the battery screen take 1 to 14 and change with it | required |
-| Board power | 12 to 24 V DC input or the bench's own 2S pack, selected automatically. The pack is disconnected in hardware below a discharge floor (F9). At the 90 % efficiency [Power](Power.md) gives for a 5 V input, the servo supply alone draws 8.9 A from a pack at 8.4 V and 11.3 A at 6.6 V, the proposed floor of F9 | decided; floor open (F9) |
+| Board power | 12 to 20 V DC input or the bench's own 2S pack, selected automatically. The pack is disconnected in hardware below a discharge floor (F9). At the 90 % efficiency [Power](Power.md) gives for a 5 V input, the servo supply alone draws 7.1 A from a pack at 8.4 V and 9.9 A at 6.0 V, the floor of F9 | decided; floor open (F9) |
 | Pack charger | 2S, balancing. The charging source and the charge current are not stated (F8); R7 selects the part | open (F8) |
 | Vibration | an analogue sensor, piezo or analogue accelerometer, and a once-per-revolution index pulse on one timebase. The sensor and converter resolve the 167 Hz fundamental at 10,000 rpm (revolutions per minute), and a fused IMU (inertial measurement unit) streaming at 100 Hz does not ([Balancing](../../docs/Balance.md)). The converter is open (Q4) | required; converter open (Q4) |
 | Rotation | optical index, magnetic pickup, phase-wire clip, ESC telemetry, and the encoder, ABI (quadrature A and B plus an index pulse). The encoder's level, supply and count rate are open (F4) | required; encoder open (F4) |
@@ -173,7 +173,7 @@ coprocessor stops acting and the display keeps beating.
 | Timing network | window = k × R × C, set on test: C fitted, the window measured, R selected from the E96 series, between 50 kΩ and 150 kΩ, to put the enable node at 170 ms. C in a dielectric with a stated temperature coefficient. The timing components at the part's pins; the timing node has no other connection, and carries no test point, because a probe on it changes the window | pull request #167 | required |
 | Deadline | output buffer disabled and every power switch open within 200 ms of the last edge, no slower than the coprocessor's 200 ms link failsafe. The switched rail's fall to its load's stop voltage is outside the budget: measured with the load and recorded, not specified | pull request #167 | required |
 | Output gate | the enable of the buffer or level translator between the RP2354B's output pins and the output connector. Disabled: outputs at high impedance under 1 µs after the enable node falls, and each connector line pulled down by 10 kΩ. The enable pin carries its own 10 kΩ pull to its disabled level. On a line that carries bidirectional DShot the pull-down is open (F14), and which pins pass the gate is open (F13): both in [Outputs, programming, receiver inputs and ESC telemetry](#outputs-programming-receiver-inputs-and-esc-telemetry). A pin bound as a servo output can carry a running motor | pull request #167, `docs/Safety.md:26-30`, `docs/Safety.md:106-110`, `STATUS.md:303` | required |
-| Servo rail gate | a high-side switch on the servo rail (up to 8.4 V, 4 to 8 A), open within 5 ms of the enable node falling, and open with its control input undriven or the 3.3 V supply absent. Off-state leakage under 5 mA, a placeholder until a load's idle current is measured | pull request #167, R3, `hardware/docs/Power.md:26-28` | required |
+| Servo rail gate | a high-side switch on the servo rail (up to 8.4 V, 4 to 6.35 A), open within 5 ms of the enable node falling, and open with its control input undriven or the 3.3 V supply absent. Off-state leakage under 5 mA, a placeholder until a load's idle current is measured | pull request #167, R3, `hardware/docs/Power.md:26-28` | required |
 | ESC pack gate, onboard 150 A path | a high-side switch with the servo rail gate's opening time, fail-open rule and leakage limit, rated for the pack voltage of F15 plus a margin that P1 asks the owner for, and for the current of F2. Its technology is open; the proposed answer is a MOSFET (metal-oxide-semiconductor field-effect transistor) array and its driver on the IO board | pull request #167, R3, F2, F7, F15 | open (F7) |
 | ESC pack gate, external path of 300 A and above | a contactor or MOSFET module driven from the IO board, or the signal gate alone. The proposed answer is a driven external module whose driver output is on the IO board | F7 | open (F7) |
 | Fail-safe direction | unpowered, undriven, unbuilt, an open trigger line and the display driving into an unpowered circuit all leave both gates disabled. 100 kΩ pull-downs hold the trigger input, each OR input and the enable node low | pull request #167, `testbench/WIRING.md:499` | required |
@@ -271,20 +271,20 @@ the receive direction. PIO reach and the PWM slices limit the pin map: see
 
 ## Power
 
-The IO board runs from a 12 to 24 V DC input when one is present. Otherwise it
+The IO board runs from a 12 to 20 V DC input when one is present. Otherwise it
 runs from the bench's own 2S pack. The selection is automatic. The selected
 source runs the IO board and, through the link cable, the display. A hardware
 disconnect removes the pack below a discharge floor, and F9 sets that floor.
 From the selected source the board makes the 3.3 V logic rail, a 5 V rail and
 the servo rail. It charges the pack from the source that F8 names.
 
-The servo rail comes from the TPS55288 buck-boost converter and feeds 8
+The servo rail comes from the TPS55285 buck-boost converter and feeds 8
 sockets. Each socket has its own supply switch and its own current monitor.
 The servo procedures that read the socket monitors are written and host-tested
 against a modelled servo. The coprocessor image does not call them
 (`firmware/iomcu/CMakeLists.txt:38-41`). Round 1 of the research re-checks the
-TPS55288 and selects the integrated circuits of R3 and R5 to R8, the
-converter's inductor and sense resistor, the motor shunts and the switch of
+TPS55285 and selects the integrated circuits of R3 and R5 to R8, the
+converter's inductor, the motor shunts and the switch of
 the ESC pack. R5 selects the power input's protection. Round 2 selects the
 other passives, the connectors, and the protection on the signal, sensor,
 balance-lead, link and heartbeat connectors. Round 3 covers the thermal design
@@ -296,11 +296,11 @@ interlock supply: see [Link and safety](#link-and-safety).
 
 | Requirement | Value | Source | State |
 | --- | --- | --- | --- |
-| DC input | 12 to 24 V; runs the IO board and the display when present | owner, 2026-09-24; Board power in [hardware STATUS](../STATUS.md#decided) | decided |
+| DC input | 12 to 20 V; runs the IO board and the display when present | owner, 2026-09-24; Board power in [hardware STATUS](../STATUS.md#decided) | decided |
 | Pack input | the bench's own 2S pack; runs the IO board and the display when the DC input is absent | owner, 2026-09-24; Board power in [hardware STATUS](../STATUS.md#decided) | decided |
 | Source selection | automatic: the DC input when present, the pack otherwise | owner, 2026-09-24; Board power in [hardware STATUS](../STATUS.md#decided) | decided |
 | Pack voltage range | from the discharge floor of F9 to the pack's full charge. The cell chemistry is open. R6 checks the servo converter across that range | F9, R6 | open (F9) |
-| Pack path current | the pack path carries the servo supply's input current. 8.4 V at 8 A is 67 W. At 90 %, the efficiency [Power](Power.md) gives for a 5 V input, that is 8.9 A from a pack at 8.4 V and 11.3 A at 6.6 V. The efficiency from the pack is not stated. 8.4 V and 6.6 V assume 4.2 V cells and the proposed floor of F9. The logic rails and the display add to it. R5 sizes the selection and the disconnect for it | R5 ([Research](Research.md#research-categories)), `hardware/docs/Power.md:63-64` | required |
+| Pack path current | the pack path carries the servo supply's input current. 8.4 V at 6.35 A is 53.3 W. At 90 %, the efficiency [Power](Power.md) gives for a 5 V input, that is 7.1 A from a pack at 8.4 V and 9.9 A at 6.0 V, the floor of F9 (2 cells at 3.0 V). The efficiency from the pack is not stated. The logic rails and the display add to it. R5 sizes the selection and the disconnect for it | R5 ([Research](Research.md#research-categories)), `hardware/docs/Power.md:63-64` | required |
 | Pack disconnect | in hardware, below the discharge floor | owner, 2026-09-24; owner decisions in [Research](Research.md#scope); Board power in [hardware STATUS](../STATUS.md#decided) | decided |
 | Pack disconnect hysteresis | the load returning after a disconnect does not reconnect the pack; hysteresis width not stated | R5 | required |
 | Discharge floor | not decided. A pack-voltage floor does not bound one cell: a pack at 6.6 V can hold cells at 3.0 V and 3.6 V, and a per-cell floor reads the pack's balance lead. The proposed answer is 3.3 V a cell (6.6 V for the pack), a candidate for 4.2 V lithium-ion cells with no source in the tree | F9 | open (F9) |
@@ -315,12 +315,12 @@ interlock supply: see [Link and safety](#link-and-safety).
 | 5 V rail | loads and current not stated. R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 select, as P4 verifies them, plus the display's draw (prerequisite 7). T3, which runs R5, runs after T2 and T4 | R5 ([Research](Research.md#research-categories)), T2 to T4 ([Research](Research.md#agent-layout)) | required |
 | Power indicator | an LED (light-emitting diode) on the IO board that shows it has power. The first check on the panel's bus-fault screen sends the operator to "its own LED, not the panel's" | `shared/ui/busfault_screen.c:158`, `shared/ui/busfault_screen.c:201` | required |
 | Load gates at reset | each socket supply switch is open, and the servo converter is off, while the RP2354B pin that drives it is an input: through a reset, a reflash and with the RP2354B unpowered. A resistor holds each control input at its inactive level. This applies the tree's fail-safe rule, which `testbench/WIRING.md:22` states for the bench's relay drivers. Whether a GPIO drives the converter's enable is not stated in the tree | `CONTRIBUTING.md:34-35`, `testbench/WIRING.md:22`, `firmware/iomcu/CMakeLists.txt:8-13` | required |
-| Servo supply | TPS55288 buck-boost converter; output voltage and current limit set over I²C | Servo supply in [hardware STATUS](../STATUS.md#decided), `hardware/docs/Power.md:15` | decided |
+| Servo supply | TPS55285 buck-boost converter; output voltage and current limit set over I²C; 12 held (owner, 2026-09-25) | Servo supply in [hardware STATUS](../STATUS.md#decided), `hardware/docs/Power.md:15` | decided |
 | Servo rail voltage | two settings, set from software: up to 5.5 V for low-voltage servos, up to 8.4 V for high-voltage servos | Servo rail in [hardware STATUS](../STATUS.md#decided), `hardware/docs/Power.md:26-28` | decided |
-| Servo rail current | 4 to 8 A; the current limit follows the voltage setting | Servo rail in [hardware STATUS](../STATUS.md#decided), `hardware/docs/Power.md:26-28` | decided |
-| Servo converter input from the DC input | 12 to 24 V. The converter input is designed for 12 V or more, which delivers the full 8 A | `hardware/docs/Power.md:61-66`, Converter input connector and heatsink in [hardware STATUS](../STATUS.md#open) | decided |
-| Servo converter input from the pack | the TPS55288 takes 2.7–36 V. 8 A at 8.4 V from the pack is not checked; R6 checks the converter from the floor of F9 to full charge, including its inductor current at the low end | `hardware/docs/Power.md:34`, Servo rail in [hardware STATUS](../STATUS.md#decided), R6 | required |
-| Converter current-limit sense resistor | 6.3 mΩ in a 1 W part: full-scale limit 10.1 A in 79 mA steps, 0.40 W at 8 A; R6 selects the part | `hardware/docs/Power.md:46-53`, R6 | decided |
+| Servo rail current | 4 to 6.35 A: the TPS55285 senses current internally and its limit stops at 6.35 A (owner, 2026-09-25, in place of 8 A). The current limit follows the voltage setting | Servo rail in [hardware STATUS](../STATUS.md#decided), `hardware/docs/Power.md:26-28` | decided |
+| Servo converter input from the DC input | 12 to 20 V (owner, 2026-09-25), inside the TPS55285's 2.4 to 22 V input | `hardware/docs/Power.md:61-66`, Converter input connector and heatsink in [hardware STATUS](../STATUS.md#open) | decided |
+| Servo converter input from the pack | the TPS55285 takes 2.4 to 22 V. 6.35 A at 8.4 V from the pack is not checked; R6 checks the converter from the floor of F9 to full charge, including its inductor current at the low end | `hardware/docs/Power.md:34`, Servo rail in [hardware STATUS](../STATUS.md#decided), R6 | required |
+| Converter current-limit sense | internal to the TPS55285; no external sense resistor | `hardware/docs/Power.md:39-40` | decided |
 | Servo sockets | 8 | owner, 2026-09-24; Servo current in [hardware STATUS](../STATUS.md#decided) | decided |
 | Socket supply switch | one per socket, 8, for up to 8.4 V; R6 selects the part | owner, 2026-09-24; R6 | decided |
 | Signal-only mode | per socket, supply pin disconnected | `shared/ui/stub_screen.c:57` | required |
@@ -471,7 +471,7 @@ The IO board's connectors carry the link cable to the display, the heartbeat
 line from the panel's header J8, 8 servo sockets, the programming connector,
 the receiver inputs, the OpenYGE telemetry line, the sensor leads, the external
 shunt's sense leads, the external I²C ports, the balance lead, the USB port,
-the SWD lines, the BOOT and RESET contacts, the 12 to 24 V DC input, the
+the SWD lines, the BOOT and RESET contacts, the 12 to 20 V DC input, the
 bench's own 2S pack and the ESC pack path. The outputs are soldered to their
 connectors. The panel finds a pad from three link pages: the catalogue, the
 shape and the pads. No connector part is chosen. Round 2 of the research
