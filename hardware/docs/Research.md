@@ -47,7 +47,7 @@ Owner decisions of 2026-09-24:
 | Motor current | the INA238 is on the IO board. An onboard shunt carries up to 150 A, with a temperature sensor beside it. An external shunt, for 300 A and above, connects to the IO board by its sense leads |
 | Servo current | one current monitor per socket, 8 sockets, beside the per-socket supply switch |
 | Sensor inputs | load cells for thrust and torque, a phase-wire rpm (revolutions per minute) clip, motor temperature, a magnetic rpm pickup, and the encoder (quadrature A and B plus an index pulse, ABI), which is the encoder in the pin budget of `firmware/iomcu/CMakeLists.txt` |
-| Where the research runs | the owner's server, 48 CPUs (central processing units) |
+| Where the research runs | the owner's server, 48 CPUs (central processing units), 128 GB of memory |
 | Checking | every finding is countered by a critic |
 | Size of a task | at most 32 agents per task |
 
@@ -263,8 +263,8 @@ known and reported to the owner. Follow-up tasks add to the total of 101.
 
 ## Prerequisites
 
-1. **Where it runs.** On the owner's server, 48 CPUs (owner, 2026-09-24). Its
-   memory is not stated. The server has Claude Code at a version that runs
+1. **Where it runs.** On the owner's server, 48 CPUs (owner, 2026-09-24) and
+   128 GB of memory (owner, 2026-09-25). Not set up yet. The server has Claude Code at a version that runs
    workflows, git, python3, ruff, and whatever the jlcparts download needs to
    unpack. The run records their versions. The workflow tool sets how many
    agents run at once; the run records that number.
@@ -309,12 +309,15 @@ known and reported to the owner. Follow-up tasks add to the total of 101.
    answer, and P7 commits the pages there.
    Nothing is pushed to `main`, and a pull request is opened only when the
    owner asks for one.
-6. **The workflow script and its schemas.** Not written. They are written from
-   this page, reviewed by the owner, and committed before T1 runs.
+6. **The workflow script and its schemas.** Not written, postponed by the
+   owner on 2026-09-25 until prerequisites 1 to 3 are in place. They are
+   written from this page, reviewed by the owner, and committed before T1
+   runs.
 7. **The display's current draw** on the link cable at the voltage of F6, peak
-   and steady, measured on the bring-up bench before R5 runs. Not measured.
+   and steady: 2 A peak and 1.5 A continuous at 5 V (owner, 2026-09-25).
 8. **The owner's answers** to the questions below.
-9. **The RP2354B quantity** in the owner's personal library.
+9. **The RP2354B quantity** in the owner's personal library: 20 (owner,
+   2026-09-25), against a need of 5 for the first build (S7).
 
 ## Questions for the owner
 
