@@ -8,7 +8,7 @@ depends on.
 | --- | --- |
 | [IO (input/output) board](docs/IOBoard.md) | the specification of the coprocessor board: what it does, with the numbers the tree fixes (draft) |
 | [Research](docs/Research.md) | the plan for round 1 of the component research, its sourcing rules and the open questions |
-| [Power](docs/Power.md) | four ICs (integrated circuits) of the power path, with their alternatives and the stock at two vendors on 2026-09-01. The TPS55285 and the INA238 are decided; the BQ25887 and the INA745A are candidates for round 1 of [the research](docs/Research.md) |
+| [Power](docs/Power.md) | four ICs (integrated circuits) of the power path, with their alternatives and the stock at two vendors on 2026-09-01. The TPS55285 and the INA238 are decided; the BQ25887 is a candidate and the INA3221 the owner's port monitor for round 1 of [the research](docs/Research.md) |
 | [Sourcing](docs/Sourcing.md) | how to obtain a stock figure from a vendor's own API (application programming interface), and which sources are not reliable |
 | [Where things stand](STATUS.md) | decided, open, not planned, and the order of work |
 

@@ -14,13 +14,13 @@ that date. Re-check before a layout commits, by the method in
 | --- | --- | --- | --- |
 | Buck-boost, I²C (Inter-Integrated Circuit) voltage and current | TPS55285 | VQFN (very thin quad flat no-lead) | the owner holds 12 (2026-09-25); its limit stops at 6.35 A, so the rail runs to 6.35 A. The TPS55288, whose limit scales past 6.35 A, is the alternative below |
 | 2S charger with balancing | BQ25887RGER, a candidate | QFN-24-EP 4×4 | the only single die that charges 2S and balances it. A seed of research category R7, not a choice: the charge input is up to 3 A from USB-C at 5 V ([Research](Research.md#research-categories)) |
-| Servo socket monitors, ≤15 V, 6.35 A | INA745A, a candidate | VQFN-14 5×3 | integrated shunt, so no shunt layout. One monitor per socket, 8 sockets (owner, 2026-09-24); research category R8 selects the part |
+| Output port monitors, ≤15 V | INA3221, 7 parts for 20 ports | VQFN-16 4×4 | 3 channels a part, 26 V bus, 13-bit shunt reading. One channel per port (owner, 2026-09-25); research category R8 checks stock and lifecycle |
 | Motor monitor, 67.2 V (16 cells), 300 A | INA238AIDGSR | VSSOP-10 | 85 V and 16 bits; the 20-bit part is unbuyable |
 
-Fitting an INA238 at both motor shunt paths, onboard and external, and at each
-of the 8 servo sockets gives one driver and one footprint for all 10 monitors,
-at the cost of an external shunt per socket. With a 5 mΩ shunt on the ±40.96 mV
-range the INA238's LSB is 0.25 mA, against about 1.2 mA for the INA745A.
+The INA3221 reads ±163.84 mV across its shunt in 40 µV steps. With a 10 mΩ
+shunt per port that is 4 mA a step and 16.4 A full scale, finer than the 0.08 A
+the servo synchroniser resolves. Seven parts give 21 channels for the 20 ports.
+It has no energy or charge accumulator; the motor keeps its INA238.
 
 ## Servo supply: TPS55285
 
@@ -106,11 +106,10 @@ whole budget above 6.75 V and is limited to 2 A below it. A charge current above
 400 mA against 50 mA is balancing within a charge against balancing overnight.
 BQ25798 has a wide input, which BQ25887 does not.
 
-## Servo socket monitor candidate: INA745A
+## Port monitor alternative: INA745A
 
-The owner puts one current monitor on each of the 8 servo sockets. Research
-category R8 selects the part; the analysis below compares the candidates for
-one position.
+The owner uses one INA3221 channel on each of the 20 output ports. The
+analysis below compares the alternatives for one position.
 
 40 V, ±35 A continuous, 16 bit, with the 800 µΩ shunt inside the package. At 8
 A: 6.4 mV drop, 51 mW, LSB (least significant bit) about 1.2 mA. No shunt to
