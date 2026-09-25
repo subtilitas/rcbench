@@ -19,7 +19,8 @@ that date. Re-check before a layout commits, by the method in
 
 Fitting an INA238 at both motor shunt paths, onboard and external, and at each
 of the 8 servo sockets gives one driver and one footprint for all 10 monitors,
-at the cost of an external shunt per socket and 0.9 mA of resolution.
+at the cost of an external shunt per socket. With a 5 mΩ shunt on the ±40.96 mV
+range the INA238's LSB is 0.25 mA, against about 1.2 mA for the INA745A.
 
 ## Servo supply: TPS55285
 
