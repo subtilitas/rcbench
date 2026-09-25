@@ -4,8 +4,9 @@ The running record for `hardware/`. Stock figures carry the date they were
 taken and are not valid after it.
 
 **Status: no board exists.** No schematic and no layout exist. The RP2354B is
-held in the owner's JLCPCB personal parts library. It holds 20
-(owner, 2026-09-25), and 12 TPS55285. No other part is bought. Four ICs
+held in the owner's JLCPCB personal parts library. It holds 20, and 12
+TPS55285, beside the other parts listed under
+[Held parts](docs/Research.md#held-parts) (export of 2026-09-25). Four ICs
 (integrated circuits) are decided: the RP2354B and the INA3221 by the owner,
 and the TPS55285 and the INA238, each with its reason. The pack charger and
 both motor shunts are open, and the INA3221's stock is not checked. [The IO (input/output) board specification](docs/IOBoard.md) is a
