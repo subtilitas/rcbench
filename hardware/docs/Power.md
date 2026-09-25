@@ -12,19 +12,25 @@ that date. Re-check before a layout commits, by the method in
 
 | Need | Part | Package | Reason |
 | --- | --- | --- | --- |
-| Buck-boost, I²C (Inter-Integrated Circuit) voltage and current | TPS55288RPMR | VQFN-26-HR 3.5×4 | the only candidate whose I²C current limit scales past 6.35 A |
-| 2S charger with balancing | BQ25887RGER | QFN-24-EP 4×4 | the only single die that charges 2S and balances it; 2 A, not 3 A |
-| Servo rail monitor, ≤15 V, 8 A | INA745A | VQFN-14 5×3 | integrated shunt, so no shunt layout |
-| Motor monitor, 65 V, 300 A | INA238AIDGSR | VSSOP-10 | 85 V and 16 bits; the 20-bit part is unbuyable |
+| Buck-boost, I²C (Inter-Integrated Circuit) voltage and current | TPS55285 | VQFN (very thin quad flat no-lead) | the owner holds 12 (2026-09-25); its limit stops at 6.35 A, so the rail runs to 6.35 A. The TPS55288, whose limit scales past 6.35 A, is the alternative below |
+| 2S charger with balancing | BQ25887RGER, a candidate | QFN-24-EP 4×4 | the only single die that charges 2S and balances it. A seed of research category R7, not a choice: the charge input is up to 3 A from USB-C at 5 V ([Research](Research.md#research-categories)) |
+| Output port monitors, ≤15 V | INA3221, 7 parts for 20 ports | VQFN-16 4×4 | 3 channels a part, 26 V bus, 13-bit shunt reading. One channel per port (owner, 2026-09-25); research category R8 checks stock and lifecycle |
+| Motor monitor, 67.2 V (16 cells), 300 A | INA238AIDGSR | VSSOP-10 | 85 V and 16 bits; the 20-bit part is unbuyable |
 
-Fitting an INA238 in both monitor positions gives one driver and one footprint
-for both, at the cost of an external shunt on the servo rail and 0.9 mA of
-resolution.
+The INA3221 reads ±163.84 mV across its shunt in 40 µV steps. With a 10 mΩ
+shunt per port that is 4 mA a step and 16.4 A full scale, finer than the 0.08 A
+the servo synchroniser resolves. Seven parts give 21 channels for the 20 ports.
+It has no energy or charge accumulator; the motor keeps its INA238.
 
-## Servo supply: TPS55288
+## Servo supply: TPS55285
+
+The servo supply is the TPS55285 (owner, 2026-09-25): 12 are held in the
+personal library. The rail runs to 6.35 A, and the DC input is 12 to 20 V to
+stay inside its 22 V input rating ([where things stand](../STATUS.md#decided)).
+The TPS55288 and TPS55289 below are the alternatives, not used.
 
 The servo rail has two output settings: up to 5.5 V for LV (low-voltage)
-servos and up to 8.4 V for HV (high-voltage) servos, at 4 to 8 A. Both are
+servos and up to 8.4 V for HV (high-voltage) servos, at 4 to 6.35 A. Both are
 set from software, and the current limit follows the voltage setting.
 
 Three parts of the same TI family:
@@ -48,24 +54,26 @@ datasheet's 10 mΩ example. The ceiling moves with the resistor:
 | 8 mΩ | 7.94 A | 62.5 mA | 0.51 W |
 | 6.3 mΩ | 10.1 A | 79 mA | 0.40 W |
 
-Choice: 6.3 mΩ in a 1 W part, for headroom over the 8 A the requirement asks
-for. The average inductor current limit is a separate mechanism set by a
+For the TPS55288, 6.3 mΩ in a 1 W part gives headroom over 8 A. The average inductor current limit is a separate mechanism set by a
 resistor at the ILIM pin and goes to 16 A.
 
 On the '285 the sense is internal, so 6.35 A is a hard ceiling. It delivers 8 A
-but cannot be set to allow 8 A.
+but cannot be set to allow 8 A; the rail's 6.35 A follows from it.
 
 Rejected: MP4245 (36 V, 6 A peak, I²C) is marked Not For New Designs at
 Digi-Key. MP8859 stops at 3 A.
 
 ### Input rail
 
-8.4 V at 8 A is 67 W. From a 5 V input at 90% efficiency that is close to 15 A
-on the input side, at the '288's 16 A inductor limit. A 5 V input delivers about 4 A at 8.4 V. The converter input is not part
-of the requirement and is designed for 12 V or more, which delivers the
-full 8 A.
+8.4 V at 6.35 A is 53.3 W out. At 90 % efficiency that is 59.3 W in: 4.9 A from
+a 12 V input and 3.0 A from 20 V. The DC input is 12 to 20 V (owner, 2026-09-25).
 
-## Pack charger: BQ25887
+## Pack charger: BQ25887 (candidate)
+
+The BQ25887 is a seed of research category R7, not a choice. The pack charges
+from USB-C only, drawing up to 3 A at 5 V (question F8 in
+[Research](Research.md#blocking-answered-before-the-research-tasks)). The
+analysis below records the alternatives.
 
 No single die charges a 2S pack above 2 A and balances it.
 
@@ -84,8 +92,10 @@ NVDC power path, which lets the bench start from a flat pack, and is cheaper.
 Both are boost chargers off a USB (Universal Serial Bus) input; neither takes
 12 V.
 
-3 A is the top of the requirement's range, not a requirement, so 2 A with
-one BQ25887 stands. At 3 A the function would split:
+The charge input is 3 A at 5 V, 15 W (F8). At an assumed 90 % efficiency, 13.5
+W reaches the pack: 1.6 A at 8.4 V and 2.25 A at 6.0 V. A 2 A charger uses the
+whole budget above 6.75 V and is limited to 2 A below it. A charge current above
+2 A splits the function:
 
 | Part | Role | Balance current | JLCPCB | Digi-Key |
 | --- | --- | --- | --- | --- |
@@ -96,7 +106,10 @@ one BQ25887 stands. At 3 A the function would split:
 400 mA against 50 mA is balancing within a charge against balancing overnight.
 BQ25798 has a wide input, which BQ25887 does not.
 
-## Servo rail monitor: INA745A
+## Port monitor alternative: INA745A
+
+The owner uses one INA3221 channel on each of the 20 output ports. The
+analysis below compares the alternatives for one position.
 
 40 V, ±35 A continuous, 16 bit, with the 800 µΩ shunt inside the package. At 8
 A: 6.4 mV drop, 51 mW, LSB (least significant bit) about 1.2 mA. No shunt to
@@ -147,8 +160,8 @@ and the same pin order, at 16 bits instead of 20.
 controller) puts on the wire. The shunt is the constraint: 300 A needs a
 busbar-type resistor (Isabellenhütte BV series, Vishay WSBS8518); the largest
 four-terminal SMD (surface-mount device) parts (Bourns CSS2H-2512, 15 W) stop
-at 0.2 mΩ and would dissipate 18 W. Kelvin-sense it, with an RC (radio control)
-filter on IN+ and IN− against switching edges.
+at 0.2 mΩ and would dissipate 18 W. Kelvin-sense it, with an RC
+(resistor-capacitor) filter on IN+ and IN− against switching edges.
 
 ## Not answered here
 
