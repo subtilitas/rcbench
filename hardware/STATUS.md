@@ -5,7 +5,7 @@ taken and are not valid after it.
 
 **Status: no board exists.** No schematic and no layout exist. The RP2354B is
 held in the owner's JLCPCB personal parts library. It holds 20
-(owner, 2026-09-25). No other part is bought. Three ICs (integrated circuits) are
+(owner, 2026-09-25), and 12 TPS55285. No other part is bought. Three ICs (integrated circuits) are
 decided: the RP2354B by the owner, and the TPS55285 and the INA238, each with
 its reason. The pack charger, the servo socket monitors and both motor shunts
 are open. [The IO (input/output) board specification](docs/IOBoard.md) is a
