@@ -207,7 +207,7 @@ coprocessor stops acting and the display keeps beating.
 - The servo rail gate as one switch on the rail (pull request #167) or as the 8 per-socket supply switches (owner, 2026-09-24): not stated in the tree. R3 and R6.
 - The fall of a switched rail to its load's stop voltage: not bounded. An ESC with 470 µF and 50 mA of idle draw takes about 230 ms from 25 V to 0.5 V (pull request #167). Each load's stop voltage is not measured, and 0.5 V stands in. Measured with the load (`testbench/WIRING.md:571-584`).
 - Behaviour outside 0 to 50 °C: not analysed (pull request #167).
-- The coprocessor enables the RP2350 watchdog (owner, 2026-09-25). A frozen coprocessor stops feeding it, the chip resets, and every gate the coprocessor drives opens while its pins are at their reset state. The watchdog timeout is not stated. The image enables none yet: no call to one appears under `firmware/iomcu/`. The link and heartbeat checks in `firmware/iomcu/src/main.c:970-992` watch the panel, not the coprocessor (`docs/Safety.md:51-54`).
+- The coprocessor enables the RP2350 watchdog (owner, 2026-09-25). A frozen coprocessor stops feeding it, the chip resets, and every gate the coprocessor drives opens while its pins are at their reset state. The watchdog timeout and the stop deadline it serves are not stated; P1 asks the owner for the deadline. The timeout exceeds the longest legitimate stall of the coprocessor, including a W25Q16JV sector erase (400 ms maximum), and R1 checks it against both. The image enables none yet: no call to one appears under `firmware/iomcu/`. The link and heartbeat checks in `firmware/iomcu/src/main.c:970-992` watch the panel, not the coprocessor (`docs/Safety.md:51-54`).
 
 ## Outputs, programming, receiver inputs and ESC telemetry
 
@@ -433,7 +433,7 @@ pin catalogue's sensor holder: see
 | ESC temperature | from the ESC's extended DShot telemetry, in whole degrees Celsius. Not reported 2000 ms after the last reading | `firmware/iomcu/src/main.c:673`, `firmware/iomcu/src/main.c:709-735`, `docs/DShot.md:294-299`, `STATUS.md:394` | required |
 | ESC voltage and current | from extended DShot telemetry, 0.25 V and 1 A per count. Not reported 2000 ms after the last reading. The only voltage and current source on the bring-up module | `firmware/iomcu/src/main.c:709-727`, `docs/DShot.md:294-299`, `STATUS.md:394` | required |
 | Motor temperature input | on the IO board, reported apart from the ESC's temperature | owner, 2026-09-24; `shared/link/include/link_pages.h:259-269` | required |
-| Motor temperature sensor | 2 channels: 1 infrared and 1 thermocouple | F5 | decided |
+| Motor temperature sensor | 2 channels: 1 infrared and 1 thermocouple. The BENCH page carries one motor temperature with one valid bit; whether a second register carries the other channel, or which channel the one register carries, is not stated, and P1 asks the owner | F5 | decided |
 | Temperatures on the link | ESC and motor in 0.1 °C steps, signed, each with its own valid bit | `shared/link/include/link_pages.h:234-235`, `shared/link/include/link_pages.h:251-269` | decided |
 | Thrust and torque | load cells, with a bridge ADC and excitation (R13) | owner, 2026-09-24; R13 | required |
 | Load-cell channels and excitation | 3 channels: thrust, and torque on 2 cells; 5 V excitation | F3 | decided |
@@ -450,7 +450,7 @@ pin catalogue's sensor holder: see
 - The whole-board I²C address map is drawn up in P5 ([Research](Research.md#agent-layout)).
 - The shared footprint's full pin order: `hardware/docs/Sourcing.md:68-69` names eight pins for a 10-pin package ([Power](Power.md#summary)); the bus-voltage pin and IN+ are not listed. The datasheet check is the pin-for-pin match of P4 ([Research](Research.md#agent-layout)).
 - Whether the INA238's ALERT pin reaches the coprocessor for the overcurrent action: not stated in the tree (R8, P5).
-- The overcurrent and over-temperature thresholds, and which temperature the over-temperature action watches: not stated. The LIMITS page (0x11) is declared and not served (`docs/Link.md:126`). No question covers them.
+- The overcurrent and over-temperature thresholds, and which temperature the over-temperature action watches: not stated. The LIMITS page (0x11) is declared and not served (`docs/Link.md:126`). P1 asks the owner for them, with the trip filter and the longest time from detection to the ESC pack switch open. P5 budgets that path: the INA238 conversion and averaging, the ALERT pin or the poll, the coprocessor's action and the switch's turn-off.
 - The accuracy of the pack voltage and the motor current: not stated in the tree (R8, R10).
 - Whether a negative current is measured: not stated. The BENCH current register sends a negative value as 0 A (`shared/bench/bench_state.c:21-28`).
 - Which source fills the BENCH voltage and current registers when the motor monitor and the ESC's telemetry both report: not stated. The page has one register for each (`shared/link/include/link_pages.h:230-231`). The ESC's figures and the bench's shunt are called independent measurements (`docs/OpenYGE.md:380-381`). No question covers it.
