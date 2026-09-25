@@ -13,13 +13,13 @@ that date. Re-check before a layout commits, by the method in
 | Need | Part | Package | Reason |
 | --- | --- | --- | --- |
 | Buck-boost, I²C (Inter-Integrated Circuit) voltage and current | TPS55285 | VQFN (very thin quad flat no-lead) | the owner holds 12 (2026-09-25); its limit stops at 6.35 A, so the rail runs to 6.35 A. The TPS55288, whose limit scales past 6.35 A, is the alternative below |
-| 2S charger with balancing | BQ25887RGER | QFN-24-EP 4×4 | the only single die that charges 2S and balances it; 2 A, not 3 A |
-| Servo rail monitor, ≤15 V, 8 A | INA745A | VQFN-14 5×3 | integrated shunt, so no shunt layout |
+| 2S charger with balancing | BQ25887RGER, a candidate | QFN-24-EP 4×4 | the only single die that charges 2S and balances it. A seed of research category R7, not a choice: the charge input is up to 3 A from USB-C at 5 V ([Research](Research.md#research-categories)) |
+| Servo socket monitors, ≤15 V, 6.35 A | INA745A, a candidate | VQFN-14 5×3 | integrated shunt, so no shunt layout. One monitor per socket, 8 sockets (owner, 2026-09-24); research category R8 selects the part |
 | Motor monitor, 65 V, 300 A | INA238AIDGSR | VSSOP-10 | 85 V and 16 bits; the 20-bit part is unbuyable |
 
-Fitting an INA238 in both monitor positions gives one driver and one footprint
-for both, at the cost of an external shunt on the servo rail and 0.9 mA of
-resolution.
+Fitting an INA238 at the motor and at each of the 8 servo sockets gives one
+driver and one footprint for all of them, at the cost of an external shunt per
+socket and 0.9 mA of resolution.
 
 ## Servo supply: TPS55285
 
@@ -67,7 +67,12 @@ Digi-Key. MP8859 stops at 3 A.
 8.4 V at 6.35 A is 53.3 W. At 90 % efficiency that is 4.4 A from a 12 V input
 and 2.7 A from 20 V. The DC input is 12 to 20 V (owner, 2026-09-25).
 
-## Pack charger: BQ25887
+## Pack charger: BQ25887 (candidate)
+
+The BQ25887 is a seed of research category R7, not a choice. The pack charges
+from USB-C only, drawing up to 3 A at 5 V (question F8 in
+[Research](Research.md#blocking-answered-before-the-research-tasks)). The
+analysis below records the alternatives.
 
 No single die charges a 2S pack above 2 A and balances it.
 
@@ -86,8 +91,8 @@ NVDC power path, which lets the bench start from a flat pack, and is cheaper.
 Both are boost chargers off a USB (Universal Serial Bus) input; neither takes
 12 V.
 
-3 A is the top of the requirement's range, not a requirement, so 2 A with
-one BQ25887 stands. At 3 A the function would split:
+A 3 A charge current is the top of the requirement's range. At 3 A the
+function would split:
 
 | Part | Role | Balance current | JLCPCB | Digi-Key |
 | --- | --- | --- | --- | --- |
@@ -98,7 +103,11 @@ one BQ25887 stands. At 3 A the function would split:
 400 mA against 50 mA is balancing within a charge against balancing overnight.
 BQ25798 has a wide input, which BQ25887 does not.
 
-## Servo rail monitor: INA745A
+## Servo socket monitor candidate: INA745A
+
+The owner puts one current monitor on each of the 8 servo sockets. Research
+category R8 selects the part; the analysis below compares the candidates for
+one position.
 
 40 V, ±35 A continuous, 16 bit, with the 800 µΩ shunt inside the package. At 8
 A: 6.4 mV drop, 51 mW, LSB (least significant bit) about 1.2 mA. No shunt to
