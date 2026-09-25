@@ -91,8 +91,10 @@ NVDC power path, which lets the bench start from a flat pack, and is cheaper.
 Both are boost chargers off a USB (Universal Serial Bus) input; neither takes
 12 V.
 
-A 3 A charge current is the top of the requirement's range. At 3 A the
-function would split:
+The charge input is 3 A at 5 V, 15 W (F8). At an assumed 90 % efficiency, 13.5
+W reaches the pack: 1.6 A at 8.4 V and 2.25 A at 6.0 V. A 2 A charger uses the
+whole budget above 6.75 V and is limited to 2 A below it. A charge current above
+2 A splits the function:
 
 | Part | Role | Balance current | JLCPCB | Digi-Key |
 | --- | --- | --- | --- | --- |
@@ -158,8 +160,8 @@ and the same pin order, at 16 bits instead of 20.
 controller) puts on the wire. The shunt is the constraint: 300 A needs a
 busbar-type resistor (Isabellenhütte BV series, Vishay WSBS8518); the largest
 four-terminal SMD (surface-mount device) parts (Bourns CSS2H-2512, 15 W) stop
-at 0.2 mΩ and would dissipate 18 W. Kelvin-sense it, with an RC (radio control)
-filter on IN+ and IN− against switching edges.
+at 0.2 mΩ and would dissipate 18 W. Kelvin-sense it, with an RC
+(resistor-capacitor) filter on IN+ and IN− against switching edges.
 
 ## Not answered here
 
