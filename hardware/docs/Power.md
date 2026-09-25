@@ -15,11 +15,11 @@ that date. Re-check before a layout commits, by the method in
 | Buck-boost, I²C (Inter-Integrated Circuit) voltage and current | TPS55285 | VQFN (very thin quad flat no-lead) | the owner holds 12 (2026-09-25); its limit stops at 6.35 A, so the rail runs to 6.35 A. The TPS55288, whose limit scales past 6.35 A, is the alternative below |
 | 2S charger with balancing | BQ25887RGER, a candidate | QFN-24-EP 4×4 | the only single die that charges 2S and balances it. A seed of research category R7, not a choice: the charge input is up to 3 A from USB-C at 5 V ([Research](Research.md#research-categories)) |
 | Servo socket monitors, ≤15 V, 6.35 A | INA745A, a candidate | VQFN-14 5×3 | integrated shunt, so no shunt layout. One monitor per socket, 8 sockets (owner, 2026-09-24); research category R8 selects the part |
-| Motor monitor, 65 V, 300 A | INA238AIDGSR | VSSOP-10 | 85 V and 16 bits; the 20-bit part is unbuyable |
+| Motor monitor, 67.2 V (16 cells), 300 A | INA238AIDGSR | VSSOP-10 | 85 V and 16 bits; the 20-bit part is unbuyable |
 
-Fitting an INA238 at the motor and at each of the 8 servo sockets gives one
-driver and one footprint for all of them, at the cost of an external shunt per
-socket and 0.9 mA of resolution.
+Fitting an INA238 at both motor shunt paths, onboard and external, and at each
+of the 8 servo sockets gives one driver and one footprint for all 10 monitors,
+at the cost of an external shunt per socket and 0.9 mA of resolution.
 
 ## Servo supply: TPS55285
 
@@ -64,8 +64,8 @@ Digi-Key. MP8859 stops at 3 A.
 
 ### Input rail
 
-8.4 V at 6.35 A is 53.3 W. At 90 % efficiency that is 4.4 A from a 12 V input
-and 2.7 A from 20 V. The DC input is 12 to 20 V (owner, 2026-09-25).
+8.4 V at 6.35 A is 53.3 W out. At 90 % efficiency that is 59.3 W in: 4.9 A from
+a 12 V input and 3.0 A from 20 V. The DC input is 12 to 20 V (owner, 2026-09-25).
 
 ## Pack charger: BQ25887 (candidate)
 
