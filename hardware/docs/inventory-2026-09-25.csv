@@ -1,0 +1,25 @@
+Category,MFR Part #,Footprint,Description,JLCPCB Part #,JLCPCB Parts Qty,Global Sourcing Parts Qty,Consigned Parts Qty,Unit Price($),Total Price($)
+Capacitors,CL05B104KP5NNNC,0402,100nF 10V X7R ±10% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS,C133086,945,0,0,0.01,1.66
+Embedded Processors & Controllers,STM32L431KCU6,UFQFPN-32(5x5),-40℃~+85℃ 1.71V~3.6V 12bit 12bit 256KB 26 32 Bit 64KB 80MHz ARM Cortex-M4 Built-in FLASH UFQFPN-32(5x5) Microcontrollers (MCU/MPU/SOC) ROHS,C1341298,0,0,0,0,0
+Magnetic Sensors,ACS711KEXLT-15AB-T,QFN-12(3x3),-40℃~+125℃ 0.6mΩ 100kHz 15.5A 3.5us 3V~5.5V 90mV/A Support QFN-12(3x3) Current Sensors ROHS,C150824,0,0,0,0,0
+Embedded Processors & Controllers,STM32L431CCY6TR,WLCSP-49(3.1x3.1),-40℃~+85℃ 1.71V~3.6V 12bit 12bit 256KB 32 Bit 39 64KB 80MHz ARM Cortex-M4 Built-in FLASH WLCSP-49(3.1x3.1) Microcontrollers (MCU/MPU/SOC) ROHS,C2053538,4,0,0,6.34,25.35
+Magnetic Sensors,ACS70331EESATR-005B3,WFQFN-12(3x3),-40℃~+85℃ 1.1mΩ 1MHz 200mV/A 3V~4.5V 535ns Support ±5A WFQFN-12(3x3) Current Sensors ROHS,C2649488,10,0,0,2.23,22.28
+Power Management (PMIC),TPSM84209RKHT,QFN-9(4x4.4),-40℃~+85℃ 1 1.2V~6V 2.5A 4.5V~28V 750kHz Adjustable Buck Built-in Overcurrent Protection、Light load efficient mode、Hiccup current limiting Step-down type QFN-9(4x4.4) DC-DC Converters ROHS,C2836944,0,0,0,0,0
+Capacitors,CL05A105MQ5NNNC,0402,1uF 6.3V X5R ±20% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS,C318573,1000,0,0,0.01,1.65
+Capacitors,C3225X5R1H106KT000N,1210,10uF 50V X5R ±10% 1210 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS,C342671,5,0,0,0.35,1.72
+Global Sourcing Parts,RP2354B,QFN-80-EP(10x10),2MB 48 External pin reset (NRST)、True random number generator (TRNG) OTP QFN-80-EP(10x10) Microcontrollers (MCU/MPU/SOC) ROHS,C39843328,20,0,0,1.46,29.1
+Embedded Processors & Controllers,RP2350B,QFN-80-EP(10x10),48 Power-on reset (POR)、Watchdog reset、External pin reset (NRST)、Built-in general-purpose timer、Integrated LDO、True random number generator (TRNG)、Hardware ECC check、Independent watchdog (IWDG) QFN-80-EP(10x10) Microcontrollers (MCU/MPU/SOC) ROHS,C42415655,25,0,0,1.19,29.53
+Capacitors,GRM21BR61H106KE43L,0805,10uF 50V X5R ±10% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS,C440198,86,0,0,0.06,5.11
+Magnetic Sensors,ACS70331EESATR-005U3,QFN-12(3x3),-40℃~+85℃ 1.1mΩ 1MHz 3V~4.5V 400mV/A 535ns 5A QFN-12(3x3) Current Sensors ROHS,C459297,0,0,0,0,0
+Global Sourcing Parts,ACS70331EESATR-2P5U3,QFN-12(3x3),-40℃~+85℃ 0.5kVrms 1.1mΩ 1MHz 2.5A 3V~4.5V 4.5mA 535ns 800mV/A Bidirectional detection、Power-on reset Not supported QFN-12(3x3) Current Sensors ROHS,C459299,20,0,0,0.29,5.64
+Magnetic Sensors,ACS711KLCTR-12AB-T,SOP-8,-40℃~+125℃ 1.2mΩ 100kHz 110mV/A 12.5A 3.5us 3V~5.5V Support SOP-8 Current Sensors ROHS,C459305,5,0,0,1.75,8.75
+Others,EPC23102,QFN(3.5x5),-40℃~+125℃ 1 N-channel + 1 N-channel 100V 342pF、343pF 35A 5.2mΩ、5.2mΩ N-Channel QFN(3.5x5) GaN Transistors(GaN HEMT) ROHS,C5160232,9,0,0,11.88,106.84
+Power Management (PMIC),TPS82740BSIPR,SIP-9,-40℃~+85℃@(TA) 1 1.7MHz 2.2V~5.5V 2.6V~3.3V 200mA 360nA Buck Buck Built-in Fixed SIP-9 DC-DC Converters ROHS,C5187175,0,0,0,0,0
+,TPS55285VALR,WQFN-15,WQFN-15 DC-DC Converters ROHS,C52160906,12,0,0,2.72,32.56
+,WS2812B-1313-V6,SMD1313-4P,SMD1313-4P RGB LEDs(Built-in IC) ROHS,C52941388,50,0,0,0.1,4.72
+Power Management (PMIC),TPS82740ASIPR,USIP-9,-40℃~+85℃@(TA) 1.8V~2.5V 2.2V~5.5V 200mA 360nA Buck Buck Built-in USIP-9 DC-DC Converters ROHS,C544660,0,0,0,0,0
+Capacitors,MSAST31LAB7106KTNA01,1206,10uF 25V X7R ±10% 1206 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS,C6105339,36,0,0,0.05,1.54
+Capacitors,C1005X5R1E225KT000E,0402,2.2uF 25V X5R ±10% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS,C76595,57,0,0,0.03,1.38
+Capacitors,GRM32ER61A107ME20L,1210,100uF 10V X5R ±20% 1210 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS,C84455,0,0,0,0,0
+Capacitors,TMK325ABJ476MM-P,1210,25V 47uF X5R ±20% 1210 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS,C90142,10,0,0,0.31,3.07
+Capacitors,CL31A106KAHNNNE,1206,10uF 25V X5R ±10% 1206 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS,C9807,100,0,0,0.02,1.55

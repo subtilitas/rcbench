@@ -153,6 +153,41 @@ replace it.
    URL (uniform resource locator) or API call it came from. A search engine's
    summary of a vendor page is not a source.
 
+### Held parts
+
+The owner's JLCPCB personal library, exported on 2026-09-25
+([inventory-2026-09-25.csv](inventory-2026-09-25.csv)). The quantity is the
+JLCPCB column of the export; the global-sourcing and consigned columns are 0 for
+every row. A held part passes rule 4 by rule 6 when its quantity covers 5 boards
+(S7) × its placements per board. It is still a candidate only when its maker is
+on the list of S1 or S2 (rule 2) and it meets the category's requirement values.
+P2 lists a held part that passes beside the other candidates and marks it held.
+
+| Part | Maker | LCSC | Package | What it is | Held | Research use |
+| --- | --- | --- | --- | --- | --- | --- |
+| RP2354B | Raspberry Pi | C39843328 | QFN-80 10 × 10 mm | the microcontroller, 2 MB flash stacked | 20 | fixed input, R1 |
+| RP2350B | Raspberry Pi | C42415655 | QFN-80 10 × 10 mm | the same die without flash | 25 | none in round 1; the board takes the RP2354B |
+| TPS55285VALR | Texas Instruments | C52160906 | WQFN-15 | servo buck-boost converter | 12 | fixed input, R6 |
+| ACS70331EESATR-2P5U3 | Allegro | C459299 | QFN-12 3 × 3 mm | Hall current sensor, 2.5 A, 800 mV/A, 1 MHz | 20 | R8, beside the INA3221 |
+| ACS70331EESATR-005B3 | Allegro | C2649488 | QFN-12 3 × 3 mm | Hall current sensor, ±5 A, 200 mV/A, 1 MHz | 10 | R8, beside the INA3221 |
+| ACS711KLCTR-12AB-T | Allegro | C459305 | SOP-8 | Hall current sensor, 12.5 A, 110 mV/A, 100 kHz | 5 | R8 |
+| STM32L431CCY6TR | STMicroelectronics | C2053538 | WLCSP-49 3.1 × 3.1 mm | Cortex-M4 microcontroller, 80 MHz | 4 | none in round 1 |
+| EPC23102 | EPC | C5160232 | QFN 3.5 × 5 mm | GaN half bridge, 100 V, 35 A | 9 | none in round 1; EPC is not on the list of S1 |
+| WS2812B-1313-V6 | Worldsemi | C52941388 | 1.3 × 1.3 mm, 4 pads | RGB LED with driver | 50 | round 2, the indicators; Worldsemi is not on the list of S1 or S2 |
+| CL05B104KP5NNNC | Samsung Electro-Mechanics | C133086 | 0402 | 100 nF 10 V X7R | 945 | round 2 |
+| CL05A105MQ5NNNC | Samsung Electro-Mechanics | C318573 | 0402 | 1 µF 6.3 V X5R | 1000 | round 2 |
+| C1005X5R1E225KT000E | TDK | C76595 | 0402 | 2.2 µF 25 V X5R | 57 | round 2 |
+| GRM21BR61H106KE43L | Murata | C440198 | 0805 | 10 µF 50 V X5R | 86 | round 2 |
+| CL31A106KAHNNNE | Samsung Electro-Mechanics | C9807 | 1206 | 10 µF 25 V X5R | 100 | round 2 |
+| MSAST31LAB7106KTNA01 | not stated in the export | C6105339 | 1206 | 10 µF 25 V X7R | 36 | round 2, once its maker is known |
+| C3225X5R1H106KT000N | TDK | C342671 | 1210 | 10 µF 50 V X5R | 5 | round 2; input capacitance of R5 and R6 |
+| TMK325ABJ476MM-P | Taiyo Yuden | C90142 | 1210 | 47 µF 25 V X5R | 10 | round 2; Taiyo Yuden is not on the list of S2 |
+
+Listed in the library with 0 held: STM32L431KCU6 (C1341298), ACS711KEXLT-15AB-T
+(C150824), TPSM84209RKHT (C2836944), ACS70331EESATR-005U3 (C459297),
+TPS82740BSIPR (C5187175), TPS82740ASIPR (C544660) and GRM32ER61A107ME20L
+(C84455). A part held at 0 counts as not held.
+
 ## Lifecycle check
 
 Recorded for every candidate that reaches the shortlist.
@@ -338,8 +373,9 @@ known and reported to the owner. Follow-up tasks add to the total of 101.
 7. **The display's current draw** on the link cable at the voltage of F6, peak
    and steady: 2 A peak and 1.5 A continuous at 5 V (owner, 2026-09-25).
 8. **The owner's answers** to the questions below.
-9. **The RP2354B quantity** in the owner's personal library: 20 (owner,
-   2026-09-25), against a need of 5 for the first build (S7).
+9. **The held parts** in the owner's personal library, exported on 2026-09-25:
+   [Held parts](#held-parts). The RP2354B is held at 20 against a need of 5 for
+   the first build (S7).
 
 ## Questions for the owner
 
