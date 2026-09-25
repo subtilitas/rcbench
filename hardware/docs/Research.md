@@ -1,7 +1,8 @@
 # IO (input/output) board component research, round 1
 
 The plan for the multi-agent research that selects the integrated circuits
-(ICs) of the IO board. **It has not run.** It is planned as six
+(ICs) of the IO board. **It has not run.** The owner accepted it on
+2026-09-25. It is planned as six
 tasks (question S8), each a workflow of at most 32 agents (owner, 2026-09-24).
 The first starts when the owner accepts this page and has answered questions
 S1, S3 and S8. A research task starts when every
