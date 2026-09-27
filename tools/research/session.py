@@ -472,11 +472,14 @@ def t6_open(results):
     before = checks[-2][1].get("sequence", 0) if len(checks) > 1 else None
     # Round 2 covers the categories a round-2 P2-P4 follow-up researched to
     # a selection, not the ones its file named.
+    # A category counts only when the run verified a part for it.
     covered = set() if before is None else {c for _, t in done
                if (t.get("followup") or {}).get("round") == 2
                and (t.get("followup") or {}).get("phases") == "P2-P4"
                and before < t.get("sequence", 0) < last.get("sequence", 0)
-               for c in (t.get("summary") or {}).get("selection") or {}}
+               for c, entries in ((t.get("summary") or {}).get("selection")
+                                  or {}).items()
+               if any(e.get("part") for e in entries)}
     summary = last.get("summary") or {}
     # A conflict belongs to the categories it names and those of its parts.
     # A part selected in more than one category belongs to each.
@@ -695,6 +698,29 @@ def check_followup(followup, cats):
                          f"categories: {stray}")
 
 
+def sync_results(results):
+    """The results tree at origin's head: fast-forwarded when behind, and
+    refused when it holds records origin lacks or has diverged."""
+    remote = f"origin/{RESULTS}"
+    if git("rev-parse", "--verify", "-q", remote, check=False).returncode:
+        raise SystemExit(f"{remote} is not there; push {RESULTS} first")
+    here = git("-C", results, "rev-parse", "HEAD")
+    there = git("rev-parse", remote)
+    if here == there:
+        return
+    if git("merge-base", "--is-ancestor", here, there,
+           check=False).returncode == 0:
+        if git("-C", results, "merge", "-q", "--ff-only", there,
+               check=False).returncode:
+            raise SystemExit(f"fast-forwarding {results} to {remote} failed")
+        return
+    if git("merge-base", "--is-ancestor", there, here,
+           check=False).returncode == 0:
+        raise SystemExit(f"{RESULTS} holds records {remote} does not; push "
+                         "it first")
+    raise SystemExit(f"{RESULTS} and {remote} have diverged")
+
+
 def on_branch(tree, branch):
     here = git("-C", tree, "branch", "--show-current")
     if here != branch:
@@ -785,6 +811,8 @@ def cmd_prepare(args):
     results = worktree(base, "results", RESULTS, detach=False)
     if changed_under(results, RUNS_DIR):
         raise SystemExit("recorded runs have uncommitted changes")
+    # The gates read the runs every clone has recorded and pushed.
+    sync_results(results)
     if recorded(results, run):
         raise SystemExit(f"{run} is recorded already")
 

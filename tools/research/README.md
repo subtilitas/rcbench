@@ -50,11 +50,14 @@ git -C $B/plan push origin research/round1
 
 `prepare` fetches origin and refuses a run out of turn: T2 and T4 before T1 is
 recorded, T3 before T2 and T4, T5 before T3, T6 before T5, a P1 follow-up
-before T1, a P2-P4 follow-up before the tasks that own its categories, a
-P5-P6 follow-up before T5, and a round 2 follow-up before a round 1 follow-up
-is recorded. It refuses a P1 run while another P1 run is prepared and not
-recorded, so question IDs do not repeat, and numbers new questions after the
-last one on the page and in the committed runs.
+before T1, a P2-P4 follow-up before the tasks that own its categories, a P5-P6
+follow-up before T5, and a round 2 follow-up before a round 1 follow-up is
+recorded. It fast-forwards the results tree to
+`origin/research/round1-results`, and refuses while that tree holds records
+origin does not (push after each `record`) or has diverged. It refuses a P1
+run while another P1 run is prepared and not recorded, so question IDs do not
+repeat, and numbers new questions after the last one on the page and in the
+committed runs.
 
 It refuses these without exception:
 
@@ -95,9 +98,9 @@ the items in the arguments:
   combination or budget it rejected; while it lists a conflict or gap whose
   categories, named or taken from its parts (a part selected in more than one
   category belongs to each), no round-2 P2-P4 follow-up since the check before
-  researched to a selection (the first check's items are never covered); and
-  while a run that decides an R3 function was not given the Q9 decision now in
-  force.
+  researched to a verified part (the first check's items are never covered);
+  and while a run that decides an R3 function was not given the Q9 decision
+  now in force.
 
 Then, before T6, it merges `research/round1` into the results tree. The gates
 read committed run records and the plan on `research/round1`. The arguments
