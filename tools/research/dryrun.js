@@ -75,7 +75,7 @@ async function runTask(task, opts = {}) {
       Object.assign(data, { stop: false, held: [], checkout_head: 'deadbeef', snapshot: '2026-09-14T09:56:01+00:00',
         jlcparts: { path: 'db', sha256: JL.sha256, sha256_ok: true, rows: JL.rows, missing_lcsc: [] },
         monostable: { commit: 'c', path: 'p', fetched: true },
-        hosts: (opts.hosts || []).map(h => ({ host: h.host, url: opts.rowUrl || h.probe || '', client: opts.rowClient || h.client, http_status: 200, bytes: 1, status_marker: opts.markerless ? '' : 'Status - Active', reachable: !(opts.down || []).includes(h.host), note: '' })) }, opts.p0 || {})
+        hosts: (opts.hosts || []).map(h => ({ host: h.host, url: opts.rowUrl || h.probe || '', client: opts.rowClient || h.client, http_status: 200, bytes: 1, status_marker: opts.markerText || (opts.markerless ? '' : 'Status - Active'), reachable: !(opts.down || []).includes(h.host), note: '' })) }, opts.p0 || {})
     }
     if (role === 'P2') {
       data.functions = [{ ...data.functions[0], function: 'f1', shortlist: [1, 2, 3].map(cand) }]
@@ -84,6 +84,11 @@ async function runTask(task, opts = {}) {
       if (opts.noReqs) { data.functions[0].requirements = []; data.functions[0].shortlist.forEach(c => { c.requirements = [] }) }
       if (opts.failedReq) data.functions[0].shortlist[0].requirements = [{ name: 'x0', required: '>= 67.2 V', datasheet: '40 V', pass: false, source: 's' }]
       if (opts.selfAlt) Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: 'part1' })
+      if (opts.backAlt) Object.assign(data.functions[0].shortlist[1], { second_source_route: 'alternate', second_source_part: 'part1' })
+      if (opts.qAltBack) Object.assign(data.functions[0].shortlist[2], { second_source_route: 'alternate', second_source_part: 'part1' })
+      if (opts.p2DupPart) data.functions[0].shortlist.push({ ...cand(1), requirements: [{ name: 'x0', required: '>= 67.2 V', datasheet: '40 V', pass: false, source: 's' }] })
+      if (opts.fnNoReq) data.functions[0].requirements = []
+      if (opts.foundNotRead) data.found_values = [{ question_id: 'V9', value: 'not read: HTTP 403', source: 's', read_at: 't' }]
       if (opts.altName) Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: opts.altName })
       if (opts.qAlt) {
         Object.assign(data.functions[0].shortlist[2], { second_source_route: 'alternate', second_source_part: 'altQ' })
@@ -101,12 +106,20 @@ async function runTask(task, opts = {}) {
         new_candidates: opts.p3dropped ? [{ ...cand(7), part: 'partN' }] : [], dropped_from_p3: opts.p3dropped ? [{ part: 'partN', maker: 'm', reason: 'r' }] : [],
         dropped_from_shortlist: opts.rankDropped ? [{ part: 'part1', maker: 'm', reason: 'r' }] : [], verify: opts.qAlt ? [{ part: 'part3', kind: 'q-alternative' }] : (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
       if (opts.extraFn) data.functions.push({ ...data.functions[0], function: 'fX' })
+      if (opts.p3dropShort) data.functions[0].dropped_from_shortlist = [{ part: 'partX', maker: 'm', reason: 'fails vmax' }]
+      if (opts.rrDup) data.functions.push({ ...data.functions[0], ranking: [], dropped_from_shortlist: [{ part: 'part1', maker: 'm', reason: 'fails vmax at 85 C' }] })
+      if (opts.noRerankFn) data.functions = []
+      if (opts.emptyRanking) data.functions[0].ranking = []
+      if (opts.qAltBack) data.functions[0].verify = [{ part: 'part3', kind: 'q-alternative' }]
+      if (opts.qSelf) data.functions[0].verify = [{ part: 'part1', kind: 'q-alternative' }]
     }
+    if (role === 'P5-critic') for (const k of ['combination_verdicts', 'budget_verdicts']) data[k] = data[k].map((v, index) => ({ ...v, index, holds: !(opts.rejectBudget && k === 'budget_verdicts' && index === 0) }))
+    if (role === 'P1' && opts.qCategory) data.questions = data.questions.map(q => ({ ...q, category: 'R99', source: 'mock' }))
     if (role === 'P1' && opts.decisionNone) data.questions = data.questions.map(q => ({ ...q, blocks: 'decision-only', decision: 'none' }))
     if (role === 'P1' && opts.contradict) data.values = data.values.map(v => ({ ...v, question: -1 }))
     if (role === 'P1' && opts.assumption) data.values = [{ where: 'IOBoard.md:1', quantity: 'ripple', value: '10 mV', marking: 'assumption', source: 's', refutation_tried: 'r', question: -1 }]
-    if (role === 'P1' && opts.twoAssumptions) {
-      data.values = [1, 2].map(n => ({ where: `IOBoard.md:${n}`, quantity: 'voltage', value: `${n} V`, marking: 'assumption', source: 's', refutation_tried: 'r', question: n === 1 ? 0 : -1 }))
+    if (role === 'P1' && (opts.twoAssumptions || opts.sharedQ)) {
+      data.values = [1, 2].map(n => ({ where: `IOBoard.md:${n}`, quantity: 'voltage', value: `${n} V`, marking: 'assumption', source: 's', refutation_tried: 'r', question: n === 1 || opts.sharedQ ? 0 : -1 }))
       data.questions = [{ function: 'rail', question: 'State the voltage of rail 1', why: 'w', blocks: 'p2', decision: 'none', for_where: '' }]
     }
     if (role === 'P3') data.missed_functions = opts.missedFn ? [{ function: 'f2', why: 'the row names it' }] : []
@@ -114,12 +127,13 @@ async function runTask(task, opts = {}) {
     if (role === 'P3' && opts.p3overturned) data.exclusions_not_holding = [{ part: 'partY', reason_given: 'r', why_it_fails: 'w' }]
     if (role === 'P7-critic' || role === 'P7') {
       for (const k of Object.keys(data.checks)) data.checks[k] = { passed: !(opts.failCheck === k && role === 'P7-critic'), output: 'o' }
-      const outs = [...T6OUT, 'hardware/docs/GroupA.md', 'hardware/docs/Power.md', 'hardware/docs/GroupC.md'].filter(f => !(role === 'P7' && f === opts.unwritten))
+      const outs = [...T6OUT, 'hardware/docs/GroupA.md', 'hardware/docs/GroupB.md', 'hardware/docs/GroupC.md'].filter(f => !(role === 'P7' && f === opts.unwritten))
       if (opts.pageOutside) outs.push('tools/research/README.md')
-      if (role === 'P7') { data.files = outs; data.group_pages = opts.pageOutside ? { A: 'hardware/docs/GroupA.md', B: 'tools/research/README.md', C: 'hardware/docs/GroupC.md' } : opts.samePages ? { A: 'hardware/docs/Power.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/Power.md' } : { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/GroupC.md' } }
+      if (role === 'P7') { data.files = outs; data.group_pages = opts.pageOutside ? { A: 'hardware/docs/GroupA.md', B: 'tools/research/README.md', C: 'hardware/docs/GroupC.md' } : opts.samePages ? { A: 'hardware/docs/Power.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/Power.md' } : (opts.pagePower ? { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/GroupC.md' } : { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/GroupB.md', C: 'hardware/docs/GroupC.md' }) }
       else {
         data.reviewed = outs
-        data.figure_checks = opts.noFigures ? [] : [{ file: 'hardware/docs/Parts.md', line: 1, figure: 'stock', return_file: 'r', agrees: !opts.criticDisagrees }]
+        const figFiles = opts.oneFigure ? ['hardware/docs/Parts.md'] : outs.filter(f => f.startsWith('hardware/docs/'))
+        data.figure_checks = opts.noFigures ? [] : figFiles.map(file => ({ file, line: 1, figure: 'stock', return_file: 'r', agrees: !opts.criticDisagrees }))
         data.sentence_issues = opts.sentenceIssue ? [{ file: 'f', line: 1, issue: 'i' }] : []
       }
     }
@@ -155,7 +169,7 @@ async function runTask(task, opts = {}) {
       const checksFor = (pt, pk) => (opts.emptyChecks || []).includes(base) ? []
         : (kind === 'stock' ? ['stock', 'presale', 'lifecycle status', 'end-of-life notices', ...(cand(pt).second_source_route === 'second-vendor' && !opts.noSecondVendor ? ['second-vendor stock'] : [])]
           : [...cand(pt).requirements.map(r => r.name).filter(n => n !== opts.skipReq), ...(pk === 'alternate' && !opts.noCompat ? ['pin-for-pin match', 'functional match'] : [])])
-          .map((figure, k) => ({ figure, stated: 's', read: 'r', source: 'src', agrees: !((opts.disagree || []).includes(base) && k === 0), passes: !((opts.failPass || []).includes(base) && k === 0) }))
+          .map((figure, k) => ({ figure, stated: 's', read: opts.readNone && kind === 'datasheet' ? 'not read: API timed out' : 'r', source: 'src', agrees: !((opts.disagree || []).includes(base) && k === 0), passes: !((opts.failPass || []).includes(base) && k === 0) }))
       data.parts = (opts.omit || []).includes(base) || (opts.omitPart || []).includes(`${base}:${part}`) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part), refutation: refute ? 'mock' : '' }]
       const oc = only ? JSON.parse(only[1]) : null
       if (oc && oc.second_source_route === 'alternate' && !opts.dropReplacementAlt) data.parts.push({ function: 'f1', part: oc.second_source_part, kind: 'alternate', verdict: 'confirmed', checks: checksFor(oc.second_source_part, 'alternate'), refutation: '' })
@@ -336,6 +350,19 @@ async function main() {
   r = await runTask('T1', { twoAssumptions: true })
   const syn = r.result.summary.questions.filter(q => q.synthetic)
   check(syn.length === 13 && syn.every(q => q.for_where === 'IOBoard.md:2'), `two assumptions: ${syn.length} synthetic, expected 13 for IOBoard.md:2`)
+  // Two assumptions naming one question: the second is not asked by it.
+  r = await runTask('T1', { sharedQ: true })
+  const syn2 = r.result.summary.questions.filter(q => q.synthetic)
+  check(syn2.length === 13 && syn2.every(q => q.for_where === 'IOBoard.md:2'), `shared question: ${syn2.length} synthetic, expected 13 for IOBoard.md:2`)
+  r = await runTask('T1', { sharedQ: true, recheckRejects: true })
+  check(r.result.followUps.filter(f => f.reason === 'assumption without a confirmed question').length === 13, 'shared question, synthetic rejected: the second assumption is listed')
+  // A null-marker maker page written as not read has no status read.
+  r = await runTask('T2', { hosts: [{ host: 'www.onsemi.com', probe: null, hold: ['R2'] }], markerText: 'not read: the page body carries no lifecycle status' })
+  check(r.result.followUps.some(f => f.host === 'www.onsemi.com' && f.reason === 'lifecycle status not read from the page'), 'not read status: listed')
+  // Two rows for one host are no reading.
+  r = await runTask('T2', { hosts: [{ host: 'jlcpcb.com', client: 'jlcpcb-api', probe: 'C39843328', stop: 'stock-tasks', hold: [] }],
+    p0: { hosts: [{ host: 'jlcpcb.com', url: 'C39843328', client: 'jlcpcb-api', http_status: 200, bytes: 1, status_marker: '', reachable: true, note: '' }, { host: 'jlcpcb.com', url: 'C39843328', client: 'jlcpcb-api', http_status: 503, bytes: 1, status_marker: '', reachable: false, note: '' }] } })
+  check(r.result.summary.stopped === true, 'P0: two rows for JLCPCB stop a stock task')
   // A reachable maker page without its lifecycle status is listed.
   r = await runTask('T2', { hosts: [{ host: 'www.nxp.com', marker: 'Status', hold: ['R2'] }], p0: {} , markerless: true })
   check(r.result.followUps.some(f => f.host === 'www.nxp.com' && f.reason === 'lifecycle status not read from the page'), 'marker absent: listed')
@@ -453,9 +480,41 @@ async function main() {
   // A value for research P2 did not return stays open, whatever P4 says.
   r = await runTask('T2', { forResearch: [{ id: 'V9', category: 'R1' }] })
   check(r.result.summary.figures_open.R1.includes('found V9'), 'value for research not returned: open')
+  // A question's own category or source key does not move it.
+  r = await runTask('T1', { qCategory: true })
+  check(r.result.summary.questions.length > 0 && r.result.summary.questions.every(q => q.category !== 'R99' && q.source !== 'mock'), 'question keys from the agent do not override the category')
   // A decision-only question that names no decision blocks P2.
   r = await runTask('T1', { decisionNone: true })
   check(r.result.summary.questions.length > 0 && r.result.summary.questions.every(q => q.blocks === 'p2' || ['Q4', 'Q8', 'Q9'].includes(q.decision)) && r.result.followUps.some(f => /names no decision/.test(f.reason)), 'decision-only without a decision: blocks P2')
+  // A part refuted in the first pair does not return as an alternate.
+  r = await runTask('T2', { backAlt: true, refute: ['P4-stock-R1:part1'] })
+  check(r1(r).selection[0].part === 'part2' && r1(r).selection[0].refuted.includes('part1') && r1(r).selection[0].alternate_unverified.includes('part1'), 'refuted part as a later alternate: stays refuted')
+  // A P3 find dropped from the shortlist is re-read.
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, omitFigure: ['P4-datasheet-R1', 're-rank drop: partX'] })
+  check(r.result.followUps.some(f => f.figure === 're-rank drop: partX' && f.reason === 'figure not verified'), 'P3 find dropped from the shortlist: re-read')
+  // Functions and parts given twice.
+  r = await runTask('T2', { rrDup: true })
+  check(r1(r).selection[0].part === null && r.result.followUps.some(f => /function returned twice/.test(f.reason)), 'function ranked twice: not ranked')
+  r = await runTask('T2', { p2DupPart: true })
+  check(r1(r).selection[0].part !== 'part1' && r.result.followUps.some(f => /more than one record/.test(f.reason)), 'part with two records: dropped')
+  // Values and checks written as not read.
+  r = await runTask('T2', { forResearch: [{ id: 'V9', category: 'R1' }], foundNotRead: true })
+  check(r.result.summary.figures_open.R1.includes('found V9'), 'value found as not read: open')
+  r = await runTask('T2', { readNone: true })
+  check(r1(r).selection[0].part === null, 'checks read as not read: not verified')
+  // No ranking, or no requirement, leaves the function open.
+  r = await runTask('T2', { noRerankFn: true })
+  check(r1(r).selection[0].part === null, 'function the re-rank did not rank: open')
+  r = await runTask('T2', { emptyRanking: true })
+  check(r1(r).selection[0].part === null, 'empty ranking: open')
+  r = await runTask('T2', { fnNoReq: true })
+  check(r1(r).selection[0].part === null, 'function with no requirement: open')
+  // A Q alternative whose alternate is the kept part: the kept part needs the alternate's checks.
+  r = await runTask('T2', { qAltBack: true, p4parts: ['part3'] })
+  check(r1(r).ledger.some(l => l.part === 'part1' && l.status === 'not verified'), 'kept part that is a Q alternative\'s alternate: compatibility checks required')
+  // A Q alternative that is the kept part is none.
+  r = await runTask('T4', { qSelf: true })
+  check(r.result.summary.q_missing.includes('R10') && r.result.summary.results.find(x => x.category === 'R10').selection[0].q_alternatives.length === 0, 'kept part named as the Q alternative: none')
   // A ruling about another item does not count.
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], wrongRuling: true })
   check(r.result.followUps.some(f => f.reason === 'the ruling names another item') && r1(r).selection[0].part === null, 'ruling about another item: no ruling')
@@ -472,6 +531,19 @@ async function main() {
   check(r.result.summary.stopped === true, 'T6: a figure the critic finds wrong stops it')
   r = await runTask('T6', { sentenceIssue: true })
   check(r.result.summary.stopped === true, 'T6: a writing issue left stops it')
+  r = await runTask('T6', { oneFigure: true })
+  check(r.result.summary.stopped === true, 'T6: a critic that checked one page stops it')
+  r = await runTask('T6', { pagePower: true })
+  check(r.result.summary.stopped === true, 'T6: a fixed output used as a group page stops it')
+  r = await runTask('T5')
+  check(r.result.summary.rejected_items === 0 && r.result.summary.unchecked_items === 0, 'T5: every item upheld')
+  r = await runTask('T5', { rejectBudget: true })
+  check(r.result.summary.rejected_items === 1 && r.result.followUps.some(f => /critic rejected/.test(f.reason)), 'T5: a rejected budget is counted and listed')
+  r = await runTask('T5', { throws: ['P5'] })
+  check(r.result.summary.missing_checks.includes('P5'), 'T5: a P5 chain that fails is a missing check')
+  // A category whose chain failed is not a selection run.
+  r = await runTask('T2', { nulls: { 'P2-R1': 2 } })
+  check(!('R1' in r.result.summary.selection) && r.result.summary.chain_failed.includes('R1') && 'R2' in r.result.summary.selection, 'failed chain: category left out of the selection')
   r = await runTask('T6', { pageOutside: true })
   check(r.result.summary.stopped === true, 'T6: a group page outside hardware/docs/ stops it')
   r = await runTask('T6', { noFigures: true })

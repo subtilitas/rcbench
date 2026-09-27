@@ -50,48 +50,79 @@ git -C $B/plan push origin research/round1
 
 `prepare` fetches origin and refuses a run out of turn: T2 and T4 before T1 is
 recorded, T3 before T2 and T4, T5 before T3, T6 before T5, a P1 follow-up
-before T1, a P2-P4 follow-up before the tasks that own its categories, and a
-P5-P6 follow-up before T5. It refuses a P1 run while another P1 run is
-prepared and not recorded, so question IDs do not repeat, and numbers new
-questions after the last one on the page and in the committed runs.
+before T1, a P2-P4 follow-up before the tasks that own its categories, a
+P5-P6 follow-up before T5, and a round 2 follow-up before a round 1 follow-up
+is recorded. It refuses a P1 run while another P1 run is prepared and not
+recorded, so question IDs do not repeat, and numbers new questions after the
+last one on the page and in the committed runs.
 
-Before T2 to T4, a P2-P4 follow-up and a P1 follow-up it refuses while a
-question a committed P1 run raised for their categories is not yet under
-"Raised by P1" on `research/round1`, or is there without an answer. Before T5,
-a P5-P6 follow-up and T6 the question check covers every category. A question
-that only feeds Q4, Q8 or Q9 (`blocks` is `decision-only` and `decision` names
-Q4, Q8 or Q9) needs no answer; `round1.js` publishes a `decision-only`
-question that names no decision as blocking P2. Before T2 to T4 and a P2-P4
-follow-up it also refuses while the latest P1 run covering a category left P1
-items there for follow-up.
+It refuses these without exception:
 
-Before T3, for the categories of T2 and T4, and before T5, a P5-P6 follow-up
-and T6, for every category, it refuses while a function has no verified part
-or a missing or unverified second source; while R10 or R12 names no Q4 or Q8
-alternative, or one not verified with its own second source; while the last
-run of a category left a figure the datasheet verifier did not confirm, or a
-value for research or a required report figure P2 did not return; while the
-latest P1 run left P1 items in a category; and while a category's parts were
-selected before a P1 run raised questions for it, or before its answers under
-"Raised by P1" changed. Before T6 it refuses while the owner's decisions on
-Q4, Q8 and Q9 are not written; while a part changed after the last P5/P6
-check; while that check ran without P5 or P6, left combinations or budgets its
-critic did not rule on, or lists a conflict or gap whose categories no round-2
-follow-up since the check before covered; and while the output paths have
-changes. Then it merges `research/round1` into the results tree.
+- T1 and P1 follow-ups while S1, S3 or S8 has no answer; T2 to T4 and P2-P4
+  follow-ups while S2, S4 to S7, S9 (for R7) or a Blocking row naming one of
+  their categories has no answer.
+- T2 to T4, P2-P4 and P1 follow-ups while a question a committed P1 run raised
+  for their categories is not yet under "Raised by P1" on `research/round1`,
+  or is there without an answer. T5, P5-P6 follow-ups and T6 check every
+  category. A question that only feeds Q4, Q8 or Q9 (`blocks` is
+  `decision-only` and `decision` names one of them) needs no answer.
+- T6 while the owner's decisions on Q4, Q8 and Q9 are not written, and while
+  the output paths have changes.
 
-`--accept-open REASON` passes the open items, not the refusals for turn,
-questions or decisions; the reason and the items go into the arguments. The
-gates read committed run records and the plan on `research/round1`. The
-arguments hold the results tree's head, the Claude Code version, the model,
-the effort, the CPU count and the workflow concurrency.
+It refuses these unless `--accept-open REASON` records the owner's reason and
+the items in the arguments:
 
-A category whose P3 returned nothing keeps no part: its selection names the
-part in `without_p3` for the follow-up task. A function P3 lists as named by
-the row and not returned by P2 is selected with no part. A ranking with a
-repeated position or one below 1 ranks nothing for that function. A part a
-verifier lists without being asked to verify it is ignored. Only the kept
-part's rule-5 alternate gates its selection.
+- T2 to T4 and P2-P4 follow-ups while the latest P1 run covering a category
+  left P1 items there. Notices, such as a marking taken as an assumption, do
+  not count.
+- T3 and P2-P4 follow-ups on its categories, for the categories of T2 and T4,
+  and T5, P5-P6 follow-ups and T6, for every category, while:
+  - a function has no verified part, or a missing or unverified second
+    source;
+  - R10 or R12 has no Q4 or Q8 alternative other than the kept part, or one
+    not verified with its own second source;
+  - a run that decides one of the category's functions left a figure the
+    datasheet verifier did not confirm, or a value for research or required
+    report figure P2 did not return or wrote as not read;
+  - the latest P1 run left P1 items in the category;
+  - a run that decides one of its functions predates a P1 run's questions for
+    the category, read other answers under "Raised by P1" for it, read
+    another specification (Research.md outside its Raised by P1 and Decided
+    tables, and IOBoard.md), or, for R5 to R8, predates a change to a part of
+    T2 or T4.
+- T6 while a part changed after the last P5/P6 check; while that check ran
+  without P5 or P6, or left combinations or budgets its critic did not rule
+  on or rejected; while it lists a conflict or gap whose categories, named or
+  taken from its parts, no round-2 P2-P4 follow-up since the check before
+  researched to a selection (the first check's items are never covered); and
+  while a run that decides an R3 function was not given the Q9 decision now
+  in force.
+
+Then, before T6, it merges `research/round1` into the results tree. The gates
+read committed run records and the plan on `research/round1`. The arguments
+hold the results tree's head, the owner's decisions, the Claude Code version,
+the model, the effort, the CPU count and the workflow concurrency. `session.py
+check` confirms the Blocking and Sourcing tables still read as the gates
+expect.
+
+`round1.js` keeps a function open, with no part, when:
+
+- the category's P3 returned nothing (the part is named in `without_p3`);
+- P3 lists it as named by the row and P2 did not return it;
+- the re-rank did not rank it, ranked no part, repeated a position or used
+  one below 1, or either P2 or the re-rank returned it twice;
+- it has no requirement.
+
+A part with more than one record is dropped. A standing refutation stays
+final in the run, even if the part is verified later as another part's
+alternate. A part a verifier was not asked to verify is ignored, and a check
+written as not read shows nothing. Only the kept part's rule-5 alternate gates
+its selection; a first-ranked part that is also a Q alternative's alternate
+needs the alternate's checks. A category whose chain failed is left out of the
+run's selection, so the gates read the run before it. Each assumption needs a
+confirmed question of its own. P0 counts a host with two rows, or a status
+written as not read, as not read. The P7 critic checks at least one figure on
+each group page and each output under `hardware/docs/`.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared
@@ -108,14 +139,15 @@ After a T6 that was not stopped `record` also commits the pages P7 wrote. It
 refuses a changed file outside the files P7 declared and its critic reviewed
 within the plan's Outputs (`hardware/docs/`, `hardware/STATUS.md`,
 `hardware/README.md`, `tools/jlc_stock.py`), a file P7 declared that did not
-change, and a group page outside `hardware/docs/`. A T6 is recorded as stopped
-unless P7 and its critic both return, the critic's three checks pass, it
-checked at least one figure and every figure agrees with its return, no
+change, and a group page outside `hardware/docs/` or among the fixed outputs.
+A renamed file counts as both its old and its new path. A T6 is recorded as
+stopped unless P7 and its critic both return, the critic's three checks pass,
+it checked at least one figure and every figure agrees with its return, no
 writing issue is left, the three group pages are three files in
-`hardware/docs/`, and every output of the plan and each group page was written
-and reviewed. A stopped T6 leaves the output paths as they were. `raised`
-reads the committed run record only and refuses a plan tree with uncommitted
-changes.
+`hardware/docs/` other than the fixed outputs, and every output of the plan
+and each group page was written and reviewed. A stopped T6 leaves the output
+paths as they were. `raised` reads the committed run record only and refuses a
+plan tree with uncommitted changes.
 
 A follow-up task takes `--followup FILE`, a JSON object with `phases` (`P1`,
 `P2-P4` or `P5-P6`), `round` (1 or 2), `categories` and `items`, and

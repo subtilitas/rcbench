@@ -43,6 +43,13 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 PLAN_REL = os.path.join("hardware", "docs", "Research.md")
+SPEC_REL = os.path.join("hardware", "docs", "IOBoard.md")
+# The Sourcing questions each task waits on, as the plan's Sourcing section
+# states them: S1, S3 and S8 block T1; S2 and S4 to S7 block T2, T3 and T4;
+# S9 blocks R7.
+SOURCING_T1 = ("S1", "S3", "S8")
+SOURCING_STOCK = ("S2", "S4", "S5", "S6", "S7")
+SOURCING_CATEGORY = {"R7": ("S9",)}
 MONOSTABLE = "23c82ca6ca976d956098cfafd25dbefa11584f5d"
 BRANCH = "research/round1"
 RESULTS = "research/round1-results"
@@ -68,7 +75,8 @@ def t6_output(path):
 
 def changed(tree):
     """Paths git reports as changed or new, from NUL-separated output so
-    no status column or file name is trimmed."""
+    no status column or file name is trimmed. A rename or copy gives both
+    its destination and its source."""
     raw = git("-C", tree, "status", "--porcelain", "-z",
               "--untracked-files=all", check=False).stdout
     out, parts = [], raw.split("\0")
@@ -77,8 +85,9 @@ def changed(tree):
         entry = parts[i]
         if len(entry) > 3:
             out.append(entry[3:])
-            if entry[0] in "RC":
+            if entry[0] in "RC" and i + 1 < len(parts):
                 i += 1  # a rename or copy carries its source next
+                out.append(parts[i])
         i += 1
     return out
 
@@ -169,6 +178,49 @@ def raised_rows(text):
     return rows
 
 
+def blocking_rows(text):
+    """The Blocking table: (id, categories it blocks, answer)."""
+    sec = text.split("#### Blocking: answered before the research tasks", 1)
+    if len(sec) < 2:
+        raise SystemExit("the Blocking section is not found")
+    rows = []
+    for line in sec[1].split("\n####", 1)[0].splitlines():
+        c = cells(line)
+        if c and len(c) == 5 and re.fullmatch(r"[A-Z]\d+", c[0]):
+            rows.append((c[0], set(re.findall(r"R\d+", c[2])), c[4]))
+    return rows
+
+
+def sourcing_answers(text):
+    """The Sourcing table: {id: answer}."""
+    sec = text.split("### Sourcing", 1)
+    if len(sec) < 2:
+        raise SystemExit("the Sourcing section is not found")
+    out = {}
+    for line in sec[1].split("\n### ", 1)[0].splitlines():
+        c = cells(line)
+        if c and len(c) == 4 and re.fullmatch(r"S\d+", c[0]):
+            out[c[0]] = c[3]
+    return out
+
+
+def spec_text(commit):
+    """The specification a run read: Research.md without its Raised by P1
+    and Decided tables, which have their own checks, and IOBoard.md. None
+    when the commit is not in this clone."""
+    texts = []
+    for rel in (PLAN_REL, SPEC_REL):
+        shown = git("show", f"{commit}:{rel}", check=False)
+        if shown.returncode:
+            return None
+        texts.append(shown.stdout)
+    plan = re.sub(r"#### Raised by P1\n.*?(?=\n#{2,4} )", "", texts[0],
+                  flags=re.S)
+    plan = re.sub(r"#### Decided on the research's output\n.*?"
+                  r"(?=\n#{2,4} |\Z)", "", plan, flags=re.S)
+    return plan + "\0" + texts[1]
+
+
 def decisions(text):
     """Q4, Q8, Q9 and the owner's entry in the Decision column."""
     sec = text.split("#### Decided on the research's output", 1)[-1]
@@ -229,6 +281,18 @@ def cmd_check(_args):
     raised_rows(text)
     if set(decisions(text)) != {"Q4", "Q8", "Q9"}:
         fails.append("the decision table does not list Q4, Q8 and Q9")
+    ids = [i for i, _, _ in blocking_rows(text)]
+    if ids != [f"F{n}" for n in range(1, 17)] + ["Q7"]:
+        fails.append(f"the Blocking table lists {ids}")
+    if any(not blocks for _, blocks, _ in blocking_rows(text)):
+        fails.append("a Blocking row names no category")
+    if sorted(sourcing_answers(text)) != sorted(f"S{n}" for n in range(1, 10)):
+        fails.append("the Sourcing table does not list S1 to S9")
+    rule = "S1, S3 and S8 block T1. S2 and S4 to S7 block T2, T3 and T4. S9 " \
+        "blocks R7 (T3)."
+    if rule not in " ".join(text.split()):
+        fails.append("the Sourcing section no longer states which task each "
+                     "question blocks as session.py reads it")
 
     schemas = resolved_schemas()
     js = read(os.path.join(HERE, "round1.js"))
@@ -381,7 +445,7 @@ def p1_unresolved(results, categories):
             continue
         name, last = cover[-1]
         left = [f for f in last.get("followUps", [])
-                if f.get("category") == c and
+                if f.get("category") == c and not f.get("notice") and
                 str(f.get("role", "")).startswith(("P1", "category"))]
         if left:
             out.append(f"{c}: {name} left {len(left)} P1 items unresolved")
@@ -403,15 +467,28 @@ def t6_open(results):
     # An item may stand only when a round-2 research follow-up recorded
     # between the check before and this one covered its categories: the
     # plan writes what round 2 leaves as not known.
-    before = checks[-2][1].get("sequence", 0) if len(checks) > 1 else 0
-    covered = {c for _, t in done
+    # The first check's items were found by it, so no earlier run covered
+    # them.
+    before = checks[-2][1].get("sequence", 0) if len(checks) > 1 else None
+    # Round 2 covers the categories a round-2 P2-P4 follow-up researched to
+    # a selection, not the ones its file named.
+    covered = set() if before is None else {c for _, t in done
                if (t.get("followup") or {}).get("round") == 2
-               and (t.get("followup") or {}).get("phases") in ("P1", "P2-P4")
+               and (t.get("followup") or {}).get("phases") == "P2-P4"
                and before < t.get("sequence", 0) < last.get("sequence", 0)
-               for c in (t.get("followup") or {}).get("categories") or []}
+               for c in (t.get("summary") or {}).get("selection") or {}}
     summary = last.get("summary") or {}
-    items = [set(x.get("categories") or []) for x in
-             summary.get("conflicts", [])] + \
+    # A conflict belongs to the categories it names and those of its parts.
+    part_cat = {}
+    for c, fns in effective_selection(results).items():
+        for e in fns.values():
+            for part in [e.get("part")] + [q.get("part") for q in
+                                           e.get("q_alternatives") or []]:
+                if part:
+                    part_cat[part] = c
+    items = [set(x.get("categories") or []) |
+             {part_cat[p] for p in x.get("parts") or [] if p in part_cat}
+             for x in summary.get("conflicts", [])] + \
         [{x["category"]} if x.get("category") else set()
          for x in summary.get("gaps", [])]
     uncovered = [i for i in items if not i or not i <= covered]
@@ -424,6 +501,9 @@ def t6_open(results):
     if summary.get("unchecked_items"):
         out.append(f"{name} left {summary['unchecked_items']} combinations "
                    "and budgets its critic did not rule on")
+    if summary.get("rejected_items"):
+        out.append(f"{name} has {summary['rejected_items']} combinations "
+                   "and budgets its critic rejected")
     return out
 
 
@@ -431,58 +511,97 @@ def answers(rows, c):
     return {r[0]: r[3].strip() for r in rows if r[1] == c}
 
 
-def stale_selections(results, categories, rows):
-    """Each category whose parts were not qualified against the values in
-    force: a P1 run raised questions for it after the last run that
-    selected them, or its answers under "Raised by P1" differ from those at
-    the plan commit that run read."""
+def deciding_runs(results, c, eff):
+    """The runs whose selection decides at least one of c's functions, in
+    record order: (name, task)."""
+    names = {e["run"] for e in eff.get(c, {}).values()}
+    return [(n, t) for n, t in runs(results) if n in names]
+
+
+def stale_selections(results, categories, rows, now, upstream=()):
+    """Each run whose parts for a category were not qualified against what
+    is in force now: a P1 run raised questions for the category after it;
+    the category's answers under "Raised by P1", or the specification,
+    differ from those at the plan commit it read; or, for a category that
+    takes the parts of T2 and T4 (`upstream`), one of those changed after
+    it."""
     done = runs(results)
-    plans = {}
+    seq = {n: t.get("sequence", 0) for n, t in done}
+    eff = effective_selection(results)
+    rows_at, spec_at = {}, {}
+
+    def rows_of(commit):
+        if commit not in rows_at:
+            shown = git("show", f"{commit}:{PLAN_REL}", check=False)
+            rows_at[commit] = raised_rows(shown.stdout) \
+                if shown.returncode == 0 else None
+        return rows_at[commit]
+
+    def spec_of(commit):
+        if commit not in spec_at:
+            spec_at[commit] = spec_text(commit)
+        return spec_at[commit]
+
+    changed_up = max([seq.get(e["run"], 0) for u in upstream
+                      for e in eff.get(u, {}).values()] or [0])
     out = []
     for c in categories:
-        p1 = [(n, t) for n, t in done if (t.get("task") == "T1" or (
+        p1 = [n for n, t in done if (t.get("task") == "T1" or (
             t.get("followup") or {}).get("phases") == "P1") and any(
             q.get("category") == c
             for q in (t.get("summary") or {}).get("questions", []))]
-        sel = [(n, t) for n, t in done if c in (
-            (t.get("summary") or {}).get("selection") or {})]
-        if p1 and sel and p1[-1][1].get("sequence", 0) > \
-                sel[-1][1].get("sequence", 0):
-            out.append(f"{c}: {p1[-1][0]} raised questions after "
-                       f"{sel[-1][0]} selected its parts")
-            continue
-        if not sel:
-            continue
-        name, task = sel[-1]
-        commit = task.get("commit", "")
-        if commit not in plans:
-            shown = git("show", f"{commit}:{PLAN_REL}", check=False)
-            plans[commit] = raised_rows(shown.stdout) \
-                if shown.returncode == 0 else None
-        if plans[commit] is None:
-            out.append(f"{c}: the plan {name} read, at {commit}, is not "
-                       "in this clone")
-        elif answers(plans[commit], c) != answers(rows, c):
-            out.append(f"{c}: the answers under Raised by P1 changed after "
-                       f"{name} selected its parts")
+        for name, task in deciding_runs(results, c, eff):
+            commit = task.get("commit", "")
+            if p1 and seq[p1[-1]] > seq[name]:
+                out.append(f"{c}: {p1[-1]} raised questions after {name} "
+                           "selected its parts")
+            if rows_of(commit) is None or spec_of(commit) is None:
+                out.append(f"{c}: the plan {name} read, at {commit}, is not "
+                           "in this clone")
+                continue
+            if answers(rows_of(commit), c) != answers(rows, c):
+                out.append(f"{c}: the answers under Raised by P1 changed "
+                           f"after {name} selected its parts")
+            if spec_of(commit) != spec_of(now):
+                out.append(f"{c}: the specification changed after {name} "
+                           "selected its parts")
+            if c not in upstream and changed_up > seq[name]:
+                out.append(f"{c}: parts of T2 or T4 changed after {name} "
+                           "selected its parts")
+    return out
+
+
+def q9_open(results, now):
+    """An R3 function decided by a run that was not given the Q9 decision
+    now in force: a choice that adds or changes a part needs an R3
+    follow-up told of it, and a P5/P6 check after that (the plan's
+    follow-up tasks)."""
+    eff = effective_selection(results)
+    out = []
+    for name, task in deciding_runs(results, "R3", eff):
+        then = (task.get("decisions") or {}).get("Q9", "")
+        if then.strip() != now.get("Q9", "").strip():
+            out.append(f"R3: {name} selected its parts without the Q9 "
+                       "decision now in force; a choice that adds or "
+                       "changes a part needs an R3 follow-up and a P5/P6 "
+                       "check after it")
     return out
 
 
 def open_in_category(results, categories):
-    """What the last run that verified each category left open for the
-    whole category: figures not returned or not confirmed, and in R10 and
-    R12 no Q4 or Q8 alternative named."""
+    """What the runs that decide each category's functions left open for
+    the whole category: figures not returned or not confirmed; and in R10
+    and R12 no Q4 or Q8 alternative."""
+    eff = effective_selection(results)
     out = []
     for c in categories:
-        sel = [(n, t) for n, t in runs(results) if c in (
-            (t.get("summary") or {}).get("selection") or {})]
-        if sel:
-            name, task = sel[-1]
-            summary = task.get("summary") or {}
-            figs = (summary.get("figures_open") or {}).get(c, [])
+        for name, task in deciding_runs(results, c, eff):
+            figs = ((task.get("summary") or {}).get("figures_open")
+                    or {}).get(c, [])
             out += [f"{c}: figure {f} not confirmed in {name}" for f in figs]
-            if c in (summary.get("q_missing") or []):
-                out.append(f"{c}: {name} named no Q4 or Q8 alternative")
+        if c in ("R10", "R12") and eff.get(c) and not any(
+                e.get("q_alternatives") for e in eff[c].values()):
+            out.append(f"{c}: no function has a Q4 or Q8 alternative")
     return out
 
 
@@ -580,6 +699,22 @@ def on_branch(tree, branch):
     if here != branch:
         raise SystemExit(f"{tree} is on {here or 'a detached HEAD'}, "
                          f"not {branch}")
+
+
+def blocking_gate(text, task, categories, is_p1, reads_stock):
+    """The Blocking and Sourcing questions a run waits on, answered."""
+    src = sourcing_answers(text)
+    need = list(SOURCING_T1) if is_p1 or task == "T1" else []
+    if reads_stock:
+        need += list(SOURCING_STOCK)
+        need += [q for c in categories for q in SOURCING_CATEGORY.get(c, ())]
+    open_q = [q for q in need if not src.get(q, "").strip()]
+    if reads_stock:
+        open_q += [i for i, blocks, answer in blocking_rows(text)
+                   if blocks & set(categories) and not answer.strip()]
+    if open_q:
+        raise SystemExit("unanswered questions this run waits on: "
+                         + ", ".join(open_q))
 
 
 def questions_gate(results, rows, categories):
@@ -681,24 +816,31 @@ def cmd_prepare(args):
         cats["tasks"].get(args.task, {}).get("categories", [])
     reads_stock = args.task in cats["tasks"] or phases == "P2-P4"
     open_sel = []
+    blocking_gate(text, args.task, task_cats, is_p1, reads_stock)
+    if phases and followup.get("round") == 2 and not any(
+            (t.get("followup") or {}).get("round") == 1
+            for _, t in runs(results)):
+        raise SystemExit("a round 2 follow-up runs after a round 1 "
+                         "follow-up is recorded")
     if reads_stock or is_p1 and args.task == "FU":
         questions_gate(results, rows, task_cats)
     if args.task == "T5" or phases == "P5-P6":
         questions_gate(results, rows, list(cats["categories"]))
     if reads_stock:
         open_sel += p1_unresolved(results, task_cats)
-    # T3 takes the parts T2 and T4 selected; T5, a P5-P6 follow-up and T6
-    # take every category's.
-    if args.task == "T3":
-        gate_cats = [c for t in ("T2", "T4")
-                     for c in cats["tasks"][t]["categories"]]
+    # T3 and a P2-P4 follow-up on its categories take the parts T2 and T4
+    # selected; T5, a P5-P6 follow-up and T6 take every category's.
+    up = [c for t in ("T2", "T4") for c in cats["tasks"][t]["categories"]]
+    if args.task == "T3" or phases == "P2-P4" and set(
+            followup["categories"]) & set(cats["tasks"]["T3"]["categories"]):
+        gate_cats = up
     elif args.task in ("T5", "T6") or phases == "P5-P6":
         gate_cats = list(cats["categories"])
     else:
         gate_cats = []
     open_sel += open_selections(effective_selection(results), gate_cats)
     open_sel += open_in_category(results, gate_cats)
-    open_sel += stale_selections(results, gate_cats, rows)
+    open_sel += stale_selections(results, gate_cats, rows, commit, up)
     open_sel += [o for o in p1_unresolved(results, gate_cats)
                  if o not in open_sel]
     last_p56 = ""
@@ -715,6 +857,7 @@ def cmd_prepare(args):
         missing = [q for q, d in decisions(text).items() if not d]
         if missing:
             raise SystemExit("the owner has not decided " + ", ".join(missing))
+        open_sel += q9_open(results, decisions(text))
     if open_sel and not args.accept_open:
         raise SystemExit("open before this run: " + "; ".join(open_sel)
                          + ". Resolve them in a follow-up task, or pass "
@@ -757,6 +900,7 @@ def cmd_prepare(args):
                   "scratch": os.path.join(base, "scratch"),
                   "digikey_env": env},
         "followup": followup, "first_v": first_v,
+        "decisions": decisions(text),
         "run": run, "run_id": run_id,
         "results_head": git("-C", results, "rev-parse", "HEAD"),
         "for_research": for_research,
@@ -874,11 +1018,12 @@ def cmd_record(args):
                 for f in r["data"].get("reviewed", [])}
         pages = {f for r in rets if r["role"] == "P7"
                  for f in (r["data"].get("group_pages") or {}).values()}
-        outside = sorted(f for f in pages if not GROUP_PAGE.fullmatch(f))
+        outside = sorted(f for f in pages if not GROUP_PAGE.fullmatch(f)
+                         or f in T6_REQUIRED)
         if outside:
             shutil.rmtree(target, ignore_errors=True)
-            raise SystemExit("group pages outside hardware/docs/: "
-                             + ", ".join(outside))
+            raise SystemExit("group pages outside hardware/docs/ or among "
+                             "the fixed outputs: " + ", ".join(outside))
         allowed = set(T6_REQUIRED) | pages
         stray = [d for d in dirty if not d.startswith(rel)
                  and not (d in allowed and d in wrote and d in seen)]
