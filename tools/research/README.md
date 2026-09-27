@@ -63,21 +63,25 @@ that only feeds Q4, Q8 or Q9 (`blocks` is `decision-only`) needs no answer.
 Before T2 to T4 and a P2-P4 follow-up it also refuses while the latest P1 run
 covering a category left P1 items there for follow-up.
 
-It refuses T3 and T5 while a function the earlier tasks cover has no verified
-part, a missing or unverified second source, or, in R10 and R12, an unverified
-Q4 or Q8 alternative. It refuses T3, T5 and T6 while a P1 run raised questions
-for a category after the last run that selected its parts. Before T6 it
-refuses while the owner's decisions on Q4, Q8 and Q9 are not written; while a
-part changed after the last P5/P6 check; while that check ran without P5 or
-P6, left combinations or budgets its critic did not rule on, or lists
-conflicts or gaps with no round 2 run; and while the output paths have
-changes. Then it merges `research/round1` into the results tree.
+Before T3, for the categories of T2 and T4, and before T5, a P5-P6 follow-up
+and T6, for every category, it refuses while a function has no verified part
+or a missing or unverified second source; while an R10 or R12 function has a
+Q4 or Q8 alternative not verified with its own second source; while the last
+run of a category left a figure the datasheet verifier did not confirm; while
+the latest P1 run left P1 items in a category; and while a category's parts
+were selected before a P1 run raised questions for it, or before its answers
+under "Raised by P1" changed. Before T6 it refuses while the owner's decisions
+on Q4, Q8 and Q9 are not written; while a part changed after the last P5/P6
+check; while that check ran without P5 or P6, left combinations or budgets its
+critic did not rule on, or lists conflicts or gaps with no round 2 run; and
+while the output paths have changes. Then it merges `research/round1` into the
+results tree.
 
 `--accept-open REASON` passes the open items, not the refusals for turn,
 questions or decisions; the reason and the items go into the arguments. The
-gates read committed run records only. The arguments hold the results tree's
-head, the Claude Code version, the model, the effort, the CPU count and the
-workflow concurrency.
+gates read committed run records and the plan on `research/round1`. The
+arguments hold the results tree's head, the Claude Code version, the model,
+the effort, the CPU count and the workflow concurrency.
 
 A category whose P3 returned nothing keeps no part: its selection names the
 part in `without_p3` for the follow-up task. A function P3 lists as named by

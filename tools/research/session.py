@@ -424,11 +424,17 @@ def t6_open(results):
     return out
 
 
-def stale_selections(results, categories):
-    """Each category whose last P2-P4 run is older than the last P1 run
-    that raised questions for it: its parts were not qualified against the
-    new values."""
+def answers(rows, c):
+    return {r[0]: r[3].strip() for r in rows if r[1] == c}
+
+
+def stale_selections(results, categories, rows):
+    """Each category whose parts were not qualified against the values in
+    force: a P1 run raised questions for it after the last run that
+    selected them, or its answers under "Raised by P1" differ from those at
+    the plan commit that run read."""
     done = runs(results)
+    plans = {}
     out = []
     for c in categories:
         p1 = [(n, t) for n, t in done if (t.get("task") == "T1" or (
@@ -441,6 +447,36 @@ def stale_selections(results, categories):
                 sel[-1][1].get("sequence", 0):
             out.append(f"{c}: {p1[-1][0]} raised questions after "
                        f"{sel[-1][0]} selected its parts")
+            continue
+        if not sel:
+            continue
+        name, task = sel[-1]
+        commit = task.get("commit", "")
+        if commit not in plans:
+            shown = git("show", f"{commit}:{PLAN_REL}", check=False)
+            plans[commit] = raised_rows(shown.stdout) \
+                if shown.returncode == 0 else None
+        if plans[commit] is None:
+            out.append(f"{c}: the plan {name} read, at {commit}, is not "
+                       "in this clone")
+        elif answers(plans[commit], c) != answers(rows, c):
+            out.append(f"{c}: the answers under Raised by P1 changed after "
+                       f"{name} selected its parts")
+    return out
+
+
+def open_figures(results, categories):
+    """The figures the datasheet verifier did not confirm in the last run
+    that verified each category."""
+    out = []
+    for c in categories:
+        sel = [(n, t) for n, t in runs(results) if c in (
+            (t.get("summary") or {}).get("selection") or {})]
+        if sel:
+            name, task = sel[-1]
+            figs = ((task.get("summary") or {}).get("figures_open")
+                    or {}).get(c, [])
+            out += [f"{c}: figure {f} not confirmed in {name}" for f in figs]
     return out
 
 
@@ -460,12 +496,24 @@ def open_selections(eff, categories):
                 for fn, e in eff.get(c, {}).items()
                 if e["part"] and e.get("second_source_missing")]
         # R10 and R12 keep an owner-selectable alternative for Q4 and Q8;
-        # each must be verified as well as the part kept.
-        out += [f"{c}: {fn} (Q alternative {q['part']} {q['status']})"
+        # each must be verified, with its second source, as the part kept.
+        out += [f"{c}: {fn} (Q alternative {q['part']}: {why})"
                 for fn, e in eff.get(c, {}).items()
                 for q in e.get("q_alternatives") or []
-                if not str(q.get("status", "")).startswith("verified")]
+                for why in q_open(q)]
     return out
+
+
+def q_open(q):
+    why = []
+    if not str(q.get("status", "")).startswith("verified"):
+        why.append(q.get("status") or "not verified")
+    if q.get("alternate") and not str(
+            q.get("alternate_status", "")).startswith("verified"):
+        why.append(f"alternate {q['alternate']} not verified")
+    if q.get("second_source_missing"):
+        why.append("no second source")
+    return why
 
 
 def run_info(model, effort):
@@ -628,15 +676,24 @@ def cmd_prepare(args):
         questions_gate(results, rows, list(cats["categories"]))
     if reads_stock:
         open_sel += p1_unresolved(results, task_cats)
-    gate = {"T3": ["T2", "T4"], "T5": ["T2", "T3", "T4"]}.get(args.task, [])
-    gate_cats = [c for t in gate for c in cats["tasks"][t]["categories"]]
+    # T3 takes the parts T2 and T4 selected; T5, a P5-P6 follow-up and T6
+    # take every category's.
+    if args.task == "T3":
+        gate_cats = [c for t in ("T2", "T4")
+                     for c in cats["tasks"][t]["categories"]]
+    elif args.task in ("T5", "T6") or phases == "P5-P6":
+        gate_cats = list(cats["categories"])
+    else:
+        gate_cats = []
     open_sel += open_selections(effective_selection(results), gate_cats)
-    open_sel += stale_selections(results, gate_cats)
+    open_sel += open_figures(results, gate_cats)
+    open_sel += stale_selections(results, gate_cats, rows)
+    open_sel += [o for o in p1_unresolved(results, gate_cats)
+                 if o not in open_sel]
     last_p56 = ""
     if args.task == "T6":
         questions_gate(results, rows, list(cats["categories"]))
         open_sel += t6_open(results)
-        open_sel += stale_selections(results, list(cats["categories"]))
         checks = [n for n, t in runs(results) if t.get("task") == "T5" or
                   (t.get("followup") or {}).get("phases") == "P5-P6"]
         last_p56 = checks[-1] if checks else ""
@@ -927,8 +984,7 @@ def main():
     p.add_argument("--no-fetch", action="store_true")
     p.add_argument("--accept-open", metavar="REASON",
                    help="start the run although earlier runs left items "
-                   "open: P1 items unresolved, functions with no verified "
-                   "part, or P5/P6 conflicts and gaps before T6; the "
+                   "open (tools/research/README.md lists them); the "
                    "reason and the items go into the arguments")
     p.set_defaults(fn=cmd_prepare)
     r = sub.add_parser("record")

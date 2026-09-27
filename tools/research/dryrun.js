@@ -84,6 +84,10 @@ async function runTask(task, opts = {}) {
       if (opts.noReqs) { data.functions[0].requirements = []; data.functions[0].shortlist.forEach(c => { c.requirements = [] }) }
       if (opts.failedReq) data.functions[0].shortlist[0].requirements = [{ name: 'x0', required: '>= 67.2 V', datasheet: '40 V', pass: false, source: 's' }]
       if (opts.selfAlt) Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: 'part1' })
+      if (opts.qAlt) {
+        Object.assign(data.functions[0].shortlist[2], { second_source_route: 'alternate', second_source_part: 'altQ' })
+        data.functions[0].shortlist.push({ ...cand(9), part: 'altQ', rank: 9 })
+      }
       if (opts.altFails) {
         Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: 'altA' })
         data.functions[0].shortlist.push({ ...cand(8), part: 'altA', requirements: [{ name: 'x0', required: '>= 67.2 V', datasheet: '40 V', pass: false, source: 's' }] })
@@ -94,7 +98,7 @@ async function runTask(task, opts = {}) {
     if (role === 'rerank') {
       data.functions = [{ function: 'f1', ranking: (opts.ranking || (opts.ranked || [1, 2, 3]).map(rank => ({ rank, part: `part${rank}`, reason: 'r' }))),
         new_candidates: opts.p3dropped ? [{ ...cand(7), part: 'partN' }] : [], dropped_from_p3: opts.p3dropped ? [{ part: 'partN', maker: 'm', reason: 'r' }] : [],
-        dropped_from_shortlist: opts.rankDropped ? [{ part: 'part1', maker: 'm', reason: 'r' }] : [], verify: (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
+        dropped_from_shortlist: opts.rankDropped ? [{ part: 'part1', maker: 'm', reason: 'r' }] : [], verify: opts.qAlt ? [{ part: 'part3', kind: 'q-alternative' }] : (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
       if (opts.extraFn) data.functions.push({ ...data.functions[0], function: 'fX' })
     }
     if (role === 'P1' && opts.contradict) data.values = data.values.map(v => ({ ...v, question: -1 }))
@@ -156,7 +160,8 @@ async function runTask(task, opts = {}) {
       const names = only ? [] : JSON.parse(/"figures_to_check":(\[[^\]]*\])/.exec(prompt)[1])
       data.figures = kind === 'datasheet' ? names.filter(n => !(opts.omitFigure && base === opts.omitFigure[0] && n === opts.omitFigure[1]))
         .map((figure, k) => ({ figure, verdict: (opts.refuteFigure || []).includes(base) && k === 0 ? 'refuted' : 'confirmed', evidence: 'e' })) : []
-      if (opts.verify && !(opts.omit || []).includes(base) && !opts.dropVerify && !only) data.parts.push(...opts.verify.map(pt => ({ function: 'f1', part: pt, kind: opts.reportFirst ? 'first' : 'alternate', verdict: (opts.refute || []).includes(`${base}:${pt}`) ? 'refuted' : 'confirmed', checks: checksFor(pt, opts.reportFirst ? 'first' : 'alternate'), refutation: '' })))
+      const extraParts = opts.p4parts || opts.verify
+      if (extraParts && !(opts.omit || []).includes(base) && !opts.dropVerify && !only) data.parts.push(...extraParts.map(pt => ({ function: 'f1', part: pt, kind: opts.reportFirst ? 'first' : 'alternate', verdict: (opts.refute || []).includes(`${base}:${pt}`) ? 'refuted' : 'confirmed', checks: checksFor(pt, opts.reportFirst ? 'first' : 'alternate'), refutation: '' })))
     }
     if (role === 'adjudicator') {
       data.stands = opts.stands !== false
@@ -224,8 +229,12 @@ async function main() {
   check(r.result.followUps.some(f => f.reason === 'figure refuted'), 'refuted figure that stands: listed')
   r = await runTask('T2')
   check(!r.result.followUps.some(f => f.reason === 'figure not verified'), 'figures: all verified when every one has a verdict')
+  check(r.result.summary.figures_open.R1.length === 0, 'figures: none open when every one is confirmed')
   r = await runTask('T2', { omitFigure: ['P4-datasheet-R1', 'P2 report: x1'] })
   check(r.result.followUps.some(f => f.figure === 'P2 report: x1' && f.reason === 'figure not verified'), 'figure without a verdict: listed')
+  check(r.result.summary.figures_open.R1.includes('P2 report: x1'), 'figure without a verdict: open on the category')
+  r = await runTask('T2', { refuteFigure: ['P4-datasheet-R2'] })
+  check(r.result.summary.figures_open.R2.length === 1, 'refuted figure that stands: open on the category')
 
   // A part on the verify list that both verifiers leave out is not verified.
   r = await runTask('T2', { verify: ['part2'] })
@@ -421,6 +430,13 @@ async function main() {
   // R10 and R12 name a Q4 or Q8 alternative.
   r = await runTask('T4')
   check(r.result.followUps.some(f => f.category === 'R10' && /Q4 alternative/.test(f.reason)), 'R10 without a Q4 alternative: listed')
+  // A Q4 or Q8 alternative is verified with its own rule-5 alternate.
+  r = await runTask('T2', { qAlt: true, p4parts: ['part3', 'altQ'] })
+  let q = r1(r).selection[0].q_alternatives[0]
+  check(q && q.status === 'verified' && q.alternate === 'altQ' && q.alternate_status === 'verified' && !q.second_source_missing, 'Q alternative and its alternate: both verified')
+  r = await runTask('T2', { qAlt: true, p4parts: ['part3'] })
+  q = r1(r).selection[0].q_alternatives[0]
+  check(q && q.status === 'verified' && q.alternate_status === 'not verified', 'Q alternative without its alternate checked: alternate not verified')
   // A ruling about another item does not count.
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], wrongRuling: true })
   check(r.result.followUps.some(f => f.reason === 'the ruling names another item') && r1(r).selection[0].part === null, 'ruling about another item: no ruling')

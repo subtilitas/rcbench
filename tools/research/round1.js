@@ -224,7 +224,7 @@ ${J(p3)}`
 function p4Prompt(cat, kind, bundle, only) {
   const what = only
     ? `Verify only this candidate, which replaces a refuted one, and, when its second_source_route is alternate, the part named in its second_source_part (kind alternate); list only those: ${J(only)}`
-    : 'Verify, for each function, the first-ranked part, its rule-5 alternate when its second_source_route is alternate (the part in its second_source_part, kind alternate), and every part in its verify list. List every part you verify in parts, once; a part you leave out counts as not verified.'
+    : 'Verify, for each function, the first-ranked part, its rule-5 alternate when its second_source_route is alternate (the part in its second_source_part, kind alternate), every part in its verify list, and the rule-5 alternate of each part of kind q-alternative in that list, in the same way (kind alternate). List every part you verify in parts, once; a part you leave out counts as not verified.'
   const how = kind === 'stock'
     ? 'You are the stock and lifecycle verifier. Re-read stock and lifecycle at the primary sources, with the clients above, and try to refute each figure.'
     : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, and the reasons the re-rank gave for dropping a P3 candidate) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
@@ -617,6 +617,12 @@ async function verifyCategory(cat, functions, bundle) {
           if (altOf(f.shortlist[0])) kinds.set(altOf(f.shortlist[0]), 'alternate')
         }
         for (const v of f.verify) if (!kinds.has(v.part) || v.kind === 'alternate') kinds.set(v.part, v.kind)
+        // A Q4 or Q8 alternative needs its own second source, as the part
+        // kept does.
+        for (const v of f.verify.filter(x => x.kind === 'q-alternative')) {
+          const a = altOf(candidateOf(functions, f.function, v.part))
+          if (a && kinds.get(a) !== 'first') kinds.set(a, 'alternate')
+        }
         for (const [part, kind] of kinds) want.push({ function: f.function, part, kind })
       }
     }
@@ -710,6 +716,13 @@ async function verifyCategory(cat, functions, bundle) {
   return ledger
 }
 
+// A part whose rule-5 route names no second source it can be built with.
+function noSecondSource(c) {
+  return c.second_source_route === 'none'
+    || (c.second_source_route === 'alternate' && !altOf(c))
+    || (c.second_source_route === 'second-vendor' && (!c.lcsc || c.lcsc === 'none'))
+}
+
 // The part each function keeps: the first part in rank order that is not
 // refuted, when both verifiers confirmed it. A part not verified keeps the
 // function open; only a refutation that stands moves on to the next part.
@@ -726,10 +739,14 @@ function selection(functions, ledger) {
     const alternates = new Set(f.verify.filter(v => v.kind === 'alternate').map(v => v.part))
     if (altOf(kept)) alternates.add(altOf(kept))
     const alternateUnverified = [...alternates].filter(part => !st({ part }).startsWith('verified'))
-    const qAlternatives = f.verify.filter(v => v.kind === 'q-alternative').map(v => ({ part: v.part, status: st(v) || 'not verified' }))
-    const missing = !!(kept && (kept.second_source_route === 'none'
-      || (kept.second_source_route === 'alternate' && !altOf(kept))
-      || (kept.second_source_route === 'second-vendor' && (!kept.lcsc || kept.lcsc === 'none'))))
+    const recOf = part => f.shortlist.find(c => c.part === part) || (f.alternateRecords || []).find(c => c.part === part) || null
+    const qAlternatives = f.verify.filter(v => v.kind === 'q-alternative').map(v => {
+      const rec = recOf(v.part)
+      const alt = altOf(rec)
+      return { part: v.part, status: st(v) || 'not verified', alternate: alt,
+        alternate_status: alt ? (st({ part: alt }) || 'not verified') : '', second_source_missing: !rec || noSecondSource(rec) }
+    })
+    const missing = !!(kept && noSecondSource(kept))
     return { function: f.function, part: kept ? kept.part : null, rank: kept ? kept.rank : null, refuted,
       alternate_unverified: alternateUnverified, second_source_missing: missing, q_alternatives: qAlternatives }
   })
@@ -770,7 +787,9 @@ async function categoryChain(cat) {
   // Without P3's search the category is not complete: no part is kept, and
   // the part that would have been is named for the follow-up task.
   const sel = selection(functions, ledger)
-  return { category: cat, status: p3 ? 'done' : 'done without P3', ledger,
+  // A figure is confirmed unless the ledger holds another status for it.
+  const figures_open = [...new Set(ledger.filter(l => l.figure && !l.status.startsWith('confirmed')).map(l => l.figure))]
+  return { category: cat, status: p3 ? 'done' : 'done without P3', ledger, figures_open,
     selection: p3 ? sel : sel.map(e => ({ ...e, part: null, rank: null, without_p3: e.part })) }
 }
 
@@ -895,7 +914,8 @@ if (TASK === 'T6') {
       summary = await phaseP5P6()
     } else {
       const results = await phaseP2P4(cats)
-      summary = { categories: cats, held: p0.held, results, selection: Object.fromEntries(results.map(r => [r.category, r.selection || []])) }
+      summary = { categories: cats, held: p0.held, results, selection: Object.fromEntries(results.map(r => [r.category, r.selection || []])),
+        figures_open: Object.fromEntries(results.map(r => [r.category, r.figures_open || []])) }
     }
   }
 }
