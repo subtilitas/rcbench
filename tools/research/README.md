@@ -110,16 +110,17 @@ expect.
 - the category's P3 returned nothing (the part is named in `without_p3`);
 - P3 lists it as named by the row and P2 did not return it;
 - the re-rank did not rank it, ranked no part, repeated a position or used
-  one below 1, or either P2 or the re-rank returned it twice;
-- P3 found a candidate for it, or overturned a drop of it, and the re-rank
-  neither qualified nor dropped that part;
+  one below 1, ranked a part with no record, ranked a part twice or also
+  dropped it, or either P2 or the re-rank returned it twice;
+- P3 found a candidate for it, or overturned its P2 drop of a part, and the
+  re-rank neither qualified nor dropped that part under it;
 - it has no requirement.
 
-A part with more than one record is dropped. A standing refutation stays final
-in the run, even if the part is verified later as another part's alternate. A
-part a verifier was not asked to verify is ignored, a part it lists twice has
-no verdict from it, and a check or figure evidence written as not read shows
-nothing. A return
+A part with more than one record is dropped. An adjudicator's ruling without
+evidence read is no ruling. A standing refutation stays final in the run, even
+if the part is verified later as another part's alternate. A part a verifier
+was not asked to verify is ignored, a part it lists twice has no verdict from
+it, and a check or figure evidence written as not read shows nothing. A return
 whose `category` names another category counts as not returned. Only the kept
 part's rule-5 alternate gates its selection; a first-ranked part that is also
 a Q alternative's alternate needs the alternate's checks. A category whose
@@ -144,15 +145,16 @@ After a T6 that was not stopped `record` also commits the pages P7 wrote. It
 refuses a changed file outside the files P7 declared and its critic reviewed
 within the plan's Outputs (`hardware/docs/`, `hardware/STATUS.md`,
 `hardware/README.md`, `tools/jlc_stock.py`), an output or group page that is
-not a file afterwards, a file P7 declared that did not
-change, and a group page outside `hardware/docs/` or among the fixed outputs.
-A renamed file counts as both its old and its new path. A T6 is recorded as
-stopped unless P7 and its critic both return, the critic's three checks pass,
-it checked at least one figure and every figure agrees with its return, no
-writing issue is left, the three group pages are three files in
-`hardware/docs/` other than the fixed outputs, and every output of the plan
-and each group page was written and reviewed. A stopped T6 leaves the output
-paths as they were. `raised` reads the committed run record only and refuses a
+not a file afterwards, a file P7 declared that did not change, and a group
+page outside `hardware/docs/` or among the fixed outputs. A renamed file
+counts as both its old and its new path. A T6 is recorded as stopped unless P7
+and its critic both return, the critic's three checks pass, it checked at
+least one figure and every figure agrees with its return, no writing issue is
+left, the three group pages are three files in `hardware/docs/` other than the
+fixed outputs, and every output of the plan and each group page was written
+and reviewed. A stopped T6 leaves the output paths as they were. A refused T6
+does too, and keeps what P7 changed in a stash named `refused T6 RUN_ID` in
+the results tree. `raised` reads the committed run record only and refuses a
 plan tree with uncommitted changes.
 
 A follow-up task takes `--followup FILE`, a JSON object with `phases` (`P1`,

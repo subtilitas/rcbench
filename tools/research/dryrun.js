@@ -90,6 +90,7 @@ async function runTask(task, opts = {}) {
       if (opts.qAltBack) Object.assign(data.functions[0].shortlist[2], { second_source_route: 'alternate', second_source_part: 'part1' })
       if (opts.p2DupPart) data.functions[0].shortlist.push({ ...cand(1), requirements: [{ name: 'x0', required: '>= 67.2 V', datasheet: '40 V', pass: false, source: 's' }] })
       if (opts.fnNoReq) data.functions[0].requirements = []
+      if (opts.p2DropY) data.functions[0].dropped = [{ part: 'partY', maker: 'm', reason: 'r' }]
       if (opts.foundNotRead) data.found_values = [{ question_id: 'V9', value: 'not read: HTTP 403', source: 's', read_at: 't' }]
       if (opts.altName) Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: opts.altName })
       if (opts.qAlt) {
@@ -107,7 +108,7 @@ async function runTask(task, opts = {}) {
       data.functions = [{ function: 'f1', ranking: (opts.ranking || (opts.ranked || [1, 2, 3]).map(rank => ({ rank, part: `part${rank}`, reason: 'r' }))),
         new_candidates: opts.p3dropped ? [{ ...cand(7), part: 'partN' }] : [], dropped_from_p3: opts.p3dropped ? [{ part: 'partN', maker: 'm', reason: 'r' }] : [],
         dropped_from_shortlist: opts.rankDropped ? [{ part: 'part1', maker: 'm', reason: 'r' }] : [], verify: opts.qAlt ? [{ part: 'part3', kind: 'q-alternative' }] : (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
-      if (opts.extraFn) data.functions.push({ ...data.functions[0], function: 'fX' })
+      if (opts.extraFn) data.functions.push({ ...data.functions[0], function: 'fX', ...(opts.rrHandleYin ? { dropped_from_shortlist: [{ part: 'partY', maker: 'm', reason: 'r' }] } : {}) })
       if (opts.p3dropShort) data.functions[0].dropped_from_shortlist = [{ part: 'partX', maker: 'm', reason: 'fails vmax' }]
       if (opts.rrDup) data.functions.push({ ...data.functions[0], ranking: [], dropped_from_shortlist: [{ part: 'part1', maker: 'm', reason: 'fails vmax at 85 C' }] })
       if (opts.noRerankFn) data.functions = []
@@ -189,6 +190,7 @@ async function runTask(task, opts = {}) {
       const g = /refuted the figure "(.+?)"/.exec(prompt)
       if (m) { data.part = m[1]; data.function = m[2] } else if (g) { data.part = ''; data.function = g[1] }
       if (opts.wrongRuling) data.part = 'another'
+      if (opts.unreadRuling) data.evidence = 'not read'
     }
     return data
   }
@@ -425,9 +427,11 @@ async function main() {
   check(r1(r).selection[0].part === null, 'no promotion past an unverified first-ranked part')
   // Duplicated and contradictory rankings.
   r = await runTask('T2', { ranking: [{ rank: 1, part: 'part1', reason: 'r' }, { rank: 2, part: 'part1', reason: 'r' }, { rank: 3, part: 'part2', reason: 'r' }], refute: ['P4-stock-R1:part1'] })
-  check(r.result.followUps.some(f => f.reason === 'ranked twice') && r1(r).selection[0].part === 'part2', 'ranked twice: listed, and the next part is a different one')
+  check(r.result.followUps.some(f => f.reason === 'ranked twice') && r1(r).selection[0].part === null, 'ranked twice: listed, function not ranked')
   r = await runTask('T2', { rankDropped: true })
-  check(r.result.followUps.some(f => f.reason === 'ranked and dropped by the re-rank') && r1(r).selection[0].part !== 'part1', 'ranked and dropped: not selected')
+  check(r.result.followUps.some(f => f.reason === 'ranked and dropped by the re-rank') && r1(r).selection[0].part === null, 'ranked and dropped: function not ranked')
+  r = await runTask('T2', { ranking: [{ rank: 1, part: 'partTypo', reason: 'r' }, { rank: 2, part: 'part2', reason: 'r' }] })
+  check(r.result.followUps.some(f => f.reason === 'ranked part has no record') && r1(r).selection[0].part === null, 'ranked part without a record: function not ranked')
   // A failed requirement and a failing check.
   r = await runTask('T2', { failedReq: true })
   check(r.result.followUps.some(f => /failed requirement/.test(f.reason)) && r1(r).selection[0].part !== 'part1', 'failed requirement: off the shortlist')
@@ -529,6 +533,12 @@ async function main() {
   check(r.result.summary.missing_checks.includes('P5-critic'), 'T5: a P5 critic that returned nothing is a missing check')
   r = await runTask('T5')
   check(r.result.summary.missing_checks.length === 0, 'T5: no missing check when every agent returns')
+  // A ruling with no evidence read is no ruling.
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'], stands: false, unreadRuling: true })
+  check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence read'), 'ruling without evidence read: no ruling')
+  // An overturned exclusion is handled by the function that dropped it.
+  r = await runTask('T2', { p3overturned: true, p2DropY: true, extraFn: true, rrHandleYin: 'fX' })
+  check(r1(r).selection.find(e => e.function === 'f1').part === null, 'overturned exclusion handled by another function: owner stays open')
   // A P3 find the re-rank did not handle keeps its function open.
   r = await runTask('T2', { p3missed: true })
   check(r1(r).selection[0].part === null, 'unhandled P3 find: function open')

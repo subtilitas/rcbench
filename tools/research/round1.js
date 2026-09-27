@@ -490,10 +490,15 @@ function merge(cat, p2, rr, p3) {
     unhandled.add(m.function)
   }
   for (const x of (p3 && p3.exclusions_not_holding) || []) {
-    if ((rr.functions || []).some(fr => handled(fr, x.part))) continue
-    followUps.push({ role: 'rerank', category: cat, part: x.part, reason: 'P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank' })
+    // Each function whose P2 drop P3 overturned handles the part itself;
+    // with no owner, any function's handling counts.
     const owners = (p2.functions || []).filter(f => (f.dropped || []).some(d => d.part === x.part)).map(f => f.function)
-    for (const n of owners.length ? owners : (p2.functions || []).map(f => f.function)) unhandled.add(n)
+    const open = owners.length
+      ? owners.filter(n => !handled((rr.functions || []).find(fr => fr.function === n), x.part))
+      : ((rr.functions || []).some(fr => handled(fr, x.part)) ? [] : (p2.functions || []).map(f => f.function))
+    if (!open.length) continue
+    followUps.push({ role: 'rerank', category: cat, part: x.part, functions: open, reason: 'P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank' })
+    for (const n of open) unhandled.add(n)
   }
   // The functions are P2's; a function only the re-rank names is listed. A
   // function either returns twice is not ranked.
@@ -530,12 +535,18 @@ function merge(cat, p2, rr, p3) {
       // nothing to verify
     } else {
       const dropped = new Set([...(fr.dropped_from_shortlist || []), ...(fr.dropped_from_p3 || [])].map(d => d.part))
+      let contradicted = false
       for (const r of [...(fr.ranking || [])].sort((a, b) => a.rank - b.rank)) {
         const rec = pool.find(c => c.part === r.part)
-        if (!rec) { followUps.push({ role: 'rerank', category: cat, function: name, part: r.part, reason: 'ranked part has no record' }); continue }
-        if (shortlist.some(x => x.part === r.part)) { followUps.push({ role: 'rerank', category: cat, function: name, part: r.part, reason: 'ranked twice' }); continue }
-        if (dropped.has(r.part)) { followUps.push({ role: 'rerank', category: cat, function: name, part: r.part, reason: 'ranked and dropped by the re-rank' }); continue }
+        const why = !rec ? 'ranked part has no record' : shortlist.some(x => x.part === r.part) ? 'ranked twice' : dropped.has(r.part) ? 'ranked and dropped by the re-rank' : ''
+        if (why) { followUps.push({ role: 'rerank', category: cat, function: name, part: r.part, reason: why }); contradicted = true; continue }
         shortlist.push({ ...rec, rank: r.rank, reason: r.reason })
+      }
+      // A ranking that names a part without a record, twice, or also as
+      // dropped did not establish its order: the function is not ranked.
+      if (contradicted) {
+        followUps.push({ role: 'rerank', category: cat, function: name, reason: 'the ranking contradicts itself or its records; the function is not ranked' })
+        shortlist = []
       }
       // A candidate the re-rank neither ranked nor dropped is kept, after the
       // ranked ones, and listed: an omission is not a drop. A record kept as
@@ -543,7 +554,7 @@ function merge(cat, p2, rr, p3) {
       const altNames = new Set([...(fr.verify || []).filter(v => v.kind === 'alternate').map(v => v.part),
         ...pool.filter(c => c.second_source_route === 'alternate').map(c => c.second_source_part)])
       let last = shortlist.length ? shortlist[shortlist.length - 1].rank : 0
-      for (const c of pool) {
+      for (const c of contradicted ? [] : pool) {
         if (shortlist.some(x => x.part === c.part) || dropped.has(c.part)) continue
         if (altNames.has(c.part)) { alternateRecords.push(c); continue }
         shortlist.push({ ...c, rank: ++last, reason: 'not ranked by the re-rank; kept in P2 order' })
@@ -551,7 +562,7 @@ function merge(cat, p2, rr, p3) {
       }
       // A part to verify without a shortlist record, such as an alternate
       // named only in a candidate's alternates, is still verified.
-      verify = (fr.verify || []).map(v => {
+      verify = contradicted ? [] : (fr.verify || []).map(v => {
         if (shortlist.some(x => x.part === v.part) || alternateRecords.some(x => x.part === v.part)) return v
         followUps.push({ role: 'rerank', category: cat, function: name, part: v.part, reason: 'part to verify has no record' })
         return { ...v, norecord: true }
@@ -637,6 +648,10 @@ function nextCandidate(functions, fn, part, ledger) {
 // The adjudicator's ruling counts only for the item it was asked about.
 function boundRuling(ruling, fn, part, cat) {
   if (!ruling) return null
+  if (readsNone((ruling.evidence || '').trim())) {
+    followUps.push({ role: 'adjudicator', category: cat, function: fn, part, reason: 'the ruling gives no evidence read' })
+    return null
+  }
   if (ruling.function === fn && (ruling.part || '') === (part || '')) return ruling
   followUps.push({ role: 'adjudicator', category: cat, function: fn, part, reason: 'the ruling names another item' })
   return null

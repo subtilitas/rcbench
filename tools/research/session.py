@@ -1018,33 +1018,40 @@ def cmd_record(args):
                 for f in r["data"].get("reviewed", [])}
         pages = {f for r in rets if r["role"] == "P7"
                  for f in (r["data"].get("group_pages") or {}).values()}
+
+        def refuse(why):
+            # A refused T6 leaves the output paths clean for the next
+            # attempt; what P7 changed is kept in a stash, not lost.
+            shutil.rmtree(target, ignore_errors=True)
+            left = [d for d in changed(results) if not d.startswith(rel)]
+            if left:
+                name = f"refused T6 {result.get('run_id', '')}"
+                git("-C", results, "stash", "push", "-q",
+                    "--include-untracked", "-m", name, "--", *left,
+                    check=False)
+                why += f"; the changes are in the stash '{name}' of {results}"
+            raise SystemExit(why)
+
         outside = sorted(f for f in pages if not GROUP_PAGE.fullmatch(f)
                          or f in T6_REQUIRED)
         if outside:
-            shutil.rmtree(target, ignore_errors=True)
-            raise SystemExit("group pages outside hardware/docs/ or among "
-                             "the fixed outputs: " + ", ".join(outside))
+            refuse("group pages outside hardware/docs/ or among the fixed "
+                   "outputs: " + ", ".join(outside))
         # Every output of the plan and each group page is a file after T6;
         # a deletion is not an output.
         gone = sorted(f for f in set(T6_REQUIRED) | pages
                       if not os.path.isfile(os.path.join(results, f)))
         if gone:
-            shutil.rmtree(target, ignore_errors=True)
-            raise SystemExit("T6 left these outputs missing: "
-                             + ", ".join(gone))
+            refuse("T6 left these outputs missing: " + ", ".join(gone))
         allowed = set(T6_REQUIRED) | pages
         stray = [d for d in dirty if not d.startswith(rel)
                  and not (d in allowed and d in wrote and d in seen)]
         unchanged = sorted(wrote - set(dirty))
         if unchanged:
-            shutil.rmtree(target, ignore_errors=True)
-            raise SystemExit("P7 lists files it did not change: "
-                             + ", ".join(unchanged))
+            refuse("P7 lists files it did not change: " + ", ".join(unchanged))
         if stray:
-            shutil.rmtree(target, ignore_errors=True)
-            raise SystemExit("T6 changed files that are not outputs P7 "
-                             "declared and its critic reviewed: "
-                             + ", ".join(stray))
+            refuse("T6 changed files that are not outputs P7 declared and its "
+                   "critic reviewed: " + ", ".join(stray))
         paths += [os.path.join(results, d) for d in dirty
                   if not d.startswith(rel)]
     if (result.get("summary") or {}).get("selection") and not stopped:
