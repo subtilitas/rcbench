@@ -268,12 +268,12 @@ ${J(p6)}`
 function p7Prompt() {
   return `${ctx('P7', '', 'P7')}
 
-Exception to the rule above: write the outputs listed under "Outputs" of Research.md into the working tree ${P.results}, which the session has merged with research/round1 before this task. Write them from the returns under ${P.results}/hardware/research/round1/ only, the parts in hardware/research/round1/selection.json, P5's budget and combinations, and the owner's decisions in the "Decision (owner, date)" column for Q4, Q8 and Q9. Do not commit. Write tools/jlc_stock.py to read DIGIKEY_ENV_FILE as well as the two variables, as tools/research/vendors.py does. Run \`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results} and report each result.`
+Exception to the rule above: write the outputs listed under "Outputs" of Research.md into the working tree ${P.results}, which the session has merged with research/round1 before this task. Write them from the returns under ${P.results}/hardware/research/round1/ only, the parts in hardware/research/round1/selection.json, P5's budget and combinations, and the owner's decisions in the "Decision (owner, date)" column for Q4, Q8 and Q9. Do not commit. Write tools/jlc_stock.py to read DIGIKEY_ENV_FILE as well as the two variables, as tools/research/vendors.py does. Run \`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results} and report each as passed or not with its last lines.`
 }
 function p7CriticPrompt(p7) {
   return `${ctx('P7-critic', '', 'P7-critic')}
 
-You are the critic of P7. Exception to the rule above: you may correct the pages in ${P.results}; do not commit. Check every figure and every stated combination on the pages P7 wrote against the returns under ${P.results}/hardware/research/round1/, and every sentence against the writing rules in CONTRIBUTING.md. Apply the corrections, then run the three checks P7 ran and report them. P7's return:
+You are the critic of P7. Exception to the rule above: you may correct the pages in ${P.results}; do not commit. Check every figure and every stated combination on the pages P7 wrote against the returns under ${P.results}/hardware/research/round1/, and every sentence against the writing rules in CONTRIBUTING.md. Apply the corrections, then run the three checks P7 ran on the tree you leave and report each as passed or not with its last lines. P7's return:
 ${J(p7)}`
 }
 
@@ -398,11 +398,15 @@ async function phaseP1(cats) {
 // The final shortlist: the re-rank's order over P2's records and the
 // re-rank's records of P3's finds.
 function merge(cat, p2, rr, p3) {
-  // Every candidate P3 found is qualified or dropped by the re-rank.
+  // Every candidate P3 found, and every P2 exclusion P3 overturned, is
+  // qualified, ranked or dropped by the re-rank.
+  const handled = (fr, part) => fr && ([...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || [])].some(c => c.part === part) || (fr.ranking || []).some(r => r.part === part))
   for (const m of (p3 && p3.missed) || []) {
     const fr = (rr.functions || []).find(f => f.function === m.function)
-    const seen = fr && ([...(fr.new_candidates || []), ...(fr.dropped_from_p3 || [])].some(c => c.part === m.part) || (fr.ranking || []).some(r => r.part === m.part))
-    if (!seen) followUps.push({ role: 'rerank', category: cat, function: m.function, part: m.part, reason: 'P3 candidate neither qualified nor dropped by the re-rank' })
+    if (!handled(fr, m.part)) followUps.push({ role: 'rerank', category: cat, function: m.function, part: m.part, reason: 'P3 candidate neither qualified nor dropped by the re-rank' })
+  }
+  for (const x of (p3 && p3.exclusions_not_holding) || []) {
+    if (!(rr.functions || []).some(fr => handled(fr, x.part))) followUps.push({ role: 'rerank', category: cat, part: x.part, reason: 'P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank' })
   }
   const functions = []
   const names = new Set([...(p2.functions || []).map(f => f.function), ...(rr.functions || []).map(f => f.function)])
@@ -428,15 +432,27 @@ function merge(cat, p2, rr, p3) {
         shortlist.push({ ...c, rank: ++last, reason: 'not ranked by the re-rank; kept in P2 order' })
         followUps.push({ role: 'rerank', category: cat, function: name, part: c.part, reason: 'candidate neither ranked nor dropped' })
       }
-      verify = (fr.verify || []).filter(v => {
-        if (shortlist.some(x => x.part === v.part)) return true
-        followUps.push({ role: 'rerank', category: cat, function: name, part: v.part, reason: 'part to verify is not on the shortlist' })
-        return false
+      // A part to verify without a shortlist record, such as an alternate
+      // named only in a candidate's alternates, is still verified.
+      verify = (fr.verify || []).map(v => {
+        if (shortlist.some(x => x.part === v.part)) return v
+        followUps.push({ role: 'rerank', category: cat, function: name, part: v.part, reason: 'part to verify has no shortlist record' })
+        return { ...v, norecord: true }
       })
     } else {
       shortlist = [...(f2.shortlist || [])].sort((a, b) => a.rank - b.rank)
       followUps.push({ role: 'rerank', category: cat, function: name, reason: 'the re-rank did not rank this function' })
     }
+    // A candidate is checked against every requirement of its function; one
+    // it does not list is added as unmet, so the verifier must check it.
+    const need = (f2.requirements || []).map(r => r.name)
+    shortlist = shortlist.map(c => {
+      const have = new Set((c.requirements || []).map(r => r.name))
+      const lack = need.filter(n => !have.has(n))
+      if (!lack.length) return c
+      followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `candidate lacks the function's requirements: ${lack.join(', ')}` })
+      return { ...c, requirements: [...(c.requirements || []), ...lack.map(n => ({ name: n, required: 'see the function', datasheet: 'not given', pass: false, source: '' }))] }
+    })
     functions.push({ function: name, requirements: f2.requirements || [], shortlist, verify, dropped: f2.dropped || [], dropped_from_shortlist: (fr && fr.dropped_from_shortlist) || [], dropped_from_p3: (fr && fr.dropped_from_p3) || [] })
   }
   return functions
@@ -476,12 +492,15 @@ async function verifyCategory(cat, functions, bundle) {
       () => run('P4', cat, `P4-stock-${cat}`, phaseName, p4Prompt(cat, 'stock', bundle, only)),
       () => run('P4', cat, `P4-datasheet-${cat}`, phaseName, p4Prompt(cat, 'datasheet', bundle, only)),
     ])
+    // Each part to verify, with its kind from the verification plan.
     const want = []
-    if (only) want.push({ function: only.function, part: only.part })
+    if (only) want.push({ function: only.function, part: only.part, kind: 'first' })
     else {
       for (const f of functions) {
-        const parts = new Set([...(f.shortlist.length ? [f.shortlist[0].part] : []), ...f.verify.map(v => v.part)])
-        for (const part of parts) want.push({ function: f.function, part })
+        const kinds = new Map()
+        if (f.shortlist.length) kinds.set(f.shortlist[0].part, 'first')
+        for (const v of f.verify) if (!kinds.has(v.part) || v.kind === 'alternate') kinds.set(v.part, v.kind)
+        for (const [part, kind] of kinds) want.push({ function: f.function, part, kind })
       }
     }
     const got = [['stock', st], ['datasheet', ds]].filter(([, v]) => v)
@@ -493,8 +512,8 @@ async function verifyCategory(cat, functions, bundle) {
       for (const p of v.parts || []) {
         if (only && (p.function !== only.function || p.part !== only.part)) continue
         const k = key(p.function, p.part)
-        const e = byPart.get(k) || { function: p.function, part: p.part, verdicts: [] }
-        e.verdicts.push({ verifier: kind, kind: p.kind, verdict: p.verdict, refutation: p.refutation, checks: p.checks })
+        const e = byPart.get(k) || { function: p.function, part: p.part, kind: p.kind === 'alternate' ? 'alternate' : 'first', verdicts: [] }
+        e.verdicts.push({ verifier: kind, kind: e.kind, reported_kind: p.kind, verdict: p.verdict, refutation: p.refutation, checks: p.checks })
         byPart.set(k, e)
       }
     }
@@ -580,7 +599,8 @@ function selection(functions, ledger) {
     const st = c => last.get(`${f.function}\u0000${c.part}`) || ''
     const kept = f.shortlist.find(c => st(c).startsWith('verified'))
     const refuted = f.shortlist.filter(c => st(c) === 'refuted').map(c => c.part)
-    return { function: f.function, part: kept ? kept.part : null, rank: kept ? kept.rank : null, refuted }
+    const alternateUnverified = f.verify.filter(v => v.kind === 'alternate' && !st(v).startsWith('verified')).map(v => v.part)
+    return { function: f.function, part: kept ? kept.part : null, rank: kept ? kept.rank : null, refuted, alternate_unverified: alternateUnverified }
   })
 }
 
@@ -665,9 +685,11 @@ if (TASK === 'T6') {
   const p7 = await run('P7', '', 'P7', 'P7', p7Prompt())
   const critic = p7 ? await run('P7-critic', '', 'P7-critic', 'P7', p7CriticPrompt(p7)) : null
   summary = { p7: p7 ? p7.checks : null, critic: critic ? critic.checks : null }
-  // The pages are final only with both returns; otherwise T6 is recorded as
-  // stopped and its pages are not committed.
+  // The pages are final only with both returns and the critic's three
+  // checks passing on the tree it leaves; otherwise T6 is stopped.
+  const failed = critic ? Object.entries(critic.checks || {}).filter(([, r]) => !(r && r.passed)).map(([k]) => k) : []
   if (!p7 || !critic) summary = { ...summary, stopped: true, reasons: [!p7 ? 'P7 returned nothing' : 'the P7 critic returned nothing'] }
+  else if (failed.length) summary = { ...summary, stopped: true, reasons: [`checks failed: ${failed.join(', ')}`] }
 } else if (TASK === 'T5') {
   summary = await phaseP5P6()
 } else {

@@ -73,7 +73,10 @@ async function runTask(task, opts = {}) {
         monostable: { commit: 'c', path: 'p', fetched: true },
         hosts: (opts.hosts || []).map(h => ({ host: h.host, url: '', client: '', http_status: 200, bytes: 1, status_marker: opts.markerless ? '' : 'Status - Active', reachable: !(opts.down || []).includes(h.host), note: '' })) }, opts.p0 || {})
     }
-    if (role === 'P2') data.functions = [{ ...data.functions[0], function: 'f1', shortlist: [1, 2, 3].map(cand) }]
+    if (role === 'P2') {
+      data.functions = [{ ...data.functions[0], function: 'f1', shortlist: [1, 2, 3].map(cand) }]
+      if (opts.fnReq) data.functions[0].requirements = [...data.functions[0].requirements, { name: opts.fnReq, value: 'v', source: 's' }]
+    }
     if (role === 'rerank') {
       data.functions = [{ function: 'f1', ranking: (opts.ranked || [1, 2, 3]).map(rank => ({ rank, part: `part${rank}`, reason: 'r' })),
         new_candidates: [], dropped_from_p3: [], dropped_from_shortlist: [], verify: (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
@@ -84,6 +87,10 @@ async function runTask(task, opts = {}) {
       data.questions = [{ function: 'rail', question: 'State the voltage of rail 1', why: 'w', blocks: 'p2', decision: 'none', for_where: '' }]
     }
     if (role === 'P3' && opts.p3missed) data.missed = [{ function: 'f1', part: 'partX', maker: 'm', why: 'w' }]
+    if (role === 'P3' && opts.p3overturned) data.exclusions_not_holding = [{ part: 'partY', reason_given: 'r', why_it_fails: 'w' }]
+    if (role === 'P7-critic' || role === 'P7') {
+      for (const k of Object.keys(data.checks)) data.checks[k] = { passed: !(opts.failCheck === k && role === 'P7-critic'), output: 'o' }
+    }
     if (role === 'P1-recheck') {
       const added = JSON.parse(/confirm or reject it[^\n]*\n([\s\S]*)$/.exec(prompt).pop().split('\n').pop())
       data.verdicts = added.map(q => ({ category: q.category, index: q.index, verdict: 'confirmed', evidence: 'e' }))
@@ -105,16 +112,16 @@ async function runTask(task, opts = {}) {
       data.verifier = kind
       // The checks a correct verifier returns, by the names round1.js requires.
       const bundle = only ? null : JSON.parse(prompt.slice(prompt.lastIndexOf('\n') + 1))
-      const cand = pt => only ? JSON.parse(only[1]) : bundle.functions[0].shortlist.find(c => c.part === pt)
+      const cand = pt => (only ? JSON.parse(only[1]) : bundle.functions[0].shortlist.find(c => c.part === pt)) || { requirements: [] }
       const checksFor = (pt, pk) => (opts.emptyChecks || []).includes(base) ? []
         : (kind === 'stock' ? ['stock', 'presale', 'lifecycle status']
-          : [...cand(pt).requirements.map(r => r.name), ...(pk === 'alternate' && !opts.noCompat ? ['pin-for-pin match', 'functional match'] : [])])
+          : [...cand(pt).requirements.map(r => r.name).filter(n => n !== opts.skipReq), ...(pk === 'alternate' && !opts.noCompat ? ['pin-for-pin match', 'functional match'] : [])])
           .map((figure, k) => ({ figure, stated: 's', read: 'r', source: 'src', agrees: !((opts.disagree || []).includes(base) && k === 0) }))
       data.parts = (opts.omit || []).includes(base) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part), refutation: refute ? 'mock' : '' }]
       const names = only ? [] : JSON.parse(/"figures_to_check":(\[[^\]]*\])/.exec(prompt)[1])
       data.figures = kind === 'datasheet' ? names.filter(n => !(opts.omitFigure && base === opts.omitFigure[0] && n === opts.omitFigure[1]))
         .map((figure, k) => ({ figure, verdict: (opts.refuteFigure || []).includes(base) && k === 0 ? 'refuted' : 'confirmed', evidence: 'e' })) : []
-      if (opts.verify && !(opts.omit || []).includes(base) && !opts.dropVerify && !only) data.parts.push(...opts.verify.map(pt => ({ function: 'f1', part: pt, kind: 'alternate', verdict: (opts.refute || []).includes(`${base}:${pt}`) ? 'refuted' : 'confirmed', checks: checksFor(pt, 'alternate'), refutation: '' })))
+      if (opts.verify && !(opts.omit || []).includes(base) && !opts.dropVerify && !only) data.parts.push(...opts.verify.map(pt => ({ function: 'f1', part: pt, kind: opts.reportFirst ? 'first' : 'alternate', verdict: (opts.refute || []).includes(`${base}:${pt}`) ? 'refuted' : 'confirmed', checks: checksFor(pt, opts.reportFirst ? 'first' : 'alternate'), refutation: '' })))
     }
     if (role === 'adjudicator') data.stands = opts.stands !== false
     return data
@@ -273,6 +280,29 @@ async function main() {
   // A reachable maker page without its lifecycle status is listed.
   r = await runTask('T2', { hosts: [{ host: 'www.nxp.com', marker: 'Status', hold: ['R2'] }], p0: {} , markerless: true })
   check(r.result.followUps.some(f => f.host === 'www.nxp.com' && f.reason === 'lifecycle status not read from the page'), 'marker absent: listed')
+
+  // A part to verify with no shortlist record is still verified.
+  r = await runTask('T2', { verify: ['partZ'] })
+  check(r1(r).ledger.some(l => l.part === 'partZ' && l.status === 'verified'), 'verify without record: verified')
+  r = await runTask('T2', { verify: ['partZ'], dropVerify: true })
+  check(r1(r).ledger.some(l => l.part === 'partZ' && l.status === 'not verified'), 'verify without record: required even when the verifiers leave it out')
+  // The kind comes from the plan: an alternate reported as first still needs its compatibility checks.
+  r = await runTask('T2', { verify: ['part2'], reportFirst: true })
+  check(r1(r).ledger.some(l => l.part === 'part2' && l.status === 'not verified'), 'canonical kind: alternate reported as first not verified')
+  check(r1(r).selection[0].alternate_unverified.includes('part2'), 'canonical kind: unverified alternate recorded on the selection')
+  // An overturned P2 exclusion the re-rank leaves out is listed.
+  r = await runTask('T2', { p3overturned: true })
+  check(r.result.followUps.some(f => f.part === 'partY'), 'overturned exclusion left out: listed')
+  // A function requirement the candidate omits is added and must be checked.
+  r = await runTask('T2', { fnReq: 'vmax' })
+  check(r.result.followUps.some(f => /lacks the function's requirements: vmax/.test(f.reason)) && r1(r).selection[0].part === 'part1', 'function requirement: added, and verified when checked')
+  r = await runTask('T2', { fnReq: 'vmax', skipReq: 'vmax' })
+  check(r1(r).selection[0].part === null, 'function requirement: not verified when unchecked')
+  // T6 stops when the critic's checks do not all pass.
+  r = await runTask('T6', { failCheck: 'jlc_stock' })
+  check(r.result.summary.stopped === true, 'T6: a failed check stops it')
+  r = await runTask('T6')
+  check(!r.result.summary.stopped, 'T6: passing checks finish it')
 
   // P0's own stop and held fields do not decide the outcome.
   r = await runTask('T2', { p0: { stop: true, stop_reasons: ['mock'], held: [{ category: 'R1', host: 'h', reason: 'mock' }] } })

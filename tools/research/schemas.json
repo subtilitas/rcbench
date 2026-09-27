@@ -251,13 +251,52 @@
    "type": "object",
    "properties": {
     "check_docs": {
-     "type": "string"
+     "type": "object",
+     "properties": {
+      "passed": {
+       "type": "boolean"
+      },
+      "output": {
+       "type": "string",
+       "description": "the command's last lines"
+      }
+     },
+     "required": [
+      "passed",
+      "output"
+     ]
     },
     "ruff": {
-     "type": "string"
+     "type": "object",
+     "properties": {
+      "passed": {
+       "type": "boolean"
+      },
+      "output": {
+       "type": "string",
+       "description": "the command's last lines"
+      }
+     },
+     "required": [
+      "passed",
+      "output"
+     ]
     },
     "jlc_stock": {
-     "type": "string"
+     "type": "object",
+     "properties": {
+      "passed": {
+       "type": "boolean"
+      },
+      "output": {
+       "type": "string",
+       "description": "the command's last lines"
+      }
+     },
+     "required": [
+      "passed",
+      "output"
+     ]
     }
    },
    "required": [

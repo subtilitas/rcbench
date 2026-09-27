@@ -51,8 +51,12 @@ AFTER = {"T2": ["T1"], "T4": ["T1"], "T3": ["T2", "T4"], "T5": ["T3"],
          "T6": ["T5"]}
 RUNS_DIR = os.path.join("hardware", "research", "round1")
 # The files T6 may write: the Outputs table of the plan.
-T6_OUTPUTS = ("hardware/docs/", "hardware/STATUS.md", "hardware/README.md",
-              "tools/jlc_stock.py")
+T6_DIRS = ("hardware/docs/",)
+T6_FILES = ("hardware/STATUS.md", "hardware/README.md", "tools/jlc_stock.py")
+
+
+def t6_output(path):
+    return path in T6_FILES or path.startswith(T6_DIRS)
 
 
 def load(name):
@@ -296,8 +300,11 @@ def effective_selection(results):
                 slot = eff.setdefault(cat, {})
                 held = slot.get(e["function"])
                 if e.get("part") or held is None:
-                    slot[e["function"]] = {"part": e.get("part"),
-                                           "rank": e.get("rank"), "run": name}
+                    slot[e["function"]] = {
+                        "part": e.get("part"), "rank": e.get("rank"),
+                        "run": name,
+                        "alternate_unverified":
+                            e.get("alternate_unverified") or []}
                 elif held["part"] in (e.get("refuted") or []):
                     # This run refuted the part in force and kept none.
                     slot[e["function"]] = {"part": None, "rank": None,
@@ -315,6 +322,9 @@ def open_selections(eff, categories):
             out.append(f"{c}: no part selected for any function")
         out += [f"{c}: {fn}" for fn, e in eff.get(c, {}).items()
                 if not e["part"]]
+        out += [f"{c}: {fn} (alternate {', '.join(e['alternate_unverified'])}"
+                " not verified)" for fn, e in eff.get(c, {}).items()
+                if e["part"] and e.get("alternate_unverified")]
     return out
 
 
@@ -474,11 +484,18 @@ def cmd_record(args):
                          f"{want['run_id']}")
     with open(args.output, "rb") as f:
         digest = hashlib.sha256(f.read()).hexdigest()
+    dirty_runs = git("-C", results, "status", "--porcelain",
+                     "--untracked-files=all", "--", RUNS_DIR)
+    if dirty_runs:
+        raise SystemExit("recorded runs have uncommitted changes; the "
+                         "selection is built from committed records only:\n"
+                         + dirty_runs)
     for name, task in runs(results, stopped=True):
         if task.get("run_id") == want["run_id"] or \
                 task.get("output_sha256") == digest:
             raise SystemExit(f"this output is recorded already, as {name}")
-    schemas = resolved_schemas()
+    # The schemas the run was prepared with are its contract.
+    schemas = want["schemas"]
     errors = []
     for r in result.get("returns", []):
         errors += [f"{r['label']}: {e}"
@@ -517,13 +534,21 @@ def cmd_record(args):
                "follow-up."]
     paths = [target]
     stopped = bool((result.get("summary") or {}).get("stopped"))
+    if args.task == "T6" and stopped:
+        # Pages a stopped T6 wrote are not kept for the next attempt.
+        outs = [o for o in T6_FILES + T6_DIRS
+                if os.path.exists(os.path.join(results, o))]
+        if outs:
+            git("-C", results, "checkout", "-q", "HEAD", "--", *outs,
+                check=False)
+            git("-C", results, "clean", "-fdq", "--", *outs, check=False)
     if args.task == "T6" and not stopped:
         dirty = [line[3:] for line in git(
             "-C", results, "status", "--porcelain", "--untracked-files=all"
         ).splitlines()]
         rel = os.path.relpath(target, results)
         stray = [d for d in dirty if not d.startswith(rel)
-                 and not d.startswith(T6_OUTPUTS)]
+                 and not t6_output(d)]
         if stray:
             shutil.rmtree(target, ignore_errors=True)
             raise SystemExit("T6 changed files outside its outputs: "
