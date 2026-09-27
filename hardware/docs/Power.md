@@ -13,8 +13,8 @@ that date. Re-check before a layout commits, by the method in
 | Need | Part | Package | Reason |
 | --- | --- | --- | --- |
 | Buck-boost, I²C (Inter-Integrated Circuit) voltage and current | TPS55285 | VQFN (very thin quad flat no-lead) | the owner holds 12 (2026-09-25); its limit stops at 6.35 A, so the rail runs to 6.35 A. The TPS55288, whose limit scales past 6.35 A, is the alternative below |
-| 2S charger with balancing | BQ25887RGER, a candidate | QFN-24-EP 4×4 | the only single die that charges 2S and balances it. A seed of research category R7, not a choice: the charge input is up to 3 A from USB-C at 5 V ([Research](Research.md#research-categories)) |
-| Output port monitors, ≤15 V | INA3221, 7 parts for 20 ports | VQFN-16 4×4 | 3 channels a part, 26 V bus, 13-bit shunt reading. One channel per port (owner, 2026-09-25); research category R8 checks stock and lifecycle |
+| 2S charger with balancing | BQ25887RGER, a candidate | QFN-24-EP 4×4 | the only single die from a maker question S1 allows that charges 2S and balances it. A seed of research category R7, not a choice: the charge input is up to 3 A from USB-C at 5 V ([Research](Research.md#research-categories)) |
+| Output port monitors, ≤15 V | INA3221, 7 parts for 20 ports | VQFN-16 4×4 | 3 channels a part, 26 V bus, 13-bit shunt reading. One channel per port (owner, 2026-09-25); a seed of research category R8, which may replace it (owner, 2026-09-27) |
 | Motor monitor, 67.2 V (16 cells), 300 A | INA238AIDGSR | VSSOP-10 | 85 V and 16 bits; the 20-bit part is unbuyable |
 
 The INA3221 reads ±163.84 mV across its shunt in 40 µV steps. With a 10 mΩ
@@ -89,6 +89,9 @@ No single die charges a 2S pack above 2 A and balances it.
 
 BQ25887 has the ADC, which gives per-cell voltage over I²C. MP2672A has the
 NVDC power path, which lets the bench start from a flat pack, and is cheaper.
+MP2672A is from Monolithic Power Systems, which question S1 in
+[Research](Research.md#sourcing) does not allow; it stays here as a comparison,
+not a candidate.
 Both are boost chargers off a USB (Universal Serial Bus) input; neither takes
 12 V.
 
@@ -108,7 +111,7 @@ BQ25798 has a wide input, which BQ25887 does not.
 
 ## Port monitor alternative: INA745A
 
-The owner uses one INA3221 channel on each of the 20 output ports. The
+The owner's choice is one INA3221 channel on each of the 20 output ports, a seed of research category R8, which may replace it (owner, 2026-09-27). The
 analysis below compares the alternatives for one position.
 
 40 V, ±35 A continuous, 16 bit, with the 800 µΩ shunt inside the package. At 8
