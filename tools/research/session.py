@@ -330,29 +330,29 @@ def runs(results, stopped=False, pending=None):
 
 
 def effective_selection(results, pending=None):
-    """The part each function keeps: a later run's part overrides an
-    earlier one, and a run that selected none leaves an earlier part."""
+    """The part each function keeps: the latest run that names a function
+    decides it. A run that names it and verifies no part leaves it open,
+    and records the earlier part it did not requalify."""
     eff = {}
     for name, task in runs(results, pending=pending):
         sel = (task.get("summary") or {}).get("selection") or {}
         for cat, entries in sel.items():
             for e in entries:
                 slot = eff.setdefault(cat, {})
-                held = slot.get(e["function"])
-                if e.get("part") or held is None:
-                    slot[e["function"]] = {
-                        "part": e.get("part"), "rank": e.get("rank"),
-                        "run": name,
-                        "alternate_unverified":
-                            e.get("alternate_unverified") or [],
-                        "second_source_missing":
-                            bool(e.get("second_source_missing")),
-                        "q_alternatives": e.get("q_alternatives") or []}
-                elif held["part"] in (e.get("refuted") or []):
-                    # This run refuted the part in force and kept none.
-                    slot[e["function"]] = {"part": None, "rank": None,
-                                           "run": name,
-                                           "refuted": held["part"]}
+                held = slot.get(e["function"]) or {}
+                entry = {
+                    "part": e.get("part"), "rank": e.get("rank"),
+                    "run": name,
+                    "alternate_unverified":
+                        e.get("alternate_unverified") or [],
+                    "second_source_missing":
+                        bool(e.get("second_source_missing")),
+                    "q_alternatives": e.get("q_alternatives") or []}
+                if not e.get("part") and held.get("part"):
+                    entry["not_requalified"] = held["part"]
+                    if held["part"] in (e.get("refuted") or []):
+                        entry["refuted"] = held["part"]
+                slot[e["function"]] = entry
     return eff
 
 
@@ -400,21 +400,24 @@ def t6_open(results):
     out = [f"{n} changed a selection after {name}" for n, t in done
            if t.get("sequence", 0) > last.get("sequence", 0)
            and (t.get("summary") or {}).get("selection")]
-    items = len((last.get("summary") or {}).get("conflicts", [])) + \
-        len((last.get("summary") or {}).get("gaps", []))
-    # Items may stand only in the check that follows a round-2 research
-    # follow-up recorded after the check before it: the plan writes what
-    # round 2 leaves as not known.
+    # An item may stand only when a round-2 research follow-up recorded
+    # between the check before and this one covered its categories: the
+    # plan writes what round 2 leaves as not known.
     before = checks[-2][1].get("sequence", 0) if len(checks) > 1 else 0
-    after_round2 = any(
-        (t.get("followup") or {}).get("round") == 2 and
-        (t.get("followup") or {}).get("phases") in ("P1", "P2-P4") and
-        before < t.get("sequence", 0) < last.get("sequence", 0)
-        for _, t in done)
-    if items and not after_round2:
-        out.append(f"{name} lists {items} conflicts and gaps, and it is not "
-                   "the check after round 2 of the follow-up tasks")
+    covered = {c for _, t in done
+               if (t.get("followup") or {}).get("round") == 2
+               and (t.get("followup") or {}).get("phases") in ("P1", "P2-P4")
+               and before < t.get("sequence", 0) < last.get("sequence", 0)
+               for c in (t.get("followup") or {}).get("categories") or []}
     summary = last.get("summary") or {}
+    items = [set(x.get("categories") or []) for x in
+             summary.get("conflicts", [])] + \
+        [{x["category"]} if x.get("category") else set()
+         for x in summary.get("gaps", [])]
+    uncovered = [i for i in items if not i or not i <= covered]
+    if uncovered:
+        out.append(f"{name} lists {len(uncovered)} conflicts and gaps that "
+                   "no round 2 follow-up since the check before covered")
     if summary.get("missing_checks"):
         out.append(f"{name} ran without "
                    + ", ".join(summary["missing_checks"]))
@@ -465,18 +468,21 @@ def stale_selections(results, categories, rows):
     return out
 
 
-def open_figures(results, categories):
-    """The figures the datasheet verifier did not confirm in the last run
-    that verified each category."""
+def open_in_category(results, categories):
+    """What the last run that verified each category left open for the
+    whole category: figures not returned or not confirmed, and in R10 and
+    R12 no Q4 or Q8 alternative named."""
     out = []
     for c in categories:
         sel = [(n, t) for n, t in runs(results) if c in (
             (t.get("summary") or {}).get("selection") or {})]
         if sel:
             name, task = sel[-1]
-            figs = ((task.get("summary") or {}).get("figures_open")
-                    or {}).get(c, [])
+            summary = task.get("summary") or {}
+            figs = (summary.get("figures_open") or {}).get(c, [])
             out += [f"{c}: figure {f} not confirmed in {name}" for f in figs]
+            if c in (summary.get("q_missing") or []):
+                out.append(f"{c}: {name} named no Q4 or Q8 alternative")
     return out
 
 
@@ -487,8 +493,10 @@ def open_selections(eff, categories):
     for c in categories:
         if not eff.get(c):
             out.append(f"{c}: no part selected for any function")
-        out += [f"{c}: {fn}" for fn, e in eff.get(c, {}).items()
-                if not e["part"]]
+        out += [f"{c}: {fn}" + (f" ({e['not_requalified']} not requalified "
+                                f"by {e['run']})"
+                                if e.get("not_requalified") else "")
+                for fn, e in eff.get(c, {}).items() if not e["part"]]
         out += [f"{c}: {fn} (alternate {', '.join(e['alternate_unverified'])}"
                 " not verified)" for fn, e in eff.get(c, {}).items()
                 if e["part"] and e.get("alternate_unverified")]
@@ -585,9 +593,12 @@ def questions_gate(results, rows, categories):
         raise SystemExit("raised by P1 but not under Raised by P1 on "
                          f"{BRANCH}: " + ", ".join(unpublished)
                          + ". Run raised and push it.")
-    blocks = {q["id"]: q.get("blocks") for _, q in committed}
+    # Only a question that names Q4, Q8 or Q9 feeds a decision alone.
+    exempt = {q["id"] for _, q in committed
+              if q.get("blocks") == "decision-only"
+              and q.get("decision") in ("Q4", "Q8", "Q9")}
     open_q = [r[0] for r in rows if r[1] in categories and not r[3].strip()
-              and blocks.get(r[0]) != "decision-only"]
+              and r[0] not in exempt]
     if open_q:
         raise SystemExit("unanswered under Raised by P1: " + ", ".join(open_q))
 
@@ -686,7 +697,7 @@ def cmd_prepare(args):
     else:
         gate_cats = []
     open_sel += open_selections(effective_selection(results), gate_cats)
-    open_sel += open_figures(results, gate_cats)
+    open_sel += open_in_category(results, gate_cats)
     open_sel += stale_selections(results, gate_cats, rows)
     open_sel += [o for o in p1_unresolved(results, gate_cats)
                  if o not in open_sel]

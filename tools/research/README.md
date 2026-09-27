@@ -59,23 +59,26 @@ Before T2 to T4, a P2-P4 follow-up and a P1 follow-up it refuses while a
 question a committed P1 run raised for their categories is not yet under
 "Raised by P1" on `research/round1`, or is there without an answer. Before T5,
 a P5-P6 follow-up and T6 the question check covers every category. A question
-that only feeds Q4, Q8 or Q9 (`blocks` is `decision-only`) needs no answer.
-Before T2 to T4 and a P2-P4 follow-up it also refuses while the latest P1 run
-covering a category left P1 items there for follow-up.
+that only feeds Q4, Q8 or Q9 (`blocks` is `decision-only` and `decision` names
+Q4, Q8 or Q9) needs no answer; `round1.js` publishes a `decision-only`
+question that names no decision as blocking P2. Before T2 to T4 and a P2-P4
+follow-up it also refuses while the latest P1 run covering a category left P1
+items there for follow-up.
 
 Before T3, for the categories of T2 and T4, and before T5, a P5-P6 follow-up
 and T6, for every category, it refuses while a function has no verified part
-or a missing or unverified second source; while an R10 or R12 function has a
-Q4 or Q8 alternative not verified with its own second source; while the last
-run of a category left a figure the datasheet verifier did not confirm; while
-the latest P1 run left P1 items in a category; and while a category's parts
-were selected before a P1 run raised questions for it, or before its answers
-under "Raised by P1" changed. Before T6 it refuses while the owner's decisions
-on Q4, Q8 and Q9 are not written; while a part changed after the last P5/P6
+or a missing or unverified second source; while R10 or R12 names no Q4 or Q8
+alternative, or one not verified with its own second source; while the last
+run of a category left a figure the datasheet verifier did not confirm, or a
+value for research or a required report figure P2 did not return; while the
+latest P1 run left P1 items in a category; and while a category's parts were
+selected before a P1 run raised questions for it, or before its answers under
+"Raised by P1" changed. Before T6 it refuses while the owner's decisions on
+Q4, Q8 and Q9 are not written; while a part changed after the last P5/P6
 check; while that check ran without P5 or P6, left combinations or budgets its
-critic did not rule on, or lists conflicts or gaps with no round 2 run; and
-while the output paths have changes. Then it merges `research/round1` into the
-results tree.
+critic did not rule on, or lists a conflict or gap whose categories no round-2
+follow-up since the check before covered; and while the output paths have
+changes. Then it merges `research/round1` into the results tree.
 
 `--accept-open REASON` passes the open items, not the refusals for turn,
 questions or decisions; the reason and the items go into the arguments. The
@@ -86,7 +89,9 @@ the effort, the CPU count and the workflow concurrency.
 A category whose P3 returned nothing keeps no part: its selection names the
 part in `without_p3` for the follow-up task. A function P3 lists as named by
 the row and not returned by P2 is selected with no part. A ranking with a
-repeated position or one below 1 ranks nothing for that function.
+repeated position or one below 1 ranks nothing for that function. A part a
+verifier lists without being asked to verify it is ignored. Only the kept
+part's rule-5 alternate gates its selection.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared
@@ -94,11 +99,10 @@ arguments, an output already recorded, a plan or a refusal, a return that does
 not match its schema, and a results tree whose head moved since `prepare`. A
 task P0 stopped is recorded as `TASK-stopped-N` and does not count as
 recorded. After a run that selects parts it rewrites
-`hardware/research/round1/selection.json`, the part each function keeps: a
-later run's verified part overrides an earlier one, and a run that verified
-none leaves the earlier part. A follow-up that refutes the part in force and
-verifies none clears it from `selection.json`. `record` commits only the run's
-directory and that file.
+`hardware/research/round1/selection.json`, the part each function keeps: the
+latest run that names a function decides it. A run that names it and verifies
+no part leaves it open and records the earlier part in `not_requalified`.
+`record` commits only the run's directory and that file.
 
 After a T6 that was not stopped `record` also commits the pages P7 wrote. It
 refuses a changed file outside the files P7 declared and its critic reviewed

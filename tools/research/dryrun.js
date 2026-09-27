@@ -84,6 +84,7 @@ async function runTask(task, opts = {}) {
       if (opts.noReqs) { data.functions[0].requirements = []; data.functions[0].shortlist.forEach(c => { c.requirements = [] }) }
       if (opts.failedReq) data.functions[0].shortlist[0].requirements = [{ name: 'x0', required: '>= 67.2 V', datasheet: '40 V', pass: false, source: 's' }]
       if (opts.selfAlt) Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: 'part1' })
+      if (opts.altName) Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: opts.altName })
       if (opts.qAlt) {
         Object.assign(data.functions[0].shortlist[2], { second_source_route: 'alternate', second_source_part: 'altQ' })
         data.functions[0].shortlist.push({ ...cand(9), part: 'altQ', rank: 9 })
@@ -101,6 +102,7 @@ async function runTask(task, opts = {}) {
         dropped_from_shortlist: opts.rankDropped ? [{ part: 'part1', maker: 'm', reason: 'r' }] : [], verify: opts.qAlt ? [{ part: 'part3', kind: 'q-alternative' }] : (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
       if (opts.extraFn) data.functions.push({ ...data.functions[0], function: 'fX' })
     }
+    if (role === 'P1' && opts.decisionNone) data.questions = data.questions.map(q => ({ ...q, blocks: 'decision-only', decision: 'none' }))
     if (role === 'P1' && opts.contradict) data.values = data.values.map(v => ({ ...v, question: -1 }))
     if (role === 'P1' && opts.assumption) data.values = [{ where: 'IOBoard.md:1', quantity: 'ripple', value: '10 mV', marking: 'assumption', source: 's', refutation_tried: 'r', question: -1 }]
     if (role === 'P1' && opts.twoAssumptions) {
@@ -340,7 +342,7 @@ async function main() {
 
   // A part to verify with no shortlist record is still verified.
   // An alternate with no record cannot show its gate evidence.
-  r = await runTask('T2', { verify: ['partZ'] })
+  r = await runTask('T2', { verify: ['partZ'], altName: 'partZ' })
   check(r1(r).ledger.some(l => l.part === 'partZ' && l.status === 'not verified'), 'alternate without record: not verified')
   check(r1(r).selection[0].alternate_unverified.includes('partZ'), 'alternate without record: recorded on the selection')
   // A replacement's rule-5 alternate is verified with it.
@@ -356,7 +358,7 @@ async function main() {
   r = await runTask('T6', { unwritten: 'hardware/README.md' })
   check(r.result.summary.stopped === true, 'T6: an unwritten output stops it')
   // The kind comes from the plan: an alternate reported as first still needs its compatibility checks.
-  r = await runTask('T2', { verify: ['part2'], reportFirst: true })
+  r = await runTask('T2', { verify: ['part2'], reportFirst: true, altName: 'part2' })
   check(r1(r).ledger.some(l => l.part === 'part2' && l.status === 'not verified'), 'canonical kind: alternate reported as first not verified')
   check(r1(r).selection[0].alternate_unverified.includes('part2'), 'canonical kind: unverified alternate recorded on the selection')
   // An overturned P2 exclusion the re-rank leaves out is listed.
@@ -437,6 +439,23 @@ async function main() {
   r = await runTask('T2', { qAlt: true, p4parts: ['part3'] })
   q = r1(r).selection[0].q_alternatives[0]
   check(q && q.status === 'verified' && q.alternate_status === 'not verified', 'Q alternative without its alternate checked: alternate not verified')
+  // Only the kept part's alternate gates it; a refuted part's does not.
+  r = await runTask('T2', { altName: 'partZ', verify: ['partZ'], refute: ['P4-stock-R1:part1'] })
+  check(r1(r).selection[0].part === 'part2' && r1(r).selection[0].alternate_unverified.length === 0, 'refuted part\'s alternate: not on the kept part')
+  // A part the pair was not asked to verify is ignored.
+  r = await runTask('T2', { p4parts: ['part3'] })
+  check(!r1(r).ledger.some(l => l.part === 'part3') && r.result.followUps.some(f => f.part === 'part3' && /not asked to verify/.test(f.reason)), 'unsolicited part: ignored, listed')
+  // R10 and R12 without any Q alternative stay open.
+  r = await runTask('T4')
+  check(r.result.summary.q_missing.includes('R10') && r.result.summary.q_missing.includes('R12') && !r.result.summary.q_missing.includes('R9'), 'R10 and R12 without a Q alternative: open')
+  r = await runTask('T4', { qAlt: true, p4parts: ['part3', 'altQ'] })
+  check(r.result.summary.q_missing.length === 0, 'R10 and R12 with a Q alternative: not open for it')
+  // A value for research P2 did not return stays open, whatever P4 says.
+  r = await runTask('T2', { forResearch: [{ id: 'V9', category: 'R1' }] })
+  check(r.result.summary.figures_open.R1.includes('found V9'), 'value for research not returned: open')
+  // A decision-only question that names no decision blocks P2.
+  r = await runTask('T1', { decisionNone: true })
+  check(r.result.summary.questions.length > 0 && r.result.summary.questions.every(q => q.blocks === 'p2' || ['Q4', 'Q8', 'Q9'].includes(q.decision)) && r.result.followUps.some(f => /names no decision/.test(f.reason)), 'decision-only without a decision: blocks P2')
   // A ruling about another item does not count.
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], wrongRuling: true })
   check(r.result.followUps.some(f => f.reason === 'the ruling names another item') && r1(r).selection[0].part === null, 'ruling about another item: no ruling')
