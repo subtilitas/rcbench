@@ -260,6 +260,26 @@
     "ruff",
     "jlc_stock"
    ]
+  },
+  "figure": {
+   "type": "object",
+   "properties": {
+    "figure": {
+     "type": "string",
+     "description": "a short name, unique within the return"
+    },
+    "value": {
+     "type": "string"
+    },
+    "source": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "figure",
+    "value",
+    "source"
+   ]
   }
  },
  "roles": {
@@ -677,7 +697,10 @@
      }
     },
     "report": {
-     "type": "string",
+     "type": "array",
+     "items": {
+      "$ref": "figure"
+     },
      "description": "the figures the category reports for a decision or for P5 (R1 errata, R2 frames held, R3 on the '423 behaviour with I_off, R10 on Q4, R12 on Q8)"
     }
    },
@@ -798,18 +821,54 @@
         "items": {
          "$ref": "dropped"
         }
+       },
+       "verify": {
+        "type": "array",
+        "description": "the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative",
+        "items": {
+         "type": "object",
+         "properties": {
+          "part": {
+           "type": "string"
+          },
+          "kind": {
+           "type": "string",
+           "enum": [
+            "first",
+            "alternate",
+            "q-alternative"
+           ]
+          }
+         },
+         "required": [
+          "part",
+          "kind"
+         ]
+        }
+       },
+       "dropped_from_shortlist": {
+        "type": "array",
+        "items": {
+         "$ref": "dropped"
+        },
+        "description": "P2 candidates the re-rank removes, each with its reason"
        }
       },
       "required": [
        "function",
        "ranking",
        "new_candidates",
-       "dropped_from_p3"
+       "dropped_from_p3",
+       "dropped_from_shortlist",
+       "verify"
       ]
      }
     },
     "report": {
-     "type": "string"
+     "type": "array",
+     "items": {
+      "$ref": "figure"
+     }
     }
    },
    "required": [
@@ -926,7 +985,8 @@
        "verdict",
        "evidence"
       ]
-     }
+     },
+     "description": "one entry for every name in figures_to_check, with that exact name"
     }
    },
    "required": [

@@ -51,7 +51,7 @@ function check(cond, msg) {
   if (!cond) { failures++; console.log(`FAIL ${msg}`) }
 }
 
-const JL = { sha256: 'sha', rows: 7, lcsc: [], manifest: 'm', manifest_created: 't' }
+const JL = { sha256: 'sha', rows: 7, lcsc: [], manifest: 'm', manifest_created: '2026-09-14T09:56:01Z' }
 
 // opts: refute ['label:part'], refuteFigure ['label'], stands, omit ['label'],
 // nulls {label: count}, throws [label], critic 'none' | 'all', p0 {...}, hosts
@@ -68,17 +68,28 @@ async function runTask(task, opts = {}) {
     const data = fake(o.schema)
     const cand = rank => ({ ...fake(schemas.P2.properties.functions.items.properties.shortlist.items), rank, part: `part${rank}` })
     if (role === 'P0') {
-      Object.assign(data, { stop: false, held: [], checkout_head: 'deadbeef',
+      Object.assign(data, { stop: false, held: [], checkout_head: 'deadbeef', snapshot: '2026-09-14T09:56:01+00:00',
         jlcparts: { path: 'db', sha256: JL.sha256, sha256_ok: true, rows: JL.rows, missing_lcsc: [] },
         monostable: { commit: 'c', path: 'p', fetched: true },
         hosts: (opts.hosts || []).map(h => ({ host: h.host, url: '', client: '', http_status: 200, bytes: 1, status_marker: '', reachable: !(opts.down || []).includes(h.host), note: '' })) }, opts.p0 || {})
     }
     if (role === 'P2') data.functions = [{ ...data.functions[0], function: 'f1', shortlist: [1, 2, 3].map(cand) }]
-    if (role === 'rerank') data.functions = [{ function: 'f1', ranking: [1, 2, 3].map(rank => ({ rank, part: `part${rank}`, reason: 'r' })), new_candidates: [], dropped_from_p3: [] }]
+    if (role === 'rerank') {
+      data.functions = [{ function: 'f1', ranking: (opts.ranked || [1, 2, 3]).map(rank => ({ rank, part: `part${rank}`, reason: 'r' })),
+        new_candidates: [], dropped_from_p3: [], dropped_from_shortlist: [], verify: (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
+    }
+    if (role === 'P1' && opts.assumption) data.values = [{ where: 'IOBoard.md:1', quantity: 'ripple', value: '10 mV', marking: 'assumption', source: 's', refutation_tried: 'r' }]
+    if (role === 'P1-recheck') {
+      const added = JSON.parse(/confirm or reject it[^\n]*\n([\s\S]*)$/.exec(prompt).pop().split('\n').pop())
+      data.verdicts = added.map(q => ({ category: q.category, index: q.index, verdict: 'confirmed', evidence: 'e' }))
+    }
     if (role === 'P1-critic') {
       if (opts.critic === 'none') data.question_verdicts = []
       else data.question_verdicts = [0, 1].map(index => ({ index, verdict: 'confirmed', reason: 'r' }))
       data.added = []
+      data.marking_verdicts = opts.markings === 'none' ? [] : (opts.assumption
+        ? [{ where: 'IOBoard.md:1', quantity: 'ripple', verdict: 'holds', correct_marking: 'unchanged', reason: 'r' }]
+        : [0, 1].map(i => ({ where: `x${i}`, quantity: `x${i}`, verdict: 'holds', correct_marking: 'unchanged', reason: 'r' })))
     }
     if (role === 'P4') {
       const only = /replaces a refuted one; list only it: (\{.*\})/.exec(prompt)
@@ -87,7 +98,10 @@ async function runTask(task, opts = {}) {
       const refute = (opts.refute || []).includes(`${base}:${part}`)
       data.verifier = kind
       data.parts = (opts.omit || []).includes(base) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: [], refutation: refute ? 'mock' : '' }]
-      data.figures = (opts.refuteFigure || []).includes(base) && !only ? [{ figure: 'frames held', verdict: 'refuted', evidence: 'e' }] : []
+      const names = only ? [] : JSON.parse(/"figures_to_check":(\[[^\]]*\])/.exec(prompt)[1])
+      data.figures = kind === 'datasheet' ? names.filter(n => !(opts.omitFigure && base === opts.omitFigure[0] && n === opts.omitFigure[1]))
+        .map((figure, k) => ({ figure, verdict: (opts.refuteFigure || []).includes(base) && k === 0 ? 'refuted' : 'confirmed', evidence: 'e' })) : []
+      if (opts.verify && !(opts.omit || []).includes(base) && !opts.dropVerify) data.parts.push(...opts.verify.map(p => ({ function: 'f1', part: p, kind: 'alternate', verdict: 'confirmed', checks: [], refutation: '' })))
     }
     if (role === 'adjudicator') data.stands = opts.stands !== false
     return data
@@ -143,10 +157,26 @@ async function main() {
   check(r.result.followUps.some(f => f.role === 'P4' && f.category === 'R1'), 'omitted part: listed for follow-up')
   check(r1(r).selection[0].part === null, 'omitted part: nothing selected')
 
-  // A refuted figure is adjudicated.
+  // A refuted figure is adjudicated; a figure without a verdict is listed.
   r = await runTask('T2', { refuteFigure: ['P4-datasheet-R2'] })
   check(r.calls.some(c => c.startsWith('adjudicator-R2')), 'refuted figure: adjudicated')
-  check(r.result.followUps.some(f => f.figure === 'frames held'), 'refuted figure that stands: listed')
+  check(r.result.followUps.some(f => f.reason === 'figure refuted'), 'refuted figure that stands: listed')
+  r = await runTask('T2')
+  check(!r.result.followUps.some(f => f.reason === 'figure not verified'), 'figures: all verified when every one has a verdict')
+  r = await runTask('T2', { omitFigure: ['P4-datasheet-R1', 'P2 report: x1'] })
+  check(r.result.followUps.some(f => f.figure === 'P2 report: x1' && f.reason === 'figure not verified'), 'figure without a verdict: listed')
+
+  // A part on the verify list that both verifiers leave out is not verified.
+  r = await runTask('T2', { verify: ['part2'] })
+  check(r1(r).ledger.some(l => l.part === 'part2' && l.status === 'verified'), 'verify list: part2 verified when covered')
+  r = await runTask('T2', { verify: ['part2'], dropVerify: true })
+  check(r1(r).ledger.some(l => l.part === 'part2' && l.status === 'not verified'), 'verify list: omitted part2 not verified')
+
+  // A re-rank that ranks only part1 keeps part2 and part3, listed.
+  r = await runTask('T2', { ranked: [1] })
+  check(r.result.followUps.filter(f => f.category === 'R1' && f.reason === 'candidate neither ranked nor dropped').length === 2, 're-rank omission: two candidates listed')
+  r = await runTask('T2', { ranked: [1], refute: ['P4-stock-R1:part1'] })
+  check(r1(r).selection[0].part === 'part2', 're-rank omission: part2 still available after a refutation')
 
   // Refutations beyond T4's 6 free agents go to a follow-up task.
   r = await runTask('T4', { refute: ['P4-stock-R9:part1', 'P4-stock-R9:part2', 'P4-stock-R9:part3',
@@ -172,10 +202,18 @@ async function main() {
   check(r.result.followUps.filter(f => f.reason === 'P1 question not ruled on').length === 26, 'T1 unruled: 26 listed')
   r = await runTask('T1', { nulls: { 'P1-critic-R4': 2 } })
   check(!r.result.summary.questions.some(q => q.category === 'R4'), 'T1 null critic: no R4 question')
+  r = await runTask('T1')
+  check(r.result.skipped.some(k => k.role === 'P1-recheck') && r.result.started + r.result.skipped.length === 28, 'T1: a skipped re-check is reported')
+  r = await runTask('T1', { markings: 'none' })
+  check(r.result.followUps.filter(f => f.reason === 'marking not ruled on').length === 26, 'T1: markings without a verdict are listed')
+  r = await runTask('T1', { assumption: true })
+  check(r.result.summary.questions.filter(q => q.synthetic).length === 13 && r.calls.includes('P1-recheck'), 'T1: an unasked assumption becomes a re-checked question')
 
   // P0: the script applies the stop and hold rules itself.
   r = await runTask('T2', { p0: { jlcparts: { path: 'db', sha256: 'other', sha256_ok: true, rows: 7, missing_lcsc: [] } } })
   check(r.result.summary.stopped === true, 'P0: a wrong database SHA-256 stops the task')
+  r = await runTask('T2', { p0: { snapshot: '2020-01-01T00:00:00Z' } })
+  check(r.result.summary.stopped === true, 'P0: a wrong manifest time stops the task')
   r = await runTask('T2', { p0: { checkout_head: 'cafe' } })
   check(r.result.summary.stopped === true, 'P0: a wrong checkout stops the task')
   r = await runTask('T2', { hosts: [{ host: 'jlcpcb.com', stop: 'stock-tasks', hold: [] }], down: ['jlcpcb.com'] })
@@ -187,6 +225,10 @@ async function main() {
   check(!r.calls.includes('P1-R1') && r.calls.includes('P1-R2'), 'P0: T1 holds by hold_in_t1 only')
   r = await runTask('T2', { hosts: winbond, down: ['www.ti.com'] })
   check(!r.calls.includes('P2-R2') && r.calls.includes('P2-R1'), 'P0: T2 holds by hold')
+
+  // T6 without both P7 returns is stopped.
+  r = await runTask('T6', { nulls: { 'P7-critic': 2 } })
+  check(r.result.summary.stopped === true, 'T6: stopped without the critic')
 
   // Follow-up plans.
   for (const [phases, n, want] of [['P1', 2, 6], ['P2-P4', 3, 16], ['P5-P6', 0, 5]]) {

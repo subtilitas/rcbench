@@ -269,6 +269,34 @@ def recorded(results, run):
     return probe.returncode == 0
 
 
+def runs(results):
+    """The recorded runs in the order they were recorded, stopped ones
+    left out: (name, task.json)."""
+    top = os.path.join(results, RUNS_DIR)
+    out = []
+    for name in sorted(os.listdir(top)) if os.path.isdir(top) else []:
+        path = os.path.join(top, name, "task.json")
+        if "-stopped-" in name or not os.path.isfile(path):
+            continue
+        out.append((name, json.loads(read(path))))
+    return sorted(out, key=lambda r: r[1].get("sequence", 0))
+
+
+def effective_selection(results):
+    """The part each function keeps: a later run's part overrides an
+    earlier one, and a run that selected none leaves an earlier part."""
+    eff = {}
+    for name, task in runs(results):
+        sel = (task.get("summary") or {}).get("selection") or {}
+        for cat, entries in sel.items():
+            for e in entries:
+                slot = eff.setdefault(cat, {})
+                if e.get("part") or e["function"] not in slot:
+                    slot[e["function"]] = {"part": e.get("part"),
+                                           "rank": e.get("rank"), "run": name}
+    return eff
+
+
 def run_info(model, effort):
     try:
         claude = subprocess.run(["claude", "--version"], capture_output=True,
@@ -334,6 +362,16 @@ def cmd_prepare(args):
         if open_q:
             raise SystemExit("unanswered under Raised by P1: "
                              + ", ".join(open_q))
+    gate = {"T3": ["T2", "T4"], "T5": ["T2", "T3", "T4"]}.get(args.task, [])
+    eff = effective_selection(results)
+    open_sel = [f"{c}: {fn}" for t in gate
+                for c in cats["tasks"][t]["categories"]
+                for fn, e in eff.get(c, {}).items() if not e["part"]]
+    if open_sel and not args.accept_open:
+        raise SystemExit("functions with no verified part: "
+                         + "; ".join(open_sel)
+                         + ". Resolve them in a follow-up task, or pass "
+                         "--accept-open REASON")
     if args.task == "T6":
         missing = [q for q, d in decisions(text).items() if not d]
         if missing:
@@ -367,6 +405,8 @@ def cmd_prepare(args):
         "followup": followup, "first_v": first_v,
         "run": f"FU-{args.name}" if args.task == "FU" else args.task,
         "run_info": run_info(args.model, args.effort),
+        "accept_open": {"reason": args.accept_open, "functions": open_sel}
+        if args.accept_open else None,
     }
     path = os.path.join(base, f"args-{args.task}.json")
     with open(path, "w") as f:
@@ -415,6 +455,9 @@ def cmd_record(args):
         with open(os.path.join(tmp, f"{name}.json"), "w") as f:
             json.dump(r, f, indent=1, ensure_ascii=False)
     meta = {k: v for k, v in result.items() if k != "returns"}
+    top = os.path.join(results, RUNS_DIR)
+    meta["sequence"] = 1 + len([n for n in os.listdir(top)
+                                if not n.endswith(".tmp")])
     with open(args.output, "rb") as f:
         meta["output_sha256"] = hashlib.sha256(f.read()).hexdigest()
     with open(os.path.join(tmp, "task.json"), "w") as f:
@@ -424,17 +467,27 @@ def cmd_record(args):
                f"Read {BRANCH} at {result['commit']}; {result['started']} "
                f"agents started, {len(result['followUps'])} items for "
                "follow-up."]
+    paths = [target]
+    stopped = bool((result.get("summary") or {}).get("stopped"))
+    if (result.get("summary") or {}).get("selection") and not stopped:
+        sel = os.path.join(results, RUNS_DIR, "selection.json")
+        with open(sel, "w") as f:
+            json.dump(effective_selection(results), f, indent=1,
+                      ensure_ascii=False)
+        paths.append(sel)
     try:
-        if args.task == "T6":
+        if args.task == "T6" and not stopped:
             git("-C", results, "add", "-A")
             git("-C", results, "commit", "-q", "-m", message[0], "-m",
                 message[1])
         else:
-            git("-C", results, "add", target)
+            git("-C", results, "add", *paths)
             git("-C", results, "commit", "-q", "-m", message[0], "-m",
-                message[1], "--", target)
+                message[1], "--", *paths)
     except SystemExit:
-        git("-C", results, "reset", "-q", "--", target, check=False)
+        git("-C", results, "reset", "-q", "--", *paths, check=False)
+        git("-C", results, "checkout", "-q", "--",
+            os.path.join(RUNS_DIR, "selection.json"), check=False)
         shutil.rmtree(target, ignore_errors=True)
         raise
     print(f"{target}: {len(result.get('returns', []))} returns committed "
@@ -510,6 +563,9 @@ def main():
     p.add_argument("--name", default="1", help="follow-up run name")
     p.add_argument("--db")
     p.add_argument("--no-fetch", action="store_true")
+    p.add_argument("--accept-open", metavar="REASON",
+                   help="start T3 or T5 with functions that have no "
+                   "verified part")
     p.set_defaults(fn=cmd_prepare)
     r = sub.add_parser("record")
     r.add_argument("task", choices=TASKS)

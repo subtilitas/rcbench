@@ -68,6 +68,7 @@ const labels = new Map()
 const returns = []
 const followUps = []
 const missing = []
+const skipped = []
 
 function takeExtra(n) {
   if (extra + n > FREE) return false
@@ -127,7 +128,7 @@ function ctx(role, cat, label) {
     `You are ${role}${catLine} in task ${TASK} of round 1 of the rcbench IO board component research.`,
     `Your instructions are hardware/docs/Research.md in the read-only checkout ${P.checkout} at commit ${A.commit}: ${rows}, the Sourcing rules, "Held parts" and "Lifecycle check". The requirement values are in hardware/docs/IOBoard.md in the same checkout and in the Answer columns of Research.md there, "Raised by P1" among them; a proposed answer is not an answer. Where this prompt and the page differ, the page holds.`,
     `Today is ${A.date}. Every figure you report carries the time it was read and the URL or API call it came from. A value you could not read is written as not read, with the reason; never estimated. A search engine's summary is not a source.`,
-    `Paths: the monostable page and the pages it links, at commit 23c82ca: ${P.monostable}. The parts database, sqlite, opened read-only only (sqlite3.connect('file:${P.db}?mode=ro', uri=True)): ${P.db}. Returns of earlier tasks: ${P.results}/hardware/research/round1/<task>/; each task's task.json holds summary.selection, the part each function keeps after refutations, which counts over a re-rank's rank 1. Your scratch directory: ${P.scratch}/${A.run || TASK}/${label}/.`,
+    `Paths: the monostable page and the pages it links, at commit 23c82ca: ${P.monostable}. The parts database, sqlite, opened read-only only (sqlite3.connect('file:${P.db}?mode=ro', uri=True)): ${P.db}. Returns of earlier tasks: ${P.results}/hardware/research/round1/<run>/. The part each function keeps after refutations and follow-ups is in ${P.results}/hardware/research/round1/selection.json; it counts over any re-rank's rank 1 and over a superseded selection. Your scratch directory: ${P.scratch}/${A.run || TASK}/${label}/.`,
     `Clients: pages with \`python3 ${P.checkout}/tools/research/vendors.py fetch URL\` (--client safari for www.analog.com); JLCPCB stock with \`vendors.py jlcpcb C<digits>\` (the exact LCSC match); Digi-Key with \`vendors.py digikey MPN\` or \`vendors.py digikey-search KEYWORDS\`, with DIGIKEY_ENV_FILE=${P.digikey_env} in that command's environment. Never print a credential.`,
     `Write, commit and push nothing inside ${P.checkout} or ${P.results}. Return exactly the schema.`,
   ].join('\n')
@@ -188,7 +189,7 @@ function p2Prompt(cat) {
   const items = TASK === 'FU' ? itemsFor(cat) : []
   return `${ctx('P2', cat, `P2-${cat}`)}
 
-Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, and record it as found. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. For up to five survivors per function, record every field of the P2 row. Report in "report" the figures the ${cat} row asks the category to report for a decision or for P5.${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in summary.selection of task.json under ${P.results}/hardware/research/round1/T2/, T4/ and every FU-*/ directory; the returns beside it carry their figures.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}`
+Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, and record it as found. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. For up to five survivors per function, record every field of the P2 row. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5.${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${P.results}/hardware/research/round1/selection.json; the returns in each run's directory carry their figures.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}`
 }
 
 function p2View(p2) {
@@ -211,7 +212,7 @@ ${J(p2View(p2))}`
 function rerankPrompt(cat, p2, p3) {
   return `${ctx('rerank', cat, `rerank-${cat}`)}
 
-You are the re-rank of the "Agent layout" table. Qualify each candidate P3 returned as P2 does, and give each qualified one a full record in new_candidates. Then rank each function's shortlist: every entry of ranking names a part of P2's shortlist or of new_candidates, by its exact part number. List every P3 candidate you drop with its reason. The script builds the final shortlist from P2's records and yours.
+You are the re-rank of the "Agent layout" table. Qualify each candidate P3 returned as P2 does, and give each qualified one a full record in new_candidates. Then rank each function's shortlist: every entry of ranking names a part of P2's shortlist or of new_candidates, by its exact part number. Rank every such part, or list it with its reason in dropped_from_shortlist (a P2 candidate) or dropped_from_p3 (a P3 candidate). In verify, name the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative. List your own figures in report. The script builds the final shortlist from P2's records and yours.
 
 P2's return:
 ${J(p2)}
@@ -223,10 +224,10 @@ ${J(p3)}`
 function p4Prompt(cat, kind, bundle, only) {
   const what = only
     ? `Verify only this candidate, which replaces a refuted one; list only it: ${J(only)}`
-    : 'Verify the first-ranked part of each function, the first-ranked part of each alternative of Q4 and Q8 the owner can choose, and, where the second source of sourcing rule 5 is an alternate, that alternate. List every part you verify in parts; a first-ranked part you leave out counts as not verified.'
+    : 'Verify, for each function, the first-ranked part and every part in its verify list. List every part you verify in parts; a part you leave out counts as not verified.'
   const how = kind === 'stock'
     ? 'You are the stock and lifecycle verifier. Re-read stock and lifecycle at the primary sources, with the clients above, and try to refute each figure.'
-    : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read every figure the category reports for a decision or for P5, each value found for research, and each reason the re-rank gave for dropping a P3 candidate, and give each a verdict in figures.'} Try to refute each.`
+    : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, and the reasons the re-rank gave for dropping a P3 candidate) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
   return `${ctx('P4', cat, `P4-${kind}-${cat}`)}
 
 ${how} ${what} Copy each function and part name exactly as the shortlist below writes it.
@@ -245,7 +246,7 @@ ${J(evidence)}`
 function p5Prompt() {
   return `${ctx('P5', '', 'P5')}
 
-Read every return under ${P.results}/hardware/research/round1/ (T2, T3, T4 and every FU-* directory) and run the checks of the P5 row over the whole board. The parts to check are those in summary.selection of each task.json, each with its alternate, and both alternatives of Q4 and Q8.`
+Read every return under ${P.results}/hardware/research/round1/ (T2, T3, T4 and every FU-* directory) and run the checks of the P5 row over the whole board. The parts to check are those in ${P.results}/hardware/research/round1/selection.json, each with its alternate, and both alternatives of Q4 and Q8.`
 }
 function p5CriticPrompt(p5) {
   return `${ctx('P5-critic', '', 'P5-critic')}
@@ -267,7 +268,7 @@ ${J(p6)}`
 function p7Prompt() {
   return `${ctx('P7', '', 'P7')}
 
-Exception to the rule above: write the outputs listed under "Outputs" of Research.md into the working tree ${P.results}, which the session has merged with research/round1 before this task. Write them from the returns under ${P.results}/hardware/research/round1/ only, the parts in summary.selection, P5's budget and combinations, and the owner's decisions in the "Decision (owner, date)" column for Q4, Q8 and Q9. Do not commit. Write tools/jlc_stock.py to read DIGIKEY_ENV_FILE as well as the two variables, as tools/research/vendors.py does. Run \`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results} and report each result.`
+Exception to the rule above: write the outputs listed under "Outputs" of Research.md into the working tree ${P.results}, which the session has merged with research/round1 before this task. Write them from the returns under ${P.results}/hardware/research/round1/ only, the parts in hardware/research/round1/selection.json, P5's budget and combinations, and the owner's decisions in the "Decision (owner, date)" column for Q4, Q8 and Q9. Do not commit. Write tools/jlc_stock.py to read DIGIKEY_ENV_FILE as well as the two variables, as tools/research/vendors.py does. Run \`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results} and report each result.`
 }
 function p7CriticPrompt(p7) {
   return `${ctx('P7-critic', '', 'P7-critic')}
@@ -286,6 +287,7 @@ function applyP0(p0) {
   if (!p0.jlcparts || !p0.jlcparts.sha256_ok || p0.jlcparts.sha256 !== j.sha256) reasons.push('the parts database fails its SHA-256 check')
   if (!p0.jlcparts || p0.jlcparts.rows !== j.rows) reasons.push('the parts database row count differs')
   if (!p0.jlcparts || (p0.jlcparts.missing_lcsc || []).length) reasons.push('LCSC numbers the page names are missing from the parts database')
+  if (!(Date.parse(p0.snapshot) === Date.parse(j.manifest_created))) reasons.push(`the parts database's manifest is ${p0.snapshot}, not ${j.manifest_created}`)
   if (p0.checkout_head !== A.commit) reasons.push(`the checkout is at ${p0.checkout_head}, not ${A.commit}`)
   if (TASK === 'T1' && !(p0.monostable && p0.monostable.fetched)) reasons.push('commit 23c82ca is not in place')
   const reach = new Map((p0.hosts || []).map(h => [h.host, h.reachable]))
@@ -326,12 +328,29 @@ async function phaseP1(cats) {
     if (!c) followUps.push({ role: 'P1', category: cat, reason: 'the P1 chain failed' })
     else byCat.set(cat, c)
   })
+  // Every marking needs the critic's verdict. An assumption is a question to
+  // the owner: one that neither P1 nor the critic asked is added here, and
+  // the re-check checks it with the critic's additions.
+  for (const c of byCat.values()) {
+    if (!c.p1 || !c.critic) continue
+    const verdicts = c.critic.marking_verdicts || []
+    const asked = [...(c.p1.questions || []), ...(c.critic.added || [])].map(q => `${q.function} ${q.question}`.toLowerCase())
+    c.extra = []
+    for (const v of c.p1.values || []) {
+      const mv = verdicts.find(x => x.where === v.where && x.quantity === v.quantity)
+      if (!mv) followUps.push({ role: 'P1-critic', category: c.cat, value: v, reason: 'marking not ruled on' })
+      const marking = mv && mv.verdict === 'wrong' && mv.correct_marking !== 'unchanged' ? mv.correct_marking : v.marking
+      if (marking !== 'assumption' || asked.some(a => a.includes(String(v.quantity).toLowerCase()))) continue
+      c.extra.push({ function: v.quantity, question: `State ${v.quantity}. P1 read "${v.value}" at ${v.where} and it is marked an assumption.`, why: 'every assumption is a question to the owner (P1 row)', blocks: 'p2', decision: 'none', synthetic: true })
+    }
+  }
   const added = []
   for (const c of byCat.values()) {
-    if (c.critic) (c.critic.added || []).forEach((q, index) => added.push({ category: c.cat, index, ...q }))
+    if (c.critic) [...(c.critic.added || []), ...(c.extra || [])].forEach((q, index) => added.push({ category: c.cat, index, ...q }))
   }
   let recheck = { verdicts: [] }
   if (added.length) recheck = await run('P1-recheck', '', 'P1-recheck', 'P1', recheckPrompt(added))
+  else skipped.push({ role: 'P1-recheck', reason: 'no question was added, so none needed a re-check' })
   // Questions reach the owner only when checked: P1's by its critic, a
   // critic's addition by the re-check. Unchecked ones go to a follow-up.
   const questions = []
@@ -347,7 +366,7 @@ async function phaseP1(cats) {
       if (ruled.get(i) === 'confirmed') questions.push({ category: cat, source: 'P1', ...q })
       else if (!ruled.has(i)) followUps.push({ role: 'P1-critic', category: cat, index: i, question: q.question, reason: 'P1 question not ruled on' })
     })
-    ;(c.critic.added || []).forEach((q, i) => {
+    ;[...(c.critic.added || []), ...(c.extra || [])].forEach((q, i) => {
       if (!recheck) { followUps.push({ role: 'P1-recheck', category: cat, index: i, question: q.question, reason: 'critic addition not checked' }); return }
       const v = (recheck.verdicts || []).find(x => x.category === cat && x.index === i)
       if (!v) followUps.push({ role: 'P1-recheck', category: cat, index: i, question: q.question, reason: 'critic addition not ruled on' })
@@ -370,6 +389,7 @@ function merge(cat, p2, rr) {
     const fr = (rr.functions || []).find(f => f.function === name)
     const pool = [...(f2.shortlist || []), ...((fr && fr.new_candidates) || [])]
     let shortlist
+    let verify = []
     if (fr) {
       shortlist = []
       for (const r of [...(fr.ranking || [])].sort((a, b) => a.rank - b.rank)) {
@@ -377,11 +397,25 @@ function merge(cat, p2, rr) {
         if (!rec) { followUps.push({ role: 'rerank', category: cat, function: name, part: r.part, reason: 'ranked part has no record' }); continue }
         shortlist.push({ ...rec, rank: r.rank, reason: r.reason })
       }
+      // A candidate the re-rank neither ranked nor dropped is kept, after the
+      // ranked ones, and listed: an omission is not a drop.
+      const dropped = new Set((fr.dropped_from_shortlist || []).map(d => d.part))
+      let last = shortlist.length ? shortlist[shortlist.length - 1].rank : 0
+      for (const c of pool) {
+        if (shortlist.some(x => x.part === c.part) || dropped.has(c.part)) continue
+        shortlist.push({ ...c, rank: ++last, reason: 'not ranked by the re-rank; kept in P2 order' })
+        followUps.push({ role: 'rerank', category: cat, function: name, part: c.part, reason: 'candidate neither ranked nor dropped' })
+      }
+      verify = (fr.verify || []).filter(v => {
+        if (shortlist.some(x => x.part === v.part)) return true
+        followUps.push({ role: 'rerank', category: cat, function: name, part: v.part, reason: 'part to verify is not on the shortlist' })
+        return false
+      })
     } else {
       shortlist = [...(f2.shortlist || [])].sort((a, b) => a.rank - b.rank)
       followUps.push({ role: 'rerank', category: cat, function: name, reason: 'the re-rank did not rank this function' })
     }
-    functions.push({ function: name, requirements: f2.requirements || [], shortlist, dropped: f2.dropped || [], dropped_from_p3: (fr && fr.dropped_from_p3) || [] })
+    functions.push({ function: name, requirements: f2.requirements || [], shortlist, verify, dropped: f2.dropped || [], dropped_from_shortlist: (fr && fr.dropped_from_shortlist) || [], dropped_from_p3: (fr && fr.dropped_from_p3) || [] })
   }
   return functions
 }
@@ -403,9 +437,14 @@ async function verifyCategory(cat, functions, bundle) {
       () => run('P4', cat, `P4-stock-${cat}`, phaseName, p4Prompt(cat, 'stock', bundle, only)),
       () => run('P4', cat, `P4-datasheet-${cat}`, phaseName, p4Prompt(cat, 'datasheet', bundle, only)),
     ])
-    const want = only
-      ? [{ function: only.function, part: only.part }]
-      : functions.filter(f => f.shortlist.length).map(f => ({ function: f.function, part: f.shortlist[0].part }))
+    const want = []
+    if (only) want.push({ function: only.function, part: only.part })
+    else {
+      for (const f of functions) {
+        const parts = new Set([...(f.shortlist.length ? [f.shortlist[0].part] : []), ...f.verify.map(v => v.part)])
+        for (const part of parts) want.push({ function: f.function, part })
+      }
+    }
     if (!st || !ds) {
       for (const w of want) {
         ledger.push({ ...w, status: 'not verified', reason: 'a verifier returned nothing' })
@@ -459,7 +498,14 @@ async function verifyCategory(cat, functions, bundle) {
       queue.push({ only: { ...next, function: e.function } })
     }
     if (only) continue
-    // Figures are verified once, by the first pair.
+    // Figures are verified once, by the first pair. Each name in
+    // figures_to_check needs the datasheet verifier's verdict.
+    const seen = new Set((ds.figures || []).map(f => f.figure))
+    for (const name of bundle.figures_to_check) {
+      if (seen.has(name)) continue
+      ledger.push({ figure: name, status: 'not verified', reason: 'the datasheet verifier gave no verdict' })
+      followUps.push({ role: 'P4', category: cat, figure: name, reason: 'figure not verified' })
+    }
     for (const [kind, v] of [['stock', st], ['datasheet', ds]]) {
       for (const f of v.figures || []) {
         if (f.verdict !== 'refuted') continue
@@ -495,7 +541,13 @@ async function categoryChain(cat) {
   const rr = await run('rerank', cat, `rerank-${cat}`, 'P2-P4', rerankPrompt(cat, p2, p3 || { category: cat, missed: [], exclusions_not_holding: [], note: 'P3 returned nothing twice; its search is a follow-up item' }))
   if (!rr) return { category: cat, status: 're-rank returned nothing' }
   const functions = merge(cat, p2, rr)
-  const bundle = { functions, found_values: p2.found_values || [], report_p2: p2.report || '', report_rerank: rr.report || '' }
+  const figures_to_check = [
+    ...(p2.found_values || []).map(v => `found ${v.question_id}`),
+    ...(p2.report || []).map(f => `P2 report: ${f.figure}`),
+    ...(rr.report || []).map(f => `re-rank report: ${f.figure}`),
+    ...functions.flatMap(f => f.dropped_from_p3.map(d => `re-rank drop: ${d.part}`)),
+  ]
+  const bundle = { functions, found_values: p2.found_values || [], report_p2: p2.report || [], report_rerank: rr.report || [], figures_to_check }
   const ledger = await verifyCategory(cat, functions, bundle)
   return { category: cat, status: p3 ? 'done' : 'done without P3', ledger, selection: selection(functions, ledger) }
 }
@@ -563,6 +615,9 @@ if (TASK === 'T6') {
   const p7 = await run('P7', '', 'P7', 'P7', p7Prompt())
   const critic = p7 ? await run('P7-critic', '', 'P7-critic', 'P7', p7CriticPrompt(p7)) : null
   summary = { p7: p7 ? p7.checks : null, critic: critic ? critic.checks : null }
+  // The pages are final only with both returns; otherwise T6 is recorded as
+  // stopped and its pages are not committed.
+  if (!p7 || !critic) summary = { ...summary, stopped: true, reasons: [!p7 ? 'P7 returned nothing' : 'the P7 critic returned nothing'] }
 } else if (TASK === 'T5') {
   summary = await phaseP5P6()
 } else {
@@ -588,5 +643,5 @@ if (TASK === 'T6') {
 log(`${TASK}: ${started} agents started (${PLANNED} planned, ${extra} of ${FREE} free used); ${followUps.length} items for follow-up`)
 return {
   task: TASK, commit: A.commit, date: A.date, run_info: A.run_info || {}, followup: TASK === 'FU' ? FU : null,
-  planned: PLANNED, started, extra_used: extra, free: FREE, summary, followUps, missing, returns,
+  planned: PLANNED, started, extra_used: extra, free: FREE, skipped, summary, followUps, missing, returns,
 }

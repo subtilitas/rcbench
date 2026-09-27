@@ -53,13 +53,19 @@ T4 and a P2-P4 follow-up while a question of their categories under "Raised by
 P1" has no answer, unless it only feeds Q4, Q8 or Q9. It numbers new
 questions after the last one on the page. Before T6 it refuses until the
 owner's decisions on Q4, Q8 and Q9 are written, then merges `research/round1`
-into the results tree. It records the Claude Code version, the model, the
-effort, the CPU count and the workflow concurrency in the arguments.
+into the results tree. It refuses T3 and T5 while a function the earlier
+tasks cover has no verified part, unless `--accept-open REASON` records the
+owner's reason in the arguments. It records the Claude Code version, the
+model, the effort, the CPU count and the workflow concurrency there too.
 
 `record` refuses a run already recorded, a plan or a refusal, and a return
 that does not match its schema. A task P0 stopped is recorded as
-`TASK-stopped-N` and does not count as recorded. It commits only the run's
-directory; after T6 it also commits the pages P7 wrote.
+`TASK-stopped-N` and does not count as recorded. After a run that selects
+parts it rewrites `hardware/research/round1/selection.json`, the part each
+function keeps: a later run's verified part overrides an earlier one, and a
+run that verified none leaves the earlier part. It commits only the run's
+directory and that file; after a T6 that was not stopped it also commits the
+pages P7 wrote. A T6 without both P7 returns is recorded as stopped.
 
 A follow-up task takes `--followup FILE`, a JSON object with `phases` (`P1`,
 `P2-P4` or `P5-P6`), `round` (1 or 2), `categories` and `items`, and
