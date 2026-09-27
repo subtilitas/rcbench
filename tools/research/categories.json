@@ -59,16 +59,24 @@
   },
   "reports": {
     "R1": [
-      "stepping-A4 errata"
+      "stepping-A4 errata",
+      "crystal tolerance",
+      "BOOT resistor",
+      "OpenOCD",
+      "watchdog"
     ],
     "R2": [
-      "frames held"
+      "frames held",
+      "clock tolerance"
     ],
     "R3": [
       "'423 behaviour with I_off"
     ],
     "R10": [
-      "Q4 alternatives"
+      "Q4 effective number of bits",
+      "Q4 sampling rate",
+      "Q4 trigger",
+      "Q4 latency jitter"
     ],
     "R12": [
       "Q8 store candidates"

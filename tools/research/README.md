@@ -66,9 +66,10 @@ It refuses these without exception:
   their categories has no answer.
 - T2 to T4, P2-P4 and P1 follow-ups while a question a committed P1 run raised
   for their categories is not yet under "Raised by P1" on `research/round1`,
-  or is there without an answer. T5, P5-P6 follow-ups and T6 check every
-  category. A question that only feeds Q4, Q8 or Q9 (`blocks` is
-  `decision-only` and `decision` names one of them) needs no answer.
+  or is there without an answer or under another category or question. T5,
+  P5-P6 follow-ups and T6 check every category. A question that only feeds Q4,
+  Q8 or Q9 (`blocks` is `decision-only` and `decision` names one of them)
+  needs no answer.
 - T6 while the owner's decisions on Q4, Q8 and Q9 are not written, and while
   the output paths have changes.
 
@@ -85,7 +86,8 @@ the items in the arguments:
     not verified with its own second source;
   - a run that decides one of the category's functions left a figure the
     datasheet verifier did not confirm, or a value for research or required
-    report figure P2 did not return or wrote as not read;
+    report figure (`categories.json` `reports`, named as it is or as
+    `NAME: PART`) P2 did not return or wrote as not read;
   - the latest P1 run left P1 items in the category;
   - a run that decides one of its functions predates a P1 run's questions for
     the category, read other answers under "Raised by P1" for it, read another
@@ -95,12 +97,12 @@ the items in the arguments:
 - T6 while a part changed after the last P5/P6 check; while that check ran
   without P5, P6 or either critic, returned no budget or no combination, or
   left a conflict, gap, combination or budget its critic did not rule on, or a
-  combination or budget it rejected; while it lists a conflict or gap whose
-  categories, named or taken from its parts (a part selected in more than one
-  category belongs to each), no round-2 P2-P4 follow-up since the check before
-  researched to a verified part (the first check's items are never covered);
-  and while a run that decides an R3 function was not given the Q9 decision
-  now in force.
+  combination or budget it rejected; while it lists a conflict or gap that no
+  round-2 P2-P4 follow-up since the check before covered: a gap's category,
+  and a conflict's named categories and every function any run selected one of
+  its parts for, each researched to a verified part (the first check's items
+  are never covered); and while a run that decides an R3 function was not
+  given the Q9 decision now in force.
 
 Then, before T6, it merges `research/round1` into the results tree. The gates
 read committed run records and the plan on `research/round1`. The arguments

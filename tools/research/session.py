@@ -470,32 +470,43 @@ def t6_open(results):
     # The first check's items were found by it, so no earlier run covered
     # them.
     before = checks[-2][1].get("sequence", 0) if len(checks) > 1 else None
-    # Round 2 covers the categories a round-2 P2-P4 follow-up researched to
-    # a selection, not the ones its file named.
-    # A category counts only when the run verified a part for it.
-    covered = set() if before is None else {c for _, t in done
-               if (t.get("followup") or {}).get("round") == 2
-               and (t.get("followup") or {}).get("phases") == "P2-P4"
-               and before < t.get("sequence", 0) < last.get("sequence", 0)
+    # Round 2 covers each function a round-2 P2-P4 follow-up verified a
+    # part for, and each category it verified any part in; not what its
+    # file named.
+    round2 = [] if before is None else [
+        t for _, t in done if (t.get("followup") or {}).get("round") == 2
+        and (t.get("followup") or {}).get("phases") == "P2-P4"
+        and before < t.get("sequence", 0) < last.get("sequence", 0)]
+    fn_done = {(c, e["function"]) for t in round2
                for c, entries in ((t.get("summary") or {}).get("selection")
                                   or {}).items()
-               if any(e.get("part") for e in entries)}
+               for e in entries if e.get("part")}
+    covered = {c for c, _ in fn_done}
     summary = last.get("summary") or {}
-    # A conflict belongs to the categories it names and those of its parts.
-    # A part selected in more than one category belongs to each.
-    part_cat = {}
-    for c, fns in effective_selection(results).items():
-        for e in fns.values():
-            for part in [e.get("part")] + [q.get("part") for q in
-                                           e.get("q_alternatives") or []]:
-                if part:
-                    part_cat.setdefault(part, set()).add(c)
-    items = [set(x.get("categories") or []).union(
-        *(part_cat.get(p, set()) for p in x.get("parts") or []))
-             for x in summary.get("conflicts", [])] + \
-        [{x["category"]} if x.get("category") else set()
-         for x in summary.get("gaps", [])]
-    uncovered = [i for i in items if not i or not i <= covered]
+    # A conflict's part points at every function any run selected it for,
+    # in every category: each of those functions must be covered, and each
+    # category the conflict names or its parts belong to.
+    part_fn = {}
+    for _, t in done:
+        for c, entries in ((t.get("summary") or {}).get("selection")
+                           or {}).items():
+            for e in entries:
+                for part in [e.get("part")] + [q.get("part") for q in
+                                               e.get("q_alternatives") or []]:
+                    if part:
+                        part_fn.setdefault(part, set()).add(
+                            (c, e["function"]))
+    uncovered = []
+    for x in summary.get("conflicts", []):
+        fns = set().union(*(part_fn.get(p, set())
+                            for p in x.get("parts") or []))
+        named = set(x.get("categories") or [])
+        if (not fns and not named) or not fns <= fn_done or \
+                not (named | {c for c, _ in fns}) <= covered:
+            uncovered.append(x)
+    for x in summary.get("gaps", []):
+        if not x.get("category") or x["category"] not in covered:
+            uncovered.append(x)
     if uncovered:
         out.append(f"{name} lists {len(uncovered)} conflicts and gaps that "
                    "no round 2 follow-up since the check before covered")
@@ -761,6 +772,21 @@ def questions_gate(results, rows, categories):
         raise SystemExit("raised by P1 but not under Raised by P1 on "
                          f"{BRANCH}: " + ", ".join(unpublished)
                          + ". Run raised and push it.")
+    # A published row keeps the category and question P1 raised.
+    by_id = {r[0]: r for r in rows}
+
+    def words(t):
+        return " ".join(str(t).split())
+    moved = [q["id"] for _, q in committed if q["id"] in by_id
+             and (q["category"] in categories
+                  or by_id[q["id"]][1] in categories)
+             and (by_id[q["id"]][1] != q["category"]
+                  or not words(by_id[q["id"]][2]).startswith(
+                      words(str(q.get("question", "")).replace("|", "\\|"))))]
+    if moved:
+        raise SystemExit("rows under Raised by P1 that no longer carry the "
+                         "category and question P1 raised: "
+                         + ", ".join(moved))
     # Only a question that names Q4, Q8 or Q9 feeds a decision alone.
     exempt = {q["id"] for _, q in committed
               if q.get("blocks") == "decision-only"

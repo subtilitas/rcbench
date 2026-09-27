@@ -92,6 +92,7 @@ async function runTask(task, opts = {}) {
       if (opts.qAltBack) Object.assign(data.functions[0].shortlist[2], { second_source_route: 'alternate', second_source_part: 'part1' })
       if (opts.p2DupPart) data.functions[0].shortlist.push({ ...cand(1), requirements: [{ name: 'x0', required: '>= 67.2 V', datasheet: '40 V', pass: false, source: 's' }] })
       if (opts.fnNoReq) data.functions[0].requirements = []
+      if (opts.reportPerPart) data.report = [{ figure: 'frames held: MCP2518FD', value: '2', source: 's' }]
       if (opts.p2DropY) data.functions[0].dropped = [{ part: 'partY', maker: 'm', reason: 'r' }]
       if (opts.foundNotRead) data.found_values = [{ question_id: 'V9', value: 'not read: HTTP 403', source: 's', read_at: 't' }]
       if (opts.onBoardAltOfOff) { Object.assign(data.functions[0].shortlist[0], { lcsc: 'none', second_source_route: 'alternate', second_source_part: 'altOn' }); data.functions[0].shortlist.push({ ...cand(8), part: 'altOn', lcsc: 'C2' }) }
@@ -560,6 +561,10 @@ async function main() {
   check(r1(r).selection[0].part === 'part1', 'held part with its held quantity checked: verified')
   r = await runTask('T2', { held: 0, heldChecks: true })
   check(r1(r).selection[0].part === null, 'part not held, checked on a held quantity: not verified')
+  // A required figure reported per part counts as returned.
+  r = await runTask('T2', { requiredReports: { R2: ['frames held'] }, reportPerPart: true })
+  check(!r.result.summary.figures_open.R2.includes('P2 report: frames held') && !r.result.followUps.some(f => f.figure === 'P2 report: frames held'), 'required figure reported per part: returned')
+  check(r.prompts.find(x => x.label === 'P2-R2').prompt.includes('frames held'), 'P2 prompt names the required figures')
   // A ruling with no evidence read is no ruling.
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], stands: false, unreadRuling: true })
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence read'), 'ruling without evidence read: no ruling')
