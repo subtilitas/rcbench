@@ -50,6 +50,9 @@ TASKS = ["T1", "T2", "T3", "T4", "T5", "T6", "FU"]
 AFTER = {"T2": ["T1"], "T4": ["T1"], "T3": ["T2", "T4"], "T5": ["T3"],
          "T6": ["T5"]}
 RUNS_DIR = os.path.join("hardware", "research", "round1")
+# The files T6 may write: the Outputs table of the plan.
+T6_OUTPUTS = ("hardware/docs/", "hardware/STATUS.md", "hardware/README.md",
+              "tools/jlc_stock.py")
 
 
 def load(name):
@@ -269,14 +272,14 @@ def recorded(results, run):
     return probe.returncode == 0
 
 
-def runs(results):
+def runs(results, stopped=False):
     """The recorded runs in the order they were recorded, stopped ones
-    left out: (name, task.json)."""
+    left out unless asked for: (name, task.json)."""
     top = os.path.join(results, RUNS_DIR)
     out = []
     for name in sorted(os.listdir(top)) if os.path.isdir(top) else []:
         path = os.path.join(top, name, "task.json")
-        if "-stopped-" in name or not os.path.isfile(path):
+        if ("-stopped-" in name and not stopped) or not os.path.isfile(path):
             continue
         out.append((name, json.loads(read(path))))
     return sorted(out, key=lambda r: r[1].get("sequence", 0))
@@ -291,9 +294,15 @@ def effective_selection(results):
         for cat, entries in sel.items():
             for e in entries:
                 slot = eff.setdefault(cat, {})
-                if e.get("part") or e["function"] not in slot:
+                held = slot.get(e["function"])
+                if e.get("part") or held is None:
                     slot[e["function"]] = {"part": e.get("part"),
                                            "rank": e.get("rank"), "run": name}
+                elif held["part"] in (e.get("refuted") or []):
+                    # This run refuted the part in force and kept none.
+                    slot[e["function"]] = {"part": None, "rank": None,
+                                           "run": name,
+                                           "refuted": held["part"]}
     return eff
 
 
@@ -335,6 +344,14 @@ def cmd_prepare(args):
             raise SystemExit("the follow-up's phases is P1, P2-P4 or P5-P6")
         if int(followup.get("round", 0)) not in (1, 2):
             raise SystemExit("follow-up tasks run in rounds 1 and 2 only")
+        fc = followup.get("categories")
+        if followup["phases"] != "P5-P6" and (
+                not isinstance(fc, list) or not fc or len(set(fc)) != len(fc)
+                or any(c not in cats["categories"] for c in fc)):
+            raise SystemExit("the follow-up's categories are a list of "
+                             "distinct IDs from R1 to R13")
+        if not isinstance(followup.get("items", []), list):
+            raise SystemExit("the follow-up's items are a list")
     for path in (db, manifest, env):
         if not os.path.isfile(path):
             raise SystemExit(f"{path} is not there")
@@ -387,8 +404,15 @@ def cmd_prepare(args):
     read_only(checkout)
     mono = worktree(base, "monostable-23c82ca", MONOSTABLE)
     read_only(mono)
-    today = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+    now = datetime.datetime.now(datetime.timezone.utc)
+    today = now.date().isoformat()
     first_v = 1 + max([int(r[0][1:]) for r in rows] or [0])
+    run = f"FU-{args.name}" if args.task == "FU" else args.task
+    if recorded(results, run):
+        raise SystemExit(f"{run} is recorded already")
+    ident = json.dumps([run, commit, now.isoformat(), followup, args.model,
+                        args.effort], sort_keys=True)
+    run_id = hashlib.sha256(ident.encode()).hexdigest()[:16]
     out = {
         "task": args.task, "mode": "run", "date": today, "commit": commit,
         "cap": cats["cap"], "categories": cats["categories"],
@@ -403,12 +427,12 @@ def cmd_prepare(args):
                   "scratch": os.path.join(base, "scratch"),
                   "digikey_env": env},
         "followup": followup, "first_v": first_v,
-        "run": f"FU-{args.name}" if args.task == "FU" else args.task,
+        "run": run, "run_id": run_id,
         "run_info": run_info(args.model, args.effort),
         "accept_open": {"reason": args.accept_open, "functions": open_sel}
         if args.accept_open else None,
     }
-    path = os.path.join(base, f"args-{args.task}.json")
+    path = os.path.join(base, f"args-{run}.json")
     with open(path, "w") as f:
         json.dump(out, f, indent=1)
     print(f"{path}: task {args.task}, {BRANCH} at {commit}, {today}, "
@@ -428,6 +452,21 @@ def cmd_record(args):
         raise SystemExit("the output is a plan or a refusal, not a run")
     if result.get("task") != args.task:
         raise SystemExit(f"the output is task {result.get('task')}")
+    run = args.task if args.task != "FU" else f"FU-{args.name}"
+    prepared = os.path.join(base, f"args-{run}.json")
+    if not os.path.isfile(prepared):
+        raise SystemExit(f"{prepared} is not there; prepare {run} first")
+    want = json.loads(read(prepared))
+    if result.get("run") != run or result.get("run_id") != want["run_id"]:
+        raise SystemExit(f"the output is run {result.get('run')} "
+                         f"{result.get('run_id')}, not the prepared {run} "
+                         f"{want['run_id']}")
+    with open(args.output, "rb") as f:
+        digest = hashlib.sha256(f.read()).hexdigest()
+    for name, task in runs(results, stopped=True):
+        if task.get("run_id") == want["run_id"] or \
+                task.get("output_sha256") == digest:
+            raise SystemExit(f"this output is recorded already, as {name}")
     schemas = resolved_schemas()
     errors = []
     for r in result.get("returns", []):
@@ -437,7 +476,6 @@ def cmd_record(args):
         print(f"FAIL {e}")
     if errors:
         return 1
-    run = args.task if args.task != "FU" else f"FU-{args.name}"
     if (result.get("summary") or {}).get("stopped"):
         k = 1
         while os.path.exists(os.path.join(results, RUNS_DIR,
@@ -458,8 +496,7 @@ def cmd_record(args):
     top = os.path.join(results, RUNS_DIR)
     meta["sequence"] = 1 + len([n for n in os.listdir(top)
                                 if not n.endswith(".tmp")])
-    with open(args.output, "rb") as f:
-        meta["output_sha256"] = hashlib.sha256(f.read()).hexdigest()
+    meta["output_sha256"] = digest
     with open(os.path.join(tmp, "task.json"), "w") as f:
         json.dump(meta, f, indent=1, ensure_ascii=False)
     os.rename(tmp, target)
@@ -469,6 +506,19 @@ def cmd_record(args):
                "follow-up."]
     paths = [target]
     stopped = bool((result.get("summary") or {}).get("stopped"))
+    if args.task == "T6" and not stopped:
+        dirty = [line[3:] for line in git(
+            "-C", results, "status", "--porcelain", "--untracked-files=all"
+        ).splitlines()]
+        rel = os.path.relpath(target, results)
+        stray = [d for d in dirty if not d.startswith(rel)
+                 and not d.startswith(T6_OUTPUTS)]
+        if stray:
+            shutil.rmtree(target, ignore_errors=True)
+            raise SystemExit("T6 changed files outside its outputs: "
+                             + ", ".join(stray))
+        paths += [os.path.join(results, d) for d in dirty
+                  if not d.startswith(rel)]
     if (result.get("summary") or {}).get("selection") and not stopped:
         sel = os.path.join(results, RUNS_DIR, "selection.json")
         with open(sel, "w") as f:
@@ -476,14 +526,9 @@ def cmd_record(args):
                       ensure_ascii=False)
         paths.append(sel)
     try:
-        if args.task == "T6" and not stopped:
-            git("-C", results, "add", "-A")
-            git("-C", results, "commit", "-q", "-m", message[0], "-m",
-                message[1])
-        else:
-            git("-C", results, "add", *paths)
-            git("-C", results, "commit", "-q", "-m", message[0], "-m",
-                message[1], "--", *paths)
+        git("-C", results, "add", "--", *paths)
+        git("-C", results, "commit", "-q", "-m", message[0], "-m",
+            message[1], "--", *paths)
     except SystemExit:
         git("-C", results, "reset", "-q", "--", *paths, check=False)
         git("-C", results, "checkout", "-q", "--",

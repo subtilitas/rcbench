@@ -230,7 +230,7 @@ function p4Prompt(cat, kind, bundle, only) {
     : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, and the reasons the re-rank gave for dropping a P3 candidate) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
   return `${ctx('P4', cat, `P4-${kind}-${cat}`)}
 
-${how} ${what} Copy each function and part name exactly as the shortlist below writes it.
+${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number) and "lifecycle status"; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is. A confirmation without its required checks counts as not verified, and a check with agrees false counts as a refutation.
 
 The shortlist, the values found for research and the reports:
 ${J(bundle)}`
@@ -299,8 +299,8 @@ function applyP0(p0) {
     if (h.stop === 'stock-tasks' && readsStock) reasons.push(`${h.host} is ${why}`)
     for (const c of (isP1Task ? h.hold_in_t1 : h.hold) || []) if (!held.has(c)) held.set(c, { category: c, host: h.host, reason: why })
   }
-  for (const h of p0.held || []) if (!held.has(h.category)) held.set(h.category, h)
-  if (p0.stop) reasons.push(...(p0.stop_reasons || ['P0 stopped the task']))
+  // P0's own stop and held fields are its reading, kept in its return; the
+  // outcome comes from the check results above only.
   return { stop: reasons.length > 0, reasons, held: [...held.values()] }
 }
 
@@ -420,6 +420,18 @@ function merge(cat, p2, rr) {
   return functions
 }
 
+function candidateOf(functions, fn, part) {
+  const f = functions.find(x => x.function === fn)
+  return f ? f.shortlist.find(c => c.part === part) : null
+}
+
+// The checks a verifier returns by these exact names for a confirmation to
+// count (the P4 prompt names them).
+function requiredChecks(kind, cand) {
+  if (kind === 'stock') return ['stock', 'lifecycle status', ...(cand && cand.lcsc && cand.lcsc !== 'none' ? ['presale'] : [])]
+  return ((cand && cand.requirements) || []).map(r => r.name)
+}
+
 function nextCandidate(functions, fn, part) {
   const f = functions.find(x => x.function === fn)
   if (!f) return null
@@ -445,17 +457,12 @@ async function verifyCategory(cat, functions, bundle) {
         for (const part of parts) want.push({ function: f.function, part })
       }
     }
-    if (!st || !ds) {
-      for (const w of want) {
-        ledger.push({ ...w, status: 'not verified', reason: 'a verifier returned nothing' })
-        followUps.push({ role: 'P4', category: cat, ...w, reason: 'not verified: a verifier returned nothing' })
-      }
-      continue
-    }
+    const got = [['stock', st], ['datasheet', ds]].filter(([, v]) => v)
+    if (got.length < 2) followUps.push({ role: 'P4', category: cat, part: only ? only.part : '', reason: 'a verifier returned nothing; what the other returned is still adjudicated' })
     const byPart = new Map()
     const key = (f, p) => `${f}\u0000${p}`
     for (const w of want) byPart.set(key(w.function, w.part), { ...w, verdicts: [] })
-    for (const [kind, v] of [['stock', st], ['datasheet', ds]]) {
+    for (const [kind, v] of got) {
       for (const p of v.parts || []) {
         if (only && (p.function !== only.function || p.part !== only.part)) continue
         const k = key(p.function, p.part)
@@ -465,12 +472,24 @@ async function verifyCategory(cat, functions, bundle) {
       }
     }
     for (const e of byPart.values()) {
+      // A confirmation counts only with its required checks, each agreeing.
+      // A check that disagrees is a refutation.
+      const cand = candidateOf(functions, e.function, e.part)
+      for (const v of e.verdicts) {
+        if (v.verdict !== 'confirmed') continue
+        const bad = (v.checks || []).filter(c => !c.agrees)
+        if (bad.length) { v.verdict = 'refuted'; v.refutation = `checks disagree: ${bad.map(c => c.figure).join(', ')}`; continue }
+        const have = new Set((v.checks || []).map(c => c.figure))
+        const lack = requiredChecks(v.verifier, cand).filter(n => !have.has(n))
+        if (lack.length) { v.verdict = 'incomplete'; v.missing = lack }
+      }
+      const complete = kind => e.verdicts.some(v => v.verifier === kind && v.verdict !== 'incomplete')
       const refuted = e.verdicts.filter(v => v.verdict === 'refuted')
       if (!refuted.length) {
-        const kinds = new Set(e.verdicts.map(v => v.verifier))
-        if (kinds.has('stock') && kinds.has('datasheet')) { ledger.push({ function: e.function, part: e.part, status: 'verified' }); continue }
-        ledger.push({ function: e.function, part: e.part, status: 'not verified', reason: 'not covered by both verifiers' })
-        followUps.push({ role: 'P4', category: cat, function: e.function, part: e.part, reason: 'not covered by both verifiers' })
+        if (complete('stock') && complete('datasheet')) { ledger.push({ function: e.function, part: e.part, status: 'verified' }); continue }
+        const reason = e.verdicts.some(v => v.verdict === 'incomplete') ? 'a verifier gave no required check for some figures' : 'not covered by both verifiers'
+        ledger.push({ function: e.function, part: e.part, status: 'not verified', reason })
+        followUps.push({ role: 'P4', category: cat, function: e.function, part: e.part, reason })
         continue
       }
       if (!takeExtra(1)) {
@@ -484,8 +503,7 @@ async function verifyCategory(cat, functions, bundle) {
         continue
       }
       if (!ruling.stands) {
-        const kinds = new Set(e.verdicts.map(v => v.verifier))
-        const both = kinds.has('stock') && kinds.has('datasheet')
+        const both = complete('stock') && complete('datasheet')
         ledger.push({ function: e.function, part: e.part, status: both ? 'verified; refutation did not stand' : 'not verified', reason: both ? '' : 'refutation did not stand, but one verifier did not cover it' })
         if (!both) followUps.push({ role: 'P4', category: cat, function: e.function, part: e.part, reason: 'not covered by both verifiers' })
         continue
@@ -500,13 +518,13 @@ async function verifyCategory(cat, functions, bundle) {
     if (only) continue
     // Figures are verified once, by the first pair. Each name in
     // figures_to_check needs the datasheet verifier's verdict.
-    const seen = new Set((ds.figures || []).map(f => f.figure))
+    const seen = new Set(((ds && ds.figures) || []).map(f => f.figure))
     for (const name of bundle.figures_to_check) {
       if (seen.has(name)) continue
       ledger.push({ figure: name, status: 'not verified', reason: 'the datasheet verifier gave no verdict' })
       followUps.push({ role: 'P4', category: cat, figure: name, reason: 'figure not verified' })
     }
-    for (const [kind, v] of [['stock', st], ['datasheet', ds]]) {
+    for (const [kind, v] of got) {
       for (const f of v.figures || []) {
         if (f.verdict !== 'refuted') continue
         if (!takeExtra(1)) {
@@ -527,10 +545,15 @@ async function verifyCategory(cat, functions, bundle) {
 // The part each function keeps: the first in rank order that both verifiers
 // confirmed, or none.
 function selection(functions, ledger) {
-  const ok = new Set(ledger.filter(l => l.part && l.status.startsWith('verified')).map(l => `${l.function}\u0000${l.part}`))
+  // A part's status is its last ledger entry: a later refutation overrides
+  // an earlier verification.
+  const last = new Map()
+  for (const l of ledger) if (l.part) last.set(`${l.function}\u0000${l.part}`, l.status)
   return functions.map(f => {
-    const kept = f.shortlist.find(c => ok.has(`${f.function}\u0000${c.part}`))
-    return { function: f.function, part: kept ? kept.part : null, rank: kept ? kept.rank : null }
+    const st = c => last.get(`${f.function}\u0000${c.part}`) || ''
+    const kept = f.shortlist.find(c => st(c).startsWith('verified'))
+    const refuted = f.shortlist.filter(c => st(c) === 'refuted').map(c => c.part)
+    return { function: f.function, part: kept ? kept.part : null, rank: kept ? kept.rank : null, refuted }
   })
 }
 
@@ -642,6 +665,6 @@ if (TASK === 'T6') {
 
 log(`${TASK}: ${started} agents started (${PLANNED} planned, ${extra} of ${FREE} free used); ${followUps.length} items for follow-up`)
 return {
-  task: TASK, commit: A.commit, date: A.date, run_info: A.run_info || {}, followup: TASK === 'FU' ? FU : null,
+  task: TASK, run: A.run || TASK, run_id: A.run_id || '', commit: A.commit, date: A.date, run_info: A.run_info || {}, followup: TASK === 'FU' ? FU : null,
   planned: PLANNED, started, extra_used: extra, free: FREE, skipped, summary, followUps, missing, returns,
 }

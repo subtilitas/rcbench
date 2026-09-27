@@ -41,6 +41,7 @@ O="--base $B --digikey-env PATH_TO_CREDENTIALS --model MODEL_ID --effort EFFORT"
 python3 tools/research/session.py check
 python3 tools/research/session.py prepare T1 $O
 # Workflow tool: scriptPath tools/research/round1.js, args = $B/args-T1.json
+# (a follow-up's arguments are $B/args-FU-N.json)
 python3 tools/research/session.py record T1 TASK_OUTPUT_FILE --base $B
 git -C $B/results push origin research/round1-results
 python3 tools/research/session.py raised --base $B
@@ -58,14 +59,20 @@ tasks cover has no verified part, unless `--accept-open REASON` records the
 owner's reason in the arguments. It records the Claude Code version, the
 model, the effort, the CPU count and the workflow concurrency there too.
 
-`record` refuses a run already recorded, a plan or a refusal, and a return
-that does not match its schema. A task P0 stopped is recorded as
+`prepare` gives each run an identity, `run_id`, which the workflow returns.
+`record` refuses an output whose run or `run_id` differs from the prepared
+arguments, an output already recorded, a plan or a refusal, and a return that
+does not match its schema. A task P0 stopped is recorded as
 `TASK-stopped-N` and does not count as recorded. After a run that selects
 parts it rewrites `hardware/research/round1/selection.json`, the part each
 function keeps: a later run's verified part overrides an earlier one, and a
 run that verified none leaves the earlier part. It commits only the run's
 directory and that file; after a T6 that was not stopped it also commits the
-pages P7 wrote. A T6 without both P7 returns is recorded as stopped.
+pages P7 wrote, and refuses a change outside the plan's Outputs
+(`hardware/docs/`, `hardware/STATUS.md`, `hardware/README.md`,
+`tools/jlc_stock.py`). A T6 without both P7 returns is recorded as stopped.
+A follow-up that refutes the part in force and verifies none clears it from
+`selection.json`.
 
 A follow-up task takes `--followup FILE`, a JSON object with `phases` (`P1`,
 `P2-P4` or `P5-P6`), `round` (1 or 2), `categories` and `items`, and

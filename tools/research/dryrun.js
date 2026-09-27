@@ -97,11 +97,17 @@ async function runTask(task, opts = {}) {
       const kind = o.label.includes('stock') ? 'stock' : 'datasheet'
       const refute = (opts.refute || []).includes(`${base}:${part}`)
       data.verifier = kind
-      data.parts = (opts.omit || []).includes(base) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: [], refutation: refute ? 'mock' : '' }]
+      // The checks a correct verifier returns, by the names round1.js requires.
+      const bundle = only ? null : JSON.parse(prompt.slice(prompt.lastIndexOf('\n') + 1))
+      const cand = pt => only ? JSON.parse(only[1]) : bundle.functions[0].shortlist.find(c => c.part === pt)
+      const checksFor = pt => (opts.emptyChecks || []).includes(base) ? []
+        : (kind === 'stock' ? ['stock', 'presale', 'lifecycle status'] : cand(pt).requirements.map(r => r.name))
+          .map((figure, k) => ({ figure, stated: 's', read: 'r', source: 'src', agrees: !((opts.disagree || []).includes(base) && k === 0) }))
+      data.parts = (opts.omit || []).includes(base) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part), refutation: refute ? 'mock' : '' }]
       const names = only ? [] : JSON.parse(/"figures_to_check":(\[[^\]]*\])/.exec(prompt)[1])
       data.figures = kind === 'datasheet' ? names.filter(n => !(opts.omitFigure && base === opts.omitFigure[0] && n === opts.omitFigure[1]))
         .map((figure, k) => ({ figure, verdict: (opts.refuteFigure || []).includes(base) && k === 0 ? 'refuted' : 'confirmed', evidence: 'e' })) : []
-      if (opts.verify && !(opts.omit || []).includes(base) && !opts.dropVerify) data.parts.push(...opts.verify.map(p => ({ function: 'f1', part: p, kind: 'alternate', verdict: 'confirmed', checks: [], refutation: '' })))
+      if (opts.verify && !(opts.omit || []).includes(base) && !opts.dropVerify && !only) data.parts.push(...opts.verify.map(pt => ({ function: 'f1', part: pt, kind: 'alternate', verdict: (opts.refute || []).includes(`${base}:${pt}`) ? 'refuted' : 'confirmed', checks: checksFor(pt), refutation: '' })))
     }
     if (role === 'adjudicator') data.stands = opts.stands !== false
     return data
@@ -229,6 +235,23 @@ async function main() {
   // T6 without both P7 returns is stopped.
   r = await runTask('T6', { nulls: { 'P7-critic': 2 } })
   check(r.result.summary.stopped === true, 'T6: stopped without the critic')
+
+  // A confirmation without its required checks is not verified.
+  r = await runTask('T2', { emptyChecks: ['P4-stock-R1'] })
+  check(r1(r).ledger.some(l => l.part === 'part1' && l.status === 'not verified') && r1(r).selection[0].part === null, 'evidence: empty checks do not verify')
+  // A disagreeing check is a refutation, and is adjudicated.
+  r = await runTask('T2', { disagree: ['P4-datasheet-R1'] })
+  check(r.calls.some(c => c.startsWith('adjudicator-R1')), 'evidence: a disagreeing check is adjudicated')
+  // One verifier returns nothing: the other's refutation is still adjudicated.
+  r = await runTask('T2', { nulls: { 'P4-datasheet-R1': 2 }, refute: ['P4-stock-R1:part1'] })
+  check(r.calls.some(c => c.startsWith('adjudicator-R1')) && r1(r).selection[0].part === 'part2', 'missing peer: refutation adjudicated, part2 selected')
+  // A later refutation overrides an earlier verification of the same part.
+  r = await runTask('T2', { verify: ['part2'], refute: ['P4-stock-R1:part1', 'P4-stock-R1-2:part2'] })
+  check(r1(r).selection[0].part === 'part3', `final status: selection ${r1(r).selection[0].part}, expected part3`)
+  check(r1(r).selection[0].refuted.includes('part2'), 'final status: part2 listed as refuted')
+  // P0's own stop and held fields do not decide the outcome.
+  r = await runTask('T2', { p0: { stop: true, stop_reasons: ['mock'], held: [{ category: 'R1', host: 'h', reason: 'mock' }] } })
+  check(!r.result.summary.stopped && r.calls.includes('P2-R1'), 'P0: its own stop and held are not applied')
 
   // Follow-up plans.
   for (const [phases, n, want] of [['P1', 2, 6], ['P2-P4', 3, 16], ['P5-P6', 0, 5]]) {
