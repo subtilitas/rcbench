@@ -1,0 +1,1235 @@
+{
+ "defs": {
+  "str": {
+   "type": "string"
+  },
+  "strs": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "requirement": {
+   "type": "object",
+   "properties": {
+    "name": {
+     "type": "string"
+    },
+    "required": {
+     "type": "string",
+     "description": "value and unit the specification or an answer fixes"
+    },
+    "datasheet": {
+     "type": "string",
+     "description": "the datasheet's value and unit, with its table or page"
+    },
+    "pass": {
+     "type": "boolean"
+    },
+    "source": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "name",
+    "required",
+    "datasheet",
+    "pass",
+    "source"
+   ]
+  },
+  "candidate": {
+   "type": "object",
+   "properties": {
+    "rank": {
+     "type": "integer"
+    },
+    "part": {
+     "type": "string"
+    },
+    "maker": {
+     "type": "string",
+     "description": "from the datasheet; the allowlist name it counts as"
+    },
+    "lcsc": {
+     "type": "string",
+     "description": "C number, or none for a part off the board"
+    },
+    "package": {
+     "type": "string"
+    },
+    "placements": {
+     "type": "integer"
+    },
+    "held": {
+     "type": "integer",
+     "description": "quantity in the owner's personal library, 0 if not held"
+    },
+    "requirements": {
+     "type": "array",
+     "items": {
+      "$ref": "requirement"
+     }
+    },
+    "jlcpcb": {
+     "type": "string",
+     "description": "stockCount, canPresaleNumber, componentLibraryType, price at the need, time read, API call; or not read and why"
+    },
+    "digikey": {
+     "type": "string",
+     "description": "stock_available, lead_weeks, status, time read, API call; or not read and why"
+    },
+    "gate": {
+     "type": "string",
+     "description": "need = 5 boards x placements, threshold per S4, pass or fail per sourcing rule 4 or 6"
+    },
+    "lifecycle": {
+     "type": "string",
+     "description": "status and its source, longevity, first datasheet date, notices, distributor status"
+    },
+    "second_source": {
+     "type": "string",
+     "description": "the route of sourcing rule 5 that passes, with evidence, or none"
+    },
+    "alternates": {
+     "$ref": "strs"
+    },
+    "driver_in_shared": {
+     "type": "string",
+     "description": "path under shared/ or none"
+    },
+    "reason": {
+     "type": "string",
+     "description": "why this rank"
+    },
+    "placements_basis": {
+     "type": "string",
+     "description": "fixed by the specification, or the range and its basis; placements is the top of the range (sourcing rule 4)"
+    }
+   },
+   "required": [
+    "rank",
+    "part",
+    "maker",
+    "lcsc",
+    "package",
+    "placements",
+    "placements_basis",
+    "held",
+    "requirements",
+    "jlcpcb",
+    "digikey",
+    "gate",
+    "lifecycle",
+    "second_source",
+    "alternates",
+    "driver_in_shared",
+    "reason"
+   ]
+  },
+  "dropped": {
+   "type": "object",
+   "properties": {
+    "part": {
+     "type": "string"
+    },
+    "maker": {
+     "type": "string"
+    },
+    "reason": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "part",
+    "maker",
+    "reason"
+   ]
+  },
+  "question": {
+   "type": "object",
+   "properties": {
+    "function": {
+     "type": "string"
+    },
+    "question": {
+     "type": "string",
+     "description": "one question the owner answers with a value, with its unit"
+    },
+    "why": {
+     "type": "string",
+     "description": "what P2 cannot qualify without it"
+    },
+    "blocks": {
+     "type": "string",
+     "enum": [
+      "p2",
+      "decision-only"
+     ]
+    },
+    "decision": {
+     "type": "string",
+     "enum": [
+      "none",
+      "Q4",
+      "Q8",
+      "Q9"
+     ]
+    }
+   },
+   "required": [
+    "function",
+    "question",
+    "why",
+    "blocks",
+    "decision"
+   ]
+  },
+  "conflict": {
+   "type": "object",
+   "properties": {
+    "parts": {
+     "$ref": "strs"
+    },
+    "categories": {
+     "$ref": "strs"
+    },
+    "kind": {
+     "type": "string"
+    },
+    "description": {
+     "type": "string"
+    },
+    "evidence": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "parts",
+    "categories",
+    "kind",
+    "description",
+    "evidence"
+   ]
+  },
+  "gap": {
+   "type": "object",
+   "properties": {
+    "spec_line": {
+     "type": "string"
+    },
+    "kind": {
+     "type": "string",
+     "enum": [
+      "no-part",
+      "no-date",
+      "unanswered",
+      "value-not-found",
+      "other"
+     ]
+    },
+    "category": {
+     "type": "string"
+    },
+    "description": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "spec_line",
+    "kind",
+    "category",
+    "description"
+   ]
+  },
+  "checks": {
+   "type": "object",
+   "properties": {
+    "check_docs": {
+     "type": "string"
+    },
+    "ruff": {
+     "type": "string"
+    },
+    "jlc_stock": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "check_docs",
+    "ruff",
+    "jlc_stock"
+   ]
+  }
+ },
+ "roles": {
+  "P0": {
+   "type": "object",
+   "properties": {
+    "versions": {
+     "type": "string",
+     "description": "Claude Code, git, python3, ruff, 7-Zip, curl_cffi"
+    },
+    "hosts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "host": {
+        "type": "string"
+       },
+       "url": {
+        "type": "string"
+       },
+       "client": {
+        "type": "string"
+       },
+       "http_status": {
+        "type": "integer"
+       },
+       "bytes": {
+        "type": "integer"
+       },
+       "status_marker": {
+        "type": "string",
+        "description": "the text the marker matched, or none"
+       },
+       "reachable": {
+        "type": "boolean"
+       },
+       "note": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "host",
+       "url",
+       "client",
+       "http_status",
+       "bytes",
+       "status_marker",
+       "reachable",
+       "note"
+      ]
+     }
+    },
+    "jlcparts": {
+     "type": "object",
+     "properties": {
+      "path": {
+       "type": "string"
+      },
+      "sha256": {
+       "type": "string"
+      },
+      "sha256_ok": {
+       "type": "boolean"
+      },
+      "rows": {
+       "type": "integer"
+      },
+      "missing_lcsc": {
+       "$ref": "strs"
+      }
+     },
+     "required": [
+      "path",
+      "sha256",
+      "sha256_ok",
+      "rows",
+      "missing_lcsc"
+     ]
+    },
+    "monostable": {
+     "type": "object",
+     "properties": {
+      "commit": {
+       "type": "string"
+      },
+      "path": {
+       "type": "string"
+      },
+      "fetched": {
+       "type": "boolean"
+      }
+     },
+     "required": [
+      "commit",
+      "path",
+      "fetched"
+     ]
+    },
+    "checkout_head": {
+     "type": "string",
+     "description": "git rev-parse HEAD of the read-only checkout"
+    },
+    "stop": {
+     "type": "boolean"
+    },
+    "stop_reasons": {
+     "$ref": "strs"
+    },
+    "held": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "category": {
+        "type": "string"
+       },
+       "host": {
+        "type": "string"
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "category",
+       "host",
+       "reason"
+      ]
+     }
+    },
+    "snapshot": {
+     "type": "string",
+     "description": "the created time of the parts database's manifest.json"
+    }
+   },
+   "required": [
+    "versions",
+    "hosts",
+    "jlcparts",
+    "snapshot",
+    "monostable",
+    "checkout_head",
+    "stop",
+    "stop_reasons",
+    "held"
+   ]
+  },
+  "P1": {
+   "type": "object",
+   "properties": {
+    "category": {
+     "type": "string"
+    },
+    "values": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "where": {
+        "type": "string",
+        "description": "file:line in the checkout"
+       },
+       "quantity": {
+        "type": "string"
+       },
+       "value": {
+        "type": "string"
+       },
+       "marking": {
+        "type": "string",
+        "enum": [
+         "sourced",
+         "owner",
+         "assumption"
+        ]
+       },
+       "source": {
+        "type": "string"
+       },
+       "refutation_tried": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "where",
+       "quantity",
+       "value",
+       "marking",
+       "source",
+       "refutation_tried"
+      ]
+     }
+    },
+    "questions": {
+     "type": "array",
+     "items": {
+      "$ref": "question"
+     }
+    }
+   },
+   "required": [
+    "category",
+    "values",
+    "questions"
+   ]
+  },
+  "P1-critic": {
+   "type": "object",
+   "properties": {
+    "category": {
+     "type": "string"
+    },
+    "marking_verdicts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "where": {
+        "type": "string"
+       },
+       "quantity": {
+        "type": "string"
+       },
+       "verdict": {
+        "type": "string",
+        "enum": [
+         "holds",
+         "wrong"
+        ]
+       },
+       "correct_marking": {
+        "type": "string",
+        "enum": [
+         "sourced",
+         "owner",
+         "assumption",
+         "unchanged"
+        ]
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "where",
+       "quantity",
+       "verdict",
+       "correct_marking",
+       "reason"
+      ]
+     }
+    },
+    "question_verdicts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer",
+        "description": "0-based index into P1's questions"
+       },
+       "verdict": {
+        "type": "string",
+        "enum": [
+         "confirmed",
+         "rejected"
+        ]
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "verdict",
+       "reason"
+      ]
+     }
+    },
+    "added": {
+     "type": "array",
+     "items": {
+      "$ref": "question"
+     }
+    }
+   },
+   "required": [
+    "category",
+    "marking_verdicts",
+    "question_verdicts",
+    "added"
+   ]
+  },
+  "P1-recheck": {
+   "type": "object",
+   "properties": {
+    "verdicts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "category": {
+        "type": "string"
+       },
+       "index": {
+        "type": "integer",
+        "description": "0-based index into that critic's added list"
+       },
+       "verdict": {
+        "type": "string",
+        "enum": [
+         "confirmed",
+         "rejected"
+        ]
+       },
+       "evidence": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "category",
+       "index",
+       "verdict",
+       "evidence"
+      ]
+     }
+    }
+   },
+   "required": [
+    "verdicts"
+   ]
+  },
+  "P2": {
+   "type": "object",
+   "properties": {
+    "category": {
+     "type": "string"
+    },
+    "found_values": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "question_id": {
+        "type": "string"
+       },
+       "value": {
+        "type": "string"
+       },
+       "source": {
+        "type": "string"
+       },
+       "read_at": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "question_id",
+       "value",
+       "source",
+       "read_at"
+      ]
+     }
+    },
+    "functions": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "function": {
+        "type": "string"
+       },
+       "requirements": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "name": {
+           "type": "string"
+          },
+          "value": {
+           "type": "string"
+          },
+          "source": {
+           "type": "string"
+          }
+         },
+         "required": [
+          "name",
+          "value",
+          "source"
+         ]
+        }
+       },
+       "shortlist": {
+        "type": "array",
+        "items": {
+         "$ref": "candidate"
+        }
+       },
+       "dropped": {
+        "type": "array",
+        "items": {
+         "$ref": "dropped"
+        }
+       }
+      },
+      "required": [
+       "function",
+       "requirements",
+       "shortlist",
+       "dropped"
+      ]
+     }
+    },
+    "report": {
+     "type": "string",
+     "description": "the figures the category reports for a decision or for P5 (R1 errata, R2 frames held, R3 on the '423 behaviour with I_off, R10 on Q4, R12 on Q8)"
+    }
+   },
+   "required": [
+    "category",
+    "found_values",
+    "functions",
+    "report"
+   ]
+  },
+  "P3": {
+   "type": "object",
+   "properties": {
+    "category": {
+     "type": "string"
+    },
+    "missed": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "function": {
+        "type": "string"
+       },
+       "part": {
+        "type": "string"
+       },
+       "maker": {
+        "type": "string"
+       },
+       "why": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "function",
+       "part",
+       "maker",
+       "why"
+      ]
+     }
+    },
+    "exclusions_not_holding": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "part": {
+        "type": "string"
+       },
+       "reason_given": {
+        "type": "string"
+       },
+       "why_it_fails": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "part",
+       "reason_given",
+       "why_it_fails"
+      ]
+     }
+    }
+   },
+   "required": [
+    "category",
+    "missed",
+    "exclusions_not_holding"
+   ]
+  },
+  "rerank": {
+   "type": "object",
+   "properties": {
+    "category": {
+     "type": "string"
+    },
+    "functions": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "function": {
+        "type": "string"
+       },
+       "ranking": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "rank": {
+           "type": "integer"
+          },
+          "part": {
+           "type": "string",
+           "description": "a part of P2's shortlist or of new_candidates, by its exact part number"
+          },
+          "reason": {
+           "type": "string"
+          }
+         },
+         "required": [
+          "rank",
+          "part",
+          "reason"
+         ]
+        }
+       },
+       "new_candidates": {
+        "type": "array",
+        "items": {
+         "$ref": "candidate"
+        },
+        "description": "full records of the P3 candidates that qualify"
+       },
+       "dropped_from_p3": {
+        "type": "array",
+        "items": {
+         "$ref": "dropped"
+        }
+       }
+      },
+      "required": [
+       "function",
+       "ranking",
+       "new_candidates",
+       "dropped_from_p3"
+      ]
+     }
+    },
+    "report": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "category",
+    "functions",
+    "report"
+   ]
+  },
+  "P4": {
+   "type": "object",
+   "properties": {
+    "category": {
+     "type": "string"
+    },
+    "verifier": {
+     "type": "string",
+     "enum": [
+      "stock",
+      "datasheet"
+     ]
+    },
+    "parts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "function": {
+        "type": "string"
+       },
+       "part": {
+        "type": "string"
+       },
+       "kind": {
+        "type": "string",
+        "enum": [
+         "first",
+         "alternate",
+         "q-alternative"
+        ]
+       },
+       "verdict": {
+        "type": "string",
+        "enum": [
+         "confirmed",
+         "refuted"
+        ]
+       },
+       "checks": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "figure": {
+           "type": "string"
+          },
+          "stated": {
+           "type": "string"
+          },
+          "read": {
+           "type": "string"
+          },
+          "source": {
+           "type": "string"
+          },
+          "agrees": {
+           "type": "boolean"
+          }
+         },
+         "required": [
+          "figure",
+          "stated",
+          "read",
+          "source",
+          "agrees"
+         ]
+        }
+       },
+       "refutation": {
+        "type": "string",
+        "description": "empty when confirmed"
+       }
+      },
+      "required": [
+       "function",
+       "part",
+       "kind",
+       "verdict",
+       "checks",
+       "refutation"
+      ]
+     }
+    },
+    "figures": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "figure": {
+        "type": "string"
+       },
+       "verdict": {
+        "type": "string",
+        "enum": [
+         "confirmed",
+         "refuted"
+        ]
+       },
+       "evidence": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "figure",
+       "verdict",
+       "evidence"
+      ]
+     }
+    }
+   },
+   "required": [
+    "category",
+    "verifier",
+    "parts",
+    "figures"
+   ]
+  },
+  "adjudicator": {
+   "type": "object",
+   "properties": {
+    "category": {
+     "type": "string"
+    },
+    "function": {
+     "type": "string"
+    },
+    "part": {
+     "type": "string"
+    },
+    "stands": {
+     "type": "boolean",
+     "description": "true when the refutation holds"
+    },
+    "ruling": {
+     "type": "string"
+    },
+    "evidence": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "category",
+    "function",
+    "part",
+    "stands",
+    "ruling",
+    "evidence"
+   ]
+  },
+  "P5": {
+   "type": "object",
+   "properties": {
+    "conflicts": {
+     "type": "array",
+     "items": {
+      "$ref": "conflict"
+     }
+    },
+    "combinations": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "bind_order": {
+        "type": "string"
+       },
+       "outputs": {
+        "type": "string"
+       },
+       "fits": {
+        "type": "boolean"
+       },
+       "resources": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "bind_order",
+       "outputs",
+       "fits",
+       "resources"
+      ]
+     }
+    },
+    "budgets": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "item": {
+        "type": "string"
+       },
+       "value": {
+        "type": "string"
+       },
+       "source": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "item",
+       "value",
+       "source"
+      ]
+     }
+    },
+    "assumptions": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "item": {
+        "type": "string"
+       },
+       "value": {
+        "type": "string"
+       },
+       "why": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "item",
+       "value",
+       "why"
+      ]
+     }
+    }
+   },
+   "required": [
+    "conflicts",
+    "combinations",
+    "budgets",
+    "assumptions"
+   ]
+  },
+  "P5-critic": {
+   "type": "object",
+   "properties": {
+    "verdicts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer"
+       },
+       "holds": {
+        "type": "boolean"
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "holds",
+       "reason"
+      ]
+     }
+    },
+    "added": {
+     "type": "array",
+     "items": {
+      "$ref": "conflict"
+     }
+    }
+   },
+   "required": [
+    "verdicts",
+    "added"
+   ]
+  },
+  "P6": {
+   "type": "object",
+   "properties": {
+    "gaps": {
+     "type": "array",
+     "items": {
+      "$ref": "gap"
+     }
+    }
+   },
+   "required": [
+    "gaps"
+   ]
+  },
+  "P6-critic": {
+   "type": "object",
+   "properties": {
+    "verdicts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer"
+       },
+       "holds": {
+        "type": "boolean"
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "holds",
+       "reason"
+      ]
+     }
+    },
+    "added": {
+     "type": "array",
+     "items": {
+      "$ref": "gap"
+     }
+    }
+   },
+   "required": [
+    "verdicts",
+    "added"
+   ]
+  },
+  "P7": {
+   "type": "object",
+   "properties": {
+    "files": {
+     "$ref": "strs"
+    },
+    "corrections": {
+     "$ref": "strs"
+    },
+    "checks": {
+     "$ref": "checks"
+    }
+   },
+   "required": [
+    "files",
+    "corrections",
+    "checks"
+   ]
+  },
+  "P7-critic": {
+   "type": "object",
+   "properties": {
+    "figure_checks": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "file": {
+        "type": "string"
+       },
+       "line": {
+        "type": "integer"
+       },
+       "figure": {
+        "type": "string"
+       },
+       "return_file": {
+        "type": "string"
+       },
+       "agrees": {
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "file",
+       "line",
+       "figure",
+       "return_file",
+       "agrees"
+      ]
+     }
+    },
+    "sentence_issues": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "file": {
+        "type": "string"
+       },
+       "line": {
+        "type": "integer"
+       },
+       "issue": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "file",
+       "line",
+       "issue"
+      ]
+     }
+    },
+    "corrections_applied": {
+     "$ref": "strs"
+    },
+    "checks": {
+     "$ref": "checks"
+    }
+   },
+   "required": [
+    "figure_checks",
+    "sentence_issues",
+    "corrections_applied",
+    "checks"
+   ]
+  }
+ }
+}

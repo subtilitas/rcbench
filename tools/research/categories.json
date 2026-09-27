@@ -1,0 +1,25 @@
+{
+  "cap": 32,
+  "planned": {"T1": 28, "T2": 21, "T3": 21, "T4": 26, "T5": 4, "T6": 2},
+  "tasks": {
+    "T2": {"group": "A", "categories": ["R1", "R2", "R3", "R4"]},
+    "T3": {"group": "B", "categories": ["R5", "R6", "R7", "R8"],
+           "after": ["T2", "T4"]},
+    "T4": {"group": "C", "categories": ["R9", "R10", "R11", "R12", "R13"]}
+  },
+  "categories": {
+    "R1": "RP2354B and its support",
+    "R2": "CAN controllers and transceivers",
+    "R3": "Safety gate",
+    "R4": "Output and input buffering",
+    "R5": "Board power input and protection",
+    "R6": "Servo supply",
+    "R7": "Pack charger and the 2S pack",
+    "R8": "Current and voltage monitors and the motor shunts",
+    "R9": "Cell monitor on the ESC pack",
+    "R10": "ADC and reference",
+    "R11": "Rotation and vibration front ends",
+    "R12": "Motor temperature, external I2C ports and the non-volatile store",
+    "R13": "Load cells for thrust and torque"
+  }
+}

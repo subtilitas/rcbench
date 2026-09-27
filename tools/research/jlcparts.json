@@ -1,0 +1,8 @@
+{
+  "path": "~/rcbench-research/jlcparts-2026-09-14/cache.sqlite3",
+  "sha256": "48b41b803d7b6bbe0fa7e25b5db430a8421f8175ad559e2c4b4bfc3a73d28c26",
+  "rows": 7161863,
+  "manifest_created": "2026-09-14T09:56:01Z",
+  "artifact": "web_build 10342101918 of yaqwsx/jlcparts run 34823400239",
+  "artifact_zip_sha256": "4e578005c4bcce8a7cc825ce3c7e06ddb197acdce228e223af57cc2631eda5f9"
+}
