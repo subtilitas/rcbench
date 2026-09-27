@@ -105,6 +105,19 @@
     "placements_basis": {
      "type": "string",
      "description": "fixed by the specification, or the range and its basis; placements is the top of the range (sourcing rule 4)"
+    },
+    "second_source_route": {
+     "type": "string",
+     "enum": [
+      "alternate",
+      "second-vendor",
+      "none"
+     ],
+     "description": "the route of sourcing rule 5 this part passes by"
+    },
+    "second_source_part": {
+     "type": "string",
+     "description": "the alternate's part number when the route is alternate, else empty"
     }
    },
    "required": [
@@ -124,7 +137,9 @@
     "second_source",
     "alternates",
     "driver_in_shared",
-    "reason"
+    "reason",
+    "second_source_route",
+    "second_source_part"
    ]
   },
   "dropped": {
@@ -1263,12 +1278,33 @@
     },
     "checks": {
      "$ref": "checks"
+    },
+    "group_pages": {
+     "type": "object",
+     "properties": {
+      "A": {
+       "type": "string"
+      },
+      "B": {
+       "type": "string"
+      },
+      "C": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "A",
+      "B",
+      "C"
+     ],
+     "description": "the page written for each category group, in the form of Power.md"
     }
    },
    "required": [
     "files",
     "corrections",
-    "checks"
+    "checks",
+    "group_pages"
    ]
   },
   "P7-critic": {
@@ -1331,13 +1367,21 @@
     },
     "checks": {
      "$ref": "checks"
+    },
+    "reviewed": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "every file the critic checked"
     }
    },
    "required": [
     "figure_checks",
     "sentence_issues",
     "corrections_applied",
-    "checks"
+    "checks",
+    "reviewed"
    ]
   }
  }

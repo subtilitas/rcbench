@@ -51,6 +51,7 @@ function check(cond, msg) {
   if (!cond) { failures++; console.log(`FAIL ${msg}`) }
 }
 
+const T6OUT = ['hardware/docs/IOBoard.md', 'hardware/docs/Parts.md', 'hardware/docs/Power.md', 'hardware/docs/Research.md', 'hardware/STATUS.md', 'hardware/README.md', 'tools/jlc_stock.py']
 const JL = { sha256: 'sha', rows: 7, lcsc: [], manifest: 'm', manifest_created: '2026-09-14T09:56:01Z' }
 
 // opts: refute ['label:part'], refuteFigure ['label'], stands, omit ['label'],
@@ -66,7 +67,8 @@ async function runTask(task, opts = {}) {
     if (left) { nulls.set(base, left - 1); return null }
     const role = roleOf(o.schema)
     const data = fake(o.schema)
-    const cand = rank => ({ ...fake(schemas.P2.properties.functions.items.properties.shortlist.items), rank, part: `part${rank}` })
+    const cand = rank => ({ ...fake(schemas.P2.properties.functions.items.properties.shortlist.items), rank, part: `part${rank}`,
+      second_source_route: rank === 2 && opts.replacementAlt ? 'alternate' : 'second-vendor', second_source_part: rank === 2 && opts.replacementAlt ? 'altB' : '' })
     if (role === 'P0') {
       Object.assign(data, { stop: false, held: [], checkout_head: 'deadbeef', snapshot: '2026-09-14T09:56:01+00:00',
         jlcparts: { path: 'db', sha256: JL.sha256, sha256_ok: true, rows: JL.rows, missing_lcsc: [] },
@@ -75,11 +77,13 @@ async function runTask(task, opts = {}) {
     }
     if (role === 'P2') {
       data.functions = [{ ...data.functions[0], function: 'f1', shortlist: [1, 2, 3].map(cand) }]
+      if (opts.replacementAlt) data.functions[0].shortlist.push({ ...cand(9), part: 'altB', rank: 9 })
       if (opts.fnReq) data.functions[0].requirements = [...data.functions[0].requirements, { name: opts.fnReq, value: 'v', source: 's' }]
     }
     if (role === 'rerank') {
       data.functions = [{ function: 'f1', ranking: (opts.ranked || [1, 2, 3]).map(rank => ({ rank, part: `part${rank}`, reason: 'r' })),
-        new_candidates: [], dropped_from_p3: [], dropped_from_shortlist: [], verify: (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
+        new_candidates: opts.p3dropped ? [{ ...cand(7), part: 'partN' }] : [], dropped_from_p3: opts.p3dropped ? [{ part: 'partN', maker: 'm', reason: 'r' }] : [],
+        dropped_from_shortlist: [], verify: (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
     }
     if (role === 'P1' && opts.assumption) data.values = [{ where: 'IOBoard.md:1', quantity: 'ripple', value: '10 mV', marking: 'assumption', source: 's', refutation_tried: 'r', question: -1 }]
     if (role === 'P1' && opts.twoAssumptions) {
@@ -90,6 +94,9 @@ async function runTask(task, opts = {}) {
     if (role === 'P3' && opts.p3overturned) data.exclusions_not_holding = [{ part: 'partY', reason_given: 'r', why_it_fails: 'w' }]
     if (role === 'P7-critic' || role === 'P7') {
       for (const k of Object.keys(data.checks)) data.checks[k] = { passed: !(opts.failCheck === k && role === 'P7-critic'), output: 'o' }
+      const outs = [...T6OUT, 'hardware/docs/GroupA.md', 'hardware/docs/Power.md', 'hardware/docs/GroupC.md'].filter(f => !(role === 'P7' && f === opts.unwritten))
+      if (role === 'P7') { data.files = outs; data.group_pages = { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/GroupC.md' } }
+      else data.reviewed = outs
     }
     if (role === 'P1-recheck') {
       const added = JSON.parse(/confirm or reject it[^\n]*\n([\s\S]*)$/.exec(prompt).pop().split('\n').pop())
@@ -111,13 +118,16 @@ async function runTask(task, opts = {}) {
       const refute = (opts.refute || []).includes(`${base}:${part}`)
       data.verifier = kind
       // The checks a correct verifier returns, by the names round1.js requires.
-      const bundle = only ? null : JSON.parse(prompt.slice(prompt.lastIndexOf('\n') + 1))
-      const cand = pt => (only ? JSON.parse(only[1]) : bundle.functions[0].shortlist.find(c => c.part === pt)) || { requirements: [] }
+      const bundle2 = JSON.parse(prompt.slice(prompt.lastIndexOf('\n') + 1))
+      const f1 = bundle2.functions[0]
+      const cand = pt => [...f1.shortlist, ...(f1.alternateRecords || [])].find(c => c.part === pt) || { requirements: [] }
       const checksFor = (pt, pk) => (opts.emptyChecks || []).includes(base) ? []
         : (kind === 'stock' ? ['stock', 'presale', 'lifecycle status']
           : [...cand(pt).requirements.map(r => r.name).filter(n => n !== opts.skipReq), ...(pk === 'alternate' && !opts.noCompat ? ['pin-for-pin match', 'functional match'] : [])])
           .map((figure, k) => ({ figure, stated: 's', read: 'r', source: 'src', agrees: !((opts.disagree || []).includes(base) && k === 0) }))
       data.parts = (opts.omit || []).includes(base) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part), refutation: refute ? 'mock' : '' }]
+      const oc = only ? JSON.parse(only[1]) : null
+      if (oc && oc.second_source_route === 'alternate' && !opts.dropReplacementAlt) data.parts.push({ function: 'f1', part: oc.second_source_part, kind: 'alternate', verdict: 'confirmed', checks: checksFor(oc.second_source_part, 'alternate'), refutation: '' })
       const names = only ? [] : JSON.parse(/"figures_to_check":(\[[^\]]*\])/.exec(prompt)[1])
       data.figures = kind === 'datasheet' ? names.filter(n => !(opts.omitFigure && base === opts.omitFigure[0] && n === opts.omitFigure[1]))
         .map((figure, k) => ({ figure, verdict: (opts.refuteFigure || []).includes(base) && k === 0 ? 'refuted' : 'confirmed', evidence: 'e' })) : []
@@ -139,7 +149,7 @@ async function runTask(task, opts = {}) {
   }
   const args = { task, cap: cats.cap, categories: cats.categories, tasks: cats.tasks, schemas,
     commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], jlcparts: JL,
-    followup: opts.followup, first_v: 5 }
+    followup: opts.followup, first_v: 5, t6_outputs: T6OUT }
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
     `return (async () => {${src}})()`)
   const result = await fn(args, agent, parallel, pipeline, () => {}, () => {})
@@ -282,10 +292,22 @@ async function main() {
   check(r.result.followUps.some(f => f.host === 'www.nxp.com' && f.reason === 'lifecycle status not read from the page'), 'marker absent: listed')
 
   // A part to verify with no shortlist record is still verified.
+  // An alternate with no record cannot show its gate evidence.
   r = await runTask('T2', { verify: ['partZ'] })
-  check(r1(r).ledger.some(l => l.part === 'partZ' && l.status === 'verified'), 'verify without record: verified')
-  r = await runTask('T2', { verify: ['partZ'], dropVerify: true })
-  check(r1(r).ledger.some(l => l.part === 'partZ' && l.status === 'not verified'), 'verify without record: required even when the verifiers leave it out')
+  check(r1(r).ledger.some(l => l.part === 'partZ' && l.status === 'not verified'), 'alternate without record: not verified')
+  check(r1(r).selection[0].alternate_unverified.includes('partZ'), 'alternate without record: recorded on the selection')
+  // A replacement's rule-5 alternate is verified with it.
+  r = await runTask('T2', { replacementAlt: true, refute: ['P4-stock-R1:part1'] })
+  check(r1(r).selection[0].part === 'part2' && r1(r).selection[0].alternate_unverified.length === 0, 'replacement alternate: verified with the replacement')
+  r = await runTask('T2', { replacementAlt: true, refute: ['P4-stock-R1:part1'], dropReplacementAlt: true })
+  check(r1(r).selection[0].alternate_unverified.includes('altB'), 'replacement alternate: left out, recorded as unverified')
+  check(r1(r).ledger.some(l => l.part === 'altB' && l.status === 'not verified'), 'replacement alternate: left out, marked not verified')
+  // A P3 candidate the re-rank dropped stays dropped.
+  r = await runTask('T2', { p3dropped: true })
+  check(!r.result.followUps.some(f => f.part === 'partN'), 'explicit P3 drop: not put back')
+  // T6 needs every output written and reviewed.
+  r = await runTask('T6', { unwritten: 'hardware/README.md' })
+  check(r.result.summary.stopped === true, 'T6: an unwritten output stops it')
   // The kind comes from the plan: an alternate reported as first still needs its compatibility checks.
   r = await runTask('T2', { verify: ['part2'], reportFirst: true })
   check(r1(r).ledger.some(l => l.part === 'part2' && l.status === 'not verified'), 'canonical kind: alternate reported as first not verified')

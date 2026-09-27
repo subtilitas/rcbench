@@ -50,8 +50,9 @@ git -C $B/plan push origin research/round1
 
 `prepare` fetches origin and refuses a task out of turn: T2 and T4 before T1
 is recorded, T3 before T2 and T4, T5 before T3, T6 before T5. It refuses T2 to
-T4 and a P2-P4 follow-up while a question of their categories under "Raised by
-P1" has no answer, unless it only feeds Q4, Q8 or Q9. It numbers new
+T4 and a P2-P4 follow-up while a question a committed P1 run raised for their
+categories is not yet under "Raised by P1", or is there without an answer,
+unless it only feeds Q4, Q8 or Q9. It numbers new
 questions after the last one on the page. Before T6 it refuses until the
 owner's decisions on Q4, Q8 and Q9 are written, then merges `research/round1`
 into the results tree. It refuses T3 and T5 while a function the earlier
@@ -70,7 +71,9 @@ run that verified none leaves the earlier part. It commits only the run's
 directory and that file; after a T6 that was not stopped it also commits the
 pages P7 wrote, and refuses a change outside the plan's Outputs
 (`hardware/docs/`, `hardware/STATUS.md`, `hardware/README.md`,
-`tools/jlc_stock.py`). A T6 without both P7 returns is recorded as stopped.
+`tools/jlc_stock.py`). A T6 is recorded as stopped unless P7 and its critic both return, the
+critic's three checks pass, and every output of the plan and each group page
+was written and reviewed. `raised` reads the committed run record only.
 A follow-up that refutes the part in force and verifies none clears it from
 `selection.json`.
 

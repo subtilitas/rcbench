@@ -189,7 +189,7 @@ function p2Prompt(cat) {
   const items = TASK === 'FU' ? itemsFor(cat) : []
   return `${ctx('P2', cat, `P2-${cat}`)}
 
-Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, and record it as found. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. For up to five survivors per function, record every field of the P2 row. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5.${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${P.results}/hardware/research/round1/selection.json; the returns in each run's directory carry their figures.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}`
+Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, and record it as found. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. For up to five survivors per function, record every field of the P2 row, and the rule-5 route in second_source_route and second_source_part; a part whose route is alternate needs a full record for that alternate among the survivors or in the re-rank. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5.${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${P.results}/hardware/research/round1/selection.json; the returns in each run's directory carry their figures.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}`
 }
 
 function p2View(p2) {
@@ -212,7 +212,7 @@ ${J(p2View(p2))}`
 function rerankPrompt(cat, p2, p3) {
   return `${ctx('rerank', cat, `rerank-${cat}`)}
 
-You are the re-rank of the "Agent layout" table. Qualify each candidate P3 returned as P2 does, and give each qualified one a full record in new_candidates. Then rank each function's shortlist: every entry of ranking names a part of P2's shortlist or of new_candidates, by its exact part number. Rank every such part, or list it with its reason in dropped_from_shortlist (a P2 candidate) or dropped_from_p3 (a P3 candidate). In verify, name the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative. List your own figures in report. The script builds the final shortlist from P2's records and yours.
+You are the re-rank of the "Agent layout" table. Qualify each candidate P3 returned as P2 does, and give each qualified one a full record in new_candidates. Then rank each function's shortlist: every entry of ranking names a part of P2's shortlist or of new_candidates, by its exact part number. Rank every such part, or list it with its reason in dropped_from_shortlist (a P2 candidate) or dropped_from_p3 (a P3 candidate). In verify, name the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative. List your own figures in report. A rule-5 alternate that is not on P2's shortlist needs a full record in new_candidates; it is kept as the alternate's record, not ranked. The script builds the final shortlist from P2's records and yours.
 
 P2's return:
 ${J(p2)}
@@ -268,12 +268,12 @@ ${J(p6)}`
 function p7Prompt() {
   return `${ctx('P7', '', 'P7')}
 
-Exception to the rule above: write the outputs listed under "Outputs" of Research.md into the working tree ${P.results}, which the session has merged with research/round1 before this task. Write them from the returns under ${P.results}/hardware/research/round1/ only, the parts in hardware/research/round1/selection.json, P5's budget and combinations, and the owner's decisions in the "Decision (owner, date)" column for Q4, Q8 and Q9. Do not commit. Write tools/jlc_stock.py to read DIGIKEY_ENV_FILE as well as the two variables, as tools/research/vendors.py does. Run \`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results} and report each as passed or not with its last lines.`
+Exception to the rule above: write the outputs listed under "Outputs" of Research.md into the working tree ${P.results}, which the session has merged with research/round1 before this task. List every file you write in files, repository-relative, and the page of each category group (A, B, C) in group_pages. Required among them: ${(A.t6_outputs || []).join(', ')}. Write them from the returns under ${P.results}/hardware/research/round1/ only, the parts in hardware/research/round1/selection.json, P5's budget and combinations, and the owner's decisions in the "Decision (owner, date)" column for Q4, Q8 and Q9. Do not commit. Write tools/jlc_stock.py to read DIGIKEY_ENV_FILE as well as the two variables, as tools/research/vendors.py does. Run \`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results} and report each as passed or not with its last lines.`
 }
 function p7CriticPrompt(p7) {
   return `${ctx('P7-critic', '', 'P7-critic')}
 
-You are the critic of P7. Exception to the rule above: you may correct the pages in ${P.results}; do not commit. Check every figure and every stated combination on the pages P7 wrote against the returns under ${P.results}/hardware/research/round1/, and every sentence against the writing rules in CONTRIBUTING.md. Apply the corrections, then run the three checks P7 ran on the tree you leave and report each as passed or not with its last lines. P7's return:
+You are the critic of P7. Exception to the rule above: you may correct the pages in ${P.results}; do not commit. List in reviewed every file you checked, repository-relative; every file P7 listed is checked. Check every figure and every stated combination on the pages P7 wrote against the returns under ${P.results}/hardware/research/round1/, and every sentence against the writing rules in CONTRIBUTING.md. Apply the corrections, then run the three checks P7 ran on the tree you leave and report each as passed or not with its last lines. P7's return:
 ${J(p7)}`
 }
 
@@ -416,6 +416,7 @@ function merge(cat, p2, rr, p3) {
     const pool = [...(f2.shortlist || []), ...((fr && fr.new_candidates) || [])]
     let shortlist
     let verify = []
+    const alternateRecords = []
     if (fr) {
       shortlist = []
       for (const r of [...(fr.ranking || [])].sort((a, b) => a.rank - b.rank)) {
@@ -424,11 +425,15 @@ function merge(cat, p2, rr, p3) {
         shortlist.push({ ...rec, rank: r.rank, reason: r.reason })
       }
       // A candidate the re-rank neither ranked nor dropped is kept, after the
-      // ranked ones, and listed: an omission is not a drop.
-      const dropped = new Set((fr.dropped_from_shortlist || []).map(d => d.part))
+      // ranked ones, and listed: an omission is not a drop. A record kept as
+      // another part's rule-5 alternate stays a record, not a candidate.
+      const dropped = new Set([...(fr.dropped_from_shortlist || []), ...(fr.dropped_from_p3 || [])].map(d => d.part))
+      const altNames = new Set([...(fr.verify || []).filter(v => v.kind === 'alternate').map(v => v.part),
+        ...pool.filter(c => c.second_source_route === 'alternate').map(c => c.second_source_part)])
       let last = shortlist.length ? shortlist[shortlist.length - 1].rank : 0
       for (const c of pool) {
         if (shortlist.some(x => x.part === c.part) || dropped.has(c.part)) continue
+        if (altNames.has(c.part)) { alternateRecords.push(c); continue }
         shortlist.push({ ...c, rank: ++last, reason: 'not ranked by the re-rank; kept in P2 order' })
         followUps.push({ role: 'rerank', category: cat, function: name, part: c.part, reason: 'candidate neither ranked nor dropped' })
       }
@@ -453,14 +458,14 @@ function merge(cat, p2, rr, p3) {
       followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `candidate lacks the function's requirements: ${lack.join(', ')}` })
       return { ...c, requirements: [...(c.requirements || []), ...lack.map(n => ({ name: n, required: 'see the function', datasheet: 'not given', pass: false, source: '' }))] }
     })
-    functions.push({ function: name, requirements: f2.requirements || [], shortlist, verify, dropped: f2.dropped || [], dropped_from_shortlist: (fr && fr.dropped_from_shortlist) || [], dropped_from_p3: (fr && fr.dropped_from_p3) || [] })
+    functions.push({ function: name, requirements: f2.requirements || [], shortlist, verify, alternateRecords, dropped: f2.dropped || [], dropped_from_shortlist: (fr && fr.dropped_from_shortlist) || [], dropped_from_p3: (fr && fr.dropped_from_p3) || [] })
   }
   return functions
 }
 
 function candidateOf(functions, fn, part) {
   const f = functions.find(x => x.function === fn)
-  return f ? f.shortlist.find(c => c.part === part) : null
+  return f ? (f.shortlist.find(c => c.part === part) || (f.alternateRecords || []).find(c => c.part === part) || null) : null
 }
 
 // The checks a verifier returns by these exact names for a confirmation to
@@ -471,6 +476,8 @@ function requiredChecks(kind, cand, partKind) {
 }
 
 function covered(v, cand) {
+  // A part with no record cannot show its gate evidence.
+  if (!cand) return false
   const have = new Set((v.checks || []).map(c => c.figure))
   return requiredChecks(v.verifier, cand, v.kind).every(n => have.has(n))
 }
@@ -493,12 +500,20 @@ async function verifyCategory(cat, functions, bundle) {
       () => run('P4', cat, `P4-datasheet-${cat}`, phaseName, p4Prompt(cat, 'datasheet', bundle, only)),
     ])
     // Each part to verify, with its kind from the verification plan.
+    // Each part to verify, with its kind from the verification plan, and
+    // the rule-5 alternate of the part that would be selected.
     const want = []
-    if (only) want.push({ function: only.function, part: only.part, kind: 'first' })
-    else {
+    const altOf = c => c && c.second_source_route === 'alternate' && c.second_source_part ? c.second_source_part : ''
+    if (only) {
+      want.push({ function: only.function, part: only.part, kind: 'first' })
+      if (altOf(only)) want.push({ function: only.function, part: altOf(only), kind: 'alternate' })
+    } else {
       for (const f of functions) {
         const kinds = new Map()
-        if (f.shortlist.length) kinds.set(f.shortlist[0].part, 'first')
+        if (f.shortlist.length) {
+          kinds.set(f.shortlist[0].part, 'first')
+          if (altOf(f.shortlist[0])) kinds.set(altOf(f.shortlist[0]), 'alternate')
+        }
         for (const v of f.verify) if (!kinds.has(v.part) || v.kind === 'alternate') kinds.set(v.part, v.kind)
         for (const [part, kind] of kinds) want.push({ function: f.function, part, kind })
       }
@@ -510,7 +525,7 @@ async function verifyCategory(cat, functions, bundle) {
     for (const w of want) byPart.set(key(w.function, w.part), { ...w, verdicts: [] })
     for (const [kind, v] of got) {
       for (const p of v.parts || []) {
-        if (only && (p.function !== only.function || p.part !== only.part)) continue
+        if (only && (p.function !== only.function || (p.part !== only.part && p.part !== altOf(only)))) continue
         const k = key(p.function, p.part)
         const e = byPart.get(k) || { function: p.function, part: p.part, kind: p.kind === 'alternate' ? 'alternate' : 'first', verdicts: [] }
         e.verdicts.push({ verifier: kind, kind: e.kind, reported_kind: p.kind, verdict: p.verdict, refutation: p.refutation, checks: p.checks })
@@ -599,8 +614,11 @@ function selection(functions, ledger) {
     const st = c => last.get(`${f.function}\u0000${c.part}`) || ''
     const kept = f.shortlist.find(c => st(c).startsWith('verified'))
     const refuted = f.shortlist.filter(c => st(c) === 'refuted').map(c => c.part)
-    const alternateUnverified = f.verify.filter(v => v.kind === 'alternate' && !st(v).startsWith('verified')).map(v => v.part)
-    return { function: f.function, part: kept ? kept.part : null, rank: kept ? kept.rank : null, refuted, alternate_unverified: alternateUnverified }
+    const alternates = new Set(f.verify.filter(v => v.kind === 'alternate').map(v => v.part))
+    if (kept && kept.second_source_route === 'alternate' && kept.second_source_part) alternates.add(kept.second_source_part)
+    const alternateUnverified = [...alternates].filter(part => !st({ part }).startsWith('verified'))
+    return { function: f.function, part: kept ? kept.part : null, rank: kept ? kept.rank : null, refuted,
+      alternate_unverified: alternateUnverified, second_source_missing: !!(kept && kept.second_source_route === 'none') }
   })
 }
 
@@ -688,6 +706,11 @@ if (TASK === 'T6') {
   // The pages are final only with both returns and the critic's three
   // checks passing on the tree it leaves; otherwise T6 is stopped.
   const failed = critic ? Object.entries(critic.checks || {}).filter(([, r]) => !(r && r.passed)).map(([k]) => k) : []
+  // Every output of the plan is written by P7 and reviewed by its critic.
+  const required = [...(A.t6_outputs || []), ...Object.values((p7 && p7.group_pages) || {})]
+  const unwritten = p7 ? required.filter(f => !(p7.files || []).includes(f)) : []
+  const unreviewed = critic ? required.filter(f => !(critic.reviewed || []).includes(f)) : []
+  if (p7 && critic && (unwritten.length || unreviewed.length)) failed.push(...unwritten.map(f => `not written: ${f}`), ...unreviewed.map(f => `not reviewed: ${f}`))
   if (!p7 || !critic) summary = { ...summary, stopped: true, reasons: [!p7 ? 'P7 returned nothing' : 'the P7 critic returned nothing'] }
   else if (failed.length) summary = { ...summary, stopped: true, reasons: [`checks failed: ${failed.join(', ')}`] }
 } else if (TASK === 'T5') {

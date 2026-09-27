@@ -55,8 +55,32 @@ T6_DIRS = ("hardware/docs/",)
 T6_FILES = ("hardware/STATUS.md", "hardware/README.md", "tools/jlc_stock.py")
 
 
+# The outputs T6 writes, from the Outputs table of the plan.
+T6_REQUIRED = ["hardware/docs/IOBoard.md", "hardware/docs/Parts.md",
+               "hardware/docs/Power.md", "hardware/docs/Research.md",
+               "hardware/STATUS.md", "hardware/README.md",
+               "tools/jlc_stock.py"]
+
+
 def t6_output(path):
     return path in T6_FILES or path.startswith(T6_DIRS)
+
+
+def changed(tree):
+    """Paths git reports as changed or new, from NUL-separated output so
+    no status column or file name is trimmed."""
+    raw = git("-C", tree, "status", "--porcelain", "-z",
+              "--untracked-files=all", check=False).stdout
+    out, parts = [], raw.split("\0")
+    i = 0
+    while i < len(parts):
+        entry = parts[i]
+        if len(entry) > 3:
+            out.append(entry[3:])
+            if entry[0] in "RC":
+                i += 1  # a rename or copy carries its source next
+        i += 1
+    return out
 
 
 def load(name):
@@ -313,6 +337,27 @@ def effective_selection(results):
     return eff
 
 
+def changed_under(tree, rel):
+    return [p for p in changed(tree) if p.startswith(rel)]
+
+
+def committed_questions(results):
+    """The questions every committed P1 run confirmed: (run, question)."""
+    out = []
+    listed = git("-C", results, "ls-tree", "--name-only", "HEAD",
+                 RUNS_DIR + "/", check=False).stdout.split()
+    for path in listed:
+        name = os.path.basename(path)
+        shown = git("-C", results, "show", f"HEAD:{path}/task.json",
+                    check=False)
+        if "-stopped-" in name or shown.returncode:
+            continue
+        for q in (json.loads(shown.stdout).get("summary") or {}).get(
+                "questions", []):
+            out.append((name, q))
+    return out
+
+
 def open_selections(eff, categories):
     """Each function with no verified part, and each category with no
     selection at all."""
@@ -396,6 +441,14 @@ def cmd_prepare(args):
     reads_stock = args.task in cats["tasks"] or \
         (followup or {}).get("phases") == "P2-P4"
     if reads_stock:
+        ids = {r[0] for r in rows}
+        unpublished = [f"{q['id']} ({run})" for run, q in
+                       committed_questions(results)
+                       if q["category"] in task_cats and q["id"] not in ids]
+        if unpublished:
+            raise SystemExit("raised by P1 but not under Raised by P1 on "
+                             f"{BRANCH}: " + ", ".join(unpublished)
+                             + ". Run raised and push it.")
         open_q = [r[0] for r in rows if r[1] in task_cats
                   and not r[3].strip() and "(feeds Q" not in r[2]]
         if open_q:
@@ -449,6 +502,7 @@ def cmd_prepare(args):
                   "digikey_env": env},
         "followup": followup, "first_v": first_v,
         "run": run, "run_id": run_id,
+        "t6_outputs": T6_REQUIRED if args.task == "T6" else [],
         "run_info": run_info(args.model, args.effort),
         "accept_open": {"reason": args.accept_open, "functions": open_sel}
         if args.accept_open else None,
@@ -543,9 +597,7 @@ def cmd_record(args):
                 check=False)
             git("-C", results, "clean", "-fdq", "--", *outs, check=False)
     if args.task == "T6" and not stopped:
-        dirty = [line[3:] for line in git(
-            "-C", results, "status", "--porcelain", "--untracked-files=all"
-        ).splitlines()]
+        dirty = changed(results)
         rel = os.path.relpath(target, results)
         stray = [d for d in dirty if not d.startswith(rel)
                  and not t6_output(d)]
@@ -582,8 +634,13 @@ def cmd_raised(args):
     not_on_research_branch()
     base = os.path.abspath(os.path.expanduser(args.base))
     results = os.path.join(base, "results")
-    task = json.loads(read(os.path.join(results, RUNS_DIR, args.run,
-                                        "task.json")))
+    shown = git("-C", results, "show",
+                f"HEAD:{RUNS_DIR}/{args.run}/task.json", check=False)
+    if shown.returncode:
+        raise SystemExit(f"{args.run} is not a committed run")
+    if changed_under(results, os.path.join(RUNS_DIR, args.run)):
+        raise SystemExit(f"{args.run} has uncommitted changes")
+    task = json.loads(shown.stdout)
     summary = task.get("summary") or {}
     questions = summary.get("questions", [])
     if not questions:
