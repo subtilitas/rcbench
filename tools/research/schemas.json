@@ -175,6 +175,10 @@
       "Q8",
       "Q9"
      ]
+    },
+    "for_where": {
+     "type": "string",
+     "description": "the where (file:line) of the value this question asks for, or empty"
     }
    },
    "required": [
@@ -182,7 +186,8 @@
     "question",
     "why",
     "blocks",
-    "decision"
+    "decision",
+    "for_where"
    ]
   },
   "conflict": {
@@ -462,6 +467,10 @@
        },
        "refutation_tried": {
         "type": "string"
+       },
+       "question": {
+        "type": "integer",
+        "description": "0-based index of the question in questions that asks for this value, or -1"
        }
       },
       "required": [
@@ -470,7 +479,8 @@
        "value",
        "marking",
        "source",
-       "refutation_tried"
+       "refutation_tried",
+       "question"
       ]
      }
     },

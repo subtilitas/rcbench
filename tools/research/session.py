@@ -306,6 +306,18 @@ def effective_selection(results):
     return eff
 
 
+def open_selections(eff, categories):
+    """Each function with no verified part, and each category with no
+    selection at all."""
+    out = []
+    for c in categories:
+        if not eff.get(c):
+            out.append(f"{c}: no part selected for any function")
+        out += [f"{c}: {fn}" for fn, e in eff.get(c, {}).items()
+                if not e["part"]]
+    return out
+
+
 def run_info(model, effort):
     try:
         claude = subprocess.run(["claude", "--version"], capture_output=True,
@@ -380,10 +392,9 @@ def cmd_prepare(args):
             raise SystemExit("unanswered under Raised by P1: "
                              + ", ".join(open_q))
     gate = {"T3": ["T2", "T4"], "T5": ["T2", "T3", "T4"]}.get(args.task, [])
-    eff = effective_selection(results)
-    open_sel = [f"{c}: {fn}" for t in gate
-                for c in cats["tasks"][t]["categories"]
-                for fn, e in eff.get(c, {}).items() if not e["part"]]
+    open_sel = open_selections(effective_selection(results),
+                               [c for t in gate
+                                for c in cats["tasks"][t]["categories"]])
     if open_sel and not args.accept_open:
         raise SystemExit("functions with no verified part: "
                          + "; ".join(open_sel)

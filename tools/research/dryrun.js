@@ -71,24 +71,30 @@ async function runTask(task, opts = {}) {
       Object.assign(data, { stop: false, held: [], checkout_head: 'deadbeef', snapshot: '2026-09-14T09:56:01+00:00',
         jlcparts: { path: 'db', sha256: JL.sha256, sha256_ok: true, rows: JL.rows, missing_lcsc: [] },
         monostable: { commit: 'c', path: 'p', fetched: true },
-        hosts: (opts.hosts || []).map(h => ({ host: h.host, url: '', client: '', http_status: 200, bytes: 1, status_marker: '', reachable: !(opts.down || []).includes(h.host), note: '' })) }, opts.p0 || {})
+        hosts: (opts.hosts || []).map(h => ({ host: h.host, url: '', client: '', http_status: 200, bytes: 1, status_marker: opts.markerless ? '' : 'Status - Active', reachable: !(opts.down || []).includes(h.host), note: '' })) }, opts.p0 || {})
     }
     if (role === 'P2') data.functions = [{ ...data.functions[0], function: 'f1', shortlist: [1, 2, 3].map(cand) }]
     if (role === 'rerank') {
       data.functions = [{ function: 'f1', ranking: (opts.ranked || [1, 2, 3]).map(rank => ({ rank, part: `part${rank}`, reason: 'r' })),
         new_candidates: [], dropped_from_p3: [], dropped_from_shortlist: [], verify: (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
     }
-    if (role === 'P1' && opts.assumption) data.values = [{ where: 'IOBoard.md:1', quantity: 'ripple', value: '10 mV', marking: 'assumption', source: 's', refutation_tried: 'r' }]
+    if (role === 'P1' && opts.assumption) data.values = [{ where: 'IOBoard.md:1', quantity: 'ripple', value: '10 mV', marking: 'assumption', source: 's', refutation_tried: 'r', question: -1 }]
+    if (role === 'P1' && opts.twoAssumptions) {
+      data.values = [1, 2].map(n => ({ where: `IOBoard.md:${n}`, quantity: 'voltage', value: `${n} V`, marking: 'assumption', source: 's', refutation_tried: 'r', question: n === 1 ? 0 : -1 }))
+      data.questions = [{ function: 'rail', question: 'State the voltage of rail 1', why: 'w', blocks: 'p2', decision: 'none', for_where: '' }]
+    }
+    if (role === 'P3' && opts.p3missed) data.missed = [{ function: 'f1', part: 'partX', maker: 'm', why: 'w' }]
     if (role === 'P1-recheck') {
       const added = JSON.parse(/confirm or reject it[^\n]*\n([\s\S]*)$/.exec(prompt).pop().split('\n').pop())
       data.verdicts = added.map(q => ({ category: q.category, index: q.index, verdict: 'confirmed', evidence: 'e' }))
     }
     if (role === 'P1-critic') {
       if (opts.critic === 'none') data.question_verdicts = []
-      else data.question_verdicts = [0, 1].map(index => ({ index, verdict: 'confirmed', reason: 'r' }))
+      else data.question_verdicts = (opts.twoAssumptions ? [0] : [0, 1]).map(index => ({ index, verdict: 'confirmed', reason: 'r' }))
       data.added = []
       data.marking_verdicts = opts.markings === 'none' ? [] : (opts.assumption
         ? [{ where: 'IOBoard.md:1', quantity: 'ripple', verdict: 'holds', correct_marking: 'unchanged', reason: 'r' }]
+        : opts.twoAssumptions ? [1, 2].map(n => ({ where: `IOBoard.md:${n}`, quantity: 'voltage', verdict: 'holds', correct_marking: 'unchanged', reason: 'r' }))
         : [0, 1].map(i => ({ where: `x${i}`, quantity: `x${i}`, verdict: 'holds', correct_marking: 'unchanged', reason: 'r' })))
     }
     if (role === 'P4') {
@@ -100,14 +106,15 @@ async function runTask(task, opts = {}) {
       // The checks a correct verifier returns, by the names round1.js requires.
       const bundle = only ? null : JSON.parse(prompt.slice(prompt.lastIndexOf('\n') + 1))
       const cand = pt => only ? JSON.parse(only[1]) : bundle.functions[0].shortlist.find(c => c.part === pt)
-      const checksFor = pt => (opts.emptyChecks || []).includes(base) ? []
-        : (kind === 'stock' ? ['stock', 'presale', 'lifecycle status'] : cand(pt).requirements.map(r => r.name))
+      const checksFor = (pt, pk) => (opts.emptyChecks || []).includes(base) ? []
+        : (kind === 'stock' ? ['stock', 'presale', 'lifecycle status']
+          : [...cand(pt).requirements.map(r => r.name), ...(pk === 'alternate' && !opts.noCompat ? ['pin-for-pin match', 'functional match'] : [])])
           .map((figure, k) => ({ figure, stated: 's', read: 'r', source: 'src', agrees: !((opts.disagree || []).includes(base) && k === 0) }))
       data.parts = (opts.omit || []).includes(base) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part), refutation: refute ? 'mock' : '' }]
       const names = only ? [] : JSON.parse(/"figures_to_check":(\[[^\]]*\])/.exec(prompt)[1])
       data.figures = kind === 'datasheet' ? names.filter(n => !(opts.omitFigure && base === opts.omitFigure[0] && n === opts.omitFigure[1]))
         .map((figure, k) => ({ figure, verdict: (opts.refuteFigure || []).includes(base) && k === 0 ? 'refuted' : 'confirmed', evidence: 'e' })) : []
-      if (opts.verify && !(opts.omit || []).includes(base) && !opts.dropVerify && !only) data.parts.push(...opts.verify.map(pt => ({ function: 'f1', part: pt, kind: 'alternate', verdict: (opts.refute || []).includes(`${base}:${pt}`) ? 'refuted' : 'confirmed', checks: checksFor(pt), refutation: '' })))
+      if (opts.verify && !(opts.omit || []).includes(base) && !opts.dropVerify && !only) data.parts.push(...opts.verify.map(pt => ({ function: 'f1', part: pt, kind: 'alternate', verdict: (opts.refute || []).includes(`${base}:${pt}`) ? 'refuted' : 'confirmed', checks: checksFor(pt, 'alternate'), refutation: '' })))
     }
     if (role === 'adjudicator') data.stands = opts.stands !== false
     return data
@@ -249,6 +256,24 @@ async function main() {
   r = await runTask('T2', { verify: ['part2'], refute: ['P4-stock-R1:part1', 'P4-stock-R1-2:part2'] })
   check(r1(r).selection[0].part === 'part3', `final status: selection ${r1(r).selection[0].part}, expected part3`)
   check(r1(r).selection[0].refuted.includes('part2'), 'final status: part2 listed as refuted')
+  // An alternate needs its compatibility checks.
+  r = await runTask('T2', { verify: ['part2'], noCompat: true })
+  check(r1(r).ledger.some(l => l.part === 'part2' && l.status === 'not verified'), 'alternate: no compatibility checks, not verified')
+  // An overturned refutation without its required checks does not verify.
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'], stands: false, emptyChecks: ['P4-stock-R1'] })
+  check(r1(r).selection[0].part === null, 'overturned refutation without checks: not verified')
+  // A candidate P3 found that the re-rank leaves out is listed.
+  r = await runTask('T2', { p3missed: true })
+  check(r.result.followUps.some(f => f.part === 'partX'), 'P3 candidate left out by the re-rank: listed')
+  // Two assumptions of one quantity: only the one without its own question
+  // gets a synthetic question.
+  r = await runTask('T1', { twoAssumptions: true })
+  const syn = r.result.summary.questions.filter(q => q.synthetic)
+  check(syn.length === 13 && syn.every(q => q.for_where === 'IOBoard.md:2'), `two assumptions: ${syn.length} synthetic, expected 13 for IOBoard.md:2`)
+  // A reachable maker page without its lifecycle status is listed.
+  r = await runTask('T2', { hosts: [{ host: 'www.nxp.com', marker: 'Status', hold: ['R2'] }], p0: {} , markerless: true })
+  check(r.result.followUps.some(f => f.host === 'www.nxp.com' && f.reason === 'lifecycle status not read from the page'), 'marker absent: listed')
+
   // P0's own stop and held fields do not decide the outcome.
   r = await runTask('T2', { p0: { stop: true, stop_reasons: ['mock'], held: [{ category: 'R1', host: 'h', reason: 'mock' }] } })
   check(!r.result.summary.stopped && r.calls.includes('P2-R1'), 'P0: its own stop and held are not applied')
