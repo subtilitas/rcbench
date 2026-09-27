@@ -1,10 +1,10 @@
 # Round 1 research scripts
 
-The scripts that run round 1 of the IO (input/output) board component research,
-as [the plan](../../hardware/docs/Research.md) sets it out. The plan is the
-agents' instructions; these files run it and hold its counts, schemas and host
-table. Nothing here runs in CI (continuous integration) but `session.py check`,
-which reads no network and starts no agent.
+The scripts that run round 1 of the IO (input/output) board component
+research, as [the plan](../../hardware/docs/Research.md) sets it out. The plan
+is the agents' instructions; these files run it and hold its counts, schemas
+and host table. Nothing here runs in CI (continuous integration) but
+`session.py check`, which reads no network and starts no agent.
 
 | File | Content |
 | --- | --- |
@@ -77,8 +77,7 @@ the items in the arguments:
   not count.
 - T3 and P2-P4 follow-ups on its categories, for the categories of T2 and T4,
   and T5, P5-P6 follow-ups and T6, for every category, while:
-  - a function has no verified part, or a missing or unverified second
-    source;
+  - a function has no verified part, or a missing or unverified second source;
   - R10 or R12 has no Q4 or Q8 alternative other than the kept part, or one
     not verified with its own second source;
   - a run that decides one of the category's functions left a figure the
@@ -86,17 +85,18 @@ the items in the arguments:
     report figure P2 did not return or wrote as not read;
   - the latest P1 run left P1 items in the category;
   - a run that decides one of its functions predates a P1 run's questions for
-    the category, read other answers under "Raised by P1" for it, read
-    another specification (Research.md outside its Raised by P1 and Decided
-    tables, and IOBoard.md), or, for R5 to R8, predates a change to a part of
-    T2 or T4.
+    the category, read other answers under "Raised by P1" for it, read another
+    specification (Research.md outside its Raised by P1 and Decided tables,
+    and IOBoard.md), or, for R5 to R8, predates a change to a part of T2 or
+    T4.
 - T6 while a part changed after the last P5/P6 check; while that check ran
-  without P5 or P6, or left combinations or budgets its critic did not rule
-  on or rejected; while it lists a conflict or gap whose categories, named or
-  taken from its parts, no round-2 P2-P4 follow-up since the check before
+  without P5 or P6, returned no budget or no combination, or left a conflict,
+  gap, combination or budget its critic did not rule on, or a combination or
+  budget it rejected; while it lists a conflict or gap whose categories, named
+  or taken from its parts, no round-2 P2-P4 follow-up since the check before
   researched to a selection (the first check's items are never covered); and
-  while a run that decides an R3 function was not given the Q9 decision now
-  in force.
+  while a run that decides an R3 function was not given the Q9 decision now in
+  force.
 
 Then, before T6, it merges `research/round1` into the results tree. The gates
 read committed run records and the plan on `research/round1`. The arguments
@@ -111,18 +111,22 @@ expect.
 - P3 lists it as named by the row and P2 did not return it;
 - the re-rank did not rank it, ranked no part, repeated a position or used
   one below 1, or either P2 or the re-rank returned it twice;
+- P3 found a candidate for it, or overturned a drop of it, and the re-rank
+  neither qualified nor dropped that part;
 - it has no requirement.
 
-A part with more than one record is dropped. A standing refutation stays
-final in the run, even if the part is verified later as another part's
-alternate. A part a verifier was not asked to verify is ignored, and a check
-written as not read shows nothing. Only the kept part's rule-5 alternate gates
-its selection; a first-ranked part that is also a Q alternative's alternate
-needs the alternate's checks. A category whose chain failed is left out of the
-run's selection, so the gates read the run before it. Each assumption needs a
-confirmed question of its own. P0 counts a host with two rows, or a status
-written as not read, as not read. The P7 critic checks at least one figure on
-each group page and each output under `hardware/docs/`.
+A part with more than one record is dropped. A standing refutation stays final
+in the run, even if the part is verified later as another part's alternate. A
+part a verifier was not asked to verify is ignored, a part it lists twice has
+no verdict from it, and a check written as not read shows nothing. A return
+whose `category` names another category counts as not returned. Only the kept
+part's rule-5 alternate gates its selection; a first-ranked part that is also
+a Q alternative's alternate needs the alternate's checks. A category whose
+chain failed is left out of the run's selection, so the gates read the run
+before it. Each assumption needs a confirmed question of its own. P0 counts a
+host with two rows, or a status written as not read, as not read. The P7
+critic checks at least one figure on each group page and each output under
+`hardware/docs/`.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared

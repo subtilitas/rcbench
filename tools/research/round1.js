@@ -100,6 +100,11 @@ async function run(role, cat, base, phase, prompt) {
       missing.push({ role, category: cat || '', label, attempt, error: String(err) })
       continue
     }
+    // A return for another category is not this category's return.
+    if (data && cat && typeof data.category === 'string' && data.category !== cat) {
+      missing.push({ role, category: cat, label, attempt, error: `returned for category ${data.category}` })
+      continue
+    }
     if (data) {
       returns.push({ role, category: cat || '', label, attempt, data })
       return data
@@ -474,12 +479,21 @@ function merge(cat, p2, rr, p3) {
   // Every candidate P3 found, and every P2 exclusion P3 overturned, is
   // qualified, ranked or dropped by the re-rank.
   const handled = (fr, part) => fr && ([...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || [])].some(c => c.part === part) || (fr.ranking || []).some(r => r.part === part))
+  // A P3 find the re-rank neither qualified nor dropped leaves its function
+  // open: the function whose P2 drop P3 overturned, or every function when
+  // none dropped the part.
+  const unhandled = new Set()
   for (const m of (p3 && p3.missed) || []) {
     const fr = (rr.functions || []).find(f => f.function === m.function)
-    if (!handled(fr, m.part)) followUps.push({ role: 'rerank', category: cat, function: m.function, part: m.part, reason: 'P3 candidate neither qualified nor dropped by the re-rank' })
+    if (handled(fr, m.part)) continue
+    followUps.push({ role: 'rerank', category: cat, function: m.function, part: m.part, reason: 'P3 candidate neither qualified nor dropped by the re-rank' })
+    unhandled.add(m.function)
   }
   for (const x of (p3 && p3.exclusions_not_holding) || []) {
-    if (!(rr.functions || []).some(fr => handled(fr, x.part))) followUps.push({ role: 'rerank', category: cat, part: x.part, reason: 'P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank' })
+    if ((rr.functions || []).some(fr => handled(fr, x.part))) continue
+    followUps.push({ role: 'rerank', category: cat, part: x.part, reason: 'P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank' })
+    const owners = (p2.functions || []).filter(f => (f.dropped || []).some(d => d.part === x.part)).map(f => f.function)
+    for (const n of owners.length ? owners : (p2.functions || []).map(f => f.function)) unhandled.add(n)
   }
   // The functions are P2's; a function only the re-rank names is listed. A
   // function either returns twice is not ranked.
@@ -509,7 +523,7 @@ function merge(cat, p2, rr, p3) {
     // follow-up task.
     if (!fr) followUps.push({ role: 'rerank', category: cat, function: name, reason: 'the re-rank did not rank this function' })
     else if (!(fr.ranking || []).length) followUps.push({ role: 'rerank', category: cat, function: name, reason: 'the re-rank ranked no part' })
-    const unranked = !fr || !(fr.ranking || []).length || p2Twice.has(name) || rrTwice.has(name)
+    const unranked = !fr || !(fr.ranking || []).length || p2Twice.has(name) || rrTwice.has(name) || unhandled.has(name)
     const badRanks = !unranked && !distinctRanks(fr.ranking)
     if (badRanks) followUps.push({ role: 'rerank', category: cat, function: name, reason: "the re-rank's positions are not distinct ranks from 1; the function is not ranked" })
     if (unranked || badRanks || !need.length) {
@@ -670,12 +684,14 @@ async function verifyCategory(cat, functions, bundle) {
     const key = (f, p) => `${f}\u0000${p}`
     for (const w of want) byPart.set(key(w.function, w.part), { ...w, verdicts: [] })
     for (const [kind, v] of got) {
-      const seenHere = new Set()
+      // A part the verifier lists twice has no single verdict from it.
+      const count = new Map()
+      for (const p of v.parts || []) count.set(key(p.function, p.part), (count.get(key(p.function, p.part)) || 0) + 1)
+      for (const [k, n] of count) if (n > 1) { const [fn, part] = k.split('\u0000'); followUps.push({ role: 'P4', category: cat, function: fn, part, reason: `${kind} verifier listed the part twice; no verdict from it` }) }
       for (const p of v.parts || []) {
         if (only && (p.function !== only.function || (p.part !== only.part && p.part !== altOf(only)))) continue
         const k = key(p.function, p.part)
-        if (seenHere.has(k)) { followUps.push({ role: 'P4', category: cat, function: p.function, part: p.part, reason: `${kind} verifier listed the part twice` }); continue }
-        seenHere.add(k)
+        if (count.get(k) > 1) continue
         if (!byPart.has(k)) { followUps.push({ role: 'P4', category: cat, function: p.function, part: p.part, reason: `${kind} verifier listed a part it was not asked to verify; ignored` }); continue }
         const e = byPart.get(k)
         e.verdicts.push({ verifier: kind, kind: e.kind, reported_kind: p.kind, verdict: p.verdict, refutation: p.refutation, checks: p.checks })
@@ -911,12 +927,16 @@ async function phaseP5P6() {
   for (const c of a.conflicts) followUps.push({ role: 'P5', item: c, reason: 'conflict' })
   for (const g of b.gaps) followUps.push({ role: 'P6', item: g, reason: 'gap' })
   const items = [...(a.combinations || []), ...(a.budgets || [])]
-  const unchecked = items.filter(x => x.unchecked).length
+  const unchecked = [...items, ...a.conflicts, ...b.gaps].filter(x => x.unchecked).length
   // A combination or budget the critic rejected is not on the pages, so it
   // is unresolved until a later check replaces it.
   const rejected = items.filter(x => x.upheld === false)
   for (const x of rejected) followUps.push({ role: 'P5', item: x, reason: 'combination or budget the critic rejected' })
+  // P5 owes the board's budget and its output combinations; an empty list
+  // of either is a check that did not run.
   const missingChecks = [a.missing, b.missing].filter(Boolean)
+  if (!a.missing && !(a.combinations || []).length) missingChecks.push('P5 combinations')
+  if (!a.missing && !(a.budgets || []).length) missingChecks.push('P5 budgets')
   for (const m of missingChecks) followUps.push({ role: m, reason: `${m} returned nothing; the check did not run` })
   return { conflicts: a.conflicts, combinations: a.combinations || [], budgets: a.budgets || [], gaps: b.gaps,
     missing_checks: missingChecks, unchecked_items: unchecked, rejected_items: rejected.length }

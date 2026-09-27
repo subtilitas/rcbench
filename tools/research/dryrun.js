@@ -67,6 +67,8 @@ async function runTask(task, opts = {}) {
     if (left) { nulls.set(base, left - 1); return null }
     const role = roleOf(o.schema)
     const data = fake(o.schema)
+    // A category-scoped agent names the category its label carries.
+    if ('category' in data && /R\d+/.test(o.label) && !opts.wrongCategory) data.category = o.label.match(/R\d+/)[0]
     const base0 = fake(schemas.P2.properties.functions.items.properties.shortlist.items)
     base0.requirements = base0.requirements.map(r => ({ ...r, pass: true }))
     const cand = rank => ({ ...base0, rank, part: `part${rank}`,
@@ -113,6 +115,7 @@ async function runTask(task, opts = {}) {
       if (opts.qAltBack) data.functions[0].verify = [{ part: 'part3', kind: 'q-alternative' }]
       if (opts.qSelf) data.functions[0].verify = [{ part: 'part1', kind: 'q-alternative' }]
     }
+    if (role === 'P5' && opts.p5Empty) Object.assign(data, { combinations: [], budgets: [] })
     if (role === 'P5-critic') for (const k of ['combination_verdicts', 'budget_verdicts']) data[k] = data[k].map((v, index) => ({ ...v, index, holds: !(opts.rejectBudget && k === 'budget_verdicts' && index === 0) }))
     if (role === 'P1' && opts.qCategory) data.questions = data.questions.map(q => ({ ...q, category: 'R99', source: 'mock' }))
     if (role === 'P1' && opts.decisionNone) data.questions = data.questions.map(q => ({ ...q, blocks: 'decision-only', decision: 'none' }))
@@ -122,7 +125,7 @@ async function runTask(task, opts = {}) {
       data.values = [1, 2].map(n => ({ where: `IOBoard.md:${n}`, quantity: 'voltage', value: `${n} V`, marking: 'assumption', source: 's', refutation_tried: 'r', question: n === 1 || opts.sharedQ ? 0 : -1 }))
       data.questions = [{ function: 'rail', question: 'State the voltage of rail 1', why: 'w', blocks: 'p2', decision: 'none', for_where: '' }]
     }
-    if (role === 'P3') data.missed_functions = opts.missedFn ? [{ function: 'f2', why: 'the row names it' }] : []
+    if (role === 'P3') Object.assign(data, { missed: [], exclusions_not_holding: [], missed_functions: opts.missedFn ? [{ function: 'f2', why: 'the row names it' }] : [] })
     if (role === 'P3' && opts.p3missed) data.missed = [{ function: 'f1', part: 'partX', maker: 'm', why: 'w' }]
     if (role === 'P3' && opts.p3overturned) data.exclusions_not_holding = [{ part: 'partY', reason_given: 'r', why_it_fails: 'w' }]
     if (role === 'P7-critic' || role === 'P7') {
@@ -171,6 +174,7 @@ async function runTask(task, opts = {}) {
           : [...cand(pt).requirements.map(r => r.name).filter(n => n !== opts.skipReq), ...(pk === 'alternate' && !opts.noCompat ? ['pin-for-pin match', 'functional match'] : [])])
           .map((figure, k) => ({ figure, stated: 's', read: opts.readNone && kind === 'datasheet' ? 'not read: API timed out' : 'r', source: 'src', agrees: !((opts.disagree || []).includes(base) && k === 0), passes: !((opts.failPass || []).includes(base) && k === 0) }))
       data.parts = (opts.omit || []).includes(base) || (opts.omitPart || []).includes(`${base}:${part}`) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part), refutation: refute ? 'mock' : '' }]
+      if ((opts.dupRow || []).includes(base)) data.parts.push({ ...data.parts[0], verdict: 'refuted', refutation: 'second row' })
       const oc = only ? JSON.parse(only[1]) : null
       if (oc && oc.second_source_route === 'alternate' && !opts.dropReplacementAlt) data.parts.push({ function: 'f1', part: oc.second_source_part, kind: 'alternate', verdict: 'confirmed', checks: checksFor(oc.second_source_part, 'alternate'), refutation: '' })
       const names = only ? [] : JSON.parse(/"figures_to_check":(\[[^\]]*\])/.exec(prompt)[1])
@@ -515,6 +519,20 @@ async function main() {
   // A Q alternative that is the kept part is none.
   r = await runTask('T4', { qSelf: true })
   check(r.result.summary.q_missing.includes('R10') && r.result.summary.results.find(x => x.category === 'R10').selection[0].q_alternatives.length === 0, 'kept part named as the Q alternative: none')
+  // A P3 find the re-rank did not handle keeps its function open.
+  r = await runTask('T2', { p3missed: true })
+  check(r1(r).selection[0].part === null, 'unhandled P3 find: function open')
+  // A part one verifier lists twice has no verdict from it.
+  r = await runTask('T2', { dupRow: ['P4-stock-R1'] })
+  check(r1(r).selection[0].part === null && r.result.followUps.some(f => /listed the part twice; no verdict/.test(f.reason)), 'part listed twice by one verifier: no verdict')
+  // A return for another category is not the category's return.
+  r = await runTask('T2', { wrongCategory: true })
+  check(!('R1' in r.result.summary.selection) && r.result.missing.some(m => /returned for category/.test(m.error || '')), 'return for another category: not returned')
+  // An empty P5 result, and unruled gaps, keep T6 open.
+  r = await runTask('T5', { p5Empty: true })
+  check(r.result.summary.missing_checks.includes('P5 combinations') && r.result.summary.missing_checks.includes('P5 budgets'), 'T5: empty P5 budgets and combinations are missing checks')
+  r = await runTask('T5', { nulls: { 'P6-critic': 2 } })
+  check(r.result.summary.unchecked_items === r.result.summary.gaps.length && r.result.summary.gaps.length > 0, 'T5: unruled gaps are unchecked items')
   // A ruling about another item does not count.
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], wrongRuling: true })
   check(r.result.followUps.some(f => f.reason === 'the ruling names another item') && r1(r).selection[0].part === null, 'ruling about another item: no ruling')
