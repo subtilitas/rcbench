@@ -1024,6 +1024,14 @@ def cmd_record(args):
             shutil.rmtree(target, ignore_errors=True)
             raise SystemExit("group pages outside hardware/docs/ or among "
                              "the fixed outputs: " + ", ".join(outside))
+        # Every output of the plan and each group page is a file after T6;
+        # a deletion is not an output.
+        gone = sorted(f for f in set(T6_REQUIRED) | pages
+                      if not os.path.isfile(os.path.join(results, f)))
+        if gone:
+            shutil.rmtree(target, ignore_errors=True)
+            raise SystemExit("T6 left these outputs missing: "
+                             + ", ".join(gone))
         allowed = set(T6_REQUIRED) | pages
         stray = [d for d in dirty if not d.startswith(rel)
                  and not (d in allowed and d in wrote and d in seen)]

@@ -90,13 +90,13 @@ the items in the arguments:
     and IOBoard.md), or, for R5 to R8, predates a change to a part of T2 or
     T4.
 - T6 while a part changed after the last P5/P6 check; while that check ran
-  without P5 or P6, returned no budget or no combination, or left a conflict,
-  gap, combination or budget its critic did not rule on, or a combination or
-  budget it rejected; while it lists a conflict or gap whose categories, named
-  or taken from its parts, no round-2 P2-P4 follow-up since the check before
-  researched to a selection (the first check's items are never covered); and
-  while a run that decides an R3 function was not given the Q9 decision now in
-  force.
+  without P5, P6 or either critic, returned no budget or no combination, or
+  left a conflict, gap, combination or budget its critic did not rule on, or a
+  combination or budget it rejected; while it lists a conflict or gap whose
+  categories, named or taken from its parts, no round-2 P2-P4 follow-up since
+  the check before researched to a selection (the first check's items are
+  never covered); and while a run that decides an R3 function was not given
+  the Q9 decision now in force.
 
 Then, before T6, it merges `research/round1` into the results tree. The gates
 read committed run records and the plan on `research/round1`. The arguments
@@ -118,7 +118,8 @@ expect.
 A part with more than one record is dropped. A standing refutation stays final
 in the run, even if the part is verified later as another part's alternate. A
 part a verifier was not asked to verify is ignored, a part it lists twice has
-no verdict from it, and a check written as not read shows nothing. A return
+no verdict from it, and a check or figure evidence written as not read shows
+nothing. A return
 whose `category` names another category counts as not returned. Only the kept
 part's rule-5 alternate gates its selection; a first-ranked part that is also
 a Q alternative's alternate needs the alternate's checks. A category whose
@@ -142,7 +143,8 @@ no part leaves it open and records the earlier part in `not_requalified`.
 After a T6 that was not stopped `record` also commits the pages P7 wrote. It
 refuses a changed file outside the files P7 declared and its critic reviewed
 within the plan's Outputs (`hardware/docs/`, `hardware/STATUS.md`,
-`hardware/README.md`, `tools/jlc_stock.py`), a file P7 declared that did not
+`hardware/README.md`, `tools/jlc_stock.py`), an output or group page that is
+not a file afterwards, a file P7 declared that did not
 change, and a group page outside `hardware/docs/` or among the fixed outputs.
 A renamed file counts as both its old and its new path. A T6 is recorded as
 stopped unless P7 and its critic both return, the critic's three checks pass,

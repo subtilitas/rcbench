@@ -179,7 +179,7 @@ async function runTask(task, opts = {}) {
       if (oc && oc.second_source_route === 'alternate' && !opts.dropReplacementAlt) data.parts.push({ function: 'f1', part: oc.second_source_part, kind: 'alternate', verdict: 'confirmed', checks: checksFor(oc.second_source_part, 'alternate'), refutation: '' })
       const names = only ? [] : JSON.parse(/"figures_to_check":(\[[^\]]*\])/.exec(prompt)[1])
       data.figures = kind === 'datasheet' ? names.filter(n => !(opts.omitFigure && base === opts.omitFigure[0] && n === opts.omitFigure[1]))
-        .map((figure, k) => ({ figure, verdict: (opts.refuteFigure || []).includes(base) && k === 0 ? 'refuted' : 'confirmed', evidence: 'e' })) : []
+        .map((figure, k) => ({ figure, verdict: (opts.refuteFigure || []).includes(base) && k === 0 ? 'refuted' : 'confirmed', evidence: opts.unreadFigure && k === 0 ? 'not read' : 'e' })) : []
       const extraParts = opts.p4parts || opts.verify
       if (extraParts && !(opts.omit || []).includes(base) && !opts.dropVerify && !only) data.parts.push(...extraParts.map(pt => ({ function: 'f1', part: pt, kind: opts.reportFirst ? 'first' : 'alternate', verdict: (opts.refute || []).includes(`${base}:${pt}`) ? 'refuted' : 'confirmed', checks: checksFor(pt, opts.reportFirst ? 'first' : 'alternate'), refutation: '' })))
     }
@@ -519,6 +519,16 @@ async function main() {
   // A Q alternative that is the kept part is none.
   r = await runTask('T4', { qSelf: true })
   check(r.result.summary.q_missing.includes('R10') && r.result.summary.results.find(x => x.category === 'R10').selection[0].q_alternatives.length === 0, 'kept part named as the Q alternative: none')
+  // A figure confirmed without evidence read is open.
+  r = await runTask('T2', { unreadFigure: true })
+  check(r.result.summary.figures_open.R1.length === 1 && r.result.followUps.some(f => f.reason === 'figure not verified'), 'figure confirmed with no evidence read: open')
+  // A check whose critic did not return is missing.
+  r = await runTask('T5', { nulls: { 'P6-critic': 2 } })
+  check(r.result.summary.missing_checks.includes('P6-critic'), 'T5: a P6 critic that returned nothing is a missing check')
+  r = await runTask('T5', { nulls: { 'P5-critic': 2 } })
+  check(r.result.summary.missing_checks.includes('P5-critic'), 'T5: a P5 critic that returned nothing is a missing check')
+  r = await runTask('T5')
+  check(r.result.summary.missing_checks.length === 0, 'T5: no missing check when every agent returns')
   // A P3 find the re-rank did not handle keeps its function open.
   r = await runTask('T2', { p3missed: true })
   check(r1(r).selection[0].part === null, 'unhandled P3 find: function open')

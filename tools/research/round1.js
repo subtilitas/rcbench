@@ -748,9 +748,11 @@ async function verifyCategory(cat, functions, bundle) {
     // Figures are verified once, by the first pair. Each name in
     // figures_to_check needs one verdict from the datasheet verifier.
     const figs = uniqueVerdicts((ds && ds.figures) || [], f => f.figure, { role: 'P4', category: cat })
+    // A confirmation counts only with evidence that was read.
     for (const name of bundle.figures_to_check) {
-      if (figs.has(name)) continue
-      ledger.push({ figure: name, status: 'not verified', reason: 'the datasheet verifier gave no single verdict' })
+      const f = figs.get(name)
+      if (f && !(f.verdict === 'confirmed' && readsNone(f.evidence))) continue
+      ledger.push({ figure: name, status: 'not verified', reason: f ? 'confirmed without evidence read' : 'the datasheet verifier gave no single verdict' })
       followUps.push({ role: 'P4', category: cat, figure: name, reason: 'figure not verified' })
     }
     for (const [kind, v] of got) {
@@ -902,6 +904,7 @@ async function p5Chain() {
   if (!p5) return { conflicts: [], missing: 'P5' }
   const critic = await run('P5-critic', '', 'P5-critic', 'P5-P6', p5CriticPrompt(p5))
   return {
+    critic_missing: critic ? '' : 'P5-critic',
     conflicts: critiqued('P5', p5.conflicts || [], critic),
     combinations: ruled(p5.combinations || [], critic && critic.combination_verdicts, critic, 'P5'),
     budgets: ruled(p5.budgets || [], critic && critic.budget_verdicts, critic, 'P5'),
@@ -911,7 +914,7 @@ async function p6Chain() {
   const p6 = await run('P6', '', 'P6', 'P5-P6', p6Prompt())
   if (!p6) return { gaps: [], missing: 'P6' }
   const critic = await run('P6-critic', '', 'P6-critic', 'P5-P6', p6CriticPrompt(p6))
-  return { gaps: critiqued('P6', p6.gaps || [], critic) }
+  return { gaps: critiqued('P6', p6.gaps || [], critic), critic_missing: critic ? '' : 'P6-critic' }
 }
 
 // T5 runs the two checks side by side. A follow-up task runs P5 and its
@@ -934,7 +937,8 @@ async function phaseP5P6() {
   for (const x of rejected) followUps.push({ role: 'P5', item: x, reason: 'combination or budget the critic rejected' })
   // P5 owes the board's budget and its output combinations; an empty list
   // of either is a check that did not run.
-  const missingChecks = [a.missing, b.missing].filter(Boolean)
+  // A check whose critic did not return is not an independent check.
+  const missingChecks = [a.missing, b.missing, a.critic_missing, b.critic_missing].filter(Boolean)
   if (!a.missing && !(a.combinations || []).length) missingChecks.push('P5 combinations')
   if (!a.missing && !(a.budgets || []).length) missingChecks.push('P5 budgets')
   for (const m of missingChecks) followUps.push({ role: m, reason: `${m} returned nothing; the check did not run` })
