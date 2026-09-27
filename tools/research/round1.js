@@ -150,7 +150,7 @@ function p0Prompt() {
   const j = A.jlcparts || {}
   return `${ctx('P0', '', 'P0')}
 
-Probe every host below with its client and record one row per host, copying the host name exactly. A marker is a regular expression the lifecycle status matches; record what it matched. Where a row's probe is null, find a product page of one of that maker's seeds (the seeds are in the category rows and the row's note) and record its URL and whether its status is in the page body. The fields hold, hold_in_t1 and stop are for the script; report reachability only, and do not decide holds from them.
+Probe every host below with its client and record one row per host, copying the host name and the client name exactly. In url record the URL fetched; for an API client, the command run with its probe. A row with another client, or without the row's probe in url, counts as not probed. A marker is a regular expression the lifecycle status matches; record what it matched. Where a row's probe is null, find a product page of one of that maker's seeds (the seeds are in the category rows and the row's note) and record its URL and whether its status is in the page body. The fields hold, hold_in_t1 and stop are for the script; report reachability only, and do not decide holds from them.
 ${J(A.hosts)}
 
 Check the parts database: the SHA-256 of ${P.db} is ${j.sha256}; jlc_components holds ${j.rows} rows; every one of these LCSC numbers is in it: ${(j.lcsc || []).join(', ')}. Record in snapshot the created time of ${j.manifest}; it should be ${j.manifest_created}.
@@ -189,7 +189,7 @@ function p2Prompt(cat) {
   const items = TASK === 'FU' ? itemsFor(cat) : []
   return `${ctx('P2', cat, `P2-${cat}`)}
 
-Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, and record it as found. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. For up to five survivors per function, record every field of the P2 row, and the rule-5 route in second_source_route and second_source_part; a part whose route is alternate needs a full record for that alternate among the survivors or in the re-rank. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5.${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${P.results}/hardware/research/round1/selection.json; the returns in each run's directory carry their figures.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}${TASK === 'FU' ? ` Name each function exactly as ${P.results}/hardware/research/round1/selection.json names it for ${cat}.` : ''}`
+Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, and record it as found. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. Return an entry for every function the ${cat} row and its lines in hardware/docs/IOBoard.md name. For up to five survivors per function, record every field of the P2 row, and the rule-5 route in second_source_route and second_source_part; a part whose route is alternate needs a full record for that alternate among the survivors or in the re-rank. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5.${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${P.results}/hardware/research/round1/selection.json; the returns in each run's directory carry their figures.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}${TASK === 'FU' ? ` Name each function exactly as ${P.results}/hardware/research/round1/selection.json names it for ${cat}.` : ''}`
 }
 
 function p2View(p2) {
@@ -205,7 +205,7 @@ function p2View(p2) {
 function p3Prompt(cat, p2) {
   return `${ctx('P3', cat, `P3-${cat}`)}
 
-Search for part families P2 did not consider, from the same allowlist, and re-read each reason P2 gave for dropping a candidate. Name each function exactly as P2 does. P2's shortlist and drops (its full records are with the session):
+Search for part families P2 did not consider, from the same allowlist, and re-read each reason P2 gave for dropping a candidate. Name each function exactly as P2 does. List in missed_functions each function the ${cat} row or its lines in hardware/docs/IOBoard.md name that P2 returned no entry for. P2's shortlist and drops (its full records are with the session):
 ${J(p2View(p2))}`
 }
 
@@ -286,9 +286,16 @@ function readsNone(text) {
 }
 
 // P0's reading of one host: reachable only when its HTTP status agrees, and
-// its lifecycle status read only when the text matches the host's marker.
+// its lifecycle status read only when the text matches the host's marker. A
+// row taken with another client, or not at the host's fixed probe, is not a
+// reading of that host.
+function probedAsTold(h, row) {
+  return row.client === h.client && (h.probe == null || (row.url || '').includes(h.probe))
+}
+
 function hostReading(h, row) {
   if (!row) return { up: undefined, status: false }
+  if (!probedAsTold(h, row)) return { up: undefined, status: false, why: `not probed with ${h.client}${h.probe == null ? '' : ` at ${h.probe}`}` }
   const ok = row.reachable === true && row.http_status >= 200 && row.http_status < 300
   let status = !readsNone((row.status_marker || '').trim())
   if (status && h.marker) {
@@ -310,7 +317,7 @@ function applyP0(p0) {
   for (const r of p0.hosts || []) if (!rows.has(r.host)) rows.set(r.host, r)
   const held = new Map()
   for (const h of A.hosts || []) {
-    const { up, status } = hostReading(h, rows.get(h.host))
+    const { up, status, why: off } = hostReading(h, rows.get(h.host))
     // A maker page that answers without its lifecycle status is reachable
     // with the status not read: listed for the categories it serves.
     if (up === true && (h.marker || h.probe === null) && (h.hold || []).length) {
@@ -318,7 +325,7 @@ function applyP0(p0) {
       continue
     }
     if (up === true) continue
-    const why = up === false ? 'unreachable' : 'not probed'
+    const why = up === false ? 'unreachable' : (off || 'not probed')
     if (h.stop === 'stock-tasks' && readsStock) reasons.push(`${h.host} is ${why}`)
     for (const c of (isP1Task ? h.hold_in_t1 : h.hold) || []) if (!held.has(c)) held.set(c, { category: c, host: h.host, reason: why })
   }
@@ -437,6 +444,11 @@ async function phaseP1(cats) {
 
 // The final shortlist: the re-rank's order over P2's records and the
 // re-rank's records of P3's finds.
+// Ranks are positions: whole numbers from 1, each given once.
+function distinctRanks(list) {
+  return list.every(r => Number.isInteger(r.rank) && r.rank >= 1) && new Set(list.map(r => r.rank)).size === list.length
+}
+
 function merge(cat, p2, rr, p3) {
   // Every candidate P3 found, and every P2 exclusion P3 overturned, is
   // qualified, ranked or dropped by the re-rank.
@@ -461,8 +473,14 @@ function merge(cat, p2, rr, p3) {
     for (const c of [...(f2.shortlist || []), ...((fr && fr.new_candidates) || [])]) if (!pool.some(x => x.part === c.part)) pool.push(c)
     let shortlist = []
     let verify = []
-    const alternateRecords = []
-    if (fr) {
+    let alternateRecords = []
+    // A ranking with repeated or non-positive positions ranks nothing: the
+    // function is left open for a follow-up task.
+    const badRanks = fr ? !distinctRanks(fr.ranking || []) : !distinctRanks(pool)
+    if (!fr) followUps.push({ role: 'rerank', category: cat, function: name, reason: 'the re-rank did not rank this function' })
+    if (badRanks) {
+      followUps.push({ role: fr ? 'rerank' : 'P2', category: cat, function: name, reason: `${fr ? "the re-rank's" : "P2's"} positions are not distinct ranks from 1; the function is not ranked` })
+    } else if (fr) {
       const dropped = new Set([...(fr.dropped_from_shortlist || []), ...(fr.dropped_from_p3 || [])].map(d => d.part))
       for (const r of [...(fr.ranking || [])].sort((a, b) => a.rank - b.rank)) {
         const rec = pool.find(c => c.part === r.part)
@@ -492,27 +510,35 @@ function merge(cat, p2, rr, p3) {
       })
     } else {
       for (const c of [...pool].sort((a, b) => a.rank - b.rank)) if (!shortlist.some(x => x.part === c.part)) shortlist.push(c)
-      followUps.push({ role: 'rerank', category: cat, function: name, reason: 'the re-rank did not rank this function' })
     }
-    // A candidate is checked against every requirement of its function; one
-    // it does not list is added as unmet, so the verifier must check it. A
-    // candidate whose own record fails a requirement is not a candidate.
-    shortlist = shortlist.filter(c => {
+    // A candidate or a rule-5 alternate is checked against every requirement
+    // of its function; one it does not list is added as unmet, so the
+    // verifier must check it. A record that fails a requirement is dropped.
+    const qualify = (list, what) => list.filter(c => {
       const failing = (c.requirements || []).filter(r => r.pass === false)
       if (!failing.length) return true
-      followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `shortlisted with a failed requirement: ${failing.map(r => r.name).join(', ')}` })
+      followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} with a failed requirement: ${failing.map(r => r.name).join(', ')}` })
       return false
     }).map(c => {
       const have = new Set((c.requirements || []).map(r => r.name))
       const lack = need.filter(n => !have.has(n))
       if (!lack.length) return c
-      followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `candidate lacks the function's requirements: ${lack.join(', ')}` })
+      followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} lacks the function's requirements: ${lack.join(', ')}` })
       return { ...c, requirements: [...(c.requirements || []), ...lack.map(n => ({ name: n, required: 'see the function', datasheet: 'not given', pass: false, source: '', added: true }))] }
     })
+    shortlist = qualify(shortlist, 'shortlisted')
+    alternateRecords = qualify(alternateRecords, 'alternate')
     if (['R10', 'R12'].includes(cat) && fr && !(fr.verify || []).some(v => v.kind === 'q-alternative')) {
       followUps.push({ role: 'rerank', category: cat, function: name, reason: `names no ${cat === 'R10' ? 'Q4' : 'Q8'} alternative to verify` })
     }
     functions.push({ function: name, requirements: f2.requirements || [], shortlist, verify, alternateRecords, dropped: f2.dropped || [], dropped_from_shortlist: (fr && fr.dropped_from_shortlist) || [], dropped_from_p3: (fr && fr.dropped_from_p3) || [] })
+  }
+  // A function the row names that P2 returned no entry for stays open, with
+  // no part, for a follow-up task.
+  for (const m of (p3 && p3.missed_functions) || []) {
+    if (functions.some(f => f.function === m.function)) continue
+    followUps.push({ role: 'P3', category: cat, function: m.function, reason: `function the row names that P2 did not return: ${m.why}` })
+    functions.push({ function: m.function, requirements: [], shortlist: [], verify: [], alternateRecords: [], dropped: [], dropped_from_shortlist: [], dropped_from_p3: [], not_returned: true })
   }
   return functions
 }
@@ -741,7 +767,11 @@ async function categoryChain(cat) {
   const figures_to_check = figuresToCheck(cat, p2, rr, functions)
   const bundle = { functions, found_values: p2.found_values || [], report_p2: p2.report || [], report_rerank: rr.report || [], figures_to_check }
   const ledger = await verifyCategory(cat, functions, bundle)
-  return { category: cat, status: p3 ? 'done' : 'done without P3', ledger, selection: selection(functions, ledger) }
+  // Without P3's search the category is not complete: no part is kept, and
+  // the part that would have been is named for the follow-up task.
+  const sel = selection(functions, ledger)
+  return { category: cat, status: p3 ? 'done' : 'done without P3', ledger,
+    selection: p3 ? sel : sel.map(e => ({ ...e, part: null, rank: null, without_p3: e.part })) }
 }
 
 async function phaseP2P4(cats) {
@@ -841,6 +871,7 @@ if (TASK === 'T6') {
   // Every output of the plan is written by P7 and reviewed by its critic.
   const groupPages = Object.values((p7 && p7.group_pages) || {})
   if (p7 && new Set(groupPages).size !== groupPages.length) failed.push('the three group pages are not three files')
+  for (const g of groupPages) if (!/^hardware\/docs\/[A-Za-z0-9_-]+\.md$/.test(g)) failed.push(`group page outside hardware/docs/: ${g}`)
   const required = [...(A.t6_outputs || []), ...groupPages]
   const unwritten = p7 ? required.filter(f => !(p7.files || []).includes(f)) : []
   const unreviewed = critic ? required.filter(f => !(critic.reviewed || []).includes(f)) : []

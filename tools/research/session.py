@@ -346,7 +346,8 @@ def effective_selection(results, pending=None):
                         "alternate_unverified":
                             e.get("alternate_unverified") or [],
                         "second_source_missing":
-                            bool(e.get("second_source_missing"))}
+                            bool(e.get("second_source_missing")),
+                        "q_alternatives": e.get("q_alternatives") or []}
                 elif held["part"] in (e.get("refuted") or []):
                     # This run refuted the part in force and kept none.
                     slot[e["function"]] = {"part": None, "rank": None,
@@ -413,6 +414,33 @@ def t6_open(results):
     if items and not after_round2:
         out.append(f"{name} lists {items} conflicts and gaps, and it is not "
                    "the check after round 2 of the follow-up tasks")
+    summary = last.get("summary") or {}
+    if summary.get("missing_checks"):
+        out.append(f"{name} ran without "
+                   + ", ".join(summary["missing_checks"]))
+    if summary.get("unchecked_items"):
+        out.append(f"{name} left {summary['unchecked_items']} combinations "
+                   "and budgets its critic did not rule on")
+    return out
+
+
+def stale_selections(results, categories):
+    """Each category whose last P2-P4 run is older than the last P1 run
+    that raised questions for it: its parts were not qualified against the
+    new values."""
+    done = runs(results)
+    out = []
+    for c in categories:
+        p1 = [(n, t) for n, t in done if (t.get("task") == "T1" or (
+            t.get("followup") or {}).get("phases") == "P1") and any(
+            q.get("category") == c
+            for q in (t.get("summary") or {}).get("questions", []))]
+        sel = [(n, t) for n, t in done if c in (
+            (t.get("summary") or {}).get("selection") or {})]
+        if p1 and sel and p1[-1][1].get("sequence", 0) > \
+                sel[-1][1].get("sequence", 0):
+            out.append(f"{c}: {p1[-1][0]} raised questions after "
+                       f"{sel[-1][0]} selected its parts")
     return out
 
 
@@ -431,6 +459,12 @@ def open_selections(eff, categories):
         out += [f"{c}: {fn} (no second source)"
                 for fn, e in eff.get(c, {}).items()
                 if e["part"] and e.get("second_source_missing")]
+        # R10 and R12 keep an owner-selectable alternative for Q4 and Q8;
+        # each must be verified as well as the part kept.
+        out += [f"{c}: {fn} (Q alternative {q['part']} {q['status']})"
+                for fn, e in eff.get(c, {}).items()
+                for q in e.get("q_alternatives") or []
+                if not str(q.get("status", "")).startswith("verified")]
     return out
 
 
@@ -456,6 +490,7 @@ def not_on_research_branch():
 
 
 NAME = re.compile(r"[A-Za-z0-9]+")
+GROUP_PAGE = re.compile(r"hardware/docs/[A-Za-z0-9_-]+\.md")
 
 
 def check_followup(followup, cats):
@@ -589,16 +624,19 @@ def cmd_prepare(args):
     open_sel = []
     if reads_stock or is_p1 and args.task == "FU":
         questions_gate(results, rows, task_cats)
+    if args.task == "T5" or phases == "P5-P6":
+        questions_gate(results, rows, list(cats["categories"]))
     if reads_stock:
         open_sel += p1_unresolved(results, task_cats)
     gate = {"T3": ["T2", "T4"], "T5": ["T2", "T3", "T4"]}.get(args.task, [])
-    open_sel += open_selections(effective_selection(results),
-                                [c for t in gate
-                                 for c in cats["tasks"][t]["categories"]])
+    gate_cats = [c for t in gate for c in cats["tasks"][t]["categories"]]
+    open_sel += open_selections(effective_selection(results), gate_cats)
+    open_sel += stale_selections(results, gate_cats)
     last_p56 = ""
     if args.task == "T6":
         questions_gate(results, rows, list(cats["categories"]))
         open_sel += t6_open(results)
+        open_sel += stale_selections(results, list(cats["categories"]))
         checks = [n for n, t in runs(results) if t.get("task") == "T5" or
                   (t.get("followup") or {}).get("phases") == "P5-P6"]
         last_p56 = checks[-1] if checks else ""
@@ -768,6 +806,11 @@ def cmd_record(args):
                 for f in r["data"].get("reviewed", [])}
         pages = {f for r in rets if r["role"] == "P7"
                  for f in (r["data"].get("group_pages") or {}).values()}
+        outside = sorted(f for f in pages if not GROUP_PAGE.fullmatch(f))
+        if outside:
+            shutil.rmtree(target, ignore_errors=True)
+            raise SystemExit("group pages outside hardware/docs/: "
+                             + ", ".join(outside))
         allowed = set(T6_REQUIRED) | pages
         stray = [d for d in dirty if not d.startswith(rel)
                  and not (d in allowed and d in wrote and d in seen)]

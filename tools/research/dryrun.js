@@ -75,7 +75,7 @@ async function runTask(task, opts = {}) {
       Object.assign(data, { stop: false, held: [], checkout_head: 'deadbeef', snapshot: '2026-09-14T09:56:01+00:00',
         jlcparts: { path: 'db', sha256: JL.sha256, sha256_ok: true, rows: JL.rows, missing_lcsc: [] },
         monostable: { commit: 'c', path: 'p', fetched: true },
-        hosts: (opts.hosts || []).map(h => ({ host: h.host, url: '', client: '', http_status: 200, bytes: 1, status_marker: opts.markerless ? '' : 'Status - Active', reachable: !(opts.down || []).includes(h.host), note: '' })) }, opts.p0 || {})
+        hosts: (opts.hosts || []).map(h => ({ host: h.host, url: opts.rowUrl || h.probe || '', client: opts.rowClient || h.client, http_status: 200, bytes: 1, status_marker: opts.markerless ? '' : 'Status - Active', reachable: !(opts.down || []).includes(h.host), note: '' })) }, opts.p0 || {})
     }
     if (role === 'P2') {
       data.functions = [{ ...data.functions[0], function: 'f1', shortlist: [1, 2, 3].map(cand) }]
@@ -84,6 +84,10 @@ async function runTask(task, opts = {}) {
       if (opts.noReqs) { data.functions[0].requirements = []; data.functions[0].shortlist.forEach(c => { c.requirements = [] }) }
       if (opts.failedReq) data.functions[0].shortlist[0].requirements = [{ name: 'x0', required: '>= 67.2 V', datasheet: '40 V', pass: false, source: 's' }]
       if (opts.selfAlt) Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: 'part1' })
+      if (opts.altFails) {
+        Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: 'altA' })
+        data.functions[0].shortlist.push({ ...cand(8), part: 'altA', requirements: [{ name: 'x0', required: '>= 67.2 V', datasheet: '40 V', pass: false, source: 's' }] })
+      }
       if (opts.offBoard) Object.assign(data.functions[0].shortlist[0], { lcsc: 'none', second_source_route: 'second-vendor' })
       if (opts.noSecond) Object.assign(data.functions[0].shortlist[0], { second_source_route: 'none' })
     }
@@ -99,12 +103,14 @@ async function runTask(task, opts = {}) {
       data.values = [1, 2].map(n => ({ where: `IOBoard.md:${n}`, quantity: 'voltage', value: `${n} V`, marking: 'assumption', source: 's', refutation_tried: 'r', question: n === 1 ? 0 : -1 }))
       data.questions = [{ function: 'rail', question: 'State the voltage of rail 1', why: 'w', blocks: 'p2', decision: 'none', for_where: '' }]
     }
+    if (role === 'P3') data.missed_functions = opts.missedFn ? [{ function: 'f2', why: 'the row names it' }] : []
     if (role === 'P3' && opts.p3missed) data.missed = [{ function: 'f1', part: 'partX', maker: 'm', why: 'w' }]
     if (role === 'P3' && opts.p3overturned) data.exclusions_not_holding = [{ part: 'partY', reason_given: 'r', why_it_fails: 'w' }]
     if (role === 'P7-critic' || role === 'P7') {
       for (const k of Object.keys(data.checks)) data.checks[k] = { passed: !(opts.failCheck === k && role === 'P7-critic'), output: 'o' }
       const outs = [...T6OUT, 'hardware/docs/GroupA.md', 'hardware/docs/Power.md', 'hardware/docs/GroupC.md'].filter(f => !(role === 'P7' && f === opts.unwritten))
-      if (role === 'P7') { data.files = outs; data.group_pages = opts.samePages ? { A: 'hardware/docs/Power.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/Power.md' } : { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/GroupC.md' } }
+      if (opts.pageOutside) outs.push('tools/research/README.md')
+      if (role === 'P7') { data.files = outs; data.group_pages = opts.pageOutside ? { A: 'hardware/docs/GroupA.md', B: 'tools/research/README.md', C: 'hardware/docs/GroupC.md' } : opts.samePages ? { A: 'hardware/docs/Power.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/Power.md' } : { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/GroupC.md' } }
       else {
         data.reviewed = outs
         data.figure_checks = opts.noFigures ? [] : [{ file: 'hardware/docs/Parts.md', line: 1, figure: 'stock', return_file: 'r', agrees: !opts.criticDisagrees }]
@@ -280,6 +286,13 @@ async function main() {
   check(!r.calls.includes('P1-R1') && r.calls.includes('P1-R2'), 'P0: T1 holds by hold_in_t1 only')
   r = await runTask('T2', { hosts: winbond, down: ['www.ti.com'] })
   check(!r.calls.includes('P2-R2') && r.calls.includes('P2-R1'), 'P0: T2 holds by hold')
+  const jlc = [{ host: 'jlcpcb.com', client: 'jlcpcb-api', probe: 'C39843328', stop: 'stock-tasks', hold: [] }]
+  r = await runTask('T2', { hosts: jlc })
+  check(!r.result.summary.stopped, 'P0: JLCPCB read with its client at its probe')
+  r = await runTask('T2', { hosts: jlc, rowClient: 'chrome' })
+  check(r.result.summary.stopped === true, 'P0: JLCPCB read with another client stops a stock task')
+  r = await runTask('T2', { hosts: jlc, rowUrl: 'https://jlcpcb.com/' })
+  check(r.result.summary.stopped === true, 'P0: JLCPCB read without its probe stops a stock task')
 
   // T6 without both P7 returns is stopped.
   r = await runTask('T6', { nulls: { 'P7-critic': 2 } })
@@ -383,6 +396,19 @@ async function main() {
   check(r1(r).selection[0].second_source_missing === true, 'self-named alternate: second source missing')
   r = await runTask('T2', { offBoard: true })
   check(r1(r).selection[0].second_source_missing === true, 'part off the board by the second vendor: second source missing')
+  // Ranks repeated or below 1 rank nothing.
+  r = await runTask('T2', { ranking: [{ rank: 1, part: 'part1', reason: 'r' }, { rank: 1, part: 'part2', reason: 'r' }] })
+  check(r1(r).selection[0].part === null && r.result.followUps.some(f => /not distinct ranks/.test(f.reason)), 'repeated rank: nothing selected, listed')
+  r = await runTask('T2', { ranking: [{ rank: 0, part: 'part1', reason: 'r' }, { rank: 1, part: 'part2', reason: 'r' }] })
+  check(r1(r).selection[0].part === null, 'rank 0: nothing selected')
+  // A rule-5 alternate that fails a requirement is no alternate.
+  r = await runTask('T2', { altFails: true, verify: ['altA'] })
+  check(r.result.followUps.some(f => /alternate with a failed requirement/.test(f.reason)) && r1(r).selection[0].alternate_unverified.includes('altA'), 'alternate failing a requirement: dropped, alternate not verified')
+  // A function P2 did not return stays open; a category without P3 keeps no part.
+  r = await runTask('T2', { missedFn: true })
+  check(r1(r).selection.some(e => e.function === 'f2' && e.part === null) && r.result.followUps.some(f => f.function === 'f2'), 'function P2 did not return: open, listed')
+  r = await runTask('T2', { nulls: { 'P3-R1': 2 } })
+  check(r1(r).status === 'done without P3' && r1(r).selection[0].part === null && r1(r).selection[0].without_p3 === 'part1', 'no P3: no part kept')
   r = await runTask('T2', { noSecond: true })
   check(r1(r).selection[0].part === 'part1' && r1(r).selection[0].second_source_missing === true, 'no second source route: second source missing')
   r = await runTask('T2')
@@ -411,6 +437,8 @@ async function main() {
   check(r.result.summary.stopped === true, 'T6: a figure the critic finds wrong stops it')
   r = await runTask('T6', { sentenceIssue: true })
   check(r.result.summary.stopped === true, 'T6: a writing issue left stops it')
+  r = await runTask('T6', { pageOutside: true })
+  check(r.result.summary.stopped === true, 'T6: a group page outside hardware/docs/ stops it')
   r = await runTask('T6', { noFigures: true })
   check(r.result.summary.stopped === true, 'T6: a critic that checked no figure stops it')
 

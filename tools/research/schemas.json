@@ -828,12 +828,32 @@
        "why_it_fails"
       ]
      }
+    },
+    "missed_functions": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "function": {
+        "type": "string"
+       },
+       "why": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "function",
+       "why"
+      ]
+     },
+     "description": "functions the category row names that P2 returned no entry for"
     }
    },
    "required": [
     "category",
     "missed",
-    "exclusions_not_holding"
+    "exclusions_not_holding",
+    "missed_functions"
    ]
   },
   "rerank": {

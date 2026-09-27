@@ -57,20 +57,32 @@ questions after the last one on the page and in the committed runs.
 
 Before T2 to T4, a P2-P4 follow-up and a P1 follow-up it refuses while a
 question a committed P1 run raised for their categories is not yet under
-"Raised by P1" on `research/round1`, or is there without an answer. A question
+"Raised by P1" on `research/round1`, or is there without an answer. Before T5,
+a P5-P6 follow-up and T6 the question check covers every category. A question
 that only feeds Q4, Q8 or Q9 (`blocks` is `decision-only`) needs no answer.
 Before T2 to T4 and a P2-P4 follow-up it also refuses while the latest P1 run
-covering a category left P1 items there for follow-up. It refuses T3 and T5
-while a function the earlier tasks cover has no verified part. Before T6 the
-question check covers every category, and it refuses while the owner's
-decisions on Q4, Q8 and Q9 are not written, while a part changed after the
-last P5/P6 check or that check lists conflicts or gaps with no round 2 run,
-and while the output paths have changes; then it merges `research/round1` into
-the results tree. `--accept-open REASON` passes the open items, not the
-refusals for turn, questions or decisions; the reason and the items go into
-the arguments. The gates read committed run records only. The arguments hold
-the results tree's head, the Claude Code version, the model, the effort, the
-CPU count and the workflow concurrency.
+covering a category left P1 items there for follow-up.
+
+It refuses T3 and T5 while a function the earlier tasks cover has no verified
+part, a missing or unverified second source, or, in R10 and R12, an unverified
+Q4 or Q8 alternative. It refuses T3, T5 and T6 while a P1 run raised questions
+for a category after the last run that selected its parts. Before T6 it
+refuses while the owner's decisions on Q4, Q8 and Q9 are not written; while a
+part changed after the last P5/P6 check; while that check ran without P5 or
+P6, left combinations or budgets its critic did not rule on, or lists
+conflicts or gaps with no round 2 run; and while the output paths have
+changes. Then it merges `research/round1` into the results tree.
+
+`--accept-open REASON` passes the open items, not the refusals for turn,
+questions or decisions; the reason and the items go into the arguments. The
+gates read committed run records only. The arguments hold the results tree's
+head, the Claude Code version, the model, the effort, the CPU count and the
+workflow concurrency.
+
+A category whose P3 returned nothing keeps no part: its selection names the
+part in `without_p3` for the follow-up task. A function P3 lists as named by
+the row and not returned by P2 is selected with no part. A ranking with a
+repeated position or one below 1 ranks nothing for that function.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared
@@ -87,11 +99,12 @@ directory and that file.
 After a T6 that was not stopped `record` also commits the pages P7 wrote. It
 refuses a changed file outside the files P7 declared and its critic reviewed
 within the plan's Outputs (`hardware/docs/`, `hardware/STATUS.md`,
-`hardware/README.md`, `tools/jlc_stock.py`), and a file P7 declared that did
-not change. A T6 is recorded as stopped unless P7 and its critic both return,
-the critic's three checks pass, it checked at least one figure and every
-figure agrees with its return, no writing issue is left, the three group pages
-are three files, and every output of the plan and each group page was written
+`hardware/README.md`, `tools/jlc_stock.py`), a file P7 declared that did not
+change, and a group page outside `hardware/docs/`. A T6 is recorded as stopped
+unless P7 and its critic both return, the critic's three checks pass, it
+checked at least one figure and every figure agrees with its return, no
+writing issue is left, the three group pages are three files in
+`hardware/docs/`, and every output of the plan and each group page was written
 and reviewed. A stopped T6 leaves the output paths as they were. `raised`
 reads the committed run record only and refuses a plan tree with uncommitted
 changes.
