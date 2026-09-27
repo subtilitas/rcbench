@@ -282,6 +282,14 @@ def worktree(base, name, ref, detach=True):
     if not registered:
         opts = ["--detach"] if detach else []
         git("worktree", "add", *opts, path, ref)
+    # A reused tree must still be where this run needs it.
+    if detach:
+        head, want = git("-C", path, "rev-parse", "HEAD"), git(
+            "rev-parse", ref + "^{commit}")
+        if head != want:
+            raise SystemExit(f"{path} is at {head}, not {want}")
+    elif git("-C", path, "branch", "--show-current") != ref:
+        raise SystemExit(f"{path} is not on {ref}")
     return path
 
 
@@ -357,6 +365,28 @@ def committed_questions(results):
             for q in (task.get("summary") or {}).get("questions", [])]
 
 
+def p1_unresolved(results, categories):
+    """Each category whose latest P1 run left it unchecked: its P1, critic or
+    re-check returned nothing, or P0 held it."""
+    p1 = [(n, t) for n, t in runs(results) if t.get("task") == "T1" or
+          (t.get("followup") or {}).get("phases") == "P1"]
+    out = []
+    for c in categories:
+        # T1 covers every category; a P1 follow-up only its own.
+        cover = [(n, t) for n, t in p1 if t.get("task") == "T1" or
+                 c in ((t.get("followup") or {}).get("categories") or [])]
+        if not cover:
+            out.append(f"{c}: no P1 run covers it")
+            continue
+        name, last = cover[-1]
+        left = [f for f in last.get("followUps", [])
+                if f.get("category") == c and
+                str(f.get("role", "")).startswith(("P1", "category"))]
+        if left:
+            out.append(f"{c}: {name} left {len(left)} P1 items unresolved")
+    return out
+
+
 def t6_open(results):
     """What stands between the last P5/P6 check and T6: a part changed
     after it, or conflicts and gaps it listed with no round 2 run."""
@@ -371,11 +401,18 @@ def t6_open(results):
            and (t.get("summary") or {}).get("selection")]
     items = len((last.get("summary") or {}).get("conflicts", [])) + \
         len((last.get("summary") or {}).get("gaps", []))
-    round2 = any((t.get("followup") or {}).get("round") == 2
-                 for _, t in done)
-    if items and not round2:
-        out.append(f"{name} lists {items} conflicts and gaps; follow-up "
-                   "rounds have not reached round 2")
+    # Items may stand only in the check that follows a round-2 research
+    # follow-up recorded after the check before it: the plan writes what
+    # round 2 leaves as not known.
+    before = checks[-2][1].get("sequence", 0) if len(checks) > 1 else 0
+    after_round2 = any(
+        (t.get("followup") or {}).get("round") == 2 and
+        (t.get("followup") or {}).get("phases") in ("P1", "P2-P4") and
+        before < t.get("sequence", 0) < last.get("sequence", 0)
+        for _, t in done)
+    if items and not after_round2:
+        out.append(f"{name} lists {items} conflicts and gaps, and it is not "
+                   "the check after round 2 of the follow-up tasks")
     return out
 
 
@@ -418,6 +455,76 @@ def not_on_research_branch():
                          "branch out twice. Run from a clone on main.")
 
 
+NAME = re.compile(r"[A-Za-z0-9]+")
+
+
+def check_followup(followup, cats):
+    """The follow-up file: its phases, round, categories and items."""
+    if followup.get("phases") not in ("P1", "P2-P4", "P5-P6"):
+        raise SystemExit("the follow-up's phases is P1, P2-P4 or P5-P6")
+    if followup.get("round") not in (1, 2):
+        raise SystemExit("follow-up tasks run in rounds 1 and 2 only")
+    fc = followup.get("categories")
+    items = followup.get("items", [])
+    if not isinstance(items, list):
+        raise SystemExit("the follow-up's items are a list")
+    if followup["phases"] == "P5-P6":
+        if fc or items:
+            raise SystemExit("a P5-P6 follow-up takes no categories or items; "
+                             "it checks the whole board")
+        return
+    if (not isinstance(fc, list) or not fc or len(set(fc)) != len(fc)
+            or any(c not in cats["categories"] for c in fc)):
+        raise SystemExit("the follow-up's categories are a list of distinct "
+                         "IDs from R1 to R13")
+    stray = [i for i in items
+             if not isinstance(i, dict) or i.get("category") not in fc]
+    if stray:
+        raise SystemExit("each follow-up item names one of the follow-up's "
+                         f"categories: {stray}")
+
+
+def on_branch(tree, branch):
+    here = git("-C", tree, "branch", "--show-current")
+    if here != branch:
+        raise SystemExit(f"{tree} is on {here or 'a detached HEAD'}, "
+                         f"not {branch}")
+
+
+def questions_gate(results, rows, categories):
+    """Every question a committed P1 run raised for these categories is
+    published and answered, unless it only feeds Q4, Q8 or Q9."""
+    committed = committed_questions(results)
+    ids = {r[0] for r in rows}
+    unpublished = [f"{q['id']} ({run})" for run, q in committed
+                   if q["category"] in categories and q["id"] not in ids]
+    if unpublished:
+        raise SystemExit("raised by P1 but not under Raised by P1 on "
+                         f"{BRANCH}: " + ", ".join(unpublished)
+                         + ". Run raised and push it.")
+    blocks = {q["id"]: q.get("blocks") for _, q in committed}
+    open_q = [r[0] for r in rows if r[1] in categories and not r[3].strip()
+              and blocks.get(r[0]) != "decision-only"]
+    if open_q:
+        raise SystemExit("unanswered under Raised by P1: " + ", ".join(open_q))
+
+
+def pending_p1(base, results, run):
+    """Another P1 run prepared and not recorded, whose question IDs this
+    run would repeat."""
+    out = []
+    for name in os.listdir(base):
+        m = re.fullmatch(r"args-(.+)\.json", name)
+        if not m or m.group(1) == run:
+            continue
+        a = json.loads(read(os.path.join(base, name)))
+        is_p1 = a.get("task") == "T1" or \
+            (a.get("followup") or {}).get("phases") == "P1"
+        if is_p1 and not recorded(results, m.group(1)):
+            out.append(m.group(1))
+    return out
+
+
 def cmd_prepare(args):
     not_on_research_branch()
     base = os.path.abspath(os.path.expanduser(args.base))
@@ -426,23 +533,14 @@ def cmd_prepare(args):
     db = os.path.abspath(os.path.expanduser(args.db or info["path"]))
     manifest = os.path.join(os.path.dirname(db), "manifest.json")
     env = os.path.abspath(os.path.expanduser(args.digikey_env))
+    if not NAME.fullmatch(args.name) or "stopped" in args.name:
+        raise SystemExit("--name is letters and digits, without 'stopped'")
     followup = None
     if args.task == "FU":
         if not args.followup:
             raise SystemExit("FU needs --followup FILE")
         followup = json.loads(read(args.followup))
-        if followup.get("phases") not in ("P1", "P2-P4", "P5-P6"):
-            raise SystemExit("the follow-up's phases is P1, P2-P4 or P5-P6")
-        if int(followup.get("round", 0)) not in (1, 2):
-            raise SystemExit("follow-up tasks run in rounds 1 and 2 only")
-        fc = followup.get("categories")
-        if followup["phases"] != "P5-P6" and (
-                not isinstance(fc, list) or not fc or len(set(fc)) != len(fc)
-                or any(c not in cats["categories"] for c in fc)):
-            raise SystemExit("the follow-up's categories are a list of "
-                             "distinct IDs from R1 to R13")
-        if not isinstance(followup.get("items", []), list):
-            raise SystemExit("the follow-up's items are a list")
+        check_followup(followup, cats)
     for path in (db, manifest, env):
         if not os.path.isfile(path):
             raise SystemExit(f"{path} is not there")
@@ -450,50 +548,60 @@ def cmd_prepare(args):
         git("fetch", "-q", "origin")
     commit = git("rev-parse", f"origin/{BRANCH}")
     text = git("show", f"{commit}:{PLAN_REL}")
+    run = f"FU-{args.name}" if args.task == "FU" else args.task
 
+    # The results tree: on its branch, its recorded runs committed.
     os.makedirs(base, exist_ok=True)
     results = worktree(base, "results", RESULTS, detach=False)
-    for task in AFTER.get(args.task, []):
+    if changed_under(results, RUNS_DIR):
+        raise SystemExit("recorded runs have uncommitted changes")
+    if recorded(results, run):
+        raise SystemExit(f"{run} is recorded already")
+
+    # The task's turn.
+    phases = (followup or {}).get("phases")
+    owner = {c: t for t, v in cats["tasks"].items() for c in v["categories"]}
+    after = list(AFTER.get(args.task, []))
+    if phases == "P2-P4":
+        after += sorted({owner[c] for c in followup["categories"]})
+    elif phases == "P1":
+        after += ["T1"]
+    elif phases == "P5-P6":
+        after += ["T5"]
+    for task in after:
         if not recorded(results, task):
-            raise SystemExit(f"{args.task} runs after {task}, "
-                             "which is not recorded")
+            raise SystemExit(f"{run} runs after {task}, which is not "
+                             "recorded")
+    is_p1 = args.task == "T1" or phases == "P1"
+    if is_p1:
+        waiting = pending_p1(base, results, run)
+        if waiting:
+            raise SystemExit("P1 runs prepared and not recorded: "
+                             + ", ".join(waiting)
+                             + "; record them first, so question IDs do "
+                             "not repeat")
+
+    # The gates.
     rows = raised_rows(text)
-    if followup:
-        task_cats = followup.get("categories", [])
-    else:
-        task_cats = cats["tasks"].get(args.task, {}).get("categories", [])
-    reads_stock = args.task in cats["tasks"] or \
-        (followup or {}).get("phases") == "P2-P4"
+    task_cats = (followup or {}).get("categories") or \
+        cats["tasks"].get(args.task, {}).get("categories", [])
+    reads_stock = args.task in cats["tasks"] or phases == "P2-P4"
+    open_sel = []
+    if reads_stock or is_p1 and args.task == "FU":
+        questions_gate(results, rows, task_cats)
     if reads_stock:
-        ids = {r[0] for r in rows}
-        unpublished = [f"{q['id']} ({run})" for run, q in
-                       committed_questions(results)
-                       if q["category"] in task_cats and q["id"] not in ids]
-        if unpublished:
-            raise SystemExit("raised by P1 but not under Raised by P1 on "
-                             f"{BRANCH}: " + ", ".join(unpublished)
-                             + ". Run raised and push it.")
-        open_q = [r[0] for r in rows if r[1] in task_cats
-                  and not r[3].strip() and "(feeds Q" not in r[2]]
-        if open_q:
-            raise SystemExit("unanswered under Raised by P1: "
-                             + ", ".join(open_q))
+        open_sel += p1_unresolved(results, task_cats)
     gate = {"T3": ["T2", "T4"], "T5": ["T2", "T3", "T4"]}.get(args.task, [])
-    open_sel = open_selections(effective_selection(results),
-                               [c for t in gate
-                                for c in cats["tasks"][t]["categories"]])
-    if open_sel and not args.accept_open:
-        raise SystemExit("functions with no verified part: "
-                         + "; ".join(open_sel)
-                         + ". Resolve them in a follow-up task, or pass "
-                         "--accept-open REASON")
+    open_sel += open_selections(effective_selection(results),
+                                [c for t in gate
+                                 for c in cats["tasks"][t]["categories"]])
+    last_p56 = ""
     if args.task == "T6":
-        open_t6 = t6_open(results)
-        if open_t6 and not args.accept_open:
-            raise SystemExit("before T6: " + "; ".join(open_t6)
-                             + ". Run the follow-up tasks, or pass "
-                             "--accept-open REASON")
-        open_sel += open_t6
+        questions_gate(results, rows, list(cats["categories"]))
+        open_sel += t6_open(results)
+        checks = [n for n, t in runs(results) if t.get("task") == "T5" or
+                  (t.get("followup") or {}).get("phases") == "P5-P6"]
+        last_p56 = checks[-1] if checks else ""
         dirty = [d for d in changed(results) if t6_output(d)]
         if dirty:
             raise SystemExit("the output paths have changes; commit or "
@@ -501,26 +609,34 @@ def cmd_prepare(args):
         missing = [q for q, d in decisions(text).items() if not d]
         if missing:
             raise SystemExit("the owner has not decided " + ", ".join(missing))
-        merged = git("-C", results, "merge", "--no-edit", "-m",
-                     f"Merge {BRANCH} at {commit[:12]} before T6", commit,
-                     check=False)
-        if merged.returncode:
-            raise SystemExit("merging research/round1 into the results "
-                             "tree failed: " + merged.stderr.strip())
+    if open_sel and not args.accept_open:
+        raise SystemExit("open before this run: " + "; ".join(open_sel)
+                         + ". Resolve them in a follow-up task, or pass "
+                         "--accept-open REASON")
 
+    # Every refusal is behind us: make the trees, and merge before T6.
     checkout = worktree(base, f"checkout-{commit[:12]}", commit)
     read_only(checkout)
     mono = worktree(base, "monostable-23c82ca", MONOSTABLE)
     read_only(mono)
+    if args.task == "T6":
+        merged = git("-C", results, "merge", "--no-edit", "-m",
+                     f"Merge {BRANCH} at {commit[:12]} before T6", commit,
+                     check=False)
+        if merged.returncode:
+            git("-C", results, "merge", "--abort", check=False)
+            raise SystemExit("merging research/round1 into the results "
+                             "tree failed: " + merged.stderr.strip())
     now = datetime.datetime.now(datetime.timezone.utc)
     today = now.date().isoformat()
-    first_v = 1 + max([int(r[0][1:]) for r in rows] or [0])
-    run = f"FU-{args.name}" if args.task == "FU" else args.task
-    if recorded(results, run):
-        raise SystemExit(f"{run} is recorded already")
+    ids = [int(r[0][1:]) for r in rows] + [
+        int(q["id"][1:]) for _, q in committed_questions(results)]
+    first_v = 1 + max(ids or [0])
     ident = json.dumps([run, commit, now.isoformat(), followup, args.model,
                         args.effort], sort_keys=True)
     run_id = hashlib.sha256(ident.encode()).hexdigest()[:16]
+    for_research = [{"id": r[0], "category": r[1]} for r in rows
+                    if "for research" in r[3].lower()]
     out = {
         "task": args.task, "mode": "run", "date": today, "commit": commit,
         "cap": cats["cap"], "categories": cats["categories"],
@@ -536,6 +652,10 @@ def cmd_prepare(args):
                   "digikey_env": env},
         "followup": followup, "first_v": first_v,
         "run": run, "run_id": run_id,
+        "results_head": git("-C", results, "rev-parse", "HEAD"),
+        "for_research": for_research,
+        "required_reports": cats.get("reports", {}),
+        "last_p56": last_p56,
         "t6_outputs": T6_REQUIRED if args.task == "T6" else [],
         "run_info": run_info(args.model, args.effort),
         "accept_open": {"reason": args.accept_open, "functions": open_sel}
@@ -566,6 +686,11 @@ def cmd_record(args):
     if not os.path.isfile(prepared):
         raise SystemExit(f"{prepared} is not there; prepare {run} first")
     want = json.loads(read(prepared))
+    on_branch(results, RESULTS)
+    head = git("-C", results, "rev-parse", "HEAD")
+    if want.get("results_head") and head != want["results_head"]:
+        raise SystemExit(f"the results tree moved from "
+                         f"{want['results_head']} to {head} since prepare")
     if result.get("run") != run or result.get("run_id") != want["run_id"]:
         raise SystemExit(f"the output is run {result.get('run')} "
                          f"{result.get('run_id')}, not the prepared {run} "
@@ -586,6 +711,10 @@ def cmd_record(args):
     schemas = want["schemas"]
     errors = []
     for r in result.get("returns", []):
+        if r.get("role") not in schemas:
+            errors.append(f"{r.get('label')}: no schema for role "
+                          f"{r.get('role')!r}")
+            continue
         errors += [f"{r['label']}: {e}"
                    for e in validate(schemas[r["role"]], r["data"])]
     for e in errors:
@@ -621,21 +750,36 @@ def cmd_record(args):
     paths = [target]
     stopped = bool((result.get("summary") or {}).get("stopped"))
     if args.task == "T6" and stopped:
-        # Pages a stopped T6 wrote are not kept for the next attempt.
-        outs = [o for o in T6_FILES + T6_DIRS
-                if os.path.exists(os.path.join(results, o))]
-        if outs:
-            git("-C", results, "checkout", "-q", "HEAD", "--", *outs,
-                check=False)
-            git("-C", results, "clean", "-fdq", "--", *outs, check=False)
+        # Pages a stopped T6 wrote, deleted or changed are not kept for the
+        # next attempt: tracked paths return to HEAD, new ones are removed.
+        for o in T6_FILES + T6_DIRS:
+            if git("-C", results, "cat-file", "-e", f"HEAD:{o.rstrip('/')}",
+                   check=False).returncode == 0:
+                git("-C", results, "checkout", "-q", "HEAD", "--", o)
+            if os.path.exists(os.path.join(results, o)):
+                git("-C", results, "clean", "-fdq", "--", o, check=False)
     if args.task == "T6" and not stopped:
         dirty = changed(results)
         rel = os.path.relpath(target, results)
+        rets = result.get("returns", [])
+        wrote = {f for r in rets if r["role"] == "P7"
+                 for f in r["data"].get("files", [])}
+        seen = {f for r in rets if r["role"] == "P7-critic"
+                for f in r["data"].get("reviewed", [])}
+        pages = {f for r in rets if r["role"] == "P7"
+                 for f in (r["data"].get("group_pages") or {}).values()}
+        allowed = set(T6_REQUIRED) | pages
         stray = [d for d in dirty if not d.startswith(rel)
-                 and not t6_output(d)]
+                 and not (d in allowed and d in wrote and d in seen)]
+        unchanged = sorted(wrote - set(dirty))
+        if unchanged:
+            shutil.rmtree(target, ignore_errors=True)
+            raise SystemExit("P7 lists files it did not change: "
+                             + ", ".join(unchanged))
         if stray:
             shutil.rmtree(target, ignore_errors=True)
-            raise SystemExit("T6 changed files outside its outputs: "
+            raise SystemExit("T6 changed files that are not outputs P7 "
+                             "declared and its critic reviewed: "
                              + ", ".join(stray))
         paths += [os.path.join(results, d) for d in dirty
                   if not d.startswith(rel)]
@@ -679,7 +823,10 @@ def cmd_raised(args):
     if not questions:
         stopped = " (the task stopped)" if summary.get("stopped") else ""
         raise SystemExit(f"{args.run} raised no questions{stopped}")
+    on_branch(results, RESULTS)
     plan = worktree(base, "plan", BRANCH, detach=False)
+    if changed(plan):
+        raise SystemExit(f"{plan} has uncommitted changes")
     if not args.no_fetch:
         git("-C", plan, "pull", "-q", "--ff-only", "origin", BRANCH)
     page = os.path.join(plan, PLAN_REL)
@@ -709,10 +856,11 @@ def cmd_raised(args):
     lines[end:end] = [row(q) for q in questions]
     with open(page, "w") as f:
         f.write("\n".join(lines))
-    git("-C", plan, "add", page)
-    git("-C", plan, "commit", "-q", "-m", f"Raise the questions of {args.run}",
+    git("-C", plan, "add", "--", page)
+    git("-C", plan, "commit", "-q", "-m",
+        f"Raise the questions of {args.run}",
         "-m", f"{len(questions)} questions P1 raised and its critics or the "
-        "re-check confirmed.")
+        "re-check confirmed.", "--", page)
     print(f"{page}: {len(questions)} questions committed on {BRANCH}; "
           "push it")
     return 0
@@ -735,8 +883,10 @@ def main():
     p.add_argument("--db")
     p.add_argument("--no-fetch", action="store_true")
     p.add_argument("--accept-open", metavar="REASON",
-                   help="start T3 or T5 with functions that have no "
-                   "verified part")
+                   help="start the run although earlier runs left items "
+                   "open: P1 items unresolved, functions with no verified "
+                   "part, or P5/P6 conflicts and gaps before T6; the "
+                   "reason and the items go into the arguments")
     p.set_defaults(fn=cmd_prepare)
     r = sub.add_parser("record")
     r.add_argument("task", choices=TASKS)

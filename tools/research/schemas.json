@@ -998,7 +998,12 @@
            "type": "string"
           },
           "agrees": {
-           "type": "boolean"
+           "type": "boolean",
+           "description": "the value read matches the value stated"
+          },
+          "passes": {
+           "type": "boolean",
+           "description": "the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes"
           }
          },
          "required": [
@@ -1006,7 +1011,8 @@
           "stated",
           "read",
           "source",
-          "agrees"
+          "agrees",
+          "passes"
          ]
         }
        },
@@ -1209,11 +1215,57 @@
      "items": {
       "$ref": "conflict"
      }
+    },
+    "combination_verdicts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer"
+       },
+       "holds": {
+        "type": "boolean"
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "holds",
+       "reason"
+      ]
+     }
+    },
+    "budget_verdicts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer"
+       },
+       "holds": {
+        "type": "boolean"
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "holds",
+       "reason"
+      ]
+     }
     }
    },
    "required": [
     "verdicts",
-    "added"
+    "added",
+    "combination_verdicts",
+    "budget_verdicts"
    ]
   },
   "P6": {
@@ -1338,7 +1390,8 @@
        "return_file",
        "agrees"
       ]
-     }
+     },
+     "description": "every figure on the pages as they stand after your corrections, each against its return"
     },
     "sentence_issues": {
      "type": "array",
@@ -1360,7 +1413,8 @@
        "line",
        "issue"
       ]
-     }
+     },
+     "description": "writing-rule issues left on the pages after your corrections"
     },
     "corrections_applied": {
      "$ref": "strs"
