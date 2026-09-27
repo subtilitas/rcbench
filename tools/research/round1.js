@@ -470,9 +470,10 @@ async function phaseP1(cats) {
 
 // The final shortlist: the re-rank's order over P2's records and the
 // re-rank's records of P3's finds.
-// Ranks are positions: whole numbers from 1, each given once.
+// Ranks are positions: the whole numbers 1 to n, each given once.
 function distinctRanks(list) {
-  return list.every(r => Number.isInteger(r.rank) && r.rank >= 1) && new Set(list.map(r => r.rank)).size === list.length
+  const ranks = list.map(r => r.rank).sort((a, b) => a - b)
+  return ranks.every((r, i) => r === i + 1)
 }
 
 function merge(cat, p2, rr, p3) {
@@ -530,7 +531,7 @@ function merge(cat, p2, rr, p3) {
     else if (!(fr.ranking || []).length) followUps.push({ role: 'rerank', category: cat, function: name, reason: 'the re-rank ranked no part' })
     const unranked = !fr || !(fr.ranking || []).length || p2Twice.has(name) || rrTwice.has(name) || unhandled.has(name)
     const badRanks = !unranked && !distinctRanks(fr.ranking)
-    if (badRanks) followUps.push({ role: 'rerank', category: cat, function: name, reason: "the re-rank's positions are not distinct ranks from 1; the function is not ranked" })
+    if (badRanks) followUps.push({ role: 'rerank', category: cat, function: name, reason: "the re-rank's positions are not the ranks 1 to n; the function is not ranked" })
     if (unranked || badRanks || !need.length) {
       // nothing to verify
     } else {
@@ -629,8 +630,8 @@ function covered(v, cand) {
   if (!cand) return false
   const req = requiredChecks(v.verifier, cand, v.kind)
   if (v.verifier === 'datasheet' && !req.length) return false
-  // A check written as not read shows nothing.
-  const have = new Set((v.checks || []).filter(c => !readsNone(c.read)).map(c => c.figure))
+  // A check written as not read, or without its source, shows nothing.
+  const have = new Set((v.checks || []).filter(c => !readsNone(c.read) && !readsNone(c.source)).map(c => c.figure))
   return req.every(n => have.has(n))
 }
 
@@ -788,6 +789,10 @@ async function verifyCategory(cat, functions, bundle) {
   return ledger
 }
 
+function onBoard(c) {
+  return !!(c && c.lcsc && c.lcsc !== 'none')
+}
+
 // A part whose rule-5 route names no second source it can be built with.
 function noSecondSource(c) {
   return c.second_source_route === 'none'
@@ -812,13 +817,16 @@ function selection(functions, ledger) {
     // refuted part does not.
     const alternateUnverified = altOf(kept) && !st({ part: altOf(kept) }).startsWith('verified') ? [altOf(kept)] : []
     const recOf = part => f.shortlist.find(c => c.part === part) || (f.alternateRecords || []).find(c => c.part === part) || null
+    // Rule 5's alternate passes rule 1 as the part does: a part on the board
+    // needs an alternate on the board.
+    const offBoardAlt = c => !!(altOf(c) && onBoard(c) && recOf(altOf(c)) && !onBoard(recOf(altOf(c))))
     const qAlternatives = f.verify.filter(v => v.kind === 'q-alternative' && !(kept && v.part === kept.part)).map(v => {
       const rec = recOf(v.part)
       const alt = altOf(rec)
       return { part: v.part, status: st(v) || 'not verified', alternate: alt,
-        alternate_status: alt ? (st({ part: alt }) || 'not verified') : '', second_source_missing: !rec || noSecondSource(rec) }
+        alternate_status: alt ? (st({ part: alt }) || 'not verified') : '', second_source_missing: !rec || noSecondSource(rec) || offBoardAlt(rec) }
     })
-    const missing = !!(kept && noSecondSource(kept))
+    const missing = !!(kept && (noSecondSource(kept) || offBoardAlt(kept)))
     return { function: f.function, part: kept ? kept.part : null, rank: kept ? kept.rank : null, refuted,
       alternate_unverified: alternateUnverified, second_source_missing: missing, q_alternatives: qAlternatives }
   })

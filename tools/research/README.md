@@ -93,10 +93,11 @@ the items in the arguments:
   without P5, P6 or either critic, returned no budget or no combination, or
   left a conflict, gap, combination or budget its critic did not rule on, or a
   combination or budget it rejected; while it lists a conflict or gap whose
-  categories, named or taken from its parts, no round-2 P2-P4 follow-up since
-  the check before researched to a selection (the first check's items are
-  never covered); and while a run that decides an R3 function was not given
-  the Q9 decision now in force.
+  categories, named or taken from its parts (a part selected in more than one
+  category belongs to each), no round-2 P2-P4 follow-up since the check before
+  researched to a selection (the first check's items are never covered); and
+  while a run that decides an R3 function was not given the Q9 decision now in
+  force.
 
 Then, before T6, it merges `research/round1` into the results tree. The gates
 read committed run records and the plan on `research/round1`. The arguments
@@ -109,8 +110,8 @@ expect.
 
 - the category's P3 returned nothing (the part is named in `without_p3`);
 - P3 lists it as named by the row and P2 did not return it;
-- the re-rank did not rank it, ranked no part, repeated a position or used
-  one below 1, ranked a part with no record, ranked a part twice or also
+- the re-rank did not rank it, ranked no part, gave positions other than 1
+  to n, ranked a part with no record, ranked a part twice or also
   dropped it, or either P2 or the re-rank returned it twice;
 - P3 found a candidate for it, or overturned its P2 drop of a part, and the
   re-rank neither qualified nor dropped that part under it;
@@ -120,15 +121,16 @@ A part with more than one record is dropped. An adjudicator's ruling without
 evidence read is no ruling. A standing refutation stays final in the run, even
 if the part is verified later as another part's alternate. A part a verifier
 was not asked to verify is ignored, a part it lists twice has no verdict from
-it, and a check or figure evidence written as not read shows nothing. A return
-whose `category` names another category counts as not returned. Only the kept
-part's rule-5 alternate gates its selection; a first-ranked part that is also
-a Q alternative's alternate needs the alternate's checks. A category whose
-chain failed is left out of the run's selection, so the gates read the run
-before it. Each assumption needs a confirmed question of its own. P0 counts a
-host with two rows, or a status written as not read, as not read. The P7
-critic checks at least one figure on each group page and each output under
-`hardware/docs/`.
+it, and a check or figure evidence written as not read, or a check without its
+source, shows nothing. A return whose `category` names another category counts
+as not returned. Only the kept part's rule-5 alternate gates its selection,
+and the alternate of a part on the board must be on the board; a first-ranked
+part that is also a Q alternative's alternate needs the alternate's checks. A
+category whose chain failed is left out of the run's selection, so the gates
+read the run before it. Each assumption needs a confirmed question of its own.
+P0 counts a host with two rows, or a status written as not read, as not read.
+The P7 critic checks at least one figure on each group page and each output
+under `hardware/docs/`.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared

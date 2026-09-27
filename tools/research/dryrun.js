@@ -92,6 +92,7 @@ async function runTask(task, opts = {}) {
       if (opts.fnNoReq) data.functions[0].requirements = []
       if (opts.p2DropY) data.functions[0].dropped = [{ part: 'partY', maker: 'm', reason: 'r' }]
       if (opts.foundNotRead) data.found_values = [{ question_id: 'V9', value: 'not read: HTTP 403', source: 's', read_at: 't' }]
+      if (opts.offBoardAlt) { Object.assign(data.functions[0].shortlist[0], { lcsc: 'C1', second_source_route: 'alternate', second_source_part: 'altOff' }); data.functions[0].shortlist.push({ ...cand(8), part: 'altOff', lcsc: 'none' }) }
       if (opts.altName) Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: opts.altName })
       if (opts.qAlt) {
         Object.assign(data.functions[0].shortlist[2], { second_source_route: 'alternate', second_source_part: 'altQ' })
@@ -173,7 +174,7 @@ async function runTask(task, opts = {}) {
       const checksFor = (pt, pk) => (opts.emptyChecks || []).includes(base) ? []
         : (kind === 'stock' ? ['stock', 'presale', 'lifecycle status', 'end-of-life notices', ...(cand(pt).second_source_route === 'second-vendor' && !opts.noSecondVendor ? ['second-vendor stock'] : [])]
           : [...cand(pt).requirements.map(r => r.name).filter(n => n !== opts.skipReq), ...(pk === 'alternate' && !opts.noCompat ? ['pin-for-pin match', 'functional match'] : [])])
-          .map((figure, k) => ({ figure, stated: 's', read: opts.readNone && kind === 'datasheet' ? 'not read: API timed out' : 'r', source: 'src', agrees: !((opts.disagree || []).includes(base) && k === 0), passes: !((opts.failPass || []).includes(base) && k === 0) }))
+          .map((figure, k) => ({ figure, stated: 's', read: opts.readNone && kind === 'datasheet' ? 'not read: API timed out' : 'r', source: opts.noSource && kind === 'stock' ? '' : 'src', agrees: !((opts.disagree || []).includes(base) && k === 0), passes: !((opts.failPass || []).includes(base) && k === 0) }))
       data.parts = (opts.omit || []).includes(base) || (opts.omitPart || []).includes(`${base}:${part}`) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part), refutation: refute ? 'mock' : '' }]
       if ((opts.dupRow || []).includes(base)) data.parts.push({ ...data.parts[0], verdict: 'refuted', refutation: 'second row' })
       const oc = only ? JSON.parse(only[1]) : null
@@ -444,7 +445,7 @@ async function main() {
   check(r1(r).selection[0].second_source_missing === true, 'part off the board by the second vendor: second source missing')
   // Ranks repeated or below 1 rank nothing.
   r = await runTask('T2', { ranking: [{ rank: 1, part: 'part1', reason: 'r' }, { rank: 1, part: 'part2', reason: 'r' }] })
-  check(r1(r).selection[0].part === null && r.result.followUps.some(f => /not distinct ranks/.test(f.reason)), 'repeated rank: nothing selected, listed')
+  check(r1(r).selection[0].part === null && r.result.followUps.some(f => /not the ranks 1 to n/.test(f.reason)), 'repeated rank: nothing selected, listed')
   r = await runTask('T2', { ranking: [{ rank: 0, part: 'part1', reason: 'r' }, { rank: 1, part: 'part2', reason: 'r' }] })
   check(r1(r).selection[0].part === null, 'rank 0: nothing selected')
   // A rule-5 alternate that fails a requirement is no alternate.
@@ -533,6 +534,15 @@ async function main() {
   check(r.result.summary.missing_checks.includes('P5-critic'), 'T5: a P5 critic that returned nothing is a missing check')
   r = await runTask('T5')
   check(r.result.summary.missing_checks.length === 0, 'T5: no missing check when every agent returns')
+  // Ranks start at 1.
+  r = await runTask('T2', { ranking: [{ rank: 2, part: 'part1', reason: 'r' }, { rank: 3, part: 'part2', reason: 'r' }] })
+  check(r1(r).selection[0].part === null, 'ranking without rank 1: function not ranked')
+  // A check without its source shows nothing.
+  r = await runTask('T2', { noSource: true })
+  check(r1(r).selection[0].part === null, 'checks without a source: not verified')
+  // A part on the board needs an alternate on the board.
+  r = await runTask('T2', { offBoardAlt: true, verify: ['altOff'] })
+  check(r1(r).selection[0].part === 'part1' && r1(r).selection[0].second_source_missing === true, 'off-board alternate of a part on the board: second source missing')
   // A ruling with no evidence read is no ruling.
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], stands: false, unreadRuling: true })
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence read'), 'ruling without evidence read: no ruling')

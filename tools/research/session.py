@@ -479,15 +479,16 @@ def t6_open(results):
                for c in (t.get("summary") or {}).get("selection") or {}}
     summary = last.get("summary") or {}
     # A conflict belongs to the categories it names and those of its parts.
+    # A part selected in more than one category belongs to each.
     part_cat = {}
     for c, fns in effective_selection(results).items():
         for e in fns.values():
             for part in [e.get("part")] + [q.get("part") for q in
                                            e.get("q_alternatives") or []]:
                 if part:
-                    part_cat[part] = c
-    items = [set(x.get("categories") or []) |
-             {part_cat[p] for p in x.get("parts") or [] if p in part_cat}
+                    part_cat.setdefault(part, set()).add(c)
+    items = [set(x.get("categories") or []).union(
+        *(part_cat.get(p, set()) for p in x.get("parts") or []))
              for x in summary.get("conflicts", [])] + \
         [{x["category"]} if x.get("category") else set()
          for x in summary.get("gaps", [])]
