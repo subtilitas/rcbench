@@ -235,7 +235,7 @@ function p4Prompt(cat, kind, bundle, only) {
     : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, and the reasons the re-rank gave for dropping a P3 candidate) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
   return `${ctx('P4', cat, `P4-${kind}-${cat}`)}
 
-${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". Each check has agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). A confirmation without its required checks counts as not verified, and a check with agrees or passes false counts as a refutation.
+${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". Each check has agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and a check with agrees or passes false counts as a refutation.
 
 The shortlist, the values found for research and the reports:
 ${J(bundle)}`
@@ -641,7 +641,10 @@ function covered(v, cand) {
   if (v.verifier === 'datasheet' && !req.length) return false
   // A check written as not read, or without its source, shows nothing.
   const have = new Set((v.checks || []).filter(c => !readsNone(c.read) && !readsNone(c.source)).map(c => c.figure))
-  return req.every(n => have.has(n))
+  // Rule 6: a part the owner holds passes rule 4 on the held quantity, in
+  // place of the live stock and presale.
+  const held = v.verifier === 'stock' && onBoard(cand) && Number(cand.held) > 0 && have.has('held quantity')
+  return req.filter(n => !(held && (n === 'stock' || n === 'presale'))).every(n => have.has(n))
 }
 
 // The next part in rank order that is not refuted.

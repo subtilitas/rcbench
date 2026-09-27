@@ -97,6 +97,7 @@ async function runTask(task, opts = {}) {
       if (opts.onBoardAltOfOff) { Object.assign(data.functions[0].shortlist[0], { lcsc: 'none', second_source_route: 'alternate', second_source_part: 'altOn' }); data.functions[0].shortlist.push({ ...cand(8), part: 'altOn', lcsc: 'C2' }) }
       if (opts.weakReq) { data.functions[0].requirements = [{ name: 'x0', value: '>= 67.2 V', source: 's' }]; data.functions[0].shortlist.forEach(c => { c.requirements = [{ name: 'x0', required: '>= 40 V', datasheet: '45 V', pass: true, source: 's' }] }) }
       if (opts.offBoardAlt) { Object.assign(data.functions[0].shortlist[0], { lcsc: 'C1', second_source_route: 'alternate', second_source_part: 'altOff' }); data.functions[0].shortlist.push({ ...cand(8), part: 'altOff', lcsc: 'none' }) }
+      if (opts.held !== undefined) data.functions[0].shortlist.forEach(c => { c.held = opts.held; c.lcsc = 'C9' })
       if (opts.altName) Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: opts.altName })
       if (opts.qAlt) {
         Object.assign(data.functions[0].shortlist[2], { second_source_route: 'alternate', second_source_part: 'altQ' })
@@ -176,7 +177,7 @@ async function runTask(task, opts = {}) {
       const f1 = bundle2.functions[0]
       const cand = pt => [...f1.shortlist, ...(f1.alternateRecords || [])].find(c => c.part === pt) || { requirements: [] }
       const checksFor = (pt, pk) => (opts.emptyChecks || []).includes(base) ? []
-        : (kind === 'stock' ? ['stock', 'presale', 'lifecycle status', 'end-of-life notices', ...(cand(pt).second_source_route === 'second-vendor' && !opts.noSecondVendor ? ['second-vendor stock'] : [])]
+        : (kind === 'stock' ? [...(opts.heldChecks ? ['held quantity'] : ['stock', 'presale']), 'lifecycle status', 'end-of-life notices', ...(cand(pt).second_source_route === 'second-vendor' && !opts.noSecondVendor ? ['second-vendor stock'] : [])]
           : [...cand(pt).requirements.map(r => r.name).filter(n => n !== opts.skipReq), ...(pk === 'alternate' && !opts.noCompat ? ['pin-for-pin match', 'functional match'] : [])])
           .map((figure, k) => ({ figure, stated: 's', read: opts.readNone && kind === 'datasheet' ? 'not read: API timed out' : 'r', source: opts.noSource && kind === 'stock' ? '' : 'src', agrees: !((opts.disagree || []).includes(base) && k === 0), passes: !((opts.failPass || []).includes(base) && k === 0) }))
       data.parts = (opts.omit || []).includes(base) || (opts.omitPart || []).includes(`${base}:${part}`) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part), refutation: refute ? 'mock' : '' }]
@@ -554,6 +555,11 @@ async function main() {
   r = await runTask('T2', { weakReq: true })
   const p4ds = r.prompts.find(x => x.label === 'P4-datasheet-R1').prompt
   check(r.result.followUps.some(f => /states other values than the function/.test(f.reason)) && p4ds.includes('"required":">= 67.2 V"') && !p4ds.includes('"required":">= 40 V"'), 'candidate restating a requirement: checked against the function value')
+  // Rule 6: a held part passes on its held quantity.
+  r = await runTask('T2', { held: 500, heldChecks: true })
+  check(r1(r).selection[0].part === 'part1', 'held part with its held quantity checked: verified')
+  r = await runTask('T2', { held: 0, heldChecks: true })
+  check(r1(r).selection[0].part === null, 'part not held, checked on a held quantity: not verified')
   // A ruling with no evidence read is no ruling.
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], stands: false, unreadRuling: true })
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence read'), 'ruling without evidence read: no ruling')

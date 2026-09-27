@@ -522,13 +522,14 @@ def deciding_runs(results, c, eff):
     return [(n, t) for n, t in runs(results) if n in names]
 
 
-def stale_selections(results, categories, rows, now, upstream=()):
+def stale_selections(results, categories, rows, now, upstream=(),
+                     downstream=()):
     """Each run whose parts for a category were not qualified against what
     is in force now: a P1 run raised questions for the category after it;
     the category's answers under "Raised by P1", or the specification,
     differ from those at the plan commit it read; or, for a category that
-    takes the parts of T2 and T4 (`upstream`), one of those changed after
-    it."""
+    takes the parts of T2 and T4 (`downstream`, those of T3), one of the
+    `upstream` parts changed after it."""
     done = runs(results)
     seq = {n: t.get("sequence", 0) for n, t in done}
     eff = effective_selection(results)
@@ -569,7 +570,7 @@ def stale_selections(results, categories, rows, now, upstream=()):
             if spec_of(commit) != spec_of(now):
                 out.append(f"{c}: the specification changed after {name} "
                            "selected its parts")
-            if c not in upstream and changed_up > seq[name]:
+            if c in downstream and changed_up > seq[name]:
                 out.append(f"{c}: parts of T2 or T4 changed after {name} "
                            "selected its parts")
     return out
@@ -874,7 +875,8 @@ def cmd_prepare(args):
         gate_cats = []
     open_sel += open_selections(effective_selection(results), gate_cats)
     open_sel += open_in_category(results, gate_cats)
-    open_sel += stale_selections(results, gate_cats, rows, commit, up)
+    open_sel += stale_selections(results, gate_cats, rows, commit, up,
+                                 cats["tasks"]["T3"]["categories"])
     open_sel += [o for o in p1_unresolved(results, gate_cats)
                  if o not in open_sel]
     last_p56 = ""
@@ -967,6 +969,28 @@ def set_aside(results, paths, result):
 
 
 def cmd_record(args):
+    """record, with every refusal after T6 setting P7's changes aside."""
+    try:
+        return record(args)
+    except SystemExit as refused:
+        results = os.path.join(os.path.abspath(os.path.expanduser(
+            args.base)), "results")
+        if args.task != "T6" or not os.path.isdir(results) or git(
+                "-C", results, "branch", "--show-current",
+                check=False).stdout.strip() != RESULTS:
+            raise
+        try:
+            out = json.loads(read(args.output))
+            run_id = out.get("result", out).get("run_id", "")
+        except (OSError, ValueError, AttributeError):
+            run_id = ""
+        left = set_aside(results, changed(results), {"run_id": run_id})
+        if not left:
+            raise
+        raise SystemExit(f"{refused}{left}") from None
+
+
+def record(args):
     base = os.path.abspath(os.path.expanduser(args.base))
     results = os.path.join(base, "results")
     with open(args.output) as f:
@@ -1015,10 +1039,9 @@ def cmd_record(args):
             continue
         errors += [f"{r['label']}: {e}"
                    for e in validate(schemas[r["role"]], r["data"])]
-    for e in errors:
-        print(f"FAIL {e}")
     if errors:
-        return 1
+        raise SystemExit("returns that do not match their schemas:\n"
+                         + "\n".join(f"FAIL {e}" for e in errors))
     if (result.get("summary") or {}).get("stopped"):
         k = 1
         while os.path.exists(os.path.join(results, RUNS_DIR,

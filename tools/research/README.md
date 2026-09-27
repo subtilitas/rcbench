@@ -125,15 +125,17 @@ evidence read is no ruling. A standing refutation stays final in the run, even
 if the part is verified later as another part's alternate. A part a verifier
 was not asked to verify is ignored, a part it lists twice has no verdict from
 it, and a check or figure evidence written as not read, or a check without its
-source, shows nothing. A return whose `category` names another category counts
-as not returned. Only the kept part's rule-5 alternate gates its selection,
-and the alternate of a part on the board must be on the board; a first-ranked
-part that is also a Q alternative's alternate needs the alternate's checks. A
-category whose chain failed is left out of the run's selection, so the gates
-read the run before it. Each assumption needs a confirmed question of its own.
-P0 counts a host with two rows, or a status written as not read, as not read.
-The P7 critic checks at least one figure on each group page and each output
-under `hardware/docs/`.
+source, shows nothing. A part on the board that the owner holds may pass the
+stock gate on a `held quantity` check in place of `stock` and `presale` (rule
+6). A return whose `category` names another category counts as not returned.
+Only the kept part's rule-5 alternate gates its selection, and the alternate
+of a part on the board must be on the board; a first-ranked part that is also
+a Q alternative's alternate needs the alternate's checks. A category whose
+chain failed is left out of the run's selection, so the gates read the run
+before it. Each assumption needs a confirmed question of its own. P0 counts a
+host with two rows, or a status written as not read, as not read. The P7
+critic checks at least one figure on each group page and each output under
+`hardware/docs/`.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared
@@ -157,10 +159,10 @@ and its critic both return, the critic's three checks pass, it checked at
 least one figure and every figure agrees with its return, no writing issue is
 left, the three group pages are three files in `hardware/docs/` other than the
 fixed outputs, and every output of the plan and each group page was written
-and reviewed. A stopped T6 leaves the output paths as they were. A refused T6
-does too, and keeps what P7 changed in a stash named `refused T6 RUN_ID` in
-the results tree. `raised` reads the committed run record only and refuses a
-plan tree with uncommitted changes.
+and reviewed. A stopped T6 leaves the output paths as they were. A T6 that
+`record` refuses, for any reason, does too, and keeps what P7 changed in a
+stash named `refused T6 RUN_ID` in the results tree. `raised` reads the
+committed run record only and refuses a plan tree with uncommitted changes.
 
 A follow-up task takes `--followup FILE`, a JSON object with `phases` (`P1`,
 `P2-P4` or `P5-P6`), `round` (1 or 2), `categories` and `items`, and
