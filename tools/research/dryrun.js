@@ -122,7 +122,7 @@ async function runTask(task, opts = {}) {
       const f1 = bundle2.functions[0]
       const cand = pt => [...f1.shortlist, ...(f1.alternateRecords || [])].find(c => c.part === pt) || { requirements: [] }
       const checksFor = (pt, pk) => (opts.emptyChecks || []).includes(base) ? []
-        : (kind === 'stock' ? ['stock', 'presale', 'lifecycle status']
+        : (kind === 'stock' ? ['stock', 'presale', 'lifecycle status', ...(cand(pt).second_source_route === 'second-vendor' && !opts.noSecondVendor ? ['second-vendor stock'] : [])]
           : [...cand(pt).requirements.map(r => r.name).filter(n => n !== opts.skipReq), ...(pk === 'alternate' && !opts.noCompat ? ['pin-for-pin match', 'functional match'] : [])])
           .map((figure, k) => ({ figure, stated: 's', read: 'r', source: 'src', agrees: !((opts.disagree || []).includes(base) && k === 0) }))
       data.parts = (opts.omit || []).includes(base) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part), refutation: refute ? 'mock' : '' }]
@@ -325,6 +325,10 @@ async function main() {
   check(r.result.summary.stopped === true, 'T6: a failed check stops it')
   r = await runTask('T6')
   check(!r.result.summary.stopped, 'T6: passing checks finish it')
+
+  // A second-vendor route needs the second vendor's stock re-read.
+  r = await runTask('T2', { noSecondVendor: true })
+  check(r1(r).selection[0].part === null, 'second-vendor route: not verified without the second-vendor stock check')
 
   // P0's own stop and held fields do not decide the outcome.
   r = await runTask('T2', { p0: { stop: true, stop_reasons: ['mock'], held: [{ category: 'R1', host: 'h', reason: 'mock' }] } })

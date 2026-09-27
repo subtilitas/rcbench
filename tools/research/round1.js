@@ -230,7 +230,7 @@ function p4Prompt(cat, kind, bundle, only) {
     : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, and the reasons the re-rank gave for dropping a P3 candidate) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
   return `${ctx('P4', cat, `P4-${kind}-${cat}`)}
 
-${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number) and "lifecycle status"; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". A confirmation without its required checks counts as not verified, and a check with agrees false counts as a refutation.
+${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". A confirmation without its required checks counts as not verified, and a check with agrees false counts as a refutation.
 
 The shortlist, the values found for research and the reports:
 ${J(bundle)}`
@@ -471,7 +471,11 @@ function candidateOf(functions, fn, part) {
 // The checks a verifier returns by these exact names for a confirmation to
 // count (the P4 prompt names them).
 function requiredChecks(kind, cand, partKind) {
-  if (kind === 'stock') return ['stock', 'lifecycle status', ...(cand && cand.lcsc && cand.lcsc !== 'none' ? ['presale'] : [])]
+  if (kind === 'stock') {
+    const onBoard = cand && cand.lcsc && cand.lcsc !== 'none'
+    return ['stock', 'lifecycle status', ...(onBoard ? ['presale'] : []),
+      ...(onBoard && cand.second_source_route === 'second-vendor' ? ['second-vendor stock'] : [])]
+  }
   return [...((cand && cand.requirements) || []).map(r => r.name), ...(partKind === 'alternate' ? ['pin-for-pin match', 'functional match'] : [])]
 }
 

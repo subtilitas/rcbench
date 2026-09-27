@@ -300,24 +300,32 @@ def recorded(results, run):
     return probe.returncode == 0
 
 
-def runs(results, stopped=False):
-    """The recorded runs in the order they were recorded, stopped ones
-    left out unless asked for: (name, task.json)."""
-    top = os.path.join(results, RUNS_DIR)
+def runs(results, stopped=False, pending=None):
+    """The committed runs in the order they were recorded, stopped ones
+    left out unless asked for: (name, task.json). They are read from HEAD,
+    so an uncommitted edit counts for nothing; `pending` adds the run being
+    recorded."""
     out = []
-    for name in sorted(os.listdir(top)) if os.path.isdir(top) else []:
-        path = os.path.join(top, name, "task.json")
-        if ("-stopped-" in name and not stopped) or not os.path.isfile(path):
+    listed = git("-C", results, "ls-tree", "--name-only", "HEAD",
+                 RUNS_DIR + "/", check=False).stdout.split()
+    for path in listed:
+        name = os.path.basename(path)
+        if "-stopped-" in name and not stopped:
             continue
-        out.append((name, json.loads(read(path))))
+        shown = git("-C", results, "show", f"HEAD:{path}/task.json",
+                    check=False)
+        if shown.returncode == 0:
+            out.append((name, json.loads(shown.stdout)))
+    if pending:
+        out.append(pending)
     return sorted(out, key=lambda r: r[1].get("sequence", 0))
 
 
-def effective_selection(results):
+def effective_selection(results, pending=None):
     """The part each function keeps: a later run's part overrides an
     earlier one, and a run that selected none leaves an earlier part."""
     eff = {}
-    for name, task in runs(results):
+    for name, task in runs(results, pending=pending):
         sel = (task.get("summary") or {}).get("selection") or {}
         for cat, entries in sel.items():
             for e in entries:
@@ -328,7 +336,9 @@ def effective_selection(results):
                         "part": e.get("part"), "rank": e.get("rank"),
                         "run": name,
                         "alternate_unverified":
-                            e.get("alternate_unverified") or []}
+                            e.get("alternate_unverified") or [],
+                        "second_source_missing":
+                            bool(e.get("second_source_missing"))}
                 elif held["part"] in (e.get("refuted") or []):
                     # This run refuted the part in force and kept none.
                     slot[e["function"]] = {"part": None, "rank": None,
@@ -343,18 +353,29 @@ def changed_under(tree, rel):
 
 def committed_questions(results):
     """The questions every committed P1 run confirmed: (run, question)."""
-    out = []
-    listed = git("-C", results, "ls-tree", "--name-only", "HEAD",
-                 RUNS_DIR + "/", check=False).stdout.split()
-    for path in listed:
-        name = os.path.basename(path)
-        shown = git("-C", results, "show", f"HEAD:{path}/task.json",
-                    check=False)
-        if "-stopped-" in name or shown.returncode:
-            continue
-        for q in (json.loads(shown.stdout).get("summary") or {}).get(
-                "questions", []):
-            out.append((name, q))
+    return [(name, q) for name, task in runs(results)
+            for q in (task.get("summary") or {}).get("questions", [])]
+
+
+def t6_open(results):
+    """What stands between the last P5/P6 check and T6: a part changed
+    after it, or conflicts and gaps it listed with no round 2 run."""
+    done = runs(results)
+    checks = [(n, t) for n, t in done if t.get("task") == "T5" or
+              (t.get("followup") or {}).get("phases") == "P5-P6"]
+    if not checks:
+        return ["no P5/P6 check is recorded"]
+    name, last = checks[-1]
+    out = [f"{n} changed a selection after {name}" for n, t in done
+           if t.get("sequence", 0) > last.get("sequence", 0)
+           and (t.get("summary") or {}).get("selection")]
+    items = len((last.get("summary") or {}).get("conflicts", [])) + \
+        len((last.get("summary") or {}).get("gaps", []))
+    round2 = any((t.get("followup") or {}).get("round") == 2
+                 for _, t in done)
+    if items and not round2:
+        out.append(f"{name} lists {items} conflicts and gaps; follow-up "
+                   "rounds have not reached round 2")
     return out
 
 
@@ -370,6 +391,9 @@ def open_selections(eff, categories):
         out += [f"{c}: {fn} (alternate {', '.join(e['alternate_unverified'])}"
                 " not verified)" for fn, e in eff.get(c, {}).items()
                 if e["part"] and e.get("alternate_unverified")]
+        out += [f"{c}: {fn} (no second source)"
+                for fn, e in eff.get(c, {}).items()
+                if e["part"] and e.get("second_source_missing")]
     return out
 
 
@@ -464,6 +488,16 @@ def cmd_prepare(args):
                          + ". Resolve them in a follow-up task, or pass "
                          "--accept-open REASON")
     if args.task == "T6":
+        open_t6 = t6_open(results)
+        if open_t6 and not args.accept_open:
+            raise SystemExit("before T6: " + "; ".join(open_t6)
+                             + ". Run the follow-up tasks, or pass "
+                             "--accept-open REASON")
+        open_sel += open_t6
+        dirty = [d for d in changed(results) if t6_output(d)]
+        if dirty:
+            raise SystemExit("the output paths have changes; commit or "
+                             "remove them before T6: " + ", ".join(dirty))
         missing = [q for q, d in decisions(text).items() if not d]
         if missing:
             raise SystemExit("the owner has not decided " + ", ".join(missing))
@@ -575,9 +609,7 @@ def cmd_record(args):
         with open(os.path.join(tmp, f"{name}.json"), "w") as f:
             json.dump(r, f, indent=1, ensure_ascii=False)
     meta = {k: v for k, v in result.items() if k != "returns"}
-    top = os.path.join(results, RUNS_DIR)
-    meta["sequence"] = 1 + len([n for n in os.listdir(top)
-                                if not n.endswith(".tmp")])
+    meta["sequence"] = 1 + len(runs(results, stopped=True))
     meta["output_sha256"] = digest
     with open(os.path.join(tmp, "task.json"), "w") as f:
         json.dump(meta, f, indent=1, ensure_ascii=False)
@@ -610,7 +642,8 @@ def cmd_record(args):
     if (result.get("summary") or {}).get("selection") and not stopped:
         sel = os.path.join(results, RUNS_DIR, "selection.json")
         with open(sel, "w") as f:
-            json.dump(effective_selection(results), f, indent=1,
+            json.dump(effective_selection(results, pending=(run, meta)), f,
+                      indent=1,
                       ensure_ascii=False)
         paths.append(sel)
     try:

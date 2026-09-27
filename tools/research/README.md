@@ -54,8 +54,11 @@ T4 and a P2-P4 follow-up while a question a committed P1 run raised for their
 categories is not yet under "Raised by P1", or is there without an answer,
 unless it only feeds Q4, Q8 or Q9. It numbers new
 questions after the last one on the page. Before T6 it refuses until the
-owner's decisions on Q4, Q8 and Q9 are written, then merges `research/round1`
-into the results tree. It refuses T3 and T5 while a function the earlier
+owner's decisions on Q4, Q8 and Q9 are written, while a part changed after the
+last P5/P6 check or that check lists conflicts or gaps with no round 2 run
+(unless `--accept-open REASON`), and while the output paths have changes; then
+it merges `research/round1` into the results tree. The gates read committed
+run records only. It refuses T3 and T5 while a function the earlier
 tasks cover has no verified part, unless `--accept-open REASON` records the
 owner's reason in the arguments. It records the Claude Code version, the
 model, the effort, the CPU count and the workflow concurrency there too.
