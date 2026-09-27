@@ -716,6 +716,11 @@ def sync_results(results):
         return
     if git("merge-base", "--is-ancestor", there, here,
            check=False).returncode == 0:
+        # Ahead by the merge before T6 alone is fine; ahead by records is
+        # not, as other clones cannot see them.
+        if git("diff", "--quiet", there, here, "--", RUNS_DIR,
+               check=False).returncode == 0:
+            return
         raise SystemExit(f"{RESULTS} holds records {remote} does not; push "
                          "it first")
     raise SystemExit(f"{RESULTS} and {remote} have diverged")
@@ -950,6 +955,17 @@ def cmd_prepare(args):
 
 # ----------------------------------------------------------------- record
 
+def set_aside(results, paths, result):
+    """A refused T6 leaves the output paths clean for the next attempt;
+    what P7 changed is kept in a stash, not lost."""
+    if not paths:
+        return ""
+    name = f"refused T6 {result.get('run_id', '')}"
+    git("-C", results, "stash", "push", "-q", "--include-untracked", "-m",
+        name, "--", *paths, check=False)
+    return f"; the changes are in the stash '{name}' of {results}"
+
+
 def cmd_record(args):
     base = os.path.abspath(os.path.expanduser(args.base))
     results = os.path.join(base, "results")
@@ -979,9 +995,12 @@ def cmd_record(args):
     dirty_runs = git("-C", results, "status", "--porcelain",
                      "--untracked-files=all", "--", RUNS_DIR)
     if dirty_runs:
-        raise SystemExit("recorded runs have uncommitted changes; the "
-                         "selection is built from committed records only:\n"
-                         + dirty_runs)
+        why = ("recorded runs have uncommitted changes; the selection is "
+               "built from committed records only:\n" + dirty_runs)
+        # After T6 those changes are P7's: set aside with its pages.
+        if args.task == "T6":
+            why += set_aside(results, changed(results), result)
+        raise SystemExit(why)
     for name, task in runs(results, stopped=True):
         if task.get("run_id") == want["run_id"] or \
                 task.get("output_sha256") == digest:
@@ -1039,7 +1058,10 @@ def cmd_record(args):
                 git("-C", results, "clean", "-fdq", "--", o, check=False)
     if args.task == "T6" and not stopped:
         dirty = changed(results)
-        rel = os.path.relpath(target, results)
+        rel = os.path.relpath(target, results).replace(os.sep, "/")
+
+        def in_run(d):
+            return d == rel or d.startswith(rel + "/")
         rets = result.get("returns", [])
         wrote = {f for r in rets if r["role"] == "P7"
                  for f in r["data"].get("files", [])}
@@ -1049,17 +1071,10 @@ def cmd_record(args):
                  for f in (r["data"].get("group_pages") or {}).values()}
 
         def refuse(why):
-            # A refused T6 leaves the output paths clean for the next
-            # attempt; what P7 changed is kept in a stash, not lost.
             shutil.rmtree(target, ignore_errors=True)
-            left = [d for d in changed(results) if not d.startswith(rel)]
-            if left:
-                name = f"refused T6 {result.get('run_id', '')}"
-                git("-C", results, "stash", "push", "-q",
-                    "--include-untracked", "-m", name, "--", *left,
-                    check=False)
-                why += f"; the changes are in the stash '{name}' of {results}"
-            raise SystemExit(why)
+            raise SystemExit(why + set_aside(
+                results, [d for d in changed(results) if not in_run(d)],
+                result))
 
         outside = sorted(f for f in pages if not GROUP_PAGE.fullmatch(f)
                          or f in T6_REQUIRED)
@@ -1073,7 +1088,7 @@ def cmd_record(args):
         if gone:
             refuse("T6 left these outputs missing: " + ", ".join(gone))
         allowed = set(T6_REQUIRED) | pages
-        stray = [d for d in dirty if not d.startswith(rel)
+        stray = [d for d in dirty if not in_run(d)
                  and not (d in allowed and d in wrote and d in seen)]
         unchanged = sorted(wrote - set(dirty))
         if unchanged:
@@ -1082,7 +1097,7 @@ def cmd_record(args):
             refuse("T6 changed files that are not outputs P7 declared and its "
                    "critic reviewed: " + ", ".join(stray))
         paths += [os.path.join(results, d) for d in dirty
-                  if not d.startswith(rel)]
+                  if not in_run(d)]
     if (result.get("summary") or {}).get("selection") and not stopped:
         sel = os.path.join(results, RUNS_DIR, "selection.json")
         with open(sel, "w") as f:

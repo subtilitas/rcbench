@@ -58,10 +58,12 @@ const JL = { sha256: 'sha', rows: 7, lcsc: [], manifest: 'm', manifest_created: 
 // nulls {label: count}, throws [label], critic 'none' | 'all', p0 {...}, hosts
 async function runTask(task, opts = {}) {
   const calls = []
+  const prompts = []
   const nulls = new Map(Object.entries(opts.nulls || {}))
   async function agent(prompt, o) {
     const base = o.label.replace(/:restart$/, '')
     calls.push(o.label)
+    prompts.push({ label: o.label, prompt })
     if ((opts.throws || []).includes(base)) throw new Error('mock throw')
     const left = nulls.get(base)
     if (left) { nulls.set(base, left - 1); return null }
@@ -92,6 +94,8 @@ async function runTask(task, opts = {}) {
       if (opts.fnNoReq) data.functions[0].requirements = []
       if (opts.p2DropY) data.functions[0].dropped = [{ part: 'partY', maker: 'm', reason: 'r' }]
       if (opts.foundNotRead) data.found_values = [{ question_id: 'V9', value: 'not read: HTTP 403', source: 's', read_at: 't' }]
+      if (opts.onBoardAltOfOff) { Object.assign(data.functions[0].shortlist[0], { lcsc: 'none', second_source_route: 'alternate', second_source_part: 'altOn' }); data.functions[0].shortlist.push({ ...cand(8), part: 'altOn', lcsc: 'C2' }) }
+      if (opts.weakReq) { data.functions[0].requirements = [{ name: 'x0', value: '>= 67.2 V', source: 's' }]; data.functions[0].shortlist.forEach(c => { c.requirements = [{ name: 'x0', required: '>= 40 V', datasheet: '45 V', pass: true, source: 's' }] }) }
       if (opts.offBoardAlt) { Object.assign(data.functions[0].shortlist[0], { lcsc: 'C1', second_source_route: 'alternate', second_source_part: 'altOff' }); data.functions[0].shortlist.push({ ...cand(8), part: 'altOff', lcsc: 'none' }) }
       if (opts.altName) Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: opts.altName })
       if (opts.qAlt) {
@@ -212,7 +216,7 @@ async function runTask(task, opts = {}) {
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
     `return (async () => {${src}})()`)
   const result = await fn(args, agent, parallel, pipeline, () => {}, () => {})
-  return { result, calls }
+  return { result, calls, prompts }
 }
 
 const r1 = r => r.result.summary.results.find(x => x.category === 'R1')
@@ -499,8 +503,8 @@ async function main() {
   r = await runTask('T2', { backAlt: true, refute: ['P4-stock-R1:part1'] })
   check(r1(r).selection[0].part === 'part2' && r1(r).selection[0].refuted.includes('part1') && r1(r).selection[0].alternate_unverified.includes('part1'), 'refuted part as a later alternate: stays refuted')
   // A P3 find dropped from the shortlist is re-read.
-  r = await runTask('T2', { p3missed: true, p3dropShort: true, omitFigure: ['P4-datasheet-R1', 're-rank drop: partX'] })
-  check(r.result.followUps.some(f => f.figure === 're-rank drop: partX' && f.reason === 'figure not verified'), 'P3 find dropped from the shortlist: re-read')
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, omitFigure: ['P4-datasheet-R1', 're-rank drop: f1: partX'] })
+  check(r.result.followUps.some(f => f.figure === 're-rank drop: f1: partX' && f.reason === 'figure not verified'), 'P3 find dropped from the shortlist: re-read')
   // Functions and parts given twice.
   r = await runTask('T2', { rrDup: true })
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => /function returned twice/.test(f.reason)), 'function ranked twice: not ranked')
@@ -543,6 +547,13 @@ async function main() {
   // A part on the board needs an alternate on the board.
   r = await runTask('T2', { offBoardAlt: true, verify: ['altOff'] })
   check(r1(r).selection[0].part === 'part1' && r1(r).selection[0].second_source_missing === true, 'off-board alternate of a part on the board: second source missing')
+  // A part off the board needs an alternate off the board.
+  r = await runTask('T2', { onBoardAltOfOff: true, verify: ['altOn'] })
+  check(r1(r).selection[0].second_source_missing === true, 'on-board alternate of a part off the board: second source missing')
+  // A candidate's weaker requirement value is replaced by the function's.
+  r = await runTask('T2', { weakReq: true })
+  const p4ds = r.prompts.find(x => x.label === 'P4-datasheet-R1').prompt
+  check(r.result.followUps.some(f => /states other values than the function/.test(f.reason)) && p4ds.includes('"required":">= 67.2 V"') && !p4ds.includes('"required":">= 40 V"'), 'candidate restating a requirement: checked against the function value')
   // A ruling with no evidence read is no ruling.
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], stands: false, unreadRuling: true })
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence read'), 'ruling without evidence read: no ruling')

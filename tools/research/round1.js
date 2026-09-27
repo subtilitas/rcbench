@@ -578,6 +578,15 @@ function merge(cat, p2, rr, p3) {
       followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} with a failed requirement: ${failing.map(r => r.name).join(', ')}` })
       return false
     }).map(c => {
+      // The function's value is the requirement; a candidate that states
+      // another is checked against the function's, its own pass unknown.
+      const fnValue = new Map((f2.requirements || []).map(r => [r.name, r.value]))
+      const norm = t => String(t || '').replace(/\s+/g, ' ').trim()
+      const restated = (c.requirements || []).filter(r => fnValue.has(r.name) && norm(r.required) !== norm(fnValue.get(r.name)))
+      if (restated.length) {
+        followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} states other values than the function for: ${restated.map(r => r.name).join(', ')}; checked against the function's`, notice: true })
+        c = { ...c, requirements: c.requirements.map(r => restated.includes(r) ? { ...r, required: fnValue.get(r.name), pass: null, restated: r.required } : r) }
+      }
       const have = new Set((c.requirements || []).map(r => r.name))
       const lack = need.filter(n => !have.has(n))
       if (!lack.length) return c
@@ -817,9 +826,9 @@ function selection(functions, ledger) {
     // refuted part does not.
     const alternateUnverified = altOf(kept) && !st({ part: altOf(kept) }).startsWith('verified') ? [altOf(kept)] : []
     const recOf = part => f.shortlist.find(c => c.part === part) || (f.alternateRecords || []).find(c => c.part === part) || null
-    // Rule 5's alternate passes rule 1 as the part does: a part on the board
-    // needs an alternate on the board.
-    const offBoardAlt = c => !!(altOf(c) && onBoard(c) && recOf(altOf(c)) && !onBoard(recOf(altOf(c))))
+    // Rule 5's alternate passes rule 1 as the part does: a part and its
+    // alternate are both on the board or both off it.
+    const offBoardAlt = c => !!(altOf(c) && recOf(altOf(c)) && onBoard(c) !== onBoard(recOf(altOf(c))))
     const qAlternatives = f.verify.filter(v => v.kind === 'q-alternative' && !(kept && v.part === kept.part)).map(v => {
       const rec = recOf(v.part)
       const alt = altOf(rec)
@@ -856,8 +865,14 @@ function figuresToCheck(cat, p2, rr, functions, p3) {
   // Every drop of a part P3 found or reopened, whichever list the re-rank
   // put it in.
   const fromP3 = new Set([...((p3 && p3.missed) || []), ...((p3 && p3.exclusions_not_holding) || [])].map(x => x.part))
+  // A part dropped under several functions is re-read under each.
   const drops = new Set()
-  for (const f of functions) for (const d of [...f.dropped_from_p3, ...f.dropped_from_shortlist]) if (d.part && (fromP3.has(d.part) || f.dropped_from_p3.includes(d)) && !drops.has(d.part)) { drops.add(d.part); add(`re-rank drop: ${d.part}`) }
+  for (const f of functions) {
+    for (const d of [...f.dropped_from_p3, ...f.dropped_from_shortlist]) {
+      const k = `${f.function}\u0000${d.part}`
+      if (d.part && (fromP3.has(d.part) || f.dropped_from_p3.includes(d)) && !drops.has(k)) { drops.add(k); add(`re-rank drop: ${f.function}: ${d.part}`) }
+    }
+  }
   return { names, missing }
 }
 
