@@ -12,7 +12,7 @@ and host table. Nothing here runs in CI (continuous integration) but
 | `schemas.json` | the return schema of each role: P0, P1, P1-critic, P1-recheck, P2, P3, rerank, P4 (both verifiers), adjudicator, P5, P5-critic, P6, P6-critic, P7, P7-critic |
 | `categories.json` | R1 to R13, the three groups, the cap of 32 and each task's planned agents |
 | `hosts.json` | each host P0 probes: its known page, its client, the regular expression the lifecycle status matches, and the categories it holds when unreachable |
-| `jlcparts.json` | the saved parts database of 2026-09-14: its path under the base directory, its SHA-256 (Secure Hash Algorithm, 256 bits) and its row count |
+| `jlcparts.json` | the saved parts database of 2026-09-14: its path under the base directory, its SHA-256 (Secure Hash Algorithm, 256 bits), its row count and its manifest's created time |
 | `vendors.py` | the readings agents take: a page (`fetch`), JLCPCB stock by exact LCSC number (`jlcpcb`), Digi-Key stock, lead time and status (`digikey`), each dated |
 | `session.py` | the session's side: `check`, `prepare`, `record`, `raised` |
 | `dryrun.js` | runs `round1.js` for every task with mock agents and checks the counting |
@@ -61,6 +61,11 @@ questions after the last one on the page and in the committed runs.
 
 It refuses these without exception:
 
+- Any task while its parts database (`--db`, or the path in `jlcparts.json`)
+  differs from `jlcparts.json` in its SHA-256, its `jlc_components` row count
+  or the created time of the `manifest.json` beside it. `prepare` reads all
+  three itself; P0 checks them again. On the research server hashing and
+  counting the saved copy of 5,940,703,232 bytes take 7 s.
 - T1 and P1 follow-ups while S1, S3 or S8 has no answer; T2 to T4 and P2-P4
   follow-ups while S2, S4 to S7, S9 (for R7) or a Blocking row naming one of
   their categories has no answer.
@@ -69,7 +74,9 @@ It refuses these without exception:
   or is there without an answer or under another category or question. T5,
   P5-P6 follow-ups and T6 check every category. A question that only feeds Q4,
   Q8 or Q9 (`blocks` is `decision-only` and `decision` names one of them)
-  needs no answer.
+  needs no answer. `round1.js` publishes a question as blocking P2 instead,
+  with a notice, unless its category is one that decision's "Reported by" cell
+  on the page names.
 - T6 while any of the rows Q4, Q8 and Q9 is missing or has no decision, and
   while the output paths have changes.
 
@@ -189,12 +196,23 @@ role only with its compatibility checks, and an alternate several primaries
 name is verified for the first only (the kept part, then the Q alternatives in
 order). A category whose chain failed is left out of the run's selection, so
 the gates read the run before it. Each assumption needs a confirmed question
-of its own, whose `for_where` is the assumption's location. P0 counts a host
-with two rows, or a status written as not read, none, no, false, absent or not
-in the page body, as not read. A P0 row counts only at its host's endpoint: an
-API client's command with the probe, a page client's probe URL, or with no
-probe a page on the host itself. The P7 critic checks at least one figure on
-each group page and each output under `hardware/docs/`, each check naming the
+of its own, whose `for_where` and `for_quantity` are the assumption's location
+and quantity. The P1 critic rules on a marking by the value's index, location
+and quantity, and a marking it upholds with the same marking is unchanged. A
+P1 critic or re-check verdict whose reason or evidence reads as none is no
+verdict. A P1 return with no value, and a category whose P1 and critic name no
+function, leave a P1 item. A P1 follow-up gives its items to P1 and the
+critic, and lists again each item its run did not deal with: a value its P1
+did not return, a question neither its P1 nor its critic raised (the same
+words, or the same `for_where` and `for_quantity`), and any other item of a
+category whose P1 or critic returned nothing; an item listed again stands for
+the item it carries. P0 counts a host with two rows, or a status written as
+not read, none, no, false, absent or not in the page body, as not read. A P0
+row counts only at its host's endpoint: an API client's command with the
+probe, whatever environment assignments (`DIGIKEY_ENV_FILE=...`, `env`) and
+interpreter path precede it, a page client's probe URL, or with no probe a
+page on the host itself. The P7 critic checks at least one figure on each
+group page and each output under `hardware/docs/`, each check naming the
 figure and the file under `hardware/research/round1/` it comes from, a path
 ending in `.json`; text after the path, such as `:34` or `#L34`, is not part
 of it, and `record` reads the same path.

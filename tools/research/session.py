@@ -35,8 +35,10 @@ import datetime
 import hashlib
 import json
 import os
+import pathlib
 import re
 import shutil
+import sqlite3
 import subprocess
 import sys
 
@@ -221,15 +223,24 @@ def spec_text(commit):
     return plan + "\0" + texts[1]
 
 
-def decisions(text):
-    """Q4, Q8, Q9 and the owner's entry in the Decision column."""
+def decisions(text, column=3):
+    """Q4, Q8, Q9 and the owner's entry in the Decision column; column 2
+    gives the Reported by cell instead."""
     sec = text.split("#### Decided on the research's output", 1)[-1]
     out = {}
     for line in sec.splitlines():
         c = cells(line)
         if c and len(c) == 4 and re.fullmatch(r"Q\d", c[0]):
-            out[c[0]] = c[3]
+            out[c[0]] = c[column]
     return out
+
+
+def decision_categories(text):
+    """The categories the Reported by column names for Q4, Q8 and Q9: the
+    only categories a question may feed that decision alone from."""
+    return {q: sorted(set(re.findall(r"\bR\d+\b", cell)),
+                      key=lambda c: int(c[1:]))
+            for q, cell in decisions(text, 2).items()}
 
 
 # ------------------------------------------------------------------ check
@@ -281,6 +292,8 @@ def cmd_check(_args):
     raised_rows(text)
     if set(decisions(text)) != {"Q4", "Q8", "Q9"}:
         fails.append("the decision table does not list Q4, Q8 and Q9")
+    if not all(decision_categories(text).values()):
+        fails.append("a decision's Reported by names no category")
     ids = [i for i, _, _ in blocking_rows(text)]
     if ids != [f"F{n}" for n in range(1, 17)] + ["Q7"]:
         fails.append(f"the Blocking table lists {ids}")
@@ -901,6 +914,46 @@ def pending_p1(base, results, run):
     return out
 
 
+def database_gate(db, manifest, info):
+    """The parts database is the saved copy of jlcparts.json: its SHA-256,
+    its jlc_components rows and its manifest's created time, read here
+    rather than taken from P0's return."""
+    digest = hashlib.sha256()
+    with open(db, "rb") as f:
+        for block in iter(lambda: f.read(1 << 20), b""):
+            digest.update(block)
+    wrong = []
+    if digest.hexdigest() != info["sha256"]:
+        wrong.append(f"SHA-256 {digest.hexdigest()}, not {info['sha256']}")
+    con = sqlite3.connect(pathlib.Path(db).as_uri() + "?mode=ro", uri=True)
+    try:
+        rows = con.execute("SELECT COUNT(*) FROM jlc_components").fetchone()[0]
+        if rows != info["rows"]:
+            wrong.append(f"{rows} jlc_components rows, not {info['rows']}")
+    except sqlite3.Error as err:
+        wrong.append(f"jlc_components not readable: {err}")
+    finally:
+        con.close()
+
+    def when(t):
+        try:
+            return datetime.datetime.fromisoformat(
+                str(t).strip().replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    try:
+        created = json.loads(read(manifest)).get("created")
+    except (ValueError, AttributeError):
+        created = None
+    if when(created) is None or when(created) != when(
+            info["manifest_created"]):
+        wrong.append(f"manifest created {created}, not "
+                     f"{info['manifest_created']}")
+    if wrong:
+        raise SystemExit(f"{db} is not the saved parts database: "
+                         + "; ".join(wrong))
+
+
 def cmd_prepare(args):
     not_on_research_branch()
     base = os.path.abspath(os.path.expanduser(args.base))
@@ -920,6 +973,7 @@ def cmd_prepare(args):
     for path in (db, manifest, env):
         if not os.path.isfile(path):
             raise SystemExit(f"{path} is not there")
+    database_gate(db, manifest, info)
     if not args.no_fetch:
         git("fetch", "-q", "origin")
     commit = git("rev-parse", f"origin/{BRANCH}")
@@ -1054,6 +1108,7 @@ def cmd_prepare(args):
                   "digikey_env": env},
         "followup": followup, "first_v": first_v,
         "decisions": decisions(text),
+        "decision_categories": decision_categories(text),
         "run": run, "run_id": run_id,
         "results_head": git("-C", results, "rev-parse", "HEAD"),
         "for_research": for_research,

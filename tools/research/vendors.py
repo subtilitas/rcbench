@@ -128,7 +128,9 @@ def cmd_jlcpcb(args):
     code = args.lcsc.upper()
     rows, _ = jlc_query(code)
     match = [p for p in rows if (p.get("componentCode") or "").upper() == code]
+    # jlc_query exits on any answer other than HTTP 200.
     emit({"api": JLC_URL, "keyword": code, "read_at": now(),
+          "http_status": 200,
           "exact_match": jlc_row(match[0]) if match else None,
           "other_results": len(rows) - len(match)})
     return 0 if match else 1

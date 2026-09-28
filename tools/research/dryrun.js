@@ -159,10 +159,19 @@ async function runTask(task, opts = {}) {
     if (role === 'P1' && opts.qCategory) data.questions = data.questions.map(q => ({ ...q, category: 'R99', source: 'mock' }))
     if (role === 'P1' && opts.decisionNone) data.questions = data.questions.map(q => ({ ...q, blocks: 'decision-only', decision: 'none' }))
     if (role === 'P1' && opts.contradict) data.values = data.values.map(v => ({ ...v, question: -1 }))
+    if (role === 'P1' && opts.noValues) data.values = []
+    if (role === 'P1' && opts.noFunctions) data.functions = []
+    if (role === 'P1' && opts.decisionQ9) data.questions = data.questions.map(q => ({ ...q, blocks: 'decision-only', decision: 'Q9' }))
+    if (role === 'P1' && opts.fuQuestion) data.questions[0].question = opts.fuQuestion
+    if (role === 'P1' && opts.sameQuantity) data.values = ['2.7 V', '3.6 V'].map(value => ({ where: 'IOBoard.md:40', quantity: 'supply voltage', value, marking: 'sourced', source: 's', refutation_tried: 'r', question: -1 }))
+    if (role === 'P1' && opts.sameLine) {
+      data.values = [['A', -1], ['B', 0]].map(([quantity, question]) => ({ where: 'IOBoard.md:1', quantity, value: '1 V', marking: 'assumption', source: 's', refutation_tried: 'r', question }))
+      data.questions = [{ function: 'rail', question: 'State A', why: 'w', blocks: 'p2', decision: 'none', for_where: 'IOBoard.md:1', for_quantity: 'A' }]
+    }
     if (role === 'P1' && opts.assumption) data.values = [{ where: 'IOBoard.md:1', quantity: 'ripple', value: '10 mV', marking: 'assumption', source: 's', refutation_tried: 'r', question: -1 }]
     if (role === 'P1' && (opts.twoAssumptions || opts.sharedQ)) {
       data.values = [1, 2].map(n => ({ where: `IOBoard.md:${n}`, quantity: 'voltage', value: `${n} V`, marking: 'assumption', source: 's', refutation_tried: 'r', question: n === 1 || opts.sharedQ ? 0 : -1 }))
-      data.questions = [{ function: 'rail', question: 'State the voltage of rail 1', why: 'w', blocks: 'p2', decision: 'none', for_where: opts.wrongWhere ? 'IOBoard.md:9' : 'IOBoard.md:1' }]
+      data.questions = [{ function: 'rail', question: 'State the voltage of rail 1', why: 'w', blocks: 'p2', decision: 'none', for_where: opts.wrongWhere ? 'IOBoard.md:9' : 'IOBoard.md:1', for_quantity: 'voltage' }]
     }
     if (role === 'P3') Object.assign(data, { missed: [], exclusions_not_holding: [], missed_functions: opts.missedFn ? [{ function: 'f2', why: 'the row names it' }] : [] })
     if (role === 'P3' && opts.p3missed) data.missed = [{ function: 'f1', part: 'partX', maker: 'm', why: 'w' }]
@@ -181,22 +190,32 @@ async function runTask(task, opts = {}) {
     }
     if (role === 'P1-recheck' && opts.recheckRejects) {
       const added = JSON.parse(/confirm or reject it[^\n]*\n([\s\S]*)$/.exec(prompt).pop().split('\n').pop())
-      data.verdicts = added.map(q => ({ category: q.category, index: q.index, verdict: 'rejected', evidence: 'e' }))
+      data.verdicts = added.map(q => ({ category: q.category, index: q.index, verdict: 'rejected', evidence: opts.recheckEvidence || 'e' }))
       return data
     }
     if (role === 'P1-recheck') {
       const added = JSON.parse(/confirm or reject it[^\n]*\n([\s\S]*)$/.exec(prompt).pop().split('\n').pop())
-      data.verdicts = added.map(q => ({ category: q.category, index: q.index, verdict: 'confirmed', evidence: 'e' }))
+      data.verdicts = added.map(q => ({ category: q.category, index: q.index, verdict: opts.recheckRejectSynthetic && q.synthetic ? 'rejected' : 'confirmed', evidence: 'e' }))
     }
     if (role === 'P1-critic') {
       if (opts.critic === 'none') data.question_verdicts = []
       else data.question_verdicts = (opts.twoAssumptions ? [0] : opts.dupVerdicts ? [0, 0, 1] : [0, 1]).map(index => ({ index, verdict: 'confirmed', reason: 'r' }))
       data.added = []
       data.marking_verdicts = opts.markings === 'none' ? [] : (opts.assumption
-        ? [{ where: 'IOBoard.md:1', quantity: 'ripple', verdict: 'holds', correct_marking: 'unchanged', reason: 'r' }]
-        : opts.twoAssumptions ? [1, 2].map(n => ({ where: `IOBoard.md:${n}`, quantity: 'voltage', verdict: 'holds', correct_marking: 'unchanged', reason: 'r' }))
-        : opts.contradict ? [{ where: 'x0', quantity: 'x0', verdict: 'wrong', correct_marking: 'unchanged', reason: 'r' }, { where: 'x1', quantity: 'x1', verdict: 'holds', correct_marking: 'unchanged', reason: 'r' }]
-        : [0, 1].map(i => ({ where: `x${i}`, quantity: `x${i}`, verdict: 'holds', correct_marking: 'unchanged', reason: 'r' })))
+        ? [{ index: 0, where: 'IOBoard.md:1', quantity: 'ripple', verdict: 'holds', correct_marking: 'unchanged', reason: 'r' }]
+        : opts.twoAssumptions ? [1, 2].map(n => ({ index: n - 1, where: `IOBoard.md:${n}`, quantity: 'voltage', verdict: 'holds', correct_marking: 'unchanged', reason: 'r' }))
+        : opts.contradict ? [{ index: 0, where: 'x0', quantity: 'x0', verdict: 'wrong', correct_marking: 'unchanged', reason: 'r' }, { index: 1, where: 'x1', quantity: 'x1', verdict: 'holds', correct_marking: 'unchanged', reason: 'r' }]
+        : [0, 1].map(i => ({ index: i, where: `x${i}`, quantity: `x${i}`, verdict: 'holds', correct_marking: 'unchanged', reason: 'r' })))
+      // Verdicts on P1's own values, by index, where and quantity.
+      const p1ret = JSON.parse(prompt.slice(prompt.lastIndexOf('\n') + 1))
+      if (opts.sameQuantity || opts.sameLine) data.marking_verdicts = p1ret.values.map((v, index) => ({ index, where: v.where, quantity: v.quantity, verdict: 'holds', correct_marking: 'unchanged', reason: 'r' }))
+      if (opts.restate) data.marking_verdicts = data.marking_verdicts.map(m => ({ ...m, correct_marking: 'sourced' }))
+      if (opts.blankReason) {
+        data.marking_verdicts = data.marking_verdicts.map(m => ({ ...m, verdict: 'wrong', correct_marking: 'owner', reason: '' }))
+        data.question_verdicts = data.question_verdicts.map(v => ({ ...v, verdict: 'rejected', reason: ' ' }))
+      }
+      if (opts.criticAdds) data.added = [opts.criticAdds]
+      if (opts.noFunctions) data.functions_missing = []
     }
     if (role === 'P4') {
       const only = /list only those: (\{.*\})/.exec(prompt)
@@ -250,7 +269,7 @@ async function runTask(task, opts = {}) {
   }
   const args = { task, cap: cats.cap, categories: cats.categories, tasks: cats.tasks, schemas,
     commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, inventory: opts.inventory || {}, jlcparts: JL, p5_budgets: opts.p5Budgets || [], p5_conditional: opts.p5Conditional || [], q_options: opts.qOptions || {},
-    followup: opts.followup, first_v: 5, t6_outputs: T6OUT, for_research: opts.forResearch || [], required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {} }
+    followup: opts.followup, first_v: 5, decision_categories: { Q4: ['R10'], Q8: ['R2', 'R12'], Q9: ['R3'] }, t6_outputs: T6OUT, for_research: opts.forResearch || [], required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {} }
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
     `return (async () => {${src}})()`)
   const result = await fn(args, agent, parallel, pipeline, () => {}, () => {})
@@ -373,6 +392,16 @@ async function main() {
   check(!r.calls.includes('P2-R3'), 'P0: a null-probe page on another host holds its categories')
   r = await runTask('T2', { hosts: jlc, rowUrl: 'https://jlcpcb.com/' })
   check(r.result.summary.stopped === true, 'P0: JLCPCB read without its probe stops a stock task')
+  // The Digi-Key command as run: its environment and interpreter path aside.
+  const dk = [{ host: 'api.digikey.com', client: 'digikey-api', probe: 'INA238AIDGSR', stop: 'stock-tasks', hold: [] }]
+  for (const u of ['DIGIKEY_ENV_FILE=/srv/dk.env python3 /srv/base/checkout-abc/tools/research/vendors.py digikey INA238AIDGSR',
+    'env DIGIKEY_ENV_FILE=/srv/dk.env python3 tools/research/vendors.py digikey INA238AIDGSR',
+    '/usr/bin/python3 /srv/checkout/tools/research/vendors.py digikey INA238AIDGSR']) {
+    r = await runTask('T2', { hosts: dk, rowUrl: u })
+    check(!r.result.summary.stopped, `P0: the Digi-Key command "${u}" counts`)
+  }
+  r = await runTask('T2', { hosts: dk, rowUrl: 'DIGIKEY_ENV_FILE=/srv/dk.env python3 tools/research/vendors.py digikey INA3221AIRGVR' })
+  check(r.result.summary.stopped === true, 'P0: the Digi-Key command at another part stops a stock task')
 
   // T6 without both P7 returns is stopped.
   r = await runTask('T6', { nulls: { 'P7-critic': 2 } })
@@ -798,6 +827,52 @@ async function main() {
   check(r.result.followUps.some(f => /more than one verdict/.test(f.reason)) && r.result.followUps.some(f => f.reason === 'P1 question not ruled on'), 'P1: duplicate verdicts count as not ruled')
   r = await runTask('T1', { assumption: true, recheckRejects: true })
   check(r.result.followUps.some(f => f.reason === 'assumption without a confirmed question'), 'P1: an assumption without a confirmed question is listed')
+  // A critic addition for another value on the assumption's line does not
+  // ask for the assumption; one for its quantity does.
+  const addAt = forQuantity => ({ function: 'display', question: `State the ${forQuantity}, in V`, why: 'w', blocks: 'p2', decision: 'none', for_where: 'IOBoard.md:1', for_quantity: forQuantity })
+  r = await runTask('T1', { assumption: true, criticAdds: addAt('cable drop') })
+  check(r.result.summary.questions.filter(q => q.synthetic).length === 13, 'P1: an addition for another quantity on the line leaves the assumption asked anew')
+  r = await runTask('T1', { assumption: true, criticAdds: addAt('cable drop'), recheckRejectSynthetic: true })
+  check(r.result.followUps.filter(f => f.reason === 'assumption without a confirmed question').length === 13, 'P1: a confirmed addition for another quantity on the line does not ask the assumption')
+  r = await runTask('T1', { assumption: true, criticAdds: addAt('ripple') })
+  check(!r.result.summary.questions.some(q => q.synthetic) && !r.result.followUps.some(f => f.reason === 'assumption without a confirmed question'), 'P1: an addition for the assumption\'s quantity asks it')
+  // Two assumptions on one line: a question for the first does not ask the
+  // second.
+  r = await runTask('T1', { sameLine: true })
+  check(r.result.summary.questions.filter(q => q.synthetic && q.for_quantity === 'B').length === 13, 'P1: a question for another quantity on the line does not ask the assumption')
+  // Two values of one line and quantity are ruled by index.
+  r = await runTask('T1', { sameQuantity: true })
+  check(!r.result.followUps.some(f => /more than one verdict|marking not ruled on/.test(f.reason)), 'P1: two values of one quantity on one line are each ruled')
+  // A verdict that restates the marking upholds it.
+  r = await runTask('T1', { restate: true })
+  check(!r.result.followUps.some(f => /taken as an assumption/.test(f.reason)) && !r.result.summary.questions.some(q => q.synthetic), 'P1: holds with the same marking keeps the marking')
+  // A verdict without its reason or evidence rules on nothing.
+  r = await runTask('T1', { blankReason: true })
+  check(r.result.followUps.filter(f => f.reason === 'marking not ruled on').length === 26 && r.result.followUps.filter(f => f.reason === 'P1 question not ruled on').length === 26, 'P1: critic verdicts without a reason are not ruled')
+  r = await runTask('T1', { criticAdds: { ...addAt('frames'), for_where: '', for_quantity: '' }, recheckRejects: true, recheckEvidence: 'not read' })
+  check(r.result.followUps.filter(f => f.reason === 'critic addition not ruled on').length === 13, 'P1: a re-check rejection without evidence is not ruled')
+  // A P1 with no value, or no function inventory, leaves a P1 item.
+  r = await runTask('T1', { noValues: true })
+  check(r.result.followUps.filter(f => f.role === 'P1' && !f.notice && /no value/.test(f.reason)).length === 13, 'P1: a return with no value is listed')
+  r = await runTask('T1', { noFunctions: true })
+  check(r.result.followUps.filter(f => f.role === 'P1' && !f.notice && /no function inventory/.test(f.reason)).length === 13, 'P1: an empty function inventory is listed')
+  // A decision-only question feeds only a decision its category reports.
+  r = await runTask('T1', { decisionQ9: true })
+  const q9 = r.result.summary.questions
+  check(q9.filter(q => q.category === 'R3').every(q => q.blocks === 'decision-only') && q9.filter(q => q.category !== 'R3').every(q => q.blocks === 'p2')
+    && r.result.followUps.some(f => f.category === 'R8' && /names no decision R8 reports/.test(f.reason)), 'P1: a Q9-only question outside R3 blocks P2')
+  // A P1 follow-up lists again each item its run did not deal with.
+  const overcurrent = 'What is the motor overcurrent threshold, in A?'
+  const fuItems = [{ role: 'P1-critic', category: 'R8', index: 1, question: overcurrent, reason: 'P1 question not ruled on' },
+    { role: 'P1', category: 'R8', value: { where: 'IOBoard.md:88', quantity: 'shunt' }, reason: 'assumption without a confirmed question' },
+    { role: 'P1', category: 'R8', reason: 'the P1 chain failed' }]
+  fuItems.push({ role: 'P1', category: 'R8', item: fuItems[0], reason: 'follow-up item this run did not deal with' })
+  r = await runTask('FU', { followup: { phases: 'P1', round: 1, categories: ['R8'], items: fuItems } })
+  const again = r.result.followUps.filter(f => f.reason === 'follow-up item this run did not deal with')
+  check(again.length === 3 && again.every(f => f.category === 'R8' && f.item.reason !== 'the P1 chain failed'), `P1 follow-up: ${again.length} items listed again, expected the question, the value and the question listed again`)
+  check(r.prompts.find(x => x.label === 'P1-critic-R8').prompt.includes(overcurrent), 'P1 follow-up: the critic is given the items')
+  r = await runTask('FU', { followup: { phases: 'P1', round: 1, categories: ['R8'], items: [fuItems[0], fuItems[3]] }, fuQuestion: overcurrent })
+  check(!r.result.followUps.some(f => f.reason === 'follow-up item this run did not deal with'), 'P1 follow-up: a question raised again is dealt with')
 
   // P0's own stop and held fields do not decide the outcome.
   r = await runTask('T2', { p0: { stop: true, stop_reasons: ['mock'], held: [{ category: 'R1', host: 'h', reason: 'mock' }] } })

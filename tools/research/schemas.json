@@ -196,6 +196,10 @@
     "for_where": {
      "type": "string",
      "description": "the where (file:line) of the value this question asks for, or empty"
+    },
+    "for_quantity": {
+     "type": "string",
+     "description": "the quantity of the value this question asks for, as P1's values name it, or empty"
     }
    },
    "required": [
@@ -204,7 +208,8 @@
     "why",
     "blocks",
     "decision",
-    "for_where"
+    "for_where",
+    "for_quantity"
    ]
   },
   "conflict": {
@@ -572,6 +577,10 @@
      "items": {
       "type": "object",
       "properties": {
+       "index": {
+        "type": "integer",
+        "description": "0-based index into P1's values"
+       },
        "where": {
         "type": "string"
        },
@@ -599,6 +608,7 @@
        }
       },
       "required": [
+       "index",
        "where",
        "quantity",
        "verdict",

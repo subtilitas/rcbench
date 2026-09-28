@@ -170,13 +170,14 @@ function p1Prompt(cat) {
   const items = TASK === 'FU' ? itemsFor(cat) : []
   return `${ctx('P1', cat, `P1-${cat}`)}
 
-Read the ${cat} row on the page and every line of hardware/docs/IOBoard.md that belongs to it (search for "${cat}" and for the functions the row names), and every source they cite. Try to refute each value: does it follow from its source, is the unit right, is it an owner decision or an assumption. Mark each. Every value you mark assumption is also a question to the owner; give each value the index of the question that asks for it in "question" (-1 if none), and give that question the value's where in for_where. List in functions every function the row and those lines name, one short name each. List every requirement value P2 needs to qualify a part that neither page states, as a question to the owner; and every "P1 asks" in the row or in those lines. ${cat === 'R5' ? 'The supply currents of the parts T2 and T4 select are inputs R5 takes from those tasks, not questions. ' : ''}A question whose value only feeds Q4, Q8 or Q9 is blocks "decision-only". A question already under "Raised by P1" is not raised again.${items.length ? `\n\nThis is a follow-up task for these gaps: ${J(items)}` : ''}`
+Read the ${cat} row on the page and every line of hardware/docs/IOBoard.md that belongs to it (search for "${cat}" and for the functions the row names), and every source they cite. Try to refute each value: does it follow from its source, is the unit right, is it an owner decision or an assumption. Mark each. Every value you mark assumption is also a question to the owner; give each value the index of the question that asks for it in "question" (-1 if none), and give that question the value's where in for_where and its quantity in for_quantity. List in functions every function the row and those lines name, one short name each. List every requirement value P2 needs to qualify a part that neither page states, as a question to the owner; and every "P1 asks" in the row or in those lines. ${cat === 'R5' ? 'The supply currents of the parts T2 and T4 select are inputs R5 takes from those tasks, not questions. ' : ''}A question whose value only feeds Q4, Q8 or Q9, in a category that decision's "Reported by" names, is blocks "decision-only" with that decision. A question already under "Raised by P1" is not raised again.${items.length ? `\n\nThis is a follow-up task for these gaps: ${J(items)}` : ''}`
 }
 
 function criticPrompt(cat, p1) {
+  const items = TASK === 'FU' ? itemsFor(cat) : []
   return `${ctx('P1-critic', cat, `P1-critic-${cat}`)}
 
-You are the critic of P1 for ${cat}. Re-derive each marking and each question below from the sources yourself. Rule on every marking once, copying its where and quantity exactly: holds with correct_marking unchanged, or wrong with the correct marking. Rule on every question once by its 0-based index (confirmed or rejected); a question you give no verdict is sent to a follow-up task, not to the owner. A marking you correct to assumption is also added as a question, with that value's where in for_where. Then look for values P1 did not mark and for missing values P1 did not list, and add each as a question. List in functions_missing every function the row or its lines name that P1's functions lacks.
+You are the critic of P1 for ${cat}. Re-derive each marking and each question below from the sources yourself. Rule on every marking once by its 0-based index in values, copying its where and quantity exactly: holds with correct_marking unchanged, or wrong with the correct marking. Rule on every question once by its 0-based index (confirmed or rejected); a question you give no verdict is sent to a follow-up task, not to the owner. Give every verdict its reason; a verdict without one is no verdict. A marking you correct to assumption is also added as a question, with that value's where in for_where and its quantity in for_quantity. Then look for values P1 did not mark and for missing values P1 did not list, and add each as a question. List in functions_missing every function the row or its lines name that P1's functions lacks.${items.length ? `\n\nThis is a follow-up task for these gaps. Check that P1's return deals with each, and add as a question a value one of them asks for that P1 did not raise: ${J(items)}` : ''}
 
 P1's return:
 ${J(p1)}`
@@ -185,7 +186,7 @@ ${J(p1)}`
 function recheckPrompt(added) {
   return `${ctx('P1-recheck', '', 'P1-recheck')}
 
-The P1 critics added the questions below. P1 did not raise them. Re-derive each from the same sources and confirm or reject it, citing the evidence. Give a verdict on every one, by its category and its 0-based index in that category's list.
+The P1 critics added the questions below. P1 did not raise them. Re-derive each from the same sources and confirm or reject it, citing the evidence; a verdict without evidence is no verdict. Give a verdict on every one, by its category and its 0-based index in that category's list.
 ${J(added)}`
 }
 
@@ -331,8 +332,9 @@ function notFound(text) {
 function probedAsTold(h, row) {
   if (row.client !== h.client) return false
   const url = String(row.url || '').trim()
-  // The command compares without its interpreter and the script's path.
-  const words = t => String(t).split(/\s+/).filter(Boolean).join(' ').replace(/^python3 /, '').replace(/^\S*vendors\.py/, 'vendors.py')
+  // The command compares without its environment (env, NAME=value), its
+  // interpreter's path and the script's path.
+  const words = t => String(t).split(/\s+/).filter(Boolean).join(' ').replace(/^(env )?([A-Za-z_]\w*=\S* )*(\S*\/)?python3 /, '').replace(/^\S*vendors\.py/, 'vendors.py')
   // An API client runs its command with the probe; a page client fetches
   // the probe URL, or, with no probe, a page on the host itself.
   const command = (A.clients || {})[h.client]
@@ -412,6 +414,12 @@ function uniqueVerdicts(list, key, where) {
   return out
 }
 
+// A verdict whose reason or evidence reads as none rules on nothing.
+const reasoned = (list, field) => (list || []).filter(v => !readsNone(v[field]))
+
+// A value, and the question that asks for it, by its where and quantity.
+const at = (where, quantity) => `${where}\u0000${quantity}`
+
 async function phaseP1(cats) {
   phase('P1')
   const chains = await pipeline(
@@ -433,29 +441,37 @@ async function phaseP1(cats) {
   // in contradiction (holds with a new marking, or wrong with none) counts as
   // an assumption.
   for (const c of byCat.values()) {
+    // Every row states values: a P1 that returns none marked and checked
+    // nothing.
+    if (c.p1 && !(c.p1.values || []).length) followUps.push({ role: 'P1', category: c.cat, reason: 'P1 returned no value; nothing was marked' })
     if (!c.p1 || !c.critic) continue
-    const mv = uniqueVerdicts(c.critic.marking_verdicts, x => `${x.where}\u0000${x.quantity}`, { role: 'P1-critic', category: c.cat })
-    c.ruledQ = uniqueVerdicts(c.critic.question_verdicts, x => x.index, { role: 'P1-critic', category: c.cat })
+    // A marking verdict names its value by index, where and quantity: two
+    // values of one line may share a quantity.
+    const mv = uniqueVerdicts(reasoned(c.critic.marking_verdicts, 'reason'), x => `${x.index}\u0000${at(x.where, x.quantity)}`, { role: 'P1-critic', category: c.cat })
+    c.ruledQ = uniqueVerdicts(reasoned(c.critic.question_verdicts, 'reason'), x => x.index, { role: 'P1-critic', category: c.cat })
     c.assumptions = []
     c.extra = []
     // A P1 question asks for one value, and a critic addition covers one
-    // value at its where: an assumption that shares either is not asked.
+    // value by its where and quantity: an assumption that shares either is
+    // not asked.
     const claimed = new Set()
     const criticAt = new Map()
-    for (const q of c.critic.added || []) if (q.for_where) criticAt.set(q.for_where, (criticAt.get(q.for_where) || 0) + 1)
-    for (const v of c.p1.values || []) {
-      const m = mv.get(`${v.where}\u0000${v.quantity}`)
+    for (const q of c.critic.added || []) if (q.for_where) criticAt.set(at(q.for_where, q.for_quantity), (criticAt.get(at(q.for_where, q.for_quantity)) || 0) + 1)
+    for (const [i, v] of (c.p1.values || []).entries()) {
+      const m = mv.get(`${i}\u0000${at(v.where, v.quantity)}`)
       let marking = v.marking
       if (!m) followUps.push({ role: 'P1-critic', category: c.cat, value: v, reason: 'marking not ruled on' })
-      else if (m.verdict === 'holds' && m.correct_marking !== 'unchanged') { marking = 'assumption'; followUps.push({ role: 'P1-critic', category: c.cat, value: v, reason: 'marking holds with a new marking; taken as an assumption', notice: true }) }
+      else if (m.verdict === 'holds' && m.correct_marking !== 'unchanged' && m.correct_marking !== v.marking) { marking = 'assumption'; followUps.push({ role: 'P1-critic', category: c.cat, value: v, reason: 'marking holds with a new marking; taken as an assumption', notice: true }) }
       else if (m.verdict === 'wrong' && (m.correct_marking === 'unchanged' || m.correct_marking === v.marking)) { marking = 'assumption'; followUps.push({ role: 'P1-critic', category: c.cat, value: v, reason: 'marking wrong with no new marking; taken as an assumption', notice: true }) }
       else if (m.verdict === 'wrong') marking = m.correct_marking
       if (marking !== 'assumption') continue
-      const ownQ = v.question >= 0 && v.question < (c.p1.questions || []).length && (c.ruledQ.get(v.question) || {}).verdict !== 'rejected' && !claimed.has(v.question) && c.p1.questions[v.question].for_where === v.where
+      const q = v.question >= 0 ? (c.p1.questions || [])[v.question] : null
+      const ownQ = !!q && (c.ruledQ.get(v.question) || {}).verdict !== 'rejected' && !claimed.has(v.question) && at(q.for_where, q.for_quantity) === at(v.where, v.quantity)
       if (ownQ) { claimed.add(v.question); c.assumptions.push({ ...v, asked: 'own' }); continue }
       c.assumptions.push({ ...v, asked: 'addition' })
-      if ((criticAt.get(v.where) || 0) > 0) { criticAt.set(v.where, criticAt.get(v.where) - 1); continue }
-      c.extra.push({ function: v.quantity, question: `State ${v.quantity}. P1 read "${v.value}" at ${v.where} and it is marked an assumption.`, why: 'every assumption is a question to the owner (P1 row)', blocks: 'p2', decision: 'none', for_where: v.where, synthetic: true })
+      const k = at(v.where, v.quantity)
+      if ((criticAt.get(k) || 0) > 0) { criticAt.set(k, criticAt.get(k) - 1); continue }
+      c.extra.push({ function: v.quantity, question: `State ${v.quantity}. P1 read "${v.value}" at ${v.where} and it is marked an assumption.`, why: 'every assumption is a question to the owner (P1 row)', blocks: 'p2', decision: 'none', for_where: v.where, for_quantity: v.quantity, synthetic: true })
     }
   }
   const added = []
@@ -465,7 +481,7 @@ async function phaseP1(cats) {
   let recheck = { verdicts: [] }
   if (added.length) recheck = await run('P1-recheck', '', 'P1-recheck', 'P1', recheckPrompt(added))
   else skipped.push({ role: 'P1-recheck', reason: 'no question was added, so none needed a re-check' })
-  const rv = recheck ? uniqueVerdicts(recheck.verdicts, x => `${x.category}\u0000${x.index}`, { role: 'P1-recheck' }) : new Map()
+  const rv = recheck ? uniqueVerdicts(reasoned(recheck.verdicts, 'evidence'), x => `${x.category}\u0000${x.index}`, { role: 'P1-recheck' }) : new Map()
   // Questions reach the owner only when checked: P1's by its critic, a
   // critic's addition by the re-check. Unchecked ones go to a follow-up.
   const questions = []
@@ -483,30 +499,52 @@ async function phaseP1(cats) {
       if (v && v.verdict === 'confirmed') {
         questions.push({ ...q, category: cat, source: 'P1' })
         confirmedIdx.add(i)
-      } else if (!v) followUps.push({ role: 'P1-critic', category: cat, index: i, question: q.question, reason: 'P1 question not ruled on' })
+      } else if (!v) followUps.push({ role: 'P1-critic', category: cat, index: i, question: q.question, for_where: q.for_where, for_quantity: q.for_quantity, reason: 'P1 question not ruled on' })
     })
     ;[...(c.critic.added || []), ...(c.extra || [])].forEach((q, i) => {
-      if (!recheck) { followUps.push({ role: 'P1-recheck', category: cat, index: i, question: q.question, reason: 'critic addition not checked' }); return }
+      if (!recheck) { followUps.push({ role: 'P1-recheck', category: cat, index: i, question: q.question, for_where: q.for_where, for_quantity: q.for_quantity, reason: 'critic addition not checked' }); return }
       const v = rv.get(`${cat}\u0000${i}`)
-      if (!v) followUps.push({ role: 'P1-recheck', category: cat, index: i, question: q.question, reason: 'critic addition not ruled on' })
+      if (!v) followUps.push({ role: 'P1-recheck', category: cat, index: i, question: q.question, for_where: q.for_where, for_quantity: q.for_quantity, reason: 'critic addition not ruled on' })
       else if (v.verdict === 'confirmed') {
         questions.push({ ...q, category: cat, source: 'P1 critic, re-checked' })
-        if (q.for_where) confirmedAt.set(q.for_where, (confirmedAt.get(q.for_where) || 0) + 1)
+        if (q.for_where) confirmedAt.set(at(q.for_where, q.for_quantity), (confirmedAt.get(at(q.for_where, q.for_quantity)) || 0) + 1)
       }
     })
     // Every assumption ends with a confirmed question of its own, or is
-    // listed: its own P1 question, or one confirmed addition at its where.
+    // listed: its own P1 question, or one confirmed addition for its where
+    // and quantity.
     for (const a of c.assumptions) {
       if (a.asked === 'own' && confirmedIdx.has(a.question)) continue
-      if ((confirmedAt.get(a.where) || 0) > 0) { confirmedAt.set(a.where, confirmedAt.get(a.where) - 1); continue }
+      const k = at(a.where, a.quantity)
+      if ((confirmedAt.get(k) || 0) > 0) { confirmedAt.set(k, confirmedAt.get(k) - 1); continue }
       const { asked, ...value } = a
       followUps.push({ role: 'P1', category: cat, value, reason: 'assumption without a confirmed question' })
     }
   }
-  // A question feeds a decision only when it names Q4, Q8 or Q9; one that
-  // names none blocks P2 until answered.
-  for (const q of questions) if (q.blocks === 'decision-only' && !['Q4', 'Q8', 'Q9'].includes(q.decision)) {
-    followUps.push({ role: 'P1', category: q.category, question: q.question, reason: 'decision-only question names no decision; published as blocking P2', notice: true })
+  // A P1 follow-up deals with each of its items, or lists it again: a value
+  // item needs the value in this run's P1 return, a question item the
+  // question in P1's questions or the critic's additions (by its words, or
+  // by its where and quantity), any other item P1 and its critic returning.
+  // What the run then leaves open it lists as its own; an item listed again
+  // is judged by the item it carries.
+  const inner = x => x.item ? inner(x.item) : x
+  if (TASK === 'FU') for (const cat of cats) {
+    const c = byCat.get(cat) || {}
+    const words = t => String(t || '').split(/\s+/).filter(Boolean).join(' ')
+    const raisedQ = [...((c.p1 || {}).questions || []), ...((c.critic || {}).added || []), ...(c.extra || [])]
+    for (const item of itemsFor(cat)) {
+      const it = inner(item)
+      const done = it.value ? ((c.p1 || {}).values || []).some(v => at(v.where, v.quantity) === at(it.value.where, it.value.quantity))
+        : it.question ? raisedQ.some(q => words(q.question) === words(it.question) || (!!it.for_where && at(q.for_where, q.for_quantity) === at(it.for_where, it.for_quantity)))
+          : !!(c.p1 && c.critic)
+      if (!done) followUps.push({ role: 'P1', category: cat, item, reason: 'follow-up item this run did not deal with' })
+    }
+  }
+  // A question feeds a decision only when it names Q4, Q8 or Q9 and its
+  // category is one the decision's Reported by names (Decided table); any
+  // other blocks P2 until answered.
+  for (const q of questions) if (q.blocks === 'decision-only' && !((A.decision_categories || {})[q.decision] || []).includes(q.category)) {
+    followUps.push({ role: 'P1', category: q.category, question: q.question, reason: `decision-only question names no decision ${q.category} reports; published as blocking P2`, notice: true })
     q.blocks = 'p2'
   }
   questions.forEach((q, i) => { q.id = `V${(A.first_v || 1) + i}` })
@@ -517,6 +555,9 @@ async function phaseP1(cats) {
     const c = byCat.get(cat)
     if (!c || !c.p1 || !c.critic) continue
     inventory[cat] = [...new Set([...(c.p1.functions || []), ...(c.critic.functions_missing || [])].map(n => String(n).trim()).filter(Boolean))]
+    // Every row names functions: an empty inventory is a check that did
+    // not run, and would leave P2's returns unchecked against it.
+    if (!inventory[cat].length) followUps.push({ role: 'P1', category: cat, reason: 'no function inventory from P1 and its critic' })
   }
   return { questions, inventory }
 }
