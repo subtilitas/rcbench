@@ -1783,6 +1783,11 @@ def cmd_script(args):
     The arguments of a run grow past 100 KB once P1 has raised questions;
     embedding them leaves nothing to copy by hand. Only the line
     `const A = args || {}` changes, and the result is read back."""
+    m = re.fullmatch(r"FU-(.+)", args.run)
+    if not (args.run in TASKS and args.run != "FU" or m and NAME.fullmatch(
+            m.group(1)) and "stopped" not in m.group(1)):
+        raise SystemExit(f"{args.run!r} is not a run: T1 to T6, or FU-NAME "
+                         "with NAME of letters and digits")
     base = os.path.abspath(os.path.expanduser(args.base))
     prepared = os.path.join(base, f"args-{args.run}.json")
     if not os.path.isfile(prepared):
@@ -1800,14 +1805,22 @@ def cmd_script(args):
     out = lines[:i] + [f"// The arguments of {args.run}, run "
                        f"{a.get('run_id')}, from {prepared}.",
                        embedded] + lines[i + 1:]
-    back = "\n".join(out).split("\n")
-    if back[:i] != lines[:i] or back[i + 2:] != lines[i + 1:] or \
-            json.loads(back[i + 1][len("const A = "):]) != a:
+    # Written beside the target, read back from the file, then renamed.
+    target = os.path.join(base, f"round1-{args.run}.js")
+    tmp = target + ".tmp"
+    with open(tmp, "w") as f:
+        f.write("\n".join(out))
+    back = read(tmp).split("\n")
+    try:
+        same = back[:i] == lines[:i] and back[i + 2:] == lines[i + 1:] \
+            and json.loads(back[i + 1][len("const A = "):]) == a
+    except (IndexError, ValueError):
+        same = False
+    if not same:
+        os.remove(tmp)
         raise SystemExit("the script does not read back as round1.js with "
                          "the prepared arguments")
-    target = os.path.join(base, f"round1-{args.run}.js")
-    with open(target, "w") as f:
-        f.write("\n".join(out))
+    os.replace(tmp, target)
     print(f"{target}: {args.run}, run {a.get('run_id')}; Workflow tool "
           "scriptPath, no args")
     return 0
