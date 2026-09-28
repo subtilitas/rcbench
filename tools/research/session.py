@@ -271,6 +271,9 @@ def decisions(text, column=3):
     for line in sec.splitlines():
         c = cells(line)
         if c and len(c) == 4 and re.fullmatch(r"Q\d", c[0]):
+            # Two rows for one decision leave no single decision.
+            if c[0] in out:
+                raise SystemExit(f"the decision table has two rows for {c[0]}")
             out[c[0]] = c[column]
     return out
 

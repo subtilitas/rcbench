@@ -736,7 +736,10 @@ function merge(cat, p2, rr, p3) {
       let last = shortlist.length ? shortlist[shortlist.length - 1].rank : 0
       for (const c of contradicted ? [] : pool) {
         if (shortlist.some(x => x.part === c.part)) continue
-        if (altNames.has(c.part)) { alternateRecords.push(c); continue }
+        // A record only an alternate stays one; a candidate P2 shortlisted
+        // needs its place in the ranking as well.
+        const p2Candidate = (f2.shortlist || []).some(x => x.part === c.part)
+        if (altNames.has(c.part)) { alternateRecords.push(c); if (!p2Candidate) continue }
         if (dropped.has(c.part)) continue
         shortlist.push({ ...c, rank: ++last, reason: 'not ranked by the re-rank; kept in P2 order' })
         followUps.push({ role: 'rerank', category: cat, function: name, part: c.part, reason: 'candidate neither ranked nor dropped' })
@@ -1538,7 +1541,8 @@ if (TASK === 'T6') {
     // Each part on the page of its category's group.
     for (const o of OWED_PARTS) if (!(critic.part_rows || []).some(x => x.function === o.function && x.part === o.part && x.parts_line > 0 && x.group_page === ((p7 && p7.group_pages) || {})[o.group])) failed.push(`no Parts.md row or group ${o.group} page for ${o.part} (${o.function}, ${o.category})`)
     const review = uniqueVerdicts(reasoned(critic.jlc_stock_review, 'reason'), x => x.index, { role: 'P7-critic' })
-    ;(A.jlc_stock_row || []).forEach((sentence, i) => { if (!(review.get(i) || {}).holds) failed.push(`tools/jlc_stock.py not confirmed: ${sentence}`) })
+    // A sentence holds with the line of tools/jlc_stock.py that does it.
+    ;(A.jlc_stock_row || []).forEach((sentence, i) => { const v = review.get(i) || {}; if (!(v.holds && v.line > 0)) failed.push(`tools/jlc_stock.py not confirmed: ${sentence}`) })
   }
   if (!p7 || !critic) summary = { ...summary, stopped: true, reasons: [!p7 ? 'P7 returned nothing' : 'the P7 critic returned nothing'] }
   else if (failed.length) summary = { ...summary, stopped: true, reasons: [`checks failed: ${failed.join(', ')}`] }

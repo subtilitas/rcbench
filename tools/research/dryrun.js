@@ -1283,6 +1283,12 @@ async function main() {
   // Each part is named on the page of its category's group.
   r = await runTask('T6', { ...selQ, partRows: ['part1', 'part4', 'part5', 'altS'].map(part => ({ function: 'f1', part, parts_line: 4, group_page: 'hardware/docs/GroupA.md' })) })
   check(r.result.summary.stopped === true && /group C page for part1/.test(r.result.summary.reasons[0]), 'T6: an R10 part named only on the group A page stops it')
+  // A stock-tool verdict holds with a line of the tool that does it.
+  r = await runTask('T6', { ...selT6, partRows: rows, jlcReview: [{ index: 0, holds: true, line: 0, reason: 'r' }] })
+  check(r.result.summary.stopped === true && /jlc_stock.py not confirmed/.test(r.result.summary.reasons[0]), 'T6: a stock-tool verdict without its line stops it')
+  // A candidate P2 shortlisted that is also another's alternate keeps its place.
+  r = await runTask('T2', { altName: 'part2', ranked: [1] })
+  check(r.result.followUps.some(f => f.part === 'part2' && f.reason === 'candidate neither ranked nor dropped'), 'P2 candidate named as an alternate and not ranked: kept in P2 order, listed')
   // Every figure P7 wrote needs a check of its own.
   r = await runTask('T6', { p7Figures: [{ file: 'hardware/docs/Parts.md', line: 1, figure: 'stock' }, { file: 'hardware/docs/Parts.md', line: 2, figure: '42 mA' }] })
   check(r.result.summary.stopped === true && /figures P7 wrote without a check/.test(r.result.summary.reasons[0]), 'T6: a figure P7 wrote without a check stops it')
