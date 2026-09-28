@@ -545,12 +545,20 @@
      "items": {
       "$ref": "question"
      }
+    },
+    "functions": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "every function the category row and its lines in IOBoard.md name, one short name each; P2 returns an entry for each by this name"
     }
    },
    "required": [
     "category",
     "values",
-    "questions"
+    "questions",
+    "functions"
    ]
   },
   "P1-critic": {
@@ -631,13 +639,21 @@
      "items": {
       "$ref": "question"
      }
+    },
+    "functions_missing": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "functions the row or its lines name that P1's functions list lacks"
     }
    },
    "required": [
     "category",
     "marking_verdicts",
     "question_verdicts",
-    "added"
+    "added",
+    "functions_missing"
    ]
   },
   "P1-recheck": {
@@ -1144,6 +1160,14 @@
     },
     "evidence": {
      "type": "string"
+    },
+    "source": {
+     "type": "string",
+     "description": "the URL, datasheet table or API call the ruling re-read"
+    },
+    "read_at": {
+     "type": "string",
+     "description": "the time the ruling's evidence was read"
     }
    },
    "required": [
@@ -1152,7 +1176,9 @@
     "part",
     "stands",
     "ruling",
-    "evidence"
+    "evidence",
+    "source",
+    "read_at"
    ]
   },
   "P5": {

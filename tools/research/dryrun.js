@@ -222,6 +222,7 @@ async function runTask(task, opts = {}) {
       if (m) { data.part = m[1]; data.function = m[2] } else if (g) { data.part = ''; data.function = g[1] }
       if (opts.wrongRuling) data.part = 'another'
       if (opts.unreadRuling) data.evidence = 'not read'
+      if (opts.unsourcedRuling) data.source = ''
     }
     return data
   }
@@ -237,7 +238,7 @@ async function runTask(task, opts = {}) {
     }))
   }
   const args = { task, cap: cats.cap, categories: cats.categories, tasks: cats.tasks, schemas,
-    commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, jlcparts: JL, p5_budgets: opts.p5Budgets || [], p5_conditional: opts.p5Conditional || [], q_options: opts.qOptions || {},
+    commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, inventory: opts.inventory || {}, jlcparts: JL, p5_budgets: opts.p5Budgets || [], p5_conditional: opts.p5Conditional || [], q_options: opts.qOptions || {},
     followup: opts.followup, first_v: 5, t6_outputs: T6OUT, for_research: opts.forResearch || [], required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {} }
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
     `return (async () => {${src}})()`)
@@ -642,6 +643,16 @@ async function main() {
   // A class the datasheet verifier did not confirm does not count.
   r = await runTask('T4', { qAlt: true, p4parts: ['part3', 'altQ'], qOptions: { Q4: ['reference', 'external ADC'] }, qOption: 'external ADC', keptOption: 'reference', omitFigure: ['P4-datasheet-R10', 'Q option: f1: part3: external ADC'] })
   check(r.result.summary.results.find(c => c.category === 'R10').selection[0].q_options_missing.includes('external ADC'), 'Q class not confirmed: missing')
+  // A ruling without its source is no ruling.
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'], stands: false, unsourcedRuling: true })
+  check(r1(r).selection[0].part === null, 'ruling without a source: no ruling')
+  // A function of the P1 inventory that P2 did not return stays open.
+  r = await runTask('T2', { inventory: { R1: ['f1', 'latch'] } })
+  check(r1(r).selection.some(e => e.function === 'latch' && e.part === null) && r.result.followUps.some(f => f.function === 'latch' && /P1 inventory/.test(f.reason)), 'inventory function P2 did not return: open')
+  check(r.prompts.find(x => x.label === 'P2-R1').prompt.includes('latch'), 'P2 is told the inventory')
+  // T1 returns each category's inventory from P1 and its critic.
+  r = await runTask('T1')
+  check(r.result.summary.inventory && Array.isArray(r.result.summary.inventory.R1) && r.result.summary.inventory.R1.length > 0, 'T1: inventory per category')
   // A malformed LCSC number drops the candidate.
   r = await runTask('T2', { lcsc: 'C123oops' })
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => /LCSC number "C123oops"; dropped/.test(f.reason)), 'malformed LCSC number: dropped')
@@ -690,7 +701,7 @@ async function main() {
   check(r.prompts.find(x => x.label === 'P2-R2').prompt.includes('frames held'), 'P2 prompt names the required figures')
   // A ruling with no evidence read is no ruling.
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], stands: false, unreadRuling: true })
-  check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence read'), 'ruling without evidence read: no ruling')
+  check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence, source and time read'), 'ruling without evidence read: no ruling')
   // An overturned exclusion is handled by the function that dropped it.
   r = await runTask('T2', { p3overturned: true, p2DropY: true, extraFn: true, rrHandleYin: 'fX' })
   check(r1(r).selection.find(e => e.function === 'f1').part === null, 'overturned exclusion handled by another function: owner stays open')

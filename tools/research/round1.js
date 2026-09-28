@@ -170,13 +170,13 @@ function p1Prompt(cat) {
   const items = TASK === 'FU' ? itemsFor(cat) : []
   return `${ctx('P1', cat, `P1-${cat}`)}
 
-Read the ${cat} row on the page and every line of hardware/docs/IOBoard.md that belongs to it (search for "${cat}" and for the functions the row names), and every source they cite. Try to refute each value: does it follow from its source, is the unit right, is it an owner decision or an assumption. Mark each. Every value you mark assumption is also a question to the owner; give each value the index of the question that asks for it in "question" (-1 if none), and give that question the value's where in for_where. List every requirement value P2 needs to qualify a part that neither page states, as a question to the owner; and every "P1 asks" in the row or in those lines. ${cat === 'R5' ? 'The supply currents of the parts T2 and T4 select are inputs R5 takes from those tasks, not questions. ' : ''}A question whose value only feeds Q4, Q8 or Q9 is blocks "decision-only". A question already under "Raised by P1" is not raised again.${items.length ? `\n\nThis is a follow-up task for these gaps: ${J(items)}` : ''}`
+Read the ${cat} row on the page and every line of hardware/docs/IOBoard.md that belongs to it (search for "${cat}" and for the functions the row names), and every source they cite. Try to refute each value: does it follow from its source, is the unit right, is it an owner decision or an assumption. Mark each. Every value you mark assumption is also a question to the owner; give each value the index of the question that asks for it in "question" (-1 if none), and give that question the value's where in for_where. List in functions every function the row and those lines name, one short name each. List every requirement value P2 needs to qualify a part that neither page states, as a question to the owner; and every "P1 asks" in the row or in those lines. ${cat === 'R5' ? 'The supply currents of the parts T2 and T4 select are inputs R5 takes from those tasks, not questions. ' : ''}A question whose value only feeds Q4, Q8 or Q9 is blocks "decision-only". A question already under "Raised by P1" is not raised again.${items.length ? `\n\nThis is a follow-up task for these gaps: ${J(items)}` : ''}`
 }
 
 function criticPrompt(cat, p1) {
   return `${ctx('P1-critic', cat, `P1-critic-${cat}`)}
 
-You are the critic of P1 for ${cat}. Re-derive each marking and each question below from the sources yourself. Rule on every marking once, copying its where and quantity exactly: holds with correct_marking unchanged, or wrong with the correct marking. Rule on every question once by its 0-based index (confirmed or rejected); a question you give no verdict is sent to a follow-up task, not to the owner. A marking you correct to assumption is also added as a question, with that value's where in for_where. Then look for values P1 did not mark and for missing values P1 did not list, and add each as a question.
+You are the critic of P1 for ${cat}. Re-derive each marking and each question below from the sources yourself. Rule on every marking once, copying its where and quantity exactly: holds with correct_marking unchanged, or wrong with the correct marking. Rule on every question once by its 0-based index (confirmed or rejected); a question you give no verdict is sent to a follow-up task, not to the owner. A marking you correct to assumption is also added as a question, with that value's where in for_where. Then look for values P1 did not mark and for missing values P1 did not list, and add each as a question. List in functions_missing every function the row or its lines name that P1's functions lacks.
 
 P1's return:
 ${J(p1)}`
@@ -194,7 +194,7 @@ function p2Prompt(cat) {
   const items = TASK === 'FU' ? itemsFor(cat) : []
   return `${ctx('P2', cat, `P2-${cat}`)}
 
-Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, and record it as found. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. Return an entry for every function the ${cat} row and its lines in hardware/docs/IOBoard.md name. For up to five survivors per function, record every field of the P2 row, and the rule-5 route in second_source_route and second_source_part; a part whose route is alternate needs a full record for that alternate among the survivors or in the re-rank. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5${((A.required_reports || {})[cat] || []).length ? `, among them these by these names: ${((A.required_reports || {})[cat]).join('; ')}` : ''}.${((A.per_part_reports || {})[cat] || []).length ? ` Report these once for each shortlisted part, named "NAME: PART", with "not applicable: REASON" as the value where one does not concern the part: ${((A.per_part_reports || {})[cat]).join('; ')}.` : ''}${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${P.results}/hardware/research/round1/selection.json; the returns in each run's directory carry their figures.` : ''}${cat === 'R3' && ((A.decisions || {}).Q9 || '').trim() ? `\n\nThe owner decided Q9: ${A.decisions.Q9}. A part it adds or changes is a function of R3 in this run, found and qualified as the others.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}${TASK === 'FU' ? ` Name each function exactly as ${P.results}/hardware/research/round1/selection.json names it for ${cat}.` : ''}`
+Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, and record it as found. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. Return an entry for every function the ${cat} row and its lines in hardware/docs/IOBoard.md name${((A.inventory || {})[cat] || []).length ? `, among them these, by these exact names: ${A.inventory[cat].join('; ')}` : ''}. For up to five survivors per function, record every field of the P2 row, and the rule-5 route in second_source_route and second_source_part; a part whose route is alternate needs a full record for that alternate among the survivors or in the re-rank. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5${((A.required_reports || {})[cat] || []).length ? `, among them these by these names: ${((A.required_reports || {})[cat]).join('; ')}` : ''}.${((A.per_part_reports || {})[cat] || []).length ? ` Report these once for each shortlisted part, named "NAME: PART", with "not applicable: REASON" as the value where one does not concern the part: ${((A.per_part_reports || {})[cat]).join('; ')}.` : ''}${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${P.results}/hardware/research/round1/selection.json; the returns in each run's directory carry their figures.` : ''}${cat === 'R3' && ((A.decisions || {}).Q9 || '').trim() ? `\n\nThe owner decided Q9: ${A.decisions.Q9}. A part it adds or changes is a function of R3 in this run, found and qualified as the others.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}${TASK === 'FU' ? ` Name each function exactly as ${P.results}/hardware/research/round1/selection.json names it for ${cat}.` : ''}`
 }
 
 function p2View(p2) {
@@ -475,7 +475,15 @@ async function phaseP1(cats) {
     q.blocks = 'p2'
   }
   questions.forEach((q, i) => { q.id = `V${(A.first_v || 1) + i}` })
-  return { questions }
+  // The functions each category names, as P1 and its critic read them:
+  // the inventory P2 answers for in later runs.
+  const inventory = {}
+  for (const cat of cats) {
+    const c = byCat.get(cat)
+    if (!c || !c.p1 || !c.critic) continue
+    inventory[cat] = [...new Set([...(c.p1.functions || []), ...(c.critic.functions_missing || [])].map(n => String(n).trim()).filter(Boolean))]
+  }
+  return { questions, inventory }
 }
 
 // ---------------------------------------------------------------- P2 to P4
@@ -642,6 +650,12 @@ function merge(cat, p2, rr, p3) {
   if (['R10', 'R12'].includes(cat) && !functions.some(f => f.decision !== 'none' && f.verify.some(v => v.kind === 'q-alternative'))) {
     followUps.push({ role: 'rerank', category: cat, reason: `names no ${cat === 'R10' ? 'Q4' : 'Q8'} function with an alternative to verify` })
   }
+  // A function of the P1 inventory P2 returned no entry for stays open.
+  for (const inv of (A.inventory || {})[cat] || []) {
+    if (functions.some(f => f.function === inv)) continue
+    followUps.push({ role: 'P2', category: cat, function: inv, reason: 'function of the P1 inventory that P2 did not return' })
+    functions.push({ function: inv, decision: 'none', failed: [], requirements: [], shortlist: [], verify: [], alternateRecords: [], dropped: [], dropped_from_shortlist: [], dropped_from_p3: [], not_returned: true })
+  }
   // A function the row names that P2 returned no entry for stays open, with
   // no part, for a follow-up task.
   for (const m of (p3 && p3.missed_functions) || []) {
@@ -704,8 +718,8 @@ function nextCandidate(functions, fn, part, ledger) {
 // The adjudicator's ruling counts only for the item it was asked about.
 function boundRuling(ruling, fn, part, cat) {
   if (!ruling) return null
-  if (readsNone((ruling.evidence || '').trim())) {
-    followUps.push({ role: 'adjudicator', category: cat, function: fn, part, reason: 'the ruling gives no evidence read' })
+  if (readsNone(ruling.evidence) || readsNone(ruling.source) || readsNone(ruling.read_at)) {
+    followUps.push({ role: 'adjudicator', category: cat, function: fn, part, reason: 'the ruling gives no evidence, source and time read' })
     return null
   }
   if (ruling.function === fn && (ruling.part || '') === (part || '')) return ruling

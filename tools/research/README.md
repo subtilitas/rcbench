@@ -105,13 +105,14 @@ the items in the arguments:
   `categories.json` `p5_budgets` (named as listed or `NAME: DETAIL`; only an
   item of `p5_conditional` may be `not applicable: REASON`), or left a
   conflict, gap, combination or budget its critic did not rule on, or a
-  combination or budget it rejected; while it lists a conflict or gap that no
-  round-2 P2-P4 follow-up since the check before covered: a gap's category,
-  and a conflict's named categories and every function any run selected one of
-  its parts for (as the kept part, its alternate, a Q alternative or that
-  one's alternate), each researched to a verified part (the first check's
-  items are never covered); and while a run that decides an R3 function was
-  not given the Q9 decision now in force.
+  combination or budget it rejected; while it, or an earlier check, lists a
+  conflict or gap that no round-2 P2-P4 follow-up covered after that check
+  (for the last check, after the check before it): a gap's category, and a
+  conflict's named categories and every function any run selected one of its
+  parts for (as the kept part, its alternate, a Q alternative or that one's
+  alternate), each researched to a verified part (the first check's items are
+  never covered); and while a run that decides an R3 function was not given
+  the Q9 decision now in force.
 
 Then, before T6, it merges `research/round1` into the results tree. The gates
 read committed run records and the plan on `research/round1`. The arguments
@@ -123,10 +124,12 @@ expect.
 `round1.js` keeps a function open, with no part, when:
 
 - the category's P3 returned nothing (the part is named in `without_p3`);
-- P3 lists it as named by the row and P2 did not return it;
-- the re-rank did not rank it, ranked no part, gave positions other than 1
-  to n, ranked a part with no record, ranked a part twice or also
-  dropped it, or either P2 or the re-rank returned it twice;
+- P3 lists it as named by the row, or it is in the category's P1 inventory
+  (the functions P1 and its critic read from the row, passed as `inventory`),
+  and P2 did not return it;
+- the re-rank did not rank it, ranked no part, gave positions other than 1 to
+  n, ranked a part with no record, ranked a part twice or also dropped it, or
+  either P2 or the re-rank returned it twice;
 - P3 found a candidate for it, or overturned its P2 drop of a part, and the
   re-rank neither qualified nor dropped that part under it;
 - it has no requirement.
@@ -136,15 +139,15 @@ number that is neither `C` and digits nor `none`, is dropped. A shortlisted
 candidate P2's own record fails is dropped and its failure re-read by the
 datasheet verifier. A requirement a candidate states with another value than
 its function is checked against the function's value, and its own pass is
-dropped before failures are counted. An adjudicator's ruling without evidence
-read is no ruling. A standing refutation stays final in the run, even if the
-part is verified later as another part's alternate. A refutation as an
-alternate fails only that relationship: the part keeps its own place on the
-shortlist. A part a verifier was not asked to verify is ignored, a part it
-lists twice has no verdict from it, and a check or figure evidence that is
-empty, blank or written as not read, or without its source or reading time,
-shows nothing. Every verified part needs a `placements` check re-deriving its
-count from the specification, the lifecycle table's readings
+dropped before failures are counted. An adjudicator's ruling without evidence,
+source and reading time is no ruling. A standing refutation stays final in the
+run, even if the part is verified later as another part's alternate. A
+refutation as an alternate fails only that relationship: the part keeps its
+own place on the shortlist. A part a verifier was not asked to verify is
+ignored, a part it lists twice has no verdict from it, and a check or figure
+evidence that is empty, blank or written as not read, or without its source or
+reading time, shows nothing. Every verified part needs a `placements` check
+re-deriving its count from the specification, the lifecycle table's readings
 (`longevity commitment`, `market introduction`, `distributor status`,
 `lead time`), for a part on the board an `LCSC identity` check, and a
 `manufacturer allowlist` check (rule 2), and an alternate needs at least the

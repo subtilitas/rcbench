@@ -484,24 +484,18 @@ def t6_open(results):
     out = [f"{n} changed a selection after {name}" for n, t in done
            if t.get("sequence", 0) > last.get("sequence", 0)
            and (t.get("summary") or {}).get("selection")]
-    # An item may stand only when a round-2 research follow-up recorded
-    # between the check before and this one covered its categories: the
-    # plan writes what round 2 leaves as not known.
-    # The first check's items were found by it, so no earlier run covered
-    # them.
-    before = checks[-2][1].get("sequence", 0) if len(checks) > 1 else None
     # Round 2 covers each function a round-2 P2-P4 follow-up verified a
     # part for, and each category it verified any part in; not what its
     # file named.
-    round2 = [] if before is None else [
-        t for _, t in done if (t.get("followup") or {}).get("round") == 2
-        and (t.get("followup") or {}).get("phases") == "P2-P4"
-        and before < t.get("sequence", 0) < last.get("sequence", 0)]
-    fn_done = {(c, e["function"]) for t in round2
+    def covered_between(start, end):
+        fns = {(c, e["function"]) for _, t in done
+               if (t.get("followup") or {}).get("round") == 2
+               and (t.get("followup") or {}).get("phases") == "P2-P4"
+               and start < t.get("sequence", 0) < end
                for c, entries in ((t.get("summary") or {}).get("selection")
                                   or {}).items()
                for e in entries if e.get("part")}
-    covered = {c for c, _ in fn_done}
+        return fns, {c for c, _ in fns}
     summary = last.get("summary") or {}
     # A conflict's part points at every function any run selected it for,
     # in every category: each of those functions must be covered, and each
@@ -519,20 +513,37 @@ def t6_open(results):
                     if part:
                         part_fn.setdefault(part, set()).add(
                             (c, e["function"]))
+
+    def uncovered_items(check, fn_done, covered):
+        out_items = []
+        for x in (check.get("summary") or {}).get("conflicts", []):
+            fns = set().union(*(part_fn.get(p, set())
+                                for p in x.get("parts") or []))
+            named = set(x.get("categories") or [])
+            if (not fns and not named) or not fns <= fn_done or \
+                    not (named | {c for c, _ in fns}) <= covered:
+                out_items.append(x)
+        for x in (check.get("summary") or {}).get("gaps", []):
+            if not x.get("category") or x["category"] not in covered:
+                out_items.append(x)
+        return out_items
+
+    # The last check's items stand only when round 2 covered them after
+    # the check before it (never for the first check, whose items it
+    # found). An earlier check's items stay open, even when a later check
+    # omits them, until round 2 covered them after that check.
     uncovered = []
-    for x in summary.get("conflicts", []):
-        fns = set().union(*(part_fn.get(p, set())
-                            for p in x.get("parts") or []))
-        named = set(x.get("categories") or [])
-        if (not fns and not named) or not fns <= fn_done or \
-                not (named | {c for c, _ in fns}) <= covered:
-            uncovered.append(x)
-    for x in summary.get("gaps", []):
-        if not x.get("category") or x["category"] not in covered:
-            uncovered.append(x)
+    if len(checks) > 1:
+        uncovered += uncovered_items(last, *covered_between(
+            checks[-2][1].get("sequence", 0), last.get("sequence", 0)))
+        for _, earlier in checks[:-1]:
+            uncovered += uncovered_items(earlier, *covered_between(
+                earlier.get("sequence", 0), last.get("sequence", 0)))
+    else:
+        uncovered += uncovered_items(last, set(), set())
     if uncovered:
-        out.append(f"{name} lists {len(uncovered)} conflicts and gaps that "
-                   "no round 2 follow-up since the check before covered")
+        out.append(f"{len(uncovered)} conflicts and gaps up to {name} that "
+                   "no round 2 follow-up after their check covered")
     if summary.get("missing_checks"):
         out.append(f"{name} ran without "
                    + ", ".join(summary["missing_checks"]))
@@ -627,6 +638,20 @@ def q9_open(results, now):
                        "decision now in force; a choice that adds or "
                        "changes a part needs an R3 follow-up and a P5/P6 "
                        "check after it")
+    return out
+
+
+def inventory(results, categories):
+    """Each category's function inventory, from the latest P1 run that
+    returned one for it."""
+    out = {}
+    for _, t in runs(results):
+        if t.get("task") == "T1" or (t.get("followup") or {}).get(
+                "phases") == "P1":
+            for c, names in ((t.get("summary") or {}).get("inventory")
+                             or {}).items():
+                if c in categories and names:
+                    out[c] = names
     return out
 
 
@@ -1024,6 +1049,7 @@ def cmd_prepare(args):
         "for_research": for_research,
         "required_reports": cats.get("reports", {}),
         "per_part_reports": cats.get("reports_per_part", {}),
+        "inventory": inventory(results, list(cats["categories"])),
         "p5_budgets": cats.get("p5_budgets", []),
         "p5_conditional": cats.get("p5_conditional", []),
         "q_options": cats.get("q_options", {}),
@@ -1070,7 +1096,7 @@ def result_shape(result, want):
                 "unchecked_items": int, "rejected_items": int,
                 "budgets_missing": list}
     elif task == "T1" or phases == "P1":
-        need, keys = ["P0"], {"questions": list}
+        need, keys = ["P0"], {"questions": list, "inventory": dict}
     else:
         need, keys = ["P0"], {"selection": dict, "figures_open": dict,
                               "q_missing": list, "chain_failed": list}
