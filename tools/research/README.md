@@ -46,8 +46,11 @@ and host table. Nothing here runs in CI (continuous integration) but
   in the agents' commands), where `vendors.py digikey` and `digikey-search`
   keep every answer of HTTP 200: an agent that asks again for the same part
   or keywords gets the kept answer, marked `"cached": true`, with the time and
-  API call of the reading. P4's stock verifier therefore reads Digi-Key again
-  only for a part no earlier agent of the run read. A refusal is not kept.
+  API call of the reading. A lock per part or keywords makes agents that ask
+  at once wait for one call. P4's stock verifier therefore reads Digi-Key
+  again only for a part no earlier agent of the run read by `digikey`; a
+  keyword search is kept as a search, not as a reading of each part it lists.
+  A refusal is not kept.
 
 ## Running a task
 

@@ -26,7 +26,9 @@ The chrome and safari clients need curl_cffi (pip install curl_cffi).
 """
 
 import argparse
+import contextlib
 import datetime
+import fcntl
 import hashlib
 import json
 import os
@@ -225,6 +227,22 @@ def dk_cache(kind, key):
     return os.path.join(folder, f"{kind}-{digest}.json")
 
 
+@contextlib.contextmanager
+def dk_locked(path):
+    """Hold the key's lock while the cache is read, the API called and the
+    answer kept, so agents that ask for one part at once make one call."""
+    if not path:
+        yield
+        return
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path + ".lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+
+
 def dk_kept(path):
     if not path:
         return None
@@ -250,6 +268,11 @@ def dk_keep(path, out):
 
 def cmd_digikey(args):
     path = dk_cache("details", args.mpn.strip().upper())
+    with dk_locked(path):
+        return dk_details(args, path)
+
+
+def dk_details(args, path):
     kept = dk_kept(path)
     if kept:
         emit(kept)
@@ -286,6 +309,11 @@ def cmd_digikey_quota(_args):
 def cmd_digikey_search(args):
     limit = max(1, min(args.limit, 50))
     path = dk_cache("search", f"{args.keywords.strip()}\0{limit}")
+    with dk_locked(path):
+        return dk_search(args, path, limit)
+
+
+def dk_search(args, path, limit):
     kept = dk_kept(path)
     if kept:
         emit(kept)
