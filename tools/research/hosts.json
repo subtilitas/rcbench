@@ -1,0 +1,409 @@
+{
+ "clients": {
+  "chrome": "python3 tools/research/vendors.py fetch URL --client chrome",
+  "safari": "python3 tools/research/vendors.py fetch URL --client safari",
+  "jlcpcb-api": "python3 tools/research/vendors.py jlcpcb LCSC",
+  "digikey-api": "python3 tools/research/vendors.py digikey MPN",
+  "git": "git fetch or git show"
+ },
+ "hosts": [
+  {
+   "host": "jlcpcb.com",
+   "role": "stock (sourcing rule 3)",
+   "client": "jlcpcb-api",
+   "probe": "C39843328",
+   "stop": "stock-tasks",
+   "hold": []
+  },
+  {
+   "host": "api.digikey.com",
+   "role": "second vendor (S3)",
+   "client": "digikey-api",
+   "probe": "INA238AIDGSR",
+   "stop": "stock-tasks",
+   "hold": []
+  },
+  {
+   "host": "www.lcsc.com",
+   "role": "distributor status",
+   "client": "chrome",
+   "probe": "https://www.lcsc.com/product-detail/C39843328.html",
+   "hold": []
+  },
+  {
+   "host": "datasheets.raspberrypi.com",
+   "role": "RP2350 datasheet (redirects to pip-assets.raspberrypi.com)",
+   "client": "chrome",
+   "probe": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+   "hold": [
+    "R1"
+   ],
+   "hold_in_t1": [
+    "R1",
+    "R3"
+   ]
+  },
+  {
+   "host": "github.com",
+   "role": "pico-sdk sources (23c82ca is checked locally by P0)",
+   "client": "git",
+   "probe": "https://github.com/raspberrypi/pico-sdk",
+   "hold": []
+  },
+  {
+   "host": "raw.githubusercontent.com",
+   "role": "pico-sdk sources (R1 reads boards/olimex_rp2350_xl.h)",
+   "client": "chrome",
+   "probe": "https://raw.githubusercontent.com/raspberrypi/pico-sdk/master/README.md",
+   "hold": [
+    "R1"
+   ],
+   "hold_in_t1": [
+    "R1"
+   ]
+  },
+  {
+   "host": "www.winbond.com",
+   "role": "W25Q16JV datasheet (R1)",
+   "client": "chrome",
+   "probe": "https://www.winbond.com/hq/product/code-storage-flash-memory/serial-nor-flash/?__locale=en&partNo=W25Q16JV",
+   "hold": [
+    "R1"
+   ],
+   "hold_in_t1": [
+    "R1"
+   ]
+  },
+  {
+   "maker": "Texas Instruments",
+   "host": "www.ti.com",
+   "client": "chrome",
+   "probe": "https://www.ti.com/product/INA238",
+   "marker": "<meta name=\"status\" content=\"[^\"]*\"",
+   "hold": [
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6",
+    "R7",
+    "R8",
+    "R9",
+    "R10",
+    "R11",
+    "R12",
+    "R13"
+   ]
+  },
+  {
+   "maker": "Microchip",
+   "host": "www.microchip.com",
+   "client": "chrome",
+   "probe": "https://www.microchip.com/en-us/product/MCP2518FD",
+   "marker": "\"productSatus\":\\s*\"[^\"]*\"",
+   "hold": [
+    "R2",
+    "R12"
+   ]
+  },
+  {
+   "maker": "NXP",
+   "host": "www.nxp.com",
+   "client": "chrome",
+   "probe": "https://www.nxp.com/products/TJA1462",
+   "marker": "Status - [A-Za-z ]+",
+   "hold": [
+    "R2",
+    "R12"
+   ]
+  },
+  {
+   "maker": "Nexperia",
+   "host": "www.nexperia.com",
+   "client": "chrome",
+   "probe": "https://www.nexperia.com/product/74LVC1G32GW",
+   "marker": "product-status--[a-z-]+",
+   "hold": [
+    "R3",
+    "R4"
+   ]
+  },
+  {
+   "maker": "Infineon (with Cypress)",
+   "host": "www.infineon.com",
+   "client": "chrome",
+   "probe": "https://www.infineon.com/part/2ED4820-EM",
+   "marker": "productStatusInfo\"\\s*value=\"[^\"]*\"",
+   "hold": [
+    "R3",
+    "R12"
+   ]
+  },
+  {
+   "maker": "Raspberry Pi",
+   "host": "www.raspberrypi.com",
+   "client": "chrome",
+   "probe": "https://www.raspberrypi.com/products/rp2350/",
+   "marker": "remain in production until at least (?:<!-- -->)?[A-Za-z]+ \\d{4}",
+   "hold": [
+    "R1"
+   ]
+  },
+  {
+   "maker": "onsemi",
+   "host": "www.onsemi.com",
+   "client": "chrome",
+   "probe": null,
+   "marker": null,
+   "hold": [
+    "R3"
+   ],
+   "note": "seeds are MOSFET families, no part named; P0 finds one product page and its status field"
+  },
+  {
+   "maker": "Vishay",
+   "host": "www.vishay.com",
+   "client": "chrome",
+   "probe": null,
+   "marker": null,
+   "hold": [
+    "R3",
+    "R8"
+   ],
+   "note": "seed WSBS8518; P0 finds its product page and status field"
+  },
+  {
+   "maker": "Isabellenhuette",
+   "host": "www.isabellenhuette.com",
+   "client": "chrome",
+   "probe": null,
+   "marker": null,
+   "hold": [
+    "R8"
+   ],
+   "note": "seed BV series; P0 finds its product page"
+  },
+  {
+   "maker": "Analog Devices (with Maxim and Linear)",
+   "host": "www.analog.com",
+   "client": "safari",
+   "probe": "https://www.analog.com/en/products/adxl1002.html",
+   "marker": null,
+   "hold": [],
+   "note": "status from Digi-Key (owner, 2026-09-27); datasheets read here; the host refuses every request for a time after about 15"
+  },
+  {
+   "maker": "Melexis",
+   "host": "www.melexis.com",
+   "client": "chrome",
+   "probe": "https://www.melexis.com/",
+   "marker": null,
+   "hold": [],
+   "note": "every page client refused on 2026-09-27; status from Digi-Key (owner, 2026-09-27)"
+  },
+  {
+   "maker": "Allegro",
+   "host": "www.allegromicro.com",
+   "client": "chrome",
+   "probe": "https://www.allegromicro.com/en/products/sense/current-sensor-ics/integrated-current-sensors/acs711",
+   "marker": null,
+   "hold": [],
+   "note": "status loaded by script; from Digi-Key (owner, 2026-09-27)"
+  },
+  {
+   "maker": "Renesas",
+   "host": "www.renesas.com",
+   "client": "chrome",
+   "probe": "https://www.renesas.com/en",
+   "hold": []
+  },
+  {
+   "maker": "ROHM",
+   "host": "www.rohm.com",
+   "client": "chrome",
+   "probe": "https://www.rohm.com/",
+   "hold": []
+  },
+  {
+   "maker": "STMicroelectronics",
+   "host": "www.st.com",
+   "client": "chrome",
+   "probe": "https://www.st.com/content/st_com/en.html",
+   "hold": []
+  },
+  {
+   "maker": "Toshiba",
+   "host": "toshiba.semicon-storage.com",
+   "client": "chrome",
+   "probe": "https://toshiba.semicon-storage.com/",
+   "hold": []
+  },
+  {
+   "maker": "Diodes Incorporated",
+   "host": "www.diodes.com",
+   "client": "chrome",
+   "probe": "https://www.diodes.com/",
+   "hold": []
+  },
+  {
+   "maker": "ams OSRAM",
+   "host": "ams-osram.com",
+   "client": "chrome",
+   "probe": "https://ams-osram.com/",
+   "hold": []
+  },
+  {
+   "maker": "Bosch Sensortec",
+   "host": "www.bosch-sensortec.com",
+   "client": "chrome",
+   "probe": "https://www.bosch-sensortec.com/",
+   "hold": []
+  },
+  {
+   "maker": "Fujitsu (RAMXEED)",
+   "host": "www.ramxeed.com",
+   "client": "chrome",
+   "probe": "https://www.ramxeed.com/products/feram/feram-products.html",
+   "hold": [
+    "R12"
+   ],
+   "note": "seed MB85RC256V; the Status column reads MP, ES, UD or NRND per ordering number",
+   "marker": "MB85RC256VPNF-G-AMERE2</td>(?:\\s*<td>[^<]*</td>){9}\\s*<td>(?:MP|ES|UD|NRND)</td>"
+  },
+  {
+   "maker": "Nisshinbo",
+   "host": "www.nisshinbo-microdevices.co.jp",
+   "client": "chrome",
+   "probe": "https://www.nisshinbo-microdevices.co.jp/en/",
+   "hold": []
+  },
+  {
+   "maker": "Torex",
+   "host": "www.torexsemi.com",
+   "client": "chrome",
+   "probe": "https://www.torexsemi.com/",
+   "hold": []
+  },
+  {
+   "maker": "Murata",
+   "host": "www.murata.com",
+   "client": "chrome",
+   "probe": "https://www.murata.com/",
+   "hold": []
+  },
+  {
+   "maker": "TDK",
+   "host": "product.tdk.com",
+   "client": "chrome",
+   "probe": "https://product.tdk.com/",
+   "hold": []
+  },
+  {
+   "maker": "Wurth Elektronik",
+   "host": "www.we-online.com",
+   "client": "chrome",
+   "probe": "https://www.we-online.com/",
+   "hold": []
+  },
+  {
+   "maker": "Coilcraft",
+   "host": "www.coilcraft.com",
+   "client": "chrome",
+   "probe": "https://www.coilcraft.com/",
+   "hold": []
+  },
+  {
+   "maker": "Bourns",
+   "host": "www.bourns.com",
+   "client": "chrome",
+   "probe": "https://www.bourns.com/",
+   "hold": []
+  },
+  {
+   "maker": "KEMET and Yageo",
+   "host": "yageogroup.com",
+   "client": "chrome",
+   "probe": "https://yageogroup.com/",
+   "hold": [],
+   "note": "answers HTTP 200 for a path that does not exist"
+  },
+  {
+   "maker": "Panasonic",
+   "host": "industry.panasonic.com",
+   "client": "chrome",
+   "probe": "https://industry.panasonic.com/",
+   "hold": []
+  },
+  {
+   "maker": "Samsung Electro-Mechanics",
+   "host": "www.samsungsem.com",
+   "client": "chrome",
+   "probe": "https://www.samsungsem.com/",
+   "hold": []
+  },
+  {
+   "maker": "Abracon",
+   "host": "abracon.com",
+   "client": "chrome",
+   "probe": null,
+   "hold": [
+    "R1"
+   ],
+   "marker": null,
+   "note": "seeds ABM8-272-T3 and AOTA-B201610S3R3-101-T, the crystal and inductor the RP2350 hardware design guide names; P0 finds a product page and its status field"
+  },
+  {
+   "maker": "Epson",
+   "host": "www.epsondevice.com",
+   "client": "chrome",
+   "probe": "https://www.epsondevice.com/crystal/en/",
+   "hold": []
+  },
+  {
+   "maker": "NDK",
+   "host": "www.ndk.com",
+   "client": "chrome",
+   "probe": "https://www.ndk.com/en/",
+   "hold": []
+  },
+  {
+   "maker": "Samsung SDI",
+   "host": "www.samsungsdi.com",
+   "client": "chrome",
+   "probe": null,
+   "hold": [],
+   "note": "cell maker (S9); P0 records reachability"
+  },
+  {
+   "maker": "LG Energy Solution",
+   "host": "www.lgensol.com",
+   "client": "chrome",
+   "probe": null,
+   "hold": [],
+   "note": "cell maker (S9)"
+  },
+  {
+   "maker": "Molicel",
+   "host": "www.molicel.com",
+   "client": "chrome",
+   "probe": null,
+   "hold": [],
+   "note": "cell maker (S9)"
+  },
+  {
+   "maker": "EVE",
+   "host": "www.evebattery.com",
+   "client": "chrome",
+   "probe": null,
+   "hold": [],
+   "note": "cell maker (S9)"
+  }
+ ],
+ "meaning": {
+  "probe": "the page P0 fetches; null means P0 finds a seed's product page on that host",
+  "marker": "a regular expression the lifecycle status in the page body matches",
+  "hold": "categories held from T2 on while the host is unreachable",
+  "hold_in_t1": "categories held in T1 and in P1 follow-ups while the host is unreachable",
+  "stop": "stock-tasks: the host stops T2 to T4 and P2-P4 follow-ups while unreachable"
+ }
+}

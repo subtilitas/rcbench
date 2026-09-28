@@ -1,0 +1,376 @@
+# Round 1 research scripts
+
+The scripts that run round 1 of the IO (input/output) board component
+research, as [the plan](../../hardware/docs/Research.md) sets it out. The plan
+is the agents' instructions; these files run it and hold its counts, schemas
+and host table. Nothing here runs in CI (continuous integration) but
+`session.py check`, which reads no network and starts no agent.
+
+| File | Content |
+| --- | --- |
+| `round1.js` | the workflow script, one run per task: `args.task` is T1 to T6, or FU for a follow-up task. `args.mode` `plan` returns the task's planned agent count and starts none |
+| `schemas.json` | the return schema of each role: P0, P1, P1-critic, P1-recheck, P2, P3, rerank, P4 (both verifiers), adjudicator, P5, P5-critic, P6, P6-critic, P7, P7-critic |
+| `categories.json` | R1 to R13, the three groups, the cap of 32, each task's planned agents, the "P1 asks" items of each row and its lines in IOBoard.md (`p1_asks`), and the fixed inputs of the Scope table, each with its category, function and part (`fixed_inputs`) |
+| `hosts.json` | each host P0 probes: its known page, its client, the regular expression the lifecycle status matches, and the categories it holds when unreachable |
+| `jlcparts.json` | the saved parts database of 2026-09-14: its path under the base directory, its SHA-256 (Secure Hash Algorithm, 256 bits), its row count and its manifest's created time |
+| `vendors.py` | the readings agents take: a page (`fetch`), JLCPCB stock by exact LCSC number (`jlcpcb`), Digi-Key stock, lead time and status (`digikey`), each dated |
+| `session.py` | the session's side: `check`, `prepare`, `record`, `raised` |
+| `dryrun.js` | runs `round1.js` for every task with mock agents and checks the counting |
+
+## Limits
+
+- At most 32 agents a task. The planned agents always run. A restart, an
+  adjudicator and a new verifier pair each take a free agent; with none left
+  the item is returned for a follow-up task.
+- An agent that returns nothing counts as not checked, never as not refuted.
+- A refutation holds only under the function it was made in. A part whose
+  refutation stands, also on a part-level reading such as
+  `lifecycle status` or `end-of-life notices`, is still kept under another
+  function, in the same run or a later one, when both verifiers confirm it
+  there.
+- A refutation fails only the alternate relationship when each refuting
+  verdict fails `pin-for-pin match` or `functional match` and no other
+  check. One that also fails another check, or gives its reason in text
+  with no failing check, gets one ruling: when it stands, the part is
+  refuted in the function in every role, also when only its fit to the
+  other part holds.
+- The workflow script has no file or git access. Every return comes back in
+  the task's output, and `session.py record` writes and commits it.
+- `vendors.py fetch` needs curl_cffi for the chrome and safari clients.
+  `vendors.py digikey` needs the owner's credentials: `DIGIKEY_CLIENT_ID` and
+  `DIGIKEY_CLIENT_SECRET`, or a file named by `DIGIKEY_ENV_FILE`.
+
+## Running a task
+
+On the research server, from a clone on `main`, with `research/round1` and
+`research/round1-results` on the remote and the parts database at
+`~/rcbench-research/jlcparts-2026-09-14/` (`--db` names another path):
+
+```bash
+B=~/rcbench-research/round1
+O="--base $B --digikey-env PATH_TO_CREDENTIALS --model MODEL_ID --effort EFFORT"
+python3 tools/research/session.py check
+python3 tools/research/session.py prepare T1 $O
+# Workflow tool: scriptPath tools/research/round1.js, args = $B/args-T1.json
+# (a follow-up's arguments are $B/args-FU-N.json)
+python3 tools/research/session.py record T1 TASK_OUTPUT_FILE --base $B
+git -C $B/results push origin research/round1-results
+python3 tools/research/session.py raised --base $B
+git -C $B/plan push origin research/round1
+```
+
+`prepare` fetches origin and refuses a run out of turn: T2 and T4 before T1 is
+recorded, T3 before T2 and T4, T5 before T3, T6 before T5, a P1 follow-up
+before T1, a P2-P4 follow-up before the tasks that own its categories, a P5-P6
+follow-up before T5, a round 2 follow-up before a round 1 follow-up is
+recorded, and any task once T6 is recorded. It fast-forwards the results tree
+to `origin/research/round1-results`, and refuses while that tree holds records
+origin does not (push after each `record`), any other commit than the merge
+before T6, which changes no record, or has diverged. It refuses a P1 run while
+another P1 run is prepared and neither recorded nor recorded as stopped, so
+question IDs do not repeat, and numbers new questions after the last one on
+the page and in the committed runs.
+
+It refuses these without exception:
+
+- Any task while its parts database (`--db`, or the path in `jlcparts.json`)
+  differs from `jlcparts.json` in its SHA-256, its `jlc_components` row count
+  or the created time of the `manifest.json` beside it. `prepare` reads all
+  three itself; P0 checks them again. On the research server hashing and
+  counting the saved copy of 5,940,703,232 bytes take 7 s.
+- T1 and P1 follow-ups while S1, S3 or S8 has no answer; T2 to T4 and P2-P4
+  follow-ups while S2, S4 to S7, S9 (for R7) or a Blocking row naming one of
+  their categories has no answer.
+- T2 to T4, P2-P4 and P1 follow-ups while a question a committed P1 run raised
+  for their categories is not yet under "Raised by P1" on `research/round1`,
+  or is there without an answer or under another category or question. T5,
+  P5-P6 follow-ups and T6 check every category. A question that only feeds Q4,
+  Q8 or Q9 (`blocks` is `decision-only` and `decision` names one of them)
+  needs no answer. `round1.js` publishes a question as blocking P2 instead,
+  with a notice, unless its category is one that decision's "Reported by" cell
+  on the page names. P6 and its critic are told that such a question, and a
+  specification line whose hardware is selected and whose link is firmware
+  work (Scope: "hardware selected, link open"), is not a gap.
+- T6 while any of the rows Q4, Q8 and Q9 is missing or has no decision, and
+  while the output paths have changes.
+
+It refuses these unless `--accept-open REASON` records the owner's reason and
+the items in the arguments:
+
+- T2 to T4 and P2-P4 follow-ups while a P1 run covering a category left P1
+  items there that no later P1 follow-up listed among its items; each listed
+  item is cleared, and what that follow-up leaves open takes its place.
+  Notices, such as a marking taken as an assumption, do not count.
+- T3 and P2-P4 follow-ups on its categories, for the categories of T2 and T4,
+  and T5, P5-P6 follow-ups and T6, for every category, while:
+  - a function has no verified part, or keeps a part a run at or after its own
+    refuted for itself, or a missing or unverified second source;
+  - R10 or R12 has not exactly one function marked with its decision, or no Q4
+    or Q8 alternative, other than the kept part, on that function, lacks a
+    verified part, of its own and with its class confirmed by the datasheet
+    verifier, for one of the decision's option classes (`categories.json`
+    `q_options`), or has an alternative not verified with its own second
+    source;
+  - a run that decides one of the category's functions left a figure the
+    datasheet verifier did not confirm, or a value for research or required
+    report figure P2 did not return or wrote as not read, not found, not
+    stated, not known or unknown (`none` is a value): `categories.json`
+    `reports` once per category (as `NAME` or `NAME: PART`),
+    `reports_per_part` once for every part the category verifies or selects,
+    replacements included (as `NAME: PART`, from P2 or the re-rank);
+  - the latest P1 run left P1 items in the category;
+  - a run that decides one of its functions predates a later P1 run covering
+    the category, read other answers under "Raised by P1" for it (answers to
+    questions that only feed Q4, Q8 or Q9 aside), read another specification
+    (the files under `hardware/docs/`, Research.md without the rows under
+    "Raised by P1" and with the Decision cells of Q4, Q8 and Q9 blank), or,
+    for R5 to R8, ran on other upstream entries of T2 and T4 than
+    `selection.json` keeps now: a function bound to another part, alternate or
+    Q alternative, or decided again by a later run.
+- T6 while a function of a category is bound to another part, alternate or Q
+  alternative than at the last P5/P6 check, or was decided again by a later
+  run; while that check ran without P5, P6 or either critic, returned no
+  upheld combination that fits, with its outputs, bind order, resources,
+  source and time, has combinations, budgets or assumptions without source and
+  time or assumptions without a value, lacks an upheld budget with a value
+  read (`shared-part stock` for each part `selection.json` keeps in more than
+  one function, in any role, not applicable only when there is none) (not
+  unknown, not known or not stated), its source and its reading time for an
+  item of `categories.json` `p5_budgets` (named as listed or `NAME: DETAIL`,
+  every row of the item counting; the Q4 and Q8 alternatives once for each
+  option class of `q_options`, as `Q4 alternatives: CLASS`; only an item of
+  `p5_conditional` may be `not applicable: REASON`, `N/A: REASON` or
+  `does not apply: REASON`) or for a rail, I²C bus or other instance its
+  critic lists as not budgeted, has an upheld budget not within its limit,
+  lacks an upheld assumption with a value, its source and its time for an item
+  of `p5_assumptions` (the encoder's state machines are R11's
+  `encoder decoding` report), or left a conflict, gap, combination, budget or
+  assumption its critic did not rule on (a verdict whose reason reads as none
+  rules on nothing), or a combination, budget or assumption it rejected; while
+  it lists a conflict or gap that no round-2 P2-P4 follow-up after the check
+  before it covered, or an earlier check lists one that no P2-P4 follow-up of
+  either round after that check covered: each category a gap's category names
+  by its ID or in a range such as `R5 to R8`, and each a conflict's categories
+  name and every function any run selected one of its parts for (as the kept
+  part, its alternate, a Q alternative or that one's alternate; a retired
+  function aside), each researched to a verified part (never the first check's
+  items, a conflict naming a part no run selected, which `prepare` names, or
+  one only retired functions kept, or a category holding a word other than
+  IDs, ranges, `and` and list separators); and while a run that decides an R3
+  function was not given the Q9 decision now in force.
+
+Then, before T6, it merges `research/round1` into the results tree. The gates
+read committed run records and the plan on `research/round1`. The arguments
+hold the results tree's head, the owner's decisions, the questions committed
+P1 runs raised (`raised`), the Claude Code version, the model, the effort, the
+CPU count and the workflow concurrency. For T6 they also hold the P5/P6
+checks, the conflicts and gaps they leave (each the last check lists, and each
+of an earlier check no follow-up after it covered), the assumptions of the
+last check's P5 its critic upheld, the parts `selection.json` keeps, and the
+sentences of the Outputs row of `tools/jlc_stock.py`. `session.py check`
+confirms the Blocking and Sourcing tables still read as the gates expect, that
+the Outputs table has a row for `tools/jlc_stock.py`, and that `p1_asks` names
+exactly the rows that carry "P1 asks", each with distinct names, and that
+`fixed_inputs` lists the fixed inputs of the Scope table by input name and
+part.
+
+`round1.js` keeps a function open, with no part, when:
+
+- the category's P3 returned nothing (the part is named in `without_p3`);
+- P3 lists it as named by the row, or it is in the category's P1 inventory
+  (the functions P1 and its critic read from the row, passed as `inventory`)
+  or serves a fixed input, and P2 did not return it;
+- the re-rank did not rank it, ranked no part, gave positions other than 1 to
+  n, ranked a part with no record, ranked a part twice or also dropped it, or
+  either P2 or the re-rank returned it twice;
+- P3 found a candidate for it, or overturned its P2 drop of a part, and the
+  re-rank neither qualified nor dropped that part under it. A find P3 files
+  under no function of P2's, and a drop it overturns that no function made,
+  hold every function open until the re-rank qualifies or drops the part under
+  one of P2's functions;
+- it has no requirement, or names one requirement twice;
+- it serves a fixed input of the Scope table (`categories.json`
+  `fixed_inputs`: the function by the table's input name, the input by a
+  part number that starts with the table's, INA238AIDGSR for INA238), and
+  its first-ranked part after the drops is another part, or the input's
+  refutation stands. The input is reported to the owner (role `owner`), not
+  re-selected: no replacement pair runs, and the function keeps no other
+  part, also none verified from the verify list. P1, P2 and the re-rank are
+  given the inputs. A function that serves the input under another name is
+  not bound to it.
+
+A part with more than one record, with placements below 1, or with an LCSC
+number that is neither `C` and digits nor `none`, has no record: it is
+dropped, and a ranking that names it leaves the function open. A shortlisted
+candidate P2's own record fails is dropped and its failure re-read by the
+datasheet verifier. A requirement a candidate states with another value than
+its function is checked against the function's value, and its own pass is
+dropped before failures are counted. An adjudicator's ruling without evidence,
+source and a reading time of the task is no ruling. A refutation the
+adjudicator rules is about the part itself (its `scope` is `part`: lifecycle,
+end-of-life, maker, identity) holds in every function of the category, and
+`prepare` holds any category that keeps the part after that run. A standing
+refutation stays final in the run, even if the part is verified later as
+another part's alternate. Once every ruling of a pass is in, a standing
+refutation sends the part its function now stands on, the first in rank order
+whose refutation has not stood, to one new pair. A refuted part ranked below
+that part, such as a Q alternative beside a verified first-ranked part, sends
+none; a refuted Q alternative is listed for a follow-up task. A part already
+verified, with its rule-5 alternate checked against it, is kept without a
+pair. A refutation no adjudicator ruled on, for want of a free agent or of a
+ruling, keeps the part open in the run: a later verification does not clear
+it, only a standing refutation replaces it, and the part holds no alternate
+role. A refutation of a part as an alternate on its fit alone, each refuting
+verdict failing `pin-for-pin match` or `functional match` and no other check,
+fails only that relationship: the part keeps its own place on the shortlist,
+and a part in both roles keeps its own verification on its other checks while
+the adjudicator rules on the relationship. Any other refutation as an
+alternate holds for the part in the function, in every role, as a refutation
+as a primary does: every other check reads the part against the function,
+whatever its role. A part a verifier was not asked to verify is ignored, a
+part it lists twice has no verdict from it, and a check read as empty, blank
+or not read, or as `none` other than `end-of-life notices` and
+`longevity commitment`, figure evidence that is none, or either without its
+source or a reading time of the task, shows nothing. A reading time is a date
+the calendar has (2026-02-31 is not one); for a P4 check, a figure verdict or
+a ruling it is also on the date `prepare` gave the run or the next day, for a
+run that passes midnight, so a reading copied from an earlier return or the
+parts database, or dated later, shows nothing. The workflow script has no
+clock: a run that goes on past the day after `prepare` counts none of the
+readings it takes then. A check that disagrees or fails is a refutation, named
+in the refutation the adjudicator rules on whatever the verdict, and a
+confirmation whose refutation is not empty is one; a refutation that is
+`none`, or starts with `no refutation`, `not refuted`, `none found` or
+`nothing found`, counts as empty. A reading that moves or always passes
+(`stock`, `presale`, `second-vendor stock`, `lead time`, `distributor status`,
+`market introduction`, `longevity commitment`, `library type`), and a
+requirement added as not given, refute only when they fail. A check for a
+route or role the part does not take refutes nothing: compatibility for a part
+that is no alternate, and `second-vendor stock` off the second-vendor route or
+for an alternate, which passes rules 1 to 4 only (rule 5). Every verified part
+needs a `placements` check re-deriving its count from the specification, a
+`board placement` check re-deriving from it whether the part is on the board,
+which passes only when its LCSC number agrees (rule 1), the lifecycle table's
+readings (`longevity commitment`, `market introduction`, `distributor status`,
+`lead time`), for a part on the board `LCSC identity` and `library type`
+checks, and a `manufacturer allowlist` check (rule 2), and an alternate needs
+at least the placements of the part it stands in for. The datasheet verifier
+re-reads each function's requirement list against IOBoard.md, the answers and
+each value found for research, which P2 applies to the function its row under
+"Raised by P1" names (`function requirements: FUNCTION`). Figures count on its
+verdicts only; the stock verifier returns none. A figure it refutes with
+evidence, source and a reading time of the task goes to an adjudicator with
+the claim the figure states: the value reported or found, the class, the
+requirement list, the failed requirements or the drop. A replacement pair
+confirms no figure, but its datasheet verifier's refutation of one is
+adjudicated in the same way. A part on the board that the owner holds may pass
+the stock gate on a `held quantity` check in place of `stock` and `presale`
+(rule 6); a passing held quantity that shows a reading supersedes failing live
+readings, and passing live readings a failing held quantity. A return whose
+`category` names another category counts as not returned. Only the kept part's
+rule-5 alternate gates its selection, and the alternate of a part on the board
+must be on the board. The kept part counts for a Q4 or Q8 option class in
+which the datasheet verifier confirmed it: `kept_option` when it is the
+first-ranked part after the drops, the option the re-rank gives it in the
+ranking, or its option when it is a Q alternative. A kept part given two
+different classes in these two roles counts for neither. An alternate counts
+only for the part it was checked against: an alternate several parts name is
+checked against the first of them (the first-ranked part, then the Q
+alternatives in order), and a replacement's alternate against the replacement.
+A part verified in its own right, the first-ranked part or a Q alternative,
+that is also another part's alternate keeps that verification. It holds the
+alternate role while verified, also after a refutation that did not stand,
+with its compatibility checks. A category whose chain failed is left out of
+the run's selection, so the gates read the run before it. Each assumption
+needs a confirmed question of its own, whose `for_where` and `for_quantity`
+are the assumption's location and quantity. The P1 critic rules on a marking
+by the value's index, location and quantity, and a marking it upholds with the
+same marking is unchanged. A P1 critic or re-check verdict whose reason or
+evidence reads as none is no verdict. A P1 return with no value, and a
+category whose P1 and critic name no function, leave a P1 item. Each "P1 asks"
+item of the category that no question under "Raised by P1" names in `asks`
+needs a confirmed question that names it. Without one it leaves a P1 item,
+also when the critic or the re-check rejected the question for it. A question
+under "Raised by P1" is not raised again: it asks for an assumption at its
+`for_where` and `for_quantity`. A P1 follow-up gives its items to P1 and the
+critic, and lists again each item its run did not deal with: a value its P1
+did not return, a question neither its P1 nor its critic raised and not under
+"Raised by P1" (the same words, or the same `for_where` and `for_quantity`),
+and any other item of a category whose P1 or critic returned nothing; an item
+listed again stands for the item it carries. P1 and the critic are told to
+copy an item's question word for word; an item without a `for_where` whose
+question they raise in other words is listed again. P1 and the critic of a
+follow-up are given the names the category's inventory and `selection.json`
+give its functions, and keep them. P0 counts a host with two rows, or a status
+written as not read, none, no, false, absent or not in the page body, as not
+read. A P0 row counts only at its host's endpoint: an API client's command
+with the probe, whatever environment assignments (`DIGIKEY_ENV_FILE=...`,
+`env`) and interpreter path precede it, a page client's probe URL, or with no
+probe a page on the host itself. The P7 critic checks at least one figure on
+each group page and each output under `hardware/docs/`, each check naming the
+figure and the file under `hardware/research/round1/` it comes from, a path
+ending in `.json`; text after the path, such as `:34` or `#L34`, is not part
+of it, and `record` reads the same path. Each check gives its kind: budget,
+combination or other. A budget or combination checked against any file but the
+last P5/P6 check's is superseded, and so is any figure checked against an
+earlier check's P5 return (a restarted one included), whatever its kind; every
+figure P7 lists as written needs a check of its own; another figure, such as a
+run's status line, may cite an earlier check's other files. P7 and its critic
+are given the three commands, the pages that need a figure checked, and the
+path rules for group pages and figure checks that `round1.js` and `record`
+apply. The schemas ask P5, P6 and their critics to write a conflict's parts as
+`selection.json` writes them and each category by its ID alone.
+
+`prepare` gives each run an identity, `run_id`, which the workflow returns.
+`record` refuses an output whose run, `run_id`, commit, date, follow-up,
+decisions or accepted open items differ from the prepared arguments, that
+lacks the result fields or the summary its task writes, or that did not stop
+and lacks the returns its task cannot finish without (P0, or P7 and its
+critic), an output already recorded, a plan or a refusal, a return that does
+not match its schema, and a results tree whose head moved since `prepare`. A
+task P0 stopped is recorded as `TASK-stopped-N` and does not count as
+recorded. After a run that selects parts it rewrites
+`hardware/research/round1/selection.json`, the part each function keeps: the
+latest run that names a function decides it. A run that names it and verifies
+no part leaves it open and records the earlier part in `not_requalified`. A
+function an earlier P1 inventory of its category lists and the latest does not
+is retired: the next run that selects parts in the category without naming it
+removes it. `record` commits only the run's directory and that file.
+
+After a T6 that was not stopped `record` also commits the pages P7 wrote. It
+refuses a changed file outside the files P7 declared and its critic reviewed
+within the plan's Outputs (`hardware/docs/`, `hardware/STATUS.md`,
+`hardware/README.md`, `tools/jlc_stock.py`), an output or group page that is
+not a file afterwards, a file P7 declared that did not change, a group page
+outside `hardware/docs/` or among the fixed outputs, a group page HEAD already
+holds, a `Research.md` whose rows under "Raised by P1", Blocking and Sourcing
+answers or decisions differ from HEAD's, and a figure the critic checked
+against a file under `hardware/research/round1/` that HEAD does not hold. A
+renamed file counts as both its old and its new path. A T6 is recorded as
+stopped unless P7 and its critic both return, the critic's three checks pass,
+it checked at least one figure and every figure agrees with its return, no
+budget or combination is superseded, no writing issue is left, P7 names three
+group pages, three files in `hardware/docs/` other than the fixed outputs, and
+every output of the plan and each group page was written and reviewed. The
+critic also gives, in an output or group page, the line that states each item
+as the arguments say: each conflict and gap the checks leave as not known,
+each item accepted open as not verified or not known, and each upheld
+assumption as assumed; the `Parts.md` line and the page of its category's
+group for each verified part `selection.json` keeps (the kept part, its
+alternate, each Q alternative and its alternate), a part not verified being an
+item accepted open; and a verdict with its reason that `tools/jlc_stock.py`
+does what each sentence of its Outputs row states. A stopped T6 leaves the
+output paths as they were. A T6 that `record` refuses, for any reason, an
+unreadable output included, does too, and keeps what P7 changed in a stash
+named `refused T6 RUN_ID` in the results tree. `raised` reads the committed
+run record only and refuses a plan tree with uncommitted changes. It writes
+each question and function on one line: every run of whitespace, a line break
+among them, becomes one space.
+
+A follow-up task takes `--followup FILE`, a JSON object with `phases` (`P1`,
+`P2-P4` or `P5-P6`), `round` (1 or 2), `categories` and `items`, and
+`--name N` (letters and digits, without `stopped`). Each item names one of the
+follow-up's categories; a P5-P6 follow-up takes none, as it checks the whole
+board. It is recorded with `record FU OUTPUT --name N` and raised with
+`raised --run FU-N`. Each task's `followUps` list is the source of the next
+follow-up files.

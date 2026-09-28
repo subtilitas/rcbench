@@ -478,11 +478,14 @@ known and reported to the owner. Follow-up tasks add to the total of 102.
    P7 and its critic write the pages there, and the session commits them after
    T6. While the tasks run, nothing is pushed to `main`, and a pull request of
    the results is opened only when the owner asks for one.
-6. **The workflow scripts and their schemas.** Not written. The scripts and
-   schemas are written from this page, with the tool the session runs between
-   tasks to write and commit each task's returns. They are committed to `main`
-   under `tools/research/` through a pull request that the automated reviewers
-   and the owner review, before T1 runs (owner, 2026-09-27).
+6. **The workflow scripts and their schemas**, in `tools/research/`
+   ([its README](../../tools/research/README.md)): `round1.js`, one run per
+   task; the return schema of each role; the host table; `vendors.py`, the
+   readings agents take; and `session.py`, which prepares a task, records its
+   returns and commits them. `session.py check` holds them to this page in CI
+   (continuous integration), with a dry run of every task on mock agents. They
+   reach `main` through a pull request that the automated reviewers and the
+   owner review, before T1 runs (owner, 2026-09-27).
 7. **The display's current draw** on the link cable at the voltage of F6, peak
    and steady: 2 A peak and 1.5 A continuous at 5 V (owner, 2026-09-25).
 8. **The owner's answers** to the questions below.
@@ -560,10 +563,12 @@ neither P2 nor the start of its task.
 
 These stay open while the research runs. The research tasks report the
 alternatives with their figures, and P5 budgets both alternatives of Q4 and
-Q8. The owner decides each before T6.
+Q8. The owner decides each before T6 and writes the decision in the last
+column; `tools/research/session.py prepare T6` refuses to start T6 while one is
+empty.
 
-| ID | Decision | Reported by |
-| --- | --- | --- |
-| Q4 | The RP2354B's ADC with a reference, or an external ADC, for the accelerometer | R10: ENOB (effective number of bits) and sampling rate of each against the balance measurement, whether each conversion can be triggered or timestamped on the index pulse's timebase, and its worst-case latency jitter |
-| Q8 | The output binding in the RP2354B's flash, or in an I²C FRAM (ferroelectric random-access memory) or EEPROM (electrically erasable programmable read-only memory) | R2: how many received frames each CAN controller holds against the stall of the W25Q16JV above and the frame count P1's question returns. R12: FRAM and EEPROM candidates |
-| Q9 | The monostable, if no part has both the '423 behaviour and I_off: which requirement gives way, or which part goes in front of the trigger inputs | R3: the parts that meet each requirement alone, what each lacks, and the shortlisted parts with I_off for a place in front of the trigger inputs. The latch's power-up state bears on it: a latch that powers up set holds the enable low through a clear-release pulse (F11, R3) |
+| ID | To decide | Reported by | Decision (owner, date) |
+| --- | --- | --- | --- |
+| Q4 | The RP2354B's ADC with a reference, or an external ADC, for the accelerometer | R10: ENOB (effective number of bits) and sampling rate of each against the balance measurement, whether each conversion can be triggered or timestamped on the index pulse's timebase, and its worst-case latency jitter |  |
+| Q8 | The output binding in the RP2354B's flash, or in an I²C FRAM (ferroelectric random-access memory) or EEPROM (electrically erasable programmable read-only memory) | R2: how many received frames each CAN controller holds against the stall of the W25Q16JV above and the frame count P1's question returns. R12: FRAM and EEPROM candidates |  |
+| Q9 | The monostable, if no part has both the '423 behaviour and I_off: which requirement gives way, or which part goes in front of the trigger inputs | R3: the parts that meet each requirement alone, what each lacks, and the shortlisted parts with I_off for a place in front of the trigger inputs. The latch's power-up state bears on it: a latch that powers up set holds the enable low through a clear-release pulse (F11, R3) |  |

@@ -108,6 +108,12 @@ jobs:
       - name: The docs agree with the tree
         run: python3 tools/check_docs.py
 
+      # The round 1 research scripts against the plan they run: the agent
+      # counts, the categories, the schemas, the host table, and a dry run
+      # of every task with mock agents.
+      - name: The research scripts agree with the plan
+        run: python3 tools/research/session.py check
+
       # The wiki gets these pages with their links translated, and a broken
       # translator shows up only as a wiki full of downloads.  Run it against
       # a copy so a mistake fails here rather than there.

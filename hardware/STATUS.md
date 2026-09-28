@@ -14,7 +14,8 @@ and a seed that research may replace (owner, 2026-09-27). [The IO (input/output)
 draft. [Round 1 of the component research](docs/Research.md) is planned and
 has not run. Its prerequisites 1 to 3 are in place (2026-09-27): the server,
 network access and Digi-Key's API (application programming interface). The
-workflow scripts are not written.
+workflow scripts are in `tools/research/` (prerequisite 6). The branches of
+prerequisites 4 and 5 are not made.
 
 ## Decided
 
@@ -63,11 +64,9 @@ workflow scripts are not written.
 1. The owner has accepted [the research plan](docs/Research.md) and answered
    questions S1 to S9 ([Sourcing questions](docs/Research.md#sourcing))
    (owner, 2026-09-25 and 2026-09-27). Prerequisites 1 to 3 are in place
-   (2026-09-27). Next: the workflow scripts and their schemas under
-   `tools/research/`, through a pull request that the automated reviewers and
-   the owner review; then the branches `research/round1` and
-   `research/round1-results` from `main` after that merge and before pull
-   request #167 merges.
+   (2026-09-27). The workflow scripts and their schemas are in
+   `tools/research/`. Next: the branches `research/round1` and
+   `research/round1-results` from `main`, before pull request #167 merges.
    T1 starts on the owner's go (owner, 2026-09-27;
    [Prerequisites](docs/Research.md#prerequisites)).
 2. Round 1 of the component research, as in

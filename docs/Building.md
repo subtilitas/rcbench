@@ -139,7 +139,7 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 
 | Workflow | Trigger | Jobs |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload; font, docs, wiki-link, frame-cost and screenshot checks; clang-tidy, cppcheck and ruff; panel build on ESP-IDF v5.4 and v5.5; coprocessor build on pico-sdk 2.3.0; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload; font, docs, wiki-link, frame-cost, screenshot and research-script checks; clang-tidy, cppcheck and ruff; panel build on ESP-IDF v5.4 and v5.5; coprocessor build on pico-sdk 2.3.0; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/` | mirrors `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release |
 
