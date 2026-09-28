@@ -234,8 +234,9 @@ def dk_cache(kind, key):
 
 
 def dk_norm(part):
-    """A part number as the cache keys it: upper case, no whitespace."""
-    return re.sub(r"\s+", "", str(part or "")).upper()
+    """A part number as the cache keys it: upper case, runs of whitespace as
+    one space, none at the ends. The details request sends the same form."""
+    return " ".join(str(part or "").split()).upper()
 
 
 @contextlib.contextmanager
@@ -291,7 +292,8 @@ def dk_details(args, path):
     if kept:
         emit(kept)
         return 0 if kept.get("http_status") == 200 else 1
-    url = DK_DETAILS_URL.format(urllib.parse.quote(args.mpn, safe=""))
+    mpn = " ".join(args.mpn.split())
+    url = DK_DETAILS_URL.format(urllib.parse.quote(mpn, safe=""))
     code, body, headers = http(url, headers=dk_headers())
     out = {"api": url, "read_at": now(), "http_status": code,
            "ratelimit_remaining": headers.get("x-ratelimit-remaining")}
@@ -300,10 +302,16 @@ def dk_details(args, path):
     else:
         out["error"] = body.decode("utf-8", errors="replace")[:500]
     # A part number several Digi-Key products carry answers 404 "Duplicate
-    # Products found": one keyword search lists them with their makers.
+    # Products found": one keyword search lists them with their makers. The
+    # 404 is kept only once the search resolved it; a failed search is
+    # asked again.
     if code == 404 and "Duplicate Products" in out.get("error", ""):
-        out = dk_duplicates(args.mpn, url) or out
-    dk_keep(path, out)
+        resolved = dk_duplicates(mpn, url)
+        if resolved:
+            out = resolved
+            dk_keep(path, out)
+    else:
+        dk_keep(path, out)
     emit(out)
     return 0 if out.get("http_status") == 200 else 1
 
@@ -393,9 +401,10 @@ def dk_search(args, path, limit):
     # fields as a details record.
     if out["http_status"] == 200:
         for part, products in dk_by_part(out["products"]).items():
-            dk_keep(dk_cache("details", part),
-                    dk_reading(out, products, from_search=True),
-                    only_new=True)
+            derived = dk_cache("details", part)
+            with dk_locked(derived):
+                dk_keep(derived, dk_reading(out, products, from_search=True),
+                        only_new=True)
     emit(out)
     return 0 if out["http_status"] == 200 else 1
 
