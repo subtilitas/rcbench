@@ -7,6 +7,7 @@
     vendors.py jlcpcb-search KEYWORD [--pages N]
     vendors.py digikey MPN
     vendors.py digikey-search KEYWORDS [--limit N]
+    vendors.py digikey-quota
 
 Each command prints one JSON object that carries the URL or API call and the
 UTC time it was read, so a figure can be dated and sourced (Sourcing rule 7 in
@@ -15,11 +16,20 @@ equals the argument, never the first result of the keyword search.
 
 Digi-Key's credentials come from DIGIKEY_CLIENT_ID and DIGIKEY_CLIENT_SECRET,
 or from the KEY=value file named by DIGIKEY_ENV_FILE. They are never printed.
+Digi-Key allows 1,000 API calls a day. With DIGIKEY_CACHE_DIR set, `digikey`
+and `digikey-search` keep each answer of HTTP 200 in that directory and give
+it again for the same part or keywords, marked "cached": true, with the time
+and API call of the reading. `session.py prepare` names one directory per run,
+so every agent of a run reads a part at Digi-Key once. `digikey-quota` prints
+the calls left today and when the count resets; it takes one call.
 The chrome and safari clients need curl_cffi (pip install curl_cffi).
 """
 
 import argparse
+import contextlib
 import datetime
+import fcntl
+import hashlib
 import json
 import os
 import re
@@ -207,7 +217,66 @@ def dk_product(p):
     }
 
 
+def dk_cache(kind, key):
+    """The file that keeps this run's answer to one Digi-Key call, or None
+    without DIGIKEY_CACHE_DIR."""
+    folder = os.environ.get("DIGIKEY_CACHE_DIR")
+    if not folder:
+        return None
+    digest = hashlib.sha256(f"{kind}\0{key}".encode()).hexdigest()[:24]
+    return os.path.join(folder, f"{kind}-{digest}.json")
+
+
+@contextlib.contextmanager
+def dk_locked(path):
+    """Hold the key's lock while the cache is read, the API called and the
+    answer kept, so agents that ask for one part at once make one call."""
+    if not path:
+        yield
+        return
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path + ".lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+
+
+def dk_kept(path):
+    if not path:
+        return None
+    try:
+        with open(path) as f:
+            out = json.load(f)
+    except (OSError, ValueError):
+        return None
+    out["cached"] = True
+    return out
+
+
+def dk_keep(path, out):
+    """Keep an answer of HTTP 200; a refusal such as 429 is read again."""
+    if not path or out.get("http_status") != 200:
+        return
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = f"{path}.{os.getpid()}.tmp"
+    with open(tmp, "w") as f:
+        json.dump(out, f, ensure_ascii=False)
+    os.replace(tmp, path)
+
+
 def cmd_digikey(args):
+    path = dk_cache("details", args.mpn.strip().upper())
+    with dk_locked(path):
+        return dk_details(args, path)
+
+
+def dk_details(args, path):
+    kept = dk_kept(path)
+    if kept:
+        emit(kept)
+        return 0
     url = DK_DETAILS_URL.format(urllib.parse.quote(args.mpn, safe=""))
     code, body, headers = http(url, headers=dk_headers())
     out = {"api": url, "read_at": now(), "http_status": code,
@@ -216,13 +285,41 @@ def cmd_digikey(args):
         out["product"] = dk_product(json.loads(body).get("Product") or {})
     else:
         out["error"] = body.decode("utf-8", errors="replace")[:500]
+    dk_keep(path, out)
     emit(out)
     return 0 if code == 200 else 1
 
 
+def dk_quota():
+    """(HTTP status, calls left today, reset time) from one details call."""
+    url = DK_DETAILS_URL.format(urllib.parse.quote("INA238AIDGSR", safe=""))
+    code, _, headers = http(url, headers=dk_headers())
+    left = headers.get("x-ratelimit-remaining")
+    return (code, int(left) if str(left or "").isdigit() else None,
+            headers.get("x-ratelimit-resettime"))
+
+
+def cmd_digikey_quota(_args):
+    code, left, reset = dk_quota()
+    emit({"read_at": now(), "http_status": code, "remaining": left,
+          "reset": reset})
+    return 0 if left is not None else 1
+
+
 def cmd_digikey_search(args):
+    limit = max(1, min(args.limit, 50))
+    path = dk_cache("search", f"{args.keywords.strip()}\0{limit}")
+    with dk_locked(path):
+        return dk_search(args, path, limit)
+
+
+def dk_search(args, path, limit):
+    kept = dk_kept(path)
+    if kept:
+        emit(kept)
+        return 0
     payload = json.dumps({"Keywords": args.keywords,
-                          "Limit": max(1, min(args.limit, 50)),
+                          "Limit": limit,
                           "Offset": 0}).encode()
     code, body, headers = http(DK_SEARCH_URL, data=payload,
                                headers=dk_headers())
@@ -235,6 +332,7 @@ def cmd_digikey_search(args):
         out["products"] = [dk_product(p) for p in data.get("Products") or []]
     else:
         out["error"] = body.decode("utf-8", errors="replace")[:500]
+    dk_keep(path, out)
     emit(out)
     return 0 if code == 200 else 1
 
@@ -264,6 +362,7 @@ def main():
     ds.add_argument("keywords")
     ds.add_argument("--limit", type=int, default=25)
     ds.set_defaults(fn=cmd_digikey_search)
+    sub.add_parser("digikey-quota").set_defaults(fn=cmd_digikey_quota)
     args = ap.parse_args()
     try:
         return args.fn(args)
