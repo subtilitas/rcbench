@@ -41,16 +41,24 @@ and host table. Nothing here runs in CI (continuous integration) but
   `DIGIKEY_CLIENT_SECRET`, or a file named by `DIGIKEY_ENV_FILE`.
 - Digi-Key's API allows 1,000 calls a day and resets at 00:00 UTC; a call
   past it answers HTTP 429 and its check reads as not read. T2, T4 and the
-  first R1 to R4 follow-up of 2026-09-28 made about 400, 400 and 500. Each
-  run has a directory under `DIR/cache/digikey/RUN_ID/` (`DIGIKEY_CACHE_DIR`
-  in the agents' commands), where `vendors.py digikey` and `digikey-search`
-  keep every answer of HTTP 200: an agent that asks again for the same part
-  or keywords gets the kept answer, marked `"cached": true`, with the time and
+  first R1 to R4 follow-up of 2026-09-28 made 367, 325 and 273 (by the API's
+  count; the follow-up ran out). `DIR/cache/digikey/` (`DIGIKEY_CACHE_DIR` in
+  the agents' commands) holds one folder per UTC day, where
+  `vendors.py digikey` and `digikey-search` keep every answer of HTTP 200 or
+  404: an agent of any run that asks again that day for the same part or
+  keywords gets the kept answer, marked `"cached": true`, with the time and
   API call of the reading. A lock per part or keywords makes agents that ask
-  at once wait for one call. P4's stock verifier therefore reads Digi-Key
-  again only for a part no earlier agent of the run read by `digikey`; a
-  keyword search is kept as a search, not as a reading of each part it lists.
-  A refusal is not kept.
+  at once wait for one call. A keyword search that returned every product it
+  matched also keeps each part number it lists as that part's reading, unless
+  one is kept already; on 2026-09-28 the
+  search and details records of 26 parts read both ways agreed in every
+  field. A part number several Digi-Key products carry answers 404
+  "Duplicate Products found" (54 parts on 2026-09-28): `vendors.py digikey`
+  then reads it with one keyword search and lists the matches with their
+  makers, with `"complete": false` when the search matched more products than
+  it returned. A refusal such as 429 is not kept. P2 and P3 read Digi-Key only
+  for candidates that pass every requirement value, and P2 records up to
+  three survivors per function.
 
 ## Running a task
 

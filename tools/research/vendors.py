@@ -16,12 +16,16 @@ equals the argument, never the first result of the keyword search.
 
 Digi-Key's credentials come from DIGIKEY_CLIENT_ID and DIGIKEY_CLIENT_SECRET,
 or from the KEY=value file named by DIGIKEY_ENV_FILE. They are never printed.
-Digi-Key allows 1,000 API calls a day. With DIGIKEY_CACHE_DIR set, `digikey`
-and `digikey-search` keep each answer of HTTP 200 in that directory and give
-it again for the same part or keywords, marked "cached": true, with the time
-and API call of the reading. `session.py prepare` names one directory per run,
-so every agent of a run reads a part at Digi-Key once. `digikey-quota` prints
-the calls left today and when the count resets; it takes one call.
+Digi-Key allows 1,000 API calls a day, counted per UTC day. With
+DIGIKEY_CACHE_DIR set, `digikey` and `digikey-search` keep each answer of
+HTTP 200 or 404 in a folder of that directory for the UTC day, and give it
+again for the same part or keywords that day, marked "cached": true, with the
+time and API call of the reading. A search also keeps each part number it
+lists as that part's details reading, unless one is kept already. A part
+number several Digi-Key products carry (404 "Duplicate Products found") is
+read with one keyword search: the answer lists the matches with their makers,
+or gives the one product. `digikey-quota` prints the calls left today and
+when the count resets; it takes one call.
 The chrome and safari clients need curl_cffi (pip install curl_cffi).
 """
 
@@ -218,13 +222,21 @@ def dk_product(p):
 
 
 def dk_cache(kind, key):
-    """The file that keeps this run's answer to one Digi-Key call, or None
-    without DIGIKEY_CACHE_DIR."""
+    """The file that keeps today's answer to one Digi-Key call, or None
+    without DIGIKEY_CACHE_DIR. One folder per UTC day, the day Digi-Key's
+    count of calls runs over."""
     folder = os.environ.get("DIGIKEY_CACHE_DIR")
     if not folder:
         return None
+    day = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
     digest = hashlib.sha256(f"{kind}\0{key}".encode()).hexdigest()[:24]
-    return os.path.join(folder, f"{kind}-{digest}.json")
+    return os.path.join(folder, day, f"{kind}-{digest}.json")
+
+
+def dk_norm(part):
+    """A part number as the cache keys it: upper case, runs of whitespace as
+    one space, none at the ends. The details request sends the same form."""
+    return " ".join(str(part or "").split()).upper()
 
 
 @contextlib.contextmanager
@@ -255,9 +267,12 @@ def dk_kept(path):
     return out
 
 
-def dk_keep(path, out):
-    """Keep an answer of HTTP 200; a refusal such as 429 is read again."""
-    if not path or out.get("http_status") != 200:
+def dk_keep(path, out, only_new=False):
+    """Keep an answer of HTTP 200 or 404: a reading, or a part number
+    Digi-Key does not list. A refusal such as 429 is read again."""
+    if not path or out.get("http_status") not in (200, 404):
+        return
+    if only_new and os.path.exists(path):
         return
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = f"{path}.{os.getpid()}.tmp"
@@ -267,7 +282,7 @@ def dk_keep(path, out):
 
 
 def cmd_digikey(args):
-    path = dk_cache("details", args.mpn.strip().upper())
+    path = dk_cache("details", dk_norm(args.mpn))
     with dk_locked(path):
         return dk_details(args, path)
 
@@ -276,8 +291,9 @@ def dk_details(args, path):
     kept = dk_kept(path)
     if kept:
         emit(kept)
-        return 0
-    url = DK_DETAILS_URL.format(urllib.parse.quote(args.mpn, safe=""))
+        return 0 if kept.get("http_status") == 200 else 1
+    mpn = " ".join(args.mpn.split())
+    url = DK_DETAILS_URL.format(urllib.parse.quote(mpn, safe=""))
     code, body, headers = http(url, headers=dk_headers())
     out = {"api": url, "read_at": now(), "http_status": code,
            "ratelimit_remaining": headers.get("x-ratelimit-remaining")}
@@ -285,9 +301,79 @@ def dk_details(args, path):
         out["product"] = dk_product(json.loads(body).get("Product") or {})
     else:
         out["error"] = body.decode("utf-8", errors="replace")[:500]
-    dk_keep(path, out)
+    # A part number several Digi-Key products carry answers 404 "Duplicate
+    # Products found": one keyword search lists them with their makers. The
+    # 404 is kept only once the search resolved it; a failed search is
+    # asked again.
+    if code == 404 and "Duplicate Products" in out.get("error", ""):
+        resolved = dk_duplicates(mpn, url)
+        if resolved:
+            out = resolved
+            dk_keep(path, out)
+    else:
+        dk_keep(path, out)
     emit(out)
-    return 0 if code == 200 else 1
+    return 0 if out.get("http_status") == 200 else 1
+
+
+def dk_search_call(keywords, limit):
+    payload = json.dumps({"Keywords": keywords, "Limit": limit,
+                          "Offset": 0}).encode()
+    code, body, headers = http(DK_SEARCH_URL, data=payload,
+                               headers=dk_headers())
+    out = {"api": DK_SEARCH_URL, "keywords": keywords, "read_at": now(),
+           "http_status": code,
+           "ratelimit_remaining": headers.get("x-ratelimit-remaining")}
+    if code == 200:
+        data = json.loads(body)
+        out["count"] = data.get("ProductsCount")
+        out["products"] = [dk_product(p) for p in data.get("Products") or []]
+    else:
+        out["error"] = body.decode("utf-8", errors="replace")[:500]
+    return out
+
+
+def dk_complete(search):
+    """Whether a search returned every product it matched."""
+    count = search.get("count")
+    return isinstance(count, int) and count <= len(search.get("products")
+                                                   or [])
+
+
+def dk_by_part(products):
+    """The products of a search grouped by part number."""
+    groups = {}
+    for p in products:
+        if p.get("part"):
+            groups.setdefault(dk_norm(p["part"]), []).append(p)
+    return groups
+
+
+def dk_reading(search, part_products, **extra):
+    """A details reading made from a search's products for one part number:
+    the product when one carries it, else every match with its maker."""
+    out = {"api": search["api"], "keywords": search["keywords"],
+           "read_at": search["read_at"], "http_status": 200,
+           "ratelimit_remaining": search.get("ratelimit_remaining"), **extra}
+    if len(part_products) == 1:
+        out["product"] = part_products[0]
+    else:
+        out["matches"] = part_products
+    return out
+
+
+def dk_duplicates(mpn, details_api):
+    search = dk_search_call(mpn.strip(), 50)
+    if search["http_status"] != 200:
+        return None
+    matches = dk_by_part(search["products"]).get(dk_norm(mpn), [])
+    if not matches:
+        return None
+    # complete: false when the search matched more products than it
+    # returned, so a maker may be missing from the matches.
+    return dk_reading(search, matches, details_api=details_api,
+                      details_status=404, duplicate=True,
+                      complete=dk_complete(search))
 
 
 def dk_quota():
@@ -317,24 +403,21 @@ def dk_search(args, path, limit):
     kept = dk_kept(path)
     if kept:
         emit(kept)
-        return 0
-    payload = json.dumps({"Keywords": args.keywords,
-                          "Limit": limit,
-                          "Offset": 0}).encode()
-    code, body, headers = http(DK_SEARCH_URL, data=payload,
-                               headers=dk_headers())
-    out = {"api": DK_SEARCH_URL, "keywords": args.keywords, "read_at": now(),
-           "http_status": code,
-           "ratelimit_remaining": headers.get("x-ratelimit-remaining")}
-    if code == 200:
-        data = json.loads(body)
-        out["count"] = data.get("ProductsCount")
-        out["products"] = [dk_product(p) for p in data.get("Products") or []]
-    else:
-        out["error"] = body.decode("utf-8", errors="replace")[:500]
+        return 0 if kept.get("http_status") == 200 else 1
+    out = dk_search_call(args.keywords, limit)
     dk_keep(path, out)
+    # Each part number the search lists becomes today's details reading of
+    # it, unless one is kept already: a search record carries the same
+    # fields as a details record. Only a search that returned every product
+    # it matched: a slice may hold one of a part number's several products.
+    if out["http_status"] == 200 and dk_complete(out):
+        for part, products in dk_by_part(out["products"]).items():
+            derived = dk_cache("details", part)
+            with dk_locked(derived):
+                dk_keep(derived, dk_reading(out, products, from_search=True),
+                        only_new=True)
     emit(out)
-    return 0 if code == 200 else 1
+    return 0 if out["http_status"] == 200 else 1
 
 
 def main():
