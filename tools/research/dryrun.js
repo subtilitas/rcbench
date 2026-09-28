@@ -152,7 +152,7 @@ async function runTask(task, opts = {}) {
         new_candidates: opts.p3dropped ? [{ ...cand(7), part: 'partN' }] : [], dropped_from_p3: opts.p3dropped ? [{ part: 'partN', maker: 'm', reason: 'r' }] : [],
         dropped_from_shortlist: opts.rankDropped ? [{ part: 'part1', maker: 'm', reason: 'r' }] : (opts.dropShort || []).map(part => ({ part, maker: 'm', reason: 'r' })), verify: opts.qDup ? [{ part: 'part3', kind: 'q-alternative', option: 'reference' }, { part: 'part3', kind: 'q-alternative', option: 'external ADC' }] : opts.twoQShare ? [{ part: 'part2', kind: 'q-alternative' }, { part: 'part3', kind: 'q-alternative' }] : opts.qAlt || opts.sharedAlt ? [{ part: 'part3', kind: 'q-alternative', option: opts.qOption || '' }] : (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
       if (opts.extraFn) data.functions.push({ ...data.functions[0], function: 'fX', ...(opts.rrHandleYin || opts.rrHandleXin ? { dropped_from_shortlist: [{ part: opts.rrHandleXin ? 'partX' : 'partY', maker: 'm', reason: 'r' }] } : {}) })
-      if (opts.p3dropShort) data.functions[0].dropped_from_shortlist = [{ part: 'partX', maker: 'm', reason: 'fails vmax' }]
+      if (opts.p3dropShort) data.functions[0].dropped_from_shortlist = [{ part: opts.dropShortPart || 'partX', maker: 'm', reason: 'fails vmax', ...(opts.dropShortLcsc ? { lcsc: opts.dropShortLcsc } : {}) }]
       if (opts.rrDup) data.functions.push({ ...data.functions[0], ranking: [], dropped_from_shortlist: [{ part: 'part1', maker: 'm', reason: 'fails vmax at 85 C' }] })
       if (opts.noRerankFn) data.functions = []
       if (opts.emptyRanking) data.functions[0].ranking = []
@@ -199,7 +199,7 @@ async function runTask(task, opts = {}) {
       data.questions = [{ function: 'rail', question: 'State the voltage of rail 1', why: 'w', blocks: 'p2', decision: 'none', for_where: opts.wrongWhere ? 'IOBoard.md:9' : 'IOBoard.md:1', for_quantity: 'voltage' }]
     }
     if (role === 'P3') Object.assign(data, { missed: [], exclusions_not_holding: [], missed_functions: opts.missedFn ? [{ function: 'f2', why: 'the row names it' }] : [] })
-    if (role === 'P3' && opts.p3missed) data.missed = [{ function: opts.p3missedFn || 'f1', part: 'partX', maker: 'm', why: 'w' }]
+    if (role === 'P3' && opts.p3missed) data.missed = [{ function: opts.p3missedFn || 'f1', part: opts.p3missedPart || 'partX', maker: 'm', why: 'w' }]
     if (role === 'P3' && opts.p3overturned) data.exclusions_not_holding = [{ part: 'partY', reason_given: 'r', why_it_fails: 'w' }]
     if (role === 'P7-critic' || role === 'P7') {
       for (const k of Object.keys(data.checks)) data.checks[k] = { passed: !(opts.failCheck === k && role === 'P7-critic'), output: 'o' }
@@ -261,7 +261,7 @@ async function runTask(task, opts = {}) {
       const checksFor = (pt, pk) => (opts.emptyChecks || []).includes(base) ? []
         : (kind === 'stock' ? [...(opts.heldChecks ? ['held quantity', ...(opts.heldAndLive ? ['stock'] : [])] : ['stock', 'presale']), ...(opts.addStock || []), 'lifecycle status', 'end-of-life notices', ...(opts.noPlacementsCheck ? [] : ['placements']), ...(opts.noBoardCheck ? [] : ['board placement']), ...(opts.noLifecycleReadings ? [] : ['longevity commitment', 'market introduction', 'distributor status', 'lead time']), ...(!opts.noIdentity && /^C\d+$/.test(cand(pt).lcsc || '') ? ['LCSC identity', ...(opts.noLibType ? [] : ['library type'])] : []), ...(cand(pt).second_source_route === 'second-vendor' && !opts.noSecondVendor ? ['second-vendor stock'] : [])]
           : [...cand(pt).requirements.map(r => r.name).filter(n => n !== opts.skipReq), ...(opts.noMakerCheck ? [] : ['manufacturer allowlist']), ...(pk === 'alternate' && !opts.noCompat ? ['pin-for-pin match', 'functional match'] : [])])
-          .map((figure, k) => ({ figure, stated: 's', read: opts.readNone && kind === 'datasheet' ? 'not read: API timed out' : 'r', source: opts.noSource && kind === 'stock' ? '' : 'src', read_at: opts.undated && kind === 'stock' ? '' : '2026-09-28T10:00:00Z', agrees: !((opts.disagree || []).includes(base) && k === 0), passes: !((opts.failPass || []).includes(base) && k === 0) }))
+          .map((figure, k) => ({ figure, stated: 's', read: opts.readNone && kind === 'datasheet' ? 'not read: API timed out' : 'r', source: opts.noSource && kind === 'stock' ? '' : 'src', read_at: opts.undated && kind === 'stock' ? '' : opts.readAt && kind === 'stock' ? opts.readAt : '2026-09-28T10:00:00Z', agrees: !((opts.disagree || []).includes(base) && k === 0), passes: !((opts.failPass || []).includes(base) && k === 0) }))
           .map(c => opts.heldAndLive && c.figure === 'stock' ? { ...c, passes: false } : c)
           .map(c => ({ ...c, ...((opts.edit || {})[c.figure] || {}), ...(kind === 'stock' ? opts.stockPatch || {} : {}) }))
           .map(c => ({ ...c, ...(((opts.editPart || {})[`${base}:${pt}`] || {})[c.figure] || {}) }))
@@ -710,6 +710,14 @@ async function main() {
   check(r1(r).selection[0].part === null, 'no manufacturer allowlist check: not verified')
   r = await runTask('T2', { undated: true })
   check(r1(r).selection[0].part === null, 'undated checks: not verified')
+  // A reading time may carry a note, a second time or a range's end; every
+  // date it gives is of the run.
+  r = await runTask('T2', { readAt: '2026-09-28T10:00Z to 10:05Z (JLCPCB), 2026-09-28T10:06:00Z (Digi-Key)' })
+  check(r1(r).selection[0].part === 'part1', 'reading time with notes and a range: verified')
+  r = await runTask('T2', { readAt: '2026-09-28T10:00:00Z; stock copied from 2026-09-20' })
+  check(r1(r).selection[0].part === null, 'reading time naming an earlier date: not verified')
+  r = await runTask('T2', { readAt: '2026-09-281' })
+  check(r1(r).selection[0].part === null, 'reading time with a digit after the date: not verified')
   // A function's requirement list is re-read against the specification.
   r = await runTask('T2', { omitFigure: ['P4-datasheet-R1', 'function requirements: f1'] })
   check(r.result.summary.figures_open.R1.includes('function requirements: f1'), 'function requirement list not confirmed: open')
@@ -879,6 +887,22 @@ async function main() {
   check(r1(r).selection[0].part === null, 'P3 find handled only under a function P2 did not return: open')
   r = await runTask('T2', { p3overturned: true, extraFn: true, rrHandleYin: true })
   check(r1(r).selection[0].part === null, 'overturned exclusion without an owner, handled only under a function P2 did not return: open')
+  // P3 names a find in its own words; the re-rank's part number handles it.
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partX (C1234)' })
+  check(r1(r).selection[0].part === 'part1', 'P3 find with its LCSC number, dropped by part number: handled')
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW (C99); partX (C1234), f1' })
+  check(r1(r).selection[0].part === 'part1', 'P3 find of two parts with its function appended, one dropped: handled')
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW,215 (C99)' })
+  check(r1(r).selection[0].part === null, 'P3 find of another part number: unhandled')
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'CAN transceiver (C99)', dropShortPart: 'partY (C99)' })
+  check(r1(r).selection[0].part === 'part1', 'P3 find by LCSC number alone, dropped under another name: handled')
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'CAN transceiver (C99)', dropShortPart: 'partY', dropShortLcsc: 'C99' })
+  check(r1(r).selection[0].part === 'part1', 'P3 find by LCSC number, the drop naming it in its lcsc field: handled')
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW (c98) AND partx (c99)', dropShortPart: 'PARTX' })
+  check(r1(r).selection[0].part === 'part1', 'P3 find in another case, joined by AND: handled')
+  // The drop of a find named in P3's own words is re-read as any P3 drop.
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partX (C1234)', omitFigure: ['P4-datasheet-R1', 're-rank drop: f1: partX'] })
+  check(r.result.followUps.some(f => f.figure === 're-rank drop: f1: partX' && f.reason === 'figure not verified'), 'drop of an annotated P3 find: re-read')
   // A fixed input of the Scope table is reported to the owner, not
   // re-selected: ranked below another part, refuted, or passed over for a
   // verified part of the verify list.
