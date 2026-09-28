@@ -1,0 +1,22 @@
+{
+ "role": "P1-recheck",
+ "category": "",
+ "label": "P1-recheck",
+ "attempt": 0,
+ "data": {
+  "verdicts": [
+   {
+    "category": "R5",
+    "index": 0,
+    "verdict": "confirmed",
+    "evidence": "The specification states no reverse voltage for the DC input. hardware/docs/IOBoard.md:331 at 249be1e5 reads 'Reverse-polarity protection | on the board's power input | R5 | required'. IOBoard.md:322 gives the DC input only as '12 to 20 V'. hardware/STATUS.md:25 and Research.md:61 give the same without a reverse figure. Research.md:283 (R5 row) lists 'reverse polarity' with no voltage. No row V1 to V265 under Raised by P1 asks it. V83 asks the highest forward continuous voltage. V86 asks where the protection sits, and V105 asks the current. The only reverse-voltage row is V191, for R9's balance lead. A search of the monostable pages at 23c82ca for 'reverse polarity' or 'DC input' found nothing. The value decides which seed qualifies. TPS25947 datasheet SLVSFC9C, revised May 2026 (https://www.ti.com/lit/ds/symlink/tps25947.pdf, read 2026-09-28T19:42:25Z), section 6.1: the IN minimum is max(-15, VOUT - 21) V at TJ from -40 to 125 °C. Section 7.3.1: 'The lowest negative voltage the device can handle at the input is limited to -15V or VOUT - 21V, whichever is higher.' The LM74700-Q1 product page (https://www.ti.com/product/LM74700-Q1, read 2026-09-28T19:43:04Z) gives a '-65-V reverse voltage rating'. With -20 V (20 V reversed) required, the TPS25947 alone does not qualify. With -15 V or less it does. One correction to the critic's 'why': the TPS25947 product page does state a reverse voltage. Its body reads 'Withstands negative voltages up to -15V' (https://www.ti.com/product/TPS25947, read 2026-09-28T19:42:24Z; the critic's copy of 19:39:37Z has the same text). That error does not change the question. The figure is still missing from the specification, and P2 needs it to qualify the part."
+   },
+   {
+    "category": "R5",
+    "index": 1,
+    "verdict": "confirmed",
+    "evidence": "No page states whether the pack's voltage may reach the DC input connector's pins. At 249be1e5, hardware/docs/IOBoard.md:324 reads 'Source selection | automatic: the DC input when present, the pack otherwise'. IOBoard.md:295-302, Research.md:61 and hardware/STATUS.md:25 each say only that the selection is automatic. F8 (Research.md:536, owner 2026-09-25) says 'the pack does not charge from the DC input', and IOBoard.md:302 and :362 say the same. That fixes only the direction from the DC input into the pack. The only reverse-current rule in the power section is for the display's link supply (Research.md:283; IOBoard.md:386). No row V1 to V265 asks this: V86 asks where the protection sits, V88 the absent threshold, V89 the interruption, V47 ESC regeneration on R3's path. A search of the monostable pages at 23c82ca found nothing. The answer decides whether a part qualifies. The TPS25947 product page (https://www.ti.com/product/TPS25947, read 2026-09-28T19:42:24Z) states: 'With integrated back-to-back FETs, reverse current flow from output to input is blocked at all times.' The LM74700-Q1 page (https://www.ti.com/product/LM74700-Q1, read 2026-09-28T19:43:04Z) lists 'Reverse current blocking'. A series P-channel MOSFET, drain to the input and gate to ground, is turned on by a pack at 6.0 to 8.4 V on its source side. It therefore passes the pack's voltage to the input pins. With 'yes', a P-channel MOSFET stage alone does not qualify, and P2 needs reverse blocking on the DC input's side."
+   }
+  ]
+ }
+}
