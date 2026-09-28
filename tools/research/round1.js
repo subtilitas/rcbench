@@ -251,7 +251,7 @@ ${J(evidence)}`
 function p5Prompt() {
   return `${ctx('P5', '', 'P5')}
 
-Read every return under ${P.results}/hardware/research/round1/ (T2, T3, T4 and every FU-* directory) and run the checks of the P5 row over the whole board. The parts to check are those in ${P.results}/hardware/research/round1/selection.json, each with its alternate, and both alternatives of Q4 and Q8.${(A.p5_budgets || []).length ? ` Return one budget for each of these, its item named as listed or "NAME: DETAIL" where it has several, each with its source and reading time; a check the P5 row makes conditional, such as "absent IOVDD" when R1 found the pin ratings the specification cites, is returned with "not applicable: REASON" as its value: ${A.p5_budgets.join('; ')}.` : ''}`
+Read every return under ${P.results}/hardware/research/round1/ (T2, T3, T4 and every FU-* directory) and run the checks of the P5 row over the whole board. The parts to check are those in ${P.results}/hardware/research/round1/selection.json, each with its alternate, and both alternatives of Q4 and Q8.${(A.p5_budgets || []).length ? ` Return one budget for each of these, its item named as listed or "NAME: DETAIL" where it has several, each with its source and reading time; a check the P5 row makes conditional (${(A.p5_conditional || []).join('; ')}) is returned with "not applicable: REASON" as its value when its condition does not hold: ${A.p5_budgets.join('; ')}.` : ''}`
 }
 function p5CriticPrompt(p5) {
   return `${ctx('P5-critic', '', 'P5-critic')}
@@ -287,7 +287,8 @@ ${J(p7)}`
 // P0 has no critic, so the script applies the stop and hold rules itself
 // from P0's check results and the host table, beside P0's own reading.
 function readsNone(text) {
-  return !text || /^(none|n\/a|-)$/i.test(text.trim()) || /^not read\b/i.test(text.trim())
+  const t = String(text || '').trim()
+  return !t || /^(none|n\/a|-)$/i.test(t) || /^not read\b/i.test(t)
 }
 
 // P0's reading of one host: reachable only when its HTTP status agrees, and
@@ -1070,7 +1071,11 @@ async function phaseP5P6() {
   // A check whose critic did not return is not an independent check.
   const missingChecks = [a.missing, b.missing, a.critic_missing, b.critic_missing].filter(Boolean)
   // Every budget the P5 row names, upheld by the critic.
-  const upheld = (a.budgets || []).filter(x => x.upheld === true && !readsNone(x.source) && !readsNone(x.read_at)).map(x => String(x.item || ''))
+  // A budget counts with a value read, its source and its time; "not
+  // applicable" only for a check the P5 row makes conditional.
+  const conditional = n => (A.p5_conditional || []).some(c => n === c || n.startsWith(`${c}: `))
+  const upheld = (a.budgets || []).filter(x => x.upheld === true && !readsNone(x.source) && !readsNone(x.read_at) && !readsNone(x.value)
+    && (!/^not applicable\b/i.test(String(x.value).trim()) || conditional(String(x.item || '')))).map(x => String(x.item || ''))
   const budgetsMissing = a.missing ? [] : (A.p5_budgets || []).filter(n => !upheld.some(i => i === n || i.startsWith(`${n}: `)))
   for (const n of budgetsMissing) followUps.push({ role: 'P5', item: n, reason: 'budget the P5 row names not returned and upheld' })
   if (!a.missing && !(a.combinations || []).length) missingChecks.push('P5 combinations')

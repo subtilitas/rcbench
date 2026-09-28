@@ -109,5 +109,8 @@
     "Q4 alternatives",
     "Q8 alternatives",
     "absent IOVDD"
+  ],
+  "p5_conditional": [
+    "absent IOVDD"
   ]
 }

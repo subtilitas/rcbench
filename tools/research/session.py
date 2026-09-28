@@ -1023,6 +1023,7 @@ def cmd_prepare(args):
         "required_reports": cats.get("reports", {}),
         "per_part_reports": cats.get("reports_per_part", {}),
         "p5_budgets": cats.get("p5_budgets", []),
+        "p5_conditional": cats.get("p5_conditional", []),
         "last_p56": last_p56,
         "t6_outputs": T6_REQUIRED if args.task == "T6" else [],
         "run_info": run_info(args.model, args.effort),

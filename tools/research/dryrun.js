@@ -146,7 +146,7 @@ async function runTask(task, opts = {}) {
       if (opts.qSelf) data.functions[0].verify = [{ part: 'part1', kind: 'q-alternative' }]
     }
     if (role === 'P5' && opts.p5Empty) Object.assign(data, { combinations: [], budgets: [] })
-    if (role === 'P5' && opts.p5Items) data.budgets = opts.p5Items.map(item => ({ item, value: 'v', source: 's', read_at: opts.budgetUndated ? '' : '2026-09-28T10:00:00Z' }))
+    if (role === 'P5' && opts.p5Items) data.budgets = opts.p5Items.map(item => ({ item, value: (opts.budgetValues || {})[item] || 'v', source: opts.blankSource ? '   ' : 's', read_at: opts.budgetUndated ? '' : '2026-09-28T10:00:00Z' }))
     if (role === 'P5-critic') for (const k of ['combination_verdicts', 'budget_verdicts']) data[k] = data[k].map((v, index) => ({ ...v, index, holds: !(opts.rejectBudget && k === 'budget_verdicts' && index === 0) }))
     if (role === 'P1' && opts.qCategory) data.questions = data.questions.map(q => ({ ...q, category: 'R99', source: 'mock' }))
     if (role === 'P1' && opts.decisionNone) data.questions = data.questions.map(q => ({ ...q, blocks: 'decision-only', decision: 'none' }))
@@ -237,7 +237,7 @@ async function runTask(task, opts = {}) {
     }))
   }
   const args = { task, cap: cats.cap, categories: cats.categories, tasks: cats.tasks, schemas,
-    commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, jlcparts: JL, p5_budgets: opts.p5Budgets || [],
+    commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, jlcparts: JL, p5_budgets: opts.p5Budgets || [], p5_conditional: opts.p5Conditional || [],
     followup: opts.followup, first_v: 5, t6_outputs: T6OUT, for_research: opts.forResearch || [], required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {} }
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
     `return (async () => {${src}})()`)
@@ -645,6 +645,13 @@ async function main() {
   // A budget without its reading time is missing.
   r = await runTask('T5', { p5Budgets: ['GPIO'], p5Items: ['GPIO'], budgetUndated: true })
   check(r.result.summary.budgets_missing.includes('GPIO'), 'T5: an undated budget is missing')
+  // Budgets need a value; not applicable only where the check is conditional.
+  r = await runTask('T5', { p5Budgets: ['GPIO', 'absent IOVDD'], p5Conditional: ['absent IOVDD'], p5Items: ['GPIO', 'absent IOVDD'], budgetValues: { GPIO: 'not read: timeout', 'absent IOVDD': 'not applicable: ratings as cited' } })
+  check(r.result.summary.budgets_missing.length === 1 && r.result.summary.budgets_missing[0] === 'GPIO', 'T5: an unread budget value is missing; a conditional not applicable is not')
+  r = await runTask('T5', { p5Budgets: ['GPIO'], p5Items: ['GPIO'], budgetValues: { GPIO: 'not applicable: x' } })
+  check(r.result.summary.budgets_missing.includes('GPIO'), 'T5: not applicable for an unconditional budget is missing')
+  r = await runTask('T5', { p5Budgets: ['GPIO'], p5Items: ['GPIO'], blankSource: true })
+  check(r.result.summary.budgets_missing.includes('GPIO'), 'T5: a whitespace source is none')
   // A held part's failing live stock is superseded by its held quantity.
   r = await runTask('T2', { held: 500, heldChecks: true, heldAndLive: true })
   check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'held part with failing live stock: verified on its held quantity')
