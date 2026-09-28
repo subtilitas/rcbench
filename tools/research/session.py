@@ -864,6 +864,28 @@ def inventory(results, categories):
     return out
 
 
+def refuted_for_itself(results, categories):
+    """Each kept part a run refuted for itself (the adjudicator's scope
+    part: lifecycle, end-of-life, maker, identity), in any category, at or
+    after the run that decided its function."""
+    done = runs(results)
+    seq = {n: t.get("sequence", 0) for n, t in done}
+    refuted = [(n, p) for n, t in done
+               for parts in ((t.get("summary") or {}).get("part_refuted")
+                             or {}).values() for p in parts]
+    out = []
+    for c, fns in effective_selection(results).items():
+        if c not in categories:
+            continue
+        for fn, e in fns.items():
+            for name, part in refuted:
+                if e.get("part") == part and seq[name] >= seq.get(
+                        e.get("run"), 0):
+                    out.append(f"{c}: {fn} keeps {part}, which {name} "
+                               "refuted for itself")
+    return out
+
+
 def open_in_category(results, categories):
     """What the runs that decide each category's functions left open for
     the whole category: figures not returned or not confirmed; and in R10
@@ -1243,6 +1265,7 @@ def cmd_prepare(args):
         gate_cats = []
     open_sel += open_selections(effective_selection(results), gate_cats)
     open_sel += open_in_category(results, gate_cats)
+    open_sel += refuted_for_itself(results, gate_cats)
     open_sel += stale_selections(results, gate_cats, rows, commit, up,
                                  cats["tasks"]["T3"]["categories"])
     open_sel += [o for o in p1_unresolved(results, gate_cats)

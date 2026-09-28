@@ -119,10 +119,12 @@
     "allowlist",
     "Q4 alternatives",
     "Q8 alternatives",
-    "absent IOVDD"
+    "absent IOVDD",
+    "shared-part stock"
   ],
   "p5_conditional": [
-    "absent IOVDD"
+    "absent IOVDD",
+    "shared-part stock"
   ],
   "p5_assumptions": [
     "receiver bus state machines",

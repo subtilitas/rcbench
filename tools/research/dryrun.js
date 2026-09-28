@@ -146,7 +146,7 @@ async function runTask(task, opts = {}) {
     }
     if (role === 'rerank') {
       const rcat = (o.label.match(/R\d+/) || [''])[0]
-      data.functions = [{ function: 'f1', decision: opts.qDecision || ({ R10: 'Q4', R12: 'Q8' }[rcat] || 'none'), kept_option: opts.keptOption || '', ranking: (opts.ranking || (opts.ranked || [1, 2, 3]).map(rank => ({ rank, part: `part${rank}`, reason: 'r' }))),
+      data.functions = [{ function: 'f1', decision: opts.qDecision || ({ R10: 'Q4', R12: 'Q8' }[rcat] || 'none'), kept_option: opts.keptOption || '', ranking: (opts.ranking || (opts.ranked || [1, 2, 3]).map(rank => ({ rank, part: `part${rank}`, reason: 'r', option: (opts.rankOptions || {})[`part${rank}`] || '' }))),
         new_candidates: opts.p3dropped ? [{ ...cand(7), part: 'partN' }] : [], dropped_from_p3: opts.p3dropped ? [{ part: 'partN', maker: 'm', reason: 'r' }] : [],
         dropped_from_shortlist: opts.rankDropped ? [{ part: 'part1', maker: 'm', reason: 'r' }] : (opts.dropShort || []).map(part => ({ part, maker: 'm', reason: 'r' })), verify: opts.qDup ? [{ part: 'part3', kind: 'q-alternative', option: 'reference' }, { part: 'part3', kind: 'q-alternative', option: 'external ADC' }] : opts.twoQShare ? [{ part: 'part2', kind: 'q-alternative' }, { part: 'part3', kind: 'q-alternative' }] : opts.qAlt || opts.sharedAlt ? [{ part: 'part3', kind: 'q-alternative', option: opts.qOption || '' }] : (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
       if (opts.extraFn) data.functions.push({ ...data.functions[0], function: 'fX', ...(opts.rrHandleYin || opts.rrHandleXin ? { dropped_from_shortlist: [{ part: opts.rrHandleXin ? 'partX' : 'partY', maker: 'm', reason: 'r' }] } : {}) })
@@ -278,6 +278,7 @@ async function runTask(task, opts = {}) {
     }
     if (role === 'adjudicator') {
       data.stands = opts.stands !== false
+      data.scope = opts.partScope ? 'part' : 'function'
       const m = /refuted (.+?) for the function "(.+?)"/.exec(prompt)
       const g = /refuted the figure "(.+?)"/.exec(prompt)
       if (m) { data.part = m[1]; data.function = m[2] } else if (g) { data.part = ''; data.function = g[1] }
@@ -775,6 +776,15 @@ async function main() {
   check(r1(r).selection[0].part === null, 'blank reading time: not verified')
   r = await runTask('T5', { p5Budgets: ['GPIO'], p5Items: ['GPIO'], budgetTime: 'unknown' })
   check(r.result.summary.budgets_missing.includes('GPIO'), 'T5: a reading time that is no date is missing')
+  // A refutation about the part itself holds in every function.
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'], partScope: true })
+  check(r1(r).part_refuted.includes('part1') && r.result.summary.part_refuted.R1.includes('part1'), 'refutation of the part itself: recorded for every function')
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'] })
+  check(r1(r).part_refuted.length === 0, 'refutation about the function: not recorded for the part')
+  // A replacement kept in a Q4 function has its ranked class confirmed.
+  r = await runTask('T4', { qAlt: true, p4parts: ['part3', 'altQ'], qOptions: { Q4: ['reference', 'external ADC'] }, qOption: 'external ADC', keptOption: 'reference', rankOptions: { part1: 'reference', part2: 'reference' }, refute: ['P4-stock-R10:part1'] })
+  const r10c = r.result.summary.results.find(c => c.category === 'R10')
+  check(r10c.selection[0].part === 'part2' && r10c.selection[0].q_options_missing.length === 0 && r.prompts.find(x => x.label === 'P4-datasheet-R10').prompt.includes('Q option: f1: part2: reference'), 'replacement kept in the Q4 function: its ranked class confirmed')
   // A malformed LCSC number drops the candidate.
   r = await runTask('T2', { lcsc: 'C123oops' })
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => /LCSC number "C123oops"; dropped/.test(f.reason)), 'malformed LCSC number: dropped')

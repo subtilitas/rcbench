@@ -106,7 +106,8 @@ the items in the arguments:
   Notices, such as a marking taken as an assumption, do not count.
 - T3 and P2-P4 follow-ups on its categories, for the categories of T2 and T4,
   and T5, P5-P6 follow-ups and T6, for every category, while:
-  - a function has no verified part, or a missing or unverified second source;
+  - a function has no verified part, or keeps a part a run at or after its own
+    refuted for itself, or a missing or unverified second source;
   - R10 or R12 has not exactly one function marked with its decision, or no Q4
     or Q8 alternative, other than the kept part, on that function, lacks a
     verified part, of its own and with its class confirmed by the datasheet
@@ -206,50 +207,52 @@ candidate P2's own record fails is dropped and its failure re-read by the
 datasheet verifier. A requirement a candidate states with another value than
 its function is checked against the function's value, and its own pass is
 dropped before failures are counted. An adjudicator's ruling without evidence,
-source and a reading time of the task is no ruling. A standing refutation
-stays final in the run, even if the part is verified later as another part's
-alternate. Once every ruling of a pass is in, a standing refutation sends the
-part its function now stands on, the first in rank order whose refutation
-has not stood, to one new pair. A refuted part ranked below that part,
-such as a Q alternative beside a verified first-ranked part, sends none;
-a refuted Q alternative is listed for a follow-up task. A part already
+source and a reading time of the task is no ruling. A refutation the
+adjudicator rules is about the part itself (its `scope` is `part`: lifecycle,
+end-of-life, maker, identity) holds in every function of the category, and
+`prepare` holds any category that keeps the part after that run. A standing
+refutation stays final in the run, even if the part is verified later as
+another part's alternate. Once every ruling of a pass is in, a standing
+refutation sends the part its function now stands on, the first in rank order
+whose refutation has not stood, to one new pair. A refuted part ranked below
+that part, such as a Q alternative beside a verified first-ranked part, sends
+none; a refuted Q alternative is listed for a follow-up task. A part already
 verified, with its rule-5 alternate checked against it, is kept without a
-pair. A refutation no adjudicator ruled on, for want of a free agent or
-of a ruling, keeps the part open in the run: a later verification does not
-clear it, only a standing refutation replaces it, and the part holds no
-alternate role. A refutation of a part as an alternate on its fit alone, each
-refuting verdict failing `pin-for-pin match` or `functional match` and no
-other check, fails only that relationship: the part keeps its own place on
-the shortlist, and a part in both roles keeps its own verification on its
-other checks while the adjudicator rules on the relationship. Any other
-refutation as an alternate holds for the part in the function, in every role,
-as a refutation as a primary does: every other check reads the part against
-the function, whatever its role. A part a verifier was not asked to
-verify is ignored, a part it lists twice has no verdict from it, and a check
-read as empty, blank or not read, or as `none` other than
-`end-of-life notices` and `longevity commitment`, figure evidence that is
-none, or either without its source or a reading time of the task, shows
-nothing. A reading time is a date the calendar has (2026-02-31 is not one);
-for a P4 check, a figure verdict or a ruling it is also on the date `prepare`
-gave the run or the next day, for a run that passes midnight, so a reading
-copied from an earlier return or the parts database, or dated later, shows
-nothing. The workflow script has no clock: a run that goes on past the day
-after `prepare` counts none of the readings it takes then. A check that
-disagrees or fails is a refutation, named in the refutation the adjudicator
-rules on whatever the verdict, and a confirmation whose refutation is not
-empty is one; a refutation that is `none`, or starts with `no refutation`,
-`not refuted`, `none found` or `nothing found`, counts as empty. A reading
-that moves or always passes (`stock`, `presale`, `second-vendor stock`,
-`lead time`, `distributor status`, `market introduction`,
-`longevity commitment`, `library type`), and a requirement added as not given,
-refute only when they fail. A check for a route or role the part does not take
-refutes nothing: compatibility for a part that is no alternate, and
-`second-vendor stock` off the second-vendor route or for an alternate, which
-passes rules 1 to 4 only (rule 5). Every verified part needs a `placements`
-check re-deriving its count from the specification, a `board placement` check
-re-deriving from it whether the part is on the board, which passes only when
-its LCSC number agrees (rule 1), the lifecycle table's readings
-(`longevity commitment`, `market introduction`, `distributor status`,
+pair. A refutation no adjudicator ruled on, for want of a free agent or of a
+ruling, keeps the part open in the run: a later verification does not clear
+it, only a standing refutation replaces it, and the part holds no alternate
+role. A refutation of a part as an alternate on its fit alone, each refuting
+verdict failing `pin-for-pin match` or `functional match` and no other check,
+fails only that relationship: the part keeps its own place on the shortlist,
+and a part in both roles keeps its own verification on its other checks while
+the adjudicator rules on the relationship. Any other refutation as an
+alternate holds for the part in the function, in every role, as a refutation
+as a primary does: every other check reads the part against the function,
+whatever its role. A part a verifier was not asked to verify is ignored, a
+part it lists twice has no verdict from it, and a check read as empty, blank
+or not read, or as `none` other than `end-of-life notices` and
+`longevity commitment`, figure evidence that is none, or either without its
+source or a reading time of the task, shows nothing. A reading time is a date
+the calendar has (2026-02-31 is not one); for a P4 check, a figure verdict or
+a ruling it is also on the date `prepare` gave the run or the next day, for a
+run that passes midnight, so a reading copied from an earlier return or the
+parts database, or dated later, shows nothing. The workflow script has no
+clock: a run that goes on past the day after `prepare` counts none of the
+readings it takes then. A check that disagrees or fails is a refutation, named
+in the refutation the adjudicator rules on whatever the verdict, and a
+confirmation whose refutation is not empty is one; a refutation that is
+`none`, or starts with `no refutation`, `not refuted`, `none found` or
+`nothing found`, counts as empty. A reading that moves or always passes
+(`stock`, `presale`, `second-vendor stock`, `lead time`, `distributor status`,
+`market introduction`, `longevity commitment`, `library type`), and a
+requirement added as not given, refute only when they fail. A check for a
+route or role the part does not take refutes nothing: compatibility for a part
+that is no alternate, and `second-vendor stock` off the second-vendor route or
+for an alternate, which passes rules 1 to 4 only (rule 5). Every verified part
+needs a `placements` check re-deriving its count from the specification, a
+`board placement` check re-deriving from it whether the part is on the board,
+which passes only when its LCSC number agrees (rule 1), the lifecycle table's
+readings (`longevity commitment`, `market introduction`, `distributor status`,
 `lead time`), for a part on the board `LCSC identity` and `library type`
 checks, and a `manufacturer allowlist` check (rule 2), and an alternate needs
 at least the placements of the part it stands in for. The datasheet verifier
@@ -259,53 +262,53 @@ each value found for research, which P2 applies to the function its row under
 verdicts only; the stock verifier returns none. A figure it refutes with
 evidence, source and a reading time of the task goes to an adjudicator with
 the claim the figure states: the value reported or found, the class, the
-requirement list, the failed requirements or the drop. A replacement
-pair confirms no figure, but its datasheet verifier's refutation of one
-is adjudicated in the same way. A part on the board that the owner holds
-may pass the stock gate on a `held quantity` check in place of `stock` and
-`presale` (rule 6); a passing held quantity that shows a reading supersedes
-failing live readings, and passing live readings a failing held quantity. A
-return whose `category` names another category counts as not returned. Only
-the kept part's rule-5 alternate gates its selection, and the alternate of a
-part on the board must be on the board. The kept part counts for a
-Q4 or Q8 option class in which the datasheet verifier confirmed it:
-`kept_option` when it is the first-ranked part after the drops, its
-option when it is a Q alternative. A kept part given two different classes
-in these two roles counts for neither. An alternate counts only for the part
-it was checked against: an alternate several parts name is checked against
-the first of them (the first-ranked part, then the Q alternatives in order),
-and a replacement's alternate against the replacement. A part verified in its
-own right, the first-ranked part or a Q alternative, that is also another
-part's alternate keeps that verification. It holds the alternate role while
-verified, also after a refutation that did not stand, with its compatibility
-checks. A category whose chain failed is left out of the run's selection, so
-the gates read the run before it. Each assumption needs a confirmed question
-of its own, whose `for_where` and `for_quantity` are the assumption's location
-and quantity. The P1 critic rules on a marking by the value's index, location
-and quantity, and a marking it upholds with the same marking is unchanged. A
-P1 critic or re-check verdict whose reason or evidence reads as none is no
-verdict. A P1 return with no value, and a category whose P1 and critic name no
-function, leave a P1 item. Each "P1 asks" item of the category that no
-question under "Raised by P1" names in `asks` needs a confirmed question that
-names it. Without one it leaves a P1 item, also when the critic or the
-re-check rejected the question for it. A question under "Raised by P1" is not
-raised again: it asks for an assumption at its `for_where` and `for_quantity`.
-A P1 follow-up gives its items to P1 and the critic, and lists again each item
-its run did not deal with: a value its P1 did not return, a question neither
-its P1 nor its critic raised and not under "Raised by P1" (the same words, or
-the same `for_where` and `for_quantity`), and any other item of a category
-whose P1 or critic returned nothing; an item listed again stands for the item
-it carries. P1 and the critic are told to copy an item's question word for
-word; an item without a `for_where` whose question they raise in other words
-is listed again. P1 and the critic of a follow-up are given the names the
-category's inventory and `selection.json` give its functions, and keep them.
-P0 counts a host with two rows, or a status written as not read, none, no,
-false, absent or not in the page body, as not read. A P0 row counts only at
-its host's endpoint: an API client's command with the probe, whatever
-environment assignments (`DIGIKEY_ENV_FILE=...`, `env`) and interpreter path
-precede it, a page client's probe URL, or with no probe a page on the host
-itself. The P7 critic checks at least one figure on each group page and each
-output under `hardware/docs/`, each check naming the figure and the file under
+requirement list, the failed requirements or the drop. A replacement pair
+confirms no figure, but its datasheet verifier's refutation of one is
+adjudicated in the same way. A part on the board that the owner holds may pass
+the stock gate on a `held quantity` check in place of `stock` and `presale`
+(rule 6); a passing held quantity that shows a reading supersedes failing live
+readings, and passing live readings a failing held quantity. A return whose
+`category` names another category counts as not returned. Only the kept part's
+rule-5 alternate gates its selection, and the alternate of a part on the board
+must be on the board. The kept part counts for a Q4 or Q8 option class in
+which the datasheet verifier confirmed it: `kept_option` when it is the
+first-ranked part after the drops, its option when it is a Q alternative. A
+kept part given two different classes in these two roles counts for neither.
+An alternate counts only for the part it was checked against: an alternate
+several parts name is checked against the first of them (the first-ranked
+part, then the Q alternatives in order), and a replacement's alternate against
+the replacement. A part verified in its own right, the first-ranked part or a
+Q alternative, that is also another part's alternate keeps that verification.
+It holds the alternate role while verified, also after a refutation that did
+not stand, with its compatibility checks. A category whose chain failed is
+left out of the run's selection, so the gates read the run before it. Each
+assumption needs a confirmed question of its own, whose `for_where` and
+`for_quantity` are the assumption's location and quantity. The P1 critic rules
+on a marking by the value's index, location and quantity, and a marking it
+upholds with the same marking is unchanged. A P1 critic or re-check verdict
+whose reason or evidence reads as none is no verdict. A P1 return with no
+value, and a category whose P1 and critic name no function, leave a P1 item.
+Each "P1 asks" item of the category that no question under "Raised by P1"
+names in `asks` needs a confirmed question that names it. Without one it
+leaves a P1 item, also when the critic or the re-check rejected the question
+for it. A question under "Raised by P1" is not raised again: it asks for an
+assumption at its `for_where` and `for_quantity`. A P1 follow-up gives its
+items to P1 and the critic, and lists again each item its run did not deal
+with: a value its P1 did not return, a question neither its P1 nor its critic
+raised and not under "Raised by P1" (the same words, or the same `for_where`
+and `for_quantity`), and any other item of a category whose P1 or critic
+returned nothing; an item listed again stands for the item it carries. P1 and
+the critic are told to copy an item's question word for word; an item without
+a `for_where` whose question they raise in other words is listed again. P1 and
+the critic of a follow-up are given the names the category's inventory and
+`selection.json` give its functions, and keep them. P0 counts a host with two
+rows, or a status written as not read, none, no, false, absent or not in the
+page body, as not read. A P0 row counts only at its host's endpoint: an API
+client's command with the probe, whatever environment assignments
+(`DIGIKEY_ENV_FILE=...`, `env`) and interpreter path precede it, a page
+client's probe URL, or with no probe a page on the host itself. The P7 critic
+checks at least one figure on each group page and each output under
+`hardware/docs/`, each check naming the figure and the file under
 `hardware/research/round1/` it comes from, a path ending in `.json`; text
 after the path, such as `:34` or `#L34`, is not part of it, and `record` reads
 the same path. Each check gives its kind: budget, combination or other. A

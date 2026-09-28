@@ -247,7 +247,7 @@ ${J(p2View(p2))}`
 function rerankPrompt(cat, p2, p3) {
   return `${ctx('rerank', cat, `rerank-${cat}`)}
 
-You are the re-rank of the "Agent layout" table. Qualify each candidate P3 returned as P2 does, and give each qualified one a full record in new_candidates. Then rank each function's shortlist: every entry of ranking names a part of P2's shortlist or of new_candidates, by its exact part number. Rank every such part, or list it with its reason in dropped_from_shortlist (a P2 candidate) or dropped_from_p3 (a P3 candidate).${fixedFor(cat).length ? ` Rank each fixed input of the Scope table first for its function: ${fixedNames(cat)}; one that fails a check is reported to the owner, not replaced by another part.` : ''} In verify, name the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative. List your own figures in report${((A.per_part_reports || {})[cat] || []).length ? `, and for each part you rank, name in verify or give a record in new_candidates, a rule-5 alternate's record among them, that P2's report lacks, these figures named "NAME: PART": ${((A.per_part_reports || {})[cat]).join('; ')}` : ''}. ${cat === 'R10' || cat === 'R12' ? `Set decision to ${cat === 'R10' ? 'Q4 on the function that implements Q4' : 'Q8 on the function that implements Q8, the non-volatile store,'} and none on the others; its alternatives are the q-alternatives in its verify. Give each q-alternative its option, and the function its kept_option for the first-ranked part, from these classes, one part at least for each: ${((A.q_options || {})[cat === 'R10' ? 'Q4' : 'Q8'] || []).join('; ')}.` : 'Set decision to none on every function.'} A rule-5 alternate that is not on P2's shortlist needs a full record in new_candidates; it is kept as the alternate's record, not ranked. The script builds the final shortlist from P2's records and yours.
+You are the re-rank of the "Agent layout" table. Qualify each candidate P3 returned as P2 does, and give each qualified one a full record in new_candidates. Then rank each function's shortlist: every entry of ranking names a part of P2's shortlist or of new_candidates, by its exact part number. Rank every such part, or list it with its reason in dropped_from_shortlist (a P2 candidate) or dropped_from_p3 (a P3 candidate).${fixedFor(cat).length ? ` Rank each fixed input of the Scope table first for its function: ${fixedNames(cat)}; one that fails a check is reported to the owner, not replaced by another part.` : ''} In verify, name the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative. List your own figures in report${((A.per_part_reports || {})[cat] || []).length ? `, and for each part you rank, name in verify or give a record in new_candidates, a rule-5 alternate's record among them, that P2's report lacks, these figures named "NAME: PART": ${((A.per_part_reports || {})[cat]).join('; ')}` : ''}. ${cat === 'R10' || cat === 'R12' ? `Set decision to ${cat === 'R10' ? 'Q4 on the function that implements Q4' : 'Q8 on the function that implements Q8, the non-volatile store,'} and none on the others; its alternatives are the q-alternatives in its verify. Give each q-alternative its option, the function its kept_option for the first-ranked part, and each ranking entry its part's option, from these classes, one part at least for each: ${((A.q_options || {})[cat === 'R10' ? 'Q4' : 'Q8'] || []).join('; ')}.` : 'Set decision to none on every function.'} A rule-5 alternate that is not on P2's shortlist needs a full record in new_candidates; it is kept as the alternate's record, not ranked. The script builds the final shortlist from P2's records and yours.
 
 P2's return:
 ${J(p2)}
@@ -274,7 +274,7 @@ ${J(bundle)}`
 function adjudicatorPrompt(cat, fn, part, evidence) {
   return `${ctx('adjudicator', cat, `adjudicator-${cat}`)}
 
-You are the adjudicating critic of the P4 row. A verifier refuted ${part ? `${part} for the function "${fn}"` : `the figure "${fn}", which states what its claim below holds`}. Re-read the evidence yourself at its sources and rule on every refutation below: stands is true when any of them holds. Copy the function "${fn}" and the part "${part}" exactly into your ruling.
+You are the adjudicating critic of the P4 row. A verifier refuted ${part ? `${part} for the function "${fn}"` : `the figure "${fn}", which states what its claim below holds`}. Re-read the evidence yourself at its sources and rule on every refutation below: stands is true when any of them holds. Give its scope: part when what holds is about the part itself (lifecycle status, an end-of-life notice, the maker's allowlist, the LCSC identity), so it fails in every function; function when it is about this function's requirements or quantity. Copy the function "${fn}" and the part "${part}" exactly into your ruling.
 ${J(evidence)}`
 }
 
@@ -286,7 +286,7 @@ const owedBudgets = () => (A.p5_budgets || []).map(n => optionsOf(n).length ? `$
 function p5Prompt() {
   return `${ctx('P5', '', 'P5')}
 
-Read every return under ${P.results}/hardware/research/round1/ (T2, T3, T4 and every FU-* directory) and run the checks of the P5 row over the whole board, and those the rows R5 and R7 under "Research categories" give P5: each rail's current with the parts R6, R7 and R8 selected, and the pack current recomputed from the converter efficiencies R5 and R6 verified, with the cell's rating and the pack's protection checked against it; a shortfall is a rail conflict. The parts to check are those in ${P.results}/hardware/research/round1/selection.json, each with its alternate, and both alternatives of Q4 and Q8.${(A.p5_budgets || []).length ? ` Return one budget for each of these: ${owedBudgets()}. Give each its source, its reading time and whether it is within its limit, and name its item as listed or, where it has several (each rail, each I2C bus), "NAME: DETAIL" once for each; every row of an item counts. A check the P5 row makes conditional (${(A.p5_conditional || []).join('; ')}) is returned with "not applicable: REASON" as its value when its condition does not hold.` : ''}${(A.p5_assumptions || []).length ? ` State in assumptions each of these, named as listed or "NAME: DETAIL" where it has several, with the value you assume, why, its source and its time: ${A.p5_assumptions.join('; ')}.` : ''}`
+Read every return under ${P.results}/hardware/research/round1/ (T2, T3, T4 and every FU-* directory) and run the checks of the P5 row over the whole board; check each part selection.json keeps for more than one function against the rule-4 stock gate at its summed placements ("shared-part stock: PART"; a shortfall is a conflict); and those the rows R5 and R7 under "Research categories" give P5: each rail's current with the parts R6, R7 and R8 selected, and the pack current recomputed from the converter efficiencies R5 and R6 verified, with the cell's rating and the pack's protection checked against it; a shortfall is a rail conflict. The parts to check are those in ${P.results}/hardware/research/round1/selection.json, each with its alternate, and both alternatives of Q4 and Q8.${(A.p5_budgets || []).length ? ` Return one budget for each of these: ${owedBudgets()}. Give each its source, its reading time and whether it is within its limit, and name its item as listed or, where it has several (each rail, each I2C bus), "NAME: DETAIL" once for each; every row of an item counts. A check the P5 row makes conditional (${(A.p5_conditional || []).join('; ')}) is returned with "not applicable: REASON" as its value when its condition does not hold.` : ''}${(A.p5_assumptions || []).length ? ` State in assumptions each of these, named as listed or "NAME: DETAIL" where it has several, with the value you assume, why, its source and its time: ${A.p5_assumptions.join('; ')}.` : ''}`
 }
 function p5CriticPrompt(p5) {
   return `${ctx('P5-critic', '', 'P5-critic')}
@@ -717,7 +717,7 @@ function merge(cat, p2, rr, p3) {
         const rec = pool.find(c => c.part === r.part)
         const why = !rec ? 'ranked part has no record' : shortlist.some(x => x.part === r.part) ? 'ranked twice' : dropped.has(r.part) ? 'ranked and dropped by the re-rank' : ''
         if (why) { followUps.push({ role: 'rerank', category: cat, function: name, part: r.part, reason: why }); contradicted = true; continue }
-        shortlist.push({ ...rec, rank: r.rank, reason: r.reason })
+        shortlist.push({ ...rec, rank: r.rank, reason: r.reason, option: String(r.option || '') })
       }
       // A ranking that names a part without a record, twice, or also as
       // dropped did not establish its order: the function is not ranked.
@@ -909,8 +909,13 @@ function laterStatus(prev, next) {
 // rests on the fit alone, which fails only that relationship.
 const ofPart = l => l.as !== 'alternate' || (String(l.status).startsWith('refuted') && !l.fit_only)
 
+// A refutation the adjudicator rules is about the part itself (lifecycle,
+// end-of-life, maker, identity) holds in every function of the category.
+const partScoped = (ledger, part) => ledger.some(l => l.part === part && l.status === 'refuted' && l.scope === 'part')
+
 // A part's own status in its function, from the ledger.
 function partStatus(ledger, fn, part) {
+  if (partScoped(ledger, part)) return 'refuted'
   let status = ''
   for (const l of ledger) if (l.part === part && l.function === fn && ofPart(l)) status = laterStatus(status, l.status)
   return status
@@ -1071,7 +1076,7 @@ async function verifyCategory(cat, functions, bundle, claims) {
         if (!both) followUps.push({ role: 'P4', category: cat, function: e.function, part: e.part, reason: 'not covered by both verifiers' })
         continue
       }
-      ledger.push({ function: e.function, part: e.part, ...as, status: 'refuted' })
+      ledger.push({ function: e.function, part: e.part, ...as, status: 'refuted', scope: ruling.scope === 'part' ? 'part' : 'function' })
       // A refuted alternate leaves the primary without a second source by
       // it. One that does not rest on the fit alone also holds for the part
       // in its function (ofPart), but sends no next part to a pair.
@@ -1182,7 +1187,7 @@ function selection(functions, ledger) {
     if (ofPart(l)) last.set(own, laterStatus(last.get(own), l.status))
   }
   return functions.map(f => {
-    const st = c => last.get(`${f.function}\u0000${c.part}`) || ''
+    const st = c => partScoped(ledger, c.part) ? 'refuted' : (last.get(`${f.function}\u0000${c.part}`) || '')
     // A part refuted in the function, standing or not ruled on, fails as an
     // alternate too; a refutation on the fit alone is the relationship's.
     const altSt = (primary, alt) => st({ part: alt }).startsWith('refuted') ? st({ part: alt }) : (altLast.get(`${f.function}\u0000${primary}\u0000${alt}`) || '')
@@ -1208,7 +1213,7 @@ function selection(functions, ledger) {
     // A class counts for a verified part whose class the datasheet verifier
     // confirmed ("Q option: FUNCTION: PART: CLASS").
     const classed = (part, option) => !!option && !ledger.some(l => l.figure === `Q option: ${f.function}: ${part}: ${option}` && !String(l.status).startsWith('confirmed'))
-    const keptClasses = !kept ? [] : [...new Set([...(kept === f.shortlist[0] ? [f.kept_option] : []),
+    const keptClasses = !kept ? [] : [...new Set([...(kept === f.shortlist[0] ? [f.kept_option] : []), kept.option,
       ...f.verify.filter(v => v.kind === 'q-alternative' && v.part === kept.part).map(v => String(v.option || ''))].filter(Boolean))]
     const have = new Set([...(keptClasses.length === 1 ? keptClasses : []).filter(o => classed(kept.part, o)),
       ...qAlternatives.filter(q => String(q.status).startsWith('verified') && classed(q.part, q.option)).map(q => q.option)])
@@ -1285,6 +1290,9 @@ function figuresToCheck(cat, p2, rr, functions, p3) {
   for (const f of functions) {
     if (f.decision === 'none') continue
     if (f.shortlist[0] && f.kept_option) add(`Q option: ${f.function}: ${f.shortlist[0].part}: ${f.kept_option}`, { function: f.function, part: f.shortlist[0].part, option: f.kept_option })
+    // Every ranked part's class, so a replacement kept after a refutation
+    // has one confirmed.
+    for (const c of f.shortlist) if (c.option && !(c === f.shortlist[0] && c.option === f.kept_option)) add(`Q option: ${f.function}: ${c.part}: ${c.option}`, { function: f.function, part: c.part, option: c.option })
     for (const v of f.verify) if (v.kind === 'q-alternative' && v.option) add(`Q option: ${f.function}: ${v.part}: ${v.option}`, { function: f.function, part: v.part, option: v.option })
   }
   // Each function's requirement list is P2's reading of the specification:
@@ -1331,7 +1339,8 @@ async function categoryChain(cat) {
   const owedLater = perPartMissing(cat, p2, rr, [...selected].filter(part => !checkedParts.has(part)))
   const figures_open = [...new Set([...not_returned, ...owedLater, ...ledger.filter(l => l.figure && !l.status.startsWith('confirmed')).map(l => l.figure)])]
   const q_missing = ['R10', 'R12'].includes(cat) && !sel.some(e => e.decision !== 'none' && (e.q_alternatives || []).length && !(e.q_options_missing || []).length)
-  return { category: cat, status: p3 ? 'done' : 'done without P3', ledger, figures_open, q_missing,
+  const part_refuted = [...new Set(ledger.filter(l => l.status === 'refuted' && l.scope === 'part').map(l => l.part))]
+  return { category: cat, status: p3 ? 'done' : 'done without P3', ledger, figures_open, q_missing, part_refuted,
     selection: p3 ? sel : sel.map(e => ({ ...e, part: null, rank: null, without_p3: e.part })) }
 }
 
@@ -1534,6 +1543,7 @@ if (TASK === 'T6') {
       const done = results.filter(r => r.selection)
       summary = { categories: cats, held: p0.held, results, selection: Object.fromEntries(done.map(r => [r.category, r.selection])),
         figures_open: Object.fromEntries(done.map(r => [r.category, r.figures_open || []])),
+        part_refuted: Object.fromEntries(done.map(r => [r.category, r.part_refuted || []])),
         q_missing: done.filter(r => r.q_missing).map(r => r.category),
         chain_failed: results.filter(r => !r.selection).map(r => r.category) }
     }

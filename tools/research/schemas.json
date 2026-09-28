@@ -926,12 +926,17 @@
           },
           "reason": {
            "type": "string"
+          },
+          "option": {
+           "type": "string",
+           "description": "on the Q4 or Q8 function, the part's option class (categories.json q_options); empty elsewhere"
           }
          },
          "required": [
           "rank",
           "part",
-          "reason"
+          "reason",
+          "option"
          ]
         }
        },
@@ -1192,6 +1197,14 @@
     "read_at": {
      "type": "string",
      "description": "the time the ruling's evidence was read"
+    },
+    "scope": {
+     "type": "string",
+     "enum": [
+      "part",
+      "function"
+     ],
+     "description": "part: what holds is about the part itself (lifecycle, end-of-life notice, maker allowlist, LCSC identity) and fails it in every function; function: about this function's requirements or quantity"
     }
    },
    "required": [
@@ -1202,7 +1215,8 @@
     "ruling",
     "evidence",
     "source",
-    "read_at"
+    "read_at",
+    "scope"
    ]
   },
   "P5": {
