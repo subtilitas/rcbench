@@ -1087,6 +1087,15 @@ async function main() {
   check(r1(r).selection[0].part === 'part1' && r.result.followUps.some(f => f.figure === 'longevity commitment' && /^recorded as not read/.test(f.reason)), 'longevity and market introduction not read, with a reason: verified, listed')
   r = await runTask('T2', { edit: { 'longevity commitment': { read: 'not read: the programme page refused the client', passes: false, agrees: false } } })
   check(r1(r).selection[0].part === 'part1', 'longevity commitment not read, with a reason, marked failing: recorded, not a refutation')
+  for (const read of ['not read: none', 'not read: N/A', 'not read: -', 'not read (unknown)']) {
+    r = await runTask('T2', { edit: { 'longevity commitment': { read } } })
+    check(r1(r).selection[0].part === null, `longevity commitment read as ${read}: not verified`)
+  }
+  // A refuted verdict whose only failing check is such a reading is none.
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'], edit: { 'longevity commitment': { read: 'not read: the programme page refused the client', passes: false } } })
+  check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'refutation resting only on an unread non-gate reading: none, no adjudicator')
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'], edit: { 'longevity commitment': { read: 'not read: the programme page refused the client', passes: false }, 'lifecycle status': { passes: false } } })
+  check(r.calls.some(c => c.startsWith('adjudicator-R1')), 'refutation with another failing check besides an unread reading: adjudicated')
   r = await runTask('T2', { edit: { 'longevity commitment': { read: 'not read' } } })
   check(r1(r).selection[0].part === null, 'longevity commitment not read without a reason: not verified')
   r = await runTask('T2', { edit: { 'lead time': { read: 'not read: API timed out' } } })
