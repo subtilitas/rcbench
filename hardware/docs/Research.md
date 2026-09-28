@@ -789,28 +789,28 @@ neither P2 nor the start of its task.
 | V229 | R11, phase-wire clip | What range of ESC PWM (pulse-width modulation) switching frequency, in kHz, must the phase-wire clip's front end reject while it passes the motor's electrical frequency? The programmer screen offers 24, 48 and 96 kHz (shared/ui/programmer_screen.c:115). Does that range apply, or a wider one? | for research (owner, 2026-09-28) |
 | V230 | R11, accelerometer | What is the lowest shaft speed, in rpm, at which a balance run is measured? | for research (owner, 2026-09-28) |
 | V231 | R11, accelerometer | Across what ambient temperature range, in °C, must the sensors mounted at the motor work? That is the accelerometer on the rig arm or firewall, and the optical and magnetic sensors if R11 selects them. | for research (owner, 2026-09-28) |
-| V232 | R12, motor temperature thermocouple | Which motor temperature channel, infrared or thermocouple, fills the BENCH page's one motor temperature register (register 5, 0.1 °C signed, valid bit 4)? Or does a second register carry the other channel? | |
-| V233 | R12, motor temperature thermocouple | Which thermocouple type (a letter, such as K, J or T) does the thermocouple channel take? | |
-| V234 | R12, motor temperature thermocouple | What motor temperature range (°C, lowest to highest) must the thermocouple channel measure? | |
-| V235 | R12, motor temperature thermocouple | What accuracy (± °C) must the thermocouple channel give over that range, cold-junction compensation included? | |
-| V236 | R12, motor temperature thermocouple | How often (Hz) must the thermocouple channel deliver a new reading? | |
-| V237 | R12, motor temperature thermocouple | What voltage (V) must the thermocouple input withstand, without damage, between either lead and the IO board's ground if the junction touches a motor phase or winding? | |
-| V238 | R12, motor temperature infrared | How long (m) is the lead from the IO board's infrared connector to the infrared sensor at the motor? Answer 0 m if the sensor sits on the IO board. | |
-| V239 | R12, motor temperature infrared | What object temperature range (°C, lowest to highest) must the infrared channel measure? | |
-| V240 | R12, motor temperature infrared | What accuracy (± °C) must the infrared channel give over that range? | |
-| V241 | R12, motor temperature infrared | What full field of view (degrees) must the infrared sensor have, given its distance to the motor and the surface it must see? | |
-| V242 | R12, motor temperature infrared | How often (Hz) must the infrared channel deliver a new reading? | |
-| V243 | R12, external I2C ports | At which clock rate (kHz) must the external I2C ports run? | |
-| V244 | R12, external I2C ports | What is the longest cable (m) between an external I2C port and the device on it? | |
-| V245 | R12, external I2C ports | What current (mA) must each external I2C port supply on its 3.3 V pin? | |
-| V246 | R12, external I2C ports | Which 7-bit I2C addresses (hex) must a device on an external I2C port be free to use? | |
-| V247 | R12, non-volatile store | What capacity (bytes) must an I2C FRAM or EEPROM store hold for the IO board's output binding? (feeds Q8 only) | |
-| V248 | R12, non-volatile store | How many saves (count) of the output binding must the store survive over the board's life? (feeds Q8 only) | |
-| V249 | R12, motor temperature infrared | Where does the infrared motor temperature sensor sit: off the IO board, on a lead to a connector on the IO board, as IOBoard.md:558 assumes, or on the IO board itself? | |
-| V250 | R12, motor temperature thermocouple | Must the thermocouple channel detect an open or unplugged thermocouple, so that the motor temperature valid bit (BENCH flag bit 4) stays clear while none is fitted? Answer yes or no. | |
-| V251 | R12, motor temperature thermocouple | Over what ambient temperature range (°C, lowest to highest) must the IO board operate, which sets the temperature of the thermocouple's cold junction at its connector? | |
-| V252 | R12, motor temperature infrared | What ambient temperature range (°C, lowest to highest) does the infrared sensor itself see at its mounting position near the motor? | |
-| V253 | R12, external I2C ports | Must a device be plugged into or out of an external I2C port while the board is powered, with the bus and the other devices on it still running? Answer yes or no. | |
+| V232 | R12, motor temperature thermocouple | Which motor temperature channel, infrared or thermocouple, fills the BENCH page's one motor temperature register (register 5, 0.1 °C signed, valid bit 4)? Or does a second register carry the other channel? | for research (owner, 2026-09-28) |
+| V233 | R12, motor temperature thermocouple | Which thermocouple type (a letter, such as K, J or T) does the thermocouple channel take? | for research (owner, 2026-09-28) |
+| V234 | R12, motor temperature thermocouple | What motor temperature range (°C, lowest to highest) must the thermocouple channel measure? | for research (owner, 2026-09-28) |
+| V235 | R12, motor temperature thermocouple | What accuracy (± °C) must the thermocouple channel give over that range, cold-junction compensation included? | for research (owner, 2026-09-28) |
+| V236 | R12, motor temperature thermocouple | How often (Hz) must the thermocouple channel deliver a new reading? | for research (owner, 2026-09-28) |
+| V237 | R12, motor temperature thermocouple | What voltage (V) must the thermocouple input withstand, without damage, between either lead and the IO board's ground if the junction touches a motor phase or winding? | for research (owner, 2026-09-28) |
+| V238 | R12, motor temperature infrared | How long (m) is the lead from the IO board's infrared connector to the infrared sensor at the motor? Answer 0 m if the sensor sits on the IO board. | for research (owner, 2026-09-28) |
+| V239 | R12, motor temperature infrared | What object temperature range (°C, lowest to highest) must the infrared channel measure? | for research (owner, 2026-09-28) |
+| V240 | R12, motor temperature infrared | What accuracy (± °C) must the infrared channel give over that range? | for research (owner, 2026-09-28) |
+| V241 | R12, motor temperature infrared | What full field of view (degrees) must the infrared sensor have, given its distance to the motor and the surface it must see? | for research (owner, 2026-09-28) |
+| V242 | R12, motor temperature infrared | How often (Hz) must the infrared channel deliver a new reading? | for research (owner, 2026-09-28) |
+| V243 | R12, external I2C ports | At which clock rate (kHz) must the external I2C ports run? | for research (owner, 2026-09-28) |
+| V244 | R12, external I2C ports | What is the longest cable (m) between an external I2C port and the device on it? | for research (owner, 2026-09-28) |
+| V245 | R12, external I2C ports | What current (mA) must each external I2C port supply on its 3.3 V pin? | for research (owner, 2026-09-28) |
+| V246 | R12, external I2C ports | Which 7-bit I2C addresses (hex) must a device on an external I2C port be free to use? | for research (owner, 2026-09-28) |
+| V247 | R12, non-volatile store | What capacity (bytes) must an I2C FRAM or EEPROM store hold for the IO board's output binding? (feeds Q8 only) | for research (owner, 2026-09-28) |
+| V248 | R12, non-volatile store | How many saves (count) of the output binding must the store survive over the board's life? (feeds Q8 only) | for research (owner, 2026-09-28) |
+| V249 | R12, motor temperature infrared | Where does the infrared motor temperature sensor sit: off the IO board, on a lead to a connector on the IO board, as IOBoard.md:558 assumes, or on the IO board itself? | for research (owner, 2026-09-28) |
+| V250 | R12, motor temperature thermocouple | Must the thermocouple channel detect an open or unplugged thermocouple, so that the motor temperature valid bit (BENCH flag bit 4) stays clear while none is fitted? Answer yes or no. | for research (owner, 2026-09-28) |
+| V251 | R12, motor temperature thermocouple | Over what ambient temperature range (°C, lowest to highest) must the IO board operate, which sets the temperature of the thermocouple's cold junction at its connector? | for research (owner, 2026-09-28) |
+| V252 | R12, motor temperature infrared | What ambient temperature range (°C, lowest to highest) does the infrared sensor itself see at its mounting position near the motor? | for research (owner, 2026-09-28) |
+| V253 | R12, external I2C ports | Must a device be plugged into or out of an external I2C port while the board is powered, with the bus and the other devices on it still running? Answer yes or no. | for research (owner, 2026-09-28) |
 | V254 | R13, load-cell excitation | Which supply gives the 5 V load-cell excitation of F3: the IO board's 5 V rail, which also carries the display's 1.5 A continuous and 2 A peak, or a separate supply for the bridges? | |
 | V255 | R13, load-cell excitation | What is the bridge resistance of each of the 3 load cells (the thrust cell and the 2 torque cells), in Ω? | |
 | V256 | R13, load-cell bridge ADC | What is the rated output of each of the 3 load cells (the thrust cell and the 2 torque cells), in mV/V? | |
