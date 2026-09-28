@@ -1493,10 +1493,10 @@ if (TASK === 'T6') {
     const wrong = (critic.figure_checks || []).filter(f => !f.agrees)
     if (wrong.length) failed.push(`${wrong.length} figures disagree with the returns`)
     // A budget or combination comes from the last P5/P6 check: one checked
-    // against an earlier check's files is superseded. Other figures, an
-    // earlier check's open items or a run's status among them, may cite it.
-    const stale = named.filter(x => ['budget', 'combination'].includes(x.kind) && (A.p56_runs || []).some(r => r !== A.last_p56 && String(x.return_file).includes(`hardware/research/round1/${r}/`)))
-    if (stale.length) failed.push(`${stale.length} budgets or combinations checked against an earlier P5/P6 check than ${A.last_p56}`)
+    // against any other file is not checked. Other figures, an earlier
+    // check's open items or a run's status among them, may cite any return.
+    const stale = named.filter(x => ['budget', 'combination'].includes(x.kind) && !String(x.return_file).startsWith(`hardware/research/round1/${A.last_p56}/`))
+    if (stale.length) failed.push(`${stale.length} budgets or combinations not checked against the last P5/P6 check, ${A.last_p56}`)
     if ((critic.sentence_issues || []).length) failed.push(`${critic.sentence_issues.length} writing issues left`)
   }
   // Every output of the plan is written by P7 and reviewed by its critic.

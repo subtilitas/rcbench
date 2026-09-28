@@ -1237,6 +1237,8 @@ async function main() {
   // such as the status line, may cite an earlier check's files.
   r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/T5/003-P5.json', figureKind: 'budget' })
   check(r.result.summary.stopped === true && r.prompts.find(x => x.label === 'P7-critic').prompt.includes('against the last P5/P6 check, FU-b, only') && r.prompts.find(x => x.label === 'P7-critic').prompt.includes('and its kind: budget or combination'), 'T6: a budget checked against a superseded P5/P6 check stops it')
+  r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/selection.json', figureKind: 'budget' })
+  check(r.result.summary.stopped === true, 'T6: a budget checked against selection.json stops it')
   r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/T5/task.json' })
   check(!r.result.summary.stopped, 'T6: a figure other than a budget or combination checked against an earlier P5/P6 check finishes it')
   r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/FU-b/003-P5.json', figureKind: 'budget', decisions: { Q4: 'external ADC (owner, 2026-10-01)' } })

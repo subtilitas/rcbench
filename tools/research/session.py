@@ -283,15 +283,10 @@ def decision_categories(text):
             for q, cell in decisions(text, 2).items()}
 
 
-def owner_cells(text):
-    """What the owner writes on the plan page: the rows under Raised by P1,
-    the Blocking and Sourcing answers and the decisions. None when a
-    section is not found."""
-    try:
-        return (raised_rows(text), blocking_rows(text),
-                sourcing_answers(text), decisions(text))
-    except SystemExit:
-        return None
+def plan_body(text):
+    """The plan page from its first section on: all but the status line."""
+    at = text.find("\n## ")
+    return text[at:] if at >= 0 else None
 
 
 # ------------------------------------------------------------------ check
@@ -878,10 +873,14 @@ def refuted_for_itself(results, categories):
         if c not in categories:
             continue
         for fn, e in fns.items():
+            # The kept part, its rule-5 alternate, each Q alternative and
+            # that one's alternate.
+            used = [e.get("part"), e.get("alternate")] + [
+                p for q in e.get("q_alternatives") or []
+                for p in (q.get("part"), q.get("alternate"))]
             for name, part in refuted:
-                if e.get("part") == part and seq[name] >= seq.get(
-                        e.get("run"), 0):
-                    out.append(f"{c}: {fn} keeps {part}, which {name} "
+                if part in used and seq[name] >= seq.get(e.get("run"), 0):
+                    out.append(f"{c}: {fn} uses {part}, which {name} "
                                "refuted for itself")
     return out
 
@@ -1099,8 +1098,9 @@ def questions_gate(results, rows, categories):
              and (q["category"] in categories
                   or by_id[q["id"]][1] in categories)
              and (by_id[q["id"]][1] != q["category"]
-                  or not words(by_id[q["id"]][2]).startswith(
-                      words(str(q.get("question", "")).replace("|", "\\|"))))]
+                  or re.sub(r" \(feeds Q\d only\)$", "",
+                            words(by_id[q["id"]][2])) != words(
+                      str(q.get("question", "")).replace("|", "\\|")))]
     if moved:
         raise SystemExit("rows under Raised by P1 that no longer carry the "
                          "category and question P1 raised: "
@@ -1382,7 +1382,11 @@ def result_shape(result, want):
     if task == "T6":
         need, keys = ["P7", "P7-critic"], {}
     elif checks:
-        need = []
+        # Each of the four agents returned, or the summary names it among
+        # the missing checks.
+        gone = summary.get("missing_checks") or []
+        need = [r for r in ("P5", "P5-critic", "P6", "P6-critic")
+                if r not in gone and r.split("-")[0] not in gone]
         keys = {"conflicts": list, "gaps": list, "missing_checks": list,
                 "unchecked_items": int, "rejected_items": int,
                 "budgets_missing": list, "unsourced_items": int,
@@ -1586,13 +1590,14 @@ def record(args):
                       if not os.path.isfile(os.path.join(results, f)))
         if gone:
             refuse("T6 left these outputs missing: " + ", ".join(gone))
-        # Of Research.md P7 writes the status line: the owner's answers and
-        # decisions stay as the owner wrote them.
+        # Of Research.md P7 writes the status line, the lead above its first
+        # section: every section below, the owner's tables among them, stays
+        # as it is.
         plan = PLAN_REL.replace(os.sep, "/")
         at_head = git("-C", results, "show", f"HEAD:{plan}", check=False)
-        if at_head.returncode == 0 and owner_cells(at_head.stdout) != \
-                owner_cells(read(os.path.join(results, plan))):
-            refuse(f"P7 changed the owner's answers or decisions in {plan}")
+        if at_head.returncode == 0 and plan_body(at_head.stdout) != \
+                plan_body(read(os.path.join(results, plan))):
+            refuse(f"P7 changed {plan} below its status line")
         allowed = set(T6_REQUIRED) | pages
         stray = [d for d in dirty if not in_run(d)
                  and not (d in allowed and d in wrote and d in seen)]

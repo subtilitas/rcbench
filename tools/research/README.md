@@ -34,10 +34,6 @@ and host table. Nothing here runs in CI (continuous integration) but
   with no failing check, gets one ruling: when it stands, the part is
   refuted in the function in every role, also when only its fit to the
   other part holds.
-- The re-rank classes only the first-ranked part of the Q4 or Q8 function
-  and its Q alternatives. A part kept after a refutation of the first-ranked
-  part that is no Q alternative has no confirmed option class in the run: its
-  class stays missing until a follow-up task ranks it first.
 - The workflow script has no file or git access. Every return comes back in
   the task's output, and `session.py record` writes and commits it.
 - `vendors.py fetch` needs curl_cffi for the chrome and safari clients.
@@ -272,53 +268,53 @@ readings, and passing live readings a failing held quantity. A return whose
 rule-5 alternate gates its selection, and the alternate of a part on the board
 must be on the board. The kept part counts for a Q4 or Q8 option class in
 which the datasheet verifier confirmed it: `kept_option` when it is the
-first-ranked part after the drops, its option when it is a Q alternative. A
-kept part given two different classes in these two roles counts for neither.
-An alternate counts only for the part it was checked against: an alternate
-several parts name is checked against the first of them (the first-ranked
-part, then the Q alternatives in order), and a replacement's alternate against
-the replacement. A part verified in its own right, the first-ranked part or a
-Q alternative, that is also another part's alternate keeps that verification.
-It holds the alternate role while verified, also after a refutation that did
-not stand, with its compatibility checks. A category whose chain failed is
-left out of the run's selection, so the gates read the run before it. Each
-assumption needs a confirmed question of its own, whose `for_where` and
-`for_quantity` are the assumption's location and quantity. The P1 critic rules
-on a marking by the value's index, location and quantity, and a marking it
-upholds with the same marking is unchanged. A P1 critic or re-check verdict
-whose reason or evidence reads as none is no verdict. A P1 return with no
-value, and a category whose P1 and critic name no function, leave a P1 item.
-Each "P1 asks" item of the category that no question under "Raised by P1"
-names in `asks` needs a confirmed question that names it. Without one it
-leaves a P1 item, also when the critic or the re-check rejected the question
-for it. A question under "Raised by P1" is not raised again: it asks for an
-assumption at its `for_where` and `for_quantity`. A P1 follow-up gives its
-items to P1 and the critic, and lists again each item its run did not deal
-with: a value its P1 did not return, a question neither its P1 nor its critic
-raised and not under "Raised by P1" (the same words, or the same `for_where`
-and `for_quantity`), and any other item of a category whose P1 or critic
-returned nothing; an item listed again stands for the item it carries. P1 and
-the critic are told to copy an item's question word for word; an item without
-a `for_where` whose question they raise in other words is listed again. P1 and
-the critic of a follow-up are given the names the category's inventory and
-`selection.json` give its functions, and keep them. P0 counts a host with two
-rows, or a status written as not read, none, no, false, absent or not in the
-page body, as not read. A P0 row counts only at its host's endpoint: an API
-client's command with the probe, whatever environment assignments
-(`DIGIKEY_ENV_FILE=...`, `env`) and interpreter path precede it, a page
-client's probe URL, or with no probe a page on the host itself. The P7 critic
-checks at least one figure on each group page and each output under
-`hardware/docs/`, each check naming the figure and the file under
-`hardware/research/round1/` it comes from, a path ending in `.json`; text
-after the path, such as `:34` or `#L34`, is not part of it, and `record` reads
-the same path. Each check gives its kind: budget, combination or other. A
-budget or combination checked against a file of a P5/P6 check other than the
-last is superseded; another figure, such as a run's status line, may cite any
-check. P7 and its critic are given the three commands, the pages that need a
-figure checked, and the path rules for group pages and figure checks that
-`round1.js` and `record` apply. The schemas ask P5, P6 and their critics to
-write a conflict's parts as `selection.json` writes them and each category by
-its ID alone.
+first-ranked part after the drops, the option the re-rank gives it in the
+ranking, or its option when it is a Q alternative. A kept part given two
+different classes in these two roles counts for neither. An alternate counts
+only for the part it was checked against: an alternate several parts name is
+checked against the first of them (the first-ranked part, then the Q
+alternatives in order), and a replacement's alternate against the replacement.
+A part verified in its own right, the first-ranked part or a Q alternative,
+that is also another part's alternate keeps that verification. It holds the
+alternate role while verified, also after a refutation that did not stand,
+with its compatibility checks. A category whose chain failed is left out of
+the run's selection, so the gates read the run before it. Each assumption
+needs a confirmed question of its own, whose `for_where` and `for_quantity`
+are the assumption's location and quantity. The P1 critic rules on a marking
+by the value's index, location and quantity, and a marking it upholds with the
+same marking is unchanged. A P1 critic or re-check verdict whose reason or
+evidence reads as none is no verdict. A P1 return with no value, and a
+category whose P1 and critic name no function, leave a P1 item. Each "P1 asks"
+item of the category that no question under "Raised by P1" names in `asks`
+needs a confirmed question that names it. Without one it leaves a P1 item,
+also when the critic or the re-check rejected the question for it. A question
+under "Raised by P1" is not raised again: it asks for an assumption at its
+`for_where` and `for_quantity`. A P1 follow-up gives its items to P1 and the
+critic, and lists again each item its run did not deal with: a value its P1
+did not return, a question neither its P1 nor its critic raised and not under
+"Raised by P1" (the same words, or the same `for_where` and `for_quantity`),
+and any other item of a category whose P1 or critic returned nothing; an item
+listed again stands for the item it carries. P1 and the critic are told to
+copy an item's question word for word; an item without a `for_where` whose
+question they raise in other words is listed again. P1 and the critic of a
+follow-up are given the names the category's inventory and `selection.json`
+give its functions, and keep them. P0 counts a host with two rows, or a status
+written as not read, none, no, false, absent or not in the page body, as not
+read. A P0 row counts only at its host's endpoint: an API client's command
+with the probe, whatever environment assignments (`DIGIKEY_ENV_FILE=...`,
+`env`) and interpreter path precede it, a page client's probe URL, or with no
+probe a page on the host itself. The P7 critic checks at least one figure on
+each group page and each output under `hardware/docs/`, each check naming the
+figure and the file under `hardware/research/round1/` it comes from, a path
+ending in `.json`; text after the path, such as `:34` or `#L34`, is not part
+of it, and `record` reads the same path. Each check gives its kind: budget,
+combination or other. A budget or combination checked against a file of a
+P5/P6 check other than the last is superseded; another figure, such as a run's
+status line, may cite any check. P7 and its critic are given the three
+commands, the pages that need a figure checked, and the path rules for group
+pages and figure checks that `round1.js` and `record` apply. The schemas ask
+P5, P6 and their critics to write a conflict's parts as `selection.json`
+writes them and each category by its ID alone.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared
