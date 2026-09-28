@@ -152,7 +152,7 @@ async function runTask(task, opts = {}) {
         new_candidates: opts.p3dropped ? [{ ...cand(7), part: 'partN' }] : [], dropped_from_p3: opts.p3dropped ? [{ part: 'partN', maker: 'm', reason: 'r' }] : [],
         dropped_from_shortlist: opts.rankDropped ? [{ part: 'part1', maker: 'm', reason: 'r' }] : (opts.dropShort || []).map(part => ({ part, maker: 'm', reason: 'r' })), verify: opts.qDup ? [{ part: 'part3', kind: 'q-alternative', option: 'reference' }, { part: 'part3', kind: 'q-alternative', option: 'external ADC' }] : opts.twoQShare ? [{ part: 'part2', kind: 'q-alternative' }, { part: 'part3', kind: 'q-alternative' }] : opts.qAlt || opts.sharedAlt ? [{ part: 'part3', kind: 'q-alternative', option: opts.qOption || '' }] : (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
       if (opts.extraFn) data.functions.push({ ...data.functions[0], function: 'fX', ...(opts.rrHandleYin || opts.rrHandleXin ? { dropped_from_shortlist: [{ part: opts.rrHandleXin ? 'partX' : 'partY', maker: 'm', reason: 'r' }] } : {}) })
-      if (opts.p3dropShort) data.functions[0].dropped_from_shortlist = [{ part: 'partX', maker: 'm', reason: 'fails vmax' }]
+      if (opts.p3dropShort) data.functions[0].dropped_from_shortlist = [{ part: opts.dropShortPart || 'partX', maker: 'm', reason: 'fails vmax', ...(opts.dropShortLcsc ? { lcsc: opts.dropShortLcsc } : {}) }]
       if (opts.rrDup) data.functions.push({ ...data.functions[0], ranking: [], dropped_from_shortlist: [{ part: 'part1', maker: 'm', reason: 'fails vmax at 85 C' }] })
       if (opts.noRerankFn) data.functions = []
       if (opts.emptyRanking) data.functions[0].ranking = []
@@ -894,6 +894,15 @@ async function main() {
   check(r1(r).selection[0].part === 'part1', 'P3 find of two parts with its function appended, one dropped: handled')
   r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW,215 (C99)' })
   check(r1(r).selection[0].part === null, 'P3 find of another part number: unhandled')
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'CAN transceiver (C99)', dropShortPart: 'partY (C99)' })
+  check(r1(r).selection[0].part === 'part1', 'P3 find by LCSC number alone, dropped under another name: handled')
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'CAN transceiver (C99)', dropShortPart: 'partY', dropShortLcsc: 'C99' })
+  check(r1(r).selection[0].part === 'part1', 'P3 find by LCSC number, the drop naming it in its lcsc field: handled')
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW (c98) AND partx (c99)', dropShortPart: 'PARTX' })
+  check(r1(r).selection[0].part === 'part1', 'P3 find in another case, joined by AND: handled')
+  // The drop of a find named in P3's own words is re-read as any P3 drop.
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partX (C1234)', omitFigure: ['P4-datasheet-R1', 're-rank drop: f1: partX'] })
+  check(r.result.followUps.some(f => f.figure === 're-rank drop: f1: partX' && f.reason === 'figure not verified'), 'drop of an annotated P3 find: re-read')
   // A fixed input of the Scope table is reported to the owner, not
   // re-selected: ranked below another part, refuted, or passed over for a
   // verified part of the verify list.

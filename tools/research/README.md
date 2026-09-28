@@ -192,11 +192,13 @@ part.
   under no function of P2's, and a drop it overturns that no function made,
   hold every function open until the re-rank qualifies or drops the part under
   one of P2's functions. A find and the re-rank's part are the same part when
-  they share a part number or an LCSC number: `TCAN3413DR (C22433320)`,
-  `A (C1); B (C2)` and a part with its function appended all match the bare
-  part number. Part numbers are the pieces between semicolons, commas followed
-  by a space and ` and `, without parenthesized text, case and spaces; a
-  function name is none. `2N7002BK,215` is one part number;
+  they share a part number or an LCSC number, a record's `lcsc` field
+  included: `TCAN3413DR (C22433320)`, `A (C1); B (C2)` and a part with its
+  function appended all match the bare part number. Part numbers are the
+  pieces between semicolons, commas followed by a space and ` and `, without
+  parenthesized text, case and spaces; a function name is none.
+  `2N7002BK,215` is one part number. The drop of such a find is re-read as the
+  drop of any P3 find;
 - it has no requirement, or names one requirement twice;
 - it serves a fixed input of the Scope table (`categories.json`
   `fixed_inputs`: the function by the table's input name, the input by a
@@ -244,8 +246,10 @@ source or a reading time of the task, shows nothing. A reading time is an ISO
 (International Organization for Standardization) 8601 date or date-time at the
 start of the text, on a date the calendar has (2026-02-31 is not one); a note,
 a second reading's time or a range's end may follow it, as in
-`2026-09-28T13:51Z to 13:56Z (JLCPCB)`, and a date-time without a zone is UTC
-(Coordinated Universal Time). For a P4 check, a figure verdict or a ruling
+`2026-09-28T13:51Z to 13:56Z (JLCPCB)`. The time ends at the end of the text,
+at whitespace, at `,`, `;`, `(` or `)`, or at a hyphen before a range's end
+time, so `2026-09-28T10` and `2026-09-28T10:00+99` are no times. A date-time
+without a zone is UTC (Coordinated Universal Time). For a P4 check, a figure verdict or a ruling
 every date it gives is also the date `prepare` gave the run or the next day,
 for a run that passes midnight, so a reading copied from an earlier return or
 the parts database, or dated later, shows nothing. The workflow script has no
