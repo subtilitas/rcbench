@@ -1167,14 +1167,15 @@ function selection(functions, ledger) {
     // Each option class of the decision (categories.json q_options) needs a
     // part: the kept part in the class its figure was asked for, as the
     // first-ranked part after the drops (kept_option) or as a Q alternative,
-    // or another Q alternative.
+    // or another Q alternative. A kept part given two classes, in both
+    // roles, has no single class and counts for neither.
     const needed = f.decision !== 'none' ? ((A.q_options || {})[f.decision] || []) : []
     // A class counts for a verified part whose class the datasheet verifier
     // confirmed ("Q option: FUNCTION: PART: CLASS").
     const classed = (part, option) => !!option && !ledger.some(l => l.figure === `Q option: ${f.function}: ${part}: ${option}` && !String(l.status).startsWith('confirmed'))
-    const keptClasses = !kept ? [] : [...(kept === f.shortlist[0] ? [f.kept_option] : []),
-      ...f.verify.filter(v => v.kind === 'q-alternative' && v.part === kept.part).map(v => String(v.option || ''))]
-    const have = new Set([...keptClasses.filter(o => classed(kept.part, o)),
+    const keptClasses = !kept ? [] : [...new Set([...(kept === f.shortlist[0] ? [f.kept_option] : []),
+      ...f.verify.filter(v => v.kind === 'q-alternative' && v.part === kept.part).map(v => String(v.option || ''))].filter(Boolean))]
+    const have = new Set([...(keptClasses.length === 1 ? keptClasses : []).filter(o => classed(kept.part, o)),
       ...qAlternatives.filter(q => String(q.status).startsWith('verified') && classed(q.part, q.option)).map(q => q.option)])
     const qOptionsMissing = needed.filter(o => !have.has(o))
     function qAlt(v) {

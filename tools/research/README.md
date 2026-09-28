@@ -247,7 +247,8 @@ the kept part's rule-5 alternate gates its selection, and the alternate of a
 part on the board must be on the board. The kept part counts for a
 Q4 or Q8 option class in which the datasheet verifier confirmed it:
 `kept_option` when it is the first-ranked part after the drops, its
-option when it is a Q alternative. An alternate counts only for the part
+option when it is a Q alternative. A kept part given two different classes
+in these two roles counts for neither. An alternate counts only for the part
 it was checked against: an alternate several parts name is checked against
 the first of them (the first-ranked part, then the Q alternatives in order),
 and a replacement's alternate against the replacement. A part verified in its

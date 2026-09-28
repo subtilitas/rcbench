@@ -1120,6 +1120,16 @@ async function main() {
   check(r10(r).selection[0].part === 'part2' && r10(r).selection[0].q_options_missing.length === 0 && !r.result.summary.q_missing.includes('R10') && !r.calls.includes('P4-stock-R10-2'), 'Q alternative verified in the pass and kept after a refutation: no pair, its class counts')
   r = await runTask('T4', { failedReq: true, qAlt: true, qOption: 'external ADC', keptOption: 'reference', qOptions: q4, p4parts: ['part2', 'part3', 'altQ'] })
   check(r10(r).selection[0].part === 'part2' && r10(r).selection[0].q_options_missing.length === 0, 'first-ranked part dropped for a failed requirement: the next part\'s confirmed class counts')
+  // A kept part classed twice, as the first-ranked part and as a Q
+  // alternative, counts for one class when the two agree and for neither
+  // when they differ.
+  const extAdc = part => ({ part, kind: 'q-alternative', option: 'external ADC' })
+  r = await runTask('T4', { failedReq: true, verifyList: [extAdc('part2'), extAdc('part3')], p4parts: ['part2', 'part3'], qOptions: q4, keptOption: 'reference' })
+  check(r10(r).selection[0].part === 'part2' && r10(r).selection[0].q_options_missing.join() === 'reference' && r.result.summary.q_missing.includes('R10'), 'part ranked first after a drop, classed reference and as an external ADC alternative: counts for neither')
+  r = await runTask('T4', { verifyList: [extAdc('part1'), extAdc('part3')], p4parts: ['part3'], qOptions: q4, keptOption: 'reference' })
+  check(r10(r).selection[0].part === 'part1' && r10(r).selection[0].q_options_missing.join() === 'reference', 'first-ranked part classed reference and as an external ADC alternative: counts for neither')
+  r = await runTask('T4', { verifyList: [{ part: 'part1', kind: 'q-alternative', option: 'reference' }, extAdc('part3')], p4parts: ['part3'], qOptions: q4, keptOption: 'reference' })
+  check(r10(r).selection[0].part === 'part1' && r10(r).selection[0].q_options_missing.length === 0, 'first-ranked part classed reference in both roles: counts once')
   // Figure refutations: the datasheet verifier's only, a replacement pair's
   // included, each ruled on against the claim it refutes.
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], replacementFigure: 'P2 report: x0' })
