@@ -823,9 +823,9 @@ neither P2 nor the start of its task.
 | V263 | R13, load-cell bridge ADC | Does each load cell connect with 4 wires (excitation and signal) or with 6 wires (excitation, signal and sense leads)? | for research (owner, 2026-09-28) |
 | V264 | R13, load-cell bridge ADC | Over what ambient temperature range, in °C, must each load-cell channel hold the accuracy asked for it? | for research (owner, 2026-09-28) |
 | V265 | R13, load-cell bridge ADC | What is the longest time, in ms, from a step change in thrust or torque to a fully settled reading on that channel? | for research (owner, 2026-09-28) |
-| V266 | R5, display supply | Does the link cable's supply block current from the display back into the IO board while the display is on its own USB-C and the IO board is unpowered or running from the pack: yes or no? | |
-| V267 | R5, reverse-polarity protection | What is the highest reverse voltage, in V, the DC input must survive without damage: the 20 V maximum reversed (-20 V), or the highest continuous voltage of V83 reversed? | |
-| V268 | R5, source selection | While the board runs from the 2S pack, must the source selection keep the pack's voltage off the DC input connector's pins, with the DC input unplugged or its source switched off: yes or no? | |
+| V266 | R5, display supply | Does the link cable's supply block current from the display back into the IO board while the display is on its own USB-C and the IO board is unpowered or running from the pack: yes or no? | Yes: the 5 V link supply blocks reverse current (an ideal diode or an eFuse with reverse blocking), so the display's USB-C feeds nothing into the IO board (owner, 2026-09-28) |
+| V267 | R5, reverse-polarity protection | What is the highest reverse voltage, in V, the DC input must survive without damage: the 20 V maximum reversed (-20 V), or the highest continuous voltage of V83 reversed? | -25.2 V: a 6S pack or a 24 V supply connected reversed (owner, 2026-09-28) |
+| V268 | R5, source selection | While the board runs from the 2S pack, must the source selection keep the pack's voltage off the DC input connector's pins, with the DC input unplugged or its source switched off: yes or no? | Yes: the DC input side of the source selection blocks reverse current, so the pack's 6.0 to 8.4 V stays off the DC input pins with the input unplugged or its source off (owner, 2026-09-28) |
 
 #### Decided on the research's output
 
