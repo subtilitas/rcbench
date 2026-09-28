@@ -48,6 +48,8 @@ import sqlite3
 import subprocess
 import sys
 
+import vendors
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 PLAN_REL = os.path.join("hardware", "docs", "Research.md")
@@ -1333,6 +1335,22 @@ def cmd_prepare(args):
             git("-C", results, "merge", "--abort", check=False)
             raise SystemExit("merging research/round1 into the results "
                              "tree failed: " + merged.stderr.strip())
+    # A run that reads stock starts only with enough of the day's Digi-Key
+    # calls left to finish: 1,000 a day, and a task takes 400 to 500.
+    quota = None
+    if reads_stock and args.digikey_min > 0:
+        os.environ["DIGIKEY_ENV_FILE"] = env
+        try:
+            code, quota, reset = vendors.dk_quota()
+        except vendors.Unreachable as err:
+            raise SystemExit(f"Digi-Key's API is unreachable: {err}")
+        if quota is None:
+            raise SystemExit(f"Digi-Key's API answered HTTP {code} with no "
+                             "count of calls left")
+        if quota < args.digikey_min:
+            raise SystemExit(f"{quota} Digi-Key calls left today, fewer than "
+                             f"--digikey-min {args.digikey_min}; the count "
+                             f"resets at {reset}")
     now = datetime.datetime.now(datetime.timezone.utc)
     today = now.date().isoformat()
     ids = [int(r[0][1:]) for r in rows] + [
@@ -1356,7 +1374,9 @@ def cmd_prepare(args):
         "paths": {"checkout": checkout, "monostable": mono, "db": db,
                   "results": results,
                   "scratch": os.path.join(base, "scratch"),
-                  "digikey_env": env},
+                  "digikey_env": env,
+                  "digikey_cache": os.path.join(base, "cache", "digikey",
+                                                run_id)},
         "followup": followup, "first_v": first_v,
         "decisions": decisions(text),
         "decision_categories": decision_categories(text),
@@ -1375,7 +1395,8 @@ def cmd_prepare(args):
         "q_options": cats.get("q_options", {}),
         "t6_outputs": T6_REQUIRED if args.task == "T6" else [],
         **t6,
-        "run_info": run_info(args.model, args.effort),
+        "run_info": {**run_info(args.model, args.effort),
+                     "digikey_calls_left": quota},
         "accept_open": {"reason": args.accept_open, "functions": open_sel}
         if args.accept_open else None,
     }
@@ -1846,6 +1867,9 @@ def main():
                    help="the effort every agent of the run gets")
     p.add_argument("--followup")
     p.add_argument("--name", default="1", help="follow-up run name")
+    p.add_argument("--digikey-min", type=int, default=600, metavar="N",
+                   help="refuse a run that reads stock while fewer than N of "
+                   "the day's Digi-Key calls are left (0: no check)")
     p.add_argument("--db")
     p.add_argument("--no-fetch", action="store_true")
     p.add_argument("--accept-open", metavar="REASON",

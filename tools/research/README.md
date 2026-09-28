@@ -39,6 +39,15 @@ and host table. Nothing here runs in CI (continuous integration) but
 - `vendors.py fetch` needs curl_cffi for the chrome and safari clients.
   `vendors.py digikey` needs the owner's credentials: `DIGIKEY_CLIENT_ID` and
   `DIGIKEY_CLIENT_SECRET`, or a file named by `DIGIKEY_ENV_FILE`.
+- Digi-Key's API allows 1,000 calls a day and resets at 00:00 UTC; a call
+  past it answers HTTP 429 and its check reads as not read. T2, T4 and the
+  first R1 to R4 follow-up of 2026-09-28 made about 400, 400 and 500. Each
+  run has a directory under `DIR/cache/digikey/RUN_ID/` (`DIGIKEY_CACHE_DIR`
+  in the agents' commands), where `vendors.py digikey` and `digikey-search`
+  keep every answer of HTTP 200: an agent that asks again for the same part
+  or keywords gets the kept answer, marked `"cached": true`, with the time and
+  API call of the reading. P4's stock verifier therefore reads Digi-Key again
+  only for a part no earlier agent of the run read. A refusal is not kept.
 
 ## Running a task
 
@@ -87,6 +96,11 @@ the page and in the committed runs.
 
 It refuses these without exception:
 
+- A task that reads stock (T2 to T5 and P2-P4 and P5-P6 follow-ups) while
+  fewer than `--digikey-min` (600 unless given; 0 skips the check) of the
+  day's Digi-Key calls are left. `prepare` makes one call to read the count
+  (`vendors.py digikey-quota` does the same), names the reset time when it
+  refuses, and records the count in `run_info` as `digikey_calls_left`.
 - Any task while its parts database (`--db`, or the path in `jlcparts.json`)
   differs from `jlcparts.json` in its SHA-256, its `jlc_components` row count
   or the created time of the `manifest.json` beside it. `prepare` reads all
