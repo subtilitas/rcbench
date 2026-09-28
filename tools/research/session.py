@@ -207,6 +207,24 @@ def sourcing_answers(text):
     return out
 
 
+def fixed_inputs(text):
+    """The Scope table of fixed inputs: (input, part), the part being the
+    part number that leads the value cell."""
+    sec = text.split("| Input | Value | Source |", 1)
+    if len(sec) < 2:
+        raise SystemExit("the fixed inputs table is not found")
+    rows = []
+    for line in sec[1].split("\n")[1:]:
+        c = cells(line)
+        if not c or len(c) != 3:
+            break
+        if not c[0].strip("-: "):
+            continue  # the separator row
+        m = re.match(r"[A-Za-z0-9]+", c[1])
+        rows.append((c[0], m.group(0) if m else ""))
+    return rows
+
+
 def spec_text(commit):
     """The specification a run read: Research.md without its Raised by P1
     and Decided tables, which have their own checks, and IOBoard.md. None
@@ -301,6 +319,17 @@ def cmd_check(_args):
     for c, names in asks.items():
         if not names or len(set(names)) != len(names):
             fails.append(f"p1_asks {c}: no name, or a name twice")
+    # The fixed inputs are the Scope table's, by input name and part, each
+    # in a known category.
+    fixed = cats.get("fixed_inputs", {})
+    listed = sorted((x.get("function"), x.get("part"))
+                    for xs in fixed.values() for x in xs)
+    if listed != sorted(fixed_inputs(text)):
+        fails.append(f"fixed_inputs {listed} against the Scope table "
+                     f"{sorted(fixed_inputs(text))}")
+    for c in fixed:
+        if c not in cats["categories"]:
+            fails.append(f"fixed_inputs: unknown category {c}")
     raised_rows(text)
     if set(decisions(text)) != {"Q4", "Q8", "Q9"}:
         fails.append("the decision table does not list Q4, Q8 and Q9")
@@ -1136,6 +1165,7 @@ def cmd_prepare(args):
         "for_research": for_research,
         "raised": raised_questions(results),
         "p1_asks": cats.get("p1_asks", {}),
+        "fixed_inputs": cats.get("fixed_inputs", {}),
         "required_reports": cats.get("reports", {}),
         "per_part_reports": cats.get("reports_per_part", {}),
         "inventory": inventory(results, list(cats["categories"])),

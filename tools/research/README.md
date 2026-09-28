@@ -10,7 +10,7 @@ and host table. Nothing here runs in CI (continuous integration) but
 | --- | --- |
 | `round1.js` | the workflow script, one run per task: `args.task` is T1 to T6, or FU for a follow-up task. `args.mode` `plan` returns the task's planned agent count and starts none |
 | `schemas.json` | the return schema of each role: P0, P1, P1-critic, P1-recheck, P2, P3, rerank, P4 (both verifiers), adjudicator, P5, P5-critic, P6, P6-critic, P7, P7-critic |
-| `categories.json` | R1 to R13, the three groups, the cap of 32, each task's planned agents, and the "P1 asks" items of each row and its lines in IOBoard.md (`p1_asks`) |
+| `categories.json` | R1 to R13, the three groups, the cap of 32, each task's planned agents, the "P1 asks" items of each row and its lines in IOBoard.md (`p1_asks`), and the fixed inputs of the Scope table, each with its category, function and part (`fixed_inputs`) |
 | `hosts.json` | each host P0 probes: its known page, its client, the regular expression the lifecycle status matches, and the categories it holds when unreachable |
 | `jlcparts.json` | the saved parts database of 2026-09-14: its path under the base directory, its SHA-256 (Secure Hash Algorithm, 256 bits), its row count and its manifest's created time |
 | `vendors.py` | the readings agents take: a page (`fetch`), JLCPCB stock by exact LCSC number (`jlcpcb`), Digi-Key stock, lead time and status (`digikey`), each dated |
@@ -134,14 +134,15 @@ P1 runs raised (`raised`), the Claude Code version, the model, the effort, the
 CPU count and the workflow concurrency. `session.py check` confirms the
 Blocking and Sourcing tables still read as the gates expect, and that
 `p1_asks` names exactly the rows that carry "P1 asks", each with distinct
-names.
+names, and that `fixed_inputs` lists the fixed inputs of the Scope table by
+input name and part.
 
 `round1.js` keeps a function open, with no part, when:
 
 - the category's P3 returned nothing (the part is named in `without_p3`);
 - P3 lists it as named by the row, or it is in the category's P1 inventory
-  (the functions P1 and its critic read from the row, passed as `inventory`),
-  and P2 did not return it;
+  (the functions P1 and its critic read from the row, passed as `inventory`)
+  or serves a fixed input, and P2 did not return it;
 - the re-rank did not rank it, ranked no part, gave positions other than 1 to
   n, ranked a part with no record, ranked a part twice or also dropped it, or
   either P2 or the re-rank returned it twice;
@@ -150,7 +151,16 @@ names.
   under no function of P2's, and a drop it overturns that no function made,
   hold every function open until the re-rank qualifies or drops the part under
   one of P2's functions;
-- it has no requirement, or names one requirement twice.
+- it has no requirement, or names one requirement twice;
+- it serves a fixed input of the Scope table (`categories.json`
+  `fixed_inputs`: the function by the table's input name, the input by a
+  part number that starts with the table's, INA238AIDGSR for INA238), and
+  its first-ranked part after the drops is another part, or the input's
+  refutation stands. The input is reported to the owner (role `owner`), not
+  re-selected: no replacement pair runs, and the function keeps no other
+  part, also none verified from the verify list. P1, P2 and the re-rank are
+  given the inputs. A function that serves the input under another name is
+  not bound to it.
 
 A part with more than one record, with placements below 1, or with an LCSC
 number that is neither `C` and digits nor `none`, has no record: it is

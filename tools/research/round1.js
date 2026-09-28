@@ -166,6 +166,13 @@ function asksFor(cat) {
   return ((A.p1_asks || {})[cat] || []).filter(n => !raisedFor(cat).some(q => words(q.asks) === words(n)))
 }
 
+// The fixed inputs of the Scope table in the category: the function each
+// serves, by the table's input name, and its part. A candidate is the input
+// when its part number starts with the table's (INA238AIDGSR for INA238).
+const fixedFor = cat => (A.fixed_inputs || {})[cat] || []
+const isFixed = (fixed, part) => !!fixed && String(part || '').toUpperCase().startsWith(String(fixed).toUpperCase())
+const fixedNames = cat => fixedFor(cat).map(x => `${x.function} for the ${x.part}`).join('; ')
+
 function p0Prompt() {
   const j = A.jlcparts || {}
   return `${ctx('P0', '', 'P0')}
@@ -186,7 +193,7 @@ function p1Prompt(cat) {
   const asks = asksFor(cat)
   return `${ctx('P1', cat, `P1-${cat}`)}
 
-Read the ${cat} row on the page and every line of hardware/docs/IOBoard.md that belongs to it (search for "${cat}" and for the functions the row names), and every source they cite. Try to refute each value: does it follow from its source, is the unit right, is it an owner decision or an assumption. Mark each. Every value you mark assumption is also a question to the owner; give each value the index of the question that asks for it in "question" (-1 if none), and give that question the value's where in for_where and its quantity in for_quantity. List in functions every function the row and those lines name, one short name each. List every requirement value P2 needs to qualify a part that neither page states, as a question to the owner; and every "P1 asks" in the row or in those lines${asks.length ? `, among them these, each question giving its item's name in asks: ${asks.join('; ')}` : ''}. ${cat === 'R5' ? 'The supply currents of the parts T2 and T4 select are inputs R5 takes from those tasks, not questions. ' : ''}A question whose value only feeds Q4, Q8 or Q9, in a category that decision's "Reported by" names, is blocks "decision-only" with that decision. A question already under "Raised by P1" is not raised again.${items.length ? `\n\nThis is a follow-up task for these gaps: ${J(items)}\nA question that raises one of them copies its question word for word.` : ''}`
+Read the ${cat} row on the page and every line of hardware/docs/IOBoard.md that belongs to it (search for "${cat}" and for the functions the row names), and every source they cite. Try to refute each value: does it follow from its source, is the unit right, is it an owner decision or an assumption. Mark each. Every value you mark assumption is also a question to the owner; give each value the index of the question that asks for it in "question" (-1 if none), and give that question the value's where in for_where and its quantity in for_quantity. List in functions every function the row and those lines name, one short name each${fixedFor(cat).length ? `, the function of each fixed input of the Scope table by its exact name: ${fixedNames(cat)}` : ''}. List every requirement value P2 needs to qualify a part that neither page states, as a question to the owner; and every "P1 asks" in the row or in those lines${asks.length ? `, among them these, each question giving its item's name in asks: ${asks.join('; ')}` : ''}. ${cat === 'R5' ? 'The supply currents of the parts T2 and T4 select are inputs R5 takes from those tasks, not questions. ' : ''}A question whose value only feeds Q4, Q8 or Q9, in a category that decision's "Reported by" names, is blocks "decision-only" with that decision. A question already under "Raised by P1" is not raised again.${items.length ? `\n\nThis is a follow-up task for these gaps: ${J(items)}\nA question that raises one of them copies its question word for word.` : ''}`
 }
 
 function criticPrompt(cat, p1) {
@@ -210,9 +217,10 @@ ${J(added)}`
 function p2Prompt(cat) {
   const t3 = ['R5', 'R6', 'R7', 'R8'].includes(cat)
   const items = TASK === 'FU' ? itemsFor(cat) : []
+  const named = [...new Set([...((A.inventory || {})[cat] || []), ...fixedFor(cat).map(x => x.function)])]
   return `${ctx('P2', cat, `P2-${cat}`)}
 
-Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, and record it as found. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. Return an entry for every function the ${cat} row and its lines in hardware/docs/IOBoard.md name${((A.inventory || {})[cat] || []).length ? `, among them these, by these exact names: ${A.inventory[cat].join('; ')}` : ''}. Give each requirement of a function a name of its own. For up to five survivors per function, record every field of the P2 row, and the rule-5 route in second_source_route and second_source_part; a part whose route is alternate needs a full record for that alternate among the survivors or in the re-rank. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5${((A.required_reports || {})[cat] || []).length ? `, among them these by these names: ${((A.required_reports || {})[cat]).join('; ')}` : ''}.${((A.per_part_reports || {})[cat] || []).length ? ` Report these once for each shortlisted part, named "NAME: PART", with "not applicable: REASON" as the value where one does not concern the part: ${((A.per_part_reports || {})[cat]).join('; ')}.` : ''}${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${P.results}/hardware/research/round1/selection.json; the returns in each run's directory carry their figures.` : ''}${cat === 'R3' && ((A.decisions || {}).Q9 || '').trim() ? `\n\nThe owner decided Q9: ${A.decisions.Q9}. A part it adds or changes is a function of R3 in this run, found and qualified as the others.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}${TASK === 'FU' ? ` Name each function exactly as ${P.results}/hardware/research/round1/selection.json names it for ${cat}.` : ''}`
+Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, and record it as found. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. Return an entry for every function the ${cat} row and its lines in hardware/docs/IOBoard.md name${named.length ? `, among them these, by these exact names: ${named.join('; ')}` : ''}.${fixedFor(cat).length ? ` The Scope table fixes these inputs: ${fixedNames(cat)}. Shortlist each for its function with its full record, also where it misses a requirement or a gate; a fixed input that fails a check is reported to the owner, not replaced.` : ''} Give each requirement of a function a name of its own. For up to five survivors per function, record every field of the P2 row, and the rule-5 route in second_source_route and second_source_part; a part whose route is alternate needs a full record for that alternate among the survivors or in the re-rank. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5${((A.required_reports || {})[cat] || []).length ? `, among them these by these names: ${((A.required_reports || {})[cat]).join('; ')}` : ''}.${((A.per_part_reports || {})[cat] || []).length ? ` Report these once for each shortlisted part, named "NAME: PART", with "not applicable: REASON" as the value where one does not concern the part: ${((A.per_part_reports || {})[cat]).join('; ')}.` : ''}${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${P.results}/hardware/research/round1/selection.json; the returns in each run's directory carry their figures.` : ''}${cat === 'R3' && ((A.decisions || {}).Q9 || '').trim() ? `\n\nThe owner decided Q9: ${A.decisions.Q9}. A part it adds or changes is a function of R3 in this run, found and qualified as the others.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}${TASK === 'FU' ? ` Name each function exactly as ${P.results}/hardware/research/round1/selection.json names it for ${cat}.` : ''}`
 }
 
 function p2View(p2) {
@@ -235,7 +243,7 @@ ${J(p2View(p2))}`
 function rerankPrompt(cat, p2, p3) {
   return `${ctx('rerank', cat, `rerank-${cat}`)}
 
-You are the re-rank of the "Agent layout" table. Qualify each candidate P3 returned as P2 does, and give each qualified one a full record in new_candidates. Then rank each function's shortlist: every entry of ranking names a part of P2's shortlist or of new_candidates, by its exact part number. Rank every such part, or list it with its reason in dropped_from_shortlist (a P2 candidate) or dropped_from_p3 (a P3 candidate). In verify, name the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative. List your own figures in report${((A.per_part_reports || {})[cat] || []).length ? `, and for each part you rank first or name in verify that P2's report lacks, these figures named "NAME: PART": ${((A.per_part_reports || {})[cat]).join('; ')}` : ''}. ${cat === 'R10' || cat === 'R12' ? `Set decision to ${cat === 'R10' ? 'Q4 on the function that implements Q4' : 'Q8 on the function that implements Q8, the non-volatile store,'} and none on the others; its alternatives are the q-alternatives in its verify. Give each q-alternative its option, and the function its kept_option for the first-ranked part, from these classes, one part at least for each: ${((A.q_options || {})[cat === 'R10' ? 'Q4' : 'Q8'] || []).join('; ')}.` : 'Set decision to none on every function.'} A rule-5 alternate that is not on P2's shortlist needs a full record in new_candidates; it is kept as the alternate's record, not ranked. The script builds the final shortlist from P2's records and yours.
+You are the re-rank of the "Agent layout" table. Qualify each candidate P3 returned as P2 does, and give each qualified one a full record in new_candidates. Then rank each function's shortlist: every entry of ranking names a part of P2's shortlist or of new_candidates, by its exact part number. Rank every such part, or list it with its reason in dropped_from_shortlist (a P2 candidate) or dropped_from_p3 (a P3 candidate).${fixedFor(cat).length ? ` Rank each fixed input of the Scope table first for its function: ${fixedNames(cat)}; one that fails a check is reported to the owner, not replaced by another part.` : ''} In verify, name the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative. List your own figures in report${((A.per_part_reports || {})[cat] || []).length ? `, and for each part you rank first or name in verify that P2's report lacks, these figures named "NAME: PART": ${((A.per_part_reports || {})[cat]).join('; ')}` : ''}. ${cat === 'R10' || cat === 'R12' ? `Set decision to ${cat === 'R10' ? 'Q4 on the function that implements Q4' : 'Q8 on the function that implements Q8, the non-volatile store,'} and none on the others; its alternatives are the q-alternatives in its verify. Give each q-alternative its option, and the function its kept_option for the first-ranked part, from these classes, one part at least for each: ${((A.q_options || {})[cat === 'R10' ? 'Q4' : 'Q8'] || []).join('; ')}.` : 'Set decision to none on every function.'} A rule-5 alternate that is not on P2's shortlist needs a full record in new_candidates; it is kept as the alternate's record, not ranked. The script builds the final shortlist from P2's records and yours.
 
 P2's return:
 ${J(p2)}
@@ -637,6 +645,7 @@ function merge(cat, p2, rr, p3) {
   for (const name of [...new Set(names)]) {
     const f2 = (p2.functions || []).find(f => f.function === name) || {}
     const fr = (rr.functions || []).find(f => f.function === name)
+    const fixed = (fixedFor(cat).find(x => x.function === name) || {}).part || ''
     const need = (f2.requirements || []).map(r => r.name)
     if (!need.length) followUps.push({ role: 'P2', category: cat, function: name, reason: 'function lists no requirement' })
     // A requirement named twice has no single value to check a part against.
@@ -732,6 +741,14 @@ function merge(cat, p2, rr, p3) {
     })
     shortlist = qualify(shortlist, 'shortlisted')
     alternateRecords = qualify(alternateRecords, 'alternate')
+    // A fixed input is not re-selected (Scope): a function whose first-ranked
+    // part after the drops is another part is not ranked, and the owner is
+    // told.
+    if (fixed && shortlist.length && !isFixed(fixed, shortlist[0].part)) {
+      followUps.push({ role: 'owner', category: cat, function: name, part: shortlist[0].part, reason: `fixed input ${fixed} not ranked first; reported to the owner, not re-selected` })
+      shortlist = []
+      verify = []
+    }
     // Only R10's Q4 function and R12's Q8 function carry the owner's
     // alternatives; q-alternatives elsewhere are not verified as such.
     const owned = { R10: 'Q4', R12: 'Q8' }[cat]
@@ -747,7 +764,7 @@ function merge(cat, p2, rr, p3) {
       followUps.push({ role: 'rerank', category: cat, function: name, reason: 'q-alternatives on a function that implements no decision; not verified' })
       verify = verify.filter(v => v.kind !== 'q-alternative')
     }
-    functions.push({ function: name, decision, kept_option: decision !== 'none' ? String((fr && fr.kept_option) || '') : '', failed, requirements: f2.requirements || [], shortlist, verify, alternateRecords, dropped: f2.dropped || [], dropped_from_shortlist: (fr && fr.dropped_from_shortlist) || [], dropped_from_p3: (fr && fr.dropped_from_p3) || [] })
+    functions.push({ function: name, decision, kept_option: decision !== 'none' ? String((fr && fr.kept_option) || '') : '', failed, requirements: f2.requirements || [], shortlist, verify, alternateRecords, dropped: f2.dropped || [], dropped_from_shortlist: (fr && fr.dropped_from_shortlist) || [], dropped_from_p3: (fr && fr.dropped_from_p3) || [], fixed_input: fixed })
   }
   // One function implements the decision; with several, none does.
   const deciding = functions.filter(f => f.decision !== 'none')
@@ -760,10 +777,12 @@ function merge(cat, p2, rr, p3) {
   if (['R10', 'R12'].includes(cat) && !functions.some(f => f.decision !== 'none' && f.verify.some(v => v.kind === 'q-alternative'))) {
     followUps.push({ role: 'rerank', category: cat, reason: `names no ${cat === 'R10' ? 'Q4' : 'Q8'} function with an alternative to verify` })
   }
-  // A function of the P1 inventory P2 returned no entry for stays open.
-  for (const inv of (A.inventory || {})[cat] || []) {
+  // A function of the P1 inventory or of a fixed input that P2 returned no
+  // entry for stays open.
+  const inventory = (A.inventory || {})[cat] || []
+  for (const inv of new Set([...inventory, ...fixedFor(cat).map(x => x.function)])) {
     if (functions.some(f => f.function === inv)) continue
-    followUps.push({ role: 'P2', category: cat, function: inv, reason: 'function of the P1 inventory that P2 did not return' })
+    followUps.push({ role: 'P2', category: cat, function: inv, reason: `${inventory.includes(inv) ? 'function of the P1 inventory' : 'function of a fixed input'} that P2 did not return` })
     functions.push({ function: inv, decision: 'none', failed: [], requirements: [], shortlist: [], verify: [], alternateRecords: [], dropped: [], dropped_from_shortlist: [], dropped_from_p3: [], not_returned: true })
   }
   // A function the row names that P2 returned no entry for stays open, with
@@ -970,6 +989,13 @@ async function verifyCategory(cat, functions, bundle) {
       // A refuted alternate fails its relationship to the primary, not the
       // part's own place on the shortlist.
       if (e.kind === 'alternate') { followUps.push({ role: 'P4', category: cat, function: e.function, part: e.part, reason: 'alternate refuted; the primary has no second source by it' }); continue }
+      // A fixed input that fails a check is reported to the owner, not
+      // re-selected (Scope): its function takes no next-ranked part.
+      const fixed = (functions.find(x => x.function === e.function) || {}).fixed_input
+      if (fixed) {
+        if (isFixed(fixed, e.part)) followUps.push({ role: 'owner', category: cat, function: e.function, part: e.part, reason: `fixed input ${fixed} refuted; reported to the owner, not re-selected` })
+        continue
+      }
       const next = nextCandidate(functions, e.function, e.part, ledger)
       if (!next) { followUps.push({ role: 'P2', category: cat, function: e.function, part: e.part, reason: 'refuted, and no next-ranked candidate' }); continue }
       // The pair is paid for here from the free agents; run() starts it.
@@ -1048,7 +1074,8 @@ function selection(functions, ledger) {
     // an alternate too; a refutation as an alternate is the relationship's.
     const altSt = c => st(c) === 'refuted' ? 'refuted' : (altLast.get(`${f.function}\u0000${c.part}`) || '')
     const standing = f.shortlist.find(c => st(c) !== 'refuted')
-    const kept = standing && st(standing).startsWith('verified') ? standing : null
+    // A fixed input's function keeps that input or nothing.
+    const kept = standing && st(standing).startsWith('verified') && (!f.fixed_input || isFixed(f.fixed_input, standing.part)) ? standing : null
     const refuted = f.shortlist.filter(c => st(c) === 'refuted').map(c => c.part)
     // Only the kept part's rule-5 alternate sources it; the alternate of a
     // refuted part does not.

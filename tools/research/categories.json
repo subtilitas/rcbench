@@ -170,5 +170,25 @@
     "R12": [
       "motor temperature register channel"
     ]
+  },
+  "fixed_inputs": {
+    "R1": [
+      {
+        "function": "Microcontroller",
+        "part": "RP2354B"
+      }
+    ],
+    "R6": [
+      {
+        "function": "Servo supply",
+        "part": "TPS55285"
+      }
+    ],
+    "R8": [
+      {
+        "function": "Motor monitor",
+        "part": "INA238"
+      }
+    ]
   }
 }

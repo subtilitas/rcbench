@@ -149,6 +149,7 @@ async function runTask(task, opts = {}) {
       if (opts.emptyRanking) data.functions[0].ranking = []
       if (opts.qAltBack) data.functions[0].verify = [{ part: 'part3', kind: 'q-alternative' }]
       if (opts.qSelf) data.functions[0].verify = [{ part: 'part1', kind: 'q-alternative' }]
+      if (opts.verifyFirst) data.functions[0].verify = opts.verifyFirst.map(part => ({ part, kind: 'first', option: '' }))
     }
     if (role === 'P5' && opts.p5Empty) Object.assign(data, { combinations: [], budgets: [] })
     if (role === 'P5' && opts.unsourcedCombos) data.combinations = data.combinations.map(x => ({ ...x, source: '' }))
@@ -273,7 +274,7 @@ async function runTask(task, opts = {}) {
   }
   const args = { task, cap: cats.cap, categories: cats.categories, tasks: cats.tasks, schemas,
     commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, inventory: opts.inventory || {}, jlcparts: JL, p5_budgets: opts.p5Budgets || [], p5_conditional: opts.p5Conditional || [], q_options: opts.qOptions || {},
-    followup: opts.followup, first_v: 5, decision_categories: { Q4: ['R10'], Q8: ['R2', 'R12'], Q9: ['R3'] }, t6_outputs: T6OUT, for_research: opts.forResearch || [], raised: opts.raised || [], p1_asks: opts.p1Asks || {}, required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {} }
+    followup: opts.followup, first_v: 5, decision_categories: { Q4: ['R10'], Q8: ['R2', 'R12'], Q9: ['R3'] }, t6_outputs: T6OUT, for_research: opts.forResearch || [], raised: opts.raised || [], p1_asks: opts.p1Asks || {}, fixed_inputs: opts.fixedInputs || {}, required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {} }
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
     `return (async () => {${src}})()`)
   const result = await fn(args, agent, parallel, pipeline, () => {}, () => {})
@@ -809,6 +810,26 @@ async function main() {
   check(r1(r).selection[0].part === null, 'P3 find handled only under a function P2 did not return: open')
   r = await runTask('T2', { p3overturned: true, extraFn: true, rrHandleYin: true })
   check(r1(r).selection[0].part === null, 'overturned exclusion without an owner, handled only under a function P2 did not return: open')
+  // A fixed input of the Scope table is reported to the owner, not
+  // re-selected: ranked below another part, refuted, or passed over for a
+  // verified part of the verify list.
+  const fixedPart1 = { R1: [{ function: 'f1', part: 'PART1' }] }
+  r = await runTask('T2', { fixedInputs: fixedPart1 })
+  check(r1(r).selection[0].part === 'part1' && !r.result.followUps.some(f => f.role === 'owner'), 'fixed input ranked first and verified: kept')
+  check(['P2-R1', 'rerank-R1'].every(l => r.prompts.find(x => x.label === l).prompt.includes('f1 for the PART1')), 'fixed input: P2 and the re-rank are told')
+  r = await runTask('T2', { fixedInputs: { R1: [{ function: 'f1', part: 'INA238' }] }, firstRecord: { part: 'INA238AIDGSR' }, p4parts: ['INA238AIDGSR'],
+    ranking: ['INA238AIDGSR', 'part2', 'part3'].map((part, i) => ({ rank: i + 1, part, reason: 'r' })) })
+  check(r1(r).selection[0].part === 'INA238AIDGSR', 'fixed input named by its part number\'s start: kept')
+  r = await runTask('T2', { fixedInputs: { R1: [{ function: 'f1', part: 'part2' }] } })
+  check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.role === 'owner' && f.part === 'part1' && /not ranked first/.test(f.reason)), 'fixed input ranked below another part: function open, reported to the owner')
+  r = await runTask('T2', { fixedInputs: fixedPart1, refute: ['P4-stock-R1:part1'] })
+  check(r1(r).selection[0].part === null && !r.calls.includes('P4-stock-R1-2') && r.result.followUps.some(f => f.role === 'owner' && f.part === 'part1' && /refuted/.test(f.reason)), 'fixed input refuted: no next-ranked part, reported to the owner')
+  r = await runTask('T2', { fixedInputs: fixedPart1, verifyFirst: ['part2'], p4parts: ['part2'], refute: ['P4-stock-R1:part1'] })
+  check(r1(r).ledger.some(l => l.part === 'part2' && l.status === 'verified') && r1(r).selection[0].part === null, 'fixed input refuted, another part verified: not kept')
+  r = await runTask('T1', { fixedInputs: { R1: [{ function: 'Microcontroller', part: 'part1' }] } })
+  check(r.prompts.find(x => x.label === 'P1-R1').prompt.includes('Microcontroller for the part1'), 'fixed input: P1 names its function')
+  r = await runTask('T2', { fixedInputs: { R1: [{ function: 'Microcontroller', part: 'part1' }] } })
+  check(r1(r).selection.some(e => e.function === 'Microcontroller' && e.part === null) && r.result.followUps.some(f => f.function === 'Microcontroller' && /fixed input that P2 did not return/.test(f.reason)), 'fixed input function P2 did not return: open')
   // A part one verifier lists twice has no verdict from it.
   r = await runTask('T2', { dupRow: ['P4-stock-R1'] })
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => /listed the part twice; no verdict/.test(f.reason)), 'part listed twice by one verifier: no verdict')
