@@ -412,7 +412,8 @@ def effective_selection(results, pending=None):
                     "second_source_missing":
                         bool(e.get("second_source_missing")),
                     "q_alternatives": e.get("q_alternatives") or [],
-                    "decision": e.get("decision", "none")}
+                    "decision": e.get("decision", "none"),
+                    "q_options_missing": e.get("q_options_missing") or []}
                 if not e.get("part") and held.get("part"):
                     entry["not_requalified"] = held["part"]
                     if held["part"] in (e.get("refuted") or []):
@@ -645,9 +646,10 @@ def open_in_category(results, categories):
         q = {"R10": "Q4", "R12": "Q8"}.get(c)
         if q and eff.get(c) and not any(
                 e.get("decision") == q and e.get("q_alternatives")
+                and not e.get("q_options_missing")
                 for e in eff[c].values()):
             out.append(f"{c}: no function implementing {q} has an "
-                       "alternative")
+                       "alternative for each of its options")
     return out
 
 
@@ -1024,6 +1026,7 @@ def cmd_prepare(args):
         "per_part_reports": cats.get("reports_per_part", {}),
         "p5_budgets": cats.get("p5_budgets", []),
         "p5_conditional": cats.get("p5_conditional", []),
+        "q_options": cats.get("q_options", {}),
         "last_p56": last_p56,
         "t6_outputs": T6_REQUIRED if args.task == "T6" else [],
         "run_info": run_info(args.model, args.effort),

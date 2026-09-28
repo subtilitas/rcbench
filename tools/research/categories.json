@@ -112,5 +112,15 @@
   ],
   "p5_conditional": [
     "absent IOVDD"
-  ]
+  ],
+  "q_options": {
+    "Q4": [
+      "reference",
+      "external ADC"
+    ],
+    "Q8": [
+      "FRAM",
+      "EEPROM"
+    ]
+  }
 }

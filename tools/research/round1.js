@@ -217,7 +217,7 @@ ${J(p2View(p2))}`
 function rerankPrompt(cat, p2, p3) {
   return `${ctx('rerank', cat, `rerank-${cat}`)}
 
-You are the re-rank of the "Agent layout" table. Qualify each candidate P3 returned as P2 does, and give each qualified one a full record in new_candidates. Then rank each function's shortlist: every entry of ranking names a part of P2's shortlist or of new_candidates, by its exact part number. Rank every such part, or list it with its reason in dropped_from_shortlist (a P2 candidate) or dropped_from_p3 (a P3 candidate). In verify, name the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative. List your own figures in report${((A.per_part_reports || {})[cat] || []).length ? `, and for each part you rank first or name in verify that P2's report lacks, these figures named "NAME: PART": ${((A.per_part_reports || {})[cat]).join('; ')}` : ''}. ${cat === 'R10' ? 'Set decision to Q4 on the function that implements Q4, and none on the others; its alternatives are the q-alternatives in its verify.' : cat === 'R12' ? 'Set decision to Q8 on the function that implements Q8, the non-volatile store, and none on the others; its alternatives are the q-alternatives in its verify.' : 'Set decision to none on every function.'} A rule-5 alternate that is not on P2's shortlist needs a full record in new_candidates; it is kept as the alternate's record, not ranked. The script builds the final shortlist from P2's records and yours.
+You are the re-rank of the "Agent layout" table. Qualify each candidate P3 returned as P2 does, and give each qualified one a full record in new_candidates. Then rank each function's shortlist: every entry of ranking names a part of P2's shortlist or of new_candidates, by its exact part number. Rank every such part, or list it with its reason in dropped_from_shortlist (a P2 candidate) or dropped_from_p3 (a P3 candidate). In verify, name the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative. List your own figures in report${((A.per_part_reports || {})[cat] || []).length ? `, and for each part you rank first or name in verify that P2's report lacks, these figures named "NAME: PART": ${((A.per_part_reports || {})[cat]).join('; ')}` : ''}. ${cat === 'R10' || cat === 'R12' ? `Set decision to ${cat === 'R10' ? 'Q4 on the function that implements Q4' : 'Q8 on the function that implements Q8, the non-volatile store,'} and none on the others; its alternatives are the q-alternatives in its verify. Give each q-alternative its option, and the function its kept_option for the first-ranked part, from these classes, one part at least for each: ${((A.q_options || {})[cat === 'R10' ? 'Q4' : 'Q8'] || []).join('; ')}.` : 'Set decision to none on every function.'} A rule-5 alternate that is not on P2's shortlist needs a full record in new_candidates; it is kept as the alternate's record, not ranked. The script builds the final shortlist from P2's records and yours.
 
 P2's return:
 ${J(p2)}
@@ -235,7 +235,7 @@ function p4Prompt(cat, kind, bundle, only) {
     : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, the reasons the re-rank gave for dropping a P3 candidate, P2\'s own drops, and for "function requirements: FUNCTION" whether the function\'s requirement list names every requirement IOBoard.md and the answers set for it, with no value weaker than theirs) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
   return `${ctx('P4', cat, `P4-${kind}-${cat}`)}
 
-${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives the lifecycle table's readings: "longevity commitment" (the programme page's commitment, or that none is published; passes unless S5 makes it a gate it fails), "market introduction" (the first datasheet revision date; passes, and under 12 months is stated in read), "distributor status" (JLCPCB, LCSC and Digi-Key; passes, a disagreement with the maker stated in read) and "lead time" (the manufacturer's lead time in Digi-Key's API; passes). It also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and a check with agrees or passes false counts as a refutation.
+${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives the lifecycle table's readings: "longevity commitment" (the programme page's commitment, or that none is published; passes unless S5 makes it a gate it fails), "market introduction" (the first datasheet revision date; passes, and under 12 months is stated in read), "distributor status" (JLCPCB, LCSC and Digi-Key; passes, a disagreement with the maker stated in read) and "lead time" (the manufacturer's lead time in Digi-Key's API; passes). For a part on the board it gives "LCSC identity" (the exact JLCPCB result for the LCSC number names the candidate's part number and package; passes only then). It also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and a check with agrees or passes false counts as a refutation.
 
 The shortlist, the values found for research and the reports:
 ${J(bundle)}`
@@ -629,7 +629,7 @@ function merge(cat, p2, rr, p3) {
       followUps.push({ role: 'rerank', category: cat, function: name, reason: 'q-alternatives on a function that implements no decision; not verified' })
       verify = verify.filter(v => v.kind !== 'q-alternative')
     }
-    functions.push({ function: name, decision, failed, requirements: f2.requirements || [], shortlist, verify, alternateRecords, dropped: f2.dropped || [], dropped_from_shortlist: (fr && fr.dropped_from_shortlist) || [], dropped_from_p3: (fr && fr.dropped_from_p3) || [] })
+    functions.push({ function: name, decision, kept_option: decision !== 'none' ? String((fr && fr.kept_option) || '') : '', failed, requirements: f2.requirements || [], shortlist, verify, alternateRecords, dropped: f2.dropped || [], dropped_from_shortlist: (fr && fr.dropped_from_shortlist) || [], dropped_from_p3: (fr && fr.dropped_from_p3) || [] })
   }
   // R10 and R12 carry the owner's choice for Q4 and Q8: one of their
   // functions names an alternative to verify, or the category stays open.
@@ -663,7 +663,7 @@ function altOf(c) {
 // (rule 2).
 function requiredChecks(kind, cand, partKind) {
   if (kind === 'stock') {
-    return ['stock', 'lifecycle status', 'end-of-life notices', 'placements', 'longevity commitment', 'market introduction', 'distributor status', 'lead time', ...(onBoard(cand) ? ['presale'] : []),
+    return ['stock', 'lifecycle status', 'end-of-life notices', 'placements', 'longevity commitment', 'market introduction', 'distributor status', 'lead time', ...(onBoard(cand) ? ['presale', 'LCSC identity'] : []),
       ...(onBoard(cand) && cand.second_source_route === 'second-vendor' ? ['second-vendor stock'] : [])]
   }
   return [...((cand && cand.requirements) || []).map(r => r.name), 'manufacturer allowlist', ...(partKind === 'alternate' ? ['pin-for-pin match', 'functional match'] : [])]
@@ -689,7 +689,7 @@ function nextCandidate(functions, fn, part, ledger) {
   const f = functions.find(x => x.function === fn)
   if (!f) return null
   const status = new Map()
-  for (const l of ledger) if (l.part && l.function === fn) status.set(l.part, l.status)
+  for (const l of ledger) if (l.part && l.function === fn && l.as !== 'alternate' && status.get(l.part) !== 'refuted') status.set(l.part, l.status)
   const i = f.shortlist.findIndex(c => c.part === part)
   if (i < 0) return null
   return f.shortlist.slice(i + 1).find(c => status.get(c.part) !== 'refuted') || null
@@ -782,30 +782,33 @@ async function verifyCategory(cat, functions, bundle) {
       const complete = kind => e.verdicts.some(v => v.verifier === kind && v.verdict !== 'incomplete' && covered(v, cand))
       const refuted = e.verdicts.filter(v => v.verdict === 'refuted')
       if (!refuted.length) {
-        if (complete('stock') && complete('datasheet')) { ledger.push({ function: e.function, part: e.part, status: 'verified' }); continue }
+        if (complete('stock') && complete('datasheet')) { ledger.push({ function: e.function, part: e.part, as: e.kind === 'alternate' ? 'alternate' : 'primary', status: 'verified' }); continue }
         const reason = e.verdicts.some(v => v.verdict === 'incomplete') ? 'a verifier gave no required check for some figures' : 'not covered by both verifiers'
-        ledger.push({ function: e.function, part: e.part, status: 'not verified', reason })
+        ledger.push({ function: e.function, part: e.part, as: e.kind === 'alternate' ? 'alternate' : 'primary', status: 'not verified', reason })
         followUps.push({ role: 'P4', category: cat, function: e.function, part: e.part, reason })
         continue
       }
       if (!takeExtra(1)) {
-        ledger.push({ function: e.function, part: e.part, status: 'refuted, not adjudicated' })
+        ledger.push({ function: e.function, part: e.part, as: e.kind === 'alternate' ? 'alternate' : 'primary', status: 'refuted, not adjudicated' })
         followUps.push({ role: 'adjudicator', category: cat, function: e.function, part: e.part, reason: 'no free agent' })
         continue
       }
       const ruling = boundRuling(await run('adjudicator', cat, `adjudicator-${cat}`, 'Refutations', adjudicatorPrompt(cat, e.function, e.part, e.verdicts)), e.function, e.part, cat)
       if (!ruling) {
-        ledger.push({ function: e.function, part: e.part, status: 'refuted, no ruling' })
+        ledger.push({ function: e.function, part: e.part, as: e.kind === 'alternate' ? 'alternate' : 'primary', status: 'refuted, no ruling' })
         followUps.push({ role: 'adjudicator', category: cat, function: e.function, part: e.part, reason: 'refutation without a ruling' })
         continue
       }
       if (!ruling.stands) {
         const both = complete('stock') && complete('datasheet')
-        ledger.push({ function: e.function, part: e.part, status: both ? 'verified; refutation did not stand' : 'not verified', reason: both ? '' : 'refutation did not stand, but one verifier did not cover it' })
+        ledger.push({ function: e.function, part: e.part, as: e.kind === 'alternate' ? 'alternate' : 'primary', status: both ? 'verified; refutation did not stand' : 'not verified', reason: both ? '' : 'refutation did not stand, but one verifier did not cover it' })
         if (!both) followUps.push({ role: 'P4', category: cat, function: e.function, part: e.part, reason: 'not covered by both verifiers' })
         continue
       }
-      ledger.push({ function: e.function, part: e.part, status: 'refuted' })
+      ledger.push({ function: e.function, part: e.part, as: e.kind === 'alternate' ? 'alternate' : 'primary', status: 'refuted' })
+      // A refuted alternate fails its relationship to the primary, not the
+      // part's own place on the shortlist.
+      if (e.kind === 'alternate') { followUps.push({ role: 'P4', category: cat, function: e.function, part: e.part, reason: 'alternate refuted; the primary has no second source by it' }); continue }
       const next = nextCandidate(functions, e.function, e.part, ledger)
       if (!next) { followUps.push({ role: 'P2', category: cat, function: e.function, part: e.part, reason: 'refuted, and no next-ranked candidate' }); continue }
       // The pair is paid for here from the free agents; run() starts it.
@@ -858,16 +861,27 @@ function noSecondSource(c) {
 function selection(functions, ledger) {
   // A part's status is its last ledger entry: a later refutation overrides
   // an earlier verification.
+  // Primary and alternate verifications are separate relationships: a part
+  // refuted as another part's alternate keeps its own shortlist place.
   const last = new Map()
-  for (const l of ledger) if (l.part && last.get(`${l.function}\u0000${l.part}`) !== 'refuted') last.set(`${l.function}\u0000${l.part}`, l.status)
+  const altLast = new Map()
+  for (const l of ledger) {
+    if (!l.part) continue
+    const m = l.as === 'alternate' ? altLast : last
+    const k = `${l.function}\u0000${l.part}`
+    if (m.get(k) !== 'refuted') m.set(k, l.status)
+  }
   return functions.map(f => {
     const st = c => last.get(`${f.function}\u0000${c.part}`) || ''
+    // A part refuted as a primary fails for the function as a whole, so as
+    // an alternate too; a refutation as an alternate is the relationship's.
+    const altSt = c => st(c) === 'refuted' ? 'refuted' : (altLast.get(`${f.function}\u0000${c.part}`) || '')
     const standing = f.shortlist.find(c => st(c) !== 'refuted')
     const kept = standing && st(standing).startsWith('verified') ? standing : null
     const refuted = f.shortlist.filter(c => st(c) === 'refuted').map(c => c.part)
     // Only the kept part's rule-5 alternate sources it; the alternate of a
     // refuted part does not.
-    const alternateUnverified = altOf(kept) && !st({ part: altOf(kept) }).startsWith('verified') ? [altOf(kept)] : []
+    const alternateUnverified = altOf(kept) && !altSt({ part: altOf(kept) }).startsWith('verified') ? [altOf(kept)] : []
     const recOf = part => f.shortlist.find(c => c.part === part) || (f.alternateRecords || []).find(c => c.part === part) || null
     // One P4 row checks an alternate against one part: an alternate named by
     // several primaries (the kept part first, then the Q alternatives in
@@ -880,16 +894,23 @@ function selection(functions, ledger) {
     // Rule 5's alternate passes rule 1 as the part does: a part and its
     // alternate are both on the board or both off it.
     const offBoardAlt = c => !!(altOf(c) && recOf(altOf(c)) && (onBoard(c) !== onBoard(recOf(altOf(c))) || recOf(altOf(c)).placements < c.placements))
-    const qAlternatives = f.verify.filter(v => v.kind === 'q-alternative' && !(kept && v.part === kept.part)).map(v => {
+    const qAlternatives = f.verify.filter(v => v.kind === 'q-alternative' && !(kept && v.part === kept.part)).map(v => ({ ...qAlt(v), option: String(v.option || '') }))
+    // Each option class of the decision (categories.json q_options) needs a
+    // part: the kept part when it is the first-ranked one the re-rank
+    // classed, or a Q alternative.
+    const needed = f.decision !== 'none' ? ((A.q_options || {})[f.decision] || []) : []
+    const have = new Set([...(kept && kept.rank === 1 && f.kept_option ? [f.kept_option] : []), ...qAlternatives.map(q => q.option)])
+    const qOptionsMissing = needed.filter(o => !have.has(o))
+    function qAlt(v) {
       const rec = recOf(v.part)
       const alt = altOf(rec)
       const shared = alt && altOwner.get(alt) !== v.part
       return { part: v.part, status: st(v) || 'not verified', alternate: alt,
-        alternate_status: !alt ? '' : shared ? `not verified: shared with ${altOwner.get(alt)}` : (st({ part: alt }) || 'not verified'), second_source_missing: !rec || noSecondSource(rec) || offBoardAlt(rec) }
-    })
+        alternate_status: !alt ? '' : shared ? `not verified: shared with ${altOwner.get(alt)}` : (altSt({ part: alt }) || 'not verified'), second_source_missing: !rec || noSecondSource(rec) || offBoardAlt(rec) }
+    }
     const missing = !!(kept && (noSecondSource(kept) || offBoardAlt(kept)))
     return { function: f.function, decision: f.decision || 'none', part: kept ? kept.part : null, rank: kept ? kept.rank : null, alternate: altOf(kept), refuted,
-      alternate_unverified: alternateUnverified, second_source_missing: missing, q_alternatives: qAlternatives }
+      alternate_unverified: alternateUnverified, second_source_missing: missing, q_alternatives: qAlternatives, q_options_missing: qOptionsMissing }
   })
 }
 
@@ -985,7 +1006,7 @@ async function categoryChain(cat) {
   }
   const owedLater = perPartMissing(cat, p2, rr, [...selected].filter(part => !checkedParts.has(part)))
   const figures_open = [...new Set([...not_returned, ...owedLater, ...ledger.filter(l => l.figure && !l.status.startsWith('confirmed')).map(l => l.figure)])]
-  const q_missing = ['R10', 'R12'].includes(cat) && !sel.some(e => e.decision !== 'none' && (e.q_alternatives || []).length)
+  const q_missing = ['R10', 'R12'].includes(cat) && !sel.some(e => e.decision !== 'none' && (e.q_alternatives || []).length && !(e.q_options_missing || []).length)
   return { category: cat, status: p3 ? 'done' : 'done without P3', ledger, figures_open, q_missing,
     selection: p3 ? sel : sel.map(e => ({ ...e, part: null, rank: null, without_p3: e.part })) }
 }

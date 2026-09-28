@@ -924,11 +924,16 @@
             "alternate",
             "q-alternative"
            ]
+          },
+          "option": {
+           "type": "string",
+           "description": "for a q-alternative, its option class (categories.json q_options); empty otherwise"
           }
          },
          "required": [
           "part",
-          "kind"
+          "kind",
+          "option"
          ]
         }
        },
@@ -947,6 +952,10 @@
          "Q8"
         ],
         "description": "Q4 on the R10 function that implements Q4, Q8 on the R12 function that implements Q8 (the non-volatile store), none elsewhere; that function's q-alternatives are the owner's choices"
+       },
+       "kept_option": {
+        "type": "string",
+        "description": "on the Q4 or Q8 function, the option class of its first-ranked part (categories.json q_options); empty elsewhere"
        }
       },
       "required": [
@@ -956,7 +965,8 @@
        "dropped_from_p3",
        "dropped_from_shortlist",
        "verify",
-       "decision"
+       "decision",
+       "kept_option"
       ]
      }
     },
