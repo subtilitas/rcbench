@@ -1,0 +1,58 @@
+{
+ "role": "P3",
+ "category": "R1",
+ "label": "P3-R1",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "missed": [
+   {
+    "function": "Core regulator inductor",
+    "part": "XAL4030-332MEC (LCSC C2937437)",
+    "maker": "Coilcraft (JLCPCB componentBrandEn 'Coilcraft'; allowlisted, S2)",
+    "why": "P2 considered XGL4020 and XFL4020 and never looked at the XAL40xx family, which has the same 4 x 4 mm footprint. The XAL40xx datasheet (Document 806, revised 02/25/26, https://www.coilcraft.com/getmedia/6adcb47d-8b55-416c-976e-1e22e0d2848c/xal4000.pdf, read 2026-09-28T13:19:54Z) gives these figures. Inductance: 3.3 uH +/-20 %. DCR: 26.0 mOhm typical, 28.6 mOhm maximum. Isat: 5.9 A at a 30 % inductance drop. Shielded. Ambient: -40 to +125 C. The drawing labels its 'Dash number': 'Indicates direction of terminals and start (short) lead. Connect high dv/dt here for lowest EMI', which is the same polarity marking P2 accepted on XGL4020. Every V8 and V14 value passes. JLCPCB API (selectSmtComponentList, exact match C2937437, read 2026-09-28T13:22:05Z): stockCount 1557, canPresaleNumber 1542, expand. That passes the gate of 50. Digi-Key API productdetails XAL4030-332MEC returned HTTP 404 (2026-09-28T13:28:37Z), so rule 5 needs an alternate. Maker status was not read: the product URL https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xal/xal4030/ redirected to the XAL family page, and that page body carries no status (2026-09-28T13:22:15Z). Height is 3.1 mm, against 2.1 mm for XGL4020. It has the same Figure 23 layout concern as P2's ranks 2 and 3"
+   },
+   {
+    "function": "Core regulator inductor",
+    "part": "XEL4030-332MEC (LCSC C19191691)",
+    "maker": "Coilcraft (JLCPCB componentBrandEn 'Coilcraft'; allowlisted, S2)",
+    "why": "This family was not considered by P2. The XEL4030 datasheet (Document 1321, revised 02/19/26, https://www.coilcraft.com/getmedia/8245f050-f190-4295-8c41-7c03d662ee3d/xel4030.pdf, read 2026-09-28T13:19:54Z) gives these figures. Inductance: 3.3 uH +/-20 %. DCR: 26.1 mOhm typical, 28.6 mOhm maximum. Isat: 5.9 A. Shielded, AEC-Q200. Ambient: -40 to +125 C. Case: 4.0 x 4.0 mm, 3.10 mm maximum height. The page 3 drawing, an image that pdftotext does not extract, labels its 'Dash number': 'Indicates direction of terminals and start (short) lead'. Every V8 and V14 value passes. JLCPCB API (C19191691, read 2026-09-28T13:22:06Z): stockCount 768, canPresaleNumber 767, expand. Digi-Key API returned HTTP 404 (2026-09-28T13:28:38Z). Because it shares the 4 x 4 mm body with XGL4020, XFL4020 and XAL4030, it is a possible rule-5 alternate for P2's ranks 2 and 3. The land patterns were not compared. Maker status was not read"
+   },
+   {
+    "function": "Core regulator inductor",
+    "part": "XAL6030-332MEC (LCSC C19191620) and XAL5030-332MEC (LCSC C5342047)",
+    "maker": "Coilcraft (JLCPCB componentBrandEn 'Coilcraft' for both, read 2026-09-28T13:22:05Z; the jlcparts maker field is blank for C19191620)",
+    "why": "These are allowlisted Coilcraft parts that P2 did not list. Rule 3 says a blank maker row is not dropped. JLCPCB API (read 2026-09-28T13:22:05Z): C19191620 has stockCount 770 and presale 764. C5342047 has stockCount 117 and presale 103. The jlcparts copy gives XAL6030-332 at Isat 12.2 A and DCR 19.92 mOhm, and XAL5030-332 at Isat 8.7 A and DCR 21.2 mOhm. Their datasheets were not read, so their DCR maximum and polarity marking are not read. Their bodies are 6.5 x 6.3 mm and 5.4 x 5.2 mm, which departs further from Figure 23 than the 4 x 4 mm parts. They are listed so the re-rank can close them"
+   },
+   {
+    "function": "USB protection",
+    "part": "VBUS54CV-HSF-G4-08 (LCSC C511465)",
+    "maker": "Vishay (JLCPCB componentBrandEn 'Vishay Intertech'; allowlisted, S1)",
+    "why": "P2 considered no Vishay part. One placement covers all 5 lines of V13: 4 I/O lines (pins 1, 3, 4, 6) for D+, D-, CC1 and CC2, and pin 5 for VBUS. Source: VBUS54CV-HSF datasheet, Document 84145, Rev. 1.3, 04-Jan-2019, JLCPCB copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588912886165356544, read 2026-09-28T13:26:12Z. VRWM: 5.5 V on the I/O pins and 5.5 V from pin 5 to GND. IEC 61000-4-2: +/-30 kV contact and +/-30 kV air, 10 pulses. Line capacitance CD: 1.2 pF typical, 2.5 pF maximum. Line symmetry dCD: at most 0.2 pF, a stated matching figure for the D+/D- 10 % check. TJ: -40 to +125 C. Pin 5 is a shunt clamp to GND (190 pF), so the 3 A VBUS current does not pass through it. JLCPCB API (C511465, read 2026-09-28T13:27:12Z): stockCount 2924, canPresaleNumber 2913, expand. Digi-Key API productdetails (read 2026-09-28T13:28:32Z): stock 55692, manufacturer lead time 11 weeks, status Active. It matches rank 1's single-placement coverage and has higher IEC ratings (+/-30 kV against +/-12 kV contact and +/-15 kV air for TPD6E05U06, SLVSBO7O). Its capacitance is higher: 1.2 pF typical against 0.47 pF"
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "NUP4114UCW1T2G (C463643), IP4234CZ6,125 (C455086), DT1240-04LP-7 (C444992), PRTR5V0U2F,115 (C478118), D5V0F4U6SO-7 (C445539)",
+    "reason_given": "Not qualified: allowlisted makers and 5.5 V stand-off per the jlcparts description, but outside the up to five records P2 writes. Datasheets not read, so their IEC ratings are not checked",
+    "why_it_fails": "P2 wrote four USB protection records (ranks 1 to 4), so a fifth was free. Being outside the records is not a requirement miss. The datasheets show two of these parts pass. (1) NUP4114UCW1T2G (NUP4114/D Rev. 7, July 2019, JLCPCB copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588936860651696128, read 2026-09-28T13:26:12Z): VRWM 5.5 V; IEC 61000-4-2 +/-8 kV contact and +/-15 kV air; 0.6 pF typical I/O to GND. It has 4 I/O lines plus pin 5 for 'USB 2.0 ... Power Line Protection', so one placement may cover all 5 lines. JLCPCB (read 2026-09-28T13:27:15Z): 1926 in stock, presale 1863. Digi-Key (read 2026-09-28T13:28:34Z): stock 0, lead time 58 weeks, Active. (2) DT1240-04LP-7 (DS36312 Rev. 5-2, JLCPCB copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8560092747848699904, read 2026-09-28T13:26:16Z): VRWM 5.5 V; +/-14 kV contact and +/-16 kV air; CI/O 0.55 pF typical, 0.65 pF maximum; 4 channels. That is a higher IEC rating than rank 2 TPD4E05U06 in the same role. JLCPCB (read 2026-09-28T13:27:17Z): 3191 in stock, presale 2915. Digi-Key (read 2026-09-28T13:28:35Z): 131277 in stock, lead time 32 weeks, Active. The other three stay out, but on different grounds. D5V0F4U6SO-7 meets the electrical values (DS35472: VRWM 5.5 V, +/-8 kV contact, +/-15 kV air, 0.5 pF) but fails rule 4: JLCPCB stockCount 1, canPresaleNumber -6 (read 2026-09-28T13:27:19Z). For IP4234CZ6 (Rev. 3.0, contact +/-15 kV) and PRTR5V0U2F (Rev. 02, contact > 8 kV), no air-discharge rating was found in the datasheet text read at 2026-09-28T13:26:15Z, so V9 air (+/-15 kV) is not shown"
+   },
+   {
+    "part": "TPD6S300RUKR (C2649810)",
+    "reason_given": "Not qualified. TPD6S300/TPD8S300 are USB-C port protectors whose CC and SBU overvoltage function the answers do not ask for. Datasheets not read",
+    "why_it_fails": "An extra function the answers do not ask for is not a failed requirement value. SLVSDK3C (https://www.ti.com/lit/ds/symlink/tpd6s300.pdf, read 2026-09-28T13:26:16Z) rates C_CC1, C_CC2, D1 and D2 at IEC 61000-4-2 +/-8 kV contact and +/-15 kV air. That covers D+, D-, CC1 and CC2 at V9. VBUS is not among its protected pins, so it needs a VBUS TVS as well: 2 placements, the same kind of solution as P2's ranks 2 to 4. JLCPCB API (C2649810, read 2026-09-28T13:27:20Z): stockCount 17564, canPresaleNumber 17559. The re-rank should qualify it on the requirement values. Its operating range is -40 to +85 C, which covers V7"
+   },
+   {
+    "part": "TPD4S012DRYR (C96506)",
+    "reason_given": "Not qualified: TPD4S012's VBUS channel is not checked against 3 A. Datasheet not read",
+    "why_it_fails": "The stated reason misapplies V10. SLVS928B (https://www.ti.com/lit/ds/symlink/tpd4s012.pdf, read 2026-09-28T13:26:14Z) lists pin 6 VBUS as an 'ESD clamp for high-voltage tolerant VBUS line(s)'. That is a shunt to GND, so the 3 A VBUS current does not flow through the part, and V10 itself puts a shunt clamp outside the 3 A path. The exclusion still stands on another ground. The same datasheet gives IEC 61000-4-2 air-gap discharge of +/-10 kV on D+, D- and ID, and +/-9 kV on VBUS. Both are below the +/-15 kV air of V9"
+   },
+   {
+    "part": "VLS252012HBX-3R3M-1 (C360733)",
+    "reason_given": "no polarity marking in the VLS201612HBX datasheet (JLCPCB copy, read 2026-09-28T13:01:18Z): fails polarity marking (V14)",
+    "why_it_fails": "The reason was read from a different series' datasheet. The VLS252012HBX-1 datasheet (JLCPCB copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588931023677218816, read 2026-09-28T13:23:03Z) shows a printed mark near one end of the top face in its page 3 shape drawing. Its part-number construction names the last field (-1) 'Marking'. The datasheet does not say whether the mark shows the winding start, so V14 is not read, not shown absent. The TDK product page (https://product.tdk.com/en/search/inductor/inductor/smd/info?part_no=VLS252012HBX-3R3M-1, read 2026-09-28T13:23:56Z) gives the status 'Production' and says nothing about the marking. The part's other values pass V8: 3.3 uH +/-20 %, DCR 0.168 Ohm max, Isat 1.80 A. The sibling VLS201612HBX-3R3M-1 (C2042572) stays out on another ground. Its datasheet (JLCPCB copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8589834694495014912, read 2026-09-28T13:23:05Z) rates Isat at 1.38 A, below the 1.5 A of V8"
+   }
+  ],
+  "missed_functions": []
+ }
+}

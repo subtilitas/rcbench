@@ -1,0 +1,990 @@
+{
+ "role": "rerank",
+ "category": "R2",
+ "label": "rerank-R2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "functions": [
+   {
+    "function": "Link CAN controller",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP2518FDT-E/SL",
+      "option": "",
+      "reason": "P2's rank 1 stands. It meets every link requirement, holds 32 frames in one receive FIFO against V16's 9, and is also the external port's first-ranked controller, so one part serves both. JLCPCB 28,943, presale 28,779 (vendors.py jlcpcb C626758, 2026-09-28T13:36:23Z); Digi-Key 43,486, Active, 42 weeks (vendors.py digikey MCP2518FDT-E/SL, 2026-09-28T13:42:36Z). No driver in shared/."
+     },
+     {
+      "rank": 2,
+      "part": "MCP251863T-E/SS",
+      "option": "",
+      "reason": "P2's rank 2 stands: the MCP2518FD's controller with a transceiver in one SSOP-28, RXCAN and TXCAN on their own pins. It fixes the transceiver and costs 2.7071 at 10 against 1.3122. JLCPCB 3,739, presale 3,696 (13:36:25Z); Digi-Key 913, Active, 48 weeks (13:42:37Z)."
+     },
+     {
+      "rank": 3,
+      "part": "MCP2515T-I/ST",
+      "option": "",
+      "reason": "P2's rank 3 stands. It holds 2 frames against V16's 9 and 8, which feeds Q8 only, so it serves only if Q8 moves the binding off the flash. The tree's register map (shared/can/mcp2515.c) is written for it. JLCPCB 40,657, presale 40,541 (13:36:26Z); Digi-Key 25,002, Active, 23 weeks (13:42:40Z)."
+     },
+     {
+      "rank": 4,
+      "part": "MCP25625T-E/ML",
+      "option": "",
+      "reason": "P3's find qualifies on the same terms as rank 3: the MCP2515 register map with a transceiver in one QFN-28, RxCAN and TxCAN on their own pins, 2 frames held (Q8 only). Ranked below the MCP2515 because its transceiver supply VDDA needs the 5 V rail (4.5 to 5.5 V), it costs 1.9017 at 1 against 1.3171, JLCPCB holds 2,398 against 40,657, and the lead time is 49 weeks against 23."
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 4,
+      "part": "MCP25625T-E/ML",
+      "maker": "Microchip Technology (data sheet DS20005282C); S1 Microchip",
+      "lcsc": "C191253",
+      "package": "QFN-28-EP 6 x 6 mm",
+      "placements": 1,
+      "placements_basis": "fixed: one link controller per board (IOBoard.md:55); classic CAN only, so not a candidate for the external port",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "link bus format",
+        "required": "classic CAN, 1 Mbit/s, 29-bit identifiers",
+        "datasheet": "stand-alone CAN 2.0B controller, up to 1 Mb/s (page 1); extended identifier registers EID8 and EID0 for each buffer (Table 4-1)",
+        "pass": true,
+        "source": "DS20005282C, https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/MCP25625-CAN-Controller-Data-Sheet-20005282C.pdf, read 2026-09-28T13:37:27Z"
+       },
+       {
+        "name": "exact 1 Mbit/s at a 75 % sample point",
+        "required": "1 Mbit/s exact, sample at 75 %",
+        "datasheet": "FOSC 1 to 25 MHz (Table 7-2). A 16 MHz crystal with BRP 0 gives TQ 125 ns; 8 TQ with PRSEG 2, PHSEG1 3, PHSEG2 2 (CNF1 0x2A, CNF2 0x29, CNF3 0x28, Table 4-2) gives 1 µs and (1+2+3)/8 = 75 %; PHSEG2 of 2 TQ meets the 2 TQ information processing time (section 3.8)",
+        "pass": true,
+        "source": "DS20005282C Table 7-2, Table 4-2, section 3.8; tree timing docs/Link.md:203-205 (XL2515: 8 quanta, tseg1 5, tseg2 2, sjw 2)"
+       },
+       {
+        "name": "3.3 V logic toward the RP2354B",
+        "required": "SPI data out and interrupt at 3.3 V",
+        "datasheet": "VDD 2.7 to 5.5 V (Table 7-1); DC voltage at all other I/Os -0.3 V to VDD + 0.3 V (section 7.0 absolute maximum ratings): run from 3.3 V, SO and INT stay at 3.3 V; VIO 2.7 to 5.5 V for the transceiver's TXD, RXD and STBY (Table 7-7)",
+        "pass": true,
+        "source": "DS20005282C Table 7-1, section 7.0, Table 7-7"
+       },
+       {
+        "name": "SPI interface",
+        "required": "SPI plus interrupt",
+        "datasheet": "SPI up to 10 MHz, modes 0,0 and 1,1 (page 1); INT on QFN pin 13 (Table 1-1)",
+        "pass": true,
+        "source": "DS20005282C page 1, Table 1-1"
+       },
+       {
+        "name": "error reporting",
+        "required": "TEC, REC, error flags, receive overflow",
+        "datasheet": "TEC at 0x1C, REC at 0x1D, EFLG at 0x2D with RX1OVR and RX0OVR (Table 4-2)",
+        "pass": true,
+        "source": "DS20005282C Table 4-2"
+       },
+       {
+        "name": "RXCAN and TXCAN test points",
+        "required": "the controller-to-transceiver lines reachable at logic level",
+        "datasheet": "controller TxCAN QFN pin 20 and RxCAN pin 21 are separate from transceiver TXD pin 24 and RXD pin 28 (Table 1-1), joined on the board",
+        "pass": true,
+        "source": "DS20005282C Table 1-1"
+       },
+       {
+        "name": "frames held through the flash stall",
+        "required": "at least 9 in 400 ms and 8 in 3 ms (V16; Q8 flash option only)",
+        "datasheet": "two receive buffers, RXB0 and RXB1, behind the message assembly buffer (page 1 'Two Receive Buffers'; page 15): 2 frames",
+        "pass": false,
+        "source": "DS20005282C page 1, page 15"
+       },
+       {
+        "name": "clock tolerance",
+        "required": "±8,500 ppm including temperature and ageing (V26)",
+        "datasheet": "no limit for the OSC1 input (Table 7-2, FOSC 1 to 25 MHz). Equations 3-6 and 3-7 (section 3.8.5) at the tree's timing, NBT 8 TQ, PHSEG2 2, SJW 2: 2/(2 x 10 x 8) = 1.25 % and 2/(2 x (13 x 8 - 2)) = 0.98 %; the crystal, a round 2 part, holds ±8,500 ppm, inside 0.98 %",
+        "pass": true,
+        "source": "DS20005282C section 3.8.5, Table 7-2"
+       },
+       {
+        "name": "time from power to acknowledging",
+        "required": "within about 1000 ms (V28)",
+        "datasheet": "oscillator start-up timer holds reset for 128 OSC1 cycles after power-on reset (page 27): 8 µs at 16 MHz",
+        "pass": true,
+        "source": "DS20005282C page 27"
+       },
+       {
+        "name": "integrated transceiver bus-fault rating",
+        "required": "at least 5.5 V DC (V25)",
+        "datasheet": "DC voltage at CANH, CANL -58 to +58 V (section 7.0)",
+        "pass": true,
+        "source": "DS20005282C section 7.0"
+       },
+       {
+        "name": "integrated transceiver loop delay",
+        "required": "at most 350 ns for 5 m at 75 %",
+        "datasheet": "tTXD-RXD 125 ns max negative edge, 235 ns max positive edge (transceiver AC characteristics, parameters 7 and 8)",
+        "pass": true,
+        "source": "DS20005282C transceiver AC characteristics"
+       },
+       {
+        "name": "integrated transceiver supply",
+        "required": "from the 3.3 V or 5 V rail",
+        "datasheet": "VDDA 4.5 to 5.5 V (Table 7-7): the 5 V rail",
+        "pass": true,
+        "source": "DS20005282C Table 7-7"
+       }
+      ],
+      "jlcpcb": "stockCount 2,398; canPresaleNumber 2,348; componentLibraryType expand (extended); price 1.9017 at the 1-piece break for a need of 5 (currency not in the reading); read 2026-09-28T13:36:14Z, vendors.py jlcpcb C191253 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 3,513; ManufacturerLeadWeeks 49; ProductStatus Active; read 2026-09-28T13:37:07Z, vendors.py digikey MCP25625T-E/ML (https://api.digikey.com/products/v4/search/MCP25625T-E%2FML/productdetails)",
+      "gate": "need = 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 2,398 >= 50 and canPresaleNumber 2,348 >= 0: pass (rule 4)",
+      "lifecycle": "In Production (Microchip product page productSatus and 'Status: In Production', https://www.microchip.com/en-us/product/MCP25625, read 2026-09-28T13:39:34Z); longevity: Microchip programme page not read (HTTP 404 at https://www.microchip.com/en-us/about/legal-information/product-longevity 13:39:37Z and /en-us/products/product-longevity-program 13:39:38Z); first datasheet Revision A, March 2014 (DS20005282C Appendix A), over 12 months; notices: none on the product page, Microchip PCN listing not read (not fetched; P2 recorded it as behind a login); distributor: Digi-Key Active 13:37:07Z, LCSC page https://www.lcsc.com/product-detail/C191253.html carried no lifecycle status and no discontinuation text 13:39:41Z, JLCPCB API row has no status field",
+      "second_source": "second vendor: Digi-Key stock 3,513 >= gate 50, read 2026-09-28T13:37:07Z (rule 5)",
+      "alternates": [],
+      "driver_in_shared": "shared/can/mcp2515.c and shared/can/include/mcp2515.h: the addresses the header uses match the MCP25625 map (CANSTAT 0x0E, CANCTRL 0x0F, TEC 0x1C, REC 0x1D, CANINTE 0x2B, CANINTF 0x2C, EFLG 0x2D, TXB0CTRL 0x30, RXB0CTRL 0x60, RXB1CTRL 0x70; DS20005282C Tables 4-1, 4-2). The SPI driver is firmware/iomcu/src/xl2515.c, outside shared/",
+      "reason": "Qualifies on the same terms as the MCP2515: every link requirement but frames held, which feeds Q8 only. Ranked 4 for the 5 V VDDA, the higher price, the lower JLCPCB stock and the 49-week lead time.",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "MCP2517FDT-H/SL (C512185), MCP2517FD (C133861)",
+      "maker": "Microchip Technology",
+      "reason": "Lifecycle gate fails: the Microchip product page shows 'In Production' in productSatus but its summary reads 'Not recommended for new designs. Consider using the pin- and functionally compatible MCP2518FD' (https://www.microchip.com/en-us/product/MCP2517FD, read 2026-09-28T13:41:23Z). The NRND text is taken as the status; the disagreement within the page is recorded. The drop stands on this, not on being a predecessor."
+     },
+     {
+      "part": "SJA1000T/N1,118 (C6910)",
+      "maker": "NXP Semiconductors",
+      "reason": "Drop stands on the datasheet as P3 read it: VDD 4.5 to 5.5 V and a multiplexed AD7 to AD0 parallel bus (SJA1000 product specification 2000 Jan 04, https://www.nxp.com/docs/en/data-sheet/SJA1000.pdf, P3 read 2026-09-28T13:27:44Z), against 3.3 V logic (IOBoard.md:175) and an SPI interface (IOBoard.md:170). Not re-read in this re-rank."
+     },
+     {
+      "part": "MCP2510 family, IA82527 (C661928)",
+      "maker": "Microchip Technology; Analog Devices",
+      "reason": "Rule 4 fails on the JLCPCB API as P3 read it: MCP2510-I/P C646750 has 2 and the other MCP2510 rows 0; IA82527 C661928 has 0 (P3, 2026-09-28T13:21:59Z to 13:28:08Z), under the gate of 50. Not re-read in this re-rank."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP2518FDT-E/SL",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "Link CAN transceiver",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TCAN3413DR",
+      "option": "",
+      "reason": "Meets every link requirement from the 3.3 V rail alone: VCC 3 to 3.6 V, loop delay 180 ns max against 350 ns, bus pins ±58 V against 5.5 V. It is also the external port's first-ranked transceiver, so one part number serves both ports. JLCPCB 14,554, presale 13,894 (13:35:45Z); Digi-Key 4,455, Active (13:36:35Z)."
+     },
+     {
+      "rank": 2,
+      "part": "TJA1051T/3/1J",
+      "option": "",
+      "reason": "P2's rank 1: the largest stock at both vendors (JLCPCB 283,926, presale 282,069, 13:36:16Z; Digi-Key 7,716, Active, 13:37:09Z), 0.5652 at 1, and an NXP longevity date of Dec 2033 (read 13:39:36Z). Ranked below the TCAN3413DR because it needs the 5 V rail for VCC, has no standby input so it cannot also serve the external port, and its loop delay is 250 ns against 180 ns."
+     },
+     {
+      "rank": 3,
+      "part": "TJA1044GT/3Z",
+      "option": "",
+      "reason": "P3's find qualifies: VIO pin, loop delay 210 ns max, bus pins ±42 V. JLCPCB 39,134 (13:35:54Z), Digi-Key 5,558 (13:36:44Z), 0.4158 at 10, NXP longevity for TJA1044G to May 2035 (13:39:36Z). Below rank 2 on stock; above ranks 4 and 5 on the longevity date and its price."
+     },
+     {
+      "rank": 4,
+      "part": "ATA6561-GAQW-N",
+      "option": "",
+      "reason": "P3's find qualifies: VIO 2.8 to 5.5 V, loop delay 210 ns max, bus pins -27 to +42 V. Digi-Key holds 43,290 (13:36:36Z), JLCPCB 6,971 (13:35:46Z), 0.5847 at 10. It also ranks on the external port. Below rank 3 on JLCPCB stock and the narrower bus rating; Microchip's longevity page was not read."
+     },
+     {
+      "rank": 5,
+      "part": "TJA1042T/3/1J",
+      "option": "",
+      "reason": "P3's find qualifies: VIO pin, loop delay 250 ns max, bus pins ±58 V, 0.4044 at 10, JLCPCB 55,618 (13:35:55Z), Digi-Key 9,562 (13:36:46Z). Ranked last of the five because NXP's longevity page lists TJA1042B and TJA1042C to Jun 2038 but no row for the TJA1042 itself, and its loop delay is the longest of the five with rank 2."
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 1,
+      "part": "TCAN3413DR",
+      "maker": "Texas Instruments (data sheet SLLSFS8A); S1 Texas Instruments",
+      "lcsc": "C22433320",
+      "package": "SOIC-8",
+      "placements": 2,
+      "placements_basis": "1 per function; also first-ranked for the external CAN transceiver, so 1 to 2 per board; gate taken at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "classic CAN at 1 Mbit/s",
+        "required": "rated for 1 Mbit/s classic CAN",
+        "datasheet": "classical CAN and CAN FD networks up to 5 Mbps; ISO 11898-2:2016 (section 3, page 1)",
+        "pass": true,
+        "source": "SLLSFS8A, https://www.ti.com/lit/ds/symlink/tcan3413.pdf, read 2026-09-28T13:37:25Z"
+       },
+       {
+        "name": "RXD at 3.3 V logic",
+        "required": "a 3.3 V part, or VIO at 3.3 V",
+        "datasheet": "VCC 3 to 3.6 V, VIO 1.7 to 3.6 V (5.4); RXD VOH 0.8 VIO (5.8)",
+        "pass": true,
+        "source": "SLLSFS8A 5.4, 5.8"
+       },
+       {
+        "name": "bus-fault rating",
+        "required": "CANH and CANL at least 5.5 V DC (V25)",
+        "datasheet": "VBUS on CANH and CANL -58 to 58 V (5.1)",
+        "pass": true,
+        "source": "SLLSFS8A 5.1"
+       },
+       {
+        "name": "loop delay for 5 m at 1 Mbit/s",
+        "required": "at most 350 ns",
+        "datasheet": "tPROP(LOOP1) and tPROP(LOOP2) 180 ns max at VCC = VIO = 3 to 3.6 V, RL 60 Ω, CL 100 pF (5.9)",
+        "pass": true,
+        "source": "SLLSFS8A 5.9"
+       },
+       {
+        "name": "supply on the board",
+        "required": "VCC from the 3.3 V or the 5 V rail",
+        "datasheet": "VCC 3 to 3.6 V: the 3.3 V rail (5.4). STB pin 8 has an integrated pull-up (Table 4-1), so it is tied low for normal mode",
+        "pass": true,
+        "source": "SLLSFS8A 5.4, Table 4-1"
+       }
+      ],
+      "jlcpcb": "stockCount 14,554; canPresaleNumber 13,894; componentLibraryType expand (extended); price 0.8932 at the 10-piece break for a need of 10 (currency not in the reading); read 2026-09-28T13:35:45Z, vendors.py jlcpcb C22433320 (selectSmtComponentList API, exact LCSC match)",
+      "digikey": "stock_available 4,455; ManufacturerLeadWeeks 16; ProductStatus Active; read 2026-09-28T13:36:35Z, vendors.py digikey TCAN3413DR (https://api.digikey.com/products/v4/search/TCAN3413DR/productdetails)",
+      "gate": "need = 5 boards x 2 = 10; threshold max(5 x 10, 50) = 50; stockCount 14,554 >= 50 and canPresaleNumber 13,894 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (TI product page meta status ACTIVE and orderable TCAN3413DR marketingStatusDescription ACTIVE, https://www.ti.com/product/TCAN3413, read 2026-09-28T13:39:30Z); longevity: TI product life cycle page, standard products not eligible for obsolescence while sold in the last 5 years (7 for automotive), in production under 10 years, or in demand; no per-part date (https://www.ti.com/quality-reliability/quality/product-life-cycle.html, read 13:39:37Z); first datasheet Revision *, March 2023 (SLLSFS8A revision history), over 12 months; notices: none on the product page, TI PCN listing not read (not fetched); distributor: Digi-Key Active 13:36:35Z, LCSC page https://www.lcsc.com/product-detail/C22433320.html carried no lifecycle status and no discontinuation text 13:39:39Z",
+      "second_source": "second vendor: Digi-Key stock 4,455 >= gate 50, read 2026-09-28T13:36:35Z (rule 5)",
+      "alternates": [],
+      "driver_in_shared": "none (a transceiver needs none)",
+      "reason": "Meets every link requirement on the 3.3 V rail alone with the shortest loop delay of the ranked five, and the same part serves the external port. Second vendor passes.",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "TJA1044GT/3Z",
+      "maker": "NXP Semiconductors (data sheet TJA1044 Rev. 8.0; JLCPCB API label 'NXP Semicon'); S1 NXP",
+      "lcsc": "C961486",
+      "package": "SO-8",
+      "placements": 1,
+      "placements_basis": "fixed: one link transceiver per board (IOBoard.md:55); not a candidate for the external port, whose normal-to-standby time it does not state (P2)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "classic CAN at 1 Mbit/s",
+        "required": "1 Mbit/s",
+        "datasheet": "timing guaranteed for CAN FD data rates up to 5 Mbit/s; all variants other than TJA1044T support CAN FD (page 1, Table 1 note)",
+        "pass": true,
+        "source": "TJA1044 Rev. 8.0, https://www.nxp.com/docs/en/data-sheet/TJA1044.pdf, read 2026-09-28T13:37:26Z"
+       },
+       {
+        "name": "RXD at 3.3 V logic",
+        "required": "VIO at 3.3 V",
+        "datasheet": "pin 5 VIO on TJA1044GT(K)/3 (Table 3); VIO 2.91 to 5.5 V (Table 1)",
+        "pass": true,
+        "source": "TJA1044 Rev. 8.0 Tables 1, 3"
+       },
+       {
+        "name": "bus-fault rating",
+        "required": "at least 5.5 V DC (V25)",
+        "datasheet": "voltage on CANH, CANL -42 to +42 V (Table 5)",
+        "pass": true,
+        "source": "TJA1044 Rev. 8.0 Table 5"
+       },
+       {
+        "name": "loop delay for 5 m at 1 Mbit/s",
+        "required": "at most 350 ns",
+        "datasheet": "td(TXDL-RXDL) and td(TXDH-RXDH) 210 ns max, all variants other than TJA1044B/C and TJA1044T (Table 8)",
+        "pass": true,
+        "source": "TJA1044 Rev. 8.0 Table 8"
+       },
+       {
+        "name": "supply on the board",
+        "required": "3.3 V or 5 V rail",
+        "datasheet": "VCC 4.5 to 5.5 V: the 5 V rail (Table 1); STB pin 8 pulled up to VIO internally (section 7.3.2), tied low for normal mode",
+        "pass": true,
+        "source": "TJA1044 Rev. 8.0 Table 1, section 7.3.2"
+       }
+      ],
+      "jlcpcb": "stockCount 39,134; canPresaleNumber 38,846; componentLibraryType expand; price 0.5278 at the 1-piece break for a need of 5 (currency not in the reading); read 2026-09-28T13:35:54Z, vendors.py jlcpcb C961486 (exact LCSC match)",
+      "digikey": "stock_available 5,558; ManufacturerLeadWeeks 10; ProductStatus Active; read 2026-09-28T13:36:44Z, vendors.py digikey TJA1044GT/3Z",
+      "gate": "need = 5 x 1 = 5; threshold max(25, 50) = 50; stockCount 39,134 >= 50, presale 38,846 >= 0: pass (rule 4)",
+      "lifecycle": "Active (NXP product page 'Status - Active', https://www.nxp.com/products/TJA1044, read 2026-09-28T13:39:35Z; the page lists orderable TJA1044GT/3Z); longevity: NXP Product Longevity lists TJA1044G from May 2013 to May 2035 (https://www.nxp.com/products/nxp-product-information/nxp-product-programs/product-longevity:PRDCT_LONGEVITY_HM, read 13:39:36Z); first datasheet: the revision table dates v.2.0 30 January 2013 and v.1.0 30 May 2013, over 12 months either way; notices: none on the product page, NXP PCN listing not read (not fetched); distributor: Digi-Key Active 13:36:44Z, LCSC page https://www.lcsc.com/product-detail/C961486.html no lifecycle status and no discontinuation text 13:41:49Z",
+      "second_source": "second vendor: Digi-Key stock 5,558 >= gate 50, read 2026-09-28T13:36:44Z (rule 5)",
+      "alternates": [
+       "TJA1042T/3/1J (TXD 1, GND 2, VCC 3, RXD 4, VIO 5, CANL 6, CANH 7, STB 8)",
+       "ATA6561-GAQW-N (same pin functions)",
+       "TCAN1044AVDRQ1 (same pin functions)"
+      ],
+      "driver_in_shared": "none (a transceiver needs none)",
+      "reason": "Meets every link requirement with a 210 ns loop delay, high stock at both vendors and an NXP longevity date of May 2035.",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 4,
+      "part": "ATA6561-GAQW-N",
+      "maker": "Microchip Technology (data sheet DS20005991B); S1 Microchip",
+      "lcsc": "C616016",
+      "package": "SOIC-8",
+      "placements": 2,
+      "placements_basis": "1 per function; also ranked for the external CAN transceiver, so 1 to 2 per board; gate taken at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "classic CAN at 1 Mbit/s",
+        "required": "1 Mbit/s",
+        "datasheet": "ISO 11898-2 compliant, communication speed up to 5 Mbps (page 1)",
+        "pass": true,
+        "source": "DS20005991B, https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/20005991B.pdf, read 2026-09-28T13:37:25Z"
+       },
+       {
+        "name": "RXD at 3.3 V logic",
+        "required": "VIO at 3.3 V",
+        "datasheet": "pin 5 VIO on ATA6561; VVIO 2.8 to 5.5 V (page 10)",
+        "pass": true,
+        "source": "DS20005991B page 3, page 10"
+       },
+       {
+        "name": "bus-fault rating",
+        "required": "at least 5.5 V DC (V25)",
+        "datasheet": "DC voltage at CANH, CANL -27 to +42 V (absolute maximum ratings, page 10)",
+        "pass": true,
+        "source": "DS20005991B page 10"
+       },
+       {
+        "name": "loop delay for 5 m at 1 Mbit/s",
+        "required": "at most 350 ns",
+        "datasheet": "tPD(TXD-RXD) 210 ns max rising and 200 ns max falling edge at TXD, RL 60 Ω, CL 100 pF (page 13)",
+        "pass": true,
+        "source": "DS20005991B page 13"
+       },
+       {
+        "name": "supply on the board",
+        "required": "3.3 V or 5 V rail",
+        "datasheet": "VVCC 4.5 to 5.5 V: the 5 V rail (page 10); STBY pin 8 pulled up to VIO (page 11), tied low for normal mode",
+        "pass": true,
+        "source": "DS20005991B pages 10, 11"
+       }
+      ],
+      "jlcpcb": "stockCount 6,971; canPresaleNumber 6,946; componentLibraryType expand; price 0.5847 at the 10-piece break for a need of 10 (currency not in the reading); read 2026-09-28T13:35:46Z, vendors.py jlcpcb C616016 (exact LCSC match)",
+      "digikey": "stock_available 43,290; ManufacturerLeadWeeks 7; ProductStatus Active; read 2026-09-28T13:36:36Z, vendors.py digikey ATA6561-GAQW-N",
+      "gate": "need = 5 x 2 = 10; threshold 50; stockCount 6,971 >= 50, presale 6,946 >= 0: pass (rule 4)",
+      "lifecycle": "In Production (Microchip product page productSatus and 'Status: In Production', https://www.microchip.com/en-us/product/ATA6561, read 2026-09-28T13:39:30Z); longevity: Microchip programme page not read (HTTP 404, 13:39:37Z and 13:39:38Z); first datasheet Revision A, April 2018 (DS20005991B revision history), over 12 months; notices: none on the product page, PCN listing not read; distributor: Digi-Key Active 13:36:36Z, LCSC page https://www.lcsc.com/product-detail/C616016.html no lifecycle status and no discontinuation text 13:39:40Z",
+      "second_source": "second vendor: Digi-Key stock 43,290 >= gate 50, read 2026-09-28T13:36:36Z (rule 5)",
+      "alternates": [
+       "ATA6561-GAQW (C2929602, same data sheet and pinout; JLCPCB 3,990, presale 3,966, 13:35:48Z; Digi-Key 3,809, 13:36:38Z)",
+       "ATA6563-GAQW1",
+       "TJA1044GT/3Z",
+       "TCAN1044AVDRQ1"
+      ],
+      "driver_in_shared": "none (a transceiver needs none)",
+      "reason": "Meets every link requirement; the largest Digi-Key stock of the ranked five and a 7-week lead time. Its bus rating, -27 to +42 V, is the narrowest of the ranked five.",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "TJA1042T/3/1J",
+      "maker": "NXP Semiconductors (data sheet TJA1042 Rev. 11; JLCPCB API label 'NXP Semicon'); S1 NXP",
+      "lcsc": "C132227",
+      "package": "SOIC-8",
+      "placements": 1,
+      "placements_basis": "fixed: one link transceiver per board; P2 dropped it for the external port because only td(stb-norm) is stated",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "classic CAN at 1 Mbit/s",
+        "required": "1 Mbit/s",
+        "datasheet": "timing guaranteed for data rates up to 5 Mbit/s in the CAN FD fast phase (page 1)",
+        "pass": true,
+        "source": "TJA1042 Rev. 11, https://www.nxp.com/docs/en/data-sheet/TJA1042.pdf, read 2026-09-28T13:37:26Z"
+       },
+       {
+        "name": "RXD at 3.3 V logic",
+        "required": "VIO at 3.3 V",
+        "datasheet": "pin 5 VIO on TJA1042T(K)/3 (Table 3); VIO 2.8 to 5.5 V (Table 1)",
+        "pass": true,
+        "source": "TJA1042 Rev. 11 Tables 1, 3"
+       },
+       {
+        "name": "bus-fault rating",
+        "required": "at least 5.5 V DC (V25)",
+        "datasheet": "voltage on pins CANH, CANL and SPLIT -58 to +58 V (Table 5)",
+        "pass": true,
+        "source": "TJA1042 Rev. 11 Table 5"
+       },
+       {
+        "name": "loop delay for 5 m at 1 Mbit/s",
+        "required": "at most 350 ns",
+        "datasheet": "td(TXDL-RXDL) and td(TXDH-RXDH) 250 ns max for TJA1042T(K)/3 (Table 8)",
+        "pass": true,
+        "source": "TJA1042 Rev. 11 Table 8"
+       },
+       {
+        "name": "supply on the board",
+        "required": "3.3 V or 5 V rail",
+        "datasheet": "VCC 4.5 to 5.5 V: the 5 V rail (Table 1); STB pin 8 pulled up to VIO (section 7.2.3), tied low for normal mode",
+        "pass": true,
+        "source": "TJA1042 Rev. 11 Table 1, section 7.2.3"
+       }
+      ],
+      "jlcpcb": "stockCount 55,618; canPresaleNumber 54,529; componentLibraryType expand; price 0.4872 at the 1-piece break for a need of 5 (currency not in the reading); read 2026-09-28T13:35:55Z, vendors.py jlcpcb C132227 (exact LCSC match)",
+      "digikey": "stock_available 9,562; ManufacturerLeadWeeks 10; ProductStatus Active; read 2026-09-28T13:36:46Z, vendors.py digikey TJA1042T/3/1J",
+      "gate": "need = 5 x 1 = 5; threshold 50; stockCount 55,618 >= 50, presale 54,529 >= 0: pass (rule 4)",
+      "lifecycle": "Active (NXP product page 'Status - Active', https://www.nxp.com/products/TJA1042, read 2026-09-28T13:39:35Z; orderable TJA1042T/3/1J listed in stock on that page); longevity: none published for the TJA1042 itself: NXP Product Longevity lists TJA1042B and TJA1042C from Jun 2023 to Jun 2038 and no TJA1042 row (read 13:39:36Z); first datasheet TJA1042 v.1, 2009-03-09 (Rev. 11 Table 12); notices: none on the product page, PCN listing not read (not fetched); distributor: Digi-Key Active 13:36:46Z, LCSC page https://www.lcsc.com/product-detail/C132227.html no lifecycle status and no discontinuation text 13:39:40Z",
+      "second_source": "second vendor: Digi-Key stock 9,562 >= gate 50, read 2026-09-28T13:36:46Z (rule 5)",
+      "alternates": [
+       "TJA1044GT/3Z",
+       "ATA6561-GAQW-N",
+       "TCAN1044AVDRQ1"
+      ],
+      "driver_in_shared": "none (a transceiver needs none)",
+      "reason": "Meets every link requirement at the lowest price of the ranked five, 0.4044 at 10, with high stock at both vendors; no published longevity date for the plain TJA1042 and a 250 ns loop delay.",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "TJA1057GT/3J (C112947)",
+      "maker": "NXP Semiconductors",
+      "reason": "Qualifies on P3's figures (TJA1057 Rev. 8.1: VIO 2.91 to 5.5 V, ±42 V, loop 230 ns max; P3 read 2026-09-28T13:25:04Z), but ranks below the five: NXP longevity for TJA1057G ends May 2028 (read 13:39:36Z), earlier than ranks 2 and 3, and it costs 0.596 at 10 against 0.4158 for the TJA1044GT/3Z. JLCPCB 10,984, presale 10,795 (13:35:57Z); Digi-Key 10,388 (13:36:47Z)."
+     },
+     {
+      "part": "TCAN1057AVDRQ1 (C3235000)",
+      "maker": "Texas Instruments",
+      "reason": "Qualifies on P3's figures (SLLSFM8C: VIO 1.7 to 5.5 V, ±58 V, loop 210 or 255 ns max, both under 350 ns; P3 read 13:24:07Z), but ranks below the five: 0.4824 at 10 against 0.4044 for rank 5, and lower stock (JLCPCB 4,764, 13:35:58Z; Digi-Key 3,627, 13:36:49Z) than ranks 2, 3 and 5; no advantage over the ranked parts."
+     },
+     {
+      "part": "TCAN1051HVDR (C130130)",
+      "maker": "Texas Instruments",
+      "reason": "Qualifies on P3's figures (SLLSES8E: VIO on V variants, ±70 V, loop 175 ns max; P3 read 13:24:09Z), but ranks below the five: JLCPCB 671, presale 664 (13:36:00Z), the lowest of the qualified SOIC-8 parts, and 1.0686 at 10."
+     },
+     {
+      "part": "MAX3051EKA+T (C112005), MAX3051ESA+T (C15648)",
+      "maker": "Analog Devices (Maxim)",
+      "reason": "Ranks below the five: bus pins only -7.5 to +12.5 V and no loop delay stated, only a 170 ns bound summed from tOFFTXD and tOFFRXD (data sheet 19-3274 Rev 5 as P3 read it, 13:28:37Z); 1.2083 (EKA) and 1.4502 (ESA) at 10. JLCPCB 15,089 and 13,589 (13:36:01Z, 13:36:02Z); Digi-Key 45,081 and 4,786 (13:36:52Z, 13:36:54Z)."
+     },
+     {
+      "part": "SN65HVD232DR (C30530)",
+      "maker": "Texas Instruments",
+      "reason": "Qualifies on P3's figures (SLOS346O: 3.3 V supply, bus -4 to 16 V, loop 135 ns max; P3 read 13:24:06Z) but ranks below the five: Digi-Key 471 (13:36:56Z), the narrowest bus rating and 0.7942 at 10. JLCPCB 42,376, presale 41,910 (13:36:04Z)."
+     },
+     {
+      "part": "SN65HVD230DR (C12084)",
+      "maker": "Texas Instruments",
+      "reason": "P3 shows the exclusion does not hold as written: a rule-5 alternate may exist in SN65HVD232DR (same data sheet, pins 5 and 8 NC; whether NC pin 8 may be grounded as the '230's Rs is not stated, P3). Qualified, it still ranks below the five: Digi-Key 0 (13:37:02Z), so its second source rests on that unconfirmed alternate, and its bus rating, -4 to 16 V, is the narrowest. JLCPCB 82,794, presale 65,955, 0.5246 at 10 (13:36:10Z)."
+     },
+     {
+      "part": "MCP2562T-E/SN (C191417)",
+      "maker": "Microchip Technology",
+      "reason": "Qualifies on P3's figures (DS20005167C: VIO 1.8 to 5.5 V, ±58 V, tTXD-RXD 235 ns max; P3 read 13:26:12Z) but ranks below the five: manufacturer lead time 52 weeks (Digi-Key 60,670, 13:36:57Z) and 0.9241 at 10. JLCPCB 9,943 (13:36:05Z)."
+     },
+     {
+      "part": "MCP2542FD-E/SN (C220598), MCP2542FDT-E/SN (C191251)",
+      "maker": "Microchip Technology",
+      "reason": "Qualifies on P3's figures (DS20005514C: VIO pin, ±58 V, tTXD-RXD 120 ns max; P3 read 13:29:56Z) but ranks below the five: JLCPCB 819 and 108 (13:36:07Z, 13:36:08Z), 1.8952 and 1.8416 at 10."
+     },
+     {
+      "part": "MAX33040EAKA+T (C5221297)",
+      "maker": "Analog Devices (Maxim)",
+      "reason": "Meets the link requirements (3.3 V part, ±40 V, tLOOP 140 ns max; 19-100746 Rev 3, read 2026-09-28T13:41:22Z) but ranks below the five: JLCPCB 434, presale 426 (13:35:51Z), and 2.3483 at 10, the highest price of the qualified transceivers."
+     },
+     {
+      "part": "ATA6563-GAQW1 (C5127614)",
+      "maker": "Microchip Technology",
+      "reason": "Meets the link requirements (DS20005790E: VIO 2.8 to 5.5 V, -27 to +42 V, tPD(TXD-RXD) 210 ns max; read 13:37:26Z) but ranks below its own family member ATA6561-GAQW-N, rank 4, on stock: JLCPCB 1,905 against 6,971 (13:35:49Z), Digi-Key 2,924 against 43,290 (13:36:39Z)."
+     },
+     {
+      "part": "TJA1044T/1Z (C520388), SN65HVD1050DR, SN65HVD251DR, MCP2551-I/SN",
+      "maker": "NXP, Texas Instruments, Microchip",
+      "reason": "Drop stands on P3's reading: TJA1044 Rev. 8.0 Table 3 gives pin 5 n.c. on the TJA1044T (read 13:37:26Z in this re-rank), so RXD is at VCC, 4.5 to 5.5 V, against the MCP2518FD's RXCAN rating of VDD + 0.3 V (DS20006027B section 7.1, P3 read 13:26:13Z) and 3.3 V logic (IOBoard.md:175)."
+     }
+    ],
+    "dropped_from_shortlist": [
+     {
+      "part": "TCAN1044AVDRQ1",
+      "maker": "Texas Instruments",
+      "reason": "Meets every link requirement at the lowest price, 0.3443 at 10, but ranks below the five: Digi-Key 0 (vendors.py digikey TCAN1044AVDRQ1, 2026-09-28T13:42:28Z), so its second source is only the alternate TCAN1042HGVDRQ1, while every ranked part passes by second vendor. It stays ranked for the external CAN transceiver."
+     },
+     {
+      "part": "TCAN1042HGVDRQ1",
+      "maker": "Texas Instruments",
+      "reason": "Meets every link requirement but ranks below the five: 2.017 at 10 and JLCPCB 847, presale 811 (13:36:19Z), the highest price and lowest JLCPCB stock of the second-vendor SOIC-8 candidates; its ±70 V rating adds nothing on the link. It stays ranked for the external CAN transceiver."
+     },
+     {
+      "part": "MCP2562FDT-E/SN",
+      "maker": "Microchip Technology",
+      "reason": "Meets every link requirement but ranks below the five: 1.4356 at 10 (JLCPCB 5,512, 13:36:20Z) and a 52-week manufacturer lead time (Digi-Key 20,245, 13:42:32Z)."
+     },
+     {
+      "part": "TCAN334DR",
+      "maker": "Texas Instruments",
+      "reason": "Meets every link requirement but ranks below the five: bus pins only -14 to 14 V (SLLSEQ7F 5.1, P2), 2.6536 at 10 and JLCPCB 479 (13:36:22Z). The TCAN3413DR, rank 1, also runs from 3.3 V alone with a ±58 V rating."
+     }
+    ],
+    "verify": [
+     {
+      "part": "TCAN3413DR",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "External CAN controller",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP2518FDT-E/SL",
+      "option": "",
+      "reason": "P2's rank 1 stands: meets every external-port requirement except frames held against a saturated bus, which no candidate meets and which feeds Q8 only. It leaves the transceiver free to be chosen for its standby input. JLCPCB 28,943 (13:36:23Z); Digi-Key 43,486 (13:42:36Z)."
+     },
+     {
+      "rank": 2,
+      "part": "MCP251863T-E/SS",
+      "option": "",
+      "reason": "P2's rank 2 stands: controller and a qualifying transceiver in one package, at a higher price (2.7071 at 10) and with lower Digi-Key stock (913, 13:42:37Z). P3 returned no new external controller."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "MCP2517FDT-H/SL (C512185), MCP2517FD (C133861)",
+      "maker": "Microchip Technology",
+      "reason": "Lifecycle gate fails: the product page summary reads 'Not recommended for new designs. Consider using the pin- and functionally compatible MCP2518FD' beside an 'In Production' badge (https://www.microchip.com/en-us/product/MCP2517FD, read 2026-09-28T13:41:23Z); the NRND text is taken as the status and the disagreement is recorded."
+     },
+     {
+      "part": "TCAN4551RGYRQ1 (C2867967)",
+      "maker": "Texas Instruments (JLCPCB API label, P3 2026-09-28T13:21:58Z)",
+      "reason": "Drop stands on the datasheet as P3 read it: SLLSEZ4A gives normal, standby and sleep modes set over SPI, and RST only as a reset pulse, so no input holds the transceiver in standby while the enable node is low (V18) (https://www.ti.com/lit/ds/symlink/tcan4551-q1.pdf, P3 read 13:24:08Z). Not re-read in this re-rank."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP2518FDT-E/SL",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "External CAN transceiver",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TCAN3413DR",
+      "option": "",
+      "reason": "Meets every external requirement with margin: loop delay 180 ns against 237 ns, normal-to-standby 30 µs against 5 ms, bus pins ±58 V against 30 V, 5 Mbps. Its STB input has an unpowered leakage limit of ±1 µA, so it needs no 4.7 kΩ resistor (P3 stated none was given). It runs from the 3.3 V rail alone and is also the link's rank 1. JLCPCB 14,554 (13:35:45Z) and Digi-Key 4,455 (13:36:35Z) are the highest of P2's and P3's second-vendor external candidates bar the ATA6561's Digi-Key count."
+     },
+     {
+      "rank": 2,
+      "part": "TCAN1042HGVDRQ1",
+      "option": "",
+      "reason": "P2's rank 1: every external requirement, the largest bus rating, ±70 V, and a 175 ns loop delay. Ranked below the TCAN3413DR on stock (JLCPCB 847, 13:36:19Z; Digi-Key 2,410, 13:42:30Z), price (2.017 at 10 against 0.8932) and its 5 V VCC."
+     },
+     {
+      "rank": 3,
+      "part": "ATA6561-GAQW-N",
+      "option": "",
+      "reason": "P3's find qualifies: STBY input, normal-to-standby 5 µs max, bus pins -27 to +42 V, 210 ns loop delay. Digi-Key 43,290 (13:36:36Z), JLCPCB 6,971 (13:35:46Z), 0.5847 at 10. Below ranks 1 and 2 on timing margin (27 ns under the 237 ns limit against 57 and 62 ns) and the absent unpowered-leakage limit on STBY, which takes the 4.7 kΩ series resistor of IOBoard.md:192."
+     },
+     {
+      "rank": 4,
+      "part": "TCAN1044AVDRQ1",
+      "option": "",
+      "reason": "P2's rank 2: every external requirement at the lowest price, 0.3443 at 10. Digi-Key holds 0 (13:42:28Z), so its second source is the alternate TCAN1042HGVDRQ1; ranked below the three second-vendor parts for that."
+     },
+     {
+      "rank": 5,
+      "part": "ATA6563-GAQW1",
+      "option": "",
+      "reason": "P3's find qualifies with the ATA6561's figures: STBY input, 5 µs, -27 to +42 V, 210 ns. Ranked last for lower stock than the ATA6561-GAQW-N: JLCPCB 1,905 (13:35:49Z), Digi-Key 2,924 (13:36:39Z)."
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 1,
+      "part": "TCAN3413DR",
+      "maker": "Texas Instruments (data sheet SLLSFS8A); S1 Texas Instruments",
+      "lcsc": "C22433320",
+      "package": "SOIC-8",
+      "placements": 2,
+      "placements_basis": "1 per function; also first-ranked for the link CAN transceiver, so 1 to 2 per board; gate taken at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "CAN FD data rate",
+        "required": "nominal 1000 kbit/s, data phase 5000 kbit/s (V21)",
+        "datasheet": "classical CAN and CAN FD networks up to 5 Mbps, 8 Mbps in simpler networks (section 3, page 1)",
+        "pass": true,
+        "source": "SLLSFS8A, https://www.ti.com/lit/ds/symlink/tcan3413.pdf, read 2026-09-28T13:37:25Z"
+       },
+       {
+        "name": "standby input",
+        "required": "a standby input held in standby while the enable node is low (V18)",
+        "datasheet": "STB pin 8, standby input with integrated pull-up (Table 4-1); standby supply currents are specified with STB = VIO (5.6), so a high selects standby and the enable node drives it through an inverter",
+        "pass": true,
+        "source": "SLLSFS8A Table 4-1, 5.6"
+       },
+       {
+        "name": "standby time",
+        "required": "in standby within 5 ms of the enable node falling (V19)",
+        "datasheet": "tMODE, normal to standby or standby to normal, 30 µs max (5.9)",
+        "pass": true,
+        "source": "SLLSFS8A 5.9"
+       },
+       {
+        "name": "bus-fault rating",
+        "required": "CANH and CANL at least 30 V DC (V24)",
+        "datasheet": "VBUS -58 to 58 V (5.1)",
+        "pass": true,
+        "source": "SLLSFS8A 5.1"
+       },
+       {
+        "name": "isolation",
+        "required": "none, 0 V working voltage (V23)",
+        "datasheet": "non-isolated transceiver (GND pin 2 shared with the bus reference)",
+        "pass": true,
+        "source": "SLLSFS8A Table 4-1"
+       },
+       {
+        "name": "loop delay for 40 m at 1000 kbit/s",
+        "required": "at most 237 ns (V22)",
+        "datasheet": "tPROP(LOOP1) and tPROP(LOOP2) 180 ns max at VCC = VIO = 3 to 3.6 V, RL 60 Ω, CL 100 pF (5.9)",
+        "pass": true,
+        "source": "SLLSFS8A 5.9"
+       },
+       {
+        "name": "RXD at 3.3 V logic",
+        "required": "VIO at 3.3 V or a 3.3 V part",
+        "datasheet": "VCC 3 to 3.6 V, VIO 1.7 to 3.6 V (5.4); RXD VOH 0.8 VIO (5.8)",
+        "pass": true,
+        "source": "SLLSFS8A 5.4, 5.8"
+       },
+       {
+        "name": "standby input powered-off isolation",
+        "required": "I_off on the standby input, or a 4.7 kΩ series resistor from the enable node (IOBoard.md:192)",
+        "datasheet": "STB ILKG(OFF) -1 to 1 µA with STB = 3.6 V, VCC = VIO = 0 V (5.8, STB terminal)",
+        "pass": true,
+        "source": "SLLSFS8A 5.8"
+       }
+      ],
+      "jlcpcb": "stockCount 14,554; canPresaleNumber 13,894; componentLibraryType expand (extended); price 0.8932 at the 10-piece break for a need of 10 (currency not in the reading); read 2026-09-28T13:35:45Z, vendors.py jlcpcb C22433320 (selectSmtComponentList API, exact LCSC match)",
+      "digikey": "stock_available 4,455; ManufacturerLeadWeeks 16; ProductStatus Active; read 2026-09-28T13:36:35Z, vendors.py digikey TCAN3413DR",
+      "gate": "need = 5 boards x 2 = 10; threshold max(5 x 10, 50) = 50; stockCount 14,554 >= 50 and canPresaleNumber 13,894 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (TI product page meta status ACTIVE and orderable TCAN3413DR ACTIVE, https://www.ti.com/product/TCAN3413, read 2026-09-28T13:39:30Z); longevity: TI life cycle policy, no per-part date (https://www.ti.com/quality-reliability/quality/product-life-cycle.html, 13:39:37Z); first datasheet Revision *, March 2023 (SLLSFS8A), over 12 months; notices: none on the product page, TI PCN listing not read (not fetched); distributor: Digi-Key Active 13:36:35Z, LCSC page no lifecycle status and no discontinuation text 13:39:39Z",
+      "second_source": "second vendor: Digi-Key stock 4,455 >= gate 50, read 2026-09-28T13:36:35Z (rule 5)",
+      "alternates": [],
+      "driver_in_shared": "none (the standby input is driven from the enable node through an inverter: STB high is standby)",
+      "reason": "Meets every external requirement with the most timing margin of the ranked candidates bar the TCAN1042HGV, I_off on STB, the 3.3 V rail alone, and the same part as the link. Second vendor passes.",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "ATA6561-GAQW-N",
+      "maker": "Microchip Technology (data sheet DS20005991B); S1 Microchip",
+      "lcsc": "C616016",
+      "package": "SOIC-8",
+      "placements": 2,
+      "placements_basis": "1 per function; also ranked for the link CAN transceiver, so 1 to 2 per board; gate taken at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "CAN FD data rate",
+        "required": "data phase 5000 kbit/s (V21)",
+        "datasheet": "communication speed up to 5 Mbps, CAN FD ready (page 1)",
+        "pass": true,
+        "source": "DS20005991B, https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/20005991B.pdf, read 2026-09-28T13:37:25Z"
+       },
+       {
+        "name": "standby input",
+        "required": "standby input held by the enable node (V18)",
+        "datasheet": "STBY pin 8; a high level selects Standby mode (section 1.1); pull-up to VIO 75 to 175 kΩ (page 11)",
+        "pass": true,
+        "source": "DS20005991B section 1.1, page 11"
+       },
+       {
+        "name": "standby time",
+        "required": "within 5 ms (V19)",
+        "datasheet": "tdel(norm-stby) 5 µs max, rising edge at STBY, ensured by design, Note 3 (page 13)",
+        "pass": true,
+        "source": "DS20005991B page 13"
+       },
+       {
+        "name": "bus-fault rating",
+        "required": "at least 30 V DC (V24)",
+        "datasheet": "DC voltage at CANH, CANL -27 to +42 V (page 10)",
+        "pass": true,
+        "source": "DS20005991B page 10"
+       },
+       {
+        "name": "isolation",
+        "required": "none (V23)",
+        "datasheet": "non-isolated transceiver",
+        "pass": true,
+        "source": "DS20005991B"
+       },
+       {
+        "name": "loop delay for 40 m at 1000 kbit/s",
+        "required": "at most 237 ns (V22)",
+        "datasheet": "tPD(TXD-RXD) 210 ns max rising and 200 ns max falling edge, RL 60 Ω, CL 100 pF (page 13)",
+        "pass": true,
+        "source": "DS20005991B page 13"
+       },
+       {
+        "name": "RXD at 3.3 V logic",
+        "required": "VIO at 3.3 V",
+        "datasheet": "VVIO 2.8 to 5.5 V (page 10)",
+        "pass": true,
+        "source": "DS20005991B page 10"
+       },
+       {
+        "name": "standby input powered-off isolation",
+        "required": "I_off or a 4.7 kΩ series resistor (IOBoard.md:192)",
+        "datasheet": "no leakage limit for STBY with VIO at 0 V; only IL -2 to +2 µA with STBY = VIO (page 11). Takes the 4.7 kΩ series resistor",
+        "pass": true,
+        "source": "DS20005991B page 11"
+       }
+      ],
+      "jlcpcb": "stockCount 6,971; canPresaleNumber 6,946; componentLibraryType expand; price 0.5847 at the 10-piece break for a need of 10 (currency not in the reading); read 2026-09-28T13:35:46Z, vendors.py jlcpcb C616016 (exact LCSC match)",
+      "digikey": "stock_available 43,290; ManufacturerLeadWeeks 7; ProductStatus Active; read 2026-09-28T13:36:36Z, vendors.py digikey ATA6561-GAQW-N",
+      "gate": "need = 5 x 2 = 10; threshold 50; stockCount 6,971 >= 50, presale 6,946 >= 0: pass (rule 4)",
+      "lifecycle": "In Production (https://www.microchip.com/en-us/product/ATA6561, read 2026-09-28T13:39:30Z); longevity: Microchip programme page not read (HTTP 404, 13:39:37Z, 13:39:38Z); first datasheet Revision A, April 2018; notices: none on the product page, PCN listing not read; distributor: Digi-Key Active 13:36:36Z, LCSC page no lifecycle status and no discontinuation text 13:39:40Z",
+      "second_source": "second vendor: Digi-Key stock 43,290 >= gate 50, read 2026-09-28T13:36:36Z (rule 5)",
+      "alternates": [
+       "ATA6561-GAQW (C2929602; JLCPCB 3,990, 13:35:48Z)",
+       "ATA6563-GAQW1",
+       "TCAN1044AVDRQ1",
+       "TCAN1042HGVDRQ1"
+      ],
+      "driver_in_shared": "none (STBY high is standby; driven from the enable node through an inverter and a 4.7 kΩ resistor)",
+      "reason": "Meets every external requirement with the fastest standby, 5 µs, and the largest Digi-Key stock; the smallest loop-delay margin of the top three and no I_off on STBY.",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "ATA6563-GAQW1",
+      "maker": "Microchip Technology (data sheet DS20005790E); S1 Microchip",
+      "lcsc": "C5127614",
+      "package": "SOIC-8",
+      "placements": 1,
+      "placements_basis": "fixed: one external transceiver per board; not ranked for the link",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "CAN FD data rate",
+        "required": "data phase 5000 kbit/s (V21)",
+        "datasheet": "communication speed up to 5 Mbps (page 1)",
+        "pass": true,
+        "source": "DS20005790E, https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/ATA6562.3-Data-Sheet-20005790E.pdf, read 2026-09-28T13:37:26Z"
+       },
+       {
+        "name": "standby input",
+        "required": "standby input held by the enable node (V18)",
+        "datasheet": "STBY pin 8; a high level selects Standby mode; internal pull-up (sections 1.1, 1.2.2)",
+        "pass": true,
+        "source": "DS20005790E sections 1.1, 1.2.2"
+       },
+       {
+        "name": "standby time",
+        "required": "within 5 ms (V19)",
+        "datasheet": "tdel(norm-stby) 5 µs max, Note 3 (page 14)",
+        "pass": true,
+        "source": "DS20005790E page 14"
+       },
+       {
+        "name": "bus-fault rating",
+        "required": "at least 30 V DC (V24)",
+        "datasheet": "DC voltage at CANH, CANL -27 to +42 V (page 11)",
+        "pass": true,
+        "source": "DS20005790E page 11"
+       },
+       {
+        "name": "isolation",
+        "required": "none (V23)",
+        "datasheet": "non-isolated transceiver",
+        "pass": true,
+        "source": "DS20005790E"
+       },
+       {
+        "name": "loop delay for 40 m at 1000 kbit/s",
+        "required": "at most 237 ns (V22)",
+        "datasheet": "tPD(TXD-RXD) 210 ns max rising, 200 ns max falling, RL 60 Ω, CL 100 pF (page 14)",
+        "pass": true,
+        "source": "DS20005790E page 14"
+       },
+       {
+        "name": "RXD at 3.3 V logic",
+        "required": "VIO at 3.3 V",
+        "datasheet": "pin 5 VIO on ATA6563; VVIO 2.8 to 5.5 V (page 11)",
+        "pass": true,
+        "source": "DS20005790E page 3, page 11"
+       },
+       {
+        "name": "standby input powered-off isolation",
+        "required": "I_off or a 4.7 kΩ series resistor (IOBoard.md:192)",
+        "datasheet": "no leakage limit for STBY with VIO at 0 V found; takes the 4.7 kΩ series resistor",
+        "pass": true,
+        "source": "DS20005790E section 2"
+       }
+      ],
+      "jlcpcb": "stockCount 1,905; canPresaleNumber 1,886; componentLibraryType expand; price 0.8802 at the 1-piece break for a need of 5 (currency not in the reading); read 2026-09-28T13:35:49Z, vendors.py jlcpcb C5127614 (exact LCSC match)",
+      "digikey": "stock_available 2,924; ManufacturerLeadWeeks 7; ProductStatus Active; read 2026-09-28T13:36:39Z, vendors.py digikey ATA6563-GAQW1",
+      "gate": "need = 5 x 1 = 5; threshold 50; stockCount 1,905 >= 50, presale 1,886 >= 0: pass (rule 4)",
+      "lifecycle": "In Production (https://www.microchip.com/en-us/product/ATA6563, read 2026-09-28T13:41:50Z); longevity: Microchip programme page not read (HTTP 404, 13:39:37Z, 13:39:38Z); first datasheet Revision A, June 2017 (DS20005790E revision history); notices: none on the product page, PCN listing not read; distributor: Digi-Key Active 13:36:39Z, LCSC page https://www.lcsc.com/product-detail/C5127614.html no discontinuation text 13:41:50Z",
+      "second_source": "second vendor: Digi-Key stock 2,924 >= gate 50, read 2026-09-28T13:36:39Z (rule 5)",
+      "alternates": [
+       "ATA6561-GAQW-N",
+       "TCAN1044AVDRQ1",
+       "TCAN1042HGVDRQ1"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Meets every external requirement on the ATA6561's figures, with lower stock at both vendors.",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "MAX33040EAKA+T (C5221297)",
+      "maker": "Analog Devices (Maxim)",
+      "reason": "V19 cannot be shown: normal-to-standby tD_NSTBY is given as 30 µs typical with no maximum (data sheet 19-100746 Rev 3, https://www.analog.com/media/en/technical-documentation/data-sheets/max33040e-max33041e.pdf, client safari, read 2026-09-28T13:41:22Z), the standard P2 applied to the MCP2562FD and TJA1042."
+     },
+     {
+      "part": "TCAN1043ADRQ1 (C5215847)",
+      "maker": "Texas Instruments",
+      "reason": "Not ranked: normal mode needs EN high as well as nSTB high (SLLSFD1F Table 7-4, read 2026-09-28T13:37:27Z). With EN held high, nSTB low gives Standby only while the wake-request flag is set and Sleep once it is cleared; with EN held low, nSTB high gives Silent, so the driver never runs. Holding Standby from the enable node alone needs EN and nSTB driven together, which the datasheet does not describe. It also needs a VSUP pin (4.5 to 40 V) and SOIC-14. Its other figures pass: tMODE2 10 µs, ±58 V, tPROP(LOOP1) 215 ns and (LOOP2) 205 ns max, nSTB ILKG(OFF) ±1 µA."
+     },
+     {
+      "part": "TCAN1462VDRBRQ1 (C5215833)",
+      "maker": "Texas Instruments",
+      "reason": "P3 shows a SON-8 rule-5 alternate, TCAN1044AVDRBRQ1 (C3234119, JLCPCB 41,538, presale 41,319, 13:36:13Z), so the P2 exclusion does not hold. Qualified, it ranks below the five: Digi-Key 0 (13:37:04Z), so its second source rests on that alternate, and 3.5061 at 10 (JLCPCB 1,900, presale 1,481, 13:36:11Z), the highest price of the external candidates."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TCAN3413DR",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   }
+  ],
+  "report": [
+   {
+    "figure": "frames held: MCP25625T-E/ML",
+    "value": "2 received frames: two receive buffers, RXB0 and RXB1, behind the message assembly buffer. Against V16 it loses 7 of 9 frames in a 400 ms stall and 6 of 8 in a 3 ms stall, as the MCP2515 does.",
+    "source": "MCP25625 DS20005282C page 1 and page 15, https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/MCP25625-CAN-Controller-Data-Sheet-20005282C.pdf, read 2026-09-28T13:37:27Z"
+   },
+   {
+    "figure": "clock tolerance: MCP25625T-E/ML",
+    "value": "No limit is given for the OSC1 input, 1 to 25 MHz (Table 7-2). The datasheet's equations 3-6 and 3-7 at the tree's timing (8 TQ, PHSEG2 2, SJW 2) allow 1.25 % and 0.98 %, so 0.98 % (±9,800 ppm) a node. The 16 MHz crystal is a round 2 part selected against ±8,500 ppm (V26).",
+    "source": "DS20005282C section 3.8.5 and Table 7-2, read 2026-09-28T13:37:27Z; docs/Link.md:203-205 at c25aa863372d"
+   },
+   {
+    "figure": "frames held: TCAN3413DR",
+    "value": "not applicable: a transceiver stores no frames",
+    "source": "SLLSFS8A, https://www.ti.com/lit/ds/symlink/tcan3413.pdf, read 2026-09-28T13:37:25Z"
+   },
+   {
+    "figure": "clock tolerance: TCAN3413DR",
+    "value": "not applicable: a transceiver has no clock; the bit timing is the controller's",
+    "source": "SLLSFS8A, read 2026-09-28T13:37:25Z"
+   },
+   {
+    "figure": "frames held: TJA1044GT/3Z",
+    "value": "not applicable: a transceiver stores no frames",
+    "source": "TJA1044 Rev. 8.0, https://www.nxp.com/docs/en/data-sheet/TJA1044.pdf, read 2026-09-28T13:37:26Z"
+   },
+   {
+    "figure": "clock tolerance: TJA1044GT/3Z",
+    "value": "not applicable: a transceiver has no clock; the bit timing is the controller's",
+    "source": "TJA1044 Rev. 8.0, read 2026-09-28T13:37:26Z"
+   },
+   {
+    "figure": "frames held: ATA6561-GAQW-N",
+    "value": "not applicable: a transceiver stores no frames",
+    "source": "DS20005991B, https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/20005991B.pdf, read 2026-09-28T13:37:25Z"
+   },
+   {
+    "figure": "clock tolerance: ATA6561-GAQW-N",
+    "value": "not applicable: a transceiver has no clock; the bit timing is the controller's",
+    "source": "DS20005991B, read 2026-09-28T13:37:25Z"
+   },
+   {
+    "figure": "frames held: TJA1042T/3/1J",
+    "value": "not applicable: a transceiver stores no frames",
+    "source": "TJA1042 Rev. 11, https://www.nxp.com/docs/en/data-sheet/TJA1042.pdf, read 2026-09-28T13:37:26Z"
+   },
+   {
+    "figure": "clock tolerance: TJA1042T/3/1J",
+    "value": "not applicable: a transceiver has no clock; the bit timing is the controller's",
+    "source": "TJA1042 Rev. 11, read 2026-09-28T13:37:26Z"
+   },
+   {
+    "figure": "frames held: ATA6563-GAQW1",
+    "value": "not applicable: a transceiver stores no frames",
+    "source": "DS20005790E, https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/ATA6562.3-Data-Sheet-20005790E.pdf, read 2026-09-28T13:37:26Z"
+   },
+   {
+    "figure": "clock tolerance: ATA6563-GAQW1",
+    "value": "not applicable: a transceiver has no clock; the bit timing is the controller's",
+    "source": "DS20005790E, read 2026-09-28T13:37:26Z"
+   },
+   {
+    "figure": "TCAN3413DR STB unpowered leakage",
+    "value": "ILKG(OFF) -1 to 1 µA with STB = 3.6 V and VCC = VIO = 0 V. P3 stated that no such limit is given for STB; the datasheet gives one, so the standby input needs no 4.7 kΩ series resistor.",
+    "source": "SLLSFS8A section 5.8, STB terminal, read 2026-09-28T13:37:25Z"
+   },
+   {
+    "figure": "MCP2518FDT-E/SL Digi-Key stock",
+    "value": "43,486, Active, 42 weeks; P2 read 33,086 at 13:05:20Z",
+    "source": "vendors.py digikey MCP2518FDT-E/SL (https://api.digikey.com/products/v4/search/MCP2518FDT-E%2FSL/productdetails), read 2026-09-28T13:42:36Z"
+   },
+   {
+    "figure": "SN65HVD230DR stock",
+    "value": "JLCPCB 82,794, presale 65,955, 0.5246 at 10; Digi-Key 0, Active, 9 weeks",
+    "source": "vendors.py jlcpcb C12084, read 2026-09-28T13:36:10Z; vendors.py digikey SN65HVD230DR, read 2026-09-28T13:37:02Z"
+   },
+   {
+    "figure": "MCP2517FD lifecycle",
+    "value": "product page badge 'In Production'; summary 'Not recommended for new designs. Consider using the pin- and functionally compatible MCP2518FD'",
+    "source": "https://www.microchip.com/en-us/product/MCP2517FD, read 2026-09-28T13:41:23Z"
+   },
+   {
+    "figure": "MAX33040E normal-to-standby delay",
+    "value": "tD_NSTBY 30 µs typical, no maximum given",
+    "source": "data sheet 19-100746 Rev 3, https://www.analog.com/media/en/technical-documentation/data-sheets/max33040e-max33041e.pdf, client safari, read 2026-09-28T13:41:22Z"
+   },
+   {
+    "figure": "TCAN1043A-Q1 mode table",
+    "value": "Normal: EN high, nSTB high. Silent: EN low, nSTB high. EN high, nSTB low: Standby with the wake-request flag set, Sleep once it is cleared. EN low, nSTB low: Standby.",
+    "source": "SLLSFD1F Table 7-4, https://www.ti.com/lit/ds/symlink/tcan1043a-q1.pdf, read 2026-09-28T13:37:27Z"
+   },
+   {
+    "figure": "NXP longevity rows",
+    "value": "TJA1051 Dec 2008 to Dec 2033; TJA1044G May 2013 to May 2035; TJA1042B and TJA1042C Jun 2023 to Jun 2038, no row for TJA1042; TJA1057G May 2013 to May 2028",
+    "source": "https://www.nxp.com/products/nxp-product-information/nxp-product-programs/product-longevity:PRDCT_LONGEVITY_HM, read 2026-09-28T13:39:36Z"
+   },
+   {
+    "figure": "Microchip longevity page",
+    "value": "not read: HTTP 404 at both paths tried",
+    "source": "https://www.microchip.com/en-us/about/legal-information/product-longevity (2026-09-28T13:39:37Z); https://www.microchip.com/en-us/products/product-longevity-program (13:39:38Z)"
+   }
+  ]
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R1",
+ "label": "adjudicator-R1-2",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "function": "re-rank report: XAL5030-332MEC",
+  "part": "",
+  "stands": true,
+  "scope": "function",
+  "ruling": "The refutation stands. The figure says \"no alternate with the same body is in the jlcparts copy\", and that is false. The copy holds two same-body 3.3 uH Coilcraft rows. XAL5030-332MEB (C2927046) is the same part as the -332MEC: the datasheet defines packaging code B as \"less than full reel\" and C as a 7-inch machine-ready reel. XGL5030-332MEC (C3911724) is the XGL series in the 5030 size. The rest of the figure is correct. The electrical values match the datasheet row \"XAL5030-332ME_\": 3.3 uH, DCR (DC resistance) 21.20 mOhm typical and 23.30 mOhm maximum, Isat (saturation current) 8.7 A. Live JLCPCB stock for C5342047 is stockCount 117 and canPresaleNumber 103. Digi-Key has no listing. The conclusion \"there is no second source\" still holds, because neither alternate passes rule 4 live. C2927046 has stockCount 0 and canPresaleNumber 0. C3911724 has stockCount 0 and canPresaleNumber 0. The copy's stock of 1 for C3911724 is not a count (rule 3). Digi-Key returns 404 for both XAL5030-332MEC and XAL5030-332MEB. The false statement concerns the rule-5 second-source search for this function. It is not about the part's lifecycle, maker allowlist or LCSC identity, so the scope is function. The corrected figure reads: \"the jlcparts copy holds XAL5030-332MEB (C2927046) and XGL5030-332MEC (C3911724), and both have 0 stock at JLCPCB on 2026-09-28\".",
+  "evidence": "jlcparts copy 2026-09-14, read-only, jlc_components where mfr LIKE 'XAL5030%' or 'XGL5030-332%'. The query returns C2927046 'XAL5030-332MEB', package 'SMD_5.28X5.48', copy stock 0. It returns C3911724 'XGL5030-332MEC', 'SMD,5.5x5.3mm', 3.3 uH, 8.4 A, copy stock 1. It returns C5342047 'XAL5030-332MEC', 'SMD,5.4x5.2mm', copy stock 630. XAL50xx datasheet text (rerank-R1/ds/xal50xx.txt): line 42 reads \"XAL5030-332ME_ 3.3 21.20 23.30 ... 8.7\". Lines 64 to 75 define packaging code C as a 7-inch machine-ready reel, B as less than full reel and D as a 13-inch reel. JLCPCB API, exact LCSC match: C5342047 has stockCount 117, canPresaleNumber 103, library type expand (read 14:02:45Z). C2927046 XAL5030-332MEB, maker label Coilcraft, has stockCount 0 and canPresaleNumber 0 (14:02:45Z). C3911724 XGL5030-332MEC has stockCount 0 and canPresaleNumber 0 (14:02:45Z). Digi-Key API productdetails returns HTTP 404 for XAL5030-332MEC (14:02:47Z) and for XAL5030-332MEB (14:02:48Z). Raw returns: /home/claude/rcbench-research/round1/scratch/T2/adjudicator-R1/jlc-C5342047.json, jlc-C2927046.json, jlc-C3911724.json, dk-MEC.json and dk-MEB.json.",
+  "source": "sqlite file:/home/claude/rcbench-research/jlcparts-2026-09-14/cache.sqlite3?mode=ro, jlc_components by mfr; https://www.coilcraft.com/getmedia/49bc46c8-4b2c-45b9-9b6c-2eaa235ea698/xal50xx.pdf (Document 908, text in scratch/T2/rerank-R1/ds/xal50xx.txt, table page 1); vendors.py jlcpcb C5342047, C2927046, C3911724 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList); vendors.py digikey XAL5030-332MEC and XAL5030-332MEB (https://api.digikey.com/products/v4/search/{MPN}/productdetails)",
+  "read_at": "2026-09-28T14:02:48Z"
+ }
+}

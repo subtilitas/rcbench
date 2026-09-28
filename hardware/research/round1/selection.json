@@ -1,0 +1,439 @@
+{
+ "R1": {
+  "Microcontroller": {
+   "part": "RP2354B",
+   "rank": 1,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "12 MHz crystal": {
+   "part": "ABM8-272-T3",
+   "rank": 1,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Core regulator inductor": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "USB protection": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ },
+ "R2": {
+  "Link CAN controller": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Link CAN transceiver": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "External CAN controller": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "External CAN transceiver": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ },
+ "R3": {
+  "monostable": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "OR gate": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "reset supervisor": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "latch": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "latch clear control": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "trigger-path inverter": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "trigger input I_off buffer (Q9)": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "servo rail gate": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "onboard pack switch MOSFETs": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "onboard pack switch driver": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "external pack switch module": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "external module driver output": {
+   "part": "2N7002BK,215",
+   "rank": 1,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "pack reverse-polarity protection": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "pack overvoltage and transient clamp": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "pack precharge": {
+   "part": "CSD19537Q3T",
+   "rank": 1,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "servo rail gate driver": {
+   "part": "2N7002BK,215",
+   "rank": 1,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "timing network (C and R of the monostable)": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "inverter on an active-low output enable": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "heartbeat-node series resistors, links and fail-safe pull-downs": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ },
+ "R4": {
+  "gated output buffer": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "enable inverter": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "bias selector": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "level translation": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "multiprotocol port path": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "UART socket path": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "receiver inputs": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "series resistance and clamps": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "reset idle level": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "programming supply switching": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "reply path through the gate": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ }
+}

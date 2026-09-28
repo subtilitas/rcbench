@@ -1,0 +1,120 @@
+{
+ "role": "P3",
+ "category": "R4",
+ "label": "P3-R4",
+ "attempt": 0,
+ "data": {
+  "category": "R4",
+  "missed": [
+   {
+    "function": "gated output buffer",
+    "part": "SN74LVC16244ADGGR (C7822)",
+    "maker": "Texas Instruments",
+    "why": "A 16-bit buffer in one TSSOP-48 part, so 1 part carries all 16 PWM lines where the rank-1 244A needs 2. Datasheet SCAS699C (revised June 2014, read 2026-09-28T13:30:24Z, https://www.ti.com/lit/ds/symlink/sn74lvc16244a.pdf): Ioff ±10 µA at VCC 0 with VI or VO = 5.5 V, VOH 2.2 V at IOH −24 mA with VCC 3 V, tdis 6.2 ns max at 3.3 V, TA −40 to 125 °C. The 4 OE pins (1, 24, 25, 48) are active low, so it needs the enable inverter. TI product page: ACTIVE (https://www.ti.com/product/SN74LVC16244A, 13:35:08Z). JLCPCB C7822: stockCount 2841, canPresaleNumber 2833, extended, USD 1.6857 at qty 1 (13:33:29Z). Gate at 1 per board is 50. Digi-Key SN74LVC16244ADGGR: 15401, Active, lead 16 weeks (13:35:35Z). Pin-compatible alternate from a second maker: see 74LVC16244ADGG,118"
+   },
+   {
+    "function": "gated output buffer",
+    "part": "74LVC16244ADGG,118 (C6070)",
+    "maker": "Nexperia",
+    "why": "The pin-for-pin alternate of SN74LVC16244ADGGR: pins 1, 48, 25, 24 are 1OE to 4OE in both pin tables. Datasheet 74LVC16244A; 74LVCH16244A Rev. 18, 9 April 2024 (read 13:34:32Z, https://assets.nexperia.com/documents/data-sheet/74LVC_LVCH16244A.pdf): IOFF ±10 µA at VCC 0 V with VI or VO = 5.5 V, VO 0 to 5.5 V in the 3-state condition, Tamb −40 to +125 °C. The 74LVCH16244A variant has bus hold on the data inputs and is not the alternate. JLCPCB C6070: 6280, presale 6278, USD 0.7097 (13:33:32Z). The Digi-Key keyword search lists 74LVC16244ADGG,118 at 2000, Active (13:36:05Z)"
+   },
+   {
+    "function": "gated output buffer",
+    "part": "74LCX244MTCX (C255589)",
+    "maker": "onsemi",
+    "why": "A pin-compatible alternate of rank 1 SN74LVC244APWR from a third maker: pin 1 OE1, pin 2 I0, pin 3 O4 and so on, the 244 pin order. SN74LVC244APWR has 0 at Digi-Key (13:37:05Z), so its rule-5 route rests on alternates. Datasheet 74LCX244/D Rev. 2, July 2024 (read 13:31:42Z, https://www.onsemi.com/download/data-sheet/pdf/74lcx244-d.pdf) states power-down high impedance on inputs and outputs, and IOFF 10 at VCC 0 with VI = 5.5 V or VO = 5.5 V. The unit glyph extracts as 'mA' and the II row of the same table extracts the same way, so the unit is not confirmed from the text. VOH is 2.2 V at IOH −24 mA with VCC 3.0 V. JLCPCB C255589: 9161, presale 9160, USD 0.4694 (13:33:39Z). Digi-Key: 53274, Active, lead 33 weeks (13:35:41Z)"
+   },
+   {
+    "function": "gated output buffer",
+    "part": "74LCX244FT (C2675684)",
+    "maker": "Toshiba",
+    "why": "A further pin-compatible alternate of SN74LVC244APWR. The pin assignment on datasheet page 2 is 1OE, 1A1, 2Y4 … GND on pins 1 to 10. Datasheet Rev. 3.0.A, dated 2026-04-21 (read 13:37:34Z, https://toshiba.semicon-storage.com/info/docget.jsp?did=14591&prodName=74LCX244FT): power-down protection on all inputs and outputs, IOFF 10.0 µA at VCC 0 with VIN/VOUT = 5.5 V, VOH 2.2 V at −24 mA with VCC 3.0 V, Topr −40 to 85 °C. JLCPCB C2675684: 5936, presale 5935, USD 0.2071 (13:33:41Z). Digi-Key: 15687, Active, lead 16 weeks (13:35:43Z)"
+   },
+   {
+    "function": "gated output buffer",
+    "part": "SN74LV244APWR (C475502)",
+    "maker": "Texas Instruments",
+    "why": "An LV-A family 244 with the same pinout as SN74LVC244APWR. Datasheet SCLS383R (revised August 2023, read 13:30:25Z, https://www.ti.com/lit/ds/symlink/sn74lv244a.pdf): Ioff 5 µA at VCC 0 with VI or VO = 0 to 5.5 V. Its drive is lower than the LVC part: VOH 2.48 V at IOH −8 mA with VCC 3 V. TI page: ACTIVE (13:35:10Z). JLCPCB C475502: 12488, presale 12447, USD 0.2453 (13:33:42Z). Digi-Key: 9528, Active, lead 9 weeks (13:35:45Z)"
+   },
+   {
+    "function": "gated output buffer",
+    "part": "SN74LVC2G126DCUR (C2652104)",
+    "maker": "Texas Instruments",
+    "why": "A dual buffer with active-high OE and Ioff, so the enable node drives it directly and the enable inverter is not needed. Datasheet SCES205N (revised September 2020, read 13:30:26Z, https://www.ti.com/lit/ds/symlink/sn74lvc2g126.pdf): Ioff ±10 µA at VCC 0 with VI or VO = 5.5 V, VOH 2.4 V at −16 mA and 2.3 V at −24 mA. TI page: ACTIVE (13:35:09Z). It takes 8 parts per board for 16 lines, so the gate is 200. JLCPCB C2652104: 17289, presale 17275, USD 0.218 (13:33:36Z). Digi-Key: 19091, Active, lead 16 weeks (13:35:38Z). The Nexperia 74LVC2G126DC,125 (C548589) has 0 at JLCPCB (13:36:20Z) and 8203 at Digi-Key (13:36:07Z). The re-rank needs to check the enable node's load: 16 OE inputs, and 16 × 10 kΩ if each OE pin carries its own pull, draw 5.3 mA at 3.3 V"
+   },
+   {
+    "function": "gated output buffer",
+    "part": "74LCX541FT(AE) (C7194124)",
+    "maker": "Toshiba",
+    "why": "A pin-compatible alternate of rank 4 SN74LVC541APWR from a second maker. The page-2 pin assignment is OE1 on pin 1, A1 to A8 on pins 2 to 9, GND on 10, Y8 to Y1 on pins 11 to 18, OE2 on 19 and VCC on 20, with OE1 and OE2 active low and ANDed. Datasheet Rev. 3.0.A, dated 2026-04-21 (read 13:37:32Z, https://toshiba.semicon-storage.com/info/docget.jsp?did=15179&prodName=74LCX541FT): power-down protection on all inputs and outputs, IOFF 10.0 µA at VCC 0 with VIN/VOUT = 5.5 V, VOH 2.2 V at −24 mA with VCC 3.0 V, Topr −40 to 85 °C. JLCPCB C7194124: 2098, presale 2098, USD 0.2339 (13:37:21Z). C516171, 74LCX541FT(AJ): 1677, presale 1673 (13:37:22Z). onsemi MC74LCX541DTR2G C7354 has 2550 at JLCPCB (13:37:22Z); its datasheet was not read"
+   },
+   {
+    "function": "gated output buffer",
+    "part": "74LVC126APW,118",
+    "maker": "Nexperia",
+    "why": "The only quad with active-high OE and IOFF found: 74LVC126A Rev. 14, 2 May 2025 (read 13:28:40Z, https://assets.nexperia.com/documents/data-sheet/74LVC126A.pdf) gives IOFF ±10 µA at VCC 0 V with VI or VO = 5.5 V and tdis 6.0 ns max at 3.0 to 3.6 V. It fails rule 4 at JLCPCB. C6060 74LVC126APW: 0. C2442297 74LVC126APW,118: 0. C548091 74LVC126AD,112: 4. C548094 74LVC126AD-Q100J: 2 (13:33:22Z to 13:36:23Z). Digi-Key has 5676 (13:36:10Z). Recorded so the re-rank logs the drop. The other active-high quads also fail the gate. SN74LV126A (SCES131J, Ioff ±5 µA): C171683 has 14 and C2675505 has 0 (13:33:26Z, 13:33:28Z). Diodes 74LVC126AT14-13 (C460513): 17, presale −143 (13:33:25Z)"
+   },
+   {
+    "function": "multiprotocol port path",
+    "part": "TC7MBL3126CFT(EL) (C2675020)",
+    "maker": "Toshiba",
+    "why": "A pin-for-pin alternate of SN74CBTLV3126PWR. The page-2 pin assignment (1OE 1, A1 2, B1 3, 2OE 4, A2 5, B2 6, GND 7, B3 8, A3 9, 3OE 10, B4 11, A4 12, 4OE 13, VCC 14) matches the SCDS038N pin table, and OE is active high. Datasheet Rev. 7.0.A, dated 2026-04-21 (read 13:32:35Z, https://toshiba.semicon-storage.com/info/docget.jsp?did=12250&prodName=TC7MBL3126CFT). IOFF is 10 µA (−40 to 85 °C) at VCC 0 with OE, A, B = 0 to 3.6 V. That states OE explicitly, where SCDS038N writes only 'VI or VO'. Switch I/O is 0 to 3.6 V recommended with VCC 0 or the switch off, but 0 to VCC with the switch on (absolute maximum VCC + 0.5 V). That is the same condition P2 used to drop Nexperia's 74CBTLV3126DS against a 3.6 V line while enabled. RON is 11 Ω max at VIS 0 V and 17 Ω at 3.0 V (VCC 3.0 V, 30 mA). VIH on OE is 0.7 × VCC. Topr −40 to 125 °C. JLCPCB C2675020: stockCount 50, canPresaleNumber 50, USD 0.8266 (13:33:20Z). That passes the gate of 50 only at 2 per board; at the 6 per board of gated-buffer rank 3 it fails. Digi-Key: 3493, Active, lead 16 weeks (13:32:28Z). The SN74CBTLV3126PWR's own Digi-Key route passes too: 3756, Active (13:35:52Z)"
+   },
+   {
+    "function": "reply path through the gate",
+    "part": "TC7MBL3126CFT(EL) (C2675020)",
+    "maker": "Toshiba",
+    "why": "The same element and readings as under multiprotocol port path: the pin-compatible alternate of rank 1 SN74CBTLV3126PWR, with IOFF stated on OE, A and B to 3.6 V. It inherits the switch-on I/O range of 0 to VCC"
+   },
+   {
+    "function": "UART socket path",
+    "part": "TC7MBL3126CFT(EL) (C2675020)",
+    "maker": "Toshiba",
+    "why": "The same element as the multiprotocol port path and its alternate; see that entry"
+   },
+   {
+    "function": "reply path through the gate",
+    "part": "TXB0104, TXS0104E",
+    "maker": "Texas Instruments",
+    "why": "The auto-direction family: both directions with one OE and no direction pin. Both fail and should be recorded as drops. TXB0104 (SCES650K, revised March 2025, read 13:38:19Z) recommends no external pull resistors and, if one is needed, more than 50 kΩ; that conflicts with the 10 kΩ pull-down and the 1 kΩ pull-up. Its OE current II is stated only at VCCA 1.2 to 3.6 V. TXS0104E (SCES651K, revised October 2023, read 13:38:20Z) has an internal 10 kΩ pull-up on each A and B I/O. Against the 10 kΩ pull-down, its own equation (1) gives an idle of VCC × 10 k / 20 k, 1.65 V, not low"
+   },
+   {
+    "function": "bias selector",
+    "part": "NC7SZ126M5X (C7421)",
+    "maker": "onsemi",
+    "why": "A pin-compatible alternate of SN74LVC1G126DBVR: SOT-23-5 pins 1 OE, 2 A, 3 GND, 4 Y, 5 VCC, and a HIGH on OE enables. Datasheet NC7SZ126/D Rev. 8, August 2024 (read 13:31:42Z, https://www.onsemi.com/download/data-sheet/pdf/nc7sz126-d.pdf): power-down high-impedance inputs and outputs, and IOFF 1 typical, 10 max at VCC 0 with VIN or VOUT = 5.5 V; the µ glyph is lost in extraction. NC7SZ126M5X is in the active part of the ordering table; the discontinued rows are P5X-F22057, L6X-L22175 and FHX-L22175. JLCPCB C7421: 5356, presale 5344, USD 0.0925 (13:33:44Z). Digi-Key: 57324, Active, lead 55 weeks (13:35:50Z)"
+   },
+   {
+    "function": "bias selector",
+    "part": "SN74LVC2G126DCUR (C2652104)",
+    "maker": "Texas Instruments",
+    "why": "A dual 1G126: 3 parts cover the 5 lines where the 1G126 needs 5, with the same Ioff, high impedance when off, and VOH 2.4 V at −16 mA with VCC 3 V (SCES205N). Readings as under gated output buffer"
+   },
+   {
+    "function": "receiver inputs",
+    "part": "SN74AXC1T45DBVR (C2677376)",
+    "maker": "Texas Instruments",
+    "why": "Pin-for-pin with rank 1 SN74LVC1T45DBVR in SOT-23-6: VCCA 1, GND 2, A 3, B 4, DIR 5, VCCB 6. It is a TI alternate whose status TI's page gives, unlike rank 2 Diodes 74LVC1T45W6-7, whose status P2 did not read. SCES882E (revised December 2023, read 13:36:36Z, https://www.ti.com/lit/ds/symlink/sn74axc1t45.pdf): VCCA and VCCB 0.65 to 3.6 V; Ioff ±5 µA on A or B at 0 to 3.6 V with the port's supply at 0 V; VOH VCCO − 0.1 V at −100 µA and 2.3 V at −12 mA with 3 V; DIR II ±1 µA, stated only at VCCA 0.65 to 3.6 V; data-input absolute maximum not recorded here. JLCPCB C2677376: 5912, presale 5622, USD 0.3992 (13:33:50Z). Digi-Key: 28049, Active, lead 9 weeks (13:35:48Z)"
+   },
+   {
+    "function": "receiver inputs",
+    "part": "74LVC1T45GW,125 (C478004)",
+    "maker": "Nexperia",
+    "why": "The Nexperia 1T45 in SOT363-2 (SC-88), the footprint of SN74LVC1T45DCKR (C9382), not of the DBVR. 74LVC1T45; 74LVCH1T45 Rev. 10, 4 August 2023 (read 13:38:43Z, https://assets.nexperia.com/documents/data-sheet/74LVC_LVCH1T45.pdf): IOFF at VCC(A) 0 V with VI or VO = 0 to 5.5 V, ±2 µA at 25 °C and ±10 µA over temperature (line 372), Tamb −40 to +125 °C. The LVCH variant has bus hold and is not this part. JLCPCB C478004: 24711, presale 24647, USD 0.2498 (13:33:48Z). Digi-Key: 0, Active, lead 20 weeks (13:35:46Z)"
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "SN74LVC541APWR (rank 4, gated output buffer)",
+    "reason_given": "Meets every value, but no second source passes rule 5",
+    "why_it_fails": "A pin-compatible alternate from a second maker passes rule 4. Toshiba 74LCX541FT(AE), C7194124, has JLCPCB stockCount 2098 and canPresaleNumber 2098 (2026-09-28T13:37:21Z); C516171, 74LCX541FT(AJ), has 1677. Its datasheet (Rev. 3.0.A, 2026-04-21, read 13:37:32Z) gives the 541 pinout with two active-low ANDed OE, IOFF 10.0 µA at VCC 0 with VIN/VOUT = 5.5 V, and 24 mA drive at 3.0 V. P2's premise itself re-reads true: SN74LVC541APWR has 0 at Digi-Key (13:37:03Z), and Nexperia 74LVC541APW,118 (C6093) has 0 with presale −12 (13:36:55Z)"
+   },
+   {
+    "part": "74CBTLV3126PW,118 and 74CBTLV3126DS,118 (multiprotocol port path)",
+    "reason_given": "switch voltage recommended at 0 to VCC with an absolute maximum of VCC + 0.5 V, below the 3.6 V device level",
+    "why_it_fails": "Only the absolute-maximum clause fails. With the 3.3 V rail at ±3 %, VCC + 0.5 V is 3.70 to 3.90 V, which is above 3.6 V, not below it. The clause is below 3.6 V only with VCC at 0 V (0.5 V), although the same Rev. 7 datasheet states IOFF ±10 µA with VI or VO = 0 V to 3.6 V (read 2026-09-28T13:34:32Z). Both drops still stand on other grounds. DS stands on the recommended VSW of 0 to VCC in enable and disable mode. PW stands on rule 4: JLCPCB C478017 has 0 (13:37:01Z). The re-rank should apply the same switch-on 0-to-VCC test to Toshiba TC7MBL3126CFT, whose datasheet states it. SN74CBTLV3126 states no recommended range for the switch I/O, only an absolute maximum VI of 4.6 V (SCDS038N)"
+   }
+  ],
+  "missed_functions": []
+ }
+}

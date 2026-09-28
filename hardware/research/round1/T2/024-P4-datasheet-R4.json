@@ -1,0 +1,349 @@
+{
+ "role": "P4",
+ "category": "R4",
+ "label": "P4-datasheet-R4",
+ "attempt": 0,
+ "data": {
+  "category": "R4",
+  "verifier": "datasheet",
+  "parts": [],
+  "figures": [
+   {
+    "figure": "found V56",
+    "verdict": "confirmed",
+    "evidence": "The reasoning holds against the sources it cites. IOBoard.md:340 says the expander is reset with the RP2354B, its driving pin is then an input, and a resistor holds each control input at its inactive level. V57's answer requires the pull-down selection in the reset and unpowered state. IOBoard.md:251 says plain DShot idles low, and :256 says bidirectional DShot idles high and servo PWM idles low. RP2350 section 9.3 says the pads reset pulled low. The 5 outputs are the 4 multiprotocol ports plus the UART socket (IOBoard.md:64-65). One small point: :273 (OpenYGE) does not say the line idles high. That is UART convention.",
+    "source": "hardware/docs/IOBoard.md:64-65, :251, :256, :273, :340 and Research.md:617 at c25aa86; https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (build-date 2025-07-29) section 9.3",
+    "read_at": "2026-09-28T13:57:06Z (RP2350); tree read 2026-09-28T13:50Z-13:56Z"
+   },
+   {
+    "figure": "found V58",
+    "verdict": "confirmed",
+    "evidence": "Each cited source says what V58 claims. AM32-bootloader main.c:516 sets the input with GPIO_PULL_UP. Lines 1095-1121 jump to the application when more than 450 of 4000 samples read low against GPIO_PULL_DOWN. BLHeliBootLoad.inc:71-72 disables push-pull and sets the pin high, so the pin is open-drain. AM32 g071 serial_telemetry.c:27-28 sets OPENDRAIN with PULL_UP. HitecDServo README.md:10-11 asks for a 1 kOhm pull-up to 3.3 V, and HitecDServoInternal.h:25 gives the servo a 3 kOhm pull-down. docs/OpenYGE.md:21 is UART 8N1. RP2350 Table 1436 gives VIH 2.0 V at IOVDD 3.3 V. The arithmetic checks: 10k||3k = 2.31 kOhm, and 3.3 x 2.31/3.31 = 2.30 V. The idle is 3.3 x 10/11 = 3.0 V. The pull-up limit for 2.0 V is 2.308 x 0.65 = 1.50 kOhm.",
+    "source": "https://raw.githubusercontent.com/am32-firmware/AM32-bootloader/master/bootloader/main.c; https://raw.githubusercontent.com/bitdump/BLHeli/master/BLHeli_S%20SiLabs/BLHeliBootLoad.inc; https://raw.githubusercontent.com/am32-firmware/AM32/main/Mcu/g071/Src/serial_telemetry.c; https://raw.githubusercontent.com/timmaxw/HitecDServo/main/README.md and src/HitecDServoInternal.h; docs/OpenYGE.md:21; RP2350 datasheet build 2025-07-29 Table 1436",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "found V59",
+    "verdict": "confirmed",
+    "evidence": "The Configuration page's CLI section reads: 'UNIX-style console (no echo, LF as EOL) on the signal line at 38400 baud 8N1. To enter CLI mode, the signal line must be held high for 2 seconds on startup.' The page was edited on Sep 24, 2026.",
+    "source": "https://github.com/neoxic/ESCape32/wiki/Configuration",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "found V60",
+    "verdict": "confirmed",
+    "evidence": "HitecDServoInternal.h:17-25 says the DPC-11 drives the line low (0 V) or high (about 2 V). When the servo transmits, the programmer pulls the line high and the servo drives it low. Lines 51-54 say the programmer pulls weakly at about 1.3 mA. README.md:2 and :6 say the library is not endorsed by Hitec. README.md:11 gives the 1 kOhm pull-up to 3.3 V for a 3.3 V microcontroller, and :73 says it was tested on a 3.3 V Pro Micro. No input-high threshold is stated anywhere.",
+    "source": "https://raw.githubusercontent.com/timmaxw/HitecDServo/main/src/HitecDServoInternal.h; https://raw.githubusercontent.com/timmaxw/HitecDServo/main/README.md",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "found V61",
+    "verdict": "confirmed",
+    "evidence": "HitecDServoInternal.h:17-25 gives a half-duplex serial link on the PWM line: 115200 baud, inverted polarity, 8N1, idle low (0 V). The servo drives low only and has a 3 kOhm pull-down. Lines 100-101 say that after a serial command the servo disregards PWM until it is rebooted by power-off or a REBOOT write. 'Open-drain' is an inference from 'drives it low to transmit', and a fair one.",
+    "source": "https://raw.githubusercontent.com/timmaxw/HitecDServo/main/src/HitecDServoInternal.h",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "found V62",
+    "verdict": "confirmed",
+    "evidence": "HitecDServoInternal.h:18 gives 115200 baud. HitecDServo.cpp:571 reads 'bit-banging a 115200 baud serial connection'.",
+    "source": "https://raw.githubusercontent.com/timmaxw/HitecDServo/main/src/HitecDServoInternal.h; https://raw.githubusercontent.com/timmaxw/HitecDServo/main/src/HitecDServo.cpp",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "found V63",
+    "verdict": "confirmed",
+    "evidence": "ESCape32 Installation step 4 says the signal line 'should read around 3.3V'. SRXL2 Rev K section 5 says 'standard 3.3V logic ... (3.3V = idle line)'. crsf.md:134 gives 400 kbaud at 3.3 V, and :138 gives 3.0 to 3.3 V. Betaflight esc_sensor.c:60 says KISS is sent at '115200 baud and 3.6V'. HitecDServoInternal.h:21-22 says the DPC-11 drives about 2 V. No source read requires 5 V. The thresholds of other servos are stated as not read.",
+    "source": "https://github.com/neoxic/ESCape32/wiki/Installation; https://raw.githubusercontent.com/SpektrumRC/SRXL2/master/Docs/SRXL2%20Specification.pdf; https://raw.githubusercontent.com/tbs-fpv/tbs-crsf-spec/main/crsf.md; https://raw.githubusercontent.com/betaflight/betaflight/master/src/main/sensors/esc_sensor.c; HitecDServoInternal.h",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "found V64",
+    "verdict": "confirmed",
+    "evidence": "AM32 IO.c:55-76 drives the DShot reply from timer output compare (CCMR1 0x60). g071 peripherals.c:493-496 sets INPUT_PIN to push-pull. AM32 main.c:1930-1933 sets NEUTRONRC_G071 to pull-down and every other target to pull-up. Bluejay Isrs.asm:481 sets the pin push-pull for the reply. RP2350 Table 1436 gives VOL at most 0.5 V at the set IOL. One correction: the '3.3 mA' sink leaves out the 300 Ohm series resistor and the pull-downs. With them the sink is about 2.3 mA. That is still above the 2 mA setting and within the 4 mA setting, so the conclusion stands.",
+    "source": "https://raw.githubusercontent.com/am32-firmware/AM32/main/Mcu/g071/Src/IO.c; https://raw.githubusercontent.com/am32-firmware/AM32/main/Mcu/g071/Src/peripherals.c; https://raw.githubusercontent.com/am32-firmware/AM32/main/Src/main.c; https://raw.githubusercontent.com/bird-sanctuary/bluejay/main/src/Modules/Isrs.asm; RP2350 datasheet build 2025-07-29 Table 1436",
+    "read_at": "2026-09-28T13:57:06Z (peripherals.c 14:02:42Z)"
+   },
+   {
+    "figure": "found V68",
+    "verdict": "confirmed",
+    "evidence": "docs/Receivers.md:10-16 gives one pin per bus, and every bus is one signal wire plus ground. analyser_screen.h:27 analyser_screen_push takes a single decoded frame stream. No source in the tree names a second receiver input.",
+    "source": "docs/Receivers.md:10-16; shared/ui/include/analyser_screen.h:20-33 at c25aa86",
+    "read_at": "2026-09-28T13:55Z (tree read)"
+   },
+   {
+    "figure": "found V69",
+    "verdict": "confirmed",
+    "evidence": "SRXL2 Rev K section 5 gives 3.3 V logic that idles at 3.3 V. crsf.md:134 gives 3.3 V, and :138 gives 3.0 to 3.3 V. EX Bus v1.21 (document of 18.12.2013), physical layer, gives a maximum logic '0' of 1.5 V and a minimum logic '1' of 3.0 V, with no maximum. The HoTT SUMD spec Rev 01 has no voltage figure in its text.",
+    "source": "SRXL2 Specification Rev K (raw.githubusercontent.com/SpektrumRC/SRXL2); crsf.md; https://www.jetimodel.cz/uloz/c6d00c58-78ab-4c4d-9f15-34e84523479e.pdf/?1626095164; https://www.deviationtx.com/media/kunena/attachments/98/HoTT-SUMD-Spec-REV01-12062012-pdf.pdf",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "found V70",
+    "verdict": "confirmed",
+    "evidence": "crsf.md:134: half-duplex 400 kbaud default, and 115.2 kbaud, 1 Mbaud and 2 Mbaud depending on hardware. crsf.md:138: 416666 baud, negotiable higher, with no ceiling stated. SRXL2 section 7.2 BaudRate field: 0 = 115200, 1 = 400000. EX Bus: 125/250 kBaud. SUMD: 115200 bit/s. S.BUS 100 kbaud is from docs/Receivers.md:12.",
+    "source": "crsf.md; SRXL2 Specification Rev K; EX Bus protocol v1.21; HoTT SUMD spec Rev 01; docs/Receivers.md:12",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "found V72",
+    "verdict": "confirmed",
+    "evidence": "Monostable.md:361-367 at 23c82ca places the gated device between the RP2350's output pins and the output connector. F13 (Research.md:541) names the 20 output ports and the UART socket. V71 (Research.md:631) gives EX Bus and SRXL2 telemetry toward the receiver only.",
+    "source": "hardware/docs/Monostable.md:361-367 at 23c82ca; hardware/docs/Research.md:541, :631 at c25aa86",
+    "read_at": "2026-09-28T13:55Z (tree read)"
+   },
+   {
+    "figure": "found V73",
+    "verdict": "refuted",
+    "evidence": "The RUN and brownout part stands. Section 9.3 lists brownout, RUN, SW-DP CDBGRSTREQ and RP-AP rescue reset as returning pads to reset state (output hi-Z, pulled low). Table 1436 gives a pull-down of 36 to 113 kOhm. The watchdog part is wrong. It rests on the isolation latches of section 9.7, but those hold a pad only while its ISO bit is set. The SDK clears ISO in gpio_set_function (section 9.3 IMPORTANT note). Section 9.7 also says ISO bits are not reset by a PADS block reset, and that 'resetting the PADS register block returns non-isolated pads to their reset state'. The datasheet's own listing of the SDK's _watchdog_enable (section 12.9.6.1, lines 52-53) sets PSM_WDSEL to every stage except ROSC and XOSC. That includes the RESETS stage (PSM WDSEL bit 4, Table 532). The RESETS reset value holds PADS_BANK0 and IO_BANK0 in reset (bits 9 and 6 = 0x1). So after a watchdog reset under the SDK's configuration, the gated lines return to pulled-low. The watchdog level depends on the firmware's PSM_WDSEL and RESETS_WDSEL settings; the isolation latches do not set it.",
+    "source": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (build-date 2025-07-29): sections 9.3, 9.7, 12.9.4, 12.9.6.1, Table 532 (PSM WDSEL), RESETS: RESET register, Table 1436",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "found V74",
+    "verdict": "confirmed",
+    "evidence": "SRXL2 Rev K section 5 gives servo-bus power of 3.5 to 8.4 V. RP2350 Table 1433 gives VPIN_FT -0.5 to 3.63 V at IOVDD 0 V, and 5.5 V at IOVDD 3.3 V. Monostable.md:74-80 is the powered-off isolation rule for inputs driven while their supply is absent.",
+    "source": "SRXL2 Specification Rev K; RP2350 datasheet build 2025-07-29 Table 1433; hardware/docs/Monostable.md:74-80 at 23c82ca",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "found V75",
+    "verdict": "refuted",
+    "evidence": "The fault list stands. IOBoard.md:531 gives signal, ground and rail on one lead. :536 says no requirement limits the current into a shorted signal line. F16 gives 8.7 V. The lower bound checks: 3.3/275 = 12.0 mA, the top IOH setting of Table 1436. The clamp figure checks: (8.7-3.6)/300 = 17 mA. The upper bound does not hold. It claims the Hitec-mode low 'stays below 0.8 V (3.3 x 300/1300 = 0.76 V)', which puts the pad at 0 V. Table 1436 guarantees only VOL <= 0.5 V at the set IOL, and the SN74CBTLV3126 adds ron up to 7 Ohm (SCDS038N 5.5). The line also carries 10 kOhm and the servo's 3 kOhm pull-downs. With the pad at 0.5 V, the connector low is about 1.05 V at 300 Ohm and 1.02 V at 275 Ohm. Both are above 0.8 V. With the pad at 0 V it is 0.69 V. So the 320 Ohm upper bound does not follow from its stated test.",
+    "source": "hardware/docs/IOBoard.md:531, :536; Research.md:544 (F16); RP2350 datasheet build 2025-07-29 Table 1436; https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf (SCDS038N, revised July 2026) section 5.5",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "found V76",
+    "verdict": "confirmed",
+    "evidence": "docs/OpenYGE.md:21 gives UART 115200 baud 8N1. docs/OpenYGE.md:400-403 names Hobbywing, Kontronik, Scorpion, OMP, ZTW, APD, FLY, Graupner and XDFly as an open decision, and their rates are not stated. Betaflight esc_sensor.c:113 gives ESC_SENSOR_BAUDRATE 115200.",
+    "source": "docs/OpenYGE.md at c25aa86; https://raw.githubusercontent.com/betaflight/betaflight/master/src/main/sensors/esc_sensor.c",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "found V77",
+    "verdict": "confirmed",
+    "evidence": "Betaflight esc_sensor.c:56-72 gives 10 bytes at 115200 baud, and :113 gives the rate. AM32 g071 serial_telemetry.c:53 sets BaudRate 115200, and :27-28 set open-drain with pull-up. The f051 variant is push-pull (lines 32-33). ESCape32 Settings lists 'telem_mode: 0' with mode 0 = KISS (page edited Sep 24, 2026).",
+    "source": "https://raw.githubusercontent.com/betaflight/betaflight/master/src/main/sensors/esc_sensor.c; https://raw.githubusercontent.com/am32-firmware/AM32/main/Mcu/g071/Src/serial_telemetry.c and Mcu/f051/Src/serial_telemetry.c; https://github.com/neoxic/ESCape32/wiki/Settings",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "found V78",
+    "verdict": "confirmed",
+    "evidence": "Research.md:281-282 says R3's gates follow the enable node alone and the buffer enable follows the monostable. AM32 main.c:1095-1137 jumps to the application when more than 450 of 4000 samples read low. It stays in the bootloader only when, with pull-up, none of 500 samples reads low. So it needs the line high nearly all the time; 'not mostly low' undersells that, but the conclusion holds. BLHeliBootLoad.inc:89-91 loops while the line is high (no timeout). The 250 ms BOOT_DELAY (:10) runs in id1 while the line is low. ESCape32 needs the line high for 2 s. HitecDServoInternal.h:89-91 gives a 1000 ms boot and a REBOOT register. 'VESC needs none' has no source cited.",
+    "source": "hardware/docs/Research.md:281-282; AM32-bootloader main.c; BLHeliBootLoad.inc; ESCape32 wiki Configuration; HitecDServoInternal.h",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "P2 report: programming supply switching",
+    "verdict": "confirmed",
+    "evidence": "Same sources as V78. AM32 and ESCape32 need the line high at start-up. BLHeli_S waits indefinitely while the line is high. R3's pack switch and the buffer enable follow the enable node alone (Research.md:281-282). The Hitec REBOOT register makes a power cycle unnecessary.",
+    "source": "AM32-bootloader main.c:1095-1137; BLHeliBootLoad.inc:10, :89-99; ESCape32 wiki Configuration; HitecDServoInternal.h:89-101; Research.md:281-282",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "P2 report: connector level in RP2354B reset (RUN, brownout)",
+    "verdict": "confirmed",
+    "evidence": "The count checks: 16 + 4 + 1 = 21 lines. Section 9.3 gives pads hi-Z and pulled low after RUN or brownout, and Table 1436 gives a pull-down of 36 to 113 kOhm. SN74LVC244A II is at most +/-5 uA (-40 to 85 C, SCAS414AG), and 5 uA x 113 kOhm = 0.57 V, which is below VIL 0.8 V, so the buffer passes low. The switch passes the pad's low. IOBoard.md:340 says the expander resets with the RP2354B and resistors hold its controls.",
+    "source": "RP2350 datasheet build 2025-07-29 section 9.3, Table 1436; https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf (SCAS414AG, revised June 2026); IOBoard.md:340",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "P2 report: connector level through a watchdog reset",
+    "verdict": "refuted",
+    "evidence": "The quoted list in section 9.3 is right. The conclusion does not follow. The isolation latches of section 9.7 hold a pad only while its ISO bit is set, and the SDK clears ISO in gpio_set_function. Section 9.7 says a PADS block reset does not reset the ISO bits and returns non-isolated pads to their reset state. The SDK's _watchdog_enable, listed in section 12.9.6.1, sets PSM_WDSEL to every stage except ROSC and XOSC, which includes RESETS (Table 532 bit 4). The RESETS reset value holds PADS_BANK0 and IO_BANK0 in reset. So under that configuration the gated lines return to hi-Z and pulled-low. The line stays high only if firmware leaves those stages out of PSM_WDSEL and RESETS_WDSEL. That is a firmware configuration for P5 and R1, not an effect of the isolation latches.",
+    "source": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (build-date 2025-07-29) sections 9.3, 9.7, 12.9.4, 12.9.6.1, Table 532, RESETS: RESET register",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "P2 report: buffer enable polarity for P5",
+    "verdict": "confirmed",
+    "evidence": "SCDS038N Table 4-1 gives 1OE to 4OE as 'Output enable, active high', and Table 7-1 gives OE H as A = B. SCAS414AG Table 7-1 gives OE L as Y = A (active low) on 1OE (pin 1) and 2OE (pin 19). Monostable.md:422 says the enable node is active high, and :369-375 give the 10 kOhm pull-down or pull-up at the part's enable pin.",
+    "source": "https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf (SCDS038N); https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf (SCAS414AG); Monostable.md:369-375, :422 at 23c82ca",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "P2 report: GPIO and expander outputs for P5",
+    "verdict": "confirmed",
+    "evidence": "The SN74LVC1T45 pin table has a DIR pin (pin 5), and V71 (yes, half duplex) needs direction switching, so it takes 1 GPIO. The 5 expander outputs match V56 (4 multiprotocol ports plus the UART socket). The SN74CBTLV3126 is a bidirectional switch with only an OE pin, so no direction pin enters the DShot PIO programs counted at IOBoard.md:258-259.",
+    "source": "https://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf pin functions; SCDS038N Table 4-1; IOBoard.md:258-259; Research.md:631",
+    "read_at": "2026-09-28T14:08:39Z (SN74LVC1T45); 13:57:06Z (SCDS038N)"
+   },
+   {
+    "figure": "P2 report: drive on the switch path",
+    "verdict": "confirmed",
+    "evidence": "Table 1436 at IOVDD 3.3 V gives VOH >= 2.62 V and VOL <= 0.5 V at IOH/IOL = 2, 4, 8 or 12 mA 'depending on setting'. With the 1 kOhm pull-up, 300 Ohm and the pull-downs, the pad sinks about 2.3 mA while low. That exceeds the 2 mA setting, so a setting of 4 mA or higher is needed.",
+    "source": "RP2350 datasheet build 2025-07-29 Table 1436",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "P2 report: enable I_off reading",
+    "verdict": "refuted",
+    "evidence": "The TMUX1511, SN74CB3Q3125 and SN74LVC126A readings are right. TMUX1511 (SCDS390B) gives IPOFF +/-2 uA to 3.6 V on S/D only, and SEL IIH/IIL only with VDD powered; section 7.3.5 is fail-safe logic. SN74CB3Q3125 (SCDS143E, revised September 2026) gives Ioff with VO 0 to 5.5 V and VI = 0, and control IIN only at VCC 3.6 V. SN74LVC126A (SCAS339U) states no Ioff. The SN74LVC8T245 and TXU0104 readings are not right. Their tables list Ioff under 'A or B port', but the text assigns that limit to every pin. SCES584D (revised May 2026) section 7.3.2: 'The maximum leakage into or out of any input or output pin on the device is specified by Ioff' (+/-2 uA). SCES937B section 7.3.4 says the same, and section 7.3 says Ioff protection covers 'an input or output while the device is powered down'. So each datasheet does state a limit for OE at supply 0 V, by reference, and the 'no figure for the enable input' drops of those two parts need a ruling.",
+    "source": "https://www.ti.com/lit/ds/symlink/sn74lvc8t245.pdf (SCES584D) 5.6 and 7.3.2; https://www.ti.com/lit/ds/symlink/txu0104.pdf (SCES937B) 5.5, 7.3, 7.3.4; https://www.ti.com/lit/ds/symlink/tmux1511.pdf (SCDS390B); https://www.ti.com/lit/ds/symlink/sn74cb3q3125.pdf (SCDS143E); https://www.ti.com/lit/ds/symlink/sn74lvc126a.pdf (SCAS339U)",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "P2 report: SN74CBTLV3126 high level",
+    "verdict": "confirmed",
+    "evidence": "SCDS038N (revised July 2026) section 5.5 tabulates ron only at VI 0 V (64 and 24 mA) and VI 2.4 V (15 mA: 10 Ohm typical, 15 Ohm maximum at VCC 3 V). Features and section 7.3 state 'Rail-to-rail switching on data I/O'.",
+    "source": "https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "P2 report: Hitec low level",
+    "verdict": "refuted",
+    "evidence": "The 0.76 V (3.3 x 300/1300) puts the RP2354B pad at 0 V. Table 1436 bounds the pad low only at VOL <= 0.5 V at the set IOL. The switch adds up to 7 Ohm (SCDS038N 5.5), and the 10 kOhm and servo 3 kOhm pull-downs share the node. With the pad at its datasheet limit of 0.5 V, the low at the servo is about 1.05 V. With the pad at 0 V it is 0.69 V. The datasheet-bounded low is therefore up to about 1.05 V, not 0.76 V. The servo's input-low threshold is still not stated.",
+    "source": "RP2350 datasheet build 2025-07-29 Table 1436; https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf section 5.5; HitecDServoInternal.h:25",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "P2 report: Hitec protocol source",
+    "verdict": "confirmed",
+    "evidence": "The HitecDServo README and header say the protocol was reverse-engineered and is not endorsed by Hitec. Neither names a Hitec publication. The header gives 115200 baud, inverted, half duplex, servo drives low only, 3 kOhm pull-down. docs/Manifest.md:32 says 'The Hitec D-series protocol is published'.",
+    "source": "https://raw.githubusercontent.com/timmaxw/HitecDServo/main/README.md and src/HitecDServoInternal.h; docs/Manifest.md:32 at c25aa86",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "P2 report: SN74CBTLV3126PWR stock margin",
+    "verdict": "confirmed",
+    "evidence": "The re-read matches. JLCPCB C543078 SN74CBTLV3126PWR: stockCount 401, canPresaleNumber 395. Digi-Key: stock_available 3756, Active, lead time 16 weeks. The gates check under S4 (5 x need, at least 50): 2 a board x 5 boards = 10, gate 50; 6 a board = 30, gate 150. 401 passes both.",
+    "source": "vendors.py jlcpcb C543078; vendors.py digikey SN74CBTLV3126PWR (api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails)",
+    "read_at": "2026-09-28T14:03:31Z (JLCPCB), 14:03:33Z (Digi-Key)"
+   },
+   {
+    "figure": "P2 report: manufacturer status not read",
+    "verdict": "confirmed",
+    "evidence": "Both Diodes part pages answered HTTP 200. The text of each page body, with scripts stripped, holds no lifecycle status: no Active, NRND, Obsolete or Last Time Buy tied to the part. Only a description and the 'Datasheet Archive' links are there.",
+    "source": "https://www.diodes.com/part/view/74LVC1G126; https://www.diodes.com/part/view/74LVC1T45",
+    "read_at": "2026-09-28T14:03:48Z"
+   },
+   {
+    "figure": "re-rank report: SN74LVC541APWR second source",
+    "verdict": "confirmed",
+    "evidence": "74LCX541FT Rev.3.0.A (2026-04-21) page 2 pinout is OE1 1, A1-A8 2-9, GND 10, Y8-Y1 11-18, OE2 19, VCC 20. That is identical to SCAS298O (SN74LVC541A PW). Both OE are active low (truth table). TSSOP20B is 6.5 x 4.4 mm, 0.65 mm pitch, 6.4 mm span, the same as TI PW. The part has power-down protection on all inputs and outputs, IOFF 10 uA at 5.5 V, VCC 1.65 to 3.6 V, and -40 to 85 C. The stock re-read matches: JLCPCB C7194124 74LCX541FT(AE) TOSHIBA TSSOP-20 stockCount 2098, presale 2098; C113281 SN74LVC541APWR stockCount 15628, presale 15242; Digi-Key 74LCX541FT stock 11.",
+    "source": "https://toshiba.semicon-storage.com/info/docget.jsp?did=15179&prodName=74LCX541FT; https://www.ti.com/lit/ds/symlink/sn74lvc541a.pdf; vendors.py jlcpcb C7194124, C113281; vendors.py digikey-search 74LCX541FT",
+    "read_at": "2026-09-28T14:03:48Z (datasheet), 14:03:31Z (JLCPCB), 14:03:33Z (Digi-Key)"
+   },
+   {
+    "figure": "re-rank report: Toshiba lifecycle status not read",
+    "verdict": "confirmed",
+    "evidence": "All three pages answered HTTP 200. Their bodies list orderable part numbers with MOQ and RoHS (TC7MBL3126CFT(AJ) and (EL); 74LCX541FT; 74LCX244FT). None has a lifecycle status for the part. The only 'Not Recommended for New Design and EOL announced' text is a navigation menu option.",
+    "source": "https://toshiba.semicon-storage.com/eu/semiconductor/product/general-purpose-logic-ics/detail.74LCX244FT.html, detail.74LCX541FT.html, detail.TC7MBL3126CFT.html",
+    "read_at": "2026-09-28T14:03:48Z"
+   },
+   {
+    "figure": "re-rank report: enable node load with SN74LVC2G126 as the gate",
+    "verdict": "confirmed",
+    "evidence": "SCES205N (revised September 2020) pin table gives 1OE on pin 1 and 2OE on pin 7, one OE per buffer. So 16 lines means 16 OE pins, each with its own 10 kOhm pull-down (Monostable.md:369-372). 16 x 3.3 V / 10 kOhm = 5.28 mA.",
+    "source": "https://www.ti.com/lit/ds/symlink/sn74lvc2g126.pdf; hardware/docs/Monostable.md:369-372 at 23c82ca",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "re-rank report: onsemi unit reading",
+    "verdict": "confirmed",
+    "evidence": "I rendered page 4 of both datasheets with pdftoppm. 74LCX244 IOFF (VI = 5.5 V or VO = 5.5 V, VCC 0) is 10 uA. NC7SZ126 IOFF is 1 uA at 25 C and 10 uA at -40 to 85 C. pdftotext prints the unit as 'mA' (74LCX244) and 'A' (NC7SZ126).",
+    "source": "https://www.onsemi.com/download/data-sheet/pdf/74lcx244-d.pdf; https://www.onsemi.com/download/data-sheet/pdf/nc7sz126-d.pdf",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "re-rank report: NC7SZ126M5X package",
+    "verdict": "confirmed",
+    "evidence": "NC7SZ126/D Rev. 8 (August 2024) ordering table gives NC7SZ126M5X as SC-74A. Under DISCONTINUED it lists NC7SZ126M5X-L22090 as SOT23-5. The case 318BQ outline is SC-74A-5 3.00 x 1.50 x 0.95, 0.95 pitch, E 2.75 BSC. JLCPCB C7421 lists NC7SZ126M5X, onsemi, SOT-23-5, stockCount 5356. Land check: the pinout matches SN74LVC1G126 DBV (OE 1, A 2, GND 3, Y 4, VCC 5). TI's DBV land has 0.6 x 1.1 mm pads, 0.95 pitch, rows 2.6 mm apart. It covers the SC-74A feet (span 2.75, L 0.2 to 0.6), so the footprint fits.",
+    "source": "https://www.onsemi.com/download/data-sheet/pdf/nc7sz126-d.pdf (ordering table, case 318BQ page); https://www.ti.com/lit/ds/symlink/sn74lvc1g126.pdf DBV0005A board layout; vendors.py jlcpcb C7421",
+    "read_at": "2026-09-28T13:57:06Z (datasheets), 14:03:31Z (JLCPCB)"
+   },
+   {
+    "figure": "re-rank report: bus switch range with the switch on",
+    "verdict": "confirmed",
+    "evidence": "TC7MBL3125CFT/3126CFT Rev.7.0.A (2026-04-21): section 10 gives VS 0 to 3.6 V (VCC 0 V or switch off) and 0 to VCC (switch on). Section 9 gives -0.5 to 4.6 V (off) and -0.5 to VCC + 0.5 (on). SCDS038N 5.3 lists only VCC 2.3 to 3.6 V, VIH, VIL and TA, and 5.1 gives VI -0.5 to 4.6 V. P4 reading: a 3.6 V level through the enabled SN74CBTLV3126 breaks no limit the datasheet states. Its behaviour above VI 2.4 V (ron) is not characterised.",
+    "source": "https://toshiba.semicon-storage.com/info/docget.jsp?did=12250&prodName=TC7MBL3126CFT; https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "re-rank report: P3's Nexperia 74CBTLV3126 correction",
+    "verdict": "confirmed",
+    "evidence": "74CBTLV3126 Rev. 7 (11 April 2024) gives VSW -0.5 to VCC + 0.5 V as the limiting value and 0 to VCC as the recommended range. 3.3 V +/-3 % is 3.201 to 3.399 V, so VCC + 0.5 is 3.70 to 3.90 V. JLCPCB C478017 74CBTLV3126PW,118 stockCount 0, presale 0.",
+    "source": "https://assets.nexperia.com/documents/data-sheet/74CBTLV3126.pdf; vendors.py jlcpcb C478017",
+    "read_at": "2026-09-28T13:57:06Z (datasheet), 14:03:31Z (JLCPCB)"
+   },
+   {
+    "figure": "re-rank report: TXS0104E idle in reset",
+    "verdict": "confirmed",
+    "evidence": "SCES651K (revised October 2023) section 8.3.5: 'Each A-port I/O has an internal 10-kOhm pullup resistor to VCCA, and each B-port I/O has an internal 10-kOhm pullup resistor to VCCB.' The B side is at least 1.65 V (3.3 x 10/20). With the pass FET conducting it is about 2.0 V. Either way the line is not low.",
+    "source": "https://www.ti.com/lit/ds/symlink/txs0104e.pdf",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "re-rank report: SN74LVC16244A disable time",
+    "verdict": "confirmed",
+    "evidence": "SCAS699C (August 2003, revised June 2014) section 7.6, -40 to 85 C: tdis OE to Y is 5.8 ns max at VCC 3.3 +/-0.3 V and 6.2 ns max at VCC 2.7 V.",
+    "source": "https://www.ti.com/lit/ds/symlink/sn74lvc16244a.pdf",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "re-rank report: stock re-reads of P2's first-ranked gate parts",
+    "verdict": "confirmed",
+    "evidence": "C7668 SN74LVC244APWR Texas Instruments TSSOP-20: stockCount 94539, canPresaleNumber 94364. C543078 SN74CBTLV3126PWR Texas Instruments TSSOP-14: stockCount 401, canPresaleNumber 395. Both match.",
+    "source": "vendors.py jlcpcb C7668; vendors.py jlcpcb C543078",
+    "read_at": "2026-09-28T14:03:31Z"
+   },
+   {
+    "figure": "re-rank report: 74LVC1T45GW,125 at Digi-Key",
+    "verdict": "confirmed",
+    "evidence": "74LVC1T45GW,125 (Nexperia USA Inc.): stock_available 0, lead time 20 weeks, Active. SN74LVC1T45DCKR: JLCPCB C9382 stockCount 52982, presale 52242, SC-70-6; Digi-Key 132105, Active. Pins match: VCC(A) 1, GND 2, A 3, B 4, DIR 5, VCC(B) 6 in 74LVC_LVCH1T45 Table 3 and in the SN74LVC1T45 pin table.",
+    "source": "vendors.py digikey 74LVC1T45GW,125; vendors.py jlcpcb C9382; vendors.py digikey SN74LVC1T45DCKR; https://assets.nexperia.com/documents/data-sheet/74LVC_LVCH1T45.pdf; https://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf",
+    "read_at": "2026-09-28T14:03:31Z-14:03:33Z (stock), 14:08:39Z (datasheets)"
+   },
+   {
+    "figure": "re-rank report: TC7MBL3126CFT(EL) stock",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C2675020 TC7MBL3126CFT(EL) TOSHIBA TSSOP-14: stockCount 50, canPresaleNumber 50. That equals gate 50 and is below gate 150. Digi-Key keyword search: TC7MBL3126CFT(EL) 3493, Active, lead time 16 weeks.",
+    "source": "vendors.py jlcpcb C2675020; vendors.py digikey-search TC7MBL3126CFT",
+    "read_at": "2026-09-28T14:03:31Z (JLCPCB), 14:03:33Z (Digi-Key)"
+   },
+   {
+    "figure": "re-rank drop: gated output buffer: 74LVCH126APW,118 / 74LVC126APW,118",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C2442297 74LVC126APW,118 (Nexperia): stockCount 0, presale 0. C6060 74LVC126APW (Nexperia): stockCount 0. The other Nexperia variants are also 0: C548095 -Q100J, C3754340 /C4118, C3756556 /AU118. C5524548 ,112 is labelled NXP and also 0. The jlcparts copy has no 74LVCH126A row. Digi-Key 74LVC126APW,118 (Nexperia): 5676. Rule 1 counts stock at JLCPCB for a part on the board.",
+    "source": "vendors.py jlcpcb C2442297, C6060, C548095, C5524548, C3754340, C3756556; vendors.py digikey-search 74LVC126APW; cache.sqlite3 (jlcparts 2026-09-14, read-only)",
+    "read_at": "2026-09-28T14:03:31Z-14:03:34Z; 14:06:59Z-14:07:06Z"
+   },
+   {
+    "figure": "re-rank drop: multiprotocol port path: TC7MBL3126CFT(EL)",
+    "verdict": "confirmed",
+    "evidence": "Rev.7.0.A (2026-04-21) section 10 gives switch I/O 0 to VCC with the switch on, and section 9 gives -0.5 to VCC + 0.5 on. VCC is 3.201 to 3.399 V, so 3.6 V is above the recommended range with the switch on. IOFF is 10 uA with OE, A and B at 0 to 3.6 V. The TSSOP14 pinout matches the 126 type. JLCPCB stock is 50/50. The Toshiba page has no status in its body.",
+    "source": "https://toshiba.semicon-storage.com/info/docget.jsp?did=12250&prodName=TC7MBL3126CFT; vendors.py jlcpcb C2675020; detail.TC7MBL3126CFT.html",
+    "read_at": "2026-09-28T13:57:06Z; 14:03:31Z; 14:03:48Z"
+   },
+   {
+    "figure": "re-rank drop: UART socket path: TC7MBL3126CFT(EL)",
+    "verdict": "confirmed",
+    "evidence": "Same datasheet reading: switch I/O 0 to VCC with the switch on (section 10). V63 applies the 3.6 V tolerance to the UART socket.",
+    "source": "https://toshiba.semicon-storage.com/info/docget.jsp?did=12250&prodName=TC7MBL3126CFT; Research.md V63",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "re-rank drop: reply path through the gate: TC7MBL3126CFT(EL)",
+    "verdict": "confirmed",
+    "evidence": "Same reading: 0 to VCC recommended and VCC + 0.5 absolute maximum with the switch on (sections 9 and 10). A KISS reply at 3.6 V (Betaflight esc_sensor.c:60) exceeds VCC of at most 3.399 V.",
+    "source": "https://toshiba.semicon-storage.com/info/docget.jsp?did=12250&prodName=TC7MBL3126CFT; Betaflight esc_sensor.c:60",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "re-rank drop: reply path through the gate: TXB0104",
+    "verdict": "confirmed",
+    "evidence": "SCES650K (revised March 2025) section 7.3.5 says external pull resistors must be above 50 kOhm, and the part must not be used where an open-drain driver sits on the I/O. The equation VOL = VCCx x 4.5 kOhm/(RPU + 4.5 kOhm) gives 3.3 x 4.5/5.5 = 2.70 V. That equation is in section 8.2.2 of SCES650K, not 7.4 as the drop cites. The drop's substance is unchanged.",
+    "source": "https://www.ti.com/lit/ds/symlink/txb0104.pdf",
+    "read_at": "2026-09-28T13:57:06Z"
+   },
+   {
+    "figure": "re-rank drop: reply path through the gate: TXS0104E",
+    "verdict": "confirmed",
+    "evidence": "SCES651K section 8.3.5 gives internal 10 kOhm pull-ups on every A and B I/O. The A pull-up outweighs the pad's 36 to 113 kOhm pull-down (Table 1436). The B side sits at 1.65 V or above against the 10 kOhm connector pull-down, not low, which contradicts V73.",
+    "source": "https://www.ti.com/lit/ds/symlink/txs0104e.pdf; RP2350 datasheet build 2025-07-29 Table 1436",
+    "read_at": "2026-09-28T13:57:06Z"
+   }
+  ]
+ }
+}
