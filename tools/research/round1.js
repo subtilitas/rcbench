@@ -232,7 +232,7 @@ function p4Prompt(cat, kind, bundle, only) {
     : 'Verify, for each function, the first-ranked part, its rule-5 alternate when its second_source_route is alternate (the part in its second_source_part, kind alternate), every part in its verify list, and the rule-5 alternate of each part of kind q-alternative in that list, in the same way (kind alternate). A first-ranked part that is also such an alternate is listed once, with the checks of an alternate as well. List every part you verify in parts, once; a part you leave out counts as not verified.'
   const how = kind === 'stock'
     ? 'You are the stock and lifecycle verifier. Re-read stock and lifecycle at the primary sources, with the clients above, and try to refute each figure.'
-    : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, the reasons the re-rank gave for dropping a P3 candidate, P2\'s own drops, and for "function requirements: FUNCTION" whether the function\'s requirement list names every requirement IOBoard.md and the answers set for it, with no value weaker than theirs) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
+    : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, the reasons the re-rank gave for dropping a P3 candidate, P2\'s own drops, for "Q option: FUNCTION: PART: CLASS" whether the part belongs to that option class of Q4 or Q8, and for "function requirements: FUNCTION" whether the function\'s requirement list names every requirement IOBoard.md and the answers set for it, with no value weaker than theirs) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
   return `${ctx('P4', cat, `P4-${kind}-${cat}`)}
 
 ${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives the lifecycle table's readings: "longevity commitment" (the programme page's commitment, or that none is published; passes unless S5 makes it a gate it fails), "market introduction" (the first datasheet revision date; passes, and under 12 months is stated in read), "distributor status" (JLCPCB, LCSC and Digi-Key; passes, a disagreement with the maker stated in read) and "lead time" (the manufacturer's lead time in Digi-Key's API; passes). For a part on the board it gives "LCSC identity" (the exact JLCPCB result for the LCSC number names the candidate's part number and package; passes only then). It also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and a check with agrees or passes false counts as a refutation.
@@ -625,6 +625,12 @@ function merge(cat, p2, rr, p3) {
     const owned = { R10: 'Q4', R12: 'Q8' }[cat]
     const decision = owned && fr && fr.decision === owned ? owned : 'none'
     if (fr && fr.decision && fr.decision !== 'none' && decision === 'none') followUps.push({ role: 'rerank', category: cat, function: name, reason: `decision ${fr.decision} does not belong to ${cat}` })
+    // A part listed more than once as a Q alternative has no single class.
+    const qTwice = new Set(verify.filter(v => v.kind === 'q-alternative').map(v => v.part).filter((part, i, all) => all.indexOf(part) !== i))
+    if (qTwice.size) {
+      for (const part of qTwice) followUps.push({ role: 'rerank', category: cat, function: name, part, reason: 'q-alternative listed more than once; not verified as one' })
+      verify = verify.filter(v => !(v.kind === 'q-alternative' && qTwice.has(v.part)))
+    }
     if (decision === 'none' && verify.some(v => v.kind === 'q-alternative')) {
       followUps.push({ role: 'rerank', category: cat, function: name, reason: 'q-alternatives on a function that implements no decision; not verified' })
       verify = verify.filter(v => v.kind !== 'q-alternative')
@@ -899,7 +905,11 @@ function selection(functions, ledger) {
     // part: the kept part when it is the first-ranked one the re-rank
     // classed, or a Q alternative.
     const needed = f.decision !== 'none' ? ((A.q_options || {})[f.decision] || []) : []
-    const have = new Set([...(kept && kept.rank === 1 && f.kept_option ? [f.kept_option] : []), ...qAlternatives.map(q => q.option)])
+    // A class counts for a verified part whose class the datasheet verifier
+    // confirmed ("Q option: FUNCTION: PART: CLASS").
+    const classed = (part, option) => !!option && !ledger.some(l => l.figure === `Q option: ${f.function}: ${part}: ${option}` && !String(l.status).startsWith('confirmed'))
+    const have = new Set([...(kept && kept.rank === 1 && classed(kept.part, f.kept_option) ? [f.kept_option] : []),
+      ...qAlternatives.filter(q => String(q.status).startsWith('verified') && classed(q.part, q.option)).map(q => q.option)])
     const qOptionsMissing = needed.filter(o => !have.has(o))
     function qAlt(v) {
       const rec = recOf(v.part)
@@ -963,6 +973,12 @@ function figuresToCheck(cat, p2, rr, functions, p3) {
       ...f.verify.filter(v => v.kind === 'q-alternative').map(v => altOf(candidateOf(functions, f.function, v.part)))]) if (part) verified.add(part)
   }
   missing.push(...perPartMissing(cat, p2, rr, verified))
+  // Each option class the re-rank gives a Q4 or Q8 part is confirmed.
+  for (const f of functions) {
+    if (f.decision === 'none') continue
+    if (f.shortlist[0] && f.kept_option) add(`Q option: ${f.function}: ${f.shortlist[0].part}: ${f.kept_option}`)
+    for (const v of f.verify) if (v.kind === 'q-alternative' && v.option) add(`Q option: ${f.function}: ${v.part}: ${v.option}`)
+  }
   // Each function's requirement list is P2's reading of the specification:
   // the datasheet verifier re-derives it from IOBoard.md and the answers.
   for (const f of functions) if (f.shortlist.length) add(`function requirements: ${f.function}`)

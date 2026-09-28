@@ -83,8 +83,9 @@ the items in the arguments:
   and T5, P5-P6 follow-ups and T6, for every category, while:
   - a function has no verified part, or a missing or unverified second source;
   - R10 or R12 has no Q4 or Q8 alternative, other than the kept part, on the
-    function the re-rank marks with that decision, lacks a part for one of the
-    decision's option classes (`categories.json` `q_options`), or has an
+    function the re-rank marks with that decision, lacks a verified part, of
+    its own and with its class confirmed by the datasheet verifier, for one of
+    the decision's option classes (`categories.json` `q_options`), or has an
     alternative not verified with its own second source;
   - a run that decides one of the category's functions left a figure the
     datasheet verifier did not confirm, or a value for research or required
@@ -168,10 +169,12 @@ under `hardware/docs/`.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared
-arguments, an output already recorded, a plan or a refusal, a return that does
-not match its schema, and a results tree whose head moved since `prepare`. A
-task P0 stopped is recorded as `TASK-stopped-N` and does not count as
-recorded. After a run that selects parts it rewrites
+arguments, that lacks the result fields or the summary its task writes, or
+that did not stop and lacks the returns its task cannot finish without (P0, or
+P7 and its critic), an output already recorded, a plan or a refusal, a return
+that does not match its schema, and a results tree whose head moved since
+`prepare`. A task P0 stopped is recorded as `TASK-stopped-N` and does not
+count as recorded. After a run that selects parts it rewrites
 `hardware/research/round1/selection.json`, the part each function keeps: the
 latest run that names a function decides it. A run that names it and verifies
 no part leaves it open and records the earlier part in `not_requalified`.

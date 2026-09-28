@@ -1043,6 +1043,46 @@ def cmd_prepare(args):
 
 # ----------------------------------------------------------------- record
 
+def result_shape(result, want):
+    """The whole workflow result: its fields, the summary its task writes,
+    and the returns a run that did not stop cannot lack."""
+    fields = {"summary": dict, "returns": list, "followUps": list,
+              "missing": list, "started": int, "planned": int}
+    bad = [k for k, kind in fields.items()
+           if not isinstance(result.get(k), kind)
+           or isinstance(result.get(k), bool)]
+    if bad:
+        raise SystemExit("the output lacks or misstates: " + ", ".join(bad))
+    summary = result["summary"]
+    roles = {r.get("role") for r in result["returns"] if isinstance(r, dict)}
+    phases = (want.get("followup") or {}).get("phases")
+    task = want.get("task")
+    if summary.get("stopped"):
+        if not isinstance(summary.get("reasons"), list):
+            raise SystemExit("a stopped run gives its reasons")
+        return
+    checks = task == "T5" or phases == "P5-P6"
+    if task == "T6":
+        need, keys = ["P7", "P7-critic"], {}
+    elif checks:
+        need = []
+        keys = {"conflicts": list, "gaps": list, "missing_checks": list,
+                "unchecked_items": int, "rejected_items": int,
+                "budgets_missing": list}
+    elif task == "T1" or phases == "P1":
+        need, keys = ["P0"], {"questions": list}
+    else:
+        need, keys = ["P0"], {"selection": dict, "figures_open": dict,
+                              "q_missing": list, "chain_failed": list}
+    lacking = [r for r in need if r not in roles] + [
+        f"summary.{k}" for k, kind in keys.items()
+        if not isinstance(summary.get(k), kind)
+        or isinstance(summary.get(k), bool)]
+    if lacking:
+        raise SystemExit("the output of a run that did not stop lacks: "
+                         + ", ".join(lacking))
+
+
 def set_aside(results, paths, result):
     """A refused T6 leaves the output paths clean for the next attempt;
     what P7 changed is kept in a stash, not lost."""
@@ -1104,6 +1144,7 @@ def record(args):
         raise SystemExit(f"the output is run {result.get('run')} "
                          f"{result.get('run_id')}, not the prepared {run} "
                          f"{want['run_id']}")
+    result_shape(result, want)
     with open(args.output, "rb") as f:
         digest = hashlib.sha256(f.read()).hexdigest()
     dirty_runs = git("-C", results, "status", "--porcelain",
