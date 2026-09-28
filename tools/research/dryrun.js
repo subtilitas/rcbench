@@ -207,7 +207,7 @@ async function runTask(task, opts = {}) {
       else {
         data.reviewed = outs
         const figFiles = opts.oneFigure ? ['hardware/docs/Parts.md'] : outs.filter(f => f.startsWith('hardware/docs/'))
-        data.figure_checks = opts.noFigures ? [] : figFiles.map(file => ({ file, line: 1, figure: opts.blankFigure ? '' : 'stock', return_file: opts.blankFigure ? '' : opts.returnFile || 'hardware/research/round1/T2/012-P4-stock-R1.json', agrees: !opts.criticDisagrees }))
+        data.figure_checks = opts.noFigures ? [] : figFiles.map(file => ({ file, line: 1, figure: opts.blankFigure ? '' : 'stock', return_file: opts.blankFigure ? '' : opts.returnFile || 'hardware/research/round1/T2/012-P4-stock-R1.json', kind: opts.figureKind || 'other', agrees: !opts.criticDisagrees }))
         data.sentence_issues = opts.sentenceIssue ? [{ file: 'f', line: 1, issue: 'i' }] : []
         data.marked = opts.marked || []
         data.part_rows = opts.partRows || []
@@ -1217,10 +1217,13 @@ async function main() {
   check(!r.result.summary.stopped, 'T6: open items stated on the pages finish it')
   r = await runTask('T6', { ...openT6, marked: [0, 1, 2].map(index => ({ index, file: 'notes.md', line: 3 })) })
   check(r.result.summary.stopped === true, 'T6: open items stated outside the outputs stop it')
-  // A budget or combination comes from the last P5/P6 check.
-  r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/T5/003-P5.json' })
-  check(r.result.summary.stopped === true && r.prompts.find(x => x.label === 'P7-critic').prompt.includes('against the last P5/P6 check, FU-b, only'), 'T6: a figure checked against a superseded P5/P6 check stops it')
-  r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/FU-b/003-P5.json', decisions: { Q4: 'external ADC (owner, 2026-10-01)' } })
+  // A budget or combination comes from the last P5/P6 check; another figure,
+  // such as the status line, may cite an earlier check's files.
+  r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/T5/003-P5.json', figureKind: 'budget' })
+  check(r.result.summary.stopped === true && r.prompts.find(x => x.label === 'P7-critic').prompt.includes('against the last P5/P6 check, FU-b, only') && r.prompts.find(x => x.label === 'P7-critic').prompt.includes('and its kind: budget or combination'), 'T6: a budget checked against a superseded P5/P6 check stops it')
+  r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/T5/task.json' })
+  check(!r.result.summary.stopped, 'T6: a figure other than a budget or combination checked against an earlier P5/P6 check finishes it')
+  r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/FU-b/003-P5.json', figureKind: 'budget', decisions: { Q4: 'external ADC (owner, 2026-10-01)' } })
   check(!r.result.summary.stopped && r.prompts.find(x => x.label === 'P7-critic').prompt.includes('"Q4":"external ADC (owner, 2026-10-01)"'), 'T6: figures from the last P5/P6 check finish it; the critic is given the decisions')
   // Both T6 prompts state the rules the gate reads: the group pages, a
   // figure on each page by its repository-relative path, the three commands.
@@ -1239,6 +1242,13 @@ async function main() {
   check(r.result.summary.stopped === true && /tools\/jlc_stock.py not confirmed/.test(r.result.summary.reasons[0]), 'T6: a stock tool that does not do its Outputs row stops it')
   r = await runTask('T6', { ...selT6, partRows: rows, jlcReview: [{ index: 0, holds: true, line: 12, reason: 'r' }] })
   check(!r.result.summary.stopped, 'T6: every part in Parts.md and the stock tool confirmed finish it')
+  // A part not verified, open and accepted as such, is owed no row.
+  const qAlts = [{ part: 'part3', status: 'refuted', alternate: 'altQ', alternate_status: '' }, { part: 'part4', status: 'verified', alternate: 'altR', alternate_status: 'not verified' }, { part: 'part5', status: 'verified', alternate: 'altS', alternate_status: 'verified' }]
+  const selQ = { ...selT6, selection: { R10: { f1: { part: 'part1', alternate: 'altA', alternate_unverified: ['altA'], q_alternatives: qAlts } } }, jlcReview: [{ index: 0, holds: true, line: 12, reason: 'r' }] }
+  r = await runTask('T6', { ...selQ, partRows: ['part1', 'part4', 'part5', 'altS'].map(part => ({ function: 'f1', part, parts_line: 4, group_page: 'hardware/docs/GroupA.md' })) })
+  check(!r.result.summary.stopped, `T6: parts not verified owed no Parts.md row: ${(r.result.summary.reasons || []).join()}`)
+  r = await runTask('T6', { ...selQ, partRows: rows.slice(0, 1) })
+  check(r.result.summary.stopped === true && ['part4', 'part5', 'altS'].every(p => r.result.summary.reasons[0].includes(`for ${p} (`)) && !['part3', 'altQ', 'altR', 'altA'].some(p => r.result.summary.reasons[0].includes(`for ${p} (`)), 'T6: each verified part without its Parts.md row stops it')
 
   // Follow-up plans.
   for (const [phases, n, want] of [['P1', 2, 6], ['P2-P4', 3, 16], ['P5-P6', 0, 5]]) {

@@ -1536,6 +1536,15 @@
         "type": "string",
         "description": "the committed return, or selection.json, the figure comes from, repository-relative: hardware/research/round1/RUN/FILE.json"
        },
+       "kind": {
+        "type": "string",
+        "enum": [
+         "budget",
+         "combination",
+         "other"
+        ],
+        "description": "budget or combination for a budget or combination of P5, other for every other figure"
+       },
        "agrees": {
         "type": "boolean"
        }
@@ -1545,6 +1554,7 @@
        "line",
        "figure",
        "return_file",
+       "kind",
        "agrees"
       ]
      },

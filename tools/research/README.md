@@ -297,10 +297,12 @@ page on the host itself. The P7 critic checks at least one figure on each
 group page and each output under `hardware/docs/`, each check naming the
 figure and the file under `hardware/research/round1/` it comes from, a path
 ending in `.json`; text after the path, such as `:34` or `#L34`, is not part
-of it, and `record` reads the same path. A figure checked against a file of
-a P5/P6 check other than the last is superseded. P7 and its critic are given
-the three commands, the pages that need a figure checked, and the path rules
-for group pages and figure checks that `round1.js` and `record` apply.
+of it, and `record` reads the same path. Each check gives its kind: budget,
+combination or other. A budget or combination checked against a file of a
+P5/P6 check other than the last is superseded; another figure, such as a
+run's status line, may cite any check. P7 and its critic are given the three
+commands, the pages that need a figure checked, and the path rules for group
+pages and figure checks that `round1.js` and `record` apply.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared
@@ -325,20 +327,21 @@ checked against a file under `hardware/research/round1/` that HEAD does not
 hold. A renamed file counts as both its old and its new path. A T6 is recorded
 as stopped unless P7 and its critic both return, the critic's three checks
 pass, it checked at least one figure and every figure agrees with its return,
-no figure is superseded, no writing issue is left, the three group pages are
-three files in `hardware/docs/` other than the fixed outputs, and every
-output of the plan and each group page was written and reviewed. The critic
-also gives, in an output or group page, the line that states each item as
-the arguments say: each conflict and gap the checks leave as not known, each
-item accepted open as not verified or not known, and each upheld assumption
-as assumed; the `Parts.md` line and the group page of each part
-`selection.json` keeps (the kept part, its alternate, each Q alternative and
-its alternate); and a verdict with its reason that `tools/jlc_stock.py` does
-what each sentence of its Outputs row states. A stopped T6 leaves the output
-paths as they were. A T6 that `record` refuses, for any reason, an unreadable
-output included, does too, and keeps what P7 changed in a stash named
-`refused T6 RUN_ID` in the results tree. `raised` reads the committed run
-record only and refuses a plan tree with uncommitted changes.
+no budget or combination is superseded, no writing issue is left, the three
+group pages are three files in `hardware/docs/` other than the fixed outputs,
+and every output of the plan and each group page was written and reviewed. The
+critic also gives, in an output or group page, the line that states each item
+as the arguments say: each conflict and gap the checks leave as not known,
+each item accepted open as not verified or not known, and each upheld
+assumption as assumed; the `Parts.md` line and the group page of each verified
+part `selection.json` keeps (the kept part, its alternate, each Q alternative
+and its alternate), a part not verified being an item accepted open; and a
+verdict with its reason that `tools/jlc_stock.py` does what each sentence of
+its Outputs row states. A stopped T6 leaves the output paths as they were. A
+T6 that `record` refuses, for any reason, an unreadable output included, does
+too, and keeps what P7 changed in a stash named `refused T6 RUN_ID` in the
+results tree. `raised` reads the committed run record only and refuses a plan
+tree with uncommitted changes.
 
 A follow-up task takes `--followup FILE`, a JSON object with `phases` (`P1`,
 `P2-P4` or `P5-P6`), `round` (1 or 2), `categories` and `items`, and

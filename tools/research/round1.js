@@ -317,10 +317,13 @@ const MARKS = [
   ...(A.p5_assumed || []).map(item => ({ state: 'assumed, beside each budget that rests on it', item })),
 ]
 
-// Each part selection.json keeps under a function: the kept part, its
-// alternate, and each Q alternative with its own alternate.
+// Each verified part selection.json keeps under a function: the kept part,
+// its alternate, and each Q alternative with its own alternate. A part not
+// verified is open (session.py open_selections), stated as accepted open.
+const isVerified = s => String(s || '').startsWith('verified')
 const OWED_PARTS = Object.values(A.selection || {}).flatMap(fns => Object.entries(fns).flatMap(([fn, e]) =>
-  [...new Set([e.part, e.alternate, ...(e.q_alternatives || []).flatMap(q => [q.part, q.alternate])].filter(Boolean))].map(part => ({ function: fn, part }))))
+  [...new Set([e.part, !(e.alternate_unverified || []).includes(e.alternate) && e.alternate,
+    ...(e.q_alternatives || []).filter(q => isVerified(q.status)).flatMap(q => [q.part, isVerified(q.alternate_status) && q.alternate])].filter(Boolean))].map(part => ({ function: fn, part }))))
 
 function p7Prompt() {
   return `${ctx('P7', '', 'P7')}
@@ -332,7 +335,7 @@ function p7CriticPrompt(p7) {
   const decided = Object.fromEntries(['Q4', 'Q8', 'Q9'].map(q => [q, (A.decisions || {})[q] || '']))
   return `${ctx('P7-critic', '', 'P7-critic')}
 
-You are the critic of P7. Exception to the rule above: you may correct the pages in ${P.results}; do not commit. figure_checks and sentence_issues describe the pages as they stand after your corrections; list every figure you checked, its file and return_file repository-relative. List in reviewed every file you checked, repository-relative; every file P7 listed is checked. Check every figure and every stated combination on the pages P7 wrote against the returns under ${P.results}/hardware/research/round1/: a budget or combination against the last P5/P6 check, ${A.last_p56 || 'T5'}, only, as its task.json marks it upheld, and the options chosen for Q4, Q8 and Q9 against the owner's decisions: ${J(decided)}. Check at least one figure on each of these pages: ${pages.join(', ')}; on hardware/docs/IOBoard.md a line's chosen part checked against hardware/research/round1/selection.json counts, and on hardware/docs/Research.md the status line checked against a run's task.json. Check every sentence against the writing rules in CONTRIBUTING.md.${MARKS.length ? ` Give in marked, by its 0-based index, the file and line where the pages state each of these as its state says: ${J(MARKS)}.` : ''}${OWED_PARTS.length ? ` Give in part_rows, for each of these parts under its function, the line of its row in hardware/docs/Parts.md and the group page that names it: ${J(OWED_PARTS)}.` : ''}${(A.jlc_stock_row || []).length ? ` Review tools/jlc_stock.py against each sentence of its row in the Outputs table, listed here, and give each, by its 0-based index, a verdict in jlc_stock_review with the line that does what it states and your reason: ${J(A.jlc_stock_row)}.` : ''} Apply the corrections, then run the three checks P7 ran on the tree you leave, ${T6_CHECKS}, and report each as passed or not with its last lines. P7's return:
+You are the critic of P7. Exception to the rule above: you may correct the pages in ${P.results}; do not commit. figure_checks and sentence_issues describe the pages as they stand after your corrections; list every figure you checked, its file and return_file repository-relative, and its kind: budget or combination for one of P5, other for the rest. List in reviewed every file you checked, repository-relative; every file P7 listed is checked. Check every figure and every stated combination on the pages P7 wrote against the returns under ${P.results}/hardware/research/round1/: a budget or combination against the last P5/P6 check, ${A.last_p56 || 'T5'}, only, as its task.json marks it upheld, and the options chosen for Q4, Q8 and Q9 against the owner's decisions: ${J(decided)}. Check at least one figure on each of these pages: ${pages.join(', ')}; on hardware/docs/IOBoard.md a line's chosen part checked against hardware/research/round1/selection.json counts, and on hardware/docs/Research.md the status line checked against a run's task.json. Check every sentence against the writing rules in CONTRIBUTING.md.${MARKS.length ? ` Give in marked, by its 0-based index, the file and line where the pages state each of these as its state says: ${J(MARKS)}.` : ''}${OWED_PARTS.length ? ` Give in part_rows, for each of these parts under its function, the line of its row in hardware/docs/Parts.md and the group page that names it: ${J(OWED_PARTS)}.` : ''}${(A.jlc_stock_row || []).length ? ` Review tools/jlc_stock.py against each sentence of its row in the Outputs table, listed here, and give each, by its 0-based index, a verdict in jlc_stock_review with the line that does what it states and your reason: ${J(A.jlc_stock_row)}.` : ''} Apply the corrections, then run the three checks P7 ran on the tree you leave, ${T6_CHECKS}, and report each as passed or not with its last lines. P7's return:
 ${J(p7)}`
 }
 
@@ -1476,10 +1479,11 @@ if (TASK === 'T6') {
     for (const f of new Set(figPages)) if (!named.some(x => x.file === f)) failed.push(`no figure checked on ${f}`)
     const wrong = (critic.figure_checks || []).filter(f => !f.agrees)
     if (wrong.length) failed.push(`${wrong.length} figures disagree with the returns`)
-    // A budget or combination comes from the last P5/P6 check: a figure
-    // checked against an earlier check's files is superseded.
-    const stale = named.filter(x => (A.p56_runs || []).some(r => r !== A.last_p56 && String(x.return_file).includes(`hardware/research/round1/${r}/`)))
-    if (stale.length) failed.push(`${stale.length} figures checked against an earlier P5/P6 check than ${A.last_p56}`)
+    // A budget or combination comes from the last P5/P6 check: one checked
+    // against an earlier check's files is superseded. Other figures, an
+    // earlier check's open items or a run's status among them, may cite it.
+    const stale = named.filter(x => ['budget', 'combination'].includes(x.kind) && (A.p56_runs || []).some(r => r !== A.last_p56 && String(x.return_file).includes(`hardware/research/round1/${r}/`)))
+    if (stale.length) failed.push(`${stale.length} budgets or combinations checked against an earlier P5/P6 check than ${A.last_p56}`)
     if ((critic.sentence_issues || []).length) failed.push(`${critic.sentence_issues.length} writing issues left`)
   }
   // Every output of the plan is written by P7 and reviewed by its critic.
