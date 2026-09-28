@@ -666,9 +666,10 @@ function distinctRanks(list) {
 // one family as "A (C1); B (C2)", or the part with its function appended.
 // Two names, or records, are the same part when they share a part number or
 // an LCSC number. Part numbers are the pieces between semicolons, commas
-// followed by a space, and " and ", without parenthesized text, case and
-// spaces; a piece that is a function name is none. A comma without a space
-// stays in the part number, as in Nexperia's 2N7002BK,215. A record's own
+// followed by a space, slashes between spaces and " and ", without
+// parenthesized text, case and spaces; a piece that is a function name is
+// none. A comma or slash without a space stays in the part number, as in
+// Nexperia's 2N7002BK,215 and Microchip's MCP2542FD-E/SN. A record's own
 // lcsc field counts as its LCSC number.
 function partKeys(p, functionNames) {
   const rec = p && typeof p === 'object' ? p : { part: p }
@@ -676,7 +677,7 @@ function partKeys(p, functionNames) {
   const text = String(rec.part || '').toUpperCase()
   const own = String(rec.lcsc || '').trim().toUpperCase()
   const lcsc = [...(text.match(/\bC\d+\b/g) || []), ...(/^C\d+$/.test(own) ? [own] : [])].map(c => `lcsc:${c}`)
-  const mpn = text.replace(/\([^)]*\)/g, ' ').split(/;|,\s+|\s+AND\s+/)
+  const mpn = text.replace(/\([^)]*\)/g, ' ').split(/;|,\s+|\s+\/\s+|\s+AND\s+/)
     .map(x => x.replace(/\s+/g, '')).filter(x => x && !fn.has(x)).map(x => `mpn:${x}`)
   return new Set([...mpn, ...lcsc])
 }
@@ -927,10 +928,20 @@ const MAY_READ_NONE = new Set(['end-of-life notices', 'longevity commitment'])
 // other check reads the part against its function, whatever its role.
 const FIT = new Set(['pin-for-pin match', 'functional match'])
 
+// Readings the lifecycle table records without a gate: S5 records a
+// longevity commitment and does not require one, and market introduction is
+// recorded and flagged under 12 months. One the verifier could not read,
+// written "not read: REASON", is recorded as that and listed for the owner,
+// as an unread manufacturer status is.
+const RECORDED_ONLY = new Set(['longevity commitment', 'market introduction'])
+const notReadWithReason = text => /^not read\s*[:;,(-]\s*\S/i.test(String(text || '').trim())
+
 // A check written as not read, as none where a value exists to be read, or
 // without its source or a reading time of this task, shows nothing.
 function shown(c) {
-  return !(MAY_READ_NONE.has(c.figure) ? unread(c.read) : readsNone(c.read)) && !readsNone(c.source) && readInRun(c.read_at)
+  const read = RECORDED_ONLY.has(c.figure) && notReadWithReason(c.read) ? true
+    : !(MAY_READ_NONE.has(c.figure) ? unread(c.read) : readsNone(c.read))
+  return read && !readsNone(c.source) && readInRun(c.read_at)
 }
 
 function covered(v, cand) {
@@ -1045,6 +1056,7 @@ async function verifyCategory(cat, functions, bundle, claims) {
         if (!byPart.has(k)) { followUps.push({ role: 'P4', category: cat, function: p.function, part: p.part, reason: `${kind} verifier listed a part it was not asked to verify; ignored` }); continue }
         const e = byPart.get(k)
         e.verdicts.push({ verifier: kind, kind: e.kind, reported_kind: p.kind, verdict: p.verdict, refutation: p.refutation, checks: p.checks })
+        for (const c of p.checks || []) if (RECORDED_ONLY.has(c.figure) && notReadWithReason(c.read) && shown(c)) followUps.push({ role: 'P4', category: cat, function: p.function, part: p.part, figure: c.figure, reason: `recorded as not read: ${String(c.read).trim()}`, notice: true })
         byPart.set(k, e)
       }
     }

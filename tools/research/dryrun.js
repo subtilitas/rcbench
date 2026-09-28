@@ -900,6 +900,10 @@ async function main() {
   check(r1(r).selection[0].part === 'part1', 'P3 find by LCSC number, the drop naming it in its lcsc field: handled')
   r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW (c98) AND partx (c99)', dropShortPart: 'PARTX' })
   check(r1(r).selection[0].part === 'part1', 'P3 find in another case, joined by AND: handled')
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW-REEL / partX' })
+  check(r1(r).selection[0].part === 'part1', 'P3 find of two parts joined by a spaced slash: handled')
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW/partX' })
+  check(r1(r).selection[0].part === null, 'a slash without spaces is part of one part number: unhandled')
   // The drop of a find named in P3's own words is re-read as any P3 drop.
   r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partX (C1234)', omitFigure: ['P4-datasheet-R1', 're-rank drop: f1: partX'] })
   check(r.result.followUps.some(f => f.figure === 're-rank drop: f1: partX' && f.reason === 'figure not verified'), 'drop of an annotated P3 find: re-read')
@@ -1077,6 +1081,14 @@ async function main() {
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence, source and time read'), 'ruling read after the task: no ruling')
   // "none" is a reading of a notice or commitment that does not exist, and
   // no reading of a status or identity; "not found" is none.
+  // A reading recorded without a gate may be not read, with its reason; it
+  // is listed for the owner. Any other check not read shows nothing.
+  r = await runTask('T2', { edit: { 'longevity commitment': { read: 'not read: www.analog.com refused the page (HTTP 403)' }, 'market introduction': { read: 'not read: the datasheet gives no revision date' } } })
+  check(r1(r).selection[0].part === 'part1' && r.result.followUps.some(f => f.figure === 'longevity commitment' && /^recorded as not read/.test(f.reason)), 'longevity and market introduction not read, with a reason: verified, listed')
+  r = await runTask('T2', { edit: { 'longevity commitment': { read: 'not read' } } })
+  check(r1(r).selection[0].part === null, 'longevity commitment not read without a reason: not verified')
+  r = await runTask('T2', { edit: { 'lead time': { read: 'not read: API timed out' } } })
+  check(r1(r).selection[0].part === null, 'lead time not read: not verified')
   r = await runTask('T2', { edit: { 'end-of-life notices': { read: 'none' }, 'longevity commitment': { read: 'none' } } })
   check(r1(r).selection[0].part === 'part1', 'checks read as none: verified')
   for (const name of ['lifecycle status', 'LCSC identity']) {
