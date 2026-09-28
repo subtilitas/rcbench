@@ -46,7 +46,6 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 PLAN_REL = os.path.join("hardware", "docs", "Research.md")
-SPEC_REL = os.path.join("hardware", "docs", "IOBoard.md")
 # The Sourcing questions each task waits on, as the plan's Sourcing section
 # states them: S1, S3 and S8 block T1; S2 and S4 to S7 block T2, T3 and T4;
 # S9 blocks R7.
@@ -226,20 +225,29 @@ def fixed_inputs(text):
 
 
 def spec_text(commit):
-    """The specification a run read: Research.md without its Raised by P1
-    and Decided tables, which have their own checks, and IOBoard.md. None
-    when the commit is not in this clone."""
-    texts = []
-    for rel in (PLAN_REL, SPEC_REL):
-        shown = git("show", f"{commit}:{rel}", check=False)
-        if shown.returncode:
-            return None
-        texts.append(shown.stdout)
-    plan = re.sub(r"#### Raised by P1\n.*?(?=\n#{2,4} )", "", texts[0],
-                  flags=re.S)
-    plan = re.sub(r"#### Decided on the research's output\n.*?"
-                  r"(?=\n#{2,4} |\Z)", "", plan, flags=re.S)
-    return plan + "\0" + texts[1]
+    """The specification a run read: the files under hardware/docs/, by
+    content, and Research.md without the rows under Raised by P1 and with
+    the Decision cells of Q4, Q8 and Q9 blank, which have their own checks.
+    None when the commit is not in this clone."""
+    plan_rel = PLAN_REL.replace(os.sep, "/")
+    listed = git("ls-tree", "-r", commit, "--", "hardware/docs/", check=False)
+    shown = git("show", f"{commit}:{plan_rel}", check=False)
+    if listed.returncode or shown.returncode:
+        return None
+    lines, sec = [], ""
+    for line in shown.stdout.split("\n"):
+        sec = line if line.startswith("#") else sec
+        c = cells(line)
+        if c and len(c) == 4 and sec == "#### Raised by P1" and \
+                re.fullmatch(r"V\d+", c[0]):
+            continue
+        if c and len(c) == 4 and re.fullmatch(r"Q\d", c[0]) and \
+                sec == "#### Decided on the research's output":
+            line = "| " + " | ".join(c[:3]) + " | |"
+        lines.append(line)
+    others = [x for x in listed.stdout.splitlines()
+              if not x.endswith("\t" + plan_rel)]
+    return "\n".join(lines) + "\0" + "\n".join(others)
 
 
 def jlc_stock_row(text):
@@ -273,6 +281,17 @@ def decision_categories(text):
     return {q: sorted(set(re.findall(r"\bR\d+\b", cell)),
                       key=lambda c: int(c[1:]))
             for q, cell in decisions(text, 2).items()}
+
+
+def owner_cells(text):
+    """What the owner writes on the plan page: the rows under Raised by P1,
+    the Blocking and Sourcing answers and the decisions. None when a
+    section is not found."""
+    try:
+        return (raised_rows(text), blocking_rows(text),
+                sourcing_answers(text), decisions(text))
+    except SystemExit:
+        return None
 
 
 # ------------------------------------------------------------------ check
@@ -461,14 +480,30 @@ def runs(results, stopped=False, pending=None):
     return sorted(out, key=lambda r: r[1].get("sequence", 0))
 
 
-def effective_selection(results, pending=None):
+def effective_selection(results, pending=None, before=None):
     """The part each function keeps: the latest run that names a function
     decides it. A run that names it and verifies no part leaves it open,
-    and records the earlier part it did not requalify."""
-    eff = {}
+    and records the earlier part it did not requalify. A function an
+    earlier P1 inventory of its category lists and the latest one does
+    not is retired by the next run that selects parts in the category
+    without naming it. `before` reads only the runs recorded before that
+    sequence number."""
+    eff, listed, dropped = {}, {}, {}
     for name, task in runs(results, pending=pending):
+        if before is not None and task.get("sequence", 0) >= before:
+            continue
+        for cat, names in ((task.get("summary") or {}).get("inventory")
+                           or {}).items():
+            if names:
+                dropped[cat] = (dropped.get(cat, set())
+                                | listed.get(cat, set())) - set(names)
+                listed[cat] = set(names)
         sel = (task.get("summary") or {}).get("selection") or {}
         for cat, entries in sel.items():
+            named = {e["function"] for e in entries}
+            for fn in [f for f in eff.get(cat, {}) if entries
+                       and f in dropped.get(cat, ()) and f not in named]:
+                del eff[cat][fn]
             for e in entries:
                 slot = eff.setdefault(cat, {})
                 held = slot.get(e["function"]) or {}
@@ -489,6 +524,16 @@ def effective_selection(results, pending=None):
                         entry["refuted"] = held["part"]
                 slot[e["function"]] = entry
     return eff
+
+
+def kept_parts(eff, categories):
+    """The parts each category keeps, whatever its functions are named:
+    each kept part with its alternate and its Q alternatives."""
+    return {c: sorted((e.get("part") or "", e.get("alternate") or "",
+                       sorted((q.get("part") or "", q.get("alternate") or "")
+                              for q in e.get("q_alternatives") or []))
+                      for e in eff.get(c, {}).values())
+            for c in categories}
 
 
 def changed_under(tree, rel):
@@ -556,22 +601,26 @@ def t6_open(results):
     after it, or conflicts and gaps it listed with no round 2 run. Also
     the conflicts and gaps the checks leave, which the pages state as not
     known: each the last check lists, and each of an earlier check that no
-    round 2 run covered. Returns (what is open, what is left)."""
+    P2-P4 follow-up after it covered. Returns (what is open, what is
+    left)."""
     done = runs(results)
     checks = [(n, t) for n, t in done if t.get("task") == "T5" or
               (t.get("followup") or {}).get("phases") == "P5-P6"]
     if not checks:
         return ["no P5/P6 check is recorded"], []
     name, last = checks[-1]
-    out = [f"{n} changed a selection after {name}" for n, t in done
-           if t.get("sequence", 0) > last.get("sequence", 0)
-           and (t.get("summary") or {}).get("selection")]
-    # Round 2 covers each function a round-2 P2-P4 follow-up verified a
+    # A part the check did not see, not a run that kept the same parts.
+    eff = effective_selection(results)
+    then = effective_selection(results, before=last.get("sequence", 0))
+    out = [f"{c}: parts changed after {name}"
+           for c in sorted(set(eff) | set(then))
+           if kept_parts(eff, [c]) != kept_parts(then, [c])]
+    # A P2-P4 follow-up of these rounds covers each function it verified a
     # part for, and each category it verified any part in; not what its
     # file named.
-    def covered_between(start, end):
+    def covered_between(start, end, rounds):
         fns = {(c, e["function"]) for _, t in done
-               if (t.get("followup") or {}).get("round") == 2
+               if (t.get("followup") or {}).get("round") in rounds
                and (t.get("followup") or {}).get("phases") == "P2-P4"
                and start < t.get("sequence", 0) < end
                for c, entries in ((t.get("summary") or {}).get("selection")
@@ -580,8 +629,9 @@ def t6_open(results):
         return fns, {c for c, _ in fns}
     summary = last.get("summary") or {}
     # A conflict's part points at every function any run selected it for,
-    # in every category: each of those functions must be covered, and each
-    # category the conflict names or its parts belong to.
+    # in every category, retired functions aside: each of those functions
+    # must be covered, and each category the conflict names or its parts
+    # belong to.
     part_fn = {}
     for _, t in done:
         for c, entries in ((t.get("summary") or {}).get("selection")
@@ -592,45 +642,60 @@ def t6_open(results):
                 for part in [e.get("part"), e.get("alternate")] + [
                         p for q in e.get("q_alternatives") or []
                         for p in (q.get("part"), q.get("alternate"))]:
-                    if part:
+                    if part and e["function"] in eff.get(c, {}):
                         part_fn.setdefault(part, set()).add(
                             (c, e["function"]))
+
+    # The category IDs a conflict's or gap's category names; a part no
+    # selection names, or a category that names no ID, is never covered.
+    def ids(cat):
+        return set(re.findall(r"\bR\d+\b", str(cat or "")))
+    unknown = set()
 
     def uncovered_items(check, fn_done, covered):
         out_items = []
         for x in (check.get("summary") or {}).get("conflicts", []):
-            fns = set().union(*(part_fn.get(p, set())
-                                for p in x.get("parts") or []))
-            named = set(x.get("categories") or [])
-            if (not fns and not named) or not fns <= fn_done or \
-                    not (named | {c for c, _ in fns}) <= covered:
+            parts = x.get("parts") or []
+            unknown.update(p for p in parts if p not in part_fn)
+            fns = set().union(*(part_fn.get(p, set()) for p in parts))
+            named = [ids(c) for c in x.get("categories") or []]
+            cats = set().union(*named) | {c for c, _ in fns}
+            if (not fns and not named) or not all(named) or \
+                    any(p not in part_fn for p in parts) or \
+                    not fns <= fn_done or not cats <= covered:
                 out_items.append({"conflict": x})
         for x in (check.get("summary") or {}).get("gaps", []):
-            if not x.get("category") or x["category"] not in covered:
+            gap_cats = ids(x.get("category"))
+            if not gap_cats or not gap_cats <= covered:
                 out_items.append({"gap": x})
         return out_items
 
     # The last check's items stand only when round 2 covered them after
     # the check before it (never for the first check, whose items it
     # found). An earlier check's items stay open, even when a later check
-    # omits them, until round 2 covered them after that check.
+    # omits them, until a P2-P4 follow-up of either round covered them
+    # after that check.
     uncovered = []
     left = [{"check": name, "conflict": x}
             for x in summary.get("conflicts", [])] + [
         {"check": name, "gap": x} for x in summary.get("gaps", [])]
     if len(checks) > 1:
         uncovered += uncovered_items(last, *covered_between(
-            checks[-2][1].get("sequence", 0), last.get("sequence", 0)))
+            checks[-2][1].get("sequence", 0), last.get("sequence", 0), (2,)))
         for earlier_name, earlier in checks[:-1]:
             items = uncovered_items(earlier, *covered_between(
-                earlier.get("sequence", 0), last.get("sequence", 0)))
+                earlier.get("sequence", 0), last.get("sequence", 0),
+                (1, 2)))
             uncovered += items
             left += [{"check": earlier_name, **x} for x in items]
     else:
         uncovered += uncovered_items(last, set(), set())
     if uncovered:
         out.append(f"{len(uncovered)} conflicts and gaps up to {name} that "
-                   "no round 2 follow-up after their check covered")
+                   "no follow-up after their check covered")
+    if unknown:
+        out.append(f"conflicts up to {name} name parts no run selected: "
+                   + ", ".join(sorted(unknown)))
     if summary.get("missing_checks"):
         out.append(f"{name} ran without "
                    + ", ".join(summary["missing_checks"]))
@@ -677,8 +742,17 @@ def t6_inputs(results, text):
         "jlc_stock_row": jlc_stock_row(text)}
 
 
-def answers(rows, c):
-    return {r[0]: r[3].strip() for r in rows if r[1] == c}
+def answers(rows, c, skip=()):
+    return {r[0]: r[3].strip() for r in rows if r[1] == c
+            and r[0] not in skip}
+
+
+def decision_only(results):
+    """The questions committed P1 runs raised that only feed Q4, Q8 or Q9:
+    they hold neither P2 nor its task."""
+    return {q["id"] for _, q in committed_questions(results)
+            if q.get("blocks") == "decision-only"
+            and q.get("decision") in ("Q4", "Q8", "Q9")}
 
 
 def deciding_runs(results, c, eff):
@@ -693,13 +767,15 @@ def stale_selections(results, categories, rows, now, upstream=(),
     """Each run whose parts for a category were not qualified against what
     is in force now: a P1 run raised questions for the category after it;
     the category's answers under "Raised by P1", or the specification,
-    differ from those at the plan commit it read; or, for a category that
-    takes the parts of T2 and T4 (`downstream`, those of T3), one of the
-    `upstream` parts changed after it."""
+    differ from those at the plan commit it read (answers to questions
+    that only feed a decision aside); or, for a category that takes the
+    parts of T2 and T4 (`downstream`, those of T3), the `upstream` parts
+    differ from those selection.json held when it ran."""
     done = runs(results)
     seq = {n: t.get("sequence", 0) for n, t in done}
     eff = effective_selection(results)
-    rows_at, spec_at = {}, {}
+    skip = decision_only(results)
+    rows_at, spec_at, up_at = {}, {}, {}
 
     def rows_of(commit):
         if commit not in rows_at:
@@ -713,8 +789,12 @@ def stale_selections(results, categories, rows, now, upstream=(),
             spec_at[commit] = spec_text(commit)
         return spec_at[commit]
 
-    changed_up = max([seq.get(e["run"], 0) for u in upstream
-                      for e in eff.get(u, {}).values()] or [0])
+    def up_of(before):
+        if before not in up_at:
+            up_at[before] = kept_parts(effective_selection(
+                results, before=before), upstream)
+        return up_at[before]
+
     out = []
     for c in categories:
         # Every P1 run covering the category: its questions, or a function
@@ -731,13 +811,13 @@ def stale_selections(results, categories, rows, now, upstream=(),
                 out.append(f"{c}: the plan {name} read, at {commit}, is not "
                            "in this clone")
                 continue
-            if answers(rows_of(commit), c) != answers(rows, c):
+            if answers(rows_of(commit), c, skip) != answers(rows, c, skip):
                 out.append(f"{c}: the answers under Raised by P1 changed "
                            f"after {name} selected its parts")
             if spec_of(commit) != spec_of(now):
                 out.append(f"{c}: the specification changed after {name} "
                            "selected its parts")
-            if c in downstream and changed_up > seq[name]:
+            if c in downstream and up_of(seq[name]) != up_of(None):
                 out.append(f"{c}: parts of T2 or T4 changed after {name} "
                            "selected its parts")
     return out
@@ -899,6 +979,10 @@ def pre_t6_merge(commit):
     if git("merge-base", "--is-ancestor", parents[1], f"origin/{BRANCH}",
            check=False).returncode:
         return False
+    # The records are the results branch's own: the merge changes none.
+    if git("diff", "--quiet", parents[0], commit, "--", RUNS_DIR,
+           check=False).returncode:
+        return False
     runs_dir = RUNS_DIR.replace(os.sep, "/") + "/"
     return all(p.startswith(runs_dir) for p in git(
         "diff", "--name-only", parents[1], commit).splitlines())
@@ -990,9 +1074,7 @@ def questions_gate(results, rows, categories):
                          "category and question P1 raised: "
                          + ", ".join(moved))
     # Only a question that names Q4, Q8 or Q9 feeds a decision alone.
-    exempt = {q["id"] for _, q in committed
-              if q.get("blocks") == "decision-only"
-              and q.get("decision") in ("Q4", "Q8", "Q9")}
+    exempt = decision_only(results)
     open_q = [r[0] for r in rows if r[1] in categories and not r[3].strip()
               and r[0] not in exempt]
     if open_q:
@@ -1001,7 +1083,9 @@ def questions_gate(results, rows, categories):
 
 def pending_p1(base, results, run):
     """Another P1 run prepared and not recorded, whose question IDs this
-    run would repeat."""
+    run would repeat. A run recorded as stopped raised none."""
+    settled = {t["run_id"] for _, t in runs(results, stopped=True)
+               if t.get("run_id")}
     out = []
     for name in os.listdir(base):
         m = re.fullmatch(r"args-(.+)\.json", name)
@@ -1010,7 +1094,8 @@ def pending_p1(base, results, run):
         a = json.loads(read(os.path.join(base, name)))
         is_p1 = a.get("task") == "T1" or \
             (a.get("followup") or {}).get("phases") == "P1"
-        if is_p1 and not recorded(results, m.group(1)):
+        if is_p1 and not recorded(results, m.group(1)) \
+                and a.get("run_id") not in settled:
             out.append(m.group(1))
     return out
 
@@ -1090,6 +1175,10 @@ def cmd_prepare(args):
     sync_results(results)
     if recorded(results, run):
         raise SystemExit(f"{run} is recorded already")
+    # The pages T6 committed close the round: no run changes what they
+    # rest on.
+    if recorded(results, "T6"):
+        raise SystemExit("T6 is recorded; round 1 is closed")
 
     # The task's turn.
     phases = (followup or {}).get("phases")
@@ -1452,12 +1541,25 @@ def record(args):
         if outside:
             refuse("group pages outside hardware/docs/ or among the fixed "
                    "outputs: " + ", ".join(outside))
+        # A group page is a new file, not a page the tree holds.
+        held = sorted(f for f in pages if git(
+            "-C", results, "cat-file", "-e", f"HEAD:{f}",
+            check=False).returncode == 0)
+        if held:
+            refuse("group pages that are not new files: " + ", ".join(held))
         # Every output of the plan and each group page is a file after T6;
         # a deletion is not an output.
         gone = sorted(f for f in set(T6_REQUIRED) | pages
                       if not os.path.isfile(os.path.join(results, f)))
         if gone:
             refuse("T6 left these outputs missing: " + ", ".join(gone))
+        # Of Research.md P7 writes the status line: the owner's answers and
+        # decisions stay as the owner wrote them.
+        plan = PLAN_REL.replace(os.sep, "/")
+        at_head = git("-C", results, "show", f"HEAD:{plan}", check=False)
+        if at_head.returncode == 0 and owner_cells(at_head.stdout) != \
+                owner_cells(read(os.path.join(results, plan))):
+            refuse(f"P7 changed the owner's answers or decisions in {plan}")
         allowed = set(T6_REQUIRED) | pages
         stray = [d for d in dirty if not in_run(d)
                  and not (d in allowed and d in wrote and d in seen)]
@@ -1530,7 +1632,7 @@ def cmd_raised(args):
         raise SystemExit("already under Raised by P1: " + ", ".join(clash))
 
     def cell(s):
-        return s.replace("|", "\\|").replace("\n", " ")
+        return " ".join(s.replace("|", "\\|").split())
 
     def row(q):
         feeds = ""

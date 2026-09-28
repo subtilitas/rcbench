@@ -203,7 +203,8 @@ async function runTask(task, opts = {}) {
       for (const k of Object.keys(data.checks)) data.checks[k] = { passed: !(opts.failCheck === k && role === 'P7-critic'), output: 'o' }
       const outs = [...T6OUT, 'hardware/docs/GroupA.md', 'hardware/docs/GroupB.md', 'hardware/docs/GroupC.md'].filter(f => !(role === 'P7' && f === opts.unwritten))
       if (opts.pageOutside) outs.push('tools/research/README.md')
-      if (role === 'P7') { data.files = outs; data.group_pages = opts.pageOutside ? { A: 'hardware/docs/GroupA.md', B: 'tools/research/README.md', C: 'hardware/docs/GroupC.md' } : opts.samePages ? { A: 'hardware/docs/Power.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/Power.md' } : (opts.pagePower ? { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/GroupC.md' } : { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/GroupB.md', C: 'hardware/docs/GroupC.md' }) }
+      if (opts.fourthPage) outs.push('hardware/docs/GroupD.md')
+      if (role === 'P7') { data.files = outs; data.group_pages = opts.pageOutside ? { A: 'hardware/docs/GroupA.md', B: 'tools/research/README.md', C: 'hardware/docs/GroupC.md' } : opts.samePages ? { A: 'hardware/docs/Power.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/Power.md' } : (opts.pagePower ? { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/GroupC.md' } : { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/GroupB.md', C: 'hardware/docs/GroupC.md' }); if (opts.fourthPage) data.group_pages.D = 'hardware/docs/GroupD.md' }
       else {
         data.reviewed = outs
         const figFiles = opts.oneFigure ? ['hardware/docs/Parts.md'] : outs.filter(f => f.startsWith('hardware/docs/'))
@@ -532,6 +533,8 @@ async function main() {
   // Three group pages must be three files.
   r = await runTask('T6', { samePages: true })
   check(r.result.summary.stopped === true, 'T6: one file for three group pages stops it')
+  r = await runTask('T6', { fourthPage: true })
+  check(r.result.summary.stopped === true && /the three group pages are not three files/.test(r.result.summary.reasons[0]), 'T6: a fourth group page stops it')
   // P5 and P6 items the critic did not check stay in the summary, unchecked.
   r = await runTask('T5', { nulls: { 'P5-critic': 2 } })
   check(r.result.summary.conflicts.length > 0 && r.result.summary.conflicts.every(c => c.unchecked), 'T5: unchecked conflicts stay in the summary')
@@ -973,6 +976,9 @@ async function main() {
   // A question that raises an item copies its words.
   r = await runTask('FU', { followup: { phases: 'P1', round: 1, categories: ['R8'], items: [fuItems[0]] } })
   check(['P1-R8', 'P1-critic-R8'].every(l => /copies its question word for word|copying its question word for word/.test(r.prompts.find(x => x.label === l).prompt)), 'P1 follow-up: P1 and the critic copy an item\'s question')
+  // A P1 follow-up keeps the names earlier runs gave the functions.
+  r = await runTask('FU', { followup: { phases: 'P1', round: 1, categories: ['R1'], items: [] }, inventory: { R1: ['CAN transceiver', 'flash'] } })
+  check(['P1-R1', 'P1-critic-R1'].every(l => r.prompts.find(x => x.label === l).prompt.includes("Give a function the category's inventory (CAN transceiver; flash) or undefined/hardware/research/round1/selection.json already names that exact name.")), 'P1 follow-up: P1 and the critic keep the functions\' names')
   // Each "P1 asks" item ends with a confirmed question that names it.
   const extCurrent = 'external path highest current'
   r = await runTask('T1', { p1Asks: { R3: [extCurrent] } })

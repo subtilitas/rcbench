@@ -66,13 +66,14 @@ git -C $B/plan push origin research/round1
 `prepare` fetches origin and refuses a run out of turn: T2 and T4 before T1 is
 recorded, T3 before T2 and T4, T5 before T3, T6 before T5, a P1 follow-up
 before T1, a P2-P4 follow-up before the tasks that own its categories, a P5-P6
-follow-up before T5, and a round 2 follow-up before a round 1 follow-up is
-recorded. It fast-forwards the results tree to
-`origin/research/round1-results`, and refuses while that tree holds records
+follow-up before T5, a round 2 follow-up before a round 1 follow-up is
+recorded, and any task once T6 is recorded. It fast-forwards the results tree
+to `origin/research/round1-results`, and refuses while that tree holds records
 origin does not (push after each `record`), any other commit than the merge
-before T6, or has diverged. It refuses a P1 run while another P1 run is
-prepared and not recorded, so question IDs do not repeat, and numbers new
-questions after the last one on the page and in the committed runs.
+before T6, which changes no record, or has diverged. It refuses a P1 run while
+another P1 run is prepared and neither recorded nor recorded as stopped, so
+question IDs do not repeat, and numbers new questions after the last one on
+the page and in the committed runs.
 
 It refuses these without exception:
 
@@ -121,34 +122,40 @@ the items in the arguments:
     replacements included (as `NAME: PART`, from P2 or the re-rank);
   - the latest P1 run left P1 items in the category;
   - a run that decides one of its functions predates a later P1 run covering
-    the category, read other answers under "Raised by P1" for it, read another
-    specification (Research.md outside its Raised by P1 and Decided tables,
-    and IOBoard.md), or, for R5 to R8, predates a change to a part of T2 or
-    T4.
-- T6 while a part changed after the last P5/P6 check; while that check ran
-  without P5, P6 or either critic, returned no upheld combination that fits,
-  with its outputs, bind order, resources, source and time, has combinations,
-  budgets or assumptions without source and time or assumptions without a
-  value, lacks an upheld budget with a value read (not unknown, not known or
-  not stated), its source and its reading time for an item of
-  `categories.json` `p5_budgets` (named as listed or `NAME: DETAIL`, every
-  row of the item counting; the Q4 and Q8 alternatives once for each option
-  class of `q_options`, as `Q4 alternatives: CLASS`; only an item of
-  `p5_conditional` may be `not applicable: REASON`, `N/A: REASON` or
-  `does not apply: REASON`) or for a rail, I²C bus or other instance its
-  critic lists as not budgeted, has an upheld budget not within its limit,
-  lacks an upheld assumption with a value, its source and its time for an
-  item of `p5_assumptions` (the encoder's state machines are R11's
-  `encoder decoding` report), or left a conflict, gap, combination, budget or
-  assumption its critic did not rule on (a verdict whose reason reads as none
-  rules on nothing), or a combination, budget or assumption it rejected; while
-  it, or an earlier check, lists a conflict or gap that no round-2 P2-P4
-  follow-up covered after that check (for the last check, after the check
-  before it): a gap's category, and a conflict's named categories and every
-  function any run selected one of its parts for (as the kept part, its
-  alternate, a Q alternative or that one's alternate), each researched to a
-  verified part (the first check's items are never covered); and while a run
-  that decides an R3 function was not given the Q9 decision now in force.
+    the category, read other answers under "Raised by P1" for it (answers to
+    questions that only feed Q4, Q8 or Q9 aside), read another specification
+    (the files under `hardware/docs/`, Research.md without the rows under
+    "Raised by P1" and with the Decision cells of Q4, Q8 and Q9 blank), or,
+    for R5 to R8, ran on other parts of T2 and T4 than `selection.json` keeps
+    now: another kept part, alternate or Q alternative in one of their
+    categories, whatever its function is named.
+- T6 while a category keeps another part, alternate or Q alternative than at
+  the last P5/P6 check; while that check ran without P5, P6 or either critic,
+  returned no upheld combination that fits, with its outputs, bind order,
+  resources, source and time, has combinations, budgets or assumptions without
+  source and time or assumptions without a value, lacks an upheld budget with
+  a value read (not unknown, not known or not stated), its source and its
+  reading time for an item of `categories.json` `p5_budgets` (named as listed
+  or `NAME: DETAIL`, every row of the item counting; the Q4 and Q8
+  alternatives once for each option class of `q_options`, as
+  `Q4 alternatives: CLASS`; only an item of `p5_conditional` may be
+  `not applicable: REASON`, `N/A: REASON` or `does not apply: REASON`) or for
+  a rail, I²C bus or other instance its critic lists as not budgeted, has an
+  upheld budget not within its limit, lacks an upheld assumption with a value,
+  its source and its time for an item of `p5_assumptions` (the encoder's state
+  machines are R11's `encoder decoding` report), or left a conflict, gap,
+  combination, budget or assumption its critic did not rule on (a verdict
+  whose reason reads as none rules on nothing), or a combination, budget or
+  assumption it rejected; while it lists a conflict or gap that no round-2
+  P2-P4 follow-up after the check before it covered, or an earlier check lists
+  one that no P2-P4 follow-up of either round after that check covered: each
+  category a gap's category names by its ID, and each a conflict's categories
+  name and every function any run selected one of its parts for (as the kept
+  part, its alternate, a Q alternative or that one's alternate; a retired
+  function aside), each researched to a verified part (never the first check's
+  items, a conflict naming a part no selection names, which `prepare` names,
+  or a category naming no ID); and while a run that decides an R3 function was
+  not given the Q9 decision now in force.
 
 Then, before T6, it merges `research/round1` into the results tree. The gates
 read committed run records and the plan on `research/round1`. The arguments
@@ -156,8 +163,8 @@ hold the results tree's head, the owner's decisions, the questions committed
 P1 runs raised (`raised`), the Claude Code version, the model, the effort, the
 CPU count and the workflow concurrency. For T6 they also hold the P5/P6
 checks, the conflicts and gaps they leave (each the last check lists, and each
-of an earlier check no round-2 run covered), the assumptions of the last
-check's P5 its critic upheld, the parts `selection.json` keeps, and the
+of an earlier check no follow-up after it covered), the assumptions of the
+last check's P5 its critic upheld, the parts `selection.json` keeps, and the
 sentences of the Outputs row of `tools/jlc_stock.py`. `session.py check`
 confirms the Blocking and Sourcing tables still read as the gates expect, that
 the Outputs table has a row for `tools/jlc_stock.py`, and that `p1_asks` names
@@ -288,21 +295,25 @@ the same `for_where` and `for_quantity`), and any other item of a category
 whose P1 or critic returned nothing; an item listed again stands for the item
 it carries. P1 and the critic are told to copy an item's question word for
 word; an item without a `for_where` whose question they raise in other words
-is listed again. P0 counts a host with two rows, or a status written as
-not read, none, no, false, absent or not in the page body, as not read. A P0
-row counts only at its host's endpoint: an API client's command with the
-probe, whatever environment assignments (`DIGIKEY_ENV_FILE=...`, `env`) and
-interpreter path precede it, a page client's probe URL, or with no probe a
-page on the host itself. The P7 critic checks at least one figure on each
-group page and each output under `hardware/docs/`, each check naming the
-figure and the file under `hardware/research/round1/` it comes from, a path
-ending in `.json`; text after the path, such as `:34` or `#L34`, is not part
-of it, and `record` reads the same path. Each check gives its kind: budget,
-combination or other. A budget or combination checked against a file of a
-P5/P6 check other than the last is superseded; another figure, such as a
-run's status line, may cite any check. P7 and its critic are given the three
-commands, the pages that need a figure checked, and the path rules for group
-pages and figure checks that `round1.js` and `record` apply.
+is listed again. P1 and the critic of a follow-up are given the names the
+category's inventory and `selection.json` give its functions, and keep them.
+P0 counts a host with two rows, or a status written as not read, none, no,
+false, absent or not in the page body, as not read. A P0 row counts only at
+its host's endpoint: an API client's command with the probe, whatever
+environment assignments (`DIGIKEY_ENV_FILE=...`, `env`) and interpreter path
+precede it, a page client's probe URL, or with no probe a page on the host
+itself. The P7 critic checks at least one figure on each group page and each
+output under `hardware/docs/`, each check naming the figure and the file under
+`hardware/research/round1/` it comes from, a path ending in `.json`; text
+after the path, such as `:34` or `#L34`, is not part of it, and `record` reads
+the same path. Each check gives its kind: budget, combination or other. A
+budget or combination checked against a file of a P5/P6 check other than the
+last is superseded; another figure, such as a run's status line, may cite any
+check. P7 and its critic are given the three commands, the pages that need a
+figure checked, and the path rules for group pages and figure checks that
+`round1.js` and `record` apply. The schemas ask P5, P6 and their critics to
+write a conflict's parts as `selection.json` writes them and each category by
+its ID alone.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared
@@ -314,22 +325,26 @@ that does not match its schema, and a results tree whose head moved since
 count as recorded. After a run that selects parts it rewrites
 `hardware/research/round1/selection.json`, the part each function keeps: the
 latest run that names a function decides it. A run that names it and verifies
-no part leaves it open and records the earlier part in `not_requalified`.
-`record` commits only the run's directory and that file.
+no part leaves it open and records the earlier part in `not_requalified`. A
+function an earlier P1 inventory of its category lists and the latest does not
+is retired: the next run that selects parts in the category without naming it
+removes it. `record` commits only the run's directory and that file.
 
 After a T6 that was not stopped `record` also commits the pages P7 wrote. It
 refuses a changed file outside the files P7 declared and its critic reviewed
 within the plan's Outputs (`hardware/docs/`, `hardware/STATUS.md`,
 `hardware/README.md`, `tools/jlc_stock.py`), an output or group page that is
 not a file afterwards, a file P7 declared that did not change, a group page
-outside `hardware/docs/` or among the fixed outputs, and a figure the critic
-checked against a file under `hardware/research/round1/` that HEAD does not
-hold. A renamed file counts as both its old and its new path. A T6 is recorded
-as stopped unless P7 and its critic both return, the critic's three checks
-pass, it checked at least one figure and every figure agrees with its return,
-no budget or combination is superseded, no writing issue is left, the three
-group pages are three files in `hardware/docs/` other than the fixed outputs,
-and every output of the plan and each group page was written and reviewed. The
+outside `hardware/docs/` or among the fixed outputs, a group page HEAD already
+holds, a `Research.md` whose rows under "Raised by P1", Blocking and Sourcing
+answers or decisions differ from HEAD's, and a figure the critic checked
+against a file under `hardware/research/round1/` that HEAD does not hold. A
+renamed file counts as both its old and its new path. A T6 is recorded as
+stopped unless P7 and its critic both return, the critic's three checks pass,
+it checked at least one figure and every figure agrees with its return, no
+budget or combination is superseded, no writing issue is left, P7 names three
+group pages, three files in `hardware/docs/` other than the fixed outputs, and
+every output of the plan and each group page was written and reviewed. The
 critic also gives, in an output or group page, the line that states each item
 as the arguments say: each conflict and gap the checks leave as not known,
 each item accepted open as not verified or not known, and each upheld
@@ -341,7 +356,8 @@ its Outputs row states. A stopped T6 leaves the output paths as they were. A
 T6 that `record` refuses, for any reason, an unreadable output included, does
 too, and keeps what P7 changed in a stash named `refused T6 RUN_ID` in the
 results tree. `raised` reads the committed run record only and refuses a plan
-tree with uncommitted changes.
+tree with uncommitted changes. It writes each question and function on one
+line: every run of whitespace, a line break among them, becomes one space.
 
 A follow-up task takes `--followup FILE`, a JSON object with `phases` (`P1`,
 `P2-P4` or `P5-P6`), `round` (1 or 2), `categories` and `items`, and

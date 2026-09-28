@@ -221,10 +221,18 @@
    "type": "object",
    "properties": {
     "parts": {
-     "$ref": "strs"
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "each part exactly as hardware/research/round1/selection.json writes it"
     },
     "categories": {
-     "$ref": "strs"
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "each category by its ID alone, R1 to R13"
     },
     "kind": {
      "type": "string"
@@ -261,7 +269,8 @@
      ]
     },
     "category": {
-     "type": "string"
+     "type": "string",
+     "description": "the category the line belongs to, by its ID alone, R1 to R13"
     },
     "description": {
      "type": "string"
