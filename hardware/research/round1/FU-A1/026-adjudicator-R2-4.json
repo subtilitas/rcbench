@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R2",
+ "label": "adjudicator-R2-4",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "function": "function requirements: External CAN controller",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The owner's Answer column for V7 reads \"0 to 50 °C ambient, one range for the whole IO board (owner, 2026-09-28)\". It sets a rated ambient temperature range for every part on the IO board, the External CAN controller included, even though the question is filed under R1. The P1 row counts \"range\" as a requirement value that P2 needs to qualify a part. The claimed requirement list names V20, V21, IOBoard.md:65, IOBoard.md:175, V27 and V17, and it leaves out this range. So the figure does not state everything the function requires. The refutation concerns this function's requirement list, not the part's lifecycle or identity, so its scope is function. The verifier's note that the MCP2518FD E grade (-40 to +125 °C) covers 0 to 50 °C is about the part and does not change the ruling. That datasheet grade was not re-read here.",
+  "evidence": "Research.md:567 (V7 row, Answer column): \"0 to 50 °C ambient, one range for the whole IO board (owner, 2026-09-28)\". Research.md:353 (P1 row) lists, for each function, \"the requirement values P2 needs to qualify a part (voltage, current, range, resolution, rate, accuracy)\". The claim's sources match what they cite. Research.md:580 is V20, :581 is V21, :587 is V27 and :577 is V17 (feeds Q8 only). IOBoard.md:65 gives the external CAN port on a controller of its own (owner, 2026-09-25). IOBoard.md:175 gives the 3.3 V logic level. None of the claim's entries gives a temperature range. IOBoard.md itself states no ambient range for R2 parts. Its 0 to 50 °C mentions (:184, :220) cover only the monostable window.",
+  "source": "checkout 10b0bade34dea67341eff3d05793d6d50a7878b4: hardware/docs/Research.md:280 (R2 row), :353 (P1 row), :358 (P4 row), :567 (V7), :577, :580, :581, :587; hardware/docs/IOBoard.md:65, :175, :184, :220",
+  "read_at": "2026-09-28T18:38:57Z",
+  "scope": "function"
+ }
+}

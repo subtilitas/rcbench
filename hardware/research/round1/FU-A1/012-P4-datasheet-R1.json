@@ -1,0 +1,849 @@
+{
+ "role": "P4",
+ "category": "R1",
+ "label": "P4-datasheet-R1",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "verifier": "datasheet",
+  "parts": [
+   {
+    "function": "Microcontroller",
+    "part": "RP2354B",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "part",
+      "stated": "Table 1: RP2354B, QFN-80, 2 MB internal flash, 48 GPIO, 8 analogue inputs; JLCPCB C39843328 is RP2354B, Raspberry Pi, erpComponentName SC1512(13)-A4",
+      "read": "Table 1 row 'RP2354B QFN-80 2 MB 48 8'. vendors.py jlcpcb C39843328 exact_match: part RP2354B, maker_label Raspberry Pi, package QFN-80-EP(10x10), erpComponentName SC1512(13)-A4, other_results 0",
+      "source": "RP2350 datasheet build 2025-07-29 (build-version d126e9e-clean, SHA-256 2877d0f270fb6d6a57943bee58aaad536aa027bea1e5b1c4ce2541a3230d4be8), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, Table 1; vendors.py jlcpcb C39843328 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:13:30Z"
+     },
+     {
+      "figure": "stepping",
+      "stated": "A4 is CHIP_ID.REVISION 0x8 (Appendix C); C39843328 erpComponentName SC1512(13)-A4; held parts' marking not read",
+      "read": "Appendix C: 'Stepping A4 is identified by a CHIP_ID.REVISION value of 0x8'; section 1: A4 'Production version'. JLCPCB C39843328 erpComponentName SC1512(13)-A4. The marking on the 20 held parts is not read (no source available to this verifier)",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, Appendix C; vendors.py jlcpcb C39843328",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:13:30Z"
+     },
+     {
+      "figure": "package",
+      "stated": "QFN-80 (Table 1); section 14.3 same QFN-80 as RP2350B; JLCPCB QFN-80-EP(10x10)",
+      "read": "Chapter 1: 'options for QFN-80 (10 × 10 mm) and QFN-60 (7 × 7 mm)'; Table 1 RP2354B QFN-80; section 14.3: RP2354B uses the same QFN-80 package as RP2350B; JLCPCB package QFN-80-EP(10x10)",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Chapter 1, Table 1, section 14.3; vendors.py jlcpcb C39843328",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:13:30Z"
+     },
+     {
+      "figure": "GPIO count",
+      "stated": "48 (Table 1)",
+      "read": "Table 1: RP2354B 48 GPIO; Table 1427 lists GPIO0 to GPIO47 with QFN-80 pin numbers",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, Tables 1 and 1427",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "ADC inputs",
+      "stated": "8 analogue inputs (Table 1); GPIO40_ADC0 to GPIO47_ADC7 (Table 1427)",
+      "read": "Table 1: 8 analogue inputs; Table 1427: GPIO40_ADC0 (pin 49) to GPIO47_ADC7 (pin 58), type Digital IO / Analogue",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Tables 1 and 1427",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "on-die SRAM",
+      "stated": "'520 kB on-chip SRAM, in 10 independent banks' (Chapter 1)",
+      "read": "Chapter 1: '520 kB on-chip SRAM, in 10 independent banks'; section 14.3: the RP2354B holds 'the same RP2350 die as the flashless variants'",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Chapter 1, section 14.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "PSRAM",
+      "stated": "Section 14.3: two stacked die, RP2350 die and W25Q16JVWI; no PSRAM die",
+      "read": "Section 14.3: 'An RP2354 device contains two stacked silicon die: the same RP2350 die as the flashless variants; a Winbond W25Q16JVWI QSPI NOR flash'. No PSRAM die. External PSRAM is possible only on a second chip select from a GPIO",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), section 14.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "in-package flash",
+      "stated": "'a Winbond W25Q16JVWI QSPI NOR flash'; 2 MB internal flash",
+      "read": "Section 14.3: 'a Winbond W25Q16JVWI QSPI NOR flash', 'RP2354A and RP2354B feature 2 MB of internal flash'; Table 1: 2 MB. Read from Raspberry Pi's own copy (final URL pip-assets.raspberrypi.com RP-008373-DS-2)",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, section 14.3, Table 1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "flash supply range",
+      "stated": "14.3: 2.7 to 3.6 V; Table 1441 QSPI_IOVDD (RP2354 only) 2.97 / 3.3 / 3.63 V; both contain 3.201 to 3.399 V",
+      "read": "Section 14.3: QSPI_IOVDD 'must be in the range 2.7 to 3.6 V'. Table 1441: QSPI_IOVDD (RP2354 only) min 2.97, typ 3.3, max 3.63 V; note 'RP2354 contains an internal 3.3V flash device, therefore QSPI_IOVDD must be 3.3V'. W25Q16JV-DTR rev I: 'Single 2.7V to 3.6V supply'. 3.201 to 3.399 V lies inside both",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), section 14.3, Table 1441; W25Q16JV-DTR datasheet revision I (SHA-256 1aaae1ed2b478c6d9c30cd0e14fcda2db8e19fc2c6fe692b108dbb42dd0b8e18), https://www.winbond.com/resource-files/W25Q16JV_DTR%20RevI%2005252026%20Plus.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "logic level",
+      "stated": "IOVDD 1.62 to 3.63 V, 1.8 / 3.3 V typical (Table 1441); VIH min 2 V, VIL max 0.8 V at IOVDD 3.3 V (Table 1436)",
+      "read": "Table 1441: IOVDD 1.62 min, 1.8 / 3.3 typ, 3.63 max V. Table 1436 at IOVDD 3.3 V: VIH 2 V min, VIL 0.8 V max, VOH 2.62 V min, VOL 0.5 V max",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Tables 1436 and 1441",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "GPIO0-39 fault tolerance",
+      "stated": "GPIO0 to 39 Digital IO (FT); VPIN_FT 5.5 V at IOVDD 3.3 V, 4.2 V at 2.5 V, 3.63 V at 1.8 V and at 0 V",
+      "read": "Table 1427: GPIO0 to GPIO39 on QFN-80 are all 'Digital IO (FT)'. Table 1433: VPIN_FT -0.5 to 5.5 V at IOVDD=3.3V ('IOVDD must be present'), 4.2 V at 2.5 V, 3.63 V at 1.8 V, 3.63 V at IOVDD=0V",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Tables 1427 and 1433",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "fault-tolerant pin current at IOVDD 0 V",
+      "stated": "Table 1426: 'very little current flows into the pin whilst it is below 3.63 V and IOVDD is 0 V'; no figure",
+      "read": "Table 1426, Digital In (FT): 'very little current flows into the pin whilst it is below 3.63 V and IOVDD is 0 V. Additionally, they will tolerate voltages up to 5.5 V, provided IOVDD is powered to 3.3 V.' No current figure",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Table 1426",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "GPIO40-47 rating",
+      "stated": "Digital IO / Analogue (Table 1427); VPIN -0.5 to IOVDD + 0.5 V (Table 1433); ADC 0 to ADC_AVDD (Table 1438)",
+      "read": "Table 1427: GPIO40_ADC0 to GPIO47_ADC7 type 'Digital IO / Analogue', not FT. Table 1433: Voltage at IO (Standard) -0.5 to IOVDD + 0.5 V. Table 1438: VPIN_ADC 0 to ADC_AVDD",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Tables 1427, 1433, 1438",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "pin input leakage",
+      "stated": "IIN 1 uA maximum, Standard and FT, no IOVDD condition (Table 1436)",
+      "read": "Table 1436 (Digital IO characteristics - Standard and FT): Pin Input Leakage Current IIN, maximum 1 uA, Conditions column empty",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Table 1436",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "pad pull-up",
+      "stated": "RPU 32 to 86 kOhm at IOVDD 3.3 V (Table 1436)",
+      "read": "Table 1436: Pull-Up Resistance RPU at IOVDD=3.3V 32 min, 86 max kOhm",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Table 1436",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "SWDIO reset bias",
+      "stated": "SWDIO QFN-80 pin 34, Digital IO (FT), reset Pull-Up (Table 1430)",
+      "read": "Table 1430: SWDIO, QFN-60 25, QFN-80 34, Digital IO (FT), IOVDD, reset state Pull-Up, 'Serial Wire Debug data'",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Table 1430",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "SWD pins",
+      "stated": "SWCLK pin 33 and SWDIO pin 34 (Table 1430)",
+      "read": "Table 1430: SWCLK QFN-80 33, Digital In (FT), Pull-Up, 'Serial Wire Debug clock'; SWDIO QFN-80 34, 'Serial Wire Debug data'",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Table 1430",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "BOOT pin",
+      "stated": "QSPI_SS pin 75, Pull-Up, 'QSPI chip select / USB BOOTSEL' (Table 1428); 14.3 CSn low at reset selects internal flash harmlessly",
+      "read": "Table 1428: QSPI_SS, QFN-80 75, Digital IO, QSPI_IOVDD, reset Pull-Up, 'QSPI chip select / USB BOOTSEL'. Section 14.3: 'The QSPI CSn can be driven low at reset or power-up to select BOOTSEL mode. This harmlessly selects the internal flash die but does not issue commands to it'",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Table 1428, section 14.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "RESET pin",
+      "stated": "RUN pin 35, Digital In (FT), Pull-Up, 'Chip enable / reset_n' (Table 1430)",
+      "read": "Table 1430: RUN, QFN-80 35, Digital In (FT), IOVDD, Pull-Up, 'Chip enable / reset_n'; section 14.3 calls RUN the 'active-low reset'",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Table 1430, section 14.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "USB device port",
+      "stated": "USB_DP 67, USB_DM 66, 27 Ohm series resistor; USB 1.1 controller and PHY with host and device; UF2 via USB BOOTSEL",
+      "read": "Table 1431: USB_DP QFN-80 67 and USB_DM 66, USB IO on USB_OTP_VDD, '27Ω series resistor required for USB operation'. Chapter 1: 'USB 1.1 controller and PHY, with host and device support'. Section 14.3: 'Internal flash can be programmed via UF2 drag-and-drop download using the USB BOOTSEL mode'",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Table 1431, Chapter 1, section 14.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "crystal input",
+      "stated": "XIN 30, XOUT 31, Analogue (XOSC) (Table 1429); 'for attaching a 12 MHz crystal' (Table 1426)",
+      "read": "Table 1429: XIN QFN-80 30, XOUT 31, Analogue (XOSC). Table 1426: 'Oscillator input pins for attaching a 12 MHz crystal'. Table 1439: fosc 1 to 50 MHz, 12 typical",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Tables 1426, 1429, 1439",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "core regulator",
+      "stated": "On-chip SMPS (Chapter 1); VREG_LX pin 63 'connect to inductor' (Table 1432); values in 6.3.8.2",
+      "read": "Chapter 1: 'On-chip switched-mode power supply to generate core voltage'. Table 1432: VREG_LX QFN-80 63, 'Voltage regulator switching output (connect to inductor)'. Section 6.3.8.2 gives the inductor values",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Chapter 1, Table 1432, section 6.3.8.2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "PIO",
+      "stated": "three PIO blocks with four state machines; 32 GPIOs at a time, GPIOBASE selects; only 0 and 16",
+      "read": "Chapter 11: 'There are three PIO blocks with four state machines'; 'Each PIO block is still limited to 32 GPIOs at a time, but GPIOBASE selects which 32'; GPIOBASE register: 'Only the values 0 and 16 are supported (only bit 4 is writable)'. Chapter 1: 12 PIO state machines",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), chapter 11 overview, GPIOBASE register (offset 0x168), Chapter 1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "PWM slices",
+      "stated": "twelve PWM slices, each with two output channels; 24 PWM channels",
+      "read": "GPIO function table: 'There are twelve PWM slices, each with two output channels (A/B)'; Chapter 1: '24 × PWM channels'",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), GPIO function select table, Chapter 1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "pin budget",
+      "stated": "48 GPIO against 27 to 32",
+      "read": "Table 1: 48 GPIO; 32 <= 48",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Table 1; hardware/docs/IOBoard.md:106 at commit 10b0bade34de",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "store endurance",
+      "stated": "Die figure not known; packaged W25Q16JV 'Min. 100K Program-Erase cycles' without 'per sector'; owner's decision 2026-09-27 budgets with the packaged figure",
+      "read": "W25Q16JV-DTR rev I features: 'Min. 100K Program-Erase cycles(1)', no 'per sector'; 'Contact Winbond for KGD and other options'; ordering package codes SN, SS, UX, UU, ZP, TB, TC, none for the in-package die. RP2350 datasheet section 14.3 defers to the W25Q16JVWI datasheet. Research.md:86 (owner, 2026-09-27) budgets with the packaged-part figure, marked as such",
+      "source": "W25Q16JV-DTR datasheet revision I, publication 2026-05-28 (SHA-256 1aaae1ed...8e18), https://www.winbond.com/resource-files/W25Q16JV_DTR%20RevI%2005252026%20Plus.pdf, features and section 10.5; hardware/docs/Research.md:86 at commit 10b0bade34de",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "operating ambient",
+      "stated": "Ambient temperature -40 to 85 C (Table 1435)",
+      "read": "Table 1435 Thermal Performance: Ambient Temperature, minimum -40, maximum 85 °C; covers 0 to 50 °C",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Table 1435",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "watchdog stop deadline (V1)",
+      "stated": "LOAD bits 23:0 in microseconds, up to 0xffffff about 16 s; 200 ms can be set",
+      "read": "Table 1248 CTRL.TIME: 'the time in usec before a watchdog reset will be triggered'; Table 1249 LOAD bits 23:0, 'maximum setting is 0xffffff which corresponds to approximately 16 seconds'. Section 12.9.2: tick from the system-level ticks block. A LOAD of 200,000 (200 ms) is inside the range",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), section 12.9, Tables 1248 and 1249",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "watchdog stall cover (V2)",
+      "stated": "LOAD max 0xffffff, about 16 s, so above 900 ms can be set; the empty window between V2 and V1 is a specification/firmware conflict, not a limit of the part",
+      "read": "Table 1249: LOAD max 0xffffff = 16,777,215 us, 'approximately 16 seconds'; a timeout above 900 ms is settable. No single timeout is both above 900 ms and at most 200 ms; the part's range covers either bound, so the empty window is not set by the silicon",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), section 12.9, Table 1249",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "image watchdog timeout (V4)",
+      "stated": "CTRL.ENABLE resets to 0: 'When not enabled the watchdog timer is paused'",
+      "read": "Table 1248: bit 30 ENABLE 'When not enabled the watchdog timer is paused', reset 0x0. The part runs without a watchdog until firmware enables it, which matches an image that sets none (grep -rn -i watchdog firmware/iomcu/ at 10b0bade34de: comments at main.c:970-973 only)",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Table 1248; firmware/iomcu/ at commit 10b0bade34de",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Raspberry Pi (S1)",
+      "read": "The datasheet's manufacturer is Raspberry Pi ('RP2350 is a new family of microcontrollers from Raspberry Pi'); JLCPCB maker_label 'Raspberry Pi'. S1 answer lists Raspberry Pi",
+      "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Chapter 1; hardware/docs/Research.md S1 row at commit 10b0bade34de; vendors.py jlcpcb C39843328",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:13:30Z"
+     }
+    ]
+   },
+   {
+    "function": "12 MHz crystal",
+    "part": "ABM8-272-T3",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "frequency",
+      "stated": "Center frequency 12.000 MHz",
+      "read": "Center Frequency 12.000 MHz (typical column)",
+      "source": "ABM8-272-T3 datasheet Revision B, date of issue Sept. 16th 2024, Abracon drawing 456603, https://abracon.com/datasheets/ABM8-272-T3.pdf, Key Electrical Specifications",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "cut and mode",
+      "stated": "Operation Mode 'Fundamental-AT'",
+      "read": "Operation Mode: Fundamental-AT",
+      "source": "ABM8-272-T3 datasheet Revision B, https://abracon.com/datasheets/ABM8-272-T3.pdf, Key Electrical Specifications",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "shunt capacitance C0",
+      "stated": "C0 3.0 pF max",
+      "read": "Shunt Capacitance (C0) maximum 3.0 pF",
+      "source": "ABM8-272-T3 datasheet Revision B, https://abracon.com/datasheets/ABM8-272-T3.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "load capacitance",
+      "stated": "CL 10 pF",
+      "read": "Load capacitance (CL) 10 pF typical",
+      "source": "ABM8-272-T3 datasheet Revision B, https://abracon.com/datasheets/ABM8-272-T3.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "ESR",
+      "stated": "R1 50 Ohm max",
+      "read": "Equivalent series resistance (R1) maximum 50 Ohm",
+      "source": "ABM8-272-T3 datasheet Revision B, https://abracon.com/datasheets/ABM8-272-T3.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "drive level rating",
+      "stated": "10 uW typical, 200 uW max",
+      "read": "Drive Level 10 uW typical, 200 uW maximum",
+      "source": "ABM8-272-T3 datasheet Revision B, https://abracon.com/datasheets/ABM8-272-T3.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "total frequency error",
+      "stated": "+/-30 ppm at 25 C, +/-30 ppm over -40 to +85 C ref. 25 C, +/-5 ppm ageing: +/-65 ppm",
+      "read": "Frequency Tolerance at +25 C -30 to +30 ppm; Frequency Stability over the Operating Temperature (ref. to +25 C) -30 to +30 ppm, operating temperature -40 to +85 C; Aging -5 to +5 ppm @25±3 C 1st year. Sum 65 ppm, under 1000 ppm",
+      "source": "ABM8-272-T3 datasheet Revision B, https://abracon.com/datasheets/ABM8-272-T3.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "DShot clock budget",
+      "stated": "+/-65 ppm, 0.0065 %, under +/-3 %",
+      "read": "65 ppm = 0.0065 %, under 3 %",
+      "source": "ABM8-272-T3 datasheet Revision B, https://abracon.com/datasheets/ABM8-272-T3.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "operating temperature",
+      "stated": "-40 to +85 C",
+      "read": "Operating Temperature -40 to +85 C; features 'Wide Operating Temperature (-40ºC to +85ºC)'",
+      "source": "ABM8-272-T3 datasheet Revision B, https://abracon.com/datasheets/ABM8-272-T3.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Abracon (S2)",
+      "read": "Datasheet maker Abracon ('ABM8-272-T3 ... Abracon Drawing # 456603'); S2 answer lists Abracon",
+      "source": "ABM8-272-T3 datasheet Revision B, https://abracon.com/datasheets/ABM8-272-T3.pdf; hardware/docs/Research.md S2 row at commit 10b0bade34de",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     }
+    ]
+   },
+   {
+    "function": "Core regulator inductor",
+    "part": "AOTA-B201610S3R3-101-T",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "inductance",
+      "stated": "3.3 uH, tolerance M (+/-20 %), at 1 MHz / 1.0 V",
+      "read": "L 3.3 uH at 1MHz/1.0V, tolerance code M, '%' column",
+      "source": "AOTA-B201610S3R3-101-T datasheet Revision A 9/13/2024, https://abracon.com/datasheets/AOTA-B201610S3R3-101-T.pdf, Electrical Specifications",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "saturation current",
+      "stated": "Isat 2.8 A typ, 2.4 A max column, at a 30 % drop",
+      "read": "Isat Typ 2.8 A, Max column 2.4 A; 'DC current at which the inductance drops 30% from its nominal value'. The lower figure, 2.4 A, is above 1.5 A",
+      "source": "AOTA-B201610S3R3-101-T datasheet Revision A, https://abracon.com/datasheets/AOTA-B201610S3R3-101-T.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "DC resistance",
+      "stated": "DCR 115 mOhm typ, 140 mOhm max",
+      "read": "DCR Typ 115, Max 140 mOhm",
+      "source": "AOTA-B201610S3R3-101-T datasheet Revision A, https://abracon.com/datasheets/AOTA-B201610S3R3-101-T.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "fully shielded",
+      "stated": "'Shielded construction for minimized EMI emissions'",
+      "read": "Features: 'Shielded construction for minimized EMI emissions'; molded body. RP2350 datasheet 6.3.8.2: 'L must be fully shielded ... we recommend the AOTA-B201610S3R3-101-T'",
+      "source": "AOTA-B201610S3R3-101-T datasheet Revision A, https://abracon.com/datasheets/AOTA-B201610S3R3-101-T.pdf; RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8) section 6.3.8.2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "polarity marking",
+      "stated": "'Marking (White Ink polarity dot)' with polarity and winding drawn; RP2350 6.3.8.3 names it polarity-marked",
+      "read": "Page 4 (rendered and viewed): 'Marking (White Ink polarity dot)', dot on the top view, drawing of + and - terminals, current and magnetic field direction, 'Internal structure is shown for illustration of polarity and winding direction'. RP2350 6.3.8.3: 'custom 2.0×1.6mm 3.3μH polarity-marked inductor, part number AOTA-B201610S3R3-101-T'",
+      "source": "AOTA-B201610S3R3-101-T datasheet Revision A, page 4, https://abracon.com/datasheets/AOTA-B201610S3R3-101-T.pdf; RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8) section 6.3.8.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "operating temperature",
+      "stated": "-40 to +125 C including self-temperature rise",
+      "read": "Operating Temperature: -40 to +125 C (including self-temperature rise)",
+      "source": "AOTA-B201610S3R3-101-T datasheet Revision A, https://abracon.com/datasheets/AOTA-B201610S3R3-101-T.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Abracon (S2)",
+      "read": "Datasheet maker Abracon (ABRACON logo, Spicewood TX); S2 answer lists Abracon",
+      "source": "AOTA-B201610S3R3-101-T datasheet Revision A, https://abracon.com/datasheets/AOTA-B201610S3R3-101-T.pdf; hardware/docs/Research.md S2 row at commit 10b0bade34de",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     }
+    ]
+   },
+   {
+    "function": "USB protection",
+    "part": "TPD6E05U06RVZR",
+    "kind": "first",
+    "verdict": "refuted",
+    "refutation": "Fails 'D+/D- steady voltage (V12)'. V12 (owner, 2026-09-28) answers what the USB protection may let reach USB_DP and USB_DM: steady 3.63 V. The TPD6E05U06 is a shunt clamp with VRWM 5.5 V and VBR 6.5 V min, 8.5 V max at 1 mA (SLVSBO7O section 5.4; Recommended Operating Conditions VIO 0 to 5.5 V). It does not conduct below its breakdown, so a steady fault between 3.63 V and 6.5 V, such as D+ shorted to a 5 V VBUS, reaches USB_DP or USB_DM through the 27 Ohm resistor unlimited. P2's own record states this ('It does not limit a steady external voltage between 3.63 V and its breakdown') and reports it separately under 'USB_DP and USB_DM steady overvoltage', yet marks the check as passing on the ground that the clamp 'adds no source'. That reading holds for every passive part and leaves the requirement empty. USB 2.0's 5V Short Circuit Withstand ECN removes the D+/D- short-to-VBUS withstand from the transceiver and states 'OEMs that require short circuit withstand to VBUS can implement the requirement with an external hub or other external protection circuitry', so a limit to 3.63 V needs a series element this part does not have. Every other requirement value passes. The failure is of the function's requirement against a shunt-clamp class, not of this part's maker, lifecycle or identity.",
+    "checks": [
+     {
+      "figure": "lines covered",
+      "stated": "6 channels (RVZ, USON-14): D+, D-, CC1, CC2 and VBUS on 5, each its own clamp to GND",
+      "read": "Table 4-3: D1+ (14), D1- (13), D2+ (12), D2- (11), D3+ (9), D3- (8) 'ESD protected channel', GND 5 and 10, NC 1-4, 6, 7. Description: 'a family of unidirectional' clamps. Recommended VIO 0 to 5.5 V on every channel, so VBUS at 5.5 V may sit on one",
+      "source": "SLVSBO7O (TPD1E05U06, TPD4E05U06, TPD6E05U06, December 2012, revised August 2024), https://www.ti.com/lit/ds/symlink/tpd6e05u06.pdf, Table 4-3, section 3, Recommended Operating Conditions",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "IEC 61000-4-2 contact",
+      "stated": "+/-12 kV contact",
+      "read": "5.2: IEC 61000-4-2 contact discharge ±12000 V",
+      "source": "SLVSBO7O, https://www.ti.com/lit/ds/symlink/tpd6e05u06.pdf, section 5.2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "IEC 61000-4-2 air",
+      "stated": "+/-15 kV air-gap",
+      "read": "5.2: IEC 61000-4-2 air-gap discharge ±15000 V",
+      "source": "SLVSBO7O, https://www.ti.com/lit/ds/symlink/tpd6e05u06.pdf, section 5.2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "VBUS stand-off",
+      "stated": "VRWM 5.5 V max, VBR 6.5 V min",
+      "read": "5.4: VRWM 5.5 V (max column) at IIO < 10 uA; VBR 6.5 min, 8.5 max V at 1 mA",
+      "source": "SLVSBO7O, https://www.ti.com/lit/ds/symlink/tpd6e05u06.pdf, section 5.4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "VBUS current",
+      "stated": "A shunt clamp from the VBUS channel to GND; the 3 A does not pass through it",
+      "read": "Each channel is a single I/O pin clamping to GND (Table 4-3); no series path, so VBUS current does not flow through the part",
+      "source": "SLVSBO7O, https://www.ti.com/lit/ds/symlink/tpd6e05u06.pdf, Table 4-3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "D+ and D- stand-off",
+      "stated": "VRWM 5.5 V, above 3.63 V; leakage 10 nA max at 2.5 V",
+      "read": "VRWM 5.5 V; ILEAK 0.01 nA typ, 10 nA max at VIO 2.5 V",
+      "source": "SLVSBO7O, https://www.ti.com/lit/ds/symlink/tpd6e05u06.pdf, section 5.4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "D+/D- steady voltage (V12)",
+      "stated": "A shunt clamp adds no source; it does not limit a steady external voltage between 3.63 V and its breakdown",
+      "read": "VRWM 5.5 V, VBR 6.5 V min, 8.5 V max at 1 mA: below 6.5 V the clamp does not conduct, so a steady external voltage up to at least 6.5 V passes to USB_DP/USB_DM through the 27 Ohm resistor. The part does not hold the pins at or below the 3.63 V V12 sets",
+      "source": "SLVSBO7O, https://www.ti.com/lit/ds/symlink/tpd6e05u06.pdf, section 5.4 and Recommended Operating Conditions; hardware/docs/Research.md V12 at commit 10b0bade34de; USB 2.0 '5V Short Circuit Withstand ECN.pdf' in https://www.usb.org/sites/default/files/usb_20_20250603.zip (read 2026-09-28T18:06:40Z)",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "D+/D- ESD clamping (V12)",
+      "stated": "TLP 10 V at 1 A, 14 V at 5 A typ; Figure 5-3 about 23 V at 16 A; no maximum",
+      "read": "5.4: VClamp 10 V at 1 A and 14 V at 5 A TLP (typ, 100 ns); RDYN 0.8 Ohm typ (fit 10 to 20 A). Figure 5-3 (rendered and viewed, typical) reaches 16 A at about 23 to 24 V; Figure 5-6 (8-kV IEC waveform) about 25 V at 25 to 30 ns. No maximum is stated; the typical 16 A reading is below 36 V",
+      "source": "SLVSBO7O, https://www.ti.com/lit/ds/symlink/tpd6e05u06.pdf, section 5.4, page 9 Figures 5-3 and 5-6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "D+/D- capacitance (V11)",
+      "stated": "CL 0.47 pF typ (RVZ)",
+      "read": "CL line capacitance TPD6E05U06 RVZ 0.47 pF typ at VIO 2.5 V, 1 MHz; no maximum; far under 75 pF",
+      "source": "SLVSBO7O, https://www.ti.com/lit/ds/symlink/tpd6e05u06.pdf, section 5.4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "D+/D- capacitance matching",
+      "stated": "Delta CIO-TO-GND 0.05 pF typ, 0.07 pF max",
+      "read": "Variation of input capacitance, channel x to GND minus channel y to GND: 0.05 typ, 0.07 max pF",
+      "source": "SLVSBO7O, https://www.ti.com/lit/ds/symlink/tpd6e05u06.pdf, section 5.4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "operating temperature",
+      "stated": "TA -40 to 125 C",
+      "read": "Absolute maximum and Recommended Operating Conditions: TA -40 to 125 °C",
+      "source": "SLVSBO7O, https://www.ti.com/lit/ds/symlink/tpd6e05u06.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments (S1)",
+      "read": "Datasheet maker Texas Instruments (SLVSBO7O, © 2024 Texas Instruments Incorporated); S1 answer lists Texas Instruments",
+      "source": "SLVSBO7O, https://www.ti.com/lit/ds/symlink/tpd6e05u06.pdf; hardware/docs/Research.md S1 row at commit 10b0bade34de",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:04:20Z"
+     }
+    ]
+   }
+  ],
+  "figures": [
+   {
+    "figure": "found V1",
+    "verdict": "confirmed",
+    "evidence": "Sources read as quoted. link_dev.h:25-31: 'the coprocessor gives up after 200 ms and the host escalates after 1 s, so the processor holding the outputs is the more suspicious of the two'; LINK_DEV_SILENCE_MS 200u. Safety.md:51: 'The panel is healthy and the coprocessor misbehaves ... no help: the panel is still beating'; 'no hardware in this design covers it'. IOBoard.md:186 and Monostable.md:28, :115 give 200 ms, 'the backstop is not slower than the link'. The panel stops the heartbeat only on STOP or an unserved disarm request (arming.c:192-197, panel main.c:716-717), an operator action, so with no action the watchdog is the only automatic stop path. The value is derived and marked as such ('A deadline read from the tree, not an owner figure')",
+    "source": "shared/link/include/link_dev.h:25-31, docs/Safety.md:45-56, hardware/docs/IOBoard.md:186 and :221, shared/safety/arming.c:192-197, firmware/panel/main/main.c:705-717 at commit 10b0bade34de; hardware/docs/Monostable.md:28 and :115-116 at 23c82ca (/home/claude/rcbench-research/round1/monostable-23c82ca)",
+    "read_at": "2026-09-28T18:14:33Z"
+   },
+   {
+    "figure": "found V2",
+    "verdict": "confirmed",
+    "evidence": "out_store_tick returns after one erase (OUT_STORE_ERASED) or one program (OUT_STORE_WROTE), 'An erase and the record that follows it are two windows on two passes' (out_store.c:326-339); the reclaim erase runs only when step == OUT_STORE_IDLE (main.c:1079). A printf follows each window (main.c:1051-1071, :1080-1083), can_report at :1086. pico-sdk 2.3.0 and 2.3.1 stdio_usb.c are byte-identical (cmp); stdio_usb_out_chars loops while nothing is accepted until time_us_64() > last_avail_time + PICO_STDIO_USB_STDOUT_TIMEOUT_US, last_avail_time updated on each accepted write; default 500000 (stdio_usb.h:31-33); no override under firmware/ or shared/. last_avail_time is static, so a later print in the same pass with a stalled host returns at once: one 500 ms wait a pass. W25Q16JV-DTR rev I: tSE 45 typ / 400 max ms, tPP 0.4 / 3 ms. OUT_STORE_SECTORS 2u (out_store.h:122); boot loop main.c:937-942 erases up to 2 sectors with a printf each. 400 + 500 = 900 ms",
+    "source": "firmware/iomcu/src/main.c, out_store.c, out_store.h at commit 10b0bade34de; https://raw.githubusercontent.com/raspberrypi/pico-sdk/2.3.0/src/rp2_common/pico_stdio_usb/stdio_usb.c, .../2.3.1/... and include/pico/stdio_usb.h (read 18:08:12Z to 18:08:13Z); W25Q16JV-DTR datasheet revision I (SHA-256 1aaae1ed...8e18), https://www.winbond.com/resource-files/W25Q16JV_DTR%20RevI%2005252026%20Plus.pdf, AC characteristics",
+    "read_at": "2026-09-28T18:08:13Z"
+   },
+   {
+    "figure": "found V4",
+    "verdict": "confirmed",
+    "evidence": "grep -rn -i watchdog firmware/iomcu/ finds only comments at main.c:970-973; hardware_watchdog is not in firmware/iomcu/CMakeLists.txt. RP2350 Table 1248: CTRL.ENABLE reset 0x0, 'When not enabled the watchdog timer is paused'; Table 1249: LOAD max 0xffffff, 'approximately 16 seconds'",
+    "source": "firmware/iomcu/ at commit 10b0bade34de; RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, section 12.9, Tables 1248, 1249",
+    "read_at": "2026-09-28T18:04:20Z"
+   },
+   {
+    "figure": "found V5",
+    "verdict": "confirmed",
+    "evidence": "RP2350 section 8.1.2.3: 'Appropriate margin is built into the design to tolerate up to 1000ppm variation in the XOSC frequency.' usb_20.pdf 7.1.11: 'For full-speed only functions, the required data-rate when transmitting (TFDRATE) is 12.000 Mb/s ±0.25% (2,500 ppm)'; Table 7-9 TFDRATE 11.9700 to 12.0300 Mb/s. test_dshot_telem.c:200-206 lays replies at 95 and 105 % (4.75 and 5.25 samples a bit); DShot.md:221-230. With V3's ±2 % that leaves ±3 %. 1000 ppm is the tightest of the three",
+    "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8) section 8.1.2.3; usb_20.pdf in https://www.usb.org/sites/default/files/usb_20_20250603.zip (fetched 2026-09-28T18:06:40Z) section 7.1.11 and Table 7-9; test/host/test_dshot_telem.c:200-206 and docs/DShot.md:221-230 at commit 10b0bade34de",
+    "read_at": "2026-09-28T18:06:40Z"
+   },
+   {
+    "figure": "found V6",
+    "verdict": "confirmed",
+    "evidence": "RP2350 8.2.1.1 recommends the ABM8-272-T3; Table 597: CL 10 pF, ESR (R1) 50 Ohm max, drive level 10 typ / 200 max uW. Hardware design guide (build date 20/08/2026), Crystal section: 'We've opted for a device with a maximum of 50 Ω, as we've found that this, along with a 1 kΩ series resistor (R2), is a good value to prevent the crystal being over-driven'; 15 pF capacitors give 7.5 pF, plus an assumed 3 pF, 10.5 pF, 'close enough to the target of 10 pF'. Neither document states the drive level the circuit applies (no 'drive level' elsewhere in either text)",
+    "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), section 8.2.1.1, Table 597; Hardware design with RP2350, https://datasheets.raspberrypi.com/rp2350/hardware-design-with-rp2350.pdf (fetched 2026-09-28T18:04:20Z), Crystal Oscillator section",
+    "read_at": "2026-09-28T18:04:20Z"
+   },
+   {
+    "figure": "found V11",
+    "verdict": "confirmed",
+    "evidence": "usb_20.pdf 7.1.6.1: 'The maximum capacitance on an upstream facing port of a full-speed device with a detachable cable (CINUB) is 100 pF on D+ or D-. This is comprised of up to 75 pF of lumped capacitance to ground on each line at the transceiver and in the connector and an additional 25 pF ...'; 'The difference in capacitance between D+ and D- must be less than 10%.' Table 7-7: CINUB 100 pF. The Device Capacitance ECN in the same zip changes only CRPB on VBUS. RP2350 Table 1437 (USB IO) gives no pin capacitance",
+    "source": "usb_20.pdf and 'Device Capacitance ECN.pdf' in https://www.usb.org/sites/default/files/usb_20_20250603.zip, section 7.1.6.1, Table 7-7; RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8) Table 1437",
+    "read_at": "2026-09-28T18:06:40Z"
+   },
+   {
+    "figure": "P2 report: stepping-A4 errata",
+    "verdict": "refuted",
+    "evidence": "The list of IDs is right: the Affects lines naming A4 are E1, E2, E4, E5, E6, E7, E8, E11, E12, E17, E26, E27, E28, 13 in all; E9, E10, E13 to E16, E19 to E23 affect A2 only; E3 is A2 QFN-60 only; E18, E24, E25 are A2 and A3; A4 is CHIP_ID.REVISION 0x8; out_ppm.c:68-80 clears EN on both channels before an abort, as E5's workaround says. The E12 entry misstates its workaround: the figure gives 'clk_sys faster than clk_usb, above 48 MHz'. E12 reads 'Workaround: Run clk_sys faster than clk_usb by at least 10% when the peripheral is in use', that is, at least 52.8 MHz with clk_usb at 48 MHz. 'Above 48 MHz' admits a clk_sys of 49 to 52.7 MHz that the erratum does not cover. The corrected entry: E12, 'A4 (mitigated on A3)', clk_sys at least 10 % faster than clk_usb while the USB peripheral is in use",
+    "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, Appendix C and Appendix E (RP2350-E12 workaround); firmware/iomcu/src/out_ppm.c:68-80 at commit 10b0bade34de",
+    "read_at": "2026-09-28T18:04:20Z"
+   },
+   {
+    "figure": "P2 report: pin ratings",
+    "verdict": "confirmed",
+    "evidence": "Table 1427: GPIO0-39 Digital IO (FT), GPIO40-47 Digital IO / Analogue. Table 1433: VPIN_FT 5.5 V at IOVDD 3.3 V ('IOVDD must be present'), 4.2 V at 2.5 V, 3.63 V at 1.8 V and 0 V; Standard VPIN -0.5 to IOVDD + 0.5 V; IOVDD and QSPI_IOVDD max 3.63 V. Table 1426 'very little current'. Table 1438 VPIN_ADC 0 to ADC_AVDD. Table 1430 RUN 35, SWCLK 33 Digital In (FT), SWDIO 34 Digital IO (FT). Table 1428 QSPI_SS 75 Digital IO on QSPI_IOVDD. Table 1431 USB_DP 67, USB_DM 66 USB IO on USB_OTP_VDD; Table 1433 has no USB IO row. Table 1434 HBM 2 kV all pins (also 4 kV for FT pins and CDM 500 V). The statement on an absent IOVDD holds for GPIO40-47 and not for GPIO0-39 (3.63 V at IOVDD 0 V). Build 2024-08-08 not read by this verifier",
+    "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Tables 1426 to 1438",
+    "read_at": "2026-09-28T18:04:20Z"
+   },
+   {
+    "figure": "P2 report: pad figures",
+    "verdict": "confirmed",
+    "evidence": "Table 1436: IIN 1 uA max, no condition; at 3.3 V RPU 32-86 kOhm, RPD 36-113 kOhm, VIH 2 V min (FT max 5.5 V), VIL 0.8 V max, VHYS 0.2 V min, VOH 2.62 V min, VOL 0.5 V max; RPU 32-106 at 1.8 V, 42-123 at 2.5 V; IIOVDD_MAX 100 mA, IQSPI_IOVDD_MAX 20 mA. Table 1427: all 52 GPIO rows reset Pull-Down. Table 1430 RUN, SWCLK, SWDIO Pull-Up. Table 1428: SS, SD2, SD3 Pull-Up; SCLK, SD0, SD1 Pull-Down. Table 1437: IIN 1 uA, RPD 14.25-15.75 kOhm, RPU2 0.873-1.548 kOhm, RPU1&2 1.398-3.063 kOhm, VOH 2.8 V min",
+    "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8), Tables 1427, 1428, 1430, 1436, 1437",
+    "read_at": "2026-09-28T18:04:20Z"
+   },
+   {
+    "figure": "P2 report: in-package flash",
+    "verdict": "confirmed",
+    "evidence": "Section 14.3: 'a Winbond W25Q16JVWI QSPI NOR flash'; the six QSPI pads 'connect to both the internal flash die and the external package pins'; 'The PADRESETB reset input on the W25Q16JVWI is not connected ... there is no way to perform a hardware reset of the flash die'; 'maximum QSPI clock frequency of the W25Q16JVWI is 133 MHz'; supply 2.7 to 3.6 V. Table 1441 QSPI_IOVDD (RP2354) 2.97/3.3/3.63 V; together 2.97 to 3.60 V holds 3.201 to 3.399 V. W25Q16JV-DTR rev I: ordering codes SN, SS, UX, UU, ZP, TB, TC, no W code; 'Contact Winbond for KGD and other options'; tSE 45/400 ms, tPP 0.4/3 ms, 'Min. 100K Program-Erase cycles'",
+    "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8) section 14.3, Table 1441; W25Q16JV-DTR datasheet revision I (SHA-256 1aaae1ed...8e18), https://www.winbond.com/resource-files/W25Q16JV_DTR%20RevI%2005252026%20Plus.pdf",
+    "read_at": "2026-09-28T18:04:20Z"
+   },
+   {
+    "figure": "P2 report: BOOT resistor",
+    "verdict": "confirmed",
+    "evidence": "Hardware design with RP2350 (build date 20/08/2026), Flash Memory section: 'The second resistor (R6) is a 1 kΩ resistor, connected to a push button (SW1) labelled USB_BOOT'; 'It is important to include resistor R6, as this allows the QSPI_SS pin to safely over-drive the applied pull-down when the RP2350 starts booting'; for the RP2354 'we would still want to keep the USB_BOOT switch connected to QSPI_SS'. R1 pull-up 'marked as DNF ... with this particular flash device, the external pull-up is unnecessary', said of the external U3 flash; nothing is stated for the in-package die. RP2350 section 14.3: CSn low at reset 'harmlessly selects the internal flash die'",
+    "source": "https://datasheets.raspberrypi.com/rp2350/hardware-design-with-rp2350.pdf (RP-008280-DS-2, fetched 2026-09-28T18:04:20Z), section 3.1; RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8) section 14.3, Table 1428",
+    "read_at": "2026-09-28T18:04:20Z"
+   },
+   {
+    "figure": "P2 report: OpenOCD",
+    "verdict": "confirmed",
+    "evidence": "rp2350.cfg (master): transport swd, CPUTAPID 0x00040927, USE_CORE default { cm0 cm1 }, cortex_m targets at -ap-num 0x2000 and 0x4000, FLASHSIZE 0 = 'Detect QSPI flash size based on flash ID or SFDP', 'flash bank $_FLASHNAME rp2xxx 0x10000000 $_FLASHSIZE 0 0 $_FLASH_TARGET'; dap create uses -tap. rp2xxx.c looks up ROM functions CONNECT_INTERNAL_FLASH, FLASH_RANGE_ERASE, FLASH_RANGE_PROGRAM and includes sfdp.h. spi.c:132-133 'win w25q16jv' 0x001540ef and 0x001570ef at 0x200000. Commits: rp2350.cfg a2c6d1522d 2026-09-06 ('Use -tap instead of -chain-position'), 9b21a31eb7 2026-02-15; rp2xxx.c latest f9077f3026 and c4fb64e76c 2025-06-29. testbench/README.md:462: snapshot 2026-02-16-16:07. Not tested on an RP2354B",
+    "source": "https://raw.githubusercontent.com/openocd-org/openocd/master/tcl/target/rp2350.cfg, src/flash/nor/rp2xxx.c, src/flash/nor/spi.c (read 18:09:01Z); https://api.github.com/repos/openocd-org/openocd/commits?path=... (read 18:09:02Z); testbench/README.md:456-465 at commit 10b0bade34de",
+    "read_at": "2026-09-28T18:09:02Z"
+   },
+   {
+    "figure": "P2 report: watchdog",
+    "verdict": "confirmed",
+    "evidence": "Table 1248 CTRL.ENABLE reset 0, TIME 'in usec'; Table 1249 LOAD max 0xffffff 'approximately 16 seconds'. V4 none (grep of firmware/iomcu/). V1 200 ms and V2 900 ms confirmed above; 900 > 200 and the 400 ms tSE alone exceeds 200 ms, so no timeout satisfies both; the silicon's range covers either bound",
+    "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8) section 12.9, Tables 1248, 1249; W25Q16JV-DTR revision I AC table; firmware/iomcu/ at commit 10b0bade34de",
+    "read_at": "2026-09-28T18:04:20Z"
+   },
+   {
+    "figure": "P2 report: board header",
+    "verdict": "confirmed",
+    "evidence": "olimex_rp2350_xl.h at 2.3.0: :14-15 include guard, :17 pico_board_cmake_set(PICO_PLATFORM, rp2350), :22 #define OLIMEX_RP2350_XL, :25 PICO_RP2350A 0, :28-36 UART 0 TX 0 RX 1, :39-41 LED 25, :44-52 I2C 1 SDA 2 SCL 3, :55-69 SPI 0 SCK 6 TX 7 RX 4 CSN 5, :73 PICO_BOOT_STAGE2_CHOOSE_W25Q080 1, :75-77 CLKDIV 2, :79-82 PICO_FLASH_SIZE_BYTES 2 MB, :84-87 PICO_RP2350_A2_SUPPORTED 1; no PSRAM chip select defined",
+    "source": "https://raw.githubusercontent.com/raspberrypi/pico-sdk/2.3.0/src/boards/include/boards/olimex_rp2350_xl.h",
+    "read_at": "2026-09-28T18:09:22Z"
+   },
+   {
+    "figure": "P2 report: XAL5030-332MEC second source",
+    "verdict": "confirmed",
+    "evidence": "jlcparts copy (read-only) rows by mfr: C2927046 XAL5030-332MEB, C3911724 XGL5030-332MEC, C5342047 XAL5030-332MEC. JLCPCB exact matches: C5342047 stockCount 117, canPresaleNumber 103 (18:13:25Z); C2927046 0 and 0 (18:13:27Z); C3911724 0 and 0 (18:13:28Z), all maker Coilcraft. Digi-Key productdetails HTTP 404 for XAL5030-332MEC, XAL5030-332MEB, XGL5030-332MEC (18:13:42Z to 18:13:45Z). XAL50xx Document 908-1 revised 02/26/26: 'XAL5030-332ME_ 3.3 21.20 23.30 ... 8.7'",
+    "source": "sqlite file:/home/claude/rcbench-research/jlcparts-2026-09-14/cache.sqlite3?mode=ro jlc_components; vendors.py jlcpcb C5342047, C2927046, C3911724; vendors.py digikey (https://api.digikey.com/products/v4/search/{MPN}/productdetails); https://www.coilcraft.com/getmedia/49bc46c8-4b2c-45b9-9b6c-2eaa235ea698/xal50xx.pdf (read 18:13:51Z)",
+    "read_at": "2026-09-28T18:13:51Z"
+   },
+   {
+    "figure": "P2 report: V12 applied",
+    "verdict": "confirmed",
+    "evidence": "Research.md V12 answer (owner, 2026-09-28): 'Steady: 3.63 V. ESD: clamping voltage at most 36 V at 16 A TLP (IEC 61000-4-2 ±8 kV contact at 30 ns), ahead of the 27 Ω series resistor'. TPD6E05U06/TPD4E05U06 give TLP only at 1 and 5 A typ with Figure 5-3 typical; TPD4E1U06 and TPD2E2U06 Figure 1 'TLP, Data to GND' in typical characteristics; VBUS54CV-HSF has no TLP entry, Fig. 8 typical 8 kV contact. The figure reports how V12 was applied; whether the steady check passes is a separate matter, refuted under the TPD6E05U06RVZR record",
+    "source": "hardware/docs/Research.md V12 row at commit 10b0bade34de; https://www.ti.com/lit/ds/symlink/tpd6e05u06.pdf, tpd4e1u06.pdf, tpd2e2u06.pdf; https://www.vishay.com/docs/84145/vbus54cvhsf.pdf (fetched 18:04:20Z to 18:04:34Z)",
+    "read_at": "2026-09-28T18:04:34Z"
+   },
+   {
+    "figure": "P2 report: USB_DP and USB_DM steady overvoltage",
+    "verdict": "confirmed",
+    "evidence": "Each of the five parts P2 shortlisted is a shunt clamp with VRWM 5.5 V: TPD6E05U06/TPD4E05U06 VBR 6.5-8.5 V, TPD4E1U06 6.5-8.5 V, TPD2E2U06 6.5-8.5 V, VBUS54CV-HSF 7-8.6 V and 6.3-8 V. None limits a steady voltage between 3.63 V and breakdown. RP2350 Table 1433 has no USB IO row; Table 1441 USB_OTP_VDD max 3.63 V",
+    "source": "https://www.ti.com/lit/ds/symlink/tpd6e05u06.pdf, tpd4e1u06.pdf, tpd2e2u06.pdf; https://www.vishay.com/docs/84145/vbus54cvhsf.pdf; RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8) Tables 1433, 1437, 1441",
+    "read_at": "2026-09-28T18:04:34Z"
+   },
+   {
+    "figure": "P2 report: crystal tolerance: RP2354B",
+    "verdict": "confirmed",
+    "evidence": "Section 8.1.2.3: 'The external crystal determines the frequency'; 'Appropriate margin is built into the design to tolerate up to 1000ppm variation in the XOSC frequency'",
+    "source": "RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8) section 8.1.2.3",
+    "read_at": "2026-09-28T18:04:20Z"
+   },
+   {
+    "figure": "P2 report: crystal tolerance: ABM8-272-T3",
+    "verdict": "confirmed",
+    "evidence": "Tolerance ±30 ppm at 25 C, stability ±30 ppm over -40 to +85 C ref. 25 C, aging ±5 ppm first year at 25±3 C: 65 ppm. Under 1000 ppm (RP2350 8.1.2.3), 2,500 ppm (USB 2.0 7.1.11) and 3 %",
+    "source": "ABM8-272-T3 datasheet Revision B (Sept. 16th 2024), https://abracon.com/datasheets/ABM8-272-T3.pdf",
+    "read_at": "2026-09-28T18:04:20Z"
+   },
+   {
+    "figure": "P2 report: crystal tolerance: AOTA-B201610S3R3-101-T",
+    "verdict": "confirmed",
+    "evidence": "The datasheet describes a 'MINI MOLDED POWER INDUCTOR (3.3µH)' with inductance, DCR, Isat and Irms; no frequency tolerance applies",
+    "source": "https://abracon.com/datasheets/AOTA-B201610S3R3-101-T.pdf, Revision A",
+    "read_at": "2026-09-28T18:04:20Z"
+   },
+   {
+    "figure": "P2 report: crystal tolerance: XGL4020-332MEC",
+    "verdict": "confirmed",
+    "evidence": "'Shielded Power Inductors – XGL4020', Document 1529; an inductor, no frequency tolerance",
+    "source": "https://www.coilcraft.com/getmedia/76c9c081-4945-4c85-9129-9356e1ad6734/xgl4020.pdf",
+    "read_at": "2026-09-28T18:04:34Z"
+   },
+   {
+    "figure": "P2 report: crystal tolerance: XAL4030-332MEC",
+    "verdict": "confirmed",
+    "evidence": "'Shielded Power Inductors – XAL40xx', Document 806; an inductor, no frequency tolerance",
+    "source": "https://www.coilcraft.com/getmedia/6adcb47d-8b55-416c-976e-1e22e0d2848c/xal4000.pdf",
+    "read_at": "2026-09-28T18:04:34Z"
+   },
+   {
+    "figure": "P2 report: crystal tolerance: XEL4030-332MEC",
+    "verdict": "confirmed",
+    "evidence": "'Shielded Power Inductors XEL4030', Document 1321; an inductor, no frequency tolerance",
+    "source": "https://www.coilcraft.com/getmedia/8245f050-f190-4295-8c41-7c03d662ee3d/xel4030.pdf",
+    "read_at": "2026-09-28T18:04:34Z"
+   },
+   {
+    "figure": "P2 report: crystal tolerance: XFL4020-332MEC",
+    "verdict": "confirmed",
+    "evidence": "'Shielded Power Inductors – XFL4020', Document 745; an inductor, no frequency tolerance",
+    "source": "https://www.coilcraft.com/getmedia/50632d43-da1b-4cdb-8ab4-3029cab51df3/xfl4020.pdf",
+    "read_at": "2026-09-28T18:04:34Z"
+   },
+   {
+    "figure": "P2 report: crystal tolerance: TPD6E05U06RVZR",
+    "verdict": "confirmed",
+    "evidence": "'TPDxE05U06 1, 4, 6 Channel ESD Protection Device'; an ESD clamp, no frequency tolerance",
+    "source": "SLVSBO7O, https://www.ti.com/lit/ds/symlink/tpd6e05u06.pdf",
+    "read_at": "2026-09-28T18:04:20Z"
+   },
+   {
+    "figure": "P2 report: crystal tolerance: VBUS54CV-HSF-G4-08",
+    "verdict": "confirmed",
+    "evidence": "'4-Line BUS-Port ESD Protection', Vishay Semiconductors; an ESD clamp, no frequency tolerance",
+    "source": "https://www.vishay.com/docs/84145/vbus54cvhsf.pdf",
+    "read_at": "2026-09-28T18:04:34Z"
+   },
+   {
+    "figure": "P2 report: crystal tolerance: TPD4E05U06DQAR",
+    "verdict": "confirmed",
+    "evidence": "Same SLVSBO7O ESD protection family, DQA package; no frequency tolerance",
+    "source": "https://www.ti.com/lit/ds/symlink/tpd4e05u06.pdf",
+    "read_at": "2026-09-28T18:04:34Z"
+   },
+   {
+    "figure": "P2 report: crystal tolerance: TPD4E1U06DBVR",
+    "verdict": "confirmed",
+    "evidence": "'TPD4E1U06 Quad-Channel, High-Speed ESD Protection Device' (SLVSBQ9D); no frequency tolerance",
+    "source": "https://www.ti.com/lit/ds/symlink/tpd4e1u06.pdf",
+    "read_at": "2026-09-28T18:04:34Z"
+   },
+   {
+    "figure": "P2 report: crystal tolerance: TPD2E2U06DRLR",
+    "verdict": "confirmed",
+    "evidence": "'TPD2E2U06 Dual-Channel High-Speed ESD Protection Device' (SLLSEG9C); no frequency tolerance",
+    "source": "https://www.ti.com/lit/ds/symlink/tpd2e2u06.pdf",
+    "read_at": "2026-09-28T18:04:34Z"
+   },
+   {
+    "figure": "re-rank report: crystal tolerance: VLS4015CX-3R3M-H",
+    "verdict": "confirmed",
+    "evidence": "TDK 'Inductors for power circuits, Wound ferrite, VLS-CX-H series', pages dated 20220609; an inductor, no frequency tolerance",
+    "source": "https://product.tdk.com/system/files/dam/doc/product/inductor/inductor/smd/catalog/inductor_automotive_power_vls4015cx-h_en.pdf",
+    "read_at": "2026-09-28T18:04:34Z"
+   },
+   {
+    "figure": "re-rank report: crystal tolerance: ETQP3M3R3KVP",
+    "verdict": "confirmed",
+    "evidence": "Panasonic 'Power Inductors, Power Choke Coil (Automotive Grade), LP series', edition 1-Jul-26; an inductor, no frequency tolerance",
+    "source": "https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C63.pdf",
+    "read_at": "2026-09-28T18:04:34Z"
+   },
+   {
+    "figure": "re-rank report: crystal tolerance: NUP4114HMR6T1G",
+    "verdict": "confirmed",
+    "evidence": "onsemi 'ESD Protection Diode, Low Clamping Voltage, NUP4114 Series', December 2021 Rev. 8; no frequency tolerance",
+    "source": "https://www.onsemi.com/pdf/datasheet/nup4114-d.pdf",
+    "read_at": "2026-09-28T18:04:34Z"
+   },
+   {
+    "figure": "function requirements: Microcontroller",
+    "verdict": "refuted",
+    "evidence": "The list omits a value IOBoard.md sets for the RP2354B. IOBoard.md:259, 'PIO instruction memory': 'the programs of all the state machines in one block share that block's 32 instructions of memory', citing the RP2350 datasheet PIO chapter, state required; IOBoard.md:233: 'Bidirectional DShot on all 4 takes 8 of the 12 PIO state machines and 64 of the 96 instruction words'. The list's 'PIO' entry takes the 3 blocks, 12 state machines and the GPIO base from :107 but not the 32 instructions a block, and no other entry names it. The same pattern stood as a refutation in T2 (adjudicator-R1-3, the 520 kB SRAM omission). Also absent: the 0.8 V maximum input-low level IOBoard.md:256 relies on for the bidirectional DShot idle ('below the 0.8 V maximum input-low level'); the 'logic level' entry requires only 3.3 V logic. The part meets both: RP2350 Figure in 11.1 'Instruction Memory ... 32 Instructions', Table 1436 VIL 0.8 V max at 3.3 V. Every entry the list does carry matches its source and none is weaker",
+    "source": "hardware/docs/IOBoard.md:103-123, :233, :256, :259 and hardware/docs/Research.md fixed inputs, R1 row, V1, V2, V4, V7 at commit 10b0bade34de; RP2350 datasheet build 2025-07-29 (SHA-256 2877d0f2...4be8) chapter 11 PIO block diagram, Table 1436; results/T2/019-adjudicator-R1-3.json",
+    "read_at": "2026-09-28T18:14:33Z"
+   },
+   {
+    "figure": "function requirements: 12 MHz crystal",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:110 (12 MHz crystal, R1) and :111 (tolerance stated by R1); V3 ±2 % (owner) gives the ±3 % DShot entry; V5 found 1000 ppm total; V6 found CL 10 pF, ESR 50 Ohm max, drive level at least 200 uW; V7 0 to 50 C ambient for rating and tolerance; V15 C0 at most 3.0 pF, fundamental AT-cut. Each is in the list with the same or a stricter value; no other R1 row under Raised by P1 names the crystal",
+    "source": "hardware/docs/IOBoard.md:110-111 and hardware/docs/Research.md V3, V5, V6, V7, V15 at commit 10b0bade34de",
+    "read_at": "2026-09-28T18:14:33Z"
+   },
+   {
+    "figure": "function requirements: Core regulator inductor",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:110 names the inductor for R1 with no value. V8: 3.3 uH ±20 %, Isat at least 1.5 A, DCR at most 250 mOhm; V14: fully shielded, marked for polarity; V7: 0 to 50 C. The list names each with the same value. The Figure 23 placement in RP2350 6.3.8.2 is not set by IOBoard.md or an answer",
+    "source": "hardware/docs/IOBoard.md:110 and hardware/docs/Research.md V7, V8, V14 at commit 10b0bade34de; RP2350 datasheet section 6.3.8.2",
+    "read_at": "2026-09-28T18:14:33Z"
+   },
+   {
+    "figure": "function requirements: USB protection",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:118 (one USB device port, protection in R1) and :536. V9 ±8 kV contact, ±15 kV air on every line; V10 5.5 V, 3 A, one USB-C shared with F8, CC1 and CC2; V11 found 75 pF per line and <10 % D+/D- difference; V12 steady 3.63 V and 36 V at 16 A TLP; V13 5 lines, VBUS 5.5 V at 3 A; V7 0 to 50 C. All are in the list at the same value",
+    "source": "hardware/docs/IOBoard.md:118, :536 and hardware/docs/Research.md V7, V9 to V13 at commit 10b0bade34de",
+    "read_at": "2026-09-28T18:14:33Z"
+   },
+   {
+    "figure": "re-rank drop: USB protection: TPD6S300RUKR (C2649810), TPD8S300RUKR (C571205)",
+    "verdict": "confirmed",
+    "evidence": "TPD6S300 (SLVSDK3C) pin functions: C_SBU1, C_SBU2, VBIAS, C_CC1, C_CC2, RPD_G2, RPD_G1, GND, FLT, VPWR, CC2, CC1, GND, SBU2, SBU1, N.C., N.C., GND, D2, D1; no VBUS pin. TPD8S300 (SLVSDD6B): the same with D1 to D4; no VBUS pin. So neither covers the 5 lines of V13. IEC: C_CC1, C_CC2, D1, D2 ±8 kV contact, ±15 kV air; C_SBU ±6 kV contact. Other statements hold: VRWM_POS 5.5 V, CIO 1.7 pF typ, ΔCIO 0.02 pF typ, Figure 28 (rendered) about 14 V at 16 A typical, VPWR 2.7 to 4.5 V recommended, VBIAS 'minimum 35-VDC rated capacitor', VPWR_UVLO 2.1 to 2.5 V with CC FETs off below UVLO, RPD_Gx shorted to C_CCx for dead-battery resistors",
+    "source": "https://www.ti.com/lit/ds/symlink/tpd6s300.pdf and https://www.ti.com/lit/ds/symlink/tpd8s300.pdf, Pin Functions, sections 7.1 to 7.5, Figure 28",
+    "read_at": "2026-09-28T18:04:34Z"
+   }
+  ]
+ }
+}

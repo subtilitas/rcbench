@@ -1,0 +1,551 @@
+{
+ "role": "rerank",
+ "category": "R2",
+ "label": "rerank-R2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "functions": [
+   {
+    "function": "Link CAN controller",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP2518FDT-E/SL",
+      "reason": "P2's rank kept. Meets every link requirement, and one receive FIFO holds 32 frames against V16's 9 and 8. It is also rank 1 on the external port, so one part number serves both ports. JLCPCB 28,886, Digi-Key 43,486 (P2). P3 returned no controller.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "MCP251863T-E/SS",
+      "reason": "P2's rank kept. The MCP2518FD controller and a transceiver in one SSOP-28, with the same 32-frame FIFOs. It sits below rank 1 on price (2.7071 against 1.3122 USD at 10) and on stock at both vendors (P2).",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "MCP2515T-I/ST",
+      "reason": "P2's rank kept. The tree's register map is written for it. It holds 2 frames against V16's 9 and 8, which matters only if Q8 keeps the binding in flash. Classic CAN only.",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "MCP25625T-E/ML",
+      "reason": "P2's rank kept. The MCP2515 register map with a transceiver in a QFN-28, holding 2 frames. It sits below the MCP2515 on price, JLCPCB stock (2,398 against 40,657) and lead time (49 against 23 weeks), and its VDDA needs the 5 V rail (P2).",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP2518FDT-E/SL",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Link CAN transceiver",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TCAN3413DR",
+      "reason": "P2's rank kept. It runs from the 3.3 V rail alone, with a 180 ns loop delay against the 350 ns limit and a ±58 V bus rating. It also ranks first on the external port, so one part number serves both. Digi-Key 4,455, Active (re-read 2026-09-28T18:13:10Z).",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "SN65HVD233DR",
+      "reason": "New from P3. Like rank 1, it runs from the 3.3 V rail alone (VCC 3 to 3.6 V). Loop delay 135 ns max at RS 0 V against 350 ns, bus pins -36 to 36 V against 5.5 V. It has the largest stock at both vendors of any link transceiver that needs no 5 V rail: JLCPCB 30,754 and Digi-Key 31,429. Price 0.8104 USD at 1. It sits below rank 1 because it runs at 1 Mbps only (misses V21), so it cannot serve the external port.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TCAN1044VDRQ1",
+      "reason": "New from P3. Loop delay 210 ns, bus ±58 V, and VIO puts RXD at 3.3 V. It costs 0.4434 USD at the 1-piece break, against 0.5652 for the TJA1051T/3/1J at the same break. It also qualifies for the external port (rank 2 there). Digi-Key 5,841, JLCPCB 13,438. It sits below ranks 1 and 2 because VCC needs the 5 V rail, whose tolerance is open (V100).",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "TJA1051T/3/1J",
+      "reason": "P2's rank 2, now 4. It has the largest JLCPCB stock (283,776) and an NXP longevity commitment to Dec 2033 (P2). It sits below ranks 2 and 3 on loop delay (250 ns against 135 and 210) and needs the 5 V rail. Pin 8 is silent mode, so it cannot serve the external port.",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "TJA1044GT/3Z",
+      "reason": "P2's rank 3, now 5. Loop 210 ns, ±42 V, NXP longevity to May 2035 (P2). It sits below the TCAN1044VDRQ1, which has the same loop delay, a wider bus rating (±58 V) and more Digi-Key stock (5,841 against 5,558), and which also serves the external port. It needs the 5 V rail.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "SN65HVD233DR",
+      "maker": "Texas Instruments (SLLS557H); JLCPCB 'Texas Instruments', 18:12:51Z; S1 Texas Instruments",
+      "lcsc": "C61643",
+      "package": "SOIC-8",
+      "placements": 1,
+      "placements_basis": "fixed at 1: link transceiver only (IOBoard.md:55). Its 1 Mbps limit misses V21 (5000 kbit/s data phase), so it cannot serve the external port.",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "classic CAN at 1 Mbit/s",
+        "required": "rated for classic CAN at 1 Mbit/s",
+        "datasheet": "'signaling rates up to 1 Mbps'; 'Data Rates up to 1 Mbps'; ISO 11898-2 compatible (page 1)",
+        "pass": true,
+        "source": "SLLS557H page 1, https://www.ti.com/lit/ds/symlink/sn65hvd233.pdf, read 2026-09-28T18:13:28Z"
+       },
+       {
+        "name": "RXD at 3.3 V logic",
+        "required": "RXD at 3.3 V: a 3.3 V part or a VIO pin at 3.3 V (RXD drives the controller's RXCAN, rated to VDD + 0.3 V on the 3.3 V rail)",
+        "datasheet": "a 3.3 V part: VCC 3 to 3.6 V (section 8.3). R (RXD) VOH 2.4 V min at -4 mA (section 8.7), driven from VCC.",
+        "pass": true,
+        "source": "SLLS557H sections 8.3, 8.7, same URL, read 2026-09-28T18:13:28Z"
+       },
+       {
+        "name": "bus-fault rating",
+        "required": "CANH and CANL withstand at least 5.5 V DC (V25)",
+        "datasheet": "voltage at any bus terminal (CANH or CANL) -36 to 36 V (section 8.1)",
+        "pass": true,
+        "source": "SLLS557H section 8.1, same URL, read 2026-09-28T18:13:28Z"
+       },
+       {
+        "name": "loop delay for the 5 m link",
+        "required": "TXD-to-RXD loop delay at most 350 ns",
+        "datasheet": "t(loop1) and t(loop2) 135 ns max with RS at 0 V (section 8.10)",
+        "pass": true,
+        "source": "SLLS557H section 8.10, same URL, read 2026-09-28T18:13:28Z"
+       },
+       {
+        "name": "supply from the board's rails",
+        "required": "VCC from the 3.3 V logic rail or the 5 V rail",
+        "datasheet": "VCC 3 to 3.6 V, from the 3.3 V rail (section 8.3). Pin 5 LBK: 'If the LBK pin is not used it may be tied to ground (GND). However, it is pulled low internally'. Pin 8 RS: strong pull-down to GND gives high-speed mode (pin functions).",
+        "pass": true,
+        "source": "SLLS557H section 8.3, pin functions, LBK description, same URL, read 2026-09-28T18:13:28Z"
+       }
+      ],
+      "jlcpcb": "stockCount 30,754, canPresaleNumber 30,581, componentLibraryType expand, 0.8104 USD at the 1-piece break (need 5), read 2026-09-28T18:12:51Z, vendors.py jlcpcb C61643 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 31,429, lead_weeks 16, ProductStatus Active, read 2026-09-28T18:13:02Z, vendors.py digikey SN65HVD233DR (https://api.digikey.com/products/v4/search/SN65HVD233DR/productdetails)",
+      "gate": "need = 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50 (S4); stockCount 30,754 >= 50, canPresaleNumber 30,581 >= 0: pass (rule 4)",
+      "lifecycle": "Status: ACTIVE, the marketingStatusDescription of the orderable SN65HVD233DR on https://www.ti.com/product/SN65HVD233, read 2026-09-28T18:14:03Z. The same page marks the tube orderable SN65HVD233D OBSOLETE, which is another orderable. SN65HVD233DR carries hasReplacements true, and the fields read name no replacement. Longevity: TI's product life cycle page says life cycles are 'typically 10 to 15 years'. A product with sales in the last five years (seven for automotive) is not eligible for obsolescence. No date is given per part (https://www.ti.com/quality-reliability/quality/product-life-cycle.html, read 18:15:32Z). First datasheet: original, November 2002 (SLLS557H revision history), not flagged. Notices: TI PCN listing not read; no TI PCN query was made. Distributor: Digi-Key Active (18:13:02Z). The LCSC C61643 page shows stock 30,754 and no discontinued, EOL, NRND or obsolete text (https://www.lcsc.com/product-detail/C61643.html, 18:15:32Z). The JLCPCB row has no status field. The orderable addendum lists SN65HVD233DR as Active, Production.",
+      "second_source": "second vendor: Digi-Key stock_available 31,429 >= 50, Active (vendors.py digikey SN65HVD233DR, read 2026-09-28T18:13:02Z)",
+      "alternates": [
+       "none checked: the second source is the second vendor. SN65HVD235 (pin 5 AB) is in the same datasheet and not read at JLCPCB"
+      ],
+      "driver_in_shared": "none",
+      "reason": "A 3.3 V part like rank 1, with the shortest loop delay of the ranked parts (135 ns) and the largest two-vendor stock of the link parts that need no 5 V rail. It sits below rank 1 because it runs at 1 Mbps only and so cannot serve the external port.",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "TCAN1044VDRQ1",
+      "maker": "Texas Instruments (SLLSF17D); JLCPCB 'Texas Instruments', 18:12:41Z; S1 Texas Instruments",
+      "lcsc": "C1852061",
+      "package": "SOIC-8",
+      "placements": 2,
+      "placements_basis": "1 to 2: one transceiver per port (IOBoard.md:55, :57); 2 when the same part serves both ports; gate taken at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "classic CAN at 1 Mbit/s",
+        "required": "rated for classic CAN at 1 Mbit/s",
+        "datasheet": "'Support of classical CAN and optimized CAN FD performance at 2, 5, and 8Mbps' (page 1)",
+        "pass": true,
+        "source": "SLLSF17D page 1, https://www.ti.com/lit/ds/symlink/tcan1044-q1.pdf, read 2026-09-28T18:13:27Z"
+       },
+       {
+        "name": "RXD at 3.3 V logic",
+        "required": "RXD at 3.3 V: a 3.3 V part or a VIO pin at 3.3 V (RXD drives the controller's RXCAN, rated to VDD + 0.3 V on the 3.3 V rail)",
+        "datasheet": "pin 5 is VIO on devices with VIO (Table 5-1). VIO 1.7 to 5.5 V (section 6.4). RXD VOH 0.8 VIO (section 6.8).",
+        "pass": true,
+        "source": "SLLSF17D Table 5-1, sections 6.4, 6.8, same URL, read 2026-09-28T18:13:27Z"
+       },
+       {
+        "name": "bus-fault rating",
+        "required": "CANH and CANL withstand at least 5.5 V DC (V25)",
+        "datasheet": "VBUS on CANH and CANL -58 to 58 V (section 6.1)",
+        "pass": true,
+        "source": "SLLSF17D section 6.1, same URL, read 2026-09-28T18:13:27Z"
+       },
+       {
+        "name": "loop delay for the 5 m link",
+        "required": "TXD-to-RXD loop delay at most 350 ns",
+        "datasheet": "tPROP(LOOP1) and tPROP(LOOP2) 210 ns max at VIO 2.8 to 5.5 V, RL 60 Ohm, CL 100 pF (section 6.9)",
+        "pass": true,
+        "source": "SLLSF17D section 6.9, same URL, read 2026-09-28T18:13:27Z"
+       },
+       {
+        "name": "supply from the board's rails",
+        "required": "VCC from the 3.3 V logic rail or the 5 V rail",
+        "datasheet": "VCC 4.5 to 5.5 V from the 5 V rail (section 6.4). STB tied to GND for normal mode only (section 8.3.1.7).",
+        "pass": true,
+        "source": "SLLSF17D sections 6.4, 8.3.1.7, same URL, read 2026-09-28T18:13:27Z"
+       }
+      ],
+      "jlcpcb": "stockCount 13,438, canPresaleNumber 13,374, componentLibraryType expand, 0.3492 USD at the 10-piece break (need 10), 0.4434 at 1, read 2026-09-28T18:12:41Z, vendors.py jlcpcb C1852061 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 5,841, lead_weeks 16, ProductStatus Active, read 2026-09-28T18:13:00Z, vendors.py digikey TCAN1044VDRQ1 (https://api.digikey.com/products/v4/search/TCAN1044VDRQ1/productdetails)",
+      "gate": "need = 5 boards x 2 = 10; threshold max(5 x 10, 50) = 50 (S4); stockCount 13,438 >= 50, canPresaleNumber 13,374 >= 0: pass (rule 4)",
+      "lifecycle": "Status: ACTIVE, the marketingStatusDescription of the orderable TCAN1044VDRQ1, with hasReplacements false, on https://www.ti.com/product/TCAN1044-Q1, read 2026-09-28T18:14:12Z. https://www.ti.com/product/TCAN1044V-Q1 redirects to the TCAN1044A-Q1 page (18:14:02Z), so that URL does not carry this part's status. Longevity: TI's product life cycle page, 'typically 10 to 15 years'. A product with sales in the last five years (seven for automotive) is not eligible for obsolescence. No date is given per part (read 18:15:32Z). First datasheet: SLLSF17D header 'AUGUST 2019', 85 months, not flagged. Notices: TI PCN listing not read; no TI PCN query was made. Distributor: Digi-Key Active (18:13:00Z). The LCSC C1852061 page shows stock 13,438 and no discontinued, EOL, NRND or obsolete text (https://www.lcsc.com/product-detail/C1852061.html, 18:15:31Z). The JLCPCB row has no status field. The orderable addendum lists TCAN1044VDRQ1 as Active, Production.",
+      "second_source": "second vendor: Digi-Key stock_available 5,841 >= 50, Active (vendors.py digikey TCAN1044VDRQ1, read 2026-09-28T18:13:00Z)",
+      "alternates": [
+       "TCAN1044AVDRQ1 (C3234993): same SOIC-8 pinout (TXD 1, GND 2, VCC 3, RXD 4, VIO 5, CANL 6, CANH 7, STB 8), with P2's figures from SLLSFJ3D. JLCPCB 2,139, presale 2,076 (18:12:46Z); Digi-Key 0 (18:13:12Z)",
+       "TCAN1044VDRBRQ1 (C5215851): the same die in SON-8 3 x 3 mm, another footprint; JLCPCB 20,643, presale 20,143 (18:12:48Z)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Qualifies for the link and for the external port. It is the cheapest of the ranked link parts at the 1-piece break. It sits below ranks 1 and 2 because it needs the 5 V rail.",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "TJA1443AT/0Z (C3233835)",
+      "maker": "NXP Semiconductors",
+      "reason": "Not re-read against the datasheet; ranks below the five on its stock and wiring. JLCPCB 403, presale 402, 0.7162 USD at 10 (vendors.py jlcpcb C3233835, 2026-09-28T18:12:31Z). Digi-Key 7,016, Active (18:13:05Z). From P3's reading of TJA1443 Rev. 2: SOIC-14 with VBAT, EN, INH, ERR_N and WAKE to wire, and a 215 ns loop delay. Five SOIC-8 parts rank above it with more JLCPCB stock."
+     },
+     {
+      "part": "TJA1441AT/0Z (C3234084)",
+      "maker": "NXP Semiconductors",
+      "reason": "Ranks below the five. JLCPCB 192, presale 188, 1.6613 USD at 10 (2026-09-28T18:12:44Z). Digi-Key 12,862, Active (18:13:07Z). P3 names it as a rule-5 alternate for the TJA1051T/3/1J, which already has a second vendor (Digi-Key 7,710, P2), so it adds no second source. Needs the 5 V rail."
+     },
+     {
+      "part": "TJA1448AT/0Z (C3029057)",
+      "maker": "NXP Semiconductors",
+      "reason": "Ranks below the five. It is a dual part at 3.0904 USD at 10 (JLCPCB 1,113, presale 1,110, 2026-09-28T18:12:31Z). Its Digi-Key status is not read here: productdetails answered HTTP 404 'Duplicate Products found' (18:14:42Z), and the keyword search answered HTTP 429, daily rate limit (18:14:47Z). P3's search (18:02:21Z) found one listing Active and another Obsolete. That disagreement is unresolved."
+     },
+     {
+      "part": "SN65HVD230DR (C12084), P3's exclusion not holding",
+      "maker": "Texas Instruments",
+      "reason": "P3's correction is taken: SN65HVD231DR (C129257) is a further alternate route (P3's reading of SLOS346O, not re-read here). JLCPCB shows 9,386, presale 9,192, 1.1693 USD at 10 (2026-09-28T18:12:31Z). Digi-Key holds 0 of it (18:13:14Z) and 0 of SN65HVD230DR (18:14:46Z). The part still ranks below the five: the SN65HVD233DR, ranked 2, is also a 3.3 V part and has a wider bus rating (-36 to 36 V against -4 to 16 V). It also has Digi-Key stock of its own, 31,429 against 0. JLCPCB SN65HVD230DR: 82,662, presale 65,823 (18:12:34Z)."
+     },
+     {
+      "part": "TCAN332DR (C73651)",
+      "maker": "Texas Instruments",
+      "reason": "Ranks below the five. It is a 3.3 V part with a -14 to 14 V bus rating (P3's reading of SLLSEQ7F), and the SN65HVD233DR is better on stock and price. JLCPCB 797, presale 747, 1.4908 USD at 10 (2026-09-28T18:12:31Z); Digi-Key 8,794, Active (18:13:08Z)."
+     },
+     {
+      "part": "TCAN337DR (C2860648)",
+      "maker": "Texas Instruments",
+      "reason": "Ranks below the five, with the TCAN332DR's supply and bus rating (P3). JLCPCB 3,312, presale 3,310, 1.2066 USD at 10 (2026-09-28T18:12:31Z); Digi-Key 2,205, Active (18:14:34Z). The SN65HVD233DR has 9 times its JLCPCB stock at about half the price."
+     },
+     {
+      "part": "TCAN330GDCNR (C191006)",
+      "maker": "Texas Instruments",
+      "reason": "Ranks below the five. SOT-23-8, 1.9325 USD at 10, JLCPCB 3,669, presale 3,649 (2026-09-28T18:12:33Z); Digi-Key 2,360, Active (18:14:36Z). Bus rating -14 to 14 V (P3)."
+     },
+     {
+      "part": "NCV7357D13R2G (C603987)",
+      "maker": "onsemi",
+      "reason": "The lifecycle gate is not shown. P3 found the onsemi product page redirected to /products, so the status was not read (18:05:59Z), and it was not re-read here. JLCPCB holds 179, presale 178 (2026-09-28T18:12:31Z); Digi-Key 4,397, Active (18:14:31Z). Its characteristics are given at VCC 4.75 to 5.25 V, and the 5 V rail's tolerance is open (V100) (P3)."
+     },
+     {
+      "part": "NCV7349D13R2G (C893047)",
+      "maker": "onsemi",
+      "reason": "The lifecycle gate is not shown: the onsemi status was not read (P3). JLCPCB 170, presale 170, 1.0881 USD at 10 (2026-09-28T18:12:52Z); Digi-Key 1,036, Active (18:14:32Z). Loop delay 245 to 250 ns (P3). Ranks below the five."
+     },
+     {
+      "part": "MAX13054ASA+T (C402690)",
+      "maker": "Analog Devices (Maxim)",
+      "reason": "Ranks below the five. It costs 3.9754 USD at 10, JLCPCB holds 173, presale 173 (2026-09-28T18:12:31Z), and its loop delay is 255 ns (P3). Digi-Key 6,475, Active (18:14:37Z)."
+     },
+     {
+      "part": "LTC2875IS8#TRPBF (C683034)",
+      "maker": "Analog Devices (Linear)",
+      "reason": "Ranks below the five. It costs 6.0817 USD at 10 (JLCPCB 2,513, presale 2,508, 2026-09-28T18:12:31Z). Digi-Key holds 0 and shows Active (18:14:39Z), so it has no second vendor."
+     },
+     {
+      "part": "SN65HVD256DR (C132551)",
+      "maker": "Texas Instruments",
+      "reason": "Ranks below the five. It costs 3.3616 USD at 10 and JLCPCB holds 176, presale 176 (2026-09-28T18:12:35Z). Digi-Key 1,517, Active (18:14:41Z)."
+     }
+    ],
+    "dropped_from_shortlist": [
+     {
+      "part": "ATA6561-GAQW-N",
+      "maker": "Microchip Technology",
+      "reason": "Link: ranks below the five after the re-rank. It needs the 5 V rail, like the TCAN1044VDRQ1, which matches its 210 ns loop delay with a wider bus rating (±58 V against -27 to +42 V) and costs less (0.3492 against 0.5847 USD at 10). It stays ranked on the external port."
+     },
+     {
+      "part": "TJA1042T/3/1J",
+      "maker": "NXP Semiconductors",
+      "reason": "Link: ranks below the five after the re-rank. It has P2's longest loop delay (250 ns) and needs the 5 V rail. The NXP longevity page has no row for the TJA1042T/3 (P2). Three new or kept parts beat it on loop delay."
+     }
+    ],
+    "verify": [
+     {
+      "part": "TCAN3413DR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "External CAN controller",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP2518FDT-E/SL",
+      "reason": "P2's rank kept. It runs CAN FD at 1 Mbps nominal and up to 8 Mbps data, with 3.3 V logic, and it leaves the transceiver free for its standby input. It is also the link's rank 1. P3 returned no controller.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "MCP251863T-E/SS",
+      "reason": "P2's rank kept. It has the same controller with an integrated transceiver that meets V18, V19 and V24, and its STBY takes the 4.7 kOhm resistor. It sits below rank 1 on price (2.7071 USD at 10) and on Digi-Key stock (913).",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP2518FDT-E/SL",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "External CAN transceiver",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TCAN3413DR",
+      "reason": "P2's rank kept. Loop delay 180 ns against 237, standby tMODE 30 us against 5 ms, bus ±58 V against +30 V, 5 Mbps, and I_off on STB. It runs from the 3.3 V rail alone and is also the link's rank 1.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TCAN1044VDRQ1",
+      "reason": "New from P3. Every external requirement: tMODE 20 us, ±58 V, 210 ns, 5 Mbps, and STB with I_off, so it drives from the inverter with no resistor. Lowest price of the ranked parts, 0.3492 USD at 10. JLCPCB 13,438 and Digi-Key 5,841. It sits below rank 1 because VCC needs the 5 V rail and its loop margin is 27 ns against rank 1's 57.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TCAN1042HGVDRQ1",
+      "reason": "P2's rank 2, now 3. It has the widest bus rating (±70 V) and a 175 ns loop delay. It sits below rank 2 on price (2.017 against 0.3492 USD at 10) and on JLCPCB stock (847 against 13,438).",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "ATA6561-GAQW-N",
+      "reason": "P2's rank 3, now 4. Standby 5 us, +42 V, 210 ns, and the largest Digi-Key stock (43,290). It sits below the TCAN1044VDRQ1, which has the same loop delay, a wider bus rating, I_off on STB where the ATA6561 needs the 4.7 kOhm resistor, and a lower price.",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "TCAN1043ADRQ1",
+      "reason": "P2's rank 5 kept. nSTB is active low and takes the enable node directly, and it has I_off on nSTB and EN. It is SOIC-14 with VSUP, and EN needs an RP2354B GPIO. After a Sleep entered by the SWE timer, EN needs a firmware edge (Figure 7-4 note 5).",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "TCAN1044VDRQ1",
+      "maker": "Texas Instruments (SLLSF17D); JLCPCB 'Texas Instruments', 18:12:41Z; S1 Texas Instruments",
+      "lcsc": "C1852061",
+      "package": "SOIC-8",
+      "placements": 2,
+      "placements_basis": "1 to 2: one transceiver per port (IOBoard.md:55, :57); 2 when the same part serves both ports; gate taken at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "CAN FD at the port's rates",
+        "required": "classic CAN and CAN FD at 1000 kbit/s nominal and 5000 kbit/s data phase (V20, V21)",
+        "datasheet": "'Support of classical CAN and optimized CAN FD performance at 2, 5, and 8Mbps' (page 1)",
+        "pass": true,
+        "source": "SLLSF17D page 1, https://www.ti.com/lit/ds/symlink/tcan1044-q1.pdf, read 2026-09-28T18:13:27Z"
+       },
+       {
+        "name": "standby input held by the enable node",
+        "required": "a standby input that, driven from the enable node, keeps the bus driver disabled while the enable node is low (V18)",
+        "datasheet": "STB pin 8, a 'Standby input for mode control, integrated pull up' (Table 5-1). STB high gives standby mode with the driver disabled (Table 8-4). It is driven from the enable node through an inverter.",
+        "pass": true,
+        "source": "SLLSF17D Table 5-1, Table 8-4, same URL, read 2026-09-28T18:13:27Z"
+       },
+       {
+        "name": "standby within 5 ms",
+        "required": "normal-to-standby within 5 ms of the enable node falling, shown by a datasheet maximum (V19)",
+        "datasheet": "tMODE, 'Mode change time, from normal to standby or from standby to normal', 20 us max (section 6.9)",
+        "pass": true,
+        "source": "SLLSF17D section 6.9, same URL, read 2026-09-28T18:13:27Z"
+       },
+       {
+        "name": "bus-fault rating",
+        "required": "CANH and CANL withstand at least +30 V DC to ground (V24)",
+        "datasheet": "VBUS on CANH and CANL -58 to 58 V (section 6.1)",
+        "pass": true,
+        "source": "SLLSF17D section 6.1, same URL, read 2026-09-28T18:13:27Z"
+       },
+       {
+        "name": "no isolation",
+        "required": "not galvanically isolated, 0 V working voltage (V23)",
+        "datasheet": "not isolated; the bus is referred to GND pin 2 (Table 5-1)",
+        "pass": true,
+        "source": "SLLSF17D Table 5-1, same URL, read 2026-09-28T18:13:27Z"
+       },
+       {
+        "name": "loop delay for 40 m at 1000 kbit/s",
+        "required": "TXD-to-RXD loop delay at most 237 ns",
+        "datasheet": "tPROP(LOOP1) and tPROP(LOOP2) 210 ns max at VIO 2.8 to 5.5 V, RL 60 Ohm, CL 100 pF (section 6.9)",
+        "pass": true,
+        "source": "SLLSF17D section 6.9, same URL, read 2026-09-28T18:13:27Z"
+       },
+       {
+        "name": "RXD at 3.3 V logic",
+        "required": "RXD at 3.3 V: a 3.3 V part or a VIO pin at 3.3 V",
+        "datasheet": "VIO pin 5, 1.7 to 5.5 V (section 6.4); RXD VOH 0.8 VIO (section 6.8)",
+        "pass": true,
+        "source": "SLLSF17D sections 6.4, 6.8, same URL, read 2026-09-28T18:13:27Z"
+       },
+       {
+        "name": "powered-off isolation of the standby input",
+        "required": "I_off on the standby input, or a series resistor of 4.7 kOhm or more from the enable node",
+        "datasheet": "STB ILKG(OFF) -1 to 1 uA at STB = 5.5 V, VCC = VIO = 0 V (section 6.8)",
+        "pass": true,
+        "source": "SLLSF17D section 6.8, same URL, read 2026-09-28T18:13:27Z"
+       },
+       {
+        "name": "supply from the board's rails",
+        "required": "VCC from the 3.3 V logic rail or the 5 V rail",
+        "datasheet": "VCC 4.5 to 5.5 V, from the 5 V rail (section 6.4)",
+        "pass": true,
+        "source": "SLLSF17D section 6.4, same URL, read 2026-09-28T18:13:27Z"
+       }
+      ],
+      "jlcpcb": "stockCount 13,438, canPresaleNumber 13,374, componentLibraryType expand, 0.3492 USD at the 10-piece break (need 10), read 2026-09-28T18:12:41Z, vendors.py jlcpcb C1852061 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 5,841, lead_weeks 16, ProductStatus Active, read 2026-09-28T18:13:00Z, vendors.py digikey TCAN1044VDRQ1 (https://api.digikey.com/products/v4/search/TCAN1044VDRQ1/productdetails)",
+      "gate": "need = 5 boards x 2 = 10; threshold max(5 x 10, 50) = 50 (S4); stockCount 13,438 >= 50, canPresaleNumber 13,374 >= 0: pass (rule 4)",
+      "lifecycle": "Status: ACTIVE, the marketingStatusDescription of the orderable TCAN1044VDRQ1, with hasReplacements false, on https://www.ti.com/product/TCAN1044-Q1, read 2026-09-28T18:14:12Z. https://www.ti.com/product/TCAN1044V-Q1 redirects to the TCAN1044A-Q1 page (18:14:02Z). Longevity: TI's product life cycle page, 'typically 10 to 15 years'. A product with sales in the last five years (seven for automotive) is not eligible for obsolescence. No date is given per part (read 18:15:32Z). First datasheet: August 2019 (SLLSF17D header), 85 months, not flagged. Notices: TI PCN listing not read; no TI PCN query was made. Distributor: Digi-Key Active (18:13:00Z). The LCSC C1852061 page shows stock 13,438 and no discontinued, EOL, NRND or obsolete text (18:15:31Z). The JLCPCB row has no status field. The orderable addendum lists TCAN1044VDRQ1 as Active.",
+      "second_source": "second vendor: Digi-Key stock_available 5,841 >= 50, Active (vendors.py digikey TCAN1044VDRQ1, read 2026-09-28T18:13:00Z)",
+      "alternates": [
+       "TCAN1044AVDRQ1 (C3234993): same SOIC-8 pinout, with P2's SLLSFJ3D figures (tMODE 20 us, ±58 V, 210 ns, STB with I_off). JLCPCB 2,139, presale 2,076 (18:12:46Z); Digi-Key 0 (18:13:12Z)",
+       "TCAN1042HGVDRQ1 (C132550): same pinout, 5 V VCC, VIO, active-high STB with I_off",
+       "TCAN1044VDRBRQ1 (C5215851): same die in SON-8 3 x 3 mm, another footprint"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Meets every external requirement at the lowest price of the ranked parts. It has I_off on STB and a second vendor of its own. Ranked 2 because it needs the 5 V rail and its loop margin is smaller than rank 1's.",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "TCAN1044VDRBRQ1 (C5215851)",
+      "maker": "Texas Instruments",
+      "reason": "Qualifies with the TCAN1044VDRQ1's figures (same datasheet SLLSF17D, VSON-8 DRB), but it is the same die in SON-8 3 x 3 mm. The ranked TCAN1044VDRQ1 takes the SOIC-8 footprint shared by ranks 1, 3 and 4. JLCPCB 20,643, presale 20,143, 0.4564 USD at 10 (2026-09-28T18:12:48Z); Digi-Key 15,136, Active (18:14:44Z). Not ranked, as a duplicate of rank 2 in another package."
+     },
+     {
+      "part": "TCAN1042GVDRQ1 (C2671658)",
+      "maker": "Texas Instruments",
+      "reason": "Qualifies on P3's reading of SLLSES9D (5 Mbps G option, VIO, ±58 V, 175 ns, tMODE 45 us, STB with I_off). It ranks below the five on JLCPCB stock: 86, presale 85, 0.9923 USD at 10 (2026-09-28T18:12:43Z), which is 36 over the gate of 50. Digi-Key 4,214, Active (18:13:03Z)."
+     },
+     {
+      "part": "TJA1443AT/0Z (C3233835)",
+      "maker": "NXP Semiconductors",
+      "reason": "Not re-read against the datasheet; ranks below the five. From P3's reading of TJA1443 Rev. 2: SOIC-14 with VBAT, EN, INH, ERR_N and WAKE to wire, and no I_off on STB_N, so it takes the 4.7 kOhm resistor. VBAT down to 4.5 V ties it to the open 5 V rail tolerance (V100). Loop delay 215 ns. JLCPCB 403, presale 402, 0.7162 USD at 10 (2026-09-28T18:12:31Z); Digi-Key 7,016, Active (18:13:05Z)."
+     },
+     {
+      "part": "TJA1448AT/0Z (C3029057)",
+      "maker": "NXP Semiconductors",
+      "reason": "Ranks below the five. It costs 3.0904 USD at 10 (JLCPCB 1,113, presale 1,110, 2026-09-28T18:12:31Z). STB1 and STB2 have no I_off (P3). Its Digi-Key status is not read here: productdetails answered HTTP 404 'Duplicate Products found' (18:14:42Z) and the keyword search answered HTTP 429, daily rate limit (18:14:47Z). P3 found one listing Active and one Obsolete, an unresolved disagreement."
+     },
+     {
+      "part": "TLE9252VSK (C540122)",
+      "maker": "Infineon Technologies",
+      "reason": "Misses 'supply from the board's rails'. The TLE9252V functional range sets the battery supply voltage VBAT at 5.5 to 40 V (Table 3, P_8.2.1), above the 5 V rail (TLE9252V Rev. 1.11, https://www.infineon.com/assets/row/public/documents/10/49/infineon-tle9252v-datasheet-en.pdf, read 2026-09-28T18:14:57Z). It also fails rule 5. Digi-Key TLE9252VSKXUMA1 shows 0, Active, lead 22 weeks (18:14:28Z), and no pin-compatible alternate is named. JLCPCB 196, presale 196 (18:12:49Z)."
+     }
+    ],
+    "dropped_from_shortlist": [
+     {
+      "part": "TCAN1044AVDRQ1",
+      "maker": "Texas Instruments",
+      "reason": "Ranks below the five after the re-rank. The TCAN1044VDRQ1 (rank 2) has the same pinout and the same figures (tMODE 20 us, ±58 V, 210 ns, STB with I_off) and has a second vendor of its own. Digi-Key holds 0 of the TCAN1044AVDRQ1 (vendors.py digikey, 2026-09-28T18:13:12Z) against 5,841. JLCPCB holds 2,139 of it (18:12:46Z) against 13,438. Price at 10 is 0.3443 against 0.3492 USD."
+     }
+    ],
+    "verify": [
+     {
+      "part": "TCAN3413DR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "frames held: SN65HVD233DR",
+    "value": "not applicable: a transceiver stores no frames",
+    "source": "SLLS557H, https://www.ti.com/lit/ds/symlink/sn65hvd233.pdf, read 2026-09-28T18:13:28Z"
+   },
+   {
+    "figure": "clock tolerance: SN65HVD233DR",
+    "value": "not applicable: a transceiver has no bit clock; the timing is the controller's",
+    "source": "SLLS557H, read 2026-09-28T18:13:28Z"
+   },
+   {
+    "figure": "frames held: TCAN1044VDRQ1",
+    "value": "not applicable: a transceiver stores no frames",
+    "source": "SLLSF17D, https://www.ti.com/lit/ds/symlink/tcan1044-q1.pdf, read 2026-09-28T18:13:27Z"
+   },
+   {
+    "figure": "clock tolerance: TCAN1044VDRQ1",
+    "value": "not applicable: a transceiver has no bit clock; the timing is the controller's",
+    "source": "SLLSF17D, read 2026-09-28T18:13:27Z"
+   },
+   {
+    "figure": "TCAN1044V-Q1 product URL",
+    "value": "https://www.ti.com/product/TCAN1044V-Q1 redirects to the TCAN1044A-Q1 page, so that URL does not give the TCAN1044VDRQ1's status. P3 cites it for ACTIVE. The status is read on https://www.ti.com/product/TCAN1044-Q1: TCAN1044VDRQ1 ACTIVE, hasReplacements false.",
+    "source": "vendors.py fetch, read 2026-09-28T18:14:02Z and 18:14:12Z"
+   },
+   {
+    "figure": "SN65HVD233 LBK pin",
+    "value": "The datasheet states 'If the LBK pin is not used it may be tied to ground (GND). However, it is pulled low internally'. This corrects P3's statement that no internal pull is stated. Tying it to ground holds.",
+    "source": "SLLS557H, LBK description, https://www.ti.com/lit/ds/symlink/sn65hvd233.pdf, read 2026-09-28T18:13:28Z"
+   },
+   {
+    "figure": "SN65HVD233DR replacement flag",
+    "value": "The TI product page gives the SN65HVD233DR marketingStatusDescription ACTIVE and hasReplacements true, and the fields read name no replacement. The tube SN65HVD233D is OBSOLETE on the same page.",
+    "source": "https://www.ti.com/product/SN65HVD233, read 2026-09-28T18:14:03Z"
+   },
+   {
+    "figure": "TLE9252V battery supply range",
+    "value": "VBAT functional range 5.5 to 40 V (Table 3, P_8.2.1); absolute maximum -0.3 to 40 V",
+    "source": "TLE9252V Rev. 1.11, https://www.infineon.com/assets/row/public/documents/10/49/infineon-tle9252v-datasheet-en.pdf, read 2026-09-28T18:14:57Z"
+   },
+   {
+    "figure": "Digi-Key readings not taken",
+    "value": "TJA1448AT/0Z not read. Productdetails answered HTTP 404 'Duplicate Products found for tja1448at/0z' (18:14:42Z). The keyword search answered HTTP 429 'Daily Ratelimit exceeded' (18:14:47Z), and no further Digi-Key call was made in this re-rank.",
+    "source": "vendors.py digikey TJA1448AT/0Z and vendors.py digikey-search TJA1448AT, 2026-09-28"
+   },
+   {
+    "figure": "Digi-Key re-reads of P2 parts",
+    "value": "TCAN3413DR 4,455, Active, lead 16 weeks (18:13:10Z). TCAN1044AVDRQ1 0, Active, lead 16 weeks (18:13:12Z). SN65HVD230DR 0, Active (18:14:46Z). SN65HVD231DR 0, Active (18:13:14Z).",
+    "source": "vendors.py digikey, https://api.digikey.com/products/v4/search/<MPN>/productdetails, 2026-09-28"
+   },
+   {
+    "figure": "Link terminator (P3 missed function)",
+    "value": "No IC and no round 1 part. The specification requires 120 Ohm at the IO board's end (IOBoard.md:176), and whether it is fitted, switchable or external is not stated (IOBoard.md:205). The resistor and any switch are passives that round 2 selects (Research.md Scope). R2's share is the choice among fitted, switchable and external. None of the ranked transceivers constrains that choice. The choice is left for the owner and round 2; this re-rank adds no function for it.",
+    "source": "checkout 10b0bade34de hardware/docs/IOBoard.md:176, :205; hardware/docs/Research.md Scope"
+   },
+   {
+    "figure": "jlcparts presence of the ranked new parts",
+    "value": "TCAN1044VDRQ1 (lcsc 1852061) and SN65HVD233DR (lcsc 61643) are in jlc_components of the 2026-09-14 copy, SOIC-8",
+    "source": "file:/home/claude/rcbench-research/jlcparts-2026-09-14/cache.sqlite3?mode=ro, queried 2026-09-28T18:15Z"
+   }
+  ]
+ }
+}

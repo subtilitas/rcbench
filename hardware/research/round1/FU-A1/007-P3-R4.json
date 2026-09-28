@@ -1,0 +1,138 @@
+{
+ "role": "P3",
+ "category": "R4",
+ "label": "P3-R4",
+ "attempt": 0,
+ "data": {
+  "category": "R4",
+  "missed": [
+   {
+    "function": "gated output buffer",
+    "part": "74LVC125APW,118 (C6059)",
+    "maker": "Nexperia",
+    "why": "Quad buffer, one active-low nOE per channel. It is a family P2 did not consider: P2 read the 126A quads (TI SN74LVC126A has no Ioff; Nexperia 74LVC126A has 0 stock) but not the 125A. Datasheet 74LVC125A Rev. 12, 2 May 2025 (https://assets.nexperia.com/documents/data-sheet/74LVC125A.pdf, read 2026-09-28T17:49:14Z). IOFF: ±10 µA at VCC 0 V and VI or VO = 5.5 V (−40 to 85 °C), ±20 µA to 125 °C. VO in 3-state is recommended at 0 to 5.5 V. VOH is 2.2 V at −24 mA and VCC 3.0 V. tdis nOE to nY is 4.6 ns max at 3.0 to 3.6 V. VIH is 2.0 V, the inputs have Schmitt-trigger action, there is no bus hold, and Tamb is −40 to +125 °C. It takes 4 parts a board, so the need is 20 and the rule-4 gate is 100. The enable inverter drives 16 OE pins, each with its own 10 kΩ pull-up: 16 × 3.3 V / 10 kΩ = 5.3 mA. JLCPCB (vendors.py jlcpcb C6059, 17:56:17Z): stockCount 10549, canPresaleNumber 10530, extended, USD 0.1949 at quantity 1. Digi-Key productdetails (17:57:15Z): 0, Active, 20 weeks. Its rule-5 route is therefore an alternate: 74LCX125MTC (below). TI SN74LVC125A is not an alternate, because SCAS290T (revised September 2024, read 17:48:32Z) states no Ioff. SN74LV4T125PWR is not one either (below)."
+   },
+   {
+    "function": "gated output buffer",
+    "part": "74LVC125AD,118 (C6057)",
+    "maker": "Nexperia",
+    "why": "The same die and datasheet as 74LVC125APW,118, in SO14. JLCPCB (17:56:16Z): 1135, presale 1124, USD 0.1756. That passes the gate of 100 at 4 a board. Digi-Key productdetails (17:57:16Z): 917, Active, 20 weeks, which also passes. Its pin-compatible SO-14 alternate is Diodes 74LVC125AS14-13."
+   },
+   {
+    "function": "gated output buffer",
+    "part": "74LVC125AS14-13 (C460512)",
+    "maker": "Diodes Incorporated",
+    "why": "The 125 pinout in SO-14, with nOE active low. Datasheet DS35265 Rev. 4-2, 2023 (https://www.diodes.com/assets/Datasheets/74LVC125A.pdf, read 2026-09-28T17:55:55Z): IOFF 10 µA (20 µA at the wider range) at VCC 0 with VI or VO = 0 to 3.6 V, and TA −40 to +125 °C. Its recommended VO is 0 to VCC in active mode and 0 to 5.5 V at VCC = 0 V. No range is given for a powered, disabled output at 3.6 V, above VCC. The absolute maximum in the high-impedance or IOFF state is −0.5 to 6.5 V. The re-rank has to rule on that before it counts as meeting the 3.6 V tolerance with the output disabled. JLCPCB (17:56:19Z): 2771, presale 2771, USD 0.1246. Digi-Key (17:57:31Z): 21535, Active, 24 weeks. Diodes' own status was not read."
+   },
+   {
+    "function": "gated output buffer",
+    "part": "74LCX125MTC (C141450)",
+    "maker": "onsemi",
+    "why": "The 125 pinout in TSSOP-14, so it is the pin-compatible alternate of 74LVC125APW,118. Datasheet 74LCX125/D Rev. 3, January 2025 (https://www.onsemi.com/download/data-sheet/pdf/74lcx125-d.pdf, read 2026-09-28T17:55:54Z): power-down high-impedance inputs and outputs. IOFF is 10 at VCC 0 with VI or VO = 5.5 V; the µ glyph extracts as 'mA', as the II and ICC rows do, so the unit is not confirmed from the text. VO is 0 to 5.5 V in tri-state mode and in power-down mode, and TA is −40 to +125 °C. JLCPCB (17:56:20Z): 316, presale 312, USD 0.374, which passes the gate of 100. Digi-Key keyword search '74LCX125MTC' (17:57:47Z): the onsemi row holds 1198, Active, 14 weeks. The productdetails call returned 'Duplicate Products found' (17:57:21Z)."
+   },
+   {
+    "function": "gated output buffer",
+    "part": "74LVC2244APW,118 (C478134)",
+    "maker": "Nexperia",
+    "why": "An octal buffer in the 244 pinout, with a 30 Ω series termination resistor in each output. Datasheet 74LVC2244A Rev. 7, 25 August 2023 (https://assets.nexperia.com/documents/data-sheet/74LVC2244A.pdf, read 2026-09-28T17:49:15Z). IOFF is ±10 µA at VCC 0 V and VI or VO = 5.5 V, and VO in 3-state is recommended at 0 to 5.5 V. VOH is 2.2 V at −12 mA and VCC 3.0 V. tdis is 5.4 ns max at 3.0 to 3.6 V, and Tamb is −40 to +125 °C. It has two active-low nOE pins and no bus hold. Its drive is half that of the 244A, so the 142 Ω of V75 (derived from 24 mA) has to be re-derived at 12 mA and 30 Ω in the part. JLCPCB (17:56:22Z): 8965, presale 8965, USD 0.2951. Digi-Key keyword search '74LVC2244APW' (17:57:50Z): 74LVC2244APW,118 has 0, Active, 22 weeks. Its rule-5 route is SN74LVC2244APWR."
+   },
+   {
+    "function": "gated output buffer",
+    "part": "SN74LVC2244APWR (C352971)",
+    "maker": "Texas Instruments",
+    "why": "The pin-compatible TI 2244A. SCAS572L (revised July 2014, https://www.ti.com/lit/ds/symlink/sn74lvc2244a.pdf, read 2026-09-28T17:58:06Z): Ioff ±10 µA at VCC 0 with VI or VO = 5.5 V. JLCPCB (17:58:17Z): 189, presale 188, which passes the gate of 50 at 2 a board. Digi-Key productdetails (17:59:46Z): 0, Active, 16 weeks. TI's product page was not read."
+   },
+   {
+    "function": "gated output buffer",
+    "part": "SN74LV4T125PWR (C90755)",
+    "maker": "Texas Instruments",
+    "why": "Recorded so the re-rank logs the drop. It carries the 125 pinout, but it is not a valid alternate for the 74LVC125A. SCLS749C (revised June 2022, https://www.ti.com/lit/ds/symlink/sn74lv4t125.pdf, read 2026-09-28T17:48:34Z) recommends VO in the high-impedance state at 0 to VCC; the absolute maximum in the high-impedance or power-off state is 4.6 V. A disabled output at the 3.6 V the connector side must take (V63, V77) is above VCC at 3.20 to 3.40 V. P2 dropped the Nexperia 74CBTLV3126 on the same kind of test. IOH is −8 mA at 3.3 V. Ioff is 5 µA at VCC 0 V with VO or VI = 0 to 5.5 V. JLCPCB (17:56:32Z): 7188, presale 7141."
+   },
+   {
+    "function": "gated output buffer",
+    "part": "SN74LVC16T245DGGR (C148170)",
+    "maker": "Texas Instruments",
+    "why": "Recorded as a drop: I_off on the enable is not stated. SCES636B (revised April 2015, https://www.ti.com/lit/ds/symlink/sn74lvc16t245.pdf, read 2026-09-28T17:48:35Z) gives Ioff (±2 µA, VI or VO = 0 to 5.5 V, one supply at 0 V) for the 'A or B port' only. It gives the control-input II only with both supplies at 1.65 to 5.5 V. Section 9.3.3 limits Ioff to 'disabling I/O output circuits'. It lacks the 'any input or output pin' statement that the adjudicated ruling relied on for SN74LVC8T245. JLCPCB (17:56:33Z): 3791, presale 3759, USD 1.762."
+   },
+   {
+    "function": "gated output buffer",
+    "part": "SN74LVT125PWR (C2675577)",
+    "maker": "Texas Instruments",
+    "why": "Recorded as a drop. P2's bus-hold exclusion names the LVTH families, but the LVT125 without the H also has bus hold. SCBS133F (revised October 2003, https://www.ti.com/lit/ds/symlink/sn74lvt125.pdf, read 2026-09-28T17:48:33Z) states 'Bus-Hold Data Inputs Eliminate the Need for External Pullup' and 'Active bus-hold circuitry holds unused or undriven inputs at a valid logic state'. That fails the no-bus-hold requirement of V73. JLCPCB stock was not read, because the part fails on the datasheet."
+   },
+   {
+    "function": "enable inverter",
+    "part": "SN74LVC1G14DBVR (C7835)",
+    "maker": "Texas Instruments",
+    "why": "A Schmitt-trigger inverter in the same SOT-23-5 pinout as rank 1 SN74LVC1G04DBVR (n.c. 1, A 2, GND 3, Y 4, VCC 5), so it is a drop-in. SCES218AA (revised October 2025, https://www.ti.com/lit/ds/symlink/sn74lvc1g14.pdf, read 2026-09-28T17:55:54Z): Ioff ±10 µA at VCC 0 with VI or VO = 5.5 V. JLCPCB (17:56:28Z): 319139, presale 317399, USD 0.065. That is the largest stock of any inverter found. Digi-Key keyword search 'SN74LVC1G14DBVR' (17:57:52Z): the TI row holds 0, Active, 16 weeks (the UMW row is not an allowlisted maker). Its rule-5 route is 74LVC1G14GV,125."
+   },
+   {
+    "function": "enable inverter",
+    "part": "74LVC1G14GV,125 (C131093)",
+    "maker": "Nexperia",
+    "why": "The pin-compatible alternate of SN74LVC1G14DBVR in SC-74A (n.c. 1, A 2, GND 3, Y 4, VCC 5). Datasheet 74LVC1G14 Rev. 19.1, 3 September 2024 (https://assets.nexperia.com/documents/data-sheet/74LVC1G14.pdf, read 2026-09-28T17:58:06Z): IOFF ±2 µA at VCC 0 V with VI or VO = 5.5 V, and Tamb −40 to +125 °C. JLCPCB (17:56:30Z): 3337, presale 3293, USD 0.0931. Digi-Key keyword search (17:57:54Z): 972, Active, 20 weeks."
+   },
+   {
+    "function": "multiprotocol port path",
+    "part": "SN74CBTLV1G125DCKR (C131992)",
+    "maker": "Texas Instruments",
+    "why": "A single-channel member of the family of rank 1 SN74CBTLV3126, one part per line. It has the same Ioff form that P2 accepted for the 3126. SCDS057H (revised June 2006, https://www.ti.com/lit/ds/symlink/sn74cbtlv1g125.pdf, read 2026-09-28T17:48:33Z): Ioff 10 µA at VCC = 0 with VI or VO = 0 to 3.6 V. The VI absolute maximum is 4.6 V, and no recommended switch I/O range is stated, as for the 3126. ron is 7 Ω max at VCC 3 V and VI 0. tdis OE to A or B is 4.1 ns max at 3.3 V. TA is −40 to 85 °C. Pins: OE 1 (active low), A 2, GND 3, B 4, VCC 5. So it needs the enable inverter and a 10 kΩ pull-up on each OE. It takes 5 to 6 parts a board: the 4 ports, the UART socket, and VESC's second line if that line is switched. The gate is therefore 125 to 150. JLCPCB (17:56:25Z): 2869, presale 2866, USD 0.3148. SN74CBTLV1G125DBVR, C2653264: 491 (17:56:27Z). Digi-Key productdetails (17:57:24Z): 15283, Active, 16 weeks. Unlike rank 2 SN74CBTLV3125PWR, it has a rule-5 route at the second vendor. TI's status page was not read."
+   },
+   {
+    "function": "multiprotocol port path",
+    "part": "SN74CBTLV3245APWR (C7156)",
+    "maker": "Texas Instruments",
+    "why": "An 8-channel CBTLV bus switch with one active-low OE (pin 19). One part covers the 4 ports, the UART socket and VESC's second line, with one OE pull-up in place of 4. SCDS034N (revised June 2026, https://www.ti.com/lit/ds/symlink/sn74cbtlv3245a.pdf, read 2026-09-28T17:59:14Z): Ioff 40 µA at VCC = 0 with VI or VO = 0 to 3.6 V. The VI absolute maximum is 4.6 V. ron is 7 Ω max at VCC 3 V and VI 0. TA is −40 to 85 °C for PW. It needs the enable inverter. JLCPCB (17:59:19Z): 1210, presale 1191, USD 0.6334, which passes the gate of 50. Digi-Key productdetails (17:59:44Z): 0, Active, 16 weeks. No alternate was qualified. Diodes PI3B3245LEX, Nexperia 74CBTLV3245PW,118 and Renesas 74CBTLV3245PGG8 were found in jlcparts but not read, so its rule-5 route is open for the re-rank."
+   },
+   {
+    "function": "multiprotocol port path",
+    "part": "PI3B3126LEX (C3001683)",
+    "maker": "Diodes Incorporated",
+    "why": "Recorded as a drop. It is pin-for-pin with SN74CBTLV3126PWR (BE0 1, A0 2, B0 3, BE1 4 … GND 7 … VCC 14, enable active high), but it fails I_off on the enable. Datasheet DS40753 Rev 3-2, March 2023 (https://www.diodes.com/datasheet/download/PI3B3125.pdf, read 2026-09-28T17:54:53Z) states IOFF 10 µA only at VCC = 0 with VOUT = 3 to 3.6 V. It says the logic inputs 'can be driven up to +3.6V regardless of the supply voltage', which is a voltage tolerance, not a current limit. It also says 'Always apply VCC and GND before applying signals to input/output or control pins.' VCC is 3.3 V ±10 %. JLCPCB (17:56:24Z): 2401. Digi-Key (17:57:29Z): 510, Active, 52 weeks. The EOL notice PCN-2519 (https://www.diodes.com/assets/PCN-Files/Diodes_PCN_2519_Rev2_EOL.pdf, read 17:54:56Z) lists PI3B3126WE and PI3B3126WEX, not the LEX part."
+   },
+   {
+    "function": "multiprotocol port path",
+    "part": "SN74CB3T3245PWR (C15298) and SN74CB3T1G125DBVR (C134001)",
+    "maker": "Texas Instruments",
+    "why": "Recorded as drops: I_off on the enable is not stated, the same ground on which P2 dropped SN74CB3Q3125. SCDS136E (revised May 2026, https://www.ti.com/lit/ds/symlink/sn74cb3t3245.pdf, read 2026-09-28T17:59:13Z) and SCDS150A (read 17:59:15Z) state Ioff only for the data pins (VCC = 0, VO = 0 to 5.5 V, VI = 0). They give the control-input IIN only at VCC = 3.6 V. JLCPCB: C15298 has 4280, presale 3957 (17:59:17Z); C134001 has 168, presale 55 (17:59:24Z)."
+   },
+   {
+    "function": "UART socket path",
+    "part": "SN74CBTLV1G125DCKR (C131992) and SN74CBTLV3245APWR (C7156)",
+    "maker": "Texas Instruments",
+    "why": "The same elements and readings as under multiprotocol port path. The socket takes one 1G125, or one channel of the 3245A."
+   },
+   {
+    "function": "reply path through the gate",
+    "part": "SN74CBTLV1G125DCKR (C131992) and SN74CBTLV3245APWR (C7156)",
+    "maker": "Texas Instruments",
+    "why": "Bus switches, so both pass both directions with one enable and no direction pin, and state Ioff with VI or VO = 0 to 3.6 V at VCC = 0 (SCDS057H, SCDS034N). The readings are under multiprotocol port path. Both need the enable inverter."
+   },
+   {
+    "function": "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+    "part": "SN74CBTLV1G125DCKR (C131992) and SN74CBTLV3245APWR (C7156)",
+    "maker": "Texas Instruments",
+    "why": "The same as under reply path through the gate."
+   },
+   {
+    "function": "receiver inputs",
+    "part": "SN74AVC1T45DBVR (C131978)",
+    "maker": "Texas Instruments",
+    "why": "Pin-for-pin with rank 1 SN74LVC1T45DBVR (VCCA 1, GND 2, A 3, B 4, DIR 5, VCCB 6), with no bus hold. SCES530L (revised January 2026, https://www.ti.com/lit/ds/symlink/sn74avc1t45.pdf, read 2026-09-28T18:00:18Z) covers the case with both supplies at 0 V, which V74 needs and on which P2 dropped Nexperia 74LVC1T45GW. The A-port Ioff is stated at VCCA 0 V with VCCB 0 to 3.6 V, and the B-port Ioff at VCCB 0 V with VCCA 0 to 3.6 V: ±5 µA over temperature, VI or VO = 0 to 3.6 V. Data inputs are recommended at 0 to 3.6 V, as for rank 2 SN74AXC1T45, so the unread S.BUS and iBUS levels apply here too. VOH is 2.3 V at −12 mA and 3 V. TA is −40 to 85 °C. JLCPCB (18:00:20Z): 3036, presale 3010, USD 0.6626. Digi-Key productdetails (18:00:22Z): 59684, Active, 16 weeks."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "LSF0108PWR (seed), gated output buffer",
+    "reason_given": "a passive FET translator; SDLS966M line 600 says pull-up resistors are always required on the high side, so it cannot drive the connector high against the 10 kΩ pull-down; EN is tied to Vref_B through 200 kΩ, not driven from the enable node",
+    "why_it_fails": "Neither stated ground holds as written, but the drop stands on others. SDLS966M (revised May 2023, https://www.ti.com/lit/ds/symlink/lsf0108.pdf, read 2026-09-28T18:00:46Z), section 8.3.2, lines 520-525: 'the EN pin must be LOW' for high impedance, and EN 'is recommended to be disabled by an open-drain driver without a pullup resistor'. EN can therefore follow the enable node through an open-drain stage. A high-side pull-up strong enough to beat the 10 kΩ pull-down does drive the line high. What fails is this. (1) That required pull-up holds the connector high while the RP2354B pad is released in reset, against the low of V73. (2) Table 9-2 requires Vref_B ≥ Vref_A + 0.8 V, and Vref_A must be the lowest level on any I/O. A 3.3 V RP2354B side and a 3.3 V connector level (V63) cannot meet both."
+   },
+   {
+    "part": "TMUX1574PWR (multiprotocol port path)",
+    "reason_given": "a 2:1 multiplexer with one select (SEL) and one active-low EN for all 4 channels (SCDS391), so one element cannot switch per port; SEL and EN leakage is stated only with VDD powered",
+    "why_it_fails": "The first clause is not a requirement. The gate enables every line together from the enable node, so one common active-low EN (through the enable inverter) serves the 4 ports. That is how P2's rank 2, SN74CBTLV3125, and the 244 are used. With SEL tied, the part is a 4-channel switch, and tOFF(EN) is 95 ns max, under 1 µs. The drop still stands on the second clause. SCDS391C (revised December 2019, https://www.ti.com/lit/ds/symlink/tmux1574.pdf, read 2026-09-28T17:48:35Z) gives the logic IIH and IIL (±2 µA) with VDD powered, plus an internal 6 MΩ pull-down. It gives IPOFF (±2 µA) for the I/O pins only. Section 8.3.5, Fail-Safe Logic, is a voltage tolerance. So no current limit is stated on EN at VDD = 0 V."
+   }
+  ],
+  "missed_functions": []
+ }
+}

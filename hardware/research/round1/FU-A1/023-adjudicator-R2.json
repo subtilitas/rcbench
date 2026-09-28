@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R2",
+ "label": "adjudicator-R2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "function": "P2 report: clock tolerance: MCP2518FDT-E/SL",
+  "part": "",
+  "stands": true,
+  "scope": "function",
+  "ruling": "The refutation stands. The datasheet figures in the claim match the source. Table 7-3 of DS20006027B gives FOSC1,4M, FOSC1,20M and FOSC1,40M as nominal ±0.5 % for a crystal or resonator. It gives FDRIFT as 10 ppm max at 4 MHz and TOSCSTAB as 3 ms max. The comparison in the claim is wrong. The claim says \"The bus sets ±8,500 ppm on the link (V26), inside the ±0.5 % input limit\". ±8,500 ppm is ±0.85 %. The ±0.5 % limit is ±5,000 ppm. So the bus figure is wider than the input limit, not inside it. On the link, the part's own ±0.5 % crystal limit is the tighter of the two and sets the crystal requirement: ±5,000 ppm or tighter, not ±8,500 ppm. On the external port, the ±3,876 ppm figure (V27) is the tighter one, as the claim says. The claim is also loose in a second place. It says a \"crystal or clock\" is accepted within ±0.5 %. In Table 7-3, the external digital clock row (FOSC1,CLKI, 2 to 40 MHz) carries no ±0.5 % tolerance. Only the crystal and resonator rows do. The ±8,500 ppm and ±3,876 ppm values are research findings for V26 and V27. Their Answer column reads \"for research (owner, 2026-09-28)\", with no owner value. The arithmetic error holds whatever those final values turn out to be, as long as V26 stays above 5,000 ppm. The finding is about how this report compares the part's clock limit with the function's requirement. Lifecycle, allowlist and LCSC identity are not involved, so the scope is function.",
+  "evidence": "Table 7-3 \"Crystal Oscillator AC Characteristics\" of DS20006027B, re-read from the PDF (1,173,292 bytes, HTTP 200). Rows:\n- FOSC1,CLKI: 2 min / 40 typ / 40 max MHz, \"External digital clock\", no ± tolerance.\n- FOSC1,4M: 4 − 0.5 % / 4 / 4 + 0.5 % MHz, 4 MHz crystal or resonator (Note 1).\n- FDRIFT: 10 ppm max, extra SYSCLK drift from the internal PLL at 4 MHz (Note 1).\n- FOSC1,20M: 20 − 0.5 % / 20 / 20 + 0.5 % MHz, crystal or resonator.\n- FOSC1,40M: 40 − 0.5 % / 40 / 40 + 0.5 % MHz, crystal or resonator.\n- TOSCSTAB: 3 ms max, from power-on reset (POR) to final frequency (Note 1).\nNote 1: \"Characterized; not 100% tested.\"\nArithmetic: ±0.5 % = ±5,000 ppm; ±8,500 ppm = ±0.85 % > ±0.5 %.\nV26 and V27 in Research.md at 10b0bade, lines 586 and 587, read \"for research (owner, 2026-09-28)\".\n±8,500 ppm is the research figure for V26 in T2/003-P2-R2.json.\n±3,876 ppm, the V27 figure at a 90 % sample point, is from T2/022-adjudicator-R2-2.json.",
+  "source": "DS20006027B Table 7-3, https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/External-CAN-FD-Controller-with-SPI-Interface-DS20006027B.pdf, fetched with vendors.py fetch (client chrome); hardware/docs/Research.md V26/V27 at 10b0bade34de",
+  "read_at": "2026-09-28T18:36:56Z"
+ }
+}

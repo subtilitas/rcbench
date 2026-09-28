@@ -1,0 +1,391 @@
+{
+ "role": "P4",
+ "category": "R2",
+ "label": "P4-stock-R2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "Link CAN controller",
+    "part": "MCP2518FDT-E/SL",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 28,886 (17:23:52Z); need 5 x 2 = 10, gate 50",
+      "read": "stockCount 28,791. Need 5 boards (S7) x 2 placements = 10; gate max(5 x 10, 50) = 50 (S4); 28,791 >= 50. Moved by -95 since P2's reading",
+      "source": "vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:18:48Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 28,722",
+      "read": "canPresaleNumber 28,627, zero or above (rule 4)",
+      "source": "vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:18:48Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "In Production (productSatus and badge), family page",
+      "read": "In Production: siliconDeviceData productSatus 'In Production' (productWPN MCP2518FD) and the badge 'Status: In Production'. No 'not recommended', NRND, obsolete, last-time-buy, discontinued or end-of-life text in the page body. The page is the MCP2518FD family page and gives no status per orderable",
+      "source": "vendors.py fetch https://www.microchip.com/en-us/product/MCP2518FD (client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:19:31Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 43,486 >= 50, Active (17:25:35Z)",
+      "read": "not read: Digi-Key's API answered HTTP 429 'Daily Ratelimit exceeded. Please try again after the number of seconds in the Retry-After header', x-ratelimit-remaining 0. The rule-4 gate at the second vendor is not shown in this task; the part is left not verified on this check, not refuted",
+      "source": "vendors.py digikey MCP2518FDT-E/SL (https://api.digikey.com/products/v4/search/MCP2518FDT-E%2FSL/productdetails)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:18:49Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "Microchip Client-Driven Obsolescence, no date per part",
+      "read": "Published, no date per part: Microchip's 'Client-Driven Obsolescence' practice: 'We pledge not to discontinue products with business activity in the past three years (potentially longer for specialized sectors) if they can be manufactured'. S5 records a commitment and does not require one",
+      "source": "vendors.py fetch https://www.microchip.com/en-us/support/quality/product-longevity (client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:21:23Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet Revision A, April 2019: 89 months",
+      "read": "DS20006027B Appendix A: 'Revision A (April 2019) Original release of this document'; Revision B December 2020 is current (the product page links DS20006027B only). April 2019 to September 2026 is 89 months, over 12, not flagged",
+      "source": "vendors.py fetch https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/External-CAN-FD-Controller-with-SPI-Interface-DS20006027B.pdf, Appendix A",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:21:24Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active (17:25:35Z); LCSC C626758 stock 28,762, no discontinued/EOL/NRND text; JLCPCB row no status field",
+      "read": "JLCPCB: the exact row C626758 carries no status field (18:18:48Z). LCSC C626758: MICROCHIP MCP2518FDT-E/SL, SOIC-14, availability InStock, stockNumber 28,690, no discontinued, obsolete, end-of-life, NRND, not-recommended or last-time-buy text (18:21:22Z). Digi-Key: not read, API HTTP 429 daily rate limit (18:18:49Z). No disagreement with the maker's In Production among the readings taken",
+      "source": "vendors.py jlcpcb C626758; vendors.py fetch https://www.lcsc.com/product-detail/C626758.html (client chrome, HTTP 200); vendors.py digikey MCP2518FDT-E/SL",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:21:22Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "Digi-Key lead_weeks 42",
+      "read": "not read: Digi-Key's API answered HTTP 429 'Daily Ratelimit exceeded', x-ratelimit-remaining 0",
+      "source": "vendors.py digikey MCP2518FDT-E/SL (https://api.digikey.com/products/v4/search/MCP2518FDT-E%2FSL/productdetails)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:18:49Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended); S6 accepts extended parts on merit",
+      "source": "vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:18:48Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C626758, MCP2518FDT-E/SL, SOIC-14",
+      "read": "The exact result for C626758 names part MCP2518FDT-E/SL, package SOIC-14, maker label 'Microchip Tech'; other_results 0",
+      "source": "vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:18:48Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2 (1 to 2: one controller per port; 2 when the same part serves both ports; gate taken at 2)",
+      "read": "The specification fixes one controller for the display link (IOBoard.md:55, 'R2 selects the IO board's controller and transceiver') and one for the external CAN port, 'on a controller of its own, separate from the display link' (IOBoard.md:65). MCP2518FDT-E/SL is rank 1 of both the Link and the External CAN controller shortlists, so the board places 2; the top of P2's range is 2; the candidate's count, 2, is at least that",
+      "source": "checkout 10b0bade34de hardware/docs/IOBoard.md:55, :65; the shortlist of this task",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:23:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C626758",
+      "read": "The specification places both controllers on the IO board (IOBoard.md:55, :65); the LCSC number C626758 is C and digits, so on the board (rule 1). Held 0: not in the Held parts table",
+      "source": "checkout 10b0bade34de hardware/docs/IOBoard.md:55, :65; hardware/docs/Research.md Held parts; vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:23:00Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "Microchip PCN API: 9 notices, 3 manufacturing and 6 document changes, none End of Life",
+      "read": "None. Microchip PCN API, filterText MCP2518FD: totalCount 9, 3 Manufacturing Change (CCB 8550 JPZA-16CPDL798 2026-09-25, QBB parts only; CCB 8132 CENO-01KVCO240 2026-03-04; CCB 6533 MFOL-18WXCO168 2024-10-17), 6 Document Change (data sheet and errata, 2020-09-28 to 2025-01-15); with filterType 5 (End of Life): totalCount 0 (18:20:46Z). filterText MCP2518FDT-E/SL: 7 notices, 1 manufacturing (CENO-01KVCO240) and 6 document changes; End of Life 0 (18:20:50Z)",
+      "source": "POST https://www.microchip.com/PCNWebAPI/api/Pcn/AllPCNsWithFilters {pageIndex 1, pageSize 100, filterText MCP2518FD or MCP2518FDT-E/SL, filterType 0 or 5}, curl_cffi chrome, HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:20:43Z"
+     }
+    ]
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "TCAN3413DR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 14,554 (17:23:43Z); need 5 x 2 = 10, gate 50",
+      "read": "stockCount 14,543. Need 5 boards (S7) x 2 placements = 10; gate max(5 x 10, 50) = 50 (S4); 14,543 >= 50. Moved by -11 since P2's reading",
+      "source": "vendors.py jlcpcb C22433320 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:18:48Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 13,894",
+      "read": "canPresaleNumber 13,883, zero or above (rule 4)",
+      "source": "vendors.py jlcpcb C22433320 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:18:48Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE, family and orderable TCAN3413DR",
+      "read": "ACTIVE: meta status ACTIVE and badge ACTIVE on the family page; the orderable TCAN3413DR (SOIC (D), 8 pins) has marketingStatusDescription 'ACTIVE', isPrototype false, hasReplacements false (18:19:32Z). The TCAN3413DR part-details page shows the ACTIVE badge (18:21:23Z). No NRND, obsolete or last-time-buy text; the only 'discontinuation' text is the generic preproduction tooltip",
+      "source": "vendors.py fetch https://www.ti.com/product/TCAN3413 and https://www.ti.com/product/TCAN3413/part-details/TCAN3413DR (client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:19:32Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 4,455 >= 50, Active (17:25:24Z)",
+      "read": "not read: Digi-Key's API answered HTTP 429 'Daily Ratelimit exceeded. Please try again after the number of seconds in the Retry-After header', x-ratelimit-remaining 0, at 18:18:50Z and again at 18:22:18Z. The rule-4 gate at the second vendor is not shown in this task; the part is left not verified on this check, not refuted",
+      "source": "vendors.py digikey TCAN3413DR (https://api.digikey.com/products/v4/search/TCAN3413DR/productdetails)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:22:18Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "TI product life cycle page: typically 10 to 15 years, no obsolescence with sales in the last 5 years (7 automotive), no date per part",
+      "read": "Published, no date per part: 'TI's product life cycles are typically 10 to 15 years'; TI standard products are not eligible for obsolescence if the product had any sales within the last five years (seven for automotive or high-reliability), can be manufactured and has been in production under 10 years, or has any current customer demand. S5 records a commitment and does not require one",
+      "source": "vendors.py fetch https://www.ti.com/quality-reliability/quality/product-life-cycle.html (client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:21:23Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet March 2023 (SLLSFS8A): 42 months",
+      "read": "SLLSFS8A header 'MARCH 2023 - REVISED NOVEMBER 2023'; revision history 'Changes from Revision * (March 2023) to Revision A (November 2023)': 'Changed the document status from: Advanced Information to: Production data'. First revision March 2023, 42 months before 2026-09-28; production data since November 2023, 34 months. Both over 12, not flagged. The product page links SLLSFS8A only",
+      "source": "vendors.py fetch https://www.ti.com/lit/ds/symlink/tcan3413.pdf, section 10 Revision History",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:21:23Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active (17:25:24Z); LCSC C22433320 stock 13,237, no discontinued/EOL/NRND text",
+      "read": "JLCPCB: the exact row C22433320 carries no status field (18:18:48Z). LCSC C22433320: TI TCAN3413DR, SOIC-8, availability InStock, stockNumber 13,248, no discontinued, obsolete, end-of-life, NRND, not-recommended or last-time-buy text (18:21:22Z). Digi-Key: not read, API HTTP 429 daily rate limit (18:18:50Z, 18:22:18Z). No disagreement with TI's ACTIVE among the readings taken",
+      "source": "vendors.py jlcpcb C22433320; vendors.py fetch https://www.lcsc.com/product-detail/C22433320.html (client chrome, HTTP 200); vendors.py digikey TCAN3413DR",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:21:22Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "Digi-Key lead_weeks 16",
+      "read": "not read: Digi-Key's API answered HTTP 429 'Daily Ratelimit exceeded', x-ratelimit-remaining 0, at 18:18:50Z and 18:22:18Z",
+      "source": "vendors.py digikey TCAN3413DR (https://api.digikey.com/products/v4/search/TCAN3413DR/productdetails)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:22:18Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended); S6 accepts extended parts on merit",
+      "source": "vendors.py jlcpcb C22433320 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:18:48Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C22433320, TCAN3413DR, SOIC-8",
+      "read": "The exact result for C22433320 names part TCAN3413DR, package SOIC-8, maker label 'Texas Instruments'; other_results 0",
+      "source": "vendors.py jlcpcb C22433320 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:18:48Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2 (1 to 2: one transceiver per port; 2 when the same part serves both ports; gate taken at 2)",
+      "read": "The specification fixes one link transceiver (IOBoard.md:55, :175) and one external-port transceiver with a standby input (IOBoard.md:57, :238). In this task's shortlist the External CAN transceiver function has no ranked part, so TCAN3413DR is placed once for the link and a second time only if it later serves the external port. The top of P2's range is 2; the candidate's count, 2, is at least that, and at least the 1 the link alone fixes",
+      "source": "checkout 10b0bade34de hardware/docs/IOBoard.md:55, :57, :175, :238; the shortlist of this task",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:23:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C22433320",
+      "read": "The specification places the link transceiver on the IO board (IOBoard.md:55, 'R2 selects the IO board's controller and transceiver'); the LCSC number C22433320 is C and digits, so on the board (rule 1). Held 0: not in the Held parts table",
+      "source": "checkout 10b0bade34de hardware/docs/IOBoard.md:55; hardware/docs/Research.md Held parts; vendors.py jlcpcb C22433320 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:23:00Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "TI PCN listing not read, no TI PCN query was made",
+      "read": "None found. TI publishes no public PCN listing: its PCN page describes notification under J-STD-046 and withdrawal under J-STD-048 (12 months to last order, 6 more to last delivery), sent to affected customers, and links no listing (18:21:57Z). The product and part-details pages show TCAN3413DR ACTIVE with hasReplacements false and no last-time-buy or obsolete field or text (18:19:32Z, 18:21:23Z). This fills P2's 'not read' and does not contradict it: neither reading names an end-of-life notice",
+      "source": "vendors.py fetch https://www.ti.com/quality-reliability/quality/product-change-notification.html (client chrome, HTTP 200); https://www.ti.com/product/TCAN3413; https://www.ti.com/product/TCAN3413/part-details/TCAN3413DR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:21:57Z"
+     }
+    ]
+   },
+   {
+    "function": "External CAN controller",
+    "part": "MCP2518FDT-E/SL",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 28,886 (17:23:52Z); need 5 x 2 = 10, gate 50",
+      "read": "stockCount 28,791. Need 5 boards (S7) x 2 placements = 10; gate max(5 x 10, 50) = 50 (S4); 28,791 >= 50. Moved by -95 since P2's reading",
+      "source": "vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:18:48Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 28,722",
+      "read": "canPresaleNumber 28,627, zero or above (rule 4)",
+      "source": "vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:18:48Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "In Production (productSatus and badge), family page",
+      "read": "In Production: siliconDeviceData productSatus 'In Production' (productWPN MCP2518FD) and the badge 'Status: In Production'. No 'not recommended', NRND, obsolete, last-time-buy, discontinued or end-of-life text in the page body. The page is the MCP2518FD family page and gives no status per orderable",
+      "source": "vendors.py fetch https://www.microchip.com/en-us/product/MCP2518FD (client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:19:31Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 43,486 >= 50, Active (17:25:35Z)",
+      "read": "not read: Digi-Key's API answered HTTP 429 'Daily Ratelimit exceeded. Please try again after the number of seconds in the Retry-After header', x-ratelimit-remaining 0. The rule-4 gate at the second vendor is not shown in this task; the part is left not verified on this check, not refuted",
+      "source": "vendors.py digikey MCP2518FDT-E/SL (https://api.digikey.com/products/v4/search/MCP2518FDT-E%2FSL/productdetails)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:18:49Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "Microchip Client-Driven Obsolescence, no date per part",
+      "read": "Published, no date per part: Microchip's 'Client-Driven Obsolescence' practice: 'We pledge not to discontinue products with business activity in the past three years (potentially longer for specialized sectors) if they can be manufactured'. S5 records a commitment and does not require one",
+      "source": "vendors.py fetch https://www.microchip.com/en-us/support/quality/product-longevity (client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:21:23Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet Revision A, April 2019: 89 months",
+      "read": "DS20006027B Appendix A: 'Revision A (April 2019) Original release of this document'; Revision B December 2020 is current (the product page links DS20006027B only). April 2019 to September 2026 is 89 months, over 12, not flagged",
+      "source": "vendors.py fetch https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/External-CAN-FD-Controller-with-SPI-Interface-DS20006027B.pdf, Appendix A",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:21:24Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active (17:25:35Z); LCSC C626758 no discontinued/EOL/NRND text",
+      "read": "JLCPCB: the exact row C626758 carries no status field (18:18:48Z). LCSC C626758: MICROCHIP MCP2518FDT-E/SL, SOIC-14, availability InStock, stockNumber 28,690, no discontinued, obsolete, end-of-life, NRND, not-recommended or last-time-buy text (18:21:22Z). Digi-Key: not read, API HTTP 429 daily rate limit (18:18:49Z). No disagreement with the maker's In Production among the readings taken",
+      "source": "vendors.py jlcpcb C626758; vendors.py fetch https://www.lcsc.com/product-detail/C626758.html (client chrome, HTTP 200); vendors.py digikey MCP2518FDT-E/SL",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:21:22Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "Digi-Key lead_weeks 42",
+      "read": "not read: Digi-Key's API answered HTTP 429 'Daily Ratelimit exceeded', x-ratelimit-remaining 0",
+      "source": "vendors.py digikey MCP2518FDT-E/SL (https://api.digikey.com/products/v4/search/MCP2518FDT-E%2FSL/productdetails)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:18:49Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended); S6 accepts extended parts on merit",
+      "source": "vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:18:48Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C626758, MCP2518FDT-E/SL, SOIC-14",
+      "read": "The exact result for C626758 names part MCP2518FDT-E/SL, package SOIC-14, maker label 'Microchip Tech'; other_results 0",
+      "source": "vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:18:48Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2 (1 to 2: one controller per port; 2 when the same part serves both ports; gate taken at 2)",
+      "read": "The specification fixes one controller for the display link (IOBoard.md:55, 'R2 selects the IO board's controller and transceiver') and one for the external CAN port, 'on a controller of its own, separate from the display link' (IOBoard.md:65). MCP2518FDT-E/SL is rank 1 of both the Link and the External CAN controller shortlists, so the board places 2; the top of P2's range is 2; the candidate's count, 2, is at least that",
+      "source": "checkout 10b0bade34de hardware/docs/IOBoard.md:55, :65; the shortlist of this task",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:23:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C626758",
+      "read": "The specification places both controllers on the IO board (IOBoard.md:55, :65); the LCSC number C626758 is C and digits, so on the board (rule 1). Held 0: not in the Held parts table",
+      "source": "checkout 10b0bade34de hardware/docs/IOBoard.md:55, :65; hardware/docs/Research.md Held parts; vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:23:00Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "Microchip PCN API (MCP2518FD, 17:28:18Z) 9 notices, none End of Life",
+      "read": "None. Microchip PCN API, filterText MCP2518FD: totalCount 9, 3 Manufacturing Change (CCB 8550 JPZA-16CPDL798 2026-09-25, QBB parts only; CCB 8132 CENO-01KVCO240 2026-03-04; CCB 6533 MFOL-18WXCO168 2024-10-17), 6 Document Change (data sheet and errata, 2020-09-28 to 2025-01-15); with filterType 5 (End of Life): totalCount 0 (18:20:46Z). filterText MCP2518FDT-E/SL: 7 notices, 1 manufacturing (CENO-01KVCO240) and 6 document changes; End of Life 0 (18:20:50Z)",
+      "source": "POST https://www.microchip.com/PCNWebAPI/api/Pcn/AllPCNsWithFilters {pageIndex 1, pageSize 100, filterText MCP2518FD or MCP2518FDT-E/SL, filterType 0 or 5}, curl_cffi chrome, HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:20:43Z"
+     }
+    ]
+   }
+  ]
+ }
+}

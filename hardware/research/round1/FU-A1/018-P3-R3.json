@@ -1,0 +1,72 @@
+{
+ "role": "P3",
+ "category": "R3",
+ "label": "P3-R3",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "missed": [
+   {
+    "function": "reset supervisor",
+    "part": "TPS3703A7330DSERQ1 (LCSC C1849519)",
+    "maker": "Texas Instruments",
+    "why": "P2 did not consider the precision window supervisors (TPS3703, TPS3702). This part narrows the unspecified band from P2's 169 mV to 153.5 mV. Source: TPS3703-Q1 data sheet SBVS344D (March 2021), https://www.ti.com/lit/ds/symlink/tps3703-q1.pdf, read 2026-09-28T18:20:28Z. It carries the same figures as TPS3703 SBVS249B, https://www.ti.com/lit/ds/symlink/tps3703.pdf, read 18:18:47Z. Naming (SBVS249B Table 12-1): A = window with CT open 10 ms; 7 = UV and OV at -7 % and +7 %; 330 = 3.30 V nominal. So VIT-(UV) nominal is 3.069 V. Electrical characteristics at -40 to 125 degC: threshold accuracy +/-0.7 %, so the threshold is 3.0475 V to 3.0905 V. VHYS is 0.3 % to 0.8 % of the tripoint, so the release is at most 3.0905 x 1.008 = 3.115 V, below 3.201 V. The band from 3.0475 V to 3.201 V is 153.5 mV. The threshold minimum is above 2.0 V (74HC423), and also above the 3.0 V operating minimum of the MC14538B. The OV trip is 3.531 V -0.7 % = 3.506 V minimum, above 3.399 V, so it does not assert inside the rail tolerance. Above 3.506 V it also asserts RESET; that is the disabling direction. tD is 7 ms to 13 ms with CT open, which meets V43's 125 ns. VDD 1.7 V to 5.5 V. RESET is driven low below UVLO (1.2 V to 1.7 V). VPOR is 1 V max. The output is open-drain, so it needs a pull-up, as P2's rank 1 does. JLCPCB C1849519: stockCount 307, canPresaleNumber 305 (2026-09-28T18:19:39Z, vendors.py jlcpcb C1849519); the gate is 50. TI product page https://www.ti.com/product/TPS3703-Q1: status ACTIVE, and the orderable TPS3703A7330DSERQ1 is listed (read 18:20:16Z). No second source is shown. The non-Q1 TPS3703A7330DSER (C2861206) has JLCPCB 23, presale 19 (18:19:40Z), under the gate. TPS3703A5330 (band 88 mV) and A6330 (C2868050, C2862900) have JLCPCB 0 (18:19:42Z, 18:19:43Z). A4330 fails the release rule: 3.168 x 1.007 x 1.008 = 3.216 V. Digi-Key was not read: the API answered HTTP 429, daily rate limit exceeded (2026-09-28T18:20:05Z). TPS3702AX33 would give a 127 mV band but has JLCPCB 6 (18:19:48Z) and no reset delay."
+   },
+   {
+    "function": "onboard pack switch driver",
+    "part": "TPSI3050DWZR (LCSC C17227641) / TPSI3050QDWZRQ1 (LCSC C17341959)",
+    "maker": "Texas Instruments",
+    "why": "P2 did not consider isolated switch drivers. The gate supply comes from the 3.3 V primary, not from the pack, so the part closes the array at any pack voltage, the 2.8 V of V51 included. Source: TPSI3050 SLVSGO9C (August 2023), https://www.ti.com/lit/ds/symlink/tpsi3050.pdf, read 2026-09-28T18:21:31Z; TPSI3050-Q1 SLVSFJ7D, https://www.ti.com/lit/ds/symlink/tpsi3050-q1.pdf, read 18:20:39Z. Three-wire mode: VDDP 3.0 V to 5.5 V. VDRV is 9.4 V to 11 V, a floating 10 V gate drive held with EN high (standard enable, 100 % duty). Peak drive is 1.5 A source and 3.0 A sink. tHL_VDRV (EN falling to VDRV at 10 %) is 2.5 us typ, 3 us max, well inside 5 ms. tLH_VDRV is 3 us typ, 4.5 us max. On loss of VDDP, VDRV goes low in 100 us typ, and an active clamp keeps VDRV under 2 V: fail-open with the 3.3 V supply absent. VIOWM is 1414 VDC. EN in three-wire mode is 0 V to 5.5 V (absolute maximum 60 V). No I_off and no internal EN pull-down are stated, so the 4.7 kOhm series route of IOBoard.md:192 and an external pull-down apply. There is no register in the path. A closed MOSFET array conducts both ways (V47). CDIV sizing: at least 20 x the gate capacitance switched, 40 uF maximum each (section 9.2.2.3). The closing time at the array's gate charge against V46 is not computed here. JLCPCB: C17227641 stockCount 2036, presale 1981; C17341959 stockCount 2973, presale 2973 (2026-09-28T18:21:20Z). TPSI3052DWZR (C20346001, 15 V gate, same DWZ package) has 1126, presale 1107 (18:21:21Z). The TI product pages TPSI3050 and TPSI3050-Q1 show status ACTIVE (18:20:19Z). Unlike the LTC7001, the DWZR and QDWZRQ1 are rule-5 alternates of each other in one land. Digi-Key was not read (HTTP 429, 18:20:05Z)."
+   },
+   {
+    "function": "external module driver output",
+    "part": "TPSI3050QDWZRQ1 (LCSC C17341959) / TPSI3050DWZR (LCSC C17227641)",
+    "maker": "Texas Instruments",
+    "why": "It gives the floating gate drive that the 2N7002 parts cannot. The drive does not depend on the pack voltage, so the module closes at a 2.8 V pack (V51). Figures as in the onboard pack switch driver entry (SLVSGO9C read 2026-09-28T18:21:31Z; SLVSFJ7D read 18:20:39Z): 10 V VDRV, 3 A sink, 3 us max from EN falling. The gate load is 5 x VS-FC420SA10 at Qg 375 nC typ, 1.875 uC at 10 V. That is about 190 nF equivalent, which needs CDIV of about 3.8 uF series by the 20x rule, inside the 40 uF limit. This is derived, not stated. Stock as in that entry (18:21:20Z). With the TPSI3050 on both the onboard and the external paths, the board no longer rests on the LTC7001, which has JLCPCB 62 and no second source."
+   },
+   {
+    "function": "pack precharge",
+    "part": "TPSI3050QDWZRQ1 (LCSC C17341959) as the precharge MOSFET's gate driver",
+    "maker": "Texas Instruments",
+    "why": "P2's pack precharge entry lists the high-side MOSFET only (CSD19537Q3T). Its floating gate drive is not assigned. With LTC7001 as the only driver, a third LTC7001 a board makes the need 15 and the gate 75, above JLCPCB 62. The TPSI3050 data sheet shows DC-link precharge as a target application (SLVSFJ7D page 1, read 2026-09-28T18:20:39Z). It drives a 100 V MOSFET on the pack node from 3.3 V, with the timing and stock of the onboard pack switch driver entry. A precharge-then-close sequence still needs a timing element; round 2 selects it."
+   },
+   {
+    "function": "onboard pack switch driver",
+    "part": "2ED4820-EM (2ED4820EMXUMA2, LCSC C3654997)",
+    "maker": "Infineon",
+    "why": "The R3 row names 2ED4820 as a seed. P2's return has no entry for it, either shortlisted or dropped. Infineon product page https://www.infineon.com/part/2ED4820-EM (read 2026-09-28T18:22:07Z): 'Input Vcc range 20 V to 70 V', productStatusInfo 'active and preferred'. It fails V51 (closing at a 2.8 V pack) and V34 (operation to 85 V). JLCPCB C3654997: stockCount 52, presale 51 (18:21:21Z). The datasheet was not read, because the range on the product page already excludes it."
+   },
+   {
+    "function": "monostable",
+    "part": "NLV74HC4538ADR2G (LCSC C904883)",
+    "maker": "onsemi",
+    "why": "MC74HC4538A/D Rev. 17 (July 2026, https://www.onsemi.com/download/data-sheet/pdf/mc74hc4538a-d.pdf, read 2026-09-28T18:15:25Z) marks MC74HC4538ADG, ADR2G, ADTR2G and NLVHC4538ADTR2G discontinued. NLV74HC4538ADR2G stands above that block, not discontinued. Its function table states the reset as 'Not Triggered'. It is 'Operating Voltage Range: 3.0 to 6.0 V', with DC limits at 2.0 V, 4.5 V and 6.0 V only. It fails sourcing rule 4: JLCPCB C904883 stockCount 0, canPresaleNumber 0 (18:16:47Z). Digi-Key was not read (HTTP 429, 18:20:06Z). It is a Q9 data point for '423 behaviour alone, not a candidate."
+   },
+   {
+    "function": "monostable",
+    "part": "CD74HC423M (C1522776), CD74HC423MT (C1848286), CD74HC423NSR (C2652536), CD74HC423E (C2869663); HD74HC423AFPEL (C49328455)",
+    "maker": "Texas Instruments; Renesas",
+    "why": "These are the other '423 rows in the parts database. P2 dropped only CD74HC423M96. Every one fails sourcing rule 4 at JLCPCB, with stockCount 0 and canPresaleNumber 0: CD74HC423M, MT and NSR at 2026-09-28T18:16:49Z, CD74HC423E at 18:16:51Z, and HD74HC423AFPEL (Renesas, on S1) at 18:24:58Z. The 74HC423BQ,115 stays the only '423 part above the gate."
+   },
+   {
+    "function": "onboard pack switch MOSFETs",
+    "part": "IAUT260N10S5N019 (C535726); DMTH10H1M7STLW-13 (C5245443); STH240N10F7-2 (C3278109)",
+    "maker": "Infineon; Diodes Incorporated; STMicroelectronics",
+    "why": "These are 100 V parts from S1 makers that P2 did not list. IAUT260N10S5N019 has the HSOF-8 land of rank 1. DMTH10H1M7STLW-13 is PowerDI1012-8. STH240N10F7-2 is H2PAK-2. The parts-database descriptions give 1.9 mOhm, 2 mOhm and 2.5 mOhm at 10 V; the datasheets were not read. At JLCPCB: C535726 stockCount 111, presale 109 (2026-09-28T18:24:07Z); C5245443 158, presale 158 (18:24:01Z); C3278109 334, presale 324 (18:24:04Z). Each is under P2's gate of 250 at 10 devices. At 2.5 mOhm the STH240 needs more devices and a higher gate. None is a candidate on these counts. They are recorded as the land-compatible parts that exist."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "MC14538BDR2G",
+    "reason_given": "characteristics given at VDD 5 V, 10 V and 15 V only, so K at 3.3 V (V36) and the timing-pin leakage (V37) cannot be read for the 3.3 V rail",
+    "why_it_fails": "The two halves of the reason fail in different ways. (1) The leakage can be read by the method P2 used for its own rank 1. MC14538B/D Rev. 12 (March 2022, https://www.onsemi.com/download/data-sheet/pdf/mc14538b-d.pdf, read 2026-09-28T18:15:24Z) gives the input current of the timing pin (pin 2 or 14) as +/-0.05 uA max at 25 degC and VDD 15 V, and +/-0.5 uA at 125 degC. Doubled every 10 degC to 50 degC that is 0.28 uA. P2's V37 for the 74HC423 also uses a figure read at another supply: the +/-0.1 uA limit at VCC 6.0 V, giving 0.57 uA. (2) K: the requirement P2 wrote says a term the datasheet does not state is reported, not estimated. P2 keeps the 74HC423 with its K temperature term unstated, and P4 refuted it in T2 on that ground. The MC14538B graphs K against temperature (Fig. 8, VDD 5 V, Rx 100 kOhm, Cx 0.1 uF, typical). Read from the page at 110 dpi, with a resolution of about 0.2 %, K changes by about 0.5 % from 0 to 50 degC. Neither Fig. 6 (supply, 5 V to 15 V) nor Fig. 8 reaches 3.3 V. So both parts have an unstated K term; an unstated term does not separate them. What does separate them: the MC14538B's lowest characterized supply is 5 V, above the 3.3 V rail, where the 74HC423's 2.0 V to 6.0 V columns bracket it. The MC14538B's VIH is stated only at 5 V (3.5 V min), so the trigger-high-level requirement (VIH at 3.3 V at or below 3.15 V) is not shown for it. If the exclusion rests on that ground, it holds; as worded, it does not. Its '423 behaviour is stated (function table: Reset rising, 'Not Triggered'). The stock passes: JLCPCB C57398 stockCount 6796, presale 6761 (18:16:48Z). A same-die alternate exists: MC14538BDTR2G (C464017) stockCount 394, presale 393 (18:16:48Z). Its 3.0 V operating minimum sits below the supervisor thresholds (3.032 V for TPS3808G33, 3.0475 V for TPS3703A7330)."
+   },
+   {
+    "part": "74LVC1G74DC,125 / SN74LVC1G74DCUR",
+    "reason_given": "not qualified: unused preset needs its own pull-up and preset and clear both low drive both outputs high; the '175 parts pass every requirement with fewer inputs; datasheets not read in this task",
+    "why_it_fails": "No latch requirement fails on these grounds. Nexperia 74LVC1G74 Rev. 18 (22 September 2025, https://assets.nexperia.com/documents/data-sheet/74LVC1G74.pdf, read 2026-09-28T18:25:46Z) states 'Schmitt-trigger action at all inputs' and IOFF +/-2 uA at VI or VO 5.5 V, VCC 0 V, the same limit as the 74LVC1G175. Table 4 gives SD L with RD L as Q H and nQ H. With SD tied to VCC, that row cannot occur, and the tie needs no pull-up. The reasons are a preference for the 6-pin part. The outcome likely stays the same: it is an 8-pin VSSOP, not a rule-5 alternate in the '175 land. It is not excluded on a requirement."
+   }
+  ],
+  "missed_functions": []
+ }
+}
