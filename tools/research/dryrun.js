@@ -204,6 +204,7 @@ async function runTask(task, opts = {}) {
       const outs = [...T6OUT, 'hardware/docs/GroupA.md', 'hardware/docs/GroupB.md', 'hardware/docs/GroupC.md'].filter(f => !(role === 'P7' && f === opts.unwritten))
       if (opts.pageOutside) outs.push('tools/research/README.md')
       if (opts.fourthPage) outs.push('hardware/docs/GroupD.md')
+      if (role === 'P7') data.figures = opts.p7Figures || outs.filter(f => f.startsWith('hardware/docs/')).map(file => ({ file, line: 1, figure: 'stock' }))
       if (role === 'P7') { data.files = outs; data.group_pages = opts.pageOutside ? { A: 'hardware/docs/GroupA.md', B: 'tools/research/README.md', C: 'hardware/docs/GroupC.md' } : opts.samePages ? { A: 'hardware/docs/Power.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/Power.md' } : (opts.pagePower ? { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/GroupC.md' } : { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/GroupB.md', C: 'hardware/docs/GroupC.md' }); if (opts.fourthPage) data.group_pages.D = 'hardware/docs/GroupD.md' }
       else {
         data.reviewed = outs
@@ -826,6 +827,9 @@ async function main() {
   check(r.result.summary.budgets_missing.length === 0, 'T5: the shared part budgeted at its summed placements: complete')
   r = await runTask('T5', { selection: { R1: { f1: { part: 'X' } } }, p5Budgets: ['shared-part stock'], p5Conditional: ['shared-part stock'], p5Items: ['shared-part stock'], budgetValues: { 'shared-part stock': 'not applicable: no part is shared' } })
   check(r.result.summary.budgets_missing.length === 0, 'T5: shared-part stock not applicable with no shared part: complete')
+  // An alternate kept in two functions is shared too.
+  r = await runTask('T5', { selection: { R1: { f1: { part: 'A', alternate: 'X' } }, R8: { f2: { part: 'B', alternate: 'X' } } }, p5Budgets: ['shared-part stock'], p5Conditional: ['shared-part stock'], p5Items: ['shared-part stock'], budgetValues: { 'shared-part stock': 'not applicable: no part is shared' } })
+  check(r.result.summary.budgets_missing.includes('shared-part stock: X'), 'T5: an alternate kept in two functions owes shared-part stock')
   // A held part's failing live stock is superseded by its held quantity.
   r = await runTask('T2', { held: 500, heldChecks: true, heldAndLive: true })
   check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'held part with failing live stock: verified on its held quantity')
@@ -1276,6 +1280,12 @@ async function main() {
   // Each part is named on the page of its category's group.
   r = await runTask('T6', { ...selQ, partRows: ['part1', 'part4', 'part5', 'altS'].map(part => ({ function: 'f1', part, parts_line: 4, group_page: 'hardware/docs/GroupA.md' })) })
   check(r.result.summary.stopped === true && /group C page for part1/.test(r.result.summary.reasons[0]), 'T6: an R10 part named only on the group A page stops it')
+  // Every figure P7 wrote needs a check of its own.
+  r = await runTask('T6', { p7Figures: [{ file: 'hardware/docs/Parts.md', line: 1, figure: 'stock' }, { file: 'hardware/docs/Parts.md', line: 2, figure: '42 mA' }] })
+  check(r.result.summary.stopped === true && /figures P7 wrote without a check/.test(r.result.summary.reasons[0]), 'T6: a figure P7 wrote without a check stops it')
+  // A restarted P5 return of an earlier check is superseded too.
+  r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/T5/004-P5-restart.json', figureKind: 'other' })
+  check(r.result.summary.stopped === true, 'T6: a figure citing an earlier restarted P5 return stops it')
   // A figure citing an earlier check's P5 return is superseded whatever its kind.
   r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/T5/003-P5.json', figureKind: 'other' })
   check(r.result.summary.stopped === true, 'T6: a figure labelled other citing an earlier P5 return stops it')

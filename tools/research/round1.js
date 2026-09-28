@@ -333,14 +333,14 @@ const OWED_PARTS = Object.entries(A.selection || {}).flatMap(([cat, fns]) => Obj
 function p7Prompt() {
   return `${ctx('P7', '', 'P7')}
 
-Exception to the rule above: write the outputs listed under "Outputs" of Research.md into the working tree ${P.results}, which the session has merged with research/round1 before this task. List every file you write in files, repository-relative, and the page of each category group (A, B, C) in group_pages: three new files hardware/docs/NAME.md, NAME of letters, digits, _ or -, none of them an output listed here. Required among them: ${(A.t6_outputs || []).join(', ')}. Write them from the returns under ${P.results}/hardware/research/round1/ only, the parts in hardware/research/round1/selection.json, P5's budget and combinations, and the owner's decisions in the "Decision (owner, date)" column for Q4, Q8 and Q9. P5's budget and combinations are those of the last P5/P6 check, ${A.last_p56 || 'T5'}, as its critic upheld them.${MARKS.length ? ` State each of these on the pages as its state says: ${J(MARKS)}.` : ''} Do not commit. Write tools/jlc_stock.py to read DIGIKEY_ENV_FILE as well as the two variables, as tools/research/vendors.py does. Run ${T6_CHECKS} and report each as passed or not with its last lines.`
+Exception to the rule above: write the outputs listed under "Outputs" of Research.md into the working tree ${P.results}, which the session has merged with research/round1 before this task. List every file you write in files, repository-relative, every figure you write in figures, with its file and line and the figure as the page states it, and the page of each category group (A, B, C) in group_pages: three new files hardware/docs/NAME.md, NAME of letters, digits, _ or -, none of them an output listed here. Required among them: ${(A.t6_outputs || []).join(', ')}. Write them from the returns under ${P.results}/hardware/research/round1/ only, the parts in hardware/research/round1/selection.json, P5's budget and combinations, and the owner's decisions in the "Decision (owner, date)" column for Q4, Q8 and Q9. P5's budget and combinations are those of the last P5/P6 check, ${A.last_p56 || 'T5'}, as its critic upheld them.${MARKS.length ? ` State each of these on the pages as its state says: ${J(MARKS)}.` : ''} Do not commit. Write tools/jlc_stock.py to read DIGIKEY_ENV_FILE as well as the two variables, as tools/research/vendors.py does. Run ${T6_CHECKS} and report each as passed or not with its last lines.`
 }
 function p7CriticPrompt(p7) {
   const pages = [...new Set([...(A.t6_outputs || []).filter(f => f.startsWith('hardware/docs/')), ...Object.values((p7 && p7.group_pages) || {})])]
   const decided = Object.fromEntries(['Q4', 'Q8', 'Q9'].map(q => [q, (A.decisions || {})[q] || '']))
   return `${ctx('P7-critic', '', 'P7-critic')}
 
-You are the critic of P7. Exception to the rule above: you may correct the pages in ${P.results}; do not commit. figure_checks and sentence_issues describe the pages as they stand after your corrections; list every figure you checked, its file and return_file repository-relative, and its kind: budget or combination for one of P5, other for the rest. List in reviewed every file you checked, repository-relative; every file P7 listed is checked. Check every figure and every stated combination on the pages P7 wrote against the returns under ${P.results}/hardware/research/round1/: a budget or combination against the last P5/P6 check, ${A.last_p56 || 'T5'}, only, as its task.json marks it upheld, and the options chosen for Q4, Q8 and Q9 against the owner's decisions: ${J(decided)}. Check at least one figure on each of these pages: ${pages.join(', ')}; on hardware/docs/IOBoard.md a line's chosen part checked against hardware/research/round1/selection.json counts, and on hardware/docs/Research.md the status line checked against a run's task.json. Check every sentence against the writing rules in CONTRIBUTING.md.${MARKS.length ? ` Give in marked, by its 0-based index, the file and line where the pages state each of these as its state says: ${J(MARKS)}.` : ''}${OWED_PARTS.length ? ` Give in part_rows, for each of these parts under its function, the line of its row in hardware/docs/Parts.md and the group page that names it: ${J(OWED_PARTS)}.` : ''}${(A.jlc_stock_row || []).length ? ` Review tools/jlc_stock.py against each sentence of its row in the Outputs table, listed here, and give each, by its 0-based index, a verdict in jlc_stock_review with the line that does what it states and your reason: ${J(A.jlc_stock_row)}.` : ''} Apply the corrections, then run the three checks P7 ran on the tree you leave, ${T6_CHECKS}, and report each as passed or not with its last lines. P7's return:
+You are the critic of P7. Exception to the rule above: you may correct the pages in ${P.results}; do not commit. figure_checks and sentence_issues describe the pages as they stand after your corrections; list every figure you checked, every figure P7 lists in figures among them by the same file and figure text, its file and return_file repository-relative, and its kind: budget or combination for one of P5, other for the rest. List in reviewed every file you checked, repository-relative; every file P7 listed is checked. Check every figure and every stated combination on the pages P7 wrote against the returns under ${P.results}/hardware/research/round1/: a budget or combination against the last P5/P6 check, ${A.last_p56 || 'T5'}, only, as its task.json marks it upheld, and the options chosen for Q4, Q8 and Q9 against the owner's decisions: ${J(decided)}. Check at least one figure on each of these pages: ${pages.join(', ')}; on hardware/docs/IOBoard.md a line's chosen part checked against hardware/research/round1/selection.json counts, and on hardware/docs/Research.md the status line checked against a run's task.json. Check every sentence against the writing rules in CONTRIBUTING.md.${MARKS.length ? ` Give in marked, by its 0-based index, the file and line where the pages state each of these as its state says: ${J(MARKS)}.` : ''}${OWED_PARTS.length ? ` Give in part_rows, for each of these parts under its function, the line of its row in hardware/docs/Parts.md and the group page that names it: ${J(OWED_PARTS)}.` : ''}${(A.jlc_stock_row || []).length ? ` Review tools/jlc_stock.py against each sentence of its row in the Outputs table, listed here, and give each, by its 0-based index, a verdict in jlc_stock_review with the line that does what it states and your reason: ${J(A.jlc_stock_row)}.` : ''} Apply the corrections, then run the three checks P7 ran on the tree you leave, ${T6_CHECKS}, and report each as passed or not with its last lines. P7's return:
 ${J(p7)}`
 }
 
@@ -1435,9 +1435,16 @@ async function phaseP5P6() {
   // the Q4 and Q8 alternatives have one for each option class.
   // A part the effective selection keeps for more than one function owes
   // its own shared-part stock row; with one, the check is not optional.
+  // Every role counts: the kept part, its alternate, each Q alternative
+  // and that one's alternate, once per function that keeps it.
   const keptBy = new Map()
-  for (const fns of Object.values(A.selection || {})) for (const e of Object.values(fns)) if (e.part) keptBy.set(e.part, (keptBy.get(e.part) || 0) + 1)
-  const shared = [...keptBy].filter(([, n]) => n > 1).map(([part]) => part)
+  for (const [cat, fns] of Object.entries(A.selection || {})) {
+    for (const [fn, e] of Object.entries(fns)) {
+      const roles = [e.part, e.alternate, ...(e.q_alternatives || []).flatMap(q => [q.part, q.alternate])].filter(Boolean)
+      for (const part of new Set(roles)) keptBy.set(part, new Set([...(keptBy.get(part) || []), `${cat}\u0000${fn}`]))
+    }
+  }
+  const shared = [...keptBy].filter(([, fns]) => fns.size > 1).map(([part]) => part)
   const conditional = n => (A.p5_conditional || []).some(c => (n === c || n.startsWith(`${c}: `)) && !(c === 'shared-part stock' && shared.length))
   const counts = x => x.upheld === true && !readsNone(x.source) && !!isTime(x.read_at) && !notFound(x.value)
     && (!/^(not applicable|n\/a|does not apply)\b/i.test(String(x.value).trim()) || conditional(String(x.item || '')))
@@ -1496,12 +1503,16 @@ if (TASK === 'T6') {
     // from the returns; each needs at least one figure checked.
     const figPages = [...(A.t6_outputs || []).filter(f => f.startsWith('hardware/docs/')), ...Object.values((p7 && p7.group_pages) || {})]
     for (const f of new Set(figPages)) if (!named.some(x => x.file === f)) failed.push(`no figure checked on ${f}`)
+    // Every figure P7 wrote has a check of its own.
+    const unchecked = ((p7 && p7.figures) || []).filter(w => !named.some(x => x.file === w.file && String(x.figure).trim() === String(w.figure).trim()))
+    if (unchecked.length) failed.push(`${unchecked.length} figures P7 wrote without a check: ${unchecked.slice(0, 5).map(w => `${w.file}: ${w.figure}`).join('; ')}`)
+    if (p7 && !(p7.figures || []).length) failed.push('P7 listed no figure it wrote')
     const wrong = (critic.figure_checks || []).filter(f => !f.agrees)
     if (wrong.length) failed.push(`${wrong.length} figures disagree with the returns`)
     // A budget or combination comes from the last P5/P6 check: one checked
     // against any other file is not checked. Other figures, an earlier
     // check's open items or a run's status among them, may cite any return.
-    const p5File = /^hardware\/research\/round1\/([^/]+)\/\d+-P5(-critic)?\.json$/
+    const p5File = /^hardware\/research\/round1\/([^/]+)\/\d+-P5(-critic)?(-\d+)?(-restart)?\.json$/
     const stale = named.filter(x => (['budget', 'combination'].includes(x.kind) && !String(x.return_file).startsWith(`hardware/research/round1/${A.last_p56}/`))
       || ((p5File.exec(String(x.return_file)) || [])[1] || A.last_p56) !== A.last_p56)
     if (stale.length) failed.push(`${stale.length} budgets or combinations not checked against the last P5/P6 check, ${A.last_p56}`)

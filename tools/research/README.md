@@ -123,21 +123,21 @@ the items in the arguments:
     questions that only feed Q4, Q8 or Q9 aside), read another specification
     (the files under `hardware/docs/`, Research.md without the rows under
     "Raised by P1" and with the Decision cells of Q4, Q8 and Q9 blank), or,
-    for R5 to R8, ran on other parts of T2 and T4 than `selection.json` keeps
-    now: another kept part, alternate or Q alternative in one of their
-    categories, whatever its function is named.
+    for R5 to R8, ran on other upstream entries of T2 and T4 than
+    `selection.json` keeps now: a function bound to another part, alternate or
+    Q alternative, or decided again by a later run.
 - T6 while a function of a category is bound to another part, alternate or Q
   alternative than at the last P5/P6 check, or was decided again by a later
   run; while that check ran without P5, P6 or either critic, returned no
   upheld combination that fits, with its outputs, bind order, resources,
   source and time, has combinations, budgets or assumptions without source and
   time or assumptions without a value, lacks an upheld budget with a value
-  read (`shared-part stock` for each part `selection.json` keeps for more than
-  one function, not applicable only when there is none) (not unknown, not
-  known or not stated), its source and its reading time for an item of
-  `categories.json` `p5_budgets` (named as listed or `NAME: DETAIL`, every row
-  of the item counting; the Q4 and Q8 alternatives once for each option class
-  of `q_options`, as `Q4 alternatives: CLASS`; only an item of
+  read (`shared-part stock` for each part `selection.json` keeps in more than
+  one function, in any role, not applicable only when there is none) (not
+  unknown, not known or not stated), its source and its reading time for an
+  item of `categories.json` `p5_budgets` (named as listed or `NAME: DETAIL`,
+  every row of the item counting; the Q4 and Q8 alternatives once for each
+  option class of `q_options`, as `Q4 alternatives: CLASS`; only an item of
   `p5_conditional` may be `not applicable: REASON`, `N/A: REASON` or
   `does not apply: REASON`) or for a rail, I²C bus or other instance its
   critic lists as not budgeted, has an upheld budget not within its limit,
@@ -312,11 +312,12 @@ ending in `.json`; text after the path, such as `:34` or `#L34`, is not part
 of it, and `record` reads the same path. Each check gives its kind: budget,
 combination or other. A budget or combination checked against any file but the
 last P5/P6 check's is superseded, and so is any figure checked against an
-earlier check's P5 return, whatever its kind; another figure, such as a run's
-status line, may cite an earlier check's other files. P7 and its critic are
-given the three commands, the pages that need a figure checked, and the path
-rules for group pages and figure checks that `round1.js` and `record` apply.
-The schemas ask P5, P6 and their critics to write a conflict's parts as
+earlier check's P5 return (a restarted one included), whatever its kind; every
+figure P7 lists as written needs a check of its own; another figure, such as a
+run's status line, may cite an earlier check's other files. P7 and its critic
+are given the three commands, the pages that need a figure checked, and the
+path rules for group pages and figure checks that `round1.js` and `record`
+apply. The schemas ask P5, P6 and their critics to write a conflict's parts as
 `selection.json` writes them and each category by its ID alone.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.

@@ -1529,13 +1529,38 @@
       "C"
      ],
      "description": "the page written for each category group: a new file hardware/docs/NAME.md in the form of Power.md, none of them an output the Outputs table names"
+    },
+    "figures": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "file": {
+        "type": "string"
+       },
+       "line": {
+        "type": "integer"
+       },
+       "figure": {
+        "type": "string",
+        "description": "the figure as the page states it, with its unit"
+       }
+      },
+      "required": [
+       "file",
+       "line",
+       "figure"
+      ]
+     },
+     "description": "every figure written on the pages, repository-relative file and line; the critic checks each by the same file and figure text"
     }
    },
    "required": [
     "files",
     "corrections",
     "checks",
-    "group_pages"
+    "group_pages",
+    "figures"
    ]
   },
   "P7-critic": {

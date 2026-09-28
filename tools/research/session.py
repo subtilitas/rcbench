@@ -521,16 +521,6 @@ def effective_selection(results, pending=None, before=None):
     return eff
 
 
-def kept_parts(eff, categories):
-    """The parts each category keeps, whatever its functions are named:
-    each kept part with its alternate and its Q alternatives."""
-    return {c: sorted((e.get("part") or "", e.get("alternate") or "",
-                       sorted((q.get("part") or "", q.get("alternate") or "")
-                              for q in e.get("q_alternatives") or []))
-                      for e in eff.get(c, {}).values())
-            for c in categories}
-
-
 def changed_under(tree, rel):
     return [p for p in changed(tree) if p.startswith(rel)]
 
@@ -802,9 +792,16 @@ def stale_selections(results, categories, rows, now, upstream=(),
         return spec_at[commit]
 
     def up_of(before):
+        # Each upstream function's part, alternate, Q alternatives and the
+        # run that qualified them: a swap or a requalification is a change.
         if before not in up_at:
-            up_at[before] = kept_parts(effective_selection(
-                results, before=before), upstream)
+            sel = effective_selection(results, before=before)
+            up_at[before] = {(u, fn): (e.get("part"), e.get("alternate"),
+                                       e.get("run"), json.dumps(
+                                           e.get("q_alternatives") or [],
+                                           sort_keys=True))
+                             for u in upstream
+                             for fn, e in sel.get(u, {}).items()}
         return up_at[before]
 
     out = []
