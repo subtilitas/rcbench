@@ -631,8 +631,9 @@ def t6_open(results):
     # A conflict's part points at every function any run selected it for,
     # in every category, retired functions aside: each of those functions
     # must be covered, and each category the conflict names or its parts
-    # belong to.
+    # belong to. A part only retired functions kept points at none.
     part_fn = {}
+    selected = set()
     for _, t in done:
         for c, entries in ((t.get("summary") or {}).get("selection")
                            or {}).items():
@@ -642,21 +643,30 @@ def t6_open(results):
                 for part in [e.get("part"), e.get("alternate")] + [
                         p for q in e.get("q_alternatives") or []
                         for p in (q.get("part"), q.get("alternate"))]:
+                    if part:
+                        selected.add(part)
                     if part and e["function"] in eff.get(c, {}):
                         part_fn.setdefault(part, set()).add(
                             (c, e["function"]))
 
-    # The category IDs a conflict's or gap's category names; a part no
-    # selection names, or a category that names no ID, is never covered.
+    # The category IDs a conflict's or gap's category names, a range such
+    # as R5 to R8 naming each ID in it; a category holding any other word
+    # names none. A part that points at no function, or a category that
+    # names no ID, is never covered.
     def ids(cat):
-        return set(re.findall(r"\bR\d+\b", str(cat or "")))
+        text = re.sub(r"\bR(\d+)\s*(?:-|–|—|to|through)\s*R(\d+)\b",
+                      lambda m: " ".join(f"R{i}" for i in range(
+                          int(m[1]), int(m[2]) + 1)), str(cat or ""))
+        if re.sub(r"\bR\d+\b|\band\b|[\s,;/&]", "", text):
+            return set()
+        return set(re.findall(r"\bR\d+\b", text))
     unknown = set()
 
     def uncovered_items(check, fn_done, covered):
         out_items = []
         for x in (check.get("summary") or {}).get("conflicts", []):
             parts = x.get("parts") or []
-            unknown.update(p for p in parts if p not in part_fn)
+            unknown.update(p for p in parts if p not in selected)
             fns = set().union(*(part_fn.get(p, set()) for p in parts))
             named = [ids(c) for c in x.get("categories") or []]
             cats = set().union(*named) | {c for c, _ in fns}

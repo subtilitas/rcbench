@@ -149,13 +149,15 @@ the items in the arguments:
   assumption it rejected; while it lists a conflict or gap that no round-2
   P2-P4 follow-up after the check before it covered, or an earlier check lists
   one that no P2-P4 follow-up of either round after that check covered: each
-  category a gap's category names by its ID, and each a conflict's categories
-  name and every function any run selected one of its parts for (as the kept
-  part, its alternate, a Q alternative or that one's alternate; a retired
-  function aside), each researched to a verified part (never the first check's
-  items, a conflict naming a part no selection names, which `prepare` names,
-  or a category naming no ID); and while a run that decides an R3 function was
-  not given the Q9 decision now in force.
+  category a gap's category names by its ID or in a range such as `R5 to R8`,
+  and each a conflict's categories name and every function any run selected
+  one of its parts for (as the kept part, its alternate, a Q alternative or
+  that one's alternate; a retired function aside), each researched to a
+  verified part (never the first check's items, a conflict naming a part no
+  run selected, which `prepare` names, or one only retired functions kept, or
+  a category holding a word other than IDs, ranges, `and` and list
+  separators); and while a run that decides an R3 function was not given the
+  Q9 decision now in force.
 
 Then, before T6, it merges `research/round1` into the results tree. The gates
 read committed run records and the plan on `research/round1`. The arguments
