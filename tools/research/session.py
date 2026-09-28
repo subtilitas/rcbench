@@ -9,7 +9,7 @@ around each task:
                        [--followup FILE] [--db FILE] [--no-fetch]
     session.py record TASK OUTPUT --base DIR [--name N]
     session.py raised --base DIR [--run T1|FU-N]
-    session.py script RUN --base DIR
+    session.py script RUN --base DIR [--out DIR]
 
 `check` holds the files in tools/research/ to the plan: the agent counts of
 the layout, the categories and the rows that carry "P1 asks", the schemas,
@@ -31,8 +31,9 @@ directory (after T6, the pages P7 wrote as well).
 `raised` appends the questions a P1 run confirmed under "Raised by P1" in a
 working tree of `research/round1` and commits them. Nothing is pushed.
 
-`script` writes DIR/round1-RUN.js, round1.js with DIR/args-RUN.json in place
-of the Workflow tool's `args`, for the Workflow tool's scriptPath.
+`script` writes round1-RUN.js, round1.js with DIR/args-RUN.json in place of
+the Workflow tool's `args`, for the Workflow tool's scriptPath, into DIR or
+the directory --out names.
 """
 
 import argparse
@@ -1806,7 +1807,11 @@ def cmd_script(args):
                        f"{a.get('run_id')}, from {prepared}.",
                        embedded] + lines[i + 1:]
     # Written beside the target, read back from the file, then renamed.
-    target = os.path.join(base, f"round1-{args.run}.js")
+    out_dir = os.path.abspath(os.path.expanduser(args.out)) if args.out \
+        else base
+    if not os.path.isdir(out_dir):
+        raise SystemExit(f"{out_dir} is not a directory")
+    target = os.path.join(out_dir, f"round1-{args.run}.js")
     tmp = target + ".tmp"
     with open(tmp, "w") as f:
         f.write("\n".join(out))
@@ -1862,6 +1867,8 @@ def main():
     w = sub.add_parser("script")
     w.add_argument("run", help="T1 to T6, or FU-N for a follow-up")
     w.add_argument("--base", required=True)
+    w.add_argument("--out", help="directory to write round1-RUN.js to, "
+                   "one that the Workflow tool reads (default: the base)")
     w.set_defaults(fn=cmd_script)
     args = ap.parse_args()
     return args.fn(args)
