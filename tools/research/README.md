@@ -101,20 +101,21 @@ the items in the arguments:
     and IOBoard.md), or, for R5 to R8, predates a change to a part of T2 or
     T4.
 - T6 while a part changed after the last P5/P6 check; while that check ran
-  without P5, P6 or either critic, returned no upheld combination with its
-  source and time, has combinations or budgets without source and time, lacks
-  an upheld budget with a value read, its source and its reading time for an
-  item of `categories.json` `p5_budgets` (named as listed or `NAME: DETAIL`;
-  only an item of `p5_conditional` may be `not applicable: REASON`), or left a
-  conflict, gap, combination or budget its critic did not rule on, or a
-  combination or budget it rejected; while it, or an earlier check, lists a
-  conflict or gap that no round-2 P2-P4 follow-up covered after that check
-  (for the last check, after the check before it): a gap's category, and a
-  conflict's named categories and every function any run selected one of its
-  parts for (as the kept part, its alternate, a Q alternative or that one's
-  alternate), each researched to a verified part (the first check's items are
-  never covered); and while a run that decides an R3 function was not given
-  the Q9 decision now in force.
+  without P5, P6 or either critic, returned no upheld combination that fits,
+  with its source and time, has combinations, budgets or assumptions without
+  source and time, lacks an upheld budget with a value read, its source and
+  its reading time for an item of `categories.json` `p5_budgets` (named as
+  listed or `NAME: DETAIL`; only an item of `p5_conditional` may be
+  `not applicable: REASON`), or left a conflict, gap, combination, budget or
+  assumption its critic did not rule on, or a combination, budget or
+  assumption it rejected; while it, or an earlier check, lists a conflict or
+  gap that no round-2 P2-P4 follow-up covered after that check (for the last
+  check, after the check before it): a gap's category, and a conflict's named
+  categories and every function any run selected one of its parts for (as the
+  kept part, its alternate, a Q alternative or that one's alternate), each
+  researched to a verified part (the first check's items are never covered);
+  and while a run that decides an R3 function was not given the Q9 decision
+  now in force.
 
 Then, before T6, it merges `research/round1` into the results tree. The gates
 read committed run records and the plan on `research/round1`. The arguments
@@ -161,16 +162,17 @@ may pass the stock gate on a `held quantity` check in place of `stock` and
 A return whose `category` names another category counts as not returned. Only
 the kept part's rule-5 alternate gates its selection, and the alternate of a
 part on the board must be on the board; a first-ranked part that is also a Q
-alternative's alternate needs the alternate's checks, and an alternate several
-primaries name is verified for the first only (the kept part, then the Q
-alternatives in order). A category whose chain failed is left out of the run's
-selection, so the gates read the run before it. Each assumption needs a
-confirmed question of its own, whose `for_where` is the assumption's location.
-P0 counts a host with two rows, or a status written as not read, as not read.
-A P0 row counts only at its host's endpoint: an API client's command with the
-probe, a page client's probe URL, or with no probe a page on the host itself.
-The P7 critic checks at least one figure on each group page and each output
-under `hardware/docs/`.
+alternative's alternate keeps its own verification, and holds the alternate
+role only with its compatibility checks, and an alternate several primaries
+name is verified for the first only (the kept part, then the Q alternatives in
+order). A category whose chain failed is left out of the run's selection, so
+the gates read the run before it. Each assumption needs a confirmed question
+of its own, whose `for_where` is the assumption's location. P0 counts a host
+with two rows, or a status written as not read, as not read. A P0 row counts
+only at its host's endpoint: an API client's command with the probe, a page
+client's probe URL, or with no probe a page on the host itself. The P7 critic
+checks at least one figure on each group page and each output under
+`hardware/docs/`.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared

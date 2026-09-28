@@ -149,7 +149,9 @@ async function runTask(task, opts = {}) {
     if (role === 'P5' && opts.p5Empty) Object.assign(data, { combinations: [], budgets: [] })
     if (role === 'P5' && opts.unsourcedCombos) data.combinations = data.combinations.map(x => ({ ...x, source: '' }))
     if (role === 'P5' && opts.p5Items) data.budgets = opts.p5Items.map(item => ({ item, value: (opts.budgetValues || {})[item] || 'v', source: opts.blankSource ? '   ' : 's', read_at: opts.budgetUndated ? '' : '2026-09-28T10:00:00Z' }))
-    if (role === 'P5-critic') for (const k of ['combination_verdicts', 'budget_verdicts']) data[k] = data[k].map((v, index) => ({ ...v, index, holds: !(opts.rejectBudget && k === 'budget_verdicts' && index === 0) }))
+    if (role === 'P5') data.combinations = data.combinations.map(x => ({ ...x, fits: !opts.noFit }))
+    if (role === 'P5' && opts.unsourcedAssumption) data.assumptions = data.assumptions.map(x => ({ ...x, source: '' }))
+    if (role === 'P5-critic') for (const k of ['combination_verdicts', 'budget_verdicts', 'assumption_verdicts']) data[k] = data[k].map((v, index) => ({ ...v, index, holds: !(opts.rejectBudget && k === 'budget_verdicts' && index === 0) && !(opts.rejectAssumption && k === 'assumption_verdicts' && index === 0) }))
     if (role === 'P1' && opts.qCategory) data.questions = data.questions.map(q => ({ ...q, category: 'R99', source: 'mock' }))
     if (role === 'P1' && opts.decisionNone) data.questions = data.questions.map(q => ({ ...q, blocks: 'decision-only', decision: 'none' }))
     if (role === 'P1' && opts.contradict) data.values = data.values.map(v => ({ ...v, question: -1 }))
@@ -563,7 +565,7 @@ async function main() {
   check(r1(r).selection[0].part === null, 'function with no requirement: open')
   // A Q alternative whose alternate is the kept part: the kept part needs the alternate's checks.
   r = await runTask('T4', { qAltBack: true, p4parts: ['part3'] })
-  check(r.result.summary.results.find(c => c.category === 'R10').ledger.some(l => l.part === 'part1' && l.status === 'not verified'), 'kept part that is a Q alternative\'s alternate: compatibility checks required')
+  check(r.result.summary.results.find(c => c.category === 'R10').ledger.some(l => l.part === 'part1' && l.as === 'alternate' && l.status === 'not verified'), 'kept part that is a Q alternative\'s alternate: compatibility checks required for that role')
   // A Q alternative outside the decision's function is not one.
   r = await runTask('T2', { qAlt: true, p4parts: ['part3', 'altQ'] })
   check(r1(r).selection[0].q_alternatives.length === 0 && r.result.followUps.some(f => /implements no decision/.test(f.reason)), 'Q alternative on a function with no decision: not verified as one')
@@ -628,6 +630,10 @@ async function main() {
   // An alternate with fewer placements than its primary is no second source.
   r = await runTask('T2', { altFewer: true, verify: ['altF'] })
   check(r1(r).selection[0].part === 'part1' && r1(r).selection[0].second_source_missing === true, 'alternate with fewer placements: second source missing')
+  // A first-ranked part that is also a Q alternative's alternate keeps its primary result.
+  r = await runTask('T4', { qAltBack: true, p4parts: ['part3'] })
+  const r10b = r.result.summary.results.find(c => c.category === 'R10')
+  check(r10b.selection[0].part === 'part1' && r10b.selection[0].q_alternatives[0].alternate_status === 'not verified', 'part in both roles: selected as primary, alternate role not verified without its compatibility checks')
   // A part refuted only as an alternate keeps its own place on the shortlist.
   r = await runTask('T2', { altName: 'part2', verify: ['part2'], refute: ['P4-stock-R1:part1', 'P4-datasheet-R1:part2'] })
   check(r1(r).selection[0].part === 'part2', 'part refuted as an alternate only: still a candidate in its own right')
@@ -655,6 +661,14 @@ async function main() {
   // T1 returns each category's inventory from P1 and its critic.
   r = await runTask('T1')
   check(r.result.summary.inventory && Array.isArray(r.result.summary.inventory.R1) && r.result.summary.inventory.R1.length > 0, 'T1: inventory per category')
+  // P5's assumptions are sourced and ruled on.
+  r = await runTask('T5', { unsourcedAssumption: true })
+  check(r.result.summary.unsourced_items > 0, 'T5: an unsourced assumption is counted')
+  r = await runTask('T5', { rejectAssumption: true })
+  check(r.result.summary.rejected_items === 1, 'T5: a rejected assumption is counted')
+  // A combination that does not fit supports nothing.
+  r = await runTask('T5', { noFit: true })
+  check(r.result.summary.missing_checks.includes('P5 combinations'), 'T5: no fitting combination is a missing check')
   // Combinations need their source and time.
   r = await runTask('T5', { unsourcedCombos: true })
   check(r.result.summary.missing_checks.includes('P5 combinations') && r.result.summary.unsourced_items > 0, 'T5: unsourced combinations are no combination')

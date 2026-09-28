@@ -256,7 +256,7 @@ Read every return under ${P.results}/hardware/research/round1/ (T2, T3, T4 and e
 function p5CriticPrompt(p5) {
   return `${ctx('P5-critic', '', 'P5-critic')}
 
-You are the critic of P5. Re-derive each conflict, each combination and each budget below by its 0-based index and give every one a verdict (conflict_verdicts as verdicts, combination_verdicts, budget_verdicts); add conflicts P5 missed. P5's return:
+You are the critic of P5. Re-derive each conflict, each combination, each budget and each assumption below by its 0-based index and give every one a verdict (conflict_verdicts as verdicts, combination_verdicts, budget_verdicts, assumption_verdicts); an assumption holds when the tree does not state the value and the value P5 assumed is sourced and reasonable. Add conflicts P5 missed. P5's return:
 ${J(p5)}`
 }
 function p6Prompt() {
@@ -766,7 +766,7 @@ async function verifyCategory(cat, functions, bundle) {
           else if (a) kinds.set(a, 'alternate')
         }
         // A first-ranked part that is also an alternate is checked as one.
-        for (const [part, kind] of kinds) want.push({ function: f.function, part, kind: alsoAlternate.has(part) ? 'alternate' : kind })
+        for (const [part, kind] of kinds) want.push({ function: f.function, part, kind, alsoAlternate: alsoAlternate.has(part) })
       }
     }
     const got = [['stock', st], ['datasheet', ds]].filter(([, v]) => v)
@@ -799,7 +799,9 @@ async function verifyCategory(cat, functions, bundle) {
         // Rule 6: a passing held quantity supersedes the live stock and
         // presale readings of a held part.
         const heldRoute = v.verifier === 'stock' && onBoard(cand) && Number(cand && cand.held) > 0 && (v.checks || []).some(c => c.figure === 'held quantity' && c.agrees && c.passes === true)
-        const bad = (v.checks || []).filter(c => !(heldRoute && (c.figure === 'stock' || c.figure === 'presale')) && (!c.agrees || c.passes !== true))
+        // Compatibility checks bear on a part's alternate role only.
+        const compat = c => c.figure === 'pin-for-pin match' || c.figure === 'functional match'
+        const bad = (v.checks || []).filter(c => !(heldRoute && (c.figure === 'stock' || c.figure === 'presale')) && !(e.kind !== 'alternate' && compat(c)) && (!c.agrees || c.passes !== true))
         if (bad.length) { v.verdict = 'refuted'; v.refutation = `checks disagree or fail: ${bad.map(c => c.figure).join(', ')}`; continue }
         if (!covered(v, cand)) { v.verdict = 'incomplete'; v.missing = requiredChecks(v.verifier, cand, v.kind).filter(n => !(v.checks || []).some(c => c.figure === n)) }
       }
@@ -840,6 +842,16 @@ async function verifyCategory(cat, functions, bundle) {
       // The pair is paid for here from the free agents; run() starts it.
       if (!takeExtra(2)) { followUps.push({ role: 'P4', category: cat, function: e.function, part: next.part, reason: 'no free agents for the next pair' }); continue }
       queue.push({ only: { ...next, function: e.function } })
+    }
+    // A first-ranked part that is also a Q alternative's alternate: its
+    // primary result stands as it is; the alternate relationship holds when
+    // that result is a verification and its compatibility checks pass.
+    for (const e of byPart.values()) {
+      if (!e.alsoAlternate) continue
+      const primary = [...ledger].reverse().find(l => l.function === e.function && l.part === e.part && l.as === 'primary')
+      const fits = e.verdicts.some(v => v.verifier === 'datasheet' && v.verdict === 'confirmed' && ['pin-for-pin match', 'functional match'].every(n => (v.checks || []).some(c => c.figure === n && c.agrees && c.passes === true && !readsNone(c.read) && !readsNone(c.source) && !readsNone(c.read_at))))
+      const status = primary && primary.status === 'refuted' ? 'refuted' : primary && primary.status.startsWith('verified') && fits ? 'verified' : 'not verified'
+      ledger.push({ function: e.function, part: e.part, as: 'alternate', status })
     }
     if (only) continue
     // Figures are verified once, by the first pair. Each name in
@@ -1096,6 +1108,7 @@ async function p5Chain() {
     conflicts: critiqued('P5', p5.conflicts || [], critic),
     combinations: ruled(p5.combinations || [], critic && critic.combination_verdicts, critic, 'P5'),
     budgets: ruled(p5.budgets || [], critic && critic.budget_verdicts, critic, 'P5'),
+    assumptions: ruled(p5.assumptions || [], critic && critic.assumption_verdicts, critic, 'P5'),
   }
 }
 async function p6Chain() {
@@ -1117,7 +1130,7 @@ async function phaseP5P6() {
   b = b || { gaps: [], missing: 'P6' }
   for (const c of a.conflicts) followUps.push({ role: 'P5', item: c, reason: 'conflict' })
   for (const g of b.gaps) followUps.push({ role: 'P6', item: g, reason: 'gap' })
-  const items = [...(a.combinations || []), ...(a.budgets || [])]
+  const items = [...(a.combinations || []), ...(a.budgets || []), ...(a.assumptions || [])]
   const unchecked = [...items, ...a.conflicts, ...b.gaps].filter(x => x.unchecked).length
   // A combination or budget the critic rejected is not on the pages, so it
   // is unresolved until a later check replaces it.
@@ -1136,11 +1149,11 @@ async function phaseP5P6() {
   const budgetsMissing = a.missing ? [] : (A.p5_budgets || []).filter(n => !upheld.some(i => i === n || i.startsWith(`${n}: `)))
   for (const n of budgetsMissing) followUps.push({ role: 'P5', item: n, reason: 'budget the P5 row names not returned and upheld' })
   // A combination counts with its source and time, and upheld.
-  if (!a.missing && !(a.combinations || []).some(x => x.upheld === true && !readsNone(x.source) && !readsNone(x.read_at))) missingChecks.push('P5 combinations')
-  const unsourced = [...(a.combinations || []), ...(a.budgets || [])].filter(x => readsNone(x.source) || readsNone(x.read_at)).length
+  if (!a.missing && !(a.combinations || []).some(x => x.upheld === true && x.fits === true && !readsNone(x.source) && !readsNone(x.read_at))) missingChecks.push('P5 combinations')
+  const unsourced = [...(a.combinations || []), ...(a.budgets || []), ...(a.assumptions || [])].filter(x => readsNone(x.source) || readsNone(x.read_at)).length
   if (!a.missing && !(a.budgets || []).length) missingChecks.push('P5 budgets')
   for (const m of missingChecks) followUps.push({ role: m, reason: `${m} returned nothing; the check did not run` })
-  return { conflicts: a.conflicts, combinations: a.combinations || [], budgets: a.budgets || [], gaps: b.gaps,
+  return { conflicts: a.conflicts, combinations: a.combinations || [], budgets: a.budgets || [], assumptions: a.assumptions || [], gaps: b.gaps,
     missing_checks: missingChecks, unchecked_items: unchecked, rejected_items: rejected.length, budgets_missing: budgetsMissing, unsourced_items: unsourced }
 }
 

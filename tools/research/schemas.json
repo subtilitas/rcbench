@@ -1266,12 +1266,22 @@
        },
        "why": {
         "type": "string"
+       },
+       "source": {
+        "type": "string",
+        "description": "where the assumed value comes from"
+       },
+       "read_at": {
+        "type": "string",
+        "description": "the time the value was read or set"
        }
       },
       "required": [
        "item",
        "value",
-       "why"
+       "why",
+       "source",
+       "read_at"
       ]
      }
     }
@@ -1357,13 +1367,36 @@
        "reason"
       ]
      }
+    },
+    "assumption_verdicts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer"
+       },
+       "holds": {
+        "type": "boolean"
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "holds",
+       "reason"
+      ]
+     }
     }
    },
    "required": [
     "verdicts",
     "added",
     "combination_verdicts",
-    "budget_verdicts"
+    "budget_verdicts",
+    "assumption_verdicts"
    ]
   },
   "P6": {
