@@ -253,10 +253,12 @@ or not read, or as `none` other than `end-of-life notices` and
 source or a reading time of the task, shows nothing. `longevity commitment`
 and `market introduction`, which the lifecycle table records without a gate
 (S5 records a commitment and does not require one), may read
-`not read: REASON`: that is recorded, neither passing nor failing, and listed
-for the owner as an unread manufacturer status is. A placeholder reason
-(`none`, `N/A`, `-`, `unknown`) is none, and a refuted verdict whose only
-failing checks are such readings is a confirmation. A reading time is an ISO
+`not read: REASON` in the stock verifier's return: that is recorded, neither
+passing nor failing, and listed for the owner as an unread manufacturer
+status is. A datasheet requirement of the same name is a requirement. A
+placeholder reason (`none`, `N/A`, `-`, `unknown`) is none, and a refuted
+verdict that states no refutation and whose only failing checks are such
+readings is a confirmation; one that states a refutation is ruled on. A reading time is an ISO
 (International Organization for Standardization) 8601 date or date-time at the
 start of the text, on a date the calendar has (2026-02-31 is not one); a note,
 a second reading's time or a range's end may follow it, as in

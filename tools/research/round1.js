@@ -944,10 +944,14 @@ function notReadWithReason(text) {
   return !!reason && !readsNone(reason) && !/^(unknown|not known|not stated)$/i.test(reason)
 }
 
+// A lifecycle reading of the stock verifier that is recorded as not read.
+// A datasheet check of the same name is a requirement, not this reading.
+const recordedUnread = (c, verifier) => verifier === 'stock' && RECORDED_ONLY.has(c.figure) && notReadWithReason(c.read)
+
 // A check written as not read, as none where a value exists to be read, or
 // without its source or a reading time of this task, shows nothing.
-function shown(c) {
-  const read = RECORDED_ONLY.has(c.figure) && notReadWithReason(c.read) ? true
+function shown(c, verifier) {
+  const read = recordedUnread(c, verifier) ? true
     : !(MAY_READ_NONE.has(c.figure) ? unread(c.read) : readsNone(c.read))
   return read && !readsNone(c.source) && readInRun(c.read_at)
 }
@@ -958,7 +962,7 @@ function covered(v, cand) {
   if (!cand) return false
   const req = requiredChecks(v.verifier, cand, v.kind)
   if (v.verifier === 'datasheet' && !req.length) return false
-  const have = new Set((v.checks || []).filter(shown).map(c => c.figure))
+  const have = new Set((v.checks || []).filter(c => shown(c, v.verifier)).map(c => c.figure))
   // Rule 6: a part the owner holds passes rule 4 on the held quantity, in
   // place of the live stock and presale.
   const held = v.verifier === 'stock' && onBoard(cand) && Number(cand.held) > 0 && have.has('held quantity')
@@ -1064,7 +1068,7 @@ async function verifyCategory(cat, functions, bundle, claims) {
         if (!byPart.has(k)) { followUps.push({ role: 'P4', category: cat, function: p.function, part: p.part, reason: `${kind} verifier listed a part it was not asked to verify; ignored` }); continue }
         const e = byPart.get(k)
         e.verdicts.push({ verifier: kind, kind: e.kind, reported_kind: p.kind, verdict: p.verdict, refutation: p.refutation, checks: p.checks })
-        for (const c of p.checks || []) if (RECORDED_ONLY.has(c.figure) && notReadWithReason(c.read) && shown(c)) followUps.push({ role: 'P4', category: cat, function: p.function, part: p.part, figure: c.figure, reason: `recorded as not read: ${String(c.read).trim()}`, notice: true })
+        for (const c of p.checks || []) if (recordedUnread(c, kind) && shown(c, kind)) followUps.push({ role: 'P4', category: cat, function: p.function, part: p.part, figure: c.figure, reason: `recorded as not read: ${String(c.read).trim()}`, notice: true })
         byPart.set(k, e)
       }
     }
@@ -1092,12 +1096,13 @@ async function verifyCategory(cat, functions, bundle, claims) {
         // A reading that moves or always passes, and a requirement P2 gave no
         // value for, differs from the value stated without refuting.
         const passesOnly = c => MOVING.has(c.figure) || (v.verifier === 'datasheet' && added.has(c.figure))
-        const recordedUnread = c => RECORDED_ONLY.has(c.figure) && notReadWithReason(c.read)
-        const fails = c => !recordedUnread(c) && ((!c.agrees && !passesOnly(c)) || c.passes !== true)
-        // A refutation whose only failing checks are readings recorded as
-        // not read is none: they neither pass nor fail.
+        const unreadHere = c => recordedUnread(c, v.verifier)
+        const fails = c => !unreadHere(c) && ((!c.agrees && !passesOnly(c)) || c.passes !== true)
+        // A refutation that states nothing, and whose only failing checks
+        // are readings recorded as not read, is none: they neither pass nor
+        // fail. One that states a reason is ruled on as any other.
         const rawFails = c => (!c.agrees && !passesOnly(c)) || c.passes !== true
-        if (v.verdict === 'refuted' && (v.checks || []).some(c => recordedUnread(c) && rawFails(c)) && (v.checks || []).every(c => !rawFails(c) || recordedUnread(c) || offRoute(c))) {
+        if (v.verdict === 'refuted' && noRefutation(v.refutation) && (v.checks || []).some(c => unreadHere(c) && rawFails(c)) && (v.checks || []).every(c => !rawFails(c) || unreadHere(c) || offRoute(c))) {
           v.verdict = 'confirmed'
           v.refutation = ''
         }

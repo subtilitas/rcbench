@@ -265,7 +265,7 @@ async function runTask(task, opts = {}) {
           .map(c => opts.heldAndLive && c.figure === 'stock' ? { ...c, passes: false } : c)
           .map(c => ({ ...c, ...((opts.edit || {})[c.figure] || {}), ...(kind === 'stock' ? opts.stockPatch || {} : {}) }))
           .map(c => ({ ...c, ...(((opts.editPart || {})[`${base}:${pt}`] || {})[c.figure] || {}) }))
-      data.parts = (opts.omit || []).includes(base) || (opts.omitPart || []).includes(`${base}:${part}`) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part, opts.bothRoles && !only ? 'alternate' : undefined), refutation: refute ? 'mock' : '' }]
+      data.parts = (opts.omit || []).includes(base) || (opts.omitPart || []).includes(`${base}:${part}`) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part, opts.bothRoles && !only ? 'alternate' : undefined), refutation: refute ? (opts.refutationText === undefined ? 'mock' : opts.refutationText) : '' }]
       if (opts.note && opts.note[0] === base && data.parts.length) data.parts[0].refutation = opts.note[1]
       if ((opts.dupRow || []).includes(base)) data.parts.push({ ...data.parts[0], verdict: 'refuted', refutation: 'second row' })
       const oc = only ? JSON.parse(only[1]) : null
@@ -1087,13 +1087,19 @@ async function main() {
   check(r1(r).selection[0].part === 'part1' && r.result.followUps.some(f => f.figure === 'longevity commitment' && /^recorded as not read/.test(f.reason)), 'longevity and market introduction not read, with a reason: verified, listed')
   r = await runTask('T2', { edit: { 'longevity commitment': { read: 'not read: the programme page refused the client', passes: false, agrees: false } } })
   check(r1(r).selection[0].part === 'part1', 'longevity commitment not read, with a reason, marked failing: recorded, not a refutation')
+  // A datasheet requirement of the same name is a requirement: not read
+  // shows nothing there.
+  r = await runTask('T2', { fnReq: 'longevity commitment', edit: { 'longevity commitment': { read: 'not read: the datasheet does not say' } } })
+  check(r1(r).selection[0].part === null, 'datasheet requirement named longevity commitment, not read: not verified')
   for (const read of ['not read: none', 'not read: N/A', 'not read: -', 'not read (unknown)']) {
     r = await runTask('T2', { edit: { 'longevity commitment': { read } } })
     check(r1(r).selection[0].part === null, `longevity commitment read as ${read}: not verified`)
   }
   // A refuted verdict whose only failing check is such a reading is none.
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'], refutationText: '', edit: { 'longevity commitment': { read: 'not read: the programme page refused the client', passes: false } } })
+  check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'refutation stating nothing, resting only on an unread non-gate reading: none, no adjudicator')
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], edit: { 'longevity commitment': { read: 'not read: the programme page refused the client', passes: false } } })
-  check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'refutation resting only on an unread non-gate reading: none, no adjudicator')
+  check(r.calls.some(c => c.startsWith('adjudicator-R1')), 'refutation stating a reason beside an unread non-gate reading: adjudicated')
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], edit: { 'longevity commitment': { read: 'not read: the programme page refused the client', passes: false }, 'lifecycle status': { passes: false } } })
   check(r.calls.some(c => c.startsWith('adjudicator-R1')), 'refutation with another failing check besides an unread reading: adjudicated')
   r = await runTask('T2', { edit: { 'longevity commitment': { read: 'not read' } } })
