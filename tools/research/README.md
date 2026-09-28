@@ -90,7 +90,8 @@ the items in the arguments:
     source;
   - a run that decides one of the category's functions left a figure the
     datasheet verifier did not confirm, or a value for research or required
-    report figure P2 did not return or wrote as not read: `categories.json`
+    report figure P2 did not return or wrote as not read, not found, not
+    stated, not known or unknown (`none` is a value): `categories.json`
     `reports` once per category (as `NAME` or `NAME: PART`),
     `reports_per_part` once for every part the category verifies or selects,
     replacements included (as `NAME: PART`, from P2 or the re-rank);
@@ -102,11 +103,13 @@ the items in the arguments:
     T4.
 - T6 while a part changed after the last P5/P6 check; while that check ran
   without P5, P6 or either critic, returned no upheld combination that fits,
-  with its source and time, has combinations, budgets or assumptions without
-  source and time, lacks an upheld budget with a value read, its source and
-  its reading time for an item of `categories.json` `p5_budgets` (named as
-  listed or `NAME: DETAIL`; only an item of `p5_conditional` may be
-  `not applicable: REASON`), or left a conflict, gap, combination, budget or
+  with its outputs, bind order, resources, source and time, has combinations,
+  budgets or assumptions without source and time or assumptions without a
+  value, lacks an upheld budget with a value read (not unknown, not known or
+  not stated), its source and its reading time for an item of
+  `categories.json` `p5_budgets` (named as listed or `NAME: DETAIL`; only an
+  item of `p5_conditional` may be `not applicable: REASON`, `N/A: REASON` or
+  `does not apply: REASON`), or left a conflict, gap, combination, budget or
   assumption its critic did not rule on, or a combination, budget or
   assumption it rejected; while it, or an earlier check, lists a conflict or
   gap that no round-2 P2-P4 follow-up covered after that check (for the last
@@ -143,36 +146,51 @@ candidate P2's own record fails is dropped and its failure re-read by the
 datasheet verifier. A requirement a candidate states with another value than
 its function is checked against the function's value, and its own pass is
 dropped before failures are counted. An adjudicator's ruling without evidence,
-source and reading time is no ruling. A standing refutation stays final in the
-run, even if the part is verified later as another part's alternate. A
-refutation as an alternate fails only that relationship: the part keeps its
-own place on the shortlist. A part a verifier was not asked to verify is
-ignored, a part it lists twice has no verdict from it, and a check or figure
-evidence that is empty, blank or written as not read, or without its source or
-a reading time that parses as a date, shows nothing. Every verified part needs
-a `placements` check re-deriving its count from the specification, the
-lifecycle table's readings (`longevity commitment`, `market introduction`,
-`distributor status`, `lead time`), for a part on the board `LCSC identity`
-and `library type` checks, and a `manufacturer allowlist` check (rule 2), and
-an alternate needs at least the placements of the part it stands in for. The
-datasheet verifier re-reads each function's requirement list against
-IOBoard.md and the answers (`function requirements: FUNCTION`). A part on the
-board that the owner holds may pass the stock gate on a `held quantity` check
-in place of `stock` and `presale` (rule 6); a passing held quantity supersedes
-failing live readings. A return whose `category` names another category counts
-as not returned. Only the kept part's rule-5 alternate gates its selection,
-and the alternate of a part on the board must be on the board; a first-ranked
-part that is also a Q alternative's alternate keeps its own verification, and
-holds the alternate role only with its compatibility checks, and an alternate
-several primaries name is verified for the first only (the kept part, then the
-Q alternatives in order). A category whose chain failed is left out of the
-run's selection, so the gates read the run before it. Each assumption needs a
-confirmed question of its own, whose `for_where` is the assumption's location.
-P0 counts a host with two rows, or a status written as not read, as not read.
-A P0 row counts only at its host's endpoint: an API client's command with the
-probe, a page client's probe URL, or with no probe a page on the host itself.
-The P7 critic checks at least one figure on each group page and each output
-under `hardware/docs/`.
+source and a reading time of the task is no ruling. A standing refutation
+stays final in the run, even if the part is verified later as another part's
+alternate. A refutation as an alternate fails only that relationship: the part
+keeps its own place on the shortlist. A part a verifier was not asked to
+verify is ignored, a part it lists twice has no verdict from it, and a check
+read as empty, blank or not read (`none` is a reading), figure evidence that
+is none, or either without its source or a reading time of the task, shows
+nothing. A reading time is a date the calendar has (2026-02-31 is not one);
+for a P4 check, a figure verdict or a ruling it is also on or after the date
+`prepare` gave the run, so a reading copied from an earlier return or the
+parts database shows nothing. A check that disagrees or fails is a refutation,
+named in the refutation the adjudicator rules on whatever the verdict, and a
+confirmation that states a refutation is one. A reading that moves or always
+passes (`stock`, `presale`, `second-vendor stock`, `lead time`,
+`distributor status`, `market introduction`, `longevity commitment`,
+`library type`), and a requirement added as not given, refute only when they
+fail. A check for a route or role the part does not take refutes nothing:
+compatibility for a part that is no alternate, and `second-vendor stock` off
+the second-vendor route or for an alternate, which passes rules 1 to 4 only
+(rule 5). Every verified part needs a `placements` check re-deriving its count
+from the specification, the lifecycle table's readings
+(`longevity commitment`, `market introduction`, `distributor status`,
+`lead time`), for a part on the board `LCSC identity` and `library type`
+checks, and a `manufacturer allowlist` check (rule 2), and an alternate needs
+at least the placements of the part it stands in for. The datasheet verifier
+re-reads each function's requirement list against IOBoard.md and the answers
+(`function requirements: FUNCTION`). A part on the board that the owner holds
+may pass the stock gate on a `held quantity` check in place of `stock` and
+`presale` (rule 6); a passing held quantity that shows a reading supersedes
+failing live readings, and passing live readings a failing held quantity. A
+return whose `category` names another category counts as not returned. Only
+the kept part's rule-5 alternate gates its selection, and the alternate of a
+part on the board must be on the board; a first-ranked part that is also a Q
+alternative's alternate keeps its own verification, and holds the alternate
+role only with its compatibility checks, and an alternate several primaries
+name is verified for the first only (the kept part, then the Q alternatives in
+order). A category whose chain failed is left out of the run's selection, so
+the gates read the run before it. Each assumption needs a confirmed question
+of its own, whose `for_where` is the assumption's location. P0 counts a host
+with two rows, or a status written as not read, none, no, false, absent or not
+in the page body, as not read. A P0 row counts only at its host's endpoint: an
+API client's command with the probe, a page client's probe URL, or with no
+probe a page on the host itself. The P7 critic checks at least one figure on
+each group page and each output under `hardware/docs/`, each check naming the
+figure and the file under `hardware/research/round1/` it comes from.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared
@@ -191,18 +209,19 @@ After a T6 that was not stopped `record` also commits the pages P7 wrote. It
 refuses a changed file outside the files P7 declared and its critic reviewed
 within the plan's Outputs (`hardware/docs/`, `hardware/STATUS.md`,
 `hardware/README.md`, `tools/jlc_stock.py`), an output or group page that is
-not a file afterwards, a file P7 declared that did not change, and a group
-page outside `hardware/docs/` or among the fixed outputs. A renamed file
-counts as both its old and its new path. A T6 is recorded as stopped unless P7
-and its critic both return, the critic's three checks pass, it checked at
-least one figure and every figure agrees with its return, no writing issue is
-left, the three group pages are three files in `hardware/docs/` other than the
-fixed outputs, and every output of the plan and each group page was written
-and reviewed. A stopped T6 leaves the output paths as they were. A T6 that
-`record` refuses, for any reason, an unreadable output included, does too, and
-keeps what P7 changed in a stash named `refused T6 RUN_ID` in the results
-tree. `raised` reads the committed run record only and refuses a plan tree
-with uncommitted changes.
+not a file afterwards, a file P7 declared that did not change, a group page
+outside `hardware/docs/` or among the fixed outputs, and a figure the critic
+checked against a file under `hardware/research/round1/` that HEAD does not
+hold. A renamed file counts as both its old and its new path. A T6 is recorded
+as stopped unless P7 and its critic both return, the critic's three checks
+pass, it checked at least one figure and every figure agrees with its return,
+no writing issue is left, the three group pages are three files in
+`hardware/docs/` other than the fixed outputs, and every output of the plan
+and each group page was written and reviewed. A stopped T6 leaves the output
+paths as they were. A T6 that `record` refuses, for any reason, an unreadable
+output included, does too, and keeps what P7 changed in a stash named
+`refused T6 RUN_ID` in the results tree. `raised` reads the committed run
+record only and refuses a plan tree with uncommitted changes.
 
 A follow-up task takes `--followup FILE`, a JSON object with `phases` (`P1`,
 `P2-P4` or `P5-P6`), `round` (1 or 2), `categories` and `items`, and

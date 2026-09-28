@@ -373,7 +373,7 @@
        },
        "status_marker": {
         "type": "string",
-        "description": "the text the marker matched, or none"
+        "description": "the text the marker matched; for a host without a marker, the lifecycle status as the page body states it; none where the page states none"
        },
        "reachable": {
         "type": "boolean"
@@ -1508,7 +1508,8 @@
         "type": "string"
        },
        "return_file": {
-        "type": "string"
+        "type": "string",
+        "description": "the committed return, or selection.json, the figure comes from, repository-relative: hardware/research/round1/RUN/FILE.json"
        },
        "agrees": {
         "type": "boolean"

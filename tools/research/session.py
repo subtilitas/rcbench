@@ -1130,6 +1130,23 @@ def set_aside(results, paths, result):
     return f"; the changes are in the stash '{name}' of {results}"
 
 
+def cited_returns(returns):
+    """The files under RUNS_DIR the P7 critic's figure checks name,
+    repository-relative. The workflow counts a check that names no such
+    file for no page."""
+    runs_rel = RUNS_DIR.replace(os.sep, "/")
+    out = set()
+    for r in returns:
+        if r.get("role") != "P7-critic":
+            continue
+        for x in r["data"].get("figure_checks", []):
+            m = re.search(rf"(?:^|/)({re.escape(runs_rel)}/[^#\s]+)",
+                          str(x.get("return_file", "")).strip())
+            if m:
+                out.add(m.group(1))
+    return out
+
+
 def cmd_record(args):
     """record, with every refusal after T6 setting P7's changes aside."""
     try:
@@ -1286,6 +1303,13 @@ def record(args):
         if stray:
             refuse("T6 changed files that are not outputs P7 declared and its "
                    "critic reviewed: " + ", ".join(stray))
+        # A figure the critic checked comes from a committed file.
+        absent = sorted(f for f in cited_returns(rets)
+                        if git("-C", results, "cat-file", "-e", f"HEAD:{f}",
+                               check=False).returncode)
+        if absent:
+            refuse("the critic checked figures against files not committed: "
+                   + ", ".join(absent))
         paths += [os.path.join(results, d) for d in dirty
                   if not in_run(d)]
     if (result.get("summary") or {}).get("selection") and not stopped:

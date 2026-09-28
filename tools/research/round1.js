@@ -155,7 +155,7 @@ function p0Prompt() {
   const j = A.jlcparts || {}
   return `${ctx('P0', '', 'P0')}
 
-Probe every host below with its client and record one row per host, copying the host name and the client name exactly. In url record the URL fetched, which is the row's probe where it has one, or a page on the host itself where it has none; for an API client, the command of the clients table run with the probe (${JSON.stringify(A.clients || {})}). A row with another client, URL or command counts as not probed. A marker is a regular expression the lifecycle status matches; record what it matched. Where a row's probe is null, find a product page of one of that maker's seeds (the seeds are in the category rows and the row's note) and record its URL and whether its status is in the page body. The fields hold, hold_in_t1 and stop are for the script; report reachability only, and do not decide holds from them.
+Probe every host below with its client and record one row per host, copying the host name and the client name exactly. In url record the URL fetched, which is the row's probe where it has one, or a page on the host itself where it has none; for an API client, the command of the clients table run with the probe (${JSON.stringify(A.clients || {})}). A row with another client, URL or command counts as not probed. A marker is a regular expression the lifecycle status matches; record what it matched. Where a row's probe is null, find a product page of one of that maker's seeds (the seeds are in the category rows and the row's note) and record its URL, and in status_marker the lifecycle status as the page body states it, or none where the body states none. The fields hold, hold_in_t1 and stop are for the script; report reachability only, and do not decide holds from them.
 ${J(A.hosts)}
 
 Check the parts database: the SHA-256 of ${P.db} is ${j.sha256}; jlc_components holds ${j.rows} rows; every one of these LCSC numbers is in it: ${(j.lcsc || []).join(', ')}. Record in snapshot the created time of ${j.manifest}; it should be ${j.manifest_created}.
@@ -235,7 +235,7 @@ function p4Prompt(cat, kind, bundle, only) {
     : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, the reasons the re-rank gave for dropping a P3 candidate, P2\'s own drops, for "Q option: FUNCTION: PART: CLASS" whether the part belongs to that option class of Q4 or Q8, and for "function requirements: FUNCTION" whether the function\'s requirement list names every requirement IOBoard.md and the answers set for it, with no value weaker than theirs) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
   return `${ctx('P4', cat, `P4-${kind}-${cat}`)}
 
-${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives the lifecycle table's readings: "longevity commitment" (the programme page's commitment, or that none is published; passes unless S5 makes it a gate it fails), "market introduction" (the first datasheet revision date; passes, and under 12 months is stated in read), "distributor status" (JLCPCB, LCSC and Digi-Key; passes, a disagreement with the maker stated in read) and "lead time" (the manufacturer's lead time in Digi-Key's API; passes). For a part on the board it gives "library type" (componentLibraryType of the exact JLCPCB row, basic or extended; passes, S6 allowing both) and "LCSC identity" (the exact JLCPCB result for the LCSC number names the candidate's part number and package; passes only then). It also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and a check with agrees or passes false counts as a refutation.
+${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor, other than a part of kind alternate; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives the lifecycle table's readings: "longevity commitment" (the programme page's commitment, or that none is published; passes unless S5 makes it a gate it fails), "market introduction" (the first datasheet revision date; passes, and under 12 months is stated in read), "distributor status" (JLCPCB, LCSC and Digi-Key; passes, a disagreement with the maker stated in read) and "lead time" (the manufacturer's lead time in Digi-Key's API; passes). For a part on the board it gives "library type" (componentLibraryType of the exact JLCPCB row, basic or extended; passes, S6 allowing both) and "LCSC identity" (the exact JLCPCB result for the LCSC number names the candidate's part number and package; passes only then). It also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified. A check with passes false counts as a refutation, and so does one with agrees false, except for a reading that moves or always passes (${[...MOVING].join(', ')}) and a requirement stated as not given.
 
 The shortlist, the values found for research and the reports:
 ${J(bundle)}`
@@ -286,15 +286,35 @@ ${J(p7)}`
 
 // P0 has no critic, so the script applies the stop and hold rules itself
 // from P0's check results and the host table, beside P0's own reading.
-// A reading time is a date the parser reads, not any nonblank text.
+// A reading time is a date the parser reads, not any nonblank text, on a day
+// the calendar has: the parser turns 2026-02-31 into March 3.
 function isTime(text) {
   const t = String(text || '').trim()
-  return /^\d{4}-\d{2}-\d{2}/.test(t) && Number.isFinite(Date.parse(t))
+  const day = t.slice(0, 10)
+  return /^\d{4}-\d{2}-\d{2}/.test(t) && Number.isFinite(Date.parse(t)) && new Date(Date.parse(day)).toISOString().slice(0, 10) === day
 }
 
-function readsNone(text) {
+// A reading of this task: taken on or after the day the session prepared it,
+// not copied from an earlier return or the parts database.
+function readInRun(text) {
+  return isTime(text) && Date.parse(String(text).trim()) >= Date.parse(A.date)
+}
+
+// A value that holds no reading: blank, a bare placeholder or written as not
+// read. "none" is a reading: no notice, no commitment, no resistor.
+function unread(text) {
   const t = String(text || '').trim()
-  return !t || /^(none|n\/a|-)$/i.test(t) || /^not read\b/i.test(t)
+  return !t || /^(n\/a|-)$/i.test(t) || /^not read\b/i.test(t)
+}
+
+// A source, evidence or refutation written as none holds none.
+function readsNone(text) {
+  return unread(text) || /^none$/i.test(String(text || '').trim())
+}
+
+// A value found, reported or budgeted that says it was not found holds none.
+function notFound(text) {
+  return unread(text) || /^(not (found|stated|known)|unknown)\b/i.test(String(text || '').trim())
 }
 
 // P0's reading of one host: reachable only when its HTTP status agrees, and
@@ -320,7 +340,9 @@ function hostReading(h, row) {
   if (!row) return { up: undefined, status: false }
   if (!probedAsTold(h, row)) return { up: undefined, status: false, why: `not probed with ${h.client}${h.probe == null ? '' : ` at ${h.probe}`}` }
   const ok = row.reachable === true && row.http_status >= 200 && row.http_status < 300
-  let status = !readsNone((row.status_marker || '').trim())
+  // A yes/no or absence answer states no status.
+  const text = String(row.status_marker || '').trim()
+  let status = !readsNone(text) && !/^(no|false)$/i.test(text) && !/^(absent|none found|not (in|found|present))\b|\bnot in (the )?page body\b/i.test(text)
   if (status && h.marker) {
     try { status = new RegExp(h.marker).test(row.status_marker) } catch (e) { status = false }
   }
@@ -692,13 +714,24 @@ function altOf(c) {
 // count (the P4 prompt names them).
 // The stock verifier re-derives the placements per board from the
 // specification; the datasheet verifier confirms the maker is allowed
-// (rule 2).
+// (rule 2). An alternate passes rules 1 to 4 only (rule 5): it owes no
+// second-vendor stock.
 function requiredChecks(kind, cand, partKind) {
   if (kind === 'stock') {
     return ['stock', 'lifecycle status', 'end-of-life notices', 'placements', 'longevity commitment', 'market introduction', 'distributor status', 'lead time', ...(onBoard(cand) ? ['presale', 'LCSC identity', 'library type'] : []),
-      ...(onBoard(cand) && cand.second_source_route === 'second-vendor' ? ['second-vendor stock'] : [])]
+      ...(onBoard(cand) && cand.second_source_route === 'second-vendor' && partKind !== 'alternate' ? ['second-vendor stock'] : [])]
   }
   return [...((cand && cand.requirements) || []).map(r => r.name), 'manufacturer allowlist', ...(partKind === 'alternate' ? ['pin-for-pin match', 'functional match'] : [])]
+}
+
+// Readings that move between P2's reading and P4's, or that pass whatever
+// they read: a value that differs from P2's refutes only when it fails.
+const MOVING = new Set(['stock', 'presale', 'second-vendor stock', 'lead time', 'distributor status', 'market introduction', 'longevity commitment', 'library type'])
+
+// A check written as not read, or without its source or a reading time of
+// this task, shows nothing.
+function shown(c) {
+  return !unread(c.read) && !readsNone(c.source) && readInRun(c.read_at)
 }
 
 function covered(v, cand) {
@@ -707,9 +740,7 @@ function covered(v, cand) {
   if (!cand) return false
   const req = requiredChecks(v.verifier, cand, v.kind)
   if (v.verifier === 'datasheet' && !req.length) return false
-  // A check written as not read, or without its source or reading time,
-  // shows nothing.
-  const have = new Set((v.checks || []).filter(c => !readsNone(c.read) && !readsNone(c.source) && !!isTime(c.read_at)).map(c => c.figure))
+  const have = new Set((v.checks || []).filter(shown).map(c => c.figure))
   // Rule 6: a part the owner holds passes rule 4 on the held quantity, in
   // place of the live stock and presale.
   const held = v.verifier === 'stock' && onBoard(cand) && Number(cand.held) > 0 && have.has('held quantity')
@@ -730,7 +761,7 @@ function nextCandidate(functions, fn, part, ledger) {
 // The adjudicator's ruling counts only for the item it was asked about.
 function boundRuling(ruling, fn, part, cat) {
   if (!ruling) return null
-  if (readsNone(ruling.evidence) || readsNone(ruling.source) || !isTime(ruling.read_at)) {
+  if (readsNone(ruling.evidence) || readsNone(ruling.source) || !readInRun(ruling.read_at)) {
     followUps.push({ role: 'adjudicator', category: cat, function: fn, part, reason: 'the ruling gives no evidence, source and time read' })
     return null
   }
@@ -798,18 +829,33 @@ async function verifyCategory(cat, functions, bundle) {
     for (const e of byPart.values()) {
       // A confirmation counts only with its required checks, each reading
       // the stated figure and passing its requirement or gate. A check that
-      // disagrees or fails is a refutation.
+      // disagrees or fails is a refutation, and is named in the refutation
+      // the adjudicator rules on whatever the verdict. A confirmation that
+      // states a refutation is one.
       const cand = candidateOf(functions, e.function, e.part)
+      const added = new Set(((cand && cand.requirements) || []).filter(r => r.added).map(r => r.name))
       for (const v of e.verdicts) {
-        if (v.verdict !== 'confirmed') continue
+        if (v.verdict === 'confirmed' && !readsNone(v.refutation)) v.verdict = 'refuted'
+        const passing = name => (v.checks || []).some(c => c.figure === name && shown(c) && c.passes === true)
         // Rule 6: a passing held quantity supersedes the live stock and
-        // presale readings of a held part.
-        const heldRoute = v.verifier === 'stock' && onBoard(cand) && Number(cand && cand.held) > 0 && (v.checks || []).some(c => c.figure === 'held quantity' && c.agrees && c.passes === true)
-        // Compatibility checks bear on a part's alternate role only.
+        // presale readings of a held part, and passing live readings a
+        // failing held quantity.
+        const heldRoute = v.verifier === 'stock' && onBoard(cand) && Number(cand && cand.held) > 0 && (v.checks || []).some(c => c.figure === 'held quantity' && shown(c) && c.agrees && c.passes === true)
+        const liveRoute = v.verifier === 'stock' && passing('stock') && passing('presale')
+        // Compatibility checks bear on a part's alternate role only, and the
+        // second vendor's stock on a route that needs it.
         const compat = c => c.figure === 'pin-for-pin match' || c.figure === 'functional match'
-        const bad = (v.checks || []).filter(c => !(heldRoute && (c.figure === 'stock' || c.figure === 'presale')) && !(e.kind !== 'alternate' && compat(c)) && (!c.agrees || c.passes !== true))
-        if (bad.length) { v.verdict = 'refuted'; v.refutation = `checks disagree or fail: ${bad.map(c => c.figure).join(', ')}`; continue }
-        if (!covered(v, cand)) { v.verdict = 'incomplete'; v.missing = requiredChecks(v.verifier, cand, v.kind).filter(n => !(v.checks || []).some(c => c.figure === n)) }
+        const offRoute = c => (heldRoute && (c.figure === 'stock' || c.figure === 'presale')) || (liveRoute && c.figure === 'held quantity')
+          || (e.kind !== 'alternate' && compat(c)) || (c.figure === 'second-vendor stock' && !requiredChecks('stock', cand, e.kind).includes(c.figure))
+        // A reading that moves or always passes, and a requirement P2 gave no
+        // value for, differs from the value stated without refuting.
+        const passesOnly = c => MOVING.has(c.figure) || (v.verifier === 'datasheet' && added.has(c.figure))
+        const bad = (v.checks || []).filter(c => !offRoute(c) && ((!c.agrees && !passesOnly(c)) || c.passes !== true))
+        if (bad.length) {
+          v.refutation = [v.verdict === 'refuted' ? v.refutation : '', `checks disagree or fail: ${bad.map(c => c.figure).join(', ')}`].filter(t => !readsNone(t)).join('; ')
+          v.verdict = 'refuted'
+        }
+        if (v.verdict === 'confirmed' && !covered(v, cand)) { v.verdict = 'incomplete'; v.missing = requiredChecks(v.verifier, cand, v.kind).filter(n => !(v.checks || []).some(c => c.figure === n)) }
       }
       // Coverage needs the required checks whatever the verdict, so an
       // overturned refutation without them does not count as confirmation.
@@ -855,7 +901,7 @@ async function verifyCategory(cat, functions, bundle) {
     for (const e of byPart.values()) {
       if (!e.alsoAlternate) continue
       const primary = [...ledger].reverse().find(l => l.function === e.function && l.part === e.part && l.as === 'primary')
-      const fits = e.verdicts.some(v => v.verifier === 'datasheet' && v.verdict === 'confirmed' && ['pin-for-pin match', 'functional match'].every(n => (v.checks || []).some(c => c.figure === n && c.agrees && c.passes === true && !readsNone(c.read) && !readsNone(c.source) && !!isTime(c.read_at))))
+      const fits = e.verdicts.some(v => v.verifier === 'datasheet' && v.verdict === 'confirmed' && ['pin-for-pin match', 'functional match'].every(n => (v.checks || []).some(c => c.figure === n && c.agrees && c.passes === true && shown(c))))
       const status = primary && primary.status === 'refuted' ? 'refuted' : primary && primary.status.startsWith('verified') && fits ? 'verified' : 'not verified'
       ledger.push({ function: e.function, part: e.part, as: 'alternate', status })
     }
@@ -866,7 +912,7 @@ async function verifyCategory(cat, functions, bundle) {
     // A confirmation counts only with evidence that was read.
     for (const name of bundle.figures_to_check) {
       const f = figs.get(name)
-      if (f && !(f.verdict === 'confirmed' && (readsNone(f.evidence) || readsNone(f.source) || !isTime(f.read_at)))) continue
+      if (f && !(f.verdict === 'confirmed' && (readsNone(f.evidence) || readsNone(f.source) || !readInRun(f.read_at)))) continue
       ledger.push({ figure: name, status: 'not verified', reason: f ? 'confirmed without evidence, source and time read' : 'the datasheet verifier gave no single verdict' })
       followUps.push({ role: 'P4', category: cat, figure: name, reason: 'figure not verified' })
     }
@@ -965,7 +1011,7 @@ function selection(functions, ledger) {
 // The per-part figures (categories.json reports_per_part) P2 and the re-rank
 // did not return for these parts, as "report: NAME: PART".
 function perPartMissing(cat, p2, rr, parts) {
-  const reported = [...(p2.report || []), ...(rr.report || [])].filter(f => !readsNone(f.value)).map(f => f.figure)
+  const reported = [...(p2.report || []), ...(rr.report || [])].filter(f => !notFound(f.value)).map(f => f.figure)
   const out = []
   for (const need of (A.per_part_reports || {})[cat] || []) {
     for (const part of parts) {
@@ -986,8 +1032,8 @@ function figuresToCheck(cat, p2, rr, functions, p3) {
   const names = []
   const missing = []
   const add = n => { names.push(names.includes(n) ? `${n} (${names.filter(x => x.startsWith(n)).length + 1})` : n) }
-  const read = (p2.found_values || []).filter(v => !readsNone(v.value))
-  const reported = (p2.report || []).filter(f => !readsNone(f.value))
+  const read = (p2.found_values || []).filter(v => !notFound(v.value))
+  const reported = (p2.report || []).filter(f => !notFound(f.value))
   for (const v of read) add(`found ${v.question_id}`)
   for (const q of (A.for_research || []).filter(q => q.category === cat)) if (!read.some(v => v.question_id === q.id)) {
     missing.push(`found ${q.id}`)
@@ -999,7 +1045,7 @@ function figuresToCheck(cat, p2, rr, functions, p3) {
     missing.push(`P2 report: ${need}`)
     followUps.push({ role: 'P2', category: cat, figure: need, reason: 'required report figure not returned' })
   }
-  const rrReported = (rr.report || []).filter(f => !readsNone(f.value))
+  const rrReported = (rr.report || []).filter(f => !notFound(f.value))
   for (const f of rrReported) add(`re-rank report: ${f.figure}`)
   // A figure the plan asks per part is owed for every part the category
   // verifies, by P2 or the re-rank, as "NAME: PART" ("not applicable:
@@ -1148,15 +1194,19 @@ async function phaseP5P6() {
   const missingChecks = [a.missing, b.missing, a.critic_missing, b.critic_missing].filter(Boolean)
   // Every budget the P5 row names, upheld by the critic.
   // A budget counts with a value read, its source and its time; "not
-  // applicable" only for a check the P5 row makes conditional.
+  // applicable" (or N/A, does not apply) only for a check the P5 row makes
+  // conditional.
   const conditional = n => (A.p5_conditional || []).some(c => n === c || n.startsWith(`${c}: `))
-  const upheld = (a.budgets || []).filter(x => x.upheld === true && !readsNone(x.source) && !!isTime(x.read_at) && !readsNone(x.value)
-    && (!/^not applicable\b/i.test(String(x.value).trim()) || conditional(String(x.item || '')))).map(x => String(x.item || ''))
+  const upheld = (a.budgets || []).filter(x => x.upheld === true && !readsNone(x.source) && !!isTime(x.read_at) && !notFound(x.value)
+    && (!/^(not applicable|n\/a|does not apply)\b/i.test(String(x.value).trim()) || conditional(String(x.item || '')))).map(x => String(x.item || ''))
   const budgetsMissing = a.missing ? [] : (A.p5_budgets || []).filter(n => !upheld.some(i => i === n || i.startsWith(`${n}: `)))
   for (const n of budgetsMissing) followUps.push({ role: 'P5', item: n, reason: 'budget the P5 row names not returned and upheld' })
-  // A combination counts with its source and time, and upheld.
-  if (!a.missing && !(a.combinations || []).some(x => x.upheld === true && x.fits === true && !readsNone(x.source) && !!isTime(x.read_at))) missingChecks.push('P5 combinations')
-  const unsourced = [...(a.combinations || []), ...(a.budgets || []), ...(a.assumptions || [])].filter(x => readsNone(x.source) || !isTime(x.read_at)).length
+  // A combination counts with its outputs, bind order, resources, source
+  // and time, and upheld.
+  if (!a.missing && !(a.combinations || []).some(x => x.upheld === true && x.fits === true && !readsNone(x.outputs) && !readsNone(x.bind_order) && !readsNone(x.resources) && !readsNone(x.source) && !!isTime(x.read_at))) missingChecks.push('P5 combinations')
+  // An assumption without a value assumed nothing.
+  const unsourced = [...(a.combinations || []), ...(a.budgets || [])].filter(x => readsNone(x.source) || !isTime(x.read_at)).length
+    + (a.assumptions || []).filter(x => readsNone(x.source) || !isTime(x.read_at) || notFound(x.value)).length
   if (!a.missing && !(a.budgets || []).length) missingChecks.push('P5 budgets')
   for (const m of missingChecks) followUps.push({ role: m, reason: `${m} returned nothing; the check did not run` })
   return { conflicts: a.conflicts, combinations: a.combinations || [], budgets: a.budgets || [], assumptions: a.assumptions || [], gaps: b.gaps,
@@ -1176,11 +1226,13 @@ if (TASK === 'T6') {
   const failed = critic ? Object.entries(critic.checks || {}).filter(([, r]) => !(r && r.passed)).map(([k]) => k) : []
   // The critic's own findings, as they stand after its corrections.
   if (critic) {
-    if (!(critic.figure_checks || []).length) failed.push('the critic checked no figure')
+    // A figure check names its figure and the committed file it comes from.
+    const named = (critic.figure_checks || []).filter(x => !readsNone(x.figure) && /(^|\/)hardware\/research\/round1\/\S/.test(String(x.return_file || '').trim()))
+    if (!named.length) failed.push('the critic checked no figure')
     // Each group page and each output under hardware/docs/ carries figures
     // from the returns; each needs at least one figure checked.
     const figPages = [...(A.t6_outputs || []).filter(f => f.startsWith('hardware/docs/')), ...Object.values((p7 && p7.group_pages) || {})]
-    for (const f of new Set(figPages)) if (!(critic.figure_checks || []).some(x => x.file === f)) failed.push(`no figure checked on ${f}`)
+    for (const f of new Set(figPages)) if (!named.some(x => x.file === f)) failed.push(`no figure checked on ${f}`)
     const wrong = (critic.figure_checks || []).filter(f => !f.agrees)
     if (wrong.length) failed.push(`${wrong.length} figures disagree with the returns`)
     if ((critic.sentence_issues || []).length) failed.push(`${critic.sentence_issues.length} writing issues left`)

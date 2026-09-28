@@ -103,6 +103,8 @@ async function runTask(task, opts = {}) {
       if (opts.twoDeciders) data.functions.push({ ...data.functions[0], function: 'fX' })
       if (opts.p2DropY) data.functions[0].dropped = [{ part: 'partY', maker: 'm', reason: 'r' }]
       if (opts.foundNotRead) data.found_values = [{ question_id: 'V9', value: 'not read: HTTP 403', source: 's', read_at: 't' }]
+      if (opts.foundValue) data.found_values = [{ question_id: 'V9', value: opts.foundValue, source: 's', read_at: '2026-09-28T10:00:00Z' }]
+      if (opts.reports) data.report = opts.reports.map(([figure, value]) => ({ figure, value, source: 's', read_at: '2026-09-28T10:00:00Z' }))
       if (opts.onBoardAltOfOff) { Object.assign(data.functions[0].shortlist[0], { lcsc: 'none', second_source_route: 'alternate', second_source_part: 'altOn' }); data.functions[0].shortlist.push({ ...cand(8), part: 'altOn', lcsc: 'C2' }) }
       if (opts.weakReq) { data.functions[0].requirements = [{ name: 'x0', value: '>= 67.2 V', source: 's' }]; data.functions[0].shortlist.forEach(c => { c.requirements = [{ name: 'x0', required: '>= 40 V', datasheet: '45 V', pass: true, source: 's' }] }) }
       if (opts.offBoardAlt) { Object.assign(data.functions[0].shortlist[0], { lcsc: 'C1', second_source_route: 'alternate', second_source_part: 'altOff' }); data.functions[0].shortlist.push({ ...cand(8), part: 'altOff', lcsc: 'none' }) }
@@ -151,6 +153,8 @@ async function runTask(task, opts = {}) {
     if (role === 'P5' && opts.p5Items) data.budgets = opts.p5Items.map(item => ({ item, value: (opts.budgetValues || {})[item] || 'v', source: opts.blankSource ? '   ' : 's', read_at: opts.budgetUndated ? '' : opts.budgetTime || '2026-09-28T10:00:00Z' }))
     if (role === 'P5') data.combinations = data.combinations.map(x => ({ ...x, fits: !opts.noFit }))
     if (role === 'P5' && opts.unsourcedAssumption) data.assumptions = data.assumptions.map(x => ({ ...x, source: '' }))
+    if (role === 'P5' && opts.blankCombos) data.combinations = data.combinations.map(x => ({ ...x, outputs: '', bind_order: '', resources: '' }))
+    if (role === 'P5' && opts.assumptionValue) data.assumptions = data.assumptions.map(x => ({ ...x, value: opts.assumptionValue }))
     if (role === 'P5-critic') for (const k of ['combination_verdicts', 'budget_verdicts', 'assumption_verdicts']) data[k] = data[k].map((v, index) => ({ ...v, index, holds: !(opts.rejectBudget && k === 'budget_verdicts' && index === 0) && !(opts.rejectAssumption && k === 'assumption_verdicts' && index === 0) }))
     if (role === 'P1' && opts.qCategory) data.questions = data.questions.map(q => ({ ...q, category: 'R99', source: 'mock' }))
     if (role === 'P1' && opts.decisionNone) data.questions = data.questions.map(q => ({ ...q, blocks: 'decision-only', decision: 'none' }))
@@ -171,7 +175,7 @@ async function runTask(task, opts = {}) {
       else {
         data.reviewed = outs
         const figFiles = opts.oneFigure ? ['hardware/docs/Parts.md'] : outs.filter(f => f.startsWith('hardware/docs/'))
-        data.figure_checks = opts.noFigures ? [] : figFiles.map(file => ({ file, line: 1, figure: 'stock', return_file: 'r', agrees: !opts.criticDisagrees }))
+        data.figure_checks = opts.noFigures ? [] : figFiles.map(file => ({ file, line: 1, figure: opts.blankFigure ? '' : 'stock', return_file: opts.blankFigure ? '' : 'hardware/research/round1/T2/012-P4-stock-R1.json', agrees: !opts.criticDisagrees }))
         data.sentence_issues = opts.sentenceIssue ? [{ file: 'f', line: 1, issue: 'i' }] : []
       }
     }
@@ -205,17 +209,19 @@ async function runTask(task, opts = {}) {
       const f1 = bundle2.functions[0]
       const cand = pt => [...f1.shortlist, ...(f1.alternateRecords || [])].find(c => c.part === pt) || { requirements: [] }
       const checksFor = (pt, pk) => (opts.emptyChecks || []).includes(base) ? []
-        : (kind === 'stock' ? [...(opts.heldChecks ? ['held quantity', ...(opts.heldAndLive ? ['stock'] : [])] : ['stock', 'presale']), 'lifecycle status', 'end-of-life notices', ...(opts.noPlacementsCheck ? [] : ['placements']), ...(opts.noLifecycleReadings ? [] : ['longevity commitment', 'market introduction', 'distributor status', 'lead time']), ...(!opts.noIdentity && /^C\d+$/.test(cand(pt).lcsc || '') ? ['LCSC identity', ...(opts.noLibType ? [] : ['library type'])] : []), ...(cand(pt).second_source_route === 'second-vendor' && !opts.noSecondVendor ? ['second-vendor stock'] : [])]
+        : (kind === 'stock' ? [...(opts.heldChecks ? ['held quantity', ...(opts.heldAndLive ? ['stock'] : [])] : ['stock', 'presale']), ...(opts.addStock || []), 'lifecycle status', 'end-of-life notices', ...(opts.noPlacementsCheck ? [] : ['placements']), ...(opts.noLifecycleReadings ? [] : ['longevity commitment', 'market introduction', 'distributor status', 'lead time']), ...(!opts.noIdentity && /^C\d+$/.test(cand(pt).lcsc || '') ? ['LCSC identity', ...(opts.noLibType ? [] : ['library type'])] : []), ...(cand(pt).second_source_route === 'second-vendor' && !opts.noSecondVendor ? ['second-vendor stock'] : [])]
           : [...cand(pt).requirements.map(r => r.name).filter(n => n !== opts.skipReq), ...(opts.noMakerCheck ? [] : ['manufacturer allowlist']), ...(pk === 'alternate' && !opts.noCompat ? ['pin-for-pin match', 'functional match'] : [])])
           .map((figure, k) => ({ figure, stated: 's', read: opts.readNone && kind === 'datasheet' ? 'not read: API timed out' : 'r', source: opts.noSource && kind === 'stock' ? '' : 'src', read_at: opts.undated && kind === 'stock' ? '' : '2026-09-28T10:00:00Z', agrees: !((opts.disagree || []).includes(base) && k === 0), passes: !((opts.failPass || []).includes(base) && k === 0) }))
           .map(c => opts.heldAndLive && c.figure === 'stock' ? { ...c, passes: false } : c)
+          .map(c => ({ ...c, ...((opts.edit || {})[c.figure] || {}), ...(kind === 'stock' ? opts.stockPatch || {} : {}) }))
       data.parts = (opts.omit || []).includes(base) || (opts.omitPart || []).includes(`${base}:${part}`) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part), refutation: refute ? 'mock' : '' }]
+      if (opts.note && opts.note[0] === base && data.parts.length) data.parts[0].refutation = opts.note[1]
       if ((opts.dupRow || []).includes(base)) data.parts.push({ ...data.parts[0], verdict: 'refuted', refutation: 'second row' })
       const oc = only ? JSON.parse(only[1]) : null
       if (oc && oc.second_source_route === 'alternate' && !opts.dropReplacementAlt) data.parts.push({ function: 'f1', part: oc.second_source_part, kind: 'alternate', verdict: 'confirmed', checks: checksFor(oc.second_source_part, 'alternate'), refutation: '' })
       const names = only ? [] : JSON.parse(/"figures_to_check":(\[[^\]]*\])/.exec(prompt)[1])
       data.figures = kind === 'datasheet' ? names.filter(n => !(opts.omitFigure && base === opts.omitFigure[0] && n === opts.omitFigure[1]))
-        .map((figure, k) => ({ figure, verdict: (opts.refuteFigure || []).includes(base) && k === 0 ? 'refuted' : 'confirmed', evidence: opts.unreadFigure && k === 0 ? 'not read' : 'e', source: opts.unsourcedFigure && k === 0 ? '' : 'datasheet table 5', read_at: '2026-09-28T10:00:00Z' })) : []
+        .map((figure, k) => ({ figure, verdict: (opts.refuteFigure || []).includes(base) && k === 0 ? 'refuted' : 'confirmed', evidence: opts.unreadFigure && k === 0 ? 'not read' : 'e', source: opts.unsourcedFigure && k === 0 ? '' : 'datasheet table 5', read_at: opts.figureReadAt && k === 0 ? opts.figureReadAt : '2026-09-28T10:00:00Z' })) : []
       const extraParts = opts.p4parts || opts.verify
       if (extraParts && !(opts.omit || []).includes(base) && !opts.dropVerify && !only) data.parts.push(...extraParts.map(pt => ({ function: 'f1', part: pt, kind: opts.reportFirst ? 'first' : 'alternate', verdict: (opts.refute || []).includes(`${base}:${pt}`) ? 'refuted' : 'confirmed', checks: checksFor(pt, opts.reportFirst ? 'first' : 'alternate'), refutation: '' })))
     }
@@ -227,6 +233,7 @@ async function runTask(task, opts = {}) {
       if (opts.wrongRuling) data.part = 'another'
       if (opts.unreadRuling) data.evidence = 'not read'
       if (opts.unsourcedRuling) data.source = ''
+      if (opts.rulingReadAt) data.read_at = opts.rulingReadAt
     }
     return data
   }
@@ -795,6 +802,69 @@ async function main() {
   // P0's own stop and held fields do not decide the outcome.
   r = await runTask('T2', { p0: { stop: true, stop_reasons: ['mock'], held: [{ category: 'R1', host: 'h', reason: 'mock' }] } })
   check(!r.result.summary.stopped && r.calls.includes('P2-R1'), 'P0: its own stop and held are not applied')
+
+  // Reading times: a check, figure or ruling read before the task's date, or
+  // on a day the calendar lacks, is not this task's reading.
+  r = await runTask('T2', { stockPatch: { read_at: '2026-09-14T09:56:01Z' } })
+  check(r1(r).selection[0].part === null, 'stock checks read before the task: not verified')
+  r = await runTask('T2', { stockPatch: { read_at: '2026-09-31T10:00:00Z' } })
+  check(r1(r).selection[0].part === null, 'stock checks read on 31 September: not verified')
+  r = await runTask('T2', { figureReadAt: '2026-09-20T10:00:00Z' })
+  check(r.result.summary.figures_open.R1.length === 1, 'figure read before the task: open')
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'], stands: false, rulingReadAt: '2026-09-20T10:00:00Z' })
+  check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence, source and time read'), 'ruling read before the task: no ruling')
+  // "none" is a reading; "not found" is none.
+  r = await runTask('T2', { edit: { 'end-of-life notices': { read: 'none' }, 'longevity commitment': { read: 'none' } } })
+  check(r1(r).selection[0].part === 'part1', 'checks read as none: verified')
+  r = await runTask('T2', { requiredReports: { R1: ['BOOT resistor'] }, reports: [['BOOT resistor', 'none']] })
+  check(!r.result.summary.figures_open.R1.includes('P2 report: BOOT resistor'), 'report read as none: returned')
+  r = await runTask('T2', { forResearch: [{ id: 'V9', category: 'R1' }], foundValue: 'not found: the datasheet does not state it' })
+  check(r.result.summary.figures_open.R1.includes('found V9'), 'value found as not found: open')
+  r = await runTask('T5', { p5Budgets: ['GPIO', 'absent IOVDD'], p5Conditional: ['absent IOVDD'], p5Items: ['GPIO', 'absent IOVDD'], budgetValues: { GPIO: 'N/A: the trip filter is unanswered', 'absent IOVDD': 'N/A: ratings as cited' } })
+  check(r.result.summary.budgets_missing.join() === 'GPIO', `T5: budgets missing ${r.result.summary.budgets_missing}, expected GPIO only (N/A, unconditional)`)
+  r = await runTask('T5', { p5Budgets: ['GPIO'], p5Items: ['GPIO'], budgetValues: { GPIO: 'unknown: sample period not stated' } })
+  check(r.result.summary.budgets_missing.includes('GPIO'), 'T5: a budget value written as unknown is missing')
+  // A null-marker page whose status P0 answers with no or absent is not read.
+  for (const [markerText, listed] of [['no', true], ['absent: the page body carries no status', true], ['not in the page body', true], ['No longer manufactured', false]]) {
+    r = await runTask('T2', { hosts: [{ host: 'www.onsemi.com', probe: null, hold: ['R2'] }], markerText })
+    check(r.result.followUps.some(f => f.host === 'www.onsemi.com' && f.reason === 'lifecycle status not read from the page') === listed, `status "${markerText}": ${listed ? '' : 'not '}listed as not read`)
+  }
+  // Rule 6: an unread held quantity waives nothing; a failing one does not
+  // refute a part that passes on live stock.
+  r = await runTask('T2', { held: 50, heldChecks: true, heldAndLive: true, addStock: ['presale'], edit: { 'held quantity': { read: 'not read', source: '' }, presale: { passes: false } } })
+  check(r1(r).selection[0].part !== 'part1' && r.calls.some(c => c.startsWith('adjudicator-R1')), 'unread held quantity with failing live stock: refuted')
+  r = await runTask('T2', { held: 20, addStock: ['held quantity'], edit: { 'held quantity': { passes: false } } })
+  check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'failing held quantity, passing live stock: verified')
+  // The second vendor's stock bears on the second-vendor route only, and not
+  // on an alternate (rule 5 asks rules 1 to 4).
+  r = await runTask('T2', { altName: 'part2', verify: ['part2'], addStock: ['second-vendor stock'], edit: { 'second-vendor stock': { passes: false } } })
+  check(r1(r).selection[0].part === 'part1' && r1(r).selection[0].alternate_unverified.length === 0 && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'failing second-vendor stock off its route: refutes nothing')
+  r = await runTask('T2', { altName: 'part2', verify: ['part2'], noSecondVendor: true })
+  check(r1(r).selection[0].part === 'part1' && r1(r).selection[0].alternate_unverified.length === 0, 'alternate without second-vendor stock: verified')
+  // A value that differs from P2's refutes only when it fails: a reading that
+  // moves, and a requirement P2 gave no value for.
+  r = await runTask('T2', { edit: { stock: { stated: '41200', read: '40870', agrees: false }, 'lead time': { agrees: false } } })
+  check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'stock moved since P2, still passing: no refutation')
+  r = await runTask('T2', { fnReq: 'vmax', edit: { vmax: { agrees: false } } })
+  check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'requirement P2 gave no value for, passing: no refutation')
+  // A confirmation that states a refutation is adjudicated; a refuted
+  // verdict names its failing checks to the adjudicator.
+  r = await runTask('T2', { note: ['P4-datasheet-R1', 'maker page lists the part as NRND since 2026-06'] })
+  check(r.calls.some(c => c.startsWith('adjudicator-R1')) && r1(r).selection[0].part === 'part2', 'confirmation stating a refutation: adjudicated')
+  r = await runTask('T2', { note: ['P4-datasheet-R1', 'none'] })
+  check(!r.calls.some(c => c.startsWith('adjudicator-R1')) && r1(r).selection[0].part === 'part1', 'confirmation with refutation none: confirmed')
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'], failPass: ['P4-stock-R1'], stands: false })
+  const adj = r.prompts.find(x => x.label === 'adjudicator-R1')
+  check(adj && adj.prompt.includes('"refutation":"mock; checks disagree or fail: stock"'), 'refuted verdict with a failing check: the check is named to the adjudicator')
+  // Figure checks name the figure and the committed return.
+  r = await runTask('T6', { blankFigure: true })
+  check(r.result.summary.stopped === true, 'T6: figure checks without a figure or return file stop it')
+  // A combination states its outputs, bind order and resources; an
+  // assumption its value.
+  r = await runTask('T5', { blankCombos: true })
+  check(r.result.summary.missing_checks.includes('P5 combinations'), 'T5: a combination without outputs, bind order and resources is none')
+  r = await runTask('T5', { assumptionValue: 'not read' })
+  check(r.result.summary.unsourced_items === 2, `T5: ${r.result.summary.unsourced_items} items without a value, source and time, expected the 2 assumptions`)
 
   // Follow-up plans.
   for (const [phases, n, want] of [['P1', 2, 6], ['P2-P4', 3, 16], ['P5-P6', 0, 5]]) {
