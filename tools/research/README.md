@@ -23,16 +23,22 @@ and host table. Nothing here runs in CI (continuous integration) but
   adjudicator and a new verifier pair each take a free agent; with none left
   the item is returned for a follow-up task.
 - An agent that returns nothing counts as not checked, never as not refuted.
-- A refutation holds only under the function it was made in, and one as an
-  alternate only for that relationship. A part whose refutation stands, also
-  on a part-level reading such as `lifecycle status` or
-  `end-of-life notices`, is still kept under another function, in the same
-  run or a later one, or as a primary after it was refuted as an alternate,
-  when both verifiers confirm it there.
-- A part verified in its own right that is also another part's alternate
-  gets one verdict from each verifier and one ruling for both roles: a
-  refutation of its `pin-for-pin match` or `functional match` that stands
-  also refutes it in its own right.
+- A refutation holds only under the function it was made in. A part whose
+  refutation stands, also on a part-level reading such as
+  `lifecycle status` or `end-of-life notices`, is still kept under another
+  function, in the same run or a later one, when both verifiers confirm it
+  there.
+- A refutation fails only the alternate relationship when each refuting
+  verdict fails `pin-for-pin match` or `functional match` and no other
+  check. One that also fails another check, or gives its reason in text
+  with no failing check, gets one ruling: when it stands, the part is
+  refuted in the function in every role, also when only its fit to the
+  other part holds.
+- A refuted part's replacement is chosen before the same pair's refutations
+  of alternates are ruled on. When the next part in rank order is an
+  alternate that pair refuted on a check other than its fit, and that
+  refutation stands, the replacement pair still runs for it. The part is not
+  kept, and the function stays open for a follow-up task.
 - The workflow script has no file or git access. Every return comes back in
   the task's output, and `session.py record` writes and commits it.
 - `vendors.py fetch` needs curl_cffi for the chrome and safari clients.
@@ -184,8 +190,14 @@ stays final in the run, even if the part is verified later as another part's
 alternate. A refutation no adjudicator ruled on, for want of a free agent or
 of a ruling, keeps the part open in the run: a later verification does not
 clear it, only a standing refutation replaces it, and the part holds no
-alternate role. A refutation as an alternate fails only that relationship: the
-part keeps its own place on the shortlist. A part a verifier was not asked to
+alternate role. A refutation of a part as an alternate on its fit alone, each
+refuting verdict failing `pin-for-pin match` or `functional match` and no
+other check, fails only that relationship: the part keeps its own place on
+the shortlist, and a part in both roles keeps its own verification on its
+other checks while the adjudicator rules on the relationship. Any other
+refutation as an alternate holds for the part in the function, in every role,
+as a refutation as a primary does: every other check reads the part against
+the function, whatever its role. A part a verifier was not asked to
 verify is ignored, a part it lists twice has no verdict from it, and a check
 read as empty, blank or not read, or as `none` other than
 `end-of-life notices` and `longevity commitment`, figure evidence that is

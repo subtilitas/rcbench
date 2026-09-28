@@ -839,6 +839,10 @@ const MOVING = new Set(['stock', 'presale', 'second-vendor stock', 'lead time', 
 // commitment.
 const MAY_READ_NONE = new Set(['end-of-life notices', 'longevity commitment'])
 
+// The checks of an alternate's fit to the part it stands in for. Every
+// other check reads the part against its function, whatever its role.
+const FIT = new Set(['pin-for-pin match', 'functional match'])
+
 // A check written as not read, as none where a value exists to be read, or
 // without its source or a reading time of this task, shows nothing.
 function shown(c) {
@@ -865,12 +869,17 @@ function laterStatus(prev, next) {
   return weight(next) >= weight(prev) ? next : prev
 }
 
+// Whether a ledger row gives the part's own status in its function: a row
+// as a primary does, and so does a refutation as an alternate unless it
+// rests on the fit alone, which fails only that relationship.
+const ofPart = l => l.as !== 'alternate' || (String(l.status).startsWith('refuted') && !l.fit_only)
+
 // The next part in rank order that is not refuted.
 function nextCandidate(functions, fn, part, ledger) {
   const f = functions.find(x => x.function === fn)
   if (!f) return null
   const status = new Map()
-  for (const l of ledger) if (l.part && l.function === fn && l.as !== 'alternate') status.set(l.part, laterStatus(status.get(l.part), l.status))
+  for (const l of ledger) if (l.part && l.function === fn && ofPart(l)) status.set(l.part, laterStatus(status.get(l.part), l.status))
   const i = f.shortlist.findIndex(c => c.part === part)
   if (i < 0) return null
   return f.shortlist.slice(i + 1).find(c => status.get(c.part) !== 'refuted') || null
@@ -954,7 +963,6 @@ async function verifyCategory(cat, functions, bundle) {
       // states a refutation is one.
       const cand = candidateOf(functions, e.function, e.part)
       const added = new Set(((cand && cand.requirements) || []).filter(r => r.added).map(r => r.name))
-      const as = e.kind === 'alternate' ? { as: 'alternate', for: e.for } : { as: 'primary' }
       for (const v of e.verdicts) {
         if (v.verdict === 'confirmed' && !noRefutation(v.refutation)) v.verdict = 'refuted'
         const passing = name => (v.checks || []).some(c => c.figure === name && shown(c) && c.passes === true)
@@ -965,13 +973,17 @@ async function verifyCategory(cat, functions, bundle) {
         const liveRoute = v.verifier === 'stock' && passing('stock') && passing('presale')
         // Compatibility checks bear on a part's alternate role only, and the
         // second vendor's stock on a route that needs it.
-        const compat = c => c.figure === 'pin-for-pin match' || c.figure === 'functional match'
+        const compat = c => FIT.has(c.figure)
         const offRoute = c => (heldRoute && (c.figure === 'stock' || c.figure === 'presale')) || (liveRoute && c.figure === 'held quantity')
           || (e.kind !== 'alternate' && compat(c)) || (c.figure === 'second-vendor stock' && !requiredChecks('stock', cand, e.kind).includes(c.figure))
         // A reading that moves or always passes, and a requirement P2 gave no
         // value for, differs from the value stated without refuting.
         const passesOnly = c => MOVING.has(c.figure) || (v.verifier === 'datasheet' && added.has(c.figure))
-        const bad = (v.checks || []).filter(c => !offRoute(c) && ((!c.agrees && !passesOnly(c)) || c.passes !== true))
+        const fails = c => (!c.agrees && !passesOnly(c)) || c.passes !== true
+        const bad = (v.checks || []).filter(c => !offRoute(c) && fails(c))
+        // The checks the verdict fails, the fit of a part that is also an
+        // alternate among them.
+        v.failed = (v.checks || []).filter(c => fails(c) && (!offRoute(c) || (e.alsoAlternate && compat(c)))).map(c => c.figure)
         if (bad.length) {
           v.refutation = [v.verdict === 'refuted' ? v.refutation : '', `checks disagree or fail: ${bad.map(c => c.figure).join(', ')}`].filter(t => !readsNone(t)).join('; ')
           v.verdict = 'refuted'
@@ -982,6 +994,18 @@ async function verifyCategory(cat, functions, bundle) {
       // overturned refutation without them does not count as confirmation.
       const complete = kind => e.verdicts.some(v => v.verifier === kind && v.verdict !== 'incomplete' && covered(v, cand))
       const refuted = e.verdicts.filter(v => v.verdict === 'refuted')
+      // A refutation whose every refuting verdict fails the fit and nothing
+      // else fails only the alternate relationship. A part in both roles
+      // refuted so keeps its own verification on its other checks, and the
+      // ruling is on the relationship.
+      const fitOnly = refuted.length > 0 && refuted.every(v => v.failed.length && v.failed.every(n => FIT.has(n)))
+      const relOnly = e.alsoAlternate && fitOnly
+      if (relOnly) {
+        const both = complete('stock') && complete('datasheet')
+        ledger.push({ function: e.function, part: e.part, as: 'primary', status: both ? 'verified' : 'not verified', reason: both ? '' : 'not covered by both verifiers' })
+        if (!both) followUps.push({ role: 'P4', category: cat, function: e.function, part: e.part, reason: 'not covered by both verifiers' })
+      }
+      const as = e.kind === 'alternate' || relOnly ? { as: 'alternate', for: e.for, ...(fitOnly ? { fit_only: true } : {}) } : { as: 'primary' }
       if (!refuted.length) {
         if (complete('stock') && complete('datasheet')) { ledger.push({ function: e.function, part: e.part, ...as, status: 'verified' }); continue }
         const reason = e.verdicts.some(v => v.verdict === 'incomplete') ? 'a verifier gave no required check for some figures' : 'not covered by both verifiers'
@@ -1001,15 +1025,18 @@ async function verifyCategory(cat, functions, bundle) {
         continue
       }
       if (!ruling.stands) {
+        // Its fit then holds on its compatibility checks (below).
+        if (relOnly) continue
         const both = complete('stock') && complete('datasheet')
         ledger.push({ function: e.function, part: e.part, ...as, status: both ? 'verified; refutation did not stand' : 'not verified', reason: both ? '' : 'refutation did not stand, but one verifier did not cover it' })
         if (!both) followUps.push({ role: 'P4', category: cat, function: e.function, part: e.part, reason: 'not covered by both verifiers' })
         continue
       }
       ledger.push({ function: e.function, part: e.part, ...as, status: 'refuted' })
-      // A refuted alternate fails its relationship to the primary, not the
-      // part's own place on the shortlist.
-      if (e.kind === 'alternate') { followUps.push({ role: 'P4', category: cat, function: e.function, part: e.part, reason: 'alternate refuted; the primary has no second source by it' }); continue }
+      // A refuted alternate leaves the primary without a second source by
+      // it. One that does not rest on the fit alone also holds for the part
+      // in its function (ofPart), but sends no next part to a pair.
+      if (as.as === 'alternate') { followUps.push({ role: 'P4', category: cat, function: e.function, part: e.part, reason: 'alternate refuted; the primary has no second source by it' }); continue }
       // A fixed input that fails a check is reported to the owner, not
       // re-selected (Scope): its function takes no next-ranked part.
       const fixed = (functions.find(x => x.function === e.function) || {}).fixed_input
@@ -1030,8 +1057,10 @@ async function verifyCategory(cat, functions, bundle) {
     // on as a whole, its compatibility included.
     for (const e of byPart.values()) {
       if (!e.alsoAlternate) continue
+      // A relationship refuted on its fit keeps that status.
+      if (ledger.some(l => l.as === 'alternate' && l.function === e.function && l.part === e.part && l.for === e.for)) continue
       const primary = [...ledger].reverse().find(l => l.function === e.function && l.part === e.part && l.as === 'primary')
-      const fits = e.verdicts.some(v => v.verifier === 'datasheet' && ['pin-for-pin match', 'functional match'].every(n => (v.checks || []).some(c => c.figure === n && c.agrees && c.passes === true && shown(c))))
+      const fits = e.verdicts.some(v => v.verifier === 'datasheet' && [...FIT].every(n => (v.checks || []).some(c => c.figure === n && c.agrees && c.passes === true && shown(c))))
       const status = primary && primary.status === 'refuted' ? 'refuted' : primary && primary.status.startsWith('verified') && fits ? 'verified' : 'not verified'
       ledger.push({ function: e.function, part: e.part, as: 'alternate', for: e.for, status })
     }
@@ -1082,21 +1111,22 @@ function selection(functions, ledger) {
   // A part's status is its last ledger entry: a later refutation overrides
   // an earlier verification, and a later verification no refutation.
   // Primary and alternate verifications are separate relationships: a part
-  // refuted as another part's alternate keeps its own shortlist place, and
-  // an alternate counts for the part it was checked against only.
+  // refuted as another part's alternate on its fit alone keeps its own
+  // shortlist place, and an alternate counts for the part it was checked
+  // against only.
   const last = new Map()
   const altLast = new Map()
   for (const l of ledger) {
     if (!l.part) continue
-    const m = l.as === 'alternate' ? altLast : last
-    const k = l.as === 'alternate' ? `${l.function}\u0000${l.for}\u0000${l.part}` : `${l.function}\u0000${l.part}`
-    m.set(k, laterStatus(m.get(k), l.status))
+    const own = `${l.function}\u0000${l.part}`
+    const rel = `${l.function}\u0000${l.for}\u0000${l.part}`
+    if (l.as === 'alternate') altLast.set(rel, laterStatus(altLast.get(rel), l.status))
+    if (ofPart(l)) last.set(own, laterStatus(last.get(own), l.status))
   }
   return functions.map(f => {
     const st = c => last.get(`${f.function}\u0000${c.part}`) || ''
-    // A part refuted as a primary, standing or not ruled on, fails for the
-    // function as a whole, so as an alternate too; a refutation as an
-    // alternate is the relationship's.
+    // A part refuted in the function, standing or not ruled on, fails as an
+    // alternate too; a refutation on the fit alone is the relationship's.
     const altSt = (primary, alt) => st({ part: alt }).startsWith('refuted') ? st({ part: alt }) : (altLast.get(`${f.function}\u0000${primary}\u0000${alt}`) || '')
     const standing = f.shortlist.find(c => st(c) !== 'refuted')
     // A fixed input's function keeps that input or nothing.

@@ -58,7 +58,9 @@ const CLIENTS = JSON.parse(fs.readFileSync(path.join(__dirname, 'hosts.json'), '
 const endpoint = h => h.probe == null ? `https://${h.host}/products/x` : /-api$/.test(h.client || '') ? CLIENTS[h.client].replace(/\b(LCSC|MPN)\b/, h.probe) : h.probe
 
 // opts: refute ['label:part'], refuteFigure ['label'], stands, omit ['label'],
-// nulls {label: count}, throws [label], critic 'none' | 'all', p0 {...}, hosts
+// nulls {label: count}, throws [label], critic 'none' | 'all', p0 {...}, hosts,
+// edit {figure: {...}} for every P4 check, editPart {'label:part': {figure:
+// {...}}} for one verifier's checks of one part
 async function runTask(task, opts = {}) {
   const calls = []
   const prompts = []
@@ -244,6 +246,7 @@ async function runTask(task, opts = {}) {
           .map((figure, k) => ({ figure, stated: 's', read: opts.readNone && kind === 'datasheet' ? 'not read: API timed out' : 'r', source: opts.noSource && kind === 'stock' ? '' : 'src', read_at: opts.undated && kind === 'stock' ? '' : '2026-09-28T10:00:00Z', agrees: !((opts.disagree || []).includes(base) && k === 0), passes: !((opts.failPass || []).includes(base) && k === 0) }))
           .map(c => opts.heldAndLive && c.figure === 'stock' ? { ...c, passes: false } : c)
           .map(c => ({ ...c, ...((opts.edit || {})[c.figure] || {}), ...(kind === 'stock' ? opts.stockPatch || {} : {}) }))
+          .map(c => ({ ...c, ...(((opts.editPart || {})[`${base}:${pt}`] || {})[c.figure] || {}) }))
       data.parts = (opts.omit || []).includes(base) || (opts.omitPart || []).includes(`${base}:${part}`) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part, opts.bothRoles && !only ? 'alternate' : undefined), refutation: refute ? 'mock' : '' }]
       if (opts.note && opts.note[0] === base && data.parts.length) data.parts[0].refutation = opts.note[1]
       if ((opts.dupRow || []).includes(base)) data.parts.push({ ...data.parts[0], verdict: 'refuted', refutation: 'second row' })
@@ -685,9 +688,14 @@ async function main() {
   r = await runTask('T4', { qAltBack: true, p4parts: ['part3'] })
   const r10b = r.result.summary.results.find(c => c.category === 'R10')
   check(r10b.selection[0].part === 'part1' && r10b.selection[0].q_alternatives[0].alternate_status === 'not verified', 'part in both roles: selected as primary, alternate role not verified without its compatibility checks')
-  // A part refuted only as an alternate keeps its own place on the shortlist.
-  r = await runTask('T2', { altName: 'part2', verify: ['part2'], refute: ['P4-stock-R1:part1', 'P4-datasheet-R1:part2'] })
-  check(r1(r).selection[0].part === 'part2', 'part refuted as an alternate only: still a candidate in its own right')
+  // A part refuted as an alternate on its fit alone keeps its own place on
+  // the shortlist; on any other check it is refuted in the function.
+  r = await runTask('T2', { altName: 'part2', verify: ['part2'], refute: ['P4-stock-R1:part1', 'P4-datasheet-R1:part2'], editPart: { 'P4-datasheet-R1:part2': { 'pin-for-pin match': { agrees: false, passes: false } } } })
+  check(r1(r).selection[0].part === 'part2', 'part refuted as an alternate on its fit only: still a candidate in its own right')
+  r = await runTask('T2', { altName: 'part2', verify: ['part2'], refute: ['P4-stock-R1:part1'], editPart: { 'P4-stock-R1:part2': { 'end-of-life notices': { read: 'last-time-buy notice 2026-08-01', agrees: false, passes: false } } } })
+  check(r1(r).selection[0].part === null && r1(r).selection[0].refuted.includes('part2'), 'part refuted as an alternate on end-of-life notices: not kept in its own right')
+  r = await runTask('T2', { alts: { part1: 'part3' }, p4parts: ['part3'], refute: ['P4-stock-R1:part1', 'P4-stock-R1-2:part2'], editPart: { 'P4-stock-R1:part3': { 'end-of-life notices': { read: 'last-time-buy notice 2026-08-01', agrees: false, passes: false } } } })
+  check(!r.calls.includes('P4-stock-R1-3') && r.result.followUps.some(f => f.part === 'part2' && f.reason === 'refuted, and no next-ranked candidate'), 'part refuted as an alternate on end-of-life notices: not the next part after a refutation')
   // A rule-5 alternate the re-rank drops as a candidate keeps its record.
   r = await runTask('T2', { altName: 'part2', verify: ['part2'], ranking: [{ rank: 1, part: 'part1', reason: 'r' }, { rank: 2, part: 'part3', reason: 'r' }], dropShort: ['part2'] })
   check(r1(r).selection[0].part === 'part1' && r1(r).selection[0].alternate_unverified.length === 0, 'alternate dropped as a candidate: verified as the alternate')
@@ -1068,8 +1076,10 @@ async function main() {
   check(qsr.part === 'part2' && /shared with part1/.test(qsr.q_alternatives[0].alternate_status), 'alternate shared with a refuted first-ranked part: not verified for the Q alternative')
   r = await runTask('T2', { cap: 23, alts: { part1: 'altP', part2: 'altP' }, verifyFirst: ['part2'], p4parts: ['part2', 'altP'], refute: ['P4-stock-R1:part1'] })
   check(r1(r).selection[0].part === 'part2' && r1(r).selection[0].alternate_unverified.includes('altP'), 'shared alternate checked against a refuted part, no pair left: not verified for the kept part')
-  r = await runTask('T2', { alts: { part1: 'altP', part2: 'altP' }, p4parts: ['altP'], refute: ['P4-stock-R1:part1', 'P4-datasheet-R1:altP'] })
-  check(r1(r).selection[0].part === 'part2' && r1(r).selection[0].alternate_unverified.length === 0, 'alternate refuted for a refuted part, verified for the replacement: verified')
+  r = await runTask('T2', { alts: { part1: 'altP', part2: 'altP' }, p4parts: ['altP'], refute: ['P4-stock-R1:part1', 'P4-datasheet-R1:altP'], editPart: { 'P4-datasheet-R1:altP': { 'pin-for-pin match': { agrees: false, passes: false } } } })
+  check(r1(r).selection[0].part === 'part2' && r1(r).selection[0].alternate_unverified.length === 0, 'alternate refuted on its fit for a refuted part, verified for the replacement: verified')
+  r = await runTask('T2', { alts: { part1: 'altP', part2: 'altP' }, p4parts: ['altP'], refute: ['P4-stock-R1:part1'], editPart: { 'P4-stock-R1:altP': { 'end-of-life notices': { read: 'last-time-buy notice 2026-08-01', agrees: false, passes: false } } } })
+  check(r1(r).selection[0].part === 'part2' && r1(r).selection[0].alternate_unverified.includes('altP'), 'alternate refuted on end-of-life notices for a refuted part, verified for the replacement: not verified')
   // A part verified in its own right keeps that role when it is also an
   // alternate: the first-ranked part listed as one, a Q alternative named
   // by another, and the kept part's alternate listed as a Q alternative.
@@ -1087,6 +1097,10 @@ async function main() {
   check(r10(r).selection[0].part === 'part1' && r10(r).selection[0].q_alternatives[0].alternate_status === 'verified', 'part in both roles, refutation did not stand: alternate role verified')
   r = await runTask('T4', { qAltBack: true, bothRoles: true, p4parts: ['part3'], refute: ['P4-datasheet-R10:part1'], edit: { 'pin-for-pin match': { passes: false } }, stands: false })
   check(r10(r).selection[0].part === 'part1' && r10(r).selection[0].q_alternatives[0].alternate_status === 'not verified', 'part in both roles, refutation did not stand, compatibility failing: alternate role not verified')
+  // A part in both roles refuted on its fit alone is refuted as the
+  // alternate only, and stays the kept part.
+  r = await runTask('T4', { qAltBack: true, bothRoles: true, p4parts: ['part3'], refute: ['P4-datasheet-R10:part1'], edit: { 'pin-for-pin match': { agrees: false, passes: false } } })
+  check(r10(r).selection[0].part === 'part1' && r10(r).selection[0].refuted.length === 0 && r10(r).selection[0].q_alternatives[0].alternate_status === 'refuted' && r10(r).ledger.filter(l => l.part === 'part1' && l.as === 'alternate').length === 1, 'part in both roles refuted on its fit, standing: kept in its own right, alternate role refuted')
 
   // Follow-up plans.
   for (const [phases, n, want] of [['P1', 2, 6], ['P2-P4', 3, 16], ['P5-P6', 0, 5]]) {
