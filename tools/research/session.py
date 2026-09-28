@@ -510,8 +510,11 @@ def t6_open(results):
         for c, entries in ((t.get("summary") or {}).get("selection")
                            or {}).items():
             for e in entries:
-                for part in [e.get("part")] + [q.get("part") for q in
-                                               e.get("q_alternatives") or []]:
+                # The kept part, its rule-5 alternate, and each Q
+                # alternative with its own alternate.
+                for part in [e.get("part"), e.get("alternate")] + [
+                        p for q in e.get("q_alternatives") or []
+                        for p in (q.get("part"), q.get("alternate"))]:
                     if part:
                         part_fn.setdefault(part, set()).add(
                             (c, e["function"]))

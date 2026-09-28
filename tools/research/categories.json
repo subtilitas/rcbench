@@ -107,6 +107,7 @@
     "power-up sequence",
     "allowlist",
     "Q4 alternatives",
-    "Q8 alternatives"
+    "Q8 alternatives",
+    "absent IOVDD"
   ]
 }

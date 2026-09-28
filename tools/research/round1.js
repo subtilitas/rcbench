@@ -170,7 +170,7 @@ function p1Prompt(cat) {
   const items = TASK === 'FU' ? itemsFor(cat) : []
   return `${ctx('P1', cat, `P1-${cat}`)}
 
-Read the ${cat} row on the page and every line of hardware/docs/IOBoard.md that belongs to it (search for "${cat}" and for the functions the row names), and every source they cite. Try to refute each value: does it follow from its source, is the unit right, is it an owner decision or an assumption. Mark each. Every value you mark assumption is also a question to the owner; give each value the index of the question that asks for it in "question" (-1 if none). List every requirement value P2 needs to qualify a part that neither page states, as a question to the owner; and every "P1 asks" in the row or in those lines. ${cat === 'R5' ? 'The supply currents of the parts T2 and T4 select are inputs R5 takes from those tasks, not questions. ' : ''}A question whose value only feeds Q4, Q8 or Q9 is blocks "decision-only". A question already under "Raised by P1" is not raised again.${items.length ? `\n\nThis is a follow-up task for these gaps: ${J(items)}` : ''}`
+Read the ${cat} row on the page and every line of hardware/docs/IOBoard.md that belongs to it (search for "${cat}" and for the functions the row names), and every source they cite. Try to refute each value: does it follow from its source, is the unit right, is it an owner decision or an assumption. Mark each. Every value you mark assumption is also a question to the owner; give each value the index of the question that asks for it in "question" (-1 if none), and give that question the value's where in for_where. List every requirement value P2 needs to qualify a part that neither page states, as a question to the owner; and every "P1 asks" in the row or in those lines. ${cat === 'R5' ? 'The supply currents of the parts T2 and T4 select are inputs R5 takes from those tasks, not questions. ' : ''}A question whose value only feeds Q4, Q8 or Q9 is blocks "decision-only". A question already under "Raised by P1" is not raised again.${items.length ? `\n\nThis is a follow-up task for these gaps: ${J(items)}` : ''}`
 }
 
 function criticPrompt(cat, p1) {
@@ -235,7 +235,7 @@ function p4Prompt(cat, kind, bundle, only) {
     : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, the reasons the re-rank gave for dropping a P3 candidate, P2\'s own drops, and for "function requirements: FUNCTION" whether the function\'s requirement list names every requirement IOBoard.md and the answers set for it, with no value weaker than theirs) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
   return `${ctx('P4', cat, `P4-${kind}-${cat}`)}
 
-${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and a check with agrees or passes false counts as a refutation.
+${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives the lifecycle table's readings: "longevity commitment" (the programme page's commitment, or that none is published; passes unless S5 makes it a gate it fails), "market introduction" (the first datasheet revision date; passes, and under 12 months is stated in read), "distributor status" (JLCPCB, LCSC and Digi-Key; passes, a disagreement with the maker stated in read) and "lead time" (the manufacturer's lead time in Digi-Key's API; passes). It also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and a check with agrees or passes false counts as a refutation.
 
 The shortlist, the values found for research and the reports:
 ${J(bundle)}`
@@ -251,7 +251,7 @@ ${J(evidence)}`
 function p5Prompt() {
   return `${ctx('P5', '', 'P5')}
 
-Read every return under ${P.results}/hardware/research/round1/ (T2, T3, T4 and every FU-* directory) and run the checks of the P5 row over the whole board. The parts to check are those in ${P.results}/hardware/research/round1/selection.json, each with its alternate, and both alternatives of Q4 and Q8.${(A.p5_budgets || []).length ? ` Return one budget for each of these, its item named as listed or "NAME: DETAIL" where it has several: ${A.p5_budgets.join('; ')}.` : ''}`
+Read every return under ${P.results}/hardware/research/round1/ (T2, T3, T4 and every FU-* directory) and run the checks of the P5 row over the whole board. The parts to check are those in ${P.results}/hardware/research/round1/selection.json, each with its alternate, and both alternatives of Q4 and Q8.${(A.p5_budgets || []).length ? ` Return one budget for each of these, its item named as listed or "NAME: DETAIL" where it has several, each with its source and reading time; a check the P5 row makes conditional, such as "absent IOVDD" when R1 found the pin ratings the specification cites, is returned with "not applicable: REASON" as its value: ${A.p5_budgets.join('; ')}.` : ''}`
 }
 function p5CriticPrompt(p5) {
   return `${ctx('P5-critic', '', 'P5-critic')}
@@ -415,7 +415,7 @@ async function phaseP1(cats) {
       else if (m.verdict === 'wrong' && (m.correct_marking === 'unchanged' || m.correct_marking === v.marking)) { marking = 'assumption'; followUps.push({ role: 'P1-critic', category: c.cat, value: v, reason: 'marking wrong with no new marking; taken as an assumption', notice: true }) }
       else if (m.verdict === 'wrong') marking = m.correct_marking
       if (marking !== 'assumption') continue
-      const ownQ = v.question >= 0 && v.question < (c.p1.questions || []).length && (c.ruledQ.get(v.question) || {}).verdict !== 'rejected' && !claimed.has(v.question)
+      const ownQ = v.question >= 0 && v.question < (c.p1.questions || []).length && (c.ruledQ.get(v.question) || {}).verdict !== 'rejected' && !claimed.has(v.question) && c.p1.questions[v.question].for_where === v.where
       if (ownQ) { claimed.add(v.question); c.assumptions.push({ ...v, asked: 'own' }); continue }
       c.assumptions.push({ ...v, asked: 'addition' })
       if ((criticAt.get(v.where) || 0) > 0) { criticAt.set(v.where, criticAt.get(v.where) - 1); continue }
@@ -662,7 +662,7 @@ function altOf(c) {
 // (rule 2).
 function requiredChecks(kind, cand, partKind) {
   if (kind === 'stock') {
-    return ['stock', 'lifecycle status', 'end-of-life notices', 'placements', ...(onBoard(cand) ? ['presale'] : []),
+    return ['stock', 'lifecycle status', 'end-of-life notices', 'placements', 'longevity commitment', 'market introduction', 'distributor status', 'lead time', ...(onBoard(cand) ? ['presale'] : []),
       ...(onBoard(cand) && cand.second_source_route === 'second-vendor' ? ['second-vendor stock'] : [])]
   }
   return [...((cand && cand.requirements) || []).map(r => r.name), 'manufacturer allowlist', ...(partKind === 'alternate' ? ['pin-for-pin match', 'functional match'] : [])]
@@ -887,7 +887,7 @@ function selection(functions, ledger) {
         alternate_status: !alt ? '' : shared ? `not verified: shared with ${altOwner.get(alt)}` : (st({ part: alt }) || 'not verified'), second_source_missing: !rec || noSecondSource(rec) || offBoardAlt(rec) }
     })
     const missing = !!(kept && (noSecondSource(kept) || offBoardAlt(kept)))
-    return { function: f.function, decision: f.decision || 'none', part: kept ? kept.part : null, rank: kept ? kept.rank : null, refuted,
+    return { function: f.function, decision: f.decision || 'none', part: kept ? kept.part : null, rank: kept ? kept.rank : null, alternate: altOf(kept), refuted,
       alternate_unverified: alternateUnverified, second_source_missing: missing, q_alternatives: qAlternatives }
   })
 }
@@ -1070,7 +1070,7 @@ async function phaseP5P6() {
   // A check whose critic did not return is not an independent check.
   const missingChecks = [a.missing, b.missing, a.critic_missing, b.critic_missing].filter(Boolean)
   // Every budget the P5 row names, upheld by the critic.
-  const upheld = (a.budgets || []).filter(x => x.upheld === true).map(x => String(x.item || ''))
+  const upheld = (a.budgets || []).filter(x => x.upheld === true && !readsNone(x.source) && !readsNone(x.read_at)).map(x => String(x.item || ''))
   const budgetsMissing = a.missing ? [] : (A.p5_budgets || []).filter(n => !upheld.some(i => i === n || i.startsWith(`${n}: `)))
   for (const n of budgetsMissing) followUps.push({ role: 'P5', item: n, reason: 'budget the P5 row names not returned and upheld' })
   if (!a.missing && !(a.combinations || []).length) missingChecks.push('P5 combinations')

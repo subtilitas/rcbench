@@ -146,7 +146,7 @@ async function runTask(task, opts = {}) {
       if (opts.qSelf) data.functions[0].verify = [{ part: 'part1', kind: 'q-alternative' }]
     }
     if (role === 'P5' && opts.p5Empty) Object.assign(data, { combinations: [], budgets: [] })
-    if (role === 'P5' && opts.p5Items) data.budgets = opts.p5Items.map(item => ({ item, value: 'v', source: 's' }))
+    if (role === 'P5' && opts.p5Items) data.budgets = opts.p5Items.map(item => ({ item, value: 'v', source: 's', read_at: opts.budgetUndated ? '' : '2026-09-28T10:00:00Z' }))
     if (role === 'P5-critic') for (const k of ['combination_verdicts', 'budget_verdicts']) data[k] = data[k].map((v, index) => ({ ...v, index, holds: !(opts.rejectBudget && k === 'budget_verdicts' && index === 0) }))
     if (role === 'P1' && opts.qCategory) data.questions = data.questions.map(q => ({ ...q, category: 'R99', source: 'mock' }))
     if (role === 'P1' && opts.decisionNone) data.questions = data.questions.map(q => ({ ...q, blocks: 'decision-only', decision: 'none' }))
@@ -154,7 +154,7 @@ async function runTask(task, opts = {}) {
     if (role === 'P1' && opts.assumption) data.values = [{ where: 'IOBoard.md:1', quantity: 'ripple', value: '10 mV', marking: 'assumption', source: 's', refutation_tried: 'r', question: -1 }]
     if (role === 'P1' && (opts.twoAssumptions || opts.sharedQ)) {
       data.values = [1, 2].map(n => ({ where: `IOBoard.md:${n}`, quantity: 'voltage', value: `${n} V`, marking: 'assumption', source: 's', refutation_tried: 'r', question: n === 1 || opts.sharedQ ? 0 : -1 }))
-      data.questions = [{ function: 'rail', question: 'State the voltage of rail 1', why: 'w', blocks: 'p2', decision: 'none', for_where: '' }]
+      data.questions = [{ function: 'rail', question: 'State the voltage of rail 1', why: 'w', blocks: 'p2', decision: 'none', for_where: opts.wrongWhere ? 'IOBoard.md:9' : 'IOBoard.md:1' }]
     }
     if (role === 'P3') Object.assign(data, { missed: [], exclusions_not_holding: [], missed_functions: opts.missedFn ? [{ function: 'f2', why: 'the row names it' }] : [] })
     if (role === 'P3' && opts.p3missed) data.missed = [{ function: 'f1', part: 'partX', maker: 'm', why: 'w' }]
@@ -201,7 +201,7 @@ async function runTask(task, opts = {}) {
       const f1 = bundle2.functions[0]
       const cand = pt => [...f1.shortlist, ...(f1.alternateRecords || [])].find(c => c.part === pt) || { requirements: [] }
       const checksFor = (pt, pk) => (opts.emptyChecks || []).includes(base) ? []
-        : (kind === 'stock' ? [...(opts.heldChecks ? ['held quantity', ...(opts.heldAndLive ? ['stock'] : [])] : ['stock', 'presale']), 'lifecycle status', 'end-of-life notices', ...(opts.noPlacementsCheck ? [] : ['placements']), ...(cand(pt).second_source_route === 'second-vendor' && !opts.noSecondVendor ? ['second-vendor stock'] : [])]
+        : (kind === 'stock' ? [...(opts.heldChecks ? ['held quantity', ...(opts.heldAndLive ? ['stock'] : [])] : ['stock', 'presale']), 'lifecycle status', 'end-of-life notices', ...(opts.noPlacementsCheck ? [] : ['placements']), ...(opts.noLifecycleReadings ? [] : ['longevity commitment', 'market introduction', 'distributor status', 'lead time']), ...(cand(pt).second_source_route === 'second-vendor' && !opts.noSecondVendor ? ['second-vendor stock'] : [])]
           : [...cand(pt).requirements.map(r => r.name).filter(n => n !== opts.skipReq), ...(opts.noMakerCheck ? [] : ['manufacturer allowlist']), ...(pk === 'alternate' && !opts.noCompat ? ['pin-for-pin match', 'functional match'] : [])])
           .map((figure, k) => ({ figure, stated: 's', read: opts.readNone && kind === 'datasheet' ? 'not read: API timed out' : 'r', source: opts.noSource && kind === 'stock' ? '' : 'src', read_at: opts.undated && kind === 'stock' ? '' : '2026-09-28T10:00:00Z', agrees: !((opts.disagree || []).includes(base) && k === 0), passes: !((opts.failPass || []).includes(base) && k === 0) }))
           .map(c => opts.heldAndLive && c.figure === 'stock' ? { ...c, passes: false } : c)
@@ -399,6 +399,9 @@ async function main() {
   check(syn2.length === 13 && syn2.every(q => q.for_where === 'IOBoard.md:2'), `shared question: ${syn2.length} synthetic, expected 13 for IOBoard.md:2`)
   r = await runTask('T1', { sharedQ: true, recheckRejects: true })
   check(r.result.followUps.filter(f => f.reason === 'assumption without a confirmed question').length === 13, 'shared question, synthetic rejected: the second assumption is listed')
+  // A question linked from another location does not ask for the value.
+  r = await runTask('T1', { twoAssumptions: true, wrongWhere: true })
+  check(r.result.summary.questions.filter(q => q.synthetic).length === 26, 'assumption linked to a question for another location: asked anew')
   // A null-marker maker page written as not read has no status read.
   r = await runTask('T2', { hosts: [{ host: 'www.onsemi.com', probe: null, hold: ['R2'] }], markerText: 'not read: the page body carries no lifecycle status' })
   check(r.result.followUps.some(f => f.host === 'www.onsemi.com' && f.reason === 'lifecycle status not read from the page'), 'not read status: listed')
@@ -636,6 +639,12 @@ async function main() {
   check(r.result.summary.figures_open.R2.includes('report: clock tolerance: part1'), 'per-part figure not reported: open')
   r = await runTask('T2', { perPartReports: { R2: ['clock tolerance'] }, reportParts: ['clock tolerance: part1'] })
   check(!r.result.summary.figures_open.R2.some(f => f.startsWith('report: clock tolerance')), 'per-part figure reported for the verified part: returned')
+  // The lifecycle table's readings are required.
+  r = await runTask('T2', { noLifecycleReadings: true })
+  check(r1(r).selection[0].part === null, 'no lifecycle readings: not verified')
+  // A budget without its reading time is missing.
+  r = await runTask('T5', { p5Budgets: ['GPIO'], p5Items: ['GPIO'], budgetUndated: true })
+  check(r.result.summary.budgets_missing.includes('GPIO'), 'T5: an undated budget is missing')
   // A held part's failing live stock is superseded by its held quantity.
   r = await runTask('T2', { held: 500, heldChecks: true, heldAndLive: true })
   check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'held part with failing live stock: verified on its held quantity')

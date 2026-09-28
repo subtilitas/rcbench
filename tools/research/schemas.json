@@ -1193,12 +1193,17 @@
        },
        "source": {
         "type": "string"
+       },
+       "read_at": {
+        "type": "string",
+        "description": "the time each figure of the budget was read (sourcing rule 7)"
        }
       },
       "required": [
        "item",
        "value",
-       "source"
+       "source",
+       "read_at"
       ]
      }
     },
