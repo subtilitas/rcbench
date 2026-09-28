@@ -59,6 +59,10 @@ python3 tools/research/session.py raised --base $B
 git -C $B/plan push origin research/round1
 ```
 
+`--effort` is the effort every agent of the run gets: `low`, `medium`, `high`,
+`xhigh` or `max`. The workflow passes it to each agent; `--model` is recorded
+only, and every agent runs on the session's model.
+
 `prepare` fetches origin and refuses a run out of turn: T2 and T4 before T1 is
 recorded, T3 before T2 and T4, T5 before T3, T6 before T5, a P1 follow-up
 before T1, a P2-P4 follow-up before the tasks that own its categories, a P5-P6

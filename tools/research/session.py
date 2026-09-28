@@ -964,6 +964,9 @@ def q_open(q):
     return why
 
 
+EFFORTS = ["low", "medium", "high", "xhigh", "max"]
+
+
 def run_info(model, effort):
     try:
         claude = subprocess.run(["claude", "--version"], capture_output=True,
@@ -1778,7 +1781,8 @@ def main():
     p.add_argument("--base", required=True)
     p.add_argument("--digikey-env", required=True)
     p.add_argument("--model", required=True)
-    p.add_argument("--effort", required=True)
+    p.add_argument("--effort", required=True, choices=EFFORTS,
+                   help="the effort every agent of the run gets")
     p.add_argument("--followup")
     p.add_argument("--name", default="1", help="follow-up run name")
     p.add_argument("--db")

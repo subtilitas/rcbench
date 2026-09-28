@@ -65,9 +65,11 @@ async function runTask(task, opts = {}) {
   const calls = []
   const prompts = []
   const nulls = new Map(Object.entries(opts.nulls || {}))
+  const efforts = []
   async function agent(prompt, o) {
     const base = o.label.replace(/:restart$/, '')
     calls.push(o.label)
+    efforts.push(o.effort)
     prompts.push({ label: o.label, prompt })
     if ((opts.throws || []).includes(base)) throw new Error('mock throw')
     const left = nulls.get(base)
@@ -305,11 +307,11 @@ async function runTask(task, opts = {}) {
     commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, inventory: opts.inventory || {}, jlcparts: JL, p5_budgets: opts.p5Budgets || [], p5_conditional: opts.p5Conditional || [], q_options: opts.qOptions || {},
     followup: opts.followup, first_v: 5, decision_categories: { Q4: ['R10'], Q8: ['R2', 'R12'], Q9: ['R3'] }, t6_outputs: T6OUT, for_research: opts.forResearch || [], raised: opts.raised || [], p1_asks: opts.p1Asks || {}, fixed_inputs: opts.fixedInputs || {}, required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {},
     p5_assumptions: opts.p5Assumptions || [], decisions: opts.decisions || {}, accept_open: opts.acceptOpen || null, left_open: opts.leftOpen || [], p5_assumed: opts.p5AssumedT6 || [],
-    last_p56: opts.lastP56 || '', p56_runs: opts.p56Runs || [], selection: opts.selection || {}, jlc_stock_row: opts.jlcRow || [] }
+    last_p56: opts.lastP56 || '', p56_runs: opts.p56Runs || [], selection: opts.selection || {}, jlc_stock_row: opts.jlcRow || [], run_info: opts.runInfo || {} }
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
     `return (async () => {${src}})()`)
   const result = await fn(args, agent, parallel, pipeline, () => {}, () => {})
-  return { result, calls, prompts }
+  return { result, calls, prompts, efforts }
 }
 
 const r1 = r => r.result.summary.results.find(x => x.category === 'R1')
@@ -323,8 +325,14 @@ async function main() {
     check(result.returns.length === result.started, `${t}: ${result.returns.length} returns against ${result.started} started`)
   }
 
+  // Every agent runs at the recorded effort; none is set without one.
+  let r = await runTask('T2', { runInfo: { effort: 'high' } })
+  check(r.efforts.length > 0 && r.efforts.every(e => e === 'high'), 'T2: every agent at the recorded effort')
+  r = await runTask('T2')
+  check(r.efforts.every(e => e === undefined), 'T2: no effort set without one recorded')
+
   // Both verifiers confirm: the first-ranked part is kept.
-  let r = await runTask('T2')
+  r = await runTask('T2')
   check(r1(r).selection[0].part === 'part1', 'T2: part1 selected')
 
   // A refutation that stands: one adjudicator, then a new pair on part2.

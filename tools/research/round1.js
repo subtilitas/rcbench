@@ -22,6 +22,8 @@ const A = args || {}
 const TASK = A.task
 const P = A.paths || {}
 const S = A.schemas || {}
+// Every agent runs at the effort prepare recorded for the run (--effort).
+const EFFORT = ['low', 'medium', 'high', 'xhigh', 'max'].includes((A.run_info || {}).effort) ? A.run_info.effort : null
 const CAP = A.cap || 32
 const CATS = A.categories || {}
 const ORDER = Object.keys(CATS)
@@ -96,7 +98,7 @@ async function run(role, cat, base, phase, prompt) {
     started++
     let data = null
     try {
-      data = await agent(prompt, { schema: S[role], label: attempt ? `${label}:restart` : label, phase })
+      data = await agent(prompt, { schema: S[role], label: attempt ? `${label}:restart` : label, phase, ...(EFFORT ? { effort: EFFORT } : {}) })
     } catch (err) {
       missing.push({ role, category: cat || '', label, attempt, error: String(err) })
       continue
