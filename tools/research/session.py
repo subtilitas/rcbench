@@ -604,12 +604,19 @@ def t6_open(results):
     if not checks:
         return ["no P5/P6 check is recorded"], []
     name, last = checks[-1]
-    # A part the check did not see, not a run that kept the same parts.
+    # An effective entry the check did not see: a function bound to other
+    # parts, or the same parts requalified by a later run.
     eff = effective_selection(results)
     then = effective_selection(results, before=last.get("sequence", 0))
-    out = [f"{c}: parts changed after {name}"
+
+    def bound(sel, c):
+        return {fn: (e.get("part"), e.get("alternate"), e.get("run"),
+                     json.dumps(e.get("q_alternatives") or [],
+                                sort_keys=True))
+                for fn, e in sel.get(c, {}).items()}
+    out = [f"{c}: selections changed after {name}"
            for c in sorted(set(eff) | set(then))
-           if kept_parts(eff, [c]) != kept_parts(then, [c])]
+           if bound(eff, c) != bound(then, c)]
     # A P2-P4 follow-up of these rounds covers each function it verified a
     # part for, and each category it verified any part in; not what its
     # file named.
@@ -1272,6 +1279,8 @@ def cmd_prepare(args):
                  if o not in open_sel]
     t6 = {"last_p56": "", "p56_runs": [], "left_open": [], "p5_assumed": [],
           "selection": {}, "jlc_stock_row": []}
+    if args.task == "T5" or phases == "P5-P6":
+        t6["selection"] = effective_selection(results)
     if args.task == "T6":
         questions_gate(results, rows, list(cats["categories"]))
         open_t6, t6 = t6_inputs(results, text)
@@ -1487,6 +1496,12 @@ def record(args):
         raise SystemExit(f"the output is run {result.get('run')} "
                          f"{result.get('run_id')}, not the prepared {run} "
                          f"{want['run_id']}")
+    copied = [k for k in ("commit", "date", "followup", "decisions",
+                          "accept_open")
+              if result.get(k) != want.get(k)]
+    if copied:
+        raise SystemExit("the output's " + ", ".join(copied)
+                         + " differ from the prepared arguments")
     result_shape(result, want)
     with open(args.output, "rb") as f:
         digest = hashlib.sha256(f.read()).hexdigest()

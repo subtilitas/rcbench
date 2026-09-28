@@ -818,6 +818,14 @@ async function main() {
   check(r.result.summary.budgets_missing.includes('GPIO'), 'T5: not applicable for an unconditional budget is missing')
   r = await runTask('T5', { p5Budgets: ['GPIO'], p5Items: ['GPIO'], blankSource: true })
   check(r.result.summary.budgets_missing.includes('GPIO'), 'T5: a whitespace source is none')
+  // Shared-part stock is owed when a part is kept for two functions.
+  const twoUses = { R1: { f1: { part: 'X' } }, R8: { f2: { part: 'X' } } }
+  r = await runTask('T5', { selection: twoUses, p5Budgets: ['shared-part stock'], p5Conditional: ['shared-part stock'], p5Items: ['shared-part stock'], budgetValues: { 'shared-part stock': 'not applicable: no part is shared' } })
+  check(r.result.summary.budgets_missing.includes('shared-part stock') && r.result.summary.budgets_missing.includes('shared-part stock: X'), 'T5: shared-part stock not applicable while a part is shared: missing')
+  r = await runTask('T5', { selection: twoUses, p5Budgets: ['shared-part stock'], p5Conditional: ['shared-part stock'], p5Items: ['shared-part stock: X'] })
+  check(r.result.summary.budgets_missing.length === 0, 'T5: the shared part budgeted at its summed placements: complete')
+  r = await runTask('T5', { selection: { R1: { f1: { part: 'X' } } }, p5Budgets: ['shared-part stock'], p5Conditional: ['shared-part stock'], p5Items: ['shared-part stock'], budgetValues: { 'shared-part stock': 'not applicable: no part is shared' } })
+  check(r.result.summary.budgets_missing.length === 0, 'T5: shared-part stock not applicable with no shared part: complete')
   // A held part's failing live stock is superseded by its held quantity.
   r = await runTask('T2', { held: 500, heldChecks: true, heldAndLive: true })
   check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'held part with failing live stock: verified on its held quantity')
@@ -1255,7 +1263,7 @@ async function main() {
   const selT6 = { selection: { R1: { f1: { part: 'part1', alternate: 'altA', q_alternatives: [] } } }, jlcRow: ['It reads the result whose LCSC number equals the row\'s.'] }
   const rows = ['part1', 'altA'].map(part => ({ function: 'f1', part, parts_line: 4, group_page: 'hardware/docs/GroupA.md' }))
   r = await runTask('T6', { ...selT6, partRows: rows.slice(0, 1), jlcReview: [{ index: 0, holds: true, line: 12, reason: 'r' }] })
-  check(r.result.summary.stopped === true && /no Parts.md row or group page for altA/.test(r.result.summary.reasons[0]), 'T6: a selected part without its Parts.md row stops it')
+  check(r.result.summary.stopped === true && /no Parts.md row or group A page for altA/.test(r.result.summary.reasons[0]), 'T6: a selected part without its Parts.md row stops it')
   r = await runTask('T6', { ...selT6, partRows: rows, jlcReview: [{ index: 0, holds: false, line: 0, reason: 'reads the first result' }] })
   check(r.result.summary.stopped === true && /tools\/jlc_stock.py not confirmed/.test(r.result.summary.reasons[0]), 'T6: a stock tool that does not do its Outputs row stops it')
   r = await runTask('T6', { ...selT6, partRows: rows, jlcReview: [{ index: 0, holds: true, line: 12, reason: 'r' }] })
@@ -1263,8 +1271,14 @@ async function main() {
   // A part not verified, open and accepted as such, is owed no row.
   const qAlts = [{ part: 'part3', status: 'refuted', alternate: 'altQ', alternate_status: '' }, { part: 'part4', status: 'verified', alternate: 'altR', alternate_status: 'not verified' }, { part: 'part5', status: 'verified', alternate: 'altS', alternate_status: 'verified' }]
   const selQ = { ...selT6, selection: { R10: { f1: { part: 'part1', alternate: 'altA', alternate_unverified: ['altA'], q_alternatives: qAlts } } }, jlcReview: [{ index: 0, holds: true, line: 12, reason: 'r' }] }
-  r = await runTask('T6', { ...selQ, partRows: ['part1', 'part4', 'part5', 'altS'].map(part => ({ function: 'f1', part, parts_line: 4, group_page: 'hardware/docs/GroupA.md' })) })
+  r = await runTask('T6', { ...selQ, partRows: ['part1', 'part4', 'part5', 'altS'].map(part => ({ function: 'f1', part, parts_line: 4, group_page: 'hardware/docs/GroupC.md' })) })
   check(!r.result.summary.stopped, `T6: parts not verified owed no Parts.md row: ${(r.result.summary.reasons || []).join()}`)
+  // Each part is named on the page of its category's group.
+  r = await runTask('T6', { ...selQ, partRows: ['part1', 'part4', 'part5', 'altS'].map(part => ({ function: 'f1', part, parts_line: 4, group_page: 'hardware/docs/GroupA.md' })) })
+  check(r.result.summary.stopped === true && /group C page for part1/.test(r.result.summary.reasons[0]), 'T6: an R10 part named only on the group A page stops it')
+  // A figure citing an earlier check's P5 return is superseded whatever its kind.
+  r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/T5/003-P5.json', figureKind: 'other' })
+  check(r.result.summary.stopped === true, 'T6: a figure labelled other citing an earlier P5 return stops it')
   r = await runTask('T6', { ...selQ, partRows: rows.slice(0, 1) })
   check(r.result.summary.stopped === true && ['part4', 'part5', 'altS'].every(p => r.result.summary.reasons[0].includes(`for ${p} (`)) && !['part3', 'altQ', 'altR', 'altA'].some(p => r.result.summary.reasons[0].includes(`for ${p} (`)), 'T6: each verified part without its Parts.md row stops it')
 

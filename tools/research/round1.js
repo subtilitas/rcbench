@@ -325,9 +325,10 @@ const MARKS = [
 // its alternate, and each Q alternative with its own alternate. A part not
 // verified is open (session.py open_selections), stated as accepted open.
 const isVerified = s => String(s || '').startsWith('verified')
-const OWED_PARTS = Object.values(A.selection || {}).flatMap(fns => Object.entries(fns).flatMap(([fn, e]) =>
+const GROUP_OF = Object.fromEntries(Object.values(A.tasks || {}).flatMap(t => (t.categories || []).map(c => [c, t.group])))
+const OWED_PARTS = Object.entries(A.selection || {}).flatMap(([cat, fns]) => Object.entries(fns).flatMap(([fn, e]) =>
   [...new Set([e.part, !(e.alternate_unverified || []).includes(e.alternate) && e.alternate,
-    ...(e.q_alternatives || []).filter(q => isVerified(q.status)).flatMap(q => [q.part, isVerified(q.alternate_status) && q.alternate])].filter(Boolean))].map(part => ({ function: fn, part }))))
+    ...(e.q_alternatives || []).filter(q => isVerified(q.status)).flatMap(q => [q.part, isVerified(q.alternate_status) && q.alternate])].filter(Boolean))].map(part => ({ category: cat, group: GROUP_OF[cat] || '', function: fn, part }))))
 
 function p7Prompt() {
   return `${ctx('P7', '', 'P7')}
@@ -1432,7 +1433,12 @@ async function phaseP5P6() {
   // applicable" (or N/A, does not apply) only for a check the P5 row makes
   // conditional. Every row of an item counts, not one of them for all, and
   // the Q4 and Q8 alternatives have one for each option class.
-  const conditional = n => (A.p5_conditional || []).some(c => n === c || n.startsWith(`${c}: `))
+  // A part the effective selection keeps for more than one function owes
+  // its own shared-part stock row; with one, the check is not optional.
+  const keptBy = new Map()
+  for (const fns of Object.values(A.selection || {})) for (const e of Object.values(fns)) if (e.part) keptBy.set(e.part, (keptBy.get(e.part) || 0) + 1)
+  const shared = [...keptBy].filter(([, n]) => n > 1).map(([part]) => part)
+  const conditional = n => (A.p5_conditional || []).some(c => (n === c || n.startsWith(`${c}: `)) && !(c === 'shared-part stock' && shared.length))
   const counts = x => x.upheld === true && !readsNone(x.source) && !!isTime(x.read_at) && !notFound(x.value)
     && (!/^(not applicable|n\/a|does not apply)\b/i.test(String(x.value).trim()) || conditional(String(x.item || '')))
   const unmet = (list, n, ok) => {
@@ -1440,7 +1446,7 @@ async function phaseP5P6() {
     return !rows.length || !rows.every(ok)
   }
   // The critic lists each rail, I2C bus or other instance P5 did not budget.
-  const budgetsMissing = a.missing ? [] : [...new Set([...(A.p5_budgets || []).flatMap(n => [n, ...optionsOf(n)]).filter(n => unmet(a.budgets, n, counts)),
+  const budgetsMissing = a.missing ? [] : [...new Set([...(A.p5_budgets || []).flatMap(n => [n, ...optionsOf(n), ...(n === 'shared-part stock' ? shared.map(part => `${n}: ${part}`) : [])]).filter(n => unmet(a.budgets, n, counts)),
     ...(a.budgets_missing || []).filter(n => !readsNone(n)).map(String)])]
   for (const n of budgetsMissing) followUps.push({ role: 'P5', item: n, reason: 'budget the P5 row names not returned and upheld' })
   // A budget the critic upheld that is not within its limit is a conflict
@@ -1495,7 +1501,9 @@ if (TASK === 'T6') {
     // A budget or combination comes from the last P5/P6 check: one checked
     // against any other file is not checked. Other figures, an earlier
     // check's open items or a run's status among them, may cite any return.
-    const stale = named.filter(x => ['budget', 'combination'].includes(x.kind) && !String(x.return_file).startsWith(`hardware/research/round1/${A.last_p56}/`))
+    const p5File = /^hardware\/research\/round1\/([^/]+)\/\d+-P5(-critic)?\.json$/
+    const stale = named.filter(x => (['budget', 'combination'].includes(x.kind) && !String(x.return_file).startsWith(`hardware/research/round1/${A.last_p56}/`))
+      || ((p5File.exec(String(x.return_file)) || [])[1] || A.last_p56) !== A.last_p56)
     if (stale.length) failed.push(`${stale.length} budgets or combinations not checked against the last P5/P6 check, ${A.last_p56}`)
     if ((critic.sentence_issues || []).length) failed.push(`${critic.sentence_issues.length} writing issues left`)
   }
@@ -1515,7 +1523,8 @@ if (TASK === 'T6') {
   if (p7 && critic) {
     const marked = new Set((critic.marked || []).filter(x => required.includes(x.file) && x.line > 0).map(x => x.index))
     MARKS.forEach((m, i) => { if (!marked.has(i)) failed.push(`item ${i} not stated on the pages as ${m.state}`) })
-    for (const o of OWED_PARTS) if (!(critic.part_rows || []).some(x => x.function === o.function && x.part === o.part && x.parts_line > 0 && groupPages.includes(x.group_page))) failed.push(`no Parts.md row or group page for ${o.part} (${o.function})`)
+    // Each part on the page of its category's group.
+    for (const o of OWED_PARTS) if (!(critic.part_rows || []).some(x => x.function === o.function && x.part === o.part && x.parts_line > 0 && x.group_page === ((p7 && p7.group_pages) || {})[o.group])) failed.push(`no Parts.md row or group ${o.group} page for ${o.part} (${o.function}, ${o.category})`)
     const review = uniqueVerdicts(reasoned(critic.jlc_stock_review, 'reason'), x => x.index, { role: 'P7-critic' })
     ;(A.jlc_stock_row || []).forEach((sentence, i) => { if (!(review.get(i) || {}).holds) failed.push(`tools/jlc_stock.py not confirmed: ${sentence}`) })
   }
