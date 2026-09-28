@@ -11,8 +11,9 @@ around each task:
     session.py raised --base DIR [--run T1|FU-N]
 
 `check` holds the files in tools/research/ to the plan: the agent counts of
-the layout, the categories, the schemas, the host table, and the dry run of
-round1.js when node is installed. It exits 1 on the first disagreement.
+the layout, the categories and the rows that carry "P1 asks", the schemas,
+the host table, and the dry run of round1.js when node is installed. It exits
+1 on the first disagreement.
 
 `prepare` fetches origin, checks the task's turn and its answered questions,
 makes the read-only checkout of `research/round1` at the commit the task
@@ -289,6 +290,17 @@ def cmd_check(_args):
         if int(m.group(7)) != sum(cats["planned"].values()):
             fails.append(f"Size total {m.group(7)} against "
                          f"{sum(cats['planned'].values())}")
+    # The "P1 asks" inventory covers the rows that carry one, by distinct
+    # names.
+    asks = cats.get("p1_asks", {})
+    carry = [r for r, row in re.findall(r"^\| (R\d+) \|(.*)$", text, re.M)
+             if "P1 asks" in row]
+    if sorted(asks) != sorted(carry):
+        fails.append(f"p1_asks names {', '.join(asks)}; the rows that carry "
+                     f"\"P1 asks\" are {', '.join(carry)}")
+    for c, names in asks.items():
+        if not names or len(set(names)) != len(names):
+            fails.append(f"p1_asks {c}: no name, or a name twice")
     raised_rows(text)
     if set(decisions(text)) != {"Q4", "Q8", "Q9"}:
         fails.append("the decision table does not list Q4, Q8 and Q9")
@@ -444,6 +456,16 @@ def committed_questions(results):
     """The questions every committed P1 run confirmed: (run, question)."""
     return [(name, q) for name, task in runs(results)
             for q in (task.get("summary") or {}).get("questions", [])]
+
+
+def raised_questions(results):
+    """The committed questions as round1.js matches them against a P1
+    run's values, items and "P1 asks": a P1 run does not raise one again.
+    Before a P1 follow-up `questions_gate` has checked that those of its
+    categories are under "Raised by P1"."""
+    return [{k: q.get(k, "") for k in ("id", "category", "question",
+                                        "for_where", "for_quantity", "asks")}
+            for _, q in committed_questions(results)]
 
 
 def p1_unresolved(results, categories):
@@ -1112,6 +1134,8 @@ def cmd_prepare(args):
         "run": run, "run_id": run_id,
         "results_head": git("-C", results, "rev-parse", "HEAD"),
         "for_research": for_research,
+        "raised": raised_questions(results),
+        "p1_asks": cats.get("p1_asks", {}),
         "required_reports": cats.get("reports", {}),
         "per_part_reports": cats.get("reports_per_part", {}),
         "inventory": inventory(results, list(cats["categories"])),

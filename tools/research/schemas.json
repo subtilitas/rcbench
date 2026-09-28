@@ -200,6 +200,10 @@
     "for_quantity": {
      "type": "string",
      "description": "the quantity of the value this question asks for, as P1's values name it, or empty"
+    },
+    "asks": {
+     "type": "string",
+     "description": "the name of the \"P1 asks\" item this question raises, as the prompt lists it, or empty"
     }
    },
    "required": [
@@ -209,7 +213,8 @@
     "blocks",
     "decision",
     "for_where",
-    "for_quantity"
+    "for_quantity",
+    "asks"
    ]
   },
   "conflict": {

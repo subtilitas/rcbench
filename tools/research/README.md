@@ -10,7 +10,7 @@ and host table. Nothing here runs in CI (continuous integration) but
 | --- | --- |
 | `round1.js` | the workflow script, one run per task: `args.task` is T1 to T6, or FU for a follow-up task. `args.mode` `plan` returns the task's planned agent count and starts none |
 | `schemas.json` | the return schema of each role: P0, P1, P1-critic, P1-recheck, P2, P3, rerank, P4 (both verifiers), adjudicator, P5, P5-critic, P6, P6-critic, P7, P7-critic |
-| `categories.json` | R1 to R13, the three groups, the cap of 32 and each task's planned agents |
+| `categories.json` | R1 to R13, the three groups, the cap of 32, each task's planned agents, and the "P1 asks" items of each row and its lines in IOBoard.md (`p1_asks`) |
 | `hosts.json` | each host P0 probes: its known page, its client, the regular expression the lifecycle status matches, and the categories it holds when unreachable |
 | `jlcparts.json` | the saved parts database of 2026-09-14: its path under the base directory, its SHA-256 (Secure Hash Algorithm, 256 bits), its row count and its manifest's created time |
 | `vendors.py` | the readings agents take: a page (`fetch`), JLCPCB stock by exact LCSC number (`jlcpcb`), Digi-Key stock, lead time and status (`digikey`), each dated |
@@ -129,10 +129,12 @@ the items in the arguments:
 
 Then, before T6, it merges `research/round1` into the results tree. The gates
 read committed run records and the plan on `research/round1`. The arguments
-hold the results tree's head, the owner's decisions, the Claude Code version,
-the model, the effort, the CPU count and the workflow concurrency. `session.py
-check` confirms the Blocking and Sourcing tables still read as the gates
-expect.
+hold the results tree's head, the owner's decisions, the questions committed
+P1 runs raised (`raised`), the Claude Code version, the model, the effort, the
+CPU count and the workflow concurrency. `session.py check` confirms the
+Blocking and Sourcing tables still read as the gates expect, and that
+`p1_asks` names exactly the rows that carry "P1 asks", each with distinct
+names.
 
 `round1.js` keeps a function open, with no part, when:
 
@@ -201,12 +203,19 @@ and quantity. The P1 critic rules on a marking by the value's index, location
 and quantity, and a marking it upholds with the same marking is unchanged. A
 P1 critic or re-check verdict whose reason or evidence reads as none is no
 verdict. A P1 return with no value, and a category whose P1 and critic name no
-function, leave a P1 item. A P1 follow-up gives its items to P1 and the
-critic, and lists again each item its run did not deal with: a value its P1
-did not return, a question neither its P1 nor its critic raised (the same
-words, or the same `for_where` and `for_quantity`), and any other item of a
-category whose P1 or critic returned nothing; an item listed again stands for
-the item it carries. P0 counts a host with two rows, or a status written as
+function, leave a P1 item. Each "P1 asks" item of the category that no
+question under "Raised by P1" names in `asks` needs a confirmed question that
+names it. Without one it leaves a P1 item, also when the critic or the
+re-check rejected the question for it. A question under "Raised by P1" is not
+raised again: it asks for an assumption at its `for_where` and `for_quantity`.
+A P1 follow-up gives its items to P1 and the critic, and lists again each item
+its run did not deal with: a value its P1 did not return, a question neither
+its P1 nor its critic raised and not under "Raised by P1" (the same words, or
+the same `for_where` and `for_quantity`), and any other item of a category
+whose P1 or critic returned nothing; an item listed again stands for the item
+it carries. P1 and the critic are told to copy an item's question word for
+word; an item without a `for_where` whose question they raise in other words
+is listed again. P0 counts a host with two rows, or a status written as
 not read, none, no, false, absent or not in the page body, as not read. A P0
 row counts only at its host's endpoint: an API client's command with the
 probe, whatever environment assignments (`DIGIKEY_ENV_FILE=...`, `env`) and

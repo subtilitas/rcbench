@@ -151,6 +151,21 @@ function itemsFor(cat) {
   return (FU.items || []).filter(i => !i.category || i.category === cat)
 }
 
+// Text compared by its words, whatever the spacing.
+const words = t => String(t || '').split(/\s+/).filter(Boolean).join(' ')
+
+// The questions committed P1 runs raised, all under "Raised by P1" before a
+// P1 follow-up runs: a run does not raise one again.
+function raisedFor(cat) {
+  return (A.raised || []).filter(q => q.category === cat)
+}
+
+// The "P1 asks" items of the category's row and its lines that no question
+// under "Raised by P1" names.
+function asksFor(cat) {
+  return ((A.p1_asks || {})[cat] || []).filter(n => !raisedFor(cat).some(q => words(q.asks) === words(n)))
+}
+
 function p0Prompt() {
   const j = A.jlcparts || {}
   return `${ctx('P0', '', 'P0')}
@@ -168,16 +183,18 @@ This is task ${TASK}. It ${readsStock ? 'reads stock' : 'reads no stock'}. Set s
 
 function p1Prompt(cat) {
   const items = TASK === 'FU' ? itemsFor(cat) : []
+  const asks = asksFor(cat)
   return `${ctx('P1', cat, `P1-${cat}`)}
 
-Read the ${cat} row on the page and every line of hardware/docs/IOBoard.md that belongs to it (search for "${cat}" and for the functions the row names), and every source they cite. Try to refute each value: does it follow from its source, is the unit right, is it an owner decision or an assumption. Mark each. Every value you mark assumption is also a question to the owner; give each value the index of the question that asks for it in "question" (-1 if none), and give that question the value's where in for_where and its quantity in for_quantity. List in functions every function the row and those lines name, one short name each. List every requirement value P2 needs to qualify a part that neither page states, as a question to the owner; and every "P1 asks" in the row or in those lines. ${cat === 'R5' ? 'The supply currents of the parts T2 and T4 select are inputs R5 takes from those tasks, not questions. ' : ''}A question whose value only feeds Q4, Q8 or Q9, in a category that decision's "Reported by" names, is blocks "decision-only" with that decision. A question already under "Raised by P1" is not raised again.${items.length ? `\n\nThis is a follow-up task for these gaps: ${J(items)}` : ''}`
+Read the ${cat} row on the page and every line of hardware/docs/IOBoard.md that belongs to it (search for "${cat}" and for the functions the row names), and every source they cite. Try to refute each value: does it follow from its source, is the unit right, is it an owner decision or an assumption. Mark each. Every value you mark assumption is also a question to the owner; give each value the index of the question that asks for it in "question" (-1 if none), and give that question the value's where in for_where and its quantity in for_quantity. List in functions every function the row and those lines name, one short name each. List every requirement value P2 needs to qualify a part that neither page states, as a question to the owner; and every "P1 asks" in the row or in those lines${asks.length ? `, among them these, each question giving its item's name in asks: ${asks.join('; ')}` : ''}. ${cat === 'R5' ? 'The supply currents of the parts T2 and T4 select are inputs R5 takes from those tasks, not questions. ' : ''}A question whose value only feeds Q4, Q8 or Q9, in a category that decision's "Reported by" names, is blocks "decision-only" with that decision. A question already under "Raised by P1" is not raised again.${items.length ? `\n\nThis is a follow-up task for these gaps: ${J(items)}\nA question that raises one of them copies its question word for word.` : ''}`
 }
 
 function criticPrompt(cat, p1) {
   const items = TASK === 'FU' ? itemsFor(cat) : []
+  const asks = asksFor(cat)
   return `${ctx('P1-critic', cat, `P1-critic-${cat}`)}
 
-You are the critic of P1 for ${cat}. Re-derive each marking and each question below from the sources yourself. Rule on every marking once by its 0-based index in values, copying its where and quantity exactly: holds with correct_marking unchanged, or wrong with the correct marking. Rule on every question once by its 0-based index (confirmed or rejected); a question you give no verdict is sent to a follow-up task, not to the owner. Give every verdict its reason; a verdict without one is no verdict. A marking you correct to assumption is also added as a question, with that value's where in for_where and its quantity in for_quantity. Then look for values P1 did not mark and for missing values P1 did not list, and add each as a question. List in functions_missing every function the row or its lines name that P1's functions lacks.${items.length ? `\n\nThis is a follow-up task for these gaps. Check that P1's return deals with each, and add as a question a value one of them asks for that P1 did not raise: ${J(items)}` : ''}
+You are the critic of P1 for ${cat}. Re-derive each marking and each question below from the sources yourself. Rule on every marking once by its 0-based index in values, copying its where and quantity exactly: holds with correct_marking unchanged, or wrong with the correct marking. Rule on every question once by its 0-based index (confirmed or rejected); a question you give no verdict is sent to a follow-up task, not to the owner. Give every verdict its reason; a verdict without one is no verdict. A marking you correct to assumption is also added as a question, with that value's where in for_where and its quantity in for_quantity. Then look for values P1 did not mark and for missing values P1 did not list, and add each as a question.${asks.length ? ` The page makes each of these "P1 asks" items a question to the owner: ${asks.join('; ')}. Add as a question each one that no question of P1 names in asks, giving its name in asks; one left without a confirmed question is sent to a follow-up task.` : ''} List in functions_missing every function the row or its lines name that P1's functions lacks.${items.length ? `\n\nThis is a follow-up task for these gaps. Check that P1's return deals with each, and add as a question a value one of them asks for that P1 did not raise, copying its question word for word: ${J(items)}` : ''}
 
 P1's return:
 ${J(p1)}`
@@ -453,10 +470,13 @@ async function phaseP1(cats) {
     c.extra = []
     // A P1 question asks for one value, and a critic addition covers one
     // value by its where and quantity: an assumption that shares either is
-    // not asked.
+    // not asked. One under "Raised by P1" for its where and quantity has
+    // asked for it already, and is not raised again.
     const claimed = new Set()
     const criticAt = new Map()
+    const raisedAt = new Map()
     for (const q of c.critic.added || []) if (q.for_where) criticAt.set(at(q.for_where, q.for_quantity), (criticAt.get(at(q.for_where, q.for_quantity)) || 0) + 1)
+    for (const q of raisedFor(c.cat)) if (q.for_where) raisedAt.set(at(q.for_where, q.for_quantity), (raisedAt.get(at(q.for_where, q.for_quantity)) || 0) + 1)
     for (const [i, v] of (c.p1.values || []).entries()) {
       const m = mv.get(`${i}\u0000${at(v.where, v.quantity)}`)
       let marking = v.marking
@@ -465,13 +485,14 @@ async function phaseP1(cats) {
       else if (m.verdict === 'wrong' && (m.correct_marking === 'unchanged' || m.correct_marking === v.marking)) { marking = 'assumption'; followUps.push({ role: 'P1-critic', category: c.cat, value: v, reason: 'marking wrong with no new marking; taken as an assumption', notice: true }) }
       else if (m.verdict === 'wrong') marking = m.correct_marking
       if (marking !== 'assumption') continue
+      const k = at(v.where, v.quantity)
+      if ((raisedAt.get(k) || 0) > 0) { raisedAt.set(k, raisedAt.get(k) - 1); continue }
       const q = v.question >= 0 ? (c.p1.questions || [])[v.question] : null
-      const ownQ = !!q && (c.ruledQ.get(v.question) || {}).verdict !== 'rejected' && !claimed.has(v.question) && at(q.for_where, q.for_quantity) === at(v.where, v.quantity)
+      const ownQ = !!q && (c.ruledQ.get(v.question) || {}).verdict !== 'rejected' && !claimed.has(v.question) && at(q.for_where, q.for_quantity) === k
       if (ownQ) { claimed.add(v.question); c.assumptions.push({ ...v, asked: 'own' }); continue }
       c.assumptions.push({ ...v, asked: 'addition' })
-      const k = at(v.where, v.quantity)
       if ((criticAt.get(k) || 0) > 0) { criticAt.set(k, criticAt.get(k) - 1); continue }
-      c.extra.push({ function: v.quantity, question: `State ${v.quantity}. P1 read "${v.value}" at ${v.where} and it is marked an assumption.`, why: 'every assumption is a question to the owner (P1 row)', blocks: 'p2', decision: 'none', for_where: v.where, for_quantity: v.quantity, synthetic: true })
+      c.extra.push({ function: v.quantity, question: `State ${v.quantity}. P1 read "${v.value}" at ${v.where} and it is marked an assumption.`, why: 'every assumption is a question to the owner (P1 row)', blocks: 'p2', decision: 'none', for_where: v.where, for_quantity: v.quantity, asks: '', synthetic: true })
     }
   }
   const added = []
@@ -520,18 +541,22 @@ async function phaseP1(cats) {
       const { asked, ...value } = a
       followUps.push({ role: 'P1', category: cat, value, reason: 'assumption without a confirmed question' })
     }
+    // Each "P1 asks" item not yet under "Raised by P1" ends with a confirmed
+    // question that names it, or is listed: a rejected one as well.
+    for (const name of asksFor(cat)) {
+      if (!questions.some(q => q.category === cat && words(q.asks) === words(name))) followUps.push({ role: 'P1', category: cat, asks: name, reason: '"P1 asks" item without a confirmed question' })
+    }
   }
   // A P1 follow-up deals with each of its items, or lists it again: a value
   // item needs the value in this run's P1 return, a question item the
-  // question in P1's questions or the critic's additions (by its words, or
-  // by its where and quantity), any other item P1 and its critic returning.
-  // What the run then leaves open it lists as its own; an item listed again
-  // is judged by the item it carries.
+  // question in P1's questions, the critic's additions or under "Raised by
+  // P1" (by its words, or by its where and quantity), any other item P1 and
+  // its critic returning. What the run then leaves open it lists as its own;
+  // an item listed again is judged by the item it carries.
   const inner = x => x.item ? inner(x.item) : x
   if (TASK === 'FU') for (const cat of cats) {
     const c = byCat.get(cat) || {}
-    const words = t => String(t || '').split(/\s+/).filter(Boolean).join(' ')
-    const raisedQ = [...((c.p1 || {}).questions || []), ...((c.critic || {}).added || []), ...(c.extra || [])]
+    const raisedQ = [...((c.p1 || {}).questions || []), ...((c.critic || {}).added || []), ...(c.extra || []), ...raisedFor(cat)]
     for (const item of itemsFor(cat)) {
       const it = inner(item)
       const done = it.value ? ((c.p1 || {}).values || []).some(v => at(v.where, v.quantity) === at(it.value.where, it.value.quantity))

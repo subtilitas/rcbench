@@ -163,6 +163,7 @@ async function runTask(task, opts = {}) {
     if (role === 'P1' && opts.noFunctions) data.functions = []
     if (role === 'P1' && opts.decisionQ9) data.questions = data.questions.map(q => ({ ...q, blocks: 'decision-only', decision: 'Q9' }))
     if (role === 'P1' && opts.fuQuestion) data.questions[0].question = opts.fuQuestion
+    if (role === 'P1' && opts.asksQ) data.questions[0].asks = opts.asksQ
     if (role === 'P1' && opts.sameQuantity) data.values = ['2.7 V', '3.6 V'].map(value => ({ where: 'IOBoard.md:40', quantity: 'supply voltage', value, marking: 'sourced', source: 's', refutation_tried: 'r', question: -1 }))
     if (role === 'P1' && opts.sameLine) {
       data.values = [['A', -1], ['B', 0]].map(([quantity, question]) => ({ where: 'IOBoard.md:1', quantity, value: '1 V', marking: 'assumption', source: 's', refutation_tried: 'r', question }))
@@ -215,6 +216,7 @@ async function runTask(task, opts = {}) {
         data.question_verdicts = data.question_verdicts.map(v => ({ ...v, verdict: 'rejected', reason: ' ' }))
       }
       if (opts.criticAdds) data.added = [opts.criticAdds]
+      if (opts.rejectQ0) data.question_verdicts[0] = { ...data.question_verdicts[0], verdict: 'rejected', reason: 'the row states it' }
       if (opts.noFunctions) data.functions_missing = []
     }
     if (role === 'P4') {
@@ -269,7 +271,7 @@ async function runTask(task, opts = {}) {
   }
   const args = { task, cap: cats.cap, categories: cats.categories, tasks: cats.tasks, schemas,
     commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, inventory: opts.inventory || {}, jlcparts: JL, p5_budgets: opts.p5Budgets || [], p5_conditional: opts.p5Conditional || [], q_options: opts.qOptions || {},
-    followup: opts.followup, first_v: 5, decision_categories: { Q4: ['R10'], Q8: ['R2', 'R12'], Q9: ['R3'] }, t6_outputs: T6OUT, for_research: opts.forResearch || [], required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {} }
+    followup: opts.followup, first_v: 5, decision_categories: { Q4: ['R10'], Q8: ['R2', 'R12'], Q9: ['R3'] }, t6_outputs: T6OUT, for_research: opts.forResearch || [], raised: opts.raised || [], p1_asks: opts.p1Asks || {}, required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {} }
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
     `return (async () => {${src}})()`)
   const result = await fn(args, agent, parallel, pipeline, () => {}, () => {})
@@ -873,6 +875,30 @@ async function main() {
   check(r.prompts.find(x => x.label === 'P1-critic-R8').prompt.includes(overcurrent), 'P1 follow-up: the critic is given the items')
   r = await runTask('FU', { followup: { phases: 'P1', round: 1, categories: ['R8'], items: [fuItems[0], fuItems[3]] }, fuQuestion: overcurrent })
   check(!r.result.followUps.some(f => f.reason === 'follow-up item this run did not deal with'), 'P1 follow-up: a question raised again is dealt with')
+  // A question already under "Raised by P1" is not raised again: an item
+  // that carries it is dealt with, and it asks for its assumption.
+  const published = { id: 'V1', category: 'R8', question: overcurrent, for_where: '', for_quantity: '', asks: '' }
+  const relabel = { role: 'P1', category: 'R8', question: overcurrent, reason: 'decision-only question names no decision R8 reports; published as blocking P2', notice: true }
+  r = await runTask('FU', { followup: { phases: 'P1', round: 1, categories: ['R8'], items: [fuItems[0], fuItems[3], relabel] }, raised: [published] })
+  check(!r.result.followUps.some(f => f.reason === 'follow-up item this run did not deal with'), 'P1 follow-up: a question under Raised by P1 is dealt with')
+  r = await runTask('FU', { followup: { phases: 'P1', round: 1, categories: ['R8'], items: [] }, assumption: true, raised: [{ ...published, question: 'State the ripple', for_where: 'IOBoard.md:1', for_quantity: 'ripple' }] })
+  check(!r.result.summary.questions.some(q => q.synthetic) && !r.result.followUps.some(f => f.reason === 'assumption without a confirmed question'), 'P1 follow-up: a question under Raised by P1 asks for its assumption')
+  // A question that raises an item copies its words.
+  r = await runTask('FU', { followup: { phases: 'P1', round: 1, categories: ['R8'], items: [fuItems[0]] } })
+  check(['P1-R8', 'P1-critic-R8'].every(l => /copies its question word for word|copying its question word for word/.test(r.prompts.find(x => x.label === l).prompt)), 'P1 follow-up: P1 and the critic copy an item\'s question')
+  // Each "P1 asks" item ends with a confirmed question that names it.
+  const extCurrent = 'external path highest current'
+  r = await runTask('T1', { p1Asks: { R3: [extCurrent] } })
+  check(r.result.followUps.some(f => f.role === 'P1' && f.category === 'R3' && f.asks === extCurrent && !f.notice), 'P1 asks: an item no question names is listed')
+  check(['P1-R3', 'P1-critic-R3'].every(l => r.prompts.find(x => x.label === l).prompt.includes(extCurrent)), 'P1 asks: P1 and the critic are given the items')
+  r = await runTask('T1', { p1Asks: { R3: [extCurrent] }, asksQ: extCurrent })
+  check(!r.result.followUps.some(f => f.asks) && r.result.summary.questions.some(q => q.category === 'R3' && q.asks === extCurrent), 'P1 asks: a confirmed question that names the item asks it')
+  r = await runTask('T1', { p1Asks: { R3: [extCurrent] }, asksQ: extCurrent, rejectQ0: true })
+  check(r.result.followUps.some(f => f.category === 'R3' && f.asks === extCurrent && !f.notice), 'P1 asks: a question the critic rejects is listed')
+  r = await runTask('T1', { p1Asks: { R3: [extCurrent] }, criticAdds: { ...addAt('external current'), for_where: '', for_quantity: '', asks: extCurrent } })
+  check(!r.result.followUps.some(f => f.asks), 'P1 asks: a re-checked critic addition that names the item asks it')
+  r = await runTask('FU', { followup: { phases: 'P1', round: 1, categories: ['R3'], items: [] }, p1Asks: { R3: [extCurrent] }, raised: [{ ...published, category: 'R3', asks: extCurrent }] })
+  check(!r.result.followUps.some(f => f.asks) && !r.prompts.find(x => x.label === 'P1-R3').prompt.includes(extCurrent), 'P1 asks: an item under Raised by P1 is not asked again')
 
   // P0's own stop and held fields do not decide the outcome.
   r = await runTask('T2', { p0: { stop: true, stop_reasons: ['mock'], held: [{ category: 'R1', host: 'h', reason: 'mock' }] } })

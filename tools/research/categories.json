@@ -125,5 +125,50 @@
       "FRAM",
       "EEPROM"
     ]
+  },
+  "p1_asks": {
+    "R1": [
+      "stop deadline"
+    ],
+    "R2": [
+      "frames the panel sends during the flash stall"
+    ],
+    "R3": [
+      "latch power-up state",
+      "latch place relative to the enable node and the gates",
+      "operator clear control and where it sits",
+      "relay or firmware clear under the GPIO6 path rule",
+      "port switches are not the servo rail gate",
+      "ESC pack switch voltage margin",
+      "external path highest current"
+    ],
+    "R4": [
+      "bias selector",
+      "firmware or I/O expander selector under the GPIO6 path rule",
+      "bias of the UART socket and the modes whose lines idle high",
+      "ESCape32 baud",
+      "Hitec D-series levels",
+      "Hitec D-series electrical form",
+      "Hitec D-series baud"
+    ],
+    "R5": [
+      "lowest voltage at the display",
+      "display power path to its USB-C VBUS"
+    ],
+    "R8": [
+      "BENCH voltage and current register source",
+      "motor overcurrent threshold",
+      "motor over-temperature threshold",
+      "temperature the over-temperature action watches",
+      "trip filter",
+      "longest time from detection to the ESC pack switch open"
+    ],
+    "R11": [
+      "servo measured position sensor",
+      "BENCH rpm register source"
+    ],
+    "R12": [
+      "motor temperature register channel"
+    ]
   }
 }
