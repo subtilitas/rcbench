@@ -220,7 +220,7 @@ function p2Prompt(cat) {
   const named = [...new Set([...((A.inventory || {})[cat] || []), ...fixedFor(cat).map(x => x.function)])]
   return `${ctx('P2', cat, `P2-${cat}`)}
 
-Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, and record it as found. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. Return an entry for every function the ${cat} row and its lines in hardware/docs/IOBoard.md name${named.length ? `, among them these, by these exact names: ${named.join('; ')}` : ''}.${fixedFor(cat).length ? ` The Scope table fixes these inputs: ${fixedNames(cat)}. Shortlist each for its function with its full record, also where it misses a requirement or a gate; a fixed input that fails a check is reported to the owner, not replaced.` : ''} Give each requirement of a function a name of its own. For up to five survivors per function, record every field of the P2 row, and the rule-5 route in second_source_route and second_source_part; a part whose route is alternate needs a full record for that alternate among the survivors or in the re-rank. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5${((A.required_reports || {})[cat] || []).length ? `, among them these by these names: ${((A.required_reports || {})[cat]).join('; ')}` : ''}.${((A.per_part_reports || {})[cat] || []).length ? ` Report these once for each shortlisted part, named "NAME: PART", with "not applicable: REASON" as the value where one does not concern the part: ${((A.per_part_reports || {})[cat]).join('; ')}.` : ''}${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${P.results}/hardware/research/round1/selection.json; the returns in each run's directory carry their figures.` : ''}${cat === 'R3' && ((A.decisions || {}).Q9 || '').trim() ? `\n\nThe owner decided Q9: ${A.decisions.Q9}. A part it adds or changes is a function of R3 in this run, found and qualified as the others.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}${TASK === 'FU' ? ` Name each function exactly as ${P.results}/hardware/research/round1/selection.json names it for ${cat}.` : ''}`
+Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, record it as found, and apply it as a requirement of the function its row names. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. Return an entry for every function the ${cat} row and its lines in hardware/docs/IOBoard.md name${named.length ? `, among them these, by these exact names: ${named.join('; ')}` : ''}.${fixedFor(cat).length ? ` The Scope table fixes these inputs: ${fixedNames(cat)}. Shortlist each for its function with its full record, also where it misses a requirement or a gate; a fixed input that fails a check is reported to the owner, not replaced.` : ''} Give each requirement of a function a name of its own. For up to five survivors per function, record every field of the P2 row, and the rule-5 route in second_source_route and second_source_part; a part whose route is alternate needs a full record for that alternate among the survivors or in the re-rank. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5${((A.required_reports || {})[cat] || []).length ? `, among them these by these names: ${((A.required_reports || {})[cat]).join('; ')}` : ''}.${((A.per_part_reports || {})[cat] || []).length ? ` Report these once for each shortlisted part, named "NAME: PART", with "not applicable: REASON" as the value where one does not concern the part: ${((A.per_part_reports || {})[cat]).join('; ')}.` : ''}${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${P.results}/hardware/research/round1/selection.json; the returns in each run's directory carry their figures.` : ''}${cat === 'R3' && ((A.decisions || {}).Q9 || '').trim() ? `\n\nThe owner decided Q9: ${A.decisions.Q9}. A part it adds or changes is a function of R3 in this run, found and qualified as the others.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}${TASK === 'FU' ? ` Name each function exactly as ${P.results}/hardware/research/round1/selection.json names it for ${cat}.` : ''}`
 }
 
 function p2View(p2) {
@@ -258,7 +258,7 @@ function p4Prompt(cat, kind, bundle, only) {
     : 'Verify, for each function, the first-ranked part, its rule-5 alternate when its second_source_route is alternate (the part in its second_source_part, kind alternate), every part in its verify list, and the rule-5 alternate of each part of kind q-alternative in that list, in the same way (kind alternate). An alternate several parts name is checked against the first of them: the first-ranked part, then the q-alternatives in order. A part verified in its own right that is also such an alternate is listed once in that function, with the checks of an alternate as well. List every part you verify in parts, once for each function you verify it for, under that function\'s name: a part verified for two functions has a row under each. A part you leave out counts as not verified.'
   const how = kind === 'stock'
     ? 'You are the stock and lifecycle verifier. Re-read stock and lifecycle at the primary sources, with the clients above, and try to refute each reading. Return figures empty: the datasheet verifier rules on figures_to_check.'
-    : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, the reasons the re-rank gave for dropping a P3 candidate, P2\'s own drops, for "Q option: FUNCTION: PART: CLASS" whether the part belongs to that option class of Q4 or Q8, and for "function requirements: FUNCTION" whether the function\'s requirement list names every requirement IOBoard.md and the answers set for it, with no value weaker than theirs) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
+    : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, the reasons the re-rank gave for dropping a P3 candidate, P2\'s own drops, for "Q option: FUNCTION: PART: CLASS" whether the part belongs to that option class of Q4 or Q8, and for "function requirements: FUNCTION" whether the function\'s requirement list names every requirement set for it by IOBoard.md, the answers and each value found for research whose row under "Raised by P1" names the function, with no value weaker than theirs) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
   return `${ctx('P4', cat, `P4-${kind}-${cat}`)}
 
 ${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor, other than a part of kind alternate; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives the lifecycle table's readings: "longevity commitment" (the programme page's commitment, or that none is published; passes unless S5 makes it a gate it fails), "market introduction" (the first datasheet revision date; passes, and under 12 months is stated in read), "distributor status" (JLCPCB, LCSC and Digi-Key; passes, a disagreement with the maker stated in read) and "lead time" (the manufacturer's lead time in Digi-Key's API; passes). For a part on the board it gives "library type" (componentLibraryType of the exact JLCPCB row, basic or extended; passes, S6 allowing both) and "LCSC identity" (the exact JLCPCB result for the LCSC number names the candidate's part number and package; passes only then). It also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that) and "board placement" (whether the specification places the part on the IO board or off it, rule 1; passes when its LCSC number says the same: C and digits on the board, none off it), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and one whose refutation is not empty counts as a refutation. A check with passes false counts as a refutation, and so does one with agrees false, except for a reading that moves or always passes (${[...MOVING].join(', ')}) and a requirement stated as not given.
@@ -274,37 +274,65 @@ You are the adjudicating critic of the P4 row. A verifier refuted ${part ? `${pa
 ${J(evidence)}`
 }
 
+// The Q4 or Q8 alternatives' budget is owed once for each option class of
+// the decision (categories.json q_options), as "Q4 alternatives: CLASS".
+const optionsOf = n => ((A.q_options || {})[(/^(Q\d+) alternatives$/.exec(n) || [])[1]] || []).map(c => `${n}: ${c}`)
+const owedBudgets = () => (A.p5_budgets || []).map(n => optionsOf(n).length ? `${n}, once for each option class as ${optionsOf(n).join(' and ')}` : n).join('; ')
+
 function p5Prompt() {
   return `${ctx('P5', '', 'P5')}
 
-Read every return under ${P.results}/hardware/research/round1/ (T2, T3, T4 and every FU-* directory) and run the checks of the P5 row over the whole board. The parts to check are those in ${P.results}/hardware/research/round1/selection.json, each with its alternate, and both alternatives of Q4 and Q8.${(A.p5_budgets || []).length ? ` Return one budget for each of these, its item named as listed or "NAME: DETAIL" where it has several, each with its source and reading time; a check the P5 row makes conditional (${(A.p5_conditional || []).join('; ')}) is returned with "not applicable: REASON" as its value when its condition does not hold: ${A.p5_budgets.join('; ')}.` : ''}`
+Read every return under ${P.results}/hardware/research/round1/ (T2, T3, T4 and every FU-* directory) and run the checks of the P5 row over the whole board, and those the rows R5 and R7 under "Research categories" give P5: each rail's current with the parts R6, R7 and R8 selected, and the pack current recomputed from the converter efficiencies R5 and R6 verified, with the cell's rating and the pack's protection checked against it; a shortfall is a rail conflict. The parts to check are those in ${P.results}/hardware/research/round1/selection.json, each with its alternate, and both alternatives of Q4 and Q8.${(A.p5_budgets || []).length ? ` Return one budget for each of these: ${owedBudgets()}. Give each its source, its reading time and whether it is within its limit, and name its item as listed or, where it has several (each rail, each I2C bus), "NAME: DETAIL" once for each; every row of an item counts. A check the P5 row makes conditional (${(A.p5_conditional || []).join('; ')}) is returned with "not applicable: REASON" as its value when its condition does not hold.` : ''}${(A.p5_assumptions || []).length ? ` State in assumptions each of these, named as listed or "NAME: DETAIL" where it has several, with the value you assume, why, its source and its time: ${A.p5_assumptions.join('; ')}.` : ''}`
 }
 function p5CriticPrompt(p5) {
   return `${ctx('P5-critic', '', 'P5-critic')}
 
-You are the critic of P5. Re-derive each conflict, each combination, each budget and each assumption below by its 0-based index and give every one a verdict (conflict_verdicts as verdicts, combination_verdicts, budget_verdicts, assumption_verdicts); an assumption holds when the tree does not state the value and the value P5 assumed is sourced and reasonable. Add conflicts P5 missed. P5's return:
+You are the critic of P5. Re-derive each conflict, each combination, each budget and each assumption below by its 0-based index and give every one a verdict (conflict_verdicts as verdicts, combination_verdicts, budget_verdicts, assumption_verdicts); an assumption holds when the tree does not state the value and the value P5 assumed is sourced and reasonable. Give every verdict its reason; a verdict without one is no verdict. Add conflicts P5 missed.${(A.p5_budgets || []).length ? ` P5 owes a budget for each of these, "NAME: DETAIL" once for each where one has several: ${owedBudgets()}. List in budgets_missing, as "NAME: DETAIL", each rail, I2C bus or other instance of them that P5 returned no budget for.` : ''} P5's return:
 ${J(p5)}`
 }
+// The Scope section's firmware lines and the questions that feed a
+// decision only are not gaps.
+const P6_RULES = 'A line whose hardware is selected and whose link page or coprocessor code is firmware work (Scope, "Not in any round") is marked "hardware selected, link open" and is not a gap. A question under "Raised by P1" marked "(feeds Q4 only)", "(feeds Q8 only)" or "(feeds Q9 only)" feeds that decision alone and needs no answer.'
 function p6Prompt() {
   return `${ctx('P6', '', 'P6')}
 
-Run the checks of the P6 row: every line of hardware/docs/IOBoard.md has a part or is marked "not round 1"; every figure in ${P.results}/hardware/research/round1/ has a date and a source; every question under "Raised by P1" is answered; every value marked for research is found.`
+Run the checks of the P6 row: every line of hardware/docs/IOBoard.md has a part or is marked "not round 1"; every figure in ${P.results}/hardware/research/round1/ has a date and a source; every question under "Raised by P1" is answered; every value marked for research is found. ${P6_RULES}`
 }
 function p6CriticPrompt(p6) {
   return `${ctx('P6-critic', '', 'P6-critic')}
 
-You are the critic of P6. Re-read the specification line by line against the evidence and give every gap below a verdict by its 0-based index; add the gaps P6 did not report. P6's return:
+You are the critic of P6. Re-read the specification line by line against the evidence and give every gap below a verdict by its 0-based index; add the gaps P6 did not report. Give every verdict its reason; a verdict without one is no verdict. ${P6_RULES} P6's return:
 ${J(p6)}`
 }
+// The three checks P7 runs and its critic runs again on the tree it leaves.
+const T6_CHECKS = `\`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results}`
+
+// What the pages state as open, each as its state says: each conflict and gap
+// the P5/P6 checks leave after the follow-up rounds (session.py t6_open),
+// each item the owner accepted open, and each assumption of the last check's
+// P5 that its critic upheld.
+const MARKS = [
+  ...(A.left_open || []).map(item => ({ state: 'not known', item })),
+  ...((A.accept_open || {}).functions || []).map(item => ({ state: 'not verified or not known', item })),
+  ...(A.p5_assumed || []).map(item => ({ state: 'assumed, beside each budget that rests on it', item })),
+]
+
+// Each part selection.json keeps under a function: the kept part, its
+// alternate, and each Q alternative with its own alternate.
+const OWED_PARTS = Object.values(A.selection || {}).flatMap(fns => Object.entries(fns).flatMap(([fn, e]) =>
+  [...new Set([e.part, e.alternate, ...(e.q_alternatives || []).flatMap(q => [q.part, q.alternate])].filter(Boolean))].map(part => ({ function: fn, part }))))
+
 function p7Prompt() {
   return `${ctx('P7', '', 'P7')}
 
-Exception to the rule above: write the outputs listed under "Outputs" of Research.md into the working tree ${P.results}, which the session has merged with research/round1 before this task. List every file you write in files, repository-relative, and the page of each category group (A, B, C) in group_pages. Required among them: ${(A.t6_outputs || []).join(', ')}. Write them from the returns under ${P.results}/hardware/research/round1/ only, the parts in hardware/research/round1/selection.json, P5's budget and combinations, and the owner's decisions in the "Decision (owner, date)" column for Q4, Q8 and Q9. P5's budget and combinations are those of the last P5/P6 check, ${A.last_p56 || 'T5'}, as its critic upheld them. Do not commit. Write tools/jlc_stock.py to read DIGIKEY_ENV_FILE as well as the two variables, as tools/research/vendors.py does. Run \`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results} and report each as passed or not with its last lines.`
+Exception to the rule above: write the outputs listed under "Outputs" of Research.md into the working tree ${P.results}, which the session has merged with research/round1 before this task. List every file you write in files, repository-relative, and the page of each category group (A, B, C) in group_pages: three new files hardware/docs/NAME.md, NAME of letters, digits, _ or -, none of them an output listed here. Required among them: ${(A.t6_outputs || []).join(', ')}. Write them from the returns under ${P.results}/hardware/research/round1/ only, the parts in hardware/research/round1/selection.json, P5's budget and combinations, and the owner's decisions in the "Decision (owner, date)" column for Q4, Q8 and Q9. P5's budget and combinations are those of the last P5/P6 check, ${A.last_p56 || 'T5'}, as its critic upheld them.${MARKS.length ? ` State each of these on the pages as its state says: ${J(MARKS)}.` : ''} Do not commit. Write tools/jlc_stock.py to read DIGIKEY_ENV_FILE as well as the two variables, as tools/research/vendors.py does. Run ${T6_CHECKS} and report each as passed or not with its last lines.`
 }
 function p7CriticPrompt(p7) {
+  const pages = [...new Set([...(A.t6_outputs || []).filter(f => f.startsWith('hardware/docs/')), ...Object.values((p7 && p7.group_pages) || {})])]
+  const decided = Object.fromEntries(['Q4', 'Q8', 'Q9'].map(q => [q, (A.decisions || {})[q] || '']))
   return `${ctx('P7-critic', '', 'P7-critic')}
 
-You are the critic of P7. Exception to the rule above: you may correct the pages in ${P.results}; do not commit. figure_checks and sentence_issues describe the pages as they stand after your corrections; list every figure you checked. List in reviewed every file you checked, repository-relative; every file P7 listed is checked. Check every figure and every stated combination on the pages P7 wrote against the returns under ${P.results}/hardware/research/round1/, and every sentence against the writing rules in CONTRIBUTING.md. Apply the corrections, then run the three checks P7 ran on the tree you leave and report each as passed or not with its last lines. P7's return:
+You are the critic of P7. Exception to the rule above: you may correct the pages in ${P.results}; do not commit. figure_checks and sentence_issues describe the pages as they stand after your corrections; list every figure you checked, its file and return_file repository-relative. List in reviewed every file you checked, repository-relative; every file P7 listed is checked. Check every figure and every stated combination on the pages P7 wrote against the returns under ${P.results}/hardware/research/round1/: a budget or combination against the last P5/P6 check, ${A.last_p56 || 'T5'}, only, as its task.json marks it upheld, and the options chosen for Q4, Q8 and Q9 against the owner's decisions: ${J(decided)}. Check at least one figure on each of these pages: ${pages.join(', ')}; on hardware/docs/IOBoard.md a line's chosen part checked against hardware/research/round1/selection.json counts, and on hardware/docs/Research.md the status line checked against a run's task.json. Check every sentence against the writing rules in CONTRIBUTING.md.${MARKS.length ? ` Give in marked, by its 0-based index, the file and line where the pages state each of these as its state says: ${J(MARKS)}.` : ''}${OWED_PARTS.length ? ` Give in part_rows, for each of these parts under its function, the line of its row in hardware/docs/Parts.md and the group page that names it: ${J(OWED_PARTS)}.` : ''}${(A.jlc_stock_row || []).length ? ` Review tools/jlc_stock.py against each sentence of its row in the Outputs table, listed here, and give each, by its 0-based index, a verdict in jlc_stock_review with the line that does what it states and your reason: ${J(A.jlc_stock_row)}.` : ''} Apply the corrections, then run the three checks P7 ran on the tree you leave, ${T6_CHECKS}, and report each as passed or not with its last lines. P7's return:
 ${J(p7)}`
 }
 
@@ -1313,14 +1341,15 @@ async function phaseP2P4(cats) {
 // ---------------------------------------------------------------- P5, P6, P7
 
 // Items the critic upholds, and items it did not check, which stay in the
-// summary as unchecked so the T6 gate sees them.
+// summary as unchecked so the T6 gate sees them. A verdict whose reason reads
+// as none rules on nothing.
 function critiqued(kind, items, critic) {
   if (!critic) {
     items.forEach((it, index) => followUps.push({ role: `${kind}-critic`, index, item: it, reason: `${kind} item not checked` }))
     return items.map(it => ({ ...it, source: kind, unchecked: true }))
   }
   const held = []
-  const vs = uniqueVerdicts(critic.verdicts, x => x.index, { role: `${kind}-critic` })
+  const vs = uniqueVerdicts(reasoned(critic.verdicts, 'reason'), x => x.index, { role: `${kind}-critic` })
   items.forEach((it, index) => {
     const v = vs.get(index)
     if (!v) { followUps.push({ role: `${kind}-critic`, index, item: it, reason: `${kind} item not ruled on` }); held.push({ ...it, source: kind, unchecked: true }) }
@@ -1333,7 +1362,7 @@ function critiqued(kind, items, critic) {
 // Combinations and budgets reach the pages only when the critic upheld them;
 // the rest stay in the summary marked unchecked or not upheld.
 function ruled(items, verdicts, critic, kind) {
-  const v = uniqueVerdicts(verdicts, x => x.index, { role: `${kind}-critic` })
+  const v = uniqueVerdicts(reasoned(verdicts, 'reason'), x => x.index, { role: `${kind}-critic` })
   return items.map((it, index) => {
     if (!critic || !v.has(index)) return { ...it, unchecked: true, upheld: undefined }
     return { ...it, unchecked: false, upheld: !!v.get(index).holds, reason: v.get(index).reason }
@@ -1350,6 +1379,7 @@ async function p5Chain() {
     combinations: ruled(p5.combinations || [], critic && critic.combination_verdicts, critic, 'P5'),
     budgets: ruled(p5.budgets || [], critic && critic.budget_verdicts, critic, 'P5'),
     assumptions: ruled(p5.assumptions || [], critic && critic.assumption_verdicts, critic, 'P5'),
+    budgets_missing: critic ? critic.budgets_missing || [] : [],
   }
 }
 async function p6Chain() {
@@ -1384,12 +1414,27 @@ async function phaseP5P6() {
   // Every budget the P5 row names, upheld by the critic.
   // A budget counts with a value read, its source and its time; "not
   // applicable" (or N/A, does not apply) only for a check the P5 row makes
-  // conditional.
+  // conditional. Every row of an item counts, not one of them for all, and
+  // the Q4 and Q8 alternatives have one for each option class.
   const conditional = n => (A.p5_conditional || []).some(c => n === c || n.startsWith(`${c}: `))
-  const upheld = (a.budgets || []).filter(x => x.upheld === true && !readsNone(x.source) && !!isTime(x.read_at) && !notFound(x.value)
-    && (!/^(not applicable|n\/a|does not apply)\b/i.test(String(x.value).trim()) || conditional(String(x.item || '')))).map(x => String(x.item || ''))
-  const budgetsMissing = a.missing ? [] : (A.p5_budgets || []).filter(n => !upheld.some(i => i === n || i.startsWith(`${n}: `)))
+  const counts = x => x.upheld === true && !readsNone(x.source) && !!isTime(x.read_at) && !notFound(x.value)
+    && (!/^(not applicable|n\/a|does not apply)\b/i.test(String(x.value).trim()) || conditional(String(x.item || '')))
+  const unmet = (list, n, ok) => {
+    const rows = (list || []).filter(x => String(x.item || '') === n || String(x.item || '').startsWith(`${n}: `))
+    return !rows.length || !rows.every(ok)
+  }
+  // The critic lists each rail, I2C bus or other instance P5 did not budget.
+  const budgetsMissing = a.missing ? [] : [...new Set([...(A.p5_budgets || []).flatMap(n => [n, ...optionsOf(n)]).filter(n => unmet(a.budgets, n, counts)),
+    ...(a.budgets_missing || []).filter(n => !readsNone(n)).map(String)])]
   for (const n of budgetsMissing) followUps.push({ role: 'P5', item: n, reason: 'budget the P5 row names not returned and upheld' })
+  // A budget the critic upheld that is not within its limit is a conflict
+  // of the board, as a combination that does not fit is.
+  const over = (a.budgets || []).filter(x => x.upheld === true && x.within !== true)
+  for (const x of over) followUps.push({ role: 'P5', item: x, reason: 'budget over its limit' })
+  // Every assumption the P5 row makes P5 state, upheld, with a value, its
+  // source and its time.
+  const assumptionsMissing = a.missing ? [] : (A.p5_assumptions || []).filter(n => unmet(a.assumptions, n, x => x.upheld === true && !readsNone(x.source) && !!isTime(x.read_at) && !notFound(x.value)))
+  for (const n of assumptionsMissing) followUps.push({ role: 'P5', item: n, reason: 'assumption the P5 row names not stated and upheld' })
   // A combination counts with its outputs, bind order, resources, source
   // and time, and upheld.
   if (!a.missing && !(a.combinations || []).some(x => x.upheld === true && x.fits === true && !readsNone(x.outputs) && !readsNone(x.bind_order) && !readsNone(x.resources) && !readsNone(x.source) && !!isTime(x.read_at))) missingChecks.push('P5 combinations')
@@ -1399,7 +1444,8 @@ async function phaseP5P6() {
   if (!a.missing && !(a.budgets || []).length) missingChecks.push('P5 budgets')
   for (const m of missingChecks) followUps.push({ role: m, reason: `${m} returned nothing; the check did not run` })
   return { conflicts: a.conflicts, combinations: a.combinations || [], budgets: a.budgets || [], assumptions: a.assumptions || [], gaps: b.gaps,
-    missing_checks: missingChecks, unchecked_items: unchecked, rejected_items: rejected.length, budgets_missing: budgetsMissing, unsourced_items: unsourced }
+    missing_checks: missingChecks, unchecked_items: unchecked, rejected_items: rejected.length, budgets_missing: budgetsMissing, unsourced_items: unsourced,
+    budgets_over: over.length, assumptions_missing: assumptionsMissing }
 }
 
 // ---------------------------------------------------------------- the task
@@ -1430,6 +1476,10 @@ if (TASK === 'T6') {
     for (const f of new Set(figPages)) if (!named.some(x => x.file === f)) failed.push(`no figure checked on ${f}`)
     const wrong = (critic.figure_checks || []).filter(f => !f.agrees)
     if (wrong.length) failed.push(`${wrong.length} figures disagree with the returns`)
+    // A budget or combination comes from the last P5/P6 check: a figure
+    // checked against an earlier check's files is superseded.
+    const stale = named.filter(x => (A.p56_runs || []).some(r => r !== A.last_p56 && String(x.return_file).includes(`hardware/research/round1/${r}/`)))
+    if (stale.length) failed.push(`${stale.length} figures checked against an earlier P5/P6 check than ${A.last_p56}`)
     if ((critic.sentence_issues || []).length) failed.push(`${critic.sentence_issues.length} writing issues left`)
   }
   // Every output of the plan is written by P7 and reviewed by its critic.
@@ -1441,6 +1491,17 @@ if (TASK === 'T6') {
   const unwritten = p7 ? required.filter(f => !(p7.files || []).includes(f)) : []
   const unreviewed = critic ? required.filter(f => !(critic.reviewed || []).includes(f)) : []
   if (p7 && critic && (unwritten.length || unreviewed.length)) failed.push(...unwritten.map(f => `not written: ${f}`), ...unreviewed.map(f => `not reviewed: ${f}`))
+  // The critic confirms what the pages must hold beyond their figures: each
+  // item stated as open where an output says so, each part selection.json
+  // keeps in its Parts.md row and on a group page, and each sentence of the
+  // stock tool's Outputs row in tools/jlc_stock.py.
+  if (p7 && critic) {
+    const marked = new Set((critic.marked || []).filter(x => required.includes(x.file) && x.line > 0).map(x => x.index))
+    MARKS.forEach((m, i) => { if (!marked.has(i)) failed.push(`item ${i} not stated on the pages as ${m.state}`) })
+    for (const o of OWED_PARTS) if (!(critic.part_rows || []).some(x => x.function === o.function && x.part === o.part && x.parts_line > 0 && groupPages.includes(x.group_page))) failed.push(`no Parts.md row or group page for ${o.part} (${o.function})`)
+    const review = uniqueVerdicts(reasoned(critic.jlc_stock_review, 'reason'), x => x.index, { role: 'P7-critic' })
+    ;(A.jlc_stock_row || []).forEach((sentence, i) => { if (!(review.get(i) || {}).holds) failed.push(`tools/jlc_stock.py not confirmed: ${sentence}`) })
+  }
   if (!p7 || !critic) summary = { ...summary, stopped: true, reasons: [!p7 ? 'P7 returned nothing' : 'the P7 critic returned nothing'] }
   else if (failed.length) summary = { ...summary, stopped: true, reasons: [`checks failed: ${failed.join(', ')}`] }
 } else if (TASK === 'T5') {

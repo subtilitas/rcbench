@@ -798,7 +798,7 @@
      "items": {
       "$ref": "figure"
      },
-     "description": "the figures the category reports for a decision or for P5 (R1 errata, R2 frames held, R3 on the '423 behaviour with I_off, R10 on Q4, R12 on Q8)"
+     "description": "the figures the category reports for a decision or for P5 (R1 errata, pin ratings, pad figures and in-package flash, R2 frames held, R3 on the '423 behaviour with I_off, R10 on Q4, R12 on Q8)"
     }
    },
    "required": [
@@ -1252,6 +1252,10 @@
        "value": {
         "type": "string"
        },
+       "within": {
+        "type": "boolean",
+        "description": "the value is within its limit, or the check passes; true for a conditional check that does not apply"
+       },
        "source": {
         "type": "string"
        },
@@ -1263,6 +1267,7 @@
       "required": [
        "item",
        "value",
+       "within",
        "source",
        "read_at"
       ]
@@ -1404,6 +1409,10 @@
        "reason"
       ]
      }
+    },
+    "budgets_missing": {
+     "$ref": "strs",
+     "description": "each rail, I2C bus or other instance of a budget item the prompt lists that P5 returned no budget for, as NAME: DETAIL"
     }
    },
    "required": [
@@ -1411,7 +1420,8 @@
     "added",
     "combination_verdicts",
     "budget_verdicts",
-    "assumption_verdicts"
+    "assumption_verdicts",
+    "budgets_missing"
    ]
   },
   "P6": {
@@ -1495,7 +1505,7 @@
       "B",
       "C"
      ],
-     "description": "the page written for each category group, in the form of Power.md"
+     "description": "the page written for each category group: a new file hardware/docs/NAME.md in the form of Power.md, none of them an output the Outputs table names"
     }
    },
    "required": [
@@ -1575,6 +1585,83 @@
       "type": "string"
      },
      "description": "every file the critic checked"
+    },
+    "marked": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer"
+       },
+       "file": {
+        "type": "string"
+       },
+       "line": {
+        "type": "integer"
+       }
+      },
+      "required": [
+       "index",
+       "file",
+       "line"
+      ]
+     },
+     "description": "each item the prompt lists to be stated on the pages, by its 0-based index, with the repository-relative file and the line that state it as the list says; an item the pages do not state so is left out"
+    },
+    "part_rows": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "function": {
+        "type": "string"
+       },
+       "part": {
+        "type": "string"
+       },
+       "parts_line": {
+        "type": "integer"
+       },
+       "group_page": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "function",
+       "part",
+       "parts_line",
+       "group_page"
+      ]
+     },
+     "description": "each part the prompt lists from selection.json, under its function: the line of its row in hardware/docs/Parts.md and the group page, repository-relative, that names it"
+    },
+    "jlc_stock_review": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer"
+       },
+       "holds": {
+        "type": "boolean"
+       },
+       "line": {
+        "type": "integer"
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "holds",
+       "line",
+       "reason"
+      ]
+     },
+     "description": "each sentence of the Outputs row of tools/jlc_stock.py the prompt lists, by its 0-based index: whether tools/jlc_stock.py does what it states, the line that does it, and why"
     }
    },
    "required": [
@@ -1582,7 +1669,10 @@
     "sentence_issues",
     "corrections_applied",
     "checks",
-    "reviewed"
+    "reviewed",
+    "marked",
+    "part_rows",
+    "jlc_stock_review"
    ]
   }
  }

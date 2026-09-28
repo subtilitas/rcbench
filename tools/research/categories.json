@@ -60,6 +60,9 @@
   "reports": {
     "R1": [
       "stepping-A4 errata",
+      "pin ratings",
+      "pad figures",
+      "in-package flash",
       "BOOT resistor",
       "OpenOCD",
       "watchdog"
@@ -103,6 +106,9 @@
     "in-package flash",
     "I2C address map",
     "current per rail",
+    "pack current",
+    "cell rating",
+    "pack protection",
     "ESC pack node clamp",
     "I2C bus timing",
     "alert pins",
@@ -117,6 +123,11 @@
   ],
   "p5_conditional": [
     "absent IOVDD"
+  ],
+  "p5_assumptions": [
+    "receiver bus state machines",
+    "programmer state machines",
+    "servo current sample period"
   ],
   "q_options": {
     "Q4": [

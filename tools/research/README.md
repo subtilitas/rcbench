@@ -91,7 +91,9 @@ It refuses these without exception:
   Q8 or Q9 (`blocks` is `decision-only` and `decision` names one of them)
   needs no answer. `round1.js` publishes a question as blocking P2 instead,
   with a notice, unless its category is one that decision's "Reported by" cell
-  on the page names.
+  on the page names. P6 and its critic are told that such a question, and a
+  specification line whose hardware is selected and whose link is firmware
+  work (Scope: "hardware selected, link open"), is not a gap.
 - T6 while any of the rows Q4, Q8 and Q9 is missing or has no decision, and
   while the output paths have changes.
 
@@ -129,28 +131,39 @@ the items in the arguments:
   budgets or assumptions without source and time or assumptions without a
   value, lacks an upheld budget with a value read (not unknown, not known or
   not stated), its source and its reading time for an item of
-  `categories.json` `p5_budgets` (named as listed or `NAME: DETAIL`; only an
-  item of `p5_conditional` may be `not applicable: REASON`, `N/A: REASON` or
-  `does not apply: REASON`), or left a conflict, gap, combination, budget or
-  assumption its critic did not rule on, or a combination, budget or
-  assumption it rejected; while it, or an earlier check, lists a conflict or
-  gap that no round-2 P2-P4 follow-up covered after that check (for the last
-  check, after the check before it): a gap's category, and a conflict's named
-  categories and every function any run selected one of its parts for (as the
-  kept part, its alternate, a Q alternative or that one's alternate), each
-  researched to a verified part (the first check's items are never covered);
-  and while a run that decides an R3 function was not given the Q9 decision
-  now in force.
+  `categories.json` `p5_budgets` (named as listed or `NAME: DETAIL`, every
+  row of the item counting; the Q4 and Q8 alternatives once for each option
+  class of `q_options`, as `Q4 alternatives: CLASS`; only an item of
+  `p5_conditional` may be `not applicable: REASON`, `N/A: REASON` or
+  `does not apply: REASON`) or for a rail, I²C bus or other instance its
+  critic lists as not budgeted, has an upheld budget not within its limit,
+  lacks an upheld assumption with a value, its source and its time for an
+  item of `p5_assumptions` (the encoder's state machines are R11's
+  `encoder decoding` report), or left a conflict, gap, combination, budget or
+  assumption its critic did not rule on (a verdict whose reason reads as none
+  rules on nothing), or a combination, budget or assumption it rejected; while
+  it, or an earlier check, lists a conflict or gap that no round-2 P2-P4
+  follow-up covered after that check (for the last check, after the check
+  before it): a gap's category, and a conflict's named categories and every
+  function any run selected one of its parts for (as the kept part, its
+  alternate, a Q alternative or that one's alternate), each researched to a
+  verified part (the first check's items are never covered); and while a run
+  that decides an R3 function was not given the Q9 decision now in force.
 
 Then, before T6, it merges `research/round1` into the results tree. The gates
 read committed run records and the plan on `research/round1`. The arguments
 hold the results tree's head, the owner's decisions, the questions committed
 P1 runs raised (`raised`), the Claude Code version, the model, the effort, the
-CPU count and the workflow concurrency. `session.py check` confirms the
-Blocking and Sourcing tables still read as the gates expect, and that
-`p1_asks` names exactly the rows that carry "P1 asks", each with distinct
-names, and that `fixed_inputs` lists the fixed inputs of the Scope table by
-input name and part.
+CPU count and the workflow concurrency. For T6 they also hold the P5/P6
+checks, the conflicts and gaps they leave (each the last check lists, and each
+of an earlier check no round-2 run covered), the assumptions of the last
+check's P5 its critic upheld, the parts `selection.json` keeps, and the
+sentences of the Outputs row of `tools/jlc_stock.py`. `session.py check`
+confirms the Blocking and Sourcing tables still read as the gates expect, that
+the Outputs table has a row for `tools/jlc_stock.py`, and that `p1_asks` names
+exactly the rows that carry "P1 asks", each with distinct names, and that
+`fixed_inputs` lists the fixed inputs of the Scope table by input name and
+part.
 
 `round1.js` keeps a function open, with no part, when:
 
@@ -231,11 +244,12 @@ its LCSC number agrees (rule 1), the lifecycle table's readings
 `lead time`), for a part on the board `LCSC identity` and `library type`
 checks, and a `manufacturer allowlist` check (rule 2), and an alternate needs
 at least the placements of the part it stands in for. The datasheet verifier
-re-reads each function's requirement list against IOBoard.md and the answers
-(`function requirements: FUNCTION`). Figures count on its verdicts only;
-the stock verifier returns none. A figure it refutes with evidence,
-source and a reading time of the task goes to an adjudicator with the
-claim the figure states: the value reported or found, the class, the
+re-reads each function's requirement list against IOBoard.md, the answers and
+each value found for research, which P2 applies to the function its row under
+"Raised by P1" names (`function requirements: FUNCTION`). Figures count on its
+verdicts only; the stock verifier returns none. A figure it refutes with
+evidence, source and a reading time of the task goes to an adjudicator with
+the claim the figure states: the value reported or found, the class, the
 requirement list, the failed requirements or the drop. A replacement
 pair confirms no figure, but its datasheet verifier's refutation of one
 is adjudicated in the same way. A part on the board that the owner holds
@@ -283,7 +297,10 @@ page on the host itself. The P7 critic checks at least one figure on each
 group page and each output under `hardware/docs/`, each check naming the
 figure and the file under `hardware/research/round1/` it comes from, a path
 ending in `.json`; text after the path, such as `:34` or `#L34`, is not part
-of it, and `record` reads the same path.
+of it, and `record` reads the same path. A figure checked against a file of
+a P5/P6 check other than the last is superseded. P7 and its critic are given
+the three commands, the pages that need a figure checked, and the path rules
+for group pages and figure checks that `round1.js` and `record` apply.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared
@@ -308,9 +325,16 @@ checked against a file under `hardware/research/round1/` that HEAD does not
 hold. A renamed file counts as both its old and its new path. A T6 is recorded
 as stopped unless P7 and its critic both return, the critic's three checks
 pass, it checked at least one figure and every figure agrees with its return,
-no writing issue is left, the three group pages are three files in
-`hardware/docs/` other than the fixed outputs, and every output of the plan
-and each group page was written and reviewed. A stopped T6 leaves the output
+no figure is superseded, no writing issue is left, the three group pages are
+three files in `hardware/docs/` other than the fixed outputs, and every
+output of the plan and each group page was written and reviewed. The critic
+also gives, in an output or group page, the line that states each item as
+the arguments say: each conflict and gap the checks leave as not known, each
+item accepted open as not verified or not known, and each upheld assumption
+as assumed; the `Parts.md` line and the group page of each part
+`selection.json` keeps (the kept part, its alternate, each Q alternative and
+its alternate); and a verdict with its reason that `tools/jlc_stock.py` does
+what each sentence of its Outputs row states. A stopped T6 leaves the output
 paths as they were. A T6 that `record` refuses, for any reason, an unreadable
 output included, does too, and keeps what P7 changed in a stash named
 `refused T6 RUN_ID` in the results tree. `raised` reads the committed run

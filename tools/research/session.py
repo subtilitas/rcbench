@@ -242,6 +242,19 @@ def spec_text(commit):
     return plan + "\0" + texts[1]
 
 
+def jlc_stock_row(text):
+    """The sentences of the Outputs table's row for tools/jlc_stock.py,
+    each of which the P7 critic confirms the tool does."""
+    sec = text.split("\n## Outputs\n", 1)
+    if len(sec) < 2:
+        raise SystemExit("the Outputs section is not found")
+    for line in sec[1].split("\n## ", 1)[0].splitlines():
+        c = cells(line)
+        if c and len(c) == 2 and c[0] == "`tools/jlc_stock.py`":
+            return re.split(r"(?<=\.)\s+(?=[A-Z`])", c[1])
+    raise SystemExit("the Outputs table has no row for tools/jlc_stock.py")
+
+
 def decisions(text, column=3):
     """Q4, Q8, Q9 and the owner's entry in the Decision column; column 2
     gives the Reported by cell instead."""
@@ -331,6 +344,7 @@ def cmd_check(_args):
         if c not in cats["categories"]:
             fails.append(f"fixed_inputs: unknown category {c}")
     raised_rows(text)
+    jlc_stock_row(text)
     if set(decisions(text)) != {"Q4", "Q8", "Q9"}:
         fails.append("the decision table does not list Q4, Q8 and Q9")
     if not all(decision_categories(text).values()):
@@ -539,12 +553,15 @@ def p1_unresolved(results, categories):
 
 def t6_open(results):
     """What stands between the last P5/P6 check and T6: a part changed
-    after it, or conflicts and gaps it listed with no round 2 run."""
+    after it, or conflicts and gaps it listed with no round 2 run. Also
+    the conflicts and gaps the checks leave, which the pages state as not
+    known: each the last check lists, and each of an earlier check that no
+    round 2 run covered. Returns (what is open, what is left)."""
     done = runs(results)
     checks = [(n, t) for n, t in done if t.get("task") == "T5" or
               (t.get("followup") or {}).get("phases") == "P5-P6"]
     if not checks:
-        return ["no P5/P6 check is recorded"]
+        return ["no P5/P6 check is recorded"], []
     name, last = checks[-1]
     out = [f"{n} changed a selection after {name}" for n, t in done
            if t.get("sequence", 0) > last.get("sequence", 0)
@@ -587,10 +604,10 @@ def t6_open(results):
             named = set(x.get("categories") or [])
             if (not fns and not named) or not fns <= fn_done or \
                     not (named | {c for c, _ in fns}) <= covered:
-                out_items.append(x)
+                out_items.append({"conflict": x})
         for x in (check.get("summary") or {}).get("gaps", []):
             if not x.get("category") or x["category"] not in covered:
-                out_items.append(x)
+                out_items.append({"gap": x})
         return out_items
 
     # The last check's items stand only when round 2 covered them after
@@ -598,12 +615,17 @@ def t6_open(results):
     # found). An earlier check's items stay open, even when a later check
     # omits them, until round 2 covered them after that check.
     uncovered = []
+    left = [{"check": name, "conflict": x}
+            for x in summary.get("conflicts", [])] + [
+        {"check": name, "gap": x} for x in summary.get("gaps", [])]
     if len(checks) > 1:
         uncovered += uncovered_items(last, *covered_between(
             checks[-2][1].get("sequence", 0), last.get("sequence", 0)))
-        for _, earlier in checks[:-1]:
-            uncovered += uncovered_items(earlier, *covered_between(
+        for earlier_name, earlier in checks[:-1]:
+            items = uncovered_items(earlier, *covered_between(
                 earlier.get("sequence", 0), last.get("sequence", 0)))
+            uncovered += items
+            left += [{"check": earlier_name, **x} for x in items]
     else:
         uncovered += uncovered_items(last, set(), set())
     if uncovered:
@@ -624,7 +646,35 @@ def t6_open(results):
     if summary.get("unsourced_items"):
         out.append(f"{name} has {summary['unsourced_items']} combinations "
                    "and budgets without source and time")
-    return out
+    if summary.get("budgets_over"):
+        out.append(f"{name} has {summary['budgets_over']} budgets over "
+                   "their limit")
+    if summary.get("assumptions_missing"):
+        out.append(f"{name} states no assumption for "
+                   + ", ".join(summary["assumptions_missing"]))
+    return out, left
+
+
+def t6_inputs(results, text):
+    """What T6 is given besides the plan: the P5/P6 checks in record order,
+    the last of them, the conflicts and gaps they leave, the assumptions of
+    the last check's P5 that its critic upheld, which the pages state
+    beside the budgets that rest on them, the parts selection.json keeps,
+    and the sentences of the stock tool's Outputs row. Returns (what is
+    open before T6, the arguments)."""
+    open_t6, left = t6_open(results)
+    checks = [(n, t) for n, t in runs(results) if t.get("task") == "T5" or
+              (t.get("followup") or {}).get("phases") == "P5-P6"]
+    last = (checks[-1][1].get("summary") or {}) if checks else {}
+    return open_t6, {
+        "last_p56": checks[-1][0] if checks else "",
+        "p56_runs": [n for n, _ in checks],
+        "left_open": left,
+        "p5_assumed": [{k: x.get(k, "") for k in ("item", "value", "why")}
+                       for x in last.get("assumptions") or []
+                       if x.get("upheld") is True],
+        "selection": effective_selection(results),
+        "jlc_stock_row": jlc_stock_row(text)}
 
 
 def answers(rows, c):
@@ -1098,13 +1148,12 @@ def cmd_prepare(args):
                                  cats["tasks"]["T3"]["categories"])
     open_sel += [o for o in p1_unresolved(results, gate_cats)
                  if o not in open_sel]
-    last_p56 = ""
+    t6 = {"last_p56": "", "p56_runs": [], "left_open": [], "p5_assumed": [],
+          "selection": {}, "jlc_stock_row": []}
     if args.task == "T6":
         questions_gate(results, rows, list(cats["categories"]))
-        open_sel += t6_open(results)
-        checks = [n for n, t in runs(results) if t.get("task") == "T5" or
-                  (t.get("followup") or {}).get("phases") == "P5-P6"]
-        last_p56 = checks[-1] if checks else ""
+        open_t6, t6 = t6_inputs(results, text)
+        open_sel += open_t6
         dirty = [d for d in changed(results) if t6_output(d)]
         if dirty:
             raise SystemExit("the output paths have changes; commit or "
@@ -1171,9 +1220,10 @@ def cmd_prepare(args):
         "inventory": inventory(results, list(cats["categories"])),
         "p5_budgets": cats.get("p5_budgets", []),
         "p5_conditional": cats.get("p5_conditional", []),
+        "p5_assumptions": cats.get("p5_assumptions", []),
         "q_options": cats.get("q_options", {}),
-        "last_p56": last_p56,
         "t6_outputs": T6_REQUIRED if args.task == "T6" else [],
+        **t6,
         "run_info": run_info(args.model, args.effort),
         "accept_open": {"reason": args.accept_open, "functions": open_sel}
         if args.accept_open else None,
@@ -1213,7 +1263,8 @@ def result_shape(result, want):
         need = []
         keys = {"conflicts": list, "gaps": list, "missing_checks": list,
                 "unchecked_items": int, "rejected_items": int,
-                "budgets_missing": list, "unsourced_items": int}
+                "budgets_missing": list, "unsourced_items": int,
+                "budgets_over": int, "assumptions_missing": list}
     elif task == "T1" or phases == "P1":
         need, keys = ["P0"], {"questions": list, "inventory": dict}
     else:

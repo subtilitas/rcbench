@@ -163,10 +163,21 @@ async function runTask(task, opts = {}) {
     if (role === 'P5' && opts.unsourcedCombos) data.combinations = data.combinations.map(x => ({ ...x, source: '' }))
     if (role === 'P5' && opts.p5Items) data.budgets = opts.p5Items.map(item => ({ item, value: (opts.budgetValues || {})[item] || 'v', source: opts.blankSource ? '   ' : 's', read_at: opts.budgetUndated ? '' : opts.budgetTime || '2026-09-28T10:00:00Z' }))
     if (role === 'P5') data.combinations = data.combinations.map(x => ({ ...x, fits: !opts.noFit }))
+    if (role === 'P5') data.budgets = data.budgets.map(x => ({ ...x, within: !(opts.overBudget || []).includes(x.item) }))
+    if (role === 'P5' && opts.p5Assumed) data.assumptions = opts.p5Assumed.map(([item, value]) => ({ item, value, why: 'w', source: 's', read_at: '2026-09-28T10:00:00Z' }))
     if (role === 'P5' && opts.unsourcedAssumption) data.assumptions = data.assumptions.map(x => ({ ...x, source: '' }))
     if (role === 'P5' && opts.blankCombos) data.combinations = data.combinations.map(x => ({ ...x, outputs: '', bind_order: '', resources: '' }))
     if (role === 'P5' && opts.assumptionValue) data.assumptions = data.assumptions.map(x => ({ ...x, value: opts.assumptionValue }))
-    if (role === 'P5-critic') for (const k of ['combination_verdicts', 'budget_verdicts', 'assumption_verdicts']) data[k] = data[k].map((v, index) => ({ ...v, index, holds: !(opts.rejectBudget && k === 'budget_verdicts' && index === 0) && !(opts.rejectAssumption && k === 'assumption_verdicts' && index === 0) }))
+    if (role === 'P5-critic') {
+      // The critic rules on every item P5 returned.
+      const p5ret = JSON.parse(prompt.slice(prompt.lastIndexOf('\n') + 1))
+      for (const [k, list] of [['combination_verdicts', 'combinations'], ['budget_verdicts', 'budgets'], ['assumption_verdicts', 'assumptions']]) {
+        data[k] = p5ret[list].map((_, index) => ({ index, reason: opts.blankVerdictReason ? ' ' : 'r', holds: !(opts.rejectBudget && k === 'budget_verdicts' && index === 0) && !(opts.rejectAssumption && k === 'assumption_verdicts' && index === 0) }))
+      }
+      if (opts.blankVerdictReason) data.verdicts = data.verdicts.map(v => ({ ...v, reason: '' }))
+      data.budgets_missing = opts.criticMissing || []
+    }
+    if (role === 'P6-critic' && opts.blankVerdictReason) data.verdicts = data.verdicts.map(v => ({ ...v, reason: '' }))
     if (role === 'P1' && opts.qCategory) data.questions = data.questions.map(q => ({ ...q, category: 'R99', source: 'mock' }))
     if (role === 'P1' && opts.decisionNone) data.questions = data.questions.map(q => ({ ...q, blocks: 'decision-only', decision: 'none' }))
     if (role === 'P1' && opts.contradict) data.values = data.values.map(v => ({ ...v, question: -1 }))
@@ -198,6 +209,9 @@ async function runTask(task, opts = {}) {
         const figFiles = opts.oneFigure ? ['hardware/docs/Parts.md'] : outs.filter(f => f.startsWith('hardware/docs/'))
         data.figure_checks = opts.noFigures ? [] : figFiles.map(file => ({ file, line: 1, figure: opts.blankFigure ? '' : 'stock', return_file: opts.blankFigure ? '' : opts.returnFile || 'hardware/research/round1/T2/012-P4-stock-R1.json', agrees: !opts.criticDisagrees }))
         data.sentence_issues = opts.sentenceIssue ? [{ file: 'f', line: 1, issue: 'i' }] : []
+        data.marked = opts.marked || []
+        data.part_rows = opts.partRows || []
+        data.jlc_stock_review = opts.jlcReview || []
       }
     }
     if (role === 'P1-recheck' && opts.recheckRejects) {
@@ -286,7 +300,9 @@ async function runTask(task, opts = {}) {
   }
   const args = { task, cap: opts.cap || cats.cap, categories: cats.categories, tasks: cats.tasks, schemas,
     commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, inventory: opts.inventory || {}, jlcparts: JL, p5_budgets: opts.p5Budgets || [], p5_conditional: opts.p5Conditional || [], q_options: opts.qOptions || {},
-    followup: opts.followup, first_v: 5, decision_categories: { Q4: ['R10'], Q8: ['R2', 'R12'], Q9: ['R3'] }, t6_outputs: T6OUT, for_research: opts.forResearch || [], raised: opts.raised || [], p1_asks: opts.p1Asks || {}, fixed_inputs: opts.fixedInputs || {}, required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {} }
+    followup: opts.followup, first_v: 5, decision_categories: { Q4: ['R10'], Q8: ['R2', 'R12'], Q9: ['R3'] }, t6_outputs: T6OUT, for_research: opts.forResearch || [], raised: opts.raised || [], p1_asks: opts.p1Asks || {}, fixed_inputs: opts.fixedInputs || {}, required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {},
+    p5_assumptions: opts.p5Assumptions || [], decisions: opts.decisions || {}, accept_open: opts.acceptOpen || null, left_open: opts.leftOpen || [], p5_assumed: opts.p5AssumedT6 || [],
+    last_p56: opts.lastP56 || '', p56_runs: opts.p56Runs || [], selection: opts.selection || {}, jlc_stock_row: opts.jlcRow || [] }
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
     `return (async () => {${src}})()`)
   const result = await fn(args, agent, parallel, pipeline, () => {}, () => {})
@@ -1150,6 +1166,79 @@ async function main() {
   // R1's crystal tolerance is owed for the crystal kept, a replacement too.
   r = await runTask('T2', { requiredReports: cats.reports, perPartReports: cats.reports_per_part, reportParts: ['crystal tolerance: part1'], refute: ['P4-stock-R1:part1'] })
   check(r1(r).selection[0].part === 'part2' && r.result.summary.figures_open.R1.includes('report: crystal tolerance: part2'), 'crystal tolerance of a replacement part: owed')
+  // R1 reports the pin ratings, the pad figures and the in-package flash.
+  r = await runTask('T2', { requiredReports: cats.reports, reports: ['stepping-A4 errata', 'BOOT resistor', 'OpenOCD', 'watchdog'].map(f => [f, 'v']) })
+  check(['pin ratings', 'pad figures', 'in-package flash'].every(f => r.result.summary.figures_open.R1.includes(`P2 report: ${f}`)), 'R1 without its pin ratings, pad figures and in-package flash: open')
+  // A value found for research is a requirement of the function its row
+  // names, and the datasheet verifier checks the list holds it.
+  r = await runTask('T2')
+  check(r.prompts.find(x => x.label === 'P2-R1').prompt.includes('apply it as a requirement of the function its row names') && r.prompts.find(x => x.label === 'P4-datasheet-R1').prompt.includes('each value found for research whose row under "Raised by P1" names the function'), 'found values: applied to their function and checked in its requirement list')
+
+  // Every row of a P5 budget item counts, not the first that passes.
+  r = await runTask('T5', { p5Budgets: ['current per rail', 'GPIO'], p5Items: ['current per rail: 3.3 V', 'current per rail: 12 V', 'GPIO: bank 0', 'GPIO: bank 1'], budgetValues: { 'current per rail: 12 V': 'not read: datasheet returned 403', 'GPIO: bank 1': 'not applicable: none' } })
+  check(r.result.summary.budgets_missing.join() === 'current per rail,GPIO', `T5: budgets missing ${r.result.summary.budgets_missing}, expected an unread rail and an unconditional not applicable beside a row that counts`)
+  // The Q4 and Q8 alternatives are budgeted for each option class.
+  r = await runTask('T5', { p5Budgets: ['Q4 alternatives'], qOptions: q4, p5Items: ['Q4 alternatives: reference'] })
+  check(r.result.summary.budgets_missing.join() === 'Q4 alternatives: external ADC' && r.prompts.find(x => x.label === 'P5').prompt.includes('Q4 alternatives: reference and Q4 alternatives: external ADC'), 'T5: a Q4 option class without a budget is missing')
+  r = await runTask('T5', { p5Budgets: ['Q4 alternatives'], qOptions: q4, p5Items: ['Q4 alternatives: reference', 'Q4 alternatives: external ADC'] })
+  check(r.result.summary.budgets_missing.length === 0, 'T5: each Q4 option class budgeted')
+  // A rail or bus the critic finds unbudgeted is missing.
+  r = await runTask('T5', { p5Budgets: ['current per rail'], p5Items: ['current per rail: 3.3 V'], criticMissing: ['current per rail: 5 V', 'none'] })
+  check(r.result.summary.budgets_missing.join() === 'current per rail: 5 V' && r.prompts.find(x => x.label === 'P5-critic').prompt.includes('List in budgets_missing'), 'T5: an instance the critic lists as unbudgeted is missing')
+  // The pack current, cell and protection recheck of the R7 row is owed.
+  r = await runTask('T5', { p5Budgets: cats.p5_budgets, p5Items: cats.p5_budgets.filter(n => !['pack current', 'cell rating', 'pack protection'].includes(n)) })
+  check(r.result.summary.budgets_missing.join() === 'pack current,cell rating,pack protection' && r.prompts.find(x => x.label === 'P5').prompt.includes('the pack current recomputed from the converter efficiencies R5 and R6 verified'), 'T5: the R7 row\'s pack recheck is owed')
+  // A budget upheld over its limit is counted and listed.
+  r = await runTask('T5', { p5Budgets: ['PIO state machines'], p5Items: ['PIO state machines'], budgetValues: { 'PIO state machines': '13 of 12 used' }, overBudget: ['PIO state machines'] })
+  check(r.result.summary.budgets_over === 1 && r.result.followUps.some(f => f.reason === 'budget over its limit'), 'T5: a budget over its limit is counted')
+  r = await runTask('T5')
+  check(r.result.summary.budgets_over === 0, 'T5: no budget over its limit')
+  // The assumptions the P5 row requires are each stated and upheld.
+  r = await runTask('T5', { p5Assumptions: cats.p5_assumptions })
+  check(r.result.summary.assumptions_missing.join() === cats.p5_assumptions.join() && r.prompts.find(x => x.label === 'P5').prompt.includes('State in assumptions'), 'T5: required assumptions not stated are missing')
+  r = await runTask('T5', { p5Assumptions: cats.p5_assumptions, p5Assumed: [...cats.p5_assumptions.map(n => [n, '2']), ['programmer state machines: SWD', 'not read']] })
+  check(r.result.summary.assumptions_missing.join() === 'programmer state machines', `T5: assumptions missing ${r.result.summary.assumptions_missing}, expected the one with an unread row`)
+  // A critic verdict without a reason rules on nothing.
+  r = await runTask('T5', { blankVerdictReason: true })
+  const s5 = r.result.summary
+  const own = [...s5.combinations, ...s5.budgets, ...s5.assumptions, ...s5.conflicts.filter(c => c.source === 'P5'), ...s5.gaps.filter(g => g.source === 'P6')]
+  check(s5.rejected_items === 0 && own.length > 6 && own.every(x => x.unchecked) && s5.unchecked_items === own.length, 'T5: verdicts without a reason leave every item unchecked')
+  check(['P5-critic', 'P6-critic'].every(l => r.prompts.find(x => x.label === l).prompt.includes('a verdict without one is no verdict')), 'T5: the critics are told a verdict needs its reason')
+  // P6 and its critic apply the Scope section's firmware lines and the
+  // decision-only questions.
+  check(['P6', 'P6-critic'].every(l => r.prompts.find(x => x.label === l).prompt.includes('"hardware selected, link open" and is not a gap') && r.prompts.find(x => x.label === l).prompt.includes('"(feeds Q9 only)" feeds that decision alone and needs no answer')), 'T5: P6 and its critic are given the link-open and decision-only rules')
+
+  // T6: what the pages state as open, each confirmed by the critic.
+  const leftOpen = [{ check: 'FU-d', conflict: { parts: ['LMR36015'], categories: ['R5'], kind: 'rail', description: '5 V rail over its rating', evidence: 'e' } }]
+  const openT6 = { leftOpen, acceptOpen: { reason: 'owner', functions: ['R3: f1 has no verified part'] }, p5AssumedT6: [{ item: 'servo current sample period', value: '1 ms' }] }
+  r = await runTask('T6', openT6)
+  check(r.result.summary.stopped === true && /item 2 not stated on the pages as assumed/.test(r.result.summary.reasons[0]) && ['P7', 'P7-critic'].every(l => r.prompts.find(x => x.label === l).prompt.includes('R3: f1 has no verified part') && r.prompts.find(x => x.label === l).prompt.includes('5 V rail over its rating') && r.prompts.find(x => x.label === l).prompt.includes('servo current sample period')), 'T6: open items not stated on the pages stop it')
+  r = await runTask('T6', { ...openT6, marked: [0, 1, 2].map(index => ({ index, file: 'hardware/docs/Power.md', line: 3 })) })
+  check(!r.result.summary.stopped, 'T6: open items stated on the pages finish it')
+  r = await runTask('T6', { ...openT6, marked: [0, 1, 2].map(index => ({ index, file: 'notes.md', line: 3 })) })
+  check(r.result.summary.stopped === true, 'T6: open items stated outside the outputs stop it')
+  // A budget or combination comes from the last P5/P6 check.
+  r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/T5/003-P5.json' })
+  check(r.result.summary.stopped === true && r.prompts.find(x => x.label === 'P7-critic').prompt.includes('against the last P5/P6 check, FU-b, only'), 'T6: a figure checked against a superseded P5/P6 check stops it')
+  r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/FU-b/003-P5.json', decisions: { Q4: 'external ADC (owner, 2026-10-01)' } })
+  check(!r.result.summary.stopped && r.prompts.find(x => x.label === 'P7-critic').prompt.includes('"Q4":"external ADC (owner, 2026-10-01)"'), 'T6: figures from the last P5/P6 check finish it; the critic is given the decisions')
+  // Both T6 prompts state the rules the gate reads: the group pages, a
+  // figure on each page by its repository-relative path, the three commands.
+  r = await runTask('T6')
+  const p7p = r.prompts.find(x => x.label === 'P7').prompt
+  const p7c = r.prompts.find(x => x.label === 'P7-critic').prompt
+  check(p7p.includes('three new files hardware/docs/NAME.md') && p7c.includes('Check at least one figure on each of these pages: hardware/docs/IOBoard.md, hardware/docs/Parts.md, hardware/docs/Power.md, hardware/docs/Research.md, hardware/docs/GroupA.md') && p7c.includes('its file and return_file repository-relative'), 'T6: the path rules and the pages to check are in the prompts')
+  check(p7c.includes('DIGIKEY_ENV_FILE=') && p7c.includes('python3 tools/jlc_stock.py --check 5'), 'T6: the critic is given the stock check with its credentials')
+  // Every part selection.json keeps has its Parts.md row and group page, and
+  // tools/jlc_stock.py does what each sentence of its Outputs row states.
+  const selT6 = { selection: { R1: { f1: { part: 'part1', alternate: 'altA', q_alternatives: [] } } }, jlcRow: ['It reads the result whose LCSC number equals the row\'s.'] }
+  const rows = ['part1', 'altA'].map(part => ({ function: 'f1', part, parts_line: 4, group_page: 'hardware/docs/GroupA.md' }))
+  r = await runTask('T6', { ...selT6, partRows: rows.slice(0, 1), jlcReview: [{ index: 0, holds: true, line: 12, reason: 'r' }] })
+  check(r.result.summary.stopped === true && /no Parts.md row or group page for altA/.test(r.result.summary.reasons[0]), 'T6: a selected part without its Parts.md row stops it')
+  r = await runTask('T6', { ...selT6, partRows: rows, jlcReview: [{ index: 0, holds: false, line: 0, reason: 'reads the first result' }] })
+  check(r.result.summary.stopped === true && /tools\/jlc_stock.py not confirmed/.test(r.result.summary.reasons[0]), 'T6: a stock tool that does not do its Outputs row stops it')
+  r = await runTask('T6', { ...selT6, partRows: rows, jlcReview: [{ index: 0, holds: true, line: 12, reason: 'r' }] })
+  check(!r.result.summary.stopped, 'T6: every part in Parts.md and the stock tool confirmed finish it')
 
   // Follow-up plans.
   for (const [phases, n, want] of [['P1', 2, 6], ['P2-P4', 3, 16], ['P5-P6', 0, 5]]) {
