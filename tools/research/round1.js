@@ -268,7 +268,7 @@ function p4Prompt(cat, kind, bundle, only) {
     : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, the reasons the re-rank gave for dropping a P3 candidate, P2\'s own drops, for "Q option: FUNCTION: PART: CLASS" whether the part belongs to that option class of Q4 or Q8, and for "function requirements: FUNCTION" whether the function\'s requirement list names every requirement set for it by IOBoard.md, the answers and each value found for research whose row under "Raised by P1" names the function, with no value weaker than theirs) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
   return `${ctx('P4', cat, `P4-${kind}-${cat}`)}
 
-${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor, other than a part of kind alternate; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives the lifecycle table's readings: "longevity commitment" (the programme page's commitment, or that none is published; passes unless S5 makes it a gate it fails), "market introduction" (the first datasheet revision date; passes, and under 12 months is stated in read), "distributor status" (JLCPCB, LCSC and Digi-Key; passes, a disagreement with the maker stated in read) and "lead time" (the manufacturer's lead time in Digi-Key's API; passes). For a part on the board it gives "library type" (componentLibraryType of the exact JLCPCB row, basic or extended; passes, S6 allowing both) and "LCSC identity" (the exact JLCPCB result for the LCSC number names the candidate's part number and package; passes only then). It also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that) and "board placement" (whether the specification places the part on the IO board or off it, rule 1; passes when its LCSC number says the same: C and digits on the board, none off it), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and one whose refutation is not empty counts as a refutation. A check with passes false counts as a refutation, and so does one with agrees false, except for a reading that moves or always passes (${[...MOVING].join(', ')}) and a requirement stated as not given.
+${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor, other than a part of kind alternate; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives the lifecycle table's readings: "longevity commitment" (the programme page's commitment, or that none is published; passes unless S5 makes it a gate it fails), "market introduction" (the first datasheet revision date; passes, and under 12 months is stated in read); a longevity commitment or market introduction you cannot read is written "not read: REASON" with passes true, and does not refute the part, "distributor status" (JLCPCB, LCSC and Digi-Key; passes, a disagreement with the maker stated in read) and "lead time" (the manufacturer's lead time in Digi-Key's API; passes). For a part on the board it gives "library type" (componentLibraryType of the exact JLCPCB row, basic or extended; passes, S6 allowing both) and "LCSC identity" (the exact JLCPCB result for the LCSC number names the candidate's part number and package; passes only then). It also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that) and "board placement" (whether the specification places the part on the IO board or off it, rule 1; passes when its LCSC number says the same: C and digits on the board, none off it), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and one whose refutation is not empty counts as a refutation. A check with passes false counts as a refutation, and so does one with agrees false, except for a reading that moves or always passes (${[...MOVING].join(', ')}) and a requirement stated as not given.
 
 The shortlist, the values found for research and the reports:
 ${J(bundle)}`
@@ -666,9 +666,10 @@ function distinctRanks(list) {
 // one family as "A (C1); B (C2)", or the part with its function appended.
 // Two names, or records, are the same part when they share a part number or
 // an LCSC number. Part numbers are the pieces between semicolons, commas
-// followed by a space, and " and ", without parenthesized text, case and
-// spaces; a piece that is a function name is none. A comma without a space
-// stays in the part number, as in Nexperia's 2N7002BK,215. A record's own
+// followed by a space, slashes between spaces and " and ", without
+// parenthesized text, case and spaces; a piece that is a function name is
+// none. A comma or slash without a space stays in the part number, as in
+// Nexperia's 2N7002BK,215 and Microchip's MCP2542FD-E/SN. A record's own
 // lcsc field counts as its LCSC number.
 function partKeys(p, functionNames) {
   const rec = p && typeof p === 'object' ? p : { part: p }
@@ -676,7 +677,7 @@ function partKeys(p, functionNames) {
   const text = String(rec.part || '').toUpperCase()
   const own = String(rec.lcsc || '').trim().toUpperCase()
   const lcsc = [...(text.match(/\bC\d+\b/g) || []), ...(/^C\d+$/.test(own) ? [own] : [])].map(c => `lcsc:${c}`)
-  const mpn = text.replace(/\([^)]*\)/g, ' ').split(/;|,\s+|\s+AND\s+/)
+  const mpn = text.replace(/\([^)]*\)/g, ' ').split(/;|,\s+|\s+\/\s+|\s+AND\s+/)
     .map(x => x.replace(/\s+/g, '')).filter(x => x && !fn.has(x)).map(x => `mpn:${x}`)
   return new Set([...mpn, ...lcsc])
 }
@@ -927,10 +928,32 @@ const MAY_READ_NONE = new Set(['end-of-life notices', 'longevity commitment'])
 // other check reads the part against its function, whatever its role.
 const FIT = new Set(['pin-for-pin match', 'functional match'])
 
+// Readings the lifecycle table records without a gate: S5 records a
+// longevity commitment and does not require one, and market introduction is
+// recorded and flagged under 12 months. A reading of either that the
+// verifier could not take, written "not read: REASON", is recorded as that
+// and listed for the owner, as an unread manufacturer status is; it neither
+// passes nor fails.
+const RECORDED_ONLY = new Set(['longevity commitment', 'market introduction'])
+// The reason is text of its own: "not read: none", "not read: N/A" or
+// "not read: -" gives none.
+function notReadWithReason(text) {
+  const t = String(text || '').trim()
+  const m = /^not read\s*[:;,(-]\s*/i.exec(t)
+  const reason = m ? t.slice(m[0].length).replace(/[\s.)]+$/, '') : ''
+  return !!reason && !readsNone(reason) && !/^(unknown|not known|not stated)$/i.test(reason)
+}
+
+// A lifecycle reading of the stock verifier that is recorded as not read.
+// A datasheet check of the same name is a requirement, not this reading.
+const recordedUnread = (c, verifier) => verifier === 'stock' && RECORDED_ONLY.has(c.figure) && notReadWithReason(c.read)
+
 // A check written as not read, as none where a value exists to be read, or
 // without its source or a reading time of this task, shows nothing.
-function shown(c) {
-  return !(MAY_READ_NONE.has(c.figure) ? unread(c.read) : readsNone(c.read)) && !readsNone(c.source) && readInRun(c.read_at)
+function shown(c, verifier) {
+  const read = recordedUnread(c, verifier) ? true
+    : !(MAY_READ_NONE.has(c.figure) ? unread(c.read) : readsNone(c.read))
+  return read && !readsNone(c.source) && readInRun(c.read_at)
 }
 
 function covered(v, cand) {
@@ -939,7 +962,7 @@ function covered(v, cand) {
   if (!cand) return false
   const req = requiredChecks(v.verifier, cand, v.kind)
   if (v.verifier === 'datasheet' && !req.length) return false
-  const have = new Set((v.checks || []).filter(shown).map(c => c.figure))
+  const have = new Set((v.checks || []).filter(c => shown(c, v.verifier)).map(c => c.figure))
   // Rule 6: a part the owner holds passes rule 4 on the held quantity, in
   // place of the live stock and presale.
   const held = v.verifier === 'stock' && onBoard(cand) && Number(cand.held) > 0 && have.has('held quantity')
@@ -1045,6 +1068,7 @@ async function verifyCategory(cat, functions, bundle, claims) {
         if (!byPart.has(k)) { followUps.push({ role: 'P4', category: cat, function: p.function, part: p.part, reason: `${kind} verifier listed a part it was not asked to verify; ignored` }); continue }
         const e = byPart.get(k)
         e.verdicts.push({ verifier: kind, kind: e.kind, reported_kind: p.kind, verdict: p.verdict, refutation: p.refutation, checks: p.checks })
+        for (const c of p.checks || []) if (recordedUnread(c, kind) && shown(c, kind)) followUps.push({ role: 'P4', category: cat, function: p.function, part: p.part, figure: c.figure, reason: `recorded as not read: ${String(c.read).trim()}`, notice: true })
         byPart.set(k, e)
       }
     }
@@ -1072,7 +1096,16 @@ async function verifyCategory(cat, functions, bundle, claims) {
         // A reading that moves or always passes, and a requirement P2 gave no
         // value for, differs from the value stated without refuting.
         const passesOnly = c => MOVING.has(c.figure) || (v.verifier === 'datasheet' && added.has(c.figure))
-        const fails = c => (!c.agrees && !passesOnly(c)) || c.passes !== true
+        const unreadHere = c => recordedUnread(c, v.verifier)
+        const fails = c => !unreadHere(c) && ((!c.agrees && !passesOnly(c)) || c.passes !== true)
+        // A refutation that states nothing, and whose only failing checks
+        // are readings recorded as not read, is none: they neither pass nor
+        // fail. One that states a reason is ruled on as any other.
+        const rawFails = c => (!c.agrees && !passesOnly(c)) || c.passes !== true
+        if (v.verdict === 'refuted' && noRefutation(v.refutation) && (v.checks || []).some(c => unreadHere(c) && rawFails(c)) && (v.checks || []).every(c => !rawFails(c) || unreadHere(c) || offRoute(c))) {
+          v.verdict = 'confirmed'
+          v.refutation = ''
+        }
         const bad = (v.checks || []).filter(c => !offRoute(c) && fails(c))
         // The checks the verdict fails, the fit of a part that is also an
         // alternate among them.

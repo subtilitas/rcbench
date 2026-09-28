@@ -265,7 +265,7 @@ async function runTask(task, opts = {}) {
           .map(c => opts.heldAndLive && c.figure === 'stock' ? { ...c, passes: false } : c)
           .map(c => ({ ...c, ...((opts.edit || {})[c.figure] || {}), ...(kind === 'stock' ? opts.stockPatch || {} : {}) }))
           .map(c => ({ ...c, ...(((opts.editPart || {})[`${base}:${pt}`] || {})[c.figure] || {}) }))
-      data.parts = (opts.omit || []).includes(base) || (opts.omitPart || []).includes(`${base}:${part}`) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part, opts.bothRoles && !only ? 'alternate' : undefined), refutation: refute ? 'mock' : '' }]
+      data.parts = (opts.omit || []).includes(base) || (opts.omitPart || []).includes(`${base}:${part}`) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part, opts.bothRoles && !only ? 'alternate' : undefined), refutation: refute ? (opts.refutationText === undefined ? 'mock' : opts.refutationText) : '' }]
       if (opts.note && opts.note[0] === base && data.parts.length) data.parts[0].refutation = opts.note[1]
       if ((opts.dupRow || []).includes(base)) data.parts.push({ ...data.parts[0], verdict: 'refuted', refutation: 'second row' })
       const oc = only ? JSON.parse(only[1]) : null
@@ -900,6 +900,10 @@ async function main() {
   check(r1(r).selection[0].part === 'part1', 'P3 find by LCSC number, the drop naming it in its lcsc field: handled')
   r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW (c98) AND partx (c99)', dropShortPart: 'PARTX' })
   check(r1(r).selection[0].part === 'part1', 'P3 find in another case, joined by AND: handled')
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW-REEL / partX' })
+  check(r1(r).selection[0].part === 'part1', 'P3 find of two parts joined by a spaced slash: handled')
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW/partX' })
+  check(r1(r).selection[0].part === null, 'a slash without spaces is part of one part number: unhandled')
   // The drop of a find named in P3's own words is re-read as any P3 drop.
   r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partX (C1234)', omitFigure: ['P4-datasheet-R1', 're-rank drop: f1: partX'] })
   check(r.result.followUps.some(f => f.figure === 're-rank drop: f1: partX' && f.reason === 'figure not verified'), 'drop of an annotated P3 find: re-read')
@@ -1077,6 +1081,31 @@ async function main() {
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence, source and time read'), 'ruling read after the task: no ruling')
   // "none" is a reading of a notice or commitment that does not exist, and
   // no reading of a status or identity; "not found" is none.
+  // A reading recorded without a gate may be not read, with its reason; it
+  // is listed for the owner. Any other check not read shows nothing.
+  r = await runTask('T2', { edit: { 'longevity commitment': { read: 'not read: www.analog.com refused the page (HTTP 403)' }, 'market introduction': { read: 'not read: the datasheet gives no revision date' } } })
+  check(r1(r).selection[0].part === 'part1' && r.result.followUps.some(f => f.figure === 'longevity commitment' && /^recorded as not read/.test(f.reason)), 'longevity and market introduction not read, with a reason: verified, listed')
+  r = await runTask('T2', { edit: { 'longevity commitment': { read: 'not read: the programme page refused the client', passes: false, agrees: false } } })
+  check(r1(r).selection[0].part === 'part1', 'longevity commitment not read, with a reason, marked failing: recorded, not a refutation')
+  // A datasheet requirement of the same name is a requirement: not read
+  // shows nothing there.
+  r = await runTask('T2', { fnReq: 'longevity commitment', edit: { 'longevity commitment': { read: 'not read: the datasheet does not say' } } })
+  check(r1(r).selection[0].part === null, 'datasheet requirement named longevity commitment, not read: not verified')
+  for (const read of ['not read: none', 'not read: N/A', 'not read: -', 'not read (unknown)']) {
+    r = await runTask('T2', { edit: { 'longevity commitment': { read } } })
+    check(r1(r).selection[0].part === null, `longevity commitment read as ${read}: not verified`)
+  }
+  // A refuted verdict whose only failing check is such a reading is none.
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'], refutationText: '', edit: { 'longevity commitment': { read: 'not read: the programme page refused the client', passes: false } } })
+  check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'refutation stating nothing, resting only on an unread non-gate reading: none, no adjudicator')
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'], edit: { 'longevity commitment': { read: 'not read: the programme page refused the client', passes: false } } })
+  check(r.calls.some(c => c.startsWith('adjudicator-R1')), 'refutation stating a reason beside an unread non-gate reading: adjudicated')
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'], edit: { 'longevity commitment': { read: 'not read: the programme page refused the client', passes: false }, 'lifecycle status': { passes: false } } })
+  check(r.calls.some(c => c.startsWith('adjudicator-R1')), 'refutation with another failing check besides an unread reading: adjudicated')
+  r = await runTask('T2', { edit: { 'longevity commitment': { read: 'not read' } } })
+  check(r1(r).selection[0].part === null, 'longevity commitment not read without a reason: not verified')
+  r = await runTask('T2', { edit: { 'lead time': { read: 'not read: API timed out' } } })
+  check(r1(r).selection[0].part === null, 'lead time not read: not verified')
   r = await runTask('T2', { edit: { 'end-of-life notices': { read: 'none' }, 'longevity commitment': { read: 'none' } } })
   check(r1(r).selection[0].part === 'part1', 'checks read as none: verified')
   for (const name of ['lifecycle status', 'LCSC identity']) {

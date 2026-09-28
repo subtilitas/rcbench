@@ -203,10 +203,10 @@ part.
   they share a part number or an LCSC number, a record's `lcsc` field
   included: `TCAN3413DR (C22433320)`, `A (C1); B (C2)` and a part with its
   function appended all match the bare part number. Part numbers are the
-  pieces between semicolons, commas followed by a space and ` and `, without
-  parenthesized text, case and spaces; a function name is none.
-  `2N7002BK,215` is one part number. The drop of such a find is re-read as the
-  drop of any P3 find;
+  pieces between semicolons, commas followed by a space, slashes between
+  spaces and ` and `, without parenthesized text, case and spaces; a function
+  name is none. `2N7002BK,215` and `MCP2542FD-E/SN` are one part number each.
+  The drop of such a find is re-read as the drop of any P3 find;
 - it has no requirement, or names one requirement twice;
 - it serves a fixed input of the Scope table (`categories.json`
   `fixed_inputs`: the function by the table's input name, the input by a
@@ -250,7 +250,15 @@ whatever its role. A part a verifier was not asked to verify is ignored, a
 part it lists twice has no verdict from it, and a check read as empty, blank
 or not read, or as `none` other than `end-of-life notices` and
 `longevity commitment`, figure evidence that is none, or either without its
-source or a reading time of the task, shows nothing. A reading time is an ISO
+source or a reading time of the task, shows nothing. `longevity commitment`
+and `market introduction`, which the lifecycle table records without a gate
+(S5 records a commitment and does not require one), may read
+`not read: REASON` in the stock verifier's return: that is recorded, neither
+passing nor failing, and listed for the owner as an unread manufacturer
+status is. A datasheet requirement of the same name is a requirement. A
+placeholder reason (`none`, `N/A`, `-`, `unknown`) is none, and a refuted
+verdict that states no refutation and whose only failing checks are such
+readings is a confirmation; one that states a refutation is ruled on. A reading time is an ISO
 (International Organization for Standardization) 8601 date or date-time at the
 start of the text, on a date the calendar has (2026-02-31 is not one); a note,
 a second reading's time or a range's end may follow it, as in
