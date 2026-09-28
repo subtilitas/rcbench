@@ -811,18 +811,18 @@ neither P2 nor the start of its task.
 | V251 | R12, motor temperature thermocouple | Over what ambient temperature range (°C, lowest to highest) must the IO board operate, which sets the temperature of the thermocouple's cold junction at its connector? | for research (owner, 2026-09-28) |
 | V252 | R12, motor temperature infrared | What ambient temperature range (°C, lowest to highest) does the infrared sensor itself see at its mounting position near the motor? | for research (owner, 2026-09-28) |
 | V253 | R12, external I2C ports | Must a device be plugged into or out of an external I2C port while the board is powered, with the bus and the other devices on it still running? Answer yes or no. | for research (owner, 2026-09-28) |
-| V254 | R13, load-cell excitation | Which supply gives the 5 V load-cell excitation of F3: the IO board's 5 V rail, which also carries the display's 1.5 A continuous and 2 A peak, or a separate supply for the bridges? | |
-| V255 | R13, load-cell excitation | What is the bridge resistance of each of the 3 load cells (the thrust cell and the 2 torque cells), in Ω? | |
-| V256 | R13, load-cell bridge ADC | What is the rated output of each of the 3 load cells (the thrust cell and the 2 torque cells), in mV/V? | |
-| V257 | R13, load-cell bridge ADC | What is the rated capacity of each of the 3 load cells (the thrust cell and the 2 torque cells), in N? | |
-| V258 | R13, load-cell bridge ADC | What thrust range, in N, and what torque range, in N·m, must the bench measure, each from its largest negative to its largest positive value? | |
-| V259 | R13, load-cell bridge ADC | What is the smallest load change, in N, that each load cell's channel must resolve (the thrust cell and each torque cell), at the output rate asked for the load-cell channels? | |
-| V260 | R13, load-cell bridge ADC | What accuracy must each load-cell channel hold, in % of the cell's rated output, counting the bridge ADC's and the excitation's gain and offset errors and their drift with temperature? | |
-| V261 | R13, load-cell bridge ADC | At what output rate must each of the 3 load-cell channels be read, in samples per second per channel? | |
-| V262 | R13, load-cell bridge ADC | How far apart in time, in ms, may the readings of the 2 torque cells, and of the thrust cell, be taken? May one multiplexed converter read them in turn, or must they be converted at the same instant? | |
-| V263 | R13, load-cell bridge ADC | Does each load cell connect with 4 wires (excitation and signal) or with 6 wires (excitation, signal and sense leads)? | |
-| V264 | R13, load-cell bridge ADC | Over what ambient temperature range, in °C, must each load-cell channel hold the accuracy asked for it? | |
-| V265 | R13, load-cell bridge ADC | What is the longest time, in ms, from a step change in thrust or torque to a fully settled reading on that channel? | |
+| V254 | R13, load-cell excitation | Which supply gives the 5 V load-cell excitation of F3: the IO board's 5 V rail, which also carries the display's 1.5 A continuous and 2 A peak, or a separate supply for the bridges? | for research (owner, 2026-09-28) |
+| V255 | R13, load-cell excitation | What is the bridge resistance of each of the 3 load cells (the thrust cell and the 2 torque cells), in Ω? | for research (owner, 2026-09-28) |
+| V256 | R13, load-cell bridge ADC | What is the rated output of each of the 3 load cells (the thrust cell and the 2 torque cells), in mV/V? | for research (owner, 2026-09-28) |
+| V257 | R13, load-cell bridge ADC | What is the rated capacity of each of the 3 load cells (the thrust cell and the 2 torque cells), in N? | for research (owner, 2026-09-28) |
+| V258 | R13, load-cell bridge ADC | What thrust range, in N, and what torque range, in N·m, must the bench measure, each from its largest negative to its largest positive value? | for research (owner, 2026-09-28) |
+| V259 | R13, load-cell bridge ADC | What is the smallest load change, in N, that each load cell's channel must resolve (the thrust cell and each torque cell), at the output rate asked for the load-cell channels? | for research (owner, 2026-09-28) |
+| V260 | R13, load-cell bridge ADC | What accuracy must each load-cell channel hold, in % of the cell's rated output, counting the bridge ADC's and the excitation's gain and offset errors and their drift with temperature? | for research (owner, 2026-09-28) |
+| V261 | R13, load-cell bridge ADC | At what output rate must each of the 3 load-cell channels be read, in samples per second per channel? | for research (owner, 2026-09-28) |
+| V262 | R13, load-cell bridge ADC | How far apart in time, in ms, may the readings of the 2 torque cells, and of the thrust cell, be taken? May one multiplexed converter read them in turn, or must they be converted at the same instant? | for research (owner, 2026-09-28) |
+| V263 | R13, load-cell bridge ADC | Does each load cell connect with 4 wires (excitation and signal) or with 6 wires (excitation, signal and sense leads)? | for research (owner, 2026-09-28) |
+| V264 | R13, load-cell bridge ADC | Over what ambient temperature range, in °C, must each load-cell channel hold the accuracy asked for it? | for research (owner, 2026-09-28) |
+| V265 | R13, load-cell bridge ADC | What is the longest time, in ms, from a step change in thrust or torque to a fully settled reading on that channel? | for research (owner, 2026-09-28) |
 
 #### Decided on the research's output
 
