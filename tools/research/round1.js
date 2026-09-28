@@ -243,7 +243,7 @@ ${J(p2View(p2))}`
 function rerankPrompt(cat, p2, p3) {
   return `${ctx('rerank', cat, `rerank-${cat}`)}
 
-You are the re-rank of the "Agent layout" table. Qualify each candidate P3 returned as P2 does, and give each qualified one a full record in new_candidates. Then rank each function's shortlist: every entry of ranking names a part of P2's shortlist or of new_candidates, by its exact part number. Rank every such part, or list it with its reason in dropped_from_shortlist (a P2 candidate) or dropped_from_p3 (a P3 candidate).${fixedFor(cat).length ? ` Rank each fixed input of the Scope table first for its function: ${fixedNames(cat)}; one that fails a check is reported to the owner, not replaced by another part.` : ''} In verify, name the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative. List your own figures in report${((A.per_part_reports || {})[cat] || []).length ? `, and for each part you rank first or name in verify that P2's report lacks, these figures named "NAME: PART": ${((A.per_part_reports || {})[cat]).join('; ')}` : ''}. ${cat === 'R10' || cat === 'R12' ? `Set decision to ${cat === 'R10' ? 'Q4 on the function that implements Q4' : 'Q8 on the function that implements Q8, the non-volatile store,'} and none on the others; its alternatives are the q-alternatives in its verify. Give each q-alternative its option, and the function its kept_option for the first-ranked part, from these classes, one part at least for each: ${((A.q_options || {})[cat === 'R10' ? 'Q4' : 'Q8'] || []).join('; ')}.` : 'Set decision to none on every function.'} A rule-5 alternate that is not on P2's shortlist needs a full record in new_candidates; it is kept as the alternate's record, not ranked. The script builds the final shortlist from P2's records and yours.
+You are the re-rank of the "Agent layout" table. Qualify each candidate P3 returned as P2 does, and give each qualified one a full record in new_candidates. Then rank each function's shortlist: every entry of ranking names a part of P2's shortlist or of new_candidates, by its exact part number. Rank every such part, or list it with its reason in dropped_from_shortlist (a P2 candidate) or dropped_from_p3 (a P3 candidate).${fixedFor(cat).length ? ` Rank each fixed input of the Scope table first for its function: ${fixedNames(cat)}; one that fails a check is reported to the owner, not replaced by another part.` : ''} In verify, name the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative. List your own figures in report${((A.per_part_reports || {})[cat] || []).length ? `, and for each part you rank, name in verify or give a record in new_candidates, a rule-5 alternate's record among them, that P2's report lacks, these figures named "NAME: PART": ${((A.per_part_reports || {})[cat]).join('; ')}` : ''}. ${cat === 'R10' || cat === 'R12' ? `Set decision to ${cat === 'R10' ? 'Q4 on the function that implements Q4' : 'Q8 on the function that implements Q8, the non-volatile store,'} and none on the others; its alternatives are the q-alternatives in its verify. Give each q-alternative its option, and the function its kept_option for the first-ranked part, from these classes, one part at least for each: ${((A.q_options || {})[cat === 'R10' ? 'Q4' : 'Q8'] || []).join('; ')}.` : 'Set decision to none on every function.'} A rule-5 alternate that is not on P2's shortlist needs a full record in new_candidates; it is kept as the alternate's record, not ranked. The script builds the final shortlist from P2's records and yours.
 
 P2's return:
 ${J(p2)}
@@ -255,9 +255,9 @@ ${J(p3)}`
 function p4Prompt(cat, kind, bundle, only) {
   const what = only
     ? `Verify only this candidate, which replaces a refuted one, and, when its second_source_route is alternate, the part named in its second_source_part (kind alternate); list only those: ${J(only)}`
-    : 'Verify, for each function, the first-ranked part, its rule-5 alternate when its second_source_route is alternate (the part in its second_source_part, kind alternate), every part in its verify list, and the rule-5 alternate of each part of kind q-alternative in that list, in the same way (kind alternate). An alternate several parts name is checked against the first of them: the first-ranked part, then the q-alternatives in order. A part verified in its own right that is also such an alternate is listed once, with the checks of an alternate as well. List every part you verify in parts, once; a part you leave out counts as not verified.'
+    : 'Verify, for each function, the first-ranked part, its rule-5 alternate when its second_source_route is alternate (the part in its second_source_part, kind alternate), every part in its verify list, and the rule-5 alternate of each part of kind q-alternative in that list, in the same way (kind alternate). An alternate several parts name is checked against the first of them: the first-ranked part, then the q-alternatives in order. A part verified in its own right that is also such an alternate is listed once in that function, with the checks of an alternate as well. List every part you verify in parts, once for each function you verify it for, under that function\'s name: a part verified for two functions has a row under each. A part you leave out counts as not verified.'
   const how = kind === 'stock'
-    ? 'You are the stock and lifecycle verifier. Re-read stock and lifecycle at the primary sources, with the clients above, and try to refute each figure.'
+    ? 'You are the stock and lifecycle verifier. Re-read stock and lifecycle at the primary sources, with the clients above, and try to refute each reading. Return figures empty: the datasheet verifier rules on figures_to_check.'
     : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, the reasons the re-rank gave for dropping a P3 candidate, P2\'s own drops, for "Q option: FUNCTION: PART: CLASS" whether the part belongs to that option class of Q4 or Q8, and for "function requirements: FUNCTION" whether the function\'s requirement list names every requirement IOBoard.md and the answers set for it, with no value weaker than theirs) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
   return `${ctx('P4', cat, `P4-${kind}-${cat}`)}
 
@@ -270,7 +270,7 @@ ${J(bundle)}`
 function adjudicatorPrompt(cat, fn, part, evidence) {
   return `${ctx('adjudicator', cat, `adjudicator-${cat}`)}
 
-You are the adjudicating critic of the P4 row. A verifier refuted ${part ? `${part} for the function "${fn}"` : `the figure "${fn}"`}. Re-read the evidence yourself at its sources and rule on every refutation below: stands is true when any of them holds. Copy the function "${fn}" and the part "${part}" exactly into your ruling.
+You are the adjudicating critic of the P4 row. A verifier refuted ${part ? `${part} for the function "${fn}"` : `the figure "${fn}", which states what its claim below holds`}. Re-read the evidence yourself at its sources and rule on every refutation below: stands is true when any of them holds. Copy the function "${fn}" and the part "${part}" exactly into your ruling.
 ${J(evidence)}`
 }
 
@@ -730,7 +730,7 @@ function merge(cat, p2, rr, p3) {
       if (!failing.length) return true
       followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} with a failed requirement: ${failing.map(r => r.name).join(', ')}` })
       // The drop is P2's word only: the datasheet verifier re-reads it.
-      failed.push({ part: c.part, names: failing.map(r => r.name) })
+      failed.push({ part: c.part, names: failing.map(r => r.name), requirements: failing })
       return false
     }).map(c => {
       const have = new Set((c.requirements || []).map(r => r.name))
@@ -874,15 +874,17 @@ function laterStatus(prev, next) {
 // rests on the fit alone, which fails only that relationship.
 const ofPart = l => l.as !== 'alternate' || (String(l.status).startsWith('refuted') && !l.fit_only)
 
-// The next part in rank order that is not refuted.
-function nextCandidate(functions, fn, part, ledger) {
-  const f = functions.find(x => x.function === fn)
-  if (!f) return null
-  const status = new Map()
-  for (const l of ledger) if (l.part && l.function === fn && ofPart(l)) status.set(l.part, laterStatus(status.get(l.part), l.status))
-  const i = f.shortlist.findIndex(c => c.part === part)
-  if (i < 0) return null
-  return f.shortlist.slice(i + 1).find(c => status.get(c.part) !== 'refuted') || null
+// A part's own status in its function, from the ledger.
+function partStatus(ledger, fn, part) {
+  let status = ''
+  for (const l of ledger) if (l.part === part && l.function === fn && ofPart(l)) status = laterStatus(status, l.status)
+  return status
+}
+
+// The part a function stands on: the first in rank order whose refutation
+// has not stood.
+function standingPart(f, ledger) {
+  return f.shortlist.find(c => partStatus(ledger, f.function, c.part) !== 'refuted') || null
 }
 
 // The adjudicator's ruling counts only for the item it was asked about.
@@ -897,11 +899,13 @@ function boundRuling(ruling, fn, part, cat) {
   return null
 }
 
-async function verifyCategory(cat, functions, bundle) {
+async function verifyCategory(cat, functions, bundle, claims) {
   const ledger = []
   const queue = [{ only: null }]
   while (queue.length) {
     const { only } = queue.shift()
+    // The parts whose refutation stood in this pass, by function.
+    const passedOver = new Map()
     const phaseName = only ? 'Refutations' : 'P2-P4'
     const [st, ds] = await parallel([
       () => run('P4', cat, `P4-stock-${cat}`, phaseName, p4Prompt(cat, 'stock', bundle, only)),
@@ -1044,11 +1048,9 @@ async function verifyCategory(cat, functions, bundle) {
         if (isFixed(fixed, e.part)) followUps.push({ role: 'owner', category: cat, function: e.function, part: e.part, reason: `fixed input ${fixed} refuted; reported to the owner, not re-selected` })
         continue
       }
-      const next = nextCandidate(functions, e.function, e.part, ledger)
-      if (!next) { followUps.push({ role: 'P2', category: cat, function: e.function, part: e.part, reason: 'refuted, and no next-ranked candidate' }); continue }
-      // The pair is paid for here from the free agents; run() starts it.
-      if (!takeExtra(2)) { followUps.push({ role: 'P4', category: cat, function: e.function, part: next.part, reason: 'no free agents for the next pair' }); continue }
-      queue.push({ only: { ...next, function: e.function } })
+      // No pair verifies another Q alternative in a refuted one's place.
+      if (e.kind === 'q-alternative') followUps.push({ role: 'rerank', category: cat, function: e.function, part: e.part, reason: 'Q alternative refuted; no other alternative verified in its place' })
+      passedOver.set(e.function, [...(passedOver.get(e.function) || []), e.part])
     }
     // A part verified in its own right that is also another part's
     // alternate: its primary result stands as it is; the alternate
@@ -1064,30 +1066,51 @@ async function verifyCategory(cat, functions, bundle) {
       const status = primary && primary.status === 'refuted' ? 'refuted' : primary && primary.status.startsWith('verified') && fits ? 'verified' : 'not verified'
       ledger.push({ function: e.function, part: e.part, as: 'alternate', for: e.for, status })
     }
-    if (only) continue
-    // Figures are verified once, by the first pair. Each name in
-    // figures_to_check needs one verdict from the datasheet verifier.
+    // A standing refutation moves its function on once every ruling of the
+    // pass is in: one pair a function, for the part it now stands on. A
+    // refuted part ranked below that part, such as a Q alternative, moves
+    // nothing, and a part already verified, with its rule-5 alternate
+    // checked against it, takes no pair.
+    for (const [fn, parts] of passedOver) {
+      const f = functions.find(x => x.function === fn)
+      const next = standingPart(f, ledger)
+      const at = part => f.shortlist.findIndex(c => c.part === part)
+      const over = parts.filter(p => at(p) >= 0 && (!next || at(p) < at(next.part))).sort((a, b) => at(a) - at(b))
+      if (!over.length) continue
+      if (!next) { followUps.push({ role: 'P2', category: cat, function: fn, part: over[over.length - 1], reason: 'refuted, and no next-ranked candidate' }); continue }
+      const alt = altOf(next)
+      if (partStatus(ledger, fn, next.part).startsWith('verified') && (!alt || ledger.some(l => l.function === fn && l.part === alt && l.as === 'alternate' && l.for === next.part))) continue
+      // The pair is paid for here from the free agents; run() starts it.
+      if (!takeExtra(2)) { followUps.push({ role: 'P4', category: cat, function: fn, part: next.part, reason: 'no free agents for the next pair' }); continue }
+      queue.push({ only: { ...next, function: fn } })
+    }
+    // Figures are confirmed once, by the first pair: each name in
+    // figures_to_check needs one verdict from the datasheet verifier, with
+    // its evidence, source and time read. Its refutation so read is
+    // adjudicated in every pass, a replacement pair's included; the stock
+    // verifier re-reads no figure.
     const figs = uniqueVerdicts((ds && ds.figures) || [], f => f.figure, { role: 'P4', category: cat })
-    // A confirmation counts only with evidence that was read.
-    for (const name of bundle.figures_to_check) {
+    const shows = f => !readsNone(f.evidence) && !readsNone(f.source) && readInRun(f.read_at)
+    for (const name of only ? [] : bundle.figures_to_check) {
       const f = figs.get(name)
-      if (f && !(f.verdict === 'confirmed' && (readsNone(f.evidence) || readsNone(f.source) || !readInRun(f.read_at)))) continue
-      ledger.push({ figure: name, status: 'not verified', reason: f ? 'confirmed without evidence, source and time read' : 'the datasheet verifier gave no single verdict' })
+      if (f && shows(f)) continue
+      ledger.push({ figure: name, status: 'not verified', reason: f ? `${f.verdict} without evidence, source and time read` : 'the datasheet verifier gave no single verdict' })
       followUps.push({ role: 'P4', category: cat, figure: name, reason: 'figure not verified' })
     }
-    for (const [kind, v] of got) {
-      for (const f of v.figures || []) {
-        if (f.verdict !== 'refuted') continue
-        if (!takeExtra(1)) {
-          ledger.push({ figure: f.figure, status: 'refuted, not adjudicated' })
-          followUps.push({ role: 'adjudicator', category: cat, figure: f.figure, reason: 'no free agent' })
-          continue
-        }
-        const ruling = boundRuling(await run('adjudicator', cat, `adjudicator-${cat}`, 'Refutations', adjudicatorPrompt(cat, f.figure, '', [{ verifier: kind, ...f }])), f.figure, '', cat)
-        const status = !ruling ? 'refuted, no ruling' : ruling.stands ? 'refuted' : 'confirmed; refutation did not stand'
-        ledger.push({ figure: f.figure, status })
-        if (!ruling || ruling.stands) followUps.push({ role: 'P2', category: cat, figure: f.figure, reason: ruling ? 'figure refuted' : 'figure refuted without a ruling' })
+    for (const name of bundle.figures_to_check) {
+      const f = figs.get(name)
+      // A figure already open takes no other ruling.
+      if (!f || f.verdict !== 'refuted' || !shows(f) || ledger.some(l => l.figure === name && !l.status.startsWith('confirmed'))) continue
+      if (!takeExtra(1)) {
+        ledger.push({ figure: name, status: 'refuted, not adjudicated' })
+        followUps.push({ role: 'adjudicator', category: cat, figure: name, reason: 'no free agent' })
+        continue
       }
+      // The ruling weighs the refutation against the claim the figure states.
+      const ruling = boundRuling(await run('adjudicator', cat, `adjudicator-${cat}`, 'Refutations', adjudicatorPrompt(cat, name, '', [{ verifier: 'datasheet', ...f, claim: claims.get(name) }])), name, '', cat)
+      const status = !ruling ? 'refuted, no ruling' : ruling.stands ? 'refuted' : 'confirmed; refutation did not stand'
+      ledger.push({ figure: name, status })
+      if (!ruling || ruling.stands) followUps.push({ role: 'P2', category: cat, figure: name, reason: ruling ? 'figure refuted' : 'figure refuted without a ruling' })
     }
   }
   return ledger
@@ -1142,13 +1165,16 @@ function selection(functions, ledger) {
     const offBoardAlt = c => !!(altOf(c) && recOf(altOf(c)) && (onBoard(c) !== onBoard(recOf(altOf(c))) || recOf(altOf(c)).placements < c.placements))
     const qAlternatives = f.verify.filter(v => v.kind === 'q-alternative' && !(kept && v.part === kept.part)).map(v => ({ ...qAlt(v), option: String(v.option || '') }))
     // Each option class of the decision (categories.json q_options) needs a
-    // part: the kept part when it is the first-ranked one the re-rank
-    // classed, or a Q alternative.
+    // part: the kept part in the class its figure was asked for, as the
+    // first-ranked part after the drops (kept_option) or as a Q alternative,
+    // or another Q alternative.
     const needed = f.decision !== 'none' ? ((A.q_options || {})[f.decision] || []) : []
     // A class counts for a verified part whose class the datasheet verifier
     // confirmed ("Q option: FUNCTION: PART: CLASS").
     const classed = (part, option) => !!option && !ledger.some(l => l.figure === `Q option: ${f.function}: ${part}: ${option}` && !String(l.status).startsWith('confirmed'))
-    const have = new Set([...(kept && kept.rank === 1 && classed(kept.part, f.kept_option) ? [f.kept_option] : []),
+    const keptClasses = !kept ? [] : [...(kept === f.shortlist[0] ? [f.kept_option] : []),
+      ...f.verify.filter(v => v.kind === 'q-alternative' && v.part === kept.part).map(v => String(v.option || ''))]
+    const have = new Set([...keptClasses.filter(o => classed(kept.part, o)),
       ...qAlternatives.filter(q => String(q.status).startsWith('verified') && classed(q.part, q.option)).map(q => q.option)])
     const qOptionsMissing = needed.filter(o => !have.has(o))
     function qAlt(v) {
@@ -1183,26 +1209,32 @@ function perPartMissing(cat, p2, rr, parts) {
 // The figures the datasheet verifier rules on: each reported figure and each
 // value found for research under a unique name, and the figures the category
 // must report and the values the owner marked for research, whether or not
-// P2 returned them.
+// P2 returned them. Each carries its claim, the value or record it states,
+// for the adjudicator of its refutation.
 function figuresToCheck(cat, p2, rr, functions, p3) {
   const names = []
   const missing = []
-  const add = n => { names.push(names.includes(n) ? `${n} (${names.filter(x => x.startsWith(n)).length + 1})` : n) }
+  const claims = new Map()
+  const add = (n, claim) => {
+    const name = names.includes(n) ? `${n} (${names.filter(x => x.startsWith(n)).length + 1})` : n
+    names.push(name)
+    claims.set(name, claim)
+  }
   const read = (p2.found_values || []).filter(v => !notFound(v.value))
   const reported = (p2.report || []).filter(f => !notFound(f.value))
-  for (const v of read) add(`found ${v.question_id}`)
+  for (const v of read) add(`found ${v.question_id}`, v)
   for (const q of (A.for_research || []).filter(q => q.category === cat)) if (!read.some(v => v.question_id === q.id)) {
     missing.push(`found ${q.id}`)
     followUps.push({ role: 'P2', category: cat, question: q.id, reason: 'value marked for research not found' })
   }
-  for (const f of reported) add(`P2 report: ${f.figure}`)
+  for (const f of reported) add(`P2 report: ${f.figure}`, f)
   // A required figure is returned under its name, or per part as "NAME: PART".
   for (const need of (A.required_reports || {})[cat] || []) if (!reported.some(f => f.figure === need || f.figure.startsWith(`${need}: `))) {
     missing.push(`P2 report: ${need}`)
     followUps.push({ role: 'P2', category: cat, figure: need, reason: 'required report figure not returned' })
   }
   const rrReported = (rr.report || []).filter(f => !notFound(f.value))
-  for (const f of rrReported) add(`re-rank report: ${f.figure}`)
+  for (const f of rrReported) add(`re-rank report: ${f.figure}`, f)
   // A figure the plan asks per part is owed for every part the category
   // verifies, by P2 or the re-rank, as "NAME: PART" ("not applicable:
   // REASON" where it does not concern the part).
@@ -1216,14 +1248,14 @@ function figuresToCheck(cat, p2, rr, functions, p3) {
   // Each option class the re-rank gives a Q4 or Q8 part is confirmed.
   for (const f of functions) {
     if (f.decision === 'none') continue
-    if (f.shortlist[0] && f.kept_option) add(`Q option: ${f.function}: ${f.shortlist[0].part}: ${f.kept_option}`)
-    for (const v of f.verify) if (v.kind === 'q-alternative' && v.option) add(`Q option: ${f.function}: ${v.part}: ${v.option}`)
+    if (f.shortlist[0] && f.kept_option) add(`Q option: ${f.function}: ${f.shortlist[0].part}: ${f.kept_option}`, { function: f.function, part: f.shortlist[0].part, option: f.kept_option })
+    for (const v of f.verify) if (v.kind === 'q-alternative' && v.option) add(`Q option: ${f.function}: ${v.part}: ${v.option}`, { function: f.function, part: v.part, option: v.option })
   }
   // Each function's requirement list is P2's reading of the specification:
   // the datasheet verifier re-derives it from IOBoard.md and the answers.
-  for (const f of functions) if (f.shortlist.length) add(`function requirements: ${f.function}`)
+  for (const f of functions) if (f.shortlist.length) add(`function requirements: ${f.function}`, f.requirements)
   // Every candidate P2 shortlisted and its own record fails.
-  for (const f of functions) for (const d of f.failed || []) add(`failed requirement: ${f.function}: ${d.part} (${d.names.join(', ')})`)
+  for (const f of functions) for (const d of f.failed || []) add(`failed requirement: ${f.function}: ${d.part} (${d.names.join(', ')})`, d)
   // Every drop of a part P3 found or reopened, whichever list the re-rank
   // put it in.
   const fromP3 = new Set([...((p3 && p3.missed) || []), ...((p3 && p3.exclusions_not_holding) || [])].map(x => x.part))
@@ -1232,10 +1264,10 @@ function figuresToCheck(cat, p2, rr, functions, p3) {
   for (const f of functions) {
     for (const d of [...f.dropped_from_p3, ...f.dropped_from_shortlist]) {
       const k = `${f.function}\u0000${d.part}`
-      if (d.part && (fromP3.has(d.part) || f.dropped_from_p3.includes(d)) && !drops.has(k)) { drops.add(k); add(`re-rank drop: ${f.function}: ${d.part}`) }
+      if (d.part && (fromP3.has(d.part) || f.dropped_from_p3.includes(d)) && !drops.has(k)) { drops.add(k); add(`re-rank drop: ${f.function}: ${d.part}`, d) }
     }
   }
-  return { names, missing, parts: verified }
+  return { names, missing, parts: verified, claims }
 }
 
 async function categoryChain(cat) {
@@ -1245,9 +1277,9 @@ async function categoryChain(cat) {
   const rr = await run('rerank', cat, `rerank-${cat}`, 'P2-P4', rerankPrompt(cat, p2, p3 || { category: cat, missed: [], exclusions_not_holding: [], note: 'P3 returned nothing twice; its search is a follow-up item' }))
   if (!rr) return { category: cat, status: 're-rank returned nothing' }
   const functions = merge(cat, p2, rr, p3)
-  const { names: figures_to_check, missing: not_returned, parts: checkedParts } = figuresToCheck(cat, p2, rr, functions, p3)
+  const { names: figures_to_check, missing: not_returned, parts: checkedParts, claims } = figuresToCheck(cat, p2, rr, functions, p3)
   const bundle = { functions, found_values: p2.found_values || [], report_p2: p2.report || [], report_rerank: rr.report || [], figures_to_check }
-  const ledger = await verifyCategory(cat, functions, bundle)
+  const ledger = await verifyCategory(cat, functions, bundle, claims)
   // Without P3's search the category is not complete: no part is kept, and
   // the part that would have been is named for the follow-up task.
   const sel = selection(functions, ledger)

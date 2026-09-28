@@ -254,7 +254,10 @@ async function runTask(task, opts = {}) {
       if (oc && oc.second_source_route === 'alternate' && !opts.dropReplacementAlt) data.parts.push({ function: 'f1', part: oc.second_source_part, kind: 'alternate', verdict: 'confirmed', checks: checksFor(oc.second_source_part, 'alternate'), refutation: '' })
       const names = only ? [] : JSON.parse(/"figures_to_check":(\[[^\]]*\])/.exec(prompt)[1])
       data.figures = kind === 'datasheet' ? names.filter(n => !(opts.omitFigure && base === opts.omitFigure[0] && n === opts.omitFigure[1]))
-        .map((figure, k) => ({ figure, verdict: (opts.refuteFigure || []).includes(base) && k === 0 ? 'refuted' : 'confirmed', evidence: opts.unreadFigure && k === 0 ? 'not read' : 'e', source: opts.unsourcedFigure && k === 0 ? '' : 'datasheet table 5', read_at: opts.figureReadAt && k === 0 ? opts.figureReadAt : '2026-09-28T10:00:00Z' })) : []
+        .map((figure, k) => ({ figure, verdict: (opts.refuteFigure || []).includes(base) && k === 0 ? 'refuted' : 'confirmed', evidence: opts.unreadFigure && k === 0 ? 'not read' : 'e', source: opts.unsourcedFigure && k === 0 ? '' : 'datasheet table 5', read_at: opts.figureReadAt && k === 0 ? opts.figureReadAt : '2026-09-28T10:00:00Z' }))
+        : opts.stockFigures ? names.map(figure => ({ figure, verdict: 'refuted', evidence: 'stock page lists 12 frames', source: 'jlcpcb C1000', read_at: '2026-09-28T10:00:00Z' })) : []
+      // A replacement pair's datasheet verifier that refutes a figure.
+      if (only && kind === 'datasheet' && opts.replacementFigure) data.figures = [{ figure: opts.replacementFigure, verdict: 'refuted', evidence: 'table 4-1: 2 FIFOs of 8 frames', source: 'datasheet table 4-1', read_at: '2026-09-28T10:00:00Z' }]
       const extraParts = opts.p4parts || opts.verify
       if (extraParts && !(opts.omit || []).includes(base) && !opts.dropVerify && !only) data.parts.push(...extraParts.map(pt => ({ function: 'f1', part: pt, kind: opts.reportFirst ? 'first' : 'alternate', verdict: (opts.refute || []).includes(`${base}:${pt}`) ? 'refuted' : 'confirmed', checks: checksFor(pt, opts.reportFirst ? 'first' : 'alternate'), refutation: '' })))
     }
@@ -693,7 +696,7 @@ async function main() {
   r = await runTask('T2', { altName: 'part2', verify: ['part2'], refute: ['P4-stock-R1:part1', 'P4-datasheet-R1:part2'], editPart: { 'P4-datasheet-R1:part2': { 'pin-for-pin match': { agrees: false, passes: false } } } })
   check(r1(r).selection[0].part === 'part2', 'part refuted as an alternate on its fit only: still a candidate in its own right')
   r = await runTask('T2', { altName: 'part2', verify: ['part2'], refute: ['P4-stock-R1:part1'], editPart: { 'P4-stock-R1:part2': { 'end-of-life notices': { read: 'last-time-buy notice 2026-08-01', agrees: false, passes: false } } } })
-  check(r1(r).selection[0].part === null && r1(r).selection[0].refuted.includes('part2'), 'part refuted as an alternate on end-of-life notices: not kept in its own right')
+  check(r1(r).selection[0].part === 'part3' && r1(r).selection[0].refuted.includes('part2') && !r1(r).ledger.some(l => l.part === 'part2' && l.status === 'verified'), 'part refuted as an alternate on end-of-life notices: not kept in its own right, and no pair for it')
   r = await runTask('T2', { alts: { part1: 'part3' }, p4parts: ['part3'], refute: ['P4-stock-R1:part1', 'P4-stock-R1-2:part2'], editPart: { 'P4-stock-R1:part3': { 'end-of-life notices': { read: 'last-time-buy notice 2026-08-01', agrees: false, passes: false } } } })
   check(!r.calls.includes('P4-stock-R1-3') && r.result.followUps.some(f => f.part === 'part2' && f.reason === 'refuted, and no next-ranked candidate'), 'part refuted as an alternate on end-of-life notices: not the next part after a refutation')
   // A rule-5 alternate the re-rank drops as a candidate keeps its record.
@@ -1068,7 +1071,7 @@ async function main() {
   check(r1(r).selection[0].part === 'part3' && r1(r).selection[0].refuted.includes('part2'), 'refutation without a ruling, then one that stands: next part kept')
   // A refutation of the alternate as a primary with no ruling keeps it from
   // sourcing the kept part.
-  r = await runTask('T2', { alts: { part1: 'part3' }, verifyFirst: ['part2'], p4parts: ['part2', 'part3'], refute: ['P4-stock-R1:part2', 'P4-stock-R1-2:part3'], nulls: { 'adjudicator-R1-2': 2 } })
+  r = await runTask('T2', { alts: { part1: 'part3' }, verifyFirst: ['part3'], p4parts: ['part3'], refute: ['P4-stock-R1:part3'], nulls: { 'adjudicator-R1': 2 } })
   check(r1(r).selection[0].part === 'part1' && r1(r).selection[0].alternate_unverified.includes('part3'), 'alternate refuted as a primary without a ruling: not verified as the alternate')
   // An alternate counts for the part it was checked against only.
   r = await runTask('T4', { sharedAlt: true, p4parts: ['part3', 'altS'], refute: ['P4-stock-R10:part1'] })
@@ -1101,6 +1104,42 @@ async function main() {
   // alternate only, and stays the kept part.
   r = await runTask('T4', { qAltBack: true, bothRoles: true, p4parts: ['part3'], refute: ['P4-datasheet-R10:part1'], edit: { 'pin-for-pin match': { agrees: false, passes: false } } })
   check(r10(r).selection[0].part === 'part1' && r10(r).selection[0].refuted.length === 0 && r10(r).selection[0].q_alternatives[0].alternate_status === 'refuted' && r10(r).ledger.filter(l => l.part === 'part1' && l.as === 'alternate').length === 1, 'part in both roles refuted on its fit, standing: kept in its own right, alternate role refuted')
+
+  // A standing refutation moves its function on once the pass's rulings are
+  // in: one pair, for the part the function then stands on, and none after
+  // a refuted part ranked below the part kept.
+  const r12 = x => x.result.summary.results.find(c => c.category === 'R12')
+  r = await runTask('T4', { verifyList: [{ part: 'part2', kind: 'q-alternative', option: 'EEPROM' }], p4parts: ['part2'], refute: ['P4-stock-R12:part2'] })
+  check(r12(r).selection[0].part === 'part1' && !r.calls.includes('P4-stock-R12-2') && r.result.extra_used === 1 && r.result.followUps.some(f => f.part === 'part2' && /^Q alternative refuted/.test(f.reason)), 'Q alternative refuted, first-ranked part verified: no pair, listed')
+  r = await runTask('T4', { verifyList: [{ part: 'part2', kind: 'q-alternative', option: 'EEPROM' }], p4parts: ['part2'], refute: ['P4-stock-R12:part1', 'P4-stock-R12:part2'] })
+  check(r12(r).selection[0].part === 'part3' && r.calls.filter(c => c.startsWith('P4-stock-R12')).length === 2 && r.result.extra_used === 4, `first-ranked part and Q alternative refuted in one pass: one pair, on part3 (extra ${r.result.extra_used}, expected 4)`)
+  // A kept Q alternative, or a kept part ranked first after the drops,
+  // counts in the class the datasheet verifier confirmed for it.
+  const q4 = { Q4: ['reference', 'external ADC'] }
+  r = await runTask('T4', { verifyList: [{ part: 'part2', kind: 'q-alternative', option: 'external ADC' }, { part: 'part3', kind: 'q-alternative', option: 'reference' }], p4parts: ['part2', 'part3'], qOptions: q4, keptOption: 'reference', refute: ['P4-stock-R10:part1'] })
+  check(r10(r).selection[0].part === 'part2' && r10(r).selection[0].q_options_missing.length === 0 && !r.result.summary.q_missing.includes('R10') && !r.calls.includes('P4-stock-R10-2'), 'Q alternative verified in the pass and kept after a refutation: no pair, its class counts')
+  r = await runTask('T4', { failedReq: true, qAlt: true, qOption: 'external ADC', keptOption: 'reference', qOptions: q4, p4parts: ['part2', 'part3', 'altQ'] })
+  check(r10(r).selection[0].part === 'part2' && r10(r).selection[0].q_options_missing.length === 0, 'first-ranked part dropped for a failed requirement: the next part\'s confirmed class counts')
+  // Figure refutations: the datasheet verifier's only, a replacement pair's
+  // included, each ruled on against the claim it refutes.
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'], replacementFigure: 'P2 report: x0' })
+  check(r1(r).selection[0].part === 'part2' && r.calls.includes('adjudicator-R1-2') && r.result.summary.figures_open.R1.includes('P2 report: x0'), 'figure refuted by the replacement pair: adjudicated, open')
+  r = await runTask('T2', { stockFigures: true })
+  check(!r.calls.some(c => c.startsWith('adjudicator-R1')) && r.result.summary.figures_open.R1.length === 0 && r.result.extra_used === 0, 'figures refuted by the stock verifier: not adjudicated, not open')
+  check(r.prompts.find(x => x.label === 'P4-stock-R1').prompt.includes('Return figures empty'), 'stock verifier is told to return no figure')
+  r = await runTask('T2', { foundValue: '31 frames', refuteFigure: ['P4-datasheet-R1'] })
+  const figAdj = r.prompts.find(x => x.label === 'adjudicator-R1')
+  check(figAdj && figAdj.prompt.includes('"claim":{"question_id":"V9","value":"31 frames"'), 'refuted figure: the adjudicator is given the value it rules on')
+  // Each verifier lists a part once for each function it verifies it for.
+  r = await runTask('T2')
+  check(['P4-stock-R1', 'P4-datasheet-R1'].every(l => r.prompts.find(x => x.label === l).prompt.includes('once for each function you verify it for')), 'P4 is told to list a part once for each function')
+  // The re-rank reports the per-part figures of every part it ranks or
+  // records, a rule-5 alternate's record among them.
+  r = await runTask('T2', { perPartReports: { R2: ['clock tolerance'] } })
+  check(r.prompts.find(x => x.label === 'rerank-R2').prompt.includes('for each part you rank, name in verify or give a record in new_candidates'), 're-rank is told to report per-part figures for its records')
+  // R1's crystal tolerance is owed for the crystal kept, a replacement too.
+  r = await runTask('T2', { requiredReports: cats.reports, perPartReports: cats.reports_per_part, reportParts: ['crystal tolerance: part1'], refute: ['P4-stock-R1:part1'] })
+  check(r1(r).selection[0].part === 'part2' && r.result.summary.figures_open.R1.includes('report: crystal tolerance: part2'), 'crystal tolerance of a replacement part: owed')
 
   // Follow-up plans.
   for (const [phases, n, want] of [['P1', 2, 6], ['P2-P4', 3, 16], ['P5-P6', 0, 5]]) {

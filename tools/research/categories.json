@@ -60,7 +60,6 @@
   "reports": {
     "R1": [
       "stepping-A4 errata",
-      "crystal tolerance",
       "BOOT resistor",
       "OpenOCD",
       "watchdog"
@@ -73,6 +72,9 @@
     ]
   },
   "reports_per_part": {
+    "R1": [
+      "crystal tolerance"
+    ],
     "R2": [
       "frames held",
       "clock tolerance"

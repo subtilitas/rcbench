@@ -1144,7 +1144,7 @@
        "read_at"
       ]
      },
-     "description": "one entry for every name in figures_to_check, with that exact name"
+     "description": "from the datasheet verifier, one entry for every name in figures_to_check, with that exact name; from the stock verifier, none"
     }
    },
    "required": [

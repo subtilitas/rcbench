@@ -34,11 +34,10 @@ and host table. Nothing here runs in CI (continuous integration) but
   with no failing check, gets one ruling: when it stands, the part is
   refuted in the function in every role, also when only its fit to the
   other part holds.
-- A refuted part's replacement is chosen before the same pair's refutations
-  of alternates are ruled on. When the next part in rank order is an
-  alternate that pair refuted on a check other than its fit, and that
-  refutation stands, the replacement pair still runs for it. The part is not
-  kept, and the function stays open for a follow-up task.
+- The re-rank classes only the first-ranked part of the Q4 or Q8 function
+  and its Q alternatives. A part kept after a refutation of the first-ranked
+  part that is no Q alternative has no confirmed option class in the run: its
+  class stays missing until a follow-up task ranks it first.
 - The workflow script has no file or git access. Every return comes back in
   the task's output, and `session.py record` writes and commits it.
 - `vendors.py fetch` needs curl_cffi for the chrome and safari clients.
@@ -187,7 +186,13 @@ its function is checked against the function's value, and its own pass is
 dropped before failures are counted. An adjudicator's ruling without evidence,
 source and a reading time of the task is no ruling. A standing refutation
 stays final in the run, even if the part is verified later as another part's
-alternate. A refutation no adjudicator ruled on, for want of a free agent or
+alternate. Once every ruling of a pass is in, a standing refutation sends the
+part its function now stands on, the first in rank order whose refutation
+has not stood, to one new pair. A refuted part ranked below that part,
+such as a Q alternative beside a verified first-ranked part, sends none;
+a refuted Q alternative is listed for a follow-up task. A part already
+verified, with its rule-5 alternate checked against it, is kept without a
+pair. A refutation no adjudicator ruled on, for want of a free agent or
 of a ruling, keeps the part open in the run: a later verification does not
 clear it, only a standing refutation replaces it, and the part holds no
 alternate role. A refutation of a part as an alternate on its fit alone, each
@@ -227,13 +232,22 @@ its LCSC number agrees (rule 1), the lifecycle table's readings
 checks, and a `manufacturer allowlist` check (rule 2), and an alternate needs
 at least the placements of the part it stands in for. The datasheet verifier
 re-reads each function's requirement list against IOBoard.md and the answers
-(`function requirements: FUNCTION`). A part on the board that the owner holds
+(`function requirements: FUNCTION`). Figures count on its verdicts only;
+the stock verifier returns none. A figure it refutes with evidence,
+source and a reading time of the task goes to an adjudicator with the
+claim the figure states: the value reported or found, the class, the
+requirement list, the failed requirements or the drop. A replacement
+pair confirms no figure, but its datasheet verifier's refutation of one
+is adjudicated in the same way. A part on the board that the owner holds
 may pass the stock gate on a `held quantity` check in place of `stock` and
 `presale` (rule 6); a passing held quantity that shows a reading supersedes
 failing live readings, and passing live readings a failing held quantity. A
 return whose `category` names another category counts as not returned. Only
 the kept part's rule-5 alternate gates its selection, and the alternate of a
-part on the board must be on the board. An alternate counts only for the part
+part on the board must be on the board. The kept part counts for a
+Q4 or Q8 option class in which the datasheet verifier confirmed it:
+`kept_option` when it is the first-ranked part after the drops, its
+option when it is a Q alternative. An alternate counts only for the part
 it was checked against: an alternate several parts name is checked against
 the first of them (the first-ranked part, then the Q alternatives in order),
 and a replacement's alternate against the replacement. A part verified in its
