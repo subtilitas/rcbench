@@ -146,11 +146,15 @@ names.
   n, ranked a part with no record, ranked a part twice or also dropped it, or
   either P2 or the re-rank returned it twice;
 - P3 found a candidate for it, or overturned its P2 drop of a part, and the
-  re-rank neither qualified nor dropped that part under it;
-- it has no requirement.
+  re-rank neither qualified nor dropped that part under it. A find P3 files
+  under no function of P2's, and a drop it overturns that no function made,
+  hold every function open until the re-rank qualifies or drops the part under
+  one of P2's functions;
+- it has no requirement, or names one requirement twice.
 
 A part with more than one record, with placements below 1, or with an LCSC
-number that is neither `C` and digits nor `none`, is dropped. A shortlisted
+number that is neither `C` and digits nor `none`, has no record: it is
+dropped, and a ranking that names it leaves the function open. A shortlisted
 candidate P2's own record fails is dropped and its failure re-read by the
 datasheet verifier. A requirement a candidate states with another value than
 its function is checked against the function's value, and its own pass is
@@ -180,8 +184,10 @@ refute only when they fail. A check for a route or role the part does not take
 refutes nothing: compatibility for a part that is no alternate, and
 `second-vendor stock` off the second-vendor route or for an alternate, which
 passes rules 1 to 4 only (rule 5). Every verified part needs a `placements`
-check re-deriving its count from the specification, the lifecycle table's
-readings (`longevity commitment`, `market introduction`, `distributor status`,
+check re-deriving its count from the specification, a `board placement` check
+re-deriving from it whether the part is on the board, which passes only when
+its LCSC number agrees (rule 1), the lifecycle table's readings
+(`longevity commitment`, `market introduction`, `distributor status`,
 `lead time`), for a part on the board `LCSC identity` and `library type`
 checks, and a `manufacturer allowlist` check (rule 2), and an alternate needs
 at least the placements of the part it stands in for. The datasheet verifier

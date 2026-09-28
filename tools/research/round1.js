@@ -212,7 +212,7 @@ function p2Prompt(cat) {
   const items = TASK === 'FU' ? itemsFor(cat) : []
   return `${ctx('P2', cat, `P2-${cat}`)}
 
-Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, and record it as found. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. Return an entry for every function the ${cat} row and its lines in hardware/docs/IOBoard.md name${((A.inventory || {})[cat] || []).length ? `, among them these, by these exact names: ${A.inventory[cat].join('; ')}` : ''}. For up to five survivors per function, record every field of the P2 row, and the rule-5 route in second_source_route and second_source_part; a part whose route is alternate needs a full record for that alternate among the survivors or in the re-rank. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5${((A.required_reports || {})[cat] || []).length ? `, among them these by these names: ${((A.required_reports || {})[cat]).join('; ')}` : ''}.${((A.per_part_reports || {})[cat] || []).length ? ` Report these once for each shortlisted part, named "NAME: PART", with "not applicable: REASON" as the value where one does not concern the part: ${((A.per_part_reports || {})[cat]).join('; ')}.` : ''}${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${P.results}/hardware/research/round1/selection.json; the returns in each run's directory carry their figures.` : ''}${cat === 'R3' && ((A.decisions || {}).Q9 || '').trim() ? `\n\nThe owner decided Q9: ${A.decisions.Q9}. A part it adds or changes is a function of R3 in this run, found and qualified as the others.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}${TASK === 'FU' ? ` Name each function exactly as ${P.results}/hardware/research/round1/selection.json names it for ${cat}.` : ''}`
+Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, and record it as found. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. Return an entry for every function the ${cat} row and its lines in hardware/docs/IOBoard.md name${((A.inventory || {})[cat] || []).length ? `, among them these, by these exact names: ${A.inventory[cat].join('; ')}` : ''}. Give each requirement of a function a name of its own. For up to five survivors per function, record every field of the P2 row, and the rule-5 route in second_source_route and second_source_part; a part whose route is alternate needs a full record for that alternate among the survivors or in the re-rank. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5${((A.required_reports || {})[cat] || []).length ? `, among them these by these names: ${((A.required_reports || {})[cat]).join('; ')}` : ''}.${((A.per_part_reports || {})[cat] || []).length ? ` Report these once for each shortlisted part, named "NAME: PART", with "not applicable: REASON" as the value where one does not concern the part: ${((A.per_part_reports || {})[cat]).join('; ')}.` : ''}${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${P.results}/hardware/research/round1/selection.json; the returns in each run's directory carry their figures.` : ''}${cat === 'R3' && ((A.decisions || {}).Q9 || '').trim() ? `\n\nThe owner decided Q9: ${A.decisions.Q9}. A part it adds or changes is a function of R3 in this run, found and qualified as the others.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}${TASK === 'FU' ? ` Name each function exactly as ${P.results}/hardware/research/round1/selection.json names it for ${cat}.` : ''}`
 }
 
 function p2View(p2) {
@@ -253,7 +253,7 @@ function p4Prompt(cat, kind, bundle, only) {
     : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, the reasons the re-rank gave for dropping a P3 candidate, P2\'s own drops, for "Q option: FUNCTION: PART: CLASS" whether the part belongs to that option class of Q4 or Q8, and for "function requirements: FUNCTION" whether the function\'s requirement list names every requirement IOBoard.md and the answers set for it, with no value weaker than theirs) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
   return `${ctx('P4', cat, `P4-${kind}-${cat}`)}
 
-${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor, other than a part of kind alternate; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives the lifecycle table's readings: "longevity commitment" (the programme page's commitment, or that none is published; passes unless S5 makes it a gate it fails), "market introduction" (the first datasheet revision date; passes, and under 12 months is stated in read), "distributor status" (JLCPCB, LCSC and Digi-Key; passes, a disagreement with the maker stated in read) and "lead time" (the manufacturer's lead time in Digi-Key's API; passes). For a part on the board it gives "library type" (componentLibraryType of the exact JLCPCB row, basic or extended; passes, S6 allowing both) and "LCSC identity" (the exact JLCPCB result for the LCSC number names the candidate's part number and package; passes only then). It also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and one whose refutation is not empty counts as a refutation. A check with passes false counts as a refutation, and so does one with agrees false, except for a reading that moves or always passes (${[...MOVING].join(', ')}) and a requirement stated as not given.
+${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor, other than a part of kind alternate; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives the lifecycle table's readings: "longevity commitment" (the programme page's commitment, or that none is published; passes unless S5 makes it a gate it fails), "market introduction" (the first datasheet revision date; passes, and under 12 months is stated in read), "distributor status" (JLCPCB, LCSC and Digi-Key; passes, a disagreement with the maker stated in read) and "lead time" (the manufacturer's lead time in Digi-Key's API; passes). For a part on the board it gives "library type" (componentLibraryType of the exact JLCPCB row, basic or extended; passes, S6 allowing both) and "LCSC identity" (the exact JLCPCB result for the LCSC number names the candidate's part number and package; passes only then). It also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that) and "board placement" (whether the specification places the part on the IO board or off it, rule 1; passes when its LCSC number says the same: C and digits on the board, none off it), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and one whose refutation is not empty counts as a refutation. A check with passes false counts as a refutation, and so does one with agrees false, except for a reading that moves or always passes (${[...MOVING].join(', ')}) and a requirement stated as not given.
 
 The shortlist, the values found for research and the reports:
 ${J(bundle)}`
@@ -601,15 +601,18 @@ function merge(cat, p2, rr, p3) {
   // Every candidate P3 found, and every P2 exclusion P3 overturned, is
   // qualified, ranked or dropped by the re-rank.
   const handled = (fr, part) => fr && ([...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || [])].some(c => c.part === part) || (fr.ranking || []).some(r => r.part === part))
+  // The functions are P2's. A find with no owner is handled by any of them.
+  const names = (p2.functions || []).map(f => f.function)
+  const handledAny = part => (rr.functions || []).some(fr => names.includes(fr.function) && handled(fr, part))
   // A P3 find the re-rank neither qualified nor dropped leaves its function
-  // open: the function whose P2 drop P3 overturned, or every function when
-  // none dropped the part.
+  // open: the function P3 names, the function whose P2 drop P3 overturned,
+  // or every function when it names or dropped under none of P2's.
   const unhandled = new Set()
   for (const m of (p3 && p3.missed) || []) {
-    const fr = (rr.functions || []).find(f => f.function === m.function)
-    if (handled(fr, m.part)) continue
+    const owned = names.includes(m.function)
+    if (owned ? handled((rr.functions || []).find(f => f.function === m.function), m.part) : handledAny(m.part)) continue
     followUps.push({ role: 'rerank', category: cat, function: m.function, part: m.part, reason: 'P3 candidate neither qualified nor dropped by the re-rank' })
-    unhandled.add(m.function)
+    for (const n of owned ? [m.function] : names) unhandled.add(n)
   }
   for (const x of (p3 && p3.exclusions_not_holding) || []) {
     // Each function whose P2 drop P3 overturned handles the part itself;
@@ -617,14 +620,13 @@ function merge(cat, p2, rr, p3) {
     const owners = (p2.functions || []).filter(f => (f.dropped || []).some(d => d.part === x.part)).map(f => f.function)
     const open = owners.length
       ? owners.filter(n => !handled((rr.functions || []).find(fr => fr.function === n), x.part))
-      : ((rr.functions || []).some(fr => handled(fr, x.part)) ? [] : (p2.functions || []).map(f => f.function))
+      : (handledAny(x.part) ? [] : names)
     if (!open.length) continue
     followUps.push({ role: 'rerank', category: cat, part: x.part, functions: open, reason: 'P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank' })
     for (const n of open) unhandled.add(n)
   }
-  // The functions are P2's; a function only the re-rank names is listed. A
-  // function either returns twice is not ranked.
-  const names = (p2.functions || []).map(f => f.function)
+  // A function only the re-rank names is listed. A function either returns
+  // twice is not ranked.
   const twice = list => new Set((list || []).map(f => f.function).filter((n, i, all) => all.indexOf(n) !== i))
   const p2Twice = twice(p2.functions)
   const rrTwice = twice(rr.functions)
@@ -637,23 +639,32 @@ function merge(cat, p2, rr, p3) {
     const fr = (rr.functions || []).find(f => f.function === name)
     const need = (f2.requirements || []).map(r => r.name)
     if (!need.length) followUps.push({ role: 'P2', category: cat, function: name, reason: 'function lists no requirement' })
-    // A part with more than one record has no single record: dropped.
+    // A requirement named twice has no single value to check a part against.
+    const needTwice = new Set(need).size !== need.length
+    if (needTwice) followUps.push({ role: 'P2', category: cat, function: name, reason: 'function names a requirement twice; not ranked' })
+    // A part with more than one record has no single record, and one with an
+    // LCSC number that is neither C and digits nor none (for a part off the
+    // board), or with placements below 1 (rule 4's need is boards x
+    // placements), has none: dropped. A ranking that names it names a part
+    // with no record.
     const listed = [...(f2.shortlist || []), ...((fr && fr.new_candidates) || [])]
-    const pool = listed.filter(c => listed.filter(x => x.part === c.part).length === 1)
-    for (const part of new Set(listed.filter(c => !pool.includes(c)).map(c => c.part))) followUps.push({ role: 'P2', category: cat, function: name, part, reason: 'part given more than one record; dropped' })
+    const malformed = c => !/^(C\d+|none)$/.test(c.lcsc || '') ? `LCSC number ${JSON.stringify(c.lcsc)}` : !(Number.isInteger(c.placements) && c.placements >= 1) ? `placements ${c.placements}` : ''
+    for (const c of listed) if (malformed(c)) followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `record with ${malformed(c)}; dropped` })
+    const pool = listed.filter(c => listed.filter(x => x.part === c.part).length === 1 && !malformed(c))
+    for (const part of new Set(listed.filter(c => listed.filter(x => x.part === c.part).length > 1).map(c => c.part))) followUps.push({ role: 'P2', category: cat, function: name, part, reason: 'part given more than one record; dropped' })
     let shortlist = []
     let verify = []
     let alternateRecords = []
     // Only the re-rank's ranking orders the shortlist. A function it did not
     // rank, ranked with no part, or ranked with repeated or non-positive
-    // positions, and a function with no requirement, is left open for a
-    // follow-up task.
+    // positions, and a function with no requirement or one named twice, is
+    // left open for a follow-up task.
     if (!fr) followUps.push({ role: 'rerank', category: cat, function: name, reason: 'the re-rank did not rank this function' })
     else if (!(fr.ranking || []).length) followUps.push({ role: 'rerank', category: cat, function: name, reason: 'the re-rank ranked no part' })
     const unranked = !fr || !(fr.ranking || []).length || p2Twice.has(name) || rrTwice.has(name) || unhandled.has(name)
     const badRanks = !unranked && !distinctRanks(fr.ranking)
     if (badRanks) followUps.push({ role: 'rerank', category: cat, function: name, reason: "the re-rank's positions are not the ranks 1 to n; the function is not ranked" })
-    if (unranked || badRanks || !need.length) {
+    if (unranked || badRanks || !need.length || needTwice) {
       // nothing to verify
     } else {
       const dropped = new Set([...(fr.dropped_from_shortlist || []), ...(fr.dropped_from_p3 || [])].map(d => d.part))
@@ -672,13 +683,15 @@ function merge(cat, p2, rr, p3) {
       }
       // A candidate the re-rank neither ranked nor dropped is kept, after the
       // ranked ones, and listed: an omission is not a drop. A record kept as
-      // another part's rule-5 alternate stays a record, not a candidate.
+      // the rule-5 alternate of a part the re-rank did not drop stays a
+      // record, not a candidate, also when the re-rank dropped it as one.
       const altNames = new Set([...(fr.verify || []).filter(v => v.kind === 'alternate').map(v => v.part),
-        ...pool.filter(c => c.second_source_route === 'alternate').map(c => c.second_source_part)])
+        ...pool.filter(c => c.second_source_route === 'alternate' && !dropped.has(c.part)).map(c => c.second_source_part)])
       let last = shortlist.length ? shortlist[shortlist.length - 1].rank : 0
       for (const c of contradicted ? [] : pool) {
-        if (shortlist.some(x => x.part === c.part) || dropped.has(c.part)) continue
+        if (shortlist.some(x => x.part === c.part)) continue
         if (altNames.has(c.part)) { alternateRecords.push(c); continue }
+        if (dropped.has(c.part)) continue
         shortlist.push({ ...c, rank: ++last, reason: 'not ranked by the re-rank; kept in P2 order' })
         followUps.push({ role: 'rerank', category: cat, function: name, part: c.part, reason: 'candidate neither ranked nor dropped' })
       }
@@ -704,16 +717,6 @@ function merge(cat, p2, rr, p3) {
       followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} states other values than the function for: ${restated.map(r => r.name).join(', ')}; checked against the function's`, notice: true })
       return { ...c, requirements: c.requirements.map(r => restated.includes(r) ? { ...r, required: fnValue.get(r.name), pass: null, restated: r.required } : r) }
     }).filter(c => {
-      // An LCSC number is C and digits, or none for a part off the board.
-      if (!/^(C\d+|none)$/.test(c.lcsc || '')) {
-        followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} with LCSC number ${JSON.stringify(c.lcsc)}; dropped` })
-        return false
-      }
-      // Rule 4's need is boards x placements: a count below 1 gates nothing.
-      if (!(Number.isInteger(c.placements) && c.placements >= 1)) {
-        followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} with placements ${c.placements}; dropped` })
-        return false
-      }
       const failing = (c.requirements || []).filter(r => r.pass === false)
       if (!failing.length) return true
       followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} with a failed requirement: ${failing.map(r => r.name).join(', ')}` })
@@ -786,12 +789,13 @@ function altOf(c) {
 // The checks a verifier returns by these exact names for a confirmation to
 // count (the P4 prompt names them).
 // The stock verifier re-derives the placements per board from the
-// specification; the datasheet verifier confirms the maker is allowed
+// specification, and whether the part is on the board, which its LCSC number
+// claims (rule 1); the datasheet verifier confirms the maker is allowed
 // (rule 2). An alternate passes rules 1 to 4 only (rule 5): it owes no
 // second-vendor stock.
 function requiredChecks(kind, cand, partKind) {
   if (kind === 'stock') {
-    return ['stock', 'lifecycle status', 'end-of-life notices', 'placements', 'longevity commitment', 'market introduction', 'distributor status', 'lead time', ...(onBoard(cand) ? ['presale', 'LCSC identity', 'library type'] : []),
+    return ['stock', 'lifecycle status', 'end-of-life notices', 'placements', 'board placement', 'longevity commitment', 'market introduction', 'distributor status', 'lead time', ...(onBoard(cand) ? ['presale', 'LCSC identity', 'library type'] : []),
       ...(onBoard(cand) && cand.second_source_route === 'second-vendor' && partKind !== 'alternate' ? ['second-vendor stock'] : [])]
   }
   return [...((cand && cand.requirements) || []).map(r => r.name), 'manufacturer allowlist', ...(partKind === 'alternate' ? ['pin-for-pin match', 'functional match'] : [])]
