@@ -1,0 +1,622 @@
+{
+ "role": "P1",
+ "category": "R3",
+ "label": "P1-R3",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "functions": [
+   "monostable",
+   "OR gate",
+   "reset supervisor",
+   "latch",
+   "latch clear control",
+   "trigger-path inverter",
+   "trigger input I_off buffer (Q9)",
+   "servo rail gate",
+   "onboard pack switch MOSFETs",
+   "onboard pack switch driver",
+   "external pack switch module",
+   "external module driver output",
+   "pack reverse-polarity protection",
+   "pack overvoltage and transient clamp",
+   "pack precharge"
+  ],
+  "values": [
+   {
+    "where": "hardware/docs/IOBoard.md:182",
+    "quantity": "monostable topology",
+    "value": "single-channel OR design: a dual retriggerable monostable, one half per edge polarity, the two Q outputs combined by an OR gate into one enable node, high while retriggered",
+    "marking": "owner",
+    "source": "F10 Answer, hardware/docs/Research.md:538 (owner, 2026-09-25); pull request #167 at 23c82ca, hardware/docs/Monostable.md:143-156 and :422-425; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "F10's Answer reads 'the single-channel OR design (owner, 2026-09-25)'. Monostable.md:143-149 defines that design as option 1 and :422-425 makes the enable node active high. The IOBoard line follows both. Holds; an owner decision, not an assumption.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:183",
+    "quantity": "trigger",
+    "value": "both edges; a single-edge trigger sees a 40 ms period and a worst case of 300 ms",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:26 and :106; shared/safety/include/heartbeat.h:45 and :57 at be1f247 and at 23c82ca; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "HEARTBEAT_PERIOD_MS is 20u and the level toggles once per period, so one polarity recurs every 40 ms. Two accepted gaps of HEARTBEAT_MAX_GAP_MS (150u) give 300 ms, above the 185 ms upper bound. Arithmetic and units hold.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:184",
+    "quantity": "window",
+    "value": "enable node falls 155 ms to 185 ms after the last edge at every corner, set to 170 ms on test",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:27, :109-115, :322-335; heartbeat.h:57; firmware/panel/main/main.c:328 (CONTROL_PERIOD_MS 5u) at be1f247; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "155 ms = 150 ms (HEARTBEAT_MAX_GAP_MS) + 5 ms (one control-task pass, CONTROL_PERIOD_MS 5u). 185 ms = 200 ms deadline - 5 ms switch budget - 10 ms reserve. The drift table sums 1.5 + 0.25 + 0.5 + 3 + 2 = 7.25 %: 170 ms x 0.9275 = 157.7 ms and x 1.0725 = 182.3 ms, 2.7 ms inside each bound. docs/Safety.md:32-37 gives about 150 ms; IOBoard.md:570 follows the pull request. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:184",
+    "quantity": "ambient temperature range",
+    "value": "0 to 50 °C",
+    "marking": "assumption",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:27, :318-320, :645; IOBoard.md:220; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "Monostable.md:27 states the window over 0 to 50 °C, but :318-320 calls it 'the range the bench is assumed to be used in; not analysed outside it', and :645 lists the range outside it as not specified. No Answer column or dated owner decision gives an ambient range. Assumption.",
+    "question": 9
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:198",
+    "quantity": "interlock supply",
+    "value": "the IO board's 3.3 V rail, 3.3 V ±3 % (3.201 V to 3.399 V), ground common with J8's GND",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:27 and :36; R5 row, hardware/docs/Research.md:283; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "Monostable.md:36 names the coprocessor board's 3.3 V rail; :27 specifies the window at 3.3 V ±3 %. R5's row carries the same tolerance to the regulator. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:186",
+    "quantity": "deadline",
+    "value": "output buffer disabled and every power switch open within 200 ms of the last edge",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:28 and :115-116; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "Equal to the coprocessor's 200 ms link failsafe (IOBoard.md:178). The budget 185 + 5 + 10 = 200 ms closes. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:185",
+    "quantity": "timing network",
+    "value": "window = k x R x C, set on test: C fitted, R selected from E96 between 50 kΩ and 150 kΩ for 170 ms; C in a dielectric with a stated temperature coefficient; timing components at the part's pins, timing node with no other connection and no test point",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:280-297 and :344-353; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "3.3 V / 150 kΩ = 22 µA and 3.3 V / 50 kΩ = 66 µA, as stated; C = 0.17 s / (0.45 x 150 kΩ) = 2.5 µF and / (0.45 x 50 kΩ) = 7.6 µF. Arithmetic holds; the C range rests on the assumed k. The part's permitted external R and C ranges come from its datasheet.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:216",
+    "quantity": "monostable k drift over supply and temperature",
+    "value": "±3 % over 3.3 V ±3 % and 0 to 50 °C (k = 0.45 at 3.3 V and 25 °C)",
+    "marking": "assumption",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:299-305 and :327; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "Monostable.md:302-303: 'the drift is an assumption, since datasheets of this class graph k against supply rather than stating a limit'. IOBoard.md:216 repeats it as assumed and gives R3 the replacement. The 2.7 ms margins rest on it. Assumption.",
+    "question": 7
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:216",
+    "quantity": "monostable timing-pin leakage at 50 °C",
+    "value": "0.5 µA",
+    "marking": "assumption",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:316 and :328; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "Monostable.md:316: 1 µA at 85 °C is the class's datasheet limit; 0.5 µA at 50 °C 'is an assumption'. 0.5 µA x 115 kΩ = 57.5 mV, 1.7 % of 3.3 V, booked as ±2 %. Assumption.",
+    "question": 8
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:194",
+    "quantity": "clear-release behaviour",
+    "value": "enable node low through the 3.3 V ramp until edges arrive; Q low while clear is active; clear release never triggers ('423 behaviour); a part whose clear release fires a pulse is excluded",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:33, :217-219, :229-236; Q9, hardware/docs/Research.md:574; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "Monostable.md:229-236 excludes a part whose clear release can trigger and requires the '423 behaviour stated in the datasheet. Q9 keeps the exclusion open only if no part also has I_off. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:192",
+    "quantity": "powered-off isolation",
+    "value": "every logic input driven while its own supply is absent has I_off or a series resistor of 4.7 kΩ or more (at most 1 mA at 3.3 V); the trigger inputs take both; a trigger-path inverter takes I_off behind the series resistor; the OR gate takes I_off on both inputs; a switch driver's logic input takes I_off or 4.7 kΩ from the enable node",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:75-88; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "3.3 V / 4.7 kΩ = 0.70 mA, under 1 mA. The 1 mA figure is the pull request's own design limit, not a datasheet figure. Each device row of the IOBoard line matches the table at Monostable.md:82-88. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:191",
+    "quantity": "fail-safe pull-downs",
+    "value": "100 kΩ pull-downs on the trigger input, each OR input and the enable node",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:188-192 and :433-439; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "Each of the three pull-downs appears in the fail-safe table with the state it holds. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:193",
+    "quantity": "heartbeat node series resistors",
+    "value": "4.7 kΩ in the trigger branch and in the RP2354B branch, each holding current into an unpowered input to 0.7 mA at 3.3 V",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:90-94 and :475-484; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "3.3 V / 4.7 kΩ = 0.70 mA. With the 100 kΩ pull-down the trigger input sits at 3.3 V x 100 / 104.7 = 3.15 V. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:197",
+    "quantity": "not defeatable",
+    "value": "no processor, register or firmware in the path from GPIO6 to either gate; the RP2354B input listens and cannot add to the enable or remove it",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:34 and :451-455; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "Monostable.md:34 says 'no programmable element'; :453 'No processor, no register and no firmware'. The F11 latch is a storage element but not programmable, so the rule reads 'register' as a processor register. A clear driven by a relay or firmware is the open point; asked.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:195",
+    "quantity": "clear network",
+    "value": "a reset supervisor with a stated threshold and delay, in place of the RC network of pull request #167; threshold and delay not stated",
+    "marking": "owner",
+    "source": "F12 Answer, hardware/docs/Research.md:540 (owner, 2026-09-25); IOBoard.md:215 and :377; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "F12's Answer reads 'a reset supervisor (owner, 2026-09-25)'. The part type is the owner's; its threshold bound above 3.201 V and its delay are not stated anywhere; asked.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:281",
+    "quantity": "reset supervisor threshold lower bound",
+    "value": "threshold, with its tolerance, above the minimum supply of the monostable and the OR gate",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:33 and :668-673; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "Monostable.md:672-673 requires 'a threshold that has to suit the monostable's minimum supply'. The OR gate follows from :33: once clear releases, the enable node is the OR gate's output, so the gate has to be inside its supply range too. If the supervisor also presets or clears the latch, the latch joins the list (see the latch power-up question). Derived; sourced.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:281",
+    "quantity": "unspecified band upper edge",
+    "value": "3.201 V (3.3 V - 3 %)",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:27; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "3.3 V x 0.97 = 3.201 V. Holds. The row gives no upper bound for the threshold; asked separately.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:196",
+    "quantity": "latch",
+    "value": "a hardware latch, set by the monostable's first expiry and cleared only by an operator clear control; power-up state, place and control not stated",
+    "marking": "owner",
+    "source": "F11 question and Answer, hardware/docs/Research.md:539 (owner, 2026-09-25); STATUS.md:340 at be1f247; pull request #167 at 23c82ca, hardware/docs/Monostable.md:497-505, :557-561, :582-585, :660-667; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "F11 asks for a latch 'set by the monostable's first expiry and cleared only by an operator action'; the Answer 'yes: a hardware latch with an operator clear control' accepts that. Pull request #167 test steps 7 and 10 assume the enable returns at each resumed edge; IOBoard.md:572 follows F11. Whether 'first expiry' means the enable's falling edge or its low level decides the power-up state; asked.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:196",
+    "quantity": "latch input isolation",
+    "value": "the latch's inputs follow the powered-off isolation rule: I_off or a 4.7 kΩ series resistor",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:75-80; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "The rule covers every logic device in the interlock whose input can be driven while its own supply is absent; a latch fed by the enable node is one. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:188",
+    "quantity": "servo rail gate type",
+    "value": "one high-side switch on the servo rail",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:30 and :401-410; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "Monostable.md:30 names 'a high-side switch on each of the servo rail and the ESC pack'. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:218",
+    "quantity": "servo rail gate identity",
+    "value": "the one rail switch is the gate; the 20 port supply switches, driven through the I/O expander, are not",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:30 and :451-455; IOBoard.md:348 (owner, 2026-09-25); read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "The pull request names one switch on the rail. The owner's port switches sit behind an I/O expander, which the Not defeatable rule keeps out of the path to a gate. Derived from both; the row asks the owner to confirm it.",
+    "question": 4
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:188",
+    "quantity": "servo rail voltage",
+    "value": "up to 8.4 V (two settings, up to 5.5 V and up to 8.4 V)",
+    "marking": "owner",
+    "source": "hardware/STATUS.md:37 (Servo rail) and hardware/docs/Power.md:32-34 at be1f247 (owner, 2026-09-24); read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "Matches the 8.4 V of Monostable.md:402. The gate's own voltage rating above 8.4 V is not stated; asked.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:188",
+    "quantity": "servo rail current",
+    "value": "4 to 6.35 A",
+    "marking": "owner",
+    "source": "hardware/STATUS.md:34 and :37 at be1f247 (owner, 2026-09-25); TPS55285 datasheet SLVSI72A (revised October 2025), https://www.ti.com/lit/ds/symlink/tps55285.pdf, read 2026-09-28T10:26:45Z",
+    "refutation_tried": "SLVSI72A: 'Programmable output current limit up to 6.35A with 50mA step'. Pull request #167 gives 4 to 8 A from the TPS55288 of its own Power.md (Monostable.md:402, :569); IOBoard.md:571 follows the owner. Holds at 6.35 A.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:188",
+    "quantity": "switch opening time",
+    "value": "open within 5 ms of the enable node falling (servo rail gate; both ESC pack switches take the same)",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:113 and :410; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "5 ms is the driver-and-switch budget; a relay whose release exceeds it is not a candidate. IOBoard.md:189-190 apply it to both pack paths. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:188",
+    "quantity": "switch fail-open",
+    "value": "open with its control input undriven or the 3.3 V supply absent (servo rail gate; both ESC pack switches take the same)",
+    "marking": "sourced",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:405-410 and :441; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "An enhancement-mode MOSFET with a gate-source resistor or a normally-open relay meets it; a normally-closed contact or a depletion-mode device does not. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:188",
+    "quantity": "servo rail gate off-state leakage limit",
+    "value": "under 5 mA",
+    "marking": "assumption",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:411-416; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "Monostable.md:415 sets '5 mA per rail as the placeholder until that idle current is measured'; a small servo idles at 5 to 10 mA, not measured. IOBoard.md:188 calls it a placeholder. Assumption.",
+    "question": 10
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:189",
+    "quantity": "onboard ESC pack switch form",
+    "value": "a MOSFET array and its driver on the IO board, high-side",
+    "marking": "owner",
+    "source": "F7 Answer, hardware/docs/Research.md:535 (owner, 2026-09-25); pull request #167 at 23c82ca, hardware/docs/Monostable.md:30; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "F7's Answer names the MOSFET array and driver on the board; the high side is from the pull request. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:189",
+    "quantity": "onboard ESC pack switch current",
+    "value": "150 A continuous",
+    "marking": "owner",
+    "source": "F2 Answer, hardware/docs/Research.md:530 (owner, 2026-09-25); read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "F2 asks about the onboard shunt; the switch sits on the same path, so the figure carries over. The current it must open, above 150 A, is not stated; asked.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:189",
+    "quantity": "ESC pack switch voltage rating",
+    "value": "67.2 V (16 cells x 4.2 V) plus a margin not stated",
+    "marking": "owner",
+    "source": "F15 Answer, hardware/docs/Research.md:543 (owner, 2026-09-25); read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "16 x 4.2 V = 67.2 V. The margin is not stated in either page; asked. The INA238's 85 V leaves 17.8 V above the pack.",
+    "question": 5
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:189",
+    "quantity": "ESC pack switch off-state leakage limit",
+    "value": "5 mA, the servo rail gate's placeholder, applied to the onboard path here and to the external path at IOBoard.md:190",
+    "marking": "assumption",
+    "source": "pull request #167 at 23c82ca, hardware/docs/Monostable.md:411-416; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "The pull request sets 5 mA per rail as a placeholder and names an ESC example idling at 50 mA. A precharge resistor left across an open switch would count against it. Assumption.",
+    "question": 11
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:190",
+    "quantity": "external ESC pack switch form",
+    "value": "a driven external module, high-side, whose driver output is on the IO board; a part off the board, bought at Digi-Key",
+    "marking": "owner",
+    "source": "F7 Answer, hardware/docs/Research.md:535, and S3 Answer, hardware/docs/Research.md:512 (owner, 2026-09-25); sourcing rule 1; pull request #167 at 23c82ca, hardware/docs/Monostable.md:30; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "F7 names the module and the driver output; S3 names Digi-Key, where rule 1 buys parts off the board. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:62",
+    "quantity": "external path current",
+    "value": "above 150 A to 300 A and more; highest not stated",
+    "marking": "owner",
+    "source": "owner decisions table, hardware/docs/Research.md:62, and hardware/STATUS.md:26 (owner, 2026-09-25); read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "Both lines give 'to 300 A and more' with no upper figure and no duty. The two paths replace each other (hardware/STATUS.md:26). The highest current is asked.",
+    "question": 6
+   },
+   {
+    "where": "hardware/docs/Research.md:281",
+    "quantity": "ESC pack reverse-polarity protection",
+    "value": "a reversed pack (down to -67.2 V) blocked on each path, at 150 A onboard and at the external path's current",
+    "marking": "assumption",
+    "source": "R3 row, hardware/docs/Research.md:281; Scope table, hardware/docs/Research.md:27; hardware/STATUS.md:74; INA238 datasheet SLYS025B (revised May 2025), section 5.1, https://www.ti.com/lit/ds/symlink/ina238.pdf, read 2026-09-28T10:26:45Z; tree read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "Only the research plan states it: no Answer column, no dated owner decision, and pull request #167 names no input protection. The INA238 takes -0.3 V at least on VBUS and IN+/IN-, so a reversed pack damages it unless a blocking stage sits ahead of it. Assumption.",
+    "question": 12
+   },
+   {
+    "where": "hardware/docs/Research.md:281",
+    "quantity": "ESC pack overvoltage protection",
+    "value": "overvoltage protection for the pack voltage of F15, threshold not stated",
+    "marking": "assumption",
+    "source": "R3 row, hardware/docs/Research.md:281; IOBoard.md:385; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "Only the research plan states a sustained-overvoltage protection; no owner answer does, and IOBoard.md:385 says its level is not stated. The transient clamp is a separate need that follows from the parts' absolute maximums. Assumption.",
+    "question": 13
+   },
+   {
+    "where": "hardware/docs/Research.md:281",
+    "quantity": "ESC pack precharge",
+    "value": "inrush into the ESC's input capacitance limited by a precharge, capacitance not stated",
+    "marking": "assumption",
+    "source": "R3 row, hardware/docs/Research.md:281; IOBoard.md:385; pull request #167 at 23c82ca, hardware/docs/Monostable.md:127-128; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "Only the research plan states the precharge; no owner answer does. The pull request gives one ESC example with 470 µF, as a decay example, not a requirement. Assumption.",
+    "question": 14
+   },
+   {
+    "where": "hardware/docs/Research.md:281",
+    "quantity": "pack node clamp level",
+    "value": "under the absolute maximum of every part on the pack node; the INA238 takes -0.3 V to 85 V on VBUS and on IN+/IN- common mode",
+    "marking": "sourced",
+    "source": "INA238 datasheet SLYS025B (revised May 2025), sections 5.1 and 5.3, https://www.ti.com/lit/ds/symlink/ina238.pdf, read 2026-09-28T10:26:45Z; Vishay SMBJ5.0A thru SMBJ188A, document 88392, revision 09-Jan-2024, https://www.vishay.com/docs/88392/smbj.pdf, read 2026-09-28T10:33:06Z",
+    "refutation_tried": "SLYS025B 5.1 gives VVBUS and VIN+/VIN- common mode -0.3 to 85 V absolute maximum; 5.3 gives 85 V as the recommended maximum. The row's 85 V holds; the -0.3 V floor binds under reverse polarity. Note for P2: the SMBJ70A (70 V working) breaks down at 77.8 to 86.0 V and clamps at 113 V at 5.3 A, so a TVS diode alone that stands off 67.2 V does not hold the node under 85 V at its rated pulse current.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:281",
+    "quantity": "gates through an RP2354B reset",
+    "value": "the coprocessor enables the RP2350 watchdog; R3's gates follow the enable node alone and stay enabled through that reset while the panel beats",
+    "marking": "owner",
+    "source": "hardware/STATUS.md:32 (Coprocessor watchdog, owner, 2026-09-25); pull request #167 at 23c82ca, hardware/docs/Monostable.md:29-30 and :451-455; read 2026-09-28 between 10:21Z and 10:37Z",
+    "refutation_tried": "The watchdog is the owner's decision; the gates' dependence on the enable node alone is the pull request's. Holds. The latch's place decides whether a latch sits in that path.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:577",
+    "quantity": "RP2350 fault-tolerant pin rating with IOVDD at 0 V",
+    "value": "GPIO0 to 39: 3.63 V maximum with IOVDD at 0 V; GPIO40 to 47: IOVDD + 0.5 V. The statement of pull request #167 that the RP2350 'is not specified as tolerating an input above an absent IOVDD' does not hold for GPIO0 to 39",
+    "marking": "sourced",
+    "source": "RP2350 datasheet build 2025-07-29, Tables 1426, 1427 and 1433 (1423, 1424 and 1430 in build 2024-08-08), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-28T10:26:44Z; pull request #167 at 23c82ca, hardware/docs/Monostable.md:476-479",
+    "refutation_tried": "Table 1433 gives VPIN_FT a maximum of 3.63 V at IOVDD = 0 V. Table 1426 says 'very little current' flows below 3.63 V with IOVDD at 0 V and gives no figure. Table 1427 lists GPIO0 to 39 as Digital IO (FT), GPIO3 among them; GPIO40 to 47 are ADC pins rated at IOVDD + 0.5 V. A 3.3 V heartbeat sits 0.33 V under 3.63 V. The statement holds for GPIO40 to 47 only. R1 confirms the tables in T2.",
+    "question": -1
+   }
+  ],
+  "questions": [
+   {
+    "function": "latch",
+    "question": "Does the hardware latch of F11 power up set, holding the gates disabled until the operator clears it, or clear, letting the gates follow the enable node once edges arrive? STATUS.md:340 holds that every stop latches and nothing re-arms on its own. A latch that powers up set also holds the gates disabled through a clear-release pulse of a '123-type monostable (Q9).",
+    "why": "The latch's element and its reset wiring (preset or cleared by the reset supervisor, or set by the enable node's level) follow from the power-up state. P2 cannot qualify the latch without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": "latch power-up state"
+   },
+   {
+    "function": "latch",
+    "question": "Where does the latch of F11 sit: between the enable node and the gates, so the enable node keeps the monostable's own timing and test steps 7 and 10 of pull request #167 still read it, or on the enable node itself, so the node stays low after the first expiry? The gates are the output buffer's enable, the servo rail gate, both ESC pack switches and the external CAN transceiver's standby.",
+    "why": "It fixes which nodes the latch drives and which of its inputs fall under the powered-off isolation rule, and so the latch's fan-out, drive and I_off. P2 cannot qualify the latch without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": "latch place relative to the enable node and the gates"
+   },
+   {
+    "function": "latch clear control",
+    "question": "What is the operator clear control of the latch (F11), and where does it sit: a push button on the IO board, a control on the display panel, or a lead to a remote button? F11's answer names no part and no connector.",
+    "why": "P2 cannot qualify the clear input's isolation, pull and debounce, or state what round 1 selects for the control, without the control and its place. A control on the panel passes through firmware.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": "operator clear control and where it sits"
+   },
+   {
+    "function": "latch clear control",
+    "question": "May a relay contact, like the bench's relays across BOOT and RESET, or firmware on either board drive the latch's clear? Pull request #167 puts no processor, register or firmware in the path from GPIO6 to either gate. A clear driven that way re-enables the gates with no operator at the bench. Answer for a relay and for firmware.",
+    "why": "It decides whether the clear input takes only a manual contact or also a logic signal, which sets the clear circuit and its isolation. P2 cannot qualify the latch's clear path without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": "relay or firmware clear under the GPIO6 path rule"
+   },
+   {
+    "function": "servo rail gate",
+    "question": "Is the one high-side switch on the servo rail the servo rail's gate, and are the 20 port supply switches, which the I/O expander drives, not a gate? The Not defeatable rule of pull request #167 keeps a gate off the I/O expander.",
+    "why": "If the port switches were the gate, R3 selects no rail switch and the gate sits behind the I/O expander, against the Not defeatable rule. P2 cannot start the servo rail gate until this is confirmed.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:218",
+    "for_quantity": "servo rail gate identity",
+    "asks": "port switches are not the servo rail gate"
+   },
+   {
+    "function": "onboard pack switch MOSFETs",
+    "question": "What voltage margin, in V, above the 67.2 V of a 16-cell pack at 4.2 V a cell (F15) are the ESC pack switches rated for, on the onboard and the external path? An 80 V part leaves 12.8 V and a 100 V part 32.8 V. The INA238 on the pack node is rated to 85 V at most.",
+    "why": "It sets the drain-source rating of the MOSFET array, the voltage rating of its driver and of the external module, and the window between the pack voltage and the clamp. P2 cannot qualify any of them without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:189",
+    "for_quantity": "ESC pack switch voltage rating",
+    "asks": "ESC pack switch voltage margin"
+   },
+   {
+    "function": "external pack switch module",
+    "question": "What is the highest current, in A, on the external ESC pack path? The tree gives above 150 A to 300 A and more (owner, 2026-09-25).",
+    "why": "P2 cannot qualify the external module's current rating, its safe operating area during turn-off, or the external path's protection without an upper figure.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Research.md:62",
+    "for_quantity": "external path current",
+    "asks": "external path highest current"
+   },
+   {
+    "function": "monostable",
+    "question": "What drift of the monostable's timing constant k, in %, over 3.3 V ±3 % and 0 to 50 °C does the window budget take? Pull request #167 assumes ±3 % (k = 0.45 at 3.3 V and 25 °C), and the window's margin of 2.7 ms each way rests on it. Give a figure, or mark it for research: read from the candidate's datasheet, where parts of this class graph k and state no limit.",
+    "why": "P2 cannot pass or fail a monostable against the 155 to 185 ms window at every corner without the k drift the budget takes.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:216",
+    "for_quantity": "monostable k drift over supply and temperature",
+    "asks": ""
+   },
+   {
+    "function": "monostable",
+    "question": "What timing-pin leakage, in µA at 50 °C, does the window budget take? Pull request #167 assumes 0.5 µA, against the class's 1 µA limit at 85 °C, and books ±2 % of window drift for it. Give a figure, or mark it for research: the candidate's 25 °C figure, doubled every 10 °C.",
+    "why": "The leakage term is 2 of the 7.25 % drift budget. P2 cannot pass or fail a monostable on the window without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:216",
+    "for_quantity": "monostable timing-pin leakage at 50 °C",
+    "asks": ""
+   },
+   {
+    "function": "monostable",
+    "question": "What ambient temperature range, in °C, do the safety gate and the ESC pack switches work across? Pull request #167 assumes 0 to 50 °C for the bench, analyses the window only there, and leaves behaviour outside it open.",
+    "why": "The window's corners, each part's operating range and the switches' current derating use it. P2 cannot qualify a part's temperature range without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:184",
+    "for_quantity": "ambient temperature range",
+    "asks": ""
+   },
+   {
+    "function": "servo rail gate",
+    "question": "What off-state leakage, in mA, may the open servo rail gate pass? Pull request #167 sets 5 mA per rail as a placeholder until a load's idle current is measured; a small servo idles at 5 to 10 mA, not measured.",
+    "why": "P2 cannot pass or fail a switch's off-state current without the limit.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:188",
+    "for_quantity": "servo rail gate off-state leakage limit",
+    "asks": ""
+   },
+   {
+    "function": "onboard pack switch MOSFETs",
+    "question": "What off-state leakage, in mA, may an open ESC pack switch pass, on the onboard and the external path, any precharge path around it included? The specification applies the servo rail's 5 mA placeholder. The ESC in pull request #167's example idles at 50 mA.",
+    "why": "It qualifies the MOSFETs' and the external module's off-state current, and decides whether a precharge resistor may stay across an open switch.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:189",
+    "for_quantity": "ESC pack switch off-state leakage limit",
+    "asks": ""
+   },
+   {
+    "function": "pack reverse-polarity protection",
+    "question": "Does the ESC pack path block a reversed pack, down to -67.2 V, on both paths: the onboard path at 150 A and the external path at its highest current? Only the research plan states this protection; no owner answer does. The INA238 takes -0.3 V at least on its bus and shunt inputs.",
+    "why": "It decides whether each pack switch is a back-to-back MOSFET array or carries a blocking stage, about twice the MOSFETs at 150 A. P2 cannot select the reverse-polarity parts without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Research.md:281",
+    "for_quantity": "ESC pack reverse-polarity protection",
+    "asks": ""
+   },
+   {
+    "function": "pack overvoltage and transient clamp",
+    "question": "What highest sustained input voltage, in V, does the ESC pack path's overvoltage protection survive while it keeps the pack node under 85 V, for example a pack of more than 16 cells connected by mistake? Answer none if only switching transients are clamped. Only the research plan states this protection; no owner answer does.",
+    "why": "P2 cannot choose between a clamp and a series disconnect, or rate its MOSFETs, without the sustained voltage it survives.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Research.md:281",
+    "for_quantity": "ESC pack overvoltage protection",
+    "asks": ""
+   },
+   {
+    "function": "pack precharge",
+    "question": "What largest ESC input capacitance, in µF, does the ESC pack switch precharge before it closes fully? Answer none if no precharge is required. Pull request #167 gives one example ESC with 470 µF. Only the research plan states the precharge; no owner answer does.",
+    "why": "P2 cannot size the precharge, or the MOSFETs' safe operating area while closing, without the capacitance.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Research.md:281",
+    "for_quantity": "ESC pack precharge",
+    "asks": ""
+   },
+   {
+    "function": "reset supervisor",
+    "question": "What highest threshold, in V with its tolerance, may the reset supervisor (F12) have? With a threshold under 3.201 V (3.3 V - 3 %), the rail can sit between the threshold and 3.201 V, where the window is not specified. With a threshold at or above 3.201 V, the supervisor can hold the monostable cleared on a rail still inside 3.3 V ±3 %.",
+    "why": "The row gives the threshold a lower bound only. P2 cannot pick a threshold option, or pass or fail one, without the upper bound.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "reset supervisor",
+    "question": "What shortest delay, in ms, does the reset supervisor hold the clear after the 3.3 V rail passes its threshold? The 3.3 V ramp time is not stated, and R5 selects the regulator after T2.",
+    "why": "P2 cannot pick or pass a supervisor's delay option without a minimum. P5 later checks it against R5's ramp.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "servo rail gate",
+    "question": "What highest voltage, in V, is the servo rail gate rated for? The rail is set to 8.4 V at most, and the TPS55285 can be programmed to 15 V over I²C.",
+    "why": "P2 cannot qualify the gate's voltage rating without it. A fault that programs the converter above 8.4 V reaches the gate before the port ceilings of F16.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "pack overvoltage and transient clamp",
+    "question": "What inductance, in µH, do the pack leads to the IO board and to the external module have, for the transient the clamp absorbs when a switch opens at full current (energy = 0.5 x L x I², at 150 A onboard)? A TVS diode rated 70 V working (Vishay SMBJ70A) breaks down at 77.8 to 86.0 V and clamps at 113 V at 5.3 A.",
+    "why": "P2 cannot size the clamp's energy or the MOSFETs' safe operating area during turn-off without the transient; IOBoard.md:385 states the transient level is not given.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "pack precharge",
+    "question": "What longest time, in ms, may an ESC pack switch take to close, precharge included, from the enable rising or the latch clearing?",
+    "why": "P2 cannot size the precharge resistor, its power, or an inrush slew rate without a closing-time limit.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "onboard pack switch driver",
+    "question": "Does the closed ESC pack switch carry current from the ESC back into the pack, as in regenerative braking, and up to what current in A? A reverse-polarity stage built as an ideal diode blocks it. The BENCH current register sends a negative current as 0 A.",
+    "why": "It decides whether the driver may be an ideal-diode controller and what reverse current the array carries. P2 cannot qualify the driver or the array's arrangement without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "onboard pack switch MOSFETs",
+    "question": "What highest current, in A, does each ESC pack switch open without damage: the motor overcurrent trip level plus its rise during detection, or a short-circuit figure? The switch opens on the enable falling and on the coprocessor's overcurrent action.",
+    "why": "P2 cannot qualify the MOSFETs' or the external module's safe operating area during turn-off without the current they interrupt.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "onboard pack switch MOSFETs",
+    "question": "What highest dissipation, in W, may the onboard ESC pack switch have at 150 A continuous? It sets how many MOSFETs share the current. The onboard shunt beside it dissipates 2.25 W at 100 µΩ and 4.5 W at 200 µΩ.",
+    "why": "Sourcing rule 4 needs the placements range and its basis; P2 cannot size the array's on-resistance and count without a dissipation limit.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "external pack switch module",
+    "question": "Is the external path's highest current continuous, or a peak, and if a peak, for how long in s?",
+    "why": "P2 cannot qualify the external module's current rating and its temperature rise at that current without the duty.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "onboard pack switch driver",
+    "question": "What lowest ESC pack voltage, in V, does each ESC pack switch close and conduct at? SET_PACK_CELLS takes 1 cell (shared/settings/settings.c:39-41), and no per-cell floor is stated for the ESC pack.",
+    "why": "P2 cannot qualify the driver's supply range or the MOSFETs' gate drive at the lowest pack voltage without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   }
+  ]
+ }
+}

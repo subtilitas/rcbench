@@ -1,0 +1,237 @@
+{
+ "role": "P1-critic",
+ "category": "R10",
+ "label": "P1-critic-R10",
+ "attempt": 0,
+ "data": {
+  "category": "R10",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/Research.md:288",
+    "quantity": "R10 scope: converter alternatives",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:288 states the pair and names Q4. Q4 at Research.md:572 is open (IOBoard.md:38), so the pair is sourced to the page as the scope of an open decision, not an owner choice. The RP2350 has no reference pin. Table 1438 gives the ADC input range as 0 V to ADC_AVDD. Table 1441 rates ADC_AVDD at 1.62 to 3.63 V, and note c says performance is compromised below 2.97 V (RP2350 datasheet build 2025-07-29, RP-008373-DS-2, read 2026-09-28T10:35:08Z from https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf). One detail of P1's refutation is off: the external-reference advice in section 12.4.6 is about the temperature sensor's accuracy, not the ADC in general. The marking does not rest on it."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/IOBoard.md:452",
+    "quantity": "Converter for the accelerometer",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:452 restates Q4 (Research.md:572), and IOBoard.md:38 lists Q4 as open. Re-read at the same URL, 2026-09-28T10:35:08Z. Section 12.4 gives 500 kS/s and '12-bit with 9.2 ENOB'. Table 1438 gives ENOB 9 bits minimum and 9.5 typical. Section 12.4.3 gives 96 cycles of a 48 MHz clk_adc, 2 µs a sample. The line names ENOB and rate only. Q4 also asks for trigger or timestamp and latency jitter, which is a superset of the line, not a conflict with it."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/IOBoard.md:103",
+    "quantity": "ADC inputs on the RP2354B",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Section 12.4 lists eight inputs on QFN-80 pins shared with GPIO[47:40]. Table 1119 maps channels 0 to 7 to GPIO40 to 47 and channel 8 to the temperature sensor (RP2350 datasheet build 2025-07-29, read 2026-09-28T10:35:08Z). The RP2354B is the QFN-80 package (Research.md:47). Count and unit hold."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/IOBoard.md:105",
+    "quantity": "ADC input rating",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Table 1427 gives GPIO40_ADC0 to GPIO47_ADC7 the type 'Digital IO / Analogue', not an FT (fault-tolerant) type. Table 1433 gives VPIN (Standard) as -0.5 V to IOVDD + 0.5 V, and VPIN_FT applies to FT pins only (read 2026-09-28T10:35:08Z). The table numbers match the +3 offset from build 2024-08-08 that IOBoard.md:19-22 states. Holds."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/IOBoard.md:453",
+    "quantity": "ADC input front-end rule",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:269-272 states the rule for every category. With IOVDD at 0 V, Table 1433's IOVDD + 0.5 V allows 0.5 V at most. Section 6.1.8 allows any supply order except that VREG_VIN and VREG_AVDD come up together. It notes only that small transient currents flow in ADC_AVDD if ADC_AVDD is up before DVDD (read 2026-09-28T10:35:08Z). A reference drives the ADC_AVDD supply pin, not an input. Holds as sourced."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/IOBoard.md:447",
+    "quantity": "Vibration sensor type",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Balance.md:62-63 says 'Use an analogue sensor (piezo or analogue accelerometer) into the coprocessor's ADC', and the external-ADC alternative comes from Q4 (Research.md:572). The value follows from its sources. Balance.md:60-62 rules out a fused IMU at 100 Hz, not a digital accelerometer that streams raw samples faster. Research.md:289 makes the IIS3DWB a seed only if Q4 accepts a digital accelerometer, which Q4 does not say. That scope is added as a question, decision-only for Q4. The marking holds."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/IOBoard.md:448",
+    "quantity": "fundamental at 10,000 rpm",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Balance.md:60-61 states 167 Hz at 10,000 rpm. 10,000 / 60 s = 166.7 Hz. The unit and the rounding hold."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/IOBoard.md:448",
+    "quantity": "highest motor speed the vibration path resolves",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:487 says the highest rpm the vibration path follows is not stated and that 10,000 rpm is an example (Balance.md:60-69). No other page states a bound. The BENCH register's 65,535 rpm (bench_state.c:21-28, stored at 1.0 a count at :82) is a register ceiling, not a requirement. The value is an assumption, and P1's question 0 asks it."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/IOBoard.md:449",
+    "quantity": "delay: constant part and variation",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Balance.md:65-67 states this for the method with an index pulse. The four-run method measures no phase (Balance.md:57-59). No page limits the variation, and P1's question 6 asks for that limit. Holds."
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/IOBoard.md:449",
+    "quantity": "analogue sensor delay",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Balance.md:67-68 states about 15 µs, under 1° at 10,000 rpm. 15 µs × 166.7 rev/s × 360° = 0.9°. The figure names no part and sets no limit on the converter. It follows from its source."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/IOBoard.md:449",
+    "quantity": "fused IMU delay",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Balance.md:68-69 states it. 5 ms × 166.7 rev/s × 360° = 300°. Holds."
+   },
+   {
+    "index": 11,
+    "where": "hardware/docs/IOBoard.md:450",
+    "quantity": "timebase",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Manifest.md:30 says 'Both sensors on the coprocessor, sampled on one timebase', and STATUS.md:26 says 'Accelerometer and index pulse, one timebase'. Sections 12.4.3.1 and 12.4.3.2 start a conversion only by a write of CS.START_ONCE or by the free-running pacing timer (read 2026-09-28T10:35:08Z). No external trigger input is described, so P1's note holds."
+   },
+   {
+    "index": 12,
+    "where": "hardware/docs/IOBoard.md:451",
+    "quantity": "sensing axis",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Balance.md:47-48 and shared/ui/balance_screen.c:218-219 and :330-336 all give one axis across the shaft. How many axes are wired is not stated (IOBoard.md:493), and P1's question 5 asks it. Holds."
+   },
+   {
+    "index": 13,
+    "where": "hardware/docs/IOBoard.md:441",
+    "quantity": "index pulse",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Balance.md:8-10 says 'optionally, an index sensor giving one pulse per revolution'. Balance.md:32-37 puts the mark on the bell. settings.c:100 reads 'Once per revolution, gives the phase'. Holds."
+   },
+   {
+    "index": 14,
+    "where": "hardware/docs/IOBoard.md:125",
+    "quantity": "capability bit for vibration",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "link_pages.h:180 reads LINK_CAP_VIBRATION = 1u << 6, 'accelerometer and an index pulse'. The seventh item of IOBoard.md:125's list of bits 0 to 8 is bit 6. Holds."
+   },
+   {
+    "index": 15,
+    "where": "hardware/docs/IOBoard.md:476",
+    "quantity": "accuracy of the pack voltage and the motor current",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "A search of the checkout's Markdown for 'accura' finds no accuracy for either quantity. IOBoard.md:415 and the Scope table's fixed input 'Motor monitor: INA238' put both quantities on the INA238, which R8 handles. No line routes either quantity through R10's converter or reference, and no source in the tree gives a reason for the R10 tag on this line. The value holds as a statement of what the tree does not state. R10 needs the accuracy of the vibration amplitude instead, which P1's question 7 asks."
+   },
+   {
+    "index": 16,
+    "where": "hardware/docs/IOBoard.md:487",
+    "quantity": "BENCH rpm register ceiling",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "In bench_state.c:21-28, to_u16 clamps at 65535, and :82 stores rpm at 1.0 a count. IOBoard.md:430 states 1 rpm a count. 65,535 / 60 = 1,092 Hz. This is a register ceiling, not a requirement. Holds."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:487 states that the highest rpm is not stated and that 10,000 rpm is an example. No page gives a bound. The fundamental is rpm / 60: 167 Hz at 10,000 rpm and 1,092 Hz at the 65,535 rpm register ceiling. P2 cannot set a lowest sample rate without it. The question asks for the value marked as an assumption at IOBoard.md:448, with the right for_where and for_quantity."
+   },
+   {
+    "index": 1,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:493 lists the sample rate as not stated. P1's seed figures re-read correctly. ADS1115: 8 to 860 SPS (SBAS444E, read 2026-09-28T10:40:52Z, https://www.ti.com/lit/ds/symlink/ads1115.pdf). ADS112C04: up to 2 kSPS (SBAS894A, read 10:40:53Z, https://www.ti.com/lit/ds/symlink/ads112c04.pdf). ADS131M04: up to 64 kSPS (SBAS890D, read 10:40:54Z, https://www.ti.com/lit/ds/symlink/ads131m04.pdf). RP2350: 500 kS/s (section 12.4, read 10:35:08Z). Blade-pass at 6 blades (Balance.md:19) is 6 × 166.7 Hz = 1,000 Hz. This question also covers harmonics and aliasing, which question 0 alone does not settle."
+   },
+   {
+    "index": 2,
+    "verdict": "confirmed",
+    "reason": "No page states the smallest amplitude to resolve. Q4 asks for ENOB 'against the balance measurement' (Research.md:572) with no figure to compare against. The screen's 'VIBRATION 0.42 g' at two decimals (shared/ui/balance_screen.c:548) is a modelled placeholder, not a requirement. P2 cannot set an ENOB threshold without this value."
+   },
+   {
+    "index": 3,
+    "verdict": "confirmed",
+    "reason": "Not stated. IOBoard.md:493 leaves the accelerometer's part open, and R11 selects it in T4 at the same time as R10 (Research.md, Agent layout). With question 2, the full scale fixes the dynamic range, so the ENOB a converter needs follows from both."
+   },
+   {
+    "index": 4,
+    "verdict": "confirmed",
+    "reason": "Not stated. Table 1438 gives the ADC input range as 0 V to ADC_AVDD. Section 6.1.5 limits the input to IOVDD, and section 12.4 to IOVDD + 10 % (read 2026-09-28T10:35:08Z). Research.md:283 holds the 3.3 V rail within ±3 % at the monostable, 3.201 V at its low end. The reference's voltage and an external converter's input range are qualified against this span. R10 and R11 run side by side in T4, so neither category can take the span from the other."
+   },
+   {
+    "index": 5,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:493 lists the number of axes wired as not stated. IOBoard.md:451 and Balance.md:47-48 use one axis. The count sets the converter's channel count, whether channels must be sampled at the same instant, and how many of the 8 ADC inputs P5 counts."
+   },
+   {
+    "index": 6,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:449 and Balance.md:65-67 count the variation of the delay and give no limit. Q4 asks for the worst-case latency jitter (Research.md:572). The arithmetic holds: 6 ms a revolution at 10,000 rpm is 16.7 µs a degree. The limit is needed to drop an external converter in P2, not only to decide Q4, so 'blocks p2' holds."
+   },
+   {
+    "index": 7,
+    "verdict": "confirmed",
+    "reason": "No accuracy is stated in the tree. The screen draws the vibration amplitude in g (shared/ui/balance_screen.c:548 and :566), so a gain error shows on the display. The correction itself is relative (Balance.md:65-67). The reference sets the RP2354B ADC's gain, since the input range is 0 V to ADC_AVDD (Table 1438, read 2026-09-28T10:35:08Z). P2 needs a figure, or an answer of 'no requirement', to qualify a reference's initial accuracy and an external converter's gain error."
+   },
+   {
+    "index": 8,
+    "verdict": "confirmed",
+    "reason": "A search of hardware/, docs/ and STATUS.md finds no ambient range for the board. 0 to 50 °C belongs to the monostable window (IOBoard.md:184; hardware/docs/Monostable.md:27 at 23c82ca) and to R5's 3.3 V rail (Research.md:283). IOBoard.md:220 lists behaviour outside that range as not analysed. The RP2350's -40 to 85 °C (Table 1435, read 2026-09-28T10:35:08Z) rates one part, not the board. P2 needs a range to turn a reference's ppm/°C drift into an error."
+   }
+  ],
+  "added": [
+   {
+    "function": "Converter for the accelerometer",
+    "question": "Does Q4 take a digital accelerometer on SPI (Serial Peripheral Interface), such as the IIS3DWB, as a third alternative beside the RP2354B's ADC with a reference and an external ADC: yes or no?",
+    "why": "hardware/docs/Research.md:289 (R11, concerns) makes the IIS3DWB a seed 'only if Q4 accepts a digital one'. Q4 (hardware/docs/Research.md:572) names only the two converter alternatives, and tools/research/categories.json gives Q4 only the option classes 'reference' and 'external ADC'. hardware/docs/IOBoard.md:447 takes an analogue sensor from docs/Balance.md:60-63. That passage rules out a fused IMU streaming orientation at 100 Hz, not an accelerometer that streams raw samples faster. No page answers the question. With yes, R10 reports the figures Q4 asks for that alternative too: rate, resolution, and whether each sample can be timestamped on the index pulse's timebase. With no, the IIS3DWB is not a seed.",
+    "blocks": "decision-only",
+    "decision": "Q4",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Converter for the accelerometer",
+    "question": "Must the converter for the accelerometer also measure a control surface's static angle from gravity, with an accelerometer on the surface, and if so to what resolution, in degrees?",
+    "why": "shared/servo/include/servo_sync.h:23-25 and docs/Servo.md:79-80 assign two servos that agree with each other and are both wrong to 'the accelerometer on the surface'. hardware/docs/IOBoard.md:454 repeats this, and shared/ui/stub_screen.c:37-43 says such an accelerometer observes two axes. A static angle is a DC measurement within ±1 g, so the converter's offset and its drift count, and a piezo sensor does not measure it. The balance measurement is AC at the fundamental. The answer therefore changes the input range, the ENOB and the offset figures P2 qualifies a converter against. R11's P1 asks which sensor gives the servo's measured position (Research.md:289). That answer picks the sensor, not whether R10's converter carries it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Converter for the accelerometer",
+    "question": "What is the longest lead, in metres, from the accelerometer on the rig arm or the firewall to the IO board?",
+    "why": "hardware/docs/IOBoard.md:493 lists the lead from the rig arm or firewall to the IO board as not stated, and names Q4 and R10 for the converter. On a complete aircraft the accelerometer sits on the firewall (docs/Balance.md:45), and its lead runs near the motor and ESC wiring. shared/ui/balance_screen.c:476-478 and :499-501 warn that a flapping lead is a second accelerometer. Each RP2354B ADC input takes 0 V to ADC_AVDD on one pin (RP2350 datasheet build 2025-07-29, Table 1438, read 2026-09-28T10:35:08Z). The ADS1115, ADS112C04 and ADS131M04 take differential inputs (SBAS444E, SBAS894A and SBAS890D, read 2026-09-28T10:40:52Z to 10:40:54Z from https://www.ti.com/lit/ds/symlink/). P2 needs the length to state whether a candidate's input must be differential.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Converter for the accelerometer",
+    "question": "Over how many seconds at a steady speed may one balance run average the vibration signal?",
+    "why": "Q4 compares each alternative's ENOB against the balance measurement (hardware/docs/Research.md:572). The fundamental is extracted over many revolutions, and averaging lowers uncorrelated noise by the square root of the number of samples averaged. The ENOB a converter needs to resolve the smallest amplitude of P1's question 2 therefore depends on how long a run averages. docs/Balance.md:57-69 and shared/ui/balance_screen.c:584-589 give the number of runs, four without an index pulse and half that with one, but no run length. Without the length, P2 cannot set an ENOB threshold, for example for the RP2354B's 9 bits minimum (Table 1438, read 2026-09-28T10:35:08Z).",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   }
+  ],
+  "functions_missing": []
+ }
+}

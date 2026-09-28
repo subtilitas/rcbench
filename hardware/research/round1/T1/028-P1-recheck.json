@@ -1,0 +1,280 @@
+{
+ "role": "P1-recheck",
+ "category": "",
+ "label": "P1-recheck",
+ "attempt": 0,
+ "data": {
+  "verdicts": [
+   {
+    "category": "R1",
+    "index": 0,
+    "verdict": "confirmed",
+    "evidence": "RP2350 datasheet build 2025-07-29 (https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T10:53:20Z). Table 1431 types USB_DP (QFN-80 pin 67) and USB_DM (pin 66) as USB IO on USB_OTP_VDD. Table 1426 describes USB IO and gives no voltage limit. Table 1433 gives VPIN (Standard, IOVDD + 0.5 V) and VPIN_FT (FT) only. Table 1437 gives leakage, input thresholds, VOH up to USB_OTG_VDD and the pull resistances, with no input maximum. Table 1434 gives 2 kV HBM for all pins. IOBoard.md:118 and :536 put the USB protection in R1 and state no clamp or withstand figure. No source states the limit a clamp is compared against."
+   },
+   {
+    "category": "R1",
+    "index": 1,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:140 says 'The USB connector type is not stated in the tree' and leaves connectors to round 2 (Research.md:28). IOBoard.md:118 and :536 put the USB port's protection in R1. IOBoard.md:370 leaves open whether the charger's USB-C input is the RP2354B's USB port. The lines an ESD array covers (VBUS, D+ and D-, plus CC1 and CC2 on a Type-C receptacle) follow from the connector type, and no source states it."
+   },
+   {
+    "category": "R1",
+    "index": 2,
+    "verdict": "confirmed",
+    "evidence": "RP2350 datasheet build 2025-07-29 (read 2026-09-28T10:53:20Z), section 6.3.8.2: 'L must be fully shielded, 3.3μH ±20% and with a maximum DC resistance of 250mΩ. Saturation current should be at least 1.5A. The inductor must be marked for polarity'. Section 6.3.8.3: field orientation affects the control loop and output voltage, which 'necessitates an inductor with marked polarity'. IOBoard.md:110 names the inductor and states no figure or construction requirement."
+   },
+   {
+    "category": "R1",
+    "index": 3,
+    "verdict": "confirmed",
+    "evidence": "RP2350 datasheet build 2025-07-29 (read 2026-09-28T10:53:20Z), Table 597 for the ABM8-272-T3: Operation Mode Fundamental-AT, Shunt Capacitance (C0) 3.0 pF maximum, CL 10 pF, ESR 50 Ω maximum, drive level 200 µW maximum. Section 8.2.1.1: 'Any changes to crystal parameters risk instability'. IOBoard.md:110 and :111 state 12 MHz and leave the tolerance to R1. They state no C0 and no mode."
+   },
+   {
+    "category": "R2",
+    "index": 0,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:210: the time from power-up to the CAN controller acknowledging is 'not measured', runs against the 1200 ms start-up self-test, and 'No question asks it.' docs/Bringup.md:43-45: the test runs at every start-up and takes 1200 ms. docs/Bringup.md:88-90: a transmit error counter of 128 means the coprocessor is not on the bus. firmware/panel/main/main.c:196 defines CAN_SELFTEST_MS 1200u, and :1079 runs it at start-up. firmware/panel/main/selftest.c:88-100 reports tec >= 128. The display is powered through the link cable (Research.md:61), so both boards start together. No figure exists to check a controller's and a transceiver's start-up against."
+   },
+   {
+    "category": "R3",
+    "index": 0,
+    "verdict": "confirmed",
+    "evidence": "F11 (Research.md:539) answers 'a hardware latch with an operator clear control'. IOBoard.md:196: set by the monostable's first expiry and cleared only by the operator control. The power-up state, the latch's place and the clear control are P1's own asks. Monostable.md at 23c82ca (:497-505, :660-667) describes only 'a latch set by the first expiry and cleared only by an operator action'. STATUS.md:340: 'Every stop latches; nothing re-arms on its own.' No source states whether the set input is the enable node's low level or its falling edge, or which of set and clear wins. The two readings select different parts: a set-dominant latch or an edge-triggered flip-flop with a clear."
+   },
+   {
+    "category": "R3",
+    "index": 1,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:433: the coprocessor acts on overcurrent and over-temperature on its own authority. IOBoard.md:475 and the R8 row (Research.md:286) time the path 'from detection to the ESC pack switch open'. The R3 row (Research.md:281): R3's gates follow the enable node alone. IOBoard.md:197 and Monostable.md at 23c82ca :449-455: no processor in the GPIO6-to-gate path, and GP3 'cannot remove the enable or add to it'. No source states how the coprocessor's action reaches the switch, so the switch driver's inputs are undefined."
+   },
+   {
+    "category": "R3",
+    "index": 2,
+    "verdict": "confirmed",
+    "evidence": "INA238 SLYS025B (https://www.ti.com/lit/ds/symlink/ina238.pdf, read 2026-09-28T10:53:20Z), section 5.1: IN+ and IN- common mode, and VBUS, -0.3 to 85 V. 0.5 × 1 µH × (150 A)² = 11.25 mJ. IOBoard.md:385: 'The transient level and the ESC input capacitance it precharges are not stated.' IOBoard.md:469: the shunt's side is not stated. No source gives the inductance of the switch-to-ESC leads, which sets the negative swing of the switched node at turn-off."
+   },
+   {
+    "category": "R3",
+    "index": 3,
+    "verdict": "confirmed",
+    "evidence": "hardware/STATUS.md:37 and IOBoard.md:342 give two settings, 'up to 5.5 V' and 'up to 8.4 V', set from software, with no lower bound. TPS55285 SLVSI72A (https://www.ti.com/lit/ds/symlink/tps55285.pdf, read 2026-09-28T10:53:20Z): VOUT 0.8 to 15 V (5.2) in 10 mV steps (features, 6.3.11). IOBoard.md:188 gives the gate's opening time, fail-open rule and leakage. It gives no lowest rail voltage at which the gate must conduct."
+   },
+   {
+    "category": "R4",
+    "index": 0,
+    "verdict": "confirmed",
+    "evidence": "Research.md:63 and IOBoard.md:64 list ESC telemetry as a multiprotocol port mode. IOBoard.md:289: whether the board reads the ESC's separate serial telemetry wire 'is not stated; no question asks it'. IOBoard.md:290: telemetry protocols beyond OpenYGE are an open decision. IOBoard.md:62 and :273 put OpenYGE on the one-pin UART socket, not on a multiprotocol port. No source gives this mode's protocol, direction or baud rate."
+   },
+   {
+    "category": "R4",
+    "index": 1,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:291 says the supply switching is 'not stated in the tree'. The R4 row (Research.md:282) asks R4 to report whether a session switches the supply, not what does it. AM32-bootloader main.c:1095-1138 (https://raw.githubusercontent.com/am32-firmware/AM32-bootloader/master/bootloader/main.c, read 2026-09-28T11:00:29Z) jumps to the application when the line reads mostly low, and stays only when it never reads low. BLHeliBootLoad.inc :10 (BOOT_DELAY about 250 ms) and :89-99 (waits while high) (https://raw.githubusercontent.com/bitdump/BLHeli/master/BLHeli_S%20SiLabs/BLHeliBootLoad.inc, read 11:00:23Z). ESCape32 wiki, Configuration (https://github.com/neoxic/ESCape32/wiki/Configuration, read 11:00:23Z): 'the signal line must be held high for 2 seconds on startup'. The ESC pack switch follows the enable node alone (Research.md:281), so whether another switch is needed is an owner choice."
+   },
+   {
+    "category": "R5",
+    "index": 0,
+    "verdict": "rejected",
+    "evidence": "The requirement is already stated with no condition. Research.md:283 (R5 row): 'The display's supply blocks reverse current'. IOBoard.md:386: 'The link-cable supply blocks reverse current ... R5 selects the part'. P2 therefore already knows that the display supply carries a reverse-blocking part, in every state. The DC-input state is electrically no new case. The display is a load on the 5 V rail (IOBoard.md:338), which the board makes from whichever source is selected (IOBoard.md:300, :334). At the blocking element, running from the DC input and running from the pack are the same state: 5 V up. The forward direction, link supply into the display's VBUS, is P1's own ask, 'display power path to its USB-C VBUS'."
+   },
+   {
+    "category": "R5",
+    "index": 1,
+    "verdict": "confirmed",
+    "evidence": "hardware/docs/Power.md:68: '8.4 V at 6.35 A is 53.3 W out. At 90 % efficiency ... 4.9 A from a 12 V input'. The 90 % carries no source. IOBoard.md and the R5 row state no DC input current. The arithmetic: 59.27 W / 12 V = 4.94 A, the display adds 7.5 W / 0.9 / 12 V = 0.69 A, and the sum is 5.63 A before the logic rails. TPS25947 product page (https://www.ti.com/product/TPS25947, read 2026-09-28T10:53:20Z): '2.7-V to 23-V, 28-mΩ, 5.5-A eFuse'. The current every series part on the DC input is rated from is not stated and rests on an unsourced efficiency."
+   },
+   {
+    "category": "R5",
+    "index": 2,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:376: 'The order in which the IO board's 5 V and 3.3 V rails come up is not stated' (R5). STATUS.md:317-319: on a module build the 3.3 V rail comes up after the 5 V rail. IOBoard.md:105 and Research.md:270-272 set constraints that depend on the order. IOBoard.md:377: the 3.3 V ramp time is not stated. Research.md:85: values the specification does not state are raised in T1."
+   },
+   {
+    "category": "R5",
+    "index": 3,
+    "verdict": "confirmed",
+    "evidence": "F9 (Research.md:537): the 3.0 V floor is 'read per cell from the pack's balance lead'. IOBoard.md:327-330 and :365 state no behaviour with the lead absent or one wire open. CONTRIBUTING.md:31-35 applies 'Fail safe by absence' to 'Anything that can make an output move', not to the pack path. No source states whether the disconnect holds the pack off without cell readings."
+   },
+   {
+    "category": "R5",
+    "index": 4,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:338: with its jumper at 5 V, the encoder's supply is a load on the 5 V rail, which also feeds the display. IOBoard.md:387: the encoder's current is not stated. docs/Safety.md:26-30: a brown-out stops the edges, and so the outputs. IOBoard.md:536 states no current limit for a shorted line at a connector. No line limits a supply output that leaves the board."
+   },
+   {
+    "category": "R6",
+    "index": 0,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:325 gives 6.0 to 8.4 V, '4.2 V a cell at full charge', and cites F9, R5 and R6. F9 (Research.md:537) gives only lithium-ion 18650 and the 3.0 V floor. git blame: line 325 comes from commit 8d8964f (2026-09-25). The 4.2 V a cell in F15 (Research.md:543) is the ESC pack's. The R6 row (Research.md:284) checks the TPS55285 up to 'its full charge', which the cell and charger that R7 selects set."
+   },
+   {
+    "category": "R6",
+    "index": 1,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:326 derives 9.9 A at 6.0 V from an assumed 90 % and says 'The efficiency from the pack is not stated'. IOBoard.md:345 marks the case not checked. TPS55285 SLVSI72A (read 2026-09-28T10:53:20Z): equation 7 gives the boost-mode IL(DC) as VOUT × IOUT / (VIN × η). Section 5.4 gives ILIM_AVG 7 A minimum and 8 A typical, with no maximum, and ILIM_PK 13 A typical. Section 6.3.9 clamps the average inductor current to 8 A typical. 9.9 A is above that clamp, so the figure that sizes the inductor, the pack path and the cells (IOBoard.md:359) is unsettled."
+   },
+   {
+    "category": "R6",
+    "index": 2,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:348 rates the port switch 'for up to 8.4 V'. IOBoard.md:379 says each port's current rating is not stated. No source gives a port's load capacitance or an inrush limit. TPS55285 SLVSI72A (read 2026-09-28T10:53:20Z): output current limit up to 6.35 A (6.3.12, 7.2), OCP_DELAY default 128 µs (7.3). The 20 ports share the rail (IOBoard.md:347)."
+   },
+   {
+    "category": "R6",
+    "index": 3,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:343 and hardware/docs/Power.md:60 treat 6.35 A as a hard ceiling. TPS55285 SLVSI72A (read 2026-09-28T10:53:20Z): in Table 7-3 (7.2), Current_Limit_EN, bit 7 of register 02h, '0b = Output current limit disabled'. In Table 7-4 (7.3), OCP_DELAY defaults to 128 µs and reaches 1.024 × 12 ms. Section 5.4 gives ILIM_AVG 7 A minimum and 8 A typical, with no maximum. IOBoard.md:536: a port switch's current limit is not stated. The owner decision gives the limit's setting. It does not say whether firmware keeps it enabled and undelayed."
+   },
+   {
+    "category": "R6",
+    "index": 4,
+    "verdict": "confirmed",
+    "evidence": "F16 (Research.md:544) and IOBoard.md:350 give the jumper and the cut-off only. shared/ui/stub_screen.c:56: 'Socket ceilings: low and high voltage, each set in hardware'. No source says whether a trip or the jumper position reaches firmware. The answer decides whether the ceiling part needs a fault output, and how many expander or GPIO inputs R6 and P5 count (IOBoard.md:383)."
+   },
+   {
+    "category": "R6",
+    "index": 5,
+    "verdict": "confirmed",
+    "evidence": "F16 (Research.md:544) cuts a port off above 6.0 V or 8.7 V. IOBoard.md:348 rates the switch 'for up to 8.4 V'. TPS55285 SLVSI72A (read 2026-09-28T10:53:20Z): VOUT recommended 0.8 to 15 V (5.2) and absolute maximum 17 V (5.1). Table 7-6 gives 20 V at INTFB 11b and REF 0780h. REF reaches 1.2 V (6.3.11), and 1.2 V / 0.0564 = 21.3 V. In Table 7-5, FB_OVP can be disabled. The ceiling part and the switch see whatever the rail reaches, and no source states the voltage they must withstand."
+   },
+   {
+    "category": "R7",
+    "index": 0,
+    "verdict": "confirmed",
+    "evidence": "Research.md:61 names only the DC input and the pack as the board's sources. F8 (Research.md:536) makes USB-C the charge source. IOBoard.md:384: whether USB powers the logic when neither is present is not stated. hardware/docs/Power.md:90-91: an NVDC path 'lets the bench start from a flat pack'. BQ25887 SLUSD89B (https://www.ti.com/lit/ds/symlink/bq25887.pdf, read 2026-09-28T10:53:20Z), section 5 Device Comparison Table: Power path 'No'."
+   },
+   {
+    "category": "R7",
+    "index": 1,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:330: the reconnect condition 'is not stated. F9's answer sets the floor only.' F9's proposed answer does not count as an answer (Research.md:501). F8 (Research.md:536) charges from USB-C and makes no exception for a disconnected pack. No source places the charger relative to the disconnect. The answer fixes the topology that R5 (the disconnect) and R7 (the charger and the pack's protection) qualify."
+   },
+   {
+    "category": "R8",
+    "index": 0,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:469: high side or low side is 'not stated in the tree (R8)'. INA238 SLYS025B (read 2026-09-28T10:53:20Z): common mode -0.3 to 85 V (5.1, 5.3). F15 gives 67.2 V (Research.md:543). A low-side shunt drops 150 A × 100 µΩ = 15 mV. The side sets the sense inputs' common mode, and whether pack voltage reaches the external sense connector."
+   },
+   {
+    "category": "R8",
+    "index": 1,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:470: where VBUS connects with the external shunt in use is 'not stated in the tree'. IOBoard.md:403-406: the two paths replace each other, and only the sense leads reach the board. docs/Screens.md:131-132: voltage is measured at the pack. shared/link/include/link_pages.h:230-232: voltage, current and power registers. INA238 SLYS025B (read 2026-09-28T10:53:20Z): ZVBUS 0.8 to 1.2 MΩ (5.5), VBUS -0.3 to 85 V (5.1)."
+   },
+   {
+    "category": "R8",
+    "index": 2,
+    "verdict": "confirmed",
+    "evidence": "INA238 SLYS025B (read 2026-09-28T10:53:20Z), 5.1: ±40 V between IN+ and IN-, and -0.3 to 85 V on each input. Section 7.1.4: a short on the shunt's load side puts the full supply across the shunt, and removing it can kick back beyond these ratings. F15 gives 67.2 V. IOBoard.md:405-406: the operator cables the external path for each test. IOBoard.md:426 gives Kelvin sensing and an RC filter. It gives no withstand voltage."
+   },
+   {
+    "category": "R8",
+    "index": 3,
+    "verdict": "confirmed",
+    "evidence": "Correction: IOBoard.md:477 concerns the BENCH motor current, where a negative value is sent as 0 A, not the port monitors. For the port monitors, IOBoard.md:380 says 'The range and sample rate each port monitor needs are not stated', which leaves the direction open. ACS70331-DS Rev. 9 (https://www.allegromicro.com/-/media/files/datasheets/acs70331-datasheet.pdf, read 2026-09-28T10:53:20Z), Selection Guide: EESATR-2P5U3 reads 0 to 2.5 A, EESATR-005B3 reads ±5 A. INA3221 SBOS576C (https://www.ti.com/lit/ds/symlink/ina3221.pdf, read 10:53:20Z), 6.5: shunt input -163.84 to 163.8 mV. The held unidirectional part passes or fails on the answer."
+   },
+   {
+    "category": "R9",
+    "index": 0,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:436 requires each cell's resistance under load and gives no figure. shared/ui/include/battery_screen.h:16 holds milliohms per cell, under load. shared/ui/battery_screen.c:295 prints PACK iR as '%.1f mOhm'. IOBoard.md:485: resolution, accuracy and alignment with the current are not stated. No source gives the resistance resolution or the current step."
+   },
+   {
+    "category": "R9",
+    "index": 1,
+    "verdict": "confirmed",
+    "evidence": "shared/ui/battery_screen.c:233 shows NO PACK, 'nothing on the lead', when the state is not valid. shared/ui/include/battery_screen.h:27: 'NULL, or valid false, means nothing is on'. battery_screen.h:14: cells 1 to 14. IOBoard.md:435 requires 1 to 16 cells and names SET_PACK_CELLS. No line says whether the count comes from the lead or from the setting. The answer decides whether open-input detection on each of the 16 inputs is a requirement."
+   },
+   {
+    "category": "R10",
+    "index": 0,
+    "verdict": "confirmed",
+    "evidence": "Research.md:289 (R11, concerns): the IIS3DWB 'is a seed only if Q4 accepts a digital one'. Q4 (Research.md:572) names only the RP2354B's ADC with a reference and an external ADC. tools/research/categories.json q_options gives Q4 ['reference', 'external ADC']. docs/Balance.md:57-63 recommends 'an analogue sensor' because a fused IMU at 100 Hz cannot resolve 167 Hz, and IOBoard.md:447 carries that recommendation. No answer or decision says whether a digital accelerometer is an alternative, so the seed's status rests on an unasked question. The answer feeds Q4 only."
+   },
+   {
+    "category": "R10",
+    "index": 1,
+    "verdict": "confirmed",
+    "evidence": "shared/servo/include/servo_sync.h:23-25: 'a separate measurement with the accelerometer on the surface'. docs/Servo.md:79-80: 'needs the accelerometer or inspection'. shared/ui/stub_screen.c:37-43: two observable axes. IOBoard.md:454. No source says whether R10's converter carries a gravity-angle measurement at DC, or to what resolution in degrees. R11's ask picks the sensor for the servo's measured position. It does not set the converter's DC range, offset or drift."
+   },
+   {
+    "category": "R10",
+    "index": 2,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:493: the lead and connector from the rig arm or firewall to the IO board are 'not stated'. docs/Balance.md:45 puts the accelerometer on the firewall. shared/ui/balance_screen.c:476-478 and :499-501: 'a flapping lead is a second accelerometer'. RP2350 datasheet build 2025-07-29 (read 2026-09-28T10:53:20Z), Table 1438: ADC input 0 V to ADC_AVDD on one pin. ADS1115 SBAS444E, ADS112C04 SBAS894A and ADS131M04 SBAS890D (https://www.ti.com/lit/ds/symlink/, read 2026-09-28T11:01:59Z) take differential inputs."
+   },
+   {
+    "category": "R10",
+    "index": 3,
+    "verdict": "confirmed",
+    "evidence": "Q4 (Research.md:572) compares each alternative's ENOB against the balance measurement. docs/Balance.md:57-69 and shared/ui/balance_screen.c:584-589 give the number of runs, four, halved with an index pulse. Neither gives a run length or an averaging time. RP2350 Table 1438 (read 2026-09-28T10:53:20Z): ENOB 9 bits minimum, 9.5 typical. No source gives the averaging time that sets the ENOB threshold. The answer also feeds Q4's comparison."
+   },
+   {
+    "category": "R11",
+    "index": 0,
+    "verdict": "confirmed",
+    "evidence": "shared/ui/programmer_screen.c:115: k_pwm offers 24, 48 and 96 kHz. docs/Link.md:159-160: MOTOR_POLES 2 to 42. The BENCH rpm register stops at 65,535 (IOBoard.md:430): 65,535 / 60 × 21 = 22.9 kHz. IOBoard.md:491: the clip's conditioning is not stated. IOBoard.md:443 gives only the 67.2 V rating. No source gives a PWM frequency the clip must reject."
+   },
+   {
+    "category": "R11",
+    "index": 1,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:447 allows a piezo sensor. IOBoard.md:448 and docs/Balance.md:60-63 give only 167 Hz at 10,000 rpm. IOBoard.md:487 says the highest rpm is not stated and gives no lowest. No source gives the lowest balance speed, which sets the lowest frequency the sensor must pass."
+   },
+   {
+    "category": "R11",
+    "index": 2,
+    "verdict": "confirmed",
+    "evidence": "The specification's only temperature range is 0 to 50 °C, for the monostable window (IOBoard.md:184), and behaviour outside it is not analysed (:220). docs/Balance.md:38-39 and shared/ui/balance_screen.c:212-215 put the accelerometer hard against the motor, and the bench measures motor temperature (F5, Research.md:533). No source gives an operating temperature for a sensor off the board."
+   },
+   {
+    "category": "R12",
+    "index": 0,
+    "verdict": "confirmed",
+    "evidence": "F5 (Research.md:533): 2 channels, 1 infrared and 1 thermocouple. IOBoard.md:457 puts the motor temperature input on the IO board (owner, 2026-09-24). That places the input, not the sensor. IOBoard.md:558 gives the infrared channel a connector and cites no source. Sourcing rule 1 (Research.md:134-139) gives a part on the board an LCSC number, and a part off it Digi-Key with LCSC none. The sensor's position therefore picks the sourcing path for seeds such as the MLX90614."
+   },
+   {
+    "category": "R12",
+    "index": 1,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:432 and shared/link/include/link_pages.h:246-269: bit 4, LINK_BN_TEMP_MOT_OK, is a valid bit set only when 'a sensor answered'. The comment warns against showing 'a motor at 0 C' that nothing measures. A thermocouple front end answers on its bus with no thermocouple fitted. The rule therefore implies open-input detection, but no source states it as a front-end requirement."
+   },
+   {
+    "category": "R12",
+    "index": 2,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md and Research.md state no ambient range for the board. The only range is in Monostable.md at 23c82ca (:27, :318-319): 0 to 50 °C, 'the range the bench is assumed to be used in', which is an assumption. Research.md:283 uses it for the 3.3 V rail's drift. The thermocouple's cold junction sits at the board's connector (IOBoard.md:558). This overlaps R13 question 1, which asks the same span for load-cell accuracy."
+   },
+   {
+    "category": "R12",
+    "index": 3,
+    "verdict": "confirmed",
+    "evidence": "No source gives the temperature at the infrared sensor's mounting position (IOBoard.md:457-458 and :558; F5, Research.md:533). The question applies only if R12 question 0 puts the sensor off the board. On the board it reduces to R12 question 2."
+   },
+   {
+    "category": "R12",
+    "index": 4,
+    "verdict": "confirmed",
+    "evidence": "Q7 (Research.md:545) gives 2 ports, 3.3 V and Qwiic, and says nothing on plugging while powered. IOBoard.md:351: the 7 port monitors sit on the RP2354B's two I²C buses. IOBoard.md:462-464 puts external sensors on the coprocessor's bus. No source says whether a device may be plugged in while the bus runs. The answer decides whether a port needs a hot-swap buffer or a segment of its own."
+   },
+   {
+    "category": "R13",
+    "index": 0,
+    "verdict": "rejected",
+    "evidence": "F3 (Research.md:531) gives 3 channels and 5 V excitation. A bridge channel is qualified against its cell. Its span is the cell's rated output at 5 V over the cell's capacity, and its step is the resolution. The critic reports that P1's questions 3 and 5 already ask both per cell, in N. The distance from the axis only converts a torque in N·m into a force on a cell. With capacity and resolution given in N, it sets no further requirement on the ADC. It is a dimension of the test rig, not of an IO board part."
+   },
+   {
+    "category": "R13",
+    "index": 1,
+    "verdict": "confirmed",
+    "evidence": "The tree's only range is 0 to 50 °C, for the monostable window (IOBoard.md:184) and the 3.3 V rail (Research.md:283). It comes from an assumption (Monostable.md at 23c82ca :318-319). Drift is specified per °C, so its error needs a temperature span, and no source gives one for a load-cell channel. This overlaps R12 question 2, the board's ambient range."
+   },
+   {
+    "category": "R13",
+    "index": 2,
+    "verdict": "confirmed",
+    "evidence": "ADS1234 SBAS350H (https://www.ti.com/lit/ds/symlink/ads1234.pdf, read 2026-09-28T10:53:20Z), 7.3.7: 'To acquire fully settled data after an input step change, five readings are required'. That is 62.5 ms at 80 SPS and 500 ms at 10 SPS. IOBoard.md:460-461 give the channels and excitation. IOBoard.md:495 says the ranges are not stated. No source states a step response for thrust or torque."
+   }
+  ]
+ }
+}

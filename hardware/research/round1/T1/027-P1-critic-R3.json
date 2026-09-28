@@ -1,0 +1,487 @@
+{
+ "role": "P1-critic",
+ "category": "R3",
+ "label": "P1-critic-R3",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/IOBoard.md:182",
+    "quantity": "monostable topology",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F10 Answer, hardware/docs/Research.md:538: 'the single-channel OR design (owner, 2026-09-25)'. Monostable.md:143-149 at 23c82ca defines that design as option 1 (one half per edge polarity, outputs combined by an OR gate), :188 makes the OR output the enable node, and :422-425 makes it active high. Tree read 2026-09-28 between 10:38Z and 10:48Z. Owner decision."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/IOBoard.md:183",
+    "quantity": "trigger",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:26 and :106 at 23c82ca. heartbeat.h:45 HEARTBEAT_PERIOD_MS 20u at be1f247 and 23c82ca: one polarity every 40 ms. heartbeat.h:57 HEARTBEAT_MAX_GAP_MS 150u: two accepted gaps are 2 x 150 = 300 ms, above 185 ms. Read 2026-09-28 between 10:38Z and 10:48Z. Sourced."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/IOBoard.md:184",
+    "quantity": "window",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:27 and :107-115 at 23c82ca: 155 = 150 + 5 ms, and 185 = 200 - 5 - 10 ms. CONTROL_PERIOD_MS is 5u at firmware/panel/main/main.c:328 (be1f247). The drift table at :322-335 sums 1.5 + 0.25 + 0.5 + 3 + 2 = 7.25 %. That gives 170 x 0.9275 = 157.7 ms and 170 x 1.0725 = 182.3 ms. Read 2026-09-28 between 10:38Z and 10:48Z. Sourced from the specification R3 builds to."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/IOBoard.md:184",
+    "quantity": "ambient temperature range",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:318-320 at 23c82ca calls 0 to 50 °C 'the range the bench is assumed to be used in; not analysed outside it'. Monostable.md:645 lists the range outside it as not specified. IOBoard.md:220 repeats that. No Answer column in Research.md gives an ambient range. Read 2026-09-28 between 10:38Z and 10:48Z. Assumption; question 9 carries it."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/IOBoard.md:198",
+    "quantity": "interlock supply",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:36 at 23c82ca gives the coprocessor board's 3.3 V rail, with ground common with J8's GND. Monostable.md:27 specifies the window at 3.3 V ±3 %: 3.3 x 0.97 = 3.201 V and 3.3 x 1.03 = 3.399 V. The R5 row (Research.md:283) holds the rail to that tolerance. Read 2026-09-28 between 10:38Z and 10:48Z. Sourced."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/IOBoard.md:186",
+    "quantity": "deadline",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:28 and :115 at 23c82ca, equal to the 200 ms link failsafe at IOBoard.md:178. The budget 185 + 5 + 10 = 200 ms closes. Read 2026-09-28 between 10:38Z and 10:48Z. Sourced."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/IOBoard.md:185",
+    "quantity": "timing network",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:289-297 at 23c82ca: set on test, R from E96. Monostable.md:344-353: R 50 to 150 kΩ, C in a dielectric with a stated temperature coefficient, components at the pins, and no other connection on the timing node. 3.3 V / 150 kΩ = 22 µA and 3.3 V / 50 kΩ = 66 µA. Read 2026-09-28 between 10:38Z and 10:48Z. Sourced."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/IOBoard.md:216",
+    "quantity": "monostable k drift over supply and temperature",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:299-303 at 23c82ca: 'the drift is an assumption'. Monostable.md:327: '±3 %, assumed; from the datasheet'. IOBoard.md:216 calls it assumed. Read 2026-09-28 between 10:38Z and 10:48Z. Assumption; question 7 carries it."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/IOBoard.md:216",
+    "quantity": "monostable timing-pin leakage at 50 °C",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:316 at 23c82ca: 'the 50 °C figure is an assumption'. Monostable.md:328: 0.5 µA x 115 kΩ = 57.5 mV, 1.74 % of 3.3 V, booked as ±2 %. Read 2026-09-28 between 10:38Z and 10:48Z. Assumption; question 8 carries it."
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/IOBoard.md:194",
+    "quantity": "clear-release behaviour",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:33 at 23c82ca: the enable stays low through the ramp. Monostable.md:217-219: Q is low while clear is active, as stated in the datasheet. Monostable.md:229-236: a part whose clear release can trigger is excluded, and the '423 behaviour is required. Q9 is at Research.md:574. Read 2026-09-28 between 10:38Z and 10:48Z. Sourced."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/IOBoard.md:192",
+    "quantity": "powered-off isolation",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Each device row of the IOBoard line matches the rule and table at Monostable.md:75-88 (23c82ca). 3.3 V / 4.7 kΩ = 0.70 mA, under the 1 mA of :79. Read 2026-09-28 between 10:38Z and 10:48Z. Sourced."
+   },
+   {
+    "index": 11,
+    "where": "hardware/docs/IOBoard.md:191",
+    "quantity": "fail-safe pull-downs",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:188-192 and :433-439 at 23c82ca name the 100 kΩ pull-downs on the trigger input, each OR input and the enable node. Read 2026-09-28 between 10:38Z and 10:48Z. Sourced."
+   },
+   {
+    "index": 12,
+    "where": "hardware/docs/IOBoard.md:193",
+    "quantity": "heartbeat node series resistors",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:90-94 and :475-484 at 23c82ca. 3.3 V / 4.7 kΩ = 0.70 mA, and 3.3 V x 100 / 104.7 = 3.15 V at the trigger input. Read 2026-09-28 between 10:38Z and 10:48Z. Sourced."
+   },
+   {
+    "index": 13,
+    "where": "hardware/docs/IOBoard.md:197",
+    "quantity": "not defeatable",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:34 at 23c82ca: 'no programmable element in the path from GPIO6 to either gate'. Monostable.md:451-455: 'No processor, no register and no firmware'; GP3 listens only. The F11 latch is the owner's own addition. Read 2026-09-28 between 10:38Z and 10:48Z. Sourced."
+   },
+   {
+    "index": 14,
+    "where": "hardware/docs/IOBoard.md:195",
+    "quantity": "clear network",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F12 Answer, Research.md:540: 'a reset supervisor (owner, 2026-09-25)'. IOBoard.md:195 and :215 say the threshold and delay are not stated. Read 2026-09-28 between 10:38Z and 10:48Z. Owner decision."
+   },
+   {
+    "index": 15,
+    "where": "hardware/docs/Research.md:281",
+    "quantity": "reset supervisor threshold lower bound",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The R3 row (Research.md:281) states that the threshold, with its tolerance, 'sits above the minimum supply of the monostable and the OR gate'. Research.md:266-268 makes the row a requirement source. Monostable.md:672-673 at 23c82ca agrees. Read 2026-09-28 between 10:38Z and 10:48Z. Sourced."
+   },
+   {
+    "index": 16,
+    "where": "hardware/docs/Research.md:281",
+    "quantity": "unspecified band upper edge",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "3.3 V x 0.97 = 3.201 V, stated in the R3 row (Research.md:281) and following from Monostable.md:27 at 23c82ca. Read 2026-09-28 between 10:38Z and 10:48Z. Sourced."
+   },
+   {
+    "index": 17,
+    "where": "hardware/docs/IOBoard.md:196",
+    "quantity": "latch",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F11 question and Answer, Research.md:539: 'yes: a hardware latch with an operator clear control (owner, 2026-09-25)'. IOBoard.md:196 says the power-up state, place and control are not stated. Questions 0 to 3 ask them. Read 2026-09-28 between 10:38Z and 10:48Z. Owner decision."
+   },
+   {
+    "index": 18,
+    "where": "hardware/docs/IOBoard.md:196",
+    "quantity": "latch input isolation",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The R3 row (Research.md:281) says 'The latch's inputs follow the powered-off isolation rule below', and IOBoard.md:196 says the same. The general rule at IOBoard.md:192 and Monostable.md:75-80 (23c82ca) allows I_off or 4.7 kΩ or more. The per-device table at Monostable.md:82-88 does not list the latch, so the general rule applies. Read 2026-09-28 between 10:38Z and 10:48Z. Sourced."
+   },
+   {
+    "index": 19,
+    "where": "hardware/docs/IOBoard.md:188",
+    "quantity": "servo rail gate type",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:30 and :401-410 at 23c82ca name a high-side switch on the servo rail. Read 2026-09-28 between 10:38Z and 10:48Z. Sourced."
+   },
+   {
+    "index": 20,
+    "where": "hardware/docs/IOBoard.md:218",
+    "quantity": "servo rail gate identity",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The R3 row (Research.md:281) states it: 'The high-side switch on the servo rail, which is the servo rail's gate: the 20 port switches of R6 are driven through the I/O expander, and that rule keeps a gate off it'. IOBoard.md:218 derives the same from Monostable.md:451-455. The row also has P1 ask the owner to confirm, so question 4 stands beside the sourced marking. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 21,
+    "where": "hardware/docs/IOBoard.md:188",
+    "quantity": "servo rail voltage",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "hardware/STATUS.md:37 (Decided, Servo rail) and hardware/docs/Power.md:32-34 at be1f247 give up to 5.5 V and up to 8.4 V, set from software. Read 2026-09-28 between 10:38Z and 10:48Z. Owner decision."
+   },
+   {
+    "index": 22,
+    "where": "hardware/docs/IOBoard.md:188",
+    "quantity": "servo rail current",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "hardware/STATUS.md:34 and :37 give 4 to 6.35 A (owner, 2026-09-25). TPS55285 datasheet SLVSI72A (revised October 2025), page 1: 'Programmable output current limit up to 6.35A with 50mA step'. Read from https://www.ti.com/lit/ds/symlink/tps55285.pdf at 2026-09-28T10:40:16Z. Owner decision."
+   },
+   {
+    "index": 23,
+    "where": "hardware/docs/IOBoard.md:188",
+    "quantity": "switch opening time",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:113 and :410 at 23c82ca give 5 ms. IOBoard.md:189-190 apply it to both pack paths. Read 2026-09-28 between 10:38Z and 10:48Z. Sourced."
+   },
+   {
+    "index": 24,
+    "where": "hardware/docs/IOBoard.md:188",
+    "quantity": "switch fail-open",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:405-410 and :441 at 23c82ca. IOBoard.md:189-190 apply it to both pack paths. Read 2026-09-28 between 10:38Z and 10:48Z. Sourced."
+   },
+   {
+    "index": 25,
+    "where": "hardware/docs/IOBoard.md:188",
+    "quantity": "servo rail gate off-state leakage limit",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:414-416 at 23c82ca: '5 mA per rail as the placeholder until that idle current is measured'. Read 2026-09-28 between 10:38Z and 10:48Z. Assumption; question 10 carries it."
+   },
+   {
+    "index": 26,
+    "where": "hardware/docs/IOBoard.md:189",
+    "quantity": "onboard ESC pack switch form",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F7 Answer, Research.md:535 (owner, 2026-09-25): a MOSFET array and its driver on the IO board. The high side is from Monostable.md:30 at 23c82ca. Read 2026-09-28 between 10:38Z and 10:48Z. Owner decision."
+   },
+   {
+    "index": 27,
+    "where": "hardware/docs/IOBoard.md:189",
+    "quantity": "onboard ESC pack switch current",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F2 Answer, Research.md:530: '150 A continuous (owner, 2026-09-25)'. The R3 row qualifies the MOSFETs for 'the current of F2'. Read 2026-09-28 between 10:38Z and 10:48Z. Owner decision."
+   },
+   {
+    "index": 28,
+    "where": "hardware/docs/IOBoard.md:189",
+    "quantity": "ESC pack switch voltage rating",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F15 Answer, Research.md:543 (owner, 2026-09-25): 16 x 4.2 V = 67.2 V. IOBoard.md:57 and :189 leave the margin to a P1 question. Read 2026-09-28 between 10:38Z and 10:48Z. Owner decision; question 5 asks the margin."
+   },
+   {
+    "index": 29,
+    "where": "hardware/docs/IOBoard.md:189",
+    "quantity": "ESC pack switch off-state leakage limit",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:189-190 and the R3 row apply the servo rail gate's limit to both pack paths. That limit is the 5 mA placeholder of Monostable.md:414-416 at 23c82ca. Read 2026-09-28 between 10:38Z and 10:48Z. Assumption; question 11 carries it."
+   },
+   {
+    "index": 30,
+    "where": "hardware/docs/IOBoard.md:190",
+    "quantity": "external ESC pack switch form",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F7 Answer (Research.md:535) and S3 Answer (Research.md:512), owner, 2026-09-25. Sourcing rule 1 (Research.md:134-141) buys a part off the board at Digi-Key. Read 2026-09-28 between 10:38Z and 10:48Z. Owner decision."
+   },
+   {
+    "index": 31,
+    "where": "hardware/docs/Research.md:62",
+    "quantity": "external path current",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:62 and hardware/STATUS.md:26 give 'above 150 A to 300 A and more (owner, 2026-09-25)', with no upper figure. Read 2026-09-28 between 10:38Z and 10:48Z. Owner decision; question 6 asks the highest current."
+   },
+   {
+    "index": 32,
+    "where": "hardware/docs/Research.md:281",
+    "quantity": "ESC pack reverse-polarity protection",
+    "verdict": "wrong",
+    "correct_marking": "sourced",
+    "reason": "The R3 row requires it: 'The ESC pack's input protection sits with the switch: reverse polarity, ... for the pack voltage of F15 ... on each path at that path's current: 150 A (F2) on the onboard path, above 150 A to 300 A or more on the external path'. The specification requires it too: IOBoard.md:385, 'R3 selects reverse-polarity ... protection with the pack switch, for 150 A continuous (F2) at up to 67.2 V (F15)'. So do Scope (Research.md:27) and hardware/STATUS.md:74. Research.md:266-268 makes the row a requirement source, the same basis on which P1 marks values 15 and 35 sourced. The -67.2 V follows from F15. The external path's highest current is asked by question 6. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 33,
+    "where": "hardware/docs/Research.md:281",
+    "quantity": "ESC pack overvoltage protection",
+    "verdict": "wrong",
+    "correct_marking": "sourced",
+    "reason": "The R3 row requires overvoltage and transient protection 'for the pack voltage of F15, with the clamp level under the absolute maximum of every part on the pack node'. IOBoard.md:385 has R3 select it. The requirement is therefore sourced, not assumed. Its level is a separate missing value: IOBoard.md:385 states no level, and questions 13 and 18 carry it. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 34,
+    "where": "hardware/docs/Research.md:281",
+    "quantity": "ESC pack precharge",
+    "verdict": "wrong",
+    "correct_marking": "sourced",
+    "reason": "The R3 row names 'inrush into the ESC's input capacitance (precharge)', and IOBoard.md:385 has R3 select inrush protection with the pack switch. The requirement is sourced. IOBoard.md:385 states that 'the ESC input capacitance it precharges' is not stated. That missing value is question 14. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 35,
+    "where": "hardware/docs/Research.md:281",
+    "quantity": "pack node clamp level",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "INA238 datasheet SLYS025B (revised May 2025), section 5.1: VIN+/VIN- common mode -0.3 to 85 V and VVBUS -0.3 to 85 V, absolute maximum. Section 5.3: VCM -0.3 to 85 V. Read from https://www.ti.com/lit/ds/symlink/ina238.pdf at 2026-09-28T10:40:16Z. Vishay document 88392, revision 09-Jan-2024: SMBJ70A VBR 77.8 to 86.0 V and VC 113 V at IPP 5.3 A. Read from https://www.vishay.com/docs/88392/smbj.pdf at 2026-09-28T10:40:17Z. Sourced."
+   },
+   {
+    "index": 36,
+    "where": "hardware/docs/Research.md:281",
+    "quantity": "gates through an RP2354B reset",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The watchdog is an owner decision (hardware/STATUS.md:32, owner, 2026-09-25). The gates' dependence on the enable node alone is from Monostable.md:29-30 and :451-455 at 23c82ca, and the R3 row states the consequence. Neither part is an assumption. The tree also has the coprocessor's overcurrent action open the ESC pack switch (IOBoard.md:475, R8 row), which conflicts with 'follow the enable node alone'; an added question carries it. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 37,
+    "where": "hardware/docs/IOBoard.md:577",
+    "quantity": "RP2350 fault-tolerant pin rating with IOVDD at 0 V",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "RP2350 datasheet build 2025-07-29, read from https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com) at 2026-09-28T10:40:47Z. Table 1426: 'very little current flows into the pin whilst it is below 3.63 V and IOVDD is 0 V'. Table 1427: GPIO0 to 39 (GPIO3 and GPIO6 among them) are Digital IO (FT); GPIO40_ADC0 to GPIO47_ADC7 are Digital IO / Analogue. Table 1433: VPIN_FT at IOVDD = 0 V is -0.5 to 3.63 V, and VPIN (standard) is -0.5 V to IOVDD + 0.5 V. Sourced."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "This is a P1 asks item (Research.md:281; IOBoard.md:196). F11's Answer (Research.md:539) gives no power-up state. STATUS.md:340 at be1f247: 'Every stop latches; nothing re-arms on its own.' Q9 (Research.md:574) ties the power-up state to a clear-release pulse. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 1,
+    "verdict": "confirmed",
+    "reason": "This is a P1 asks item (Research.md:281; IOBoard.md:196). Test steps 7 and 10 at Monostable.md:557-561 and :582-585 (23c82ca) assume the enable returns at each resumed edge. IOBoard.md:57 and :238 add the external CAN transceiver's standby to the gated set. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 2,
+    "verdict": "confirmed",
+    "reason": "This is a P1 asks item. IOBoard.md:214: where the control sits and what it is are not stated (F11). F11's Answer names no part and no connector. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 3,
+    "verdict": "confirmed",
+    "reason": "This is a P1 asks item (Research.md:281; IOBoard.md:214). The path rule is at Monostable.md:451-455 (23c82ca). The BOOT and RESET relay contacts are at IOBoard.md:78 and :87-89. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 4,
+    "verdict": "confirmed",
+    "reason": "This is a P1 asks item. The R3 row and IOBoard.md:218 have P1 ask the owner to confirm that the port switches are not the gate. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 5,
+    "verdict": "confirmed",
+    "reason": "This is a P1 asks item (Research.md:281; IOBoard.md:57, :189). 80 - 67.2 = 12.8 V and 100 - 67.2 = 32.8 V. The INA238 is rated to 85 V: SLYS025B section 5.1, https://www.ti.com/lit/ds/symlink/ina238.pdf, read 2026-09-28T10:40:16Z."
+   },
+   {
+    "index": 6,
+    "verdict": "confirmed",
+    "reason": "This is a P1 asks item (Research.md:281). Research.md:62 and hardware/STATUS.md:26 give no upper figure. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 7,
+    "verdict": "confirmed",
+    "reason": "Marking 7 is an assumption (Monostable.md:299-303, :327 at 23c82ca), and the 2.7 ms margins at :331-337 rest on it. Every assumption is a question (Research.md P1 row). Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 8,
+    "verdict": "confirmed",
+    "reason": "Marking 8 is an assumption (Monostable.md:316, :328 at 23c82ca), and it is 2 of the 7.25 % drift budget. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 9,
+    "verdict": "confirmed",
+    "reason": "Marking 3 is an assumption (Monostable.md:318-320, :645 at 23c82ca). No owner answer gives an ambient range. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 10,
+    "verdict": "confirmed",
+    "reason": "Marking 25 is a placeholder (Monostable.md:414-416 at 23c82ca). The small-servo idle of 5 to 10 mA is stated there as not measured. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 11,
+    "verdict": "confirmed",
+    "reason": "Marking 29 applies the 5 mA placeholder to both pack paths (IOBoard.md:189-190). Monostable.md:416 names an ESC example idling at 50 mA. Whether a precharge path may bypass an open switch depends on the limit. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 12,
+    "verdict": "rejected",
+    "reason": "The requirement is stated, not assumed (marking 32). The R3 row requires reverse-polarity protection 'on each path at that path's current: 150 A (F2) on the onboard path, above 150 A to 300 A or more on the external path'. IOBoard.md:385 has R3 select it. The reversed voltage, -67.2 V, follows from F15. The external path's current is asked by question 6. The question asks the owner to re-decide a stated requirement, and asks for no missing value. How many series MOSFETs the blocking takes is the placements range P2 states under sourcing rule 4 (Research.md:183). Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 13,
+    "verdict": "confirmed",
+    "reason": "The protection is required (marking 33), but no figure gives the sustained input it has to survive. The row bounds only the clamp, under the 85 V of the INA238 (SLYS025B section 5.1, read 2026-09-28T10:40:16Z). A clamp and a series disconnect qualify differently between 67.2 V and 85 V. IOBoard.md:385 leaves the protection values unstated. The value is missing, although the sentence 'Only the research plan states this protection' understates the specification line."
+   },
+   {
+    "index": 14,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:385: 'the ESC input capacitance it precharges [is] not stated'. The only figure is the 470 µF decay example at Monostable.md:127-128 (23c82ca). The value is missing. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 15,
+    "verdict": "rejected",
+    "reason": "The R3 row (Research.md:281) already gives R3 the choice: 'R3 states the band between that threshold and 3.201 V (3.3 V - 3 %), where the window is not specified, or picks the threshold that closes it'. P2 passes any threshold above the lower bound of marking 15 and reports the band, so no owner value is missing. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 16,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:195 and :215 state that the supervisor's threshold and delay are not stated. F12's Answer (Research.md:540) gives none. The 3.3 V ramp is not stated either (IOBoard.md:377), and R5 selects the regulator in T3, after T2. P5 checks the delay against the ramp later (P5 row), but P2 needs a minimum, or the value marked for research, to pass or fail a delay option. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 17,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:188 gives the rail's setting, up to 8.4 V, but no rating for the gate. TPS55285 SLVSI72A gives an output voltage range of 0.8 to 15 V over I²C. Its output overvoltage protection trips at 115 % of the set point (VVOUT_OVP_FB), so a wrong setting is not caught. Read from https://www.ti.com/lit/ds/symlink/tps55285.pdf at 2026-09-28T10:40:16Z. The converter's input is 12 to 20 V (IOBoard.md:344). The rating margin is a missing value."
+   },
+   {
+    "index": 18,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:385: 'The transient level ... [is] not stated'. The R3 row asks for safe operating area during turn-off. Vishay 88392 (revision 09-Jan-2024): SMBJ70A VBR 77.8 to 86.0 V and VC 113 V at 5.3 A. Read from https://www.vishay.com/docs/88392/smbj.pdf at 2026-09-28T10:40:17Z. At 1 µH and 150 A, 0.5 x L x I² = 11 mJ. The lead inductance sets that energy and is not in the tree."
+   },
+   {
+    "index": 19,
+    "verdict": "confirmed",
+    "reason": "The row requires a precharge (marking 34). Neither IOBoard.md nor the row states an inrush current limit or a closing time. Without one of them, P2 cannot size the precharge resistor or its power, even once question 14 gives the capacitance. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 20,
+    "verdict": "confirmed",
+    "reason": "The tree does not state whether the closed pack switch carries current back into the pack. shared/bench/bench_state.c:21-27 at be1f247 returns 0 for a value at or below 0, and :80 sends LINK_BN_CURRENT_CA through it, so a negative current is sent as 0 A. An ideal-diode blocking stage and a back-to-back array differ in that case. The value is missing. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 21,
+    "verdict": "confirmed",
+    "reason": "The R3 row qualifies the MOSFETs and the external module for safe operating area during turn-off. IOBoard.md:475 and the R8 row time the coprocessor's action 'to the ESC pack switch open'. The current the switch interrupts, the trip plus its rise during detection or a short-circuit figure, is not stated anywhere. R8's P1 asks for the trip threshold, not this. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 22,
+    "verdict": "confirmed",
+    "reason": "The R3 row requires 'current sharing and heat across the array' but states no dissipation or temperature-rise limit. Sourcing rule 4 (Research.md:183) has P2 state the placements range with its basis. At 150 A the shunt beside the switch dissipates 2.25 W at 100 µΩ and 4.5 W at 200 µΩ (hardware/STATUS.md:46). Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 23,
+    "verdict": "confirmed",
+    "reason": "F2 (Research.md:530) settles the duty for the onboard path only. The R3 row qualifies the external module for 'its temperature rise at that current'. Research.md:62 and hardware/STATUS.md:26 state no duty. Read 2026-09-28 between 10:38Z and 10:48Z."
+   },
+   {
+    "index": 24,
+    "verdict": "confirmed",
+    "reason": "shared/settings/settings.c:39-41 at be1f247: SET_PACK_CELLS in SET_CAT_ESC, minimum 1. IOBoard.md:67 and :435 give 1 to 16 cells. F9's 3.0 V floor applies to the bench's 2S pack only. No lowest ESC pack voltage is stated, and a high-side driver has a lowest supply. Read 2026-09-28 between 10:38Z and 10:48Z."
+   }
+  ],
+  "added": [
+   {
+    "function": "latch",
+    "question": "Does the latch of F11 set on the enable node's low level, or on its falling edge? With a level set, a clear given while the enable is low leaves the gates disabled, and so does a clear control held or stuck closed. With an edge set, a clear given while the panel is stopped lets the gates return when the edges resume, with no operator action at that moment. Answer level or falling edge, and say which input wins when set and clear are both active.",
+    "why": "The answer fixes the latch element: a set-dominant latch fed by the level, or an edge-triggered flip-flop with a clear. It also fixes whether its set overrides its clear. STATUS.md:340 holds that nothing re-arms on its own. P2 cannot qualify the latch without it. Question 0 asks the power-up state only.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "onboard pack switch driver",
+    "question": "How does the coprocessor's overcurrent and over-temperature action open the ESC pack switches? The options are an RP2354B output on a second, disable-only input of each switch driver, or no switch action at all: the throttle stops, and the switches follow the enable node alone. IOBoard.md:475 and the R8 row time the path 'from detection to the ESC pack switch open'. The R3 row says R3's gates follow the enable node alone. IOBoard.md:197 puts no processor in the path from GPIO6 to a gate.",
+    "why": "A second input changes the driver's logic to an AND of the enable node and an RP2354B output. It adds an input under the powered-off isolation rule, and its level during an RP2354B reset decides whether the pack switches open through that reset, which the R3 row says they do not. P2 cannot qualify the onboard driver or the external module's driver output without it. P5 cannot budget the motor overcurrent path without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "pack overvoltage and transient clamp",
+    "question": "What inductance, in µH, do the leads between each ESC pack switch and the ESC have? When a high-side switch opens at full current, that inductance keeps the current flowing into the ESC's input capacitance. That drives the switched node negative until a clamp conducts. The energy is 0.5 x L x I²: 11 mJ at 1 µH and 150 A. The INA238 takes -0.3 V at least on VBUS, IN+ and IN- (SLYS025B section 5.1, https://www.ti.com/lit/ds/symlink/ina238.pdf, read 2026-09-28T10:40:16Z).",
+    "why": "Question 18 covers only the pack-side leads, which set the positive transient. Without the switched side's inductance, P2 cannot size the clamp on the switched node or the MOSFETs' avalanche energy during turn-off. P5 cannot check the INA238 where it sits on the switched side; the shunt's side is not stated (IOBoard.md:469).",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "servo rail gate",
+    "question": "What lowest servo rail voltage, in V, does the servo rail gate close and conduct at? The rail has two settings, up to 5.5 V and up to 8.4 V, set from software (hardware/STATUS.md:37). The TPS55285 programs 0.8 V to 15 V (SLVSI72A, https://www.ti.com/lit/ds/symlink/tps55285.pdf, read 2026-09-28T10:40:16Z).",
+    "why": "A high-side switch has a lowest supply at which its driver turns it fully on. P2 cannot pass or fail the gate's supply range, or a P-channel gate's drive, without the lowest rail voltage.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   }
+  ],
+  "functions_missing": [
+   "servo rail gate driver"
+  ]
+ }
+}

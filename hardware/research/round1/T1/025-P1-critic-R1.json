@@ -1,0 +1,463 @@
+{
+ "role": "P1-critic",
+ "category": "R1",
+ "label": "P1-critic-R1",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/Research.md:47",
+    "quantity": "Microcontroller part",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:45-47 lists the RP2354B as a fixed input whose source is the owner. The JLCPCB API was re-read with vendors.py jlcpcb C39843328 at 2026-09-28T10:41:10Z. It returns an exact match: RP2354B, Raspberry Pi, QFN-80-EP(10x10). The owner marking is correct."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/Research.md:47",
+    "quantity": "In-package flash capacity and construction",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "RP2350 datasheet build 2025-07-29 (build-version d126e9e-clean), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T10:38:05Z. Section 14.3 reads: 'RP2354A and RP2354B feature 2 MB of internal flash', 'two stacked silicon die', 'a Winbond W25Q16JVWI QSPI NOR flash'. Sourced."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/Research.md:47",
+    "quantity": "In-package flash part number",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Raspberry Pi's own copy (read 2026-09-28T10:38:05Z), section 14.3, names W25Q16JVWI twice. The W25Q16JV-DTR revision I ordering list (section 10.5, read 10:41:24Z, SHA-256 1aaae1ed...8e18) has no such suffix and refers KGD to Winbond, as P1 states."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/Research.md:47",
+    "quantity": "Package",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Section 14.4 of build 2025-07-29 reads '10 x 10 mm QFN-80', and 14.3 says the RP2354B uses the QFN-80 package. The JLCPCB API at 10:41:10Z gives QFN-80-EP(10x10). Sourced."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/Research.md:47",
+    "quantity": "GPIO count",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Table 1427 lists GPIO0 to GPIO47 with QFN-80 pins. pico-sdk 2.3.1 platform_defs.h:48-52 (raw.githubusercontent.com, read 2026-09-28T10:42:31Z) gives NUM_BANK0_GPIOS 48 when PICO_RP2350A is 0. Sourced."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/Research.md:47",
+    "quantity": "ADC inputs",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Table 1427 lists GPIO40_ADC0 to GPIO47_ADC7 on QFN-80 pins 49 and 52 to 58. platform_defs.h:42 gives NUM_ADC_CHANNELS 9 for the B package: 8 inputs and the temperature sensor. Sourced."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/Research.md:47",
+    "quantity": "SRAM on the die",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Build 2025-07-29 says '520 kB on-chip SRAM, in 10 independent banks' in chapter 1 and 'a total of 520 kB (520 x 1024 bytes)' in section 4.2. Unit and value are sourced."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/Research.md:47",
+    "quantity": "PSRAM in the package",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Section 14.3 names two die only. It says external QSPI RAM goes on the package pins with a Bank 0 GPIO as a second chip select. The olimex_rp2350_xl.h that R1 starts from has no PSRAM define. Sourced."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/Research.md:47",
+    "quantity": "Stepping",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:88 records the stepping as an owner decision of 2026-09-27. The LCSC photograph (https://assets.lcsc.com/images/lcsc/900x900/20260311_Raspberry-Pi-RP2354B_C39843328_front.jpg, read 2026-09-28T10:41:16Z) shows 'RP2354B0A4' with 21 / 25. Section 14.4 decodes the last two characters as die stepping A4. The held parts' marking is not read."
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/Research.md:47",
+    "quantity": "JLCPCB erpComponentName of C39843328",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Re-read with vendors.py jlcpcb C39843328 at 2026-09-28T10:41:10Z: erpComponentName is SC1512(13)-A4. Sourced."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/Research.md:47",
+    "quantity": "In-package flash supply range (section 14.3)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Section 14.3 of build 2025-07-29 (read 10:38:05Z) reads: 'This voltage must be in the range 2.7 to 3.6 V'. The W25Q16JV-DTR revision I, section 10.5 (read 10:41:24Z), gives 'V = 2.7V to 3.6V'. Sourced. The combined 2.97 to 3.60 V bound P1 derives follows from both limits."
+   },
+   {
+    "index": 11,
+    "where": "hardware/docs/Research.md:47",
+    "quantity": "QSPI_IOVDD on the RP2354",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Table 1441, row 'QSPI_IOVDD (RP2354 only)': 2.97 / 3.3 / 3.63 V. Its note reads: 'RP2354 contains an internal 3.3V flash device, therefore QSPI_IOVDD must be 3.3V'. Sourced."
+   },
+   {
+    "index": 12,
+    "where": "hardware/docs/IOBoard.md:104",
+    "quantity": "Supply of the in-package flash",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Section 14.3 reads: 'The internal flash is powered by the QSPI_IOVDD supply input'. Table 1432 puts QSPI_IOVDD on QFN-80 pin 69. Sourced."
+   },
+   {
+    "index": 13,
+    "where": "hardware/docs/Research.md:228",
+    "quantity": "RP2354B held in the personal library",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "hardware/docs/inventory-2026-09-25.csv:10 reads C39843328 with JLCPCB Parts Qty 20 and 0 in the other two columns. The total of 29.1 at 1.46 each is consistent with 20. The library needs a login, and rule 6 takes the quantity the owner states. Owner holds."
+   },
+   {
+    "index": 14,
+    "where": "hardware/docs/IOBoard.md:103",
+    "quantity": "RP2354B need for the first build",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "S7's Answer column (Research.md:516) gives 5 boards (owner, 2026-09-25). IOBoard.md:103 fixes 1 a board. 20 held is at or above 5, so rule 6 passes. Owner holds."
+   },
+   {
+    "index": 15,
+    "where": "hardware/docs/Research.md:279",
+    "quantity": "RP2350 datasheet table numbering between builds",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "In build 2025-07-29 (read 10:38:05Z) the tables are: 1426 Pin Types, 1427 GPIO pins, 1428 QSPI pins, 1430 Miscellaneous pins, 1433 Absolute maximum ratings, 1436 Digital IO. That matches the value. The older side was also checked in Raspberry Pi's file as archived at https://web.archive.org/web/20240830091639id_/https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (read 2026-09-28T10:42:03Z). That file is build-date 2024-08-21, not 2024-08-08, and has 1423 Pin Types, 1424 GPIO pins, 1425 QSPI pins, 1427 Miscellaneous, 1430 Absolute maximum, 1433 Digital IO. Build 2024-08-08 itself was not read."
+   },
+   {
+    "index": 16,
+    "where": "hardware/docs/IOBoard.md:105",
+    "quantity": "GPIO0 to 39 input rating with IOVDD at 3.3 V",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Table 1427 types GPIO0 to 39 on QFN-80 as Digital IO (FT). Table 1433 gives VPIN_FT at IOVDD=3.3V a maximum of 5.5 V, with 'IOVDD must be present'. Sourced."
+   },
+   {
+    "index": 17,
+    "where": "hardware/docs/IOBoard.md:105",
+    "quantity": "GPIO0 to 39 input rating with IOVDD at 0 V",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Table 1433 gives VPIN_FT at IOVDD=0V a maximum of 3.63 V. Table 1426 defines FT pins by that 3.63 V condition. The archived build 2024-08-21, Table 1430, gives the same figures. Sourced."
+   },
+   {
+    "index": 18,
+    "where": "hardware/docs/IOBoard.md:105",
+    "quantity": "GPIO40 to 47 input rating",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Table 1427 types GPIO40_ADC0 to GPIO47_ADC7 as Digital IO / Analogue, not FT. Table 1433 gives VPIN (Standard) a maximum of IOVDD + 0.5 V, and Table 1438 gives an ADC input range of 0 to ADC_AVDD. Sourced."
+   },
+   {
+    "index": 19,
+    "where": "hardware/docs/IOBoard.md:105",
+    "quantity": "Current into an FT pin below 3.63 V with IOVDD at 0 V",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Table 1426 says 'very little current flows into the pin whilst it is below 3.63 V and IOVDD is 0 V'. Tables 1433 and 1436 give no figure under that condition. Sourced as 'no figure'."
+   },
+   {
+    "index": 20,
+    "where": "hardware/docs/IOBoard.md:105",
+    "quantity": "Pin input leakage",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Table 1436 (Standard and FT unless otherwise stated) gives IIN a maximum of 1 uA, with an empty Conditions cell. 1 uA x 2.2 kOhm = 2.2 mV. Sourced."
+   },
+   {
+    "index": 21,
+    "where": "hardware/docs/IOBoard.md:577",
+    "quantity": "GPIO0 to 39 rating at IOVDD 0 V against the pull request #167 statement",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:476-479 at 23c82ca says of GP3 that 'the RP2350 is not specified as tolerating an input above an absent IOVDD'. GP3 is FT (Table 1427). Tables 1426 and 1433 rate an FT pin to 3.63 V at IOVDD 0 V, so the statement fails for GPIO0 to 39. It holds for the standard GPIO40 to 47 at IOVDD + 0.5 V. Sourced."
+   },
+   {
+    "index": 22,
+    "where": "hardware/docs/IOBoard.md:122",
+    "quantity": "SWDIO pin and reset state",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Table 1430 lists SWDIO on QFN-80 pin 34, Digital IO (FT), IOVDD, reset state Pull-Up. SWCLK is pin 33, also Pull-Up. Sourced. The line's separate claim about the SWD specification rests on testbench/README.md:503-505 and is not a requirement value for an R1 part."
+   },
+   {
+    "index": 23,
+    "where": "hardware/docs/IOBoard.md:122",
+    "quantity": "Digital IO pull-up at IOVDD 3.3 V",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Table 1436 gives RPU at IOVDD=3.3V as 32 to 86 kOhm and RPD as 36 to 113 kOhm. Sourced."
+   },
+   {
+    "index": 24,
+    "where": "hardware/docs/IOBoard.md:123",
+    "quantity": "QSPI_SS pin and function",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Table 1428 lists QSPI_SS on QFN-80 pin 75, Digital IO (not FT), QSPI_IOVDD, Pull-Up, 'QSPI chip select / USB BOOTSEL'. Section 14.3 reads: CSn driven low at reset 'harmlessly selects the internal flash die but does not issue commands to it'. Sourced."
+   },
+   {
+    "index": 25,
+    "where": "hardware/docs/IOBoard.md:123",
+    "quantity": "RUN pin",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Table 1430 lists RUN on QFN-80 pin 35, Digital In (FT), Pull-Up, 'Chip enable / reset_n'. Sourced."
+   },
+   {
+    "index": 26,
+    "where": "hardware/docs/IOBoard.md:110",
+    "quantity": "Crystal frequency",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Table 1426 reads 'Oscillator input pins for attaching a 12 MHz crystal'. The note under Table 1439 reads: 'By default, USB Bootmode relies on a 12MHz input being present'. Section 8.2.1 reads: 'RP2350 supports 1 MHz to 50 MHz crystals'. The 12 MHz is sourced."
+   },
+   {
+    "index": 27,
+    "where": "hardware/docs/IOBoard.md:111",
+    "quantity": "Bidirectional DShot decoder clock tolerance",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "test/host/test_dshot_telem.c:197-217 lays the reply at 95, 100 and 105 twentieths of 5 samples a bit, which is 4.75, 5 and 5.25. docs/DShot.md:229-230 states the same. Sourced."
+   },
+   {
+    "index": 28,
+    "where": "hardware/docs/IOBoard.md:111",
+    "quantity": "ESC clock offset from the bench",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "docs/DShot.md:224 reads 'from its own crystal, a percent or two from the bench's'. It has no measurement, no named ESC and no datasheet, so it is an assumption. P1's question 2 carries it."
+   },
+   {
+    "index": 29,
+    "where": "hardware/docs/IOBoard.md:111",
+    "quantity": "CAN bit rate against the controller clock",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "shared/can/include/can_timing.h:17-21 reads 'the bit rate comes out exact ... A rate that cannot be hit exactly is reported as impossible'. docs/Link.md:196-209 agrees. Sourced."
+   },
+   {
+    "index": 30,
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "olimex_rp2350_xl.h package, flash and PSRAM",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "pico-sdk 2.3.0 olimex_rp2350_xl.h (raw.githubusercontent.com, read 2026-09-28T10:42:30Z) has these lines: :25 PICO_RP2350A 0; :73 PICO_BOOT_STAGE2_CHOOSE_W25Q080 1; :75-77 PICO_FLASH_SPI_CLKDIV 2; :79-82 PICO_FLASH_SIZE_BYTES 2 MB; :84-87 PICO_RP2350A2_SUPPORTED 1. It has no PSRAM define. The UART0 0/1, I2C1 2/3, SPI0 4-7 and LED 25 lines are as P1 lists. Sourced."
+   },
+   {
+    "index": 31,
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "pico2.h PICO_RP2350A and NUM_BANK0_GPIOS",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "pico-sdk 2.3.1 pico2.h:23 reads '#define PICO_RP2350A 1', and platform_defs.h:48-52 gives 30 or 48 (read 2026-09-28T10:42:30Z and 10:42:31Z). Sourced."
+   },
+   {
+    "index": 32,
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "pico-sdk board header for the RP2354",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The GitHub contents API for src/boards/include/boards at ref 2.3.1 (read 2026-09-28T10:42:41Z) lists 160 files, none named with 2354. A sparse clone of tag 2.3.1, commit 079c6f39023649b154152db30f1d781e884879bc, read 10:42:51Z, has no header whose content contains '2354'. Sourced."
+   },
+   {
+    "index": 33,
+    "where": "hardware/docs/IOBoard.md:114",
+    "quantity": "Image size limit",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "2,097,152 - 2 x 4,096 = 2,088,960 bytes. Research.md:103 and STATUS.md:298 state that limit. The present -DLIMIT=4186112 is at firmware/iomcu/CMakeLists.txt:108. Sourced arithmetic."
+   },
+   {
+    "index": 34,
+    "where": "hardware/docs/IOBoard.md:116",
+    "quantity": "4 kB sector erase of the packaged W25Q16JV",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The W25Q16JV-DTR revision I AC table (https://www.winbond.com/resource-files/W25Q16JV_DTR%20RevI%2005252026%20Plus.pdf, read 2026-09-28T10:41:24Z, same SHA-256 as P1) gives tSE 45 ms typical and 400 ms maximum. Sourced for packaged parts."
+   },
+   {
+    "index": 35,
+    "where": "hardware/docs/IOBoard.md:116",
+    "quantity": "256-byte page program of the packaged W25Q16JV",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The same table gives tPP 0.4 ms typical and 3 ms maximum. Sourced for packaged parts."
+   },
+   {
+    "index": 36,
+    "where": "hardware/docs/IOBoard.md:116",
+    "quantity": "Erase and program times of the W25Q16JVWI die",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:86 records it as an owner decision of 2026-09-27. The ordering list and valid part numbers of revision I (sections 10.5 and 10.6) name SOIC, USON, WSON and TFBGA parts and say 'Contact Winbond for KGD'. No die figure was found. Owner holds."
+   },
+   {
+    "index": 37,
+    "where": "hardware/docs/IOBoard.md:117",
+    "quantity": "Program-erase endurance",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:117 says the revision D packaged figure is used (owner, 2026-09-27; Research.md:86). Revision I, page 4, reads 'Min. 100K Program-Erase cycles(1)'. Its revision history row I (2026/05/26) removes 'per sector'. Using a packaged figure for the die is the owner's decision."
+   },
+   {
+    "index": 38,
+    "where": "hardware/docs/Research.md:120",
+    "quantity": "W25Q16JV datasheet served without a login",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The PDF cover (read 10:41:24Z) reads 'W25Q16JV-DTR', 'Publication Release Date: May 28, 2026', 'Revision I'. Its ordering list uses the M suffix (DTR). Sourced."
+   },
+   {
+    "index": 39,
+    "where": "hardware/docs/IOBoard.md:221",
+    "quantity": "Longest legitimate stall the watchdog timeout exceeds",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "No owner date and no source rank the sector erase as the longest stall. IOBoard.md:221 itself says 'including', and IOBoard.md:181 names a second stall, a console print to a slow USB host. main.c:1096-1098 and pico-sdk 2.3.1 stdio_usb.c:101-131 plus stdio_usb.h:31-33 (read 10:40:17Z; default 500,000 us) confirm the print blocks. An assumption; P1's question 1 carries it."
+   },
+   {
+    "index": 40,
+    "where": "hardware/docs/IOBoard.md:221",
+    "quantity": "Coprocessor watchdog",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "hardware/STATUS.md:32 records 'the RP2350's internal watchdog', owner decision 2026-09-25, and says the timeout is not stated. A grep of firmware/iomcu/ finds 'watchdog' only in comments at main.c:970-973. Owner holds."
+   },
+   {
+    "index": 41,
+    "where": "hardware/docs/IOBoard.md:118",
+    "quantity": "USB port",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Table 1431 lists USB_DP on pin 67 and USB_DM on pin 66, '27Ω series resistor required'. Section 12.7.1 reads 'a Full Speed (FS) device (12 Mb/s)'. docs/Building.md:113-114 and firmware/iomcu/CMakeLists.txt:98 give the UF2 loader and the CDC console. Sourced."
+   },
+   {
+    "index": 42,
+    "where": "hardware/docs/Research.md:279",
+    "quantity": "Erratum the tree cites",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Appendix E: RP2350-E5, 'Interactions between CHAIN_TO and ABORT of active channels', affects A2, A3 and A4 and is fixed by documentation. Its workaround, clearing EN on the aborted channel and on any channel it chains to, is what firmware/iomcu/src/out_ppm.c:68-80 does. Appendix C: A4 'has no hardware changes', and E9 affects A2 only. Sourced."
+   },
+   {
+    "index": 43,
+    "where": "hardware/docs/IOBoard.md:121",
+    "quantity": "SWD route on the bench",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "testbench/README.md:438 and :456-465 name linuxgpiod, target/rp2350.cfg and OpenOCD 0.12.0+dev-snapshot (2026-02-16-16:07). The same file gives three wires with no supply. The tree marks it untested. Sourced as stated."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "This is the page's 'P1 asks' item for R1 (the R1 row at Research.md:279; categories.json p1_asks R1). IOBoard.md:221 and hardware/STATUS.md:32 state no deadline. IOBoard.md:162-163 and docs/Safety.md:51 say nothing removes the outputs when the coprocessor freezes and the panel beats, so the monostable's 200 ms does not apply."
+   },
+   {
+    "index": 1,
+    "verdict": "confirmed",
+    "reason": "It carries marking 39, which is correctly an assumption. IOBoard.md:181 and main.c:1096-1098 name the console print as a second stall. One caveat for the owner: pico-sdk 2.3.1 stdio_usb.c:120-121 (read 2026-09-28T10:40:17Z) measures PICO_STDIO_USB_STDOUT_TIMEOUT_US (500,000 us, stdio_usb.h:31-33) from the last time the host accepted data. A host that takes a few bytes within every 500 ms can therefore hold one print longer than 500 ms. 'Up to 500 ms a write' is the bound with no progress, not the per-print maximum."
+   },
+   {
+    "index": 2,
+    "verdict": "confirmed",
+    "reason": "It carries marking 28, which is correctly an assumption: docs/DShot.md:224 states 'a percent or two' with no source. The decoder's tested 5 % (test_dshot_telem.c:197-217) less that figure is the margin R1 states the crystal against (IOBoard.md:111)."
+   },
+   {
+    "index": 3,
+    "verdict": "confirmed",
+    "reason": "The R1 row checks 'the watchdog timeout' against two bounds. IOBoard.md:221 and hardware/STATUS.md:32 state that no timeout exists, and no watchdog call appears under firmware/iomcu/. Without a value, R1 can report only the window between the stall and the deadline. The page names only the deadline as P1-asked, so the timeout is a missing value too."
+   },
+   {
+    "index": 4,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:111 says the crystal's tolerance is not stated, and the R1 row asks R1 to state it. Build 2025-07-29 (read 10:38:05Z) gives Table 597 as ±30 ppm tolerance, ±30 ppm stability and ±5 ppm first-year aging for the ABM8-272-T3. Section 8.1.2.3 reads 'tolerate up to 1000ppm variation in the XOSC frequency'. The figures in the question match."
+   },
+   {
+    "index": 5,
+    "verdict": "confirmed",
+    "reason": "Table 597 gives CL 10 pF, ESR at most 50 Ohm, C0 at most 3.0 pF, and drive level 10 uW typical and 200 uW maximum. Section 8.2.1.1 says the crystal and damping resistor are 'tuned for 3.3V operation' and 'Any changes to crystal parameters risk instability'. Neither page states these values."
+   },
+   {
+    "index": 6,
+    "verdict": "confirmed",
+    "reason": "A grep of IOBoard.md, Research.md and hardware/STATUS.md finds no operating temperature range for the board. The only range is the interlock's 0 to 50 °C (IOBoard.md:184, :220). Table 1435 gives the RP2350 -40 to 85 °C ambient. Crystal stability, inductor saturation and protection ratings all depend on the range. It applies to every R1 function, not only the crystal."
+   },
+   {
+    "index": 7,
+    "verdict": "confirmed",
+    "reason": "Section 6.3.8.2 of build 2025-07-29 (read 10:38:05Z) gives 3.3 uH ±20 %, at most 250 mOhm DC resistance, at least 1.5 A saturation current, fully shielded, polarity-marked, and recommends the AOTA-B201610S3R3-101-T. Section 6.3.8.3 asks for low roll-off. IOBoard.md:110 states none of these."
+   },
+   {
+    "index": 8,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:118 and :536 put the USB protection in R1 with no level. Table 1434 gives only component-handling figures: 2 kV HBM, 4 kV HBM on FT pins, and 500 V CDM. USB_DP and USB_DM are not FT. P2 needs a system-level target."
+   },
+   {
+    "index": 9,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:370 says it is not stated whether the charger's USB-C input is the RP2354B's port. :384 says it is not stated whether that port powers the logic. :140 says the connector type is not stated. F8 fixes 3 A at 5 V for the charger's USB-C. Each of these sets the VBUS rating and the lines the protection covers."
+   },
+   {
+    "index": 10,
+    "verdict": "confirmed",
+    "reason": "Section 12.7.1 gives a Full Speed device (12 Mb/s), and Table 1431 requires 27 Ohm series resistors. No page states a capacitance limit for a clamp on D+ and D-, so P2 has no figure to drop a part on."
+   }
+  ],
+  "added": [
+   {
+    "function": "USB protection",
+    "question": "What highest voltage, in V, may the USB protection let reach USB_DP and USB_DM (QFN-80 pins 67 and 66)? Give the clamping voltage at the ESD level asked in the ESD question, and the highest steady voltage those pins may see.",
+    "why": "The RP2350 datasheet (build 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T10:38:05Z) types USB_DP and USB_DM as USB IO on USB_OTP_VDD (Tables 1426 and 1431). Its absolute maximum ratings (Table 1433) give a Voltage at IO for Standard and FT pins only. Table 1437 (USB IO) gives no input maximum. Neither page states a limit, so P2 cannot compare a clamp's clamping voltage with the rating of the pins it protects.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:118",
+    "for_quantity": "highest voltage at USB_DP and USB_DM behind the USB protection",
+    "asks": ""
+   },
+   {
+    "function": "USB protection",
+    "question": "Which connector type does the RP2354B's USB port use: USB Type-C or another type the owner names? How many lines must the protection cover: VBUS, D+ and D-, plus CC1 and CC2 on USB Type-C?",
+    "why": "IOBoard.md:140 says the USB connector type is not stated and leaves connectors to round 2, while IOBoard.md:118 and :536 put the port's protection in round 1 (R1). P1's VBUS question settles only whether the port shares the charger's USB-C connector (IOBoard.md:370). If it does not, the connector and so the lines to clamp stay open. A Type-C receptacle adds CC1 and CC2 to the lines. P2 cannot choose a protection array's channel count or voltage rating per line without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:140",
+    "for_quantity": "USB connector type and number of protected lines",
+    "asks": ""
+   },
+   {
+    "function": "Core regulator inductor",
+    "question": "Must the core regulator inductor be fully shielded and marked for polarity (yes or no for each), as section 6.3.8.2 of the RP2350 datasheet requires?",
+    "why": "Section 6.3.8.2 (build 2025-07-29, read 2026-09-28T10:38:05Z) says 'L must be fully shielded' and 'The inductor must be marked for polarity'. Section 6.3.8.3 says field orientation affects the regulator's control loop and output voltage. P1's inductor question asks inductance, saturation current and DC resistance only. IOBoard.md:110 states neither shielding nor polarity marking, so P2 would keep an unmarked or unshielded inductor that meets the three figures.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:110",
+    "for_quantity": "core regulator inductor shielding and polarity marking",
+    "asks": ""
+   },
+   {
+    "function": "12 MHz crystal",
+    "question": "What highest shunt capacitance C0, in pF, and which cut and mode (fundamental AT-cut or another) must the 12 MHz crystal meet?",
+    "why": "Table 597 of the RP2350 datasheet (build 2025-07-29, read 2026-09-28T10:38:05Z) gives the ABM8-272-T3 a C0 of at most 3.0 pF and Fundamental-AT operation. Section 8.2.1.1 says 'Any changes to crystal parameters risk instability'. P1's crystal question asks load capacitance, ESR and drive level only. IOBoard.md:110 states neither C0 nor the mode, so P2 cannot drop a crystal on them.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:110",
+    "for_quantity": "12 MHz crystal shunt capacitance C0 and mode",
+    "asks": ""
+   }
+  ],
+  "functions_missing": []
+ }
+}

@@ -1,0 +1,319 @@
+{
+ "role": "P1-critic",
+ "category": "R7",
+ "label": "P1-critic-R7",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/Research.md:61",
+    "quantity": "pack series cell count",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The Power row of the owner decisions of 2026-09-24 (Research.md:56-61) states 'the bench's own 2S (two cells in series) pack'. The row carries no later date, so the decision is of 2026-09-24. Read 2026-09-28 from the checkout at be1f247."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/IOBoard.md:359",
+    "quantity": "cells in the pack",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "No Answer or Decision column gives a parallel count. S9 (Research.md:518) gives makers and F9 (Research.md:537) gives chemistry and floor. Research.md:61 gives 2S. 'holds 2 lithium-ion 18650 cells' entered STATUS.md and IOBoard.md in commit 8d8964f (2026-09-25, 'Carry the owner's answers through the specification and status pages'; found with git log -S on 2026-09-28). That commit combined F9 with 2S. It cites no owner answer that sets the parallel count. The count 2 therefore assumes 2S1P."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/Research.md:537",
+    "quantity": "cell chemistry and format",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F9 Answer column: 'lithium-ion (18650), floor 3.0 V a cell, read per cell from the pack's balance lead (owner, 2026-09-25)'. Read from the Answer column, not the proposed answer."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/IOBoard.md:329",
+    "quantity": "discharge floor per cell",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:329 repeats F9's Answer (Research.md:537) word for word: 3.0 V a cell, read per cell from the balance lead. The unit is volts per cell."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/IOBoard.md:325",
+    "quantity": "lowest pack voltage",
+    "verdict": "wrong",
+    "correct_marking": "sourced",
+    "reason": "No owner answer states 6.0 V. It is derived from two owner values: 2S (Research.md:61) times F9's 3.0 V floor (Research.md:537). IOBoard.md:325 cites F9, R5 and R6, not an owner answer. P1 marks derivations from owner decisions as sourced at index 14 and index 16. By that rule this value is sourced too. The arithmetic holds: 2 × 3.0 V = 6.0 V. It is the lowest pack voltage only within the accuracy of R5's disconnect threshold, which is not stated."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/IOBoard.md:325",
+    "quantity": "full-charge voltage per cell",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F9's Answer (Research.md:537) gives no charge voltage. For this pack, 4.2 V appears only in F9's proposed answer, and a proposed answer is not an answer (Research.md:501). F15 applies 4.2 V a cell to the ESC pack, not the bench pack. The BQ25887's REG00 sets 3.40 to 4.60 V a cell, default 4.20 V. Its accuracy is specified at 4.20 V and 4.35 V (SLUSD89B, https://www.ti.com/lit/ds/symlink/bq25887.pdf, read 2026-09-28T10:36:56Z). The charge voltage is a real setting that nothing in the tree sources."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/Research.md:518",
+    "quantity": "allowed cell makers",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "S9 Answer column: 'Samsung SDI, LG Energy Solution, Molicel and EVE, beside Murata and Panasonic, which S2 allows (owner, 2026-09-27)'. It matches the value."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/Research.md:285",
+    "quantity": "charger balancing",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "No Answer or Decision column asks for balancing. The requirement is in the tree: Power.md:16 ('2S charger with balancing', since commit 67743aa of 2026-09-01) and the R7 row of the accepted plan (Research.md:285). It is sourced from the tree. The R7 row asks for balancing, not for balancing in the charger IC itself. The BQ25798 split seeds put it in a separate part."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/IOBoard.md:362",
+    "quantity": "charge source",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F8 Answer (Research.md:536): 'USB-C only ... the pack does not charge from the DC input (owner, 2026-09-25)'."
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/IOBoard.md:363",
+    "quantity": "charger input current from USB-C",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F8 Answer (Research.md:536): 'drawing up to 3 A at 5 V (15 W)'. It is a ceiling on the draw. 5 V × 3 A = 15 W."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/IOBoard.md:363",
+    "quantity": "charger efficiency",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:363 says 'At an assumed 90 %', and Power.md:98 says the same. Neither cites a source. SLUSD89B page 1 (read 2026-09-28T10:36:56Z) gives one operating point only: 93.4 % at 5 V in, 7.6 V battery, 1 A charge. The arithmetic checks: 13.5 W / 8.4 V = 1.61 A, 13.5 W / 6.0 V = 2.25 A, 13.5 W / 2 A = 6.75 V."
+   },
+   {
+    "index": 11,
+    "where": "hardware/docs/IOBoard.md:363",
+    "quantity": "BQ25887 charge current",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "SLUSD89B (read 2026-09-28T10:36:56Z): title '2-A Boost-Mode Battery Charger'. ICHG_RANGE is 100 to 2200 mA. Table 2 sets 1.50 A as the default-mode charge current, so 2 A needs an I2C write. TI's product page (https://www.ti.com/product/BQ25887, read 2026-09-28T10:36:56Z) shows status ACTIVE."
+   },
+   {
+    "index": 12,
+    "where": "hardware/docs/IOBoard.md:369",
+    "quantity": "BQ25887 input voltage range",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "SLUSD89B page 1 and Section 5 (read 2026-09-28T10:36:56Z) give 3.9 to 6.2 V VBUS operating range and a 20 V absolute maximum."
+   },
+   {
+    "index": 13,
+    "where": "hardware/docs/IOBoard.md:371",
+    "quantity": "BQ25887 power path",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "SLUSD89B Section 5 Device Comparison Table (read 2026-09-28T10:36:56Z) lists Power path 'No' for the BQ25887 and 'Yes' for the BQ25882, BQ25883 and BQ25886. USB detection is by PSEL."
+   },
+   {
+    "index": 14,
+    "where": "hardware/docs/Research.md:285",
+    "quantity": "power path or load sharing",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The R7 row states the requirement: 'a power path or load sharing so the bench runs from the pack while it charges'. IOBoard.md:371 derives the overlap from the owner decision (Research.md:61, pack runs the board whenever the DC input is absent) and F8 (USB-C charges it). No owner answer states it directly. It is sourced."
+   },
+   {
+    "index": 15,
+    "where": "hardware/docs/IOBoard.md:361",
+    "quantity": "charger input limit per USB-C current advertisement",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Checked in section 4.6.2.1 and Table 4-20 of USB Type-C Release 2.5. The zip is https://www.usb.org/sites/default/files/USB%20Type-C%202.5%20Release%20202603.zip, read 2026-09-28T10:37:27Z, SHA-256 603c2cb0...edb81b5, the same as P1's. Default is 500 mA (USB 2.0), or 900 mA or 1,500 mA (USB 3.2 single-lane or dual-lane); the other levels are 1.5 A and 3.0 A. Table 4-32 gives tSinkAdj 60 ms. For this board, P2 applies 500 mA at Default. The 900 mA and 1,500 mA levels need USB 3.2 operation, and the RP2354B has a 'USB 1.1 controller and PHY' (RP2350 datasheet, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T10:43:07Z). A Power Sinking Device may draw up to 500 mA."
+   },
+   {
+    "index": 16,
+    "where": "hardware/docs/IOBoard.md:369",
+    "quantity": "USB-C source current for 15 W",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "In Table 4-20 (read 2026-09-28T10:37:27Z), 3.0 A equals 15 W. 1.5 A and the largest Default level each reach 7.5 W only. At 5 V (F8), only a 3.0 A advertisement reaches 15 W."
+   },
+   {
+    "index": 17,
+    "where": "hardware/docs/Research.md:285",
+    "quantity": "servo supply output at the pack's worst case",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "6.35 A is the owner's fixed input (Research.md:48, 2026-09-25). 8.4 V is the decided Servo rail row (STATUS.md:37, IOBoard.md:342). 8.4 V × 6.35 A = 53.34 W. The product of those sources is sourced. The TPS55285's current-limit tolerance was not read."
+   },
+   {
+    "index": 18,
+    "where": "hardware/docs/Research.md:285",
+    "quantity": "servo supply efficiency from the pack",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The R7 row's 9.9 A rests on the 90 % that the R5 row (Research.md:283) and IOBoard.md:326 take from Power.md:68. Power.md:68 applies that figure to 12 V and 20 V inputs. IOBoard.md:326 says 'The efficiency from the pack is not stated.' From 6.0 V to 8.4 V the TPS55285 boosts, which is a different operating point. The arithmetic checks: 59.3 W / 6.0 V = 9.88 A."
+   },
+   {
+    "index": 19,
+    "where": "hardware/docs/Research.md:490",
+    "quantity": "display current at 5 V",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Prerequisite 7 (Research.md:489-490): '2 A peak and 1.5 A continuous at 5 V (owner, 2026-09-25)'. The peak's duration is not stated."
+   },
+   {
+    "index": 20,
+    "where": "hardware/docs/Research.md:285",
+    "quantity": "5 V rail efficiency from the pack",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The R7 row says 'about 1.4 A from the pack at an assumed 90 %'. No source is given, and the 5 V converter is R5's, selected in T3. 7.5 W / 0.9 / 6.0 V = 1.39 A, so the row takes the 6.0 V floor."
+   },
+   {
+    "index": 21,
+    "where": "hardware/docs/IOBoard.md:364",
+    "quantity": "balance current per cell",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:364 leaves the balance current 'not chosen'. Power.md:109 claims 400 mA balances within one charge and 50 mA overnight. That claim rests on no stated cell imbalance in mAh. The BQ25887's 400 mA follows from ICB_MAX (SLUSD89B, read 2026-09-28T10:36:56Z). Balancing is enabled only above 3.65 to 3.75 V a cell (VCBEN_RISING)."
+   },
+   {
+    "index": 22,
+    "where": "hardware/docs/IOBoard.md:360",
+    "quantity": "pack overcurrent protection setting",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The R7 row says R7 checks 'the pack's overcurrent protection against that' pack current, and IOBoard.md:360 adds the cell's continuous-discharge rating. Setting it between those two values follows. The rule is sourced from the accepted plan. Its inputs are open (P1 questions 0, 3, 4, 6, 12)."
+   },
+   {
+    "index": 23,
+    "where": "hardware/docs/IOBoard.md:365",
+    "quantity": "bench pack balance-lead input",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The R9 row (Research.md:287) puts the ESC cell monitor 'on an input separate from the 2S pack's lead of F9, because both packs are connected during a motor test'. F9 reads each cell from the balance lead. The value follows."
+   },
+   {
+    "index": 24,
+    "where": "hardware/docs/Research.md:285",
+    "quantity": "MP2672A allowlist",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "S1 Answer (Research.md:510): 'Not allowed: Monolithic Power Systems ... (owner, 2026-09-25)'. Rule 2 (Research.md:140-143) drops a seed from such a maker."
+   },
+   {
+    "index": 25,
+    "where": "hardware/docs/IOBoard.md:365",
+    "quantity": "BQ25887 thermistor input",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "From SLUSD89B (read 2026-09-28T10:36:56Z). The TS pin table says 'Connect a negative temperature coefficient thermistor ... Charge suspends when TS pin is out of range. Recommend 103AT-2 thermistor.' The JEITA comparators sit at 0, 10, 45 and 60 °C, and the page 1 ADC reads the NTC."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "No owner answer gives the parallel count (index 1). Two readings of it change the current each cell carries by a factor of 2. That is about 11.3 A plus the logic rails for 2S1P (9.88 A + 1.39 A at 6.0 V). The count also sets the cells per board for the rule 4 gate."
+   },
+   {
+    "index": 1,
+    "verdict": "confirmed",
+    "reason": "F9's Answer gives no charge voltage. The BQ25887 regulates 3.40 to 4.60 V a cell, default 4.20 V (REG00, SLUSD89B, read 2026-09-28T10:36:56Z). P2 has to set the regulation voltage and check it against the cell. The owner may answer 'for research', which takes it from the selected cell's datasheet."
+   },
+   {
+    "index": 2,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:363 marks 90 % 'assumed', and every assumption is a question (Research.md:353). The only datasheet figure is 93.4 % at 5 V, 7.6 V and 1 A (SLUSD89B page 1, read 2026-09-28T10:36:56Z). It overlaps question 7. With a stated lowest charge current, P2 would read each candidate's own efficiency."
+   },
+   {
+    "index": 3,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:326 says the efficiency from the pack is not stated. The 90 % is Power.md:68's figure for 12 V and 20 V inputs. It sets the 9.9 A that the cell rating and the overcurrent protection are sized for. R6 re-checks the TPS55285 in the same task, so 'for research' is an available answer."
+   },
+   {
+    "index": 4,
+    "verdict": "confirmed",
+    "reason": "The R7 row calls the 90 % 'assumed'. The 5 V converter is R5's, selected in T3, so R7's P2 has no verified figure. The resulting 1.39 A adds to the pack current."
+   },
+   {
+    "index": 5,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:364 leaves the balance current 'not chosen'. Power.md:109's 'one charge' and 'overnight' rest on no stated imbalance. The value chooses between the integrated route (BQ25887, up to 400 mA, only above 3.65 to 3.75 V a cell per VCBEN_RISING) and the split route (15 to 50 mA, Power.md:106-107)."
+   },
+   {
+    "index": 6,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:359 says the logic rails 'are not stated', and IOBoard.md:338 and :387 leave the excitation and encoder currents unstated. Research.md:353 exempts only R5 from asking for supply currents. R7's P2 needs a figure to check the cell and set the protection. P5 re-checks it afterwards."
+   },
+   {
+    "index": 7,
+    "verdict": "confirmed",
+    "reason": "F8 (Research.md:536) caps the draw at 3 A and sets no floor. The R7 row says 'at the current of F8' without a charge current. The BQ25887 charges at 100 to 2200 mA, default 1.50 A (SLUSD89B, ICHG_RANGE and Table 2, read 2026-09-28T10:36:56Z). Power.md:78 and :99-101 make 2 A the line between the single-die route and the split route."
+   },
+   {
+    "index": 8,
+    "verdict": "confirmed",
+    "reason": "A grep of IOBoard.md, Research.md, Power.md and STATUS.md on 2026-09-28 found no capacity or run time for the bench pack. Cells from the allowed makers trade continuous-discharge current against capacity. Once several cells pass the current check, P2 has no requirement to qualify or rank them by."
+   },
+   {
+    "index": 9,
+    "verdict": "confirmed",
+    "reason": "The R7 row has R7 check the cell's temperature limits, and IOBoard.md:359 records them. No page states the pack's charge or discharge ambient range. The only stated range is the interlock's 0 to 50 °C (IOBoard.md:184). The BQ25887 suspends charge below 0 °C and above 60 °C, halves the current below 10 °C and lowers the voltage to 8.1 V above 45 °C (SLUSD89B, read 2026-09-28T10:36:56Z)."
+   },
+   {
+    "index": 10,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:365 says 'whether the pack carries one is not stated'. The BQ25887's TS pin suspends charging when out of range and recommends a 103AT-2 (SLUSD89B pin table, read 2026-09-28T10:36:56Z). Without a pack NTC, TS needs a fixed bias, which changes how P2 qualifies the charger's temperature input."
+   },
+   {
+    "index": 11,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:370 says it is not stated. Section 4.6.2.1 (read 2026-09-28T10:37:27Z) covers a Sink at Default in two ways. As a USB device it follows the USB 2.0 or 3.2 specification. As a Power Sinking Device it has no USB communications function and may draw up to 500 mA. On the RP2354B's port the charger is on a USB device, a 'USB 1.1 controller and PHY' (RP2350 datasheet, read 2026-09-28T10:43:07Z). That port cannot be a Power Sinking Device. P2 cannot qualify the input detection without the answer."
+   },
+   {
+    "index": 12,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:360 says 'on the 2S pack'. IOBoard.md:365 has the pack reach the board by power and balance leads, so the cells are off the board. Rule 1 (Research.md:134-139) routes a part by where it sits: LCSC and JLCPCB on the board, Digi-Key off it. The location decides the vendor, the LCSC number and the placements."
+   },
+   {
+    "index": 13,
+    "verdict": "confirmed",
+    "reason": "Research.md:27 has R7 select 'the pack's protection'. IOBoard.md:360 names only overcurrent, and the per-cell floor is R5's disconnect (IOBoard.md:327). 2S protection parts differ in overvoltage, short-circuit and over-temperature functions. P2 needs the list to qualify one."
+   },
+   {
+    "index": 14,
+    "verdict": "confirmed",
+    "reason": "Re-derived. MPN lookups for INR18650-30Q, NCR18650B, INR18650-P28A, INR18650MJ1 and INR18650-35E returned HTTP 404 (api.digikey.com/products/v4, 2026-09-28T10:41:10Z to 10:41:16Z). Keyword searches returned no product for 'Samsung SDI 18650', 'Molicel 18650', 'Panasonic NCR18650B', 'Murata US18650VTC6' and 'LG Energy Solution 18650' (10:40:50Z to 10:40:57Z). 'EVE 18650', which P1's question omits, returned only DFRobot, Weidmüller and Gedore items (10:40:48Z). '18650 battery cell lithium ion' returned 78 results; 50 were read, all ENEPAQ, Dantona and PKCELL (10:41:20Z). The jlcparts copy holds 118 rows that match 18650 and none is a cell from an S9 maker (queried 10:41:35Z). The question should add one fact. 'INR18650' returned four Jauch Quartz cells in stock, 1,301 to 1,911 each (10:41:23Z). Jauch is not on S9. The LI INR18650JD-29E datasheet (jauch.com, read 10:45:05Z) names no cell maker and rates 6 A continuous discharge. With them in the question, the owner can decide to widen S9 as an alternative to naming another vendor."
+   }
+  ],
+  "added": [
+   {
+    "function": "Power path",
+    "question": "With USB-C present, no DC input, and the pack flat or opened by the 3.0 V floor disconnect, does the IO board run from USB-C? If yes, up to what current, in A at 5 V, does the power path deliver to the board?",
+    "why": "The owner decision at Research.md:61 names only the DC input and the pack as the board's sources. F8 (Research.md:536) makes USB-C the charge source. IOBoard.md:384 says it is not stated whether USB powers the logic when neither source is present. Power.md:91 says an NVDC (narrow voltage direct current) power path lets the bench start from a flat pack. The BQ25887 has no power path (SLUSD89B Section 5, read 2026-09-28T10:36:56Z). Without the answer, P2 cannot choose between a charger that feeds the board from VBUS and a load-sharing path beside the charger. It also cannot size the current that path carries.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:384",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Pack charger",
+    "question": "Must the charger charge the pack while R5's 3.0 V floor disconnect is open, with the charger connected on the cells' side of the disconnect? Answer yes or no.",
+    "why": "IOBoard.md:330 says the condition that reconnects the pack after a disconnect is not stated. F9's proposed answer, 'Reconnection only when the DC input or the charger is present', is not an answer (Research.md:501). A charger behind the disconnect cannot charge a pack the floor has opened until the pack reconnects. Without the answer, P2 cannot place the charger's battery terminal and the pack's protection relative to the disconnect, or qualify the power path.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:330",
+    "for_quantity": "",
+    "asks": ""
+   }
+  ],
+  "functions_missing": []
+ }
+}

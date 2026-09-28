@@ -1,0 +1,335 @@
+{
+ "role": "P1-critic",
+ "category": "R12",
+ "label": "P1-critic-R12",
+ "attempt": 0,
+ "data": {
+  "category": "R12",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/Research.md:533",
+    "quantity": "motor temperature channels",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F5's Answer column at be1f247 reads '2 channels: 1 infrared and 1 thermocouple (owner, 2026-09-25)'. The value is taken from the answer, not the proposed answer ('owner to state'). IOBoard.md:72, :458 and hardware/STATUS.md:28 restate it. F5 gives no type, range, accuracy, rate or sensor position. Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/IOBoard.md:457",
+    "quantity": "motor temperature input",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:65 lists motor temperature among the sensor inputs of 2026-09-24, and Research.md:18-20 puts the sensor front ends on the IO board. link_pages.h:261-269 gives the motor its own valid bit, LINK_BN_TEMP_MOT_OK (1u << 4), apart from LINK_BN_TEMP_OK (1u << 3). firmware/iomcu/src/main.c:730-731 leaves bit 4 clear for ESC telemetry. The placement is the owner's; the separate report is the tree's. Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/IOBoard.md:458",
+    "quantity": "motor temperature registers on the BENCH page",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "link_pages.h:229-244 holds the BENCH enum: register 5 is LINK_BN_TEMP_MOT_DC and LINK_BN_COUNT is 13. No second motor temperature register exists. The one valid bit is LINK_BN_TEMP_MOT_OK at :269. F5's 2 channels therefore map onto 1 register, which is the P1 asks item. Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/IOBoard.md:459",
+    "quantity": "motor temperature register format",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "link_pages.h:235 reads '0.1 C, signed'. bench_state.c:13 sets DC_PER_C to 10.0f. :30-33 reads the register as int16_t. :35-41 clamps to -32768 and 32767 counts, which gives -3,276.8 to +3,276.7 °C. The step is the link's and is not a sensor resolution. The display prints whole degrees ('%s %dC', shared/ui/motor_screen.c:550), a value P1 did not list. It needs no owner answer. Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/IOBoard.md:431",
+    "quantity": "bench sampling period",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "firmware/iomcu/src/main.c:1013 calls sample() once 20u ms have passed, which is 50 Hz. docs/Link.md:167 names 'the next 50 ms poll'. The period belongs to the firmware loop. It is not a rate stated for either motor temperature channel. Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/IOBoard.md:558",
+    "quantity": "motor temperature connectors",
+    "verdict": "wrong",
+    "correct_marking": "assumption",
+    "reason": "The cited source, Research.md:28, says only that round 2 selects connectors. F5 (Research.md:533) gives the method and the count and does not say where the infrared sensor sits. No line in the tree gives it (grep for 'infrared' at be1f247 finds only IOBoard.md:72, :458, :558, Research.md:290, :533 and hardware/STATUS.md:28). A connector on the infrared channel puts the sensor off the board, and IOBoard.md:558 assumes that without a source. P1's own refutation records the position as unstated (its question 6). The thermocouple's connector follows from the method, but the infrared half of the value is an assumption. Added as a question with this where and quantity."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/Research.md:545",
+    "quantity": "external I2C ports",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Q7's Answer column reads '2 ports, 3.3 V, Qwiic (JST-SH 4-pin) (owner, 2026-09-25)'. IOBoard.md:74 and :463 and hardware/STATUS.md:28 restate it. 3.3 V agrees with IOBoard.md:54. The answer gives no clock rate, cable length, supply current, addresses or hot-plug behaviour. Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/IOBoard.md:462",
+    "quantity": "bus for external sensors",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "docs/Manifest.md:14 is '> - Eingang für externe Stromsensoren (I²C)'. docs/Manifest.md:28 reads 'On the coprocessor's I²C bus. The panel's I²C bus is reserved for the touch controller and the I/O expander.' The value follows from its source. firmware/panel/components/board/include/board.h:31 reads 'The shared I2C bus (touch controller, expander, external sensors)', which contradicts it, and IOBoard.md's Conflicts section does not list it. Q7 is an IO board question (R12), so the ports sit on the IO board. Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/IOBoard.md:597",
+    "quantity": "I2C speed setting",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "shared/settings/settings.c:105-107 defines i2c_khz 'I2C speed', 'Shared with the touch controller', unit kHz, min 100, max 400, step 100, default 400. The setting belongs to the display's bus. It sets no rate for the coprocessor's buses or the external ports, and IOBoard.md:481 records that rate as not stated. Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/IOBoard.md:464",
+    "quantity": "addresses held on the coprocessor's I2C buses",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The port monitors' part of the value rests on the owner's choice: 7 INA3221 on two I²C buses (hardware/STATUS.md:45, 'two I²C buses (owner, 2026-09-25)'; IOBoard.md:351, '4 addresses (0x40 to 0x43) on each'). That choice is a seed R8 may replace (Research.md:79). 7 parts over 2 buses split 4 and 3, so on one bus 1 address of 0x40 to 0x43 stays free. 'Each INA238 at 0x44 or above' is the page's allocation, derived from that choice, and the page hands the map to P5 (IOBoard.md:464, :472). The owner marking holds for what the value rests on. Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/IOBoard.md:115",
+    "quantity": "flash output binding store geometry",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "out_store.c:35-39: STORE_SECTORS is OUT_STORE_SECTORS (2, out_store.h:122) and STORE_RECORDS is FLASH_SECTOR_SIZE / FLASH_PAGE_SIZE, 4,096 / 256 = 16. That gives 32 slots, at 4 MB less 8 kB in the module build. Research.md:102 requires the 2 MB placement. record_t (out_store.c:99-107) is a 20-byte header plus out_store_t, and out_store_t is LINK_OS_COUNT + LINK_CC_COUNT = 8×4 + 8×4 uint16. That makes 148 bytes (link_pages.h:94, :127). Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 11,
+    "where": "hardware/docs/IOBoard.md:115",
+    "quantity": "save timing",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "out_store.h:98 OUT_STORE_SETTLE_MS 400u, :116 OUT_STORE_QUIET_MS 5u, :130 OUT_STORE_GAP_WAIT_MS 1000u. :30-33 describes 16 slots a sector, 'Fifteen saves in sixteen therefore cost one page program'. That is one erase per 16 saves. Units ms. Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 12,
+    "where": "hardware/docs/IOBoard.md:116",
+    "quantity": "W25Q16JV page program and 4 kB sector erase times",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Re-read revision D: AC Electrical Characteristics, printed page 61. It gives Page Program Time tPP 0.4 ms typical and 3 ms maximum, and Sector Erase Time (4KB) tSE 45 ms typical and 400 ms maximum. Read 2026-09-28T10:37:59Z from https://www.winbond.com/resource-files/w25q16jv%20spi%20revd%2008122016.pdf (vendors.py fetch --client chrome, HTTP 200, 2,747,375 bytes). The figures are for the packaged parts. The die's figures are not known (Research.md:124)."
+   },
+   {
+    "index": 13,
+    "where": "hardware/docs/IOBoard.md:116",
+    "quantity": "flash figures in the Q8 budget",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:86 records the decision 'Q8 and P5 budget with the packaged parts' maximums from Winbond's datasheets, each marked as a packaged-part figure' (owner, 2026-09-27). Research.md:124-126 repeats it. Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 14,
+    "where": "hardware/docs/IOBoard.md:116",
+    "quantity": "bring-up module erase-and-program window",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "STATUS.md:292 reads 'eight erase-and-program windows printed 19,174 to 19,186 us' on the bring-up module. firmware/iomcu/CMakeLists.txt:5-7 and Research.md:110-113 identify that flash as the module's 4 MB part, not the W25Q16JV. The figure bounds nothing on the IO board. Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 15,
+    "where": "hardware/docs/IOBoard.md:117",
+    "quantity": "flash store endurance",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Revision D, section 2 Features, printed page 4: 'Min. 100K Program-Erase cycles per sector'. Read 2026-09-28T10:37:59Z from https://www.winbond.com/resource-files/w25q16jv%20spi%20revd%2008122016.pdf. out_store_map.h:82-84 reads 'a sector pair of 32 slots at 100,000 erase cycles a sector accepts about 3.2 million saves'. 32 × 100,000 = 3,200,000. The owner's decision (Research.md:86) applies the packaged figure to the die. The figure is what the flash allows, not a required number of saves."
+   },
+   {
+    "index": 16,
+    "where": "hardware/docs/IOBoard.md:138",
+    "quantity": "gap after a poll for a store window",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "out_store.h:103 reads 'The panel polls every 50 ms'. :110 reads 'A run that has just ended leaves up to 45 ms before the next'. That is 50 ms less the 5 ms quiet test. Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 17,
+    "where": "hardware/docs/IOBoard.md:114",
+    "quantity": "image size limit",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:103 reads 'The limit becomes 2,088,960 bytes, 2 MB less 8 kB'. 2,097,152 − 2 × 4,096 = 2,088,960. The limit applies while the store stays in the flash. Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 18,
+    "where": "hardware/docs/Research.md:573",
+    "quantity": "Q8 alternatives",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:573 gives Q8 as the binding in the RP2354B's flash or in an I²C FRAM or EEPROM. R12's report is 'FRAM and EEPROM candidates', and the Decision column is empty. tools/research/categories.json q_options gives Q8: ['FRAM', 'EEPROM'], and reports_per_part R12 gives ['Q8 store candidate']. Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 19,
+    "where": "hardware/docs/Research.md:290",
+    "quantity": "MB85RC256V maker on the allowlist",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "S1's Answer column (Research.md:510) adds Fujitsu (owner, 2026-09-25) and states 'Fujitsu covers RAMXEED' (owner, 2026-09-27). Research.md:78 and rule 2 (:144-146) repeat it. Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 20,
+    "where": "hardware/docs/Research.md:290",
+    "quantity": "JLCPCB maker labels of MB85RC256V rows",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Re-read via vendors.py jlcpcb C45273903 from https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList at 2026-09-28T10:38:14Z. Exact match MB85RC256VPNF-G-AMERE2, maker_label 'RAMXEED/FUJITSU', stockCount 6,523, canPresaleNumber 6,474, library type expand. The jlcparts copy of 2026-09-14 (cache.sqlite3, opened read-only, read 2026-09-28) has an empty manufacturer for C45273903 and C2061051 and 'FUJITSU' for C126728 and C209964. This is a sourcing reading for P2, not a requirement value. The keyword search's other rows were not re-read here."
+   },
+   {
+    "index": 21,
+    "where": "hardware/docs/Research.md:290",
+    "quantity": "MLX90614 maker and lifecycle source",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "S1's Answer (Research.md:510) adds Melexis (owner, 2026-09-25). Research.md:77 and the Lifecycle check (:257, :261) make Digi-Key's ProductStatus the status for Melexis parts (owner, 2026-09-27). Read 2026-09-28 from the checkout."
+   },
+   {
+    "index": 22,
+    "where": "hardware/docs/IOBoard.md:453",
+    "quantity": "front end on an ADC input",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:270-272 states the rule for every category. IOBoard.md:54 and :105 give the ADC inputs (GPIO40 to 47) as rated at IOVDD + 0.5 V, from RP2350 datasheet build 2024-08-08 Table 1430, read from a copy. R1 re-reads that table in T2. The rule binds R12 only where a front end has an analogue output on an ADC input. Read 2026-09-28 from the checkout."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "This is the P1 asks item of R12 (Research.md:290; categories.json p1_asks R12 'motor temperature register channel'). link_pages.h:229-244 has 1 motor temperature register (5) and :269 has 1 valid bit (bit 4), against the 2 channels of F5 (Research.md:533). IOBoard.md:458 and :483 record it as not stated."
+   },
+   {
+    "index": 1,
+    "verdict": "confirmed",
+    "reason": "F5's answer (Research.md:533) names a thermocouple and no type. A grep of the checkout at be1f247 for 'thermocouple', 'type K' and 'K-type' finds no type anywhere in the tree. The type sets which front ends apply and the range each measures."
+   },
+   {
+    "index": 2,
+    "verdict": "confirmed",
+    "reason": "Neither IOBoard.md nor Research.md states a motor temperature range. The tree has only examples: telemetry_sim.c:18 starts at 24.0 °C, and test/host/test_bench.c:29 uses 58.9 °C. The register span (bench_state.c:35-41) is a format limit, not a range the channel must measure."
+   },
+   {
+    "index": 3,
+    "verdict": "confirmed",
+    "reason": "No accuracy is stated for either channel. The 0.1 °C link step (link_pages.h:235) and the whole-degree display (motor_screen.c:550) are formats, not accuracies. The only ambient range in the sources is the monostable page's 0 to 50 °C. That page calls it 'the range the bench is assumed to be used in' (Monostable.md:27, :318-319 at 23c82ca)."
+   },
+   {
+    "index": 4,
+    "verdict": "confirmed",
+    "reason": "The 20 ms sampling (main.c:1013; IOBoard.md:431) is the firmware loop that samples every bench number. No update rate is stated for the thermocouple channel, and a front end's conversion time is qualified against one."
+   },
+   {
+    "index": 5,
+    "verdict": "confirmed",
+    "reason": "F15 gives the ESC pack as 67.2 V (Research.md:543). IOBoard.md:443 rates the phase-wire clip for it. No rating is stated for a thermocouple input, although the junction sits on the motor. The value decides whether a front end's input absolute maximum suffices or an isolated input is needed."
+   },
+   {
+    "index": 6,
+    "verdict": "confirmed",
+    "reason": "No source gives the infrared sensor's position or lead. The length decides sourcing rule 1 (Research.md:134-139) and the signal the lead carries. The question's premise, a sensor off the board, is itself unsourced: see the added question for IOBoard.md:558."
+   },
+   {
+    "index": 7,
+    "verdict": "confirmed",
+    "reason": "F5 (Research.md:533) gives an infrared channel and no object temperature range. No other line in the tree gives one. A sensor's object range is qualified against it."
+   },
+   {
+    "index": 8,
+    "verdict": "confirmed",
+    "reason": "No accuracy is stated for the infrared channel on either page or in the tree. A sensor's object-temperature accuracy is qualified against it."
+   },
+   {
+    "index": 9,
+    "verdict": "confirmed",
+    "reason": "No distance to the motor or target size is stated anywhere in the tree. An infrared sensor's optics variant sets the spot it averages over at that distance. The owner can answer with the full field of view, or with the distance and the spot diameter from which it follows."
+   },
+   {
+    "index": 10,
+    "verdict": "confirmed",
+    "reason": "The 20 ms bench sampling (IOBoard.md:431) is the firmware loop, not a stated need for the infrared channel. No rate is stated elsewhere."
+   },
+   {
+    "index": 11,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:481 records the coprocessor's I²C bus speed as not stated. The one speed setting (settings.c:105-107) belongs to the display's bus. The multiplexer, buffer and extender seeds (Research.md:290) are rated against a clock. The external ports share the coprocessor's buses with the port monitors unless a segment separates them (IOBoard.md:351, :464)."
+   },
+   {
+    "index": 12,
+    "verdict": "confirmed",
+    "reason": "Q7's answer (Research.md:545) gives no cable length or capacitance, and no line in the tree does. The length decides whether a port needs a buffer or a differential extender (seed PCA9615)."
+   },
+   {
+    "index": 13,
+    "verdict": "confirmed",
+    "reason": "A Qwiic port carries its device's 3.3 V supply, and no source states the current. R5 sizes the 3.3 V rail from the parts T2 and T4 select plus the display's draw (Research.md:283), which leaves external devices out."
+   },
+   {
+    "index": 14,
+    "verdict": "confirmed",
+    "reason": "docs/Manifest.md:14 and :28 put external current sensors on the coprocessor's bus. IOBoard.md:351 and :464 place 0x40 to 0x43 (port monitors) and 0x44 upward (INA238) on both buses. Which addresses an external device needs is not stated. The answer decides whether a port shares a bus or needs its own segment (seed TCA9548A)."
+   },
+   {
+    "index": 15,
+    "verdict": "confirmed",
+    "reason": "The flash store holds 32 slots of 256 bytes (out_store.c:35-39), and today's record is 148 bytes for 8 slots and 8 channels (out_store.c:99-107; link_pages.h:94, :127). out_store.h:64 keeps 'the two pages that describe the outputs, and nothing else'. The record for 20 ports is not defined (IOBoard.md:248). The capacity only feeds Q8 (Research.md:573), so it is decision-only Q8."
+   },
+   {
+    "index": 16,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:117 and out_store_map.h:82-84 give what the flash allows: about 3.2 million saves. No source states how many saves the board needs. The value only feeds Q8 (Research.md:573), so it is decision-only Q8."
+   }
+  ],
+  "added": [
+   {
+    "function": "motor temperature infrared",
+    "question": "Where does the infrared motor temperature sensor sit: off the IO board, on a lead to a connector on the IO board, as IOBoard.md:558 assumes, or on the IO board itself?",
+    "why": "IOBoard.md:558 gives the infrared channel a connector, and no source backs it. F5 (Research.md:533) gives the method and the count only, and Research.md:28 only puts connectors in round 2. The position decides sourcing rule 1: an LCSC number and JLCPCB assembly, or Digi-Key with LCSC number none (Research.md:134-139). It also decides whether the sensor's signal crosses a lead. P1's question 6, the lead's length, rests on this premise.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:558",
+    "for_quantity": "motor temperature connectors",
+    "asks": ""
+   },
+   {
+    "function": "motor temperature thermocouple",
+    "question": "Must the thermocouple channel detect an open or unplugged thermocouple, so that the motor temperature valid bit (BENCH flag bit 4) stays clear while none is fitted? Answer yes or no.",
+    "why": "IOBoard.md:432 sets each valid bit 'only when a sensor answered' (link_pages.h:246-276). A thermocouple front end answers on its bus whether or not a thermocouple is plugged in. Holding bit 4 clear with no thermocouple needs the front end to report an open input. P2 checks each front end for open-circuit detection against the answer. It applies to the thermocouple channel if question 0 puts it in the register.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "motor temperature thermocouple",
+    "question": "Over what ambient temperature range (°C, lowest to highest) must the IO board operate, which sets the temperature of the thermocouple's cold junction at its connector?",
+    "why": "The cold junction sits at the IO board's connector (IOBoard.md:558), so the front end's cold-junction error depends on the board's ambient. IOBoard.md and Research.md state no ambient range. The only one in the sources is the monostable page's 0 to 50 °C, given as 'the range the bench is assumed to be used in' (hardware/docs/Monostable.md:27, :318-319 at 23c82ca). That is an assumption. P2 checks each front end's cold-junction accuracy and operating range against the answer.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "motor temperature infrared",
+    "question": "What ambient temperature range (°C, lowest to highest) does the infrared sensor itself see at its mounting position near the motor?",
+    "why": "The sensor sits near the motor it measures, so its own temperature is not the IO board's. No source states it. P2 checks each infrared sensor's rated operating range against it, and the object-temperature accuracy its datasheet gives at that ambient.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "external I2C ports",
+    "question": "Must a device be plugged into or out of an external I2C port while the board is powered, with the bus and the other devices on it still running? Answer yes or no.",
+    "why": "Q7 (Research.md:545) fixes the count, level and connector only. A Qwiic lead plugged into a running bus can disturb transfers on the bus it joins, and the port monitors share the coprocessor's buses (IOBoard.md:351, :464). The answer decides whether a port needs a hot-swap buffer or a segment it can reset alone. P2 checks each buffer, multiplexer or extender (seeds TCA9548A, PCA9615, TCA9617A) against it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   }
+  ],
+  "functions_missing": []
+ }
+}

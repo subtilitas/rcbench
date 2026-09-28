@@ -1,0 +1,317 @@
+{
+ "role": "P1",
+ "category": "R9",
+ "label": "P1-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "functions": [
+   "Cell monitor"
+  ],
+  "values": [
+   {
+    "where": "hardware/docs/Research.md:287",
+    "quantity": "highest cell count of the ESC pack on the balance lead",
+    "value": "16 cells",
+    "marking": "owner",
+    "source": "F15, hardware/docs/Research.md:543: '16 cells, 67.2 V at 4.2 V a cell (owner, 2026-09-25)'; checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "F15 asks for the highest ESC pack voltage, and the owner answers with the cell count and the voltage a cell. 16 cells follows word for word. The unit is cells in series. The same figure stands at IOBoard.md:67, :407 and :435. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:435",
+    "quantity": "lowest cell count of the ESC pack on the balance lead",
+    "value": "1 cell (the lower end of '1 to 16 cells', attributed to owner, 2026-09-25)",
+    "marking": "assumption",
+    "source": "shared/settings/settings.c:39-41 (SET_PACK_CELLS: SET_TYPE_INT, min 1, max 14, step 1, default 6) and shared/ui/include/battery_screen.h:14 ('1 to 14'), carried over to the hardware; checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "F15 (Research.md:543) gives only the top, 16 cells. The owner states no lowest count, so the attribution '(owner, 2026-09-25)' covers only the 16. The lower bound of SET_PACK_CELLS is a validity bound: the settings table says its ranges are the physical ones, 'a pack cannot have zero cells' (settings.c:34-35). Neither the tree nor the owner states that the monitor reads every count the setting admits. The same lower bound stands at Research.md:287 and IOBoard.md:67, and question 0 covers all three. The figure decides candidates. BQ76952 reads 3 to 16 cells and BQ76942 3 to 10 (ti.com product pages, read 2026-09-28T10:26Z). The lowest counts of ADBMS6948 and LTC6813 are not read here: www.analog.com refuses requests after about 15 (Research.md prerequisite 2), and finding the figure is P2's task.",
+    "question": 0
+   },
+   {
+    "where": "hardware/docs/Research.md:287",
+    "quantity": "highest ESC pack voltage at the balance lead",
+    "value": "67.2 V",
+    "marking": "owner",
+    "source": "F15, hardware/docs/Research.md:543 (owner, 2026-09-25); checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "Checked the arithmetic: 16 × 4.2 V = 67.2 V. The unit is V. It is the full-charge working voltage, not a transient level or an absolute maximum. The rating a monitor's input needs above it is not stated (question 7). Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:407",
+    "quantity": "highest cell voltage of the ESC pack",
+    "value": "4.2 V a cell",
+    "marking": "owner",
+    "source": "F15, hardware/docs/Research.md:543: 'at 4.2 V a cell' (owner, 2026-09-25); checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "F15's answer states 4.2 V a cell. Cells charged above 4.2 V fall outside it, and no source in the tree names such cells. The ESC pack's chemistry and its lowest cell voltage are not stated (question 3). Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:287",
+    "quantity": "ESC pack balance-lead input separate from the 2S pack's lead",
+    "value": "a separate input, because both packs are connected during a motor test",
+    "marking": "sourced",
+    "source": "F9, hardware/docs/Research.md:537 (the 2S pack is read per cell from its own balance lead, owner 2026-09-25); hardware/docs/Research.md:61 (the 2S pack runs the board when the DC input is absent, selected automatically, owner 2026-09-24); F15, Research.md:543; hardware/docs/IOBoard.md:365; checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "The 2S pack stays connected for the automatic selection. Its per-cell floor is read in hardware at all times (F9). The ESC pack feeds the ESC during a motor test (F2, F7). Each balance lead carries the taps of its own pack's cells, so one lead cannot serve both packs, and a separate input follows. The owner does not state it in these words. It follows from the three decisions. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:287",
+    "quantity": "cell count SET_PACK_CELLS takes",
+    "value": "1 to 14 cells",
+    "marking": "sourced",
+    "source": "shared/settings/settings.c:39-41 ('pack_cells', 'Series count in the pack', unit 'S', SET_TYPE_INT, 1, 14, step 1, default 6); checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "Read at the cited lines, with unit 'S' (cells in series). Changing it to 16 is firmware work outside round 1 (Research.md:31-40, 'Not in any round'). Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:287",
+    "quantity": "cell count the battery screen takes",
+    "value": "1 to 14 cells (BATTERY_CELLS_MAX 14)",
+    "marking": "sourced",
+    "source": "shared/ui/include/battery_screen.h:11 ('#define BATTERY_CELLS_MAX 14') and :14 ('1 to 14'); test/host/test_battery.c:141-148 draws every count from 1 to BATTERY_CELLS_MAX; checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "Read. The per-cell arrays hold 14 entries. A 16-cell pack needs the define and the arrays changed, which is firmware work outside round 1. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:436",
+    "quantity": "per-cell quantities",
+    "value": "voltage, and resistance under load",
+    "marking": "sourced",
+    "source": "shared/ui/include/battery_screen.h:15-16 (volts[] 'per cell'; milliohms[] 'per cell, under load'); checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "Read. The units are V and mΩ. Resistance under load needs each cell voltage paired with a current sample. How they are paired is not stated (IOBoard.md:485; question 6). Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:436",
+    "quantity": "per-pack quantities",
+    "value": "capacity and drawn mAh",
+    "marking": "sourced",
+    "source": "shared/ui/include/battery_screen.h:17-18 (capacity_mah, drawn_mah); checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "The screen's state carries both fields. The tree gives each a source other than the balance lead. Capacity is the Capacity setting, 0 to 30,000 mAh (settings.c:42-44). Charge is 'accumulated by the current monitor' (shared/link/include/link_pages.h:236; IOBoard.md:417). Neither is a requirement on the cell monitor part. Holds as a quantity of the screen.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:437",
+    "quantity": "load condition for the spread",
+    "value": "measured under load; at rest a weak cell reads like the others",
+    "marking": "sourced",
+    "source": "docs/Screens.md:248 ('Measure under load. At rest a weak cell reads like the others.'); shared/ui/battery_screen.c:302-307; checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "Both sources read. The load is the motor current: up to 150 A continuous on the onboard path (F2, IOBoard.md:420), and above 150 A to 300 A and more on the external path (Research.md:62). Under load each cell's voltage follows the ESC's current. The time between cell samples, and between a cell sample and the current sample, therefore bears on the reading (questions 5 and 6). Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:438",
+    "quantity": "spread verdict thresholds",
+    "value": "HEALTHY below 30 mV, WATCH from 30 mV, REPLACE from 60 mV",
+    "marking": "sourced",
+    "source": "shared/ui/battery_screen.c:46-47 (SPREAD_WATCH_MV 30.0f, SPREAD_BAD_MV 60.0f) and :235-243 (compared with >=); docs/Screens.md:243-246; checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "The code compares with >=, so 'from' is correct. The unit is mV. The spread is the highest cell minus the lowest (battery_screen.c:95-106). These are screen thresholds, not an accuracy. The error a reading may have against them is not stated (question 2). Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:439",
+    "quantity": "divergence plot scale floor",
+    "value": "12 mV at full deflection",
+    "marking": "sourced",
+    "source": "shared/ui/battery_screen.c:41 ('#define SCALE_FLOOR_MV 12.0f'); docs/Screens.md:245-246; checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "Read. It is a display scale, not a measurement requirement. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:439",
+    "quantity": "pack mean display resolution",
+    "value": "0.001 V",
+    "marking": "sourced",
+    "source": "shared/ui/battery_screen.c:288 ('%.3f V' of the mean); checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "Read. Each cell prints to 0.01 V (battery_screen.c:204) and the spread in whole mV (:290). These are display formats. The measurement resolution a cell needs is not stated (IOBoard.md:485; question 1). Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:396",
+    "quantity": "link page for the cell readings",
+    "value": "none; a firmware change outside round 1; the line is complete in hardware and open on the link",
+    "marking": "sourced",
+    "source": "docs/Link.md:121-137 (the page map has no cell page); a search of the tree finds battery_screen_set() called only at test/host/test_battery.c:59 and test/host/render_screen.c:324 (defined at shared/ui/battery_screen.c:70); hardware/docs/Research.md:31-40; checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "The page map lists no page for cells. No file under firmware/ calls battery_screen_set(). Holds. P6 marks the line 'hardware selected, link open'.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:125",
+    "quantity": "capability bit for the cell monitor",
+    "value": "bit 7 of the capability word, set when the part is fitted",
+    "marking": "sourced",
+    "source": "shared/link/include/link_pages.h:181 (LINK_CAP_CELLS = 1u << 7, 'a cell monitor on the balance lead'); docs/Link.md:145-148; firmware/iomcu/src/main.c:839-853 (sets bits 0 to 2 only); checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "Read. Setting the bit is firmware work once the part is fitted. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:453",
+    "quantity": "ADC input rule",
+    "value": "a front end that drives one of the RP2354B's 8 ADC inputs keeps it within its rating (GPIO40 to 47 at IOVDD + 0.5 V) while the 3.3 V rail is down and the front end's supply is up",
+    "marking": "sourced",
+    "source": "hardware/docs/Research.md:269-272; hardware/docs/IOBoard.md:54 and :105 (RP2350 datasheet, build 2024-08-08, Table 1430, read from a copy); checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "The rule binds R9 only if its design drives an RP2354B ADC input, for example a divider for a 1-cell or 2-cell pack. A monitor with its own converter on I²C or SPI drives no ADC input. The rating is the page's reading of a copy of the datasheet. It is not re-read here, and R1 confirms it in T2. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:536",
+    "quantity": "protection on the balance-lead connector",
+    "value": "ESD and overvoltage protection selected in round 2",
+    "marking": "sourced",
+    "source": "hardware/docs/Research.md:28 (round 2: ESD and overvoltage protection on the signal, sensor, balance-lead, link and heartbeat connectors); checkout be1f24767452, read 2026-09-28",
+    "refutation_tried": "Round 2's scope names the balance-lead connectors. The rating of the monitor's own input, which that protection clamps under, is a round 1 requirement and is not stated (question 7). Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:287",
+    "quantity": "BQ76952 series-cell range (seed concern)",
+    "value": "3 to 16 cells",
+    "marking": "sourced",
+    "source": "https://www.ti.com/product/BQ76952, vendors.py fetch --client chrome, HTTP 200, read 2026-09-28T10:26:01Z: 'Number of series cells (max) 16', 'Number of series cells (min) 3', status ACTIVE",
+    "refutation_tried": "Read at the manufacturer's product page. The concern holds: the part reads no 1-cell or 2-cell pack.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:287",
+    "quantity": "BQ76942 series-cell range (seed concern)",
+    "value": "3 to 10 cells",
+    "marking": "sourced",
+    "source": "https://www.ti.com/product/BQ76942, vendors.py fetch --client chrome, HTTP 200, read 2026-09-28T10:26:02Z: 'Number of series cells (max) 10', 'Number of series cells (min) 3', status ACTIVE",
+    "refutation_tried": "Read at the manufacturer's product page. The concern holds but says too little: with 10 cells at most, the part also does not reach the 16 cells of F15.",
+    "question": -1
+   }
+  ],
+  "questions": [
+   {
+    "function": "Cell monitor",
+    "question": "What is the lowest cell count, in cells, of an ESC pack that the cell monitor reads on its balance lead? The page gives 1 to 16 cells. F15 gives only the top, 16 cells. The 1 is the lower bound of SET_PACK_CELLS, which the settings table sets as a physical limit ('a pack cannot have zero cells').",
+    "why": "P2 cannot keep or drop a monitor by its lowest cell count. BQ76952 reads 3 to 16 cells and BQ76942 3 to 10 (ti.com, read 2026-09-28T10:26Z). A monitor that takes its supply from the stack needs a stack voltage that a 1-cell or 2-cell pack may not reach.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:435",
+    "for_quantity": "lowest cell count of the ESC pack on the balance lead",
+    "asks": ""
+   },
+   {
+    "function": "Cell monitor",
+    "question": "What resolution, in mV, does each cell voltage reading need? The screen prints each cell to 0.01 V, the pack mean to 0.001 V and the spread in whole mV. The per-cell resistance under load divides a cell's voltage change by the current change, so this resolution also bounds the resistance.",
+    "why": "IOBoard.md:485 lists the resolution per cell as not stated (R9). Without it P2 cannot drop a monitor whose converter is too coarse.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Cell monitor",
+    "question": "What largest error, in mV, may each cell voltage reading have under load, and over which ambient temperature range, in °C? The spread verdict switches at 30 mV and 60 mV between two cells (shared/ui/battery_screen.c:46-47).",
+    "why": "IOBoard.md:485 lists the accuracy per cell as not stated (R9). The tree states the board's ambient range only for the monostable's window, 0 to 50 °C (IOBoard.md:184). P2 cannot check a datasheet's total measurement error without the figure and its temperature range.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Cell monitor",
+    "question": "What is the lowest cell voltage, in V, that the cell monitor reads within that error? F15 sets the top at 4.2 V a cell. The ESC pack's chemistry and discharge floor are not stated.",
+    "why": "A datasheet states its cell error over a limited input range. P2 cannot check that range against the cells the bench reads.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Cell monitor",
+    "question": "How often, in ms, does the cell monitor read every cell of a 16-cell pack? The coprocessor samples the bench numbers every 20 ms (IOBoard.md:431). No rate is stated for the cells.",
+    "why": "P2 cannot check a monitor's conversion time for 16 cells, or its bus traffic, against a rate that is not stated.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Cell monitor",
+    "question": "What largest time, in µs, may separate the first and the last cell sample of one reading of the pack? The spread is measured under load (IOBoard.md:437), where each cell's voltage follows the ESC's current.",
+    "why": "A monitor that converts the cells one after another over milliseconds reads each cell at a different current, and shows a spread the pack does not have. P2 cannot choose between simultaneous and sequential conversion without this figure.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Cell monitor",
+    "question": "What largest time, in µs, may separate a cell voltage sample from the motor current sample it is paired with for the per-cell resistance under load? The current comes from the INA238 (R8).",
+    "why": "IOBoard.md:485 lists how the cell samples align with the current as not stated (R9). P2 cannot qualify a monitor's trigger or timestamp against the INA238's conversion without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Cell monitor",
+    "question": "What voltage, in V, must the cell monitor's balance-lead input be rated for, above the 67.2 V of F15? Round 2 selects the overvoltage protection on the balance-lead connector (Research.md:28), which clamps under that rating. No line places the balance lead behind R3's input protection on the ESC pack's power path.",
+    "why": "P2 cannot drop a monitor whose absolute maximum sits too close to 67.2 V for a clamp to fit under it. P5's ESC pack node clamp check needs the figure.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Cell monitor",
+    "question": "What largest voltage, in V, may stand between the ESC pack's negative at the balance lead and the IO board's ground during a motor test? If the cell monitor is isolated from the RP2354B instead, what isolation voltage, in V? The ESC pack's return reaches the star point by its own lead (testbench/WIRING.md:37-39). Which side of the motor supply the shunts sit on is not stated (IOBoard.md:469). The isolation between the 150 A path and the 3.3 V I²C bus is not defined (IOBoard.md:497).",
+    "why": "Without the offset or the isolation voltage, P2 cannot choose between a monitor on the board's ground, read directly over I²C or SPI, and one behind an isolated interface, or qualify either.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Cell monitor",
+    "question": "What largest current, in µA, may the cell monitor draw from any one pin of the ESC pack's balance lead, with the IO board powered and with it unpowered? An uneven draw across the pins discharges the cells unevenly and opens the spread the screen judges.",
+    "why": "A monitor that takes its supply from the top of the stack draws from the upper pins. P2 cannot qualify a monitor's supply and input currents without a limit.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Cell monitor",
+    "question": "What voltages, in V, must the balance-lead input survive from a mis-plugged lead: the largest reverse voltage on any pin against the lead's lowest pin, and the largest voltage between two adjacent pins? A lead plugged in reversed, or shifted by one pin, puts these voltages on the input.",
+    "why": "IOBoard.md:485 lists the protection against a mis-plugged lead as not stated (R9). P2 cannot check a monitor's absolute maximum ratings on its cell inputs against mis-plug cases that are not stated.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Cell monitor",
+    "question": "How many connectors, of how many cells each, carry the ESC pack's balance lead to the IO board? A 16-cell pack's balance lead can arrive as one lead or as several. A lead plugged in without the others leaves inputs open.",
+    "why": "IOBoard.md:485 lists the balance-lead connector sizes as not stated (R9). Round 2 selects the connector part (Research.md:28). Without the arrangement, P2 cannot check which inputs a monitor sees open, or whether it survives the leads plugged in any order.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Cell monitor",
+    "question": "May a jumper or an adapter lead set the cell count at the balance-lead input? Answer yes or no, and if yes, the number of positions. With no setting, a pack of any count from the lowest to 16 cells plugs in with no change on the board.",
+    "why": "Some monitors need unused cell inputs shorted, or take their supply from the top cell. They read a smaller pack only through such a setting. P2 cannot keep or drop them without the answer.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   }
+  ]
+ }
+}

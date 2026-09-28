@@ -1,0 +1,367 @@
+{
+ "role": "P1-critic",
+ "category": "R6",
+ "label": "P1-critic-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/Research.md:48",
+    "quantity": "Servo supply output current limit",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. SLVSI72A (https://www.ti.com/lit/ds/symlink/tps55285.pdf, read 2026-09-28T10:37:06Z, vendors.py fetch, chrome, HTTP 200), 6.3.12 and Table 7-3: the output current limit is programmable from 500 mA to 6.35 A in 50 mA steps, with no external sense resistor. It resets to 11100100b, which is 5 A, enabled. The 6.35 A is a register value, not a fixed stop. Current_Limit_EN (register 02h bit 7) disables it, and OCP_DELAY (register 03h, 7.3) lets current run above it for up to 1.024 x 12 ms. Accuracy is given only at the 1, 3 and 5 A settings, from engineering-sample characterization (5.4, note 1)."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/Research.md:48",
+    "quantity": "Servo supply input voltage range",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. SLVSI72A (read 2026-09-28T10:37:06Z), 5.2: VIN 2.4 to 22 V for VOUT >= 3.0 V, and 3 to 22 V below that. 5.4: UVLO rising 2.8 to 3.0 V; input OVP rising 22 to 23 V, 0.9 V hysteresis. 5.1: VIN absolute maximum 27 V."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/Research.md:48",
+    "quantity": "Servo supply quantity held",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. hardware/docs/inventory-2026-09-25.csv:18: TPS55285VALR, WQFN-15, C52160906, JLCPCB Parts Qty 12, Global Sourcing 0, Consigned 0. The figure is the quantity the owner stated on 2026-09-25. Agents cannot read the library (rule 6). 12 covers 5 boards x 1 placement."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/Research.md:230",
+    "quantity": "Servo supply part and package",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. JLCPCB API (vendors.py jlcpcb C52160906; https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList; read 2026-09-28T10:44:45Z): exact match C52160906, TPS55285VALR, maker label Texas Instruments, package WQFN-15, stockCount 2702, canPresaleNumber 2691, library type expand. jlcparts copy, opened read-only at 2026-09-28T10:44:50Z: jlc_components row 52160906, mfr TPS55285VALR, package WQFN-15, joints 15, manufacturer empty, attributes {}, fetched_at 1779539991 (2026-05-23T12:39:51Z). SLVSI72A (read 10:37:06Z), Figure 4-1: VAL package, 15-pin WQFN-HR."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/Research.md:284",
+    "quantity": "Enable node through an RP2354B reset",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. IOBoard.md:221: the monostable's gates follow the enable node alone and stay enabled through a watchdog reset while the panel beats. At 23c82ca, Monostable.md line 29 has one enable node, high while retriggered. Line 34 puts no programmable element between GPIO6 and either gate. Lines 453-454 make GP3 an input that listens. Nothing the RP2354B does reaches the node, so an expander held off only by the enable stays on through the reset."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/Research.md:284",
+    "quantity": "TPS22990 and TPS22918 input rating",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. https://www.ti.com/lit/ds/symlink/tps22990.pdf, read 2026-09-28T10:44:30Z (HTTP 200), 7.3: VIN 0.6 V to VBIAS, and VBIAS 2.5 to 5.5 V. https://www.ti.com/lit/ds/symlink/tps22918.pdf, read 2026-09-28T10:44:31Z (HTTP 200), 6.3: VIN 0 to 5.5 V; page 1 gives 1 V to 5.5 V. Both give a VIN absolute maximum of 6 V. Neither takes 8.4 V."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/IOBoard.md:325",
+    "quantity": "Pack voltage range at the converter's input",
+    "verdict": "wrong",
+    "correct_marking": "assumption",
+    "reason": "The 6.0 V end follows from F9 (owner, 2026-09-25); the 8.4 V end does not. F9's answer gives lithium-ion 18650 and a 3.0 V floor, and no charge voltage. F9's proposed answer calls 4.2 V cells a candidate with no source in the tree. 4.2 V a cell entered IOBoard.md:325 and hardware/STATUS.md:25 in commit 8d8964f (2026-09-25, 'Carry the owner's answers through ...') as a derivation with no source. The owner attribution on STATUS.md:25 covers the two sources and the 12 to 20 V input, not the charge voltage. Research.md:284 checks the converter up to the pack's full charge, so R6 needs this figure. The cell and charger R7 selects set it. The range is also at the pack terminals, not at VIN (P1 question 4)."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/IOBoard.md:326",
+    "quantity": "Servo converter efficiency from the pack",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. IOBoard.md:326 takes 90 % from Power.md:68, a figure for the DC input, and states that the efficiency from the pack is not stated. SLVSI72A (read 2026-09-28T10:37:06Z), Figures 5-1 to 5-8: curves for VOUT 5, 9, 12 and 15 V at VIN 5, 9, 12 and 20 V. None is at 6.0 to 8.4 V in with 8.4 V out."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/IOBoard.md:326",
+    "quantity": "Servo supply input current from the pack",
+    "verdict": "wrong",
+    "correct_marking": "assumption",
+    "reason": "The arithmetic holds: 53.34 W, 59.27 W, 7.06 A and 9.88 A. But the figures follow from two assumed inputs, not a source. The 90 % is assumed: IOBoard.md:326 says the efficiency from the pack is not stated. 6.35 A at 8.4 V from the pack is also assumed: IOBoard.md:345 marks it not checked. In boost mode the input current is the inductor current (SLVSI72A, read 2026-09-28T10:37:06Z, equation 7). The average inductor current limit clamps it at 7 A minimum and 8 A typical, with no maximum (5.4). The peak limit is 13 A typical. So 9.9 A is not reached at 6.0 V. It is not shown to be an upper bound either, because the limit has no maximum. Added as a question."
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/IOBoard.md:341",
+    "quantity": "Servo supply control",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. SLVSI72A (read 2026-09-28T10:37:06Z), 6.3.11 and 7.1: an 11-bit reference DAC, 45 mV to 1.2 V. 6.3.12 and 7.2: the current limit is in register 02h. Table 6-2: the MODE resistor sets the address, 74h or 75h. 5.5: SCL 100 to 1000 kHz. At reset, REF is 282 mV; with INTFB 0.0564 that gives 5 V, and IOUT_LIMIT is 5 A. EN/UVLO below 0.4 V resets every register (6.3.6)."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/IOBoard.md:342",
+    "quantity": "Servo rail voltage settings",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. Both settings entered the Decided table of hardware/STATUS.md in the owner's own commit da7232b (Julian, 2026-09-02): 'The hardware record settles the servo rail as two output settings'. F16's answer (owner, 2026-09-25) puts the ceilings at 6.0 V and 8.7 V against them. Both lie in SLVSI72A's 0.8 to 15 V (5.2, read 2026-09-28T10:37:06Z). No tolerance is stated (P1 question 5)."
+   },
+   {
+    "index": 11,
+    "where": "hardware/docs/IOBoard.md:343",
+    "quantity": "Servo rail current ceiling",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds as the register's top: SLVSI72A (read 2026-09-28T10:37:06Z), 7.2, 1111111b = 6.35 A. It bounds the rail only while Current_Limit_EN (register 02h bit 7) is set. With the bit cleared, the bound is the average inductor current limit, 7 A minimum and 8 A typical (5.4), and page 1 gives up to 7 A output in buck mode. Power.md:60 calls 6.35 A a 'hard ceiling', which overstates it. An added question asks for the bound."
+   },
+   {
+    "index": 12,
+    "where": "hardware/docs/IOBoard.md:343",
+    "quantity": "Servo rail current lower end and per-setting limit",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. Commit da7232b (2026-09-02) gives 4 to 8 A with '12 V or more delivers the full 8 A at 8.4 V; a 5 V input delivers about 4 A'. Commit 2e4db2e (2026-09-25) changes only 8 A to 6.35 A. The board has no 5 V input: DC is 12 to 20 V and the pack 6.0 to 8.4 V. At 23c82ca, Monostable.md:569 reads the old range per setting: 8 A at 8.4 V and 4 A at 5.5 V. No figure per setting is stated anywhere."
+   },
+   {
+    "index": 13,
+    "where": "hardware/docs/IOBoard.md:344",
+    "quantity": "Converter input from the DC input",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. The Power row at Research.md:61 gives 12 to 20 V (owner, 2026-09-25). 20 V is 2.0 V under SLVSI72A's lowest rising input-OVP trip, 22.0 V (5.4, read 2026-09-28T10:37:06Z)."
+   },
+   {
+    "index": 14,
+    "where": "hardware/docs/IOBoard.md:345",
+    "quantity": "Rail current required at 8.4 V from the pack",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. IOBoard.md:345 and hardware/STATUS.md:37 mark 6.35 A at 8.4 V from the pack as not checked, and no owner answer gives the current required from the pack. SLVSI72A (read 2026-09-28T10:37:06Z), 5.4: the average inductor current limit is 7 A minimum and 8 A typical (VIN 8 V, VOUT 15 V, 400 kHz). By equation 7, 6.35 A at 8.4 V from 6.0 V at 90 % needs 9.88 A. At the limit the rail gives 4.5 to 5.1 A."
+   },
+   {
+    "index": 15,
+    "where": "hardware/docs/IOBoard.md:346",
+    "quantity": "Converter current-limit sense",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. SLVSI72A (read 2026-09-28T10:37:06Z), page 1 and 6.3.12: the output current limit needs no external current sense resistor. Table 4-1 has no sense pins."
+   },
+   {
+    "index": 16,
+    "where": "hardware/docs/IOBoard.md:348",
+    "quantity": "Port supply switches",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. Commit 46f02ad (2026-09-25) records an owner decision of that date: 'Each port has a supply switch through an I/O expander'. hardware/STATUS.md:27 gives one supply switch per port. 8.4 V matches the HV setting. P1's pin arithmetic (27 to 32 plus 20) uses a budget that IOBoard.md:133 says may not cover the 20 ports. The owner's decision does not rest on that arithmetic."
+   },
+   {
+    "index": 17,
+    "where": "hardware/docs/IOBoard.md:349",
+    "quantity": "Signal-only mode",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. shared/ui/stub_screen.c:57 reads 'Signal-only mode per socket, supply pin disconnected'. The source is a file in the tree, not an owner answer."
+   },
+   {
+    "index": 18,
+    "where": "hardware/docs/IOBoard.md:350",
+    "quantity": "Port voltage ceiling",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. F16, Research.md:544 (owner, 2026-09-25); stub_screen.c:56 agrees. SLVSI72A (read 2026-09-28T10:37:06Z), 6.3.15 and 5.4: the output OVP trips at 110.5 to 120 % of the target. Firmware can disable it (FB_OVP, register 04h bit 6, 7.4), so it does not stand in for the ceiling."
+   },
+   {
+    "index": 19,
+    "where": "hardware/docs/IOBoard.md:340",
+    "quantity": "Load gates at reset",
+    "verdict": "wrong",
+    "correct_marking": "sourced",
+    "reason": "IOBoard.md:340 is in state 'required'. Its Source column cites CONTRIBUTING.md:34-35, testbench/WIRING.md:22 and firmware/iomcu/CMakeLists.txt:8-13, and the line says it applies the tree's fail-safe rule. The one owner decision behind it is the watchdog (hardware/STATUS.md:32, owner, 2026-09-25), which covers gates opening at an RP2354B reset only. The reflash and unpowered cases and the holding resistor come from WIRING.md:22's rule for relay drivers. The converter being off comes from the fail-safe rule. Commit 6d8187e (2026-09-27) lists this check as a correction of the plan, not an owner decision. An owner date on the whole value would credit the owner with what the tree derives."
+   },
+   {
+    "index": 20,
+    "where": "hardware/docs/IOBoard.md:378",
+    "quantity": "ILIM resistor on the TPS55285",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds. SLVSI72A (read 2026-09-28T10:37:06Z), Table 4-1: 15 pins, none of them ILIM. 6.3.9: the average inductor current limit is internal, 8 A typical. Table 6-2: a MODE resistor of 0, 24.9, 48.7 or 82.5 kOhm, or open, sets the address (74h or 75h) and the default OE bit."
+   },
+   {
+    "index": 21,
+    "where": "hardware/docs/IOBoard.md:536",
+    "quantity": "Servo rail current limit for a shorted output",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Holds as a statement of the setting: SLVSI72A (read 2026-09-28T10:37:06Z), 7.2, caps IOUT_LIMIT at 6.35 A. The current into a short can still exceed it, for three reasons. Accuracy at 6.35 A is not specified; at the 5 A setting it is +/-0.3 A (5.4). OCP_DELAY lets current run above the limit for up to 1.024 x 12 ms (7.3). Clearing Current_Limit_EN leaves only the inductor limit, 7 A minimum and 8 A typical. No port-switch limit is stated."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:343 gives 4 to 6.35 A and says the limit 'follows the voltage setting', with no figure per setting. The 4 A comes from a 5 V input the board lacks (commit da7232b). Monostable.md:569 at 23c82ca reads the range as figures per setting. P2 sizes the inductor and the port switches from the answer."
+   },
+   {
+    "index": 1,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:345 leaves 6.35 A at 8.4 V from the pack unchecked. SLVSI72A (read 2026-09-28T10:37:06Z), 5.4 with equation 7: from 6.0 V at 90 %, the 7 A minimum inductor limit gives 4.5 A at 8.4 V and the 8 A typical gives 5.1 A. 6.35 A would need 9.88 A. The answer fixes the inductor's DC current at the low end, which Research.md:284 asks R6 to check."
+   },
+   {
+    "index": 2,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:326 states that the efficiency from the pack is not stated. In SLVSI72A (read 2026-09-28T10:37:06Z), Figures 5-3 and 5-4 (VOUT 9 V, VIN 5 V and 9 V) bracket the case. No curve is at 8.4 V out. Equation 7 needs the figure."
+   },
+   {
+    "index": 3,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:374 leaves R5's overvoltage threshold unstated, and 12 to 20 V (owner, 2026-09-25) has no tolerance or transient. SLVSI72A (read 2026-09-28T10:37:06Z): input OVP 22.0 to 23.0 V rising; VIN absolute maximum 27 V. R5 runs beside R6 in T3, so R6's P2 cannot take R5's clamp as an input."
+   },
+   {
+    "index": 4,
+    "verdict": "confirmed",
+    "reason": "F9 fixes 6.0 V at the pack terminals. R5's disconnect and source selection sit between the pack and VIN, and no drop is stated (IOBoard.md:326-330). Equation 7 scales the inductor's DC current with 1/VIN."
+   },
+   {
+    "index": 5,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:342 says 'up to' and gives no tolerance. SLVSI72A (read 2026-09-28T10:37:06Z), 5.4, gives VOUT_FULL 9.85 to 10.15 V only at the 10 V full scale. The +/-1.5 % at 8.4 V is P1's extrapolation; page 1 gives +/-1 % reference accuracy. The 8.7 V HV ceiling sits 0.3 V above the setting."
+   },
+   {
+    "index": 6,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:340 states that what drives the enable is not stated. SLVSI72A (read 2026-09-28T10:37:06Z), 6.3.6: the registers reset only when EN/UVLO falls below 0.4 V. With a divider, the converter keeps its last setting through an RP2354B reset. 6.3.2: a MODE resistor that sets the default OE bit to 1 starts switching at power-up without firmware. 5.1 also limits EN/UVLO, SCL and SDA to VCC + 0.3 V, and in shutdown every function is disabled (6.3.6). An EN held low while a 3.3 V I2C bus stays pulled up is therefore a check for P2 and P5."
+   },
+   {
+    "index": 7,
+    "verdict": "confirmed",
+    "reason": "Only the monostable has a temperature range, 0 to 50 C (IOBoard.md:184, 220). SLVSI72A (read 2026-09-28T10:37:06Z): RθJA 47.6 C/W on a standard board and 33 C/W on the EVM (5.3); junction temperature 125 C recommended maximum (5.2). The inductor's current ratings depend on the ambient temperature."
+   },
+   {
+    "index": 8,
+    "verdict": "confirmed",
+    "reason": "SLVSI72A (read 2026-09-28T10:37:06Z), 6.3.7: four settings; 400 or 800 kHz is recommended at high power. 8.1: below 500 kHz at high power. 8.2.2.3: the inductance must exceed 1.2/fSW (3 uH at 400 kHz), and ripple equations 5, 6 and 8 depend on fSW. The tree states no frequency."
+   },
+   {
+    "index": 9,
+    "verdict": "confirmed",
+    "reason": "SLVSI72A (read 2026-09-28T10:37:06Z), 8.2.2.3: saturation must exceed the calculated peak current. 5.4 gives the peak limit as 13 A typical, with no minimum or maximum. The inductors in Table 8-2 saturate at 15.2 to 17 A. The two criteria lead to different inductor size classes."
+   },
+   {
+    "index": 10,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:348 and 383 name the 20 port switches. IOBoard.md:340 leaves the converter's enable driver open. IOBoard.md:256 asks whether R4's bias selector may sit on the expander. The expander's width and count depend on the answer."
+   },
+   {
+    "index": 11,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:481: the coprocessor's I2C speed is not stated. SLVSI72A (read 2026-09-28T10:37:06Z), 5.5: fSCL 100 to 1000 kHz, so the TPS55285 is not specified below 100 kHz. P2 checks the expander's clock rating against the bus rate."
+   },
+   {
+    "index": 12,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:218 asks this for R3 and R6; the R3 row (Research.md:281) asks the same. If the port switches were the gate, IOBoard.md:188 and 192 would bind each switch: open within 5 ms, open when undriven, under 5 mA off, and I_off or 4.7 kOhm on its input. The Not defeatable rule (IOBoard.md:197) would then keep them off the expander."
+   },
+   {
+    "index": 13,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:379: not stated. Firmware bounds a servo at 3.0 A (docs/Servo.md:35) and a synchronised pair at 4.0 A (docs/Servo.md:68). The rail's limit is at most 6.35 A."
+   },
+   {
+    "index": 14,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:536: a port switch's limit is not stated. The rail's one limit is shared by 20 ports. It can run above its setting for up to 1.024 x 12 ms when OCP_DELAY is set (SLVSI72A 7.3, read 2026-09-28T10:37:06Z), and firmware can disable it (7.2, bit 7). Parts with and without their own limit differ."
+   },
+   {
+    "index": 15,
+    "verdict": "confirmed",
+    "reason": "No drop is stated. Each switch sits in series with a 10 mOhm monitor shunt (IOBoard.md:351). P2 checks on-resistance against the allowed drop."
+   },
+   {
+    "index": 16,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:349 requires the supply pin disconnected. Only the servo rail gate has a leakage limit, a 5 mA placeholder (IOBoard.md:188)."
+   },
+   {
+    "index": 17,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:531: a lead carries signal, ground and rail. docs/OpenYGE.md:253: a BEC drives a regulated voltage to the receiver and servos. SLVSI72A (read 2026-09-28T10:37:06Z), 6.4.1 and 6.3.14: in FPWM mode the converter passes power from output to input, so a back-driven rail reaches VIN. The tree states no requirement."
+   },
+   {
+    "index": 18,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:221 leaves the deadline open, and R1 checks the watchdog timeout against it (Research.md:279). R6's share of it, the expander's reset path and the switch's turn-off, is what P2 qualifies."
+   },
+   {
+    "index": 19,
+    "verdict": "confirmed",
+    "reason": "F16 (owner, 2026-09-25) gives 6.0 V and 8.7 V with no tolerance, and P2 needs a band to qualify the threshold's accuracy. The 8.53 V in the question's reason extrapolates the +/-1.5 % full-scale accuracy (SLVSI72A 5.4)."
+   },
+   {
+    "index": 20,
+    "verdict": "confirmed",
+    "reason": "F16's answer states no response time. Overvoltage detectors and protected switches differ in response time, so P2 needs the figure."
+   },
+   {
+    "index": 21,
+    "verdict": "confirmed",
+    "reason": "F16's answer states the cut-off only. Auto-retry and latch-off parts differ."
+   },
+   {
+    "index": 22,
+    "verdict": "rejected",
+    "reason": "The question is valid, but one of its candidates is wrong, so it is re-added in corrected form. The question calls 15 V 'the TPS55285's highest programmable output'. In SLVSI72A (read 2026-09-28T10:37:06Z), 15 V is only the recommended maximum (5.2), which revision A lowered from 22 V (Revision History). Table 7-6 gives 20 V at INTFB 11b and REF 0780h. REF reaches 1.2 V (7.1), which is about 21.3 V at ratio 0.0564. Firmware can also disable FB_OVP (7.4). As written, the owner would answer on a false premise."
+   }
+  ],
+  "added": [
+   {
+    "function": "Servo supply",
+    "question": "What is the 2S pack's full-charge voltage, in V: 8.4 V (2 x 4.2 V), or the charge voltage of the cell and charger R7 selects?",
+    "why": "Research.md:284 checks the TPS55285 from the floor of F9 up to the pack's full charge. F9's answer gives the chemistry and the 3.0 V floor only. 4.2 V a cell entered IOBoard.md:325 in commit 8d8964f without a source. P2 checks the converter's input range against the top of this range, and its mode at the 8.4 V setting: buck-boost at 8.4 V in, buck above it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:325",
+    "for_quantity": "Pack voltage range at the converter's input",
+    "asks": ""
+   },
+   {
+    "function": "Servo supply",
+    "question": "What input current from the pack, in A, do the servo supply's inductor and the pack path take at the 6.0 V floor: 9.9 A (8.4 V x 6.35 A at an assumed 90 %), or the TPS55285's average inductor current limit, 7 A minimum and 8 A typical, with no maximum stated?",
+    "why": "IOBoard.md:326 computes 7.1 A and 9.9 A from an assumed 90 % and from 6.35 A at 8.4 V from the pack, which IOBoard.md:345 marks not checked. In boost mode the input current is the inductor current (SLVSI72A equation 7, https://www.ti.com/lit/ds/symlink/tps55285.pdf, read 2026-09-28T10:37:06Z). The average inductor current limit clamps it (5.4). That limit has no maximum, and the only other bound is the peak limit, 13 A typical. R6 sizes the inductor's DC current from this figure, and R5 and R7 size the pack path and the cells.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:326",
+    "for_quantity": "Servo supply input current from the pack",
+    "asks": ""
+   },
+   {
+    "function": "Port supply switch",
+    "question": "What capacitance must a port supply switch charge at turn-on, in uF, and what peak inrush current may it draw from the servo rail while doing so, in A?",
+    "why": "The tree states no capacitance on a port's supply pin and no turn-on requirement (IOBoard.md:348, 379). The rail's only current limit is the TPS55285's: at most 6.35 A, with a 128 us default response (SLVSI72A 7.3, read 2026-09-28T10:37:06Z), shared by 20 ports. A port switched onto an uncharged capacitance pulls down the rail for the other 19. P2 chooses between switches with and without a controlled rise time from these figures.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Port supply switch",
+    "question": "What is the highest current the servo rail may deliver into a shorted port, in A: 6.35 A, with firmware keeping the TPS55285's output current limit enabled and its response at 128 us, or the average inductor current limit the converter falls back to otherwise, 7 A minimum and 8 A typical, with no maximum stated?",
+    "why": "IOBoard.md:343 and Power.md:60 treat 6.35 A as a hard ceiling. SLVSI72A (read 2026-09-28T10:37:06Z) lets firmware clear Current_Limit_EN (7.2, register 02h bit 7). It also lets firmware delay the limit by up to 1.024 x 12 ms (OCP_DELAY, 7.3). A port switch with no limit of its own (IOBoard.md:536) carries this current until it opens. P2 qualifies each switch's current rating against the answer.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Port voltage ceiling",
+    "question": "Must the RP2354B read, for each of the 20 ports, whether the ceiling has cut the port off and which ceiling its jumper selects? Yes or no for each.",
+    "why": "F16's answer and IOBoard.md:350 give the cut-off and the jumper, and nothing that reaches firmware. The SETUP stub lists the ceilings only as set in hardware (shared/ui/stub_screen.c:56). A trip report needs a fault output on the ceiling part, and the two reports together take up to 40 inputs through the I/O expander or GPIO. P2 qualifies the ceiling part and sizes the expander from the answer.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Port voltage ceiling",
+    "question": "What is the highest voltage the port supply switches and the ceiling parts must withstand at their input, in V: 15 V (the TPS55285's recommended maximum output), 17 V (its VOUT absolute maximum), 20 V (the DC input through a failed converter), or about 21.3 V (the highest target its registers can set)?",
+    "why": "The ceiling cuts a port off above 6.0 V or 8.7 V (F16), so the ceiling part and the port switch see whatever the rail reaches. SLVSI72A (read 2026-09-28T10:37:06Z) recommends at most 15 V out (5.2) and gives VOUT an absolute maximum of 17 V (5.1). Its registers reach further. Table 7-6 gives 20 V at INTFB 11b and REF 0780h. REF reaches 1.2 V, which is 21.3 V at ratio 0.0564 (7.1, 7.4). Firmware can disable the output overvoltage protection (FB_OVP, 7.4). P2 checks each part's absolute maximum against the answer.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   }
+  ],
+  "functions_missing": []
+ }
+}
