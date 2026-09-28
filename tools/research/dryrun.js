@@ -209,7 +209,7 @@ async function runTask(task, opts = {}) {
       else {
         data.reviewed = outs
         const figFiles = opts.oneFigure ? ['hardware/docs/Parts.md'] : outs.filter(f => f.startsWith('hardware/docs/'))
-        data.figure_checks = opts.noFigures ? [] : figFiles.map(file => ({ file, line: 1, figure: opts.blankFigure ? '' : 'stock', return_file: opts.blankFigure ? '' : opts.returnFile || 'hardware/research/round1/T2/012-P4-stock-R1.json', kind: opts.figureKind || 'other', agrees: !opts.criticDisagrees }))
+        data.figure_checks = opts.noFigures ? [] : figFiles.map(file => ({ file, line: opts.checkLine === undefined ? 1 : opts.checkLine, figure: opts.blankFigure ? '' : 'stock', return_file: opts.blankFigure ? '' : opts.returnFile || 'hardware/research/round1/T2/012-P4-stock-R1.json', kind: opts.figureKind || 'other', agrees: !opts.criticDisagrees }))
         data.sentence_issues = opts.sentenceIssue ? [{ file: 'f', line: 1, issue: 'i' }] : []
         data.marked = opts.marked || []
         data.part_rows = opts.partRows || []
@@ -1292,6 +1292,11 @@ async function main() {
   // Every figure P7 wrote needs a check of its own.
   r = await runTask('T6', { p7Figures: [{ file: 'hardware/docs/Parts.md', line: 1, figure: 'stock' }, { file: 'hardware/docs/Parts.md', line: 2, figure: '42 mA' }] })
   check(r.result.summary.stopped === true && /figures P7 wrote without a check/.test(r.result.summary.reasons[0]), 'T6: a figure P7 wrote without a check stops it')
+  // A figure check names a line of its page; P7 names the line of each figure.
+  r = await runTask('T6', { checkLine: 0 })
+  check(r.result.summary.stopped === true && /no figure checked on|checked no figure/.test(r.result.summary.reasons[0]), 'T6: a figure check at line 0 checks nothing')
+  r = await runTask('T6', { p7Figures: [{ file: 'hardware/docs/Parts.md', line: 0, figure: 'stock' }] })
+  check(r.result.summary.stopped === true && /figures P7 wrote without their line/.test(r.result.summary.reasons[0]), 'T6: a figure P7 wrote without its line stops it')
   // A restarted P5 return of an earlier check is superseded too.
   r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/T5/004-P5-restart.json', figureKind: 'other' })
   check(r.result.summary.stopped === true, 'T6: a figure citing an earlier restarted P5 return stops it')

@@ -752,6 +752,14 @@ def answers(rows, c, skip=()):
             and r[0] not in skip}
 
 
+def feeds_suffix(q):
+    """The text `raised` appends to a question that only feeds a decision:
+    " (feeds Q4 only)" for one with `decision` Q4, empty for any other."""
+    if q.get("blocks") == "decision-only":
+        return f" (feeds {q.get('decision')} only)"
+    return ""
+
+
 def decision_only(results):
     """The questions committed P1 runs raised that only feed Q4, Q8 or Q9:
     they hold neither P2 nor its task."""
@@ -1101,13 +1109,14 @@ def questions_gate(results, rows, categories):
 
     def words(t):
         return " ".join(str(t).split())
+    # The suffix is the one `raised` wrote for the question, or none.
     moved = [q["id"] for _, q in committed if q["id"] in by_id
              and (q["category"] in categories
                   or by_id[q["id"]][1] in categories)
              and (by_id[q["id"]][1] != q["category"]
-                  or re.sub(r" \(feeds Q\d only\)$", "",
-                            words(by_id[q["id"]][2])) != words(
-                      str(q.get("question", "")).replace("|", "\\|")))]
+                  or words(by_id[q["id"]][2]) != words(
+                      str(q.get("question", "")).replace("|", "\\|"))
+                  + feeds_suffix(q))]
     if moved:
         raise SystemExit("rows under Raised by P1 that no longer carry the "
                          "category and question P1 raised: "
@@ -1449,6 +1458,29 @@ def cited_returns(returns):
     return out
 
 
+def misplaced_figures(results, returns):
+    """The P7 critic's figure checks whose page line does not state the
+    figure, as the page stands after T6: a line below 1 or past the end, a
+    file outside the tree or not a file, or a line without the figure's
+    text (runs of whitespace compared as one space)."""
+    root = os.path.realpath(results)
+    out = []
+    for r in returns:
+        if r.get("role") != "P7-critic":
+            continue
+        for x in r["data"].get("figure_checks", []):
+            f, n = str(x.get("file", "")), x.get("line")
+            figure = " ".join(str(x.get("figure", "")).split())
+            path = os.path.realpath(os.path.join(root, f))
+            lines = (read(path).split("\n")
+                     if path.startswith(root + os.sep)
+                     and os.path.isfile(path) else [])
+            if not (type(n) is int and 0 < n <= len(lines) and figure
+                    and figure in " ".join(lines[n - 1].split())):
+                out.append(f"{f}:{n} {figure}")
+    return out
+
+
 def cmd_record(args):
     """record, with every refusal after T6 setting P7's changes aside."""
     try:
@@ -1632,6 +1664,11 @@ def record(args):
         if absent:
             refuse("the critic checked figures against files not committed: "
                    + ", ".join(absent))
+        # Each check names the line of its page that states its figure.
+        misplaced = misplaced_figures(results, rets)
+        if misplaced:
+            refuse("figure checks whose line does not state the figure: "
+                   + "; ".join(misplaced))
         paths += [os.path.join(results, d) for d in dirty
                   if not in_run(d)]
     if (result.get("summary") or {}).get("selection") and not stopped:
@@ -1697,11 +1734,8 @@ def cmd_raised(args):
         return " ".join(s.replace("|", "\\|").split())
 
     def row(q):
-        feeds = ""
-        if q["blocks"] == "decision-only":
-            feeds = f" (feeds {q['decision']} only)"
         return (f"| {q['id']} | {q['category']}, {cell(q['function'])} | "
-                f"{cell(q['question'])}{feeds} | |")
+                f"{cell(q['question'])}{feeds_suffix(q)} | |")
 
     lines = text.split("\n")
     start = lines.index("#### Raised by P1")

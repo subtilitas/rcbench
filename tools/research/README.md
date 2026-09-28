@@ -344,8 +344,10 @@ within the plan's Outputs (`hardware/docs/`, `hardware/STATUS.md`,
 not a file afterwards, a file P7 declared that did not change, a group page
 outside `hardware/docs/` or among the fixed outputs, a group page HEAD already
 holds, a `Research.md` whose rows under "Raised by P1", Blocking and Sourcing
-answers or decisions differ from HEAD's, and a figure the critic checked
-against a file under `hardware/research/round1/` that HEAD does not hold. A
+answers or decisions differ from HEAD's, a figure the critic checked
+against a file under `hardware/research/round1/` that HEAD does not hold, and
+a figure check whose line of its page, after T6, does not state the figure in
+the check's text (runs of whitespace compared as one space). A
 renamed file counts as both its old and its new path. A T6 is recorded as
 stopped unless P7 and its critic both return, the critic's three checks pass,
 it checked at least one figure and every figure agrees with its return, no
@@ -365,7 +367,9 @@ unreadable output included, does too, and keeps what P7 changed in a stash
 named `refused T6 RUN_ID` in the results tree. `raised` reads the committed
 run record only and refuses a plan tree with uncommitted changes. It writes
 each question and function on one line: every run of whitespace, a line break
-among them, becomes one space.
+among them, becomes one space. A question that only feeds a decision ends in
+` (feeds Q4 only)`, with that decision's ID; the gates accept that suffix on
+that question alone.
 
 A follow-up task takes `--followup FILE`, a JSON object with `phases` (`P1`,
 `P2-P4` or `P5-P6`), `round` (1 or 2), `categories` and `items`, and

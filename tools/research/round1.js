@@ -341,7 +341,7 @@ function p7CriticPrompt(p7) {
   const decided = Object.fromEntries(['Q4', 'Q8', 'Q9'].map(q => [q, (A.decisions || {})[q] || '']))
   return `${ctx('P7-critic', '', 'P7-critic')}
 
-You are the critic of P7. Exception to the rule above: you may correct the pages in ${P.results}; do not commit. figure_checks and sentence_issues describe the pages as they stand after your corrections; list every figure you checked, every figure P7 lists in figures among them by the same file and figure text, its file and return_file repository-relative, and its kind: budget or combination for one of P5, other for the rest. List in reviewed every file you checked, repository-relative; every file P7 listed is checked. Check every figure and every stated combination on the pages P7 wrote against the returns under ${P.results}/hardware/research/round1/: a budget or combination against the last P5/P6 check, ${A.last_p56 || 'T5'}, only, as its task.json marks it upheld, and the options chosen for Q4, Q8 and Q9 against the owner's decisions: ${J(decided)}. Check at least one figure on each of these pages: ${pages.join(', ')}; on hardware/docs/IOBoard.md a line's chosen part checked against hardware/research/round1/selection.json counts, and on hardware/docs/Research.md the status line checked against a run's task.json. Check every sentence against the writing rules in CONTRIBUTING.md.${MARKS.length ? ` Give in marked, by its 0-based index, the file and line where the pages state each of these as its state says: ${J(MARKS)}.` : ''}${OWED_PARTS.length ? ` Give in part_rows, for each of these parts under its function, the line of its row in hardware/docs/Parts.md and the group page that names it: ${J(OWED_PARTS)}.` : ''}${(A.jlc_stock_row || []).length ? ` Review tools/jlc_stock.py against each sentence of its row in the Outputs table, listed here, and give each, by its 0-based index, a verdict in jlc_stock_review with the line that does what it states and your reason: ${J(A.jlc_stock_row)}.` : ''} Apply the corrections, then run the three checks P7 ran on the tree you leave, ${T6_CHECKS}, and report each as passed or not with its last lines. P7's return:
+You are the critic of P7. Exception to the rule above: you may correct the pages in ${P.results}; do not commit. figure_checks and sentence_issues describe the pages as they stand after your corrections; list every figure you checked, every figure P7 lists in figures among them by the same file and figure text, its file and return_file repository-relative, its line: the line of the page as it stands after your corrections that states the figure in that text, and its kind: budget or combination for one of P5, other for the rest. List in reviewed every file you checked, repository-relative; every file P7 listed is checked. Check every figure and every stated combination on the pages P7 wrote against the returns under ${P.results}/hardware/research/round1/: a budget or combination against the last P5/P6 check, ${A.last_p56 || 'T5'}, only, as its task.json marks it upheld, and the options chosen for Q4, Q8 and Q9 against the owner's decisions: ${J(decided)}. Check at least one figure on each of these pages: ${pages.join(', ')}; on hardware/docs/IOBoard.md a line's chosen part checked against hardware/research/round1/selection.json counts, and on hardware/docs/Research.md the status line checked against a run's task.json. Check every sentence against the writing rules in CONTRIBUTING.md.${MARKS.length ? ` Give in marked, by its 0-based index, the file and line where the pages state each of these as its state says: ${J(MARKS)}.` : ''}${OWED_PARTS.length ? ` Give in part_rows, for each of these parts under its function, the line of its row in hardware/docs/Parts.md and the group page that names it: ${J(OWED_PARTS)}.` : ''}${(A.jlc_stock_row || []).length ? ` Review tools/jlc_stock.py against each sentence of its row in the Outputs table, listed here, and give each, by its 0-based index, a verdict in jlc_stock_review with the line that does what it states and your reason: ${J(A.jlc_stock_row)}.` : ''} Apply the corrections, then run the three checks P7 ran on the tree you leave, ${T6_CHECKS}, and report each as passed or not with its last lines. P7's return:
 ${J(p7)}`
 }
 
@@ -1499,9 +1499,11 @@ if (TASK === 'T6') {
   const failed = critic ? Object.entries(critic.checks || {}).filter(([, r]) => !(r && r.passed)).map(([k]) => k) : []
   // The critic's own findings, as they stand after its corrections.
   if (critic) {
-    // A figure check names its figure and the committed file it comes from,
-    // a path ending in .json; session.py record reads the same path.
-    const named = (critic.figure_checks || []).filter(x => !readsNone(x.figure) && RETURN_FILE.test(String(x.return_file || '')))
+    // A figure check names its figure, the line of the page that states it
+    // and the committed file it comes from, a path ending in .json;
+    // session.py record reads the same path and that the line states the
+    // figure.
+    const named = (critic.figure_checks || []).filter(x => !readsNone(x.figure) && Number.isInteger(x.line) && x.line > 0 && RETURN_FILE.test(String(x.return_file || '')))
     if (!named.length) failed.push('the critic checked no figure')
     // Each group page and each output under hardware/docs/ carries figures
     // from the returns; each needs at least one figure checked.
@@ -1511,6 +1513,8 @@ if (TASK === 'T6') {
     const unchecked = ((p7 && p7.figures) || []).filter(w => !named.some(x => x.file === w.file && String(x.figure).trim() === String(w.figure).trim()))
     if (unchecked.length) failed.push(`${unchecked.length} figures P7 wrote without a check: ${unchecked.slice(0, 5).map(w => `${w.file}: ${w.figure}`).join('; ')}`)
     if (p7 && !(p7.figures || []).length) failed.push('P7 listed no figure it wrote')
+    const unplaced = ((p7 && p7.figures) || []).filter(w => !(Number.isInteger(w.line) && w.line > 0))
+    if (unplaced.length) failed.push(`${unplaced.length} figures P7 wrote without their line`)
     const wrong = (critic.figure_checks || []).filter(f => !f.agrees)
     if (wrong.length) failed.push(`${wrong.length} figures disagree with the returns`)
     // A budget or combination comes from the last P5/P6 check: one checked
