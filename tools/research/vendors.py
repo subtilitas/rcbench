@@ -333,6 +333,13 @@ def dk_search_call(keywords, limit):
     return out
 
 
+def dk_complete(search):
+    """Whether a search returned every product it matched."""
+    count = search.get("count")
+    return isinstance(count, int) and count <= len(search.get("products")
+                                                   or [])
+
+
 def dk_by_part(products):
     """The products of a search grouped by part number."""
     groups = {}
@@ -362,8 +369,11 @@ def dk_duplicates(mpn, details_api):
     matches = dk_by_part(search["products"]).get(dk_norm(mpn), [])
     if not matches:
         return None
+    # complete: false when the search matched more products than it
+    # returned, so a maker may be missing from the matches.
     return dk_reading(search, matches, details_api=details_api,
-                      details_status=404, duplicate=True)
+                      details_status=404, duplicate=True,
+                      complete=dk_complete(search))
 
 
 def dk_quota():
@@ -398,8 +408,9 @@ def dk_search(args, path, limit):
     dk_keep(path, out)
     # Each part number the search lists becomes today's details reading of
     # it, unless one is kept already: a search record carries the same
-    # fields as a details record.
-    if out["http_status"] == 200:
+    # fields as a details record. Only a search that returned every product
+    # it matched: a slice may hold one of a part number's several products.
+    if out["http_status"] == 200 and dk_complete(out):
         for part, products in dk_by_part(out["products"]).items():
             derived = dk_cache("details", part)
             with dk_locked(derived):

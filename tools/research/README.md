@@ -48,13 +48,15 @@ and host table. Nothing here runs in CI (continuous integration) but
   404: an agent of any run that asks again that day for the same part or
   keywords gets the kept answer, marked `"cached": true`, with the time and
   API call of the reading. A lock per part or keywords makes agents that ask
-  at once wait for one call. A keyword search also keeps each part number it
-  lists as that part's reading, unless one is kept already; on 2026-09-28 the
+  at once wait for one call. A keyword search that returned every product it
+  matched also keeps each part number it lists as that part's reading, unless
+  one is kept already; on 2026-09-28 the
   search and details records of 26 parts read both ways agreed in every
   field. A part number several Digi-Key products carry answers 404
   "Duplicate Products found" (54 parts on 2026-09-28): `vendors.py digikey`
   then reads it with one keyword search and lists the matches with their
-  makers. A refusal such as 429 is not kept. P2 and P3 read Digi-Key only
+  makers, with `"complete": false` when the search matched more products than
+  it returned. A refusal such as 429 is not kept. P2 and P3 read Digi-Key only
   for candidates that pass every requirement value, and P2 records up to
   three survivors per function.
 
