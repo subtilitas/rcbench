@@ -53,6 +53,9 @@ function check(cond, msg) {
 
 const T6OUT = ['hardware/docs/IOBoard.md', 'hardware/docs/Parts.md', 'hardware/docs/Power.md', 'hardware/docs/Research.md', 'hardware/STATUS.md', 'hardware/README.md', 'tools/jlc_stock.py']
 const JL = { sha256: 'sha', rows: 7, lcsc: [], manifest: 'm', manifest_created: '2026-09-14T09:56:01Z' }
+const CLIENTS = JSON.parse(fs.readFileSync(path.join(__dirname, 'hosts.json'), 'utf8')).clients
+// The endpoint a correct P0 row records for a host.
+const endpoint = h => h.probe == null ? `https://${h.host}/products/x` : /-api$/.test(h.client || '') ? CLIENTS[h.client].replace(/\b(LCSC|MPN)\b/, h.probe) : h.probe
 
 // opts: refute ['label:part'], refuteFigure ['label'], stands, omit ['label'],
 // nulls {label: count}, throws [label], critic 'none' | 'all', p0 {...}, hosts
@@ -81,7 +84,7 @@ async function runTask(task, opts = {}) {
       Object.assign(data, { stop: false, held: [], checkout_head: 'deadbeef', snapshot: '2026-09-14T09:56:01+00:00',
         jlcparts: { path: 'db', sha256: JL.sha256, sha256_ok: true, rows: JL.rows, missing_lcsc: [] },
         monostable: { commit: 'c', path: 'p', fetched: true },
-        hosts: (opts.hosts || []).map(h => ({ host: h.host, url: opts.rowUrl || h.probe || '', client: opts.rowClient || h.client, http_status: 200, bytes: 1, status_marker: opts.markerText || (opts.markerless ? '' : 'Status - Active'), reachable: !(opts.down || []).includes(h.host), note: '' })) }, opts.p0 || {})
+        hosts: (opts.hosts || []).map(h => ({ host: h.host, url: opts.rowUrl || endpoint(h), client: opts.rowClient || h.client, http_status: 200, bytes: 1, status_marker: opts.markerText || (opts.markerless ? '' : 'Status - Active'), reachable: !(opts.down || []).includes(h.host), note: '' })) }, opts.p0 || {})
     }
     if (role === 'P2') {
       data.functions = [{ ...data.functions[0], function: 'f1', shortlist: [1, 2, 3].map(cand) }]
@@ -143,6 +146,7 @@ async function runTask(task, opts = {}) {
       if (opts.qSelf) data.functions[0].verify = [{ part: 'part1', kind: 'q-alternative' }]
     }
     if (role === 'P5' && opts.p5Empty) Object.assign(data, { combinations: [], budgets: [] })
+    if (role === 'P5' && opts.p5Items) data.budgets = opts.p5Items.map(item => ({ item, value: 'v', source: 's' }))
     if (role === 'P5-critic') for (const k of ['combination_verdicts', 'budget_verdicts']) data[k] = data[k].map((v, index) => ({ ...v, index, holds: !(opts.rejectBudget && k === 'budget_verdicts' && index === 0) }))
     if (role === 'P1' && opts.qCategory) data.questions = data.questions.map(q => ({ ...q, category: 'R99', source: 'mock' }))
     if (role === 'P1' && opts.decisionNone) data.questions = data.questions.map(q => ({ ...q, blocks: 'decision-only', decision: 'none' }))
@@ -197,9 +201,10 @@ async function runTask(task, opts = {}) {
       const f1 = bundle2.functions[0]
       const cand = pt => [...f1.shortlist, ...(f1.alternateRecords || [])].find(c => c.part === pt) || { requirements: [] }
       const checksFor = (pt, pk) => (opts.emptyChecks || []).includes(base) ? []
-        : (kind === 'stock' ? [...(opts.heldChecks ? ['held quantity'] : ['stock', 'presale']), 'lifecycle status', 'end-of-life notices', ...(opts.noPlacementsCheck ? [] : ['placements']), ...(cand(pt).second_source_route === 'second-vendor' && !opts.noSecondVendor ? ['second-vendor stock'] : [])]
+        : (kind === 'stock' ? [...(opts.heldChecks ? ['held quantity', ...(opts.heldAndLive ? ['stock'] : [])] : ['stock', 'presale']), 'lifecycle status', 'end-of-life notices', ...(opts.noPlacementsCheck ? [] : ['placements']), ...(cand(pt).second_source_route === 'second-vendor' && !opts.noSecondVendor ? ['second-vendor stock'] : [])]
           : [...cand(pt).requirements.map(r => r.name).filter(n => n !== opts.skipReq), ...(opts.noMakerCheck ? [] : ['manufacturer allowlist']), ...(pk === 'alternate' && !opts.noCompat ? ['pin-for-pin match', 'functional match'] : [])])
           .map((figure, k) => ({ figure, stated: 's', read: opts.readNone && kind === 'datasheet' ? 'not read: API timed out' : 'r', source: opts.noSource && kind === 'stock' ? '' : 'src', read_at: opts.undated && kind === 'stock' ? '' : '2026-09-28T10:00:00Z', agrees: !((opts.disagree || []).includes(base) && k === 0), passes: !((opts.failPass || []).includes(base) && k === 0) }))
+          .map(c => opts.heldAndLive && c.figure === 'stock' ? { ...c, passes: false } : c)
       data.parts = (opts.omit || []).includes(base) || (opts.omitPart || []).includes(`${base}:${part}`) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part), refutation: refute ? 'mock' : '' }]
       if ((opts.dupRow || []).includes(base)) data.parts.push({ ...data.parts[0], verdict: 'refuted', refutation: 'second row' })
       const oc = only ? JSON.parse(only[1]) : null
@@ -232,7 +237,7 @@ async function runTask(task, opts = {}) {
     }))
   }
   const args = { task, cap: cats.cap, categories: cats.categories, tasks: cats.tasks, schemas,
-    commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], jlcparts: JL,
+    commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, jlcparts: JL, p5_budgets: opts.p5Budgets || [],
     followup: opts.followup, first_v: 5, t6_outputs: T6OUT, for_research: opts.forResearch || [], required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {} }
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
     `return (async () => {${src}})()`)
@@ -348,6 +353,12 @@ async function main() {
   check(!r.result.summary.stopped, 'P0: JLCPCB read with its client at its probe')
   r = await runTask('T2', { hosts: jlc, rowClient: 'chrome' })
   check(r.result.summary.stopped === true, 'P0: JLCPCB read with another client stops a stock task')
+  r = await runTask('T2', { hosts: jlc, rowUrl: 'python3 /srv/checkout/tools/research/vendors.py jlcpcb C39843328' })
+  check(!r.result.summary.stopped, 'P0: the API command through an absolute path counts')
+  r = await runTask('T2', { hosts: jlc, rowUrl: 'echo C39843328' })
+  check(r.result.summary.stopped === true, 'P0: JLCPCB probe text without its command stops a stock task')
+  r = await runTask('T2', { hosts: [{ host: 'www.onsemi.com', client: 'chrome', probe: null, hold: ['R3'] }], rowUrl: 'https://example.com/onsemi' })
+  check(!r.calls.includes('P2-R3'), 'P0: a null-probe page on another host holds its categories')
   r = await runTask('T2', { hosts: jlc, rowUrl: 'https://jlcpcb.com/' })
   check(r.result.summary.stopped === true, 'P0: JLCPCB read without its probe stops a stock task')
 
@@ -625,6 +636,16 @@ async function main() {
   check(r.result.summary.figures_open.R2.includes('report: clock tolerance: part1'), 'per-part figure not reported: open')
   r = await runTask('T2', { perPartReports: { R2: ['clock tolerance'] }, reportParts: ['clock tolerance: part1'] })
   check(!r.result.summary.figures_open.R2.some(f => f.startsWith('report: clock tolerance')), 'per-part figure reported for the verified part: returned')
+  // A held part's failing live stock is superseded by its held quantity.
+  r = await runTask('T2', { held: 500, heldChecks: true, heldAndLive: true })
+  check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'held part with failing live stock: verified on its held quantity')
+  // The P5 row's budgets are each returned and upheld.
+  r = await runTask('T5', { p5Budgets: ['GPIO', 'DMA channels'], p5Items: ['GPIO', 'DMA channels: PPM'] })
+  check(r.result.summary.budgets_missing.length === 0, 'T5: every named budget returned and upheld')
+  r = await runTask('T5', { p5Budgets: ['GPIO', 'DMA channels'], p5Items: ['GPIO'] })
+  check(r.result.summary.budgets_missing.includes('DMA channels'), 'T5: a named budget not returned is missing')
+  r = await runTask('T5', { p5Budgets: ['GPIO'], p5Items: ['GPIO'], rejectBudget: true })
+  check(r.result.summary.budgets_missing.includes('GPIO'), 'T5: a named budget the critic rejected is missing')
   // Rule 6: a held part passes on its held quantity.
   r = await runTask('T2', { held: 500, heldChecks: true })
   check(r1(r).selection[0].part === 'part1', 'held part with its held quantity checked: verified')

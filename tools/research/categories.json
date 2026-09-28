@@ -83,5 +83,30 @@
     "R12": [
       "Q8 store candidate"
     ]
-  }
+  },
+  "p5_budgets": [
+    "GPIO",
+    "PIO GPIO windows",
+    "PIO state machines",
+    "PIO instruction memory",
+    "DMA channels",
+    "PWM slices",
+    "ADC inputs",
+    "SPI controllers",
+    "I2C controllers",
+    "UART controllers",
+    "in-package flash",
+    "I2C address map",
+    "current per rail",
+    "ESC pack node clamp",
+    "I2C bus timing",
+    "alert pins",
+    "motor overcurrent path",
+    "servo current abort",
+    "enable polarity",
+    "power-up sequence",
+    "allowlist",
+    "Q4 alternatives",
+    "Q8 alternatives"
+  ]
 }

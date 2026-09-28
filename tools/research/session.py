@@ -535,6 +535,9 @@ def t6_open(results):
     if summary.get("unchecked_items"):
         out.append(f"{name} left {summary['unchecked_items']} combinations "
                    "and budgets its critic did not rule on")
+    if summary.get("budgets_missing"):
+        out.append(f"{name} has no budget for "
+                   + ", ".join(summary["budgets_missing"]))
     if summary.get("rejected_items"):
         out.append(f"{name} has {summary['rejected_items']} combinations "
                    "and budgets its critic rejected")
@@ -1000,6 +1003,7 @@ def cmd_prepare(args):
         "cap": cats["cap"], "categories": cats["categories"],
         "tasks": cats["tasks"], "schemas": resolved_schemas(),
         "hosts": load("hosts.json")["hosts"],
+        "clients": load("hosts.json")["clients"],
         "jlcparts": {"sha256": info["sha256"], "rows": info["rows"],
                      "manifest": manifest,
                      "manifest_created": info["manifest_created"],
@@ -1015,6 +1019,7 @@ def cmd_prepare(args):
         "for_research": for_research,
         "required_reports": cats.get("reports", {}),
         "per_part_reports": cats.get("reports_per_part", {}),
+        "p5_budgets": cats.get("p5_budgets", []),
         "last_p56": last_p56,
         "t6_outputs": T6_REQUIRED if args.task == "T6" else [],
         "run_info": run_info(args.model, args.effort),

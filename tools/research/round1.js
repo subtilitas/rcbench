@@ -155,7 +155,7 @@ function p0Prompt() {
   const j = A.jlcparts || {}
   return `${ctx('P0', '', 'P0')}
 
-Probe every host below with its client and record one row per host, copying the host name and the client name exactly. In url record the URL fetched; for an API client, the command run with its probe. A row with another client, or without the row's probe in url, counts as not probed. A marker is a regular expression the lifecycle status matches; record what it matched. Where a row's probe is null, find a product page of one of that maker's seeds (the seeds are in the category rows and the row's note) and record its URL and whether its status is in the page body. The fields hold, hold_in_t1 and stop are for the script; report reachability only, and do not decide holds from them.
+Probe every host below with its client and record one row per host, copying the host name and the client name exactly. In url record the URL fetched, which is the row's probe where it has one, or a page on the host itself where it has none; for an API client, the command of the clients table run with the probe (${JSON.stringify(A.clients || {})}). A row with another client, URL or command counts as not probed. A marker is a regular expression the lifecycle status matches; record what it matched. Where a row's probe is null, find a product page of one of that maker's seeds (the seeds are in the category rows and the row's note) and record its URL and whether its status is in the page body. The fields hold, hold_in_t1 and stop are for the script; report reachability only, and do not decide holds from them.
 ${J(A.hosts)}
 
 Check the parts database: the SHA-256 of ${P.db} is ${j.sha256}; jlc_components holds ${j.rows} rows; every one of these LCSC numbers is in it: ${(j.lcsc || []).join(', ')}. Record in snapshot the created time of ${j.manifest}; it should be ${j.manifest_created}.
@@ -251,7 +251,7 @@ ${J(evidence)}`
 function p5Prompt() {
   return `${ctx('P5', '', 'P5')}
 
-Read every return under ${P.results}/hardware/research/round1/ (T2, T3, T4 and every FU-* directory) and run the checks of the P5 row over the whole board. The parts to check are those in ${P.results}/hardware/research/round1/selection.json, each with its alternate, and both alternatives of Q4 and Q8.`
+Read every return under ${P.results}/hardware/research/round1/ (T2, T3, T4 and every FU-* directory) and run the checks of the P5 row over the whole board. The parts to check are those in ${P.results}/hardware/research/round1/selection.json, each with its alternate, and both alternatives of Q4 and Q8.${(A.p5_budgets || []).length ? ` Return one budget for each of these, its item named as listed or "NAME: DETAIL" where it has several: ${A.p5_budgets.join('; ')}.` : ''}`
 }
 function p5CriticPrompt(p5) {
   return `${ctx('P5-critic', '', 'P5-critic')}
@@ -295,7 +295,18 @@ function readsNone(text) {
 // row taken with another client, or not at the host's fixed probe, is not a
 // reading of that host.
 function probedAsTold(h, row) {
-  return row.client === h.client && (h.probe == null || (row.url || '').includes(h.probe))
+  if (row.client !== h.client) return false
+  const url = String(row.url || '').trim()
+  // The command compares without its interpreter and the script's path.
+  const words = t => String(t).split(/\s+/).filter(Boolean).join(' ').replace(/^python3 /, '').replace(/^\S*vendors\.py/, 'vendors.py')
+  // An API client runs its command with the probe; a page client fetches
+  // the probe URL, or, with no probe, a page on the host itself.
+  const command = (A.clients || {})[h.client]
+  if (h.probe != null && /-api$/.test(h.client) && command) return words(url) === words(command.replace(/\b(LCSC|MPN)\b/, h.probe))
+  if (h.probe != null) return url.replace(/\/$/, '') === String(h.probe).replace(/\/$/, '')
+  const m = /^https?:\/\/([^/:?#]+)/i.exec(url)
+  const bare = String(h.host).replace(/^www\./, '')
+  return !!m && (m[1] === h.host || m[1] === bare || m[1].endsWith(`.${bare}`))
 }
 
 function hostReading(h, row) {
@@ -758,7 +769,10 @@ async function verifyCategory(cat, functions, bundle) {
       const cand = candidateOf(functions, e.function, e.part)
       for (const v of e.verdicts) {
         if (v.verdict !== 'confirmed') continue
-        const bad = (v.checks || []).filter(c => !c.agrees || c.passes !== true)
+        // Rule 6: a passing held quantity supersedes the live stock and
+        // presale readings of a held part.
+        const heldRoute = v.verifier === 'stock' && onBoard(cand) && Number(cand && cand.held) > 0 && (v.checks || []).some(c => c.figure === 'held quantity' && c.agrees && c.passes === true)
+        const bad = (v.checks || []).filter(c => !(heldRoute && (c.figure === 'stock' || c.figure === 'presale')) && (!c.agrees || c.passes !== true))
         if (bad.length) { v.verdict = 'refuted'; v.refutation = `checks disagree or fail: ${bad.map(c => c.figure).join(', ')}`; continue }
         if (!covered(v, cand)) { v.verdict = 'incomplete'; v.missing = requiredChecks(v.verifier, cand, v.kind).filter(n => !(v.checks || []).some(c => c.figure === n)) }
       }
@@ -1055,11 +1069,15 @@ async function phaseP5P6() {
   // of either is a check that did not run.
   // A check whose critic did not return is not an independent check.
   const missingChecks = [a.missing, b.missing, a.critic_missing, b.critic_missing].filter(Boolean)
+  // Every budget the P5 row names, upheld by the critic.
+  const upheld = (a.budgets || []).filter(x => x.upheld === true).map(x => String(x.item || ''))
+  const budgetsMissing = a.missing ? [] : (A.p5_budgets || []).filter(n => !upheld.some(i => i === n || i.startsWith(`${n}: `)))
+  for (const n of budgetsMissing) followUps.push({ role: 'P5', item: n, reason: 'budget the P5 row names not returned and upheld' })
   if (!a.missing && !(a.combinations || []).length) missingChecks.push('P5 combinations')
   if (!a.missing && !(a.budgets || []).length) missingChecks.push('P5 budgets')
   for (const m of missingChecks) followUps.push({ role: m, reason: `${m} returned nothing; the check did not run` })
   return { conflicts: a.conflicts, combinations: a.combinations || [], budgets: a.budgets || [], gaps: b.gaps,
-    missing_checks: missingChecks, unchecked_items: unchecked, rejected_items: rejected.length }
+    missing_checks: missingChecks, unchecked_items: unchecked, rejected_items: rejected.length, budgets_missing: budgetsMissing }
 }
 
 // ---------------------------------------------------------------- the task
