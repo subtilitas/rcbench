@@ -830,6 +830,9 @@ async function main() {
   // An alternate kept in two functions is shared too.
   r = await runTask('T5', { selection: { R1: { f1: { part: 'A', alternate: 'X' } }, R8: { f2: { part: 'B', alternate: 'X' } } }, p5Budgets: ['shared-part stock'], p5Conditional: ['shared-part stock'], p5Items: ['shared-part stock'], budgetValues: { 'shared-part stock': 'not applicable: no part is shared' } })
   check(r.result.summary.budgets_missing.includes('shared-part stock: X'), 'T5: an alternate kept in two functions owes shared-part stock')
+  // A P5-P6 follow-up re-reads stock: JLCPCB unreachable stops it.
+  r = await runTask('FU', { followup: { phases: 'P5-P6', round: 1, categories: [], items: [] }, hosts: [{ host: 'jlcpcb.com', client: 'jlcpcb-api', probe: 'C39843328', stop: 'stock-tasks', hold: [] }], down: ['jlcpcb.com'] })
+  check(r.result.summary.stopped === true, 'P5-P6 follow-up: JLCPCB down stops it')
   // A held part's failing live stock is superseded by its held quantity.
   r = await runTask('T2', { held: 500, heldChecks: true, heldAndLive: true })
   check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'held part with failing live stock: verified on its held quantity')

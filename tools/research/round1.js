@@ -56,7 +56,8 @@ if (A.mode === 'plan' || PLANNED > CAP) {
 }
 for (const k of ['commit', 'date']) if (!A[k]) throw new Error(`args.${k} missing`)
 
-const readsStock = TASK === 'T2' || TASK === 'T3' || TASK === 'T4' || (TASK === 'FU' && FU.phases === 'P2-P4')
+// P5 re-reads the stock of shared parts, so a P5-P6 follow-up reads stock too.
+const readsStock = TASK === 'T2' || TASK === 'T3' || TASK === 'T4' || (TASK === 'FU' && (FU.phases === 'P2-P4' || FU.phases === 'P5-P6'))
 const isP1Task = TASK === 'T1' || (TASK === 'FU' && FU.phases === 'P1')
 
 // ---------------------------------------------------------------- counting

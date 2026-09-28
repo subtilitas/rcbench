@@ -98,7 +98,8 @@ It refuses these unless `--accept-open REASON` records the owner's reason and
 the items in the arguments:
 
 - T2 to T4 and P2-P4 follow-ups while a P1 run covering a category left P1
-  items there that no later P1 follow-up listed among its items and cleared.
+  items there that no later P1 follow-up listed among its items; each listed
+  item is cleared, and what that follow-up leaves open takes its place.
   Notices, such as a marking taken as an assumption, do not count.
 - T3 and P2-P4 follow-ups on its categories, for the categories of T2 and T4,
   and T5, P5-P6 follow-ups and T6, for every category, while:

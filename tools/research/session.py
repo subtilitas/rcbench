@@ -569,11 +569,11 @@ def p1_unresolved(results, categories):
         for name, task in cover:
             listed = {key(i) for i in
                       (task.get("followup") or {}).get("items") or []}
-            mine = left_by(task, c)
-            if not mine:
-                for k in listed:
-                    open_items.pop(k, None)
-            for f in mine:
+            # The items it listed are cleared one by one; what it left
+            # open itself takes their place.
+            for k in listed:
+                open_items.pop(k, None)
+            for f in left_by(task, c):
                 open_items[key(f)] = name
         for name in sorted(set(open_items.values())):
             n = sum(1 for v in open_items.values() if v == name)
@@ -1243,7 +1243,10 @@ def cmd_prepare(args):
     rows = raised_rows(text)
     task_cats = (followup or {}).get("categories") or \
         cats["tasks"].get(args.task, {}).get("categories", [])
-    reads_stock = args.task in cats["tasks"] or phases == "P2-P4"
+    # P5 re-reads the stock of shared parts: T5 and P5-P6 follow-ups read
+    # stock too.
+    reads_stock = args.task in cats["tasks"] or args.task == "T5" or \
+        phases in ("P2-P4", "P5-P6")
     open_sel = []
     blocking_gate(text, args.task, task_cats, is_p1, reads_stock)
     if phases and followup.get("round") == 2 and not any(
@@ -1635,14 +1638,20 @@ def record(args):
                       indent=1,
                       ensure_ascii=False)
         paths.append(sel)
+    sel_rel = os.path.join(RUNS_DIR, "selection.json")
+    sel_tracked = git("-C", results, "cat-file", "-e", f"HEAD:{sel_rel}",
+                      check=False).returncode == 0
     try:
         git("-C", results, "add", "--", *paths)
         git("-C", results, "commit", "-q", "-m", message[0], "-m",
             message[1], "--", *paths)
     except SystemExit:
         git("-C", results, "reset", "-q", "--", *paths, check=False)
-        git("-C", results, "checkout", "-q", "--",
-            os.path.join(RUNS_DIR, "selection.json"), check=False)
+        # A selection.json this record created goes; one in HEAD returns.
+        if sel_tracked:
+            git("-C", results, "checkout", "-q", "--", sel_rel, check=False)
+        elif os.path.exists(os.path.join(results, sel_rel)):
+            os.remove(os.path.join(results, sel_rel))
         shutil.rmtree(target, ignore_errors=True)
         raise
     print(f"{target}: {len(result.get('returns', []))} returns committed "
