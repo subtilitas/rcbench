@@ -1133,15 +1133,19 @@ def set_aside(results, paths, result):
 def cited_returns(returns):
     """The files under RUNS_DIR the P7 critic's figure checks name,
     repository-relative. The workflow counts a check that names no such
-    file for no page."""
+    file for no page. The pattern is round1.js's RETURN_FILE: plain path
+    segments ending in .json, so ':34' or '#L34' after it is no part of
+    the path."""
     runs_rel = RUNS_DIR.replace(os.sep, "/")
+    seg = "[A-Za-z0-9_-][A-Za-z0-9_.-]*"
+    path = re.compile(rf"(?:^|[^A-Za-z0-9_.-])({re.escape(runs_rel)}/"
+                      rf"(?:{seg}/)*{seg}\.json)(?![A-Za-z0-9_./-])")
     out = set()
     for r in returns:
         if r.get("role") != "P7-critic":
             continue
         for x in r["data"].get("figure_checks", []):
-            m = re.search(rf"(?:^|/)({re.escape(runs_rel)}/[^#\s]+)",
-                          str(x.get("return_file", "")).strip())
+            m = path.search(str(x.get("return_file", "")))
             if m:
                 out.add(m.group(1))
     return out

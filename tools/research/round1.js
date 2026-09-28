@@ -235,7 +235,7 @@ function p4Prompt(cat, kind, bundle, only) {
     : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, the reasons the re-rank gave for dropping a P3 candidate, P2\'s own drops, for "Q option: FUNCTION: PART: CLASS" whether the part belongs to that option class of Q4 or Q8, and for "function requirements: FUNCTION" whether the function\'s requirement list names every requirement IOBoard.md and the answers set for it, with no value weaker than theirs) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
   return `${ctx('P4', cat, `P4-${kind}-${cat}`)}
 
-${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor, other than a part of kind alternate; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives the lifecycle table's readings: "longevity commitment" (the programme page's commitment, or that none is published; passes unless S5 makes it a gate it fails), "market introduction" (the first datasheet revision date; passes, and under 12 months is stated in read), "distributor status" (JLCPCB, LCSC and Digi-Key; passes, a disagreement with the maker stated in read) and "lead time" (the manufacturer's lead time in Digi-Key's API; passes). For a part on the board it gives "library type" (componentLibraryType of the exact JLCPCB row, basic or extended; passes, S6 allowing both) and "LCSC identity" (the exact JLCPCB result for the LCSC number names the candidate's part number and package; passes only then). It also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified. A check with passes false counts as a refutation, and so does one with agrees false, except for a reading that moves or always passes (${[...MOVING].join(', ')}) and a requirement stated as not given.
+${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor, other than a part of kind alternate; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives the lifecycle table's readings: "longevity commitment" (the programme page's commitment, or that none is published; passes unless S5 makes it a gate it fails), "market introduction" (the first datasheet revision date; passes, and under 12 months is stated in read), "distributor status" (JLCPCB, LCSC and Digi-Key; passes, a disagreement with the maker stated in read) and "lead time" (the manufacturer's lead time in Digi-Key's API; passes). For a part on the board it gives "library type" (componentLibraryType of the exact JLCPCB row, basic or extended; passes, S6 allowing both) and "LCSC identity" (the exact JLCPCB result for the LCSC number names the candidate's part number and package; passes only then). It also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and one whose refutation is not empty counts as a refutation. A check with passes false counts as a refutation, and so does one with agrees false, except for a reading that moves or always passes (${[...MOVING].join(', ')}) and a requirement stated as not given.
 
 The shortlist, the values found for research and the reports:
 ${J(bundle)}`
@@ -295,9 +295,11 @@ function isTime(text) {
 }
 
 // A reading of this task: taken on or after the day the session prepared it,
-// not copied from an earlier return or the parts database.
+// not copied from an earlier return or the parts database, and no later than
+// the next day, for a run that passes midnight. The script has no clock.
 function readInRun(text) {
-  return isTime(text) && Date.parse(String(text).trim()) >= Date.parse(A.date)
+  const t = Date.parse(String(text).trim())
+  return isTime(text) && t >= Date.parse(A.date) && t < Date.parse(A.date) + 2 * 864e5
 }
 
 // A value that holds no reading: blank, a bare placeholder or written as not
@@ -310,6 +312,11 @@ function unread(text) {
 // A source, evidence or refutation written as none holds none.
 function readsNone(text) {
   return unread(text) || /^none$/i.test(String(text || '').trim())
+}
+
+// A refutation that says there is none: the schema leaves it empty.
+function noRefutation(text) {
+  return readsNone(text) || /^(no refutations?|not refuted|(none|nothing) found)\b/i.test(String(text || '').trim())
 }
 
 // A value found, reported or budgeted that says it was not found holds none.
@@ -728,10 +735,14 @@ function requiredChecks(kind, cand, partKind) {
 // they read: a value that differs from P2's refutes only when it fails.
 const MOVING = new Set(['stock', 'presale', 'second-vendor stock', 'lead time', 'distributor status', 'market introduction', 'longevity commitment', 'library type'])
 
-// A check written as not read, or without its source or a reading time of
-// this task, shows nothing.
+// Checks whose reading may be that there is none: no notice, no published
+// commitment.
+const MAY_READ_NONE = new Set(['end-of-life notices', 'longevity commitment'])
+
+// A check written as not read, as none where a value exists to be read, or
+// without its source or a reading time of this task, shows nothing.
 function shown(c) {
-  return !unread(c.read) && !readsNone(c.source) && readInRun(c.read_at)
+  return !(MAY_READ_NONE.has(c.figure) ? unread(c.read) : readsNone(c.read)) && !readsNone(c.source) && readInRun(c.read_at)
 }
 
 function covered(v, cand) {
@@ -835,7 +846,7 @@ async function verifyCategory(cat, functions, bundle) {
       const cand = candidateOf(functions, e.function, e.part)
       const added = new Set(((cand && cand.requirements) || []).filter(r => r.added).map(r => r.name))
       for (const v of e.verdicts) {
-        if (v.verdict === 'confirmed' && !readsNone(v.refutation)) v.verdict = 'refuted'
+        if (v.verdict === 'confirmed' && !noRefutation(v.refutation)) v.verdict = 'refuted'
         const passing = name => (v.checks || []).some(c => c.figure === name && shown(c) && c.passes === true)
         // Rule 6: a passing held quantity supersedes the live stock and
         // presale readings of a held part, and passing live readings a
@@ -1215,6 +1226,11 @@ async function phaseP5P6() {
 
 // ---------------------------------------------------------------- the task
 
+// A committed file under hardware/research/round1/ that a figure comes from:
+// plain path segments ending in .json, wherever the path stands in the text.
+// session.py cited_returns() reads the same pattern.
+const RETURN_FILE = /(?:^|[^A-Za-z0-9_.-])hardware\/research\/round1\/(?:[A-Za-z0-9_-][A-Za-z0-9_.-]*\/)*[A-Za-z0-9_-][A-Za-z0-9_.-]*\.json(?![A-Za-z0-9_./-])/
+
 let summary = {}
 if (TASK === 'T6') {
   phase('P7')
@@ -1226,8 +1242,9 @@ if (TASK === 'T6') {
   const failed = critic ? Object.entries(critic.checks || {}).filter(([, r]) => !(r && r.passed)).map(([k]) => k) : []
   // The critic's own findings, as they stand after its corrections.
   if (critic) {
-    // A figure check names its figure and the committed file it comes from.
-    const named = (critic.figure_checks || []).filter(x => !readsNone(x.figure) && /(^|\/)hardware\/research\/round1\/\S/.test(String(x.return_file || '').trim()))
+    // A figure check names its figure and the committed file it comes from,
+    // a path ending in .json; session.py record reads the same path.
+    const named = (critic.figure_checks || []).filter(x => !readsNone(x.figure) && RETURN_FILE.test(String(x.return_file || '')))
     if (!named.length) failed.push('the critic checked no figure')
     // Each group page and each output under hardware/docs/ carries figures
     // from the returns; each needs at least one figure checked.

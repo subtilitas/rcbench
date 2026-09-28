@@ -175,7 +175,7 @@ async function runTask(task, opts = {}) {
       else {
         data.reviewed = outs
         const figFiles = opts.oneFigure ? ['hardware/docs/Parts.md'] : outs.filter(f => f.startsWith('hardware/docs/'))
-        data.figure_checks = opts.noFigures ? [] : figFiles.map(file => ({ file, line: 1, figure: opts.blankFigure ? '' : 'stock', return_file: opts.blankFigure ? '' : 'hardware/research/round1/T2/012-P4-stock-R1.json', agrees: !opts.criticDisagrees }))
+        data.figure_checks = opts.noFigures ? [] : figFiles.map(file => ({ file, line: 1, figure: opts.blankFigure ? '' : 'stock', return_file: opts.blankFigure ? '' : opts.returnFile || 'hardware/research/round1/T2/012-P4-stock-R1.json', agrees: !opts.criticDisagrees }))
         data.sentence_issues = opts.sentenceIssue ? [{ file: 'f', line: 1, issue: 'i' }] : []
       }
     }
@@ -803,19 +803,35 @@ async function main() {
   r = await runTask('T2', { p0: { stop: true, stop_reasons: ['mock'], held: [{ category: 'R1', host: 'h', reason: 'mock' }] } })
   check(!r.result.summary.stopped && r.calls.includes('P2-R1'), 'P0: its own stop and held are not applied')
 
-  // Reading times: a check, figure or ruling read before the task's date, or
-  // on a day the calendar lacks, is not this task's reading.
+  // Reading times: a check, figure or ruling read before the task's date,
+  // after the day that follows it, or on a day the calendar lacks, is not
+  // this task's reading.
   r = await runTask('T2', { stockPatch: { read_at: '2026-09-14T09:56:01Z' } })
   check(r1(r).selection[0].part === null, 'stock checks read before the task: not verified')
   r = await runTask('T2', { stockPatch: { read_at: '2026-09-31T10:00:00Z' } })
   check(r1(r).selection[0].part === null, 'stock checks read on 31 September: not verified')
+  for (const t of ['2026-09-29T00:00:00Z', '2027-09-28T10:00:00Z', '2099-01-01']) {
+    r = await runTask('T2', { stockPatch: { read_at: t } })
+    check(r1(r).selection[0].part === null, `stock checks read at ${t}, after the task: not verified`)
+  }
+  r = await runTask('T2', { stockPatch: { read_at: '2026-09-28T23:59:59Z' } })
+  check(r1(r).selection[0].part === 'part1', 'stock checks read the day after prepare: verified')
   r = await runTask('T2', { figureReadAt: '2026-09-20T10:00:00Z' })
   check(r.result.summary.figures_open.R1.length === 1, 'figure read before the task: open')
+  r = await runTask('T2', { figureReadAt: '2027-09-28T10:00:00Z' })
+  check(r.result.summary.figures_open.R1.length === 1, 'figure read after the task: open')
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], stands: false, rulingReadAt: '2026-09-20T10:00:00Z' })
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence, source and time read'), 'ruling read before the task: no ruling')
-  // "none" is a reading; "not found" is none.
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'], stands: false, rulingReadAt: '2099-01-01' })
+  check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence, source and time read'), 'ruling read after the task: no ruling')
+  // "none" is a reading of a notice or commitment that does not exist, and
+  // no reading of a status or identity; "not found" is none.
   r = await runTask('T2', { edit: { 'end-of-life notices': { read: 'none' }, 'longevity commitment': { read: 'none' } } })
   check(r1(r).selection[0].part === 'part1', 'checks read as none: verified')
+  for (const name of ['lifecycle status', 'LCSC identity']) {
+    r = await runTask('T2', { edit: { [name]: { read: 'none' } } })
+    check(r1(r).selection[0].part === null, `${name} read as none: not verified`)
+  }
   r = await runTask('T2', { requiredReports: { R1: ['BOOT resistor'] }, reports: [['BOOT resistor', 'none']] })
   check(!r.result.summary.figures_open.R1.includes('P2 report: BOOT resistor'), 'report read as none: returned')
   r = await runTask('T2', { forResearch: [{ id: 'V9', category: 'R1' }], foundValue: 'not found: the datasheet does not state it' })
@@ -851,14 +867,23 @@ async function main() {
   // verdict names its failing checks to the adjudicator.
   r = await runTask('T2', { note: ['P4-datasheet-R1', 'maker page lists the part as NRND since 2026-06'] })
   check(r.calls.some(c => c.startsWith('adjudicator-R1')) && r1(r).selection[0].part === 'part2', 'confirmation stating a refutation: adjudicated')
-  r = await runTask('T2', { note: ['P4-datasheet-R1', 'none'] })
-  check(!r.calls.some(c => c.startsWith('adjudicator-R1')) && r1(r).selection[0].part === 'part1', 'confirmation with refutation none: confirmed')
+  for (const note of ['none', 'No refutation found', 'No refutations found.', 'Not refuted.']) {
+    r = await runTask('T2', { note: ['P4-datasheet-R1', note] })
+    check(!r.calls.some(c => c.startsWith('adjudicator-R1')) && r1(r).selection[0].part === 'part1', `confirmation with refutation "${note}": confirmed`)
+  }
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], failPass: ['P4-stock-R1'], stands: false })
   const adj = r.prompts.find(x => x.label === 'adjudicator-R1')
   check(adj && adj.prompt.includes('"refutation":"mock; checks disagree or fail: stock"'), 'refuted verdict with a failing check: the check is named to the adjudicator')
   // Figure checks name the figure and the committed return.
   r = await runTask('T6', { blankFigure: true })
   check(r.result.summary.stopped === true, 'T6: figure checks without a figure or return file stop it')
+  // The return file is a path ending in .json, as session.py record reads it.
+  r = await runTask('T6', { returnFile: 'hardware/research/round1/T2' })
+  check(r.result.summary.stopped === true, 'T6: figure checks naming a run directory, not a file, stop it')
+  for (const rf of ['hardware/research/round1/T2/012-P4-stock-R1.json:34', '/srv/results/hardware/research/round1/T2/012-P4-stock-R1.json, parts[0]']) {
+    r = await runTask('T6', { returnFile: rf })
+    check(!r.result.summary.stopped, `T6: return file "${rf}" names a file`)
+  }
   // A combination states its outputs, bind order and resources; an
   // assumption its value.
   r = await runTask('T5', { blankCombos: true })

@@ -151,23 +151,28 @@ stays final in the run, even if the part is verified later as another part's
 alternate. A refutation as an alternate fails only that relationship: the part
 keeps its own place on the shortlist. A part a verifier was not asked to
 verify is ignored, a part it lists twice has no verdict from it, and a check
-read as empty, blank or not read (`none` is a reading), figure evidence that
-is none, or either without its source or a reading time of the task, shows
+read as empty, blank or not read, or as `none` other than
+`end-of-life notices` and `longevity commitment`, figure evidence that is
+none, or either without its source or a reading time of the task, shows
 nothing. A reading time is a date the calendar has (2026-02-31 is not one);
-for a P4 check, a figure verdict or a ruling it is also on or after the date
-`prepare` gave the run, so a reading copied from an earlier return or the
-parts database shows nothing. A check that disagrees or fails is a refutation,
-named in the refutation the adjudicator rules on whatever the verdict, and a
-confirmation that states a refutation is one. A reading that moves or always
-passes (`stock`, `presale`, `second-vendor stock`, `lead time`,
-`distributor status`, `market introduction`, `longevity commitment`,
-`library type`), and a requirement added as not given, refute only when they
-fail. A check for a route or role the part does not take refutes nothing:
-compatibility for a part that is no alternate, and `second-vendor stock` off
-the second-vendor route or for an alternate, which passes rules 1 to 4 only
-(rule 5). Every verified part needs a `placements` check re-deriving its count
-from the specification, the lifecycle table's readings
-(`longevity commitment`, `market introduction`, `distributor status`,
+for a P4 check, a figure verdict or a ruling it is also on the date `prepare`
+gave the run or the next day, for a run that passes midnight, so a reading
+copied from an earlier return or the parts database, or dated later, shows
+nothing. The workflow script has no clock: a run that goes on past the day
+after `prepare` counts none of the readings it takes then. A check that
+disagrees or fails is a refutation, named in the refutation the adjudicator
+rules on whatever the verdict, and a confirmation whose refutation is not
+empty is one; a refutation that is `none`, or starts with `no refutation`,
+`not refuted`, `none found` or `nothing found`, counts as empty. A reading
+that moves or always passes (`stock`, `presale`, `second-vendor stock`,
+`lead time`, `distributor status`, `market introduction`,
+`longevity commitment`, `library type`), and a requirement added as not given,
+refute only when they fail. A check for a route or role the part does not take
+refutes nothing: compatibility for a part that is no alternate, and
+`second-vendor stock` off the second-vendor route or for an alternate, which
+passes rules 1 to 4 only (rule 5). Every verified part needs a `placements`
+check re-deriving its count from the specification, the lifecycle table's
+readings (`longevity commitment`, `market introduction`, `distributor status`,
 `lead time`), for a part on the board `LCSC identity` and `library type`
 checks, and a `manufacturer allowlist` check (rule 2), and an alternate needs
 at least the placements of the part it stands in for. The datasheet verifier
@@ -190,7 +195,9 @@ in the page body, as not read. A P0 row counts only at its host's endpoint: an
 API client's command with the probe, a page client's probe URL, or with no
 probe a page on the host itself. The P7 critic checks at least one figure on
 each group page and each output under `hardware/docs/`, each check naming the
-figure and the file under `hardware/research/round1/` it comes from.
+figure and the file under `hardware/research/round1/` it comes from, a path
+ending in `.json`; text after the path, such as `:34` or `#L34`, is not part
+of it, and `record` reads the same path.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared
