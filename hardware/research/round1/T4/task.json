@@ -1,0 +1,1933 @@
+{
+ "task": "T4",
+ "run": "T4",
+ "run_id": "c88c72d61697608a",
+ "commit": "c25aa863372d2e61e3f23a58d47bc3bf19d35702",
+ "date": "2026-09-28",
+ "run_info": {
+  "claude_code": "2.1.283 (Claude Code)",
+  "cpus": 48,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "concurrency": 16,
+  "concurrency_setting": "unset"
+ },
+ "followup": null,
+ "accept_open": null,
+ "decisions": {
+  "Q4": "",
+  "Q8": "",
+  "Q9": ""
+ },
+ "planned": 26,
+ "started": 32,
+ "extra_used": 6,
+ "free": 6,
+ "skipped": [],
+ "summary": {
+  "categories": [
+   "R9",
+   "R10",
+   "R11",
+   "R12",
+   "R13"
+  ],
+  "held": [],
+  "results": [
+   {
+    "category": "R9",
+    "status": "done",
+    "ledger": [
+     {
+      "figure": "found V186",
+      "status": "refuted"
+     },
+     {
+      "figure": "found V187",
+      "status": "refuted"
+     },
+     {
+      "figure": "P2 report: skew limit on the external path",
+      "status": "refuted"
+     },
+     {
+      "figure": "re-rank report: ADBMS1818 package outlines",
+      "status": "refuted"
+     }
+    ],
+    "figures_open": [
+     "found V189",
+     "found V190",
+     "found V192",
+     "found V193",
+     "found V186",
+     "found V187",
+     "P2 report: skew limit on the external path",
+     "re-rank report: ADBMS1818 package outlines"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "Cell monitor",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   },
+   {
+    "category": "R10",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "Converter for the accelerometer",
+      "part": "ADCS7476AIMFX/NOPB",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "Converter for the accelerometer",
+      "part": "REF3030AIDBZR",
+      "as": "primary",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "found V196",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "found V197",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "found V200",
+      "status": "refuted, not adjudicated"
+     }
+    ],
+    "figures_open": [
+     "found V198",
+     "found V199",
+     "found V203",
+     "found V206",
+     "found V207",
+     "found V208",
+     "found V196",
+     "found V197",
+     "found V200"
+    ],
+    "q_missing": true,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "Converter for the accelerometer",
+      "decision": "Q4",
+      "part": "ADCS7476AIMFX/NOPB",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [
+       {
+        "part": "REF3030AIDBZR",
+        "status": "refuted, not adjudicated",
+        "alternate": "",
+        "alternate_status": "",
+        "second_source_missing": false,
+        "option": "reference"
+       }
+      ],
+      "q_options_missing": [
+       "reference"
+      ]
+     }
+    ]
+   },
+   {
+    "category": "R11",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "accelerometer",
+      "part": "ADXL316WBCSZ",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "optical index",
+      "part": "TCRT5000",
+      "as": "primary",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "function": "magnetic pickup",
+      "part": "DRV5015A1QDBZR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "phase-wire clip",
+      "part": "TLV7011DBVR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "encoder input",
+      "part": "AM26LV32EIDR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "figure": "found V220",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "found V221",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "found V229",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "function requirements: accelerometer",
+      "status": "refuted, not adjudicated"
+     }
+    ],
+    "figures_open": [
+     "found V222",
+     "found V224",
+     "found V225",
+     "found V230",
+     "found V231",
+     "found V220",
+     "found V221",
+     "found V229",
+     "function requirements: accelerometer"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "accelerometer",
+      "decision": "none",
+      "part": "ADXL316WBCSZ",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "optical index",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "magnetic pickup",
+      "decision": "none",
+      "part": "DRV5015A1QDBZR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "phase-wire clip",
+      "decision": "none",
+      "part": "TLV7011DBVR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "encoder input",
+      "decision": "none",
+      "part": "AM26LV32EIDR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "encoder decode",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "rotation from ESC",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "rotation inputs",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "BENCH rpm source",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "servo measured position",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   },
+   {
+    "category": "R12",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "motor temperature thermocouple",
+      "part": "MAX31856MUD+T",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "motor temperature infrared",
+      "part": "MLX90614ESF-BCC-000-TU",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "external I2C ports",
+      "part": "TCA9548APWR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "external I2C ports",
+      "part": "PCA9548APWR",
+      "as": "alternate",
+      "for": "TCA9548APWR",
+      "status": "verified"
+     },
+     {
+      "function": "non-volatile store",
+      "part": "MB85RC256VPNF-G-AMERE2",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "non-volatile store",
+      "part": "M24256E-FMN6TP",
+      "as": "primary",
+      "status": "verified"
+     }
+    ],
+    "figures_open": [
+     "found V232",
+     "found V233",
+     "found V235",
+     "found V238",
+     "found V240",
+     "found V241",
+     "found V249",
+     "found V252",
+     "found V253"
+    ],
+    "q_missing": true,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "motor temperature thermocouple",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "motor temperature infrared",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "external I2C ports",
+      "decision": "none",
+      "part": "TCA9548APWR",
+      "rank": 1,
+      "alternate": "PCA9548APWR",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "non-volatile store",
+      "decision": "Q8",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [
+       {
+        "part": "MB85RC256VPNF-G-AMERE2",
+        "status": "not verified",
+        "alternate": "",
+        "alternate_status": "",
+        "second_source_missing": false,
+        "option": "FRAM"
+       },
+       {
+        "part": "M24256E-FMN6TP",
+        "status": "verified",
+        "alternate": "",
+        "alternate_status": "",
+        "second_source_missing": false,
+        "option": "EEPROM"
+       }
+      ],
+      "q_options_missing": [
+       "FRAM"
+      ]
+     }
+    ]
+   },
+   {
+    "category": "R13",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "load-cell excitation",
+      "part": "BD450M2FP3-CE2",
+      "as": "primary",
+      "status": "verified; refutation did not stand",
+      "reason": ""
+     },
+     {
+      "figure": "P2 report: excitation load on the input bus",
+      "status": "refuted"
+     },
+     {
+      "figure": "re-rank report: TLE42644G manufacturer status",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "re-rank drop: load-cell bridge ADC: AD7730BRZ-REEL",
+      "status": "refuted, not adjudicated"
+     }
+    ],
+    "figures_open": [
+     "P2 report: excitation load on the input bus",
+     "re-rank report: TLE42644G manufacturer status",
+     "re-rank drop: load-cell bridge ADC: AD7730BRZ-REEL"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "load-cell bridge ADC",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "load-cell excitation",
+      "decision": "none",
+      "part": "BD450M2FP3-CE2",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   }
+  ],
+  "selection": {
+   "R9": [
+    {
+     "function": "Cell monitor",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ],
+   "R10": [
+    {
+     "function": "Converter for the accelerometer",
+     "decision": "Q4",
+     "part": "ADCS7476AIMFX/NOPB",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [
+      {
+       "part": "REF3030AIDBZR",
+       "status": "refuted, not adjudicated",
+       "alternate": "",
+       "alternate_status": "",
+       "second_source_missing": false,
+       "option": "reference"
+      }
+     ],
+     "q_options_missing": [
+      "reference"
+     ]
+    }
+   ],
+   "R11": [
+    {
+     "function": "accelerometer",
+     "decision": "none",
+     "part": "ADXL316WBCSZ",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "optical index",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "magnetic pickup",
+     "decision": "none",
+     "part": "DRV5015A1QDBZR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "phase-wire clip",
+     "decision": "none",
+     "part": "TLV7011DBVR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "encoder input",
+     "decision": "none",
+     "part": "AM26LV32EIDR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "encoder decode",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "rotation from ESC",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "rotation inputs",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "BENCH rpm source",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "servo measured position",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ],
+   "R12": [
+    {
+     "function": "motor temperature thermocouple",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "motor temperature infrared",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "external I2C ports",
+     "decision": "none",
+     "part": "TCA9548APWR",
+     "rank": 1,
+     "alternate": "PCA9548APWR",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "non-volatile store",
+     "decision": "Q8",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [
+      {
+       "part": "MB85RC256VPNF-G-AMERE2",
+       "status": "not verified",
+       "alternate": "",
+       "alternate_status": "",
+       "second_source_missing": false,
+       "option": "FRAM"
+      },
+      {
+       "part": "M24256E-FMN6TP",
+       "status": "verified",
+       "alternate": "",
+       "alternate_status": "",
+       "second_source_missing": false,
+       "option": "EEPROM"
+      }
+     ],
+     "q_options_missing": [
+      "FRAM"
+     ]
+    }
+   ],
+   "R13": [
+    {
+     "function": "load-cell bridge ADC",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "load-cell excitation",
+     "decision": "none",
+     "part": "BD450M2FP3-CE2",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ]
+  },
+  "figures_open": {
+   "R9": [
+    "found V189",
+    "found V190",
+    "found V192",
+    "found V193",
+    "found V186",
+    "found V187",
+    "P2 report: skew limit on the external path",
+    "re-rank report: ADBMS1818 package outlines"
+   ],
+   "R10": [
+    "found V198",
+    "found V199",
+    "found V203",
+    "found V206",
+    "found V207",
+    "found V208",
+    "found V196",
+    "found V197",
+    "found V200"
+   ],
+   "R11": [
+    "found V222",
+    "found V224",
+    "found V225",
+    "found V230",
+    "found V231",
+    "found V220",
+    "found V221",
+    "found V229",
+    "function requirements: accelerometer"
+   ],
+   "R12": [
+    "found V232",
+    "found V233",
+    "found V235",
+    "found V238",
+    "found V240",
+    "found V241",
+    "found V249",
+    "found V252",
+    "found V253"
+   ],
+   "R13": [
+    "P2 report: excitation load on the input bus",
+    "re-rank report: TLE42644G manufacturer status",
+    "re-rank drop: load-cell bridge ADC: AD7730BRZ-REEL"
+   ]
+  },
+  "part_refuted": {
+   "R9": [],
+   "R10": [],
+   "R11": [],
+   "R12": [],
+   "R13": []
+  },
+  "q_missing": [
+   "R10",
+   "R12"
+  ],
+  "chain_failed": []
+ },
+ "followUps": [
+  {
+   "role": "P0",
+   "host": "www.vishay.com",
+   "categories": [
+    "R3",
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P0",
+   "host": "www.isabellenhuette.com",
+   "categories": [
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "rerank",
+   "category": "R9",
+   "part": "ADBMS6830 (MWCCSZ C18166017, MWCCSZ-RL C18168951, MWCSWZ-RL C18171253, MSW-ENG C42946217)",
+   "functions": [
+    "Cell monitor"
+   ],
+   "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+  },
+  {
+   "role": "rerank",
+   "category": "R9",
+   "part": "ADBMS6948WCCSZ (C18166021)",
+   "functions": [
+    "Cell monitor"
+   ],
+   "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+  },
+  {
+   "role": "rerank",
+   "category": "R9",
+   "part": "LTC6811-1/-2, LTC6804, LTC6803, LTC6801, LTC6810",
+   "functions": [
+    "Cell monitor"
+   ],
+   "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+  },
+  {
+   "role": "rerank",
+   "category": "R9",
+   "part": "Shortlist ranks 1 to 5 (ADBMS1818ASWAZ-RL, ADBMS1818ASWZ-RL, ADBMS1818ASWAZ-R7, LTC6813HLWE-1#3ZZPBF, LTC6813HLWE-1#3ZZTRPBF)",
+   "functions": [
+    "Cell monitor"
+   ],
+   "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "question": "V189",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "question": "V190",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "question": "V192",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "question": "V193",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "figure": "found V186",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "rerank",
+   "category": "R13",
+   "function": "load-cell bridge ADC",
+   "part": "AD7193BRUZ-REEL / AD7193BCPZ-RL7",
+   "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+  },
+  {
+   "role": "P2",
+   "category": "R13",
+   "function": "load-cell excitation",
+   "part": "BD450M2FP3-CE2",
+   "reason": "shortlisted states other values than the function for: output voltage, output current, input voltage range, dropout, junction temperature, output protection, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R13",
+   "function": "load-cell excitation",
+   "part": "TPS7B6950QDCYRQ1",
+   "reason": "shortlisted states other values than the function for: output voltage, output current, input voltage range, dropout, junction temperature, output protection, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R13",
+   "function": "load-cell excitation",
+   "part": "L5150BNTR",
+   "reason": "shortlisted states other values than the function for: output voltage, output current, input voltage range, dropout, junction temperature, output protection, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R13",
+   "function": "load-cell excitation",
+   "part": "TPS7B8250QDGNRQ1",
+   "reason": "shortlisted states other values than the function for: output voltage, output current, input voltage range, dropout, junction temperature, output protection, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R13",
+   "function": "load-cell excitation",
+   "part": "TPS7B8150DGNR",
+   "reason": "shortlisted states other values than the function for: output voltage, output current, input voltage range, dropout, junction temperature, output protection, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R13",
+   "function": "load-cell excitation",
+   "part": "TLE42644G",
+   "reason": "shortlisted states other values than the function for: output voltage, output current, input voltage range, dropout, junction temperature, output protection, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R13",
+   "function": "load-cell excitation",
+   "part": "TPS7A1650DGNR",
+   "reason": "shortlisted states other values than the function for: output voltage, output current, input voltage range, dropout, junction temperature, output protection, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "figure": "found V187",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "figure": "P2 report: skew limit on the external path",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature thermocouple",
+   "part": "MAX31856MUD+T",
+   "reason": "shortlisted states other values than the function for: open thermocouple detection, reading interval, input withstand, 3.3 V logic at the RP2354B, thermocouple type, accuracy; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature thermocouple",
+   "part": "MCP96L01T-E/MX",
+   "reason": "shortlisted states other values than the function for: open thermocouple detection, reading interval, input withstand, 3.3 V logic at the RP2354B, thermocouple type, accuracy; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature thermocouple",
+   "part": "MCP9601-E/MX",
+   "reason": "shortlisted states other values than the function for: open thermocouple detection, reading interval, input withstand, 3.3 V logic at the RP2354B, thermocouple type, accuracy; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature thermocouple",
+   "part": "MAX31855KASA+T",
+   "reason": "shortlisted states other values than the function for: open thermocouple detection, reading interval, input withstand, 3.3 V logic at the RP2354B, thermocouple type, accuracy; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature thermocouple",
+   "part": "MAX6675ISA+T",
+   "reason": "shortlisted states other values than the function for: open thermocouple detection, reading interval, input withstand, 3.3 V logic at the RP2354B, thermocouple type, accuracy; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature thermocouple",
+   "part": "MAX31856MUD+T",
+   "reason": "shortlisted lacks the function's requirements: channel count, register channel"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature thermocouple",
+   "part": "MCP96L01T-E/MX",
+   "reason": "shortlisted lacks the function's requirements: channel count, register channel"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature thermocouple",
+   "part": "MCP9601-E/MX",
+   "reason": "shortlisted lacks the function's requirements: channel count, register channel"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature thermocouple",
+   "part": "MAX31855KASA+T",
+   "reason": "shortlisted lacks the function's requirements: channel count, register channel"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature thermocouple",
+   "part": "MAX6675ISA+T",
+   "reason": "shortlisted lacks the function's requirements: channel count, register channel"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature infrared",
+   "part": "MLX90614ESF-BCC-000-TU",
+   "reason": "shortlisted states other values than the function for: reading interval, 3.3 V supply and logic, sensor ambient range, accuracy, field of view; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature infrared",
+   "part": "MLX90614ESF-BAA-000-TU",
+   "reason": "shortlisted states other values than the function for: reading interval, 3.3 V supply and logic, sensor ambient range, accuracy, field of view; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature infrared",
+   "part": "MLX90614ESF-DCC-000-TU",
+   "reason": "shortlisted states other values than the function for: reading interval, 3.3 V supply and logic, sensor ambient range, accuracy, field of view; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature infrared",
+   "part": "MLX90614ESF-DCI-000-TU",
+   "reason": "shortlisted states other values than the function for: reading interval, 3.3 V supply and logic, sensor ambient range, accuracy, field of view; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature infrared",
+   "part": "MLX90614ESF-BCC-000-TU",
+   "reason": "shortlisted lacks the function's requirements: channel count, sensor position and lead length"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature infrared",
+   "part": "MLX90614ESF-BAA-000-TU",
+   "reason": "shortlisted lacks the function's requirements: channel count, sensor position and lead length"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature infrared",
+   "part": "MLX90614ESF-DCC-000-TU",
+   "reason": "shortlisted lacks the function's requirements: channel count, sensor position and lead length"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "motor temperature infrared",
+   "part": "MLX90614ESF-DCI-000-TU",
+   "reason": "shortlisted lacks the function's requirements: channel count, sensor position and lead length"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "external I2C ports",
+   "part": "TCA9548APWR",
+   "reason": "shortlisted states other values than the function for: ports, cable length and bus load, address separation, port supply current, hot plug; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "external I2C ports",
+   "part": "PCA9548APWR",
+   "reason": "shortlisted states other values than the function for: ports, cable length and bus load, address separation, port supply current, hot plug; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "external I2C ports",
+   "part": "TCA9546APWR",
+   "reason": "shortlisted states other values than the function for: ports, cable length and bus load, address separation, port supply current, hot plug; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "external I2C ports",
+   "part": "PCA9546APWR",
+   "reason": "shortlisted states other values than the function for: ports, cable length and bus load, address separation, port supply current, hot plug; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "external I2C ports",
+   "part": "TCA9543APWR",
+   "reason": "shortlisted states other values than the function for: ports, cable length and bus load, address separation, port supply current, hot plug; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "non-volatile store",
+   "part": "MB85RC256VPNF-G-AMERE2",
+   "reason": "shortlisted states other values than the function for: capacity, saves, interface, address; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "non-volatile store",
+   "part": "FM24CL64B-GTR",
+   "reason": "shortlisted states other values than the function for: capacity, saves, interface, address; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "non-volatile store",
+   "part": "FM24CL16B-GTR",
+   "reason": "shortlisted states other values than the function for: capacity, saves, interface, address; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "non-volatile store",
+   "part": "AT24C256C-SSHL-T",
+   "reason": "shortlisted states other values than the function for: capacity, saves, interface, address; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "function": "non-volatile store",
+   "part": "24LC256T-I/SN",
+   "reason": "shortlisted states other values than the function for: capacity, saves, interface, address; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "question": "V232",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "question": "V233",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "question": "V235",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "question": "V238",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "question": "V240",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "question": "V241",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "question": "V249",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "question": "V252",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R12",
+   "question": "V253",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "figure": "re-rank report: ADBMS1818 package outlines",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "accelerometer",
+   "part": "ADXL316WBCSZ",
+   "reason": "shortlisted states other values than the function for: output type, sensing axis, full scale, bandwidth on the used axis, supply, build and sourcing, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "accelerometer",
+   "part": "ADXL326BCPZ-RL7",
+   "reason": "shortlisted states other values than the function for: output type, sensing axis, full scale, bandwidth on the used axis, supply, build and sourcing, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "accelerometer",
+   "part": "ADXL316WBCSZ",
+   "reason": "shortlisted lacks the function's requirements: smallest amplitude resolved, delay variation, lead length"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "accelerometer",
+   "part": "ADXL326BCPZ-RL7",
+   "reason": "shortlisted lacks the function's requirements: smallest amplitude resolved, delay variation, lead length"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "optical index",
+   "part": "TCRT5000",
+   "reason": "shortlisted states other values than the function for: sensor selected, working distance, pulse rate, supply, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "optical index",
+   "part": "TCRT5000L",
+   "reason": "shortlisted states other values than the function for: sensor selected, working distance, pulse rate, supply, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "optical index",
+   "part": "TCND5000",
+   "reason": "shortlisted states other values than the function for: sensor selected, working distance, pulse rate, supply, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "optical index",
+   "part": "CNY70",
+   "reason": "shortlisted states other values than the function for: sensor selected, working distance, pulse rate, supply, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "optical index",
+   "part": "VCNT2030",
+   "reason": "shortlisted states other values than the function for: sensor selected, pulse rate, supply, output, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "optical index",
+   "part": "TCRT5000",
+   "reason": "shortlisted lacks the function's requirements: output, pulse width at the top speed"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "optical index",
+   "part": "TCRT5000L",
+   "reason": "shortlisted lacks the function's requirements: output, pulse width at the top speed"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "optical index",
+   "part": "TCND5000",
+   "reason": "shortlisted lacks the function's requirements: output, pulse width at the top speed"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "optical index",
+   "part": "CNY70",
+   "reason": "shortlisted lacks the function's requirements: output, pulse width at the top speed"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "optical index",
+   "part": "VCNT2030",
+   "reason": "shortlisted lacks the function's requirements: pulse width at the top speed"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "magnetic pickup",
+   "part": "DRV5015A1QDBZR",
+   "reason": "shortlisted states other values than the function for: sensor type, pulses per revolution, lowest speed, supply, output, sensitivity, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "magnetic pickup",
+   "part": "DRV5015A1EDBZRQ1",
+   "reason": "shortlisted states other values than the function for: sensor type, pulses per revolution, lowest speed, supply, output, sensitivity, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "magnetic pickup",
+   "part": "TLE4961-1M (orderable TLE49611MXTSA1)",
+   "reason": "shortlisted states other values than the function for: sensor type, pulses per revolution, lowest speed, supply, output, sensitivity, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "magnetic pickup",
+   "part": "DRV5011ADDBZR",
+   "reason": "shortlisted states other values than the function for: sensor type, pulses per revolution, lowest speed, supply, output, build and sourcing, sensitivity, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "magnetic pickup",
+   "part": "DRV5013ADQDBZR",
+   "reason": "shortlisted states other values than the function for: sensor type, pulses per revolution, lowest speed, supply, output, sensitivity, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "magnetic pickup",
+   "part": "DRV5015A1QDBZR",
+   "reason": "shortlisted lacks the function's requirements: build and sourcing"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "magnetic pickup",
+   "part": "DRV5015A1EDBZRQ1",
+   "reason": "shortlisted lacks the function's requirements: build and sourcing"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "magnetic pickup",
+   "part": "TLE4961-1M (orderable TLE49611MXTSA1)",
+   "reason": "shortlisted lacks the function's requirements: build and sourcing"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "magnetic pickup",
+   "part": "DRV5013ADQDBZR",
+   "reason": "shortlisted lacks the function's requirements: build and sourcing"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV7011DBVR",
+   "reason": "shortlisted states other values than the function for: comparator supply, comparator input range, comparator delay; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV3201AIDBVR",
+   "reason": "shortlisted states other values than the function for: comparator supply, comparator output, comparator input range, comparator delay; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "MCP6561T-E/OT",
+   "reason": "shortlisted states other values than the function for: comparator supply, comparator output, comparator input range, comparator delay; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV1811DBVR",
+   "reason": "shortlisted states other values than the function for: comparator supply, comparator output, comparator input range, comparator delay; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV7031DBVR",
+   "reason": "shortlisted states other values than the function for: comparator supply, comparator input range, comparator delay; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV7011DBVR",
+   "reason": "shortlisted lacks the function's requirements: coupling, isolation, input withstand, electrical frequency passed, PWM rejected, lowest speed, placements"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV3201AIDBVR",
+   "reason": "shortlisted lacks the function's requirements: coupling, isolation, input withstand, electrical frequency passed, PWM rejected, lowest speed, placements"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "MCP6561T-E/OT",
+   "reason": "shortlisted lacks the function's requirements: coupling, isolation, input withstand, electrical frequency passed, PWM rejected, lowest speed, placements"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV1811DBVR",
+   "reason": "shortlisted lacks the function's requirements: coupling, isolation, input withstand, electrical frequency passed, PWM rejected, lowest speed, placements"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV7031DBVR",
+   "reason": "shortlisted lacks the function's requirements: coupling, isolation, input withstand, electrical frequency passed, PWM rejected, lowest speed, placements"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "encoder input",
+   "part": "AM26LV32EIDR",
+   "reason": "shortlisted states other values than the function for: signal forms, channels, per-channel frequency, channel skew, input withstand, supply, powered-off behaviour; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "encoder input",
+   "part": "ISL32273EIBZ-T",
+   "reason": "shortlisted states other values than the function for: signal forms, channels, per-channel frequency, channel skew, input withstand, supply, powered-off behaviour; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "encoder input",
+   "part": "AM26LV32EIPWR",
+   "reason": "shortlisted states other values than the function for: signal forms, channels, per-channel frequency, channel skew, input withstand, supply, powered-off behaviour; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "encoder input",
+   "part": "MAX3280EAUK+T",
+   "reason": "shortlisted states other values than the function for: signal forms, channels, per-channel frequency, channel skew, supply, powered-off behaviour; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "encoder input",
+   "part": "MAX3097EEEE+T",
+   "reason": "shortlisted states other values than the function for: signal forms, channels, per-channel frequency, channel skew, supply, powered-off behaviour; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "encoder input",
+   "part": "AM26C32IDR",
+   "reason": "shortlisted states other values than the function for: signal forms, channels, per-channel frequency, channel skew, supply, powered-off behaviour; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "encoder input",
+   "part": "ST26C32ABDR",
+   "reason": "shortlisted states other values than the function for: signal forms, channels, per-channel frequency, channel skew, supply, powered-off behaviour; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "rerank",
+   "category": "R11",
+   "function": "encoder decode",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R11",
+   "function": "rotation from ESC",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R11",
+   "function": "rotation inputs",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R11",
+   "function": "BENCH rpm source",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R11",
+   "function": "servo measured position",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "question": "V222",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "question": "V224",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "question": "V225",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "question": "V230",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "question": "V231",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "ADCS7476AIMFX/NOPB",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "REF3030AIDBZR",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "ADS7886SBDBVR",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "REF3130AQDBZRQ1",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "ADS7042IDCUR",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "REF2030AIDDCR",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "ADC121S051CIMF/NOPB",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "REF3033AIDBZR",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "MCP3461RT-E/NC",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "REF3430IDBVR",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "AD7476ARTZ-REEL7",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "REF3330AIDBZR",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "MCP1501T-30E/CHY",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "LM4040AIM3-3.0/NOPB",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "LM4040AIM3-3.0+T",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "LM4040BIM3-3.0/NOPB",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "REF5030AIDR",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "ADR4530ARZ-R7",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "ADR3430ARJZ-R7",
+   "reason": "alternate states other values than the function for: Q4 option, fundamental at the highest motor speed, vibration channels, input span at the accelerometer input, trigger or timestamp on the coprocessor timebase, latency jitter, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, ADC_AVDD voltage from the reference, reference output current, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "question": "V198",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "question": "V199",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "question": "V203",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "question": "V206",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "question": "V207",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "question": "V208",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R13",
+   "figure": "P2 report: excitation load on the input bus",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R13",
+   "figure": "re-rank report: TLE42644G manufacturer status",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R13",
+   "figure": "re-rank drop: load-cell bridge ADC: AD7730BRZ-REEL",
+   "reason": "no free agent"
+  },
+  {
+   "role": "P4",
+   "category": "R12",
+   "function": "motor temperature thermocouple",
+   "part": "MAX31856MUD+T",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R12",
+   "function": "motor temperature infrared",
+   "part": "MLX90614ESF-BCC-000-TU",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R12",
+   "function": "non-volatile store",
+   "part": "MB85RC256VPNF-G-AMERE2",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R11",
+   "function": "optical index",
+   "part": "TCRT5000",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R11",
+   "figure": "found V220",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R11",
+   "figure": "found V221",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R11",
+   "figure": "found V229",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R11",
+   "figure": "function requirements: accelerometer",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "REF3030AIDBZR",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R10",
+   "figure": "found V196",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R10",
+   "figure": "found V197",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R10",
+   "figure": "found V200",
+   "reason": "no free agent"
+  }
+ ],
+ "missing": [],
+ "sequence": 3,
+ "output_sha256": "251697dd25c3ca378797af2466821616b097f4012ea7d5154dca59e0e57dc04b"
+}

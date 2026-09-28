@@ -1,0 +1,139 @@
+{
+ "role": "P4",
+ "category": "R13",
+ "label": "P4-stock-R13",
+ "attempt": 0,
+ "data": {
+  "category": "R13",
+  "verifier": "stock",
+  "parts": [
+   {
+    "function": "load-cell excitation",
+    "part": "BD450M2FP3-CE2",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C308595 stockCount 3170 (re-read 2026-09-28T15:53:40Z); gate: need 5 boards × 1 = 5, threshold 50 (S4: 5 × need, never under 50)",
+      "read": "stockCount 3170, exact match C308595 (other_results 0). 3170 ≥ 50: pass",
+      "source": "vendors.py jlcpcb C308595 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, keyword C308595)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T15:57:00Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 3067",
+      "read": "canPresaleNumber 3067 ≥ 0: pass",
+      "source": "vendors.py jlcpcb C308595",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T15:57:00Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Active (www.rohm.com product page, Product Detail 'BD450M2FP3-CE2 Status Active', 15:18:44Z)",
+      "read": "ROHM product page, Product Detail: 'Part Number | BD450M2FP3-CE2 Status | Active', Package SOT223-4F, Taping, 2000 per reel. Active passes S5",
+      "source": "https://www.rohm.com/products/power-management/linear-regulators/single-output-ldo-regulators/bd450m2fp3-c-product (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T15:57:08Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not given: 'longevity: not read' in the lifecycle record",
+      "read": "ROHM publishes a Product Longevity Program (supply periods of 10 to 20 years, updated each April). Its product list (1756 rows, table 'Support Period from 2026') does not list BD450M2FP3-C or any BD4xxM2 part; the BD4xx entries are the BD433/BD450 S2 and S5 series only. The 2025 PLP cancellation list does not name it either. No published commitment for this part. S5 records a commitment and does not require one",
+      "source": "https://www.rohm.com/product-info/product-longevity-program (15:57:28Z) and its data call https://www.rohm.com/product-info/product-longevity-program?p_p_id=com_rohm_plp_portlet_RohmPlpWebPortlet&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_resource_id=%2Fget%2FPlpProductListData&p_p_cacheability=cacheLevelPage (15:57:47Z)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T15:57:47Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "not given: 'first datasheet date: not read (current Rev.006 22 May 2025, © 2013)'",
+      "read": "Datasheet revision history: Rev.001 05.Dec.2012 'New Release (BD450M2WEFJ-C, BD450M2EFJ-C)'; Rev.002 15.Jan.2013 'Additional Entry (BD4xxM2-C Series)', the revision that adds the FP3 (SOT223-4(F)) parts; current Rev.006 22.May.2025. On the market more than 12 months (about 13 years): not flagged",
+      "source": "https://fscdn.rohm.com/en/products/databook/datasheet/ic/power/linear_regulator/bd4xxm2-c-e.pdf, Revision History p. 34 (vendors.py fetch, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T15:58:09Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; LCSC page not read",
+      "read": "Digi-Key ProductStatus Active, discontinued false, end_of_life false. JLCPCB: listed, stock 3170, the API row carries no status field. LCSC: C308595 page lists ROHM BD450M2FP3-CE2, SOT-223-4(F), stockNumber 3170, isPreSale false; the page carries no lifecycle field. No distributor disagrees with ROHM's Active",
+      "source": "vendors.py digikey BD450M2FP3-CE2 (https://api.digikey.com/products/v4/search/BD450M2FP3-CE2/productdetails, 15:57:02Z); vendors.py jlcpcb C308595 (15:57:00Z); https://www.lcsc.com/product-detail/C308595.html (vendors.py fetch, 15:58:47Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T15:58:47Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "16 weeks (Digi-Key)",
+      "read": "ManufacturerLeadWeeks 16",
+      "source": "vendors.py digikey BD450M2FP3-CE2 (https://api.digikey.com/products/v4/search/BD450M2FP3-CE2/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T15:57:02Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "not given: 'PCN: not read' in the lifecycle record",
+      "read": "No end-of-life or last-time-buy notice found. ROHM's product page shows Status Active and links no PCN or discontinuation notice; ROHM's sales support page names only Rochester Electronics as reseller of discontinued products and publishes no PCN listing; the PLP 2025 cancellation list does not name the part. Digi-Key API: end_of_life false, discontinued false. ROHM's full PCN listing is not public on www.rohm.com: not read",
+      "source": "ROHM product page (15:57:08Z); https://www.rohm.com/sales_support (15:58:37Z); ROHM PLP page (15:57:28Z); vendors.py digikey BD450M2FP3-CE2 (15:57:02Z)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T15:58:37Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand (extended); S6 allows extended parts on merit",
+      "source": "vendors.py jlcpcb C308595",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T15:57:00Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C308595, BD450M2FP3-CE2, SOT223-4(F), ROHM",
+      "read": "exact match lcsc C308595, part BD450M2FP3-CE2, package SOT-223-4(F), maker_label ROHM Semicon, '5V 200mA 42V'",
+      "source": "vendors.py jlcpcb C308595",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T15:57:00Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one excitation for the 3 bridges (V254)",
+      "read": "1 per board: F3 fixes one 5 V excitation for the 3 channels, and V254's found value gives one regulator of its own that feeds all 3 bridges and the ADC's AVDD. Candidate count 1 ≥ 1; need 5 × 1 = 5",
+      "source": "hardware/docs/Research.md F3 Answer and V254 row at checkout c25aa863372d; V254 found value",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T15:59:01Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C308595",
+      "read": "On the IO board: IOBoard.md:338 counts the load-cell excitation (F3) among the IO board's own loads, V100 names it one of 'the IO board's own 5 V loads', and V254 places a regulator of its own on the board fed from the input bus. LCSC number C308595 (C and digits) says the same",
+      "source": "hardware/docs/IOBoard.md:338 and Research.md V100, V254 rows at checkout c25aa863372d",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T15:59:01Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 3618 (15:17:44Z); route second-vendor",
+      "read": "Digi-Key stock_available 3618 (Cut Tape BD450M2FP3-CE2CT-ND 3618, Digi-Reel 3618, Tape & Reel 2000 at MOQ 2000), status Active. 3618 ≥ 50: rule-4 gate at the second vendor passes, so rule 5 holds by the second-vendor route",
+      "source": "vendors.py digikey BD450M2FP3-CE2 (https://api.digikey.com/products/v4/search/BD450M2FP3-CE2/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T15:57:02Z"
+     }
+    ]
+   }
+  ],
+  "figures": []
+ }
+}

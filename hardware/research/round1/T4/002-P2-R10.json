@@ -1,0 +1,924 @@
+{
+ "role": "P2",
+ "category": "R10",
+ "label": "P2-R10",
+ "attempt": 0,
+ "data": {
+  "category": "R10",
+  "found_values": [
+   {
+    "question_id": "V196",
+    "value": "10,000 rpm. It is the only speed the tree states for the vibration path, and IOBoard.md:448 marks the 167 Hz fundamental at 10,000 rpm as required (from docs/Balance.md:60-62). No primary source outside the tree gives a higher bound: APC Propellers' RPM limits page answered HTTP 522 at 2026-09-28T15:06:03Z. The BENCH rpm register stops at 65,535 rpm, a 1,092 Hz fundamental (IOBoard.md:487, shared/bench/bench_state.c:21-28). That is a register ceiling, not a requirement; the shortlist is also checked at it in the report",
+    "source": "hardware/docs/IOBoard.md:448 and :487, docs/Balance.md:60-62, checkout c25aa863372d, read 2026-09-28T15:15:58Z; https://www.apcprop.com/technical-information/rpm-limits/ (HTTP 522)",
+    "read_at": "2026-09-28T15:15:58Z"
+   },
+   {
+    "question_id": "V197",
+    "value": "at least 2,000 samples per second on the vibration channel. The balance screen takes rotors of 2 to 6 blades. At 10,000 rpm (V196) a 6-blade rotor's blade-pass frequency is 6 x 166.7 Hz = 1,000 Hz. Sampled at 2,000 S/s or more, it does not fold onto the 167 Hz fundamental. The fundamental alone needs more than 2 x 166.7 = 333 S/s. The seed ADXL1002's 3 dB bandwidth is 11 kHz, so content between 1,000 Hz and 11 kHz still folds into the band at 2,000 S/s unless the front end filters it (round 2). Derived from the blade count, V196 and the sampling theorem; no source states a rate",
+    "source": "docs/Balance.md:19 and shared/ui/include/balance_screen.h:25 (2 to 6 blades), checkout c25aa863372d, read 2026-09-28T15:15:58Z; V196; ADXL1002 Table 1 (3 dB bandwidth 11 kHz), ADXL1001/ADXL1002 data sheet Rev. A, https://www.analog.com/media/en/technical-documentation/data-sheets/adxl1001-1002.pdf, read 2026-09-28T15:07:21Z",
+    "read_at": "2026-09-28T15:15:58Z"
+   },
+   {
+    "question_id": "V198",
+    "value": "not found. No source in the tree states the smallest vibration amplitude the balance measurement must resolve. The screen's 'VIBRATION 0.42 g' is a fixed placeholder string (shared/ui/balance_screen.c:548). No public standard for this measurement was read. Not applied as a requirement; the report gives each part's effective step in mg for the owner",
+    "source": "shared/ui/balance_screen.c:548, docs/Balance.md, checkout c25aa863372d, read 2026-09-28T15:15:58Z",
+    "read_at": "2026-09-28T15:15:58Z"
+   },
+   {
+    "question_id": "V199",
+    "value": "not found. No source states the largest vibration at the rig arm or the firewall. The seed ADXL1002 measures +/-50 g (Table 1); the converter's clipping is set by the span of V200. Not applied as a requirement",
+    "source": "hardware/docs/IOBoard.md:493, checkout c25aa863372d, read 2026-09-28T15:15:58Z; ADXL1002 Table 1, ADXL1001/ADXL1002 data sheet Rev. A, https://www.analog.com/media/en/technical-documentation/data-sheets/adxl1001-1002.pdf, read 2026-09-28T15:07:21Z",
+    "read_at": "2026-09-28T15:15:58Z"
+   },
+   {
+    "question_id": "V200",
+    "value": "0.33 V to 2.97 V. This is the output of the seed analogue accelerometer, the ADXL1002, on a 3.3 V supply across its +/-50 g range. Its 0 g output is VDD/2, 1.65 V. Its sensitivity is ratiometric to VDD: 40 mV/g at 5.0 V, so 26.4 mV/g at 3.3 V, and +/-1.32 V at 50 g. The figure holds for that sensor at 3.3 V; R11 selects the sensor in the same task. On the RP2354B's ADC the input also stays at or below IOVDD, 3.201 V at the 3.3 V rail's -3 % (section 12.4; Research.md:283)",
+    "source": "ADXL1002 Table 1 (measurement range +/-50 g, sensitivity 40 mV/g at VDD 5.0 V, 0 g output VDD/2, supply 3.0 to 5.25 V) and section Ratiometric Output Voltage, ADXL1001/ADXL1002 data sheet Rev. A, https://www.analog.com/media/en/technical-documentation/data-sheets/adxl1001-1002.pdf, read 2026-09-28T15:07:21Z; RP2350 section 12.4, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z",
+    "read_at": "2026-09-28T15:07:21Z"
+   },
+   {
+    "question_id": "V201",
+    "value": "1 axis. Balance.md says to use one of the two axes of a three-axis sensor that lie in the firewall's plane and to ignore the third. IOBoard.md:451 gives one axis, across the shaft",
+    "source": "docs/Balance.md:47-48, hardware/docs/IOBoard.md:451, checkout c25aa863372d, read 2026-09-28T15:15:58Z",
+    "read_at": "2026-09-28T15:15:58Z"
+   },
+   {
+    "question_id": "V202",
+    "value": "1 degree at the highest motor speed. The balance screen prints the correction angle in whole degrees (shared/ui/balance_screen.c:549, '%d deg'). Balance.md gives 'under 1 degree at 10,000 rpm' as the delay of the analogue sensor it recommends. At 10,000 rpm (V196) one revolution takes 6 ms, so 1 degree is 16.7 us of delay variation",
+    "source": "shared/ui/balance_screen.c:549, docs/Balance.md:65-68, checkout c25aa863372d, read 2026-09-28T15:15:58Z; V196",
+    "read_at": "2026-09-28T15:15:58Z"
+   },
+   {
+    "question_id": "V203",
+    "value": "not found. No source states an accuracy for the vibration amplitude. The correction comes from ratios of runs. The trial run measures the whole chain (docs/Balance.md:65-67), and the four-run method compares runs (docs/Balance.md:57-59). A constant gain error therefore cancels in the correction. Not applied as a requirement",
+    "source": "docs/Balance.md:57-59 and :65-67, checkout c25aa863372d, read 2026-09-28T15:15:58Z",
+    "read_at": "2026-09-28T15:15:58Z"
+   },
+   {
+    "question_id": "V204",
+    "value": "0 to 50 degC ambient. The owner's answer to V7 gives one range for the whole IO board",
+    "source": "V7 Answer, hardware/docs/Research.md:567 ('0 to 50 degC ambient, one range for the whole IO board (owner, 2026-09-28)'), checkout c25aa863372d, read 2026-09-28T15:15:58Z",
+    "read_at": "2026-09-28T15:15:58Z"
+   },
+   {
+    "question_id": "V205",
+    "value": "no. The specification requires an analogue sensor, piezo or analogue accelerometer, into an ADC on the IO board (IOBoard.md:447, state required). Q4 names two alternatives, the RP2354B's ADC with a reference and an external ADC (Research.md:837), and tools/research/categories.json gives Q4 only the options 'reference' and 'external ADC'. The IIS3DWB therefore stays outside Q4, as Research.md:289 makes it a seed only if Q4 accepts a digital sensor. Feeds Q4 only",
+    "source": "hardware/docs/IOBoard.md:447, hardware/docs/Research.md:289 and :837, tools/research/categories.json (q_options Q4), checkout c25aa863372d, read 2026-09-28T15:15:58Z",
+    "read_at": "2026-09-28T15:15:58Z"
+   },
+   {
+    "question_id": "V206",
+    "value": "not found. The tree names the surface measurement: 'a separate measurement with the accelerometer on the surface', with a surface 5 degrees off as the example (shared/servo/include/servo_sync.h:23-25; docs/Servo.md:79-80). It states no resolution and does not route that sensor through this converter. Not applied as a requirement. Every shortlisted converter is DC-coupled: the RP2354B's input range is 0 V to ADC_AVDD (Table 1438), and each external ADC's is 0 V to its supply",
+    "source": "shared/servo/include/servo_sync.h:23-25, docs/Servo.md:79-80, checkout c25aa863372d, read 2026-09-28T15:15:58Z; RP2350 Table 1438",
+    "read_at": "2026-09-28T15:15:58Z"
+   },
+   {
+    "question_id": "V207",
+    "value": "not found. No source in the tree states the lead length from the accelerometer to the IO board (IOBoard.md:493 lists the lead as not stated). Not applied as a requirement",
+    "source": "hardware/docs/IOBoard.md:493, checkout c25aa863372d, read 2026-09-28T15:15:58Z",
+    "read_at": "2026-09-28T15:15:58Z"
+   },
+   {
+    "question_id": "V208",
+    "value": "not found. No source states how long one balance run averages at a steady speed. Not applied as a requirement",
+    "source": "docs/Balance.md, shared/ui/balance_screen.c, checkout c25aa863372d, read 2026-09-28T15:15:58Z",
+    "read_at": "2026-09-28T15:15:58Z"
+   }
+  ],
+  "functions": [
+   {
+    "function": "Converter for the accelerometer",
+    "requirements": [
+     {
+      "name": "Q4 option",
+      "value": "the RP2354B's ADC with a reference, or an external ADC",
+      "source": "Q4, hardware/docs/Research.md:837; hardware/docs/IOBoard.md:452"
+     },
+     {
+      "name": "sample rate per channel",
+      "value": "at least 2,000 S/s",
+      "source": "V197 found value"
+     },
+     {
+      "name": "fundamental at the highest motor speed",
+      "value": "resolves the 167 Hz fundamental at 10,000 rpm",
+      "source": "hardware/docs/IOBoard.md:448; V196 found value"
+     },
+     {
+      "name": "vibration channels",
+      "value": "1 channel",
+      "source": "V201 found value; hardware/docs/IOBoard.md:451"
+     },
+     {
+      "name": "input span at the accelerometer input",
+      "value": "0.33 V to 2.97 V, and at or below IOVDD on an RP2354B ADC input",
+      "source": "V200 found value; RP2350 section 12.4"
+     },
+     {
+      "name": "trigger or timestamp on the coprocessor timebase",
+      "value": "each conversion triggered or timestamped on the index pulse's timebase",
+      "source": "hardware/docs/IOBoard.md:450; Q4, hardware/docs/Research.md:837"
+     },
+     {
+      "name": "latency jitter",
+      "value": "delay variation at most 16.7 us (1 degree at 10,000 rpm)",
+      "source": "V202 and V196 found values"
+     },
+     {
+      "name": "ambient temperature range",
+      "value": "0 to 50 degC",
+      "source": "V204 found value (V7 Answer)"
+     },
+     {
+      "name": "3.3 V logic toward the RP2354B",
+      "value": "every signal reaching an RP2354B pin at 3.3 V logic",
+      "source": "hardware/docs/IOBoard.md:54"
+     },
+     {
+      "name": "ADC input rating with the 3.3 V rail down",
+      "value": "no front end drives an RP2354B ADC input above its rating (IOVDD + 0.5 V) while the 3.3 V rail is down",
+      "source": "hardware/docs/Research.md:269-272; hardware/docs/IOBoard.md:453; RP2350 Table 1433"
+     },
+     {
+      "name": "ADC_AVDD voltage from the reference",
+      "value": "2.97 V to 3.63 V (reference option): the ADC input range is 0 V to ADC_AVDD, so the reference is at least the 2.97 V top of the span, and ADC performance is compromised below 2.97 V",
+      "source": "RP2350 Table 1438, Table 1441 and note c, section 6.1.5; V200"
+     },
+     {
+      "name": "reference output current",
+      "value": "at least the ADC_AVDD draw: 142 uA typical in the hello_adc case, plus about 40 uA with the temperature sensor bias; no maximum is stated",
+      "source": "RP2350 Table 1446 (column headed ADC_IOVDD, hello_adc: 142 uA) and section 12.4.6"
+     },
+     {
+      "name": "supply from the board rails",
+      "value": "runs from the 3.3 V rail, 3.201 V to 3.399 V (3.3 V +/-3 %), or from the 5 V rail",
+      "source": "hardware/docs/Research.md:283; F6"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "ADCS7476AIMFX/NOPB",
+      "maker": "Texas Instruments (data sheet SNAS192G); S1 Texas Instruments",
+      "lcsc": "C91530",
+      "package": "SOT-23-6",
+      "placements": 2,
+      "placements_basis": "not fixed by the specification: 1 to 2, one single-channel converter per axis wired; V201 gives 1 axis, and a three-axis part flat on the firewall has 2 in-plane axes (docs/Balance.md:47-48). Gate at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Q4 option",
+        "required": "external ADC",
+        "datasheet": "12-bit SAR ADC, 1 MSPS, SPI (Features, Description)",
+        "pass": true,
+        "source": "ADCS7476 data sheet SNAS192G, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-09-28T15:09:58Z"
+       },
+       {
+        "name": "sample rate per channel",
+        "required": "at least 2,000 S/s",
+        "datasheet": "up to 1 MSPS throughput at fSCLK 20 MHz; track-and-hold acquisition 400 ns (Electrical Characteristics)",
+        "pass": true,
+        "source": "ADCS7476 data sheet SNAS192G, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-09-28T15:09:58Z"
+       },
+       {
+        "name": "fundamental at the highest motor speed",
+        "required": "167 Hz at 10,000 rpm",
+        "datasheet": "1 MSPS: Nyquist 500 kHz, far above 167 Hz (and 1,092 Hz at 65,535 rpm)",
+        "pass": true,
+        "source": "ADCS7476 data sheet SNAS192G, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-09-28T15:09:58Z"
+       },
+       {
+        "name": "vibration channels",
+        "required": "1",
+        "datasheet": "1 single-ended input",
+        "pass": true,
+        "source": "ADCS7476 data sheet SNAS192G, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-09-28T15:09:58Z"
+       },
+       {
+        "name": "input span at the accelerometer input",
+        "required": "0.33 V to 2.97 V",
+        "datasheet": "input range 0 V to VDD (VIN, Electrical Characteristics); VDD from the 3.3 V rail gives 0 to 3.201 V at the low end, covering 0.33 to 2.97 V",
+        "pass": true,
+        "source": "ADCS7476 data sheet SNAS192G, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-09-28T15:09:58Z"
+       },
+       {
+        "name": "trigger or timestamp on the coprocessor timebase",
+        "required": "triggered or timestamped",
+        "datasheet": "triggered: a conversion begins on the falling edge of CS (Pin Functions, pin 6), which the coprocessor drives; aperture delay 3 ns",
+        "pass": true,
+        "source": "ADCS7476 data sheet SNAS192G, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-09-28T15:09:58Z"
+       },
+       {
+        "name": "latency jitter",
+        "required": "at most 16.7 us",
+        "datasheet": "aperture jitter 30 ps (tAJ, Electrical Characteristics)",
+        "pass": true,
+        "source": "ADCS7476 data sheet SNAS192G, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-09-28T15:09:58Z"
+       },
+       {
+        "name": "ambient temperature range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to 125 degC (Recommended Operating Conditions; orderable ADCS7476AIMFX/NOPB -40 to 125)",
+        "pass": true,
+        "source": "ADCS7476 data sheet SNAS192G, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-09-28T15:09:58Z"
+       },
+       {
+        "name": "3.3 V logic toward the RP2354B",
+        "required": "3.3 V logic",
+        "datasheet": "VOH at least VDD - 0.2 V at 200 uA, VIH 2.4 V; with VDD on the 3.3 V rail SDATA stays within 3.3 V logic",
+        "pass": true,
+        "source": "ADCS7476 data sheet SNAS192G, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-09-28T15:09:58Z"
+       },
+       {
+        "name": "ADC input rating with the 3.3 V rail down",
+        "required": "no RP2354B ADC input driven",
+        "datasheet": "not applicable: the part drives no RP2354B ADC input; its digital lines reach bank 0 GPIO",
+        "pass": true,
+        "source": "ADCS7476 data sheet SNAS192G, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-09-28T15:09:58Z; hardware/docs/IOBoard.md:54"
+       },
+       {
+        "name": "ADC_AVDD voltage from the reference",
+        "required": "2.97 V to 3.63 V (reference option only)",
+        "datasheet": "not applicable: external ADC; ADC_AVDD stays on its own supply",
+        "pass": true,
+        "source": "RP2350 section 6.1.5"
+       },
+       {
+        "name": "reference output current",
+        "required": "reference option only",
+        "datasheet": "not applicable: the part's supply is its reference",
+        "pass": true,
+        "source": "ADCS7476 data sheet SNAS192G, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-09-28T15:09:58Z"
+       },
+       {
+        "name": "supply from the board rails",
+        "required": "3.3 V rail (3.201 to 3.399 V) or 5 V rail",
+        "datasheet": "VDD 2.7 V to 5.25 V (Pin Functions pin 1): the 3.3 V rail; VDD is also the reference",
+        "pass": true,
+        "source": "ADCS7476 data sheet SNAS192G, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-09-28T15:09:58Z"
+       }
+      ],
+      "jlcpcb": "stockCount 2,312; canPresaleNumber 2,279; componentLibraryType expand (extended); price 1.3024 at the 10-piece break for a need of 10 (currency not in the reading); read 2026-09-28T15:12:12Z, vendors.py jlcpcb C91530 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 88 (cut tape 88, Digi-Reel 88, tape and reel 0); ManufacturerLeadWeeks 16; ProductStatus Active; read 2026-09-28T15:12:34Z, vendors.py digikey ADCS7476AIMFX/NOPB (https://api.digikey.com/products/v4/search/ADCS7476AIMFX%2FNOPB/productdetails)",
+      "gate": "need = 5 boards x 2 = 10; threshold max(5 x 10, 50) = 50; stockCount 2,312 >= 50 and canPresaleNumber 2,279 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE: TI product page meta status ACTIVE and orderable ADCS7476AIMFX/NOPB marketingStatusDescription ACTIVE (https://www.ti.com/product/ADCS7476, read 2026-09-28T15:12:53Z); longevity: TI product life cycle page: standard products are not eligible for obsolescence while sold in the last 5 years, in production under 10 years, or in demand; no per-part date (https://www.ti.com/quality-reliability/quality/product-life-cycle.html, read 2026-09-28T15:13:24Z); market introduction: first datasheet April 2003 (SNAS192G header), over 12 months; notices: none on the product page, TI PCN listing not read; distributor: Digi-Key Active (15:12:34Z); LCSC page https://www.lcsc.com/product-detail/C91530.html carried no lifecycle or discontinuation text in its body (15:14:52Z); JLCPCB API row carries no status",
+      "second_source": "second vendor: Digi-Key stock_available 88 >= gate 50, read 2026-09-28T15:12:34Z (rule 5). The margin is 38 parts",
+      "alternates": [
+       "ADC121S101CIMF/NOPB (Texas Instruments, C74860): the same six pin functions in the same order in SOT-23-6 (SNAS304H Pin Functions, https://www.ti.com/lit/ds/symlink/adc121s101.pdf, read 2026-09-28T15:13:47Z), VA 2.7 to 5.25 V as reference, 1 MSPS. Its frame starts with 3 leading zeros where the ADCS7476 has 4, so the firmware match is not verified. JLCPCB stockCount 448, canPresaleNumber 432 (15:12:23Z); Digi-Key 608, Active (15:12:44Z)"
+      ],
+      "driver_in_shared": "none (no ADC or reference driver under shared/; a search of shared/ and firmware/ for the part names finds none)",
+      "reason": "Highest guaranteed ENOB of the shortlist: 11.3 bits from 70 dB minimum SINAD over -40 to 125 degC. It is the only part with a stated aperture jitter, 30 ps. The coprocessor starts each conversion with its own CS edge, so the sample instant is on the index pulse's timebase. VDD is the reference, so on the 3.3 V rail it is ratiometric with an accelerometer on the same rail. First-ranked external ADC for Q4. Weakness: Digi-Key holds 88, 38 above the gate",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "REF3030AIDBZR",
+      "maker": "Texas Instruments (data sheet SBVS032K); S1 Texas Instruments",
+      "lcsc": "C38423",
+      "package": "SOT-23-3",
+      "placements": 1,
+      "placements_basis": "fixed by the RP2354B: 1 per board, for its one ADC_AVDD pin (QFN-80 pin 59)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Q4 option",
+        "required": "reference for the RP2354B's ADC",
+        "datasheet": "a voltage reference driving ADC_AVDD, the ADC's supply and full-scale (Table 1438: input range 0 V to ADC_AVDD)",
+        "pass": true,
+        "source": "RP2350 Table 1438; REF30/REF30E data sheet SBVS032K, https://www.ti.com/lit/ds/symlink/ref30.pdf, read 2026-09-28T15:10:11Z"
+       },
+       {
+        "name": "sample rate per channel",
+        "required": "at least 2,000 S/s",
+        "datasheet": "RP2354B ADC: 500 kS/s from a 48 MHz clk_adc, 96 cycles a conversion (section 12.4.3); free-running pacing timer sets lower rates",
+        "pass": true,
+        "source": "RP2350 section 12.4 and 12.4.3.2, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "fundamental at the highest motor speed",
+        "required": "167 Hz at 10,000 rpm",
+        "datasheet": "500 kS/s: Nyquist 250 kHz, far above 167 Hz (and 1,092 Hz at 65,535 rpm)",
+        "pass": true,
+        "source": "RP2350 section 12.4.3, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "vibration channels",
+        "required": "1",
+        "datasheet": "8 external inputs on QFN-80 (GPIO40 to 47, Table 1119); 1 used",
+        "pass": true,
+        "source": "RP2350 section 12.4, Table 1119, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "input span at the accelerometer input",
+        "required": "0.33 V to 2.97 V, at or below IOVDD",
+        "datasheet": "ADC range 0 V to ADC_AVDD = 0 to 2.990 V at worst, covering 0.33 to 2.97 V with 20 mV to spare; the accelerometer on the 3.3 V rail stays under IOVDD",
+        "pass": true,
+        "source": "RP2350 Table 1438 and section 12.4; REF30/REF30E data sheet SBVS032K, https://www.ti.com/lit/ds/symlink/ref30.pdf, read 2026-09-28T15:10:11Z"
+       },
+       {
+        "name": "trigger or timestamp on the coprocessor timebase",
+        "required": "triggered or timestamped",
+        "datasheet": "no external trigger input: a conversion starts on a CS.START_ONCE write or on the free-running pacing timer, once per DIV.INT + 1 clk_adc cycles; each sample is timestamped by its index on that pacing",
+        "pass": true,
+        "source": "RP2350 sections 12.4.3.1 and 12.4.3.2, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "latency jitter",
+        "required": "at most 16.7 us",
+        "datasheet": "not stated in the datasheet. With DIV.FRAC at 0 the pacing interval is a whole number of clk_adc cycles; a non-zero FRAC alternates it by one cycle, 20.8 ns at 48 MHz, far under 16.7 us",
+        "pass": true,
+        "source": "RP2350 section 12.4.3.2, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "ambient temperature range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to 125 degC (Recommended Operating Conditions)",
+        "pass": true,
+        "source": "REF30/REF30E data sheet SBVS032K, https://www.ti.com/lit/ds/symlink/ref30.pdf, read 2026-09-28T15:10:11Z"
+       },
+       {
+        "name": "3.3 V logic toward the RP2354B",
+        "required": "3.3 V logic",
+        "datasheet": "not applicable: an analogue supply on ADC_AVDD, no logic signal",
+        "pass": true,
+        "source": "RP2350 section 6.1.5"
+       },
+       {
+        "name": "ADC input rating with the 3.3 V rail down",
+        "required": "no ADC input above IOVDD + 0.5 V with the rail down",
+        "datasheet": "fed from the 3.3 V rail, it cannot hold ADC_AVDD up while that rail is down; it drives a supply pin, not an ADC input",
+        "pass": true,
+        "source": "RP2350 sections 6.1.5 and 6.1.8, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "ADC_AVDD voltage from the reference",
+        "required": "2.97 V to 3.63 V",
+        "datasheet": "3.0 V: 2.994 V min at 25 degC (Table 6.6 prints 3.06 V as the maximum; +/-0.2 % gives 3.006 V); drift at most 50 ppm/degC over 0 to 70 degC, so at least 2.990 V over 0 to 50 degC: inside 2.97 to 3.63 V",
+        "pass": true,
+        "source": "REF30/REF30E data sheet SBVS032K, https://www.ti.com/lit/ds/symlink/ref30.pdf, read 2026-09-28T15:10:11Z; RP2350 Table 1441"
+       },
+       {
+        "name": "reference output current",
+        "required": "at least 182 uA (142 uA + 40 uA)",
+        "datasheet": "load current up to 25 mA (Recommended Operating Conditions); load regulation 100 ppm max over 0 to 25 mA",
+        "pass": true,
+        "source": "REF30/REF30E data sheet SBVS032K, https://www.ti.com/lit/ds/symlink/ref30.pdf, read 2026-09-28T15:10:11Z; RP2350 Table 1446"
+       },
+       {
+        "name": "supply from the board rails",
+        "required": "3.3 V rail (3.201 to 3.399 V) or 5 V rail",
+        "datasheet": "VIN at least VOUT + 0.05 V = 3.05 V, at most 5.5 V (Recommended Operating Conditions); dropout 50 mV max: runs from the 3.3 V rail at 3.201 V",
+        "pass": true,
+        "source": "REF30/REF30E data sheet SBVS032K, https://www.ti.com/lit/ds/symlink/ref30.pdf, read 2026-09-28T15:10:11Z"
+       }
+      ],
+      "jlcpcb": "stockCount 31,526; canPresaleNumber 30,280; componentLibraryType expand (extended); price 0.8494 at the 1-piece break for a need of 5 (currency not in the reading); read 2026-09-28T15:12:15Z, vendors.py jlcpcb C38423 (exact LCSC match)",
+      "digikey": "stock_available 22,902; ManufacturerLeadWeeks 16; ProductStatus Active; read 2026-09-28T15:12:38Z, vendors.py digikey REF3030AIDBZR (https://api.digikey.com/products/v4/search/REF3030AIDBZR/productdetails)",
+      "gate": "need = 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 31,526 >= 50 and canPresaleNumber 30,280 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE: TI product page https://www.ti.com/product/REF30 (redirected from /product/REF3030) meta status ACTIVE, orderable REF3030AIDBZR marketingStatusDescription ACTIVE, read 2026-09-28T15:12:54Z; longevity: TI product life cycle page: standard products are not eligible for obsolescence while sold in the last 5 years, in production under 10 years, or in demand; no per-part date (https://www.ti.com/quality-reliability/quality/product-life-cycle.html, read 2026-09-28T15:13:24Z); market introduction: first datasheet March 2002 (SBVS032K header), over 12 months; notices: none on the product page, TI PCN listing not read; distributor: Digi-Key Active (15:12:38Z); LCSC page https://www.lcsc.com/product-detail/C38423.html carried no lifecycle or discontinuation text (15:14:53Z); JLCPCB API row carries no status",
+      "second_source": "second vendor: Digi-Key stock_available 22,902 >= gate 50, read 2026-09-28T15:12:38Z (rule 5)",
+      "alternates": [],
+      "driver_in_shared": "none (a reference needs no driver; the RP2354B ADC has no driver under shared/)",
+      "reason": "First-ranked reference for Q4. It runs from the 3.3 V rail, so nothing it powers stays up while that rail is down. Its worst-case 2.990 V clears the 2.97 V top of the span and the 2.97 V performance limit of ADC_AVDD. Its 94 uVrms noise (10 Hz to 10 kHz) is under one 0.73 mV code of the RP2354B's ADC. Highest JLCPCB stock of the shortlist. The option's ENOB is the RP2354B's 9 bits minimum",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "ADS7042IDCUR",
+      "maker": "Texas Instruments (data sheet SBAS608C); S1 Texas Instruments",
+      "lcsc": "C701641",
+      "package": "VSSOP-8",
+      "placements": 2,
+      "placements_basis": "not fixed by the specification: 1 to 2, one single-channel converter per axis wired; V201 gives 1 axis, and a flat three-axis part has 2 in-plane axes (docs/Balance.md:47-48). Gate at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Q4 option",
+        "required": "external ADC",
+        "datasheet": "12-bit SAR ADC, 1 MSPS, SPI-compatible (Description)",
+        "pass": true,
+        "source": "ADS7042 data sheet SBAS608C, https://www.ti.com/lit/ds/symlink/ads7042.pdf, read 2026-09-28T15:09:57Z"
+       },
+       {
+        "name": "sample rate per channel",
+        "required": "at least 2,000 S/s",
+        "datasheet": "1 MSPS maximum throughput at 16 MHz SCLK; acquisition time 200 ns min (Timing Characteristics)",
+        "pass": true,
+        "source": "ADS7042 data sheet SBAS608C, https://www.ti.com/lit/ds/symlink/ads7042.pdf, read 2026-09-28T15:09:57Z"
+       },
+       {
+        "name": "fundamental at the highest motor speed",
+        "required": "167 Hz at 10,000 rpm",
+        "datasheet": "1 MSPS: Nyquist 500 kHz, far above 167 Hz (and 1,092 Hz at 65,535 rpm)",
+        "pass": true,
+        "source": "ADS7042 data sheet SBAS608C, https://www.ti.com/lit/ds/symlink/ads7042.pdf, read 2026-09-28T15:09:57Z"
+       },
+       {
+        "name": "vibration channels",
+        "required": "1",
+        "datasheet": "1 single-ended input",
+        "pass": true,
+        "source": "ADS7042 data sheet SBAS608C, https://www.ti.com/lit/ds/symlink/ads7042.pdf, read 2026-09-28T15:09:57Z"
+       },
+       {
+        "name": "input span at the accelerometer input",
+        "required": "0.33 V to 2.97 V",
+        "datasheet": "full-scale input span 0 V to AVDD; AINP absolute -0.1 V to AVDD + 0.1 V (Electrical Characteristics); AVDD on the 3.3 V rail covers 0.33 to 2.97 V",
+        "pass": true,
+        "source": "ADS7042 data sheet SBAS608C, https://www.ti.com/lit/ds/symlink/ads7042.pdf, read 2026-09-28T15:09:57Z"
+       },
+       {
+        "name": "trigger or timestamp on the coprocessor timebase",
+        "required": "triggered or timestamped",
+        "datasheet": "triggered: the input is sampled on the CS falling edge (Description), which the coprocessor drives",
+        "pass": true,
+        "source": "ADS7042 data sheet SBAS608C, https://www.ti.com/lit/ds/symlink/ads7042.pdf, read 2026-09-28T15:09:57Z"
+       },
+       {
+        "name": "latency jitter",
+        "required": "at most 16.7 us",
+        "datasheet": "not stated: SBAS608C gives no aperture delay or aperture jitter; the sample instant is the CS falling edge",
+        "pass": true,
+        "source": "ADS7042 data sheet SBAS608C, https://www.ti.com/lit/ds/symlink/ads7042.pdf, read 2026-09-28T15:09:57Z"
+       },
+       {
+        "name": "ambient temperature range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to 125 degC (Recommended Operating Conditions)",
+        "pass": true,
+        "source": "ADS7042 data sheet SBAS608C, https://www.ti.com/lit/ds/symlink/ads7042.pdf, read 2026-09-28T15:09:57Z"
+       },
+       {
+        "name": "3.3 V logic toward the RP2354B",
+        "required": "3.3 V logic",
+        "datasheet": "DVDD 1.65 V to 3.6 V independent of AVDD; with DVDD on the 3.3 V rail SDO stays within 3.3 V logic",
+        "pass": true,
+        "source": "ADS7042 data sheet SBAS608C, https://www.ti.com/lit/ds/symlink/ads7042.pdf, read 2026-09-28T15:09:57Z"
+       },
+       {
+        "name": "ADC input rating with the 3.3 V rail down",
+        "required": "no RP2354B ADC input driven",
+        "datasheet": "not applicable: the part drives no RP2354B ADC input; its digital lines reach bank 0 GPIO",
+        "pass": true,
+        "source": "ADS7042 data sheet SBAS608C, https://www.ti.com/lit/ds/symlink/ads7042.pdf, read 2026-09-28T15:09:57Z; hardware/docs/IOBoard.md:54"
+       },
+       {
+        "name": "ADC_AVDD voltage from the reference",
+        "required": "2.97 V to 3.63 V (reference option only)",
+        "datasheet": "not applicable: external ADC; ADC_AVDD stays on its own supply",
+        "pass": true,
+        "source": "RP2350 section 6.1.5"
+       },
+       {
+        "name": "reference output current",
+        "required": "reference option only",
+        "datasheet": "not applicable: the part's supply is its reference",
+        "pass": true,
+        "source": "ADS7042 data sheet SBAS608C, https://www.ti.com/lit/ds/symlink/ads7042.pdf, read 2026-09-28T15:09:57Z"
+       },
+       {
+        "name": "supply from the board rails",
+        "required": "3.3 V rail (3.201 to 3.399 V) or 5 V rail",
+        "datasheet": "AVDD and DVDD 1.65 V to 3.6 V (Recommended Operating Conditions): the 3.3 V rail at up to 3.399 V; AVDD is also the reference",
+        "pass": true,
+        "source": "ADS7042 data sheet SBAS608C, https://www.ti.com/lit/ds/symlink/ads7042.pdf, read 2026-09-28T15:09:57Z"
+       }
+      ],
+      "jlcpcb": "stockCount 2,077; canPresaleNumber 2,068; componentLibraryType expand (extended); price 2.8111 at the 10-piece break for a need of 10 (currency not in the reading); read 2026-09-28T15:12:14Z, vendors.py jlcpcb C701641 (exact LCSC match)",
+      "digikey": "stock_available 9,556 (cut tape 9,556, tape and reel 9,000, bulk 265); ManufacturerLeadWeeks 16; ProductStatus Active; read 2026-09-28T15:12:36Z, vendors.py digikey ADS7042IDCUR",
+      "gate": "need = 5 boards x 2 = 10; threshold max(5 x 10, 50) = 50; stockCount 2,077 >= 50 and canPresaleNumber 2,068 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE: TI product page meta status ACTIVE and orderable ADS7042IDCUR marketingStatusDescription ACTIVE (https://www.ti.com/product/ADS7042, read 2026-09-28T15:12:54Z); longevity: TI product life cycle page: standard products are not eligible for obsolescence while sold in the last 5 years, in production under 10 years, or in demand; no per-part date (https://www.ti.com/quality-reliability/quality/product-life-cycle.html, read 2026-09-28T15:13:24Z); market introduction: first datasheet June 2014 (SBAS608C header), over 12 months; notices: none on the product page, TI PCN listing not read; distributor: Digi-Key Active (15:12:36Z); LCSC page https://www.lcsc.com/product-detail/C701641.html carried no lifecycle or discontinuation text (15:14:52Z)",
+      "second_source": "second vendor: Digi-Key stock_available 9,556 >= gate 50, read 2026-09-28T15:12:36Z (rule 5)",
+      "alternates": [],
+      "driver_in_shared": "none (no ADC driver under shared/)",
+      "reason": "Meets every requirement. ENOB is 11.0 bits minimum from 68 dB SINAD (fIN 2 kHz, AVDD 3 V), below the ADCS7476. The datasheet states no aperture jitter, and the part calibrates its offset in the first CS frame after power-up, which needs 16 SCLK edges (section 10.4.1.1). Ranked below the ADCS7476 for the unstated jitter and the higher price. Deeper second-vendor stock than the ADCS7476",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 4,
+      "part": "REF3033AIDBZR",
+      "maker": "Texas Instruments (data sheet SBVS032K); S1 Texas Instruments",
+      "lcsc": "C36658",
+      "package": "SOT-23-3",
+      "placements": 1,
+      "placements_basis": "fixed by the RP2354B: 1 per board, for its one ADC_AVDD pin (QFN-80 pin 59)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Q4 option",
+        "required": "reference for the RP2354B's ADC",
+        "datasheet": "a voltage reference driving ADC_AVDD, the ADC's supply and full-scale (Table 1438: input range 0 V to ADC_AVDD)",
+        "pass": true,
+        "source": "RP2350 Table 1438; REF30/REF30E data sheet SBVS032K, https://www.ti.com/lit/ds/symlink/ref30.pdf, read 2026-09-28T15:10:11Z"
+       },
+       {
+        "name": "sample rate per channel",
+        "required": "at least 2,000 S/s",
+        "datasheet": "RP2354B ADC: 500 kS/s from a 48 MHz clk_adc, 96 cycles a conversion (section 12.4.3); free-running pacing timer sets lower rates",
+        "pass": true,
+        "source": "RP2350 section 12.4 and 12.4.3.2, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "fundamental at the highest motor speed",
+        "required": "167 Hz at 10,000 rpm",
+        "datasheet": "500 kS/s: Nyquist 250 kHz, far above 167 Hz (and 1,092 Hz at 65,535 rpm)",
+        "pass": true,
+        "source": "RP2350 section 12.4.3, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "vibration channels",
+        "required": "1",
+        "datasheet": "8 external inputs on QFN-80 (GPIO40 to 47, Table 1119); 1 used",
+        "pass": true,
+        "source": "RP2350 section 12.4, Table 1119, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "input span at the accelerometer input",
+        "required": "0.33 V to 2.97 V, at or below IOVDD",
+        "datasheet": "ADC range 0 V to ADC_AVDD = 0 to 3.290 V at worst; the input stays at or below 2.97 V, under the 3.201 V IOVDD minimum",
+        "pass": true,
+        "source": "RP2350 Table 1438 and section 12.4; REF30/REF30E data sheet SBVS032K, https://www.ti.com/lit/ds/symlink/ref30.pdf, read 2026-09-28T15:10:11Z"
+       },
+       {
+        "name": "trigger or timestamp on the coprocessor timebase",
+        "required": "triggered or timestamped",
+        "datasheet": "no external trigger input: a conversion starts on a CS.START_ONCE write or on the free-running pacing timer, once per DIV.INT + 1 clk_adc cycles; each sample is timestamped by its index on that pacing",
+        "pass": true,
+        "source": "RP2350 sections 12.4.3.1 and 12.4.3.2, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "latency jitter",
+        "required": "at most 16.7 us",
+        "datasheet": "not stated in the datasheet. With DIV.FRAC at 0 the pacing interval is a whole number of clk_adc cycles; a non-zero FRAC alternates it by one cycle, 20.8 ns at 48 MHz, far under 16.7 us",
+        "pass": true,
+        "source": "RP2350 section 12.4.3.2, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "ambient temperature range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to 125 degC (Recommended Operating Conditions)",
+        "pass": true,
+        "source": "REF30/REF30E data sheet SBVS032K, https://www.ti.com/lit/ds/symlink/ref30.pdf, read 2026-09-28T15:10:11Z"
+       },
+       {
+        "name": "3.3 V logic toward the RP2354B",
+        "required": "3.3 V logic",
+        "datasheet": "not applicable: an analogue supply on ADC_AVDD, no logic signal",
+        "pass": true,
+        "source": "RP2350 section 6.1.5"
+       },
+       {
+        "name": "ADC input rating with the 3.3 V rail down",
+        "required": "no ADC input above IOVDD + 0.5 V with the rail down",
+        "datasheet": "fed from the 5 V rail, it can hold ADC_AVDD at 3.3 V while the 3.3 V rail is down. ADC_AVDD is a supply pin, not an ADC input. Section 6.1.8 lets ADC_AVDD come up before DVDD, with small transient currents and no damage",
+        "pass": true,
+        "source": "RP2350 sections 6.1.5 and 6.1.8, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "ADC_AVDD voltage from the reference",
+        "required": "2.97 V to 3.63 V",
+        "datasheet": "3.3 V: 3.294 V to 3.306 V at 25 degC (Table 6.6); drift at most 50 ppm/degC over 0 to 70 degC, so 3.290 to 3.310 V over 0 to 50 degC: inside 2.97 to 3.63 V",
+        "pass": true,
+        "source": "REF30/REF30E data sheet SBVS032K, https://www.ti.com/lit/ds/symlink/ref30.pdf, read 2026-09-28T15:10:11Z; RP2350 Table 1441"
+       },
+       {
+        "name": "reference output current",
+        "required": "at least 182 uA (142 uA + 40 uA)",
+        "datasheet": "load current up to 25 mA (Recommended Operating Conditions)",
+        "pass": true,
+        "source": "REF30/REF30E data sheet SBVS032K, https://www.ti.com/lit/ds/symlink/ref30.pdf, read 2026-09-28T15:10:11Z; RP2350 Table 1446"
+       },
+       {
+        "name": "supply from the board rails",
+        "required": "3.3 V rail (3.201 to 3.399 V) or 5 V rail",
+        "datasheet": "VIN at least VOUT + 0.05 V = 3.35 V, at most 5.5 V: not the 3.3 V rail (3.201 V minimum), so it runs from the 5 V rail",
+        "pass": true,
+        "source": "REF30/REF30E data sheet SBVS032K, https://www.ti.com/lit/ds/symlink/ref30.pdf, read 2026-09-28T15:10:11Z"
+       }
+      ],
+      "jlcpcb": "stockCount 27,116; canPresaleNumber 25,133; componentLibraryType expand (extended); price 0.4418 at the 1-piece break for a need of 5 (currency not in the reading); read 2026-09-28T15:12:17Z, vendors.py jlcpcb C36658 (exact LCSC match)",
+      "digikey": "stock_available 69,085; ManufacturerLeadWeeks 16; ProductStatus Active; read 2026-09-28T15:12:39Z, vendors.py digikey REF3033AIDBZR",
+      "gate": "need = 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 27,116 >= 50 and canPresaleNumber 25,133 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE: https://www.ti.com/product/REF30 (redirected from /product/REF3033) meta status ACTIVE, orderable REF3033AIDBZR marketingStatusDescription ACTIVE, read 2026-09-28T15:12:56Z; longevity: TI product life cycle page: standard products are not eligible for obsolescence while sold in the last 5 years, in production under 10 years, or in demand; no per-part date (https://www.ti.com/quality-reliability/quality/product-life-cycle.html, read 2026-09-28T15:13:24Z); market introduction: first datasheet March 2002 (SBVS032K), over 12 months; notices: none on the product page, TI PCN listing not read; distributor: Digi-Key Active (15:12:39Z); LCSC page https://www.lcsc.com/product-detail/C36658.html carried no lifecycle or discontinuation text (15:14:53Z)",
+      "second_source": "second vendor: Digi-Key stock_available 69,085 >= gate 50, read 2026-09-28T15:12:39Z (rule 5)",
+      "alternates": [],
+      "driver_in_shared": "none (a reference needs no driver)",
+      "reason": "Seed. It meets every requirement, and at 3.3 V it gives the ADC its full nominal ADC_AVDD. It needs the 5 V rail, which adds a load to R5's 5 V rail, and it holds ADC_AVDD up while the 3.3 V rail is down. The datasheet allows that order. Ranked below the REF3030 for the second rail. Its noise is 105 uVrms (10 Hz to 10 kHz)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "LM4040BIM3-3.0/NOPB",
+      "maker": "Texas Instruments (data sheet SNOS633N, LM4040-N); S1 Texas Instruments",
+      "lcsc": "C139380",
+      "package": "SOT-23-3",
+      "placements": 1,
+      "placements_basis": "fixed by the RP2354B: 1 per board, for its one ADC_AVDD pin (QFN-80 pin 59); plus a series resistor (round 2)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Q4 option",
+        "required": "reference for the RP2354B's ADC",
+        "datasheet": "a voltage reference driving ADC_AVDD, the ADC's supply and full-scale (Table 1438: input range 0 V to ADC_AVDD)",
+        "pass": true,
+        "source": "RP2350 Table 1438; LM4040-N data sheet SNOS633N, https://www.ti.com/lit/ds/symlink/lm4040-n.pdf, read 2026-09-28T15:13:48Z"
+       },
+       {
+        "name": "sample rate per channel",
+        "required": "at least 2,000 S/s",
+        "datasheet": "RP2354B ADC: 500 kS/s from a 48 MHz clk_adc, 96 cycles a conversion (section 12.4.3); free-running pacing timer sets lower rates",
+        "pass": true,
+        "source": "RP2350 section 12.4 and 12.4.3.2, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "fundamental at the highest motor speed",
+        "required": "167 Hz at 10,000 rpm",
+        "datasheet": "500 kS/s: Nyquist 250 kHz, far above 167 Hz (and 1,092 Hz at 65,535 rpm)",
+        "pass": true,
+        "source": "RP2350 section 12.4.3, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "vibration channels",
+        "required": "1",
+        "datasheet": "8 external inputs on QFN-80 (GPIO40 to 47, Table 1119); 1 used",
+        "pass": true,
+        "source": "RP2350 section 12.4, Table 1119, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "input span at the accelerometer input",
+        "required": "0.33 V to 2.97 V, at or below IOVDD",
+        "datasheet": "ADC range 0 V to ADC_AVDD = 0 to 2.974 V at worst, covering 0.33 to 2.97 V with 4 mV to spare",
+        "pass": true,
+        "source": "RP2350 Table 1438 and section 12.4; LM4040-N data sheet SNOS633N, https://www.ti.com/lit/ds/symlink/lm4040-n.pdf, read 2026-09-28T15:13:48Z"
+       },
+       {
+        "name": "trigger or timestamp on the coprocessor timebase",
+        "required": "triggered or timestamped",
+        "datasheet": "no external trigger input: a conversion starts on a CS.START_ONCE write or on the free-running pacing timer, once per DIV.INT + 1 clk_adc cycles; each sample is timestamped by its index on that pacing",
+        "pass": true,
+        "source": "RP2350 sections 12.4.3.1 and 12.4.3.2, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "latency jitter",
+        "required": "at most 16.7 us",
+        "datasheet": "not stated in the datasheet. With DIV.FRAC at 0 the pacing interval is a whole number of clk_adc cycles; a non-zero FRAC alternates it by one cycle, 20.8 ns at 48 MHz, far under 16.7 us",
+        "pass": true,
+        "source": "RP2350 section 12.4.3.2, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "ambient temperature range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to 85 degC industrial (Recommended Operating Conditions)",
+        "pass": true,
+        "source": "LM4040-N data sheet SNOS633N, https://www.ti.com/lit/ds/symlink/lm4040-n.pdf, read 2026-09-28T15:13:48Z"
+       },
+       {
+        "name": "3.3 V logic toward the RP2354B",
+        "required": "3.3 V logic",
+        "datasheet": "not applicable: an analogue supply on ADC_AVDD, no logic signal",
+        "pass": true,
+        "source": "RP2350 section 6.1.5"
+       },
+       {
+        "name": "ADC input rating with the 3.3 V rail down",
+        "required": "no ADC input above IOVDD + 0.5 V with the rail down",
+        "datasheet": "fed from the 3.3 V rail through its resistor, it cannot hold ADC_AVDD up while that rail is down",
+        "pass": true,
+        "source": "RP2350 sections 6.1.5 and 6.1.8, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+       },
+       {
+        "name": "ADC_AVDD voltage from the reference",
+        "required": "2.97 V to 3.63 V",
+        "datasheet": "3.0 V shunt: +/-6 mV at 25 degC and +/-26 mV over -40 to 85 degC at IR 100 uA (Table 5.11, grade B), so at least 2.974 V: inside 2.97 to 3.63 V. Over 0 to 50 degC, +/-0.2 % plus 100 ppm/degC x 25 degC gives at least 2.9865 V",
+        "pass": true,
+        "source": "LM4040-N data sheet SNOS633N, https://www.ti.com/lit/ds/symlink/lm4040-n.pdf, read 2026-09-28T15:13:48Z; RP2350 Table 1441"
+       },
+       {
+        "name": "reference output current",
+        "required": "at least 182 uA (142 uA + 40 uA)",
+        "datasheet": "the series resistor sets it; up to 15 mA through the shunt (Recommended Operating Conditions)",
+        "pass": true,
+        "source": "LM4040-N data sheet SNOS633N, https://www.ti.com/lit/ds/symlink/lm4040-n.pdf, read 2026-09-28T15:13:48Z; RP2350 Table 1446"
+       },
+       {
+        "name": "supply from the board rails",
+        "required": "3.3 V rail (3.201 to 3.399 V) or 5 V rail",
+        "datasheet": "a shunt fed through a series resistor from the 3.3 V rail: minimum operating current 67 uA over temperature, reverse current up to 15 mA. At 3.201 V a resistor of 800 Ohm or less supplies 67 uA plus the 182 uA load; at 3.399 V it then passes 0.5 mA",
+        "pass": true,
+        "source": "LM4040-N data sheet SNOS633N, https://www.ti.com/lit/ds/symlink/lm4040-n.pdf, read 2026-09-28T15:13:48Z"
+       }
+      ],
+      "jlcpcb": "stockCount 8,663; canPresaleNumber 8,537; componentLibraryType expand (extended); price 1.1465 at the 1-piece break for a need of 5 (currency not in the reading); read 2026-09-28T15:12:20Z, vendors.py jlcpcb C139380 (exact LCSC match)",
+      "digikey": "stock_available 10,910; ManufacturerLeadWeeks 9; ProductStatus Active; read 2026-09-28T15:12:43Z, vendors.py digikey LM4040BIM3-3.0/NOPB",
+      "gate": "need = 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 8,663 >= 50 and canPresaleNumber 8,537 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE: TI product page https://www.ti.com/product/LM4040-N meta status ACTIVE, orderable LM4040BIM3-3.0/NOPB marketingStatusDescription ACTIVE, read 2026-09-28T15:12:57Z; longevity: TI product life cycle page: standard products are not eligible for obsolescence while sold in the last 5 years, in production under 10 years, or in demand; no per-part date (https://www.ti.com/quality-reliability/quality/product-life-cycle.html, read 2026-09-28T15:13:24Z); market introduction: first datasheet December 1991 (SNOS633N header), over 12 months; notices: none on the product page, TI PCN listing not read; distributor: Digi-Key Active (15:12:43Z); LCSC page https://www.lcsc.com/product-detail/C139380.html carried no lifecycle or discontinuation text (15:14:54Z)",
+      "second_source": "second vendor: Digi-Key stock_available 10,910 >= gate 50, read 2026-09-28T15:12:43Z (rule 5)",
+      "alternates": [],
+      "driver_in_shared": "none (a reference needs no driver)",
+      "reason": "Seed family. It meets every requirement, but with the least margin: 2.974 V worst case over its rated range against the 2.97 V top of the span. It needs a series resistor sized to the 3.3 V rail's tolerance. Its drift is 100 ppm/degC maximum, against 50 ppm/degC for the REF3030 over 0 to 70 degC. Its noise is 35 uVrms",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "ADS1115IDGSR (C37593)",
+      "maker": "Texas Instruments",
+      "reason": "Misses the sample rate: 8 to 860 SPS (SBAS444E page 1, https://www.ti.com/lit/ds/symlink/ads1115.pdf, read 2026-09-28T15:10:00Z), under the 2,000 S/s of V197. Seed"
+     },
+     {
+      "part": "ADS131M02IRUKR (C5215160), ADS131M02IPWR (C2922448)",
+      "maker": "Texas Instruments",
+      "reason": "Misses the input span. The differential input range is -VREF/gain to +VREF/gain, and the internal reference is 1.2 V, so the range is +/-1.2 V at gain 1 (SBAS853A Recommended Operating Conditions, https://www.ti.com/lit/ds/symlink/ads131m02.pdf, read 2026-09-28T15:09:59Z). The 0.33 to 2.97 V of V200 is a +/-1.32 V swing about mid-supply, so it clips above +/-45 g without a divider in front (round 2). With a divider it would fit, and its external CLKIN (0.3 to 8.4 MHz) could come from the coprocessor and put its conversions on the coprocessor's timebase. P3 may re-read this drop"
+     },
+     {
+      "part": "ADS131M04IRUKR (C5121509)",
+      "maker": "Texas Instruments",
+      "reason": "Seed. Not qualified: its data sheet SBAS890D was not re-read in this task. The ADS131M02 of the same family misses the input span for the same reason (+/-1.2 V at gain 1), and the M04's extra channels are not needed for 1 axis (V201)"
+     },
+     {
+      "part": "ADS112C04IPWR (C701615)",
+      "maker": "Texas Instruments",
+      "reason": "Seed. Not shortlisted (five survivors at most). It reaches 2,000 SPS only at the top rate of turbo mode, exactly the V197 floor (SBAS894A, https://www.ti.com/lit/ds/symlink/ads112c04.pdf, read 2026-09-28T15:10:01Z). Conversions are started by commands on I2C, which on the coprocessor's shared sensor bus follow that bus's traffic. Its internal oscillator is +/-4 % in turbo mode. Ranked below the SAR parts that start on a CS edge"
+     },
+     {
+      "part": "ADS1015IDGSR (C193969)",
+      "maker": "Texas Instruments",
+      "reason": "Not shortlisted (five survivors at most). 12-bit, up to 3,300 SPS, data rate variation -10 % to +10 % (SBAS473F Electrical Characteristics, https://www.ti.com/lit/ds/symlink/ads1015.pdf, read 2026-09-28T15:10:03Z). It is started over I2C like the ADS112C04"
+     },
+     {
+      "part": "ADS7866IDBVR (C91026)",
+      "maker": "Texas Instruments",
+      "reason": "Not shortlisted (five survivors at most). 12-bit, 200 kSPS, SOT-23-6, supply as reference. The data sheet was fetched (https://www.ti.com/lit/ds/symlink/ads7866.pdf, 2026-09-28T15:09:59Z) but not qualified"
+     },
+     {
+      "part": "ADC121S101CIMF/NOPB (C74860)",
+      "maker": "Texas Instruments",
+      "reason": "Not shortlisted. It is listed as the pin-compatible alternate of the ADCS7476AIMFX/NOPB. JLCPCB stockCount 448 (15:12:23Z)"
+     },
+     {
+      "part": "AD7476ARTZ-REEL7 (C651070)",
+      "maker": "Analog Devices",
+      "reason": "Not shortlisted. The jlcparts copy lists 24 in stock on 2026-09-14, under the gate of 50. Not counted at JLCPCB, and the data sheet was not read"
+     },
+     {
+      "part": "MCP3201-BI/SN (C49274), MCP3202-CI/SN (C56997)",
+      "maker": "Microchip Technology",
+      "reason": "Not shortlisted (five survivors at most). 12-bit, 100 kSPS in the jlcparts description. Data sheets not read"
+     },
+     {
+      "part": "ADR3430ARJZ-R7 (C138535)",
+      "maker": "Analog Devices",
+      "reason": "Not shortlisted. JLCPCB's description gives a 3.2 to 5.5 V input, 1 mV above the 3.3 V rail's 3.201 V low end, so it runs from the 5 V rail like the REF3033. The data sheet was not read. JLCPCB stockCount 8,178 (15:12:18Z); Digi-Key 9,719, Active, lead 24 weeks (15:12:41Z)"
+     },
+     {
+      "part": "LM4040AIM3-3.0+T (C143326)",
+      "maker": "Analog Devices (Maxim Integrated)",
+      "reason": "Not shortlisted. It is the same LM4040 3.0 V function from another maker; the TI LM4040BIM3-3.0/NOPB is shortlisted instead. Data sheet not read. JLCPCB stockCount 8,480 (15:12:22Z)"
+     },
+     {
+      "part": "LM4040C30FTA (C460608)",
+      "maker": "Diodes Incorporated",
+      "reason": "Not shortlisted. Same LM4040 3.0 V function; +/-0.5 % in the jlcparts description, against +/-0.2 % for the shortlisted B grade. Data sheet not read"
+     },
+     {
+      "part": "LM4040A30IDBZR (C9409)",
+      "maker": "Texas Instruments",
+      "reason": "Fails the stock gate: JLCPCB stockCount 42 under the threshold of 50, canPresaleNumber 20 (2026-09-28T15:12:26Z, vendors.py jlcpcb C9409)"
+     },
+     {
+      "part": "REF3330AIDBZR (C140329), REF3430IDBVR (C2156866), REF5030AIDR (C69362), REF3130AQDBZRQ1 (C2156928), MCP1501T-30E/CHY (C625321)",
+      "maker": "Texas Instruments; Microchip Technology",
+      "reason": "Not shortlisted (five survivors at most). 3.0 V series references found in the jlcparts copy. Data sheets not read"
+     },
+     {
+      "part": "HX711 (C6705483)",
+      "maker": "JLCPCB maker field blank; Avia Semiconductor by part number",
+      "reason": "Not a candidate: Avia Semiconductor is not on the S1 list (rule 2). Its 10 or 80 SPS is also under V197"
+     },
+     {
+      "part": "IIS3DWB",
+      "maker": "STMicroelectronics",
+      "reason": "Not a candidate: a digital accelerometer on SPI, outside Q4 (V205 found no). It is a sensor, not a converter"
+     }
+    ]
+   }
+  ],
+  "report": [
+   {
+    "figure": "Q4 effective number of bits: ADCS7476AIMFX/NOPB",
+    "value": "11.3 bits minimum and 11.7 typical, from SINAD 70 dB minimum over -40 to 125 degC and 72 dB typical (fIN 100 kHz, 1 MSPS), using ENOB = (SINAD - 1.76 dB) / 6.02 dB. Against the balance measurement, with the ADXL1002 on the same 3.3 V rail: one code is 0.806 mV = 30.5 mg, and one effective step (3.3 V / 2^11.3) is 1.28 mV = 48.6 mg per sample. V198 is not found, so there is no threshold",
+    "source": "ADCS7476 data sheet SNAS192G, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-09-28T15:09:58Z; ADXL1002 at 3.3 V: 26.4 mV/g, ratiometric (40 mV/g at 5.0 V, Table 1, ADXL1001/ADXL1002 data sheet Rev. A, https://www.analog.com/media/en/technical-documentation/data-sheets/adxl1001-1002.pdf, read 2026-09-28T15:07:21Z)"
+   },
+   {
+    "figure": "Q4 sampling rate: ADCS7476AIMFX/NOPB",
+    "value": "up to 1 MSPS (fSCLK 20 MHz), against the 2,000 S/s of V197; also above the 13.1 kS/s a 6-blade rotor at 65,535 rpm would need",
+    "source": "ADCS7476 data sheet SNAS192G, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-09-28T15:09:58Z"
+   },
+   {
+    "figure": "Q4 trigger: ADCS7476AIMFX/NOPB",
+    "value": "triggered: a conversion begins on the falling edge of CS, which the coprocessor drives on its own timebase (a PIO state machine or SPI); aperture delay 3 ns",
+    "source": "ADCS7476 data sheet SNAS192G, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-09-28T15:09:58Z (Pin Functions pin 6, Electrical Characteristics)"
+   },
+   {
+    "figure": "Q4 latency jitter: ADCS7476AIMFX/NOPB",
+    "value": "30 ps aperture jitter (tAJ). The CS edge timing is the coprocessor's and is not in the part. The limit is 16.7 us at 10,000 rpm (V202) and 2.5 us at 65,535 rpm",
+    "source": "ADCS7476 data sheet SNAS192G, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-09-28T15:09:58Z"
+   },
+   {
+    "figure": "Q4 effective number of bits: REF3030AIDBZR",
+    "value": "the RP2354B ADC's: 9 bits minimum, 9.5 typical (Table 1438); section 12.4 states 9.2. With ADC_AVDD at 3.0 V and the ADXL1002 on the 3.3 V rail: one code is 0.732 mV = 27.7 mg, and one effective step (3.0 V / 2^9) is 5.86 mV = 222 mg per sample. The reference adds 94 uVrms (10 Hz to 10 kHz, SBVS032K Table 6.6), under one code. V198 is not found, so there is no threshold",
+    "source": "RP2350 Table 1438 and section 12.4, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z; REF30/REF30E data sheet SBVS032K, https://www.ti.com/lit/ds/symlink/ref30.pdf, read 2026-09-28T15:10:11Z; ADXL1002 Table 1, read 2026-09-28T15:07:21Z"
+   },
+   {
+    "figure": "Q4 sampling rate: REF3030AIDBZR",
+    "value": "the RP2354B ADC's: 500 kS/s (48 MHz clk_adc, 96 cycles), shared across the channels round-robin sampling selects. Against 2,000 S/s (V197)",
+    "source": "RP2350 sections 12.4, 12.4.3 and 12.4.3.3, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+   },
+   {
+    "figure": "Q4 trigger: REF3030AIDBZR",
+    "value": "the RP2354B ADC's: no external trigger input. A conversion starts on a CS.START_ONCE write, or on the free-running pacing timer once per DIV.INT + 1 clk_adc cycles. A free-running sample is timestamped by its index on that pacing, from the time START_MANY was set",
+    "source": "RP2350 sections 12.4.3.1 and 12.4.3.2, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+   },
+   {
+    "figure": "Q4 latency jitter: REF3030AIDBZR",
+    "value": "the RP2354B ADC's: not stated in the datasheet. With DIV.FRAC at 0 the conversions are a whole number of clk_adc cycles apart. A non-zero FRAC alternates the interval by one cycle, 20.8 ns at 48 MHz. The phase between the START_MANY write and the first conversion is not stated",
+    "source": "RP2350 section 12.4.3.2, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+   },
+   {
+    "figure": "Q4 effective number of bits: ADS7042IDCUR",
+    "value": "11.0 bits minimum and 11.25 typical, from SINAD 68 dB minimum and 69.5 dB typical (fIN 2 kHz, AVDD 3 V). Against the balance measurement, with AVDD and the ADXL1002 on the 3.3 V rail: one code is 0.806 mV = 30.5 mg, and one effective step (3.3 V / 2^11.0) is 1.61 mV = 61 mg per sample. V198 is not found, so there is no threshold",
+    "source": "ADS7042 data sheet SBAS608C, https://www.ti.com/lit/ds/symlink/ads7042.pdf, read 2026-09-28T15:09:57Z (Electrical Characteristics); ADXL1002 Table 1, read 2026-09-28T15:07:21Z"
+   },
+   {
+    "figure": "Q4 sampling rate: ADS7042IDCUR",
+    "value": "up to 1 MSPS at 16 MHz SCLK, against 2,000 S/s (V197)",
+    "source": "ADS7042 data sheet SBAS608C, https://www.ti.com/lit/ds/symlink/ads7042.pdf, read 2026-09-28T15:09:57Z (Timing Characteristics)"
+   },
+   {
+    "figure": "Q4 trigger: ADS7042IDCUR",
+    "value": "triggered: the input is sampled on the CS falling edge, which the coprocessor drives",
+    "source": "ADS7042 data sheet SBAS608C, https://www.ti.com/lit/ds/symlink/ads7042.pdf, read 2026-09-28T15:09:57Z (Description)"
+   },
+   {
+    "figure": "Q4 latency jitter: ADS7042IDCUR",
+    "value": "not stated: SBAS608C gives no aperture delay or aperture jitter. The sample instant is the CS falling edge the coprocessor drives. The limit is 16.7 us at 10,000 rpm (V202)",
+    "source": "ADS7042 data sheet SBAS608C, https://www.ti.com/lit/ds/symlink/ads7042.pdf, read 2026-09-28T15:09:57Z"
+   },
+   {
+    "figure": "Q4 effective number of bits: REF3033AIDBZR",
+    "value": "the RP2354B ADC's: 9 bits minimum, 9.5 typical (Table 1438). With ADC_AVDD at 3.3 V: one code is 0.806 mV = 30.5 mg, and one effective step (3.3 V / 2^9) is 6.45 mV = 244 mg per sample with the ADXL1002 at 3.3 V. The reference adds 105 uVrms (10 Hz to 10 kHz), under one code",
+    "source": "RP2350 Table 1438, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z; REF30/REF30E data sheet SBVS032K, https://www.ti.com/lit/ds/symlink/ref30.pdf, read 2026-09-28T15:10:11Z; ADXL1002 Table 1, read 2026-09-28T15:07:21Z"
+   },
+   {
+    "figure": "Q4 sampling rate: REF3033AIDBZR",
+    "value": "the RP2354B ADC's: 500 kS/s, against 2,000 S/s (V197)",
+    "source": "RP2350 section 12.4.3, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+   },
+   {
+    "figure": "Q4 trigger: REF3033AIDBZR",
+    "value": "the RP2354B ADC's: no external trigger input; CS.START_ONCE or the free-running pacing timer, with samples timestamped by their index on the pacing",
+    "source": "RP2350 sections 12.4.3.1 and 12.4.3.2, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+   },
+   {
+    "figure": "Q4 latency jitter: REF3033AIDBZR",
+    "value": "the RP2354B ADC's: not stated. The pacing is in whole 20.8 ns clk_adc cycles at 48 MHz, alternating by one cycle when DIV.FRAC is not 0",
+    "source": "RP2350 section 12.4.3.2, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+   },
+   {
+    "figure": "Q4 effective number of bits: LM4040BIM3-3.0/NOPB",
+    "value": "the RP2354B ADC's: 9 bits minimum, 9.5 typical (Table 1438). With ADC_AVDD at 3.0 V: one code is 0.732 mV = 27.7 mg, and one effective step is 5.86 mV = 222 mg per sample with the ADXL1002 at 3.3 V. The shunt adds 35 uVrms wideband noise (10 Hz to 10 kHz), under one code",
+    "source": "RP2350 Table 1438, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z; LM4040-N data sheet SNOS633N, https://www.ti.com/lit/ds/symlink/lm4040-n.pdf, read 2026-09-28T15:13:48Z (Table 5.11); ADXL1002 Table 1, read 2026-09-28T15:07:21Z"
+   },
+   {
+    "figure": "Q4 sampling rate: LM4040BIM3-3.0/NOPB",
+    "value": "the RP2354B ADC's: 500 kS/s, against 2,000 S/s (V197)",
+    "source": "RP2350 section 12.4.3, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+   },
+   {
+    "figure": "Q4 trigger: LM4040BIM3-3.0/NOPB",
+    "value": "the RP2354B ADC's: no external trigger input; CS.START_ONCE or the free-running pacing timer, with samples timestamped by their index on the pacing",
+    "source": "RP2350 sections 12.4.3.1 and 12.4.3.2, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+   },
+   {
+    "figure": "Q4 latency jitter: LM4040BIM3-3.0/NOPB",
+    "value": "the RP2354B ADC's: not stated. The pacing is in whole 20.8 ns clk_adc cycles at 48 MHz, alternating by one cycle when DIV.FRAC is not 0",
+    "source": "RP2350 section 12.4.3.2, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z"
+   },
+   {
+    "figure": "Q4 alternatives: RP2354B resources for P5",
+    "value": "Reference option: 1 of the 8 ADC inputs (GPIO40 to 47); the ADC FIFO streams through 1 DMA channel on DREQ_ADC; ADC_AVDD from the reference. The input stays at or below IOVDD, and the pad input enable is cleared on the ADC pin (section 12.4). External ADC option (ADCS7476 or ADS7042): 3 bank 0 GPIO for CS, SCLK and data out, on an SPI controller or a PIO state machine; the RP2354B ADC is not used. How samples are moved (DMA or interrupt) is not fixed here",
+    "source": "RP2350 sections 12.4, 12.4.3.5, Table 1119, RP2350 datasheet build 2025-07-29 (RP-008373-DS-2), https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T15:05:01Z; ADCS7476 data sheet SNAS192G (Pin Functions), read 2026-09-28T15:09:58Z; ADS7042 data sheet SBAS608C (Pin Functions), read 2026-09-28T15:09:57Z"
+   },
+   {
+    "figure": "Q4 check at the 65,535 rpm register ceiling",
+    "value": "fundamental 1,092 Hz; 6-blade blade-pass 6,553 Hz, needing more than 13.1 kS/s; 1 degree = 2.54 us. Every shortlisted alternative passes: 500 kS/s and whole 20.8 ns pacing cycles on the RP2354B, and 1 MSPS with a CS-edge start on the external ADCs. Not a requirement (V196)",
+    "source": "shared/bench/bench_state.c:21-28 and hardware/docs/IOBoard.md:487, checkout c25aa863372d, read 2026-09-28T15:15:58Z; RP2350 section 12.4.3, read 2026-09-28T15:05:01Z; ADCS7476 SNAS192G, read 2026-09-28T15:09:58Z; ADS7042 SBAS608C, read 2026-09-28T15:09:57Z"
+   }
+  ]
+ }
+}

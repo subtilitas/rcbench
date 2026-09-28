@@ -1,0 +1,417 @@
+{
+ "role": "P4",
+ "category": "R13",
+ "label": "P4-datasheet-R13",
+ "attempt": 0,
+ "data": {
+  "category": "R13",
+  "verifier": "datasheet",
+  "parts": [
+   {
+    "function": "load-cell excitation",
+    "part": "BD450M2FP3-CE2",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "output voltage",
+      "stated": "4.90 to 5.10 V, 6 V ≤ VCC ≤ 42 V, 0 to 50 mA; 4.80 to 5.10 V to 200 mA; Tj −40 to +150 °C",
+      "read": "VOUT (BD450M2FP3-C) 4.90/5.00/5.10 V min/typ/max at 6 V ≤ VCC ≤ 42 V, 0 mA ≤ IOUT ≤ 50 mA; 4.80/5.00/5.10 V at 6 V ≤ VCC ≤ 42 V, IOUT ≤ 200 mA; table conditions −40 °C ≤ Tj ≤ +150 °C. At 57 mA the band is 4.80 to 5.10 V, inside 4.75 to 5.25 V from 6.0 V in",
+      "source": "https://fscdn.rohm.com/en/products/databook/datasheet/ic/power/linear_regulator/bd4xxm2-c-e.pdf (BD4xxM2-C / BD4xxU2-C Series Rev.006, 22 May 2025), Electrical Characteristics, page 9",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:00:06Z"
+     },
+     {
+      "figure": "output current",
+      "stated": "IOUT 0 to 200 mA",
+      "read": "Operating Conditions: Output Current IOUT 0 to 200 mA; 200 mA ≥ 57 mA",
+      "source": "bd4xxm2-c-e.pdf Rev.006, Operating Conditions, page 7",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:00:06Z"
+     },
+     {
+      "figure": "input voltage range",
+      "stated": "operating VCC 5.8 to 42.0 V (IOUT ≤ 200 mA, 5 V output); absolute 45 V",
+      "read": "Operating Conditions, note *2 (BD450 parts incl. BD450M2FP3-C): VCC 5.8 to 42.0 V at IOUT ≤ 200 mA, 5.5 to 42.0 V at IOUT ≤ 100 mA; Absolute Maximum VCC −0.3 to +45.0 V. Covers 6.0 to 22 V",
+      "source": "bd4xxm2-c-e.pdf Rev.006, Operating Conditions and Absolute Maximum Ratings, page 7",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:00:06Z"
+     },
+     {
+      "figure": "dropout",
+      "stated": "0.35 V max at 100 mA",
+      "read": "ΔVd 0.16 typ, 0.35 V max at VCC = VOUT × 0.95 (4.75 V typ), IOUT = 100 mA; ≤ 1.0 V at 57 mA. VOUT is also specified from VCC = 6 V at IOUT ≤ 200 mA",
+      "source": "bd4xxm2-c-e.pdf Rev.006, Electrical Characteristics, page 9",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:00:06Z"
+     },
+     {
+      "figure": "junction temperature",
+      "stated": "θja 83.3 °C/W (SOT223-4(F), JEDEC 4-layer): (17 V × 57 mA + 22 V × 150 µA) = 0.972 W → Tj 131 °C",
+      "read": "θja 83.3 °C/W for SOT223-4(F) on a 114.3 × 76.2 × 1.6 mm JEDEC 4-layer board with 74.2 × 74.2 mm backside copper; circuit current Icc 150 µA max at IOUT ≤ 200 mA, Tj ≤ 150 °C; Tjmax 150 °C. 0.972 W → Tj 131 °C at 50 °C ambient (132 °C at the 4.80 V minimum VOUT). Condition: the Pd absolute maximum of 0.60 W is given on a 1-layer JEDEC board (derate 4.8 mW/°C above 25 °C, 0.48 W at 50 °C), which 0.97 W exceeds; the pass holds only with copper giving the 4-layer θja. The IO board's layer count is not stated in the tree",
+      "source": "bd4xxm2-c-e.pdf Rev.006, Thermal Resistance (page 8), Electrical Characteristics (page 9), Absolute Maximum Ratings (page 7)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:00:06Z"
+     },
+     {
+      "figure": "output protection",
+      "stated": "OCP about 550 mA typical; TSD 175 °C typical",
+      "read": "OCP: 'If the output current reaches ca. 550 mA (Typ.)'; TSD: 'If the chip temperature (Tj) reaches ca. 175 °C (Typ.)'; TSD 175 °C typ in Electrical Characteristics",
+      "source": "bd4xxm2-c-e.pdf Rev.006, protection function table and Electrical Characteristics",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:00:06Z"
+     },
+     {
+      "figure": "operating temperature",
+      "stated": "Tj −40 to +150 °C",
+      "read": "Junction Temperature Range Tj −40 to +150 °C (Operating Conditions); no ambient range is given. At 50 °C ambient Tj is 131 °C, inside the range; at 0 °C inside as well",
+      "source": "bd4xxm2-c-e.pdf Rev.006, Operating Conditions, page 7",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:00:06Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "ROHM (datasheet BD4xxM2-C / BD4xxU2-C Series Rev.006, 22 May 2025); S1 ROHM",
+      "read": "datasheet maker ROHM Co., Ltd. (© 2013 ROHM Co., Ltd., TSZ02201-0G1G0AN0063-1-2, Rev.006 22.May.2025); ROHM is on the S1 list (owner, 2026-09-25)",
+      "source": "bd4xxm2-c-e.pdf Rev.006 page footer; hardware/docs/Research.md S1 Answer at checkout c25aa863372d",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:00:06Z"
+     }
+    ]
+   }
+  ],
+  "figures": [
+   {
+    "figure": "found V254",
+    "verdict": "confirmed",
+    "evidence": "ADS1235 SBAS824 9.2: 'The excitation voltage provided to the bridge is the ADC power supply voltage (5 V)... sense lines are connected to the reference inputs... ratiometric operation that cancels noise and drift of the excitation voltage' (verbatim). 6.3 AVDD to AVSS 4.75/5/5.25 V; ADS1261 7.3 AVDD to AVSS 4.75 to 5.25 V. IOBoard.md:338 puts the excitation on the 5 V rail with the display's 1.5 A continuous, 2 A peak; V100 is for research. The R5 row gives the 12 to 20 V input and the 2S pack with a 6.0 V floor, so 6.0 to 20 V. Note: 'at most 57 mA' holds at exactly 5.0 V. At the rank-1 regulator's 5.10 V maximum, 2 × AD7190 gives 57.9 mA (see the P2 load figure)",
+    "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf; https://www.ti.com/lit/ds/symlink/ads1261.pdf; hardware/docs/IOBoard.md:338 and Research.md R5 row at c25aa863372d",
+    "read_at": "2026-09-28T16:00:07Z (ADS1235), 16:03:16Z (ADS1261), 16:07:22Z (checkout)"
+   },
+   {
+    "figure": "found V255",
+    "verdict": "confirmed",
+    "evidence": "TAS501 Specifications: input resistance 350 ± 5 Ω and output resistance 350 ± 3 Ω; capacity 5 kg to 5 t. 5.0 V / 345 Ω = 14.49 mA, and 3 cells draw 43.5 mA. No load cell is named in the tree, so the value is from a representative cell. Condition: TAS501 states an excitation of 9 to 12 Vdc, and F3 fixes 5 V, below that range",
+    "source": "https://cdn.sparkfun.com/assets/parts/1/2/2/3/8/TAS501.pdf",
+    "read_at": "2026-09-28T16:00:11Z"
+   },
+   {
+    "figure": "found V256",
+    "verdict": "confirmed",
+    "evidence": "TAS501: rated output 2.0 ± 0.005 mV/V, zero balance ±1.0 %FS. Tedea-Huntleigh 620: R.O. 2.0 mV/V, Document No. 12059, Revision 25-Jul-2012, 6-wire. 2.0 mV/V × 5 V = 10.0 mV. 500/490.3 = 1.0198, which gives 10.198 mV, plus 0.1 mV zero balance: 10.30 mV. TAS501's stated excitation is 9 to 12 Vdc, and the ratio at 5 V is not stated",
+    "source": "https://cdn.sparkfun.com/assets/parts/1/2/2/3/8/TAS501.pdf; https://intertechnology.com/Tedea_Huntleigh/pdfs/620.pdf",
+    "read_at": "2026-09-28T16:00:11Z"
+   },
+   {
+    "figure": "found V257",
+    "verdict": "confirmed",
+    "evidence": "TAS501 capacities 5, 10, 20, 30, 50, 100 kg and up; safe overload 150 %FS. 50 kg × 9.80665 = 490.3 N, and 150 % is 735.5 N. Torque cells not read: stated as unknown. Flag: 500 N (V258) is 2.0 % above the 490.3 N rated capacity, where TAS501 specifies no accuracy (safe overload is a damage limit). The next step, 100 kg (980.7 N), covers ±500 N within rated capacity. It would halve the signal and set V259's noise limit at 0.17 µV RMS",
+    "source": "https://cdn.sparkfun.com/assets/parts/1/2/2/3/8/TAS501.pdf",
+    "read_at": "2026-09-28T16:00:11Z"
+   },
+   {
+    "figure": "found V258",
+    "verdict": "confirmed",
+    "evidence": "Flight Stand 50, FSFI50 V5.1 2026-08-10: Thrust ±500 N, Torque ±30 Nm, Voltage up to 180 V, Current up to 300 A. Series 1585, AFU3XH V2.4 2024-08-01, Table 1: thrust −5 to 5 kgf, torque −2 to 2 Nm, 0 to 50 V, 0 to 55 A; 'The circuit board is able to measure three load cell units'. Research.md:62 gives an external shunt for 'above 150 A to 300 A and more (owner, 2026-09-25)'; F15 gives 67.2 V",
+    "source": "https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf; https://cdn.rcbenchmark.com/landing_pages/Manuals/Series%201585%20Datasheet.pdf; Research.md:62 at c25aa863372d",
+    "read_at": "2026-09-28T16:00:12Z"
+   },
+   {
+    "figure": "found V259",
+    "verdict": "confirmed",
+    "evidence": "FS50: thrust resolution 0.05 N, torque 0.003 Nm; Resolution is defined as 'Three times the standard deviation of the noise floor measured during a 1-second static recording at the full sample rate'. 0.003/30 = 1/10,000. 0.05/490.3 × 10.0 mV = 1.020 µV; /3 = 0.340 µV RMS. Depends on the 490.3 N choice of V257",
+    "source": "https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf",
+    "read_at": "2026-09-28T16:00:12Z"
+   },
+   {
+    "figure": "found V260",
+    "verdict": "confirmed",
+    "evidence": "FS50 Standard: thrust accuracy ±5 N over ±500 N (1.0 %; 1.02 % of a 490.3 N cell), torque ±0.4 Nm over ±30 Nm (1.33 %). Accuracy is defined as the maximum average error during calibration, with no temperature range stated. The found 1.0 % is at least as tight as both",
+    "source": "https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf",
+    "read_at": "2026-09-28T16:00:12Z"
+   },
+   {
+    "figure": "found V261",
+    "verdict": "confirmed",
+    "evidence": "FS50 sampling rate 100 Hz Standard, 1,000 Hz Pro. Series 1585: 'up to ~80 Hz'. main.c:1013 'if ((uint32_t)(now - last_sample) >= 20u) { sample();' within 1011-1016. IOBoard.md:431 gives sampling every 20 ms (50 Hz)",
+    "source": "FS50 and Series 1585 datasheets (URLs above); firmware/iomcu/src/main.c:1011-1016 and hardware/docs/IOBoard.md:431 at c25aa863372d",
+    "read_at": "2026-09-28T16:00:12Z (datasheets), 16:07:22Z (checkout)"
+   },
+   {
+    "figure": "found V262",
+    "verdict": "confirmed",
+    "evidence": "Derivation from V261: one set every 10 ms at 100 SPS. FS50 states one sampling rate for the set and nothing about simultaneous conversion. Nothing in the tree requires simultaneous conversion (grep of the checkout for load cell)",
+    "source": "FS50 datasheet; checkout c25aa863372d",
+    "read_at": "2026-09-28T16:00:12Z"
+   },
+   {
+    "figure": "found V263",
+    "verdict": "confirmed",
+    "evidence": "TAS501: '4 core shielded PVC cable, Ø 5 × 3m', excitation(+) Red, excitation(−) Black, signal(+) Green, signal(−) White. Tedea 620: '6-Wire cable (sense circuit)', two sense wires",
+    "source": "TAS501.pdf; https://intertechnology.com/Tedea_Huntleigh/pdfs/620.pdf",
+    "read_at": "2026-09-28T16:00:11Z"
+   },
+   {
+    "figure": "found V264",
+    "verdict": "confirmed",
+    "evidence": "Research.md:567 V7 Answer: '0 to 50 °C ambient, one range for the whole IO board (owner, 2026-09-28)'. TAS501: operating −10 to +40 °C, compensated −20 to +55 °C. FS50 operating 0 to 40 °C",
+    "source": "Research.md:567 at c25aa863372d; TAS501.pdf; FS50 datasheet",
+    "read_at": "2026-09-28T16:07:22Z (checkout), 16:00:11Z (TAS501)"
+   },
+   {
+    "figure": "found V265",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:431: samples every 20 ms (50 Hz); main.c:1013 has the 20u test inside 1011-1016. The 20 ms is a derivation from that period, stated as such",
+    "source": "hardware/docs/IOBoard.md:431; firmware/iomcu/src/main.c:1011-1016 at c25aa863372d",
+    "read_at": "2026-09-28T16:07:22Z"
+   },
+   {
+    "figure": "P2 report: R13 row report figures",
+    "verdict": "confirmed",
+    "evidence": "The P4 row under Agent layout lists the figures to re-read for R1, R2, R3, R10 and R12, none for R13. The R13 row reads 'Load cells for thrust and torque: bridge ADC and excitation (F3)', concerns 'none'",
+    "source": "hardware/docs/Research.md Agent layout P4 row and R13 row at c25aa863372d",
+    "read_at": "2026-09-28T16:07:22Z"
+   },
+   {
+    "figure": "P2 report: excitation load on the input bus",
+    "verdict": "refuted",
+    "evidence": "The parts of the sum read correctly: AD7190 B grade AIDD 6.75 mA max (gain 16 to 128, buffer on), 2 × 6.75 = 13.5 mA; ADS1235 IAVDD 6.5 mA max (gain 64, 128). 'At most' fails as a bound. The bridges run at the regulator's output, and BD450M2FP3-CE2 is specified up to 5.10 V: 3 × 5.10/345 = 44.3 mA. The regulator's circuit current, 150 µA max, also flows from the input bus. Maximum: 44.3 + 13.5 + 0.15 = 58.0 mA with 2 × AD7190; 51.0 mA with ADS1235. At the 5.25 V AVDD limit, 59.3 mA. The AD7195 of the re-rank gives 58.3 mA at 5.10 V. None of this changes the regulator choice: 200 mA rating",
+    "source": "AD7190.pdf Rev. C Power Requirements; ads1235.pdf 6.5; bd4xxm2-c-e.pdf Rev.006 Electrical Characteristics",
+    "read_at": "2026-09-28T16:00:19Z (AD7190), 16:00:07Z (ADS1235), 16:00:06Z (BD4xxM2)"
+   },
+   {
+    "figure": "P2 report: load-cell load on the 5 V rail",
+    "verdict": "confirmed",
+    "evidence": "Follows from V254 (confirmed): the excitation and the ADC's AVDD come from the regulator on the input bus, not the 5 V rail. IOBoard.md:338 still counts the excitation on the 5 V rail, as the figure states",
+    "source": "V254; hardware/docs/IOBoard.md:338",
+    "read_at": "2026-09-28T16:07:22Z"
+   },
+   {
+    "figure": "P2 report: bridge ADC interface at rank 1",
+    "verdict": "confirmed",
+    "evidence": "ADS1235 Pin Functions: 7 PWDN, 8 RESET, 9 START, 10 CS, 11 SCLK, 12 DIN, 13 DRDY, 14 DOUT/DRDY. At least 4 (CS, SCLK, DIN, DOUT/DRDY) and at most 8 lines. DVDD 2.7 to 5.25 V takes 3.3 V. 2 or 3 chip selects matches the placements in the re-rank's cost figure (AD7190 2, AD7192 2, ADS1220 3). The ranks themselves were not given here",
+    "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf Pin Functions and 6.3",
+    "read_at": "2026-09-28T16:00:07Z"
+   },
+   {
+    "figure": "P2 report: excitation regulator dissipation at rank 1",
+    "verdict": "confirmed",
+    "evidence": "(22 − 5.0) V × 57 mA + 22 V × 150 µA = 0.972 W; × 83.3 °C/W = 81 K; Tj 131 °C at 50 °C. θja is for a JEDEC 4-layer board with 74.2 × 74.2 mm backside copper. The Pd absolute maximum of 0.60 W (1-layer board, 0.48 W at 50 °C) is exceeded without that copper, which is a layout condition for round 3",
+    "source": "bd4xxm2-c-e.pdf Rev.006 Thermal Resistance, Absolute Maximum Ratings",
+    "read_at": "2026-09-28T16:00:06Z"
+   },
+   {
+    "figure": "re-rank report: ADS1262IPWR JLCPCB stock",
+    "verdict": "confirmed",
+    "evidence": "C2669963 ADS1262IPWR TSSOP-28, stockCount 658, canPresaleNumber 637, expand, 15.6401 USD at 1 to 9",
+    "source": "vendors.py jlcpcb C2669963",
+    "read_at": "2026-09-28T15:58:15Z"
+   },
+   {
+    "figure": "re-rank report: ADS1262IPWR Digi-Key",
+    "verdict": "confirmed",
+    "evidence": "Cut tape 2127 (T&R 2000), lead_weeks 26, status Active",
+    "source": "vendors.py digikey ADS1262IPWR",
+    "read_at": "2026-09-28T15:58:55Z"
+   },
+   {
+    "figure": "re-rank report: ADS1263IPWR stock",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C2861295: 212, presale 209, 16.2832 USD at 1 to 9. Digi-Key: cut tape 2630, 16 weeks, Active",
+    "source": "vendors.py jlcpcb C2861295; vendors.py digikey ADS1263IPWR",
+    "read_at": "2026-09-28T15:58:17Z, 15:58:56Z"
+   },
+   {
+    "figure": "re-rank report: ADS122C04IPWR stock",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C2872338: 4157, presale 4033, 7.1048 USD at the 10 break (15 parts). Digi-Key: cut tape 2593, 16 weeks, Active",
+    "source": "vendors.py jlcpcb C2872338; vendors.py digikey ADS122C04IPWR",
+    "read_at": "2026-09-28T15:58:18Z, 15:58:58Z"
+   },
+   {
+    "figure": "re-rank report: AD7195BCPZ-RL7 stock",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C578052: 672, presale 659, 18.0939 USD at the 10 break. Digi-Key: cut tape 557, 49 weeks, Active",
+    "source": "vendors.py jlcpcb C578052; vendors.py digikey AD7195BCPZ-RL7",
+    "read_at": "2026-09-28T15:58:20Z, 15:59:00Z"
+   },
+   {
+    "figure": "re-rank report: AD7193 JLCPCB stock",
+    "verdict": "confirmed",
+    "evidence": "C650628 AD7193BCPZ-RL7 43, presale 41; C125128 AD7193BRUZ-REEL 0, presale −5; C650629 AD7193BRUZ 0, presale −13",
+    "source": "vendors.py jlcpcb C650628, C125128, C650629",
+    "read_at": "2026-09-28T15:58:21Z to 15:58:25Z"
+   },
+   {
+    "figure": "re-rank report: TPS7B8250QDGNRQ1 stock",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C424924: 2043, presale 2005, 1.5136 USD at 1 to 9. Digi-Key: cut tape 1616, 16 weeks, Active",
+    "source": "vendors.py jlcpcb C424924; vendors.py digikey TPS7B8250QDGNRQ1",
+    "read_at": "2026-09-28T15:58:26Z, 15:59:03Z"
+   },
+   {
+    "figure": "re-rank report: TLE42644G stock",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C539683 TLE42644G, Infineon Technologies, 257, presale 257, 1.2391 USD at 1 to 9. Digi-Key TLE42644G 'Discontinued at DigiKey', all packagings 0, 21 weeks. TLE42644GHTMA1: Active, cut tape 2561, 13 weeks",
+    "source": "vendors.py jlcpcb C539683; vendors.py digikey TLE42644G, TLE42644GHTMA1",
+    "read_at": "2026-09-28T15:58:28Z, 15:59:05Z, 15:59:07Z"
+   },
+   {
+    "figure": "re-rank report: TLE42644G manufacturer status",
+    "verdict": "refuted",
+    "evidence": "The page does say which orderable is which. OPN table: column TLE42644GHTMA1 'active and preferred' (packing 4000), column TLE42644GHTSA3 'discontinued' (packing 1000). Its 'View replacement TLE42644GHTMA1 Recommended Product Status Active' names HTMA1 as the replacement. The page's JSON-LD agrees: Product TLE42644GHTSA3 'discontinued', Product TLE42644GHTMA1 'active and preferred'",
+    "source": "https://www.infineon.com/part/TLE42644G",
+    "read_at": "2026-09-28T15:59:19Z"
+   },
+   {
+    "figure": "re-rank report: BD750L2EFJ-CE2 status",
+    "verdict": "confirmed",
+    "evidence": "ROHM page: 'Part Number | BD750L2EFJ-CE2 Status | Not Recommended for New Designs'. Digi-Key ProductStatus 'Not For New Designs'",
+    "source": "https://www.rohm.com/products/power-management/linear-regulators/single-output-ldo-regulators/bd750l2efj-c-product; vendors.py digikey BD750L2EFJ-CE2",
+    "read_at": "2026-09-28T15:59:19Z, 15:59:09Z"
+   },
+   {
+    "figure": "re-rank report: TI product status of new and first-ranked TI ADCs and regulator",
+    "verdict": "confirmed",
+    "evidence": "<meta name=\"status\" content=\"ACTIVE\"> on www.ti.com/product/ADS1262, ADS1263, ADS122C04, TPS7B82-Q1 and ADS1235",
+    "source": "vendors.py fetch https://www.ti.com/product/<name>",
+    "read_at": "2026-09-28T15:59:21Z to 15:59:23Z"
+   },
+   {
+    "figure": "re-rank report: first-ranked parts re-read at JLCPCB",
+    "verdict": "confirmed",
+    "evidence": "C2669975 ADS1235IRHBR 1340, presale 1220, 10.0473 USD; C308595 BD450M2FP3-CE2 3170, presale 3067, 0.6724 USD; C2669985 ADS1261IRHBR 414, presale 406",
+    "source": "vendors.py jlcpcb C2669975, C308595, C2669985",
+    "read_at": "2026-09-28T15:58:29Z, 15:58:31Z, 15:58:32Z"
+   },
+   {
+    "figure": "re-rank report: bridge ADC cost per board at the need",
+    "verdict": "confirmed",
+    "evidence": "Price breaks read: ADS1235 C2669975 10.0473 at 1; ADS1262 C2669963 15.6401; ADS1261 C2669985 16.0932; ADS1263 C2861295 16.2832. At the 10 break: AD7190BRUZ-REEL C19566 9.7615 (×2 = 19.52); AD7192BRUZ-REEL C392902 10.2942 (×2 = 20.59); AD7195 C578052 18.0939 (×2 = 36.19). ADS1220IPWR C48263 2.1258 (×3 = 6.38); ADS122C04 C2872338 7.1048 (×3 = 21.31). All in USD",
+    "source": "vendors.py jlcpcb for each LCSC number",
+    "read_at": "2026-09-28T15:58:15Z to 15:58:39Z"
+   },
+   {
+    "figure": "re-rank report: excitation load with AD7195",
+    "verdict": "confirmed",
+    "evidence": "AD7195 Power Requirements: AIDD 5.5 typ, 6.9 mA max at gain 16 to 128, buffer on. 2 × 6.9 = 13.8, plus 43.5 = 57.3 mA. ADS1262 and ADS1263 IAVDD 6.5 mA max (reference on), giving 50.0 mA. As with P2's figure, this is at exactly 5.0 V: 58.1 mA at the BD450M2's 5.10 V",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/AD7195.pdf; https://www.ti.com/lit/ds/symlink/ads1262.pdf Electrical Characteristics",
+    "read_at": "2026-09-28T16:00:20Z, 16:02:08Z"
+   },
+   {
+    "figure": "re-rank report: AD7793 step settling at 123 Hz",
+    "verdict": "confirmed",
+    "evidence": "AD7792/AD7793 Rev. B Table 16: fADC 123 Hz, tSETTLE 16 ms. 1/123 Hz = 8.1 ms, so an asynchronous step settles within 24.1 ms, above 20 ms",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/AD7792_7793.pdf",
+    "read_at": "2026-09-28T16:00:20Z"
+   },
+   {
+    "figure": "function requirements: load-cell excitation",
+    "verdict": "confirmed",
+    "evidence": "The list covers each value from the stated sources. IOBoard.md:73, F3: 5 V. IOBoard.md:558: output protection. V7/V264: 0 to 50 °C. V84 (open): 22 V. V254 and V255, whose rows name 'R13, load-cell excitation': own regulator, AVDD 4.75 to 5.25 V, input bus 6.0 to 20 V, 57 mA, 345 Ω. None is weaker. V100, V101 and V143 name R5 or R7, and V254 takes the excitation off the 5 V rail. V254's 'linear regulator' is not named as such. The dropout entry (≤ 1.0 V at 57 mA from 6.0 V) carries it. No pin reaches the RP2354B (IOBoard.md:54). The 57 mA equals V254's figure, and the real maximum at 5.10 V is 57.9 mA (see the P2 load figure)",
+    "source": "hardware/docs/IOBoard.md:54, 73, 338, 558; Research.md F3, V7, V84, V100, V101, V143, V254, V255 at c25aa863372d",
+    "read_at": "2026-09-28T16:07:22Z"
+   },
+   {
+    "figure": "re-rank drop: load-cell bridge ADC: AD7193BCPZ-RL7",
+    "verdict": "confirmed",
+    "evidence": "Rule 4: need 5, gate 50. C650628 43 < 50 (presale 41); C125128 0/−5; C650629 0/−13. Not in Held parts. Digi-Key 7380 cut tape, 52 weeks, Active: not rule 4's gate",
+    "source": "vendors.py jlcpcb C650628, C125128, C650629; vendors.py digikey AD7193BCPZ-RL7; Research.md Held parts",
+    "read_at": "2026-09-28T15:58:21Z to 15:59:01Z"
+   },
+   {
+    "figure": "re-rank drop: load-cell bridge ADC: AD7793BRUZ-REEL",
+    "verdict": "confirmed",
+    "evidence": "Table 16: 123 Hz, tSETTLE 16 ms, so 24.1 ms per step. 242 Hz: tSETTLE 8 ms. Table 5 (external 2.5 V reference): 0.379 µV at gain 64 and 0.397 µV at gain 128 (> 0.34). 123 Hz noise 0.265/0.283 passes but settling fails. JLCPCB C27355 7889",
+    "source": "AD7792_7793.pdf Rev. B Tables 5, 16; vendors.py jlcpcb C27355",
+    "read_at": "2026-09-28T16:00:20Z, 15:58:42Z"
+   },
+   {
+    "figure": "re-rank drop: load-cell bridge ADC: AD7794BRUZ-REEL",
+    "verdict": "confirmed",
+    "evidence": "Rev. D. Chop enabled: Table 5 is identical to AD7793's (242 Hz 0.379/0.397 µV), and Table 19 gives 123 Hz tSETTLE 16 ms. Table 11, chop disabled, internal 1.17 V reference: 123 Hz 0.36 µV (gain 64) and 0.37 µV (gain 128); 242 Hz 0.5/0.47 µV; 62 Hz is under 100 SPS. No chop-disabled table with an external reference is given",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/AD7794_7795.pdf",
+    "read_at": "2026-09-28T16:00:20Z"
+   },
+   {
+    "figure": "re-rank drop: load-cell bridge ADC: AD7730BRZ-REEL",
+    "verdict": "refuted",
+    "evidence": "The premise '1200 Hz, its fastest rate with CHP = 0' is wrong. Table XV gives CHP 0, SKIP 0: SF 2048 to 150, 150 Hz to 2.048 kHz; SKIP 1 up to 7.6 kHz. Table III lists sample rates only. Normal-mode settling is 25 outputs (20.8 ms at 1200 Hz), so about 12.2 ms at 2.048 kHz; noise above 1200 Hz is not tabulated. SKIP mode, 20 mV range, SF 1536 (200 Hz), CHP 0 gives 200 nV RMS (datasheet text, below 0.34 µV), settled by the sinc3 alone. 210 nV and 20.8 ms at 1200 Hz read correctly. Step settling is not shown to fail for one channel a part (3 placements, JLCPCB C488325 321 ≥ gate 75). Whether it passes is not read",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/AD7730_7730L.pdf Rev. B Tables I, III, XV, FASTStep and SKIP mode sections; vendors.py jlcpcb C488325",
+    "read_at": "2026-09-28T16:00:21Z, 15:58:43Z"
+   },
+   {
+    "figure": "re-rank drop: load-cell bridge ADC: ADS1256IDBR",
+    "verdict": "confirmed",
+    "evidence": "SBAS288K: Reference input voltage VREF 0.5 min, 2.5 typ, 2.6 V max, so 5.0 V excitation cannot be VREF. The row is in Electrical Characteristics: SBAS288K has no Recommended Operating Conditions table. The value holds",
+    "source": "https://www.ti.com/lit/ds/symlink/ads1256.pdf",
+    "read_at": "2026-09-28T16:00:08Z"
+   },
+   {
+    "figure": "re-rank drop: load-cell bridge ADC: ADS125H02IRHBR",
+    "verdict": "confirmed",
+    "evidence": "SBAS790C 7.3: HV_AVDD to HV_AVSS 10 to 36 V, HV_AVDD to AGND 5 to 36 V, besides AVDD 4.75 to 5.25 V. It cannot run from the 5.0 V excitation regulator alone",
+    "source": "https://www.ti.com/lit/ds/symlink/ads125h02.pdf",
+    "read_at": "2026-09-28T16:00:08Z"
+   },
+   {
+    "figure": "re-rank drop: load-cell bridge ADC: ADS131M04IPWR",
+    "verdict": "confirmed",
+    "evidence": "SBAS890D 6.3: AVDD to AGND 2.7/3.0/3.6 V (normal modes)",
+    "source": "https://www.ti.com/lit/ds/symlink/ads131m04.pdf",
+    "read_at": "2026-09-28T16:00:08Z"
+   },
+   {
+    "figure": "re-rank drop: load-cell bridge ADC: MCP3564-E/ST",
+    "verdict": "confirmed",
+    "evidence": "DS20006181C Electrical Specifications: Analog Operating Voltage AVDD 2.7 to 3.6 V",
+    "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/MSLD/ProductDocuments/DataSheets/MCP3561-2-4-Family-Data-Sheet-DS20006181C.pdf",
+    "read_at": "2026-09-28T16:00:09Z"
+   },
+   {
+    "figure": "re-rank drop: load-cell bridge ADC: AD7124-8BCPZ-RL7",
+    "verdict": "confirmed",
+    "evidence": "Rev. F, AVDD to AVSS: low and mid power 2.7 to 3.6 V, full power 2.9 to 3.6 V. External REFIN 0.5 to AVDD",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/AD7124-8.pdf",
+    "read_at": "2026-09-28T16:00:21Z"
+   },
+   {
+    "figure": "re-rank drop: load-cell excitation: BD750L2EFJ-CE2",
+    "verdict": "confirmed",
+    "evidence": "ROHM page 'Status | Not Recommended for New Designs'; Digi-Key 'Not For New Designs' (lead 14 weeks). The lifecycle gate fails",
+    "source": "ROHM bd750l2efj-c-product page; vendors.py digikey BD750L2EFJ-CE2",
+    "read_at": "2026-09-28T15:59:19Z, 15:59:09Z"
+   },
+   {
+    "figure": "re-rank drop: load-cell excitation: TPS7B8250QDRVRQ1",
+    "verdict": "confirmed",
+    "evidence": "SLVSDQ0K 5.4: RθJA DRV (WSON-6) 72.8 °C/W, DGN 63.9. 0.969 W × 72.8 = 70.5 K, so Tj 121 °C. JLCPCB C2862522 WSON-6-EP(2x2) 1344, presale 1343. Digi-Key 0 in all packagings. The reason is a different footprint of the same die, not a requirement miss",
+    "source": "https://www.ti.com/lit/ds/symlink/tps7b82-q1.pdf; vendors.py jlcpcb C2862522; vendors.py digikey TPS7B8250QDRVRQ1",
+    "read_at": "2026-09-28T16:00:09Z, 16:05:36Z, 15:59:12Z"
+   },
+   {
+    "figure": "re-rank drop: load-cell excitation: TLV76050DBZR",
+    "verdict": "confirmed",
+    "evidence": "SNVSAV1A 6.4: RθJA 275.2 °C/W (DBZ). 6.3: TJ −40 to 125 °C. 0.97 W gives 267 K, so TJ 317 °C at 50 °C ambient",
+    "source": "https://www.ti.com/lit/ds/symlink/tlv760.pdf",
+    "read_at": "2026-09-28T16:00:09Z"
+   },
+   {
+    "figure": "re-rank drop: load-cell excitation: ADP7142AUJZ-5.0-R7",
+    "verdict": "confirmed",
+    "evidence": "Rev. K Table 4: 5-lead TSOT θJA 170 °C/W (LFCSP-6 72.1, SOIC-8 52.7). Absolute maximum TJ 150 °C; specified TJ −40 to +125 °C. 0.97 W gives 165 K, so TJ 215 °C",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/ADP7142.pdf",
+    "read_at": "2026-09-28T16:00:21Z"
+   }
+  ]
+ }
+}

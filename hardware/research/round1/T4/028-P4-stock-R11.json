@@ -1,0 +1,643 @@
+{
+ "role": "P4",
+ "category": "R11",
+ "label": "P4-stock-R11",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "accelerometer",
+    "part": "ADXL316WBCSZ",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 104 (2026-09-28T15:15:02Z); gate: need 5 boards x 1 = 5, threshold max(5 x 5, 50) = 50",
+      "read": "stockCount 104 in the exact-match row C662336 (other_results 0); 104 >= 50, rule 4 passes",
+      "source": "python3 vendors.py jlcpcb C662336 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 84",
+      "read": "canPresaleNumber 84, >= 0",
+      "source": "python3 vendors.py jlcpcb C662336",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Active from Digi-Key ProductStatus (distributor figure, the status for Analog Devices parts)",
+      "read": "Digi-Key ProductStatus Active (Id 0), Discontinued false, EndOfLife false, DateLastBuyChance null. Analog Devices part: Digi-Key's status is the status (Lifecycle check). The analog.com product page https://www.analog.com/en/products/adxl316.html answered HTTP 403 with a challenge to the safari and chrome clients and no answer to plain (16:06:04Z, 16:06:09Z)",
+      "source": "python3 vendors.py digikey ADXL316WBCSZ (https://api.digikey.com/products/v4/search/ADXL316WBCSZ/productdetails); raw productdetails re-read 16:07:53Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:08Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 387 >= 50",
+      "read": "Digi-Key QuantityAvailable 387 (Tray 387); 387 >= 50, rule 5 second-vendor route passes",
+      "source": "python3 vendors.py digikey ADXL316WBCSZ (https://api.digikey.com/products/v4/search/ADXL316WBCSZ/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:08Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "Analog Devices publishes a Product Life Cycle Information page with no fixed number of years: 'obsolescence should be avoided provided technology and customer demand exist ... when it can't be avoided, customers are notified two years in advance'; a PDN under JESD48A with a 12-month last-time-buy period and shipment up to 18 months from the PDN. No part-specific commitment. S5: recorded, not required",
+      "source": "python3 vendors.py fetch https://www.analog.com/en/support/customer-service-resources/sales/product-life-cycle-information.html (final URL https://www.analog.com/en/support/product-life-cycle-information.html, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T16:07:26Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision 10/2015 (Rev. 0), over 12 months",
+      "read": "Revision history of ADXL316 Rev. C: '10/2015—Revision 0: Initial Version'; Rev. A 8/2016, Rev. B 4/2019, Rev. C 5/2019. About 11 years on the market, over 12 months",
+      "source": "python3 vendors.py fetch https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf --client safari (HTTP 200, 370,034 bytes), page 2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:06:57Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB API carries no status",
+      "read": "Digi-Key Active. LCSC productCycle 'normal' in the record of productCode C662336 (productModel ADXL316WBCSZ, brand ADI, LFCSP-12, LCSC stockNumber 65). JLCPCB: no status field in the API row. No disagreement",
+      "source": "python3 vendors.py digikey ADXL316WBCSZ; python3 vendors.py fetch https://www.lcsc.com/product-detail/C662336.html (HTTP 200, 16:08:18Z); vendors.py jlcpcb C662336",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:08:18Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 46 weeks",
+      "read": "ManufacturerLeadWeeks 46",
+      "source": "python3 vendors.py digikey ADXL316WBCSZ (https://api.digikey.com/products/v4/search/ADXL316WBCSZ/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:08Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType 'expand' (extended); S6 allows it",
+      "source": "python3 vendors.py jlcpcb C662336",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C662336, ADXL316WBCSZ, LFCSP-12 4 x 4 x 1.45 mm",
+      "read": "exact row C662336: componentModelEn ADXL316WBCSZ, componentSpecificationEn LFCSP-12, componentBrandEn Analog Devices, description '-40℃~+105℃ 1.8V~3.6V Accelerometer X,Y,Z ±19g ... LFCSP-12'",
+      "source": "python3 vendors.py jlcpcb C662336",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1: one accelerometer on the sensor board of V221, one sensor board for each IO board",
+      "read": "1 a board: IOBoard.md:447 and :451 ask for one vibration sensor, one axis of a three-axis part used; found value V221 puts it on one sensor board for each IO board. Candidate count 1 >= 1",
+      "source": "checkout c25aa863372d hardware/docs/IOBoard.md:447, :451; found value V221",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:10:09Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on a sensor board JLCPCB assembles, with an LCSC number (V221)",
+      "read": "not on the IO board itself but on a sensor board JLCPCB assembles under the IO board's rule 1 (found value V221; IOBoard.md does not place it). LCSC number C662336, C and digits, matches a JLCPCB-assembled placement",
+      "source": "checkout c25aa863372d hardware/docs/Research.md:781 (V221, for research); found value V221; vendors.py jlcpcb C662336",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices not read",
+      "read": "none found. Digi-Key media list for ADXL316WBCSZ holds Datasheets, EDA Models, Other Related Documents and Product Photos, no PCN and no obsolescence/EOL entry; Digi-Key EndOfLife false, Discontinued false, DateLastBuyChance null. ADI's own product page (which carries its PCN/PDN list) answered HTTP 403 and was not read. The stated 'not read' makes no claim this reading contradicts",
+      "source": "Digi-Key API https://api.digikey.com/products/v4/search/ADXL316WBCSZ/media (HTTP 200, 16:07:54Z) and /productdetails (16:07:53Z); https://www.analog.com/en/products/adxl316.html (HTTP 403, 16:06:04Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:07:54Z"
+     }
+    ]
+   },
+   {
+    "function": "optical index",
+    "part": "TCRT5000",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 4070 (15:15:04Z); gate: need 5 x 1 = 5, threshold 50",
+      "read": "stockCount 4070 in the exact row C2984661 (other_results 0); 4070 >= 50",
+      "source": "python3 vendors.py jlcpcb C2984661 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 3978",
+      "read": "canPresaleNumber 3978, >= 0",
+      "source": "python3 vendors.py jlcpcb C2984661",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "manufacturer status not read: https://www.vishay.com/en/product/83760/ HTTP 200 with no status in its body; reported to the owner",
+      "read": "manufacturer status not read, reason: https://www.vishay.com/en/product/83760/ answered HTTP 200 (752,841 bytes) with no lifecycle, production, obsolete, NRND or EOL text in the body; its embedded page JSON carries document lists only (keys pCorResults, documentsTabResults, lcpData 'TCRT5000', no status field). https://www.vishay.com/search/?query=TCRT5000&type=inv (HTTP 200, 16:05:25Z) and /en/product/83760/tab/quality/ (HTTP 200, 16:05:54Z) carry none; the PCN search type answered HTTP 500 (16:05:53Z). Recorded as not read and reported to the owner, the Lifecycle check's rule for a page without status; no failing status is read anywhere: Digi-Key Active, LCSC 'normal'. The gate 'active or in production' is therefore not positively shown at the maker",
+      "source": "python3 vendors.py fetch https://www.vishay.com/en/product/83760/ (chrome client)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:26Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 1761 >= 50",
+      "read": "Digi-Key QuantityAvailable 1761 (Tube 1761), maker 'Vishay Semiconductor Opto Division'; 1761 >= 50",
+      "source": "python3 vendors.py digikey TCRT5000 (https://api.digikey.com/products/v4/search/TCRT5000/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:10Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "not read: no Vishay longevity or product-lifecycle programme page found; https://www.vishay.com/en/company/quality/ answered HTTP 404, and the product page and its quality tab link none. S5: recorded, not required",
+      "source": "python3 vendors.py fetch https://www.vishay.com/en/company/quality/ (HTTP 404); https://www.vishay.com/en/product/83760/tab/quality/ (HTTP 200, 16:05:54Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:07:26Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision not read; revision 1.7 dated 17-Aug-09, over 12 months",
+      "read": "first revision not read: the datasheet carries no revision history; it is Document Number 83760, Rev. 1.7, 17-Aug-09. Digi-Key also lists a Vishay PCN OSI-837-2015 Rev. 0 of 23-Apr-2015 on the part. On the market over 12 months",
+      "source": "python3 vendors.py fetch https://www.vishay.com/docs/83760/tcrt5000.pdf (HTTP 200, 176,657 bytes), page footers; Digi-Key API /products/v4/search/TCRT5000/media (16:07:57Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:06:57Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB carries none",
+      "read": "Digi-Key ProductStatus Active, EndOfLife false, Discontinued false. LCSC productCycle 'normal' for productCode C2984661 (TCRT5000, VISHAY, DIP-4, stockNumber 4070). JLCPCB API row has no status field (raw row keys read 16:10:09Z). No maker status to compare",
+      "source": "python3 vendors.py digikey TCRT5000; python3 vendors.py fetch https://www.lcsc.com/product-detail/C2984661.html (HTTP 200, 16:08:18Z); vendors.jlc_query C2984661 raw row",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:08:18Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "9 weeks",
+      "read": "ManufacturerLeadWeeks 9",
+      "source": "python3 vendors.py digikey TCRT5000",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:10Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType 'expand' (extended); S6 allows it",
+      "source": "python3 vendors.py jlcpcb C2984661",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2984661, TCRT5000, DIP-4 leaded",
+      "read": "exact row C2984661: componentModelEn TCRT5000, componentSpecificationEn DIP-4, componentBrandEn 'Vishay Intertech', description '... 15mm 70V 950nm Phototransistor DIP-4 Reflective Optical Interrupters'",
+      "source": "python3 vendors.py jlcpcb C2984661",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1: one sensor on the probe board of V219, one probe for each IO board",
+      "read": "1 a board: IOBoard.md:441 asks for one pulse a revolution from one pen line; found value V219 puts one reflective sensor on one probe board for each IO board. Candidate count 1 >= 1",
+      "source": "checkout c25aa863372d hardware/docs/IOBoard.md:441; found value V219",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:10:09Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on a probe board JLCPCB assembles, on a lead (V219)",
+      "read": "not on the IO board itself but on a probe board JLCPCB assembles (found value V219; IOBoard.md does not place it). LCSC number C2984661, C and digits, matches a JLCPCB-assembled placement",
+      "source": "checkout c25aa863372d hardware/docs/Research.md:779 (V219, for research); found value V219; vendors.py jlcpcb C2984661",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change notices not read",
+      "read": "no end-of-life or last-time-buy notice found. Digi-Key media for TCRT5000 lists one change notice, 'PCN Assembly/Origin: PCN OSI-837-2015 Rev. 0 23/Apr/2015' (https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/19/OSI-837-2015-Rev-0.pdf), no obsolescence/EOL entry; EndOfLife false, Discontinued false, DateLastBuyChance null. Vishay's PCN search answered HTTP 500 and was not read. The stated 'not read' makes no claim this reading contradicts",
+      "source": "Digi-Key API https://api.digikey.com/products/v4/search/TCRT5000/media (HTTP 200) and /productdetails (16:07:55Z); https://www.vishay.com/en/search/?query=TCRT5000&type=pcn (HTTP 500, 16:05:53Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:07:57Z"
+     }
+    ]
+   },
+   {
+    "function": "magnetic pickup",
+    "part": "DRV5015A1QDBZR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 339 (15:15:09Z); gate: need 5, threshold 50",
+      "read": "stockCount 339 in the exact row C2152440 (other_results 0); 339 >= 50",
+      "source": "python3 vendors.py jlcpcb C2152440 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 336",
+      "read": "canPresaleNumber 336, >= 0",
+      "source": "python3 vendors.py jlcpcb C2152440",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "manufacturer status ACTIVE: https://www.ti.com/product/DRV5015, orderable DRV5015A1QDBZR",
+      "read": "ACTIVE: the orderablePartNumber DRV5015A1QDBZR record carries marketingStatusDescription 'ACTIVE' (no other orderable between the key and the status); page meta status ACTIVE. The OBSOLETE entries on the page belong to DRV5015A1QDBZT, A2QDBZT and A3QDBZT, not this part",
+      "source": "python3 vendors.py fetch https://www.ti.com/product/DRV5015 (HTTP 200, 303,904 bytes)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:25Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 2831 >= 50",
+      "read": "Digi-Key QuantityAvailable 2831 (Cut Tape 2831, Digi-Reel 2831, Tape & Reel 0); 2831 >= 50",
+      "source": "python3 vendors.py digikey DRV5015A1QDBZR (https://api.digikey.com/products/v4/search/DRV5015A1QDBZR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:12Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "TI's Product life cycle page: 'TI's product life cycles are typically 10 to 15 years and often extend longer'; a standard product is not eligible for obsolescence while it has had sales in the last five years (seven for automotive), has been in production under 10 years, or has current demand. No part-specific commitment. S5: recorded, not required",
+      "source": "python3 vendors.py fetch https://www.ti.com/support-quality/quality-policies-procedures/product-life-cycle.html (final https://www.ti.com/quality-reliability/quality/product-life-cycle.html, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T16:07:24Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision June 2018, over 12 months",
+      "read": "SBAS915A – JUNE 2018 – REVISED APRIL 2019; revision history 'Changes from Original (June 2018) to Revision A'. Over 12 months",
+      "source": "python3 vendors.py fetch https://www.ti.com/lit/ds/symlink/drv5015.pdf (HTTP 200), page 1 header and section 4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:06:58Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active",
+      "read": "Digi-Key Active, EndOfLife false, Discontinued false; LCSC productCycle 'normal' for C2152440 (DRV5015A1QDBZR, TI, SOT-23, stockNumber 335); JLCPCB API carries no status field. All agree with TI's ACTIVE",
+      "source": "python3 vendors.py digikey DRV5015A1QDBZR; python3 vendors.py fetch https://www.lcsc.com/product-detail/C2152440.html (HTTP 200, 16:08:19Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:08:19Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "9 weeks",
+      "read": "ManufacturerLeadWeeks 9",
+      "source": "python3 vendors.py digikey DRV5015A1QDBZR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:12Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType 'expand' (extended); S6 allows it",
+      "source": "python3 vendors.py jlcpcb C2152440",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2152440, DRV5015A1QDBZR, SOT-23 (DBZ) 3 pins",
+      "read": "exact row C2152440: componentModelEn DRV5015A1QDBZR, componentSpecificationEn SOT-23, componentBrandEn Texas Instruments, description '... 2.5V~5.5V ... 30kHz Open-drain SOT-23 Hall Switches'",
+      "source": "python3 vendors.py jlcpcb C2152440",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1: one latch on the magnetic pickup's sensor board, one board for each IO board",
+      "read": "1 a board: IOBoard.md:442 asks for one magnetic rpm input; found values V217 and V218 give one latch reading two magnets on one sensor board for each IO board. Candidate count 1 >= 1",
+      "source": "checkout c25aa863372d hardware/docs/IOBoard.md:442; found values V217, V218",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:10:09Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on a sensor board JLCPCB assembles (V217, V221)",
+      "read": "not on the IO board itself but on a sensor board JLCPCB assembles (found value V217; IOBoard.md does not place it). LCSC number C2152440, C and digits, matches a JLCPCB-assembled placement",
+      "source": "checkout c25aa863372d hardware/docs/Research.md:777 (V217, for research); found value V217; vendors.py jlcpcb C2152440",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "notices not read",
+      "read": "no end-of-life or last-time-buy notice found. TI status of the orderable is ACTIVE (TI marks LAST TIME BUY on the product page). Digi-Key media lists two change notices only: 'PCN Design/Specification: SOT devices Marking 05/Feb/2024' and 'PCN Assembly/Origin: Mult Dev Assembly Site 19/Dec/2024'; no obsolescence/EOL entry; EndOfLife false, Discontinued false, DateLastBuyChance null. TI's per-part PCN listing needs a login and was not read. The stated 'not read' makes no claim this reading contradicts",
+      "source": "Digi-Key API https://api.digikey.com/products/v4/search/DRV5015A1QDBZR/media (HTTP 200) and /productdetails (16:07:58Z); https://www.ti.com/product/DRV5015 (16:04:25Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:08:00Z"
+     }
+    ]
+   },
+   {
+    "function": "phase-wire clip",
+    "part": "TLV7011DBVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 6136 (15:53:45Z); gate: need 5 boards x 2 = 10, threshold max(5 x 10, 50) = 50",
+      "read": "stockCount 6136 in the exact row C702117 (other_results 0); 6136 >= 50",
+      "source": "python3 vendors.py jlcpcb C702117 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 5959",
+      "read": "canPresaleNumber 5959, >= 0",
+      "source": "python3 vendors.py jlcpcb C702117",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "manufacturer status ACTIVE: https://www.ti.com/product/TLV7011, orderable TLV7011DBVR, and page meta status ACTIVE",
+      "read": "ACTIVE: the orderablePartNumber TLV7011DBVR record carries marketingStatusDescription 'ACTIVE'; page meta status ACTIVE. The page's PREVIEW entries belong to other orderables",
+      "source": "python3 vendors.py fetch https://www.ti.com/product/TLV7011 (HTTP 200, 329,196 bytes)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:25Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 56359 >= 50",
+      "read": "Digi-Key QuantityAvailable 56359 (Cut Tape 56359, Digi-Reel 56359, Tape & Reel 54000); 56359 >= 50",
+      "source": "python3 vendors.py digikey TLV7011DBVR (https://api.digikey.com/products/v4/search/TLV7011DBVR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:14Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "TI's Product life cycle page: life cycles typically 10 to 15 years; a standard product is not eligible for obsolescence while it has had sales in the last five years, has been in production under 10 years, or has current demand. No part-specific commitment. S5: recorded, not required",
+      "source": "python3 vendors.py fetch https://www.ti.com/support-quality/quality-policies-procedures/product-life-cycle.html (final https://www.ti.com/quality-reliability/quality/product-life-cycle.html, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T16:07:24Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision September 2017, over 12 months",
+      "read": "the header reads SLVSDM5F – SEPTEMBER 2017 – REVISED MARCH 2020, but the revision history names an earlier original: 'Changes from Original (May 2017) to Revision A' (ADVANCED INFO to PRODUCTION DATA), Revision A July 2017. The SOT-23 package lost its preview status in Revision D ('Deleted preview status of SOT23 package', Revision C March 2018 to D; Revision D dated February 2019). First revision May 2017; the DBV package in production data since February 2019 at the latest. Over 12 months either way",
+      "source": "python3 vendors.py fetch https://www.ti.com/lit/ds/symlink/tlv7011.pdf (HTTP 200), page 1 header and section 4",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T16:06:58Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active",
+      "read": "Digi-Key Active, EndOfLife false, Discontinued false; LCSC productCycle 'normal' for C702117 (TLV7011DBVR, TI, SOT-23-5, stockNumber 5806); JLCPCB API carries no status field. All agree with TI's ACTIVE",
+      "source": "python3 vendors.py digikey TLV7011DBVR; python3 vendors.py fetch https://www.lcsc.com/product-detail/C702117.html (HTTP 200, 16:08:19Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:08:19Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "16 weeks",
+      "read": "ManufacturerLeadWeeks 16",
+      "source": "python3 vendors.py digikey TLV7011DBVR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:14Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType 'expand' (extended); S6 allows it",
+      "source": "python3 vendors.py jlcpcb C702117",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C702117, TLV7011DBVR, SOT-23-5 (DBV)",
+      "read": "exact row C702117: componentModelEn TLV7011DBVR, componentSpecificationEn SOT-23-5, componentBrandEn Texas Instruments, description '... 1.6V~5.5V ... 260ns ... CMOS Push-pull Rail-to-rail input SOT-23-5 Comparators'. Price USD 0.4336 at the 10 break, as stated",
+      "source": "python3 vendors.py jlcpcb C702117",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2: one comparator for the phase-wire clip and one for the optical index (V219)",
+      "read": "2 a board: one for the phase-wire clip (IOBoard.md:443) and one for the optical index's analogue output (found value V219: comparator with hysteresis on the IO board). The count rests on V219, a found value. Candidate count 2 >= 2",
+      "source": "checkout c25aa863372d hardware/docs/IOBoard.md:441, :443; found value V219",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:10:09Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, with an LCSC number",
+      "read": "on the IO board: the comparators sit on the IO board (V219, IOBoard.md:104 for the GPIO drive). LCSC number C702117, C and digits",
+      "source": "checkout c25aa863372d hardware/docs/IOBoard.md:104, :443; found value V219; vendors.py jlcpcb C702117",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:03:59Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change notices not read",
+      "read": "no end-of-life or last-time-buy notice found. TI status ACTIVE. Digi-Key media lists two change notices only: 'PCN Design/Specification: SOT devices Marking 05/Feb/2024' and 'PCN Assembly/Origin: Assembly 28/Mar/2023'; no obsolescence/EOL entry; EndOfLife false, Discontinued false, DateLastBuyChance null. TI's per-part PCN listing needs a login and was not read. The stated 'not read' makes no claim this reading contradicts",
+      "source": "Digi-Key API https://api.digikey.com/products/v4/search/TLV7011DBVR/media (HTTP 200) and /productdetails (16:08:01Z); https://www.ti.com/product/TLV7011 (16:04:25Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:08:02Z"
+     }
+    ]
+   },
+   {
+    "function": "encoder input",
+    "part": "AM26LV32EIDR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 49000 (15:15:14Z); gate: need 5 x 1 = 5, threshold 50",
+      "read": "stockCount 49000 in the exact row C527448 (other_results 0); 49000 >= 50",
+      "source": "python3 vendors.py jlcpcb C527448 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:00Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 48899",
+      "read": "canPresaleNumber 48899, >= 0",
+      "source": "python3 vendors.py jlcpcb C527448",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:00Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "manufacturer status ACTIVE: https://www.ti.com/product/AM26LV32E, AM26LV32EIDR",
+      "read": "ACTIVE: the orderablePartNumber AM26LV32EIDR record carries marketingStatusDescription 'ACTIVE'; page meta status ACTIVE",
+      "source": "python3 vendors.py fetch https://www.ti.com/product/AM26LV32E (HTTP 200, 286,040 bytes)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:25Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 13489 >= 50",
+      "read": "Digi-Key QuantityAvailable 13489 (Cut Tape 13489, Digi-Reel 13489, Tape & Reel 13050); 13489 >= 50",
+      "source": "python3 vendors.py digikey AM26LV32EIDR (https://api.digikey.com/products/v4/search/AM26LV32EIDR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:16Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "TI's Product life cycle page: life cycles typically 10 to 15 years; a standard product is not eligible for obsolescence while it has had sales in the last five years, has been in production under 10 years, or has current demand. No part-specific commitment. S5: recorded, not required",
+      "source": "python3 vendors.py fetch https://www.ti.com/support-quality/quality-policies-procedures/product-life-cycle.html (final https://www.ti.com/quality-reliability/quality/product-life-cycle.html, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T16:07:24Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision April 2008",
+      "read": "SLLS849E – APRIL 2008 – REVISED AUGUST 2023; revision history starts at 'Revision A (May 2008) to Revision B (July 2015)'. First revision April 2008, over 12 months",
+      "source": "python3 vendors.py fetch https://www.ti.com/lit/ds/symlink/am26lv32e.pdf (HTTP 200), page 1 header and section 4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:06:58Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active",
+      "read": "Digi-Key Active, EndOfLife false, Discontinued false; LCSC productCycle 'normal' for C527448 (AM26LV32EIDR, TI, SOIC-16, stockNumber 48837); JLCPCB API carries no status field. All agree with TI's ACTIVE",
+      "source": "python3 vendors.py digikey AM26LV32EIDR; python3 vendors.py fetch https://www.lcsc.com/product-detail/C527448.html (HTTP 200, 16:08:20Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:08:20Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "16 weeks",
+      "read": "ManufacturerLeadWeeks 16",
+      "source": "python3 vendors.py digikey AM26LV32EIDR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:16Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType 'expand' (extended); S6 allows it",
+      "source": "python3 vendors.py jlcpcb C527448",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:00Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C527448, AM26LV32EIDR, SOIC-16 (D)",
+      "read": "exact row C527448: componentModelEn AM26LV32EIDR, componentSpecificationEn SOIC-16, componentBrandEn Texas Instruments, description '... 32Mbps 3V~3.6V 4 ... Receiver ±15kV SOIC-16 RS-485 / RS-422 ICs'",
+      "source": "python3 vendors.py jlcpcb C527448",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:00Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1: one quad receiver takes A, B and I; the fourth receiver is spare",
+      "read": "1 a board: 3 channels (A, B, I; Research.md:65, IOBoard.md:444-445) in one quad receiver. Candidate count 1 >= 1",
+      "source": "checkout c25aa863372d hardware/docs/Research.md:65; hardware/docs/IOBoard.md:444-445",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:10:09Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, with an LCSC number",
+      "read": "on the IO board: the encoder input is an IO board input (IOBoard.md:444-445, pin budget IOBoard.md:104). LCSC number C527448, C and digits",
+      "source": "checkout c25aa863372d hardware/docs/IOBoard.md:104, :444-445; vendors.py jlcpcb C527448",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:00Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "notices not read",
+      "read": "no end-of-life or last-time-buy notice found. TI status ACTIVE. Digi-Key media lists two change notices only: 'PCN Design/Specification: Design 25/Feb/2022' and 'PCN Design/Specification: AM26LV32E 10/Feb/2021'; no obsolescence/EOL entry; EndOfLife false, Discontinued false, DateLastBuyChance null. TI's per-part PCN listing needs a login and was not read. The stated 'not read' makes no claim this reading contradicts",
+      "source": "Digi-Key API https://api.digikey.com/products/v4/search/AM26LV32EIDR/media (HTTP 200) and /productdetails (16:08:03Z); https://www.ti.com/product/AM26LV32E (16:04:25Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:08:04Z"
+     }
+    ]
+   }
+  ]
+ }
+}

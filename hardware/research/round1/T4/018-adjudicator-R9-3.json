@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R9",
+ "label": "adjudicator-R9-3",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "function": "P2 report: skew limit on the external path",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The figure says the MAX14921 and the BQ79616 both sample all cells at once. The BQ79616 datasheet says otherwise. It measures the cells one after another on a single multiplexed Main ADC (analog-to-digital converter): 8 µs per input and 192 µs per full cycle, so Cell1 to Cell16 are spread over about 128 µs. The rest of the figure holds. The arithmetic checks: 0.333 A / 900 A/s = 370 µs and 0.889 A / 900 A/s = 988 µs. The MAX14921 does sample all cells at once and is limited to 65 V. The BQ79616 does fail V181 (lowest cell count), because it needs at least 6 cells. Its reason for being excluded is right; its description as a simultaneous-sampling part is wrong. The figure has to be corrected: drop the BQ79616 from the \"samples all cells at once\" list, or report its skew of about 128 µs across 16 cells. Scope is function. The error is in this figure's comparison against V186 (the skew limit), not in the part's lifecycle, allowlist or LCSC identity. No part is named in the figure's ruling.",
+  "evidence": "BQ79616 datasheet, SLUSF21A (June 2023, revised June 2026). Section 6.3.2.1 Main ADC: \"There are total of 24 inputs (slots) multiplexed to the Main ADC. All inputs are measured in round robin fashion. Each input takes 8 μs (nominal) to measure and a single round robin cycle completes in 192 μs (nominal).\" Its inputs include \"Cell1 to Cell16 voltages through differential VCn–1 to VCn\". Section 3 Description: \"all cell voltages can be measured within 128 μs\". Timing table: tMAIN_ADC_CYCLE, single round robin cycle (Main ADC), 192 µs. Section 6.3.2.1.1.1: \"The device allows a minimum of 6 cells to a maximum of 16 cells to be measured.\" MAX14920/MAX14921 datasheet, page 1: \"Simultaneous Cell Voltage Sampling\"; \"Both devices simultaneously sample all cell voltages\"; \"up to 16 cells/+65V (max)\". Electrical characteristics: VP supply voltage +6 to +65 V. The arithmetic was re-computed: 0.333/900 = 370 µs and 0.889/900 = 988 µs. The 711 µs tSKEW2 of the ADBMS1818 (Table 4) was not re-read in this ruling. The verifier read it as 711 µs maximum, and the ruling does not depend on it.",
+  "source": "https://www.ti.com/lit/ds/symlink/bq79616.pdf (vendors.py fetch, chrome client, HTTP 200, 4,725,020 bytes) SLUSF21A sections 3, 6.3.2.1 and 6.3.2.1.1.1 and the timing table; https://www.analog.com/media/en/technical-documentation/data-sheets/MAX14920-MAX14921.pdf (vendors.py fetch --client safari, HTTP 200, 817,689 bytes) page 1 and the electrical characteristics",
+  "read_at": "2026-09-28T15:57:48Z (BQ79616), 2026-09-28T15:57:49Z (MAX14921)",
+  "scope": "function"
+ }
+}

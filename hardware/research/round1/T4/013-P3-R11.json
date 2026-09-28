@@ -1,0 +1,63 @@
+{
+ "role": "P3",
+ "category": "R11",
+ "label": "P3-R11",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "missed": [
+   {
+    "function": "phase-wire clip",
+    "part": "TLV7011DBVR (LCSC C702117)",
+    "maker": "Texas Instruments (S1)",
+    "why": "This is a seed in the R11 row (Research.md:289). P2 neither shortlisted nor dropped it. Datasheet SLVSDM5F, revised March 2020 (https://www.ti.com/lit/ds/symlink/tlv7011.pdf, read 2026-09-28T15:44:10Z). Supply 1.6 to 5.5 V. Push-pull output. tPHL 260 ns and tPLH 310 ns typical at 5 V with 100 mV overdrive; no maximum is stated. Both are far under the 21.8 µs limit. Common-mode range VEE to VCC + 0.1 V for VS 2.5 to 5 V, so 0 V is included. Internal hysteresis 1.2 / 4.2 / 14 mV (min / typ / max). The DBV pin order (1 OUT, 2 VEE, 3 IN+, 4 IN−, 5 VCC) matches TLV3201AIDBVR and MCP6561T-E/OT. TA −40 to 125 °C. Unlike TLV3201, its IN+ and IN− absolute maximum is VEE − 0.3 to 6 V, not referenced to VCC. TLV3201's inputs are diode-clamped at VCC + 0.5 V (SBOS561C, https://www.ti.com/lit/ds/symlink/tlv3201.pdf, read 15:44:55Z). The divided phase signal of a coasting motor can therefore sit on TLV7011's input while the 3.3 V rail is down without back-feeding the rail. JLCPCB C702117: stockCount 6136, canPresaleNumber 5959, extended, USD 0.5132 at qty 1 (15:44:00Z). With 2 placements the need is 10, so the gate is 50. The SC-70 TLV7011DCKR (C193688) has 7141 (15:44:00Z). Digi-Key TLV7011DBVR: 56359, Active, lead 16 weeks (15:44:46Z). TI product page https://www.ti.com/product/TLV7011 carries <meta name=\"status\" content=\"ACTIVE\"> (15:44:48Z)"
+   },
+   {
+    "function": "phase-wire clip",
+    "part": "TLV7031DBVR (LCSC C2869832)",
+    "maker": "Texas Instruments (S1)",
+    "why": "The nanopower sibling of TLV7011, with the same DBV pin order (1 OUT, 2 VEE, 3 IN+, 4 IN−, 5 VCC). The \"S\" option uses a different pin order and is not this part. Datasheet SLVSE13J, revised November 2024 (https://www.ti.com/lit/ds/symlink/tlv7031.pdf, read 15:44:10Z). Supply 1.6 to 6.5 V. Push-pull output. Propagation delay 3 µs typical, no maximum stated: 14 % of the 21.8 µs limit, the slowest of the candidates. Common-mode range VEE to VCC + 0.1 V. Hysteresis 2 / 7 / 17 mV. Input pins rated VEE − 0.3 to 7 V, not referenced to VCC. JLCPCB C2869832: 93875, presale 93792, USD 0.352 (15:44:01Z). Digi-Key: 4396, Active, lead 16 weeks (15:44:48Z). TI product page https://www.ti.com/product/TLV7031: status ACTIVE (15:44:48Z)"
+   },
+   {
+    "function": "magnetic pickup",
+    "part": "DRV5011ADDBZR (LCSC C2655023)",
+    "maker": "Texas Instruments (S1)",
+    "why": "TI's low-voltage digital latch; P2 did not consider the family. Datasheet SLVSCY6B, revised January 2020 (https://www.ti.com/lit/ds/symlink/drv5011.pdf, read 15:40:13Z). VCC 2.5 to 5.5 V. Push-pull CMOS output: the 'push-pull from its own 3.3 V supply' option, with no pull-up needed. Sensing bandwidth 30 kHz, typical only. Delay 13 µs typical, 25 µs maximum. BOP 0.6 / 2 / 3.8 mT and BRP −3.8 / −2 / −0.6 mT; hysteresis 2 / 4 / 6 mT. It is a latch, so it holds its state with the rotor stopped. DBZ pins 1 VCC, 2 OUT, 3 GND: the same order as the DRV5015 and DRV5013 SOT-23 parts on P2's list. TA −40 to 135 °C (DBZ). It is less sensitive than rank 1 DRV5015A1 (2 mT against 0.7 mT typical). JLCPCB C2655023: 903, presale 898, USD 0.2899 (15:40:04Z); gate 50. The X2SON DRV5011ADDMRR (C2152499) has 1943 (15:40:05Z). Digi-Key DRV5011ADDBZR: 4122, Active, lead 9 weeks (15:40:27Z). TI page https://www.ti.com/product/DRV5011: <meta name=\"status\" content=\"ACTIVE\"> (15:40:41Z). Three other parts were checked and do not qualify. MLX92211LSE-AAA-000-RE (C3716263, 951 at 15:41:19Z; Digi-Key 0 at 15:41:25Z) states its BOP/BRP only for VDD 3.8 to 24 V. That was read from JLCPCB's copy of datasheet Rev. 010, December 2019 (https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8590343539981774848, 15:41:48Z), after melexis.com answered HTTP 403 to all three clients (15:41:33Z to 15:41:39Z). Its thresholds at 3.3 V are therefore not stated. APS12205ELHALT (Allegro, 50 at 15:41:20Z) gives only an 800 kHz chopping frequency and no switching frequency, the same gap P2 found for A1220 (APS12205-15-35-DS Rev. 7, 15:42:29Z). MLX92212LSE-ABA is a unipolar switch, not a latch (MLX92212 datasheet, 15:40:41Z)"
+   },
+   {
+    "function": "optical index",
+    "part": "VCNT2030 (LCSC C18186160)",
+    "maker": "Vishay (S1); JLCPCB's API labels it Vishay Intertech (the jlcparts copy has a blank maker field)",
+    "why": "A VCSEL reflective sensor with a phototransistor output. Of the candidates found, it is the only one whose stated range covers 5 mm with an mA-level current on a grey target. Datasheet: document 80223, Rev. 1.4, 27 February 2024 (https://www.vishay.com/docs/80223/vcnt2030.pdf, read 15:38:22Z). Distance range with IF max and IC > 0.5 mA: 0 to 7 mm on an 18 % Kodak grey card and 0 to 38 mm on the 90 % white side. Peak sensitivity at 0.9 mm. IC 1.8 / 2.5 / 5.4 mA at IF 8 mA and d = 1 mm on grey. VF 1.9 V typical at 8 mA, so it runs from 3.3 V through a resistor. tr 10 µs and tf 15 µs typical. Tamb −40 to 85 °C. 1.85 × 1.2 × 0.6 mm SMD, MSL 3. It has no daylight-blocking filter. JLCPCB C18186160: 99, presale 84, USD 2.9718 (15:36:40Z). With 1 per probe board the gate is 50, which it passes. Digi-Key: 33, Active, lead 29 weeks (15:37:20Z): under 50, so the second vendor fails. No pin-compatible alternate was found, so rule 5 is open. The Vishay product page https://www.vishay.com/en/product/80223/ loaded (15:48:43Z) with no status in its body: manufacturer status not read. Checked and not candidates: onsemi QRD1114 (C258245) reads about 0.12 of peak at 197 mil (5 mm) in Figure 5 of QRD1114/D Rev. 6, June 2026 (read 15:37:37Z). ROHM RPR-0720 (C24264297) is an I²C proximity sensor (datasheet 2023.07.05 Rev.002, 15:37:37Z). ams OSRAM SFH 9206 has 9 in the 2026-09-14 jlcparts copy and was not counted"
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "MAX3097EEEE+T (C117545)",
+    "reason_given": "not qualified: datasheet not read; JLCPCB C117545 99 (15:15:23Z)",
+    "why_it_fails": "'Datasheet not read' does not fail any requirement value. At 1 per board the gate is 50, and 99 passes. JLCPCB re-read: 99, presale 92, USD 7.2915 (15:46:35Z). Datasheet 19-1727 Rev 1, 5/19 (https://www.analog.com/media/en/technical-documentation/data-sheets/MAX3097E-MAX3098E.pdf, safari client, 15:46:44Z). Three RS-422/RS-485 receivers in one part, so A, B and I take one package. VCC 3 to 5.5 V. Common-mode range −10 to +13.2 V, which takes V228's 12 V. A/B/Z input absolute maximum ±25 V. Input current specified at VCC = 0: 0.07 to 0.14 mA at 13.2 V. Threshold ±200 mV, hysteresis 40 mV. tPLH/tPHL 85 ns typical at 3.0 to 3.6 V. Channel-to-channel skew ±10 ns, under 50 ns. fMAX 32 Mbit/s. TA −40 to 85 °C. VOH is VCC − 1.0 V at −1 mA with VCC 3.0 V, which is 2.2 V at 3.2 V; the re-rank checks that against the RP2354B's input-high threshold. Digi-Key: 836, Active, lead 15 weeks (15:47:09Z), so the second vendor passes. Lifecycle is read at Digi-Key (Maxim counts as Analog Devices). The drop of MAX3097ECEE+T (C2672561, 30 at 15:46:35Z) holds"
+   },
+   {
+    "part": "MAX3280EAUK+T (C131126)",
+    "reason_given": "not qualified: single receiver, 3 placements, datasheet not read; JLCPCB C131126 4046 (15:15:28Z)",
+    "why_it_fails": "Three placements fail no requirement value. The need is 5 boards × 3 = 15 and the gate is 75. JLCPCB: 4046, presale 3995, USD 1.3918 (15:46:34Z). Digi-Key: 38470, Active, lead 17 weeks (15:47:10Z). Datasheet 19-2320 Rev 7, 1/19 (https://www.analog.com/media/en/technical-documentation/data-sheets/MAX3280E-MAX3284E.pdf, safari client, 15:46:45Z). VCC 3.0 to 5.5 V. Common-mode range −7 to +12 V. A and B absolute maximum −7.5 to +12.5 V, so V228's 12 V is inside with 0.5 V to the absolute maximum. Input current specified at VCC = GND: 250 µA at +12 V. Threshold −200 to −50 mV (true fail-safe), hysteresis 25 mV. tPLH 7 / 15 ns and tPHL 8 / 15 ns (typ / max). Device-to-device delay matching 8 ns maximum at the same supply and temperature, so three packages stay under the 50 ns skew limit. VOH VCC − 0.4 V at −4 mA. TA −40 to 125 °C. SOT-23-5, no enable. In the single-ended form the reference on the inverting input sets the switching point, against the −200 to −50 mV fail-safe offset"
+   },
+   {
+    "part": "SN65LBC175, AM26C32, ST26C32AB, SN75175 (5 V receivers)",
+    "reason_given": "5 V receivers (4.5 to 5.5 V in the jlcparts copy; datasheets not read): outputs at 5 V would need translation to 3.3 V (IOBoard.md:104, R11 concern on SN65LBC175); not qualified further",
+    "why_it_fails": "Translation is the route the page prescribes, not a failed value. The R11 row's concern reads \"SN65LBC175 runs from 5 V; its outputs are translated to 3.3 V\" (Research.md:289). IOBoard.md:104 requires translation of a 5 V output that can drive before the 3.3 V rail is up; it does not forbid the part. The family has two pin-compatible makers with large stock: AM26C32IDR (C36693) 134031, presale 133615 (15:49:22Z), and ST26C32ABDR (C157432) 7198, presale 7173 (15:49:24Z). The re-rank either qualifies them against the datasheet or states the value that fails. The translator and the 5 V supply count against them in the ranking. SN65LBC175 itself has at most 10 per row in the 2026-09-14 jlcparts copy; that was not counted at JLCPCB"
+   },
+   {
+    "part": "TCRT1000, VCNT2020 (Vishay)",
+    "reason_given": "not qualified: the datasheet URLs tried (vishay.com/docs/83751/tcrt1000.pdf, vishay.com/docs/84285/vcnt2020.pdf) returned HTTP 404",
+    "why_it_fails": "The document numbers were wrong: 83751 is the CNY70. The datasheets load at https://www.vishay.com/docs/83752/tcrt1000.pdf (Rev. 2.0, 13 October 2021, HTTP 200 at 15:37:36Z) and https://www.vishay.com/docs/80362/vcnt2020.pdf (Rev. 1.3, 25 October 2023, HTTP 200 at 15:37:37Z). Digi-Key's API gives the same URLs (15:37:18Z, 15:37:11Z). Both parts stay out, but for a different reason. At more than 20 % relative collector current, TCRT1000's range is 0.2 to 4 mm (peak at 1 mm) and VCNT2020's is 0.2 to 2.5 mm. Neither reaches V220's 5 mm. The drop reason should read 'working distance 5 mm outside the stated range', not 'datasheet not found'"
+   },
+   {
+    "part": "RPR-220 (ROHM)",
+    "reason_given": "lifecycle: Digi-Key ProductStatus Last Time Buy (15:16:46Z); ROHM product page not found at the URL tried (HTTP 404, 15:19:37Z). A last-time-buy part fails the gate",
+    "why_it_fails": "The Lifecycle check takes Digi-Key's ProductStatus as the gate only for Analog Devices, Melexis and Allegro. For ROHM the manufacturer's page is the status and Digi-Key's figure is recorded as a distributor status. A product page without the status is recorded as not read and reported to the owner. Three ROHM product URLs answered 404 (15:47:54Z to 15:48:06Z). https://www.rohm.com/datasheet?p=RPR-220 answered 200 (15:48:07Z), with no status in the page body. ROHM's status is therefore not read, and Last Time Buy (Digi-Key, 15:37:30Z) is a distributor figure to report, not a failed gate. The part is still not qualified: the datasheet PDFs tried at fscdn.rohm.com returned HTTP 404 (15:48:27Z, 15:48:29Z), so the working distance at 5 mm is not read. JLCPCB C21062: 1395, presale 1393 (15:36:48Z)"
+   }
+  ],
+  "missed_functions": []
+ }
+}
