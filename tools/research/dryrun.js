@@ -73,6 +73,7 @@ async function runTask(task, opts = {}) {
     if ('category' in data && /R\d+/.test(o.label) && !opts.wrongCategory) data.category = o.label.match(/R\d+/)[0]
     const base0 = fake(schemas.P2.properties.functions.items.properties.shortlist.items)
     base0.requirements = base0.requirements.map(r => ({ ...r, pass: true }))
+    base0.placements = opts.placements === undefined ? 1 : opts.placements
     const cand = rank => ({ ...base0, rank, part: `part${rank}`,
       second_source_route: rank === 2 && opts.replacementAlt ? 'alternate' : (rank === 1 && opts.emptyAlt ? 'alternate' : 'second-vendor'), second_source_part: rank === 2 && opts.replacementAlt ? 'altB' : '' })
     if (role === 'P0') {
@@ -86,13 +87,15 @@ async function runTask(task, opts = {}) {
       if (opts.replacementAlt) data.functions[0].shortlist.push({ ...cand(9), part: 'altB', rank: 9 })
       if (opts.fnReq) data.functions[0].requirements = [...data.functions[0].requirements, { name: opts.fnReq, value: 'v', source: 's' }]
       if (opts.noReqs) { data.functions[0].requirements = []; data.functions[0].shortlist.forEach(c => { c.requirements = [] }) }
-      if (opts.failedReq) data.functions[0].shortlist[0].requirements = [{ name: 'x0', required: '>= 67.2 V', datasheet: '40 V', pass: false, source: 's' }]
+      if (opts.failedReq) data.functions[0].shortlist[0].requirements = [{ name: 'x0', required: 'x0', datasheet: '40 V', pass: false, source: 's' }]
       if (opts.selfAlt) Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: 'part1' })
       if (opts.backAlt) Object.assign(data.functions[0].shortlist[1], { second_source_route: 'alternate', second_source_part: 'part1' })
       if (opts.qAltBack) Object.assign(data.functions[0].shortlist[2], { second_source_route: 'alternate', second_source_part: 'part1' })
-      if (opts.p2DupPart) data.functions[0].shortlist.push({ ...cand(1), requirements: [{ name: 'x0', required: '>= 67.2 V', datasheet: '40 V', pass: false, source: 's' }] })
+      if (opts.p2DupPart) data.functions[0].shortlist.push({ ...cand(1), requirements: [{ name: 'x0', required: 'x0', datasheet: '40 V', pass: false, source: 's' }] })
       if (opts.fnNoReq) data.functions[0].requirements = []
       if (opts.reportPerPart) data.report = [{ figure: 'frames held: MCP2518FD', value: '2', source: 's' }]
+      if (opts.strictReq) data.functions[0].shortlist[0].requirements = [{ name: 'x0', required: '>= 99 V', datasheet: '70 V', pass: false, source: 's' }, { name: 'x1', required: 'x1', datasheet: 'd', pass: true, source: 's' }]
+      if (opts.reportParts) data.report = opts.reportParts.map(figure => ({ figure, value: 'not applicable: transceiver', source: 's' }))
       if (opts.p2DropY) data.functions[0].dropped = [{ part: 'partY', maker: 'm', reason: 'r' }]
       if (opts.foundNotRead) data.found_values = [{ question_id: 'V9', value: 'not read: HTTP 403', source: 's', read_at: 't' }]
       if (opts.onBoardAltOfOff) { Object.assign(data.functions[0].shortlist[0], { lcsc: 'none', second_source_route: 'alternate', second_source_part: 'altOn' }); data.functions[0].shortlist.push({ ...cand(8), part: 'altOn', lcsc: 'C2' }) }
@@ -106,13 +109,14 @@ async function runTask(task, opts = {}) {
       }
       if (opts.altFails) {
         Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: 'altA' })
-        data.functions[0].shortlist.push({ ...cand(8), part: 'altA', requirements: [{ name: 'x0', required: '>= 67.2 V', datasheet: '40 V', pass: false, source: 's' }] })
+        data.functions[0].shortlist.push({ ...cand(8), part: 'altA', requirements: [{ name: 'x0', required: 'x0', datasheet: '40 V', pass: false, source: 's' }] })
       }
       if (opts.offBoard) Object.assign(data.functions[0].shortlist[0], { lcsc: 'none', second_source_route: 'second-vendor' })
       if (opts.noSecond) Object.assign(data.functions[0].shortlist[0], { second_source_route: 'none' })
     }
     if (role === 'rerank') {
-      data.functions = [{ function: 'f1', ranking: (opts.ranking || (opts.ranked || [1, 2, 3]).map(rank => ({ rank, part: `part${rank}`, reason: 'r' }))),
+      const rcat = (o.label.match(/R\d+/) || [''])[0]
+      data.functions = [{ function: 'f1', decision: opts.qDecision || ({ R10: 'Q4', R12: 'Q8' }[rcat] || 'none'), ranking: (opts.ranking || (opts.ranked || [1, 2, 3]).map(rank => ({ rank, part: `part${rank}`, reason: 'r' }))),
         new_candidates: opts.p3dropped ? [{ ...cand(7), part: 'partN' }] : [], dropped_from_p3: opts.p3dropped ? [{ part: 'partN', maker: 'm', reason: 'r' }] : [],
         dropped_from_shortlist: opts.rankDropped ? [{ part: 'part1', maker: 'm', reason: 'r' }] : [], verify: opts.qAlt ? [{ part: 'part3', kind: 'q-alternative' }] : (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
       if (opts.extraFn) data.functions.push({ ...data.functions[0], function: 'fX', ...(opts.rrHandleYin ? { dropped_from_shortlist: [{ part: 'partY', maker: 'm', reason: 'r' }] } : {}) })
@@ -214,7 +218,7 @@ async function runTask(task, opts = {}) {
   }
   const args = { task, cap: cats.cap, categories: cats.categories, tasks: cats.tasks, schemas,
     commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], jlcparts: JL,
-    followup: opts.followup, first_v: 5, t6_outputs: T6OUT, for_research: opts.forResearch || [], required_reports: opts.requiredReports || {} }
+    followup: opts.followup, first_v: 5, t6_outputs: T6OUT, for_research: opts.forResearch || [], required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {} }
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
     `return (async () => {${src}})()`)
   const result = await fn(args, agent, parallel, pipeline, () => {}, () => {})
@@ -473,13 +477,14 @@ async function main() {
   check(r.result.followUps.some(f => f.reason === 'function P2 did not return') && r1(r).selection.length === 1, 're-rank-only function: listed, not verified')
   // R10 and R12 name a Q4 or Q8 alternative.
   r = await runTask('T4')
-  check(r.result.followUps.some(f => f.category === 'R10' && /Q4 alternative/.test(f.reason)), 'R10 without a Q4 alternative: listed')
+  check(r.result.followUps.some(f => f.category === 'R10' && /no Q4 function with an alternative/.test(f.reason)), 'R10 without a Q4 alternative: listed')
   // A Q4 or Q8 alternative is verified with its own rule-5 alternate.
-  r = await runTask('T2', { qAlt: true, p4parts: ['part3', 'altQ'] })
-  let q = r1(r).selection[0].q_alternatives[0]
+  const r10 = x => x.result.summary.results.find(c => c.category === 'R10')
+  r = await runTask('T4', { qAlt: true, p4parts: ['part3', 'altQ'] })
+  let q = r10(r).selection[0].q_alternatives[0]
   check(q && q.status === 'verified' && q.alternate === 'altQ' && q.alternate_status === 'verified' && !q.second_source_missing, 'Q alternative and its alternate: both verified')
-  r = await runTask('T2', { qAlt: true, p4parts: ['part3'] })
-  q = r1(r).selection[0].q_alternatives[0]
+  r = await runTask('T4', { qAlt: true, p4parts: ['part3'] })
+  q = r10(r).selection[0].q_alternatives[0]
   check(q && q.status === 'verified' && q.alternate_status === 'not verified', 'Q alternative without its alternate checked: alternate not verified')
   // Only the kept part's alternate gates it; a refuted part's does not.
   r = await runTask('T2', { altName: 'partZ', verify: ['partZ'], refute: ['P4-stock-R1:part1'] })
@@ -525,8 +530,13 @@ async function main() {
   r = await runTask('T2', { fnNoReq: true })
   check(r1(r).selection[0].part === null, 'function with no requirement: open')
   // A Q alternative whose alternate is the kept part: the kept part needs the alternate's checks.
-  r = await runTask('T2', { qAltBack: true, p4parts: ['part3'] })
-  check(r1(r).ledger.some(l => l.part === 'part1' && l.status === 'not verified'), 'kept part that is a Q alternative\'s alternate: compatibility checks required')
+  r = await runTask('T4', { qAltBack: true, p4parts: ['part3'] })
+  check(r.result.summary.results.find(c => c.category === 'R10').ledger.some(l => l.part === 'part1' && l.status === 'not verified'), 'kept part that is a Q alternative\'s alternate: compatibility checks required')
+  // A Q alternative outside the decision's function is not one.
+  r = await runTask('T2', { qAlt: true, p4parts: ['part3', 'altQ'] })
+  check(r1(r).selection[0].q_alternatives.length === 0 && r.result.followUps.some(f => /implements no decision/.test(f.reason)), 'Q alternative on a function with no decision: not verified as one')
+  r = await runTask('T4', { qAlt: true, p4parts: ['part3', 'altQ'], qDecision: 'none' })
+  check(r.result.summary.q_missing.includes('R10'), 'R10 with its alternative on no Q4 function: open')
   // A Q alternative that is the kept part is none.
   r = await runTask('T4', { qSelf: true })
   check(r.result.summary.q_missing.includes('R10') && r.result.summary.results.find(x => x.category === 'R10').selection[0].q_alternatives.length === 0, 'kept part named as the Q alternative: none')
@@ -556,6 +566,17 @@ async function main() {
   r = await runTask('T2', { weakReq: true })
   const p4ds = r.prompts.find(x => x.label === 'P4-datasheet-R1').prompt
   check(r.result.followUps.some(f => /states other values than the function/.test(f.reason)) && p4ds.includes('"required":">= 67.2 V"') && !p4ds.includes('"required":">= 40 V"'), 'candidate restating a requirement: checked against the function value')
+  // A failure against a restated, stricter value is not a failure.
+  r = await runTask('T2', { strictReq: true })
+  check(r1(r).selection[0].part === 'part1', 'failure against a restated value: checked against the function value, kept')
+  // Placements below 1 drop the candidate.
+  r = await runTask('T2', { placements: 0 })
+  check(r1(r).selection[0].part === null && r.result.followUps.some(f => /placements 0; dropped/.test(f.reason)), 'placements 0: dropped')
+  // Per-part report figures are owed for every part the category verifies.
+  r = await runTask('T2', { perPartReports: { R2: ['clock tolerance'] } })
+  check(r.result.summary.figures_open.R2.includes('report: clock tolerance: part1'), 'per-part figure not reported: open')
+  r = await runTask('T2', { perPartReports: { R2: ['clock tolerance'] }, reportParts: ['clock tolerance: part1'] })
+  check(!r.result.summary.figures_open.R2.some(f => f.startsWith('report: clock tolerance')), 'per-part figure reported for the verified part: returned')
   // Rule 6: a held part passes on its held quantity.
   r = await runTask('T2', { held: 500, heldChecks: true })
   check(r1(r).selection[0].part === 'part1', 'held part with its held quantity checked: verified')

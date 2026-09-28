@@ -411,7 +411,8 @@ def effective_selection(results, pending=None):
                         e.get("alternate_unverified") or [],
                     "second_source_missing":
                         bool(e.get("second_source_missing")),
-                    "q_alternatives": e.get("q_alternatives") or []}
+                    "q_alternatives": e.get("q_alternatives") or [],
+                    "decision": e.get("decision", "none")}
                 if not e.get("part") and held.get("part"):
                     entry["not_requalified"] = held["part"]
                     if held["part"] in (e.get("refuted") or []):
@@ -615,9 +616,14 @@ def open_in_category(results, categories):
             figs = ((task.get("summary") or {}).get("figures_open")
                     or {}).get(c, [])
             out += [f"{c}: figure {f} not confirmed in {name}" for f in figs]
-        if c in ("R10", "R12") and eff.get(c) and not any(
-                e.get("q_alternatives") for e in eff[c].values()):
-            out.append(f"{c}: no function has a Q4 or Q8 alternative")
+        # The function that implements Q4 (R10) or Q8 (R12) carries the
+        # owner's alternatives.
+        q = {"R10": "Q4", "R12": "Q8"}.get(c)
+        if q and eff.get(c) and not any(
+                e.get("decision") == q and e.get("q_alternatives")
+                for e in eff[c].values()):
+            out.append(f"{c}: no function implementing {q} has an "
+                       "alternative")
     return out
 
 
@@ -967,6 +973,7 @@ def cmd_prepare(args):
         "results_head": git("-C", results, "rev-parse", "HEAD"),
         "for_research": for_research,
         "required_reports": cats.get("reports", {}),
+        "per_part_reports": cats.get("reports_per_part", {}),
         "last_p56": last_p56,
         "t6_outputs": T6_REQUIRED if args.task == "T6" else [],
         "run_info": run_info(args.model, args.effort),

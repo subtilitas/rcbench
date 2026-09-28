@@ -59,7 +59,9 @@
      "type": "string"
     },
     "placements": {
-     "type": "integer"
+     "type": "integer",
+     "minimum": 1,
+     "description": "placements per board, at least 1 (sourcing rule 4)"
     },
     "held": {
      "type": "integer",
@@ -936,6 +938,15 @@
          "$ref": "dropped"
         },
         "description": "P2 candidates the re-rank removes, each with its reason"
+       },
+       "decision": {
+        "type": "string",
+        "enum": [
+         "none",
+         "Q4",
+         "Q8"
+        ],
+        "description": "Q4 on the R10 function that implements Q4, Q8 on the R12 function that implements Q8 (the non-volatile store), none elsewhere; that function's q-alternatives are the owner's choices"
        }
       },
       "required": [
@@ -944,7 +955,8 @@
        "new_candidates",
        "dropped_from_p3",
        "dropped_from_shortlist",
-       "verify"
+       "verify",
+       "decision"
       ]
      }
     },

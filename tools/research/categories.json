@@ -65,12 +65,14 @@
       "OpenOCD",
       "watchdog"
     ],
+    "R3": [
+      "'423 behaviour with I_off"
+    ]
+  },
+  "reports_per_part": {
     "R2": [
       "frames held",
       "clock tolerance"
-    ],
-    "R3": [
-      "'423 behaviour with I_off"
     ],
     "R10": [
       "Q4 effective number of bits",
@@ -79,7 +81,7 @@
       "Q4 latency jitter"
     ],
     "R12": [
-      "Q8 store candidates"
+      "Q8 store candidate"
     ]
   }
 }

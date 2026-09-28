@@ -194,7 +194,7 @@ function p2Prompt(cat) {
   const items = TASK === 'FU' ? itemsFor(cat) : []
   return `${ctx('P2', cat, `P2-${cat}`)}
 
-Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, and record it as found. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. Return an entry for every function the ${cat} row and its lines in hardware/docs/IOBoard.md name. For up to five survivors per function, record every field of the P2 row, and the rule-5 route in second_source_route and second_source_part; a part whose route is alternate needs a full record for that alternate among the survivors or in the re-rank. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5${((A.required_reports || {})[cat] || []).length ? `, among them these by these names, as "NAME: PART" for each part a figure concerns: ${((A.required_reports || {})[cat]).join('; ')}` : ''}.${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${P.results}/hardware/research/round1/selection.json; the returns in each run's directory carry their figures.` : ''}${cat === 'R3' && ((A.decisions || {}).Q9 || '').trim() ? `\n\nThe owner decided Q9: ${A.decisions.Q9}. A part it adds or changes is a function of R3 in this run, found and qualified as the others.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}${TASK === 'FU' ? ` Name each function exactly as ${P.results}/hardware/research/round1/selection.json names it for ${cat}.` : ''}`
+Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, and record it as found. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. Return an entry for every function the ${cat} row and its lines in hardware/docs/IOBoard.md name. For up to five survivors per function, record every field of the P2 row, and the rule-5 route in second_source_route and second_source_part; a part whose route is alternate needs a full record for that alternate among the survivors or in the re-rank. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5${((A.required_reports || {})[cat] || []).length ? `, among them these by these names: ${((A.required_reports || {})[cat]).join('; ')}` : ''}.${((A.per_part_reports || {})[cat] || []).length ? ` Report these once for each shortlisted part, named "NAME: PART", with "not applicable: REASON" as the value where one does not concern the part: ${((A.per_part_reports || {})[cat]).join('; ')}.` : ''}${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${P.results}/hardware/research/round1/selection.json; the returns in each run's directory carry their figures.` : ''}${cat === 'R3' && ((A.decisions || {}).Q9 || '').trim() ? `\n\nThe owner decided Q9: ${A.decisions.Q9}. A part it adds or changes is a function of R3 in this run, found and qualified as the others.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}${TASK === 'FU' ? ` Name each function exactly as ${P.results}/hardware/research/round1/selection.json names it for ${cat}.` : ''}`
 }
 
 function p2View(p2) {
@@ -217,7 +217,7 @@ ${J(p2View(p2))}`
 function rerankPrompt(cat, p2, p3) {
   return `${ctx('rerank', cat, `rerank-${cat}`)}
 
-You are the re-rank of the "Agent layout" table. Qualify each candidate P3 returned as P2 does, and give each qualified one a full record in new_candidates. Then rank each function's shortlist: every entry of ranking names a part of P2's shortlist or of new_candidates, by its exact part number. Rank every such part, or list it with its reason in dropped_from_shortlist (a P2 candidate) or dropped_from_p3 (a P3 candidate). In verify, name the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative. List your own figures in report. A rule-5 alternate that is not on P2's shortlist needs a full record in new_candidates; it is kept as the alternate's record, not ranked. The script builds the final shortlist from P2's records and yours.
+You are the re-rank of the "Agent layout" table. Qualify each candidate P3 returned as P2 does, and give each qualified one a full record in new_candidates. Then rank each function's shortlist: every entry of ranking names a part of P2's shortlist or of new_candidates, by its exact part number. Rank every such part, or list it with its reason in dropped_from_shortlist (a P2 candidate) or dropped_from_p3 (a P3 candidate). In verify, name the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative. List your own figures in report${((A.per_part_reports || {})[cat] || []).length ? `, and for each part you rank first or name in verify that P2's report lacks, these figures named "NAME: PART": ${((A.per_part_reports || {})[cat]).join('; ')}` : ''}. ${cat === 'R10' ? 'Set decision to Q4 on the function that implements Q4, and none on the others; its alternatives are the q-alternatives in its verify.' : cat === 'R12' ? 'Set decision to Q8 on the function that implements Q8, the non-volatile store, and none on the others; its alternatives are the q-alternatives in its verify.' : 'Set decision to none on every function.'} A rule-5 alternate that is not on P2's shortlist needs a full record in new_candidates; it is kept as the alternate's record, not ranked. The script builds the final shortlist from P2's records and yours.
 
 P2's return:
 ${J(p2)}
@@ -572,21 +572,26 @@ function merge(cat, p2, rr, p3) {
     // A candidate or a rule-5 alternate is checked against every requirement
     // of its function; one it does not list is added as unmet, so the
     // verifier must check it. A record that fails a requirement is dropped.
-    const qualify = (list, what) => list.filter(c => {
+    const fnValue = new Map((f2.requirements || []).map(r => [r.name, r.value]))
+    const norm = t => String(t || '').replace(/\s+/g, ' ').trim()
+    const qualify = (list, what) => list.map(c => {
+      // The function's value is the requirement; a candidate that states
+      // another is checked against the function's, its own pass unknown.
+      const restated = (c.requirements || []).filter(r => fnValue.has(r.name) && norm(r.required) !== norm(fnValue.get(r.name)))
+      if (!restated.length) return c
+      followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} states other values than the function for: ${restated.map(r => r.name).join(', ')}; checked against the function's`, notice: true })
+      return { ...c, requirements: c.requirements.map(r => restated.includes(r) ? { ...r, required: fnValue.get(r.name), pass: null, restated: r.required } : r) }
+    }).filter(c => {
+      // Rule 4's need is boards x placements: a count below 1 gates nothing.
+      if (!(Number.isInteger(c.placements) && c.placements >= 1)) {
+        followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} with placements ${c.placements}; dropped` })
+        return false
+      }
       const failing = (c.requirements || []).filter(r => r.pass === false)
       if (!failing.length) return true
       followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} with a failed requirement: ${failing.map(r => r.name).join(', ')}` })
       return false
     }).map(c => {
-      // The function's value is the requirement; a candidate that states
-      // another is checked against the function's, its own pass unknown.
-      const fnValue = new Map((f2.requirements || []).map(r => [r.name, r.value]))
-      const norm = t => String(t || '').replace(/\s+/g, ' ').trim()
-      const restated = (c.requirements || []).filter(r => fnValue.has(r.name) && norm(r.required) !== norm(fnValue.get(r.name)))
-      if (restated.length) {
-        followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} states other values than the function for: ${restated.map(r => r.name).join(', ')}; checked against the function's`, notice: true })
-        c = { ...c, requirements: c.requirements.map(r => restated.includes(r) ? { ...r, required: fnValue.get(r.name), pass: null, restated: r.required } : r) }
-      }
       const have = new Set((c.requirements || []).map(r => r.name))
       const lack = need.filter(n => !have.has(n))
       if (!lack.length) return c
@@ -595,19 +600,28 @@ function merge(cat, p2, rr, p3) {
     })
     shortlist = qualify(shortlist, 'shortlisted')
     alternateRecords = qualify(alternateRecords, 'alternate')
-    functions.push({ function: name, requirements: f2.requirements || [], shortlist, verify, alternateRecords, dropped: f2.dropped || [], dropped_from_shortlist: (fr && fr.dropped_from_shortlist) || [], dropped_from_p3: (fr && fr.dropped_from_p3) || [] })
+    // Only R10's Q4 function and R12's Q8 function carry the owner's
+    // alternatives; q-alternatives elsewhere are not verified as such.
+    const owned = { R10: 'Q4', R12: 'Q8' }[cat]
+    const decision = owned && fr && fr.decision === owned ? owned : 'none'
+    if (fr && fr.decision && fr.decision !== 'none' && decision === 'none') followUps.push({ role: 'rerank', category: cat, function: name, reason: `decision ${fr.decision} does not belong to ${cat}` })
+    if (decision === 'none' && verify.some(v => v.kind === 'q-alternative')) {
+      followUps.push({ role: 'rerank', category: cat, function: name, reason: 'q-alternatives on a function that implements no decision; not verified' })
+      verify = verify.filter(v => v.kind !== 'q-alternative')
+    }
+    functions.push({ function: name, decision, requirements: f2.requirements || [], shortlist, verify, alternateRecords, dropped: f2.dropped || [], dropped_from_shortlist: (fr && fr.dropped_from_shortlist) || [], dropped_from_p3: (fr && fr.dropped_from_p3) || [] })
   }
   // R10 and R12 carry the owner's choice for Q4 and Q8: one of their
   // functions names an alternative to verify, or the category stays open.
-  if (['R10', 'R12'].includes(cat) && !functions.some(f => f.verify.some(v => v.kind === 'q-alternative'))) {
-    followUps.push({ role: 'rerank', category: cat, reason: `names no ${cat === 'R10' ? 'Q4' : 'Q8'} alternative to verify` })
+  if (['R10', 'R12'].includes(cat) && !functions.some(f => f.decision !== 'none' && f.verify.some(v => v.kind === 'q-alternative'))) {
+    followUps.push({ role: 'rerank', category: cat, reason: `names no ${cat === 'R10' ? 'Q4' : 'Q8'} function with an alternative to verify` })
   }
   // A function the row names that P2 returned no entry for stays open, with
   // no part, for a follow-up task.
   for (const m of (p3 && p3.missed_functions) || []) {
     if (functions.some(f => f.function === m.function)) continue
     followUps.push({ role: 'P3', category: cat, function: m.function, reason: `function the row names that P2 did not return: ${m.why}` })
-    functions.push({ function: m.function, requirements: [], shortlist: [], verify: [], alternateRecords: [], dropped: [], dropped_from_shortlist: [], dropped_from_p3: [], not_returned: true })
+    functions.push({ function: m.function, decision: 'none', requirements: [], shortlist: [], verify: [], alternateRecords: [], dropped: [], dropped_from_shortlist: [], dropped_from_p3: [], not_returned: true })
   }
   return functions
 }
@@ -839,7 +853,7 @@ function selection(functions, ledger) {
         alternate_status: alt ? (st({ part: alt }) || 'not verified') : '', second_source_missing: !rec || noSecondSource(rec) || offBoardAlt(rec) }
     })
     const missing = !!(kept && (noSecondSource(kept) || offBoardAlt(kept)))
-    return { function: f.function, part: kept ? kept.part : null, rank: kept ? kept.rank : null, refuted,
+    return { function: f.function, decision: f.decision || 'none', part: kept ? kept.part : null, rank: kept ? kept.rank : null, refuted,
       alternate_unverified: alternateUnverified, second_source_missing: missing, q_alternatives: qAlternatives }
   })
 }
@@ -865,7 +879,25 @@ function figuresToCheck(cat, p2, rr, functions, p3) {
     missing.push(`P2 report: ${need}`)
     followUps.push({ role: 'P2', category: cat, figure: need, reason: 'required report figure not returned' })
   }
-  for (const f of rr.report || []) add(`re-rank report: ${f.figure}`)
+  const rrReported = (rr.report || []).filter(f => !readsNone(f.value))
+  for (const f of rrReported) add(`re-rank report: ${f.figure}`)
+  // A figure the plan asks per part is owed for every part the category
+  // verifies, by P2 or the re-rank, as "NAME: PART" ("not applicable:
+  // REASON" where it does not concern the part).
+  const verified = new Set()
+  for (const f of functions) {
+    const first = f.shortlist[0]
+    for (const part of [first && first.part, altOf(first), ...f.verify.map(v => v.part),
+      ...f.verify.filter(v => v.kind === 'q-alternative').map(v => altOf(candidateOf(functions, f.function, v.part)))]) if (part) verified.add(part)
+  }
+  for (const need of (A.per_part_reports || {})[cat] || []) {
+    for (const part of verified) {
+      const n = `${need}: ${part}`
+      if (reported.some(f => f.figure === n) || rrReported.some(f => f.figure === n)) continue
+      missing.push(`report: ${n}`)
+      followUps.push({ role: 'P2', category: cat, figure: n, reason: 'required per-part report figure not returned' })
+    }
+  }
   // Every drop of a part P3 found or reopened, whichever list the re-rank
   // put it in.
   const fromP3 = new Set([...((p3 && p3.missed) || []), ...((p3 && p3.exclusions_not_holding) || [])].map(x => x.part))
@@ -896,7 +928,7 @@ async function categoryChain(cat) {
   // A figure is confirmed unless the ledger holds another status for it.
   // What P2 did not return has nothing to verify and stays open.
   const figures_open = [...new Set([...not_returned, ...ledger.filter(l => l.figure && !l.status.startsWith('confirmed')).map(l => l.figure)])]
-  const q_missing = ['R10', 'R12'].includes(cat) && !sel.some(e => (e.q_alternatives || []).length)
+  const q_missing = ['R10', 'R12'].includes(cat) && !sel.some(e => e.decision !== 'none' && (e.q_alternatives || []).length)
   return { category: cat, status: p3 ? 'done' : 'done without P3', ledger, figures_open, q_missing,
     selection: p3 ? sel : sel.map(e => ({ ...e, part: null, rank: null, without_p3: e.part })) }
 }
