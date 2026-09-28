@@ -9,6 +9,7 @@ around each task:
                        [--followup FILE] [--db FILE] [--no-fetch]
     session.py record TASK OUTPUT --base DIR [--name N]
     session.py raised --base DIR [--run T1|FU-N]
+    session.py script RUN --base DIR
 
 `check` holds the files in tools/research/ to the plan: the agent counts of
 the layout, the categories and the rows that carry "P1 asks", the schemas,
@@ -29,6 +30,9 @@ directory (after T6, the pages P7 wrote as well).
 
 `raised` appends the questions a P1 run confirmed under "Raised by P1" in a
 working tree of `research/round1` and commits them. Nothing is pushed.
+
+`script` writes DIR/round1-RUN.js, round1.js with DIR/args-RUN.json in place
+of the Workflow tool's `args`, for the Workflow tool's scriptPath.
 """
 
 import argparse
@@ -1770,6 +1774,45 @@ def cmd_raised(args):
     return 0
 
 
+ARGS_LINE = "const A = args || {}"
+
+
+def cmd_script(args):
+    """DIR/round1-RUN.js: round1.js with the prepared arguments of RUN in
+    place of the Workflow tool's `args`, for the Workflow tool's scriptPath.
+    The arguments of a run grow past 100 KB once P1 has raised questions;
+    embedding them leaves nothing to copy by hand. Only the line
+    `const A = args || {}` changes, and the result is read back."""
+    base = os.path.abspath(os.path.expanduser(args.base))
+    prepared = os.path.join(base, f"args-{args.run}.json")
+    if not os.path.isfile(prepared):
+        raise SystemExit(f"{prepared} is not there; run prepare first")
+    a = json.loads(read(prepared))
+    src = read(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "round1.js"))
+    lines = src.split("\n")
+    if lines.count(ARGS_LINE) != 1:
+        raise SystemExit(f"round1.js holds `{ARGS_LINE}` "
+                         f"{lines.count(ARGS_LINE)} times, not once")
+    i = lines.index(ARGS_LINE)
+    embedded = "const A = " + json.dumps(a, ensure_ascii=True,
+                                         separators=(",", ":"))
+    out = lines[:i] + [f"// The arguments of {args.run}, run "
+                       f"{a.get('run_id')}, from {prepared}.",
+                       embedded] + lines[i + 1:]
+    back = "\n".join(out).split("\n")
+    if back[:i] != lines[:i] or back[i + 2:] != lines[i + 1:] or \
+            json.loads(back[i + 1][len("const A = "):]) != a:
+        raise SystemExit("the script does not read back as round1.js with "
+                         "the prepared arguments")
+    target = os.path.join(base, f"round1-{args.run}.js")
+    with open(target, "w") as f:
+        f.write("\n".join(out))
+    print(f"{target}: {args.run}, run {a.get('run_id')}; Workflow tool "
+          "scriptPath, no args")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(
         description=__doc__,
@@ -1803,6 +1846,10 @@ def main():
     q.add_argument("--run", default="T1")
     q.add_argument("--no-fetch", action="store_true")
     q.set_defaults(fn=cmd_raised)
+    w = sub.add_parser("script")
+    w.add_argument("run", help="T1 to T6, or FU-N for a follow-up")
+    w.add_argument("--base", required=True)
+    w.set_defaults(fn=cmd_script)
     args = ap.parse_args()
     return args.fn(args)
 
