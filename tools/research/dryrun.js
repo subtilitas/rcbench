@@ -65,9 +65,11 @@ async function runTask(task, opts = {}) {
   const calls = []
   const prompts = []
   const nulls = new Map(Object.entries(opts.nulls || {}))
+  const efforts = []
   async function agent(prompt, o) {
     const base = o.label.replace(/:restart$/, '')
     calls.push(o.label)
+    efforts.push(o.effort)
     prompts.push({ label: o.label, prompt })
     if ((opts.throws || []).includes(base)) throw new Error('mock throw')
     const left = nulls.get(base)
@@ -209,7 +211,7 @@ async function runTask(task, opts = {}) {
       else {
         data.reviewed = outs
         const figFiles = opts.oneFigure ? ['hardware/docs/Parts.md'] : outs.filter(f => f.startsWith('hardware/docs/'))
-        data.figure_checks = opts.noFigures ? [] : figFiles.map(file => ({ file, line: 1, figure: opts.blankFigure ? '' : 'stock', return_file: opts.blankFigure ? '' : opts.returnFile || 'hardware/research/round1/T2/012-P4-stock-R1.json', kind: opts.figureKind || 'other', agrees: !opts.criticDisagrees }))
+        data.figure_checks = opts.noFigures ? [] : figFiles.map(file => ({ file, line: opts.checkLine === undefined ? 1 : opts.checkLine, figure: opts.blankFigure ? '' : 'stock', return_file: opts.blankFigure ? '' : opts.returnFile || 'hardware/research/round1/T2/012-P4-stock-R1.json', kind: opts.figureKind || 'other', agrees: !opts.criticDisagrees }))
         data.sentence_issues = opts.sentenceIssue ? [{ file: 'f', line: 1, issue: 'i' }] : []
         data.marked = opts.marked || []
         data.part_rows = opts.partRows || []
@@ -305,11 +307,11 @@ async function runTask(task, opts = {}) {
     commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, inventory: opts.inventory || {}, jlcparts: JL, p5_budgets: opts.p5Budgets || [], p5_conditional: opts.p5Conditional || [], q_options: opts.qOptions || {},
     followup: opts.followup, first_v: 5, decision_categories: { Q4: ['R10'], Q8: ['R2', 'R12'], Q9: ['R3'] }, t6_outputs: T6OUT, for_research: opts.forResearch || [], raised: opts.raised || [], p1_asks: opts.p1Asks || {}, fixed_inputs: opts.fixedInputs || {}, required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {},
     p5_assumptions: opts.p5Assumptions || [], decisions: opts.decisions || {}, accept_open: opts.acceptOpen || null, left_open: opts.leftOpen || [], p5_assumed: opts.p5AssumedT6 || [],
-    last_p56: opts.lastP56 || '', p56_runs: opts.p56Runs || [], selection: opts.selection || {}, jlc_stock_row: opts.jlcRow || [] }
+    last_p56: opts.lastP56 || '', p56_runs: opts.p56Runs || [], selection: opts.selection || {}, jlc_stock_row: opts.jlcRow || [], run_info: opts.runInfo || {} }
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
     `return (async () => {${src}})()`)
   const result = await fn(args, agent, parallel, pipeline, () => {}, () => {})
-  return { result, calls, prompts }
+  return { result, calls, prompts, efforts }
 }
 
 const r1 = r => r.result.summary.results.find(x => x.category === 'R1')
@@ -323,8 +325,14 @@ async function main() {
     check(result.returns.length === result.started, `${t}: ${result.returns.length} returns against ${result.started} started`)
   }
 
+  // Every agent runs at the recorded effort; none is set without one.
+  let r = await runTask('T2', { runInfo: { effort: 'high' } })
+  check(r.efforts.length > 0 && r.efforts.every(e => e === 'high'), 'T2: every agent at the recorded effort')
+  r = await runTask('T2')
+  check(r.efforts.every(e => e === undefined), 'T2: no effort set without one recorded')
+
   // Both verifiers confirm: the first-ranked part is kept.
-  let r = await runTask('T2')
+  r = await runTask('T2')
   check(r1(r).selection[0].part === 'part1', 'T2: part1 selected')
 
   // A refutation that stands: one adjudicator, then a new pair on part2.
@@ -1292,6 +1300,14 @@ async function main() {
   // Every figure P7 wrote needs a check of its own.
   r = await runTask('T6', { p7Figures: [{ file: 'hardware/docs/Parts.md', line: 1, figure: 'stock' }, { file: 'hardware/docs/Parts.md', line: 2, figure: '42 mA' }] })
   check(r.result.summary.stopped === true && /figures P7 wrote without a check/.test(r.result.summary.reasons[0]), 'T6: a figure P7 wrote without a check stops it')
+  // A figure check names a line of its page; P7 names the line of each figure.
+  r = await runTask('T6', { checkLine: 0 })
+  check(r.result.summary.stopped === true && /no figure checked on|checked no figure/.test(r.result.summary.reasons[0]), 'T6: a figure check at line 0 checks nothing')
+  r = await runTask('T6', { p7Figures: [{ file: 'hardware/docs/Parts.md', line: 0, figure: 'stock' }] })
+  check(r.result.summary.stopped === true && /figures P7 wrote without their line/.test(r.result.summary.reasons[0]), 'T6: a figure P7 wrote without its line stops it')
+  // A figure P7 wrote on two lines needs checks on two lines.
+  r = await runTask('T6', { p7Figures: [{ file: 'hardware/docs/Parts.md', line: 1, figure: 'stock' }, { file: 'hardware/docs/Parts.md', line: 3, figure: 'stock' }] })
+  check(r.result.summary.stopped === true && /figures P7 wrote without a check/.test(r.result.summary.reasons[0]), 'T6: one check for a figure P7 wrote on two lines stops it')
   // A restarted P5 return of an earlier check is superseded too.
   r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/T5/004-P5-restart.json', figureKind: 'other' })
   check(r.result.summary.stopped === true, 'T6: a figure citing an earlier restarted P5 return stops it')

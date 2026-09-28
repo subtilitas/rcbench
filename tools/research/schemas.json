@@ -1575,7 +1575,8 @@
         "type": "string"
        },
        "line": {
-        "type": "integer"
+        "type": "integer",
+        "description": "the line of the page, after your corrections, that states the figure in the text given in figure; 1 or more"
        },
        "figure": {
         "type": "string"

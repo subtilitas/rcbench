@@ -59,6 +59,10 @@ python3 tools/research/session.py raised --base $B
 git -C $B/plan push origin research/round1
 ```
 
+`--effort` is the effort every agent of the run gets: `low`, `medium`, `high`,
+`xhigh` or `max`. The workflow passes it to each agent; `--model` is recorded
+only, and every agent runs on the session's model.
+
 `prepare` fetches origin and refuses a run out of turn: T2 and T4 before T1 is
 recorded, T3 before T2 and T4, T5 before T3, T6 before T5, a P1 follow-up
 before T1, a P2-P4 follow-up before the tasks that own its categories, a P5-P6
@@ -314,7 +318,8 @@ of it, and `record` reads the same path. Each check gives its kind: budget,
 combination or other. A budget or combination checked against any file but the
 last P5/P6 check's is superseded, and so is any figure checked against an
 earlier check's P5 return (a restarted one included), whatever its kind; every
-figure P7 lists as written needs a check of its own; another figure, such as a
+figure P7 lists as written needs a check of its own, a figure written on n
+lines of a file checks on n lines of it; another figure, such as a
 run's status line, may cite an earlier check's other files. P7 and its critic
 are given the three commands, the pages that need a figure checked, and the
 path rules for group pages and figure checks that `round1.js` and `record`
@@ -344,8 +349,11 @@ within the plan's Outputs (`hardware/docs/`, `hardware/STATUS.md`,
 not a file afterwards, a file P7 declared that did not change, a group page
 outside `hardware/docs/` or among the fixed outputs, a group page HEAD already
 holds, a `Research.md` whose rows under "Raised by P1", Blocking and Sourcing
-answers or decisions differ from HEAD's, and a figure the critic checked
-against a file under `hardware/research/round1/` that HEAD does not hold. A
+answers or decisions differ from HEAD's, a figure the critic checked
+against a file under `hardware/research/round1/` that HEAD does not hold, and
+a figure check whose line of its page, after T6, does not state the figure in
+the check's text as a value of its own (`5 V` is not read in `15 V`, `0.5 V`,
+`-5 V` or `5 VA`; runs of whitespace compare as one space). A
 renamed file counts as both its old and its new path. A T6 is recorded as
 stopped unless P7 and its critic both return, the critic's three checks pass,
 it checked at least one figure and every figure agrees with its return, no
@@ -365,7 +373,9 @@ unreadable output included, does too, and keeps what P7 changed in a stash
 named `refused T6 RUN_ID` in the results tree. `raised` reads the committed
 run record only and refuses a plan tree with uncommitted changes. It writes
 each question and function on one line: every run of whitespace, a line break
-among them, becomes one space.
+among them, becomes one space. A question that only feeds a decision ends in
+` (feeds Q4 only)`, with that decision's ID; the gates accept that suffix on
+that question alone.
 
 A follow-up task takes `--followup FILE`, a JSON object with `phases` (`P1`,
 `P2-P4` or `P5-P6`), `round` (1 or 2), `categories` and `items`, and
