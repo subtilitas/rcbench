@@ -1868,7 +1868,7 @@ def main():
     w.add_argument("run", help="T1 to T6, or FU-N for a follow-up")
     w.add_argument("--base", required=True)
     w.add_argument("--out", help="directory to write round1-RUN.js to, "
-                   "one the Workflow tool reads (default: the base)")
+                   "one that the Workflow tool reads (default: the base)")
     w.set_defaults(fn=cmd_script)
     args = ap.parse_args()
     return args.fn(args)
