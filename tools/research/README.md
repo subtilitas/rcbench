@@ -89,8 +89,8 @@ the items in the arguments:
     datasheet verifier did not confirm, or a value for research or required
     report figure P2 did not return or wrote as not read: `categories.json`
     `reports` once per category (as `NAME` or `NAME: PART`),
-    `reports_per_part` once for every part the category verifies (as
-    `NAME: PART`, from P2 or the re-rank);
+    `reports_per_part` once for every part the category verifies or selects,
+    replacements included (as `NAME: PART`, from P2 or the re-rank);
   - the latest P1 run left P1 items in the category;
   - a run that decides one of its functions predates a P1 run's questions for
     the category, read other answers under "Raised by P1" for it, read another
@@ -141,12 +141,13 @@ check in place of `stock` and `presale` (rule 6). A return whose `category`
 names another category counts as not returned. Only the kept part's rule-5
 alternate gates its selection, and the alternate of a part on the board must
 be on the board; a first-ranked part that is also a Q alternative's alternate
-needs the alternate's checks, and an alternate the kept part shares with a Q
-alternative is not verified for the latter. A category whose chain failed is
-left out of the run's selection, so the gates read the run before it. Each
-assumption needs a confirmed question of its own. P0 counts a host with two
-rows, or a status written as not read, as not read. The P7 critic checks at
-least one figure on each group page and each output under `hardware/docs/`.
+needs the alternate's checks, and an alternate several primaries name is
+verified for the first only (the kept part, then the Q alternatives in order).
+A category whose chain failed is left out of the run's selection, so the gates
+read the run before it. Each assumption needs a confirmed question of its own.
+P0 counts a host with two rows, or a status written as not read, as not read.
+The P7 critic checks at least one figure on each group page and each output
+under `hardware/docs/`.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared

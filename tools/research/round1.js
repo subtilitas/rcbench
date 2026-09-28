@@ -851,22 +851,44 @@ function selection(functions, ledger) {
     // refuted part does not.
     const alternateUnverified = altOf(kept) && !st({ part: altOf(kept) }).startsWith('verified') ? [altOf(kept)] : []
     const recOf = part => f.shortlist.find(c => c.part === part) || (f.alternateRecords || []).find(c => c.part === part) || null
+    // One P4 row checks an alternate against one part: an alternate named by
+    // several primaries (the kept part first, then the Q alternatives in
+    // order) is verified for the first of them only.
+    const altOwner = new Map()
+    for (const primary of [kept, ...f.verify.filter(v => v.kind === 'q-alternative').map(v => recOf(v.part))]) {
+      const a = altOf(primary)
+      if (a && !altOwner.has(a)) altOwner.set(a, primary.part)
+    }
     // Rule 5's alternate passes rule 1 as the part does: a part and its
     // alternate are both on the board or both off it.
     const offBoardAlt = c => !!(altOf(c) && recOf(altOf(c)) && onBoard(c) !== onBoard(recOf(altOf(c))))
     const qAlternatives = f.verify.filter(v => v.kind === 'q-alternative' && !(kept && v.part === kept.part)).map(v => {
       const rec = recOf(v.part)
       const alt = altOf(rec)
-      // One P4 row checks an alternate against one part: an alternate the
-      // kept part shares is not checked against this one.
-      const shared = alt && kept && alt === altOf(kept)
+      const shared = alt && altOwner.get(alt) !== v.part
       return { part: v.part, status: st(v) || 'not verified', alternate: alt,
-        alternate_status: !alt ? '' : shared ? 'not verified: shared with the kept part' : (st({ part: alt }) || 'not verified'), second_source_missing: !rec || noSecondSource(rec) || offBoardAlt(rec) }
+        alternate_status: !alt ? '' : shared ? `not verified: shared with ${altOwner.get(alt)}` : (st({ part: alt }) || 'not verified'), second_source_missing: !rec || noSecondSource(rec) || offBoardAlt(rec) }
     })
     const missing = !!(kept && (noSecondSource(kept) || offBoardAlt(kept)))
     return { function: f.function, decision: f.decision || 'none', part: kept ? kept.part : null, rank: kept ? kept.rank : null, refuted,
       alternate_unverified: alternateUnverified, second_source_missing: missing, q_alternatives: qAlternatives }
   })
+}
+
+// The per-part figures (categories.json reports_per_part) P2 and the re-rank
+// did not return for these parts, as "report: NAME: PART".
+function perPartMissing(cat, p2, rr, parts) {
+  const reported = [...(p2.report || []), ...(rr.report || [])].filter(f => !readsNone(f.value)).map(f => f.figure)
+  const out = []
+  for (const need of (A.per_part_reports || {})[cat] || []) {
+    for (const part of parts) {
+      const n = `${need}: ${part}`
+      if (reported.includes(n)) continue
+      out.push(`report: ${n}`)
+      followUps.push({ role: 'P2', category: cat, figure: n, reason: 'required per-part report figure not returned' })
+    }
+  }
+  return out
 }
 
 // The figures the datasheet verifier rules on: each reported figure and each
@@ -901,14 +923,7 @@ function figuresToCheck(cat, p2, rr, functions, p3) {
     for (const part of [first && first.part, altOf(first), ...f.verify.map(v => v.part),
       ...f.verify.filter(v => v.kind === 'q-alternative').map(v => altOf(candidateOf(functions, f.function, v.part)))]) if (part) verified.add(part)
   }
-  for (const need of (A.per_part_reports || {})[cat] || []) {
-    for (const part of verified) {
-      const n = `${need}: ${part}`
-      if (reported.some(f => f.figure === n) || rrReported.some(f => f.figure === n)) continue
-      missing.push(`report: ${n}`)
-      followUps.push({ role: 'P2', category: cat, figure: n, reason: 'required per-part report figure not returned' })
-    }
-  }
+  missing.push(...perPartMissing(cat, p2, rr, verified))
   // Every candidate P2 shortlisted and its own record fails.
   for (const f of functions) for (const d of f.failed || []) add(`failed requirement: ${f.function}: ${d.part} (${d.names.join(', ')})`)
   // Every drop of a part P3 found or reopened, whichever list the re-rank
@@ -922,7 +937,7 @@ function figuresToCheck(cat, p2, rr, functions, p3) {
       if (d.part && (fromP3.has(d.part) || f.dropped_from_p3.includes(d)) && !drops.has(k)) { drops.add(k); add(`re-rank drop: ${f.function}: ${d.part}`) }
     }
   }
-  return { names, missing }
+  return { names, missing, parts: verified }
 }
 
 async function categoryChain(cat) {
@@ -932,7 +947,7 @@ async function categoryChain(cat) {
   const rr = await run('rerank', cat, `rerank-${cat}`, 'P2-P4', rerankPrompt(cat, p2, p3 || { category: cat, missed: [], exclusions_not_holding: [], note: 'P3 returned nothing twice; its search is a follow-up item' }))
   if (!rr) return { category: cat, status: 're-rank returned nothing' }
   const functions = merge(cat, p2, rr, p3)
-  const { names: figures_to_check, missing: not_returned } = figuresToCheck(cat, p2, rr, functions, p3)
+  const { names: figures_to_check, missing: not_returned, parts: checkedParts } = figuresToCheck(cat, p2, rr, functions, p3)
   const bundle = { functions, found_values: p2.found_values || [], report_p2: p2.report || [], report_rerank: rr.report || [], figures_to_check }
   const ledger = await verifyCategory(cat, functions, bundle)
   // Without P3's search the category is not complete: no part is kept, and
@@ -940,7 +955,15 @@ async function categoryChain(cat) {
   const sel = selection(functions, ledger)
   // A figure is confirmed unless the ledger holds another status for it.
   // What P2 did not return has nothing to verify and stays open.
-  const figures_open = [...new Set([...not_returned, ...ledger.filter(l => l.figure && !l.status.startsWith('confirmed')).map(l => l.figure)])]
+  // A replacement part reached through a refutation owes its per-part
+  // figures too; the first pair re-read the ones P2 and the re-rank gave.
+  const selected = new Set()
+  for (const e of sel) {
+    const rec = e.part ? candidateOf(functions, e.function, e.part) : null
+    for (const part of [e.part, altOf(rec), ...(e.q_alternatives || []).flatMap(q => [q.part, q.alternate])]) if (part) selected.add(part)
+  }
+  const owedLater = perPartMissing(cat, p2, rr, [...selected].filter(part => !checkedParts.has(part)))
+  const figures_open = [...new Set([...not_returned, ...owedLater, ...ledger.filter(l => l.figure && !l.status.startsWith('confirmed')).map(l => l.figure)])]
   const q_missing = ['R10', 'R12'].includes(cat) && !sel.some(e => e.decision !== 'none' && (e.q_alternatives || []).length)
   return { category: cat, status: p3 ? 'done' : 'done without P3', ledger, figures_open, q_missing,
     selection: p3 ? sel : sel.map(e => ({ ...e, part: null, rank: null, without_p3: e.part })) }

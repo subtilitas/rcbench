@@ -104,6 +104,11 @@ async function runTask(task, opts = {}) {
       if (opts.offBoardAlt) { Object.assign(data.functions[0].shortlist[0], { lcsc: 'C1', second_source_route: 'alternate', second_source_part: 'altOff' }); data.functions[0].shortlist.push({ ...cand(8), part: 'altOff', lcsc: 'none' }) }
       if (opts.held !== undefined) data.functions[0].shortlist.forEach(c => { c.held = opts.held; c.lcsc = 'C9' })
       if (opts.altName) Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: opts.altName })
+      if (opts.twoQShare) {
+        Object.assign(data.functions[0].shortlist[1], { second_source_route: 'alternate', second_source_part: 'altS2' })
+        Object.assign(data.functions[0].shortlist[2], { second_source_route: 'alternate', second_source_part: 'altS2' })
+        data.functions[0].shortlist.push({ ...cand(9), part: 'altS2', rank: 9 })
+      }
       if (opts.sharedAlt) {
         Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: 'altS' })
         Object.assign(data.functions[0].shortlist[2], { second_source_route: 'alternate', second_source_part: 'altS' })
@@ -124,7 +129,7 @@ async function runTask(task, opts = {}) {
       const rcat = (o.label.match(/R\d+/) || [''])[0]
       data.functions = [{ function: 'f1', decision: opts.qDecision || ({ R10: 'Q4', R12: 'Q8' }[rcat] || 'none'), ranking: (opts.ranking || (opts.ranked || [1, 2, 3]).map(rank => ({ rank, part: `part${rank}`, reason: 'r' }))),
         new_candidates: opts.p3dropped ? [{ ...cand(7), part: 'partN' }] : [], dropped_from_p3: opts.p3dropped ? [{ part: 'partN', maker: 'm', reason: 'r' }] : [],
-        dropped_from_shortlist: opts.rankDropped ? [{ part: 'part1', maker: 'm', reason: 'r' }] : [], verify: opts.qAlt || opts.sharedAlt ? [{ part: 'part3', kind: 'q-alternative' }] : (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
+        dropped_from_shortlist: opts.rankDropped ? [{ part: 'part1', maker: 'm', reason: 'r' }] : [], verify: opts.twoQShare ? [{ part: 'part2', kind: 'q-alternative' }, { part: 'part3', kind: 'q-alternative' }] : opts.qAlt || opts.sharedAlt ? [{ part: 'part3', kind: 'q-alternative' }] : (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
       if (opts.extraFn) data.functions.push({ ...data.functions[0], function: 'fX', ...(opts.rrHandleYin ? { dropped_from_shortlist: [{ part: 'partY', maker: 'm', reason: 'r' }] } : {}) })
       if (opts.p3dropShort) data.functions[0].dropped_from_shortlist = [{ part: 'partX', maker: 'm', reason: 'fails vmax' }]
       if (opts.rrDup) data.functions.push({ ...data.functions[0], ranking: [], dropped_from_shortlist: [{ part: 'part1', maker: 'm', reason: 'fails vmax at 85 C' }] })
@@ -581,7 +586,14 @@ async function main() {
   // An alternate shared by the kept part and a Q alternative is not verified for the latter.
   r = await runTask('T4', { sharedAlt: true, p4parts: ['part3', 'altS'] })
   const qs = r.result.summary.results.find(c => c.category === 'R10').selection[0].q_alternatives[0]
-  check(qs && /shared with the kept part/.test(qs.alternate_status), 'alternate shared with the kept part: not verified for the Q alternative')
+  check(qs && /shared with part1/.test(qs.alternate_status), 'alternate shared with the kept part: not verified for the Q alternative')
+  // Two Q alternatives naming one alternate: verified for the first only.
+  r = await runTask('T4', { twoQShare: true, p4parts: ['part2', 'part3', 'altS2'] })
+  const q2 = r.result.summary.results.find(c => c.category === 'R10').selection[0].q_alternatives
+  check(q2.length === 2 && q2[0].alternate_status === 'verified' && /shared with part2/.test(q2[1].alternate_status), 'alternate shared by two Q alternatives: verified for the first only')
+  // A replacement part owes its per-part figures.
+  r = await runTask('T2', { perPartReports: { R2: ['clock tolerance'] }, reportParts: ['clock tolerance: part1'], refute: ['P4-stock-R2:part1'] })
+  check(r.result.summary.results.find(c => c.category === 'R2').selection[0].part === 'part2' && r.result.summary.figures_open.R2.includes('report: clock tolerance: part2'), 'replacement part without its per-part figure: open')
   // A malformed LCSC number drops the candidate.
   r = await runTask('T2', { lcsc: 'C123oops' })
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => /LCSC number "C123oops"; dropped/.test(f.reason)), 'malformed LCSC number: dropped')
