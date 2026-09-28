@@ -67,6 +67,9 @@
     ],
     "R3": [
       "'423 behaviour with I_off"
+    ],
+    "R11": [
+      "encoder decoding"
     ]
   },
   "reports_per_part": {

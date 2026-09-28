@@ -286,6 +286,12 @@ ${J(p7)}`
 
 // P0 has no critic, so the script applies the stop and hold rules itself
 // from P0's check results and the host table, beside P0's own reading.
+// A reading time is a date the parser reads, not any nonblank text.
+function isTime(text) {
+  const t = String(text || '').trim()
+  return /^\d{4}-\d{2}-\d{2}/.test(t) && Number.isFinite(Date.parse(t))
+}
+
 function readsNone(text) {
   const t = String(text || '').trim()
   return !t || /^(none|n\/a|-)$/i.test(t) || /^not read\b/i.test(t)
@@ -703,7 +709,7 @@ function covered(v, cand) {
   if (v.verifier === 'datasheet' && !req.length) return false
   // A check written as not read, or without its source or reading time,
   // shows nothing.
-  const have = new Set((v.checks || []).filter(c => !readsNone(c.read) && !readsNone(c.source) && !readsNone(c.read_at)).map(c => c.figure))
+  const have = new Set((v.checks || []).filter(c => !readsNone(c.read) && !readsNone(c.source) && !!isTime(c.read_at)).map(c => c.figure))
   // Rule 6: a part the owner holds passes rule 4 on the held quantity, in
   // place of the live stock and presale.
   const held = v.verifier === 'stock' && onBoard(cand) && Number(cand.held) > 0 && have.has('held quantity')
@@ -724,7 +730,7 @@ function nextCandidate(functions, fn, part, ledger) {
 // The adjudicator's ruling counts only for the item it was asked about.
 function boundRuling(ruling, fn, part, cat) {
   if (!ruling) return null
-  if (readsNone(ruling.evidence) || readsNone(ruling.source) || readsNone(ruling.read_at)) {
+  if (readsNone(ruling.evidence) || readsNone(ruling.source) || !isTime(ruling.read_at)) {
     followUps.push({ role: 'adjudicator', category: cat, function: fn, part, reason: 'the ruling gives no evidence, source and time read' })
     return null
   }
@@ -849,7 +855,7 @@ async function verifyCategory(cat, functions, bundle) {
     for (const e of byPart.values()) {
       if (!e.alsoAlternate) continue
       const primary = [...ledger].reverse().find(l => l.function === e.function && l.part === e.part && l.as === 'primary')
-      const fits = e.verdicts.some(v => v.verifier === 'datasheet' && v.verdict === 'confirmed' && ['pin-for-pin match', 'functional match'].every(n => (v.checks || []).some(c => c.figure === n && c.agrees && c.passes === true && !readsNone(c.read) && !readsNone(c.source) && !readsNone(c.read_at))))
+      const fits = e.verdicts.some(v => v.verifier === 'datasheet' && v.verdict === 'confirmed' && ['pin-for-pin match', 'functional match'].every(n => (v.checks || []).some(c => c.figure === n && c.agrees && c.passes === true && !readsNone(c.read) && !readsNone(c.source) && !!isTime(c.read_at))))
       const status = primary && primary.status === 'refuted' ? 'refuted' : primary && primary.status.startsWith('verified') && fits ? 'verified' : 'not verified'
       ledger.push({ function: e.function, part: e.part, as: 'alternate', status })
     }
@@ -860,7 +866,7 @@ async function verifyCategory(cat, functions, bundle) {
     // A confirmation counts only with evidence that was read.
     for (const name of bundle.figures_to_check) {
       const f = figs.get(name)
-      if (f && !(f.verdict === 'confirmed' && (readsNone(f.evidence) || readsNone(f.source) || readsNone(f.read_at)))) continue
+      if (f && !(f.verdict === 'confirmed' && (readsNone(f.evidence) || readsNone(f.source) || !isTime(f.read_at)))) continue
       ledger.push({ figure: name, status: 'not verified', reason: f ? 'confirmed without evidence, source and time read' : 'the datasheet verifier gave no single verdict' })
       followUps.push({ role: 'P4', category: cat, figure: name, reason: 'figure not verified' })
     }
@@ -1144,13 +1150,13 @@ async function phaseP5P6() {
   // A budget counts with a value read, its source and its time; "not
   // applicable" only for a check the P5 row makes conditional.
   const conditional = n => (A.p5_conditional || []).some(c => n === c || n.startsWith(`${c}: `))
-  const upheld = (a.budgets || []).filter(x => x.upheld === true && !readsNone(x.source) && !readsNone(x.read_at) && !readsNone(x.value)
+  const upheld = (a.budgets || []).filter(x => x.upheld === true && !readsNone(x.source) && !!isTime(x.read_at) && !readsNone(x.value)
     && (!/^not applicable\b/i.test(String(x.value).trim()) || conditional(String(x.item || '')))).map(x => String(x.item || ''))
   const budgetsMissing = a.missing ? [] : (A.p5_budgets || []).filter(n => !upheld.some(i => i === n || i.startsWith(`${n}: `)))
   for (const n of budgetsMissing) followUps.push({ role: 'P5', item: n, reason: 'budget the P5 row names not returned and upheld' })
   // A combination counts with its source and time, and upheld.
-  if (!a.missing && !(a.combinations || []).some(x => x.upheld === true && x.fits === true && !readsNone(x.source) && !readsNone(x.read_at))) missingChecks.push('P5 combinations')
-  const unsourced = [...(a.combinations || []), ...(a.budgets || []), ...(a.assumptions || [])].filter(x => readsNone(x.source) || readsNone(x.read_at)).length
+  if (!a.missing && !(a.combinations || []).some(x => x.upheld === true && x.fits === true && !readsNone(x.source) && !!isTime(x.read_at))) missingChecks.push('P5 combinations')
+  const unsourced = [...(a.combinations || []), ...(a.budgets || []), ...(a.assumptions || [])].filter(x => readsNone(x.source) || !isTime(x.read_at)).length
   if (!a.missing && !(a.budgets || []).length) missingChecks.push('P5 budgets')
   for (const m of missingChecks) followUps.push({ role: m, reason: `${m} returned nothing; the check did not run` })
   return { conflicts: a.conflicts, combinations: a.combinations || [], budgets: a.budgets || [], assumptions: a.assumptions || [], gaps: b.gaps,

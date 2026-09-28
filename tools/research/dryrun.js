@@ -36,7 +36,7 @@ function fake(schema, i = 0) {
   switch (schema.type) {
     case 'object': {
       const o = {}
-      for (const k of schema.required || []) o[k] = fake(schema.properties[k], i)
+      for (const k of schema.required || []) o[k] = k === 'read_at' ? '2026-09-28T10:00:00Z' : fake(schema.properties[k], i)
       return o
     }
     case 'array': return [0, 1].map(j => fake(schema.items, j))
@@ -148,7 +148,7 @@ async function runTask(task, opts = {}) {
     }
     if (role === 'P5' && opts.p5Empty) Object.assign(data, { combinations: [], budgets: [] })
     if (role === 'P5' && opts.unsourcedCombos) data.combinations = data.combinations.map(x => ({ ...x, source: '' }))
-    if (role === 'P5' && opts.p5Items) data.budgets = opts.p5Items.map(item => ({ item, value: (opts.budgetValues || {})[item] || 'v', source: opts.blankSource ? '   ' : 's', read_at: opts.budgetUndated ? '' : '2026-09-28T10:00:00Z' }))
+    if (role === 'P5' && opts.p5Items) data.budgets = opts.p5Items.map(item => ({ item, value: (opts.budgetValues || {})[item] || 'v', source: opts.blankSource ? '   ' : 's', read_at: opts.budgetUndated ? '' : opts.budgetTime || '2026-09-28T10:00:00Z' }))
     if (role === 'P5') data.combinations = data.combinations.map(x => ({ ...x, fits: !opts.noFit }))
     if (role === 'P5' && opts.unsourcedAssumption) data.assumptions = data.assumptions.map(x => ({ ...x, source: '' }))
     if (role === 'P5-critic') for (const k of ['combination_verdicts', 'budget_verdicts', 'assumption_verdicts']) data[k] = data[k].map((v, index) => ({ ...v, index, holds: !(opts.rejectBudget && k === 'budget_verdicts' && index === 0) && !(opts.rejectAssumption && k === 'assumption_verdicts' && index === 0) }))
@@ -678,6 +678,11 @@ async function main() {
   // The library type of the JLCPCB row is checked.
   r = await runTask('T2', { noLibType: true })
   check(r1(r).selection[0].part === null, 'no library type check: not verified')
+  // A reading time must be a date.
+  r = await runTask('T2', { undated: true })
+  check(r1(r).selection[0].part === null, 'blank reading time: not verified')
+  r = await runTask('T5', { p5Budgets: ['GPIO'], p5Items: ['GPIO'], budgetTime: 'unknown' })
+  check(r.result.summary.budgets_missing.includes('GPIO'), 'T5: a reading time that is no date is missing')
   // A malformed LCSC number drops the candidate.
   r = await runTask('T2', { lcsc: 'C123oops' })
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => /LCSC number "C123oops"; dropped/.test(f.reason)), 'malformed LCSC number: dropped')

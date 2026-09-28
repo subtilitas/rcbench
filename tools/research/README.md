@@ -70,8 +70,8 @@ It refuses these without exception:
   P5-P6 follow-ups and T6 check every category. A question that only feeds Q4,
   Q8 or Q9 (`blocks` is `decision-only` and `decision` names one of them)
   needs no answer.
-- T6 while the owner's decisions on Q4, Q8 and Q9 are not written, and while
-  the output paths have changes.
+- T6 while any of the rows Q4, Q8 and Q9 is missing or has no decision, and
+  while the output paths have changes.
 
 It refuses these unless `--accept-open REASON` records the owner's reason and
 the items in the arguments:
@@ -95,7 +95,7 @@ the items in the arguments:
     `reports_per_part` once for every part the category verifies or selects,
     replacements included (as `NAME: PART`, from P2 or the re-rank);
   - the latest P1 run left P1 items in the category;
-  - a run that decides one of its functions predates a P1 run's questions for
+  - a run that decides one of its functions predates a later P1 run covering
     the category, read other answers under "Raised by P1" for it, read another
     specification (Research.md outside its Raised by P1 and Decided tables,
     and IOBoard.md), or, for R5 to R8, predates a change to a part of T2 or
@@ -149,30 +149,30 @@ refutation as an alternate fails only that relationship: the part keeps its
 own place on the shortlist. A part a verifier was not asked to verify is
 ignored, a part it lists twice has no verdict from it, and a check or figure
 evidence that is empty, blank or written as not read, or without its source or
-reading time, shows nothing. Every verified part needs a `placements` check
-re-deriving its count from the specification, the lifecycle table's readings
-(`longevity commitment`, `market introduction`, `distributor status`,
-`lead time`), for a part on the board `LCSC identity` and `library type`
-checks, and a `manufacturer allowlist` check (rule 2), and an alternate needs
-at least the placements of the part it stands in for. The datasheet verifier
-re-reads each function's requirement list against IOBoard.md and the answers
-(`function requirements: FUNCTION`). A part on the board that the owner holds
-may pass the stock gate on a `held quantity` check in place of `stock` and
-`presale` (rule 6); a passing held quantity supersedes failing live readings.
-A return whose `category` names another category counts as not returned. Only
-the kept part's rule-5 alternate gates its selection, and the alternate of a
-part on the board must be on the board; a first-ranked part that is also a Q
-alternative's alternate keeps its own verification, and holds the alternate
-role only with its compatibility checks, and an alternate several primaries
-name is verified for the first only (the kept part, then the Q alternatives in
-order). A category whose chain failed is left out of the run's selection, so
-the gates read the run before it. Each assumption needs a confirmed question
-of its own, whose `for_where` is the assumption's location. P0 counts a host
-with two rows, or a status written as not read, as not read. A P0 row counts
-only at its host's endpoint: an API client's command with the probe, a page
-client's probe URL, or with no probe a page on the host itself. The P7 critic
-checks at least one figure on each group page and each output under
-`hardware/docs/`.
+a reading time that parses as a date, shows nothing. Every verified part needs
+a `placements` check re-deriving its count from the specification, the
+lifecycle table's readings (`longevity commitment`, `market introduction`,
+`distributor status`, `lead time`), for a part on the board `LCSC identity`
+and `library type` checks, and a `manufacturer allowlist` check (rule 2), and
+an alternate needs at least the placements of the part it stands in for. The
+datasheet verifier re-reads each function's requirement list against
+IOBoard.md and the answers (`function requirements: FUNCTION`). A part on the
+board that the owner holds may pass the stock gate on a `held quantity` check
+in place of `stock` and `presale` (rule 6); a passing held quantity supersedes
+failing live readings. A return whose `category` names another category counts
+as not returned. Only the kept part's rule-5 alternate gates its selection,
+and the alternate of a part on the board must be on the board; a first-ranked
+part that is also a Q alternative's alternate keeps its own verification, and
+holds the alternate role only with its compatibility checks, and an alternate
+several primaries name is verified for the first only (the kept part, then the
+Q alternatives in order). A category whose chain failed is left out of the
+run's selection, so the gates read the run before it. Each assumption needs a
+confirmed question of its own, whose `for_where` is the assumption's location.
+P0 counts a host with two rows, or a status written as not read, as not read.
+A P0 row counts only at its host's endpoint: an API client's command with the
+probe, a page client's probe URL, or with no probe a page on the host itself.
+The P7 critic checks at least one figure on each group page and each output
+under `hardware/docs/`.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared

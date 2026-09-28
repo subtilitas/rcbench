@@ -603,14 +603,15 @@ def stale_selections(results, categories, rows, now, upstream=(),
                       for e in eff.get(u, {}).values()] or [0])
     out = []
     for c in categories:
-        p1 = [n for n, t in done if (t.get("task") == "T1" or (
-            t.get("followup") or {}).get("phases") == "P1") and any(
-            q.get("category") == c
-            for q in (t.get("summary") or {}).get("questions", []))]
+        # Every P1 run covering the category: its questions, or a function
+        # it added to the inventory, can change what the parts must meet.
+        p1 = [n for n, t in done if t.get("task") == "T1" or (
+            (t.get("followup") or {}).get("phases") == "P1" and c in (
+                (t.get("followup") or {}).get("categories") or []))]
         for name, task in deciding_runs(results, c, eff):
             commit = task.get("commit", "")
             if p1 and seq[p1[-1]] > seq[name]:
-                out.append(f"{c}: {p1[-1]} raised questions after {name} "
+                out.append(f"{c}: {p1[-1]} read the category after {name} "
                            "selected its parts")
             if rows_of(commit) is None or spec_of(commit) is None:
                 out.append(f"{c}: the plan {name} read, at {commit}, is not "
@@ -1003,7 +1004,9 @@ def cmd_prepare(args):
         if dirty:
             raise SystemExit("the output paths have changes; commit or "
                              "remove them before T6: " + ", ".join(dirty))
-        missing = [q for q, d in decisions(text).items() if not d]
+        # Each of Q4, Q8 and Q9 has its row and the owner's decision.
+        found = decisions(text)
+        missing = [q for q in ("Q4", "Q8", "Q9") if not found.get(q)]
         if missing:
             raise SystemExit("the owner has not decided " + ", ".join(missing))
         open_sel += q9_open(results, decisions(text))
