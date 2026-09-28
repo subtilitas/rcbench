@@ -314,7 +314,8 @@ of it, and `record` reads the same path. Each check gives its kind: budget,
 combination or other. A budget or combination checked against any file but the
 last P5/P6 check's is superseded, and so is any figure checked against an
 earlier check's P5 return (a restarted one included), whatever its kind; every
-figure P7 lists as written needs a check of its own; another figure, such as a
+figure P7 lists as written needs a check of its own, a figure written on n
+lines of a file checks on n lines of it; another figure, such as a
 run's status line, may cite an earlier check's other files. P7 and its critic
 are given the three commands, the pages that need a figure checked, and the
 path rules for group pages and figure checks that `round1.js` and `record`
@@ -347,7 +348,8 @@ holds, a `Research.md` whose rows under "Raised by P1", Blocking and Sourcing
 answers or decisions differ from HEAD's, a figure the critic checked
 against a file under `hardware/research/round1/` that HEAD does not hold, and
 a figure check whose line of its page, after T6, does not state the figure in
-the check's text (runs of whitespace compared as one space). A
+the check's text as a value of its own (`5 V` is not read in `15 V`, `0.5 V`,
+`-5 V` or `5 VA`; runs of whitespace compare as one space). A
 renamed file counts as both its old and its new path. A T6 is recorded as
 stopped unless P7 and its critic both return, the critic's three checks pass,
 it checked at least one figure and every figure agrees with its return, no

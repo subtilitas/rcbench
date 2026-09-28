@@ -1458,11 +1458,21 @@ def cited_returns(returns):
     return out
 
 
+def states(line, figure):
+    """Whether the line states the figure as a value of its own: not part
+    of a longer number or word, so "5 V" is not read in "15 V", "0.5 V",
+    "-5 V" or "5 VA". Runs of whitespace compare as one space."""
+    return re.search(r"(?<![0-9A-Za-z.,+\-\u2212\u00b1])"
+                     + re.escape(" ".join(figure.split()))
+                     + r"(?![0-9A-Za-z])(?![.,][0-9])",
+                     " ".join(line.split())) is not None
+
+
 def misplaced_figures(results, returns):
     """The P7 critic's figure checks whose page line does not state the
     figure, as the page stands after T6: a line below 1 or past the end, a
-    file outside the tree or not a file, or a line without the figure's
-    text (runs of whitespace compared as one space)."""
+    file outside the tree or not a file, or a line that does not state the
+    figure (`states`)."""
     root = os.path.realpath(results)
     out = []
     for r in returns:
@@ -1476,7 +1486,7 @@ def misplaced_figures(results, returns):
                      if path.startswith(root + os.sep)
                      and os.path.isfile(path) else [])
             if not (type(n) is int and 0 < n <= len(lines) and figure
-                    and figure in " ".join(lines[n - 1].split())):
+                    and states(lines[n - 1], figure)):
                 out.append(f"{f}:{n} {figure}")
     return out
 

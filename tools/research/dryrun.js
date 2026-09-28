@@ -1297,6 +1297,9 @@ async function main() {
   check(r.result.summary.stopped === true && /no figure checked on|checked no figure/.test(r.result.summary.reasons[0]), 'T6: a figure check at line 0 checks nothing')
   r = await runTask('T6', { p7Figures: [{ file: 'hardware/docs/Parts.md', line: 0, figure: 'stock' }] })
   check(r.result.summary.stopped === true && /figures P7 wrote without their line/.test(r.result.summary.reasons[0]), 'T6: a figure P7 wrote without its line stops it')
+  // A figure P7 wrote on two lines needs checks on two lines.
+  r = await runTask('T6', { p7Figures: [{ file: 'hardware/docs/Parts.md', line: 1, figure: 'stock' }, { file: 'hardware/docs/Parts.md', line: 3, figure: 'stock' }] })
+  check(r.result.summary.stopped === true && /figures P7 wrote without a check/.test(r.result.summary.reasons[0]), 'T6: one check for a figure P7 wrote on two lines stops it')
   // A restarted P5 return of an earlier check is superseded too.
   r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/T5/004-P5-restart.json', figureKind: 'other' })
   check(r.result.summary.stopped === true, 'T6: a figure citing an earlier restarted P5 return stops it')
