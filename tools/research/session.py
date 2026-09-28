@@ -716,6 +716,21 @@ def check_followup(followup, cats):
                          f"categories: {stray}")
 
 
+def pre_t6_merge(commit):
+    """The merge prepare makes before T6: two parents, the second a pushed
+    research/round1 commit, and nothing beyond it but the run records."""
+    parents = git("rev-list", "--parents", "-n", "1", commit).split()[1:]
+    if len(parents) != 2 or not git("log", "-1", "--format=%s", commit) \
+            .startswith(f"Merge {BRANCH} at "):
+        return False
+    if git("merge-base", "--is-ancestor", parents[1], f"origin/{BRANCH}",
+           check=False).returncode:
+        return False
+    runs_dir = RUNS_DIR.replace(os.sep, "/") + "/"
+    return all(p.startswith(runs_dir) for p in git(
+        "diff", "--name-only", parents[1], commit).splitlines())
+
+
 def sync_results(results):
     """The results tree at origin's head: fast-forwarded when behind, and
     refused when it holds records origin lacks or has diverged."""
@@ -734,13 +749,21 @@ def sync_results(results):
         return
     if git("merge-base", "--is-ancestor", there, here,
            check=False).returncode == 0:
-        # Ahead by the merge before T6 alone is fine; ahead by records is
-        # not, as other clones cannot see them.
-        if git("diff", "--quiet", there, here, "--", RUNS_DIR,
-               check=False).returncode == 0:
+        # Ahead by the merge before T6 alone is fine: a merge of a pushed
+        # research/round1 commit that adds nothing but the records. Ahead
+        # by records is not, as other clones cannot see them; ahead by
+        # anything else is a commit nobody reviewed.
+        if all(pre_t6_merge(c) for c in
+               git("rev-list", "--first-parent", f"{there}..{here}").split()):
             return
-        raise SystemExit(f"{RESULTS} holds records {remote} does not; push "
-                         "it first")
+        if git("diff", "--quiet", there, here, "--", RUNS_DIR,
+               check=False).returncode:
+            raise SystemExit(f"{RESULTS} holds records {remote} does not; "
+                             "push it first")
+        raise SystemExit(f"{RESULTS} holds commits that are neither records "
+                         f"nor the merge before T6; remove them (git -C "
+                         f"{results} reset --hard {there}) or review and "
+                         "push them")
     raise SystemExit(f"{RESULTS} and {remote} have diverged")
 
 

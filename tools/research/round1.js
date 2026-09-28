@@ -572,6 +572,7 @@ function merge(cat, p2, rr, p3) {
     // A candidate or a rule-5 alternate is checked against every requirement
     // of its function; one it does not list is added as unmet, so the
     // verifier must check it. A record that fails a requirement is dropped.
+    const failed = []
     const fnValue = new Map((f2.requirements || []).map(r => [r.name, r.value]))
     const norm = t => String(t || '').replace(/\s+/g, ' ').trim()
     const qualify = (list, what) => list.map(c => {
@@ -582,6 +583,11 @@ function merge(cat, p2, rr, p3) {
       followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} states other values than the function for: ${restated.map(r => r.name).join(', ')}; checked against the function's`, notice: true })
       return { ...c, requirements: c.requirements.map(r => restated.includes(r) ? { ...r, required: fnValue.get(r.name), pass: null, restated: r.required } : r) }
     }).filter(c => {
+      // An LCSC number is C and digits, or none for a part off the board.
+      if (!/^(C\d+|none)$/.test(c.lcsc || '')) {
+        followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} with LCSC number ${JSON.stringify(c.lcsc)}; dropped` })
+        return false
+      }
       // Rule 4's need is boards x placements: a count below 1 gates nothing.
       if (!(Number.isInteger(c.placements) && c.placements >= 1)) {
         followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} with placements ${c.placements}; dropped` })
@@ -590,6 +596,8 @@ function merge(cat, p2, rr, p3) {
       const failing = (c.requirements || []).filter(r => r.pass === false)
       if (!failing.length) return true
       followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} with a failed requirement: ${failing.map(r => r.name).join(', ')}` })
+      // The drop is P2's word only: the datasheet verifier re-reads it.
+      failed.push({ part: c.part, names: failing.map(r => r.name) })
       return false
     }).map(c => {
       const have = new Set((c.requirements || []).map(r => r.name))
@@ -609,7 +617,7 @@ function merge(cat, p2, rr, p3) {
       followUps.push({ role: 'rerank', category: cat, function: name, reason: 'q-alternatives on a function that implements no decision; not verified' })
       verify = verify.filter(v => v.kind !== 'q-alternative')
     }
-    functions.push({ function: name, decision, requirements: f2.requirements || [], shortlist, verify, alternateRecords, dropped: f2.dropped || [], dropped_from_shortlist: (fr && fr.dropped_from_shortlist) || [], dropped_from_p3: (fr && fr.dropped_from_p3) || [] })
+    functions.push({ function: name, decision, failed, requirements: f2.requirements || [], shortlist, verify, alternateRecords, dropped: f2.dropped || [], dropped_from_shortlist: (fr && fr.dropped_from_shortlist) || [], dropped_from_p3: (fr && fr.dropped_from_p3) || [] })
   }
   // R10 and R12 carry the owner's choice for Q4 and Q8: one of their
   // functions names an alternative to verify, or the category stays open.
@@ -621,7 +629,7 @@ function merge(cat, p2, rr, p3) {
   for (const m of (p3 && p3.missed_functions) || []) {
     if (functions.some(f => f.function === m.function)) continue
     followUps.push({ role: 'P3', category: cat, function: m.function, reason: `function the row names that P2 did not return: ${m.why}` })
-    functions.push({ function: m.function, decision: 'none', requirements: [], shortlist: [], verify: [], alternateRecords: [], dropped: [], dropped_from_shortlist: [], dropped_from_p3: [], not_returned: true })
+    functions.push({ function: m.function, decision: 'none', failed: [], requirements: [], shortlist: [], verify: [], alternateRecords: [], dropped: [], dropped_from_shortlist: [], dropped_from_p3: [], not_returned: true })
   }
   return functions
 }
@@ -793,8 +801,8 @@ async function verifyCategory(cat, functions, bundle) {
     // A confirmation counts only with evidence that was read.
     for (const name of bundle.figures_to_check) {
       const f = figs.get(name)
-      if (f && !(f.verdict === 'confirmed' && readsNone(f.evidence))) continue
-      ledger.push({ figure: name, status: 'not verified', reason: f ? 'confirmed without evidence read' : 'the datasheet verifier gave no single verdict' })
+      if (f && !(f.verdict === 'confirmed' && (readsNone(f.evidence) || readsNone(f.source) || readsNone(f.read_at)))) continue
+      ledger.push({ figure: name, status: 'not verified', reason: f ? 'confirmed without evidence, source and time read' : 'the datasheet verifier gave no single verdict' })
       followUps.push({ role: 'P4', category: cat, figure: name, reason: 'figure not verified' })
     }
     for (const [kind, v] of got) {
@@ -816,7 +824,7 @@ async function verifyCategory(cat, functions, bundle) {
 }
 
 function onBoard(c) {
-  return !!(c && c.lcsc && c.lcsc !== 'none')
+  return !!(c && /^C\d+$/.test(c.lcsc || ''))
 }
 
 // A part whose rule-5 route names no second source it can be built with.
@@ -849,8 +857,11 @@ function selection(functions, ledger) {
     const qAlternatives = f.verify.filter(v => v.kind === 'q-alternative' && !(kept && v.part === kept.part)).map(v => {
       const rec = recOf(v.part)
       const alt = altOf(rec)
+      // One P4 row checks an alternate against one part: an alternate the
+      // kept part shares is not checked against this one.
+      const shared = alt && kept && alt === altOf(kept)
       return { part: v.part, status: st(v) || 'not verified', alternate: alt,
-        alternate_status: alt ? (st({ part: alt }) || 'not verified') : '', second_source_missing: !rec || noSecondSource(rec) || offBoardAlt(rec) }
+        alternate_status: !alt ? '' : shared ? 'not verified: shared with the kept part' : (st({ part: alt }) || 'not verified'), second_source_missing: !rec || noSecondSource(rec) || offBoardAlt(rec) }
     })
     const missing = !!(kept && (noSecondSource(kept) || offBoardAlt(kept)))
     return { function: f.function, decision: f.decision || 'none', part: kept ? kept.part : null, rank: kept ? kept.rank : null, refuted,
@@ -898,6 +909,8 @@ function figuresToCheck(cat, p2, rr, functions, p3) {
       followUps.push({ role: 'P2', category: cat, figure: n, reason: 'required per-part report figure not returned' })
     }
   }
+  // Every candidate P2 shortlisted and its own record fails.
+  for (const f of functions) for (const d of f.failed || []) add(`failed requirement: ${f.function}: ${d.part} (${d.names.join(', ')})`)
   // Every drop of a part P3 found or reopened, whichever list the re-rank
   // put it in.
   const fromP3 = new Set([...((p3 && p3.missed) || []), ...((p3 && p3.exclusions_not_holding) || [])].map(x => x.part))

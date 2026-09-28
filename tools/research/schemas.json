@@ -53,7 +53,7 @@
     },
     "lcsc": {
      "type": "string",
-     "description": "C number, or none for a part off the board"
+     "description": "C number, or none for a part off the board C followed by digits, or none for a part off the board"
     },
     "package": {
      "type": "string"
@@ -1080,12 +1080,22 @@
        },
        "evidence": {
         "type": "string"
+       },
+       "source": {
+        "type": "string",
+        "description": "the URL, datasheet table or API call the figure was re-read from"
+       },
+       "read_at": {
+        "type": "string",
+        "description": "the time the figure was re-read"
        }
       },
       "required": [
        "figure",
        "verdict",
-       "evidence"
+       "evidence",
+       "source",
+       "read_at"
       ]
      },
      "description": "one entry for every name in figures_to_check, with that exact name"

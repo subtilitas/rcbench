@@ -54,10 +54,10 @@ before T1, a P2-P4 follow-up before the tasks that own its categories, a P5-P6
 follow-up before T5, and a round 2 follow-up before a round 1 follow-up is
 recorded. It fast-forwards the results tree to
 `origin/research/round1-results`, and refuses while that tree holds records
-origin does not (push after each `record`) or has diverged. It refuses a P1
-run while another P1 run is prepared and not recorded, so question IDs do not
-repeat, and numbers new questions after the last one on the page and in the
-committed runs.
+origin does not (push after each `record`), any other commit than the merge
+before T6, or has diverged. It refuses a P1 run while another P1 run is
+prepared and not recorded, so question IDs do not repeat, and numbers new
+questions after the last one on the page and in the committed runs.
 
 It refuses these without exception:
 
@@ -125,25 +125,28 @@ expect.
   re-rank neither qualified nor dropped that part under it;
 - it has no requirement.
 
-A part with more than one record, or with placements below 1, is dropped. A
-requirement a candidate states with another value than its function is checked
-against the function's value, and its own pass is dropped before failures are
-counted. An adjudicator's ruling without evidence read is no ruling. A
-standing refutation stays final in the run, even if the part is verified later
-as another part's alternate. A part a verifier was not asked to verify is
-ignored, a part it lists twice has no verdict from it, and a check or figure
-evidence written as not read, or a check without its source, shows nothing. A
-part on the board that the owner holds may pass the stock gate on a
-`held quantity` check in place of `stock` and `presale` (rule 6). A return
-whose `category` names another category counts as not returned. Only the kept
-part's rule-5 alternate gates its selection, and the alternate of a part on
-the board must be on the board; a first-ranked part that is also a Q
-alternative's alternate needs the alternate's checks. A category whose chain
-failed is left out of the run's selection, so the gates read the run before
-it. Each assumption needs a confirmed question of its own. P0 counts a host
-with two rows, or a status written as not read, as not read. The P7 critic
-checks at least one figure on each group page and each output under
-`hardware/docs/`.
+A part with more than one record, with placements below 1, or with an LCSC
+number that is neither `C` and digits nor `none`, is dropped. A shortlisted
+candidate P2's own record fails is dropped and its failure re-read by the
+datasheet verifier. A requirement a candidate states with another value than
+its function is checked against the function's value, and its own pass is
+dropped before failures are counted. An adjudicator's ruling without evidence
+read is no ruling. A standing refutation stays final in the run, even if the
+part is verified later as another part's alternate. A part a verifier was not
+asked to verify is ignored, a part it lists twice has no verdict from it, and
+a check or figure evidence written as not read, or a check or figure without
+its source (and a figure without its reading time), shows nothing. A part on
+the board that the owner holds may pass the stock gate on a `held quantity`
+check in place of `stock` and `presale` (rule 6). A return whose `category`
+names another category counts as not returned. Only the kept part's rule-5
+alternate gates its selection, and the alternate of a part on the board must
+be on the board; a first-ranked part that is also a Q alternative's alternate
+needs the alternate's checks, and an alternate the kept part shares with a Q
+alternative is not verified for the latter. A category whose chain failed is
+left out of the run's selection, so the gates read the run before it. Each
+assumption needs a confirmed question of its own. P0 counts a host with two
+rows, or a status written as not read, as not read. The P7 critic checks at
+least one figure on each group page and each output under `hardware/docs/`.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared

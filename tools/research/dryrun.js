@@ -74,6 +74,7 @@ async function runTask(task, opts = {}) {
     const base0 = fake(schemas.P2.properties.functions.items.properties.shortlist.items)
     base0.requirements = base0.requirements.map(r => ({ ...r, pass: true }))
     base0.placements = opts.placements === undefined ? 1 : opts.placements
+    base0.lcsc = opts.lcsc === undefined ? 'C1000' : opts.lcsc
     const cand = rank => ({ ...base0, rank, part: `part${rank}`,
       second_source_route: rank === 2 && opts.replacementAlt ? 'alternate' : (rank === 1 && opts.emptyAlt ? 'alternate' : 'second-vendor'), second_source_part: rank === 2 && opts.replacementAlt ? 'altB' : '' })
     if (role === 'P0') {
@@ -103,6 +104,11 @@ async function runTask(task, opts = {}) {
       if (opts.offBoardAlt) { Object.assign(data.functions[0].shortlist[0], { lcsc: 'C1', second_source_route: 'alternate', second_source_part: 'altOff' }); data.functions[0].shortlist.push({ ...cand(8), part: 'altOff', lcsc: 'none' }) }
       if (opts.held !== undefined) data.functions[0].shortlist.forEach(c => { c.held = opts.held; c.lcsc = 'C9' })
       if (opts.altName) Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: opts.altName })
+      if (opts.sharedAlt) {
+        Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: 'altS' })
+        Object.assign(data.functions[0].shortlist[2], { second_source_route: 'alternate', second_source_part: 'altS' })
+        data.functions[0].shortlist.push({ ...cand(9), part: 'altS', rank: 9 })
+      }
       if (opts.qAlt) {
         Object.assign(data.functions[0].shortlist[2], { second_source_route: 'alternate', second_source_part: 'altQ' })
         data.functions[0].shortlist.push({ ...cand(9), part: 'altQ', rank: 9 })
@@ -118,7 +124,7 @@ async function runTask(task, opts = {}) {
       const rcat = (o.label.match(/R\d+/) || [''])[0]
       data.functions = [{ function: 'f1', decision: opts.qDecision || ({ R10: 'Q4', R12: 'Q8' }[rcat] || 'none'), ranking: (opts.ranking || (opts.ranked || [1, 2, 3]).map(rank => ({ rank, part: `part${rank}`, reason: 'r' }))),
         new_candidates: opts.p3dropped ? [{ ...cand(7), part: 'partN' }] : [], dropped_from_p3: opts.p3dropped ? [{ part: 'partN', maker: 'm', reason: 'r' }] : [],
-        dropped_from_shortlist: opts.rankDropped ? [{ part: 'part1', maker: 'm', reason: 'r' }] : [], verify: opts.qAlt ? [{ part: 'part3', kind: 'q-alternative' }] : (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
+        dropped_from_shortlist: opts.rankDropped ? [{ part: 'part1', maker: 'm', reason: 'r' }] : [], verify: opts.qAlt || opts.sharedAlt ? [{ part: 'part3', kind: 'q-alternative' }] : (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
       if (opts.extraFn) data.functions.push({ ...data.functions[0], function: 'fX', ...(opts.rrHandleYin ? { dropped_from_shortlist: [{ part: 'partY', maker: 'm', reason: 'r' }] } : {}) })
       if (opts.p3dropShort) data.functions[0].dropped_from_shortlist = [{ part: 'partX', maker: 'm', reason: 'fails vmax' }]
       if (opts.rrDup) data.functions.push({ ...data.functions[0], ranking: [], dropped_from_shortlist: [{ part: 'part1', maker: 'm', reason: 'fails vmax at 85 C' }] })
@@ -191,7 +197,7 @@ async function runTask(task, opts = {}) {
       if (oc && oc.second_source_route === 'alternate' && !opts.dropReplacementAlt) data.parts.push({ function: 'f1', part: oc.second_source_part, kind: 'alternate', verdict: 'confirmed', checks: checksFor(oc.second_source_part, 'alternate'), refutation: '' })
       const names = only ? [] : JSON.parse(/"figures_to_check":(\[[^\]]*\])/.exec(prompt)[1])
       data.figures = kind === 'datasheet' ? names.filter(n => !(opts.omitFigure && base === opts.omitFigure[0] && n === opts.omitFigure[1]))
-        .map((figure, k) => ({ figure, verdict: (opts.refuteFigure || []).includes(base) && k === 0 ? 'refuted' : 'confirmed', evidence: opts.unreadFigure && k === 0 ? 'not read' : 'e' })) : []
+        .map((figure, k) => ({ figure, verdict: (opts.refuteFigure || []).includes(base) && k === 0 ? 'refuted' : 'confirmed', evidence: opts.unreadFigure && k === 0 ? 'not read' : 'e', source: opts.unsourcedFigure && k === 0 ? '' : 'datasheet table 5', read_at: '2026-09-28T10:00:00Z' })) : []
       const extraParts = opts.p4parts || opts.verify
       if (extraParts && !(opts.omit || []).includes(base) && !opts.dropVerify && !only) data.parts.push(...extraParts.map(pt => ({ function: 'f1', part: pt, kind: opts.reportFirst ? 'first' : 'alternate', verdict: (opts.refute || []).includes(`${base}:${pt}`) ? 'refuted' : 'confirmed', checks: checksFor(pt, opts.reportFirst ? 'first' : 'alternate'), refutation: '' })))
     }
@@ -566,6 +572,19 @@ async function main() {
   r = await runTask('T2', { weakReq: true })
   const p4ds = r.prompts.find(x => x.label === 'P4-datasheet-R1').prompt
   check(r.result.followUps.some(f => /states other values than the function/.test(f.reason)) && p4ds.includes('"required":">= 67.2 V"') && !p4ds.includes('"required":">= 40 V"'), 'candidate restating a requirement: checked against the function value')
+  // A figure confirmed without its source is open.
+  r = await runTask('T2', { unsourcedFigure: true })
+  check(r.result.summary.figures_open.R1.length === 1, 'figure confirmed without a source: open')
+  // P2's own drop of a shortlisted candidate is re-read by the datasheet verifier.
+  r = await runTask('T2', { failedReq: true })
+  check(r.prompts.find(x => x.label === 'P4-datasheet-R1').prompt.includes('failed requirement: f1: part1 (x0)'), 'shortlisted candidate failing its own requirement: re-read by P4')
+  // An alternate shared by the kept part and a Q alternative is not verified for the latter.
+  r = await runTask('T4', { sharedAlt: true, p4parts: ['part3', 'altS'] })
+  const qs = r.result.summary.results.find(c => c.category === 'R10').selection[0].q_alternatives[0]
+  check(qs && /shared with the kept part/.test(qs.alternate_status), 'alternate shared with the kept part: not verified for the Q alternative')
+  // A malformed LCSC number drops the candidate.
+  r = await runTask('T2', { lcsc: 'C123oops' })
+  check(r1(r).selection[0].part === null && r.result.followUps.some(f => /LCSC number "C123oops"; dropped/.test(f.reason)), 'malformed LCSC number: dropped')
   // A failure against a restated, stricter value is not a failure.
   r = await runTask('T2', { strictReq: true })
   check(r1(r).selection[0].part === 'part1', 'failure against a restated value: checked against the function value, kept')
