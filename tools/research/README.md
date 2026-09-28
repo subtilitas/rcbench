@@ -23,6 +23,16 @@ and host table. Nothing here runs in CI (continuous integration) but
   adjudicator and a new verifier pair each take a free agent; with none left
   the item is returned for a follow-up task.
 - An agent that returns nothing counts as not checked, never as not refuted.
+- A refutation holds only under the function it was made in, and one as an
+  alternate only for that relationship. A part whose refutation stands, also
+  on a part-level reading such as `lifecycle status` or
+  `end-of-life notices`, is still kept under another function, in the same
+  run or a later one, or as a primary after it was refuted as an alternate,
+  when both verifiers confirm it there.
+- A part verified in its own right that is also another part's alternate
+  gets one verdict from each verifier and one ruling for both roles: a
+  refutation of its `pin-for-pin match` or `functional match` that stands
+  also refutes it in its own right.
 - The workflow script has no file or git access. Every return comes back in
   the task's output, and `session.py record` writes and commits it.
 - `vendors.py fetch` needs curl_cffi for the chrome and safari clients.
@@ -171,8 +181,11 @@ its function is checked against the function's value, and its own pass is
 dropped before failures are counted. An adjudicator's ruling without evidence,
 source and a reading time of the task is no ruling. A standing refutation
 stays final in the run, even if the part is verified later as another part's
-alternate. A refutation as an alternate fails only that relationship: the part
-keeps its own place on the shortlist. A part a verifier was not asked to
+alternate. A refutation no adjudicator ruled on, for want of a free agent or
+of a ruling, keeps the part open in the run: a later verification does not
+clear it, only a standing refutation replaces it, and the part holds no
+alternate role. A refutation as an alternate fails only that relationship: the
+part keeps its own place on the shortlist. A part a verifier was not asked to
 verify is ignored, a part it lists twice has no verdict from it, and a check
 read as empty, blank or not read, or as `none` other than
 `end-of-life notices` and `longevity commitment`, figure evidence that is
@@ -208,11 +221,14 @@ may pass the stock gate on a `held quantity` check in place of `stock` and
 failing live readings, and passing live readings a failing held quantity. A
 return whose `category` names another category counts as not returned. Only
 the kept part's rule-5 alternate gates its selection, and the alternate of a
-part on the board must be on the board; a first-ranked part that is also a Q
-alternative's alternate keeps its own verification, and holds the alternate
-role only with its compatibility checks, and an alternate several primaries
-name is verified for the first only (the kept part, then the Q alternatives in
-order). A category whose chain failed is left out of the run's selection, so
+part on the board must be on the board. An alternate counts only for the part
+it was checked against: an alternate several parts name is checked against
+the first of them (the first-ranked part, then the Q alternatives in order),
+and a replacement's alternate against the replacement. A part verified in its
+own right, the first-ranked part or a Q alternative, that is also another
+part's alternate keeps that verification. It holds the alternate role while
+verified, also after a refutation that did not stand, with its compatibility
+checks. A category whose chain failed is left out of the run's selection, so
 the gates read the run before it. Each assumption needs a confirmed question
 of its own, whose `for_where` and `for_quantity` are the assumption's location
 and quantity. The P1 critic rules on a marking by the value's index, location

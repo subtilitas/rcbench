@@ -116,6 +116,11 @@ async function runTask(task, opts = {}) {
         Object.assign(data.functions[0].shortlist[0], { placements: 20, second_source_route: 'alternate', second_source_part: 'altF' })
         data.functions[0].shortlist.push({ ...cand(9), part: 'altF', rank: 9, placements: 5 })
       }
+      // alts {PART: ALTERNATE}: rule-5 alternates, each with a record.
+      for (const [part, alt] of Object.entries(opts.alts || {})) {
+        Object.assign(data.functions[0].shortlist.find(c => c.part === part), { second_source_route: 'alternate', second_source_part: alt })
+        if (!data.functions[0].shortlist.some(c => c.part === alt)) data.functions[0].shortlist.push({ ...cand(9), part: alt, rank: 9 })
+      }
       if (opts.twoQShare) {
         Object.assign(data.functions[0].shortlist[1], { second_source_route: 'alternate', second_source_part: 'altS2' })
         Object.assign(data.functions[0].shortlist[2], { second_source_route: 'alternate', second_source_part: 'altS2' })
@@ -150,6 +155,7 @@ async function runTask(task, opts = {}) {
       if (opts.qAltBack) data.functions[0].verify = [{ part: 'part3', kind: 'q-alternative' }]
       if (opts.qSelf) data.functions[0].verify = [{ part: 'part1', kind: 'q-alternative' }]
       if (opts.verifyFirst) data.functions[0].verify = opts.verifyFirst.map(part => ({ part, kind: 'first', option: '' }))
+      if (opts.verifyList) data.functions[0].verify = opts.verifyList.map(v => ({ option: '', ...v }))
     }
     if (role === 'P5' && opts.p5Empty) Object.assign(data, { combinations: [], budgets: [] })
     if (role === 'P5' && opts.unsourcedCombos) data.combinations = data.combinations.map(x => ({ ...x, source: '' }))
@@ -238,7 +244,7 @@ async function runTask(task, opts = {}) {
           .map((figure, k) => ({ figure, stated: 's', read: opts.readNone && kind === 'datasheet' ? 'not read: API timed out' : 'r', source: opts.noSource && kind === 'stock' ? '' : 'src', read_at: opts.undated && kind === 'stock' ? '' : '2026-09-28T10:00:00Z', agrees: !((opts.disagree || []).includes(base) && k === 0), passes: !((opts.failPass || []).includes(base) && k === 0) }))
           .map(c => opts.heldAndLive && c.figure === 'stock' ? { ...c, passes: false } : c)
           .map(c => ({ ...c, ...((opts.edit || {})[c.figure] || {}), ...(kind === 'stock' ? opts.stockPatch || {} : {}) }))
-      data.parts = (opts.omit || []).includes(base) || (opts.omitPart || []).includes(`${base}:${part}`) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part), refutation: refute ? 'mock' : '' }]
+      data.parts = (opts.omit || []).includes(base) || (opts.omitPart || []).includes(`${base}:${part}`) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part, opts.bothRoles && !only ? 'alternate' : undefined), refutation: refute ? 'mock' : '' }]
       if (opts.note && opts.note[0] === base && data.parts.length) data.parts[0].refutation = opts.note[1]
       if ((opts.dupRow || []).includes(base)) data.parts.push({ ...data.parts[0], verdict: 'refuted', refutation: 'second row' })
       const oc = only ? JSON.parse(only[1]) : null
@@ -272,7 +278,7 @@ async function runTask(task, opts = {}) {
       } catch (e) { return null }
     }))
   }
-  const args = { task, cap: cats.cap, categories: cats.categories, tasks: cats.tasks, schemas,
+  const args = { task, cap: opts.cap || cats.cap, categories: cats.categories, tasks: cats.tasks, schemas,
     commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, inventory: opts.inventory || {}, jlcparts: JL, p5_budgets: opts.p5Budgets || [], p5_conditional: opts.p5Conditional || [], q_options: opts.qOptions || {},
     followup: opts.followup, first_v: 5, decision_categories: { Q4: ['R10'], Q8: ['R2', 'R12'], Q9: ['R3'] }, t6_outputs: T6OUT, for_research: opts.forResearch || [], raised: opts.raised || [], p1_asks: opts.p1Asks || {}, fixed_inputs: opts.fixedInputs || {}, required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {} }
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
@@ -1045,6 +1051,42 @@ async function main() {
   check(r.result.summary.missing_checks.includes('P5 combinations'), 'T5: a combination without outputs, bind order and resources is none')
   r = await runTask('T5', { assumptionValue: 'not read' })
   check(r.result.summary.unsourced_items === 2, `T5: ${r.result.summary.unsourced_items} items without a value, source and time, expected the 2 assumptions`)
+
+  // A refutation no adjudicator ruled on is not cleared by a later pair's
+  // verification; a standing one still moves on.
+  r = await runTask('T2', { verifyFirst: ['part2'], p4parts: ['part2'], refute: ['P4-stock-R1:part1', 'P4-stock-R1:part2'], nulls: { 'adjudicator-R1-2': 2 } })
+  check(r1(r).ledger.some(l => l.part === 'part2' && l.status === 'refuted, no ruling') && r1(r).ledger.some(l => l.part === 'part2' && l.status === 'verified') && r1(r).selection[0].part === null, 'refutation without a ruling, then verified by a pair: not kept')
+  r = await runTask('T2', { verifyFirst: ['part2'], p4parts: ['part2'], refute: ['P4-stock-R1:part1', 'P4-stock-R1:part2', 'P4-stock-R1-2:part2'], nulls: { 'adjudicator-R1-2': 2 } })
+  check(r1(r).selection[0].part === 'part3' && r1(r).selection[0].refuted.includes('part2'), 'refutation without a ruling, then one that stands: next part kept')
+  // A refutation of the alternate as a primary with no ruling keeps it from
+  // sourcing the kept part.
+  r = await runTask('T2', { alts: { part1: 'part3' }, verifyFirst: ['part2'], p4parts: ['part2', 'part3'], refute: ['P4-stock-R1:part2', 'P4-stock-R1-2:part3'], nulls: { 'adjudicator-R1-2': 2 } })
+  check(r1(r).selection[0].part === 'part1' && r1(r).selection[0].alternate_unverified.includes('part3'), 'alternate refuted as a primary without a ruling: not verified as the alternate')
+  // An alternate counts for the part it was checked against only.
+  r = await runTask('T4', { sharedAlt: true, p4parts: ['part3', 'altS'], refute: ['P4-stock-R10:part1'] })
+  const qsr = r.result.summary.results.find(c => c.category === 'R10').selection[0]
+  check(qsr.part === 'part2' && /shared with part1/.test(qsr.q_alternatives[0].alternate_status), 'alternate shared with a refuted first-ranked part: not verified for the Q alternative')
+  r = await runTask('T2', { cap: 23, alts: { part1: 'altP', part2: 'altP' }, verifyFirst: ['part2'], p4parts: ['part2', 'altP'], refute: ['P4-stock-R1:part1'] })
+  check(r1(r).selection[0].part === 'part2' && r1(r).selection[0].alternate_unverified.includes('altP'), 'shared alternate checked against a refuted part, no pair left: not verified for the kept part')
+  r = await runTask('T2', { alts: { part1: 'altP', part2: 'altP' }, p4parts: ['altP'], refute: ['P4-stock-R1:part1', 'P4-datasheet-R1:altP'] })
+  check(r1(r).selection[0].part === 'part2' && r1(r).selection[0].alternate_unverified.length === 0, 'alternate refuted for a refuted part, verified for the replacement: verified')
+  // A part verified in its own right keeps that role when it is also an
+  // alternate: the first-ranked part listed as one, a Q alternative named
+  // by another, and the kept part's alternate listed as a Q alternative.
+  for (const [what, o, ok] of [
+    ['first-ranked part also listed as an alternate', { alts: { part3: 'part1' }, verifyList: [{ part: 'part3', kind: 'q-alternative' }, { part: 'part1', kind: 'alternate' }], p4parts: ['part3'] }, s => s.part === 'part1'],
+    ['Q alternative that is another\'s alternate', { alts: { part3: 'part2' }, verifyList: [{ part: 'part2', kind: 'q-alternative' }, { part: 'part3', kind: 'q-alternative' }], p4parts: ['part2', 'part3'] }, s => s.q_alternatives[0].status === 'verified' && s.q_alternatives[1].alternate_status === 'verified'],
+    ['kept part\'s alternate listed as a Q alternative', { alts: { part1: 'part3' }, verifyList: [{ part: 'part3', kind: 'q-alternative' }], p4parts: ['part3'] }, s => s.part === 'part1' && s.alternate_unverified.length === 0 && s.q_alternatives[0].status === 'verified'],
+  ]) {
+    r = await runTask('T4', o)
+    check(ok(r10(r).selection[0]), `${what}: verified in both roles`)
+  }
+  // A part in both roles whose refutation did not stand holds the alternate
+  // role on its compatibility checks.
+  r = await runTask('T4', { qAltBack: true, bothRoles: true, p4parts: ['part3'], refute: ['P4-datasheet-R10:part1'], stands: false })
+  check(r10(r).selection[0].part === 'part1' && r10(r).selection[0].q_alternatives[0].alternate_status === 'verified', 'part in both roles, refutation did not stand: alternate role verified')
+  r = await runTask('T4', { qAltBack: true, bothRoles: true, p4parts: ['part3'], refute: ['P4-datasheet-R10:part1'], edit: { 'pin-for-pin match': { passes: false } }, stands: false })
+  check(r10(r).selection[0].part === 'part1' && r10(r).selection[0].q_alternatives[0].alternate_status === 'not verified', 'part in both roles, refutation did not stand, compatibility failing: alternate role not verified')
 
   // Follow-up plans.
   for (const [phases, n, want] of [['P1', 2, 6], ['P2-P4', 3, 16], ['P5-P6', 0, 5]]) {

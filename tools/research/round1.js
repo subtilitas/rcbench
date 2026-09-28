@@ -255,7 +255,7 @@ ${J(p3)}`
 function p4Prompt(cat, kind, bundle, only) {
   const what = only
     ? `Verify only this candidate, which replaces a refuted one, and, when its second_source_route is alternate, the part named in its second_source_part (kind alternate); list only those: ${J(only)}`
-    : 'Verify, for each function, the first-ranked part, its rule-5 alternate when its second_source_route is alternate (the part in its second_source_part, kind alternate), every part in its verify list, and the rule-5 alternate of each part of kind q-alternative in that list, in the same way (kind alternate). A first-ranked part that is also such an alternate is listed once, with the checks of an alternate as well. List every part you verify in parts, once; a part you leave out counts as not verified.'
+    : 'Verify, for each function, the first-ranked part, its rule-5 alternate when its second_source_route is alternate (the part in its second_source_part, kind alternate), every part in its verify list, and the rule-5 alternate of each part of kind q-alternative in that list, in the same way (kind alternate). An alternate several parts name is checked against the first of them: the first-ranked part, then the q-alternatives in order. A part verified in its own right that is also such an alternate is listed once, with the checks of an alternate as well. List every part you verify in parts, once; a part you leave out counts as not verified.'
   const how = kind === 'stock'
     ? 'You are the stock and lifecycle verifier. Re-read stock and lifecycle at the primary sources, with the clients above, and try to refute each figure.'
     : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, the reasons the re-rank gave for dropping a P3 candidate, P2\'s own drops, for "Q option: FUNCTION: PART: CLASS" whether the part belongs to that option class of Q4 or Q8, and for "function requirements: FUNCTION" whether the function\'s requirement list names every requirement IOBoard.md and the answers set for it, with no value weaker than theirs) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
@@ -805,6 +805,17 @@ function altOf(c) {
   return c && c.second_source_route === 'alternate' && c.second_source_part && c.second_source_part !== c.part ? c.second_source_part : ''
 }
 
+// One P4 row checks an alternate against one part, the first to name it:
+// the first-ranked part, then the Q alternatives in order.
+function altOwners(functions, f) {
+  const owners = new Map()
+  for (const primary of [f.shortlist[0], ...f.verify.filter(v => v.kind === 'q-alternative').map(v => candidateOf(functions, f.function, v.part))]) {
+    const a = altOf(primary)
+    if (a && !owners.has(a)) owners.set(a, primary.part)
+  }
+  return owners
+}
+
 // The checks a verifier returns by these exact names for a confirmation to
 // count (the P4 prompt names them).
 // The stock verifier re-derives the placements per board from the
@@ -847,12 +858,19 @@ function covered(v, cand) {
   return req.filter(n => !(held && (n === 'stock' || n === 'presale'))).every(n => have.has(n))
 }
 
+// A part's status after a later ledger entry: a standing refutation is
+// final, and one no adjudicator ruled on gives way to a standing one only.
+function laterStatus(prev, next) {
+  const weight = s => s === 'refuted' ? 2 : String(s || '').startsWith('refuted') ? 1 : 0
+  return weight(next) >= weight(prev) ? next : prev
+}
+
 // The next part in rank order that is not refuted.
 function nextCandidate(functions, fn, part, ledger) {
   const f = functions.find(x => x.function === fn)
   if (!f) return null
   const status = new Map()
-  for (const l of ledger) if (l.part && l.function === fn && l.as !== 'alternate' && status.get(l.part) !== 'refuted') status.set(l.part, l.status)
+  for (const l of ledger) if (l.part && l.function === fn && l.as !== 'alternate') status.set(l.part, laterStatus(status.get(l.part), l.status))
   const i = f.shortlist.findIndex(c => c.part === part)
   if (i < 0) return null
   return f.shortlist.slice(i + 1).find(c => status.get(c.part) !== 'refuted') || null
@@ -882,28 +900,30 @@ async function verifyCategory(cat, functions, bundle) {
     ])
     // Each part to verify, with its kind from the verification plan, and
     // the rule-5 alternate of the part that would be selected.
+    // An alternate's row names the part it was checked against (for).
     const want = []
     if (only) {
       want.push({ function: only.function, part: only.part, kind: 'first' })
-      if (altOf(only)) want.push({ function: only.function, part: altOf(only), kind: 'alternate' })
+      if (altOf(only)) want.push({ function: only.function, part: altOf(only), kind: 'alternate', for: only.part })
     } else {
       for (const f of functions) {
+        // A part verified in its own right keeps that kind; an alternate
+        // role it also has is checked beside it.
         const kinds = new Map()
+        const plan = (part, kind) => { if (!kinds.has(part) || (kinds.get(part) === 'alternate' && kind !== 'alternate')) kinds.set(part, kind) }
         if (f.shortlist.length) {
-          kinds.set(f.shortlist[0].part, 'first')
-          if (altOf(f.shortlist[0])) kinds.set(altOf(f.shortlist[0]), 'alternate')
+          plan(f.shortlist[0].part, 'first')
+          if (altOf(f.shortlist[0])) plan(altOf(f.shortlist[0]), 'alternate')
         }
-        for (const v of f.verify) if (!kinds.has(v.part) || v.kind === 'alternate') kinds.set(v.part, v.kind)
+        for (const v of f.verify) plan(v.part, v.kind)
         // A Q4 or Q8 alternative needs its own second source, as the part
         // kept does.
-        const alsoAlternate = new Set()
         for (const v of f.verify.filter(x => x.kind === 'q-alternative')) {
           const a = altOf(candidateOf(functions, f.function, v.part))
-          if (a && kinds.get(a) === 'first') alsoAlternate.add(a)
-          else if (a) kinds.set(a, 'alternate')
+          if (a) plan(a, 'alternate')
         }
-        // A first-ranked part that is also an alternate is checked as one.
-        for (const [part, kind] of kinds) want.push({ function: f.function, part, kind, alsoAlternate: alsoAlternate.has(part) })
+        const owners = altOwners(functions, f)
+        for (const [part, kind] of kinds) want.push({ function: f.function, part, kind, for: owners.get(part) || '', alsoAlternate: kind !== 'alternate' && owners.has(part) })
       }
     }
     const got = [['stock', st], ['datasheet', ds]].filter(([, v]) => v)
@@ -934,6 +954,7 @@ async function verifyCategory(cat, functions, bundle) {
       // states a refutation is one.
       const cand = candidateOf(functions, e.function, e.part)
       const added = new Set(((cand && cand.requirements) || []).filter(r => r.added).map(r => r.name))
+      const as = e.kind === 'alternate' ? { as: 'alternate', for: e.for } : { as: 'primary' }
       for (const v of e.verdicts) {
         if (v.verdict === 'confirmed' && !noRefutation(v.refutation)) v.verdict = 'refuted'
         const passing = name => (v.checks || []).some(c => c.figure === name && shown(c) && c.passes === true)
@@ -962,30 +983,30 @@ async function verifyCategory(cat, functions, bundle) {
       const complete = kind => e.verdicts.some(v => v.verifier === kind && v.verdict !== 'incomplete' && covered(v, cand))
       const refuted = e.verdicts.filter(v => v.verdict === 'refuted')
       if (!refuted.length) {
-        if (complete('stock') && complete('datasheet')) { ledger.push({ function: e.function, part: e.part, as: e.kind === 'alternate' ? 'alternate' : 'primary', status: 'verified' }); continue }
+        if (complete('stock') && complete('datasheet')) { ledger.push({ function: e.function, part: e.part, ...as, status: 'verified' }); continue }
         const reason = e.verdicts.some(v => v.verdict === 'incomplete') ? 'a verifier gave no required check for some figures' : 'not covered by both verifiers'
-        ledger.push({ function: e.function, part: e.part, as: e.kind === 'alternate' ? 'alternate' : 'primary', status: 'not verified', reason })
+        ledger.push({ function: e.function, part: e.part, ...as, status: 'not verified', reason })
         followUps.push({ role: 'P4', category: cat, function: e.function, part: e.part, reason })
         continue
       }
       if (!takeExtra(1)) {
-        ledger.push({ function: e.function, part: e.part, as: e.kind === 'alternate' ? 'alternate' : 'primary', status: 'refuted, not adjudicated' })
+        ledger.push({ function: e.function, part: e.part, ...as, status: 'refuted, not adjudicated' })
         followUps.push({ role: 'adjudicator', category: cat, function: e.function, part: e.part, reason: 'no free agent' })
         continue
       }
       const ruling = boundRuling(await run('adjudicator', cat, `adjudicator-${cat}`, 'Refutations', adjudicatorPrompt(cat, e.function, e.part, e.verdicts)), e.function, e.part, cat)
       if (!ruling) {
-        ledger.push({ function: e.function, part: e.part, as: e.kind === 'alternate' ? 'alternate' : 'primary', status: 'refuted, no ruling' })
+        ledger.push({ function: e.function, part: e.part, ...as, status: 'refuted, no ruling' })
         followUps.push({ role: 'adjudicator', category: cat, function: e.function, part: e.part, reason: 'refutation without a ruling' })
         continue
       }
       if (!ruling.stands) {
         const both = complete('stock') && complete('datasheet')
-        ledger.push({ function: e.function, part: e.part, as: e.kind === 'alternate' ? 'alternate' : 'primary', status: both ? 'verified; refutation did not stand' : 'not verified', reason: both ? '' : 'refutation did not stand, but one verifier did not cover it' })
+        ledger.push({ function: e.function, part: e.part, ...as, status: both ? 'verified; refutation did not stand' : 'not verified', reason: both ? '' : 'refutation did not stand, but one verifier did not cover it' })
         if (!both) followUps.push({ role: 'P4', category: cat, function: e.function, part: e.part, reason: 'not covered by both verifiers' })
         continue
       }
-      ledger.push({ function: e.function, part: e.part, as: e.kind === 'alternate' ? 'alternate' : 'primary', status: 'refuted' })
+      ledger.push({ function: e.function, part: e.part, ...as, status: 'refuted' })
       // A refuted alternate fails its relationship to the primary, not the
       // part's own place on the shortlist.
       if (e.kind === 'alternate') { followUps.push({ role: 'P4', category: cat, function: e.function, part: e.part, reason: 'alternate refuted; the primary has no second source by it' }); continue }
@@ -1002,15 +1023,17 @@ async function verifyCategory(cat, functions, bundle) {
       if (!takeExtra(2)) { followUps.push({ role: 'P4', category: cat, function: e.function, part: next.part, reason: 'no free agents for the next pair' }); continue }
       queue.push({ only: { ...next, function: e.function } })
     }
-    // A first-ranked part that is also a Q alternative's alternate: its
-    // primary result stands as it is; the alternate relationship holds when
-    // that result is a verification and its compatibility checks pass.
+    // A part verified in its own right that is also another part's
+    // alternate: its primary result stands as it is; the alternate
+    // relationship holds when that result is a verification and its
+    // compatibility checks pass. A refutation that did not stand was ruled
+    // on as a whole, its compatibility included.
     for (const e of byPart.values()) {
       if (!e.alsoAlternate) continue
       const primary = [...ledger].reverse().find(l => l.function === e.function && l.part === e.part && l.as === 'primary')
-      const fits = e.verdicts.some(v => v.verifier === 'datasheet' && v.verdict === 'confirmed' && ['pin-for-pin match', 'functional match'].every(n => (v.checks || []).some(c => c.figure === n && c.agrees && c.passes === true && shown(c))))
+      const fits = e.verdicts.some(v => v.verifier === 'datasheet' && ['pin-for-pin match', 'functional match'].every(n => (v.checks || []).some(c => c.figure === n && c.agrees && c.passes === true && shown(c))))
       const status = primary && primary.status === 'refuted' ? 'refuted' : primary && primary.status.startsWith('verified') && fits ? 'verified' : 'not verified'
-      ledger.push({ function: e.function, part: e.part, as: 'alternate', status })
+      ledger.push({ function: e.function, part: e.part, as: 'alternate', for: e.for, status })
     }
     if (only) continue
     // Figures are verified once, by the first pair. Each name in
@@ -1057,38 +1080,33 @@ function noSecondSource(c) {
 // function open; only a refutation that stands moves on to the next part.
 function selection(functions, ledger) {
   // A part's status is its last ledger entry: a later refutation overrides
-  // an earlier verification.
+  // an earlier verification, and a later verification no refutation.
   // Primary and alternate verifications are separate relationships: a part
-  // refuted as another part's alternate keeps its own shortlist place.
+  // refuted as another part's alternate keeps its own shortlist place, and
+  // an alternate counts for the part it was checked against only.
   const last = new Map()
   const altLast = new Map()
   for (const l of ledger) {
     if (!l.part) continue
     const m = l.as === 'alternate' ? altLast : last
-    const k = `${l.function}\u0000${l.part}`
-    if (m.get(k) !== 'refuted') m.set(k, l.status)
+    const k = l.as === 'alternate' ? `${l.function}\u0000${l.for}\u0000${l.part}` : `${l.function}\u0000${l.part}`
+    m.set(k, laterStatus(m.get(k), l.status))
   }
   return functions.map(f => {
     const st = c => last.get(`${f.function}\u0000${c.part}`) || ''
-    // A part refuted as a primary fails for the function as a whole, so as
-    // an alternate too; a refutation as an alternate is the relationship's.
-    const altSt = c => st(c) === 'refuted' ? 'refuted' : (altLast.get(`${f.function}\u0000${c.part}`) || '')
+    // A part refuted as a primary, standing or not ruled on, fails for the
+    // function as a whole, so as an alternate too; a refutation as an
+    // alternate is the relationship's.
+    const altSt = (primary, alt) => st({ part: alt }).startsWith('refuted') ? st({ part: alt }) : (altLast.get(`${f.function}\u0000${primary}\u0000${alt}`) || '')
     const standing = f.shortlist.find(c => st(c) !== 'refuted')
     // A fixed input's function keeps that input or nothing.
     const kept = standing && st(standing).startsWith('verified') && (!f.fixed_input || isFixed(f.fixed_input, standing.part)) ? standing : null
     const refuted = f.shortlist.filter(c => st(c) === 'refuted').map(c => c.part)
     // Only the kept part's rule-5 alternate sources it; the alternate of a
     // refuted part does not.
-    const alternateUnverified = altOf(kept) && !altSt({ part: altOf(kept) }).startsWith('verified') ? [altOf(kept)] : []
+    const alternateUnverified = altOf(kept) && !altSt(kept.part, altOf(kept)).startsWith('verified') ? [altOf(kept)] : []
     const recOf = part => f.shortlist.find(c => c.part === part) || (f.alternateRecords || []).find(c => c.part === part) || null
-    // One P4 row checks an alternate against one part: an alternate named by
-    // several primaries (the kept part first, then the Q alternatives in
-    // order) is verified for the first of them only.
-    const altOwner = new Map()
-    for (const primary of [kept, ...f.verify.filter(v => v.kind === 'q-alternative').map(v => recOf(v.part))]) {
-      const a = altOf(primary)
-      if (a && !altOwner.has(a)) altOwner.set(a, primary.part)
-    }
+    const altOwner = altOwners(functions, f)
     // Rule 5's alternate passes rule 1 as the part does: a part and its
     // alternate are both on the board or both off it.
     const offBoardAlt = c => !!(altOf(c) && recOf(altOf(c)) && (onBoard(c) !== onBoard(recOf(altOf(c))) || recOf(altOf(c)).placements < c.placements))
@@ -1108,7 +1126,7 @@ function selection(functions, ledger) {
       const alt = altOf(rec)
       const shared = alt && altOwner.get(alt) !== v.part
       return { part: v.part, status: st(v) || 'not verified', alternate: alt,
-        alternate_status: !alt ? '' : shared ? `not verified: shared with ${altOwner.get(alt)}` : (altSt({ part: alt }) || 'not verified'), second_source_missing: !rec || noSecondSource(rec) || offBoardAlt(rec) }
+        alternate_status: !alt ? '' : altSt(v.part, alt) || (shared ? `not verified: shared with ${altOwner.get(alt)}` : 'not verified'), second_source_missing: !rec || noSecondSource(rec) || offBoardAlt(rec) }
     }
     const missing = !!(kept && (noSecondSource(kept) || offBoardAlt(kept)))
     return { function: f.function, decision: f.decision || 'none', part: kept ? kept.part : null, rank: kept ? kept.rank : null, alternate: altOf(kept), refuted,
