@@ -1036,6 +1036,10 @@
           "passes": {
            "type": "boolean",
            "description": "the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes"
+          },
+          "read_at": {
+           "type": "string",
+           "description": "the time the value was read (sourcing rule 7)"
           }
          },
          "required": [
@@ -1044,7 +1048,8 @@
           "read",
           "source",
           "agrees",
-          "passes"
+          "passes",
+          "read_at"
          ]
         }
        },

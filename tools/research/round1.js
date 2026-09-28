@@ -232,10 +232,10 @@ function p4Prompt(cat, kind, bundle, only) {
     : 'Verify, for each function, the first-ranked part, its rule-5 alternate when its second_source_route is alternate (the part in its second_source_part, kind alternate), every part in its verify list, and the rule-5 alternate of each part of kind q-alternative in that list, in the same way (kind alternate). A first-ranked part that is also such an alternate is listed once, with the checks of an alternate as well. List every part you verify in parts, once; a part you leave out counts as not verified.'
   const how = kind === 'stock'
     ? 'You are the stock and lifecycle verifier. Re-read stock and lifecycle at the primary sources, with the clients above, and try to refute each figure.'
-    : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, and the reasons the re-rank gave for dropping a P3 candidate) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
+    : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, the reasons the re-rank gave for dropping a P3 candidate, P2\'s own drops, and for "function requirements: FUNCTION" whether the function\'s requirement list names every requirement IOBoard.md and the answers set for it, with no value weaker than theirs) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
   return `${ctx('P4', cat, `P4-${kind}-${cat}`)}
 
-${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". Each check has agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and a check with agrees or passes false counts as a refutation.
+${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and a check with agrees or passes false counts as a refutation.
 
 The shortlist, the values found for research and the reports:
 ${J(bundle)}`
@@ -646,13 +646,15 @@ function altOf(c) {
 
 // The checks a verifier returns by these exact names for a confirmation to
 // count (the P4 prompt names them).
+// The stock verifier re-derives the placements per board from the
+// specification; the datasheet verifier confirms the maker is allowed
+// (rule 2).
 function requiredChecks(kind, cand, partKind) {
   if (kind === 'stock') {
-    const onBoard = cand && cand.lcsc && cand.lcsc !== 'none'
-    return ['stock', 'lifecycle status', 'end-of-life notices', ...(onBoard ? ['presale'] : []),
-      ...(onBoard && cand.second_source_route === 'second-vendor' ? ['second-vendor stock'] : [])]
+    return ['stock', 'lifecycle status', 'end-of-life notices', 'placements', ...(onBoard(cand) ? ['presale'] : []),
+      ...(onBoard(cand) && cand.second_source_route === 'second-vendor' ? ['second-vendor stock'] : [])]
   }
-  return [...((cand && cand.requirements) || []).map(r => r.name), ...(partKind === 'alternate' ? ['pin-for-pin match', 'functional match'] : [])]
+  return [...((cand && cand.requirements) || []).map(r => r.name), 'manufacturer allowlist', ...(partKind === 'alternate' ? ['pin-for-pin match', 'functional match'] : [])]
 }
 
 function covered(v, cand) {
@@ -661,8 +663,9 @@ function covered(v, cand) {
   if (!cand) return false
   const req = requiredChecks(v.verifier, cand, v.kind)
   if (v.verifier === 'datasheet' && !req.length) return false
-  // A check written as not read, or without its source, shows nothing.
-  const have = new Set((v.checks || []).filter(c => !readsNone(c.read) && !readsNone(c.source)).map(c => c.figure))
+  // A check written as not read, or without its source or reading time,
+  // shows nothing.
+  const have = new Set((v.checks || []).filter(c => !readsNone(c.read) && !readsNone(c.source) && !readsNone(c.read_at)).map(c => c.figure))
   // Rule 6: a part the owner holds passes rule 4 on the held quantity, in
   // place of the live stock and presale.
   const held = v.verifier === 'stock' && onBoard(cand) && Number(cand.held) > 0 && have.has('held quantity')
@@ -861,7 +864,7 @@ function selection(functions, ledger) {
     }
     // Rule 5's alternate passes rule 1 as the part does: a part and its
     // alternate are both on the board or both off it.
-    const offBoardAlt = c => !!(altOf(c) && recOf(altOf(c)) && onBoard(c) !== onBoard(recOf(altOf(c))))
+    const offBoardAlt = c => !!(altOf(c) && recOf(altOf(c)) && (onBoard(c) !== onBoard(recOf(altOf(c))) || recOf(altOf(c)).placements < c.placements))
     const qAlternatives = f.verify.filter(v => v.kind === 'q-alternative' && !(kept && v.part === kept.part)).map(v => {
       const rec = recOf(v.part)
       const alt = altOf(rec)
@@ -924,6 +927,9 @@ function figuresToCheck(cat, p2, rr, functions, p3) {
       ...f.verify.filter(v => v.kind === 'q-alternative').map(v => altOf(candidateOf(functions, f.function, v.part)))]) if (part) verified.add(part)
   }
   missing.push(...perPartMissing(cat, p2, rr, verified))
+  // Each function's requirement list is P2's reading of the specification:
+  // the datasheet verifier re-derives it from IOBoard.md and the answers.
+  for (const f of functions) if (f.shortlist.length) add(`function requirements: ${f.function}`)
   // Every candidate P2 shortlisted and its own record fails.
   for (const f of functions) for (const d of f.failed || []) add(`failed requirement: ${f.function}: ${d.part} (${d.names.join(', ')})`)
   // Every drop of a part P3 found or reopened, whichever list the re-rank

@@ -76,9 +76,9 @@ It refuses these without exception:
 It refuses these unless `--accept-open REASON` records the owner's reason and
 the items in the arguments:
 
-- T2 to T4 and P2-P4 follow-ups while the latest P1 run covering a category
-  left P1 items there. Notices, such as a marking taken as an assumption, do
-  not count.
+- T2 to T4 and P2-P4 follow-ups while a P1 run covering a category left P1
+  items there that no later P1 follow-up listed among its items and cleared.
+  Notices, such as a marking taken as an assumption, do not count.
 - T3 and P2-P4 follow-ups on its categories, for the categories of T2 and T4,
   and T5, P5-P6 follow-ups and T6, for every category, while:
   - a function has no verified part, or a missing or unverified second source;
@@ -134,20 +134,24 @@ dropped before failures are counted. An adjudicator's ruling without evidence
 read is no ruling. A standing refutation stays final in the run, even if the
 part is verified later as another part's alternate. A part a verifier was not
 asked to verify is ignored, a part it lists twice has no verdict from it, and
-a check or figure evidence written as not read, or a check or figure without
-its source (and a figure without its reading time), shows nothing. A part on
-the board that the owner holds may pass the stock gate on a `held quantity`
-check in place of `stock` and `presale` (rule 6). A return whose `category`
-names another category counts as not returned. Only the kept part's rule-5
-alternate gates its selection, and the alternate of a part on the board must
-be on the board; a first-ranked part that is also a Q alternative's alternate
-needs the alternate's checks, and an alternate several primaries name is
-verified for the first only (the kept part, then the Q alternatives in order).
-A category whose chain failed is left out of the run's selection, so the gates
-read the run before it. Each assumption needs a confirmed question of its own.
-P0 counts a host with two rows, or a status written as not read, as not read.
-The P7 critic checks at least one figure on each group page and each output
-under `hardware/docs/`.
+a check or figure evidence written as not read, or without its source or
+reading time, shows nothing. Every verified part needs a `placements` check
+re-deriving its count from the specification and a `manufacturer allowlist`
+check (rule 2), and an alternate needs at least the placements of the part it
+stands in for. The datasheet verifier re-reads each function's requirement
+list against IOBoard.md and the answers (`function requirements: FUNCTION`). A
+part on the board that the owner holds may pass the stock gate on a
+`held quantity` check in place of `stock` and `presale` (rule 6). A return
+whose `category` names another category counts as not returned. Only the kept
+part's rule-5 alternate gates its selection, and the alternate of a part on
+the board must be on the board; a first-ranked part that is also a Q
+alternative's alternate needs the alternate's checks, and an alternate several
+primaries name is verified for the first only (the kept part, then the Q
+alternatives in order). A category whose chain failed is left out of the run's
+selection, so the gates read the run before it. Each assumption needs a
+confirmed question of its own. P0 counts a host with two rows, or a status
+written as not read, as not read. The P7 critic checks at least one figure on
+each group page and each output under `hardware/docs/`.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.
 `record` refuses an output whose run or `run_id` differs from the prepared
@@ -172,9 +176,10 @@ least one figure and every figure agrees with its return, no writing issue is
 left, the three group pages are three files in `hardware/docs/` other than the
 fixed outputs, and every output of the plan and each group page was written
 and reviewed. A stopped T6 leaves the output paths as they were. A T6 that
-`record` refuses, for any reason, does too, and keeps what P7 changed in a
-stash named `refused T6 RUN_ID` in the results tree. `raised` reads the
-committed run record only and refuses a plan tree with uncommitted changes.
+`record` refuses, for any reason, an unreadable output included, does too, and
+keeps what P7 changed in a stash named `refused T6 RUN_ID` in the results
+tree. `raised` reads the committed run record only and refuses a plan tree
+with uncommitted changes.
 
 A follow-up task takes `--followup FILE`, a JSON object with `phases` (`P1`,
 `P2-P4` or `P5-P6`), `round` (1 or 2), `categories` and `items`, and

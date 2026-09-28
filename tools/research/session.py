@@ -432,10 +432,21 @@ def committed_questions(results):
 
 
 def p1_unresolved(results, categories):
-    """Each category whose latest P1 run left it unchecked: its P1, critic or
-    re-check returned nothing, or P0 held it."""
+    """Each category with P1 items no later run cleared: a P1 run's item
+    for the category (its P1, critic or re-check returned nothing, a
+    question was not ruled on, or P0 held it) stays open until a later P1
+    follow-up covering the category lists it among its items and leaves
+    no item of its own there."""
     p1 = [(n, t) for n, t in runs(results) if t.get("task") == "T1" or
           (t.get("followup") or {}).get("phases") == "P1"]
+
+    def key(item):
+        return json.dumps(item, sort_keys=True)
+
+    def left_by(task, c):
+        return [f for f in task.get("followUps", [])
+                if f.get("category") == c and not f.get("notice") and
+                str(f.get("role", "")).startswith(("P1", "category"))]
     out = []
     for c in categories:
         # T1 covers every category; a P1 follow-up only its own.
@@ -444,12 +455,19 @@ def p1_unresolved(results, categories):
         if not cover:
             out.append(f"{c}: no P1 run covers it")
             continue
-        name, last = cover[-1]
-        left = [f for f in last.get("followUps", [])
-                if f.get("category") == c and not f.get("notice") and
-                str(f.get("role", "")).startswith(("P1", "category"))]
-        if left:
-            out.append(f"{c}: {name} left {len(left)} P1 items unresolved")
+        open_items = {}
+        for name, task in cover:
+            listed = {key(i) for i in
+                      (task.get("followup") or {}).get("items") or []}
+            mine = left_by(task, c)
+            if not mine:
+                for k in listed:
+                    open_items.pop(k, None)
+            for f in mine:
+                open_items[key(f)] = name
+        for name in sorted(set(open_items.values())):
+            n = sum(1 for v in open_items.values() if v == name)
+            out.append(f"{c}: {name} left {n} P1 items unresolved")
     return out
 
 
@@ -1028,21 +1046,25 @@ def cmd_record(args):
     """record, with every refusal after T6 setting P7's changes aside."""
     try:
         return record(args)
-    except SystemExit as refused:
+    except (SystemExit, OSError, ValueError, KeyError, TypeError,
+            AttributeError) as failed:
+        # A malformed output fails like a refusal.
+        refused = failed if isinstance(failed, SystemExit) else SystemExit(
+            f"the output cannot be recorded: {failed!r}")
         results = os.path.join(os.path.abspath(os.path.expanduser(
             args.base)), "results")
         if args.task != "T6" or not os.path.isdir(results) or git(
                 "-C", results, "branch", "--show-current",
                 check=False).stdout.strip() != RESULTS:
             raise
+        # The stash is named for the prepared run when the output is
+        # unreadable.
         try:
-            out = json.loads(read(args.output))
-            run_id = out.get("result", out).get("run_id", "")
-        except (OSError, ValueError, AttributeError):
+            run_id = json.loads(read(os.path.join(os.path.dirname(results),
+                                                  "args-T6.json")))["run_id"]
+        except (OSError, ValueError, KeyError, TypeError):
             run_id = ""
         left = set_aside(results, changed(results), {"run_id": run_id})
-        if not left:
-            raise
         raise SystemExit(f"{refused}{left}") from None
 
 

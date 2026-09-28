@@ -104,6 +104,10 @@ async function runTask(task, opts = {}) {
       if (opts.offBoardAlt) { Object.assign(data.functions[0].shortlist[0], { lcsc: 'C1', second_source_route: 'alternate', second_source_part: 'altOff' }); data.functions[0].shortlist.push({ ...cand(8), part: 'altOff', lcsc: 'none' }) }
       if (opts.held !== undefined) data.functions[0].shortlist.forEach(c => { c.held = opts.held; c.lcsc = 'C9' })
       if (opts.altName) Object.assign(data.functions[0].shortlist[0], { second_source_route: 'alternate', second_source_part: opts.altName })
+      if (opts.altFewer) {
+        Object.assign(data.functions[0].shortlist[0], { placements: 20, second_source_route: 'alternate', second_source_part: 'altF' })
+        data.functions[0].shortlist.push({ ...cand(9), part: 'altF', rank: 9, placements: 5 })
+      }
       if (opts.twoQShare) {
         Object.assign(data.functions[0].shortlist[1], { second_source_route: 'alternate', second_source_part: 'altS2' })
         Object.assign(data.functions[0].shortlist[2], { second_source_route: 'alternate', second_source_part: 'altS2' })
@@ -193,9 +197,9 @@ async function runTask(task, opts = {}) {
       const f1 = bundle2.functions[0]
       const cand = pt => [...f1.shortlist, ...(f1.alternateRecords || [])].find(c => c.part === pt) || { requirements: [] }
       const checksFor = (pt, pk) => (opts.emptyChecks || []).includes(base) ? []
-        : (kind === 'stock' ? [...(opts.heldChecks ? ['held quantity'] : ['stock', 'presale']), 'lifecycle status', 'end-of-life notices', ...(cand(pt).second_source_route === 'second-vendor' && !opts.noSecondVendor ? ['second-vendor stock'] : [])]
-          : [...cand(pt).requirements.map(r => r.name).filter(n => n !== opts.skipReq), ...(pk === 'alternate' && !opts.noCompat ? ['pin-for-pin match', 'functional match'] : [])])
-          .map((figure, k) => ({ figure, stated: 's', read: opts.readNone && kind === 'datasheet' ? 'not read: API timed out' : 'r', source: opts.noSource && kind === 'stock' ? '' : 'src', agrees: !((opts.disagree || []).includes(base) && k === 0), passes: !((opts.failPass || []).includes(base) && k === 0) }))
+        : (kind === 'stock' ? [...(opts.heldChecks ? ['held quantity'] : ['stock', 'presale']), 'lifecycle status', 'end-of-life notices', ...(opts.noPlacementsCheck ? [] : ['placements']), ...(cand(pt).second_source_route === 'second-vendor' && !opts.noSecondVendor ? ['second-vendor stock'] : [])]
+          : [...cand(pt).requirements.map(r => r.name).filter(n => n !== opts.skipReq), ...(opts.noMakerCheck ? [] : ['manufacturer allowlist']), ...(pk === 'alternate' && !opts.noCompat ? ['pin-for-pin match', 'functional match'] : [])])
+          .map((figure, k) => ({ figure, stated: 's', read: opts.readNone && kind === 'datasheet' ? 'not read: API timed out' : 'r', source: opts.noSource && kind === 'stock' ? '' : 'src', read_at: opts.undated && kind === 'stock' ? '' : '2026-09-28T10:00:00Z', agrees: !((opts.disagree || []).includes(base) && k === 0), passes: !((opts.failPass || []).includes(base) && k === 0) }))
       data.parts = (opts.omit || []).includes(base) || (opts.omitPart || []).includes(`${base}:${part}`) ? [] : [{ function: 'f1', part, kind: 'first', verdict: refute ? 'refuted' : 'confirmed', checks: checksFor(part), refutation: refute ? 'mock' : '' }]
       if ((opts.dupRow || []).includes(base)) data.parts.push({ ...data.parts[0], verdict: 'refuted', refutation: 'second row' })
       const oc = only ? JSON.parse(only[1]) : null
@@ -594,6 +598,19 @@ async function main() {
   // A replacement part owes its per-part figures.
   r = await runTask('T2', { perPartReports: { R2: ['clock tolerance'] }, reportParts: ['clock tolerance: part1'], refute: ['P4-stock-R2:part1'] })
   check(r.result.summary.results.find(c => c.category === 'R2').selection[0].part === 'part2' && r.result.summary.figures_open.R2.includes('report: clock tolerance: part2'), 'replacement part without its per-part figure: open')
+  // Placements, maker and reading time are checked for every part.
+  r = await runTask('T2', { noPlacementsCheck: true })
+  check(r1(r).selection[0].part === null, 'no placements check: not verified')
+  r = await runTask('T2', { noMakerCheck: true })
+  check(r1(r).selection[0].part === null, 'no manufacturer allowlist check: not verified')
+  r = await runTask('T2', { undated: true })
+  check(r1(r).selection[0].part === null, 'undated checks: not verified')
+  // A function's requirement list is re-read against the specification.
+  r = await runTask('T2', { omitFigure: ['P4-datasheet-R1', 'function requirements: f1'] })
+  check(r.result.summary.figures_open.R1.includes('function requirements: f1'), 'function requirement list not confirmed: open')
+  // An alternate with fewer placements than its primary is no second source.
+  r = await runTask('T2', { altFewer: true, verify: ['altF'] })
+  check(r1(r).selection[0].part === 'part1' && r1(r).selection[0].second_source_missing === true, 'alternate with fewer placements: second source missing')
   // A malformed LCSC number drops the candidate.
   r = await runTask('T2', { lcsc: 'C123oops' })
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => /LCSC number "C123oops"; dropped/.test(f.reason)), 'malformed LCSC number: dropped')
