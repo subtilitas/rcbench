@@ -930,9 +930,10 @@ const FIT = new Set(['pin-for-pin match', 'functional match'])
 
 // Readings the lifecycle table records without a gate: S5 records a
 // longevity commitment and does not require one, and market introduction is
-// recorded and flagged under 12 months. One the verifier could not read,
-// written "not read: REASON", is recorded as that and listed for the owner,
-// as an unread manufacturer status is.
+// recorded and flagged under 12 months. A reading of either that the
+// verifier could not take, written "not read: REASON", is recorded as that
+// and listed for the owner, as an unread manufacturer status is; it neither
+// passes nor fails.
 const RECORDED_ONLY = new Set(['longevity commitment', 'market introduction'])
 const notReadWithReason = text => /^not read\s*[:;,(-]\s*\S/i.test(String(text || '').trim())
 
@@ -1084,7 +1085,8 @@ async function verifyCategory(cat, functions, bundle, claims) {
         // A reading that moves or always passes, and a requirement P2 gave no
         // value for, differs from the value stated without refuting.
         const passesOnly = c => MOVING.has(c.figure) || (v.verifier === 'datasheet' && added.has(c.figure))
-        const fails = c => (!c.agrees && !passesOnly(c)) || c.passes !== true
+        const recordedUnread = c => RECORDED_ONLY.has(c.figure) && notReadWithReason(c.read)
+        const fails = c => !recordedUnread(c) && ((!c.agrees && !passesOnly(c)) || c.passes !== true)
         const bad = (v.checks || []).filter(c => !offRoute(c) && fails(c))
         // The checks the verdict fails, the fit of a part that is also an
         // alternate among them.

@@ -1085,6 +1085,8 @@ async function main() {
   // is listed for the owner. Any other check not read shows nothing.
   r = await runTask('T2', { edit: { 'longevity commitment': { read: 'not read: www.analog.com refused the page (HTTP 403)' }, 'market introduction': { read: 'not read: the datasheet gives no revision date' } } })
   check(r1(r).selection[0].part === 'part1' && r.result.followUps.some(f => f.figure === 'longevity commitment' && /^recorded as not read/.test(f.reason)), 'longevity and market introduction not read, with a reason: verified, listed')
+  r = await runTask('T2', { edit: { 'longevity commitment': { read: 'not read: the programme page refused the client', passes: false, agrees: false } } })
+  check(r1(r).selection[0].part === 'part1', 'longevity commitment not read, with a reason, marked failing: recorded, not a refutation')
   r = await runTask('T2', { edit: { 'longevity commitment': { read: 'not read' } } })
   check(r1(r).selection[0].part === null, 'longevity commitment not read without a reason: not verified')
   r = await runTask('T2', { edit: { 'lead time': { read: 'not read: API timed out' } } })
