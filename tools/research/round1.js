@@ -353,18 +353,32 @@ ${J(p7)}`
 // from P0's check results and the host table, beside P0's own reading.
 // A reading time is a date the parser reads, not any nonblank text, on a day
 // the calendar has: the parser turns 2026-02-31 into March 3.
+// A reading time is an ISO date or date-time at the start of the text; what
+// follows it, such as "(JLCPCB)", a second reading's time or the end of a
+// range ("to 13:56Z"), is allowed. A date-time without a zone is UTC.
+const TIME = /\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?(?!\d)/g
+function timeMs(token) {
+  let t = token.replace(' ', 'T')
+  if (/T\d{2}:\d{2}/.test(t) && !/(Z|[+-]\d{2}:?\d{2})$/.test(t)) t += 'Z'
+  const day = token.slice(0, 10)
+  const ms = Date.parse(t)
+  // A date the calendar has: 2026-02-31 is not one.
+  return Number.isFinite(ms) && Number.isFinite(Date.parse(day)) && new Date(Date.parse(day)).toISOString().slice(0, 10) === day ? ms : NaN
+}
 function isTime(text) {
   const t = String(text || '').trim()
-  const day = t.slice(0, 10)
-  return /^\d{4}-\d{2}-\d{2}/.test(t) && Number.isFinite(Date.parse(t)) && new Date(Date.parse(day)).toISOString().slice(0, 10) === day
+  const first = (t.match(new RegExp(`^${TIME.source}`)) || [])[0]
+  return !!first && Number.isFinite(timeMs(first))
 }
 
 // A reading of this task: taken on or after the day the session prepared it,
 // not copied from an earlier return or the parts database, and no later than
-// the next day, for a run that passes midnight. The script has no clock.
+// the next day, for a run that passes midnight. Every date the text gives
+// counts. The script has no clock.
 function readInRun(text) {
-  const t = Date.parse(String(text).trim())
-  return isTime(text) && t >= Date.parse(A.date) && t < Date.parse(A.date) + 2 * 864e5
+  if (!isTime(text)) return false
+  const start = Date.parse(A.date)
+  return (String(text).match(TIME) || []).every(token => { const ms = timeMs(token); return ms >= start && ms < start + 2 * 864e5 })
 }
 
 // A value that holds no reading: blank, a bare placeholder or written as not
@@ -644,12 +658,29 @@ function distinctRanks(list) {
   return ranks.every((r, i) => r === i + 1)
 }
 
+// P3 names a find in its own words: "TCAN3413DR (C22433320)", two parts of
+// one family as "A (C1); B (C2)", or the part with its function appended.
+// Two such strings name the same find when they share a part number or an
+// LCSC number. Part numbers are the pieces between semicolons, commas
+// followed by a space, and " and ", without parenthesized text, case and
+// spaces; a piece that is a function name is none. A comma without a space
+// stays in the part number, as in Nexperia's 2N7002BK,215.
+function partKeys(s, functionNames) {
+  const fn = new Set(functionNames.map(n => n.toUpperCase().replace(/\s+/g, '')))
+  const text = String(s || '')
+  const lcsc = (text.match(/\bC\d{3,}\b/g) || []).map(c => `lcsc:${c}`)
+  const mpn = text.replace(/\([^)]*\)/g, ' ').split(/;|,\s+|\s+and\s+/)
+    .map(p => p.toUpperCase().replace(/\s+/g, '')).filter(p => p && !fn.has(p)).map(p => `mpn:${p}`)
+  return new Set([...mpn, ...lcsc])
+}
+
 function merge(cat, p2, rr, p3) {
-  // Every candidate P3 found, and every P2 exclusion P3 overturned, is
-  // qualified, ranked or dropped by the re-rank.
-  const handled = (fr, part) => fr && ([...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || [])].some(c => c.part === part) || (fr.ranking || []).some(r => r.part === part))
   // The functions are P2's. A find with no owner is handled by any of them.
   const names = (p2.functions || []).map(f => f.function)
+  const samePart = (a, b) => { if (a === b) return true; const kb = partKeys(b, names); return [...partKeys(a, names)].some(k => kb.has(k)) }
+  // Every candidate P3 found, and every P2 exclusion P3 overturned, is
+  // qualified, ranked or dropped by the re-rank.
+  const handled = (fr, part) => fr && ([...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || [])].some(c => samePart(c.part, part)) || (fr.ranking || []).some(r => samePart(r.part, part)))
   const handledAny = part => (rr.functions || []).some(fr => names.includes(fr.function) && handled(fr, part))
   // A P3 find the re-rank neither qualified nor dropped leaves its function
   // open: the function P3 names, the function whose P2 drop P3 overturned,
@@ -664,7 +695,7 @@ function merge(cat, p2, rr, p3) {
   for (const x of (p3 && p3.exclusions_not_holding) || []) {
     // Each function whose P2 drop P3 overturned handles the part itself;
     // with no owner, any function's handling counts.
-    const owners = (p2.functions || []).filter(f => (f.dropped || []).some(d => d.part === x.part)).map(f => f.function)
+    const owners = (p2.functions || []).filter(f => (f.dropped || []).some(d => samePart(d.part, x.part))).map(f => f.function)
     const open = owners.length
       ? owners.filter(n => !handled((rr.functions || []).find(fr => fr.function === n), x.part))
       : (handledAny(x.part) ? [] : names)
