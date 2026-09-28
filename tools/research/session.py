@@ -406,6 +406,7 @@ def effective_selection(results, pending=None):
                 held = slot.get(e["function"]) or {}
                 entry = {
                     "part": e.get("part"), "rank": e.get("rank"),
+                    "alternate": e.get("alternate") or "",
                     "run": name,
                     "alternate_unverified":
                         e.get("alternate_unverified") or [],
@@ -556,6 +557,9 @@ def t6_open(results):
     if summary.get("rejected_items"):
         out.append(f"{name} has {summary['rejected_items']} combinations "
                    "and budgets its critic rejected")
+    if summary.get("unsourced_items"):
+        out.append(f"{name} has {summary['unsourced_items']} combinations "
+                   "and budgets without source and time")
     return out
 
 
@@ -669,10 +673,13 @@ def open_in_category(results, categories):
         # The function that implements Q4 (R10) or Q8 (R12) carries the
         # owner's alternatives.
         q = {"R10": "Q4", "R12": "Q8"}.get(c)
-        if q and eff.get(c) and not any(
-                e.get("decision") == q and e.get("q_alternatives")
-                and not e.get("q_options_missing")
-                for e in eff[c].values()):
+        deciders = [e for e in eff.get(c, {}).values()
+                    if e.get("decision") == q] if q else []
+        if q and eff.get(c) and len(deciders) > 1:
+            out.append(f"{c}: {len(deciders)} functions implement {q}")
+        elif q and eff.get(c) and not (
+                deciders and deciders[0].get("q_alternatives")
+                and not deciders[0].get("q_options_missing")):
             out.append(f"{c}: no function implementing {q} has an "
                        "alternative for each of its options")
     return out
@@ -1094,7 +1101,7 @@ def result_shape(result, want):
         need = []
         keys = {"conflicts": list, "gaps": list, "missing_checks": list,
                 "unchecked_items": int, "rejected_items": int,
-                "budgets_missing": list}
+                "budgets_missing": list, "unsourced_items": int}
     elif task == "T1" or phases == "P1":
         need, keys = ["P0"], {"questions": list, "inventory": dict}
     else:

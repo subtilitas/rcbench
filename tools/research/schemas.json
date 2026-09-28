@@ -1206,13 +1206,23 @@
        },
        "resources": {
         "type": "string"
+       },
+       "source": {
+        "type": "string",
+        "description": "the files, datasheet tables and lines the combination's resource count rests on"
+       },
+       "read_at": {
+        "type": "string",
+        "description": "the time the combination was worked out"
        }
       },
       "required": [
        "bind_order",
        "outputs",
        "fits",
-       "resources"
+       "resources",
+       "source",
+       "read_at"
       ]
      }
     },

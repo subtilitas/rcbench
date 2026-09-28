@@ -100,6 +100,7 @@ async function runTask(task, opts = {}) {
       if (opts.reportPerPart) data.report = [{ figure: 'frames held: MCP2518FD', value: '2', source: 's' }]
       if (opts.strictReq) data.functions[0].shortlist[0].requirements = [{ name: 'x0', required: '>= 99 V', datasheet: '70 V', pass: false, source: 's' }, { name: 'x1', required: 'x1', datasheet: 'd', pass: true, source: 's' }]
       if (opts.reportParts) data.report = opts.reportParts.map(figure => ({ figure, value: 'not applicable: transceiver', source: 's' }))
+      if (opts.twoDeciders) data.functions.push({ ...data.functions[0], function: 'fX' })
       if (opts.p2DropY) data.functions[0].dropped = [{ part: 'partY', maker: 'm', reason: 'r' }]
       if (opts.foundNotRead) data.found_values = [{ question_id: 'V9', value: 'not read: HTTP 403', source: 's', read_at: 't' }]
       if (opts.onBoardAltOfOff) { Object.assign(data.functions[0].shortlist[0], { lcsc: 'none', second_source_route: 'alternate', second_source_part: 'altOn' }); data.functions[0].shortlist.push({ ...cand(8), part: 'altOn', lcsc: 'C2' }) }
@@ -146,6 +147,7 @@ async function runTask(task, opts = {}) {
       if (opts.qSelf) data.functions[0].verify = [{ part: 'part1', kind: 'q-alternative' }]
     }
     if (role === 'P5' && opts.p5Empty) Object.assign(data, { combinations: [], budgets: [] })
+    if (role === 'P5' && opts.unsourcedCombos) data.combinations = data.combinations.map(x => ({ ...x, source: '' }))
     if (role === 'P5' && opts.p5Items) data.budgets = opts.p5Items.map(item => ({ item, value: (opts.budgetValues || {})[item] || 'v', source: opts.blankSource ? '   ' : 's', read_at: opts.budgetUndated ? '' : '2026-09-28T10:00:00Z' }))
     if (role === 'P5-critic') for (const k of ['combination_verdicts', 'budget_verdicts']) data[k] = data[k].map((v, index) => ({ ...v, index, holds: !(opts.rejectBudget && k === 'budget_verdicts' && index === 0) }))
     if (role === 'P1' && opts.qCategory) data.questions = data.questions.map(q => ({ ...q, category: 'R99', source: 'mock' }))
@@ -201,7 +203,7 @@ async function runTask(task, opts = {}) {
       const f1 = bundle2.functions[0]
       const cand = pt => [...f1.shortlist, ...(f1.alternateRecords || [])].find(c => c.part === pt) || { requirements: [] }
       const checksFor = (pt, pk) => (opts.emptyChecks || []).includes(base) ? []
-        : (kind === 'stock' ? [...(opts.heldChecks ? ['held quantity', ...(opts.heldAndLive ? ['stock'] : [])] : ['stock', 'presale']), 'lifecycle status', 'end-of-life notices', ...(opts.noPlacementsCheck ? [] : ['placements']), ...(opts.noLifecycleReadings ? [] : ['longevity commitment', 'market introduction', 'distributor status', 'lead time']), ...(!opts.noIdentity && /^C\d+$/.test(cand(pt).lcsc || '') ? ['LCSC identity'] : []), ...(cand(pt).second_source_route === 'second-vendor' && !opts.noSecondVendor ? ['second-vendor stock'] : [])]
+        : (kind === 'stock' ? [...(opts.heldChecks ? ['held quantity', ...(opts.heldAndLive ? ['stock'] : [])] : ['stock', 'presale']), 'lifecycle status', 'end-of-life notices', ...(opts.noPlacementsCheck ? [] : ['placements']), ...(opts.noLifecycleReadings ? [] : ['longevity commitment', 'market introduction', 'distributor status', 'lead time']), ...(!opts.noIdentity && /^C\d+$/.test(cand(pt).lcsc || '') ? ['LCSC identity', ...(opts.noLibType ? [] : ['library type'])] : []), ...(cand(pt).second_source_route === 'second-vendor' && !opts.noSecondVendor ? ['second-vendor stock'] : [])]
           : [...cand(pt).requirements.map(r => r.name).filter(n => n !== opts.skipReq), ...(opts.noMakerCheck ? [] : ['manufacturer allowlist']), ...(pk === 'alternate' && !opts.noCompat ? ['pin-for-pin match', 'functional match'] : [])])
           .map((figure, k) => ({ figure, stated: 's', read: opts.readNone && kind === 'datasheet' ? 'not read: API timed out' : 'r', source: opts.noSource && kind === 'stock' ? '' : 'src', read_at: opts.undated && kind === 'stock' ? '' : '2026-09-28T10:00:00Z', agrees: !((opts.disagree || []).includes(base) && k === 0), passes: !((opts.failPass || []).includes(base) && k === 0) }))
           .map(c => opts.heldAndLive && c.figure === 'stock' ? { ...c, passes: false } : c)
@@ -653,6 +655,15 @@ async function main() {
   // T1 returns each category's inventory from P1 and its critic.
   r = await runTask('T1')
   check(r.result.summary.inventory && Array.isArray(r.result.summary.inventory.R1) && r.result.summary.inventory.R1.length > 0, 'T1: inventory per category')
+  // Combinations need their source and time.
+  r = await runTask('T5', { unsourcedCombos: true })
+  check(r.result.summary.missing_checks.includes('P5 combinations') && r.result.summary.unsourced_items > 0, 'T5: unsourced combinations are no combination')
+  // Two functions marked with one decision: none counts.
+  r = await runTask('T4', { qAlt: true, p4parts: ['part3', 'altQ'], extraFn: true, twoDeciders: true })
+  check(r.result.summary.q_missing.includes('R10') && r.result.followUps.some(f => f.category === 'R10' && /functions marked Q4; none counts/.test(f.reason)), 'two Q4 functions: neither counts')
+  // The library type of the JLCPCB row is checked.
+  r = await runTask('T2', { noLibType: true })
+  check(r1(r).selection[0].part === null, 'no library type check: not verified')
   // A malformed LCSC number drops the candidate.
   r = await runTask('T2', { lcsc: 'C123oops' })
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => /LCSC number "C123oops"; dropped/.test(f.reason)), 'malformed LCSC number: dropped')

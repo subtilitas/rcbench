@@ -235,7 +235,7 @@ function p4Prompt(cat, kind, bundle, only) {
     : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, the reasons the re-rank gave for dropping a P3 candidate, P2\'s own drops, for "Q option: FUNCTION: PART: CLASS" whether the part belongs to that option class of Q4 or Q8, and for "function requirements: FUNCTION" whether the function\'s requirement list names every requirement IOBoard.md and the answers set for it, with no value weaker than theirs) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
   return `${ctx('P4', cat, `P4-${kind}-${cat}`)}
 
-${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives the lifecycle table's readings: "longevity commitment" (the programme page's commitment, or that none is published; passes unless S5 makes it a gate it fails), "market introduction" (the first datasheet revision date; passes, and under 12 months is stated in read), "distributor status" (JLCPCB, LCSC and Digi-Key; passes, a disagreement with the maker stated in read) and "lead time" (the manufacturer's lead time in Digi-Key's API; passes). For a part on the board it gives "LCSC identity" (the exact JLCPCB result for the LCSC number names the candidate's part number and package; passes only then). It also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and a check with agrees or passes false counts as a refutation.
+${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives the lifecycle table's readings: "longevity commitment" (the programme page's commitment, or that none is published; passes unless S5 makes it a gate it fails), "market introduction" (the first datasheet revision date; passes, and under 12 months is stated in read), "distributor status" (JLCPCB, LCSC and Digi-Key; passes, a disagreement with the maker stated in read) and "lead time" (the manufacturer's lead time in Digi-Key's API; passes). For a part on the board it gives "library type" (componentLibraryType of the exact JLCPCB row, basic or extended; passes, S6 allowing both) and "LCSC identity" (the exact JLCPCB result for the LCSC number names the candidate's part number and package; passes only then). It also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and a check with agrees or passes false counts as a refutation.
 
 The shortlist, the values found for research and the reports:
 ${J(bundle)}`
@@ -645,6 +645,12 @@ function merge(cat, p2, rr, p3) {
     }
     functions.push({ function: name, decision, kept_option: decision !== 'none' ? String((fr && fr.kept_option) || '') : '', failed, requirements: f2.requirements || [], shortlist, verify, alternateRecords, dropped: f2.dropped || [], dropped_from_shortlist: (fr && fr.dropped_from_shortlist) || [], dropped_from_p3: (fr && fr.dropped_from_p3) || [] })
   }
+  // One function implements the decision; with several, none does.
+  const deciding = functions.filter(f => f.decision !== 'none')
+  if (deciding.length > 1) {
+    followUps.push({ role: 'rerank', category: cat, functions: deciding.map(f => f.function), reason: `${deciding.length} functions marked ${deciding[0].decision}; none counts` })
+    for (const f of deciding) { f.decision = 'none'; f.verify = f.verify.filter(v => v.kind !== 'q-alternative') }
+  }
   // R10 and R12 carry the owner's choice for Q4 and Q8: one of their
   // functions names an alternative to verify, or the category stays open.
   if (['R10', 'R12'].includes(cat) && !functions.some(f => f.decision !== 'none' && f.verify.some(v => v.kind === 'q-alternative'))) {
@@ -683,7 +689,7 @@ function altOf(c) {
 // (rule 2).
 function requiredChecks(kind, cand, partKind) {
   if (kind === 'stock') {
-    return ['stock', 'lifecycle status', 'end-of-life notices', 'placements', 'longevity commitment', 'market introduction', 'distributor status', 'lead time', ...(onBoard(cand) ? ['presale', 'LCSC identity'] : []),
+    return ['stock', 'lifecycle status', 'end-of-life notices', 'placements', 'longevity commitment', 'market introduction', 'distributor status', 'lead time', ...(onBoard(cand) ? ['presale', 'LCSC identity', 'library type'] : []),
       ...(onBoard(cand) && cand.second_source_route === 'second-vendor' ? ['second-vendor stock'] : [])]
   }
   return [...((cand && cand.requirements) || []).map(r => r.name), 'manufacturer allowlist', ...(partKind === 'alternate' ? ['pin-for-pin match', 'functional match'] : [])]
@@ -1129,11 +1135,13 @@ async function phaseP5P6() {
     && (!/^not applicable\b/i.test(String(x.value).trim()) || conditional(String(x.item || '')))).map(x => String(x.item || ''))
   const budgetsMissing = a.missing ? [] : (A.p5_budgets || []).filter(n => !upheld.some(i => i === n || i.startsWith(`${n}: `)))
   for (const n of budgetsMissing) followUps.push({ role: 'P5', item: n, reason: 'budget the P5 row names not returned and upheld' })
-  if (!a.missing && !(a.combinations || []).length) missingChecks.push('P5 combinations')
+  // A combination counts with its source and time, and upheld.
+  if (!a.missing && !(a.combinations || []).some(x => x.upheld === true && !readsNone(x.source) && !readsNone(x.read_at))) missingChecks.push('P5 combinations')
+  const unsourced = [...(a.combinations || []), ...(a.budgets || [])].filter(x => readsNone(x.source) || readsNone(x.read_at)).length
   if (!a.missing && !(a.budgets || []).length) missingChecks.push('P5 budgets')
   for (const m of missingChecks) followUps.push({ role: m, reason: `${m} returned nothing; the check did not run` })
   return { conflicts: a.conflicts, combinations: a.combinations || [], budgets: a.budgets || [], gaps: b.gaps,
-    missing_checks: missingChecks, unchecked_items: unchecked, rejected_items: rejected.length, budgets_missing: budgetsMissing }
+    missing_checks: missingChecks, unchecked_items: unchecked, rejected_items: rejected.length, budgets_missing: budgetsMissing, unsourced_items: unsourced }
 }
 
 // ---------------------------------------------------------------- the task

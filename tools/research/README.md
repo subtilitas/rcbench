@@ -82,11 +82,12 @@ the items in the arguments:
 - T3 and P2-P4 follow-ups on its categories, for the categories of T2 and T4,
   and T5, P5-P6 follow-ups and T6, for every category, while:
   - a function has no verified part, or a missing or unverified second source;
-  - R10 or R12 has no Q4 or Q8 alternative, other than the kept part, on the
-    function the re-rank marks with that decision, lacks a verified part, of
-    its own and with its class confirmed by the datasheet verifier, for one of
-    the decision's option classes (`categories.json` `q_options`), or has an
-    alternative not verified with its own second source;
+  - R10 or R12 has not exactly one function marked with its decision, or no Q4
+    or Q8 alternative, other than the kept part, on that function, lacks a
+    verified part, of its own and with its class confirmed by the datasheet
+    verifier, for one of the decision's option classes (`categories.json`
+    `q_options`), or has an alternative not verified with its own second
+    source;
   - a run that decides one of the category's functions left a figure the
     datasheet verifier did not confirm, or a value for research or required
     report figure P2 did not return or wrote as not read: `categories.json`
@@ -100,10 +101,11 @@ the items in the arguments:
     and IOBoard.md), or, for R5 to R8, predates a change to a part of T2 or
     T4.
 - T6 while a part changed after the last P5/P6 check; while that check ran
-  without P5, P6 or either critic, returned no combination, lacks an upheld
-  budget with a value read, its source and its reading time for an item of
-  `categories.json` `p5_budgets` (named as listed or `NAME: DETAIL`; only an
-  item of `p5_conditional` may be `not applicable: REASON`), or left a
+  without P5, P6 or either critic, returned no upheld combination with its
+  source and time, has combinations or budgets without source and time, lacks
+  an upheld budget with a value read, its source and its reading time for an
+  item of `categories.json` `p5_budgets` (named as listed or `NAME: DETAIL`;
+  only an item of `p5_conditional` may be `not applicable: REASON`), or left a
   conflict, gap, combination or budget its critic did not rule on, or a
   combination or budget it rejected; while it, or an earlier check, lists a
   conflict or gap that no round-2 P2-P4 follow-up covered after that check
@@ -149,10 +151,10 @@ evidence that is empty, blank or written as not read, or without its source or
 reading time, shows nothing. Every verified part needs a `placements` check
 re-deriving its count from the specification, the lifecycle table's readings
 (`longevity commitment`, `market introduction`, `distributor status`,
-`lead time`), for a part on the board an `LCSC identity` check, and a
-`manufacturer allowlist` check (rule 2), and an alternate needs at least the
-placements of the part it stands in for. The datasheet verifier re-reads each
-function's requirement list against IOBoard.md and the answers
+`lead time`), for a part on the board `LCSC identity` and `library type`
+checks, and a `manufacturer allowlist` check (rule 2), and an alternate needs
+at least the placements of the part it stands in for. The datasheet verifier
+re-reads each function's requirement list against IOBoard.md and the answers
 (`function requirements: FUNCTION`). A part on the board that the owner holds
 may pass the stock gate on a `held quantity` check in place of `stock` and
 `presale` (rule 6); a passing held quantity supersedes failing live readings.
