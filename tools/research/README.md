@@ -51,9 +51,9 @@ B=~/rcbench-research/round1
 O="--base $B --digikey-env PATH_TO_CREDENTIALS --model MODEL_ID --effort EFFORT"
 python3 tools/research/session.py check
 python3 tools/research/session.py prepare T1 $O
-python3 tools/research/session.py script T1 --base $B
-# Workflow tool: scriptPath $B/round1-T1.js, no args
-# (a follow-up: script FU-N, $B/round1-FU-N.js)
+python3 tools/research/session.py script T1 --base $B --out SCRATCH
+# Workflow tool: scriptPath SCRATCH/round1-T1.js, no args
+# (a follow-up: script FU-N, SCRATCH/round1-FU-N.js)
 python3 tools/research/session.py record T1 TASK_OUTPUT_FILE --base $B
 git -C $B/results push origin research/round1-results
 python3 tools/research/session.py raised --base $B
@@ -61,7 +61,9 @@ git -C $B/plan push origin research/round1
 ```
 
 `script` writes `round1.js` with the prepared arguments in place of the
-Workflow tool's `args`: once P1 has raised questions they pass 100 KB (T2's
+Workflow tool's `args`, into the base directory or the one `--out` names. The
+Workflow tool reads a script only from the session's working directory or
+its scratchpad directory, so `--out` names one of those: once P1 has raised questions they pass 100 KB (T2's
 were 132 KB), too long to copy into a tool call by hand. Only the line
 `const A = args || {}` changes, and the script is read back against both
 files. `record` takes the Workflow tool's task output file as it is, or its
