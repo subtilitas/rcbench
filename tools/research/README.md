@@ -167,7 +167,7 @@ It refuses these without exception:
 whose stock gate failure the owner accepts. T6's stock check then counts as
 passed when every line of its report that starts `[FAIL]` gives an excepted
 part number right after `[FAIL]`, exactly, and a stock or presale shortfall
-against its gate (`stock N, gate G`, N below G); a failed lookup (no exact
+against its gate (`stock N, gate G`, N below G, or a presale reading below zero); a failed lookup (no exact
 match, the API unreachable, no credentials) is not excepted. With exceptions
 given, the report's `[FAIL]` lines are read whether or not the critic marks
 the check passed, and `prepare` refuses an exception for a part no function

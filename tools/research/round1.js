@@ -1645,12 +1645,15 @@ if (TASK === 'T6') {
   // against its gate. A lookup that failed (no exact match, the API
   // unreachable, no credentials) is no shortfall and is not excepted.
   const failedPart = l => ((/\[FAIL\]\s+(\S+)/.exec(l) || [])[1] || '').replace(/[:;,.]+$/, '')
-  // A shortfall states a stock or presale reading below its gate.
+  // A shortfall states a stock reading below its gate, or a presale
+  // reading (canPresaleNumber) below zero, as the stock tool's Outputs row
+  // fails them.
   const shortfall = l => {
     if (/unreachable|no exact match|credential|not checked|could not|error|\b429\b/i.test(l)) return false
     const gate = Number((/\bgate\b[^0-9]{0,5}(\d+)/i.exec(l) || [])[1])
-    const readings = [...l.matchAll(/\b(?:stock|presale)\w*\b[^0-9-]{0,20}(-?\d+)/gi)].map(m => Number(m[1]))
-    return Number.isFinite(gate) && readings.some(v => v < gate)
+    const stock = [...l.matchAll(/\bstock\w*\b[^0-9-]{0,20}(-?\d+)/gi)].map(m => Number(m[1]))
+    const presale = [...l.matchAll(/\b(?:presale|canpresale)\w*\b[^0-9-]{0,20}(-?\d+)/gi)].map(m => Number(m[1]))
+    return (Number.isFinite(gate) && stock.some(v => v < gate)) || presale.some(v => v < 0)
   }
   const failLines = r => String((r && r.output) || '').split('\n').filter(l => /\[FAIL\]/.test(l))
   const excepted = r => {
