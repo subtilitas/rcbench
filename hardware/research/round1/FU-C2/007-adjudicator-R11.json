@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R11",
+ "label": "adjudicator-R11",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "function": "P2 report: encoder decoding",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands, and its scope is this function. The figure misreads the AM26LV32E datasheet. It adds tsk(pp), which SLLS849E section 6.6 gives as \"Pulse skew (device to device)\", 9 ns maximum. That bound applies between two separate devices. The encoder's A and B go through two receivers in one AM26LV32EIDR package. A quadrature edge on A and the next edge on B have opposite polarity. For that case the datasheet bounds the delay difference only by the propagation-delay spread: tPLH or tPHL maximum 26 ns minus minimum 8 ns gives 18 ns. Taking tsk(o) as output skew within one device and adding tsk(p) (6 + 6 ns maximum) gives 12 ns. The worst-case A-to-B spacing at 5 MHz per channel is therefore 50 - 18 = 32 ns, not the 41 ns the 9 ns figure implies. The decoding conclusion still holds. 32 ns is above the model's 14 ns decode limit and inside the 30 to 70 ns range the model decodes without error. The figure's skew clause is wrong and has to be restated with the 18 ns bound (32 ns minimum spacing). No part is refuted: the part field is empty, and nothing here concerns lifecycle, allowlist or LCSC identity. Open item outside this ruling: V227 (whether 5 MHz is the per-channel frequency or the count rate) is marked for research. The 50 ns spacing and the 20 Mcounts/s figure both take 5 MHz as the per-channel frequency.",
+  "evidence": "AM26LV32E datasheet SLLS849E (April 2008, revised August 2023), section 6.6 Switching Characteristics, re-read from the source:\n- tPLH: 8 min, 16 typ, 26 max ns.\n- tPHL: 8 min, 16 typ, 26 max ns.\n- tsk(p) \"Pulse skew\": 4 typ, 6 max ns.\n- tsk(o) \"Pulse skew\": 4 typ, 6 max ns.\n- tsk(pp) \"Pulse skew (device to device)\": 6 typ, 9 max ns.\n- f(max): 32 MHz.\nThe 9 ns figure is the device-to-device bound, so it does not cover two channels in one package. Opposite-edge delay difference within one package: 26 - 8 = 18 ns, or 6 + 6 = 12 ns using tsk(p) + tsk(o). Minimum A-to-B spacing: 50 - 18 = 32 ns.\nquad_sim.py was re-run from P2's scratch files (same SHA-256 as the verifier's copy, 60d783a6...7093) with P2's quad_edge.hex:\n- All 7 cases match, longest edge path 6 cycles.\n- 5 MHz at 30 ns and at 70 ns A-to-B spacing: 40,000 counts decoded, 40,000 true.\n- The spacing sweep decodes at 14 ns and fails at 13, 12, 10 and 8 ns.\nSo 32 ns decodes, and the figure's conclusion survives. Its 9 ns skew clause does not.",
+  "source": "https://www.ti.com/lit/ds/symlink/am26lv32e.pdf (SLLS849E section 6.6), fetched with vendors.py fetch into /home/claude/rcbench-research/round1/scratch/FU-C2/adjudicator-R11/am26lv32e.pdf; quad_sim.py and quad_edge.hex copied from /home/claude/rcbench-research/round1/scratch/FU-C2/P2-R11/ and re-run in /home/claude/rcbench-research/round1/scratch/FU-C2/adjudicator-R11/; Research.md rows R11 and P4 and V227, IOBoard.md F4 lines 445-446, checkout e13f5f60d2e5",
+  "read_at": "2026-09-29T08:03:04Z (datasheet); 2026-09-29T08:03:35Z (simulation re-run)",
+  "scope": "function"
+ }
+}
