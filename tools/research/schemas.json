@@ -326,7 +326,7 @@
       },
       "output": {
        "type": "string",
-       "description": "the command's last lines"
+       "description": "the command's last lines, and every line of its report that starts [FAIL]"
       }
      },
      "required": [

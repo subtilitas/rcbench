@@ -26,12 +26,13 @@ const S = A.schemas || {}
 // checkout's. Every client command names it.
 const VENDORS = P.vendors || `${P.checkout}/tools/research/vendors.py`
 const CLIENTS = Object.fromEntries(Object.entries(A.clients || {}).map(([k, v]) => [k, String(v).replace('tools/research/vendors.py', VENDORS)]))
-// The model of each role: P2, which finds and records the candidates, and the
-// adjudicator, which rules on refutations, run on the oversight model; every
-// other role on the agent model (prepare's --oversight-model and
+// The model of each role: P2, which finds and records the candidates, the
+// adjudicator, which rules on refutations, and P7 and its critic, which write
+// and check the pages, run on the oversight model; every other role on the
+// agent model (prepare's --oversight-model and
 // --agent-model). Without them the session's model.
 const MODELS = ['sonnet', 'opus', 'haiku', 'fable']
-const OVERSIGHT_ROLES = new Set(['P2', 'adjudicator'])
+const OVERSIGHT_ROLES = new Set(['P2', 'adjudicator', 'P7', 'P7-critic'])
 
 // Whether a return's category text names cat: its R IDs are all cat, or it
 // has none and is cat's name.
@@ -345,7 +346,11 @@ You are the critic of P6. Re-read the specification line by line against the evi
 ${J(p6)}`
 }
 // The three checks P7 runs and its critic runs again on the tree it leaves.
-const T6_CHECKS = `\`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results}`
+// Parts whose stock gate failure the owner accepted (prepare
+// --stock-exception): the stock check may fail on these alone.
+const STOCK_EXCEPTIONS = (A.stock_exceptions || []).filter(x => x && x.part)
+
+const T6_CHECKS = `\`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results}; run the stock check once, after your last edit, since each run reads Digi-Key, which allows 1,000 calls a day. tools/jlc_stock.py prints each problem on one line starting "[FAIL] PART", and the report of the stock check gives every such line${STOCK_EXCEPTIONS.length ? `; a failure of these parts alone is the owner's accepted exception and counts as passed: ${STOCK_EXCEPTIONS.map(x => x.part).join(', ')}` : ''}`
 
 // What the pages state as open, each as its state says: each conflict and gap
 // the P5/P6 checks leave after the follow-up rounds (session.py t6_open),
@@ -355,6 +360,7 @@ const MARKS = [
   ...(A.left_open || []).map(item => ({ state: 'not known', item })),
   ...((A.accept_open || {}).functions || []).map(item => ({ state: 'not verified or not known', item })),
   ...(A.p5_assumed || []).map(item => ({ state: 'assumed, beside each budget that rests on it', item })),
+  ...STOCK_EXCEPTIONS.map(x => ({ state: "the owner's stock exception, with its reason, in the part's Parts.md row", item: `${x.part}: ${x.reason}` })),
 ]
 
 // Each verified part selection.json keeps under a function: the kept part,
@@ -1633,7 +1639,13 @@ if (TASK === 'T6') {
   summary = { p7: p7 ? p7.checks : null, critic: critic ? critic.checks : null }
   // The pages are final only with both returns and the critic's three
   // checks passing on the tree it leaves; otherwise T6 is stopped.
-  const failed = critic ? Object.entries(critic.checks || {}).filter(([, r]) => !(r && r.passed)).map(([k]) => k) : []
+  // The stock check may fail on the owner's excepted parts alone: every
+  // "[FAIL]" line of its report names one of them.
+  const excepted = r => {
+    const lines = String((r && r.output) || '').split('\n').filter(l => /\[FAIL\]/.test(l))
+    return STOCK_EXCEPTIONS.length > 0 && lines.length > 0 && lines.every(l => STOCK_EXCEPTIONS.some(x => l.includes(x.part)))
+  }
+  const failed = critic ? Object.entries(critic.checks || {}).filter(([k, r]) => !(r && r.passed) && !(k === 'jlc_stock' && excepted(r))).map(([k]) => k) : []
   // The critic's own findings, as they stand after its corrections.
   if (critic) {
     // A figure check names its figure, the line of the page that states it
@@ -1725,7 +1737,7 @@ if (TASK === 'T6') {
 
 log(`${TASK}: ${started} agents started (${PLANNED} planned, ${extra} of ${FREE} free used); ${followUps.length} items for follow-up`)
 return {
-  task: TASK, run: A.run || TASK, run_id: A.run_id || '', commit: A.commit, date: A.date, run_info: A.run_info || {}, followup: TASK === 'FU' ? FU : null,
+  task: TASK, run: A.run || TASK, run_id: A.run_id || '', commit: A.commit, date: A.date, run_info: A.run_info || {}, followup: TASK === 'FU' ? FU : null, stock_exceptions: STOCK_EXCEPTIONS,
   accept_open: A.accept_open || null, decisions: A.decisions || {},
   planned: PLANNED, started, extra_used: extra, free: FREE, skipped, summary, followUps, missing, returns,
 }

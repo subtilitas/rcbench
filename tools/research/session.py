@@ -1365,6 +1365,15 @@ def cmd_prepare(args):
     run_id = hashlib.sha256(ident.encode()).hexdigest()[:16]
     for_research = [{"id": r[0], "category": r[1]} for r in rows
                     if "for research" in r[3].lower()]
+    # The owner's stock exceptions, T6 only: PART=REASON each.
+    stock_exceptions = []
+    for x in args.stock_exception:
+        part, _, why = x.partition("=")
+        if not part.strip() or not why.strip():
+            raise SystemExit(f"--stock-exception {x!r}: give PART=REASON")
+        stock_exceptions.append({"part": part.strip(), "reason": why.strip()})
+    if stock_exceptions and args.task != "T6":
+        raise SystemExit("--stock-exception applies to T6 only")
     # The agents run this tool's vendors.py, copied for the run so a branch
     # switch in this clone does not change it; the checkout of
     # research/round1 carries the copy of the day the branch was cut.
@@ -1415,6 +1424,7 @@ def cmd_prepare(args):
                      "vendors_sha256": vendors_sha},
         "accept_open": {"reason": args.accept_open, "functions": open_sel}
         if args.accept_open else None,
+        "stock_exceptions": stock_exceptions,
     }
     path = os.path.join(base, f"args-{run}.json")
     with open(path, "w") as f:
@@ -1589,6 +1599,9 @@ def record(args):
     copied = [k for k in ("commit", "date", "followup", "decisions",
                           "accept_open")
               if result.get(k) != want.get(k)]
+    if (result.get("stock_exceptions") or []) != \
+            (want.get("stock_exceptions") or []):
+        copied.append("stock_exceptions")
     if copied:
         raise SystemExit("the output's " + ", ".join(copied)
                          + " differ from the prepared arguments")
@@ -1894,6 +1907,11 @@ def main():
                    "the day's Digi-Key calls are left (0: no check)")
     p.add_argument("--db")
     p.add_argument("--no-fetch", action="store_true")
+    p.add_argument("--stock-exception", action="append", default=[],
+                   metavar="PART=REASON",
+                   help="T6: a part whose stock gate failure the owner "
+                   "accepts; the stock check may fail on these alone, and "
+                   "the pages state each (repeatable)")
     p.add_argument("--accept-open", metavar="REASON",
                    help="start the run although earlier runs left items "
                    "open (tools/research/README.md lists them); the "

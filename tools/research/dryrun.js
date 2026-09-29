@@ -203,7 +203,7 @@ async function runTask(task, opts = {}) {
     if (role === 'P3' && opts.p3missed) data.missed = [{ function: opts.p3missedFn || 'f1', part: opts.p3missedPart || 'partX', maker: 'm', why: 'w' }]
     if (role === 'P3' && opts.p3overturned) data.exclusions_not_holding = [{ part: 'partY', reason_given: 'r', why_it_fails: 'w' }]
     if (role === 'P7-critic' || role === 'P7') {
-      for (const k of Object.keys(data.checks)) data.checks[k] = { passed: !(opts.failCheck === k && role === 'P7-critic'), output: 'o' }
+      for (const k of Object.keys(data.checks)) data.checks[k] = { passed: !(opts.failCheck === k && role === 'P7-critic'), output: opts.failCheck === k && opts.failOutput ? opts.failOutput : 'o' }
       const outs = [...T6OUT, 'hardware/docs/GroupA.md', 'hardware/docs/GroupB.md', 'hardware/docs/GroupC.md'].filter(f => !(role === 'P7' && f === opts.unwritten))
       if (opts.pageOutside) outs.push('tools/research/README.md')
       if (opts.fourthPage) outs.push('hardware/docs/GroupD.md')
@@ -308,7 +308,7 @@ async function runTask(task, opts = {}) {
     commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, inventory: opts.inventory || {}, jlcparts: JL, p5_budgets: opts.p5Budgets || [], p5_conditional: opts.p5Conditional || [], q_options: opts.qOptions || {},
     followup: opts.followup, first_v: 5, decision_categories: { Q4: ['R10'], Q8: ['R2', 'R12'], Q9: ['R3'] }, t6_outputs: T6OUT, for_research: opts.forResearch || [], raised: opts.raised || [], p1_asks: opts.p1Asks || {}, fixed_inputs: opts.fixedInputs || {}, required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {},
     p5_assumptions: opts.p5Assumptions || [], decisions: opts.decisions || {}, accept_open: opts.acceptOpen || null, left_open: opts.leftOpen || [], p5_assumed: opts.p5AssumedT6 || [],
-    last_p56: opts.lastP56 || '', p56_runs: opts.p56Runs || [], selection: opts.selection || {}, jlc_stock_row: opts.jlcRow || [], run_info: opts.runInfo || {} }
+    last_p56: opts.lastP56 || '', p56_runs: opts.p56Runs || [], selection: opts.selection || {}, jlc_stock_row: opts.jlcRow || [], run_info: opts.runInfo || {}, stock_exceptions: opts.stockExceptions || [] }
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
     `return (async () => {${src}})()`)
   const result = await fn(args, agent, parallel, pipeline, () => {}, () => {})
@@ -564,6 +564,18 @@ async function main() {
   check(r.result.summary.stopped === true, 'T6: a failed check stops it')
   r = await runTask('T6')
   check(!r.result.summary.stopped, 'T6: passing checks finish it')
+  // A stock check failing on the owner's excepted parts alone passes; the
+  // exception is stated on the pages.
+  const exc = [{ part: 'ADS1235IRHBR', reason: 'Digi-Key stock 0; kept (owner, 2026-09-29)' }]
+  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR (second vendor): stock 0, gate 50\n1 problem(s)', stockExceptions: exc, marked: [{ index: 0, file: 'hardware/docs/Parts.md', line: 3 }] })
+  check(!r.result.summary.stopped, 'T6: a stock check failing on an excepted part alone finishes it')
+  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR (second vendor): stock 0\n[FAIL] TCA9548APWR: stock 3', stockExceptions: exc, marked: [{ index: 0, file: 'hardware/docs/Parts.md', line: 3 }] })
+  check(r.result.summary.stopped === true, 'T6: a stock check failing on another part too stops it')
+  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR (second vendor): stock 0', stockExceptions: exc })
+  check(r.result.summary.stopped === true && /item 0 not stated/.test(r.result.summary.reasons[0]), 'T6: an exception not stated on the pages stops it')
+  check(r.result.stock_exceptions.length === 1, 'T6: the exceptions are carried into the result')
+  r = await runTask('T6', { runInfo: { agent_model: 'sonnet', oversight_model: 'opus' } })
+  check(r.models.length === 2 && r.models.every(([, m]) => m === 'opus'), 'T6: P7 and its critic on the oversight model')
 
   // A second-vendor route needs the second vendor's stock re-read.
   r = await runTask('T2', { noSecondVendor: true })
