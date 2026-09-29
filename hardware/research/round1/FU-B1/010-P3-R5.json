@@ -1,0 +1,95 @@
+{
+ "role": "P3",
+ "category": "R5",
+ "label": "P3-R5",
+ "attempt": 0,
+ "data": {
+  "category": "R5",
+  "missed": [
+   {
+    "function": "reverse-polarity protection",
+    "part": "LTC4359HDCB#TRPBF (same die: LTC4359IMS8#TRPBF C2653612, LTC4359CMS8#TRPBF C688235)",
+    "maker": "Analog Devices (Linear); S1 Analog Devices",
+    "why": "P2 did not consider this family. It is the Analog Devices counterpart of LM74700: an ideal-diode controller with reverse input protection. Source: LTC4359 Rev. F, https://www.analog.com/media/en/technical-documentation/data-sheets/LTC4359.pdf (vendors.py fetch --client safari, read 2026-09-29T12:37:18Z). Absolute ratings: IN, SOURCE and SHDN -40 V to 100 V; OUT -2 V to 100 V; IN - OUT -100 V to 100 V. Operating range 4 V to 80 V. H grade -40 to 125 degC. Against the requirement values: -25.2 V reverse passes (-40 V). 25.2 V continuous and the 37.3 V clamp pass (80 V operating). 5.8 V to 22 V is inside 4 V to 80 V. Current goes through the external MOSFET. Ideal-diode reverse blocking (fast GATE pull-down when OUT > IN) keeps the pack's 6.0 V to 8.45 V off the DC pins. Every reverse-polarity value passes. Limit: it drives one MOSFET per path and has no UV/OV comparator, so like LM74700 it serves neither the overvoltage cut-off, inrush limiting nor V88. Back-to-back MOSFETs with SHDN are possible (feature list). Stock: JLCPCB C688238 stockCount 4783, canPresaleNumber 4772, expand, USD 4.8798 at 10 (vendors.py jlcpcb C688238, 2026-09-29T12:39:58Z). The need is 5 boards x 2 placements = 10, so the gate is 50: pass. C2653612 834/806 (12:39:57Z). Digi-Key LTC4359HDCB#TRPBF stock 6225, ProductStatus Active, lead 10 weeks (vendors.py digikey, 2026-09-29T12:48:47Z). Also read and failing, so not returned: onsemi NCV68261MTWAITBG (NCV68261/D Rev. 1 Table 2: VS DC -18 V minimum, above -25.2 V; https://www.onsemi.com/pdf/datasheet/ncv68261-d.pdf read 12:37:26Z). TI TPS48111LQDGXRQ1 (TPS4811-Q1 SLUSEE5E 6.1: VS to GND -1 V minimum, so the input is not reverse-protected; read 12:37:27Z)."
+   },
+   {
+    "function": "reverse-polarity protection",
+    "part": "LTC4364HDE-2#TRPBF",
+    "maker": "Analog Devices (Linear); S1 Analog Devices",
+    "why": "P2 did not consider this family. It is a surge stopper with an ideal-diode controller: HGATE drives the pass MOSFET and DGATE drives the ideal-diode MOSFET, the same two-MOSFET structure as LM7480x. Source: LTC4364-1/LTC4364-2 Rev. B, https://www.analog.com/media/en/technical-documentation/data-sheets/LTC4364-1-4364-2.pdf (--client safari, read 2026-09-29T12:38:57Z; the URL LTC4364.pdf answered 404 at 12:37:25Z). Absolute ratings: VCC, SOURCE, OV, UV and SHDN -40 V to 100 V; OUT and SENSE -20 V to 100 V. VCC operates from 4 V to 80 V. H grade -40 to 125 degC. The -25.2 V reverse, 25.2 V continuous and 37.3 V clamp values pass. DGATE turns off on reverse current with a 130 mA pull-down, and is held low even with VCC unpowered while the output is high. That keeps the pack off the DC pins. Every reverse-polarity value passes. Stock: JLCPCB C688295 stockCount 90, canPresaleNumber 89, expand, USD 10.9161 at 10 (vendors.py jlcpcb C688295, 2026-09-29T12:39:55Z). The need is 10, so the gate is 50: pass, with little margin. Other orderables fail rule 4: C580875 LTC4364HMS-2#PBF 32/32, C688309 LTC4364IS-2#PBF 15/14. Digi-Key LTC4364HDE-2#TRPBF stock 8671, Active, lead 12 weeks (2026-09-29T12:48:51Z)."
+   },
+   {
+    "function": "source selection",
+    "part": "LTC4364HDE-2#TRPBF",
+    "maker": "Analog Devices (Linear); S1 Analog Devices",
+    "why": "P2 did not consider this family. The circuit is the same as rank 1's OR circuit: a UV-gated HGATE MOSFET plus a DGATE ideal diode on each input. LTC4364 Rev. B (read 2026-09-29T12:38:57Z). UV falls at 1.22 V to 1.28 V, with hysteresis of 25 mV to 80 mV, so UV rises at 1.245 V to 1.36 V. With a divider ratio of 7.5, the DC input counts as absent below 9.15 V to 9.60 V and present above 9.34 V to 10.20 V, before resistor tolerance. That meets the V88 bounds: falling threshold above 8.45 V, rising threshold at or below 11.4 V. UV to HGATE low (tOFF,HGATE(UV)) is 4 us maximum. On the pack path DGATE works as an ideal diode (30 mV forward regulation, 130 mA fast pull-down on reverse current). That blocks the DC input from the pack (F8). When the DC input is removed, the pack takes over through the body diode and then DGATE, with no gap, as with rank 1. The same DGATE blocking keeps the pack off the DC pins. VCC operates from 4 V to 80 V, which covers 5.8 V to 22 V, 25.2 V and 37.3 V. -40 V covers -25.2 V. Current goes through external MOSFETs. The circuit breaker has a threshold of 43 mV to 57 mV; SENSE may be tied to OUT when unused (pin description). H grade -40 to 125 degC. Stock is as in the reverse-polarity entry: JLCPCB 90/89 at 12:39:55Z, Digi-Key 8671 Active at 12:48:51Z. Not offered for overvoltage protection: the OV pin only inhibits retry. The FB servo (VFB 1.22 V to 1.28 V) regulates the output at the clamp, and HGATE turns off only when the TMR timer expires. The load is therefore not disconnected at the threshold. Also read and not returned: LTC4368 fails here, because its reverse comparator (-1 mV to -5 mV across RSENSE) passes current into the pack before it trips, and its back-to-back MOSFETs both turn off."
+   },
+   {
+    "function": "inrush limiting",
+    "part": "LTC4364HDE-2#TRPBF",
+    "maker": "Analog Devices (Linear); S1 Analog Devices",
+    "why": "P2 did not consider this family. LTC4364 Rev. B (read 2026-09-29T12:38:57Z), section 'Limiting Inrush Current and HGATE Pin Compensation': the HGATE slew rate sets the inrush, I_INRUSH = C_L x I_HGATE(UP) / C_HGATE. I_HGATE(UP) is -10 uA to -30 uA (electrical table), a 3:1 spread. Sized so the 30 uA corner gives 2.0 A, the 10 uA corner gives 0.67 A. That is a component-set limit at every corner, the same kind as rank 1's HGATE capacitor. HGATE needs at least 6.8 nF to GND. The part already sits on each input for reverse polarity and source selection. -40 V to 100 V at a terminal covers -25.2 V and 25.2 V. Stock: JLCPCB C688295 90/89 (12:39:55Z); Digi-Key 8671 Active (12:48:51Z)."
+   },
+   {
+    "function": "reverse-polarity protection",
+    "part": "LTC4368IMS-2#TRPBF",
+    "maker": "Analog Devices (Linear); S1 Analog Devices",
+    "why": "P2 did not consider this family. It is a back-to-back N-MOSFET controller with UV/OV comparators and a bidirectional circuit breaker. Source: LTC4368 Rev. C, https://www.analog.com/media/en/technical-documentation/data-sheets/LTC4368.pdf (--client safari, read 2026-09-29T12:37:24Z). VIN protection range is -40 V to 100 V and the operating range 2.5 V to 60 V. VIN to VOUT is rated -60 V to 100 V. I grade -40 to 85 degC. The -25.2 V, 25.2 V and 37.3 V values pass. The DC pins are kept free of the pack the way P2 accepted for LTC4365: the UV window holds the MOSFETs off. In addition, the -2 option trips on reverse current at -1 mV to -5 mV across RSENSE. Every reverse-polarity value passes. Stock: JLCPCB C688403 stockCount 79, canPresaleNumber 77, expand, USD 7.0874 at 10 (vendors.py jlcpcb C688403, 2026-09-29T12:39:56Z). The need is 10, so the gate is 50: pass. Rule 5 is not met on what was read. Digi-Key has LTC4368IMS-2#TRPBF at 1, Active, lead 32 weeks (12:48:49Z), and LTC4368IMS-2#PBF at 0 (12:51:52Z). The other -2 orderables at JLCPCB fail rule 4: C580890 CMS-2#PBF 34/33 and C688382 CDD-2#PBF 37/36 (12:39:56Z)."
+   },
+   {
+    "function": "overvoltage protection",
+    "part": "LTC4368IMS-2#TRPBF",
+    "maker": "Analog Devices (Linear); S1 Analog Devices",
+    "why": "P2 did not consider this family. LTC4368 Rev. C (read 2026-09-29T12:37:24Z). VOV (OV rising) is 492.5 mV to 507.5 mV over the full temperature range, +/-1.5 %. That is a 3.0 % span against the 10 % band. A divider ratio of 42.0 trips at 20.69 V to 21.32 V before resistor tolerance, inside 'above 20.0 V and at or below 22.0 V'. The pack band (above 8.45 V) is met with a second ratio. Cut-off response: the UV/OV fault propagation delay tFAULT is 2 us maximum (50 mV overdrive), and the gate fast turn-off delay tD(FAST) is 6 us maximum at CGATE 2.2 nF for a UV or OV fault. The pull-down IGATE(FAST) is 30 mA to 90 mA; with a larger gate capacitance the time scales and must be recomputed. The 25.2 V continuous and 37.3 V values pass (60 V operating, 100 V protection). Current goes through external MOSFETs and a sense resistor; the forward breaker is 40 mV to 60 mV, so RSENSE is at most 3.05 mOhm for 13.1 A. I grade. Stock and rule 5 are as in the reverse-polarity entry: JLCPCB 79/77, Digi-Key 1."
+   },
+   {
+    "function": "inrush limiting",
+    "part": "LTC4368IMS-2#TRPBF",
+    "maker": "Analog Devices (Linear); S1 Analog Devices",
+    "why": "P2 did not consider this family. LTC4368 Rev. C (read 2026-09-29T12:37:24Z), 'Limiting Inrush Current During Turn On': I_INRUSH = C_OUT x I_GATE(UP) / C_GATE. I_GATE(UP) is -20 uA to -60 uA, a 3:1 spread. Sized for 2.0 A at 60 uA, it gives 0.67 A at 20 uA, a component-set limit at every corner. Unlike LTC4365 Rev. B, which P2 dropped because no inrush function is stated (Rev. B has no inrush text, re-read 12:52:35Z), this datasheet ties the gate current to inrush. It survives -40 V and 100 V at a terminal. Stock and rule 5 are as in the reverse-polarity entry (JLCPCB 79/77, Digi-Key 1)."
+   },
+   {
+    "function": "3.3 V logic buck",
+    "part": "L6981N33DR",
+    "maker": "STMicroelectronics; S1 STMicroelectronics",
+    "why": "P2 did not consider this family. Source: L6981 DS13554 Rev 3, https://www.st.com/resource/en/datasheet/l6981.pdf (read 2026-09-29T12:43:48Z). The order code table lists L6981N33DR as fixed 3.3 V, LNM (low noise mode). Section 6.4.2: LNM is forced PWM at every load. The fixed 3.3 V output is 3.284 V to 3.346 V over TJ -40 to 125 degC (note 3: assured by characterization), with the divider inside. That leaves 83 mV below and 53 mV above for ripple and load regulation inside 3.201 V to 3.399 V. Load regulation is given only as typical curves (Figures 17 and 18), so the re-rank closes the budget. Output current is 1.5 A DC against 1.36 A. VIN operates from 3.5 V to 38 V, with 42 V absolute (at least 27 V needed). Internal soft-start TSS is 1.0 ms minimum and 1.6 ms maximum. TJ -40 to 150 degC. JLCPCB C5268095 stockCount 292, canPresaleNumber 289, expand, USD 2.7404 at 10 (vendors.py jlcpcb C5268095, 2026-09-29T12:45:56Z). The need is 5, so the gate is 50: pass. Digi-Key L6981N33DR stock 3117, Active, lead 30 weeks (2026-09-29T12:48:53Z). The adjustable LNM part L6981NDR fails rule 4: C3192320 stockCount 7, canPresaleNumber -29 (12:45:54Z)."
+   },
+   {
+    "function": "3.3 V logic buck",
+    "part": "MAX17504ATP+T",
+    "maker": "Analog Devices (Maxim); S1 Analog Devices",
+    "why": "P2 did not consider this family. Source: MAX17504 19-6844 Rev 3, https://www.analog.com/media/en/technical-documentation/data-sheets/MAX17504.pdf (--client safari, read 2026-09-29T12:43:47Z). VFB_REG is 0.89 V to 0.91 V (+/-1.11 %) with MODE = SGND (PWM, constant frequency at all loads) or MODE = VCC, over TA -40 to 125 degC. MODE open (PFM) is 0.89 V to 0.936 V and is not the one to use. That leaves about 1.9 % of the 3.0 % budget for resistors, ripple and load regulation. Load regulation is not stated as min/max. IFB is +/-50 nA at TA 25 degC only. VIN operates from 4.5 V to 60 V, with 65 V absolute. Output current is 3.5 A. Soft-start is set by CSS with ISS 4.7 uA to 5.3 uA. The datasheet's tSS = CSS / 5.55 uA is typical, so min and max come from ISS and the CSS tolerance. JLCPCB C516781 stockCount 12050, canPresaleNumber 12025, expand, USD 2.0322 at 10 (2026-09-29T12:45:57Z): pass. Digi-Key MAX17504ATP+T stock 0, Active, lead 24 weeks (12:48:55Z). The same part in tube packing, MAX17504ATP+, has 6560, Active, lead 20 weeks (12:49:32Z). Also read and failing, not returned: AP63301WU-7 (DS42002 Rev. 3-2, tSS 4 ms typical only: fails 'start-up ramp'). LMR23625CFDDAR (SNVSAH3E: VREF 0.98 V to 1.02 V over TJ, TSS typical only). TPS56339DDCR (SLVSEI2A: TSS 5 ms typical only). LMR33640 (SNVSB99C: PFM options only). TPS552892RYQR and L6981NDR (rule 4)."
+   },
+   {
+    "function": "encoder 12 V supply",
+    "part": "LM5175PWPR",
+    "maker": "Texas Instruments; S1 Texas Instruments",
+    "why": "P2 did not consider this family. It is the 42 V sibling of rank 2 LM5176PWPR and pin-for-pin the same HTSSOP-28. The pin diagrams of LM5175 SNVSA37A (https://www.ti.com/lit/ds/symlink/lm5175.pdf, read 2026-09-29T12:46:45Z) and LM5176 SNVSAI1D (read 12:46:46Z) carry the same names on pins 3 to 28: VISNS 3, MODE 4, DITH 5, RT 6, SLOPE 7, SS 8, COMP 9, AGND 10, FB 11, VOSNS 12, ISNS(-) 13, ISNS(+) 14, CSG 15, CS 16, PGOOD 17 to SW1 28. The average current loop is the same: VSNS 43 mV to 57 mV, against 43 mV to 57 mV in LM5176. A 0.20 Ohm output-side sense resistor gives 215 mA to 285 mA before resistor tolerance, inside 160 mA to 300 mA, in both jumper positions. The VSNS row is stated at VISNS(-) = 24 V, the same condition limit P2 accepted for LM5176. VREF is 0.788 V to 0.812 V, which gives 10.8 V to 13.2 V and 4.75 V to 5.25 V. VIN operates from 3.5 V to 42 V (5.8 V to 22 V needed). TJ -40 to 125 degC. Current goes through external MOSFETs. JLCPCB C113356 stockCount 6521, canPresaleNumber 6513, expand, USD 2.989 at 10 (vendors.py jlcpcb C113356, 2026-09-29T12:48:35Z): pass. Digi-Key LM5175PWPR stock 2798, Active, lead 9 weeks (2026-09-29T12:48:56Z). It is a rule-5 alternate for rank 2 at a lower price. Also read and failing, not returned: TPS552892RYQR (SLVSH28A, read 12:46:46Z). It needs no I2C and its VSNS is 48 mV to 52 mV, but it fails rule 4: JLCPCB C19272254 stockCount 4, canPresaleNumber -23 (12:48:34Z), and the Q1 part C22375748 has 28/16. The LTC3114-1 family (1 A, programmable output current limit) fails rule 4: every jlcparts row is at 20 or below."
+   },
+   {
+    "function": "reverse-polarity protection",
+    "part": "TPS2663 (TPS26630/1/2/3; seed of the R5 row)",
+    "maker": "Texas Instruments; S1 Texas Instruments",
+    "why": "TPS2663 is a seed in the R5 row (Research.md:283), and P2's return records it nowhere, neither on a shortlist nor as a drop. It is returned only so the drop is recorded; it is not a candidate. Source: TPS2663x SLVSE94G, https://www.ti.com/lit/ds/symlink/tps2663.pdf (read 2026-09-29T12:40:29Z): 4.5 V to 60 V, 67 V absolute, -60 V reverse polarity with an external blocking FET, integrated 31 mOhm FET, current limit adjustable from 0.6 A to 6 A (+/-7 %). It fails 'current carried' on reverse polarity, overvoltage protection and inrush limiting alike: 6 A at most against 6.4 A on the DC path and 13.1 A on the pack path. The same holds for TPS1663 (600 mA to 6 A, jlcparts C1849461)."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "LM74910QRGERQ1",
+    "reason_given": "passes the reverse-polarity values (-65 V, ideal diode; LM749x0-Q1 SNOSDE6C); not among the three kept: 24-pin package with a circuit breaker and sense resistor the function does not need, no pin-compatible partner",
+    "why_it_fails": "The 'no pin-compatible partner' part does not hold. SNOSDE6C (https://www.ti.com/lit/ds/symlink/lm74910-q1.pdf, read 2026-09-29T12:52:10Z) covers LM74900-Q1, LM74910-Q1 and LM74910H-Q1 with one pin diagram (Figure 5-1, RGE 24-pin VQFN). The shared threshold rows (V(OVR) 0.585 V to 0.63 V, V(UVLOR) 0.585 V to 0.63 V) apply to all three. The Device Comparison Table differs only in charge-pump strength (2.7 mA against 4.2 mA), input absolute maximum and SLEEP overcurrent response. LM74900QRGERQ1 is a pin-compatible partner that passes rule 4: JLCPCB C20345498 stockCount 8092, canPresaleNumber 7991, USD 3.2115 at 10 (vendors.py jlcpcb, 2026-09-29T12:52:24Z). LM74910QRGERQ1 itself reads C22427891 1988/1982 (12:52:26Z). The package and circuit-breaker part of the reason is a ranking preference and stands."
+   },
+   {
+    "part": "TVS2701DRBR, SMBJ26CA-13-F (input TVS)",
+    "reason_given": "not candidates for this function: a TVS clamps and does not cut the input off, so it has no cut-off band or cut-off response; the TVS is reported (report 'input TVS')",
+    "why_it_fails": "V85 is filed under 'R5, overvoltage protection' (Research.md Raised by P1) and asks what transient the DC input's protection absorbs. The Scope table puts the power input's protection in R5, round 1 (Research.md:28). P2's own requirement rows 'input transient survived', 'transient survived' and 'input survival' assume TVS2701DRBR's 37.3 V clamp. As a report the TVS has no rank, no rule-4/5 record and no P4 verification, yet the choice decides other functions. SMBJ26CA-13-F clamps at 42.1 V at 14.2 A (Diodes ds19002, per the T3 P3 reading). That is above LTC4417's 42 V absolute rating, which P2's 'passes with the TVS2701DRBR ahead' entries depend on. Both pass rule 4 today at a need of 5 x 2 = 10 (gate 50): JLCPCB C2878109 TVS2701DRBR stockCount 155, canPresaleNumber 137, USD 0.6628 at 10 (vendors.py jlcpcb, 2026-09-29T12:51:22Z), and C135063 SMBJ26CA-13-F 63/62 (12:51:24Z). The TVS needs its own ranked shortlist and verification, under the overvoltage-protection function or as a function of its own."
+   },
+   {
+    "part": "AP63201WU-7",
+    "reason_given": "fails rule 4: JLCPCB C2071044 stockCount 0, canPresaleNumber -331; its forced PWM and 792 mV to 808 mV reference would pass",
+    "why_it_fails": "The drop stands on rule 4, but the claim that the part would otherwise pass does not hold. DS41326 Rev. 3-2 (https://www.diodes.com/assets/Datasheets/AP63200-AP63201-AP63203-AP63205.pdf, read 2026-09-29T12:53:07Z) gives the soft-start period tSS as 4 ms typical only, with no minimum or maximum. It therefore fails P2's own 'start-up ramp' requirement. The same applies to the AP63203 drop, and to the forced-PWM 3 A sibling AP63301WU-7 (DS42002 Rev. 3-2, tSS 4 ms typical only, read 12:43:44Z). None of them comes back as a candidate if stock returns."
+   }
+  ],
+  "missed_functions": []
+ }
+}

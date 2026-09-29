@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R7",
+ "label": "adjudicator-R7-7",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "function": "re-rank report: BQ40Z50-R2 short-circuit trip with tolerance",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The datasheet values in the claim are correct. At CONTROL[RSNS] = 0, SCD1 runs from -22.2 to -100 mV in steps of -11.1 mV. The post-trim offset is -2.5 to +2.5 mV and the post-trim scale error is -5 % to +5 %. Using the claim's own method, the 55.5 mV step at 2 mOhm trips at 25.2 to 30.5 A (27.75 A nominal), and the 33.3 mV step at 1 mOhm reaches 37.6 A at its upper limit. Both figures check out. The figure for the 22.2 mV step at 1 mOhm does not. Its limits are (22.2 - 2.5) x 0.95 = 18.7 A and (22.2 + 2.5) x 1.05 = 25.9 A, not the 26.9 A the claim states. Applying the offset and the scale error in the other order gives 22.2 x 1.05 + 2.5 = 25.8 A, so no order of the datasheet tolerances produces 26.9 A. The figure as reported is wrong by 1.0 A at its upper limit and must read 18.7 to 25.9 A. This is a computation error in a figure reported for this function. It says nothing about the part's lifecycle, maker or identity, so the scope is function.",
+  "evidence": "SLUSCS4C (June 2017, revised April 2021), table 7.31, page 17 and its continuation on page 18. VSCD1 at CONTROL[RSNS] = 0 is -22.2 mV min to -100 mV max. Delta VSCD1 at RSNS = 0 is -11.1 mV typ. VOFFSET (OLD, SCC and SCDx, post-trim) is -2.5 to 2.5 mV. VSCALE (post-trim) is -5 % to 5 %. Min and max limits hold over TA -40 to 85 C and VCC 2.2 to 26 V. Computed from these values: 55.5 mV / 2 mOhm gives 25.175 to 30.45 A; 33.3 mV / 1 mOhm gives 29.26 to 37.59 A; 22.2 mV / 1 mOhm gives 18.715 to 25.935 A. The copy is saved at /home/claude/rcbench-research/round1/scratch/FU-B1/adjudicator-R7/adjR7_bq40z50r2.pdf with its text in adjR7_bq40z50r2.txt, lines 1276 to 1356.",
+  "source": "https://www.ti.com/lit/ds/symlink/bq40z50-r2.pdf (SLUSCS4C, table 7.31), fetched with vendors.py fetch --out, HTTP 200, 3,096,886 bytes",
+  "read_at": "2026-09-29T13:20:58Z",
+  "scope": "function"
+ }
+}

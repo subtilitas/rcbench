@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R7",
+ "label": "adjudicator-R7-5",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "function": "P2 report: cell sourcing",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The figure says \"No vendor read counts an S9 cell at or above the gate of 50\", and that the pack cells fail rule 4 until the owner names a vendor. Both statements are false. Liion Wholesale is the vendor P2 itself named in V151. On re-read it counts a Molicel cell far above the gate. Its Shopify product record for \"Molicel/NPE INR-18650-P30B 30A 3000mAh Flat Top 18650 Battery - Authorized Distributor\" has one variant, SKU molicelnpe-inr18650p30b. That variant shows available true, inventory_quantity 6536, inventory_management shopify and inventory_policy deny, so the count is on-hand stock with no backorder. Molicel is on the S9 list. The gate is 5 x (5 boards x 2 cells) = 50 at P2's 2S1P. At a 2S2P pack (V137) it would be 100. 6536 passes both. The P26A counts that P2 reported (0 and -1) are not in dispute. The figure fails only because it generalises from the P26A to every S9 cell. The P2 return dropped the P30B only because its requirement values were not read (data sheet behind a registration form). This ruling does not decide whether the P30B meets R7's requirement values. That stays for the verifiers of whichever cell is ranked. Scope is function: the finding is about this figure's stock count against the function's gate. It is not about a part's lifecycle, allowlist or LCSC identity.",
+  "evidence": "vendors.py fetch of the Liion Wholesale P30B product JSON returned HTTP 200 with no challenge, 7694 bytes, read 2026-09-29T13:19:12Z and again at 13:19:18Z (saved as adj_lw_p30b_body.js). Fields read: title \"Molicel/NPE INR-18650-P30B 30A 3000mAh Flat Top 18650 Battery - Authorized Distributor\"; vendor \"Molicel/NPE\"; product available True; variant \"Default Title\", SKU molicelnpe-inr18650p30b, available True, inventory_quantity 6536, inventory_policy deny, inventory_management shopify, price 550 (cents). The description reads \"Liion Wholesale is an authorized US distributor of these cells in partnership with New Power Energy\" and \"Brand: E-One Moli Energy Corp. (Molicel)\". Gate: S4 gives 5 x need, never under 50. Need is 5 boards (S7) x 2 cells (P2's V137, 2S1P) = 10, so the gate is 50. At 4 cells (2S2P) the gate is 100. Either way 6536 is above it. The claim under review is from /home/claude/rcbench-research/round1/scratch/FU-B1/P2-R7/build.py line 525, which relies on V151 at line 52.",
+  "source": "python3 /home/claude/rcbench-research/round1/tools/c7df594d3d3daaf8/vendors.py fetch https://liionwholesale.com/products/molicel-npe-inr-18650-p30b-36a-3000mah-flat-top-18650-battery-authorized-distributor.js (saved to /home/claude/rcbench-research/round1/scratch/FU-B1/adjudicator-R7/adj_lw_p30b_body.js); Research.md at e13f5f60 sourcing rules 1, 2 and 4, S4, S7, S9, V137, V151",
+  "read_at": "2026-09-29T13:19:12Z",
+  "scope": "function"
+ }
+}

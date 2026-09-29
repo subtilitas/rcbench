@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R7",
+ "label": "adjudicator-R7-6",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "function": "P2 report: USB-C sink timing",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The figure says no data sheet it read gives an Rp-change-to-output delay, and it cites the FUSB303B's tPDDebounce of 10 to 20 ms in that place. The same FUSB303B data sheet (onsemi FUSB303B/D, September 2024, Rev. 3), Table 8, gives tRpValueChange: minimum 10 ms, maximum 20 ms, \"Time a Sink port shall wait before it can determine there has been a change in Rp\". The part reports that change as BC_LVL[1:0] in Status register 11h (01 = default current, 10 = 1.5 A, 11 = 3 A). A change sets I_BC_LVL in Interrupt register 14h, which asserts INT_N unless M_BC_LVL masks it. So for the FUSB303B, one data sheet the figure read does give a 10 to 20 ms Rp-change detection time, and that time ends at a register and an interrupt pin. The tPDDebounce the figure cites is the detach time (\"Time a Sink port shall wait before it can determine it is detached\", 10/15/20 ms), not an Rp-change time. The ruling needs only this contradiction. The TUSB321AI (168 ms) and TUSB321 (133 ms) power-on debounce values and tSinkAdj of 60 ms were not re-read for it. Not stated in Table 8: the delay from the INT_N edge through the firmware's I2C (Inter-Integrated Circuit) read to the charger's input-limit change, and the BQ25713 ILIM_HIZ response time. P5 or a bench measurement still has to supply those. Scope is function, because this is a reported figure for R7's USB-C input-limit behaviour, not a property of any part's lifecycle or identity.",
+  "evidence": "FUSB303B/D, \"September, 2024 − Rev. 3\", Table 8 TIMING PARAMETERS: \"tRpValueChange | Time a Sink port shall wait before it can determine there has been a change in Rp | 10 | – | 20 | ms\". \"tPDDebounce | Time a Sink port shall wait before it can determine it is detached | 10 | 15 | 20 | ms\". Register map: Status 11h holds BC_LVL[1:0] (thresholds that allow detection of current advertisement on CC: 01 default, 10 1.5 A, 11 3 A). Interrupt 14h bit 2 I_BC_LVL: \"Interrupt flagged when a change in BC_LVL[1:0] advertised\". Mask bit M_BC_LVL: \"Mask the I_BC_LVL interrupt bit from asserting INT_N pin\". Fetched HTTP 200, 559,529 bytes, SHA-256 5ed054de7a6cd73deed792d5ec9aa979ec6e653dc17b857ffa5c28dddba88b87, saved as /home/claude/rcbench-research/round1/scratch/FU-B1/adjudicator-R7/r7_fusb303b.pdf, text at r7_fusb.txt lines 652-662.",
+  "source": "python3 /home/claude/rcbench-research/round1/tools/c7df594d3d3daaf8/vendors.py fetch --out r7_fusb303b.pdf https://www.onsemi.com/download/data-sheet/pdf/fusb303b-d.pdf (Table 8 Timing Parameters; registers 11h Status, 14h Interrupt, Mask)",
+  "read_at": "2026-09-29T13:20:08Z",
+  "scope": "function"
+ }
+}

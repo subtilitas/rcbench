@@ -1,0 +1,72 @@
+{
+ "role": "P3",
+ "category": "R8",
+ "label": "P3-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "missed": [
+   {
+    "function": "Onboard shunt temperature sensor",
+    "part": "TMP116AIDRVR (LCSC C2691433)",
+    "maker": "Texas Instruments (datasheet SBOS740A, May 2017, revised May 2019, https://www.ti.com/lit/ds/symlink/tmp116.pdf, read 2026-09-29T12:37:32Z); on S1 as Texas Instruments; JLCPCB label Texas Instruments; Digi-Key 'Texas Instruments'",
+    "why": "P2 did not consider this family. It passes every requirement value. Accuracy is +/-0.25 degC max from -40 to +105 degC at V+ 3.0 to 3.6 V, which covers the 3.3 V rail at +/-3 %. The limit is +/-2 degC (V170). Only the TMP117 below has a wider margin. The range is -55 to 125 degC, and the interface is I2C/SMBus, 1.9 to 5.5 V (section 6.5). ADD0 gives 4 addresses, 0x48 to 0x4B (Table 2). Those sit inside the 0x40 to 0x4F monitor block, as for P2's TMP112. The package is WSON-6 (DRV), with the same pinout as the TMP117 (SCL 1, GND 2, ALERT 3, ADD0 4, V+ 5, SDA 6). Stock and lifecycle: JLCPCB C2691433 stockCount 2399, canPresaleNumber 2323, expand (vendors.py jlcpcb, exact match, 2026-09-29T12:36:19Z); gate 50, need 5. Digi-Key Active, 37390 in stock, lead time 16 weeks (vendors.py digikey TMP116AIDRVR, 12:37:20Z). That is the rule-5 second vendor. TI product page https://www.ti.com/product/TMP116: meta status ACTIVE, orderable TMP116AIDRVR ACTIVE (12:45:06Z). Also on the page and in stock: TMP116NAIDRVR (C182074), JLCPCB 1085, presale 1016 (12:36:20Z). Not read: TI PCN notices, market introduction beyond the first datasheet date (May 2017)."
+   },
+   {
+    "function": "Onboard shunt temperature sensor",
+    "part": "TMP117NAIDRVR (LCSC C2876169)",
+    "maker": "Texas Instruments (datasheet SNOSD82D, June 2018, revised September 2022, https://www.ti.com/lit/ds/symlink/tmp117.pdf, the copy P2 fetched 2026-09-29T11:58:12Z); on S1 as Texas Instruments; JLCPCB label Texas Instruments",
+    "why": "P2 read only TMP117AIDRVR and did not consider the N grade. Same datasheet, the same WSON-6 (DRV) package, pinout and register map (DEVICE_ID 0Fh = 0117h). It passes every value: TMP117N +/-0.2 degC max from -40 to 100 degC (section 6.5), the widest margin of any part found against +/-2 degC. Orderable range -55 to 150 degC (packaging addendum: 'TMP117NAIDRVR Active Production WSON (DRV) | 6 ... -55 to 150'). Addresses 0x48 to 0x4B. Stock: JLCPCB stockCount 1371, canPresaleNumber 1319, expand (12:36:20Z), passing the gate of 50. Digi-Key Active, 0 in every packaging, lead time 9 weeks (vendors.py digikey TMP117NAIDRVR, 12:37:15Z). Its second source is TMP117AIDRVR as a rule-5 alternate: same die, footprint, registers, addresses and start-up; JLCPCB 41228, presale 40869 (12:36:20Z). TI product page https://www.ti.com/product/TMP117 (12:45:06Z): TMP117NAIDRVR and TMP117AIDRVR both ACTIVE. TMP117MAIDRVR (C2803242, JLCPCB 1779) does not pass: its orderable range is 0 to 85 degC, against the 100 degC trip level."
+   },
+   {
+    "function": "Onboard shunt temperature sensor",
+    "part": "ADT7410TRZ-REEL7 (LCSC C660048)",
+    "maker": "Analog Devices (datasheet ADT7410 Rev. C, https://www.analog.com/media/en/technical-documentation/data-sheets/ADT7410.pdf, vendors.py fetch --client safari, read 2026-09-29T12:36:48Z); on S1 as Analog Devices; JLCPCB label Analog Devices; Digi-Key 'Analog Devices Inc.'",
+    "why": "P2 did not consider this family. It passes every value. Accuracy is +/-0.5 degC max from -40 to +105 degC at VDD 2.7 to 3.6 V, with lifetime drift included (Table 1 and its note 1). That equals the MCP9808's margin against +/-2 degC. Operation is specified from -55 to +150 degC over an I2C interface. A1 and A0 give 0x48 to 0x4B (Table 20), inside the monitor block like the TMP112. Package: SOIC-8. Stock: JLCPCB stockCount 1009, canPresaleNumber 989, expand (12:36:20Z); gate 50. Digi-Key Active, 847 in stock (cut tape), lead time 16 weeks (vendors.py digikey ADT7410TRZ-REEL7, 12:37:18Z). That is the second vendor. For an Analog Devices part, Digi-Key's Active is the lifecycle status (Lifecycle check). Not read: an Analog Devices PCN listing, and market introduction beyond Rev. 0."
+   },
+   {
+    "function": "Onboard shunt temperature sensor",
+    "part": "TMP275AIDR (LCSC C415179)",
+    "maker": "Texas Instruments (datasheet SBOS363F, June 2006, revised May 2018, https://www.ti.com/lit/ds/symlink/tmp275.pdf, read 2026-09-29T12:36:48Z); on S1 as Texas Instruments; JLCPCB label Texas Instruments",
+    "why": "P2 did not consider this family. It passes every requirement value. Accuracy: +/-0.75 degC max from 0 to 100 degC at V+ 3 to 3.6 V, and +/-0.5 degC from -20 to 100 degC at 3.3 V (section 6.5). Range -40 to 125 degC. A2, A1 and A0 give 0x48 to 0x4F (Table 2). It uses the LM75 SOIC-8 pinout. JLCPCB stockCount 456, canPresaleNumber 440, expand (12:36:20Z); gate 50. Digi-Key Active, 0 in every packaging, lead time 16 weeks (12:37:17Z). So the second-vendor route fails. TMP275AIDGKR (C87815, JLCPCB 1885) is VSSOP-8, a different footprint. A rule-5 alternate in the same SOIC-8 land (TMP1075DR, PCT2075D) was not qualified for registers and start-up. TI product page: TMP275AIDR ACTIVE (12:45:06Z)."
+   },
+   {
+    "function": "Onboard shunt temperature sensor",
+    "part": "LM75BD,118 (LCSC C34565)",
+    "maker": "NXP (datasheet LM75B Rev. 6.1, 6 February 2015, https://www.nxp.com/docs/en/data-sheet/LM75B.pdf, read 2026-09-29T12:45:52Z); on S1 as NXP; JLCPCB label NXP Semicon; Digi-Key 'NXP USA Inc.'",
+    "why": "P2 dropped only the UMW and MSKSEMI copies of the LM75B and TI's LM75B. It did not consider NXP's own part. It passes with no margin: Tacc +/-2 degC from -25 to +100 degC at VCC 2.8 to 5.5 V. The limit covers the whole supply range, which is the ground on which P2 dropped TI's LM75B. It is +/-3 degC from -55 to +125 degC (Table 18). Addresses 0x48 to 0x4F. It has the same SO-8 LM75 pinout and 11-bit data as P2's rank 3, PCT2075D. JLCPCB stockCount 6562, canPresaleNumber 6521, expand (12:36:20Z). Digi-Key Active, 17610, lead time 16 weeks (vendors.py digikey 'LM75BD,118', cached, read 2026-09-29T10:02:03Z). NXP product page and PCN listing not read."
+   },
+   {
+    "function": "Port current monitor",
+    "part": "INA237AIDGSR (LCSC C2864837)",
+    "maker": "Texas Instruments (datasheet SBOSA20A, February 2021, revised May 2022, https://www.ti.com/lit/ds/symlink/ina237.pdf, the copy P2 fetched 2026-09-29T11:58:04Z); on S1 as Texas Instruments; JLCPCB label Texas Instruments; Digi-Key 'Texas Instruments'",
+    "why": "P2 read the INA237 only as the motor monitor's alternate, not for the ports. As the port monitor it passes every value, 20 parts a board as for P2's INA226. Common mode -0.3 to 85 V, and differential absolute maximum +/-40 V, against 8.7 V measured and 20 V withstand (V171). Full scale +/-163.84 mV at ADCRANGE 0, which is 16.4 A on 10 mOhm (V172). Accuracy at 3 A on 10 mOhm, by P2's method: offset 50 uV max (5.0 mA); drift 20 nV/degC x 25 K (0.05 mA); CMRR 120 dB x 12 V (1.2 mA); gain 0.3 % (9.0 mA); gain drift 50 ppm/degC x 25 K (3.75 mA); half LSB 2.5 uV (0.25 mA). That sums to 19.3 mA. With ERJ-6CWDR010V's 22.9 mA the total is 42.2 mA of 50 mA (V174). This beats the INA3221's 49.2 mA, and the INA226's 31.6 mA beats it. Noise: Table 8-2 gives a noise-free ENOB of 15.7 at 1052 us and 4 averages (4.208 ms period, inside V173's 5 ms), about 6.2 uV peak-to-peak, 0.6 mA (typical, the basis P2 accepted for the INA226). Addresses: A1 and A0 give 16, 0x40 to 0x4F, so 10 a bus as for the INA226. The register map is the INA238's apart from DEVICE_ID, so one driver serves the motor and port monitors. Stock: JLCPCB stockCount 5344, canPresaleNumber 5287, expand, 1.2395 at the 100 break (2026-09-29T12:41:01Z); gate 500 for a need of 100. Digi-Key Active, 27742, lead time 16 weeks (vendors.py digikey INA237AIDGSR, cached, read 09:56:11Z). TI product page https://www.ti.com/product/INA237: INA237AIDGSR ACTIVE (12:45:06Z). Checked and not passing: INA230AIRGTR (C882784) JLCPCB 115 < 500 (12:41:02Z); INA230AIDGSR (C3685977) 1; INA260AIPWR (C2155885) 0 with presale -66 (12:41:01Z); INA220AIDGSR (C543040) has no noise limit or figure in SBOS459E (read 12:36:48Z), the same ground as INA219."
+   },
+   {
+    "function": "External shunt",
+    "part": "WSBS8536L1000JK60",
+    "maker": "Vishay Dale (datasheets 30395, WSBS8536, and 30411, WSBS8536...60, both revision 26-May-2026, https://www.vishay.com/docs/30395/wsbs8536.pdf read 2026-09-29T12:42:19Z, https://www.vishay.com/doc?30411 -> https://www.vishay.com/docs/30411/wsbs8536-60.pdf read 12:42:41Z); on S1 as Vishay; Digi-Key 'Vishay Dale'",
+    "why": "P2 searched WSBS8518, WSBE8518, WSBM8518, CSM2F-8518 and BAS, and did not consider the 8536 size. Values, from 30411 unless noted: 100 uOhm +/-5 % (L1000, J), inside 50 to 136 uOhm; 300 A x 105 uOhm = 31.5 mV, inside 40.96 mV. Power 50 W at 70 degC. The derating graph falls from 100 % at 70 degC to 0 at 170 degC (page 2, rendered and read), which gives 2 K/W and 18 K at 9 W. Temperature coefficient +/-165 ppm/degC for 100 uOhm (component; the element alone is +/-20). At 50 degC ambient the shunt sits at 68 degC: 43 K x 165 ppm = 0.71 % of 0.91 % at 300 A, and 25 K x 165 ppm = 0.41 % of 0.45 % at 15 A. That is a wider margin than WSBS8518L1000JK20 (0.875 % and 0.44 %). Kelvin sense: special code 60, 'two sense pins attached with plated terminals', B = 21.894 mm for 100 uOhm, pins 7.87 mm high, minimum pull strength 200 N. Operating range -65 to +170 degC. Mounting: 85 x 36 x 3 mm, two 10 mm holes 60 mm apart, so it is no alternate of the 18 mm wide 8518 parts. Digi-Key keyword search 'WSBS8536' (cached, read 2026-09-29T10:17:38Z): WSBS8536L1000JK60 Active, 76 (541-WSBS8536L1000JK60-ND, bulk), lead time 48 weeks, which passes the gate of 50. No second source: WSBS8536L1000JK20 (two sense pins, bare copper, datasheet 30397 not read) has 17 < 50, and WSBS8536L1000JT60 is not listed. The rank-1 WSBE8518L1000JKA2 has no second source either. Not read: Vishay's product page, market introduction. No WSBS8536 entry is in the copy of Vishay's PCN listing that P2 saved at 12:02:45Z. The 125 uOhm WSBS8536L1250JK80 (29) fails the gate."
+   },
+   {
+    "function": "Motor monitor",
+    "part": "INA236AIDDFR (LCSC C5443912), a seed of the R8 row",
+    "maker": "Texas Instruments (datasheet SBOSA81D, May 2021, revised August 2023, https://www.ti.com/lit/ds/symlink/ina236.pdf, read 2026-09-29T12:44:57Z)",
+    "why": "The R8 row seeds INA236, and P2's return records it nowhere, neither shortlisted nor dropped. Record it as dropped on 'bus and input rating': common-mode input range -0.3 to 48 V (section 6.5), absolute maximum 50 V, differential +/-26 V (section 6.1), against the 67.2 V pack (F15). It is also not the fixed INA238. Found in the jlcparts copy only; its stock was not read, because it fails a value."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "TMP117AIDRVR (C699536), Onboard shunt temperature sensor",
+    "reason_given": "not dropped on a value (SNOSD82D, read 11:58:12Z; JLCPCB 41231, presale 40872, 11:55:30Z). Not recorded: Digi-Key 0 (vendors.py digikey TMP117AIDRVR, 2026-09-29T11:56:48Z) and no allowlisted WSON-6 alternate, so no second source",
+    "why_it_fails": "An allowlisted WSON-6 alternate exists in the same datasheet. TMP117NAIDRVR (C2876169) is the same die in the same DRV package, with the same pinout, registers, DEVICE_ID 0117h, addresses 0x48 to 0x4B and start-up. It is specified +/-0.2 degC from -40 to 100 degC, orderable -55 to 150 degC (SNOSD82D section 6.5 and packaging addendum, P2's copy of 11:58:12Z). JLCPCB C2876169: stockCount 1371, canPresaleNumber 1319 (vendors.py jlcpcb, exact match, 2026-09-29T12:36:20Z), which passes the gate of 50. TMP117AIDRVR itself reads JLCPCB 41228, presale 40869 (12:36:20Z). The TMP116AIDRVR (C2691433, SBOS740A) has the same DRV pinout and register addresses, DEVICE_ID 1116h. It reads JLCPCB 2399 and Digi-Key 37390 (12:36:19Z, 12:37:20Z). So the TMP117AIDRVR passes rule 5 by the alternate route. Its +/-0.2 degC is the widest accuracy margin of any candidate in the function. TI product page https://www.ti.com/product/TMP117 shows TMP117AIDRVR and TMP117NAIDRVR ACTIVE (12:45:06Z)."
+   },
+   {
+    "part": "WSLP1206R0100FEA (C844910), WSL2512R0100FEA (C844901), PMR18EZPFU10L0 (C308574), PA2512FKE7T0R01E (C375691), CRA2512-FZ-R010ELF (C840621), PE1206FRF7W0R01L (C875635), Port shunt",
+    "reason_given": "tolerance and TCR share: +/-1 % alone is 30 mA at 3 A, beyond the 23.7 mA left by the INA3221",
+    "why_it_fails": "The reason holds only for the INA3221 pairing, not for the function. P2's own rank-2 port monitor, INA226AIDGSR, takes 8.7 mA by P2's figures. That leaves 41.3 mA, or 1.377 % at 3 A, so +/-1 % alone (30 mA) is no longer beyond the budget. The INA237AIDGSR found here takes 19.3 mA and leaves 30.7 mA (1.02 %). There, +/-1 % leaves 0.02 % for the TCR term, so the drop would hold again. For the INA226 pairing, each +/-1 % part needs re-qualification: tolerance plus TCR x (25 K + self-heating) <= 1.377 %, which allows about 107 ppm/degC at 35 K. The TCR, thermal resistance and power of these six were not read from their datasheets here, so none is claimed to pass."
+   }
+  ],
+  "missed_functions": []
+ }
+}
