@@ -1361,6 +1361,15 @@ def cmd_prepare(args):
     run_id = hashlib.sha256(ident.encode()).hexdigest()[:16]
     for_research = [{"id": r[0], "category": r[1]} for r in rows
                     if "for research" in r[3].lower()]
+    # The agents run this tool's vendors.py, copied for the run so a branch
+    # switch in this clone does not change it; the checkout of
+    # research/round1 carries the copy of the day the branch was cut.
+    src = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                       "vendors.py")
+    vendors_copy = os.path.join(base, "tools", run_id, "vendors.py")
+    os.makedirs(os.path.dirname(vendors_copy), exist_ok=True)
+    shutil.copyfile(src, vendors_copy)
+    vendors_sha = hashlib.sha256(open(vendors_copy, "rb").read()).hexdigest()
     out = {
         "task": args.task, "mode": "run", "date": today, "commit": commit,
         "cap": cats["cap"], "categories": cats["categories"],
@@ -1375,7 +1384,8 @@ def cmd_prepare(args):
                   "results": results,
                   "scratch": os.path.join(base, "scratch"),
                   "digikey_env": env,
-                  "digikey_cache": os.path.join(base, "cache", "digikey")},
+                  "digikey_cache": os.path.join(base, "cache", "digikey"),
+                  "vendors": vendors_copy},
         "followup": followup, "first_v": first_v,
         "decisions": decisions(text),
         "decision_categories": decision_categories(text),
@@ -1395,7 +1405,8 @@ def cmd_prepare(args):
         "t6_outputs": T6_REQUIRED if args.task == "T6" else [],
         **t6,
         "run_info": {**run_info(args.model, args.effort),
-                     "digikey_calls_left": quota},
+                     "digikey_calls_left": quota,
+                     "vendors_sha256": vendors_sha},
         "accept_open": {"reason": args.accept_open, "functions": open_sel}
         if args.accept_open else None,
     }
