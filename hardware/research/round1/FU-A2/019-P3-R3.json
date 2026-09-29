@@ -1,0 +1,43 @@
+{
+ "role": "P3",
+ "category": "R3",
+ "label": "P3-R3",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "missed": [
+   {
+    "function": "trigger-path inverter",
+    "part": "74AUP1G14GVH (LCSC C545593)",
+    "maker": "Nexperia",
+    "why": "P2 read only TI inverters (SN74AUP1G14, SN74LVC1G14, SN74LVC1G04) and 74LVC1G04GV. It did not read Nexperia's 74AUP1G14. Source: 74AUP1G14 Rev. 11 (12 July 2023), https://assets.nexperia.com/documents/data-sheet/74AUP1G14.pdf, read 2026-09-29T01:21:42Z. IOFF (VI or VO 0 V to 3.6 V, VCC 0 V) is +/-0.2 uA at 25 degC and +/-0.5 uA at -40 to 85 degC. P2's rank 1 SN74AUP1G14DBVR has 0.6 uA at -40 to 85 degC (SCES578J, https://www.ti.com/lit/ds/symlink/sn74aup1g14.pdf, read 01:32:54Z). Delta-IOFF is 0.6 uA on both. Supply 0.8 V to 3.6 V; Tamb -40 to 125 degC. VT+ is 1.88 V to 2.29 V at VCC 3.0 V, below 3.15 V. Neither maker states VT+ at 3.3 V: both tables stop at VCC 3.0 V, and TI gives the same 1.88 V to 2.29 V. So it meets 'input threshold' on the reading P2 accepted for its rank 1. The GV package is SOT753 with pins 1 n.c., 2 A, 3 GND, 4 Y, 5 VCC. TI's DBV pin table has A 2, GND 3, Y 4, VCC 5. So it is a candidate for rank 1's rule-5 alternate in the same land. JLCPCB C545593: stockCount 356, canPresaleNumber 351, expand, USD 0.2128 at 1 (2026-09-29T01:21:28Z, vendors.py jlcpcb C545593, exact match); gate 50. Digi-Key 74AUP1G14GVH, Nexperia USA Inc.: stock_available 5335, lead 24 weeks, status Active (vendors.py digikey-search 74AUP1G14GV, 01:22:24Z). The same search lists an NXP USA Inc. row with 65500. The Nexperia product page https://www.nexperia.com/product/74AUP1G14GV has product-status--production in the page body (01:22:24Z). Like P2's rank 1, it is placed only with a monostable whose trigger inputs have one polarity. Three related rows fail rule 4 at JLCPCB: the SOT353 form 74AUP1G14GW,125 (C545594) has 1 (01:21:27Z); Nexperia's buffer 74AUP1G17GW,125 (C545626) has 3 and 74AUP1G17GVH (C545625) has 0 (01:21:27Z), so they add nothing to 'trigger input I_off buffer (Q9)'."
+   },
+   {
+    "function": "reset supervisor",
+    "part": "TPS3702AX33DDCR (LCSC C2068673); TPS3702CX33DDCR (LCSC C2068031)",
+    "maker": "Texas Instruments",
+    "why": "P2 has no record of the TPS3702 window supervisor family. Source: SBVS251A (February 2024), https://www.ti.com/lit/ds/symlink/tps3702.pdf, read 2026-09-29T01:23:33Z. Threshold accuracy +/-0.9 % at -40 to 125 degC. VHYS 0.3 % to 0.8 % of the nominal trip point. Table 10-1: AX33 UV 3.10 V with SET low and 3.23 V with SET high; CX33 UV 3.00 V and 3.17 V. AX33 with SET low: threshold 3.072 V to 3.128 V, release at most 3.128 + 0.025 = 3.153 V, band to 3.201 V 129 mV. That is narrower than rank 1's 155 mV. The OV trip, 3.50 V - 0.9 % = 3.469 V minimum, stays above 3.399 V. It fails sourcing rule 4: JLCPCB C2068673 stockCount 6, canPresaleNumber 6 (01:29:04Z); TPS3702AX33QDDCRQ1 (C702149) 5/5 and AX33DDCT (C2067086) 0 (01:29:06Z to 01:29:07Z); gate 50. CX33DDCR passes rule 4 (C2068031 stockCount 4751, canPresaleNumber 4577, 01:29:07Z) but does not beat P2's ranks. SET high fails the release rule: 3.17 x 1.009 + 0.008 x 3.17 = 3.224 V > 3.201 V. SET low gives a 2.973 V threshold minimum, a 228 mV band, wider than all three of P2's ranks. The whole family also leaves 'delay (V43)' unshown. The timing table gives tpd(LH) 35 us and tSD 300 us as nominal values only, with no minimum, so 'at least 125 ns' cannot be shown. Digi-Key was not read, because no row passes every requirement."
+   },
+   {
+    "function": "monostable",
+    "part": "LTC6993-2 and LTC6993-4 (TimerBlox) rows: LTC6993CS6-2#TRMPBF C581040, LTC6993IS6-2#TRMPBF C581046, LTC6993HS6-2#TRPBF C689997, LTC6993HS6-2#TRMPBF C581044, LTC6993HS6-2#WTRMPBF C3236203, LTC6993CS6-4#TRMPBF C581042, LTC6993HS6-4#TRMPBF C690000, LTC6993HS6-4#TRPBF C690001",
+    "maker": "Analog Devices",
+    "why": "P2 has no record of ADI's TimerBlox monostables, which sit in the parts database's 'Monostable Multivibrators' subcategory. The database describes the -2 and -4 rows as 'Monostable Retriggerable', one channel, 2.25 V to 5.5 V, TSOT-23-6. A single-channel part cannot meet 'dual retriggerable, one half per edge polarity' in one package; two packages would be needed. Every retriggerable row also fails sourcing rule 4. JLCPCB stockCount readings: C581040 11, C581046 3, C689997 2, C581044 1, C3236203 10, C581042 15, C690000 28, C690001 3 (2026-09-29T01:29:26Z to 01:29:28Z, vendors.py jlcpcb, exact matches). The gate is 50 at any need of 10 or less. The datasheet was not read: its clear input, its '423 behaviour and its I_off are not read."
+   },
+   {
+    "function": "onboard pack switch driver",
+    "part": "TPSI3100DVXR (LCSC C45073217); TPSI3100QDVXRQ1 (LCSC C43131697); TPSI31P1QDVXRQ1 (LCSC C49307526)",
+    "maker": "Texas Instruments",
+    "why": "P2 has no record of the TPSI3100 isolated switch drivers, TI's other family of isolated switch drivers with integrated bias beside the TPSI305x it ranks. Each fails sourcing rule 4 against the gate of 50 (100 at P2's summed 2 to 4 a board). JLCPCB: C45073217 stockCount 0, canPresaleNumber -3 (2026-09-29T01:32:08Z); C43131697 0/0 (01:32:06Z); C49307526 17/16 (01:32:09Z); vendors.py jlcpcb, exact matches. The datasheet was not read, because the stock gate decides. For completeness, TPSI3052SQDWZRQ1 (C20346003) holds 35/35 (01:32:11Z), also under the gate. P2's rank 1 TPSI3052DWZR (C20346001) holds 1126/1107 (01:32:23Z)."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "SN74LVC1G04DCKR, 74LVC1G04GV,125 (trigger-path inverter)",
+    "reason_given": "not qualified: no Schmitt input; the trigger line reaches the input through 4.7 kOhm and 100 kOhm, and the Schmitt parts pass every requirement; datasheets not read in this task",
+    "why_it_fails": "As worded, the reason names none of the requirement values P2 lists for this function, and both parts meet every listed value. 'Input threshold' (positive-going threshold at 3.3 V below 3.15 V): VIH is 2.0 V minimum at VCC 3 V to 3.6 V (TI SCES214AF, https://www.ti.com/lit/ds/symlink/sn74lvc1g04.pdf, read 2026-09-29T01:25:43Z, section 5.3). 'I_off on the input': Ioff +/-10 uA at VI or VO 5.5 V, VCC 0 V (TI, same read). IOFF +/-2 uA at -40 to 85 degC (Nexperia 74LVC1G04 Rev. 18.1, https://assets.nexperia.com/documents/data-sheet/74LVC1G04.pdf, read 01:25:43Z). Supply and temperature pass as well. The drop would hold on a ground P2 did not list, the input transition rate. Delta-t/delta-V is 10 ns/V maximum at VCC 3.3 V +/-0.3 V (TI section 5.3) and 10 ns/V at 2.7 V to 5.5 V (Nexperia). Behind the 4.7 kOhm series resistor, the edge charges at least the input's own Ci of 3.5 pF typical (TI). 2.2 x 4.7 kOhm x 3.5 pF = 36 ns for 10 % to 90 % of 3.3 V, 2.64 V, which is about 14 ns/V. That is derived from a typical Ci with no board capacitance added, and it is above 10 ns/V. So the parts are out, but only after P2 adds 'input transition rate behind 4.7 kOhm' to the requirements and cites these limits. The same missing requirement is the real reason every latch 'takes the Schmitt buffer ahead of CP', which P2 states only in its ranking reasons."
+   }
+  ],
+  "missed_functions": []
+ }
+}

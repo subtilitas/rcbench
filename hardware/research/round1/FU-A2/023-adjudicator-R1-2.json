@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R1",
+ "label": "adjudicator-R1-2",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "function": "found V1",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. V1 asks for a specific stop deadline. It runs from a frozen coprocessor that stops feeding the RP2350 watchdog while the panel keeps beating, and ends when every gate the coprocessor drives is at its reset state. The owner marked V1 \"for research\" (Research.md:561), and Research.md:553 says such a value is found at its primary source. No source in the tree gives it. P2's 200 ms is reasoning by analogy, not a figure found at a source. The 200 ms in the tree measures two other things. One is link silence before the coprocessor fills failsafe values on its own authority (link_dev.h:25-31). The other is the monostable's drive-removed deadline, counted from the last heartbeat edge (IOBoard.md:186; Monostable.md:28, :115-116). Neither counts from the watchdog feed stopping, and both assume a coprocessor or monostable that can still act. Safety.md:51-54 marks the V1 case as \"no help\" from the monostable and says no hardware covers it. IOBoard.md:221 says outright: \"The watchdog timeout and the stop deadline it serves are not stated; P1 asks the owner for the deadline.\" The same line clashes with P2's value. It requires the watchdog timeout to exceed the longest legitimate stall, including a 400 ms W25Q16JV sector erase. Counted from the last feed, the chip resets only after that timeout, so the deadline is longer than 400 ms. A 200 ms deadline cannot be met under the tree's own rule. The panel's 1 s escalation only sets h->escalated (link_host.c:268-271). Outside link_host.c, only the host tests read it (test/host/test_link_watchdog.c). No firmware acts on it, so it gives no deadline either. V1 is not found and goes back to the owner. The scope is function: the ruling is about this question's value, not about the RP2354B.",
+  "evidence": "Research.md:553 \"P2 finds a value marked for research at its primary source and records it as found, not given\"; Research.md:561 V1 \"for research (owner, 2026-09-28)\". IOBoard.md:221: \"The watchdog timeout and the stop deadline it serves are not stated; P1 asks the owner for the deadline. The timeout exceeds the longest legitimate stall of the coprocessor, including a W25Q16JV sector erase (400 ms maximum)\". IOBoard.md:186 and Monostable.md:28, :115: the deadline is \"within 200 ms of the last edge\", i.e. counted from the heartbeat, not from the watchdog feed. link_dev.h:25-31: LINK_DEV_SILENCE_MS 200u is link silence before the coprocessor fills failsafe values itself. Safety.md:51-54: third row \"no help\"; \"no hardware in this design covers it\". link_host.h:26-28 LINK_HOST_TIMEOUT_MS 1000u; link_host.c:268-271 only sets h->escalated. A grep of all .c and .h files finds reads of escalated only in link_host.c and in test/host/test_link_watchdog.c, none in firmware.",
+  "source": "checkout e13f5f60d2e5: hardware/docs/Research.md:553, :561; hardware/docs/IOBoard.md:186, :221; docs/Safety.md:1-56; shared/link/include/link_dev.h:25-31; shared/link/include/link_host.h:26-28; shared/link/link_host.c:255-272; grep -rn escalated over *.c and *.h. /home/claude/rcbench-research/round1/monostable-23c82ca hardware/docs/Monostable.md:25-30, :112-117",
+  "read_at": "2026-09-29T01:38:32Z",
+  "scope": "function"
+ }
+}

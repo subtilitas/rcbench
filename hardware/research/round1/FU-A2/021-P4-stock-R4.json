@@ -1,0 +1,1129 @@
+{
+ "role": "P4",
+ "category": "R4",
+ "label": "P4-stock-R4",
+ "attempt": 0,
+ "data": {
+  "category": "R4",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "gated output buffer",
+    "part": "SN74LVC244APWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 94539",
+      "read": "stockCount 94539 at JLCPCB (row C7668 SN74LVC244APWR); need 5 boards × 2 = 10; S4 gate max(5 × 10, 50) = 50; 94539 >= 50: pass (rule 4)",
+      "source": "vendors.py jlcpcb C7668 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:08Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 94365",
+      "read": "canPresaleNumber 94365, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C7668 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:08Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "manufacturer status ACTIVE (meta status ACTIVE; orderable marketingStatusDescription ACTIVE)",
+      "read": "meta status ACTIVE; orderable SN74LVC244APWR marketingStatusDescription ACTIVE (all 18 orderables of SN74LVC244A on the page ACTIVE). S5: active passes",
+      "source": "https://www.ti.com/product/SN74LVC244A (vendors.py fetch, client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:29:08Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (no maker programme page fetched)",
+      "read": "TI's product life cycle page publishes no per-part commitment: life cycles are typically 10 to 15 years; a standard product is not eligible for obsolescence while it has had sales in the last 5 years, has been in production under 10 years, or has current demand. S5: recorded, not required",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:24Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "November 1992 (SCAS414 header)",
+      "read": "SCAS414AG – NOVEMBER 1992 – REVISED JUNE 2026: first revision November 1992, over 12 months on the market",
+      "source": "https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:45Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; the JLCPCB API carries no status",
+      "read": "Digi-Key ProductStatus Active (discontinued false, end_of_life false; stock_available 0, all three packagings 0); LCSC page C7668: availability InStock, stock 94210, no lifecycle field and no discontinued, obsolete or end-of-life marker; JLCPCB: the API row carries no status field, and the part page jlcpcb.com/partdetail/C7668 (01:31:32Z) no status marker. No disagreement with the maker's ACTIVE",
+      "source": "vendors.py digikey SN74LVC244APWR (https://api.digikey.com/products/v4/search/SN74LVC244APWR/productdetails), read 01:28:36Z; https://www.lcsc.com/product-detail/C7668.html (vendors.py fetch), read 01:31:12Z; vendors.py jlcpcb C7668, read 01:28:08Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:36Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks",
+      "read": "manufacturer lead time 16 weeks",
+      "source": "vendors.py digikey SN74LVC244APWR (https://api.digikey.com/products/v4/search/SN74LVC244APWR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:36Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended) on the exact row C7668; S6 allows both",
+      "source": "vendors.py jlcpcb C7668 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:08Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C7668, SN74LVC244APWR, TSSOP-20 (PW)",
+      "read": "exact result for C7668: SN74LVC244APWR, label Texas Instruments, package TSSOP-20",
+      "source": "vendors.py jlcpcb C7668 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:08Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2; fixed by the specification: 16 PWM lines at 8 buffers a part",
+      "read": "2 a board: 16 PWM ports (Research.md:63; IOBoard.md:226-227) at 8 buffers a part; candidate count 2 >= 2",
+      "source": "hardware/docs/Research.md:63, hardware/docs/IOBoard.md:226-237 at e13f5f60",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:33:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C7668",
+      "read": "on the IO board (rule 1): the gated output buffer of the 16 PWM ports (IOBoard.md:226-243); LCSC C7668 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md:226-243 at e13f5f60; vendors.py jlcpcb C7668",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:08Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read",
+      "read": "no end-of-life or last-time-buy notice shown: TI marks SN74LVC244APWR ACTIVE, and TI designates a product being discontinued LAST TIME BUY (product life cycle page, 01:30:24Z); Digi-Key end_of_life false, discontinued false. TI's PCN listing itself is not read: https://www.ti.com/productchangenotification and https://www.ti.com/support-quality/pcn.html answered HTTP 404 (01:31:44Z to 01:31:45Z)",
+      "source": "https://www.ti.com/product/SN74LVC244A (01:29:08Z); https://www.ti.com/quality-reliability/quality/product-life-cycle.html; vendors.py digikey SN74LVC244APWR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:36Z"
+     }
+    ]
+   },
+   {
+    "function": "gated output buffer",
+    "part": "74LVC244APW,118",
+    "kind": "alternate",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 27938",
+      "read": "stockCount 27938 at JLCPCB (row C6079 74LVC244APW,118); need 5 × 2 = 10; S4 gate 50; 27938 >= 50: pass (rule 4), so SN74LVC244APWR's rule-5 alternate route passes",
+      "source": "vendors.py jlcpcb C6079 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:10Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 27915",
+      "read": "canPresaleNumber 27915, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C6079 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:10Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "manufacturer status Production (marker product-status--production)",
+      "read": "product heading 74LVC244APW with span product-status--production 'Production'; the ordering rows load by script and are not in the page body. S5: in production passes",
+      "source": "https://www.nexperia.com/product/74LVC244APW (vendors.py fetch, client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:29:45Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "Nexperia Longevity Program 2026, standard logic table (families incl. LVC), 20-pin TSSOP SOT360-1: 10 years as of September 2025; the page states no legal rights derive from it and products stay subject to PCN and end-of-life policies. S5: recorded, not required",
+      "source": "https://www.nexperia.com/support/customer-support/longevity (vendors.py fetch, client chrome, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:06Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "74LVC244A_74LVCH244A v.1, 1996-09-06",
+      "read": "Table 11 revision history of Rev. 14: 74LVC244A_74LVCH244A v.1, 19960906, product specification; over 12 months on the market",
+      "source": "https://assets.nexperia.com/documents/data-sheet/74LVC_LVCH244A.pdf (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:47Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active",
+      "read": "Digi-Key (Nexperia USA Inc.) ProductStatus Active (discontinued false, end_of_life false; stock_available 0); LCSC page C6079: availability InStock, stock 27925, no lifecycle field and no discontinued, obsolete or end-of-life marker; JLCPCB API row carries no status field. No disagreement with the maker's Production",
+      "source": "vendors.py digikey 74LVC244APW,118 (https://api.digikey.com/products/v4/search/74LVC244APW%2C118/productdetails), 01:28:38Z; https://www.lcsc.com/product-detail/C6079.html, 01:31:29Z; vendors.py jlcpcb C6079, 01:28:10Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:38Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 20 weeks",
+      "read": "manufacturer lead time 20 weeks",
+      "source": "vendors.py digikey 74LVC244APW,118 (https://api.digikey.com/products/v4/search/74LVC244APW%2C118/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:38Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended) on the exact row C6079; S6 allows both",
+      "source": "vendors.py jlcpcb C6079 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:10Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C6079, 74LVC244APW,118, TSSOP-20 (SOT360-1)",
+      "read": "exact result for C6079: 74LVC244APW,118, label Nexperia, package TSSOP-20",
+      "source": "vendors.py jlcpcb C6079 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:10Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2; fixed by the specification: 16 PWM lines at 8 buffers a part",
+      "read": "2 a board, as the part it stands in for: 16 PWM ports (Research.md:63; IOBoard.md:226-227) at 8 buffers a part; candidate count 2 >= 2",
+      "source": "hardware/docs/Research.md:63, hardware/docs/IOBoard.md:226-237 at e13f5f60",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:33:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C6079",
+      "read": "on the IO board (rule 1), in place of SN74LVC244APWR; LCSC C6079 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md:226-243 at e13f5f60; vendors.py jlcpcb C6079",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:10Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read",
+      "read": "no end-of-life or last-time-buy notice shown: Nexperia marks 74LVC244APW Production; Digi-Key end_of_life false, discontinued false. Nexperia's PCN listing itself is not read; no PCN entry is in the product page body",
+      "source": "https://www.nexperia.com/product/74LVC244APW (01:29:45Z); vendors.py digikey 74LVC244APW,118",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:38Z"
+     }
+    ]
+   },
+   {
+    "function": "enable inverter",
+    "part": "SN74LVC1G04DBVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 53239",
+      "read": "stockCount 53224 at JLCPCB (row C7827 SN74LVC1G04DBVR); need 5 × 2 = 10; S4 gate 50; 53224 >= 50: pass (rule 4). Moved by 15 since P2's reading",
+      "source": "vendors.py jlcpcb C7827 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:11Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 51429",
+      "read": "canPresaleNumber 51414, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C7827 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:11Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "manufacturer status ACTIVE (meta status ACTIVE; orderable marketingStatusDescription ACTIVE)",
+      "read": "meta status ACTIVE; orderable SN74LVC1G04DBVR marketingStatusDescription ACTIVE (all 18 orderables on the page ACTIVE). S5: active passes",
+      "source": "https://www.ti.com/product/SN74LVC1G04 (vendors.py fetch, client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:29:08Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (no maker programme page fetched)",
+      "read": "TI's product life cycle page publishes no per-part commitment: life cycles are typically 10 to 15 years; a standard product is not eligible for obsolescence while it has had sales in the last 5 years, has been in production under 10 years, or has current demand. S5: recorded, not required",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:24Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "April 1999 (SCES214 header)",
+      "read": "SCES214AF – APRIL 1999 – REVISED OCTOBER 2025: first revision April 1999, over 12 months on the market",
+      "source": "https://www.ti.com/lit/ds/symlink/sn74lvc1g04.pdf (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:45Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; the JLCPCB API carries no status",
+      "read": "Digi-Key keyword row of Texas Instruments ProductStatus Active (discontinued false, end_of_life false); productdetails answered HTTP 404, duplicate products (01:28:39Z); LCSC page C7827: availability InStock, stock 53220, no lifecycle or discontinued marker; JLCPCB API row carries no status field. No disagreement with the maker's ACTIVE",
+      "source": "vendors.py digikey-search SN74LVC1G04DBVR (https://api.digikey.com/products/v4/search/keyword), 01:28:54Z; https://www.lcsc.com/product-detail/C7827.html, 01:31:30Z; vendors.py jlcpcb C7827, 01:28:11Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:54Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks",
+      "read": "manufacturer lead time 16 weeks (Texas Instruments keyword row)",
+      "source": "vendors.py digikey-search SN74LVC1G04DBVR (https://api.digikey.com/products/v4/search/keyword)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:54Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended) on the exact row C7827; S6 allows both",
+      "source": "vendors.py jlcpcb C7827 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:11Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C7827, SN74LVC1G04DBVR, SOT-23-5 (DBV)",
+      "read": "exact result for C7827: SN74LVC1G04DBVR, label Texas Instruments, package SOT-23-5",
+      "source": "vendors.py jlcpcb C7827 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:11Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2; range 1 to 2: one inverter on the 4 OE pins of the two 244s, or one per 244; the gate applies at 2",
+      "read": "the specification fixes no count; top of P2's range 1 to 2 (one inverter for the four 244 OE pins, or one per 244) is 2; candidate count 2 >= 2",
+      "source": "P2's placements_basis; Monostable.md:369-376 at 23c82ca as cited; hardware/docs/IOBoard.md:226-237 at e13f5f60",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:33:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C7827",
+      "read": "on the IO board (rule 1): drives the 244s' OE pins; LCSC C7827 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md:226-243 at e13f5f60; vendors.py jlcpcb C7827",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:11Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read",
+      "read": "no end-of-life or last-time-buy notice shown: TI marks SN74LVC1G04DBVR ACTIVE (TI designates a product being discontinued LAST TIME BUY); Digi-Key TI row end_of_life false, discontinued false. TI's PCN listing itself is not read (the two PCN URLs tried answered HTTP 404, 01:31:44Z to 01:31:45Z)",
+      "source": "https://www.ti.com/product/SN74LVC1G04 (01:29:08Z); https://www.ti.com/quality-reliability/quality/product-life-cycle.html; vendors.py digikey-search SN74LVC1G04DBVR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:54Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "stock_available 248301",
+      "read": "Digi-Key keyword row SN74LVC1G04DBVR of Texas Instruments: stock_available 248301, Active; gate 50: pass (rule 5). The UMW (1144) and EVVO SN74LVC1G04DBVR-EV (4063) rows are not allowlisted makers; SN74LVC1G04DBVRG4 and DBVRE4 (TI) are Discontinued at DigiKey with 0, other part numbers",
+      "source": "vendors.py digikey-search SN74LVC1G04DBVR (https://api.digikey.com/products/v4/search/keyword)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:54Z"
+     }
+    ]
+   },
+   {
+    "function": "bias selector",
+    "part": "SN74LVC1G126DBVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 73654",
+      "read": "stockCount 73654 at JLCPCB (row C7834 SN74LVC1G126DBVR); need 5 × 5 = 25; S4 gate max(125, 50) = 125; 73654 >= 125: pass (rule 4)",
+      "source": "vendors.py jlcpcb C7834 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:13Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 73282",
+      "read": "canPresaleNumber 73282, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C7834 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:13Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "manufacturer status ACTIVE (meta status ACTIVE; orderable marketingStatusDescription ACTIVE)",
+      "read": "meta status ACTIVE; orderable SN74LVC1G126DBVR marketingStatusDescription ACTIVE (all 14 orderables on the page ACTIVE). S5: active passes",
+      "source": "https://www.ti.com/product/SN74LVC1G126 (vendors.py fetch, client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:29:08Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (no maker programme page fetched)",
+      "read": "TI's product life cycle page publishes no per-part commitment: life cycles are typically 10 to 15 years; a standard product is not eligible for obsolescence while it has had sales in the last 5 years, has been in production under 10 years, or has current demand. S5: recorded, not required",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:24Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "April 1999 (SCES224 header)",
+      "read": "SCES224S – APRIL 1999 – REVISED AUGUST 2026: first revision April 1999, over 12 months on the market",
+      "source": "https://www.ti.com/lit/ds/symlink/sn74lvc1g126.pdf (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:45Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; the JLCPCB API carries no status",
+      "read": "Digi-Key keyword row of Texas Instruments ProductStatus Active (discontinued false, end_of_life false); productdetails answered HTTP 404, duplicate products (01:28:41Z); LCSC page C7834: availability InStock, stock 73570, no lifecycle or discontinued marker; JLCPCB API row carries no status field. No disagreement with the maker's ACTIVE",
+      "source": "vendors.py digikey-search SN74LVC1G126DBVR (https://api.digikey.com/products/v4/search/keyword), 01:28:55Z; https://www.lcsc.com/product-detail/C7834.html, 01:31:30Z; vendors.py jlcpcb C7834, 01:28:13Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:55Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks",
+      "read": "manufacturer lead time 16 weeks (Texas Instruments keyword row)",
+      "source": "vendors.py digikey-search SN74LVC1G126DBVR (https://api.digikey.com/products/v4/search/keyword)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:55Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended) on the exact row C7834; S6 allows both",
+      "source": "vendors.py jlcpcb C7834 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:13Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C7834, SN74LVC1G126DBVR, SOT-23-5 (DBV)",
+      "read": "exact result for C7834: SN74LVC1G126DBVR, label Texas Instruments, package SOT-23-5",
+      "source": "vendors.py jlcpcb C7834 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:13Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "5; fixed by the specification: 5 lines, the 4 multiprotocol ports and the UART socket (F13, V56), one buffer a line",
+      "read": "5 a board: 4 multiprotocol ports and the one-pin UART socket (Research.md:63; IOBoard.md:226-237), one buffer a line; candidate count 5 >= 5",
+      "source": "hardware/docs/Research.md:63, hardware/docs/IOBoard.md:226-237 at e13f5f60",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:33:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C7834",
+      "read": "on the IO board (rule 1): the per-line bias switch; LCSC C7834 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md:226-243 at e13f5f60; vendors.py jlcpcb C7834",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:13Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read",
+      "read": "no end-of-life or last-time-buy notice shown: TI marks SN74LVC1G126DBVR ACTIVE (TI designates a product being discontinued LAST TIME BUY); Digi-Key TI row end_of_life false, discontinued false. TI's PCN listing itself is not read (the two PCN URLs tried answered HTTP 404, 01:31:44Z to 01:31:45Z)",
+      "source": "https://www.ti.com/product/SN74LVC1G126 (01:29:08Z); https://www.ti.com/quality-reliability/quality/product-life-cycle.html; vendors.py digikey-search SN74LVC1G126DBVR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:55Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "stock_available 19359",
+      "read": "Digi-Key keyword row SN74LVC1G126DBVR of Texas Instruments: stock_available 19359, Active; gate 125: pass (rule 5). The UMW (1242) and EVVO SN74LVC1G126DBVR-EV (2610) rows are not allowlisted makers",
+      "source": "vendors.py digikey-search SN74LVC1G126DBVR (https://api.digikey.com/products/v4/search/keyword)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:55Z"
+     }
+    ]
+   },
+   {
+    "function": "multiprotocol port path",
+    "part": "SN74CBTLV3126PWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 401",
+      "read": "stockCount 401 at JLCPCB (row C543078 SN74CBTLV3126PWR); need 5 × 2 = 10; S4 gate 50; 401 >= 50: pass (rule 4)",
+      "source": "vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 395",
+      "read": "canPresaleNumber 395, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "manufacturer status ACTIVE (meta status ACTIVE; orderable marketingStatusDescription ACTIVE)",
+      "read": "meta status ACTIVE; orderable SN74CBTLV3126PWR marketingStatusDescription ACTIVE. 10 orderables ACTIVE; SN74CBTLV3126PW (TSSOP tube of 90) and SN74CBTLV3126D (SOIC tube) are OBSOLETE, other carriers and packages, not this reel. S5: active passes",
+      "source": "https://www.ti.com/product/SN74CBTLV3126 (vendors.py fetch, client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:29:09Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (no maker programme page fetched)",
+      "read": "TI's product life cycle page publishes no per-part commitment: life cycles are typically 10 to 15 years; a standard product is not eligible for obsolescence while it has had sales in the last 5 years, has been in production under 10 years, or has current demand. S5: recorded, not required",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:24Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "December 1997 (SCDS038 header)",
+      "read": "SCDS038N – DECEMBER 1997 – REVISED JULY 2026: first revision December 1997, over 12 months on the market",
+      "source": "https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:46Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; the JLCPCB API carries no status",
+      "read": "Digi-Key ProductStatus Active (discontinued false, end_of_life false); LCSC page C543078: availability InStock, stock 401, no lifecycle or discontinued marker; JLCPCB API row carries no status field. No disagreement with the maker's ACTIVE",
+      "source": "vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails), 01:28:43Z; https://www.lcsc.com/product-detail/C543078.html, 01:31:31Z; vendors.py jlcpcb C543078, 01:28:14Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:43Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks",
+      "read": "manufacturer lead time 16 weeks",
+      "source": "vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:43Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended) on the exact row C543078; S6 allows both",
+      "source": "vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C543078, SN74CBTLV3126PWR, TSSOP-14 (PW)",
+      "read": "exact result for C543078: SN74CBTLV3126PWR, label Texas Instruments, package TSSOP-14",
+      "source": "vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2; range 5 to 6 lines at 4 switches a part: 2 parts, shared with the UART socket path and the reply path",
+      "read": "top of P2's range, 6 lines (4 multiprotocol ports, the UART socket, a second VESC line) at 4 switches a part = 2 parts; candidate count 2 >= 2",
+      "source": "P2's placements_basis; hardware/docs/Research.md:63, hardware/docs/IOBoard.md:226-237 at e13f5f60",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:33:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C543078",
+      "read": "on the IO board (rule 1): the gate element of the switch path; LCSC C543078 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md:226-243 at e13f5f60; vendors.py jlcpcb C543078",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read",
+      "read": "no end-of-life or last-time-buy notice shown for SN74CBTLV3126PWR: TI marks it ACTIVE (TI designates a product being discontinued LAST TIME BUY); Digi-Key end_of_life false, discontinued false. The obsolete PW tube and D orderables are other part numbers. TI's PCN listing itself is not read (the two PCN URLs tried answered HTTP 404, 01:31:44Z to 01:31:45Z)",
+      "source": "https://www.ti.com/product/SN74CBTLV3126 (01:29:09Z); https://www.ti.com/quality-reliability/quality/product-life-cycle.html; vendors.py digikey SN74CBTLV3126PWR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:43Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "stock_available 3756",
+      "read": "Digi-Key SN74CBTLV3126PWR: stock_available 3756 (tape and reel 2000, cut tape 3756, Digi-Reel 3756), Active; gate 50: pass (rule 5)",
+      "source": "vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:43Z"
+     }
+    ]
+   },
+   {
+    "function": "UART socket path",
+    "part": "SN74CBTLV3126PWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 401",
+      "read": "stockCount 401 at JLCPCB (row C543078 SN74CBTLV3126PWR); need 5 × 2 = 10; S4 gate 50; 401 >= 50: pass (rule 4)",
+      "source": "vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 395",
+      "read": "canPresaleNumber 395, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "manufacturer status ACTIVE (meta status ACTIVE; orderable marketingStatusDescription ACTIVE)",
+      "read": "meta status ACTIVE; orderable SN74CBTLV3126PWR marketingStatusDescription ACTIVE. 10 orderables ACTIVE; SN74CBTLV3126PW (TSSOP tube of 90) and SN74CBTLV3126D (SOIC tube) are OBSOLETE, other carriers and packages, not this reel. S5: active passes",
+      "source": "https://www.ti.com/product/SN74CBTLV3126 (vendors.py fetch, client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:29:09Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (no maker programme page fetched)",
+      "read": "TI's product life cycle page publishes no per-part commitment: life cycles are typically 10 to 15 years; a standard product is not eligible for obsolescence while it has had sales in the last 5 years, has been in production under 10 years, or has current demand. S5: recorded, not required",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:24Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "December 1997 (SCDS038 header)",
+      "read": "SCDS038N – DECEMBER 1997 – REVISED JULY 2026: first revision December 1997, over 12 months on the market",
+      "source": "https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:46Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; the JLCPCB API carries no status",
+      "read": "Digi-Key ProductStatus Active (discontinued false, end_of_life false); LCSC page C543078: availability InStock, stock 401, no lifecycle or discontinued marker; JLCPCB API row carries no status field. No disagreement with the maker's ACTIVE",
+      "source": "vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails), 01:28:43Z; https://www.lcsc.com/product-detail/C543078.html, 01:31:31Z; vendors.py jlcpcb C543078, 01:28:14Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:43Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks",
+      "read": "manufacturer lead time 16 weeks",
+      "source": "vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:43Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended) on the exact row C543078; S6 allows both",
+      "source": "vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C543078, SN74CBTLV3126PWR, TSSOP-14 (PW)",
+      "read": "exact result for C543078: SN74CBTLV3126PWR, label Texas Instruments, package TSSOP-14",
+      "source": "vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2; range 5 to 6 lines at 4 switches a part: 2 parts, shared with the multiprotocol port path and the reply path",
+      "read": "top of P2's range, 6 lines at 4 switches a part = 2 parts, the same 2 parts as the multiprotocol port path; candidate count 2 >= 2",
+      "source": "P2's placements_basis; hardware/docs/Research.md:63, hardware/docs/IOBoard.md:226-237 at e13f5f60",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:33:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C543078",
+      "read": "on the IO board (rule 1): the UART socket line's gate element; LCSC C543078 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md:226-243 at e13f5f60; vendors.py jlcpcb C543078",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read",
+      "read": "no end-of-life or last-time-buy notice shown for SN74CBTLV3126PWR: TI marks it ACTIVE; Digi-Key end_of_life false, discontinued false. The obsolete PW tube and D orderables are other part numbers. TI's PCN listing itself is not read (the two PCN URLs tried answered HTTP 404, 01:31:44Z to 01:31:45Z)",
+      "source": "https://www.ti.com/product/SN74CBTLV3126 (01:29:09Z); https://www.ti.com/quality-reliability/quality/product-life-cycle.html; vendors.py digikey SN74CBTLV3126PWR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:43Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "stock_available 3756",
+      "read": "Digi-Key SN74CBTLV3126PWR: stock_available 3756, Active; gate 50: pass (rule 5)",
+      "source": "vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:43Z"
+     }
+    ]
+   },
+   {
+    "function": "reply path through the gate",
+    "part": "SN74CBTLV3126PWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 401",
+      "read": "stockCount 401 at JLCPCB (row C543078 SN74CBTLV3126PWR); need 5 × 2 = 10; S4 gate 50; 401 >= 50: pass (rule 4)",
+      "source": "vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 395",
+      "read": "canPresaleNumber 395, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "manufacturer status ACTIVE (meta status ACTIVE; orderable marketingStatusDescription ACTIVE)",
+      "read": "meta status ACTIVE; orderable SN74CBTLV3126PWR marketingStatusDescription ACTIVE. SN74CBTLV3126PW (tube) and SN74CBTLV3126D are OBSOLETE, other orderables. S5: active passes",
+      "source": "https://www.ti.com/product/SN74CBTLV3126 (vendors.py fetch, client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:29:09Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (no maker programme page fetched)",
+      "read": "TI's product life cycle page publishes no per-part commitment: life cycles are typically 10 to 15 years; a standard product is not eligible for obsolescence while it has had sales in the last 5 years, has been in production under 10 years, or has current demand. S5: recorded, not required",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:24Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "December 1997 (SCDS038 header)",
+      "read": "SCDS038N – DECEMBER 1997 – REVISED JULY 2026: first revision December 1997, over 12 months on the market",
+      "source": "https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:46Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; the JLCPCB API carries no status",
+      "read": "Digi-Key ProductStatus Active (discontinued false, end_of_life false); LCSC page C543078: availability InStock, stock 401, no lifecycle or discontinued marker; JLCPCB API row carries no status field. No disagreement with the maker's ACTIVE",
+      "source": "vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails), 01:28:43Z; https://www.lcsc.com/product-detail/C543078.html, 01:31:31Z; vendors.py jlcpcb C543078, 01:28:14Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:43Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks",
+      "read": "manufacturer lead time 16 weeks",
+      "source": "vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:43Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended) on the exact row C543078; S6 allows both",
+      "source": "vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C543078, SN74CBTLV3126PWR, TSSOP-14 (PW)",
+      "read": "exact result for C543078: SN74CBTLV3126PWR, label Texas Instruments, package TSSOP-14",
+      "source": "vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2; range 5 to 6 lines at 4 switches a part: 2 parts, shared with the multiprotocol port path and the UART socket path",
+      "read": "top of P2's range, 6 lines at 4 switches a part = 2 parts, the same 2 parts as the port paths; candidate count 2 >= 2",
+      "source": "P2's placements_basis; hardware/docs/Research.md:63, hardware/docs/IOBoard.md:226-243 at e13f5f60",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:33:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C543078",
+      "read": "on the IO board (rule 1); LCSC C543078 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md:226-243 at e13f5f60; vendors.py jlcpcb C543078",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read",
+      "read": "no end-of-life or last-time-buy notice shown for SN74CBTLV3126PWR: TI marks it ACTIVE; Digi-Key end_of_life false, discontinued false. TI's PCN listing itself is not read (the two PCN URLs tried answered HTTP 404, 01:31:44Z to 01:31:45Z)",
+      "source": "https://www.ti.com/product/SN74CBTLV3126 (01:29:09Z); https://www.ti.com/quality-reliability/quality/product-life-cycle.html; vendors.py digikey SN74CBTLV3126PWR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:43Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "stock_available 3756",
+      "read": "Digi-Key SN74CBTLV3126PWR: stock_available 3756, Active; gate 50: pass (rule 5)",
+      "source": "vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:43Z"
+     }
+    ]
+   },
+   {
+    "function": "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+    "part": "SN74CBTLV3126PWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 401",
+      "read": "stockCount 401 at JLCPCB (row C543078 SN74CBTLV3126PWR); need 5 × 2 = 10; S4 gate 50; 401 >= 50: pass (rule 4)",
+      "source": "vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 395",
+      "read": "canPresaleNumber 395, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "manufacturer status ACTIVE (meta status ACTIVE; orderable marketingStatusDescription ACTIVE)",
+      "read": "meta status ACTIVE; orderable SN74CBTLV3126PWR marketingStatusDescription ACTIVE. SN74CBTLV3126PW (tube) and SN74CBTLV3126D are OBSOLETE, other orderables. S5: active passes",
+      "source": "https://www.ti.com/product/SN74CBTLV3126 (vendors.py fetch, client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:29:09Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (no maker programme page fetched)",
+      "read": "TI's product life cycle page publishes no per-part commitment: life cycles are typically 10 to 15 years; a standard product is not eligible for obsolescence while it has had sales in the last 5 years, has been in production under 10 years, or has current demand. S5: recorded, not required",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:24Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "December 1997 (SCDS038 header)",
+      "read": "SCDS038N – DECEMBER 1997 – REVISED JULY 2026: first revision December 1997, over 12 months on the market",
+      "source": "https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:46Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; the JLCPCB API carries no status",
+      "read": "Digi-Key ProductStatus Active (discontinued false, end_of_life false); LCSC page C543078: availability InStock, stock 401, no lifecycle or discontinued marker; JLCPCB API row carries no status field. No disagreement with the maker's ACTIVE",
+      "source": "vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails), 01:28:43Z; https://www.lcsc.com/product-detail/C543078.html, 01:31:31Z; vendors.py jlcpcb C543078, 01:28:14Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:43Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks",
+      "read": "manufacturer lead time 16 weeks",
+      "source": "vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:43Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended) on the exact row C543078; S6 allows both",
+      "source": "vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C543078, SN74CBTLV3126PWR, TSSOP-14 (PW)",
+      "read": "exact result for C543078: SN74CBTLV3126PWR, label Texas Instruments, package TSSOP-14",
+      "source": "vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2; range 5 to 6 lines at 4 switches a part: 2 parts, shared with the port paths",
+      "read": "top of P2's range, 6 lines at 4 switches a part = 2 parts, the same 2 parts as the port paths; candidate count 2 >= 2",
+      "source": "P2's placements_basis; hardware/docs/Research.md:63, hardware/docs/IOBoard.md:226-243 at e13f5f60",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:33:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C543078",
+      "read": "on the IO board (rule 1); LCSC C543078 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md:226-243 at e13f5f60; vendors.py jlcpcb C543078",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read",
+      "read": "no end-of-life or last-time-buy notice shown for SN74CBTLV3126PWR: TI marks it ACTIVE; Digi-Key end_of_life false, discontinued false. TI's PCN listing itself is not read (the two PCN URLs tried answered HTTP 404, 01:31:44Z to 01:31:45Z)",
+      "source": "https://www.ti.com/product/SN74CBTLV3126 (01:29:09Z); https://www.ti.com/quality-reliability/quality/product-life-cycle.html; vendors.py digikey SN74CBTLV3126PWR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:43Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "stock_available 3756",
+      "read": "Digi-Key SN74CBTLV3126PWR: stock_available 3756, Active; gate 50: pass (rule 5)",
+      "source": "vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:43Z"
+     }
+    ]
+   },
+   {
+    "function": "receiver inputs",
+    "part": "SN74LVC1T45DBVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 393313",
+      "read": "stockCount 392914 at JLCPCB (row C7843 SN74LVC1T45DBVR); need 5 × 1 = 5; S4 gate max(25, 50) = 50; 392914 >= 50: pass (rule 4). Moved by 399 since P2's reading",
+      "source": "vendors.py jlcpcb C7843 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:16Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 391336",
+      "read": "canPresaleNumber 390937, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C7843 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:16Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "manufacturer status ACTIVE (meta status ACTIVE; orderable marketingStatusDescription ACTIVE)",
+      "read": "meta status ACTIVE; orderable SN74LVC1T45DBVR marketingStatusDescription ACTIVE (all 14 orderables on the page ACTIVE). S5: active passes",
+      "source": "https://www.ti.com/product/SN74LVC1T45 (vendors.py fetch, client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:29:09Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (no maker programme page fetched)",
+      "read": "TI's product life cycle page publishes no per-part commitment: life cycles are typically 10 to 15 years; a standard product is not eligible for obsolescence while it has had sales in the last 5 years, has been in production under 10 years, or has current demand. S5: recorded, not required",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:24Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "December 2003 (SCES515 header)",
+      "read": "SCES515N – DECEMBER 2003 – REVISED JUNE 2024: first revision December 2003, over 12 months on the market",
+      "source": "https://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:30:46Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; the JLCPCB API carries no status",
+      "read": "Digi-Key ProductStatus Active (discontinued false, end_of_life false); LCSC page C7843: availability InStock, stock 389575, no lifecycle or discontinued marker; JLCPCB API row carries no status field. No disagreement with the maker's ACTIVE",
+      "source": "vendors.py digikey SN74LVC1T45DBVR (https://api.digikey.com/products/v4/search/SN74LVC1T45DBVR/productdetails), 01:28:44Z; https://www.lcsc.com/product-detail/C7843.html, 01:31:31Z; vendors.py jlcpcb C7843, 01:28:16Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:44Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 9 weeks",
+      "read": "manufacturer lead time 9 weeks",
+      "source": "vendors.py digikey SN74LVC1T45DBVR (https://api.digikey.com/products/v4/search/SN74LVC1T45DBVR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:44Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended) on the exact row C7843; S6 allows both",
+      "source": "vendors.py jlcpcb C7843 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:16Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C7843, SN74LVC1T45DBVR, SOT-23-6 (DBV)",
+      "read": "exact result for C7843: SN74LVC1T45DBVR, label Texas Instruments, package SOT-23-6",
+      "source": "vendors.py jlcpcb C7843 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:16Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1; fixed by V68 (found): 1 receiver input, one part",
+      "read": "1 a board: V68 is marked for research (Research.md:628) and its found value is 1 receiver input; one bit a part; candidate count 1 >= 1",
+      "source": "hardware/docs/Research.md:628 at e13f5f60; V68 found value in the shortlist",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:33:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C7843",
+      "read": "on the IO board (rule 1): the receiver input's buffer (IOBoard.md:226-237); LCSC C7843 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md:226-237 at e13f5f60; vendors.py jlcpcb C7843",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:16Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read",
+      "read": "no end-of-life or last-time-buy notice shown: TI marks SN74LVC1T45DBVR ACTIVE (TI designates a product being discontinued LAST TIME BUY); Digi-Key end_of_life false, discontinued false. TI's PCN listing itself is not read (the two PCN URLs tried answered HTTP 404, 01:31:44Z to 01:31:45Z)",
+      "source": "https://www.ti.com/product/SN74LVC1T45 (01:29:09Z); https://www.ti.com/quality-reliability/quality/product-life-cycle.html; vendors.py digikey SN74LVC1T45DBVR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:44Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "stock_available 91030",
+      "read": "Digi-Key SN74LVC1T45DBVR: stock_available 91082 (tape and reel 91030, cut tape 91082, Digi-Reel 91082), Active; gate 50: pass (rule 5)",
+      "source": "vendors.py digikey SN74LVC1T45DBVR (https://api.digikey.com/products/v4/search/SN74LVC1T45DBVR/productdetails)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T01:28:44Z"
+     }
+    ]
+   }
+  ]
+ }
+}

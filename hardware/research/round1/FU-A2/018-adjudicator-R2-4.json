@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R2",
+ "label": "adjudicator-R2-4",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "function": "function requirements: External CAN transceiver",
+  "part": "",
+  "stands": true,
+  "ruling": "Refutation stands, scope function. The loop-delay entry, \"TXD-to-RXD loop delay at most 237 ns\", uses only DroneCAN's recommended 87.5 % sample point. The source it cites also gives the valid range at 1000 kbit/s as 75 % to 90 %, so any valid node on the port may sample at 75 %. During arbitration and ACK, a node that started the frame must see the far node's dominant bit before its own sample point. That needs loop(A) + loop(B) + 2 x 40 m x 5 ns/m <= SP(A). The entry keeps its own assumption that the remote transceiver equals the IO board's. With a remote at 75 %: (750 ns - 400 ns) / 2 = 175 ns. Two 237 ns loops plus the bus take 874 ns, over 750 ns, so a node meeting the entry can fail 40 m against a valid remote. The tree's own CAN timing samples at 75 % on the link: IOBoard.md:168-169, \"both ends sample at 75 % of the bit\". No line fixes the external port's sample point higher. The requirement is therefore at most 175 ns: about 3 ns less if both nodes' 0.3 m stubs are counted, and taken at 5 ns/m. The other entries (V18 to V21, V23 0 V, V24 +30 V, IOBoard.md:175, :192, rails, V7) were not disputed and are not ruled on here. The verifier's transceiver figures (TCAN3413DR 180 ns, TCAN1044VDRQ1 210 ns, TCAN1042HGVDRQ1 160/175 ns, TCAN1472VDRQ1 155/160 ns) were not re-read by this adjudicator. They are consequences for part selection, not the basis of this ruling.",
+  "evidence": "DroneCAN \"CAN bus parameters\" table, re-read: \"1000 kbit/s | 75% to 90% | 87.5% | 40 m | 0.3 m\" (columns: bit rate, valid range for the sample point location, recommended location, max bus length, max stub length). Page text: \"The estimated bus length limits are based on the assumption that the propagation delay does not exceed 5 ns/m, not including additional delay times of CAN transceivers and other components.\" Found V22 in FU-A1/004-P2-R2.json: \"40 m total bus length at 1000 kbit/s, stubs at most 0.3 m, sample point 75 % to 90 %, 87.5 % recommended\". The disputed entry's source, in the same file: \"(875 ns to DroneCAN's recommended 87.5 % sample point - 2 x 40 m x 5 ns/m) / 2, the remote node taken as equal\". Research.md:582 at e13f5f60: V22 answered \"for research (owner, 2026-09-28)\", with no owner figure for the sample point. IOBoard.md:168: \"Bit timing | exactly 1 Mbit/s; both ends sample at 75 % of the bit\". Arithmetic: (750 - 400) / 2 = 175 ns; 2 x 237 + 400 = 874 ns > 750 ns.",
+  "source": "https://dronecan.github.io/Specification/8._Hardware_design_recommendations/ via vendors.py fetch (client chrome, HTTP 200, 35,733 bytes, saved to /home/claude/rcbench-research/round1/scratch/FU-A2/adjudicator-R2/dronecan.html); checkout e13f5f60d2e553032b27a14f31ed4a93ef4fe828 hardware/docs/Research.md:578-584, :567 and hardware/docs/IOBoard.md:168-169; /home/claude/rcbench-research/round1/results/hardware/research/round1/FU-A1/004-P2-R2.json (V22 found value and the loop-delay entry)",
+  "read_at": "2026-09-29T01:28:25Z",
+  "scope": "function"
+ }
+}

@@ -1,0 +1,2173 @@
+{
+ "role": "P4",
+ "category": "R3",
+ "label": "P4-stock-R3",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "monostable",
+    "part": "74HC423BQ,115",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C3216364 stockCount 233 (2026-09-29T00:13:13Z); need 5, gate 50: pass (rule 4)",
+      "read": "stockCount 233 at the exact row C3216364 (74HC423BQ115); need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; 233 >= 50: pass (rule 4); not held",
+      "source": "vendors.py jlcpcb C3216364 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:27Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 231 (2026-09-29T00:13:13Z)",
+      "read": "canPresaleNumber 231 at the exact row C3216364, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C3216364 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:27Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "production (maker page 'product-status--production')",
+      "read": "https://www.nexperia.com/product/74HC423BQ: product heading 74HC423BQ Production 'Dual retriggerable monostable multivibrator with reset' with the span class product-status--production; the ordering rows load by script and are not in the page body. S5: in production passes",
+      "source": "https://www.nexperia.com/product/74HC423BQ (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:54Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "Nexperia longevity programme: 10 years as of September 2025 for 16-pin DHVQFN SOT763-1 (HC(T)); not a gate",
+      "read": "Nexperia Longevity Program 2026, Analog & Logic package table (families include HC(T)), 16 pin DHVQFN SOT763-1: 10 years as of September 2025; the datasheet gives the package as SOT763-1. 'No legal rights can be derived from our program.' Recorded, not a gate (S5)",
+      "source": "https://www.nexperia.com/support/customer-support/longevity (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:55Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision: 74HC_HCT423_CNV v.2, 1998-07-08",
+      "read": "revision history of the current datasheet: earliest row 74HC_HCT423_CNV v.2, 19980708, Product specification; 28 years on the market, not under 12 months",
+      "source": "https://assets.nexperia.com/documents/data-sheet/74HC423.pdf (vendors.py fetch), revision history",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:38Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB listed; LCSC no end-of-life mark; Digi-Key Active",
+      "read": "JLCPCB: listed, the API row has no status field; LCSC C3216364: InStock, 233, no discontinued, obsolete or end-of-life text; Digi-Key ProductStatus Active, discontinued false, end_of_life false (Nexperia USA Inc.). No disagreement with the maker's Production",
+      "source": "vendors.py jlcpcb C3216364 (exact LCSC match) (2026-09-29T01:44:27Z); https://www.lcsc.com/product-detail/C3216364.html (2026-09-29T01:50:19Z); vendors.py digikey 74HC423BQ,115 (2026-09-29T01:44:58Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:58Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 14 weeks (P2)",
+      "read": "manufacturer lead time 14 weeks in Digi-Key's API",
+      "source": "vendors.py digikey 74HC423BQ,115",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:58Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended) on the exact JLCPCB row C3216364; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C3216364 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:27Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C3216364, 74HC423BQ,115, DHVQFN-16 (SOT763-1), 2.5 x 3.5 mm",
+      "read": "the exact JLCPCB result for C3216364: part '74HC423BQ115', maker label 'Nexperia', package 'DHVQFN-16-EP(2.5x3.5)'; the row names 74HC423BQ115, the orderable 74HC423BQ,115 without the comma, in DHVQFN-16-EP(2.5x3.5)",
+      "source": "vendors.py jlcpcb C3216364 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:27Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one dual part for the single-channel OR design (IOBoard.md:182)",
+      "read": "1: IOBoard.md:182 fixes 'a dual retriggerable monostable, one half per edge polarity'; one dual part carries both halves; the candidate's count 1 meets it",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:182",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C3216364",
+      "read": "on the IO board (rule 1): the interlock's monostable, supplied from the IO board's 3.3 V rail (hardware/docs/IOBoard.md@e13f5f6:182, :198); its LCSC number C3216364 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:182, :198; vendors.py jlcpcb C3216364 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: the maker's product page shows Production and no end-of-life, discontinued or last-time-buy text; Digi-Key end_of_life false, discontinued false. Nexperia's PCN listing not read: its page redirects to the My Nexperia login (2026-09-29T01:50:35Z)",
+      "source": "https://www.nexperia.com/product/74HC423BQ; vendors.py digikey 74HC423BQ,115",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:58Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 74HC423BQ,115 stock_available 2148 against the rule-4 gate of 50 (need 5), status Active",
+      "read": "Digi-Key 74HC423BQ,115 (Nexperia USA Inc.): stock_available 2148, ProductStatus Active; gate 50 (need 5): 2148 >= 50, pass (rule 5, second vendor)",
+      "source": "vendors.py digikey 74HC423BQ,115",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:58Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "OR gate",
+    "part": "74AUP1G32GW,125",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C179324 stockCount 952 (2026-09-29T00:13:19Z); need 5, gate 50: pass (rule 4)",
+      "read": "stockCount 952 at the exact row C179324 (74AUP1G32GW,125); need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; 952 >= 50: pass (rule 4); not held",
+      "source": "vendors.py jlcpcb C179324 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:29Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 949 (2026-09-29T00:13:19Z)",
+      "read": "canPresaleNumber 949 at the exact row C179324, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C179324 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:29Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "production (maker page 'product-status--production')",
+      "read": "https://www.nexperia.com/product/74AUP1G32GW: product heading 74AUP1G32GW Production 'Low-power 2-input OR-gate' with the span class product-status--production; the ordering rows load by script and are not in the page body. S5: in production passes",
+      "source": "https://www.nexperia.com/product/74AUP1G32GW (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:55Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "[D6] 10 years as of September 2025 for 5-pin TSSOP SOT353-1 (AUP); not a gate",
+      "read": "Nexperia Longevity Program 2026, mini-logic package table (families include AUP), 5 pin SOT353-1: 10 years as of September 2025; the datasheet gives SOT353-1. Recorded, not a gate (S5)",
+      "source": "https://www.nexperia.com/support/customer-support/longevity (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:55Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision: 74AUP1G32 v.1, 2005-08-02",
+      "read": "revision history: earliest row 74AUP1G32 v.1, 20050802, Product data sheet; 21 years on the market, not under 12 months",
+      "source": "https://assets.nexperia.com/documents/data-sheet/74AUP1G32.pdf (vendors.py fetch), revision history",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:39Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB listed; LCSC no end-of-life mark; Digi-Key Active",
+      "read": "JLCPCB: listed, the API row has no status field; LCSC C179324: InStock, 950, no discontinued, obsolete or end-of-life text; Digi-Key ProductStatus Active, discontinued false, end_of_life false (Nexperia USA Inc.); the search's other rows: 74AUP1G32GW/DG,125 (NXP USA Inc., Obsolete, 0); 74AUP1G32GW,125 (NXP USA Inc., Discontinued at DigiKey, 0); 74AUP1G32GW-Q100/H (Nexperia USA Inc., Obsolete, 0); 74AUP1G32GW-Q100H (Nexperia USA Inc., Obsolete, 0). No disagreement with the maker's Production",
+      "source": "vendors.py jlcpcb C179324 (exact LCSC match) (2026-09-29T01:44:29Z); https://www.lcsc.com/product-detail/C179324.html (2026-09-29T01:50:19Z); vendors.py digikey-search 74AUP1G32GW,125 (vendors.py digikey 74AUP1G32GW,125: HTTP 404 Duplicate Products, 2026-09-29T01:45:00Z) (2026-09-29T01:45:36Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:36Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 20 weeks (P2)",
+      "read": "manufacturer lead time 20 weeks in Digi-Key's API",
+      "source": "vendors.py digikey-search 74AUP1G32GW,125 (vendors.py digikey 74AUP1G32GW,125: HTTP 404 Duplicate Products, 2026-09-29T01:45:00Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:36Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended) on the exact JLCPCB row C179324; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C179324 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:29Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C179324, 74AUP1G32GW,125, TSSOP5 (SOT353-1)",
+      "read": "the exact JLCPCB result for C179324: part '74AUP1G32GW,125', maker label 'Nexperia', package 'TSSOP-5'; the row names 74AUP1G32GW,125 in TSSOP-5 (SOT353-1)",
+      "source": "vendors.py jlcpcb C179324 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:29Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one OR gate (IOBoard.md:182)",
+      "read": "1: IOBoard.md:182 'the two outputs combined by an OR gate into one enable node'; one gate; the candidate's count 1 meets it",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:182",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C179324",
+      "read": "on the IO board (rule 1): the OR gate of the interlock (hardware/docs/IOBoard.md@e13f5f6:182, :192); its LCSC number C179324 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:182, :192; vendors.py jlcpcb C179324 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: the maker's product page shows Production and no end-of-life, discontinued or last-time-buy text; Digi-Key end_of_life false, discontinued false. Nexperia's PCN listing not read: its page redirects to the My Nexperia login (2026-09-29T01:50:35Z)",
+      "source": "https://www.nexperia.com/product/74AUP1G32GW; vendors.py digikey-search 74AUP1G32GW,125 (vendors.py digikey 74AUP1G32GW,125: HTTP 404 Duplicate Products, 2026-09-29T01:45:00Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:36Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 74AUP1G32GW,125 stock_available 14211 against the rule-4 gate of 50 (need 5), status Active",
+      "read": "Digi-Key 74AUP1G32GW,125 (Nexperia USA Inc.): stock_available 14211, ProductStatus Active; gate 50 (need 5): 14211 >= 50, pass (rule 5, second vendor)",
+      "source": "vendors.py digikey-search 74AUP1G32GW,125 (vendors.py digikey 74AUP1G32GW,125: HTTP 404 Duplicate Products, 2026-09-29T01:45:00Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:36Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "reset supervisor",
+    "part": "TPS3703A7330DSERQ1",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C1849519 stockCount 307 (2026-09-29T00:13:24Z); need 5, gate 50: pass (rule 4)",
+      "read": "stockCount 307 at the exact row C1849519 (TPS3703A7330DSERQ1); need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; 307 >= 50: pass (rule 4); not held",
+      "source": "vendors.py jlcpcb C1849519 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:30Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 305 (2026-09-29T00:13:24Z)",
+      "read": "canPresaleNumber 305 at the exact row C1849519, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C1849519 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:30Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (maker page, orderable ACTIVE)",
+      "read": "https://www.ti.com/product/TPS3703-Q1: meta status ACTIVE; order table (generic part TPS3703-Q1) orderable TPS3703A7330DSERQ1 marketingStatusDescription ACTIVE ('released to the market and is available for purchase'); all 23 orderables of TPS3703-Q1 in the order table ACTIVE. S5: active passes",
+      "source": "https://www.ti.com/product/TPS3703-Q1 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:56Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no per-part commitment; TI policy [D19] 'typically 10 to 15 years'",
+      "read": "no per-part commitment published; TI's life cycle page: 'TI's product life cycles are typically 10 to 15 years and often extend longer'. Recorded, not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:59Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision: SBVS344D header, November 2018",
+      "read": "header 'SBVS344D – NOVEMBER 2018 – REVISED MARCH 2021': first release November 2018, about 7 years 10 months on the market, not under 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/tps3703-q1.pdf (vendors.py fetch), page header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:39Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB listed; LCSC no end-of-life mark; Digi-Key Active",
+      "read": "JLCPCB: listed, the API row has no status field; LCSC C1849519: InStock, 303, no discontinued, obsolete or end-of-life text; Digi-Key ProductStatus Active, discontinued false, end_of_life false (Texas Instruments). No disagreement with the maker's ACTIVE",
+      "source": "vendors.py jlcpcb C1849519 (exact LCSC match) (2026-09-29T01:44:30Z); https://www.lcsc.com/product-detail/C1849519.html (2026-09-29T01:50:20Z); vendors.py digikey TPS3703A7330DSERQ1 (2026-09-29T01:45:01Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:01Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 26 weeks (P2)",
+      "read": "manufacturer lead time 26 weeks in Digi-Key's API",
+      "source": "vendors.py digikey TPS3703A7330DSERQ1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:01Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended) on the exact JLCPCB row C1849519; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C1849519 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:30Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C1849519, TPS3703A7330DSERQ1, WSON-6 1.5 x 1.5 mm (DSE)",
+      "read": "the exact JLCPCB result for C1849519: part 'TPS3703A7330DSERQ1', maker label 'Texas Instruments', package 'WSON-6(1.5x1.5)'; the row names TPS3703A7330DSERQ1 in WSON-6(1.5x1.5)",
+      "source": "vendors.py jlcpcb C1849519 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:30Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one supervisor holds both clear inputs (IOBoard.md:195)",
+      "read": "1: IOBoard.md:195 'a reset supervisor with a stated threshold and delay (F12)'; one supervisor; the candidate's count 1 meets it",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:195",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C1849519",
+      "read": "on the IO board (rule 1): the interlock's clear network (hardware/docs/IOBoard.md@e13f5f6:195, :198); its LCSC number C1849519 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:195, :198; vendors.py jlcpcb C1849519 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: TI's order table marks TPS3703A7330DSERQ1 ACTIVE (TI marks a product being discontinued LAST TIME BUY); Digi-Key end_of_life false, discontinued false. TI's PCN listing not read: https://www.ti.com/productchangenotification HTTP 404 (2026-09-29T01:50:36Z)",
+      "source": "https://www.ti.com/product/TPS3703-Q1; vendors.py digikey TPS3703A7330DSERQ1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:01Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key TPS3703A7330DSERQ1 stock_available 280 against the rule-4 gate of 50 (need 5), status Active",
+      "read": "Digi-Key TPS3703A7330DSERQ1 (Texas Instruments): stock_available 280, ProductStatus Active; gate 50 (need 5): 280 >= 50, pass (rule 5, second vendor)",
+      "source": "vendors.py digikey TPS3703A7330DSERQ1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:01Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "latch",
+    "part": "74LVC1G175GW,125",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C282350 stockCount 1973 (2026-09-29T00:13:26Z); need 5, gate 50: pass (rule 4)",
+      "read": "stockCount 1973 at the exact row C282350 (74LVC1G175GW,125); need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; 1973 >= 50: pass (rule 4); not held",
+      "source": "vendors.py jlcpcb C282350 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:32Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 1897 (2026-09-29T00:13:26Z)",
+      "read": "canPresaleNumber 1897 at the exact row C282350, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C282350 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:32Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "production (maker page 'product-status--production')",
+      "read": "https://www.nexperia.com/product/74LVC1G175GW: product heading 74LVC1G175GW Production 'Single D-type flip-flop with reset; positive-edge trigger' with the span class product-status--production; the ordering rows load by script and are not in the page body. S5: in production passes",
+      "source": "https://www.nexperia.com/product/74LVC1G175GW (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:55Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "[D6] 10 years as of September 2025 for 6-pin TSSOP SOT363-2 (LVC); not a gate",
+      "read": "Nexperia Longevity Program 2026, mini-logic package table (families include LVC), 6 pin SOT363-2: 10 years as of September 2025; the datasheet gives SOT363-2. Recorded, not a gate (S5)",
+      "source": "https://www.nexperia.com/support/customer-support/longevity (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:55Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision: 74LVC1G175 v.1, 2004-03-18",
+      "read": "revision history: earliest row 74LVC1G175 v.1, 20040318, Product specification; 22 years on the market, not under 12 months",
+      "source": "https://assets.nexperia.com/documents/data-sheet/74LVC1G175.pdf (vendors.py fetch), revision history",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:40Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB listed; LCSC no end-of-life mark; Digi-Key Active",
+      "read": "JLCPCB: listed, the API row has no status field; LCSC C282350: InStock, 1970, no discontinued, obsolete or end-of-life text; Digi-Key ProductStatus Active, discontinued false, end_of_life false (Nexperia USA Inc.); the search's other rows: 74LVC1G175GW-Q100H (Nexperia USA Inc., Active, 13573); 74LVC1G175GW,165 (Nexperia USA Inc., Obsolete, 0); 74LVC1G175GW,125 (NXP USA Inc., Discontinued at DigiKey, 0). No disagreement with the maker's Production",
+      "source": "vendors.py jlcpcb C282350 (exact LCSC match) (2026-09-29T01:44:32Z); https://www.lcsc.com/product-detail/C282350.html (2026-09-29T01:50:20Z); vendors.py digikey-search 74LVC1G175GW,125 (vendors.py digikey 74LVC1G175GW,125: HTTP 404 Duplicate Products, 2026-09-29T01:45:03Z) (2026-09-29T01:45:38Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:38Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 20 weeks (P2)",
+      "read": "manufacturer lead time 20 weeks in Digi-Key's API",
+      "source": "vendors.py digikey-search 74LVC1G175GW,125 (vendors.py digikey 74LVC1G175GW,125: HTTP 404 Duplicate Products, 2026-09-29T01:45:03Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:38Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended) on the exact JLCPCB row C282350; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C282350 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:32Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C282350, 74LVC1G175GW,125, SOT363 (TSSOP6)",
+      "read": "the exact JLCPCB result for C282350: part '74LVC1G175GW,125', maker label 'Nexperia', package 'TSSOP-6'; the row names 74LVC1G175GW,125 in TSSOP-6 (SOT363)",
+      "source": "vendors.py jlcpcb C282350 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:32Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one latch between the enable node and the gates (V30)",
+      "read": "1: IOBoard.md:196 'a hardware latch'; V30 places one latch between the enable node and the gates; the candidate's count 1 meets it (the Schmitt buffer ahead of CP is counted under the Q9 buffer)",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:196; V30 found value",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C282350",
+      "read": "on the IO board (rule 1): the interlock's hardware latch (hardware/docs/IOBoard.md@e13f5f6:196); its LCSC number C282350 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:196; vendors.py jlcpcb C282350 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: the maker's product page shows Production and no end-of-life, discontinued or last-time-buy text; Digi-Key end_of_life false, discontinued false. Nexperia's PCN listing not read: its page redirects to the My Nexperia login (2026-09-29T01:50:35Z)",
+      "source": "https://www.nexperia.com/product/74LVC1G175GW; vendors.py digikey-search 74LVC1G175GW,125 (vendors.py digikey 74LVC1G175GW,125: HTTP 404 Duplicate Products, 2026-09-29T01:45:03Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:38Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 74LVC1G175GW,125 stock_available 36048 against the rule-4 gate of 50 (need 5), status Active",
+      "read": "Digi-Key 74LVC1G175GW,125 (Nexperia USA Inc.): stock_available 36048, ProductStatus Active; gate 50 (need 5): 36048 >= 50, pass (rule 5, second vendor)",
+      "source": "vendors.py digikey-search 74LVC1G175GW,125 (vendors.py digikey 74LVC1G175GW,125: HTTP 404 Duplicate Products, 2026-09-29T01:45:03Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:38Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "latch clear control",
+    "part": "434153017835",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C2680612 stockCount 5229 (2026-09-29T00:13:29Z); need 5, gate 50: pass (rule 4)",
+      "read": "stockCount 5229 at the exact row C2680612 (434153017835); need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; 5229 >= 50: pass (rule 4); not held",
+      "source": "vendors.py jlcpcb C2680612 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:33Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 5079 (2026-09-29T00:13:29Z)",
+      "read": "canPresaleNumber 5079 at the exact row C2680612, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C2680612 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:33Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "active (maker page: 'Production is active. Expected lifetime: >10 years.')",
+      "read": "WS-TASV product table, row 434153017835: class wecProductTableBody__lifecycle--active, 'Status Active Production is active. Expected lifetime: >10 years.' S5: active passes",
+      "source": "https://www.we-online.com/en/components/products/WS-TASV (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:46:00Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "'>10 years' on the same row; not a gate",
+      "read": "no separate longevity programme page read; the maker's WS-TASV product table row for 434153017835 states 'Production is active. Expected lifetime: >10 years.' Recorded, not a gate (S5)",
+      "source": "https://www.we-online.com/en/components/products/WS-TASV (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:46:00Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "not read: drawing rev 001.002 of 2021-01-07, no earlier revision listed",
+      "read": "not read: the datasheet's title blocks carry REVISION 001.002, DATE 2021-01-07, and no revision history, so the first revision's date is not stated; on the market at least since 2021-01-07, not under 12 months",
+      "source": "https://www.we-online.com/components/products/datasheet/434153017835.pdf (vendors.py fetch), title blocks",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:40Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB listed; LCSC page HTTP 404, not read; Digi-Key Active",
+      "read": "JLCPCB: listed, the API row has no status field; LCSC page C2680612 not read: HTTP 404 'Page Not Found'; Digi-Key ProductStatus Active, discontinued false, end_of_life false (Würth Elektronik). No disagreement with the maker's Active",
+      "source": "vendors.py jlcpcb C2680612 (exact LCSC match) (2026-09-29T01:44:33Z); https://www.lcsc.com/product-detail/C2680612.html (2026-09-29T01:50:20Z); vendors.py digikey 434153017835 (2026-09-29T01:45:05Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:05Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 17 weeks (P2)",
+      "read": "manufacturer lead time 17 weeks in Digi-Key's API",
+      "source": "vendors.py digikey 434153017835",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:05Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended) on the exact JLCPCB row C2680612; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C2680612 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:33Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2680612, 434153017835, SMD J-bend, 3.5 x 2.9 mm (WS-TASV)",
+      "read": "the exact JLCPCB result for C2680612: part '434153017835', maker label 'Wurth Elektronik', package 'SMD-4P,2.9x3.5mm'; the row names 434153017835, label Wurth Elektronik, in SMD-4P,2.9x3.5mm",
+      "source": "vendors.py jlcpcb C2680612 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:33Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one clear control on the IO board (V31)",
+      "read": "1: V31 (found for research) 'a momentary normally-open push button on the IO board'; one button; the candidate's count 1 meets it",
+      "source": "V31 found value; hardware/docs/IOBoard.md@e13f5f6:196",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C2680612",
+      "read": "on the IO board (rule 1): V31 places the push button on the IO board (V31; hardware/docs/IOBoard.md@e13f5f6:196); its LCSC number C2680612 is C and digits, the same",
+      "source": "V31 found value; vendors.py jlcpcb C2680612 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: the maker's table row shows 'Production is active' with no end-of-life text; Digi-Key end_of_life false, discontinued false. Würth's PCN page not read: HTTP 404 (2026-09-29T01:50:37Z)",
+      "source": "https://www.we-online.com/en/components/products/WS-TASV; vendors.py digikey 434153017835",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:05Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 434153017835 stock_available 27089 against the rule-4 gate of 50 (need 5), status Active",
+      "read": "Digi-Key 434153017835 (Würth Elektronik): stock_available 27089, ProductStatus Active; gate 50 (need 5): 27089 >= 50, pass (rule 5, second vendor)",
+      "source": "vendors.py digikey 434153017835",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:05Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "trigger-path inverter",
+    "part": "SN74AUP1G14DBVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C2682131 stockCount 5252 (2026-09-29T00:13:31Z); need 5, gate 50: pass (rule 4)",
+      "read": "stockCount 5252 at the exact row C2682131 (SN74AUP1G14DBVR); need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; 5252 >= 50: pass (rule 4); not held",
+      "source": "vendors.py jlcpcb C2682131 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:35Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 5231 (2026-09-29T00:13:31Z)",
+      "read": "canPresaleNumber 5231 at the exact row C2682131, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C2682131 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:35Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (maker page, orderable ACTIVE)",
+      "read": "https://www.ti.com/product/SN74AUP1G14: meta status ACTIVE; order table (generic part SN74AUP1G14) orderable SN74AUP1G14DBVR marketingStatusDescription ACTIVE ('released to the market and is available for purchase'); all 13 orderables of SN74AUP1G14 in the order table ACTIVE. S5: active passes",
+      "source": "https://www.ti.com/product/SN74AUP1G14 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:57Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no per-part commitment; TI policy [D19] 'typically 10 to 15 years'",
+      "read": "no per-part commitment published; TI's life cycle page: 'TI's product life cycles are typically 10 to 15 years and often extend longer'. Recorded, not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:59Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision: SCES578J header, June 2003",
+      "read": "header 'SCES578J – JUNE 2003 – REVISED SEPTEMBER 2017': first release June 2003, 23 years on the market, not under 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/sn74aup1g14.pdf (vendors.py fetch), page header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:41Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB listed; LCSC no end-of-life mark; Digi-Key Active",
+      "read": "JLCPCB: listed, the API row has no status field; LCSC C2682131: InStock, 5250, no discontinued, obsolete or end-of-life text; Digi-Key ProductStatus Active, discontinued false, end_of_life false (Texas Instruments). No disagreement with the maker's ACTIVE",
+      "source": "vendors.py jlcpcb C2682131 (exact LCSC match) (2026-09-29T01:44:35Z); https://www.lcsc.com/product-detail/C2682131.html (2026-09-29T01:50:21Z); vendors.py digikey SN74AUP1G14DBVR (2026-09-29T01:45:07Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:07Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks (P2)",
+      "read": "manufacturer lead time 16 weeks in Digi-Key's API",
+      "source": "vendors.py digikey SN74AUP1G14DBVR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:07Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended) on the exact JLCPCB row C2682131; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C2682131 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:35Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2682131, SN74AUP1G14DBVR, SOT-23-5 (DBV)",
+      "read": "the exact JLCPCB result for C2682131: part 'SN74AUP1G14DBVR', maker label 'Texas Instruments', package 'SOT-23-5'; the row names SN74AUP1G14DBVR in SOT-23-5",
+      "source": "vendors.py jlcpcb C2682131 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:35Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "range 0 to 1: none with the 74HC423 (Monostable.md:149-152); one with a part whose trigger inputs have one polarity; the gate applies at 1",
+      "read": "the specification does not fix the count: IOBoard.md:192 'An inverter in the trigger path takes I_off'; Monostable.md@23c82ca:176 'A part with one trigger input of fixed polarity per half takes an inverter'. P2's range 0 to 1, top 1; the candidate is counted at 1 (need 5, gate 50)",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:192; hardware/docs/Monostable.md@23c82ca:176",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C2682131",
+      "read": "on the IO board (rule 1): a trigger-path inverter of the interlock (hardware/docs/IOBoard.md@e13f5f6:192); its LCSC number C2682131 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:192; vendors.py jlcpcb C2682131 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: TI's order table marks SN74AUP1G14DBVR ACTIVE (TI marks a product being discontinued LAST TIME BUY); Digi-Key end_of_life false, discontinued false. TI's PCN listing not read: https://www.ti.com/productchangenotification HTTP 404 (2026-09-29T01:50:36Z)",
+      "source": "https://www.ti.com/product/SN74AUP1G14; vendors.py digikey SN74AUP1G14DBVR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:07Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key SN74AUP1G14DBVR stock_available 28635 against the rule-4 gate of 50 (need 5), status Active",
+      "read": "Digi-Key SN74AUP1G14DBVR (Texas Instruments): stock_available 28635, ProductStatus Active; gate 50 (need 5): 28635 >= 50, pass (rule 5, second vendor)",
+      "source": "vendors.py digikey SN74AUP1G14DBVR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:07Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "trigger input I_off buffer (Q9)",
+    "part": "SN74AUP1G17DBVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C183012 stockCount 8928 (2026-09-29T00:13:34Z); need 10, gate 50: pass (rule 4)",
+      "read": "stockCount 8928 at the exact row C183012 (SN74AUP1G17DBVR); need 5 boards x 2 = 10; S4 gate max(5 x 10, 50) = 50; 8928 >= 50: pass (rule 4); not held",
+      "source": "vendors.py jlcpcb C183012 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:36Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 8807 (2026-09-29T00:13:34Z)",
+      "read": "canPresaleNumber 8807 at the exact row C183012, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C183012 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:36Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (maker page, orderable ACTIVE)",
+      "read": "https://www.ti.com/product/SN74AUP1G17: meta status ACTIVE; order table (generic part SN74AUP1G17) orderable SN74AUP1G17DBVR marketingStatusDescription ACTIVE ('released to the market and is available for purchase'); all 13 orderables of SN74AUP1G17 in the order table ACTIVE. S5: active passes",
+      "source": "https://www.ti.com/product/SN74AUP1G17 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:57Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no per-part commitment; TI policy [D19] 'typically 10 to 15 years'",
+      "read": "no per-part commitment published; TI's life cycle page: 'TI's product life cycles are typically 10 to 15 years and often extend longer'. Recorded, not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:59Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision: SCES579J header, June 2004",
+      "read": "header 'SCES579J – JUNE 2004 – REVISED SEPTEMBER 2017': first release June 2004, 22 years on the market, not under 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/sn74aup1g17.pdf (vendors.py fetch), page header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:42Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB listed; LCSC no end-of-life mark; Digi-Key Active",
+      "read": "JLCPCB: listed, the API row has no status field; LCSC C183012: InStock, 8685, no discontinued, obsolete or end-of-life text; Digi-Key ProductStatus Active, discontinued false, end_of_life false (Texas Instruments); the search's other rows: SN74AUP1G17DBVR (UMW, Active, 5910); SN74AUP1G17DBVRE4 (Texas Instruments, Discontinued at DigiKey, 0); SN74AUP1G17DBVRG4 (Texas Instruments, Discontinued at DigiKey, 0). No disagreement with the maker's ACTIVE",
+      "source": "vendors.py jlcpcb C183012 (exact LCSC match) (2026-09-29T01:44:36Z); https://www.lcsc.com/product-detail/C183012.html (2026-09-29T01:50:21Z); vendors.py digikey-search SN74AUP1G17DBVR (vendors.py digikey SN74AUP1G17DBVR: HTTP 404 Duplicate Products, 2026-09-29T01:45:09Z) (2026-09-29T01:45:41Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:41Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 9 weeks (P2)",
+      "read": "manufacturer lead time 9 weeks in Digi-Key's API",
+      "source": "vendors.py digikey-search SN74AUP1G17DBVR (vendors.py digikey SN74AUP1G17DBVR: HTTP 404 Duplicate Products, 2026-09-29T01:45:09Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:41Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended) on the exact JLCPCB row C183012; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C183012 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:36Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C183012, SN74AUP1G17DBVR, SOT-23-5 (DBV)",
+      "read": "the exact JLCPCB result for C183012: part 'SN74AUP1G17DBVR', maker label 'Texas Instruments', package 'SOT-23-5'; the row names SN74AUP1G17DBVR in SOT-23-5",
+      "source": "vendors.py jlcpcb C183012 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:36Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2: one buffer drives both trigger inputs if Q9 places it (Research.md:842), and the same part is the Schmitt buffer ahead of the latch clock; the gate applies at 2",
+      "read": "the specification does not fix the count; P2 states 2 with its basis (one Q9 buffer, Research.md:842, and one Schmitt buffer ahead of the latch clock, V31); the candidate is counted at 2 (need 10, gate 50)",
+      "source": "hardware/docs/Research.md@e13f5f6:842; V31 found value; hardware/docs/IOBoard.md@e13f5f6:192, :194",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C183012",
+      "read": "on the IO board (rule 1): the buffer in front of the trigger inputs and ahead of the latch clock (hardware/docs/IOBoard.md@e13f5f6:192, :194; V31); its LCSC number C183012 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:192, :194; vendors.py jlcpcb C183012 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: TI's order table marks SN74AUP1G17DBVR ACTIVE (TI marks a product being discontinued LAST TIME BUY); Digi-Key end_of_life false, discontinued false. TI's PCN listing not read: https://www.ti.com/productchangenotification HTTP 404 (2026-09-29T01:50:36Z)",
+      "source": "https://www.ti.com/product/SN74AUP1G17; vendors.py digikey-search SN74AUP1G17DBVR (vendors.py digikey SN74AUP1G17DBVR: HTTP 404 Duplicate Products, 2026-09-29T01:45:09Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:41Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key SN74AUP1G17DBVR stock_available 88895 against the rule-4 gate of 50 (need 10), status Active",
+      "read": "Digi-Key SN74AUP1G17DBVR (Texas Instruments): stock_available 88895, ProductStatus Active; gate 50 (need 10): 88895 >= 50, pass (rule 5, second vendor)",
+      "source": "vendors.py digikey-search SN74AUP1G17DBVR (vendors.py digikey SN74AUP1G17DBVR: HTTP 404 Duplicate Products, 2026-09-29T01:45:09Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:41Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "servo rail gate",
+    "part": "TPS259824ONRGER",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C2155766 stockCount 1926 (2026-09-29T00:13:37Z); need 5, gate 50: pass (rule 4)",
+      "read": "stockCount 1926 at the exact row C2155766 (TPS259824ONRGER); need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; 1926 >= 50: pass (rule 4); not held",
+      "source": "vendors.py jlcpcb C2155766 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:38Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 1920 (2026-09-29T00:13:37Z)",
+      "read": "canPresaleNumber 1920 at the exact row C2155766, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C2155766 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:38Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (maker page, orderable ACTIVE)",
+      "read": "https://www.ti.com/product/TPS25982: meta status ACTIVE; order table (generic part TPS25982) orderable TPS259824ONRGER marketingStatusDescription ACTIVE ('released to the market and is available for purchase'); all 16 orderables of TPS25982 in the order table ACTIVE; the page also shows 'A newer version of this product is available': TPS25983, 'Pin-for-pin with same functionality', status ACTIVE (hasReplacements true on the orderable). A newer version is not a status of NRND, last-time buy or obsolete. S5: active passes",
+      "source": "https://www.ti.com/product/TPS25982 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:57Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no per-part commitment; TI policy [D19] 'typically 10 to 15 years'",
+      "read": "no per-part commitment published; TI's life cycle page: 'TI's product life cycles are typically 10 to 15 years and often extend longer'. Recorded, not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:59Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision: SLVSEI3D header, October 2018",
+      "read": "header 'SLVSEI3D – OCTOBER 2018 – REVISED MAY 2026': first release October 2018, about 8 years on the market, not under 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/tps25982.pdf (vendors.py fetch), page header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:42Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB listed; LCSC no end-of-life mark; Digi-Key Active",
+      "read": "JLCPCB: listed, the API row has no status field; LCSC C2155766: InStock, 1926, no discontinued, obsolete or end-of-life text; Digi-Key ProductStatus Active, discontinued false, end_of_life false (Texas Instruments). No disagreement with the maker's ACTIVE. Digi-Key stock_available is 0 in every packaging, so its rule-5 second source is the alternate TPS259827ONRGET, not the second vendor",
+      "source": "vendors.py jlcpcb C2155766 (exact LCSC match) (2026-09-29T01:44:38Z); https://www.lcsc.com/product-detail/C2155766.html (2026-09-29T01:50:22Z); vendors.py digikey TPS259824ONRGER (2026-09-29T01:45:11Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:11Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks (P2)",
+      "read": "manufacturer lead time 16 weeks in Digi-Key's API",
+      "source": "vendors.py digikey TPS259824ONRGER",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:11Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended) on the exact JLCPCB row C2155766; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C2155766 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:38Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2155766, TPS259824ONRGER, VQFN-24 4 x 4 mm (RGE)",
+      "read": "the exact JLCPCB result for C2155766: part 'TPS259824ONRGER', maker label 'Texas Instruments', package 'QFN-24(4x4)'; the row names TPS259824ONRGER in QFN-24(4x4), the RGE VQFN-24 4 x 4 mm",
+      "source": "vendors.py jlcpcb C2155766 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:38Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one switch on the servo rail (V33)",
+      "read": "1: IOBoard.md:188 'a high-side switch on the servo rail'; V33 makes that one switch the gate; the candidate's count 1 meets it",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:188; V33 found value",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C2155766",
+      "read": "on the IO board (rule 1): the servo rail gate (hardware/docs/IOBoard.md@e13f5f6:188); its LCSC number C2155766 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:188; vendors.py jlcpcb C2155766 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: TI's order table marks TPS259824ONRGER ACTIVE (TI marks a product being discontinued LAST TIME BUY); Digi-Key end_of_life false, discontinued false. TI's PCN listing not read: https://www.ti.com/productchangenotification HTTP 404 (2026-09-29T01:50:36Z)",
+      "source": "https://www.ti.com/product/TPS25982; vendors.py digikey TPS259824ONRGER",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:11Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "servo rail gate",
+    "part": "TPS259827ONRGET",
+    "kind": "alternate",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C2155765 stockCount 762 (2026-09-29T00:13:38Z); need 5, gate 50: pass (rule 4)",
+      "read": "stockCount 762 at the exact row C2155765 (TPS259827ONRGET); need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; 762 >= 50: pass (rule 4); not held",
+      "source": "vendors.py jlcpcb C2155765 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:39Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 630 (2026-09-29T00:13:38Z)",
+      "read": "canPresaleNumber 630 at the exact row C2155765, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C2155765 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:39Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (maker page, orderable ACTIVE)",
+      "read": "https://www.ti.com/product/TPS25982: meta status ACTIVE; order table (generic part TPS25982) orderable TPS259827ONRGET marketingStatusDescription ACTIVE ('released to the market and is available for purchase'); all 16 orderables of TPS25982 in the order table ACTIVE; the page also shows 'A newer version of this product is available': TPS25983, 'Pin-for-pin with same functionality', status ACTIVE (hasReplacements true on the orderable). A newer version is not a status of NRND, last-time buy or obsolete. S5: active passes",
+      "source": "https://www.ti.com/product/TPS25982 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:57Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no per-part commitment; TI policy [D19] 'typically 10 to 15 years'",
+      "read": "no per-part commitment published; TI's life cycle page: 'TI's product life cycles are typically 10 to 15 years and often extend longer'. Recorded, not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:59Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision: SLVSEI3D header, October 2018",
+      "read": "header 'SLVSEI3D – OCTOBER 2018 – REVISED MAY 2026': first release October 2018, about 8 years on the market, not under 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/tps25982.pdf (vendors.py fetch), page header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:42Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB listed; LCSC no end-of-life mark; Digi-Key Active",
+      "read": "JLCPCB: listed, the API row has no status field; LCSC C2155765: InStock, 496, no discontinued, obsolete or end-of-life text; Digi-Key ProductStatus Active, discontinued false, end_of_life false (Texas Instruments). No disagreement with the maker's ACTIVE",
+      "source": "vendors.py jlcpcb C2155765 (exact LCSC match) (2026-09-29T01:44:39Z); https://www.lcsc.com/product-detail/C2155765.html (2026-09-29T01:50:22Z); vendors.py digikey TPS259827ONRGET (2026-09-29T01:45:12Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:12Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 9 weeks (P2)",
+      "read": "manufacturer lead time 9 weeks in Digi-Key's API",
+      "source": "vendors.py digikey TPS259827ONRGET",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:12Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended) on the exact JLCPCB row C2155765; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C2155765 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:39Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2155765, TPS259827ONRGET, VQFN-24 4 x 4 mm (RGE)",
+      "read": "the exact JLCPCB result for C2155765: part 'TPS259827ONRGET', maker label 'Texas Instruments', package 'VQFN-24(4x4)'; the row names TPS259827ONRGET in VQFN-24(4x4)",
+      "source": "vendors.py jlcpcb C2155765 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:39Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one switch on the servo rail (V33)",
+      "read": "1: IOBoard.md:188, V33; as the part it stands in for; the candidate's count 1 meets it",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:188; V33 found value",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C2155765",
+      "read": "on the IO board (rule 1): the servo rail gate, in place of TPS259824ONRGER (hardware/docs/IOBoard.md@e13f5f6:188); its LCSC number C2155765 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:188; vendors.py jlcpcb C2155765 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: TI's order table marks TPS259827ONRGET ACTIVE (TI marks a product being discontinued LAST TIME BUY); Digi-Key end_of_life false, discontinued false. TI's PCN listing not read: https://www.ti.com/productchangenotification HTTP 404 (2026-09-29T01:50:36Z)",
+      "source": "https://www.ti.com/product/TPS25982; vendors.py digikey TPS259827ONRGET",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:12Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "onboard pack switch MOSFETs",
+    "part": "IPT015N10N5ATMA1",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C108964 stockCount 28320 (2026-09-29T00:13:42Z); need 50, gate 250: pass (rule 4)",
+      "read": "stockCount 28320 at the exact row C108964 (IPT015N10N5); need 5 boards x 10 = 50; S4 gate max(5 x 50, 50) = 250; 28320 >= 250: pass (rule 4); with the pack reverse-polarity array the same part sums to 20 a board, need 100, gate 500: 28320 >= 500, pass; not held",
+      "source": "vendors.py jlcpcb C108964 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:41Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 26365 (2026-09-29T00:13:42Z)",
+      "read": "canPresaleNumber 26365 at the exact row C108964, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C108964 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:41Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "active and preferred (maker page)",
+      "read": "https://www.infineon.com/part/IPT015N10N5: ordering row 'Recommended OPN IPT015N10N5ATMA1', 'Product Status active and preferred'; data-hasreplacement false. S5: active passes",
+      "source": "https://www.infineon.com/part/IPT015N10N5 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:59Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none that names the part: the Infineon programme page [D36] covers OptiMOS automotive MOSFETs, not this industrial part",
+      "read": "none that names the part: Infineon's longevity page states its MOSFET programme is 'for our OptiMOS™ automotive Power MOSFETs'; the IPT015N10N5 product page lists it as an industrial N-channel part and names no longevity figure. No published commitment recorded; not a gate (S5)",
+      "source": "https://www.infineon.com/product-information/product-longevity-program (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:59Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision: 2.0, 2014-12-17",
+      "read": "revision history of Rev. 2.4 (2023-05-04): earliest row 2.0, 2014-12-17, 'Release of final version'; 11 years on the market, not under 12 months",
+      "source": "https://www.infineon.com/assets/row/public/documents/24/49/infineon-ipt015n10n5-datasheet-en.pdf (vendors.py fetch), Revision History",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:45Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB listed; LCSC no end-of-life mark; Digi-Key Active",
+      "read": "JLCPCB: listed, the API row has no status field; LCSC C108964: InStock, 28320, no discontinued, obsolete or end-of-life text; Digi-Key ProductStatus Active, discontinued false, end_of_life false (Infineon Technologies). No disagreement with the maker's active and preferred",
+      "source": "vendors.py jlcpcb C108964 (exact LCSC match) (2026-09-29T01:44:41Z); https://www.lcsc.com/product-detail/C108964.html (2026-09-29T01:50:22Z); vendors.py digikey IPT015N10N5ATMA1 (2026-09-29T01:45:14Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:14Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 17 weeks (P2)",
+      "read": "manufacturer lead time 17 weeks in Digi-Key's API",
+      "source": "vendors.py digikey IPT015N10N5ATMA1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:14Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended) on the exact JLCPCB row C108964; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C108964 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:41Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C108964, IPT015N10N5ATMA1, PG-HSOF-8 (TOLL), 9.9 x 11.7 mm",
+      "read": "the exact JLCPCB result for C108964: part 'IPT015N10N5', maker label 'Infineon Technologies', package 'HSOF-8'; the row names IPT015N10N5, label Infineon Technologies, in HSOF-8; Infineon's product page lists IPT015N10N5ATMA1 as the product's one OPN ('Recommended OPN IPT015N10N5ATMA1'), so the row is the candidate in PG-HSOF-8",
+      "source": "vendors.py jlcpcb C108964 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:41Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "range 8 to 10 (8 with the TPSI3052's 13.9 V drive, 10 with the TPSI3050's 9.4 V); gate at 10; plus 8 to 10 as the reverse array (summed gate 500)",
+      "read": "the specification does not fix the count: IOBoard.md:189 'a MOSFET array'. P2's range 8 to 10, top 10, with its basis (V49's 7 W at 150 A: 8 devices 6.13 W, 10 at the TPSI3050's drive); the candidate is counted at 10 (need 50, gate 250), 20 summed with the reverse array (gate 500)",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:189; hardware/docs/Research.md@e13f5f6:609 (V49)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C108964",
+      "read": "on the IO board (rule 1): IOBoard.md:189 'a MOSFET array and its driver on the IO board' (hardware/docs/IOBoard.md@e13f5f6:189); its LCSC number C108964 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:189; vendors.py jlcpcb C108964 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: Infineon's product page shows 'active and preferred' with no replacement; Digi-Key end_of_life false, discontinued false. Infineon's discontinued-products search loads by script and was not read (2026-09-29T01:50:36Z)",
+      "source": "https://www.infineon.com/part/IPT015N10N5; vendors.py digikey IPT015N10N5ATMA1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:14Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key IPT015N10N5ATMA1 stock_available 40281 against the rule-4 gate of 250 (need 50), status Active",
+      "read": "Digi-Key IPT015N10N5ATMA1 (Infineon Technologies): stock_available 40281, ProductStatus Active; gate 250 (need 50): 40281 >= 250, pass (rule 5, second vendor); with the pack reverse-polarity array the same part sums to 20 a board, need 100, gate 500: 40281 >= 500, pass",
+      "source": "vendors.py digikey IPT015N10N5ATMA1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:14Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "onboard pack switch driver",
+    "part": "TPSI3052DWZR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C20346001 stockCount 1126 (2026-09-29T00:13:50Z); need 10, gate 50: pass (rule 4)",
+      "read": "stockCount 1126 at the exact row C20346001 (TPSI3052DWZR); need 5 boards x 2 = 10; S4 gate max(5 x 10, 50) = 50; 1126 >= 50: pass (rule 4); with 'external module driver output' the same part sums to 2 to 4 a board, gate at 4: need 20, gate 100: 1126 >= 100, pass; not held",
+      "source": "vendors.py jlcpcb C20346001 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:42Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 1107 (2026-09-29T00:13:50Z)",
+      "read": "canPresaleNumber 1107 at the exact row C20346001, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C20346001 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:42Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (maker page, orderable ACTIVE)",
+      "read": "https://www.ti.com/product/TPSI3052: meta status ACTIVE; order table (generic part TPSI3052) orderable TPSI3052DWZR marketingStatusDescription ACTIVE ('released to the market and is available for purchase'); both orderables of TPSI3052 in the order table ACTIVE. S5: active passes",
+      "source": "https://www.ti.com/product/TPSI3052 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:58Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no per-part commitment; TI policy [D19] 'typically 10 to 15 years'",
+      "read": "no per-part commitment published; TI's life cycle page: 'TI's product life cycles are typically 10 to 15 years and often extend longer'. Recorded, not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:59Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision: SLVSGS3B header, April 2022",
+      "read": "header 'SLVSGS3B – APRIL 2022 – REVISED AUGUST 2023': first release April 2022, about 4 years 5 months on the market, not under 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/tpsi3052.pdf (vendors.py fetch), page header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:43Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB listed; LCSC no end-of-life mark; Digi-Key Active",
+      "read": "JLCPCB: listed, the API row has no status field; LCSC C20346001: InStock, 1087, no discontinued, obsolete or end-of-life text; Digi-Key ProductStatus Active, discontinued false, end_of_life false (Texas Instruments). No disagreement with the maker's ACTIVE",
+      "source": "vendors.py jlcpcb C20346001 (exact LCSC match) (2026-09-29T01:44:42Z); https://www.lcsc.com/product-detail/C20346001.html (2026-09-29T01:50:23Z); vendors.py digikey TPSI3052DWZR (2026-09-29T01:45:16Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:16Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks (P2)",
+      "read": "manufacturer lead time 16 weeks in Digi-Key's API",
+      "source": "vendors.py digikey TPSI3052DWZR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:16Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended) on the exact JLCPCB row C20346001; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C20346001 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:42Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C20346001, TPSI3052DWZR, SOIC-8 wide body (DWZ), 7.50 x 5.85 mm",
+      "read": "the exact JLCPCB result for C20346001: part 'TPSI3052DWZR', maker label 'Texas Instruments', package 'SOIC-8'; the row names TPSI3052DWZR in SOIC-8; the DWZ suffix of the part number is the wide-body SOIC-8",
+      "source": "vendors.py jlcpcb C20346001 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:42Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "range 1 to 2 (arrays; onboard precharge MOSFET); gate at 2; also rank 1 of 'external module driver output': summed 2 to 4, gate 100",
+      "read": "the specification does not fix the count: IOBoard.md:189 'its driver'. P2's range 1 to 2, top 2 (one for the switch and reverse arrays, one for the precharge MOSFET); the candidate is counted at 2 (need 10, gate 50), 4 summed with the external module driver (gate 100)",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:189; hardware/docs/Research.md@e13f5f6:602 (V42)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C20346001",
+      "read": "on the IO board (rule 1): IOBoard.md:189 'a MOSFET array and its driver on the IO board' (hardware/docs/IOBoard.md@e13f5f6:189); its LCSC number C20346001 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:189; vendors.py jlcpcb C20346001 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: TI's order table marks TPSI3052DWZR ACTIVE (TI marks a product being discontinued LAST TIME BUY); Digi-Key end_of_life false, discontinued false. TI's PCN listing not read: https://www.ti.com/productchangenotification HTTP 404 (2026-09-29T01:50:36Z)",
+      "source": "https://www.ti.com/product/TPSI3052; vendors.py digikey TPSI3052DWZR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:16Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key TPSI3052DWZR stock_available 3184 against the rule-4 gate of 50 (need 10), status Active",
+      "read": "Digi-Key TPSI3052DWZR (Texas Instruments): stock_available 3184, ProductStatus Active; gate 50 (need 10): 3184 >= 50, pass (rule 5, second vendor); with 'external module driver output' the same part sums to 2 to 4 a board, gate at 4: need 20, gate 100: 3184 >= 100, pass",
+      "source": "vendors.py digikey TPSI3052DWZR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:16Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "external pack switch module",
+    "part": "VS-FC420SA10",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "Digi-Key stock_available 5361 (2026-09-29T00:17Z); need 50, gate 250: pass (rules 1 and 4)",
+      "read": "a part off the board (rule 1), counted at Digi-Key: stock_available 5361 (Vishay General Semiconductor - Diodes Division); need 5 boards x 10 = 50; S4 gate max(5 x 50, 50) = 250; 5361 >= 250: pass (rules 1 and 4); not held",
+      "source": "vendors.py digikey VS-FC420SA10",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:17Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read: no longevity text and no Vishay programme page found",
+      "read": "not read: the Vishay product page carries no longevity or lifecycle text in its body, and no Vishay longevity programme page was located. Recorded as none read; not a gate (S5)",
+      "source": "https://www.vishay.com/en/product/95793/ (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:46:00Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "not read: only 'Revision: 10-Sep-2019', no history",
+      "read": "not read: document 95793 carries 'Revision: 10-Sep-2019' on its datasheet pages and no revision history, so the first revision's date is not stated; on the market at least since 2019-09-10, not under 12 months",
+      "source": "https://www.vishay.com/docs/95793/vs-fc420sa10.pdf (vendors.py fetch), page footers",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:46Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active (distributor figure); maker status not read",
+      "read": "JLCPCB and LCSC: none, a part off the board (rule 1). Digi-Key ProductStatus Active, discontinued false, end_of_life false (Vishay General Semiconductor - Diodes Division). That is a distributor figure: the Lifecycle check takes the status of a Vishay part from the maker's product page, and https://www.vishay.com/en/product/95793/ (read 2026-09-29T01:46:00Z, HTTP 200) carries no lifecycle status in its body (no status, lifecycle, active, production, obsolete, discontinued or NRND text; its Next.js page data holds datasheet, features, documents and category only). https://www.vishay.com/ppg?95793 redirects to the same page, https://www.vishay.com/search?type=inv&query=VS-FC420SA10 carries no status, and https://www.vishay.com/en/search?query=VS-FC420SA10 answered HTTP 500 (2026-09-29T01:49:03Z to 01:49:04Z). The manufacturer status is therefore not read and is reported to the owner (Lifecycle check). The 'lifecycle status' check, the gate reading, is left out of this record: the part counts as not verified, not as refuted. The disagreement with the maker cannot be stated, the maker's status being unread",
+      "source": "vendors.py digikey VS-FC420SA10 (read 2026-09-29T01:45:17Z); https://www.vishay.com/en/product/95793/ (vendors.py fetch, chrome, read 2026-09-29T01:46:00Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:17Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 19 weeks (P2)",
+      "read": "manufacturer lead time 19 weeks in Digi-Key's API",
+      "source": "vendors.py digikey VS-FC420SA10",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:17Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "range 5 to 10: 5 keep each at 120 A of V48's 600 A under the 100 us SOA line; 5 more in anti-series; gate at 10: need 50, Digi-Key gate 250",
+      "read": "the specification does not fix the count: IOBoard.md:190 'a driven external module'. P2's range 5 to 10, top 10 (5 switching for V48's 600 A, 5 in anti-series for the reversed pack); the candidate is counted at 10 (need 50, gate 250)",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:190; hardware/docs/Research.md@e13f5f6:608 (V48)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "off the board, LCSC none",
+      "read": "off the board (rule 1): IOBoard.md:190 'The module is a part off the board, bought at the second vendor of S3'; LCSC none, the same",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:190; hardware/docs/Research.md@e13f5f6:134-140 (rule 1)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: the Vishay product page body has no end-of-life, obsolete or last-time-buy text; Digi-Key end_of_life false, discontinued false. Vishay's PCN search runs by script; not read",
+      "source": "https://www.vishay.com/en/product/95793/; vendors.py digikey VS-FC420SA10",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:17Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "external pack switch module",
+    "part": "VS-FC270SA20",
+    "kind": "alternate",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "Digi-Key stock_available 649 (2026-09-29T00:17Z); need 50, gate 250: pass (rules 1 and 4)",
+      "read": "a part off the board (rule 1), counted at Digi-Key: stock_available 649 (Vishay General Semiconductor - Diodes Division); need 5 boards x 10 = 50; S4 gate max(5 x 50, 50) = 250; 649 >= 250: pass (rules 1 and 4); not held",
+      "source": "vendors.py digikey VS-FC270SA20",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:19Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read: no longevity text and no Vishay programme page found",
+      "read": "not read: the Vishay product page carries no longevity or lifecycle text in its body, and no Vishay longevity programme page was located. Recorded as none read; not a gate (S5)",
+      "source": "https://www.vishay.com/en/product/96103/ (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:46:01Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "not read: only 'Revision: 08-Jan-2021', no history",
+      "read": "not read: document 96103 carries 'Revision: 08-Jan-2021' on its datasheet pages and no revision history, so the first revision's date is not stated; on the market at least since 2021-01-08, not under 12 months",
+      "source": "https://www.vishay.com/docs/96103/vs-fc270sa20.pdf (vendors.py fetch), page footers",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:46Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active (distributor figure); maker status not read",
+      "read": "JLCPCB and LCSC: none, a part off the board (rule 1). Digi-Key ProductStatus Active, discontinued false, end_of_life false (Vishay General Semiconductor - Diodes Division). That is a distributor figure: the Lifecycle check takes the status of a Vishay part from the maker's product page, and https://www.vishay.com/en/product/96103/ (read 2026-09-29T01:46:01Z, HTTP 200) carries no lifecycle status in its body (no status, lifecycle, active, production, obsolete, discontinued or NRND text; its Next.js page data holds datasheet, features, documents and category only). The same page template as VS-FC420SA10's (docid 95793), whose other Vishay URLs carry no status either (2026-09-29T01:49:03Z to 01:49:04Z). The manufacturer status is therefore not read and is reported to the owner (Lifecycle check). The 'lifecycle status' check, the gate reading, is left out of this record: the part counts as not verified, not as refuted. The disagreement with the maker cannot be stated, the maker's status being unread",
+      "source": "vendors.py digikey VS-FC270SA20 (read 2026-09-29T01:45:19Z); https://www.vishay.com/en/product/96103/ (vendors.py fetch, chrome, read 2026-09-29T01:46:01Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:19Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 15 weeks (P2)",
+      "read": "manufacturer lead time 15 weeks in Digi-Key's API",
+      "source": "vendors.py digikey VS-FC270SA20",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:19Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "range 5 to 10: 5 switching and 5 in anti-series; gate at 10: need 50, Digi-Key gate 250",
+      "read": "as the part it stands in for: IOBoard.md:190, P2's range 5 to 10, top 10; the candidate is counted at 10 (need 50, gate 250)",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:190; hardware/docs/Research.md@e13f5f6:608 (V48)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "off the board, LCSC none",
+      "read": "off the board (rule 1): IOBoard.md:190, a module off the board; LCSC none, the same",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:190; hardware/docs/Research.md@e13f5f6:134-140 (rule 1)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: the Vishay product page body has no end-of-life, obsolete or last-time-buy text; Digi-Key end_of_life false, discontinued false. Vishay's PCN search runs by script; not read",
+      "source": "https://www.vishay.com/en/product/96103/; vendors.py digikey VS-FC270SA20",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:19Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "external module driver output",
+    "part": "TPSI3052DWZR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C20346001 stockCount 1126 (2026-09-29T00:13:50Z); need 10, gate 50: pass (rule 4)",
+      "read": "stockCount 1126 at the exact row C20346001 (TPSI3052DWZR); need 5 boards x 2 = 10; S4 gate max(5 x 10, 50) = 50; 1126 >= 50: pass (rule 4); with 'onboard pack switch driver' the same part sums to 2 to 4 a board, gate at 4: need 20, gate 100: 1126 >= 100, pass; not held",
+      "source": "vendors.py jlcpcb C20346001 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:42Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 1107 (2026-09-29T00:13:50Z)",
+      "read": "canPresaleNumber 1107 at the exact row C20346001, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C20346001 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:42Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (maker page, orderable ACTIVE)",
+      "read": "https://www.ti.com/product/TPSI3052: meta status ACTIVE; order table (generic part TPSI3052) orderable TPSI3052DWZR marketingStatusDescription ACTIVE ('released to the market and is available for purchase'); both orderables of TPSI3052 in the order table ACTIVE. S5: active passes",
+      "source": "https://www.ti.com/product/TPSI3052 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:58Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no per-part commitment; TI policy [D19] 'typically 10 to 15 years'",
+      "read": "no per-part commitment published; TI's life cycle page: 'TI's product life cycles are typically 10 to 15 years and often extend longer'. Recorded, not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:59Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision: SLVSGS3B header, April 2022",
+      "read": "header 'SLVSGS3B – APRIL 2022 – REVISED AUGUST 2023': first release April 2022, about 4 years 5 months on the market, not under 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/tpsi3052.pdf (vendors.py fetch), page header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:43Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB listed; LCSC no end-of-life mark; Digi-Key Active",
+      "read": "JLCPCB: listed, the API row has no status field; LCSC C20346001: InStock, 1087, no discontinued, obsolete or end-of-life text; Digi-Key ProductStatus Active, discontinued false, end_of_life false (Texas Instruments). No disagreement with the maker's ACTIVE",
+      "source": "vendors.py jlcpcb C20346001 (exact LCSC match) (2026-09-29T01:44:42Z); https://www.lcsc.com/product-detail/C20346001.html (2026-09-29T01:50:23Z); vendors.py digikey TPSI3052DWZR (2026-09-29T01:45:16Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:16Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks (P2)",
+      "read": "manufacturer lead time 16 weeks in Digi-Key's API",
+      "source": "vendors.py digikey TPSI3052DWZR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:16Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended) on the exact JLCPCB row C20346001; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C20346001 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:42Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C20346001, TPSI3052DWZR, SOIC-8 wide body (DWZ), 7.50 x 5.85 mm",
+      "read": "the exact JLCPCB result for C20346001: part 'TPSI3052DWZR', maker label 'Texas Instruments', package 'SOIC-8'; the row names TPSI3052DWZR in SOIC-8; the DWZ suffix of the part number is the wide-body SOIC-8",
+      "source": "vendors.py jlcpcb C20346001 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:42Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "range 1 to 2 (modules' gates; external precharge if on the board); gate at 2; summed with the onboard driver 2 to 4",
+      "read": "the specification does not fix the count: IOBoard.md:190 'whose driver output is on the IO board'. P2's range 1 to 2, top 2; the candidate is counted at 2 (need 10, gate 50), 4 summed with the onboard driver (gate 100)",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:190",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C20346001",
+      "read": "on the IO board (rule 1): IOBoard.md:190 'whose driver output is on the IO board' (hardware/docs/IOBoard.md@e13f5f6:190); its LCSC number C20346001 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:190; vendors.py jlcpcb C20346001 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: TI's order table marks TPSI3052DWZR ACTIVE (TI marks a product being discontinued LAST TIME BUY); Digi-Key end_of_life false, discontinued false. TI's PCN listing not read: https://www.ti.com/productchangenotification HTTP 404 (2026-09-29T01:50:36Z)",
+      "source": "https://www.ti.com/product/TPSI3052; vendors.py digikey TPSI3052DWZR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:16Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key TPSI3052DWZR stock_available 3184 against the rule-4 gate of 50 (need 10), status Active",
+      "read": "Digi-Key TPSI3052DWZR (Texas Instruments): stock_available 3184, ProductStatus Active; gate 50 (need 10): 3184 >= 50, pass (rule 5, second vendor); with 'onboard pack switch driver' the same part sums to 2 to 4 a board, gate at 4: need 20, gate 100: 3184 >= 100, pass",
+      "source": "vendors.py digikey TPSI3052DWZR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:16Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "pack reverse-polarity protection",
+    "part": "IPT015N10N5ATMA1",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C108964 stockCount 28320 (2026-09-29T00:13:42Z); need 50, gate 250: pass (rule 4)",
+      "read": "stockCount 28320 at the exact row C108964 (IPT015N10N5); need 5 boards x 10 = 50; S4 gate max(5 x 50, 50) = 250; 28320 >= 250: pass (rule 4); with the onboard switch array the same part sums to 20 a board, need 100, gate 500: 28320 >= 500, pass; not held",
+      "source": "vendors.py jlcpcb C108964 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:41Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 26365 (2026-09-29T00:13:42Z)",
+      "read": "canPresaleNumber 26365 at the exact row C108964, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C108964 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:41Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "active and preferred (maker page)",
+      "read": "https://www.infineon.com/part/IPT015N10N5: ordering row 'Recommended OPN IPT015N10N5ATMA1', 'Product Status active and preferred'; data-hasreplacement false. S5: active passes",
+      "source": "https://www.infineon.com/part/IPT015N10N5 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:59Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none that names the part: the Infineon programme page [D36] covers OptiMOS automotive MOSFETs, not this industrial part",
+      "read": "none that names the part: Infineon's longevity page states its MOSFET programme is 'for our OptiMOS™ automotive Power MOSFETs'; the IPT015N10N5 product page lists it as an industrial N-channel part and names no longevity figure. No published commitment recorded; not a gate (S5)",
+      "source": "https://www.infineon.com/product-information/product-longevity-program (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:59Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision: 2.0, 2014-12-17",
+      "read": "revision history of Rev. 2.4 (2023-05-04): earliest row 2.0, 2014-12-17, 'Release of final version'; 11 years on the market, not under 12 months",
+      "source": "https://www.infineon.com/assets/row/public/documents/24/49/infineon-ipt015n10n5-datasheet-en.pdf (vendors.py fetch), Revision History",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:45Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB listed; LCSC no end-of-life mark; Digi-Key Active",
+      "read": "JLCPCB: listed, the API row has no status field; LCSC C108964: InStock, 28320, no discontinued, obsolete or end-of-life text; Digi-Key ProductStatus Active, discontinued false, end_of_life false (Infineon Technologies). No disagreement with the maker's active and preferred",
+      "source": "vendors.py jlcpcb C108964 (exact LCSC match) (2026-09-29T01:44:41Z); https://www.lcsc.com/product-detail/C108964.html (2026-09-29T01:50:22Z); vendors.py digikey IPT015N10N5ATMA1 (2026-09-29T01:45:14Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:14Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 17 weeks (P2)",
+      "read": "manufacturer lead time 17 weeks in Digi-Key's API",
+      "source": "vendors.py digikey IPT015N10N5ATMA1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:14Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended) on the exact JLCPCB row C108964; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C108964 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:41Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C108964, IPT015N10N5ATMA1, PG-HSOF-8 (TOLL), 9.9 x 11.7 mm",
+      "read": "the exact JLCPCB result for C108964: part 'IPT015N10N5', maker label 'Infineon Technologies', package 'HSOF-8'; the row names IPT015N10N5, label Infineon Technologies, in HSOF-8; Infineon's product page lists IPT015N10N5ATMA1 as the product's one OPN ('Recommended OPN IPT015N10N5ATMA1'), so the row is the candidate in PG-HSOF-8",
+      "source": "vendors.py jlcpcb C108964 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:41Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "range 8 to 10: an anti-series array beside the switch array, the same count; gate at 10 (need 50, gate 250); summed with the switch array 20, gate 500",
+      "read": "the specification does not fix the count: the R3 row puts reverse polarity with the ESC pack switch (Research.md:281). P2's range 8 to 10, top 10, the switch array's count; the candidate is counted at 10 (need 50, gate 250), 20 summed with the switch array (gate 500)",
+      "source": "hardware/docs/Research.md@e13f5f6:281; hardware/docs/IOBoard.md@e13f5f6:189",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C108964",
+      "read": "on the IO board (rule 1): the ESC pack's input protection sits with the onboard switch (Research.md:281), on the IO board (hardware/docs/Research.md@e13f5f6:281; hardware/docs/IOBoard.md@e13f5f6:189); its LCSC number C108964 is C and digits, the same",
+      "source": "hardware/docs/Research.md@e13f5f6:281; hardware/docs/IOBoard.md@e13f5f6:189; vendors.py jlcpcb C108964 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: Infineon's product page shows 'active and preferred' with no replacement; Digi-Key end_of_life false, discontinued false. Infineon's discontinued-products search loads by script and was not read (2026-09-29T01:50:36Z)",
+      "source": "https://www.infineon.com/part/IPT015N10N5; vendors.py digikey IPT015N10N5ATMA1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:14Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key IPT015N10N5ATMA1 stock_available 40281 against the rule-4 gate of 250 (need 50), status Active",
+      "read": "Digi-Key IPT015N10N5ATMA1 (Infineon Technologies): stock_available 40281, ProductStatus Active; gate 250 (need 50): 40281 >= 250, pass (rule 5, second vendor); with the onboard switch array the same part sums to 20 a board, need 100, gate 500: 40281 >= 500, pass",
+      "source": "vendors.py digikey IPT015N10N5ATMA1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:14Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "pack precharge",
+    "part": "CSD19537Q3T",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C134143 stockCount 630 (2026-09-29T00:13:51Z); need 10, gate 50: pass (rule 4)",
+      "read": "stockCount 630 at the exact row C134143 (CSD19537Q3T); need 5 boards x 2 = 10; S4 gate max(5 x 10, 50) = 50; 630 >= 50: pass (rule 4); not held",
+      "source": "vendors.py jlcpcb C134143 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:44Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 593 (2026-09-29T00:13:51Z)",
+      "read": "canPresaleNumber 593 at the exact row C134143, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C134143 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:44Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (maker page, orderable ACTIVE)",
+      "read": "https://www.ti.com/product/CSD19537Q3: meta status ACTIVE; order table (generic part CSD19537Q3) orderable CSD19537Q3T marketingStatusDescription ACTIVE ('released to the market and is available for purchase'); both orderables of CSD19537Q3 in the order table ACTIVE. S5: active passes",
+      "source": "https://www.ti.com/product/CSD19537Q3 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:58Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no per-part commitment; TI policy [D19] 'typically 10 to 15 years'",
+      "read": "no per-part commitment published; TI's life cycle page: 'TI's product life cycles are typically 10 to 15 years and often extend longer'. Recorded, not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:59Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision: SLPS549B header, August 2015",
+      "read": "header 'SLPS549B – AUGUST 2015 – REVISED NOVEMBER 2022': first release August 2015, 11 years on the market, not under 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/csd19537q3.pdf (vendors.py fetch), page header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:44Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB listed; LCSC no end-of-life mark; Digi-Key Active",
+      "read": "JLCPCB: listed, the API row has no status field; LCSC C134143: InStock, 630, no discontinued, obsolete or end-of-life text; Digi-Key ProductStatus Active, discontinued false, end_of_life false (Texas Instruments). No disagreement with the maker's ACTIVE",
+      "source": "vendors.py jlcpcb C134143 (exact LCSC match) (2026-09-29T01:44:44Z); https://www.lcsc.com/product-detail/C134143.html (2026-09-29T01:50:23Z); vendors.py digikey CSD19537Q3T (2026-09-29T01:45:21Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:21Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 9 weeks (P2)",
+      "read": "manufacturer lead time 9 weeks in Digi-Key's API",
+      "source": "vendors.py digikey CSD19537Q3T",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:21Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended) on the exact JLCPCB row C134143; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C134143 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:44Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C134143, CSD19537Q3T, SON 3.3 x 3.3 mm (VSONP)",
+      "read": "the exact JLCPCB result for C134143: part 'CSD19537Q3T', maker label 'Texas Instruments', package 'VSONP-8(3.3x3.3)'; the row names CSD19537Q3T in VSONP-8(3.3x3.3)",
+      "source": "vendors.py jlcpcb C134143 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:44Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "range 1 to 2: one for the onboard path; one if the external path's precharge sits on the IO board; gate at 2 (need 10, gate 50)",
+      "read": "the specification does not fix the count: the R3 row names precharge with the ESC pack switch (Research.md:281). P2's range 1 to 2, top 2; the candidate is counted at 2 (need 10, gate 50)",
+      "source": "hardware/docs/Research.md@e13f5f6:281, :602 (V42)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C134143",
+      "read": "on the IO board (rule 1): the precharge MOSFET of the onboard path, with the switch (Research.md:281) (hardware/docs/Research.md@e13f5f6:281; hardware/docs/IOBoard.md@e13f5f6:189); its LCSC number C134143 is C and digits, the same",
+      "source": "hardware/docs/Research.md@e13f5f6:281; hardware/docs/IOBoard.md@e13f5f6:189; vendors.py jlcpcb C134143 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: TI's order table marks CSD19537Q3T ACTIVE (TI marks a product being discontinued LAST TIME BUY); Digi-Key end_of_life false, discontinued false. TI's PCN listing not read: https://www.ti.com/productchangenotification HTTP 404 (2026-09-29T01:50:36Z)",
+      "source": "https://www.ti.com/product/CSD19537Q3; vendors.py digikey CSD19537Q3T",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:21Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key CSD19537Q3T stock_available 3267 against the rule-4 gate of 50 (need 10), status Active",
+      "read": "Digi-Key CSD19537Q3T (Texas Instruments): stock_available 3267, ProductStatus Active; gate 50 (need 10): 3267 >= 50, pass (rule 5, second vendor)",
+      "source": "vendors.py digikey CSD19537Q3T",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:21Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "servo rail gate driver",
+    "part": "2N7002BK,215",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C282405 stockCount 172680 (2026-09-29T00:13:52Z); need 5, gate 50: pass (rule 4)",
+      "read": "stockCount 172680 at the exact row C282405 (2N7002BK,215); need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; 172680 >= 50: pass (rule 4); not held",
+      "source": "vendors.py jlcpcb C282405 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:45Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 172511 (2026-09-29T00:13:52Z)",
+      "read": "canPresaleNumber 172511 at the exact row C282405, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C282405 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:45Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "production (maker page 'product-status--production')",
+      "read": "https://www.nexperia.com/product/2N7002BK: product heading 2N7002BK Production '60 V, 350 mA N-channel Trench MOSFET' with the span class product-status--production; the ordering rows load by script and are not in the page body. S5: in production passes",
+      "source": "https://www.nexperia.com/product/2N7002BK (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:55Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no table in [D6] names the 2N7002BK or small-signal MOSFETs; none recorded",
+      "read": "not read: the Nexperia longevity page has no small-signal MOSFET table; its Automotive MOSFETs table gives SOT23 10 years only for technology row T6 and does not map part numbers to technology rows; the datasheet names 'Trench MOSFET technology' and AEC-Q101 qualification, not a T-row. No commitment read for the part; not a gate (S5)",
+      "source": "https://www.nexperia.com/support/customer-support/longevity (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:55Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision: 2N7002BK v.1, 2010-06-17",
+      "read": "revision history: earliest row 2N7002BK v.1, 20100617, Product data sheet (v.2 20241017); 16 years on the market, not under 12 months",
+      "source": "https://assets.nexperia.com/documents/data-sheet/2N7002BK.pdf (vendors.py fetch), revision history",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:47Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB listed; LCSC no end-of-life mark; Digi-Key Active",
+      "read": "JLCPCB: listed, the API row has no status field; LCSC C282405: InStock, 172670, no discontinued, obsolete or end-of-life text; Digi-Key ProductStatus Active, discontinued false, end_of_life false (Nexperia USA Inc.). No disagreement with the maker's Production",
+      "source": "vendors.py jlcpcb C282405 (exact LCSC match) (2026-09-29T01:44:45Z); https://www.lcsc.com/product-detail/C282405.html (2026-09-29T01:50:24Z); vendors.py digikey 2N7002BK,215 (2026-09-29T01:45:23Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:23Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 30 weeks (P2)",
+      "read": "manufacturer lead time 30 weeks in Digi-Key's API",
+      "source": "vendors.py digikey 2N7002BK,215",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:23Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended) on the exact JLCPCB row C282405; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C282405 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:45Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C282405, 2N7002BK,215, SOT-23",
+      "read": "the exact JLCPCB result for C282405: part '2N7002BK,215', maker label 'Nexperia', package 'SOT-23'; the row names 2N7002BK,215 in SOT-23",
+      "source": "vendors.py jlcpcb C282405 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:45Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "range 0 to 1: none with the integrated switches ranked for the servo rail gate; one with a discrete P-channel switch; the gate applies at 1",
+      "read": "the specification does not fix the count: IOBoard.md:192 'a switch driver's logic input'. P2's range 0 to 1, top 1; the candidate is counted at 1 (need 5, gate 50)",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:188, :192",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C282405",
+      "read": "on the IO board (rule 1): a driver of the servo rail gate (hardware/docs/IOBoard.md@e13f5f6:188, :192); its LCSC number C282405 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:188, :192; vendors.py jlcpcb C282405 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: the maker's product page shows Production and no end-of-life, discontinued or last-time-buy text; Digi-Key end_of_life false, discontinued false. Nexperia's PCN listing not read: its page redirects to the My Nexperia login (2026-09-29T01:50:35Z)",
+      "source": "https://www.nexperia.com/product/2N7002BK; vendors.py digikey 2N7002BK,215",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:23Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 2N7002BK,215 stock_available 135525 against the rule-4 gate of 50 (need 5), status Active",
+      "read": "Digi-Key 2N7002BK,215 (Nexperia USA Inc.): stock_available 135525, ProductStatus Active; gate 50 (need 5): 135525 >= 50, pass (rule 5, second vendor)",
+      "source": "vendors.py digikey 2N7002BK,215",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:23Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "inverter on an active-low output enable",
+    "part": "SN74LVC1G04DBVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C7827 stockCount 53239 (2026-09-29T00:13:55Z); need 5, gate 50: pass (rule 4)",
+      "read": "stockCount 53224 at the exact row C7827 (SN74LVC1G04DBVR); need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; 53224 >= 50: pass (rule 4); not held",
+      "source": "vendors.py jlcpcb C7827 (exact LCSC match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:47Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 51429 (2026-09-29T00:13:55Z)",
+      "read": "canPresaleNumber 51414 at the exact row C7827, zero or above: pass (rule 4)",
+      "source": "vendors.py jlcpcb C7827 (exact LCSC match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:47Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (maker page, orderable ACTIVE)",
+      "read": "https://www.ti.com/product/SN74LVC1G04: meta status ACTIVE; order table (generic part SN74LVC1G04) orderable SN74LVC1G04DBVR marketingStatusDescription ACTIVE ('released to the market and is available for purchase'); all 18 orderables of SN74LVC1G04 in the order table ACTIVE. S5: active passes",
+      "source": "https://www.ti.com/product/SN74LVC1G04 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:58Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no per-part commitment; TI policy [D19] 'typically 10 to 15 years'",
+      "read": "no per-part commitment published; TI's life cycle page: 'TI's product life cycles are typically 10 to 15 years and often extend longer'. Recorded, not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:59Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision: SCES214AF header, April 1999",
+      "read": "header 'SCES214AF – APRIL 1999 – REVISED OCTOBER 2025': first release April 1999, 27 years on the market, not under 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/sn74lvc1g04.pdf (vendors.py fetch), page header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:49:45Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB listed; LCSC no end-of-life mark; Digi-Key Active",
+      "read": "JLCPCB: listed, the API row has no status field; LCSC C7827: InStock, 53020, no discontinued, obsolete or end-of-life text; Digi-Key ProductStatus Active, discontinued false, end_of_life false (Texas Instruments); the search's other rows: SN74LVC1G04DBVR (UMW, Active, 1144); SN74LVC1G04DBVR-EV (EVVO, Active, 4063); SN74LVC1G04DBVRG4 (Texas Instruments, Discontinued at DigiKey, 0); SN74LVC1G04DBVRE4 (Texas Instruments, Discontinued at DigiKey, 0). No disagreement with the maker's ACTIVE",
+      "source": "vendors.py jlcpcb C7827 (exact LCSC match) (2026-09-29T01:44:47Z); https://www.lcsc.com/product-detail/C7827.html (2026-09-29T01:50:24Z); vendors.py digikey-search SN74LVC1G04DBVR (vendors.py digikey SN74LVC1G04DBVR: HTTP 404 Duplicate Products, 2026-09-29T01:45:25Z) (2026-09-29T01:45:43Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:43Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks (P2)",
+      "read": "manufacturer lead time 16 weeks in Digi-Key's API",
+      "source": "vendors.py digikey-search SN74LVC1G04DBVR (vendors.py digikey SN74LVC1G04DBVR: HTTP 404 Duplicate Products, 2026-09-29T01:45:25Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:43Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended) on the exact JLCPCB row C7827; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C7827 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:47Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C7827, SN74LVC1G04DBVR, SOT-23-5 (DBV)",
+      "read": "the exact JLCPCB result for C7827: part 'SN74LVC1G04DBVR', maker label 'Texas Instruments', package 'SOT-23-5'; the row names SN74LVC1G04DBVR in SOT-23-5",
+      "source": "vendors.py jlcpcb C7827 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:44:47Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1: one inverter drives the active-low OE pins from the latch output (V30); the same placement as R4's 'enable inverter', not a second one",
+      "read": "the specification does not fix the count: IOBoard.md:192 and Monostable.md@23c82ca:373 'an active-low enable takes the node through an inverter'. P2 states 1 with its basis; the candidate is counted at 1 (need 5, gate 50). R4 counts the same placement 1 to 2; at 2 the need is 10 and the gate stays 50, so the gate result is the same",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:192; hardware/docs/Monostable.md@23c82ca:373-376",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C7827",
+      "read": "on the IO board (rule 1): the inverter on the output buffer's active-low enable (hardware/docs/IOBoard.md@e13f5f6:187, :192); its LCSC number C7827 is C and digits, the same",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:187, :192; vendors.py jlcpcb C7827 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:52:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the page; PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: TI's order table marks SN74LVC1G04DBVR ACTIVE (TI marks a product being discontinued LAST TIME BUY); Digi-Key end_of_life false, discontinued false. TI's PCN listing not read: https://www.ti.com/productchangenotification HTTP 404 (2026-09-29T01:50:36Z)",
+      "source": "https://www.ti.com/product/SN74LVC1G04; vendors.py digikey-search SN74LVC1G04DBVR (vendors.py digikey SN74LVC1G04DBVR: HTTP 404 Duplicate Products, 2026-09-29T01:45:25Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:43Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key SN74LVC1G04DBVR stock_available 248301 against the rule-4 gate of 50 (need 5), status Active",
+      "read": "Digi-Key SN74LVC1G04DBVR (Texas Instruments): stock_available 248301, ProductStatus Active; gate 50 (need 5): 248301 >= 50, pass (rule 5, second vendor)",
+      "source": "vendors.py digikey-search SN74LVC1G04DBVR (vendors.py digikey SN74LVC1G04DBVR: HTTP 404 Duplicate Products, 2026-09-29T01:45:25Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:45:43Z"
+     }
+    ],
+    "refutation": ""
+   }
+  ]
+ }
+}

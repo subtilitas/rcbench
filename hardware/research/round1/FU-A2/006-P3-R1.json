@@ -1,0 +1,78 @@
+{
+ "role": "P3",
+ "category": "R1",
+ "label": "P3-R1",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "missed": [
+   {
+    "function": "Core regulator inductor",
+    "part": "VLS4015CX-3R3M-H (LCSC C3222575)",
+    "maker": "TDK (datasheet and JLCPCB maker_label 'TDK'; Digi-Key maker 'TDK'); allowlisted as TDK (S2)",
+    "why": "Missing from P2's shortlist and from its drops. FU-A1 P3 found it at 2026-09-28T17:45:50Z. P2 dropped the VLS-HBX types for lack of a polarity mark, but this VLS-CX-H type labels one. Datasheet: TDK inductor_automotive_power_vls4015cx-h_en, JLCPCB copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8603109194232832000, re-read 2026-09-29T00:54:56Z, SHA-256 5d2a514b113eb5c8566b83a5669f2ef9105edfb8a1da8e18b2a80dddbc6d936a. Figures: 3.3 uH +/-20 %. DC resistance 0.096 Ohm max, 0.080 Ohm typ. Isat 2.41 A in the max column, 2.84 A typ, at a 30 % inductance drop. 'Magnetic shield type ... High magnetic shield construction'. The drawing labels a 'Polarity Mark'. Operating range -40 to +125 C, self-heating included. Against V8, V14 and V7, every value passes. JLCPCB (vendors.py jlcpcb C3222575, selectSmtComponentList exact match, 2026-09-29T00:52:44Z): stockCount 1845, canPresaleNumber 1845, expand, 0.3324 USD at 1. That passes rule 4 against the gate of 50. Digi-Key (https://api.digikey.com/products/v4/search/VLS4015CX-3R3M-H/productdetails, 2026-09-29T00:55:21Z): stock_available 2479, lead time 12 weeks, status Active. That passes rule 5 at the second vendor. Body 4.0 x 4.0 x 1.5 mm. That departs from the 2.0 x 1.6 mm layout of the design guide, as P2's ranks 2 and 3 do, but it is lower than either. Siblings fail: VLS3015CX-3R3M-H (C3223233) has Isat 1.29 A in the max column (JLCPCB 440 in stock, presale 424 at 00:52:45Z). VLS4020CX-3R3M-H (C6745793) has 42 in stock, presale 42 (00:52:45Z), below the gate of 50."
+   },
+   {
+    "function": "Core regulator inductor",
+    "part": "ETQP3M3R3KVP (LCSC C542316; Digi-Key MPN ETQ-P3M3R3KVP)",
+    "maker": "Panasonic (datasheet; JLCPCB maker_label 'PANASONIC'; Digi-Key 'Panasonic Industry'); allowlisted as Panasonic (S2)",
+    "why": "P2 considered no Panasonic inductor. FU-A1 P3 listed this part at 2026-09-28T17:44:01Z. Datasheet: Panasonic Power Choke Coil (Automotive Grade), JLCPCB copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8589968333195288576, re-read 2026-09-29T00:54:57Z, SHA-256 49d78ec18d36daa588d76849828af258925d5d36e3c1c390719a7a248e7b25bd. Figures: 3.3 uH +/-20 %. DCR 27.3 mOhm typ, 30.03 mOhm max. Rated current 5.4 (4.4) A. Isat 8.0 A. 'Shielded construction'. The marking drawings carry a 'Polarity' label. Tc -55 to +155 C, self-heating included. Every value of V8, V14 and V7 passes. JLCPCB (vendors.py jlcpcb C542316, exact match, 2026-09-29T00:52:44Z): stockCount 163, canPresaleNumber 154, expand, 0.9354 USD at 1. That passes rule 4. Digi-Key (https://api.digikey.com/products/v4/search/ETQ-P3M3R3KVP/productdetails, 00:55:23Z): stock_available 2343, lead time 23 weeks, Active. That passes rule 5. Body 5.5 x 5.0 mm. Siblings fail rule 4: ETQP3M3R3YFP (C409622) has stockCount 30 and canPresaleNumber -57, and ETQP3M3R3KVN (C542315) has 9 (00:52:45Z to 00:52:46Z)."
+   },
+   {
+    "function": "Core regulator inductor",
+    "part": "74438357033 (LCSC C17430655), WE-MAPI 4030",
+    "maker": "Wurth Elektronik (datasheet; JLCPCB maker_label 'Wurth Elektronik'; Digi-Key 'Wurth Elektronik'); allowlisted as Wurth Elektronik (S2)",
+    "why": "P2 considered no Wurth Elektronik inductor. Datasheet: https://www.we-online.com/components/products/datasheet/74438357033.pdf, read 2026-09-29T00:54:37Z, SHA-256 a49aab25ec41c4dc03870529ed6b45e4b0dfa4d7d764ba8ae7260cc9006022fa. Figures: 3.3 uH +/-20 % at 100 kHz. RDC 29 mOhm typ, 33.5 mOhm max. ISAT 3.3 A typ at a 10 % drop and 6.8 A typ at 30 %. Only typical Isat figures are given; Coilcraft's figures for P2's ranks are typical too. Operating range -40 to +125 C. Body 4.1 x 4.1 x 3.1 mm max. 'Product Marking: Start of Winding' is shown as a dot. The WE-MAPI product page (https://www.we-online.com/en/components/products/WE-MAPI, read 00:55:08Z) states 'Magnetically shielded' and lists 74438357033 at 3.3 uH. Every value of V8, V14 and V7 passes. JLCPCB (vendors.py jlcpcb C17430655, exact match, 00:54:22Z): stockCount 78, canPresaleNumber 77, expand, 3.3681 USD at 1. That passes the gate of 50 with little margin. Digi-Key (https://api.digikey.com/products/v4/search/74438357033/productdetails, 00:55:25Z): stock_available 4180, lead time 37 weeks, Active. That passes rule 5. The 4020 sibling 74438356033 (C2045382) fails rule 4: stockCount 9, presale 8 (00:54:22Z). Its datasheet (read 00:53:17Z) gives 48 mOhm max, 3.55 A typ at a 10 % drop and the same start-of-winding dot. Its maker field in jlcparts is blank."
+   },
+   {
+    "function": "Core regulator inductor",
+    "part": "VLS252012HBX-3R3M-1 (LCSC C360733)",
+    "maker": "TDK (datasheet; JLCPCB maker_label 'TDK'); allowlisted as TDK (S2)",
+    "why": "P2 read VLS201612HBX-1 and treated its '-1' suffix as a marking code. It dropped that part on Isat alone and did not consider this 2.5 x 2.0 mm size of the same series. Datasheet: https://product.tdk.com/en/system/files/dam/doc/product/inductor/inductor/smd/catalog/inductor_commercial_power_vls252012hbx-1_en.pdf (20180709), read 2026-09-29T00:53:16Z, SHA-256 0190a95f70b860ae83f7183f6f81970d5de9c9310c83b23e7d6a1130da283ed9. Figures: 3.3 uH +/-20 %. DC resistance 0.168 Ohm max, 0.140 Ohm typ. Isat 1.80 A in the max column, 2.10 A typ, at a 30 % drop. Itemp 1.55 A max. 'High magnetic shield construction'. Operating range -40 to +105 C. V8 and V7 pass on the guaranteed figures. For V14, the part-number construction names '-1' as 'Marking', and the top view shows an unlabelled dot pattern at one end. The datasheet does not say that the mark shows polarity. It passes V14 on P2's own reading of '-1', and FU-A1 P3's stricter reading of the HBX dot fails it. The re-rank decides. For that reason Digi-Key was not read. JLCPCB (vendors.py jlcpcb C360733, exact match, 00:54:22Z): stockCount 1040, canPresaleNumber 1011, expand, 0.0629 USD at 1. Body 2.5 x 2.0 x 1.2 mm, the closest of the finds to the 2.0 x 1.6 mm design-guide layout. It is not pin-compatible with the 0806 AOTA part. Also checked: Bourns SRP2010DPA-3R3M (C22110848) is an 0806 part, so it was checked as an alternate for rank 1. Its datasheet (https://www.bourns.com/docs/Product-Datasheets/SRP2010DPA.pdf, read 00:53:16Z) shows no marking, so it fails V14. Its JLCPCB reading was 111 in stock, presale 103 (00:52:45Z)."
+   },
+   {
+    "function": "USB protection",
+    "part": "TPD2S701-Q1 (LCSC C2865204, TPD2S701QDSKRQ1; also TPD2S703-Q1, C5216312)",
+    "maker": "Texas Instruments (datasheet; jlcparts maker field blank, not read at JLCPCB); allowlisted as Texas Instruments (S1)",
+    "why": "A family of adjustable-threshold data-line OVP (overvoltage protection) switches that P2 did not consider. It fails 'D+/D- steady voltage (V12)', so it is listed for the re-rank to close. Datasheet SLLSEY0A (https://www.ti.com/lit/ds/symlink/tpd2s701-q1.pdf, read 2026-09-29T00:43:15Z) gives these figures. Mode 1 threshold: VOVP_RISING is 1.19 to 1.31 x VREF, with VREF accuracy +/-8 %. At VREF 3.3 V, VOVP is 3.61 min, 4.14 typ, 4.67 max. Mode 0 needs VREF 3 to 3.6 V. The internal D+ and D- absolute maximum is VREF + 0.3 V. To bring the maximum threshold down to 3.63 V, VREF must fall to about 2.6 V. The minimum threshold then falls to about 2.8 V and the internal-pin absolute maximum to about 2.9 V, both below the 3.3 V full-speed level the RP2354B drives. So no VREF setting keeps the steady voltage at or below 3.63 V and passes USB. It also covers D+ and D- only (IEC 61000-4-2 +/-8 kV contact, +/-15 kV air). TPD2S703-Q1 (https://www.ti.com/lit/ds/symlink/tpd2s703-q1.pdf, read 00:43:18Z) has the same OVP table. Its jlcparts stock is 5."
+   },
+   {
+    "function": "USB protection",
+    "part": "TPD3S714-Q1 (LCSC C2649829) and TPD3S716-Q1 (LCSC C2649847)",
+    "maker": "Texas Instruments (datasheet; jlcparts maker 'Texas Instruments'); allowlisted (S1)",
+    "why": "USB 2.0 VBUS and data-line protectors that P2 did not consider. Both fail 'D+/D- steady voltage (V12)'. The VD+/VD- OVP threshold follows the VIN pin, tied to the 3.3 V I/O rail: VIN + 0.6 V min, VIN + 0.8 V typ, VIN + 1 V max. At VIN 3.3 V that is 3.9 to 4.3 V, so a steady 3.63 to 3.9 V passes to the system side. Sources: SLVSCG4C (https://www.ti.com/lit/ds/symlink/tpd3s714-q1.pdf, read 2026-09-29T00:43:16Z) and SLVSDH9D (https://www.ti.com/lit/ds/symlink/tpd3s716-q1.pdf, read 00:43:18Z). The VBUS OVP is 5.4 to 5.8 V (TPD3S714-Q1). No CC pins, so 'lines covered' also needs other parts. The jlcparts copy shows 44 and 0 in stock; not read at JLCPCB. Listed for the re-rank to close."
+   },
+   {
+    "function": "USB protection",
+    "part": "ISL54225IRTZ (LCSC C1557049)",
+    "maker": "Renesas (Intersil FN7627; JLCPCB jlcparts maker 'RENESAS'); allowlisted as Renesas (S1)",
+    "why": "A USB 2.0 switch with D+/D- OVP that P2 did not consider. It comes closest on threshold and still fails 'D+/D- steady voltage (V12)'. Datasheet FN7627 Rev 0.00 (https://www.renesas.com/en/document/dst/isl54225-datasheet, read 2026-09-29T00:47:03Z) gives the Positive Fault-Protection trip at 25 C as 3.63 V min, 3.8 V typ, 3.95 V max, for VDD 2.7 to 5.25 V. It isolates up to +5.25 V. A steady 3.63 to 3.95 V can pass, and no figure is given over 0 to 50 C. It covers D+ and D- only, with no IEC 61000-4-2 rating (HBM >5.5 kV). The jlcparts stock is 50; not read at JLCPCB. Listed for the re-rank to close."
+   },
+   {
+    "function": "USB protection",
+    "part": "PI3USB42ZMEX (LCSC C780880)",
+    "maker": "Diodes Incorporated (Pericom; jlcparts maker 'Diodes Incorporated'); allowlisted (S1)",
+    "why": "A USB 2.0 switch 'With Vbus Short Protection' that P2 did not consider. It fails, or at best does not show, 'D+/D- steady voltage (V12)'. Datasheet DS42424 Rev 4-2 (https://www.diodes.com/assets/Datasheets/PI3USB42.pdf, read 2026-09-29T00:47:00Z; pages 1, 3 and 4 viewed as images) says: 'If the Vin (D+/-) is 0.6V greater than VDD, USB42 will turn off the switch'. It gives no min or max for that threshold. The recommended switch input maximum is VDD + 0.5 V, and VDD runs 1.8 to 4.5 V. On the 3.3 V rail that is about 3.9 V, above 3.63 V. It covers D+ and D- only; ESD is >8 kV HBM only. Listed for the re-rank to close."
+   },
+   {
+    "function": "USB protection",
+    "part": "SN74CB3T1G125 (LCSC C134001) and SN74CB3T3306 (LCSC C543077)",
+    "maker": "Texas Instruments (datasheet; jlcparts maker 'Texas Instruments'); allowlisted (S1)",
+    "why": "A FET (field-effect transistor) bus switch whose output tracks VCC. The switch as a series limiter, behind a shunt ESD array such as VBUS54CV, is an approach P2 did not consider. It is not qualified: 'D+/D- steady voltage (V12)' is not shown. SCDS150A (https://www.ti.com/lit/ds/symlink/sn74cb3t1g125.pdf, read 2026-09-29T00:43:17Z), Figure 1 note A: for an input from VCC - 1 V to 5.5 V, 'the output high voltage (VOH) level will be equal to approximately the VCC voltage level'. That is a typical figure. Figure 4 gives only typical VOH curves, and no maximum output voltage is specified. Data I/O range 0 to 5.5 V; Ioff 10 uA max at VCC 0; Cio(ON) 4 pF; ron 5 Ohm typ. It has no IEC 61000-4-2 rating (2 kV HBM), so it needs the clamp array for V9. With VCC on the 3.3 V rail (3.399 V max), the typical output stays under 3.63 V. No datasheet figure guarantees it. SN74CB3T3306 (https://www.ti.com/lit/ds/symlink/sn74cb3t3306.pdf, read 00:43:17Z) is the 2-bit version from the same datasheet family. No USB protection family found in this search shows a steady limit of 3.63 V or less while passing the 3.3 V full-speed signal. The USB protection function stays without a qualifying part."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "Blank-maker 3.3 uH rows, among them XAL6030-332MEC (LCSC C19191620)",
+    "reason_given": "Polarity marking (V14) is not stated for any of them in the jlcparts rows; not qualified in this task. 956 rows in the filtered set carry a blank maker",
+    "why_it_fails": "Sourcing rule 3 says an agent never drops a row because its maker or attributes are blank. It takes the maker from JLCPCB's API and every requirement value from the datasheet. At least one allowlisted row in this set passes every value. XAL6030-332MEC has a blank maker in jlcparts. JLCPCB (vendors.py jlcpcb C19191620, exact match, 2026-09-29T00:57:52Z) names the maker Coilcraft and gives stockCount 770, canPresaleNumber 764, expand, 7.2249 USD at 1. Datasheet: Coilcraft Document 887-1 'Shielded Power Inductors - XAL60xx' (https://www.coilcraft.com/getmedia/ea51f14b-7f32-4dc6-8dfe-d4b70549040f/xal60xx.pdf, read 00:56:47Z, SHA-256 236888dabe560055e7eb40e24b8bf938db132b66a0e9f1a3c512fb3b04361681). It gives XAL6030-332ME_ at 3.3 uH +/-20 %, DCR 19.92 mOhm typ and 20.81 mOhm max, and Isat 12.2 A. Ambient is -40 to +125 C. The drawing labels the 'Dash number': 'Indicates direction of terminals and start (short) lead', the same mark P2 accepted on XGL4020. It passes V8, V14 and V7. Digi-Key answered HTTP 404 (https://api.digikey.com/products/v4/search/XAL6030-332MEC/productdetails, 00:58:08Z), so its second source must be an alternate. Its 6.5 x 6.3 mm body ranks it below the 4 x 4 mm parts. It is still a candidate, not an exclusion. A second allowlisted row in the set, Wurth 74438356033 (C2045382), has a blank maker in jlcparts; JLCPCB names Wurth Elektronik. It carries a start-of-winding dot but fails rule 4 on stockCount 9 (00:54:22Z), so the drop holds for it on stock, not on marking."
+   },
+   {
+    "part": "XAL4030-332MEC (C2937437), XEL4030-332MEC (C19191691)",
+    "reason_given": "Qualify on the values read ... Not among the three records: Digi-Key does not carry Coilcraft ... so each would need the other as its alternate, and the 4 x 4 x 3.1 mm body adds nothing over XGL4020; XEL4030's start-lead note was not found in the text",
+    "why_it_fails": "Neither reason is a failed requirement value. (1) P2's ranks 2 and 3 (XGL4020-332MEC, XFL4020-332MEC) are Coilcraft parts with the same Digi-Key gap, and they also rely on each other as alternates. P2 reads XFL4020 at stock 723, while XAL4030 read 1557 in P2's own JLCPCB call (00:21:26Z), so the stock comparison favours XAL4030. (2) XEL4030's start-lead mark is in the page-3 drawing, an image that pdftotext does not extract. T2 P3 read it there: Document 1321, read 2026-09-28T13:19:54Z, 'Dash number: Indicates direction of terminals and start (short) lead'. P2's own reading of XAL40xx (Document 806-1) found the same mark. Both parts meet V8, V14 and V7 on P2's figures. The re-rank should weigh them against rank 3 on stock and height, not drop them."
+   }
+  ],
+  "missed_functions": []
+ }
+}
