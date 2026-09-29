@@ -1218,6 +1218,16 @@ def cmd_prepare(args):
             raise SystemExit("FU needs --followup FILE")
         followup = json.loads(read(args.followup))
         check_followup(followup, cats)
+    # The owner's stock exceptions, T6 only: PART=REASON each. Read before
+    # any merge, so a malformed one leaves the results tree untouched.
+    stock_exceptions = []
+    for x in args.stock_exception:
+        part, _, why = x.partition("=")
+        if not part.strip() or not why.strip():
+            raise SystemExit(f"--stock-exception {x!r}: give PART=REASON")
+        stock_exceptions.append({"part": part.strip(), "reason": why.strip()})
+    if stock_exceptions and args.task != "T6":
+        raise SystemExit("--stock-exception applies to T6 only")
     for path in (db, manifest, env):
         if not os.path.isfile(path):
             raise SystemExit(f"{path} is not there")
@@ -1365,15 +1375,6 @@ def cmd_prepare(args):
     run_id = hashlib.sha256(ident.encode()).hexdigest()[:16]
     for_research = [{"id": r[0], "category": r[1]} for r in rows
                     if "for research" in r[3].lower()]
-    # The owner's stock exceptions, T6 only: PART=REASON each.
-    stock_exceptions = []
-    for x in args.stock_exception:
-        part, _, why = x.partition("=")
-        if not part.strip() or not why.strip():
-            raise SystemExit(f"--stock-exception {x!r}: give PART=REASON")
-        stock_exceptions.append({"part": part.strip(), "reason": why.strip()})
-    if stock_exceptions and args.task != "T6":
-        raise SystemExit("--stock-exception applies to T6 only")
     # The agents run this tool's vendors.py, copied for the run so a branch
     # switch in this clone does not change it; the checkout of
     # research/round1 carries the copy of the day the branch was cut.
@@ -1895,11 +1896,11 @@ def main():
     p.add_argument("--effort", required=True, choices=EFFORTS,
                    help="the effort every agent of the run gets")
     p.add_argument("--agent-model", choices=MODELS,
-                   help="the model of every role but P2 and the "
-                   "adjudicator (default: the session's model)")
+                   help="the model of every role but P2, the adjudicator, "
+                   "P7 and the P7 critic (default: the session's model)")
     p.add_argument("--oversight-model", choices=MODELS,
-                   help="the model of P2 and the adjudicator (default: the "
-                   "session's model)")
+                   help="the model of P2, the adjudicator, P7 and the P7 "
+                   "critic (default: the session's model)")
     p.add_argument("--followup")
     p.add_argument("--name", default="1", help="follow-up run name")
     p.add_argument("--digikey-min", type=int, default=600, metavar="N",

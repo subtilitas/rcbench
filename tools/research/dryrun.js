@@ -574,6 +574,13 @@ async function main() {
   r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR (second vendor): stock 0', stockExceptions: exc })
   check(r.result.summary.stopped === true && /item 0 not stated/.test(r.result.summary.reasons[0]), 'T6: an exception not stated on the pages stops it')
   check(r.result.stock_exceptions.length === 1, 'T6: the exceptions are carried into the result')
+  const atParts = [{ index: 0, file: 'hardware/docs/Parts.md', line: 3 }]
+  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBRX: stock 0, gate 50', stockExceptions: exc, marked: atParts })
+  check(r.result.summary.stopped === true, 'T6: a failure of a part whose number only contains the excepted one stops it')
+  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: no exact match for C1234', stockExceptions: exc, marked: atParts })
+  check(r.result.summary.stopped === true, 'T6: a failed lookup of an excepted part is no shortfall and stops it')
+  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: stock 0, gate 50', stockExceptions: exc, marked: [{ index: 0, file: 'hardware/docs/Power.md', line: 3 }] })
+  check(r.result.summary.stopped === true && /item 0 not stated/.test(r.result.summary.reasons[0]), 'T6: an exception stated outside Parts.md stops it')
   r = await runTask('T6', { runInfo: { agent_model: 'sonnet', oversight_model: 'opus' } })
   check(r.models.length === 2 && r.models.every(([, m]) => m === 'opus'), 'T6: P7 and its critic on the oversight model')
 

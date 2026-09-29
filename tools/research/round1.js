@@ -350,7 +350,7 @@ ${J(p6)}`
 // --stock-exception): the stock check may fail on these alone.
 const STOCK_EXCEPTIONS = (A.stock_exceptions || []).filter(x => x && x.part)
 
-const T6_CHECKS = `\`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results}; run the stock check once, after your last edit, since each run reads Digi-Key, which allows 1,000 calls a day. tools/jlc_stock.py prints each problem on one line starting "[FAIL] PART", and the report of the stock check gives every such line${STOCK_EXCEPTIONS.length ? `; a failure of these parts alone is the owner's accepted exception and counts as passed: ${STOCK_EXCEPTIONS.map(x => x.part).join(', ')}` : ''}`
+const T6_CHECKS = `\`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results}; run the stock check once, after your last edit, since each run reads Digi-Key, which allows 1,000 calls a day. tools/jlc_stock.py prints each problem on one line starting "[FAIL] PART", where PART is the part number alone and a stock or presale shortfall gives its reading and gate as "stock N, gate G", and the report of the stock check gives every such line${STOCK_EXCEPTIONS.length ? `; a failure of these parts alone is the owner's accepted exception and counts as passed: ${STOCK_EXCEPTIONS.map(x => x.part).join(', ')}` : ''}`
 
 // What the pages state as open, each as its state says: each conflict and gap
 // the P5/P6 checks leave after the follow-up rounds (session.py t6_open),
@@ -1640,10 +1640,16 @@ if (TASK === 'T6') {
   // The pages are final only with both returns and the critic's three
   // checks passing on the tree it leaves; otherwise T6 is stopped.
   // The stock check may fail on the owner's excepted parts alone: every
-  // "[FAIL]" line of its report names one of them.
+  // "[FAIL]" line of its report names one of them, the part number right
+  // after "[FAIL]" equal to it, and states a stock or presale shortfall
+  // against its gate. A lookup that failed (no exact match, the API
+  // unreachable, no credentials) is no shortfall and is not excepted.
+  const failedPart = l => ((/\[FAIL\]\s+(\S+)/.exec(l) || [])[1] || '').replace(/[:;,.]+$/, '')
+  const shortfall = l => /\b(stock|presale)\w*\b[^0-9]{0,20}-?\d+/i.test(l) && /\bgate\b[^0-9]{0,5}\d+/i.test(l)
+    && !/unreachable|no exact match|credential|not checked|could not|error|\b429\b/i.test(l)
   const excepted = r => {
     const lines = String((r && r.output) || '').split('\n').filter(l => /\[FAIL\]/.test(l))
-    return STOCK_EXCEPTIONS.length > 0 && lines.length > 0 && lines.every(l => STOCK_EXCEPTIONS.some(x => l.includes(x.part)))
+    return STOCK_EXCEPTIONS.length > 0 && lines.length > 0 && lines.every(l => shortfall(l) && STOCK_EXCEPTIONS.some(x => failedPart(l) === x.part))
   }
   const failed = critic ? Object.entries(critic.checks || {}).filter(([k, r]) => !(r && r.passed) && !(k === 'jlc_stock' && excepted(r))).map(([k]) => k) : []
   // The critic's own findings, as they stand after its corrections.
@@ -1696,7 +1702,10 @@ if (TASK === 'T6') {
   // keeps in its Parts.md row and on a group page, and each sentence of the
   // stock tool's Outputs row in tools/jlc_stock.py.
   if (p7 && critic) {
-    const marked = new Set((critic.marked || []).filter(x => required.includes(x.file) && x.line > 0).map(x => x.index))
+    // A stock exception is stated in its part's Parts.md row; every other
+    // item on any output or group page.
+    const firstException = MARKS.length - STOCK_EXCEPTIONS.length
+    const marked = new Set((critic.marked || []).filter(x => required.includes(x.file) && x.line > 0 && (x.index < firstException || x.file === 'hardware/docs/Parts.md')).map(x => x.index))
     MARKS.forEach((m, i) => { if (!marked.has(i)) failed.push(`item ${i} not stated on the pages as ${m.state}`) })
     // Each part on the page of its category's group.
     for (const o of OWED_PARTS) if (!(critic.part_rows || []).some(x => x.function === o.function && x.part === o.part && x.parts_line > 0 && x.group_page === ((p7 && p7.group_pages) || {})[o.group])) failed.push(`no Parts.md row or group ${o.group} page for ${o.part} (${o.function}, ${o.category})`)

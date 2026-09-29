@@ -165,9 +165,12 @@ It refuses these without exception:
 
 `--stock-exception PART=REASON`, for T6 only and repeatable, records a part
 whose stock gate failure the owner accepts. T6's stock check then counts as
-passed when every line of its report that starts `[FAIL]` names an excepted
-part, and the pages state each exception with its reason in the part's
-`Parts.md` row. `record` refuses an output whose exceptions differ from the
+passed when every line of its report that starts `[FAIL]` gives an excepted
+part number right after `[FAIL]`, exactly, and a stock or presale shortfall
+against its gate (`stock N, gate G`); a failed lookup (no exact match, the
+API unreachable, no credentials) is not excepted. The pages state each
+exception with its reason in the part's `Parts.md` row, and only a mark
+there counts. `prepare` reads the exceptions before it merges anything. `record` refuses an output whose exceptions differ from the
 prepared ones. P7 and its critic run the stock check once each, after their
 last edit: each run reads Digi-Key.
 
