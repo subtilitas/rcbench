@@ -1,0 +1,161 @@
+{
+ "role": "rerank",
+ "category": "R1",
+ "label": "rerank-R1",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "functions": [
+   {
+    "function": "Microcontroller",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "reason": "The fixed input of the Scope table, ranked first and not replaced. P3 returned nothing for this function. Re-read: JLCPCB C39843328 exact match stockCount 2977, canPresaleNumber 2820, expand (vendors.py jlcpcb C39843328, 2026-09-29T09:06:04Z): rule 4 passes at the gate of 50, and rule 6 by the 20 held. Digi-Key SC1512(13)-A4 stock_available 3560, Active, 22 weeks (read 2026-09-29T03:48:29Z, returned cached) is the second vendor. P2's record marks three watchdog rows false (V1, V2, and the V1-and-V2 window). They are not properties of the part: V1 is not found and V2 has no bound with a slow USB host. The part offers every timeout from 1 us to about 16.8 s (RP2350 datasheet Table 1249). The FU-A2 adjudicator ruled the same (FU-A2/022-adjudicator-R1.json). They go to the owner, not to re-selection",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "12 MHz crystal",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "ABM8-272-T3",
+      "reason": "The only candidate that meets every value of V5, V6, V7 and V15: CL 10 pF, ESR 50 Ohm max, C0 3.0 pF max, drive level 200 uW max, fundamental AT-cut, 65 ppm worst-case total error against 1000 ppm. P3 returned no crystal and overturned none of P2's crystal drops. Re-read: JLCPCB C20625731 exact match stockCount 15120, canPresaleNumber 14476, expand, USD 0.619 at 1 (2026-09-29T09:06:04Z): rule 4 passes at the gate of 50. Digi-Key ABM8-272-T3 stock_available 28505, Active, 14 weeks (2026-09-29T08:33:53Z, cached) is the second vendor. Maker status is not read (Abracon product page answered 404 to P2); that goes to the owner",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "ABM8-272-T3",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Core regulator inductor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "AOTA-B201610S3R3-101-T",
+      "reason": "Ground 1 of P2's basis: the inductor RP2350 datasheet section 6.3.8.2 recommends, in the 2.0 x 1.6 mm case the Figure 23 layout is drawn for. Every value passes: 3.3 uH +/-20 %, Isat 2.4 A, DCR 140 mOhm max, shielded, white-ink polarity dot, -40 to +125 C. Maker status Active. Re-read: JLCPCB C42411119 stockCount 4561, canPresaleNumber 4070 (2026-09-29T09:06:04Z). Digi-Key 28115, Active (08:33:55Z, cached) is the second vendor. None of P3's finds is the recommended part, so none displaces it",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "VLS4015CX-3R3M-H",
+      "reason": "Not ground 1. Ground 2: Digi-Key second vendor (2479, Active, 08:33:56Z, cached). Ground 3: maker status read (TDK Production). Ground 4: 4.0 x 4.0 x 1.5 mm, 16.0 mm2, the smallest body of the parts tied on grounds 1 to 3. Re-read: JLCPCB C3222575 stockCount 1845, canPresaleNumber 1845 (09:06:04Z). P3's finds rank below it: ETQP3M3R3KVP has no maker status read and a 27.5 mm2 body; the Coilcraft parts and XAL5030-332MEC have no Digi-Key listing",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "74438357033",
+      "reason": "Not ground 1. Ground 2: Digi-Key second vendor (4180, Active, 08:33:58Z, cached). Ground 3: maker status read (Wurth 'Production is active'). Ground 4: 4.1 x 4.1 x 3.1 mm, 16.8 mm2, larger and taller than VLS4015CX-3R3M-H. Re-read: JLCPCB C17430655 stockCount 78, canPresaleNumber 77 (09:06:04Z): passes the gate of 50 with a margin of 28. It ranks above ETQP3M3R3KVP on ground 3 (Panasonic status not read) and on ground 4 (27.5 mm2)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "ETQP3M3R3KVP (LCSC C542316; Digi-Key MPN ETQ-P3M3R3KVP)",
+      "maker": "Panasonic",
+      "reason": "Qualifies but ranks 4th, below the owner's cap of three full records per function (Research.md, Agent layout, P2 row: 'For up to three survivors per function (owner, 2026-09-28)'), which the re-rank applies as P2 does. Values (datasheet AGL0000C63, https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C63.pdf, SHA-256 3181caa00e4f342cbcccd4adabed32e007abd62172fe56d5eab0e52c58b53ee2, read 2026-09-29T09:08:24Z): 3.3 uH, DCR 27.3 (30.03) mOhm, rated current 5.4 (4.4) A, Isat 8.0 A, 'Magnetically shielded', a 'Polarity' mark in the marking drawings, body 5.5 x 5.0 x 3.0 mm. Rank: it ties VLS4015CX-3R3M-H and 74438357033 on grounds 1 and 2 (not the recommended part; Digi-Key ETQ-P3M3R3KVP stock_available 2343, Active, 23 weeks, 2026-09-29T08:55:44Z, cached). It loses on ground 3: its maker status is not read (the Panasonic model page answered HTTP 404 to P3 at 08:56:58Z), while TDK and Wurth status is read. Were it read as active, it would still lose on ground 4: 27.5 mm2 against 16.0 and 16.8 mm2. JLCPCB C542316 stockCount 163, canPresaleNumber 154 (09:06:04Z)"
+     },
+     {
+      "part": "XAL5030-332MEC (LCSC C5342047)",
+      "maker": "Coilcraft",
+      "reason": "Qualifies on the values read but ranks below the three shortlisted parts, beyond the owner's cap of three full records per function (Research.md, P2 row, owner 2026-09-28). Values: Coilcraft Document 908-1, revised 02/26/26 (https://www.coilcraft.com/getmedia/49bc46c8-4b2c-45b9-9b6c-2eaa235ea698/xal50xx.pdf, SHA-256 398076aa6efec9860d440a00fc4c37e28d535c130e68f9362da491a75d236ce4, read 2026-09-29T09:08:25Z): XAL5030-332ME_ 3.3 uH +/-20 %, DCR 21.20 typ, 23.30 max mOhm, Isat 8.7 A. The start-lead mark (V14) is P3's reading of the page-4 drawing and was not re-read here. Rank: Digi-Key answered 404 for XAL5030-332MEC (https://api.digikey.com/products/v4/search/XAL5030-332MEC/productdetails, 2026-09-29T08:55:52Z, cached), so it has no second-vendor route and loses on ground 2 to all three shortlisted parts. JLCPCB C5342047 stockCount 117, canPresaleNumber 103, package 'SMD,5.4x5.2mm' (09:06:04Z)"
+     },
+     {
+      "part": "XGL4020-332MEC (C6937839), XAL4030-332MEC (C2937437), XEL4030-332MEC (C19191691), XAL6030-332MEC (C19191620), XEL6030-332MEC (C19191645)",
+      "maker": "Coilcraft",
+      "reason": "Their values pass V8, V14 and V7 on the FU-A2 readings (not re-read here), but each ranks below the three shortlisted parts, beyond the owner's cap of three full records per function (Research.md, P2 row, owner 2026-09-28). Ground 2: Digi-Key answered 404 for every one (api.digikey.com/products/v4/search/<MPN>/productdetails: XGL4020 08:55:55Z, XAL4030 08:56:04Z, XEL4030 08:56:06Z, XAL6030 08:56:08Z, XEL6030 08:56:37Z, 2026-09-29, cached), so none has the second-vendor route the three shortlisted parts have. XGL4020's FU-A2 alternate XFL4020-332MEC also answered 404 at Digi-Key (09:08:37Z) and is dropped by P2 on rule 4. Ground 3: no Coilcraft maker status read. JLCPCB (09:06:04Z): XGL4020 1446/1442, XAL4030 1546/1531, XEL4030 768/767, XAL6030 770/764, XEL6030 74/70 (stockCount/canPresaleNumber); all pass rule 4. XAL6030-332MEC is a blank-maker row in jlcparts, and JLCPCB names Coilcraft, an S2 maker"
+     },
+     {
+      "part": "BCL322520RT-3R3M-D (LCSC C3220968)",
+      "maker": "TDK",
+      "reason": "Fails 'polarity marking' (V14): the datasheet does not show the part marked for polarity. 'BCL322520RT-D type' (JLCPCB copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8590359843489157120, SHA-256 0ad3bd35e55754e6d30b1a56cb53c3f753c2c8bd51211404e6d9abacce4d85eb, read 2026-09-29T09:06:28Z). Page 3 'Shape & Dimensions' draws an unlabelled hatched square in one corner of the top view. No page names it a polarity or winding-start mark, and the part-number construction (page 1) has no marking field. The other values pass: 3.3 uH +/-20 %, DC resistance 0.078 Ohm max, Isat 3.13 A max column, 'fully encapsulated with a magnetic material', -55 to +155 C. P3's note on SPM3015T-3R3M-LR (C2045178) belongs to the SPM family P2 dropped on V14"
+     },
+     {
+      "part": "Blank-maker 3.3 uH rows (APS0530M3R3A, GSM0530-3R3-M, PCT252012-3R3-M, APS201610M3R3F and the rest)",
+      "maker": "COILANK INTERNATIONAL; FAUKU; jieerrui (JLCPCB labels); Coilcraft for XAL6030-332MEC",
+      "reason": "P3 is right: P2's second clause (V14 not stated for any) does not cover the whole set. The rows P2 names are off the S2 list by the maker JLCPCB gives them (vendors.py jlcpcb, exact matches, 2026-09-29T09:08:16Z): APS0530M3R3A C53198622 'COILANK INTERNATIONAL', GSM0530-3R3-M C51933828 'FAUKU', PCT252012-3R3-M C54557086 'jieerrui', APS201610M3R3F C48783272 'COILANK INTERNATIONAL'. Rule 2 drops them. The one row P3 names that qualifies, XAL6030-332MEC (C19191620, JLCPCB 'Coilcraft', stockCount 770, 09:06:04Z), is handled with the Coilcraft entry: it ranks below the three shortlisted parts because Digi-Key answered 404 (08:56:08Z, cached), beyond the owner's cap of three records"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "AOTA-B201610S3R3-101-T",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "USB protection",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "ADuM3160BRWZ-RL (LCSC C284149) and ADuM4160BRWZ-RL (LCSC C57791), full/low-speed USB isolators; also ISOUSB111DWR (LCSC C5216549)",
+      "maker": "Analog Devices; Texas Instruments",
+      "reason": "Each is a D+/D- repeater only. As the function's part it fails five values. 'lines covered': only UD+, UD-, DD+ and DD-, with no VBUS, CC1 or CC2 path. 'VBUS rating': no VBUS path. 'CC function': no CC pins. 'IEC 61000-4-2 contact' and 'IEC 61000-4-2 air': no IEC 61000-4-2 rating. ADuM3160 Rev. D and ADuM4160 Rev. E give only 'Class 3A contact ESD performance per ANSI/ESD STM5.1-2007', an HBM class; their IEC 61000-4-5 figure is a surge across the barrier. ISOUSB111 SLLSFC6E section 5.2 gives HBM +/-2000 V and CDM +/-500 V. 'D+/D- ESD clamping (V12)' is not given by any. On 'D+/D- steady voltage (V12)', the side-2 drivers give VOH 2.8 to 3.6 V. ADuM3160 and ADuM4160 also rate the connector-side inputs VUD+ and VUD- at -0.5 V to VDD1 + 0.5 V, at most 4.1 V with VDD1 at 3.6 V. A steady 5 V on the connector's D+ therefore exceeds their absolute maximum. ISOUSB111 rates its bus pins at -0.3 to 6 V for 1000 short events and 1000 h. ISOUSB111DWR also fails rule 4: JLCPCB stockCount 33 < 50, canPresaleNumber 25 (vendors.py jlcpcb C5216549, 2026-09-29T09:06:04Z). Sources: https://www.analog.com/media/en/technical-documentation/data-sheets/ADuM3160.pdf (SHA-256 339238edd188daff7be738dac4edea32861368c38c50fbf8ab4a73efa96f8edd) and .../ADuM4160.pdf (SHA-256 73c2148ca6e284572646602d1c9658e9baf4952ece5b8501a409149b08c90fe3), read 09:07:02Z; https://www.ti.com/lit/ds/symlink/isousb111.pdf (SHA-256 edd2f224403b00780241d9fef6f4cfc2c0102224193cfb580bd1b87248c0cefe), read 09:07:03Z. The route as a set of parts goes to the owner (report 'USB protection: repeater route')"
+     },
+     {
+      "part": "TPD4S311AYBFR (C5216311), TPD4S311YBFR (C2869912), TPD6S300ARUKR (C2876380), TPD6S300RUKR (C2649810), TPD2S300YFFR (C2650411), TCPP01-M12 (C1121848), TCPP02-M18 (C3662929)",
+      "maker": "Texas Instruments; STMicroelectronics",
+      "reason": "P3 is right that P2's reasons were partly wrong: an SBU threshold is not a D+/D- figure, and 'datasheets not read' is not a failed value. Re-read as the function's single part, each still fails 'lines covered' (V13: VBUS, D+, D-, CC1, CC2). TPD2S300: CC1/CC2 OVP only, VOVPCC_RISE 5.55 to 6.18 V, IEC 61000-4-2 +/-8 kV contact and +/-15 kV air on CC1/CC2; no VBUS, D+ or D- pins (SLVSDL1, https://www.ti.com/lit/ds/symlink/tpd2s300.pdf, SHA-256 d1f89a59c7e19afb8bbfe5d51995ba47a9e191197587fe4e740e2e931fd53c04, read 2026-09-29T09:07:03Z). TCPP01-M12: VBUS OVP through an external N-channel MOSFET, and 6.0 V OVP and IEC 61000-4-2 level 4 on CC1/CC2; no D+/D- pins (DS12900 Rev 7, https://www.st.com/resource/en/datasheet/tcpp01-m12.pdf, SHA-256 6c56e21599833df25bb36daa266e110af4469f21bfea2538964f1bfb6e55c359, 09:07:39Z). TCPP02-M18: source-side VBUS and CC1/CC2 protection; no D+/D- pins (DS13787 Rev 4, https://www.st.com/resource/en/datasheet/tcpp02-m18.pdf, SHA-256 291a75882c4634104eeac7d1d475c7464d1ea77329ecb912064391d3a3fa9727, 09:07:39Z). TPD4S311/A and TPD6S300/A: CC and SBU OVP FETs, no VBUS path. TPD6S300A names wiring the SBU FETs to USB 2.0 D+/D- instead. In that wiring VOVPSBU is 4.35 min, 4.5 typ, 4.7 max V, so it fails 'D+/D- steady voltage (V12)' at 3.63 V (SLVSEL8, https://www.ti.com/lit/ds/symlink/tpd6s300a.pdf, SHA-256 e0f3f108e67f29d98d52828cbf69ec744f054a902767e3662ff2e1f258bf5b61, 09:07:53Z; SLVSF72C, https://www.ti.com/lit/ds/symlink/tpd4s311a.pdf, SHA-256 3f206dd65f48b10e3c1c3d4ea9df9566fb7417bb480b2c5abd018f3188229e49, VOVPSBU 4.35 to 4.7 V, 09:07:54Z)"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "re-rank JLCPCB re-read",
+    "value": "Exact matches (stockCount / canPresaleNumber, library type, USD at 1): C39843328 RP2354B 2977 / 2820, expand, 1.5335, erpComponentName SC1512(13)-A4. C20625731 ABM8-272-T3 15120 / 14476, expand, 0.619. C42411119 AOTA-B201610S3R3-101-T 4561 / 4070, expand, 0.2827. C3222575 VLS4015CX-3R3M-H 1845 / 1845, expand, 0.3325. C17430655 74438357033 78 / 77, expand, 3.3691. Every ranked part passes rule 4 at the gate of max(5 x 5, 50) = 50. Figures for P3's finds: C542316 ETQP3M3R3KVP 163 / 154. C5342047 XAL5030-332MEC 117 / 103. C6937839 XGL4020 1446 / 1442. C2937437 XAL4030 1546 / 1531. C19191691 XEL4030 768 / 767. C19191620 XAL6030 770 / 764. C19191645 XEL6030 74 / 70. C3220968 BCL322520RT-3R3M-D 1230 / 1227. C2045178 SPM3015T-3R3M-LR 1950 / 1950. C284149 ADUM3160BRWZ-RL 5068 / 4946. C57791 ADUM4160BRWZ-RL 5531 / 5334. C5216549 ISOUSB111DWR 33 / 25, which fails rule 4. C2650411 TPD2S300YFFR 205 / 193. C511465 VBUS54CV-HSF-G4-08 2919 / 2908",
+    "source": "python3 /home/claude/rcbench-research/round1/tools/c9784e63b4dfa30d/vendors.py jlcpcb C<digits> (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList), each read 2026-09-29T09:06:04Z"
+   },
+   {
+    "figure": "inductor order beyond the cap",
+    "value": "P2's grounds, in order: (1) the part section 6.3.8.2 recommends; (2) second-vendor route over an alternate only; (3) maker status read; (4) body area, then height; (5) JLCPCB stock. The order: 1 AOTA-B201610S3R3-101-T. 2 VLS4015CX-3R3M-H. 3 74438357033. Beyond the owner's cap of three records: 4 ETQP3M3R3KVP, which has Digi-Key (2343, Active) but no maker status read and a 5.5 x 5.0 mm body. The rest have no Digi-Key listing (404) and no Coilcraft status read, and rank by ground 4: 5 XGL4020-332MEC (4 x 4 x 2.1 mm); 6 XAL4030-332MEC and 7 XEL4030-332MEC (4 x 4 x 3.1 mm, JLCPCB 1546 before 768); 8 XAL5030-332MEC (JLCPCB 'SMD,5.4x5.2mm'); 9 XAL6030-332MEC and 10 XEL6030-332MEC ('SMD,6.5x6.3mm', 770 before 74). BCL322520RT-3R3M-D is dropped on V14. P3's finds change none of the first three",
+    "source": "the records and drops of this return; vendors.py digikey readings of 2026-09-29 (ETQ-P3M3R3KVP 08:55:44Z; XGL4020 08:55:55Z; XAL4030 08:56:04Z; XEL4030 08:56:06Z; XAL6030 08:56:08Z; XEL6030 08:56:37Z; XAL5030 08:55:52Z; XFL4020 09:08:37Z); Panasonic AGL0000C63 read 09:08:24Z; JLCPCB package fields read 09:06:04Z"
+   },
+   {
+    "figure": "USB protection: repeater route",
+    "value": "No part covers VBUS, D+, D-, CC1 and CC2 and holds D+/D- at 3.63 V steady (V12, V13). The function stays with no ranked part. P3's route needs three elements, not one part. (a) A USB repeater between the connector's D+/D- and USB_DP/USB_DM. Its side 2 drives VOH 2.8 to 3.6 V from the 3.3 V rail, so the steady level at the RP2354B's pins is set by a driver, not by an OVP threshold. ISOUSB111 rates its connector-side bus pins at -0.3 to 6 V for 1000 short events and 1000 h, and CIO_xDx is 10 pF max; it fails rule 4 at JLCPCB (33). ADuM3160 and ADuM4160 are in stock (5068 and 5531). They rate their connector-side inputs at VDD1 + 0.5 V, at most 4.1 V, so a steady 5 V on the connector's D+ is outside their rating. (b) A connector-side array for IEC 61000-4-2 level 4 on every line: none of the repeaters has an IEC rating. (c) A CC1/CC2 element such as TPD2S300 (VOVPCC_RISE 5.55 to 6.18 V, IEC +/-8 kV contact and +/-15 kV air on CC). Not shown: the RP2354B's soft connect and BOOTSEL re-enumeration through a repeater, and any repeater's clamping at 16 A TLP. The owner decides whether the USB protection may be a set of parts and whether V12's steady limit binds against an external source. Only then can a set be qualified",
+    "source": "ADuM3160 Rev. D and ADuM4160 Rev. E (https://www.analog.com/media/en/technical-documentation/data-sheets/ADuM3160.pdf, .../ADuM4160.pdf, read 2026-09-29T09:07:02Z); ISOUSB111 SLLSFC6E (https://www.ti.com/lit/ds/symlink/isousb111.pdf, read 09:07:03Z), sections 5.1, 5.2 and the electrical characteristics; TPD2S300 SLVSDL1 (https://www.ti.com/lit/ds/symlink/tpd2s300.pdf, read 09:07:03Z); JLCPCB readings of 09:06:04Z; V12, V13"
+   },
+   {
+    "figure": "fixed input record: RP2354B",
+    "value": "P2's record for the RP2354B marks 'watchdog stop deadline (V1)', 'watchdog stall cover (V2)' and 'watchdog window (V1 and V2)' as pass false. A record with a failed requirement is dropped by the merge, so the Microcontroller function goes to the owner. Those three rows fail on the values found, not on the part. V1 is not found (FU-A2/023-adjudicator-R1-2.json). V2 has no bound while a slow USB host keeps reading. The part's watchdog takes any LOAD up to 0xffffff us, about 16.8 s (RP2350 datasheet Table 1249). Stock, lifecycle and second source pass: JLCPCB 2977 / 2820 (09:06:04Z); in production until at least January 2045; Digi-Key 3560, Active. The re-rank ranks it first, as the Scope requires",
+    "source": "P2's return (this task); vendors.py jlcpcb C39843328, 2026-09-29T09:06:04Z; results FU-A2/022-adjudicator-R1.json and FU-A2/023-adjudicator-R1-2.json; RP2350 datasheet build 2025-07-29, Table 1249, as P2 read it"
+   }
+  ]
+ }
+}

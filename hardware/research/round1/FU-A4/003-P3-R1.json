@@ -1,0 +1,54 @@
+{
+ "role": "P3",
+ "category": "R1",
+ "label": "P3-R1",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "missed": [
+   {
+    "function": "USB protection",
+    "part": "ADuM3160BRWZ-RL (LCSC C284149) and ADuM4160BRWZ-RL (LCSC C57791), full/low-speed USB isolators; also ISOUSB111DWR (LCSC C5216549)",
+    "maker": "Analog Devices (JLCPCB maker_label 'Analog Devices'); Texas Instruments for ISOUSB111 (JLCPCB 'Texas Instruments'); both allowlisted (S1)",
+    "why": "P2 did not consider this family: a USB repeater placed in series between the connector's D+/D- and USB_DP/USB_DM. The RP2354B's pins connect only to side 2, which is powered from the board's 3.3 V rail (3.201 to 3.399 V). A steady voltage on the connector's D+, such as the shared 5 V VBUS, reaches only side 1. So V12's steady limit rests on the side-2 driver, not on an OVP threshold. P2's 30 mV argument (an element that passes full-speed signalling passes 3.6 V) does not apply to this route. Figures read: (1) ADuM3160 datasheet, JLCPCB copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8586196649656135680 (Chinese edition), read 2026-09-29T09:01:25Z, SHA-256 a874ef35...0a0f06. VDD2 3.1 to 3.6 V. Logic-high output VOH 2.8 V min, 3.6 V max (RL 15 kOhm), which is at or below 3.63 V. CIN 10 pF typ per pin. TA -40 to +105 C. Absolute maximum: VUD+/VUD- -0.5 V to VDD1 + 0.5 V, and VDD+/VDD- -0.5 V to VDD2 + 0.5 V. Upstream short-circuit protection is listed with no figure. ESD is HBM class 3A only, with no IEC 61000-4-2 rating. (2) ADuM4160 datasheet, JLCPCB copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8586177548170903552, read 09:01:22Z, SHA-256 6d72c73d...c1e9: the same VOH 2.8 to 3.6 V, CIN 10 pF typ and VUD abs max VDDI + 0.5 V; TA -40 to +105 C. (3) ISOUSB111, SLLSFC6E rev. July 2025 (https://www.ti.com/lit/ds/symlink/isousb111.pdf, read 08:59:57Z, SHA-256 edd2f224...e0cefe). Bus pins UD+/UD-/DD+/DD- are rated -0.3 to 6 V for 1000 short events and 1000 h cumulative, so it survives a VBUS short, which the ADuM parts are not rated for. V3P3Vx 3.0 to 3.6 V. VOH 2.8 to 3.6 V. CIO 10 pF max. It detects speed and connection automatically. TA -40 to +125 C. HBM +/-2000 V only, and TI calls for external ESD diodes at the connector. JLCPCB exact matches: ADuM3160BRWZ-RL stock 5068, presale 4946, 5.6595 USD at 1 (09:01:11Z). ADuM4160BRWZ-RL stock 5531, presale 5334, 9.7514 USD (09:01:10Z). ISOUSB111DWR stock 33, presale 25 (09:01:07Z), which fails rule 4. ISOUSB111DWXR stock 0, presale -179 (09:01:08Z). Not shown, so Digi-Key was not read: (a) V9 and the V12 clamp still need a connector-side array. VBUS54CV-HSF covers VBUS plus 4 lines at +/-30 kV contact and air, but it gives VC 22 V max at 11 A 8/20 us, not a 16 A TLP figure (Document 84145 Rev. 1.3, https://www.vishay.com/docs/84145/vbus54cvhsf.pdf, read 09:00:44Z, SHA-256 26a39d9a...04fd08). (b) Soft-connect and BOOTSEL re-enumeration of the RP2354B through the repeater are not shown. (c) The ADuM upstream pins exceed their rating under a steady 5 V on D+. The re-rank qualifies the set."
+   },
+   {
+    "function": "Core regulator inductor",
+    "part": "ETQP3M3R3KVP (LCSC C542316; Digi-Key MPN ETQ-P3M3R3KVP)",
+    "maker": "Panasonic (datasheet; JLCPCB maker_label 'PANASONIC'; Digi-Key 'Panasonic Industry'); allowlisted as Panasonic (S2)",
+    "why": "P2 neither shortlists nor drops this part. The FU-A2 re-rank shortlisted it (FU-A4 task.json items). It passes every value. Datasheet AGL0000C63 dated 1-Jul-26, the copy Digi-Key links (https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C63.pdf, read 2026-09-29T08:56:44Z, SHA-256 3181caa0...b53ee2). Figures: 3.3 uH +/-20 %. DCR 27.3 mOhm typ, 30.03 mOhm max. Isat (delta L -30 %) 8.0 A. Rated current 5.4 (4.4) A. 'Magnetically shielded'. The PCC-M0530M-LP drawing labels a 'Polarity' mark. Tc -55 to +170 C, self-heating included. Body 5.5 x 5.0 x 3.0 mm max. JLCPCB (vendors.py jlcpcb C542316, exact match, 08:54:25Z): stock 163, presale 154, expand, 0.9357 USD at 1, which passes the gate of 50. Digi-Key (https://api.digikey.com/products/v4/search/ETQ-P3M3R3KVP/productdetails, 08:55:44Z): stock_available 2343, lead time 23 weeks, status Active, which passes rule 5. Maker status not read: the Panasonic model page https://industrial.panasonic.com/ww/products/pt/power-choke-coils/models/ETQP3M3R3KVP answered HTTP 404 (08:56:58Z). On P2's grounds it ties ranks 2 and 3 on grounds 1 and 2 and loses on ground 3 (status not read), so it would rank 4. Its 27.5 mm2 footprint also loses on ground 4. It does not displace P2's top three."
+   },
+   {
+    "function": "Core regulator inductor",
+    "part": "XAL5030-332MEC (LCSC C5342047)",
+    "maker": "Coilcraft (datasheet; JLCPCB maker_label 'Coilcraft'); allowlisted as Coilcraft (S2)",
+    "why": "No earlier task considered this part. Datasheet Document 908 'Shielded Power Inductors - XAL50xx', revised 02/26/26 (https://www.coilcraft.com/getmedia/49bc46c8-4b2c-45b9-9b6c-2eaa235ea698/xal50xx.pdf, read 2026-09-29T08:54:45Z, SHA-256 398076aa...5a75d236ce4). Figures for XAL5030-332ME_: 3.3 uH +/-20 %. DCR 21.20 mOhm typ, 23.30 mOhm max. Isat 8.7 A (30 % drop, typ). Irms 5.9 A at 20 C rise. Ambient -40 to +125 C. The page-4 drawing labels the dash number: 'Indicates direction of terminals and start (short) lead'. Body 5.28 x 5.48 mm, 3.1 mm max height. It passes V8, V14 and V7. JLCPCB (exact match, 08:54:26Z): stock 117, presale 103, expand, 6.1517 USD at 1, which passes the gate of 50. Digi-Key answered 404 (https://api.digikey.com/products/v4/search/XAL5030-332MEC/productdetails, 08:55:52Z), so its second source must be an alternate. It ranks below every Digi-Key part on P2's ground 2."
+   },
+   {
+    "function": "Core regulator inductor",
+    "part": "XGL4020-332MEC (C6937839), XAL4030-332MEC (C2937437), XEL4030-332MEC (C19191691), XAL6030-332MEC (C19191620), XEL6030-332MEC (C19191645)",
+    "maker": "Coilcraft (JLCPCB maker_label 'Coilcraft' for each; the jlcparts maker field is blank for XAL6030); allowlisted as Coilcraft (S2)",
+    "why": "P2 neither shortlists nor drops these parts. The FU-A2 re-rank shortlisted them, with XEL6030 as an alternate (FU-A4 task.json items), on datasheet values that pass V8, V14 (the dash-number start-lead mark) and V7. Those values come from the FU-A2 readings and were not re-read in this task. JLCPCB now (vendors.py jlcpcb, exact matches, 2026-09-29T08:54:25Z to 08:54:26Z): XGL4020 stock 1446, presale 1442. XAL4030 1546/1531. XEL4030 768/767. XAL6030 770/764. XEL6030 74/70. All pass the gate of 50. Digi-Key answered 404 for each (api.digikey.com/products/v4/search/<MPN>/productdetails: XGL4020 08:55:55Z, XAL4030 08:56:04Z, XEL4030 08:56:06Z, XAL6030 08:56:08Z, XEL6030 08:56:37Z). So they rank below P2's ranks 2 and 3 on ground 2. They serve as alternates for one another under rule 5."
+   },
+   {
+    "function": "Core regulator inductor",
+    "part": "BCL322520RT-3R3M-D (LCSC C3220968)",
+    "maker": "TDK (datasheet; JLCPCB maker_label 'TDK'); allowlisted as TDK (S2)",
+    "why": "A TDK wound-metal family that P2 did not consider. It fails 'polarity marking' (V14) on the same reading as P2's drop of VLS252012HBX-3R3M-1, so it is listed for the re-rank to close. Datasheet 'BCL322520RT-D type', JLCPCB copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8590359843489157120, read 2026-09-29T08:53:20Z, SHA-256 0ad3bd35...4d85eb. Figures: 3.3 uH +/-20 %. DC resistance 0.078 Ohm max, 0.068 typ. Isat 3.13 A in the max column, 3.91 A typ. Itemp 2.99 A. 'The coil is fully encapsulated with a magnetic material to minimize leakage flux'. Operating range -55 to +155 C. Body 3.2 x 2.5 x 2.0 mm max. The top view shows an unlabelled hatched square in one corner, and the datasheet does not say that it marks polarity or the winding start. JLCPCB (exact match, 08:54:24Z): stock 1230, presale 1227, 0.9828 USD at 1. Digi-Key was not read because V14 is not shown. The SPM3015T-3R3M-LR type (C2045178) belongs to the SPM family P2 dropped. Its datasheet (JLCPCB copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8558034154856988672, read 08:53:52Z, dated 20210419) also shows no mark."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "Blank-maker 3.3 uH rows (APS0530M3R3A, GSM0530-3R3-M, PCT252012-3R3-M, APS201610M3R3F and the rest)",
+    "reason_given": "Rule 2 where JLCPCB names a maker off the list; polarity marking (V14) not stated for any of them",
+    "why_it_fails": "The second clause does not hold for the whole set. Sourcing rule 3 says a row is never dropped because its maker field is blank. XAL6030-332MEC (C19191620) is a blank-maker row in the jlcparts copy. JLCPCB names its maker 'Coilcraft' (vendors.py jlcpcb C19191620, exact match, 2026-09-29T08:54:26Z: stock 770, presale 764). The XAL60xx datasheet labels the dash-number start-lead mark (FU-A2 P3 reading of https://www.coilcraft.com/getmedia/ea51f14b-7f32-4dc6-8dfe-d4b70549040f/xal60xx.pdf, 2026-09-29T00:56:47Z). It meets V8, V14 and V7. The rule 2 clause holds for the rows whose maker JLCPCB names off the list."
+   },
+   {
+    "part": "TPD4S311AYBFR (C5216311), TPD4S311YBFR (C2869912), TPD6S300ARUKR (C2876380), TPD6S300RUKR (C2649810), TPD2S300YFFR (C2650411), TCPP01-M12 (C1121848), TCPP02-M18 (C3662929)",
+    "reason_given": "No VBUS pin or CC/SBU only: fail 'lines covered'; SBU OVP 4.35 V min fails V12; TPD2S300 and TCPP01/02: not qualified, datasheets not read, no steady 3.63 V limit on D+/D- shown",
+    "why_it_fails": "V12 governs only USB_DP and USB_DM (QFN-80 pins 66 and 67). V13 sets 5 lines that the protection covers, not one package. A CC-only part therefore fails neither V12 nor 'lines covered' as the CC1/CC2 element of a set. TPD2S300 has no D+/D- pins. SLVSDL1 (https://www.ti.com/lit/ds/symlink/tpd2s300.pdf, read 2026-09-29T08:59:08Z, SHA-256 d1f89a59...fd53c04) gives 2 channels of CC1/CC2 short-to-VBUS OVP, 24 V DC tolerant, and VOVPCC_RISE 5.55 V min, 6.18 V max. It also gives IEC 61000-4-2 +/-8 kV contact and +/-15 kV air on CC1/CC2, TA -40 to 85 C, and integrated dead-battery Rd. The reason given for it does not apply. For TCPP01-M12 and TCPP02-M18, 'datasheets not read' is not a failed requirement value, and they were not read in this task either. The SBU-OVP reason for TPD4S311 and TPD6S300 concerns SBU, not D+/D-. This changes no ranking by itself: the function still needs a D+/D- element that meets V12, such as the isolator route under missed."
+   }
+  ],
+  "missed_functions": []
+ }
+}

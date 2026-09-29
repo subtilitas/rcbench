@@ -1,21 +1,22 @@
 {
  "R1": {
   "Microcontroller": {
-   "part": "RP2354B",
-   "rank": 1,
+   "part": null,
+   "rank": null,
    "alternate": "",
-   "run": "FU-A2",
+   "run": "FU-A4",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
    "decision": "none",
-   "q_options_missing": []
+   "q_options_missing": [],
+   "not_requalified": "RP2354B"
   },
   "12 MHz crystal": {
    "part": "ABM8-272-T3",
    "rank": 1,
    "alternate": "",
-   "run": "FU-A2",
+   "run": "FU-A4",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -26,7 +27,7 @@
    "part": "AOTA-B201610S3R3-101-T",
    "rank": 1,
    "alternate": "",
-   "run": "FU-A2",
+   "run": "FU-A4",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -37,7 +38,7 @@
    "part": null,
    "rank": null,
    "alternate": "",
-   "run": "FU-A2",
+   "run": "FU-A4",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
