@@ -89,6 +89,13 @@ were 132 KB), too long to copy into a tool call by hand. Only the line
 files. `record` takes the Workflow tool's task output file as it is, or its
 `result`.
 
+The agents run `DIR/tools/RUN_ID/vendors.py`, a copy `prepare` makes of the
+`vendors.py` beside `session.py`; its SHA-256 goes into `run_info` as
+`vendors_sha256`. The read-only checkout of `research/round1` carries the
+tools of the day the branch was cut, so a change to `vendors.py` on `main`
+reaches the agents only through this copy. FU-A2 of 2026-09-29 ran the
+checkout's copy, without the Digi-Key cache of #184 and #185: 253 calls.
+
 `--effort` is the effort every agent of the run gets: `low`, `medium`, `high`,
 `xhigh` or `max`. The workflow passes it to each agent; `--model` is recorded
 only, and every agent runs on the session's model.
