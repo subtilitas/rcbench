@@ -350,7 +350,7 @@ ${J(p6)}`
 // --stock-exception): the stock check may fail on these alone.
 const STOCK_EXCEPTIONS = (A.stock_exceptions || []).filter(x => x && x.part)
 
-const T6_CHECKS = `\`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results}; run the stock check once, after your last edit, since each run reads Digi-Key, which allows 1,000 calls a day. tools/jlc_stock.py prints each problem on one line starting "[FAIL] PART", PART the part number alone; a stock shortfall exactly as "[FAIL] PART: stock N, gate G" or "[FAIL] PART (second vendor): stock N, gate G", a presale shortfall exactly as "[FAIL] PART: presale N", and every other problem, a failed lookup among them, in other words; the report of the stock check gives every such line${STOCK_EXCEPTIONS.length ? `; a failure of these parts alone is the owner's accepted exception and counts as passed: ${STOCK_EXCEPTIONS.map(x => x.part).join(', ')}` : ''}`
+const T6_CHECKS = `\`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results}; run the stock check once, after your last edit, since each run reads Digi-Key, which allows 1,000 calls a day. tools/jlc_stock.py prints each problem on one line starting "[FAIL] PART", PART the part number alone; a stock shortfall exactly as "[FAIL] PART: stock N, gate G" or "[FAIL] PART (second vendor): stock N, gate G", a presale shortfall exactly as "[FAIL] PART: presale N", and every other problem, a failed lookup among them, in other words; it ends its report with "N problem(s)", N the count of [FAIL] lines; the report of the stock check gives every such line and that last line${STOCK_EXCEPTIONS.length ? `; a failure of these parts alone is the owner's accepted exception and counts as passed: ${STOCK_EXCEPTIONS.map(x => x.part).join(', ')}` : ''}`
 
 // What the pages state as open, each as its state says: each conflict and gap
 // the P5/P6 checks leave after the follow-up rounds (session.py t6_open),
@@ -1657,9 +1657,16 @@ if (TASK === 'T6') {
     return m[1] !== undefined ? Number(m[1]) < Number(m[2]) : Number(m[3]) < 0
   }
   const failLines = r => String((r && r.output) || '').split('\n').filter(l => /\[FAIL\]/.test(l))
+  // The report ends with "N problem(s)", N the count of [FAIL] lines: a
+  // run that stopped early, a crash among them, prints no such count.
+  const complete = r => {
+    const text = String((r && r.output) || '')
+    const m = /(\d+) problem\(s\)\s*$/.exec(text.trim())
+    return !!m && Number(m[1]) === failLines(r).length && !/Traceback|\bException\b/.test(text)
+  }
   const excepted = r => {
     const lines = failLines(r)
-    return STOCK_EXCEPTIONS.length > 0 && lines.length > 0 && lines.every(l => shortfall(l) && STOCK_EXCEPTIONS.some(x => failedPart(l) === x.part))
+    return STOCK_EXCEPTIONS.length > 0 && lines.length > 0 && complete(r) && lines.every(l => shortfall(l) && STOCK_EXCEPTIONS.some(x => failedPart(l) === x.part))
   }
   // With exceptions, the stock check's report is read whatever the critic
   // says of it: a [FAIL] line outside the exceptions fails it.
@@ -1718,7 +1725,13 @@ if (TASK === 'T6') {
     // A stock exception is stated in its part's Parts.md row; every other
     // item on any output or group page.
     const firstException = MARKS.length - STOCK_EXCEPTIONS.length
-    const marked = new Set((critic.marked || []).filter(x => required.includes(x.file) && x.line > 0 && (x.index < firstException || x.file === 'hardware/docs/Parts.md')).map(x => x.index))
+    // A stock exception's mark sits on its part's own Parts.md row, the line
+    // the critic gives for that part in part_rows.
+    const exceptionRow = i => {
+      const x = STOCK_EXCEPTIONS[i - firstException]
+      return new Set((critic.part_rows || []).filter(p => x && p.part === x.part && p.parts_line > 0).map(p => p.parts_line))
+    }
+    const marked = new Set((critic.marked || []).filter(x => required.includes(x.file) && x.line > 0 && (x.index < firstException || (x.file === 'hardware/docs/Parts.md' && exceptionRow(x.index).has(x.line)))).map(x => x.index))
     MARKS.forEach((m, i) => { if (!marked.has(i)) failed.push(`item ${i} not stated on the pages as ${m.state}`) })
     // Each part on the page of its category's group.
     for (const o of OWED_PARTS) if (!(critic.part_rows || []).some(x => x.function === o.function && x.part === o.part && x.parts_line > 0 && x.group_page === ((p7 && p7.group_pages) || {})[o.group])) failed.push(`no Parts.md row or group ${o.group} page for ${o.part} (${o.function}, ${o.category})`)

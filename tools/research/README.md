@@ -168,8 +168,11 @@ whose stock gate failure the owner accepts. T6's stock check then counts as
 passed when every line of its report that starts `[FAIL]` is a shortfall of
 an excepted part in the format P7 is given: `[FAIL] PART: stock N, gate G`
 (or `PART (second vendor)`) with N below G, or `[FAIL] PART: presale N` with
-N below zero, PART exactly the excepted part number. A line in any other
-wording, a failed lookup among them, is not excepted. With exceptions
+N below zero, PART exactly the excepted part number, and the report ends with
+`N problem(s)`, N the count of `[FAIL]` lines, with no traceback. A line in
+any other wording, a failed lookup among them, is not excepted, and an
+exception's mark counts only on its part's own `Parts.md` row, the line the
+critic gives for the part in `part_rows`. With exceptions
 given, the report's `[FAIL]` lines are read whether or not the critic marks
 the check passed, and `prepare` refuses an exception for a part no function
 keeps (kept part, alternate, Q alternative or its alternate). The pages state each

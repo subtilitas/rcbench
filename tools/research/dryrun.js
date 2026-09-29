@@ -567,7 +567,8 @@ async function main() {
   // A stock check failing on the owner's excepted parts alone passes; the
   // exception is stated on the pages.
   const exc = [{ part: 'ADS1235IRHBR', reason: 'Digi-Key stock 0; kept (owner, 2026-09-29)' }]
-  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR (second vendor): stock 0, gate 50\n1 problem(s)', stockExceptions: exc, marked: [{ index: 0, file: 'hardware/docs/Parts.md', line: 3 }] })
+  const excRow = [{ function: 'load-cell bridge ADC', part: 'ADS1235IRHBR', parts_line: 3, group_page: 'hardware/docs/GroupC.md' }]
+  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR (second vendor): stock 0, gate 50\n1 problem(s)', stockExceptions: exc, marked: [{ index: 0, file: 'hardware/docs/Parts.md', line: 3 }], partRows: excRow })
   check(!r.result.summary.stopped, 'T6: a stock check failing on an excepted part alone finishes it')
   r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR (second vendor): stock 0\n[FAIL] TCA9548APWR: stock 3', stockExceptions: exc, marked: [{ index: 0, file: 'hardware/docs/Parts.md', line: 3 }] })
   check(r.result.summary.stopped === true, 'T6: a stock check failing on another part too stops it')
@@ -581,8 +582,12 @@ async function main() {
   check(r.result.summary.stopped === true, 'T6: a presale reading above zero is no shortfall and stops it')
   r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: lookup failed; stock 0, gate 50', stockExceptions: exc, marked: atParts })
   check(r.result.summary.stopped === true, 'T6: a line in another wording than the shortfall format is no shortfall and stops it')
-  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: presale -99', stockExceptions: exc, marked: atParts })
+  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: presale -99\n1 problem(s)', stockExceptions: exc, marked: atParts, partRows: excRow })
   check(!r.result.summary.stopped, 'T6: a presale reading below zero is a shortfall of an excepted part')
+  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: stock 0, gate 50\nTraceback (most recent call last):\n  KeyError', stockExceptions: exc, marked: atParts, partRows: excRow })
+  check(r.result.summary.stopped === true, 'T6: an excepted shortfall beside a crash, with no problem count, stops it')
+  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: stock 0, gate 50\n1 problem(s)', stockExceptions: exc, marked: [{ index: 0, file: 'hardware/docs/Parts.md', line: 9 }], partRows: excRow })
+  check(r.result.summary.stopped === true && /item 0 not stated/.test(r.result.summary.reasons[0]), 'T6: an exception marked on another line of Parts.md than its row stops it')
   r = await runTask('T6', { passOutput: '[FAIL] ADS1235IRHBR: stock 0, gate 50\n[FAIL] TCA9548APWR: stock 3, gate 50', stockExceptions: exc, marked: atParts })
   check(r.result.summary.stopped === true, 'T6: a stock check the critic marks passed is still read for [FAIL] lines outside the exceptions')
   r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBRX: stock 0, gate 50', stockExceptions: exc, marked: atParts })
