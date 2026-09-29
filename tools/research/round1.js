@@ -26,6 +26,16 @@ const S = A.schemas || {}
 // checkout's. Every client command names it.
 const VENDORS = P.vendors || `${P.checkout}/tools/research/vendors.py`
 const CLIENTS = Object.fromEntries(Object.entries(A.clients || {}).map(([k, v]) => [k, String(v).replace('tools/research/vendors.py', VENDORS)]))
+// The model of each role: the adjudicator, which rules on refutations, runs on
+// the oversight model; every other role on the agent model (prepare's
+// --oversight-model and --agent-model). Without them the session's model.
+const MODELS = ['sonnet', 'opus', 'haiku', 'fable']
+const OVERSIGHT_ROLES = new Set(['adjudicator'])
+function modelFor(role) {
+  const m = OVERSIGHT_ROLES.has(role) ? (A.run_info || {}).oversight_model : (A.run_info || {}).agent_model
+  return MODELS.includes(m) ? m : null
+}
+
 // Every agent runs at the effort prepare recorded for the run (--effort).
 const EFFORT = ['low', 'medium', 'high', 'xhigh', 'max'].includes((A.run_info || {}).effort) ? A.run_info.effort : null
 const CAP = A.cap || 32
@@ -102,7 +112,7 @@ async function run(role, cat, base, phase, prompt) {
     started++
     let data = null
     try {
-      data = await agent(prompt, { schema: S[role], label: attempt ? `${label}:restart` : label, phase, ...(EFFORT ? { effort: EFFORT } : {}) })
+      data = await agent(prompt, { schema: S[role], label: attempt ? `${label}:restart` : label, phase, ...(EFFORT ? { effort: EFFORT } : {}), ...(modelFor(role) ? { model: modelFor(role) } : {}) })
     } catch (err) {
       missing.push({ role, category: cat || '', label, attempt, error: String(err) })
       continue

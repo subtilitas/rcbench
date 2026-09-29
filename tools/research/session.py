@@ -972,6 +972,7 @@ def q_open(q):
 
 
 EFFORTS = ["low", "medium", "high", "xhigh", "max"]
+MODELS = ["sonnet", "opus", "haiku", "fable"]
 
 
 def run_info(model, effort):
@@ -1405,6 +1406,8 @@ def cmd_prepare(args):
         "t6_outputs": T6_REQUIRED if args.task == "T6" else [],
         **t6,
         "run_info": {**run_info(args.model, args.effort),
+                     "agent_model": args.agent_model,
+                     "oversight_model": args.oversight_model,
                      "digikey_calls_left": quota,
                      "vendors_sha256": vendors_sha},
         "accept_open": {"reason": args.accept_open, "functions": open_sel}
@@ -1875,6 +1878,12 @@ def main():
     p.add_argument("--model", required=True)
     p.add_argument("--effort", required=True, choices=EFFORTS,
                    help="the effort every agent of the run gets")
+    p.add_argument("--agent-model", choices=MODELS,
+                   help="the model of every role but the adjudicator "
+                   "(default: the session's model)")
+    p.add_argument("--oversight-model", choices=MODELS,
+                   help="the adjudicator's model (default: the session's "
+                   "model)")
     p.add_argument("--followup")
     p.add_argument("--name", default="1", help="follow-up run name")
     p.add_argument("--digikey-min", type=int, default=600, metavar="N",
