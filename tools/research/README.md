@@ -69,6 +69,7 @@ On the research server, from a clone on `main`, with `research/round1` and
 ```bash
 B=~/rcbench-research/round1
 O="--base $B --digikey-env PATH_TO_CREDENTIALS --model MODEL_ID --effort EFFORT"
+O="$O --agent-model sonnet --oversight-model opus"
 python3 tools/research/session.py check
 python3 tools/research/session.py prepare T1 $O
 python3 tools/research/session.py script T1 --base $B --out SCRATCH
@@ -97,8 +98,15 @@ reaches the agents only through this copy. FU-A2 of 2026-09-29 ran the
 checkout's copy, without the Digi-Key cache of #184 and #185: 253 calls.
 
 `--effort` is the effort every agent of the run gets: `low`, `medium`, `high`,
-`xhigh` or `max`. The workflow passes it to each agent; `--model` is recorded
-only, and every agent runs on the session's model.
+`xhigh` or `max`. The workflow passes it to each agent. `--model` is the
+session's model, which runs the workflow and records its returns.
+`--oversight-model` is the adjudicator's, the role that rules on a standing
+refutation; `--agent-model` is every other role's: P0, P1 and its critic and
+re-check, P2, P3, the re-rank, both P4 verifiers, P5, P6, P7 and every
+critic. Each is `sonnet`, `opus`, `haiku` or `fable`; one not given leaves
+those agents on the session's model. Both go into `run_info`. From
+2026-09-29 the owner runs round 1 with `--agent-model sonnet
+--oversight-model opus` at `--effort high`.
 
 `prepare` fetches origin and refuses a run out of turn: T2 and T4 before T1 is
 recorded, T3 before T2 and T4, T5 before T3, T6 before T5, a P1 follow-up

@@ -65,11 +65,12 @@ async function runTask(task, opts = {}) {
   const calls = []
   const prompts = []
   const nulls = new Map(Object.entries(opts.nulls || {}))
-  const efforts = []
+  const efforts = [], models = []
   async function agent(prompt, o) {
     const base = o.label.replace(/:restart$/, '')
     calls.push(o.label)
     efforts.push(o.effort)
+    models.push([o.label, o.model])
     prompts.push({ label: o.label, prompt })
     if ((opts.throws || []).includes(base)) throw new Error('mock throw')
     const left = nulls.get(base)
@@ -311,7 +312,7 @@ async function runTask(task, opts = {}) {
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
     `return (async () => {${src}})()`)
   const result = await fn(args, agent, parallel, pipeline, () => {}, () => {})
-  return { result, calls, prompts, efforts }
+  return { result, calls, prompts, efforts, models }
 }
 
 const r1 = r => r.result.summary.results.find(x => x.category === 'R1')
@@ -330,6 +331,12 @@ async function main() {
   check(r.efforts.length > 0 && r.efforts.every(e => e === 'high'), 'T2: every agent at the recorded effort')
   r = await runTask('T2')
   check(r.efforts.every(e => e === undefined), 'T2: no effort set without one recorded')
+  // The adjudicator runs on the oversight model, every other role on the
+  // agent model; neither set, no model is given.
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'], runInfo: { effort: 'high', agent_model: 'sonnet', oversight_model: 'opus' } })
+  check(r.models.some(([l]) => l.startsWith('adjudicator')) && r.models.every(([l, m]) => m === (l.startsWith('adjudicator') ? 'opus' : 'sonnet')), 'T2: adjudicator on the oversight model, every other role on the agent model')
+  r = await runTask('T2', { refute: ['P4-stock-R1:part1'] })
+  check(r.models.every(([, m]) => m === undefined), 'T2: no model set without one recorded')
 
   // Both verifiers confirm: the first-ranked part is kept.
   r = await runTask('T2')
