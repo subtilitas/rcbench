@@ -123,7 +123,7 @@ def resolved_schemas():
 
 def validate(schema, value, where="$"):
     """The subset of JSON Schema the schemas use: type, properties,
-    required, items, enum."""
+    required, items, enum, pattern."""
     kind = schema.get("type")
     ok = {"object": dict, "array": list, "string": str, "boolean": bool}
     if kind == "integer":
@@ -133,6 +133,9 @@ def validate(schema, value, where="$"):
         return [f"{where}: not a {kind}"]
     if "enum" in schema and value not in schema["enum"]:
         return [f"{where}: {value!r} not in {schema['enum']}"]
+    if "pattern" in schema and isinstance(value, str) and not re.search(
+            schema["pattern"], value):
+        return [f"{where}: {value!r} does not match {schema['pattern']}"]
     errs = []
     if kind == "object":
         for key in schema.get("required", []):
@@ -1879,11 +1882,11 @@ def main():
     p.add_argument("--effort", required=True, choices=EFFORTS,
                    help="the effort every agent of the run gets")
     p.add_argument("--agent-model", choices=MODELS,
-                   help="the model of every role but the adjudicator "
-                   "(default: the session's model)")
+                   help="the model of every role but P2 and the "
+                   "adjudicator (default: the session's model)")
     p.add_argument("--oversight-model", choices=MODELS,
-                   help="the adjudicator's model (default: the session's "
-                   "model)")
+                   help="the model of P2 and the adjudicator (default: the "
+                   "session's model)")
     p.add_argument("--followup")
     p.add_argument("--name", default="1", help="follow-up run name")
     p.add_argument("--digikey-min", type=int, default=600, metavar="N",

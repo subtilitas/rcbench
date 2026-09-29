@@ -26,11 +26,22 @@ const S = A.schemas || {}
 // checkout's. Every client command names it.
 const VENDORS = P.vendors || `${P.checkout}/tools/research/vendors.py`
 const CLIENTS = Object.fromEntries(Object.entries(A.clients || {}).map(([k, v]) => [k, String(v).replace('tools/research/vendors.py', VENDORS)]))
-// The model of each role: the adjudicator, which rules on refutations, runs on
-// the oversight model; every other role on the agent model (prepare's
-// --oversight-model and --agent-model). Without them the session's model.
+// The model of each role: P2, which finds and records the candidates, and the
+// adjudicator, which rules on refutations, run on the oversight model; every
+// other role on the agent model (prepare's --oversight-model and
+// --agent-model). Without them the session's model.
 const MODELS = ['sonnet', 'opus', 'haiku', 'fable']
-const OVERSIGHT_ROLES = new Set(['adjudicator'])
+const OVERSIGHT_ROLES = new Set(['P2', 'adjudicator'])
+
+// Whether a return's category text names cat: its R IDs are all cat, or it
+// has none and is cat's name.
+function sameCategory(text, cat) {
+  const t = String(text || '').trim()
+  if (t === cat) return true
+  const ids = t.match(/\bR\d+\b/g) || []
+  if (ids.length) return ids.every(i => i === cat)
+  return t.toLowerCase() === String(CATS[cat] || '').trim().toLowerCase()
+}
 function modelFor(role) {
   const m = OVERSIGHT_ROLES.has(role) ? (A.run_info || {}).oversight_model : (A.run_info || {}).agent_model
   return MODELS.includes(m) ? m : null
@@ -117,10 +128,15 @@ async function run(role, cat, base, phase, prompt) {
       missing.push({ role, category: cat || '', label, attempt, error: String(err) })
       continue
     }
-    // A return for another category is not this category's return.
-    if (data && cat && typeof data.category === 'string' && data.category !== cat) {
-      missing.push({ role, category: cat, label, attempt, error: `returned for category ${data.category}` })
-      continue
+    // A return for another category is not this category's return. One
+    // that gives the ID with the name, as "R6 (Servo supply)", or the name
+    // alone names this category, and is read as its ID.
+    if (data && cat && typeof data.category === 'string') {
+      if (!sameCategory(data.category, cat)) {
+        missing.push({ role, category: cat, label, attempt, error: `returned for category ${data.category}` })
+        continue
+      }
+      data.category = cat
     }
     if (data) {
       returns.push({ role, category: cat || '', label, attempt, data })

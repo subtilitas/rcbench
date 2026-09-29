@@ -512,7 +512,9 @@
    "type": "object",
    "properties": {
     "category": {
-     "type": "string"
+     "type": "string",
+     "pattern": "^R([1-9]|1[0-3])$",
+     "description": "the category's ID, R1 to R13, not its name"
     },
     "values": {
      "type": "array",
@@ -584,7 +586,9 @@
    "type": "object",
    "properties": {
     "category": {
-     "type": "string"
+     "type": "string",
+     "pattern": "^R([1-9]|1[0-3])$",
+     "description": "the category's ID, R1 to R13, not its name"
     },
     "marking_verdicts": {
      "type": "array",
@@ -723,7 +727,9 @@
    "type": "object",
    "properties": {
     "category": {
-     "type": "string"
+     "type": "string",
+     "pattern": "^R([1-9]|1[0-3])$",
+     "description": "the category's ID, R1 to R13, not its name"
     },
     "found_values": {
      "type": "array",
@@ -821,7 +827,9 @@
    "type": "object",
    "properties": {
     "category": {
-     "type": "string"
+     "type": "string",
+     "pattern": "^R([1-9]|1[0-3])$",
+     "description": "the category's ID, R1 to R13, not its name"
     },
     "missed": {
      "type": "array",
@@ -902,7 +910,9 @@
    "type": "object",
    "properties": {
     "category": {
-     "type": "string"
+     "type": "string",
+     "pattern": "^R([1-9]|1[0-3])$",
+     "description": "the category's ID, R1 to R13, not its name"
     },
     "functions": {
      "type": "array",
@@ -1032,7 +1042,9 @@
    "type": "object",
    "properties": {
     "category": {
-     "type": "string"
+     "type": "string",
+     "pattern": "^R([1-9]|1[0-3])$",
+     "description": "the category's ID, R1 to R13, not its name"
     },
     "verifier": {
      "type": "string",
@@ -1172,7 +1184,9 @@
    "type": "object",
    "properties": {
     "category": {
-     "type": "string"
+     "type": "string",
+     "pattern": "^R([1-9]|1[0-3])$",
+     "description": "the category's ID, R1 to R13, not its name"
     },
     "function": {
      "type": "string"
