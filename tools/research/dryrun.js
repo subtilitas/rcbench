@@ -78,7 +78,7 @@ async function runTask(task, opts = {}) {
     const role = roleOf(o.schema)
     const data = fake(o.schema)
     // A category-scoped agent names the category its label carries.
-    if ('category' in data && /R\d+/.test(o.label) && !opts.wrongCategory) data.category = o.label.match(/R\d+/)[0]
+    if ('category' in data && /R\d+/.test(o.label) && !opts.wrongCategory) data.category = opts.categoryText ? opts.categoryText(o.label.match(/R\d+/)[0]) : o.label.match(/R\d+/)[0]
     const base0 = fake(schemas.P2.properties.functions.items.properties.shortlist.items)
     base0.requirements = base0.requirements.map(r => ({ ...r, pass: true }))
     base0.placements = opts.placements === undefined ? 1 : opts.placements
@@ -326,15 +326,23 @@ async function main() {
     check(result.returns.length === result.started, `${t}: ${result.returns.length} returns against ${result.started} started`)
   }
 
+  // A return names its category by ID; the ID with the name, or the name
+  // alone, names it too; another ID does not.
+  let r = await runTask('T2', { categoryText: c => `${c} (${cats.categories[c]})` })
+  check((((r1(r) || {}).selection || [])[0] || {}).part === 'part1', 'category given as ID with its name: read as the ID')
+  r = await runTask('T2', { categoryText: c => cats.categories[c] })
+  check((((r1(r) || {}).selection || [])[0] || {}).part === 'part1', 'category given by its name alone: read as the ID')
+  r = await runTask('T2', { categoryText: c => c === 'R1' ? 'R1 and R2' : c })
+  check(r.result.missing.some(m => m.error === 'returned for category R1 and R2'), 'category text naming another ID too: not this category')
   // Every agent runs at the recorded effort; none is set without one.
-  let r = await runTask('T2', { runInfo: { effort: 'high' } })
+  r = await runTask('T2', { runInfo: { effort: 'high' } })
   check(r.efforts.length > 0 && r.efforts.every(e => e === 'high'), 'T2: every agent at the recorded effort')
   r = await runTask('T2')
   check(r.efforts.every(e => e === undefined), 'T2: no effort set without one recorded')
   // The adjudicator runs on the oversight model, every other role on the
   // agent model; neither set, no model is given.
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], runInfo: { effort: 'high', agent_model: 'sonnet', oversight_model: 'opus' } })
-  check(r.models.some(([l]) => l.startsWith('adjudicator')) && r.models.every(([l, m]) => m === (l.startsWith('adjudicator') ? 'opus' : 'sonnet')), 'T2: adjudicator on the oversight model, every other role on the agent model')
+  check(r.models.some(([l]) => l.startsWith('adjudicator')) && r.models.every(([l, m]) => m === (/^(adjudicator|P2-)/.test(l) ? 'opus' : 'sonnet')), 'T2: P2 and the adjudicator on the oversight model, every other role on the agent model')
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'] })
   check(r.models.every(([, m]) => m === undefined), 'T2: no model set without one recorded')
 

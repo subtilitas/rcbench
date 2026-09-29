@@ -100,13 +100,21 @@ checkout's copy, without the Digi-Key cache of #184 and #185: 253 calls.
 `--effort` is the effort every agent of the run gets: `low`, `medium`, `high`,
 `xhigh` or `max`. The workflow passes it to each agent. `--model` is the
 session's model, which runs the workflow and records its returns.
-`--oversight-model` is the adjudicator's, the role that rules on a standing
+`--oversight-model` is the model of P2, which finds and records the
+candidates, and of the adjudicator, the role that rules on a standing
 refutation; `--agent-model` is every other role's: P0, P1 and its critic and
-re-check, P2, P3, the re-rank, both P4 verifiers, P5, P6, P7 and every
-critic. Each is `sonnet`, `opus`, `haiku` or `fable`; one not given leaves
-those agents on the session's model. Both go into `run_info`. From
-2026-09-29 the owner runs round 1 with `--agent-model sonnet
---oversight-model opus` at `--effort high`.
+re-check, P3, the re-rank, both P4 verifiers, P5, P6, P7 and every critic.
+Each is `sonnet`, `opus`, `haiku` or `fable`; one not given leaves those
+agents on the session's model. Both go into `run_info`. From 2026-09-29 the
+owner runs round 1 with `--agent-model sonnet --oversight-model opus` at
+`--effort high`. The first such run, with P2 on Sonnet, returned 2 of R5's 12
+functions from P2.
+
+A return names its category by ID: the schemas hold the field to `R1` to
+`R13`, so the Workflow tool has the agent correct a name. The script reads
+text that gives the ID with the name (`R6 (Servo supply)`) or the category's
+name alone as that ID, and text naming another ID as another category's
+return.
 
 `prepare` fetches origin and refuses a run out of turn: T2 and T4 before T1 is
 recorded, T3 before T2 and T4, T5 before T3, T6 before T5, a P1 follow-up
