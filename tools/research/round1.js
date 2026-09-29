@@ -350,7 +350,7 @@ ${J(p6)}`
 // --stock-exception): the stock check may fail on these alone.
 const STOCK_EXCEPTIONS = (A.stock_exceptions || []).filter(x => x && x.part)
 
-const T6_CHECKS = `\`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results}; run the stock check once, after your last edit, since each run reads Digi-Key, which allows 1,000 calls a day. tools/jlc_stock.py prints each problem on one line starting "[FAIL] PART", where PART is the part number alone and a stock or presale shortfall gives its reading and gate as "stock N, gate G", and the report of the stock check gives every such line${STOCK_EXCEPTIONS.length ? `; a failure of these parts alone is the owner's accepted exception and counts as passed: ${STOCK_EXCEPTIONS.map(x => x.part).join(', ')}` : ''}`
+const T6_CHECKS = `\`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results}; run the stock check once, after your last edit, since each run reads Digi-Key, which allows 1,000 calls a day. tools/jlc_stock.py prints each problem on one line starting "[FAIL] PART", PART the part number alone; a stock shortfall exactly as "[FAIL] PART: stock N, gate G" or "[FAIL] PART (second vendor): stock N, gate G", a presale shortfall exactly as "[FAIL] PART: presale N", and every other problem, a failed lookup among them, in other words; the report of the stock check gives every such line${STOCK_EXCEPTIONS.length ? `; a failure of these parts alone is the owner's accepted exception and counts as passed: ${STOCK_EXCEPTIONS.map(x => x.part).join(', ')}` : ''}`
 
 // What the pages state as open, each as its state says: each conflict and gap
 // the P5/P6 checks leave after the follow-up rounds (session.py t6_open),
@@ -1648,12 +1648,13 @@ if (TASK === 'T6') {
   // A shortfall states a stock reading below its gate, or a presale
   // reading (canPresaleNumber) below zero, as the stock tool's Outputs row
   // fails them.
+  // Only the shortfall format P7 is given counts; any other wording, a
+  // failed lookup among them, is no shortfall.
+  const SHORTFALL = /^\s*\[FAIL\]\s+\S+(?:\s+\((?:second vendor|first vendor)\))?:\s*(?:stock\s+(-?\d+),\s*gate\s+(\d+)|presale\s+(-?\d+))\s*$/
   const shortfall = l => {
-    if (/unreachable|no exact match|credential|not checked|could not|error|\b429\b/i.test(l)) return false
-    const gate = Number((/\bgate\b[^0-9]{0,5}(\d+)/i.exec(l) || [])[1])
-    const stock = [...l.matchAll(/\bstock\w*\b[^0-9-]{0,20}(-?\d+)/gi)].map(m => Number(m[1]))
-    const presale = [...l.matchAll(/\b(?:presale|canpresale)\w*\b[^0-9-]{0,20}(-?\d+)/gi)].map(m => Number(m[1]))
-    return (Number.isFinite(gate) && stock.some(v => v < gate)) || presale.some(v => v < 0)
+    const m = SHORTFALL.exec(l)
+    if (!m) return false
+    return m[1] !== undefined ? Number(m[1]) < Number(m[2]) : Number(m[3]) < 0
   }
   const failLines = r => String((r && r.output) || '').split('\n').filter(l => /\[FAIL\]/.test(l))
   const excepted = r => {

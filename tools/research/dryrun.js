@@ -577,9 +577,11 @@ async function main() {
   const atParts = [{ index: 0, file: 'hardware/docs/Parts.md', line: 3 }]
   r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: stock 100, gate 50', stockExceptions: exc, marked: atParts })
   check(r.result.summary.stopped === true, 'T6: an excepted part whose stock is not below its gate is no shortfall and stops it')
-  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: stock 100, presale 20, gate 50', stockExceptions: exc, marked: atParts })
+  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: presale 20', stockExceptions: exc, marked: atParts })
   check(r.result.summary.stopped === true, 'T6: a presale reading above zero is no shortfall and stops it')
-  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: stock 100, presale -99, gate 50', stockExceptions: exc, marked: atParts })
+  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: lookup failed; stock 0, gate 50', stockExceptions: exc, marked: atParts })
+  check(r.result.summary.stopped === true, 'T6: a line in another wording than the shortfall format is no shortfall and stops it')
+  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: presale -99', stockExceptions: exc, marked: atParts })
   check(!r.result.summary.stopped, 'T6: a presale reading below zero is a shortfall of an excepted part')
   r = await runTask('T6', { passOutput: '[FAIL] ADS1235IRHBR: stock 0, gate 50\n[FAIL] TCA9548APWR: stock 3, gate 50', stockExceptions: exc, marked: atParts })
   check(r.result.summary.stopped === true, 'T6: a stock check the critic marks passed is still read for [FAIL] lines outside the exceptions')
