@@ -450,7 +450,8 @@ function applyP0(p0) {
   if (!p0.jlcparts || !p0.jlcparts.sha256_ok || p0.jlcparts.sha256 !== j.sha256) reasons.push('the parts database fails its SHA-256 check')
   if (!p0.jlcparts || p0.jlcparts.rows !== j.rows) reasons.push('the parts database row count differs')
   if (!p0.jlcparts || (p0.jlcparts.missing_lcsc || []).length) reasons.push('LCSC numbers the page names are missing from the parts database')
-  if (!(Date.parse(p0.snapshot) === Date.parse(j.manifest_created))) reasons.push(`the parts database's manifest is ${p0.snapshot}, not ${j.manifest_created}`)
+  // The snapshot is the time at the start of P0's text; a note may follow.
+  if (!(leadingTime(p0.snapshot) === Date.parse(j.manifest_created))) reasons.push(`the parts database's manifest is ${p0.snapshot}, not ${j.manifest_created}`)
   if (p0.checkout_head !== A.commit) reasons.push(`the checkout is at ${p0.checkout_head}, not ${A.commit}`)
   if (TASK === 'T1' && !(p0.monostable && p0.monostable.fetched)) reasons.push('commit 23c82ca is not in place')
   // A host given more than one row has no single reading: not probed.
