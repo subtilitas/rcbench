@@ -167,8 +167,11 @@ It refuses these without exception:
 whose stock gate failure the owner accepts. T6's stock check then counts as
 passed when every line of its report that starts `[FAIL]` gives an excepted
 part number right after `[FAIL]`, exactly, and a stock or presale shortfall
-against its gate (`stock N, gate G`); a failed lookup (no exact match, the
-API unreachable, no credentials) is not excepted. The pages state each
+against its gate (`stock N, gate G`, N below G); a failed lookup (no exact
+match, the API unreachable, no credentials) is not excepted. With exceptions
+given, the report's `[FAIL]` lines are read whether or not the critic marks
+the check passed, and `prepare` refuses an exception for a part no function
+keeps (kept part, alternate, Q alternative or its alternate). The pages state each
 exception with its reason in the part's `Parts.md` row, and only a mark
 there counts. `prepare` reads the exceptions before it merges anything. `record` refuses an output whose exceptions differ from the
 prepared ones. P7 and its critic run the stock check once each, after their

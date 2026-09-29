@@ -1331,6 +1331,18 @@ def cmd_prepare(args):
         if missing:
             raise SystemExit("the owner has not decided " + ", ".join(missing))
         open_sel += q9_open(results, decisions(text))
+        # An exception names a part the stock check reads: a kept part, an
+        # alternate, a Q alternative or its alternate.
+        kept = set()
+        for fns in t6["selection"].values():
+            for e in fns.values():
+                kept |= {e.get("part"), e.get("alternate")}
+                for q in e.get("q_alternatives") or []:
+                    kept |= {q.get("part"), q.get("alternate")}
+        stray = [x["part"] for x in stock_exceptions if x["part"] not in kept]
+        if stray:
+            raise SystemExit("--stock-exception names parts no function "
+                             "keeps: " + ", ".join(stray))
     if open_sel and not args.accept_open:
         raise SystemExit("open before this run: " + "; ".join(open_sel)
                          + ". Resolve them in a follow-up task, or pass "

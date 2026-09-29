@@ -1645,13 +1645,22 @@ if (TASK === 'T6') {
   // against its gate. A lookup that failed (no exact match, the API
   // unreachable, no credentials) is no shortfall and is not excepted.
   const failedPart = l => ((/\[FAIL\]\s+(\S+)/.exec(l) || [])[1] || '').replace(/[:;,.]+$/, '')
-  const shortfall = l => /\b(stock|presale)\w*\b[^0-9]{0,20}-?\d+/i.test(l) && /\bgate\b[^0-9]{0,5}\d+/i.test(l)
-    && !/unreachable|no exact match|credential|not checked|could not|error|\b429\b/i.test(l)
+  // A shortfall states a stock or presale reading below its gate.
+  const shortfall = l => {
+    if (/unreachable|no exact match|credential|not checked|could not|error|\b429\b/i.test(l)) return false
+    const gate = Number((/\bgate\b[^0-9]{0,5}(\d+)/i.exec(l) || [])[1])
+    const readings = [...l.matchAll(/\b(?:stock|presale)\w*\b[^0-9-]{0,20}(-?\d+)/gi)].map(m => Number(m[1]))
+    return Number.isFinite(gate) && readings.some(v => v < gate)
+  }
+  const failLines = r => String((r && r.output) || '').split('\n').filter(l => /\[FAIL\]/.test(l))
   const excepted = r => {
-    const lines = String((r && r.output) || '').split('\n').filter(l => /\[FAIL\]/.test(l))
+    const lines = failLines(r)
     return STOCK_EXCEPTIONS.length > 0 && lines.length > 0 && lines.every(l => shortfall(l) && STOCK_EXCEPTIONS.some(x => failedPart(l) === x.part))
   }
-  const failed = critic ? Object.entries(critic.checks || {}).filter(([k, r]) => !(r && r.passed) && !(k === 'jlc_stock' && excepted(r))).map(([k]) => k) : []
+  // With exceptions, the stock check's report is read whatever the critic
+  // says of it: a [FAIL] line outside the exceptions fails it.
+  const stockFails = r => STOCK_EXCEPTIONS.length ? (failLines(r).length ? !excepted(r) : !(r && r.passed)) : !(r && r.passed)
+  const failed = critic ? Object.entries(critic.checks || {}).filter(([k, r]) => k === 'jlc_stock' ? stockFails(r) : !(r && r.passed)).map(([k]) => k) : []
   // The critic's own findings, as they stand after its corrections.
   if (critic) {
     // A figure check names its figure, the line of the page that states it

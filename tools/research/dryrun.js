@@ -203,7 +203,7 @@ async function runTask(task, opts = {}) {
     if (role === 'P3' && opts.p3missed) data.missed = [{ function: opts.p3missedFn || 'f1', part: opts.p3missedPart || 'partX', maker: 'm', why: 'w' }]
     if (role === 'P3' && opts.p3overturned) data.exclusions_not_holding = [{ part: 'partY', reason_given: 'r', why_it_fails: 'w' }]
     if (role === 'P7-critic' || role === 'P7') {
-      for (const k of Object.keys(data.checks)) data.checks[k] = { passed: !(opts.failCheck === k && role === 'P7-critic'), output: opts.failCheck === k && opts.failOutput ? opts.failOutput : 'o' }
+      for (const k of Object.keys(data.checks)) data.checks[k] = { passed: !(opts.failCheck === k && role === 'P7-critic'), output: opts.failCheck === k && opts.failOutput ? opts.failOutput : k === 'jlc_stock' && opts.passOutput ? opts.passOutput : 'o' }
       const outs = [...T6OUT, 'hardware/docs/GroupA.md', 'hardware/docs/GroupB.md', 'hardware/docs/GroupC.md'].filter(f => !(role === 'P7' && f === opts.unwritten))
       if (opts.pageOutside) outs.push('tools/research/README.md')
       if (opts.fourthPage) outs.push('hardware/docs/GroupD.md')
@@ -575,6 +575,10 @@ async function main() {
   check(r.result.summary.stopped === true && /item 0 not stated/.test(r.result.summary.reasons[0]), 'T6: an exception not stated on the pages stops it')
   check(r.result.stock_exceptions.length === 1, 'T6: the exceptions are carried into the result')
   const atParts = [{ index: 0, file: 'hardware/docs/Parts.md', line: 3 }]
+  r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: stock 100, gate 50', stockExceptions: exc, marked: atParts })
+  check(r.result.summary.stopped === true, 'T6: an excepted part whose stock is not below its gate is no shortfall and stops it')
+  r = await runTask('T6', { passOutput: '[FAIL] ADS1235IRHBR: stock 0, gate 50\n[FAIL] TCA9548APWR: stock 3, gate 50', stockExceptions: exc, marked: atParts })
+  check(r.result.summary.stopped === true, 'T6: a stock check the critic marks passed is still read for [FAIL] lines outside the exceptions')
   r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBRX: stock 0, gate 50', stockExceptions: exc, marked: atParts })
   check(r.result.summary.stopped === true, 'T6: a failure of a part whose number only contains the excepted one stops it')
   r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: no exact match for C1234', stockExceptions: exc, marked: atParts })
