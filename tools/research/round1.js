@@ -289,24 +289,13 @@ P3's return:
 ${J(p3)}`
 }
 
-function p4Prompt(cat, kind, bundle, only) {
+function p4Prompt(cat, kind, bundle, only, owed) {
   const what = only
     ? `Verify only this candidate, which replaces a refuted one, and, when its second_source_route is alternate, the part named in its second_source_part (kind alternate); list only those: ${J(only)}`
     : 'Verify, for each function, the first-ranked part, its rule-5 alternate when its second_source_route is alternate (the part in its second_source_part, kind alternate), every part in its verify list, and the rule-5 alternate of each part of kind q-alternative in that list, in the same way (kind alternate). An alternate several parts name is checked against the first of them: the first-ranked part, then the q-alternatives in order. A part verified in its own right that is also such an alternate is listed once in that function, with the checks of an alternate as well. List every part you verify in parts, once for each function you verify it for, under that function\'s name: a part verified for two functions has a row under each. A part you leave out counts as not verified.'
   const how = kind === 'stock'
     ? 'You are the stock and lifecycle verifier. Re-read stock and lifecycle at the primary sources, with the clients above, and try to refute each reading. Return figures empty: the datasheet verifier rules on figures_to_check.'
     : `You are the datasheet and pin verifier. Re-read every requirement value in the datasheet; for an alternate, the pin-for-pin match and the functional match to the part it stands in for.${only ? '' : ' Re-read each item of figures_to_check below (the reported figures, the values found for research, the reasons the re-rank gave for dropping a P3 candidate, P2\'s own drops, for "Q option: FUNCTION: PART: CLASS" whether the part belongs to that option class of Q4 or Q8, and for "function requirements: FUNCTION" whether the function\'s requirement list names every requirement set for it by IOBoard.md, the answers and each value found for research whose row under "Raised by P1" names the function, with no value weaker than theirs) and give each a verdict in figures under its exact name; an item without a verdict counts as not verified.'} Try to refute each.`
-  // The checks each part owes, by name: a verdict that lacks one counts as
-  // not verified, so the verifier is given the list.
-  const owed = {}
-  for (const f of bundle.functions || []) {
-    if (only && f.function !== only.function) continue
-    const alts = f.alternateRecords || []
-    const records = only ? [only, ...alts.filter(a => a.part === only.second_source_part)] : [...(f.shortlist || []), ...alts]
-    for (const c of records) {
-      if (c && c.part) owed[f.function] = { ...(owed[f.function] || {}), [c.part]: requiredChecks(kind, c, alts.includes(c) ? 'alternate' : undefined) }
-    }
-  }
   return `${ctx('P4', cat, `P4-${kind}-${cat}`)}
 
 ${how} ${what} Copy each function and part name exactly as the shortlist below writes it. Name your checks exactly: the stock verifier gives "stock" (the gate's reading, at JLCPCB for a part on the board, at Digi-Key for a part off it), "presale" (JLCPCB, for a part with an LCSC number), "lifecycle status", and "second-vendor stock" (Digi-Key, against the rule-4 gate) for a part on the board whose second_source_route is second-vendor, other than a part of kind alternate; the datasheet verifier gives one check per entry of the candidate's requirements, named as that entry is, and for a part of kind alternate also "pin-for-pin match" and "functional match". The stock verifier also gives the lifecycle table's readings: "longevity commitment" (the programme page's commitment, or that none is published; passes unless S5 makes it a gate it fails), "market introduction" (the first datasheet revision date; passes, and under 12 months is stated in read); a longevity commitment or market introduction you cannot read is written "not read: REASON" with passes true, and does not refute the part, "distributor status" (JLCPCB, LCSC and Digi-Key; passes, a disagreement with the maker stated in read) and "lead time" (the manufacturer's lead time in Digi-Key's API; passes). For a part on the board it gives "library type" (componentLibraryType of the exact JLCPCB row, basic or extended; passes, S6 allowing both) and "LCSC identity" (the exact JLCPCB result for the LCSC number names the candidate's part number and package; passes only then). It also gives "placements" (the placements per board as the specification fixes them, or the top of the range P2 states with its basis; passes when the candidate's count is at least that) and "board placement" (whether the specification places the part on the IO board or off it, rule 1; passes when its LCSC number says the same: C and digits on the board, none off it), and the datasheet verifier "manufacturer allowlist" (passes when the datasheet's manufacturer is allowed by S1, S2 or S9 for the part, rule 2). Each check has read_at, the time it was read, agrees (the value read matches the value stated) and passes (the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes); the stock verifier also gives "end-of-life notices" (passes when no end-of-life or last-time-buy notice exists). For a part on the board whose held is above 0, "held quantity" (the quantity and date the owner states under Held parts, against boards × placements per board, rule 6) may stand in place of "stock" and "presale". A confirmation without its required checks counts as not verified, and one whose refutation is not empty counts as a refutation. A check with passes false counts as a refutation, and so does one with agrees false, except for a reading that moves or always passes (${[...MOVING].join(', ')}) and a requirement stated as not given.
@@ -1056,6 +1045,55 @@ function boundRuling(ruling, fn, part, cat) {
   return null
 }
 
+// The parts one P4 pass verifies, each with its kind from the verification
+// plan, and the rule-5 alternate of the part that would be selected; an
+// alternate's row names the part it was checked against (for).
+function verificationPlan(functions, only) {
+  const want = []
+  if (only) {
+    want.push({ function: only.function, part: only.part, kind: 'first' })
+    if (altOf(only)) want.push({ function: only.function, part: altOf(only), kind: 'alternate', for: only.part })
+  } else {
+    for (const f of functions) {
+      // A part verified in its own right keeps that kind; an alternate
+      // role it also has is checked beside it.
+      const kinds = new Map()
+      const plan = (part, kind) => { if (!kinds.has(part) || (kinds.get(part) === 'alternate' && kind !== 'alternate')) kinds.set(part, kind) }
+      if (f.shortlist.length) {
+        plan(f.shortlist[0].part, 'first')
+        if (altOf(f.shortlist[0])) plan(altOf(f.shortlist[0]), 'alternate')
+      }
+      for (const v of f.verify) plan(v.part, v.kind)
+      // A Q4 or Q8 alternative needs its own second source, as the part
+      // kept does.
+      for (const v of f.verify.filter(x => x.kind === 'q-alternative')) {
+        const a = altOf(candidateOf(functions, f.function, v.part))
+        if (a) plan(a, 'alternate')
+      }
+      const owners = altOwners(functions, f)
+      for (const [part, kind] of kinds) want.push({ function: f.function, part, kind, for: owners.get(part) || '', alsoAlternate: kind !== 'alternate' && owners.has(part) })
+    }
+  }
+  return want
+}
+
+// The checks each planned part owes the verifier of this kind, by name: the
+// list covered() holds a verdict to. A part that is also an alternate owes
+// the fit checks beside its own; a held part on the board may give "held
+// quantity" in place of "stock" and "presale" (rule 6).
+function owedChecks(kind, functions, plan) {
+  const owed = {}
+  for (const w of plan) {
+    const cand = candidateOf(functions, w.function, w.part)
+    if (!cand) continue
+    let names = requiredChecks(kind, cand, w.kind)
+    if (kind === 'datasheet' && w.alsoAlternate) names = [...names, ...[...FIT].filter(n => !names.includes(n))]
+    if (kind === 'stock' && onBoard(cand) && Number(cand.held) > 0) names = ['held quantity, or both stock and presale', ...names.filter(n => n !== 'stock' && n !== 'presale')]
+    owed[w.function] = { ...(owed[w.function] || {}), [w.part]: names }
+  }
+  return owed
+}
+
 async function verifyCategory(cat, functions, bundle, claims) {
   const ledger = []
   const queue = [{ only: null }]
@@ -1064,38 +1102,12 @@ async function verifyCategory(cat, functions, bundle, claims) {
     // The parts whose refutation stood in this pass, by function.
     const passedOver = new Map()
     const phaseName = only ? 'Refutations' : 'P2-P4'
+    const plan = verificationPlan(functions, only)
     const [st, ds] = await parallel([
-      () => run('P4', cat, `P4-stock-${cat}`, phaseName, p4Prompt(cat, 'stock', bundle, only)),
-      () => run('P4', cat, `P4-datasheet-${cat}`, phaseName, p4Prompt(cat, 'datasheet', bundle, only)),
+      () => run('P4', cat, `P4-stock-${cat}`, phaseName, p4Prompt(cat, 'stock', bundle, only, owedChecks('stock', functions, plan))),
+      () => run('P4', cat, `P4-datasheet-${cat}`, phaseName, p4Prompt(cat, 'datasheet', bundle, only, owedChecks('datasheet', functions, plan))),
     ])
-    // Each part to verify, with its kind from the verification plan, and
-    // the rule-5 alternate of the part that would be selected.
-    // An alternate's row names the part it was checked against (for).
-    const want = []
-    if (only) {
-      want.push({ function: only.function, part: only.part, kind: 'first' })
-      if (altOf(only)) want.push({ function: only.function, part: altOf(only), kind: 'alternate', for: only.part })
-    } else {
-      for (const f of functions) {
-        // A part verified in its own right keeps that kind; an alternate
-        // role it also has is checked beside it.
-        const kinds = new Map()
-        const plan = (part, kind) => { if (!kinds.has(part) || (kinds.get(part) === 'alternate' && kind !== 'alternate')) kinds.set(part, kind) }
-        if (f.shortlist.length) {
-          plan(f.shortlist[0].part, 'first')
-          if (altOf(f.shortlist[0])) plan(altOf(f.shortlist[0]), 'alternate')
-        }
-        for (const v of f.verify) plan(v.part, v.kind)
-        // A Q4 or Q8 alternative needs its own second source, as the part
-        // kept does.
-        for (const v of f.verify.filter(x => x.kind === 'q-alternative')) {
-          const a = altOf(candidateOf(functions, f.function, v.part))
-          if (a) plan(a, 'alternate')
-        }
-        const owners = altOwners(functions, f)
-        for (const [part, kind] of kinds) want.push({ function: f.function, part, kind, for: owners.get(part) || '', alsoAlternate: kind !== 'alternate' && owners.has(part) })
-      }
-    }
+    const want = plan
     const got = [['stock', st], ['datasheet', ds]].filter(([, v]) => v)
     if (got.length < 2) followUps.push({ role: 'P4', category: cat, part: only ? only.part : '', reason: 'a verifier returned nothing; what the other returned is still adjudicated' })
     const byPart = new Map()

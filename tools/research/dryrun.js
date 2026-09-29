@@ -333,6 +333,10 @@ async function main() {
   check(/"part1":\s*\[[^\]]*"manufacturer allowlist"/.test(owedBlock), 'P4 datasheet prompt lists manufacturer allowlist among part1\'s owed checks')
   const stPrompt = (r.prompts.find(p => p.label === 'P4-stock-R1') || {}).prompt || ''
   check(/"part1":\s*\[[^\]]*"lead time"/.test(stPrompt.split('The checks each part owes')[1] || ''), 'P4 stock prompt lists lead time among part1\'s owed checks')
+  const owedOf = (res, label) => (((res.prompts.find(p => p.label === label) || {}).prompt || '').split('The checks each part owes')[1] || '').split('The shortlist,')[0]
+  check(/"part1"/.test(owedOf(r, 'P4-stock-R1')) && !/"part2"|"part3"/.test(owedOf(r, 'P4-stock-R1')), 'P4 prompt lists owed checks for the planned parts only')
+  r = await runTask('T2', { held: 500, heldChecks: true })
+  check(/"held quantity, or both stock and presale"/.test(owedOf(r, 'P4-stock-R1')) && !/"stock",/.test(owedOf(r, 'P4-stock-R1')), 'P4 stock prompt gives a held part the held quantity in place of stock and presale')
 
   // A return names its category by ID; the ID with the name, or the name
   // alone, names it too; another ID does not.
