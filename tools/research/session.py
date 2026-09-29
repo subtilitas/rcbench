@@ -1218,6 +1218,16 @@ def cmd_prepare(args):
             raise SystemExit("FU needs --followup FILE")
         followup = json.loads(read(args.followup))
         check_followup(followup, cats)
+    # The owner's stock exceptions, T6 only: PART=REASON each. Read before
+    # any merge, so a malformed one leaves the results tree untouched.
+    stock_exceptions = []
+    for x in args.stock_exception:
+        part, _, why = x.partition("=")
+        if not part.strip() or not why.strip():
+            raise SystemExit(f"--stock-exception {x!r}: give PART=REASON")
+        stock_exceptions.append({"part": part.strip(), "reason": why.strip()})
+    if stock_exceptions and args.task != "T6":
+        raise SystemExit("--stock-exception applies to T6 only")
     for path in (db, manifest, env):
         if not os.path.isfile(path):
             raise SystemExit(f"{path} is not there")
@@ -1321,6 +1331,18 @@ def cmd_prepare(args):
         if missing:
             raise SystemExit("the owner has not decided " + ", ".join(missing))
         open_sel += q9_open(results, decisions(text))
+        # An exception names a part the stock check reads: a kept part, an
+        # alternate, a Q alternative or its alternate.
+        kept = set()
+        for fns in t6["selection"].values():
+            for e in fns.values():
+                kept |= {e.get("part"), e.get("alternate")}
+                for q in e.get("q_alternatives") or []:
+                    kept |= {q.get("part"), q.get("alternate")}
+        stray = [x["part"] for x in stock_exceptions if x["part"] not in kept]
+        if stray:
+            raise SystemExit("--stock-exception names parts no function "
+                             "keeps: " + ", ".join(stray))
     if open_sel and not args.accept_open:
         raise SystemExit("open before this run: " + "; ".join(open_sel)
                          + ". Resolve them in a follow-up task, or pass "
@@ -1415,6 +1437,7 @@ def cmd_prepare(args):
                      "vendors_sha256": vendors_sha},
         "accept_open": {"reason": args.accept_open, "functions": open_sel}
         if args.accept_open else None,
+        "stock_exceptions": stock_exceptions,
     }
     path = os.path.join(base, f"args-{run}.json")
     with open(path, "w") as f:
@@ -1589,6 +1612,9 @@ def record(args):
     copied = [k for k in ("commit", "date", "followup", "decisions",
                           "accept_open")
               if result.get(k) != want.get(k)]
+    if (result.get("stock_exceptions") or []) != \
+            (want.get("stock_exceptions") or []):
+        copied.append("stock_exceptions")
     if copied:
         raise SystemExit("the output's " + ", ".join(copied)
                          + " differ from the prepared arguments")
@@ -1882,11 +1908,11 @@ def main():
     p.add_argument("--effort", required=True, choices=EFFORTS,
                    help="the effort every agent of the run gets")
     p.add_argument("--agent-model", choices=MODELS,
-                   help="the model of every role but P2 and the "
-                   "adjudicator (default: the session's model)")
+                   help="the model of every role but P2, the adjudicator, "
+                   "P7 and the P7 critic (default: the session's model)")
     p.add_argument("--oversight-model", choices=MODELS,
-                   help="the model of P2 and the adjudicator (default: the "
-                   "session's model)")
+                   help="the model of P2, the adjudicator, P7 and the P7 "
+                   "critic (default: the session's model)")
     p.add_argument("--followup")
     p.add_argument("--name", default="1", help="follow-up run name")
     p.add_argument("--digikey-min", type=int, default=600, metavar="N",
@@ -1894,6 +1920,11 @@ def main():
                    "the day's Digi-Key calls are left (0: no check)")
     p.add_argument("--db")
     p.add_argument("--no-fetch", action="store_true")
+    p.add_argument("--stock-exception", action="append", default=[],
+                   metavar="PART=REASON",
+                   help="T6: a part whose stock gate failure the owner "
+                   "accepts; the stock check may fail on these alone, and "
+                   "the pages state each (repeatable)")
     p.add_argument("--accept-open", metavar="REASON",
                    help="start the run although earlier runs left items "
                    "open (tools/research/README.md lists them); the "

@@ -26,12 +26,13 @@ const S = A.schemas || {}
 // checkout's. Every client command names it.
 const VENDORS = P.vendors || `${P.checkout}/tools/research/vendors.py`
 const CLIENTS = Object.fromEntries(Object.entries(A.clients || {}).map(([k, v]) => [k, String(v).replace('tools/research/vendors.py', VENDORS)]))
-// The model of each role: P2, which finds and records the candidates, and the
-// adjudicator, which rules on refutations, run on the oversight model; every
-// other role on the agent model (prepare's --oversight-model and
+// The model of each role: P2, which finds and records the candidates, the
+// adjudicator, which rules on refutations, and P7 and its critic, which write
+// and check the pages, run on the oversight model; every other role on the
+// agent model (prepare's --oversight-model and
 // --agent-model). Without them the session's model.
 const MODELS = ['sonnet', 'opus', 'haiku', 'fable']
-const OVERSIGHT_ROLES = new Set(['P2', 'adjudicator'])
+const OVERSIGHT_ROLES = new Set(['P2', 'adjudicator', 'P7', 'P7-critic'])
 
 // Whether a return's category text names cat: its R IDs are all cat, or it
 // has none and is cat's name.
@@ -345,7 +346,11 @@ You are the critic of P6. Re-read the specification line by line against the evi
 ${J(p6)}`
 }
 // The three checks P7 runs and its critic runs again on the tree it leaves.
-const T6_CHECKS = `\`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results}`
+// Parts whose stock gate failure the owner accepted (prepare
+// --stock-exception): the stock check may fail on these alone.
+const STOCK_EXCEPTIONS = (A.stock_exceptions || []).filter(x => x && x.part)
+
+const T6_CHECKS = `\`python3 tools/check_docs.py\`, \`ruff check tools/\` and \`DIGIKEY_ENV_FILE=${P.digikey_env} python3 tools/jlc_stock.py --check 5\` in ${P.results}; run the stock check once, after your last edit, since each run reads Digi-Key, which allows 1,000 calls a day. tools/jlc_stock.py prints each problem on one line starting "[FAIL] PART", PART the part number alone; a stock shortfall exactly as "[FAIL] PART: stock N, gate G" or "[FAIL] PART (second vendor): stock N, gate G", a presale shortfall exactly as "[FAIL] PART: presale N", and every other problem, a failed lookup among them, in other words; it ends its report with "N problem(s)", N the count of [FAIL] lines; the report of the stock check gives every such line and that last line${STOCK_EXCEPTIONS.length ? `; a failure of these parts alone is the owner's accepted exception and counts as passed: ${STOCK_EXCEPTIONS.map(x => x.part).join(', ')}` : ''}`
 
 // What the pages state as open, each as its state says: each conflict and gap
 // the P5/P6 checks leave after the follow-up rounds (session.py t6_open),
@@ -355,6 +360,7 @@ const MARKS = [
   ...(A.left_open || []).map(item => ({ state: 'not known', item })),
   ...((A.accept_open || {}).functions || []).map(item => ({ state: 'not verified or not known', item })),
   ...(A.p5_assumed || []).map(item => ({ state: 'assumed, beside each budget that rests on it', item })),
+  ...STOCK_EXCEPTIONS.map(x => ({ state: "the owner's stock exception, with its reason, in the part's Parts.md row", item: `${x.part}: ${x.reason}` })),
 ]
 
 // Each verified part selection.json keeps under a function: the kept part,
@@ -1633,7 +1639,39 @@ if (TASK === 'T6') {
   summary = { p7: p7 ? p7.checks : null, critic: critic ? critic.checks : null }
   // The pages are final only with both returns and the critic's three
   // checks passing on the tree it leaves; otherwise T6 is stopped.
-  const failed = critic ? Object.entries(critic.checks || {}).filter(([, r]) => !(r && r.passed)).map(([k]) => k) : []
+  // The stock check may fail on the owner's excepted parts alone: every
+  // "[FAIL]" line of its report names one of them, the part number right
+  // after "[FAIL]" equal to it, and states a stock or presale shortfall
+  // against its gate. A lookup that failed (no exact match, the API
+  // unreachable, no credentials) is no shortfall and is not excepted.
+  const failedPart = l => ((/\[FAIL\]\s+(\S+)/.exec(l) || [])[1] || '').replace(/[:;,.]+$/, '')
+  // A shortfall states a stock reading below its gate, or a presale
+  // reading (canPresaleNumber) below zero, as the stock tool's Outputs row
+  // fails them.
+  // Only the shortfall format P7 is given counts; any other wording, a
+  // failed lookup among them, is no shortfall.
+  const SHORTFALL = /^\s*\[FAIL\]\s+\S+(?:\s+\((?:second vendor|first vendor)\))?:\s*(?:stock\s+(-?\d+),\s*gate\s+(\d+)|presale\s+(-?\d+))\s*$/
+  const shortfall = l => {
+    const m = SHORTFALL.exec(l)
+    if (!m) return false
+    return m[1] !== undefined ? Number(m[1]) < Number(m[2]) : Number(m[3]) < 0
+  }
+  const failLines = r => String((r && r.output) || '').split('\n').filter(l => /\[FAIL\]/.test(l))
+  // The report ends with "N problem(s)", N the count of [FAIL] lines: a
+  // run that stopped early, a crash among them, prints no such count.
+  const complete = r => {
+    const text = String((r && r.output) || '')
+    const m = /(\d+) problem\(s\)\s*$/.exec(text.trim())
+    return !!m && Number(m[1]) === failLines(r).length && !/Traceback|\bException\b/.test(text)
+  }
+  const excepted = r => {
+    const lines = failLines(r)
+    return STOCK_EXCEPTIONS.length > 0 && lines.length > 0 && complete(r) && lines.every(l => shortfall(l) && STOCK_EXCEPTIONS.some(x => failedPart(l) === x.part))
+  }
+  // With exceptions, the stock check's report is read whatever the critic
+  // says of it: a [FAIL] line outside the exceptions fails it.
+  const stockFails = r => STOCK_EXCEPTIONS.length ? (failLines(r).length ? !excepted(r) : !(r && r.passed)) : !(r && r.passed)
+  const failed = critic ? Object.entries(critic.checks || {}).filter(([k, r]) => k === 'jlc_stock' ? stockFails(r) : !(r && r.passed)).map(([k]) => k) : []
   // The critic's own findings, as they stand after its corrections.
   if (critic) {
     // A figure check names its figure, the line of the page that states it
@@ -1684,7 +1722,16 @@ if (TASK === 'T6') {
   // keeps in its Parts.md row and on a group page, and each sentence of the
   // stock tool's Outputs row in tools/jlc_stock.py.
   if (p7 && critic) {
-    const marked = new Set((critic.marked || []).filter(x => required.includes(x.file) && x.line > 0).map(x => x.index))
+    // A stock exception is stated in its part's Parts.md row; every other
+    // item on any output or group page.
+    const firstException = MARKS.length - STOCK_EXCEPTIONS.length
+    // A stock exception's mark sits on its part's own Parts.md row, the line
+    // the critic gives for that part in part_rows.
+    const exceptionRow = i => {
+      const x = STOCK_EXCEPTIONS[i - firstException]
+      return new Set((critic.part_rows || []).filter(p => x && p.part === x.part && p.parts_line > 0).map(p => p.parts_line))
+    }
+    const marked = new Set((critic.marked || []).filter(x => required.includes(x.file) && x.line > 0 && (x.index < firstException || (x.file === 'hardware/docs/Parts.md' && exceptionRow(x.index).has(x.line)))).map(x => x.index))
     MARKS.forEach((m, i) => { if (!marked.has(i)) failed.push(`item ${i} not stated on the pages as ${m.state}`) })
     // Each part on the page of its category's group.
     for (const o of OWED_PARTS) if (!(critic.part_rows || []).some(x => x.function === o.function && x.part === o.part && x.parts_line > 0 && x.group_page === ((p7 && p7.group_pages) || {})[o.group])) failed.push(`no Parts.md row or group ${o.group} page for ${o.part} (${o.function}, ${o.category})`)
@@ -1725,7 +1772,7 @@ if (TASK === 'T6') {
 
 log(`${TASK}: ${started} agents started (${PLANNED} planned, ${extra} of ${FREE} free used); ${followUps.length} items for follow-up`)
 return {
-  task: TASK, run: A.run || TASK, run_id: A.run_id || '', commit: A.commit, date: A.date, run_info: A.run_info || {}, followup: TASK === 'FU' ? FU : null,
+  task: TASK, run: A.run || TASK, run_id: A.run_id || '', commit: A.commit, date: A.date, run_info: A.run_info || {}, followup: TASK === 'FU' ? FU : null, stock_exceptions: STOCK_EXCEPTIONS,
   accept_open: A.accept_open || null, decisions: A.decisions || {},
   planned: PLANNED, started, extra_used: extra, free: FREE, skipped, summary, followUps, missing, returns,
 }

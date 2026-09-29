@@ -101,9 +101,10 @@ checkout's copy, without the Digi-Key cache of #184 and #185: 253 calls.
 `xhigh` or `max`. The workflow passes it to each agent. `--model` is the
 session's model, which runs the workflow and records its returns.
 `--oversight-model` is the model of P2, which finds and records the
-candidates, and of the adjudicator, the role that rules on a standing
-refutation; `--agent-model` is every other role's: P0, P1 and its critic and
-re-check, P3, the re-rank, both P4 verifiers, P5, P6, P7 and every critic.
+candidates, of the adjudicator, the role that rules on a standing refutation,
+and of P7 and its critic, which write and check the pages; `--agent-model` is
+every other role's: P0, P1 and its critic and re-check, P3, the re-rank, both
+P4 verifiers, P5, P6 and their critics.
 Each is `sonnet`, `opus`, `haiku` or `fable`; one not given leaves those
 agents on the session's model. Both go into `run_info`. From 2026-09-29 the
 owner runs round 1 with `--agent-model sonnet --oversight-model opus` at
@@ -161,6 +162,24 @@ It refuses these without exception:
   work (Scope: "hardware selected, link open"), is not a gap.
 - T6 while any of the rows Q4, Q8 and Q9 is missing or has no decision, and
   while the output paths have changes.
+
+`--stock-exception PART=REASON`, for T6 only and repeatable, records a part
+whose stock gate failure the owner accepts. T6's stock check then counts as
+passed when every line of its report that starts `[FAIL]` is a shortfall of
+an excepted part in the format P7 is given: `[FAIL] PART: stock N, gate G`
+(or `PART (second vendor)`) with N below G, or `[FAIL] PART: presale N` with
+N below zero, PART exactly the excepted part number, and the report ends with
+`N problem(s)`, N the count of `[FAIL]` lines, with no traceback. A line in
+any other wording, a failed lookup among them, is not excepted, and an
+exception's mark counts only on its part's own `Parts.md` row, the line the
+critic gives for the part in `part_rows`. With exceptions
+given, the report's `[FAIL]` lines are read whether or not the critic marks
+the check passed, and `prepare` refuses an exception for a part no function
+keeps (kept part, alternate, Q alternative or its alternate). The pages state each
+exception with its reason in the part's `Parts.md` row, and only a mark
+there counts. `prepare` reads the exceptions before it merges anything. `record` refuses an output whose exceptions differ from the
+prepared ones. P7 and its critic run the stock check once each, after their
+last edit: each run reads Digi-Key.
 
 It refuses these unless `--accept-open REASON` records the owner's reason and
 the items in the arguments:
