@@ -110,6 +110,12 @@ owner runs round 1 with `--agent-model sonnet --oversight-model opus` at
 `--effort high`. The first such run, with P2 on Sonnet, returned 2 of R5's 12
 functions from P2.
 
+Each P4 verifier is given, by function and part, the names of the checks
+its verdict owes (`manufacturer allowlist` among the datasheet verifier's): a
+verdict that lacks one counts as not verified. In FU-B3 of round 1 the
+datasheet verifiers on Sonnet left `manufacturer allowlist` out for 18 of 26
+parts; on Opus no run had left it out.
+
 A return names its category by ID: the schemas hold the field to `R1` to
 `R13`, so the Workflow tool has the agent correct a name. The script reads
 text that gives the ID with the name (`R6 (Servo supply)`) or the category's

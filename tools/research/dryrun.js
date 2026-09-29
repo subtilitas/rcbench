@@ -326,9 +326,17 @@ async function main() {
     check(result.returns.length === result.started, `${t}: ${result.returns.length} returns against ${result.started} started`)
   }
 
+  // The verifiers are told the checks each part owes by name.
+  let r = await runTask('T2')
+  const dsPrompt = (r.prompts.find(p => p.label === 'P4-datasheet-R1') || {}).prompt || ''
+  const owedBlock = dsPrompt.split('The checks each part owes')[1] || ''
+  check(/"part1":\s*\[[^\]]*"manufacturer allowlist"/.test(owedBlock), 'P4 datasheet prompt lists manufacturer allowlist among part1\'s owed checks')
+  const stPrompt = (r.prompts.find(p => p.label === 'P4-stock-R1') || {}).prompt || ''
+  check(/"part1":\s*\[[^\]]*"lead time"/.test(stPrompt.split('The checks each part owes')[1] || ''), 'P4 stock prompt lists lead time among part1\'s owed checks')
+
   // A return names its category by ID; the ID with the name, or the name
   // alone, names it too; another ID does not.
-  let r = await runTask('T2', { categoryText: c => `${c} (${cats.categories[c]})` })
+  r = await runTask('T2', { categoryText: c => `${c} (${cats.categories[c]})` })
   check((((r1(r) || {}).selection || [])[0] || {}).part === 'part1', 'category given as ID with its name: read as the ID')
   r = await runTask('T2', { categoryText: c => cats.categories[c] })
   check((((r1(r) || {}).selection || [])[0] || {}).part === 'part1', 'category given by its name alone: read as the ID')
