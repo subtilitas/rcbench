@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R3",
+ "label": "adjudicator-R3-4",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "function": "P2 report: onboard switch turn-off",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The claim's controlled-turn-off half does not hold as stated. It says that at 17.8 A/us the array of 8 IPT015N10N5 stays inside Diagram 3 at 37.5 A a device. That figure assumes 300 A divides equally among 8 devices while they turn off in the saturation region. The datasheet states no current sharing in that region. The devices share one gate voltage, so current divides by VGS(th) and gfs, not by RDS(on). VGS(th) is 2.2 to 3.8 V and gfs is 140 S minimum, so one device can carry far more than 1/8 of the current. Example (derived, linear gfs model, not a datasheet figure): 1 device at 2.2 V and 7 at 3.8 V put about 233 A in the low-threshold device. The single-device Diagram 3 allowance at 85 V over about 17 us is about 110 A at TC 25 degC and about 55 A at TC 100 degC. The requirement \"each device inside its single-pulse SOA over that turn-off\" is therefore not shown to be met. The owner-stated sharing mechanism, RDS(on) rising with temperature, applies to the fully-on state, not to this interval. The parts of the claim that hold: the hard-turn-off failure (67.5 mJ = 0.5 x 1.5 uH x 300 A^2, Diagram 13 IAV about 150 A a device, avalanche not shared); TPSI3052 tHL_VDRV 3 us max; and the 5 ms budget. They do not rescue the SOA statement. Scope is function: the finding is about this function's turn-off requirement (300 A per V48, 1 uH per V45 plus 0.5 uH per V54, 8 devices in parallel). It is not about the part's lifecycle, identity or maker, and the IPT015N10N5 still stands where it is used elsewhere (pack reverse-polarity protection).",
+  "evidence": "Re-read IPT015N10N5 datasheet Rev. 2.4 (2023-05-04), fetched 2026-09-29T06:22:11Z.\n- Table 4: VGS(th) 2.2 V min, 3.0 V typ, 3.8 V max (VDS=VGS, ID=280 uA). gfs 140 S min, 280 S typ (ID=100 A).\n- Table 2: Tj max 175 degC. EAS 775 mJ at ID=150 A.\n- Diagram 3 (TC=25 degC, single pulse), digitized from page 6 at 300 dpi. Axes: 225 px per decade in VDS, 200 px per decade in ID. At 85.3 V the 1 us line reads about 1190 A, the 10 us line about 208 A and the 100 us line about 13 A. Log-log interpolation to 17 us gives about 110 A. Derated to TC 100 degC by (175-100)/(175-25) = 0.5, that is about 55 A (derived).\n- The datasheet says nothing on current sharing between paralleled devices in the saturation region.\n- 300 A / 17.8 A/us = 16.9 us of turn-off. The claim puts the pack node at up to 85 V during it.\n- Owner answers in Research.md@e13f5f6: V48 300 A onboard; V45 1 uH; V54 0.5 uH. The R3 row's P2 requirement \"current sharing: RDS(on) rising with temperature\" covers only the on state.\n- TPSI3052 (SLVSGS3B) was fetched at the same time. The refutation calls its 3 us figure correct and the ruling does not depend on it.",
+  "source": "https://www.infineon.com/assets/row/public/documents/24/49/infineon-ipt015n10n5-datasheet-en.pdf (vendors.py fetch; Table 2, Table 4, Diagram 3 page 6 rendered at 300 dpi; saved in /home/claude/rcbench-research/round1/scratch/FU-A3/adjudicator-R3/r1/ipt.pdf); https://www.ti.com/lit/ds/symlink/tpsi3052.pdf (vendors.py fetch); hardware/docs/Research.md at e13f5f6 (R3 row, V45, V48, V54); /home/claude/rcbench-research/round1/scratch/FU-A3/P2-R3/final.json (the requirement \"safe operating area during turn-off\")",
+  "read_at": "2026-09-29T06:22:11Z",
+  "scope": "function"
+ }
+}
