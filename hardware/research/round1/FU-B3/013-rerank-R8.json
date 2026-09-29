@@ -1,0 +1,462 @@
+{
+ "role": "rerank",
+ "category": "R8",
+ "label": "rerank-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "functions": [
+   {
+    "function": "Motor monitor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "INA238AIDGSR",
+      "reason": "Unchanged from P2: fixed input (F1); meets every requirement value; fails sourcing rule 4 at both JLCPCB (stock 0, presale -99) and Digi-Key (stock 0); no rule-5 route. Reported to the owner, not replaced (Scope table, fixed inputs rule).",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "INA238AQDGSRQ1",
+      "reason": "Unchanged from P2: same die and DEVICE_ID as the fixed input; fails rule 4 at JLCPCB (1, presale -115) but Digi-Key stock 5024 clears the gate as a personal-library purchase route (rule 6, once bought in and its quantity stated).",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "INA238AIDGSR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Onboard shunt",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "BVR-Z-R0002-1.0",
+      "reason": "Unchanged from P2: widest accuracy-share margin (0.50 A of 1.5 A at 150 A), four-terminal Kelvin, largest second-vendor stock (Digi-Key 11190).",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "BVE-M-R0002-1.0",
+      "reason": "Unchanged from P2: passes with a second vendor; below the BVR because its TCR is stated only 20-60 degC and the terminal temperature at 150 A is not independently confirmed.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "WSLP2726L2000FEA",
+      "reason": "Unchanged from P2: passes with stated TCR and EMF; last for having no second source.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "BVR-Z-R0002-1.0",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Onboard shunt temperature sensor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP9808T-E/MS",
+      "reason": "Best accuracy at the 100 degC trip point (+/-0.5 degC max, -20 to 100 degC) with a second vendor (Digi-Key 21589), and its 4 addresses (0x18-0x1F) sit outside the 0x40-0x4F block IOBoard.md:462-464 reserves for the port and motor monitors. Still first after adding STTS22H and ADT7410: both have worse accuracy at 100 degC (STTS22H +/-1.0 degC, ADT7410 +/-0.5 degC only tying, not beating, it) and MCP9808's 4-week Digi-Key lead time and largest stock margin are unmatched.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "STTS22HTR",
+      "reason": "New candidate from P3 (missed: STMicroelectronics was not searched). Passes every requirement value; +/-1.0 degC max at the 100 degC trip point (the -40 to 125 degC row of Table 3; the tighter +/-0.5 degC band only covers -10 to 60 degC). Its 4 addresses (0x38, 0x3C, 0x3E, 0x3F) sit outside the 0x40-0x4F monitor block, the same address advantage that puts MCP9808 ahead of TMP116 in P2's own ranking; on that basis it outranks the in-block TMP116, ADT7410 and TMP112 despite their tighter accuracy. Second-vendor stock is adequate (Digi-Key 752, JLCPCB 550) but its 24-week Digi-Key lead time and worse accuracy keep it below MCP9808.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TMP116AIDRVR",
+      "reason": "Unchanged from P2: +/-0.25 degC, the best accuracy figure of any candidate, stock at both vendors; ranks below the two address-outside parts because its 4 addresses (0x48-0x4B) sit inside the 0x40-0x4F monitor block.",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "ADT7410TRZ-REEL7",
+      "reason": "P3 correctly showed the prior drop reason for this part did not hold: its own datasheet gives +/-0.5 degC max from -40 to 105 degC at VDD 2.7-3.6 V (covering the 100 degC trip point directly), not the +/-2 degC that actually describes the LM75BD it was grouped with, and the '11-bit, 330 at JLCPCB' facts belong to the PCT2075, not this part. It qualifies: JLCPCB C660048 stock 1009/presale 989 clears the gate, Digi-Key stock 847 gives a second vendor. Ranked behind TMP116 (better accuracy, same in-block address class) and above TMP112 (worse accuracy, 1.0 degC) per the accuracy-tier ordering P2 used between those two; its own address block (0x48-0x4B, same as TMP116) is inside the monitor block, and it is the highest-priced part on the list (4.7563 at the 1 break) with the smallest Digi-Key stock of the group.",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "TMP112AIDRLR",
+      "reason": "Unchanged from P2, now last of five: +/-1 degC, largest stock at both vendors and lowest price; below the +/-0.5 degC and +/-0.25 degC parts on accuracy, and its address (0x48-0x4B) is inside the monitor block like ADT7410's, but its accuracy margin at the 100 degC trip point ties ADT7410's tier only nominally (1.0 vs 0.5 degC) so it stays behind it.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "STTS22HTR",
+      "maker": "STMicroelectronics (DS12606 Rev 8); S1 STMicroelectronics",
+      "lcsc": "C2969838",
+      "package": "UDFN-6L (2 x 2 x 0.5 mm)",
+      "placements": 1,
+      "placements_basis": "fixed: one sensor (IOBoard.md:422)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "watched temperature",
+        "required": "beside the shunt",
+        "datasheet": "factory-calibrated digital I2C/SMBus sensor, exposed pad down for better thermal match with the surrounding component",
+        "pass": true,
+        "source": "DS12606 Rev 8 s1 Overview, page 1 and 3"
+       },
+       {
+        "name": "trip temperature",
+        "required": "100 degC",
+        "datasheet": "Temperature accuracy (Tacc), -40 to 125 degC row: Max +/-1.0 degC (the applicable row at 100 degC; the +/-0.5 degC row only covers -10 to 60 degC)",
+        "pass": true,
+        "source": "DS12606 Table 3"
+       },
+       {
+        "name": "range",
+        "required": "0 to >= 100 degC",
+        "datasheet": "Operating temperature range (Top) -40 to +125 degC",
+        "pass": true,
+        "source": "DS12606 Table 3, Table 4"
+       },
+       {
+        "name": "accuracy",
+        "required": "+/-2 degC at 3.3 V +/-3 %",
+        "datasheet": "+/-1.0 degC max over -40 to 125 degC (typ +/-0.7 degC); Tacc's test condition is temperature only, with no separate VDD dependence stated across the 1.5-3.6 V supply range",
+        "pass": true,
+        "source": "DS12606 Table 3, Table 4"
+       },
+       {
+        "name": "interface",
+        "required": "3.3 V I2C",
+        "datasheet": "VDD 1.5 to 3.6 V; I2C/SMBus 3.0 up to 1 MHz; 4 slave addresses via the Addr pin",
+        "pass": true,
+        "source": "DS12606 Table 4; Table 1, Table 2"
+       },
+       {
+        "name": "board ambient",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to +125 degC",
+        "pass": true,
+        "source": "DS12606 Table 3, Table 4"
+       }
+      ],
+      "jlcpcb": "stockCount 550, canPresaleNumber 531, expand, 2.2499 at the 1 break (currency not in the reading); vendors.py jlcpcb C2969838 exact match, 2026-09-29T17:09:49Z, label STMicroelectronics, UDFN-6(2x2)",
+      "digikey": "stock_available 752 (Cut Tape / Digi-Reel; Tape & Reel variation is 0); lead time 24 weeks; ProductStatus Active; vendors.py digikey STTS22HTR (https://api.digikey.com/products/v4/search/STTS22HTR/productdetails), 2026-09-29T14:16:11Z, cached",
+      "gate": "need 5 x 1 = 5, threshold 50: stock 550, presale 531: pass",
+      "lifecycle": "Maker Active: https://www.st.com/en/mems-and-sensors/stts22h.html, badge text 'Active' with tooltip 'Product is in volume production.' in the page body (2026-09-29T17:11:18Z-17:12:16Z). Longevity: a published 10-year commitment, Longevity Starting Date 2021-01-01, in the same quality-and-reliability table (same reading); not a gate (S5). Introduced: DS12606 Table 16, first public release 09-Oct-2019 (Rev 4): over 6 years, not flagged. Notices: no PCN marker found on the product page (marker search, 2026-09-29T17:11:53Z); not read further, reported. Distributor: Digi-Key Active (14:16:11Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C2969838.html, 2026-09-29T17:14:41Z); all agree",
+      "second_source": "second-vendor: Digi-Key 752 >= 50 (2026-09-29T14:16:11Z)",
+      "alternates": [],
+      "driver_in_shared": "none (settings.c:87-95 names the INA228 only)",
+      "reason": "P3's missed candidate (STMicroelectronics was never searched for this function). Qualifies on every value; +/-1.0 degC at the 100 degC trip point, addresses outside the 0x40-0x4F monitor block like the rank-1 MCP9808. Ranked 2nd: worse accuracy and a longer Digi-Key lead time (24 weeks) than MCP9808, but its out-of-block addressing outranks the in-block TMP116/ADT7410/TMP112",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 4,
+      "part": "ADT7410TRZ-REEL7",
+      "maker": "Analog Devices (Rev. C); S1 Analog Devices",
+      "lcsc": "C660048",
+      "package": "SOIC-8 (narrow)",
+      "placements": 1,
+      "placements_basis": "fixed: one sensor (IOBoard.md:422)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "watched temperature",
+        "required": "beside the shunt",
+        "datasheet": "digital I2C temperature sensor with a band-gap reference and 13/16-bit sigma-delta ADC",
+        "pass": true,
+        "source": "ADT7410 Rev C General Description, p1"
+       },
+       {
+        "name": "trip temperature",
+        "required": "100 degC",
+        "datasheet": "+/-0.5 degC max, -40 degC to +105 degC, VDD 2.7 V to 3.6 V (covers 100 degC directly, not just an extrapolated wide-range figure)",
+        "pass": true,
+        "source": "ADT7410 Rev C Table 1"
+       },
+       {
+        "name": "range",
+        "required": "0 to >= 100 degC",
+        "datasheet": "-55 degC to +150 degC rated operation",
+        "pass": true,
+        "source": "ADT7410 Rev C Table 1, Features"
+       },
+       {
+        "name": "accuracy",
+        "required": "+/-2 degC at 3.3 V +/-3 %",
+        "datasheet": "+/-0.5 degC max, -40 to 105 degC, VDD 2.7-3.6 V (+/-0.4 degC max at VDD 3.0 V, same range)",
+        "pass": true,
+        "source": "ADT7410 Rev C Table 1"
+       },
+       {
+        "name": "interface",
+        "required": "3.3 V I2C",
+        "datasheet": "VDD 2.7 to 5.5 V; I2C-compatible; 4 addresses via A0/A1 pins",
+        "pass": true,
+        "source": "ADT7410 Rev C Table 1; Table 20"
+       },
+       {
+        "name": "board ambient",
+        "required": "0 to 50 degC",
+        "datasheet": "-55 degC to +150 degC",
+        "pass": true,
+        "source": "ADT7410 Rev C Table 1"
+       }
+      ],
+      "jlcpcb": "stockCount 1009, canPresaleNumber 989, expand, 4.7563 at the 1 break (currency not in the reading); vendors.py jlcpcb C660048 exact match, 2026-09-29T17:12:38Z, label Analog Devices, SOIC-8",
+      "digikey": "stock_available 847 (Cut Tape / Digi-Reel; Tape & Reel variation is 0); lead time 16 weeks; ProductStatus Active; vendors.py digikey ADT7410TRZ-REEL7 (https://api.digikey.com/products/v4/search/ADT7410TRZ-REEL7/productdetails), 2026-09-29T12:37:18Z, cached",
+      "gate": "need 5 x 1 = 5, threshold 50: stock 1009, presale 989: pass",
+      "lifecycle": "Maker status not read at the manufacturer's own page: https://www.analog.com/en/products/adt7410.html HTTP 403, challenge (2026-09-29T17:14:32Z), matching Research.md's record of www.analog.com refusing requests on 2026-09-27. Per the Lifecycle check's stated exception for Analog Devices, Digi-Key's ProductStatus counts as the maker status: Active (12:37:18Z, cached). Longevity: not published (S5 no gate). Introduced: Rev C revision history, Rev 0 initial version 4/2009: over 17 years, not flagged. Notices: manufacturer PCN listing not read (host unreachable). Distributor: Digi-Key Active (12:37:18Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C660048.html, 2026-09-29T17:14:42Z)",
+      "second_source": "second-vendor: Digi-Key 847 >= 50 (2026-09-29T12:37:18Z)",
+      "alternates": [],
+      "driver_in_shared": "none (settings.c:87-95 names the INA228 only)",
+      "reason": "P3 showed the prior drop reason for this part ('no margin +/-2 degC', grouped with PCT2075D,118 and LM75BD,118) does not hold: that accuracy figure and the '11-bit, 330 at JLCPCB' facts belong to the PCT2075 and LM75BD, not the ADT7410, whose own datasheet gives +/-0.5 degC max covering the 100 degC trip point. It qualifies and gets a full record. Ranked 4th: same accuracy tier as MCP9808 but its 4 addresses (0x48-0x4B) sit inside the monitor block like TMP116's, and it is the highest-priced, lowest-Digi-Key-stock part of the group",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP9808T-E/MS",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "External shunt",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "WSBE8518L1000JKA2",
+      "reason": "Unchanged from P2: best accuracy-share margin (0.73 A of 3 A at 300 A), 418 in stock at Digi-Key; no rule-5 second source, reported to the owner.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "BAS-M-R0001-R-5.0",
+      "reason": "Unchanged from P2: wide margin, largest stock; below the WSBE because its TCR is stated only 20-60 degC and the terminal temperature at 300 A is not known (round 3). No second source.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "WSBS8536L1000JK60",
+      "reason": "Unchanged from P2: passes with the thinnest margins (1.9 mA and 68.6 mA); last, no second source, larger body.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "WSBE8518L1000JKA2",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "External shunt sense input",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "INA238AIDGSR",
+      "reason": "Unchanged from P2: the only part F1 allows for this input; fails the input-withstand value (differential abs max +/-40 V against the required 85 V) and the stock gate. Reported to the owner; round 2 selects the sensor-connector protection.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "INA238AIDGSR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port current monitor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "INA3221AIRGVR",
+      "reason": "Unchanged from P2: the owner's seed; passes with 7 parts for 20 ports, thinnest accuracy margin (49.3 of 50 mA on a typical, not maximum, PSRR).",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "INA226AIDGSR",
+      "reason": "Unchanged from P2: widest accuracy margin (31.7 mA), lowest price; 20 parts and 10 addresses a bus.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "INA237AIDGSR",
+      "reason": "Unchanged from P2: passes (41.8 mA margin), shares the INA238's registers; below the INA226 on margin and price.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "ISL28022FRZ-T (C5741743)",
+      "maker": "Renesas",
+      "reason": "Rule 4 fail at JLCPCB: stockCount 118, canPresaleNumber 118 (2026-09-29T17:12:03Z) against need 20 x 5 = 100, threshold max(5 x 100, 50) = 500. Digi-Key not read: the board part's gate is JLCPCB stock (rule 4), which already fails by a wide margin"
+     },
+     {
+      "part": "ISL28022FUZ (C1529908)",
+      "maker": "Renesas",
+      "reason": "Rule 4 fail: stockCount 69, presale 69 (2026-09-29T17:12:03Z), against threshold 500"
+     },
+     {
+      "part": "ISL28022FUZ-T7A (C2650193)",
+      "maker": "Renesas",
+      "reason": "Rule 4 fail: stockCount 6, presale 6 (2026-09-29T17:12:03Z), against threshold 500"
+     },
+     {
+      "part": "ISL28023FR60Z-T7A (C2650168), ISL28023FR12Z (C5657135), ISL28023FR12Z-T (C2657872), ISL28023FR60Z-T (C2657875), ISL28023FR12Z-T7A (C3685329)",
+      "maker": "Renesas",
+      "reason": "Rule 4 fail: every ISL28023 SKU checked reads stockCount 0 at JLCPCB (2026-09-29T17:12:04Z-17:12:05Z), against threshold 500"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "INA3221AIRGVR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port shunt",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "ERJ-6CWDR010V",
+      "reason": "Unchanged from P2: passes with the INA3221 (22.9 of 23.6 mA); only +/-0.5 % part with stock at both vendors.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "PE1206DRM470R01L",
+      "reason": "Unchanged from P2: passes (22.7 mA), twice the power rating; Digi-Key 0, second-sourced by the PA1206 alternate.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "PA1206DRE470R01Z",
+      "reason": "Unchanged from P2: widest TCR margin (20.1 mA); second-sourced by the PE1206 alternate.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "ERJ-6CWDR010V",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo rail monitor",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "STTS22H stock and second source",
+    "value": "JLCPCB C2969838 stockCount 550, presale 531 (need 5, threshold 50: pass); Digi-Key stock_available 752 (Cut Tape/Digi-Reel), 24 weeks, ProductStatus Active",
+    "source": "vendors.py jlcpcb C2969838 2026-09-29T17:09:49Z; vendors.py digikey STTS22HTR (https://api.digikey.com/products/v4/search/STTS22HTR/productdetails) 2026-09-29T14:16:11Z, cached"
+   },
+   {
+    "figure": "STTS22H accuracy at the 100 degC trip point",
+    "value": "+/-1.0 degC max over -40 to 125 degC (typ +/-0.7 degC); the tighter +/-0.5 degC band applies only -10 to 60 degC, so it does not cover the 100 degC trip point",
+    "source": "STMicroelectronics STTS22H datasheet DS12606 Rev 8, Table 3, https://www.st.com/resource/en/datasheet/stts22h.pdf, read 2026-09-29T17:09:56Z"
+   },
+   {
+    "figure": "STTS22H address block",
+    "value": "4 addresses (7-bit 0x38, 0x3C, 0x3E, 0x3F via the Addr pin), all outside the 0x40-0x4F block IOBoard.md:462-464 reserves for the INA3221 port monitor and the INA238 motor monitor",
+    "source": "DS12606 Table 2, read 2026-09-29T17:09:56Z; checkout e13f5f60d2e5 hardware/docs/IOBoard.md:462-464"
+   },
+   {
+    "figure": "STTS22H lifecycle",
+    "value": "Maker Active ('Product is in volume production' in the page body) with a published 10-year longevity commitment starting 2021-01-01; first public release 09-Oct-2019 (Rev 4), over 6 years; no PCN marker on the product page; LCSC 'normal'",
+    "source": "https://www.st.com/en/mems-and-sensors/stts22h.html, read 2026-09-29T17:11:18Z-17:12:16Z; DS12606 Table 16 read 17:09:56Z; https://www.lcsc.com/product-detail/C2969838.html read 2026-09-29T17:14:41Z"
+   },
+   {
+    "figure": "ADT7410 accuracy, corrected",
+    "value": "+/-0.5 degC max, -40 to +105 degC, VDD 2.7-3.6 V (+/-0.4 degC max at 3.0 V), covering the 100 degC trip point; this does not match the +/-2 degC figure P2's dropped list attached to it, which describes the LM75BD it was grouped with",
+    "source": "Analog Devices ADT7410 datasheet Rev C, Table 1, https://www.analog.com/media/en/technical-documentation/data-sheets/adt7410.pdf, read 2026-09-29T17:12:16Z"
+   },
+   {
+    "figure": "ADT7410 stock, second source and lifecycle",
+    "value": "JLCPCB C660048 stockCount 1009, presale 989 (pass); Digi-Key stock_available 847, 16 weeks, Active. analog.com refuses every request (HTTP 403, challenge) as of this reading, matching Research.md's 2026-09-27 record; Digi-Key's ProductStatus (Active) is the maker status per the lifecycle check's stated Analog Devices exception. LCSC 'normal'",
+    "source": "vendors.py jlcpcb C660048 2026-09-29T17:12:38Z; vendors.py digikey ADT7410TRZ-REEL7 2026-09-29T12:37:18Z, cached; vendors.py fetch https://www.analog.com/en/products/adt7410.html 2026-09-29T17:14:32Z; https://www.lcsc.com/product-detail/C660048.html read 17:14:42Z"
+   },
+   {
+    "figure": "ADT7410 address block",
+    "value": "0x48-0x4B (A0/A1 pins), the same 4 addresses as TMP116, inside the 0x40-0x4F monitor block",
+    "source": "ADT7410 Rev C Table 20, https://www.analog.com/media/en/technical-documentation/data-sheets/adt7410.pdf, read 2026-09-29T17:12:16Z"
+   },
+   {
+    "figure": "Onboard shunt temperature sensor re-rank order",
+    "value": "1 MCP9808 (address outside the block, best accuracy at 100 degC), 2 STTS22H (address outside, +/-1.0 degC), 3 TMP116 (+/-0.25 degC, address inside), 4 ADT7410 (+/-0.5 degC, address inside, highest price), 5 TMP112 (+/-1.0 degC, address inside, largest stock)",
+    "source": "derived from the datasheet and stock figures above, plus P2's Onboard shunt temperature sensor shortlist"
+   },
+   {
+    "figure": "Port current monitor P3 candidate, dropped",
+    "value": "ISL28022FRZ-T, ISL28022FUZ and ISL28022FUZ-T7A read stockCount 118, 69 and 6 at JLCPCB; every ISL28023 SKU checked reads 0; all fail rule 4 against a threshold of 500 (20 placements x 5 boards x S4's 5x). Digi-Key not read, since the board-part gate is JLCPCB stock and it already fails there",
+    "source": "vendors.py jlcpcb C5741743, C1529908, C2650193, C2650168, C5657135, C2657872, C2657875, C3685329, all 2026-09-29T17:12:03Z-17:12:05Z"
+   },
+   {
+    "figure": "PCT2075D,118 and LM75BD,118 drop reasons stand",
+    "value": "P3's refutation of the grouped drop reason applies only to the ADT7410 line; PCT2075D,118's 11-bit ADC and low JLCPCB stock, and LM75BD,118's own +/-2 degC accuracy, are unaffected and remain the reasons those two stay dropped",
+    "source": "P2's return, Onboard shunt temperature sensor dropped list; P3's exclusions_not_holding entry for ADT7410TRZ-REEL7"
+   }
+  ]
+ }
+}

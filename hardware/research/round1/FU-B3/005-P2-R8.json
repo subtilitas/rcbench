@@ -1,0 +1,2199 @@
+{
+ "role": "P2",
+ "category": "R8",
+ "label": "P2-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "found_values": [
+   {
+    "question_id": "V154",
+    "value": "The INA238 of the cabled path fills BENCH registers 0 and 1 whenever it answers; ESC telemetry only when no monitor answers. One path per test; how firmware tells which is not stated. Applied as 'reading of record'",
+    "source": "checkout e13f5f6: hardware/STATUS.md:55; docs/Screens.md:147-148; firmware/iomcu/src/main.c:714; docs/OpenYGE.md:380-381; hardware/docs/IOBoard.md:406",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V155",
+    "value": "150 A onboard (F2, continuous), 300 A external (V50, peak 30 s): each path's rated current; V48 opens each switch at twice it. Applied as 'trip inside full scale'",
+    "source": "checkout e13f5f6: hardware/docs/Research.md:530, :608, :610",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V156",
+    "value": "100 degC at the sensor beside the onboard shunt, derived from V49 (switch array budgeted at TJ 100 degC); no stated trip level exists. Applied as 'trip temperature' and the Onboard shunt's 100 degC terminal",
+    "source": "checkout e13f5f6: hardware/docs/Research.md:609 (V49); hardware/docs/IOBoard.md:475",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V157",
+    "value": "The sensor beside the onboard shunt, onboard path only; the ESC cuts its own power (OpenYGE POWER_CUT), no motor limit exists, the external path's thermal design is round 3. Applied as 'watched temperature'",
+    "source": "checkout e13f5f6: hardware/docs/Research.md:29, :62; hardware/docs/IOBoard.md:66, :422; docs/OpenYGE.md:321-322",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V158",
+    "value": "One averaged reading above the threshold, read at the 20 ms sample, trips; the tree's only current ceiling aborts at once. Applied as 'reading window'",
+    "source": "checkout e13f5f6: docs/Servo.md:35; firmware/iomcu/src/main.c:1013; hardware/docs/IOBoard.md:431",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V159",
+    "value": "None applies (V160). Detection to disarm at most 20 ms; the pack switch opens when the enable falls, 155 to 185 ms after the last heartbeat edge, all power switches open within 200 ms",
+    "source": "checkout e13f5f6: hardware/docs/IOBoard.md:57, :197; firmware/iomcu/src/main.c:1013",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V160",
+    "value": "Nothing: the action disarms the outputs; the pack switches follow the enable node through the latch alone (no processor between GPIO6 and a gate). ALERT may reach a GPIO. As R3's V53. Applied as 'switch action'",
+    "source": "checkout e13f5f6: hardware/docs/IOBoard.md:197; hardware/docs/Research.md:281; results FU-A3/003-P2-R3.json",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V161",
+    "value": "Firmware integrates charge (1 mAh) and energy (0.1 Wh) from CURRENT 07h and POWER 08h at 20 ms; the INA238 has no accumulator, so IOBoard.md:417 conflicts with the fixed input. Applied as 'charge and energy'",
+    "source": "checkout e13f5f6: shared/link/include/link_pages.h:236-237; hardware/docs/IOBoard.md:417; SLYS025B register map, https://www.ti.com/lit/ds/symlink/ina238.pdf",
+    "read_at": "2026-09-29T15:22:44Z"
+   },
+   {
+    "question_id": "V162",
+    "value": "50 to 136 uOhm: 1.25 uV LSB / 25 mA (V165) and 40.96 mV / 300 A (V163). Applied as 'resistance'",
+    "source": "derived; SLYS025B s5.5, https://www.ti.com/lit/ds/symlink/ina238.pdf; checkout e13f5f6: hardware/docs/IOBoard.md:424",
+    "read_at": "2026-09-29T15:22:44Z"
+   },
+   {
+    "question_id": "V163",
+    "value": "300 A (V50 for the same path; 'and more' has no figure; R3's V35). Applied as 'highest current and duty'",
+    "source": "checkout e13f5f6: hardware/docs/Research.md:62, :610",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V164",
+    "value": "Peak: 300 A for 30 s at most (V50). Budgets take the steady rise at 9 W, an upper bound",
+    "source": "checkout e13f5f6: hardware/docs/Research.md:610 (owner, 2026-09-28)",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V165",
+    "value": "25 mA or finer (25 mA on 50 uOhm, the coarsest the tree accepts; screen prints 0.1 A). Applied as 'external-path resolution'",
+    "source": "checkout e13f5f6: hardware/docs/Power.md:157-162; hardware/STATUS.md:58; shared/ui/motor_screen.c:113",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V166",
+    "value": "+/-1 % of reading from 15 A to 150 A onboard and 300 A external, +/-0.15 A below 15 A, 0 to 50 degC, after one calibration per path at 25 degC. Flight Stand 50: 'Current accuracy 1% from 15 to 300 A' ('maximum allowed average error observed during calibration'); below 15 A is this return's extension",
+    "source": "Flight Stand 50 FSFI50 V5.1, https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf",
+    "read_at": "2026-09-29T15:22:48Z"
+   },
+   {
+    "question_id": "V167",
+    "value": "+/-1 % of reading from 5 to 67.2 V (Flight Stand 50: 'Voltage accuracy 1% measured value from 5 to 180 V')",
+    "source": "Flight Stand 50 FSFI50 V5.1, https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf",
+    "read_at": "2026-09-29T15:22:48Z"
+   },
+   {
+    "question_id": "V168",
+    "value": "0 to 50 degC ambient (owner's V7, whole board); budgets take 25 K from the 25 degC calibration",
+    "source": "checkout e13f5f6: hardware/docs/Research.md:567",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V169",
+    "value": "4.5 W at 150 A (the larger stated dissipation, 200 uOhm): caps the shunt at 200 uOhm",
+    "source": "checkout e13f5f6: hardware/docs/IOBoard.md:421; hardware/STATUS.md:46",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V170",
+    "value": "0 to at least 100 degC; +/-2 degC (owner's V235 figure for the contact thermocouple)",
+    "source": "checkout e13f5f6: hardware/docs/Research.md:567, :795",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V171",
+    "value": "Measure to 8.7 V (F16 HV ceiling); withstand 20 V (R3's V44: TPS55285 OVP to 18 V, DC input 20 V)",
+    "source": "checkout e13f5f6: hardware/docs/Research.md:544; results FU-A3/003-P2-R3.json",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V172",
+    "value": "6.35 A, the rail limit one port can carry; 0.403 W in 10 mOhm",
+    "source": "checkout e13f5f6: hardware/docs/IOBoard.md:343; docs/Servo.md:35, :69",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V173",
+    "value": "5 ms per channel (abort at every sample; host tests at SAMPLE_MS 5, 200 Hz)",
+    "source": "checkout e13f5f6: docs/Servo.md:35; test/host/test_servo_limit.c:19",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V174",
+    "value": "Noise <= 20 mA peak-to-peak (host model noise_a 0.02 A); accuracy +/-50 mA to 3.0 A, 0 to 50 degC, uncalibrated (half the 0.1 A digit of the absolute thresholds)",
+    "source": "checkout e13f5f6: shared/servo/servo_sim.c:22, :44; docs/Servo.md:33-39, :65-69; shared/servo/servo_limit.c:56-62",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V175",
+    "value": "Firmware check at every sample; no hardware alert ('All three run on the coprocessor.')",
+    "source": "checkout e13f5f6: docs/Servo.md:39; hardware/docs/IOBoard.md:351",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V176",
+    "value": "No rail monitor: the rail current is the sum of the 20 port channels; the owner decision of one channel per port supersedes docs/Manifest.md:28's INA745A; nothing in the tree reads a rail current. The function takes no part",
+    "source": "checkout e13f5f6: hardware/docs/IOBoard.md:305, :382, :585; hardware/docs/Research.md:64; docs/Manifest.md:28",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V177",
+    "value": "High side on both paths (pack return goes to the star point by its own lead; switches are high-side, V54): leads at up to 67.2 V to ground",
+    "source": "checkout e13f5f6: testbench/WIRING.md:37-47; hardware/docs/Research.md:281, :614",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "question_id": "V178",
+    "value": "VBUS from the external shunt's pack-side sense lead, tapped ahead of the IN+ filter resistor (ZVBUS 0.8 to 1.2 MOhm)",
+    "source": "checkout e13f5f6: docs/Screens.md:131-134; hardware/docs/IOBoard.md:428, :470; SLYS025B s5.5, https://www.ti.com/lit/ds/symlink/ina238.pdf",
+    "read_at": "2026-09-29T15:22:44Z"
+   },
+   {
+    "question_id": "V179",
+    "value": "85 V lead to ground and 85 V between the leads, either polarity (wrong-terminal lead or load-side short puts the pack across them; R3 clamps under 85 V)",
+    "source": "checkout e13f5f6: hardware/docs/Research.md:281, :543; SLYS025B s7.1.4, https://www.ti.com/lit/ds/symlink/ina238.pdf",
+    "read_at": "2026-09-29T15:22:44Z"
+   },
+   {
+    "question_id": "V180",
+    "value": "0 A to positive full scale; every threshold is positive",
+    "source": "checkout e13f5f6: shared/servo/servo_limit.c:56-62; shared/servo/servo_sync.c:35-37",
+    "read_at": "2026-09-29T15:37:34Z"
+   }
+  ],
+  "functions": [
+   {
+    "function": "Motor monitor",
+    "requirements": [
+     {
+      "name": "fixed part",
+      "value": "INA238, 2 a board (F1)",
+      "source": "checkout e13f5f6: hardware/docs/Research.md:49, :529"
+     },
+     {
+      "name": "monitor footprint",
+      "value": "the VSSOP-10 footprint shared with the INA228; DEVICE_ID 2381h or 2281h",
+      "source": "checkout e13f5f6: hardware/docs/IOBoard.md:416"
+     },
+     {
+      "name": "bus and input rating",
+      "value": "VBUS, IN+, IN- rated for 67.2 V up to R3's clamp under 85 V",
+      "source": "checkout e13f5f6: hardware/docs/Research.md:281, :543"
+     },
+     {
+      "name": "trip inside full scale",
+      "value": "150 A onboard, 300 A external at upper tolerance inside 40.96 mV",
+      "source": "V155"
+     },
+     {
+      "name": "current accuracy",
+      "value": "V166 with the 3.3 V rail anywhere in +/-3 %",
+      "source": "V166, V168; Research.md:283 (R5 row)"
+     },
+     {
+      "name": "voltage accuracy",
+      "value": "+/-1 % of reading 5 to 67.2 V",
+      "source": "V167"
+     },
+     {
+      "name": "external-path resolution",
+      "value": "<= 25 mA",
+      "source": "V165"
+     },
+     {
+      "name": "reading window",
+      "value": "one averaged reading within 20 ms",
+      "source": "V158, V159"
+     },
+     {
+      "name": "charge and energy",
+      "value": "CURRENT and POWER registers",
+      "source": "V161"
+     },
+     {
+      "name": "reading of record",
+      "value": "readable over I2C",
+      "source": "V154"
+     },
+     {
+      "name": "switch action",
+      "value": "no output drives the pack switch",
+      "source": "V160"
+     },
+     {
+      "name": "ambient range",
+      "value": "0 to 50 degC",
+      "source": "V168"
+     },
+     {
+      "name": "logic and addresses",
+      "value": "3.3 V I2C, two addresses >= 0x44",
+      "source": "checkout e13f5f6: hardware/docs/IOBoard.md:54, :464"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "INA238AIDGSR",
+      "maker": "Texas Instruments (SLYS025B); S1 Texas Instruments; datasheets (all times 2026-09-29 UTC): SLYS025B https://www.ti.com/lit/ds/symlink/ina238.pdf 15:22:44Z; SLYS021A https://www.ti.com/lit/ds/symlink/ina228.pdf 15:22:45Z",
+      "lcsc": "C2868250",
+      "package": "VSSOP-10 (DGS)",
+      "placements": 2,
+      "placements_basis": "fixed: one INA238 per path (F1)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "fixed part",
+        "required": "INA238",
+        "datasheet": "INA238, DEVICE_ID 2381h",
+        "pass": true,
+        "source": "SLYS025B s6.6.1.17"
+       },
+       {
+        "name": "monitor footprint",
+        "required": "INA228/INA238 VSSOP-10",
+        "datasheet": "VSSOP-10 pinout as the INA228 (SLYS021A s7.6.1.20, DEVICE_ID 2281h)",
+        "pass": true,
+        "source": "SLYS025B pin table; SLYS021A"
+       },
+       {
+        "name": "bus and input rating",
+        "required": "67.2 V, under 85 V",
+        "datasheet": "VBUS, VIN common mode -0.3 to 85 V abs max",
+        "pass": true,
+        "source": "SLYS025B abs max"
+       },
+       {
+        "name": "trip inside full scale",
+        "required": "<= 40.96 mV",
+        "datasheet": "30.3 mV (BVR 1 %) at 150 A; 31.5 mV (WSBE 5 %) at 300 A",
+        "pass": true,
+        "source": "SLYS025B elec. char.; BVR; V30424"
+       },
+       {
+        "name": "current accuracy",
+        "required": "1.5 A at 150 A, 3 A at 300 A, 0.15 A at 15 A",
+        "datasheet": "after calibration: drift 0.5 uV + CMRR 140 dB over 5 to 67.2 V 6.22 uV + PSRR 1 uV/V x 0.198 V + half LSB 0.625 uV = 7.543 uV; gain drift 25 ppm/degC x 25 K. Path totals: BVR 0.50 A and 55.5 mA; WSBE 0.73 A and 89.3 mA",
+        "pass": true,
+        "source": "SLYS025B elec. char."
+       },
+       {
+        "name": "voltage accuracy",
+        "required": "1 %",
+        "datasheet": "offset 5 mV, drift 40 uV/degC, gain 0.1 %, drift 25 ppm/degC, LSB 3.125 mV: 0.32 % at 5 V, 0.17 % at 67.2 V",
+        "pass": true,
+        "source": "SLYS025B elec. char."
+       },
+       {
+        "name": "external-path resolution",
+        "required": "25 mA",
+        "datasheet": "1.25 uV LSB: 12.5 mA on 100 uOhm",
+        "pass": true,
+        "source": "SLYS025B elec. char."
+       },
+       {
+        "name": "reading window",
+        "required": "20 ms",
+        "datasheet": "1052 us x 2 inputs x 4 averages = 8.4 ms",
+        "pass": true,
+        "source": "SLYS025B TCT, ADC_CONFIG"
+       },
+       {
+        "name": "charge and energy",
+        "required": "CURRENT, POWER",
+        "datasheet": "07h CURRENT, 08h POWER; no accumulator",
+        "pass": true,
+        "source": "SLYS025B register map"
+       },
+       {
+        "name": "reading of record",
+        "required": "I2C",
+        "datasheet": "I2C, VIH 1.2 V",
+        "pass": true,
+        "source": "SLYS025B pin table"
+       },
+       {
+        "name": "switch action",
+        "required": "none",
+        "datasheet": "ALERT open-drain, may stay unconnected",
+        "pass": true,
+        "source": "SLYS025B pin table"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to 125 degC",
+        "pass": true,
+        "source": "SLYS025B elec. char."
+       },
+       {
+        "name": "logic and addresses",
+        "required": "3.3 V, >= 0x44",
+        "datasheet": "VS 2.7 to 5.5 V; 16 addresses 0x40 to 0x4F",
+        "pass": true,
+        "source": "SLYS025B address table"
+       }
+      ],
+      "jlcpcb": "stockCount 0, canPresaleNumber -99, expand, 3.9864 at the 10 break (currency not in the reading); vendors.py jlcpcb C2868250 exact match, 15:21:13Z, label Texas Instruments, VSSOP-10-0.5mm",
+      "digikey": "stock_available 0; lead time 16 weeks; ProductStatus Active; vendors.py digikey INA238AIDGSR (https://api.digikey.com/products/v4/search/INA238AIDGSR/productdetails), 02:34:14Z, cached",
+      "gate": "need 5 x 2 = 10, threshold 50: stock 0, presale -99: fail (rule 4); not held. Fixed input: reported, not replaced",
+      "lifecycle": "Maker ACTIVE: https://www.ti.com/product/INA238 meta status and orderable INA238AIDGSR ACTIVE (15:32:40Z). TI policy: life cycles 'typically 10 to 15 years', no dated commitment (https://www.ti.com/quality-reliability/quality/product-life-cycle.html 15:33:01Z), not a gate (S5); notices: no public TI PCN listing, J-STD-048 with 12 months to last order (https://www.ti.com/quality-reliability/quality/product-change-notification.html 15:33:01Z), none marks this orderable. Introduced January 2021 (SLYS025 *), not flagged. Distributor: Digi-Key Active (02:34:14Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C2868250.html 15:34:51Z); all agree",
+      "second_source": "none: Digi-Key 0; INA238AQDGSRQ1 fails rule 4 at JLCPCB (1, presale -115); INA228AIDGSR 0/-174 and Digi-Key 0; INA237 fails V166; INA238AIDGST Obsolete (Digi-Key 11:56:46Z)",
+      "alternates": [
+       "INA238AQDGSRQ1 (C2876521)",
+       "INA228AIDGSR (C2887910)"
+      ],
+      "driver_in_shared": "none (settings.c:87-95 names the INA228 only)",
+      "reason": "Fixed input; meets every value; fails rule 4 at both vendors, no rule-5 route. Reported to the owner",
+      "second_source_route": "none",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "INA238AQDGSRQ1",
+      "maker": "Texas Instruments (SLYS026A, INA238-Q1); S1 Texas Instruments; datasheets (all times 2026-09-29 UTC): SLYS026A https://www.ti.com/lit/ds/symlink/ina238-q1.pdf 15:22:45Z; SLYS021A https://www.ti.com/lit/ds/symlink/ina228.pdf 15:22:45Z",
+      "lcsc": "C2876521",
+      "package": "VSSOP-10 (DGS)",
+      "placements": 2,
+      "placements_basis": "fixed: one INA238 per path (F1)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "fixed part",
+        "required": "INA238",
+        "datasheet": "INA238-Q1, same die, DEVICE_ID 2381h",
+        "pass": true,
+        "source": "SLYS026A s7.6.1.17"
+       },
+       {
+        "name": "monitor footprint",
+        "required": "INA228/INA238 VSSOP-10",
+        "datasheet": "VSSOP-10 pinout as the INA228 (SLYS021A s7.6.1.20, DEVICE_ID 2281h)",
+        "pass": true,
+        "source": "SLYS026A pin table; SLYS021A"
+       },
+       {
+        "name": "bus and input rating",
+        "required": "67.2 V, under 85 V",
+        "datasheet": "VBUS, VIN common mode -0.3 to 85 V abs max",
+        "pass": true,
+        "source": "SLYS026A abs max"
+       },
+       {
+        "name": "trip inside full scale",
+        "required": "<= 40.96 mV",
+        "datasheet": "30.3 mV (BVR 1 %) at 150 A; 31.5 mV (WSBE 5 %) at 300 A",
+        "pass": true,
+        "source": "SLYS026A elec. char.; BVR; V30424"
+       },
+       {
+        "name": "current accuracy",
+        "required": "1.5 A at 150 A, 3 A at 300 A, 0.15 A at 15 A",
+        "datasheet": "after calibration: drift 0.5 uV + CMRR 140 dB over 5 to 67.2 V 6.22 uV + PSRR 1 uV/V x 0.198 V + half LSB 0.625 uV = 7.543 uV; gain drift 25 ppm/degC x 25 K. Path totals: BVR 0.50 A and 55.5 mA; WSBE 0.73 A and 89.3 mA",
+        "pass": true,
+        "source": "SLYS026A elec. char."
+       },
+       {
+        "name": "voltage accuracy",
+        "required": "1 %",
+        "datasheet": "offset 5 mV, drift 40 uV/degC, gain 0.1 %, drift 25 ppm/degC, LSB 3.125 mV: 0.32 % at 5 V, 0.17 % at 67.2 V",
+        "pass": true,
+        "source": "SLYS026A elec. char."
+       },
+       {
+        "name": "external-path resolution",
+        "required": "25 mA",
+        "datasheet": "1.25 uV LSB: 12.5 mA on 100 uOhm",
+        "pass": true,
+        "source": "SLYS026A elec. char."
+       },
+       {
+        "name": "reading window",
+        "required": "20 ms",
+        "datasheet": "1052 us x 2 inputs x 4 averages = 8.4 ms",
+        "pass": true,
+        "source": "SLYS026A TCT, ADC_CONFIG"
+       },
+       {
+        "name": "charge and energy",
+        "required": "CURRENT, POWER",
+        "datasheet": "07h CURRENT, 08h POWER; no accumulator",
+        "pass": true,
+        "source": "SLYS026A register map"
+       },
+       {
+        "name": "reading of record",
+        "required": "I2C",
+        "datasheet": "I2C, VIH 1.2 V",
+        "pass": true,
+        "source": "SLYS026A pin table"
+       },
+       {
+        "name": "switch action",
+        "required": "none",
+        "datasheet": "ALERT open-drain, may stay unconnected",
+        "pass": true,
+        "source": "SLYS026A pin table"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to 125 degC",
+        "pass": true,
+        "source": "SLYS026A elec. char."
+       },
+       {
+        "name": "logic and addresses",
+        "required": "3.3 V, >= 0x44",
+        "datasheet": "VS 2.7 to 5.5 V; 16 addresses 0x40 to 0x4F",
+        "pass": true,
+        "source": "SLYS026A address table"
+       }
+      ],
+      "jlcpcb": "stockCount 1, canPresaleNumber -115, expand, 5.0341 at the 10 break (currency not in the reading); vendors.py jlcpcb C2876521 exact match, 15:21:15Z, label Texas Instruments, VSSOP-10-0.5mm",
+      "digikey": "stock_available 5024; lead time 16 weeks; ProductStatus Active; vendors.py digikey INA238AQDGSRQ1 (https://api.digikey.com/products/v4/search/INA238AQDGSRQ1/productdetails), 09:56:16Z, cached",
+      "gate": "need 10, threshold 50: JLCPCB 1, presale -115: fail; Digi-Key 5024 >= 50: passes by rule 6 once bought into the personal library and its quantity stated",
+      "lifecycle": "Maker ACTIVE: https://www.ti.com/product/INA238-Q1 meta status and orderable INA238AQDGSRQ1 ACTIVE (15:32:41Z). TI policy: life cycles 'typically 10 to 15 years', no dated commitment (https://www.ti.com/quality-reliability/quality/product-life-cycle.html 15:33:01Z), not a gate (S5); notices: no public TI PCN listing, J-STD-048 with 12 months to last order (https://www.ti.com/quality-reliability/quality/product-change-notification.html 15:33:01Z), none marks this orderable. Introduced June 2020 (SLYS026 *), not flagged. Distributor: Digi-Key Active (09:56:16Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C2876521.html 15:34:51Z); all agree",
+      "second_source": "second-vendor: Digi-Key 5024 >= 50 (09:56:16Z)",
+      "alternates": [
+       "INA238AIDGSR (C2868250)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Same die and DEVICE_ID as the fixed input; the purchase route for it through the personal library. Replaces nothing",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "INA228AIDGSR (C2887910)",
+      "maker": "Texas Instruments",
+      "reason": "fixed part (INA228, SLYS021A 15:22:45Z); rule 4: JLCPCB 0/-174 (15:21:16Z), Digi-Key 0 (09:56:14Z)"
+     },
+     {
+      "part": "INA228AQDGSRQ1 (C5214669, C32710522)",
+      "maker": "Texas Instruments",
+      "reason": "fixed part; JLCPCB 67/-165 and 0 (15:21:23Z)"
+     },
+     {
+      "part": "INA237AIDGSR (C2864837), INA237AQDGSRQ1 (C2866496)",
+      "maker": "Texas Instruments",
+      "reason": "fixed part; current accuracy: CMRR 120 dB with Vos at VCM 0 V only (SBOSA20A s6.5, https://www.ti.com/lit/ds/symlink/ina237.pdf 15:22:46Z): 62.2 uV over 5 to 67.2 V, 0.31 A on 200 uOhm, 0.62 A on 100 uOhm, against 0.15 A"
+     },
+     {
+      "part": "INA238AIDGST (C4370984)",
+      "maker": "Texas Instruments",
+      "reason": "Digi-Key Obsolete (11:56:46Z, cached); JLCPCB 0 (15:21:19Z)"
+     },
+     {
+      "part": "INA239AIDGSR (C2876522), INA229AIDGSR (C2846803)",
+      "maker": "Texas Instruments",
+      "reason": "fixed part; SPI, not I2C (IOBoard.md:462); JLCPCB 0/-40, 0/-63 (15:21:54Z)"
+     },
+     {
+      "part": "INA236AIDDFR (C5443912)",
+      "maker": "Texas Instruments",
+      "reason": "bus rating: VCM to 48 V, abs max 50 V (SBOSA81D s6.1, s6.3, read by FU-B1's re-rank 12:49:39Z) against 67.2 V; fixed part"
+     }
+    ]
+   },
+   {
+    "function": "Onboard shunt",
+    "requirements": [
+     {
+      "name": "continuous current",
+      "value": "150 A continuous",
+      "source": "checkout e13f5f6: hardware/docs/Research.md:530 (F2)"
+     },
+     {
+      "name": "dissipation",
+      "value": "<= 4.5 W at 150 A, R <= 200 uOhm",
+      "source": "V169"
+     },
+     {
+      "name": "trip inside full scale",
+      "value": "150 A x R x (1 + tol) <= 40.96 mV",
+      "source": "V155"
+     },
+     {
+      "name": "power rating at the trip temperature",
+      "value": "rating at a 100 degC terminal >= (150 A)^2 x R",
+      "source": "V156"
+     },
+     {
+      "name": "accuracy share",
+      "value": "TCR x (element - 25 degC) + thermal EMF <= 1.3685 A at 150 A (terminal 100 degC) and <= 102.9 mA at 15 A (25 K): V166 less the INA238's 131.5 mA and 47.1 mA (PSRR included). EMF taken over the element's own rise; where unstated, the coefficient the margin holds is given",
+      "source": "V156, V166, V168; SLYS025B s5.5"
+     },
+     {
+      "name": "Kelvin sense",
+      "value": "four-terminal or Kelvin pad layout",
+      "source": "SLYS025B s7.4.1; checkout e13f5f6: hardware/docs/IOBoard.md:468"
+     },
+     {
+      "name": "ambient range",
+      "value": "0 to 50 degC",
+      "source": "V168"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "BVR-Z-R0002-1.0",
+      "maker": "Isabellenhuette (BVR Issue 12-September-2024); S2; datasheets (all times 2026-09-29 UTC): BVR https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BVR.pdf 15:22:43Z; BAS https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BAS.pdf 15:22:42Z",
+      "lcsc": "C6869644",
+      "package": "4026 SMD, four-terminal, ZERANIN 30",
+      "placements": 1,
+      "placements_basis": "fixed: one onboard shunt (IOBoard.md:419-421)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "continuous current",
+        "required": "150 A",
+        "datasheet": "up to 245 A (0.2 mOhm)",
+        "pass": true,
+        "source": "BVR features"
+       },
+       {
+        "name": "dissipation",
+        "required": "<= 4.5 W",
+        "datasheet": "0.2 mOhm: 4.5 W",
+        "pass": true,
+        "source": "BVR p2"
+       },
+       {
+        "name": "trip inside full scale",
+        "required": "<= 40.96 mV",
+        "datasheet": "1 %: 30.3 mV",
+        "pass": true,
+        "source": "BVR technical data"
+       },
+       {
+        "name": "power rating at the trip temperature",
+        "required": ">= 4.5 W at 100 degC",
+        "datasheet": "P>100 degC 6 W",
+        "pass": true,
+        "source": "BVR p2"
+       },
+       {
+        "name": "accuracy share",
+        "required": "<= 1.3685 A; <= 102.9 mA",
+        "datasheet": "TCR 0 +/- 20 ppm/K (20 to 60 degC only); Rthi 4 K/W, element 118 degC: 279 mA; EMF not in the BVR sheet, 1 uV/K for ZERANIN 30 (BAS sheet) x 18 K = 90 mA; 369 mA. At 15 A 8.4 mA. Margin holds to 12 uV/K",
+        "pass": true,
+        "source": "BVR p2; BAS technical data; BVR Issue BVR-2011-11-02 (ZERANIN 30), https://web.archive.org/web/20130507090849id_/http://www.isabellenhuette.de/fileadmin/content/praezisions-leistungswiderstaende/BVR.PDF 15:29:26Z"
+       },
+       {
+        "name": "Kelvin sense",
+        "required": "four-terminal",
+        "datasheet": "four terminal-configuration",
+        "pass": true,
+        "source": "BVR features"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-65 to +170 degC",
+        "pass": true,
+        "source": "BVR technical data"
+       }
+      ],
+      "jlcpcb": "stockCount 359, canPresaleNumber 354, expand, 2.0306 at the 1 break (currency not in the reading); vendors.py jlcpcb C6869644 exact match, 15:21:26Z, label Isabellenhuette, 4026",
+      "digikey": "stock_available 11190; lead time 18 weeks; ProductStatus Active; vendors.py digikey BVR-Z-R0002-1.0 (https://api.digikey.com/products/v4/search/BVR-Z-R0002-1.0/productdetails), 10:20:01Z, cached",
+      "gate": "need 5, threshold 50: 359, presale 354: pass",
+      "lifecycle": "Maker status not read: https://www.isabellenhuette.com/solutions/products/bvr HTTP 200, no status in the body (15:30:06Z); reported. Longevity: none published (product page; https://www.isabellenhuette.com/company/quality 15:34:43Z), not a gate (S5); notices: none listed on the live site, the old discontinuations page answers 404 (https://www.isabellenhuette.de/en/precision-and-power-resistors/standard-products/discontinuations/ 15:29:51Z). PTN_BVR_01 (2013-October) ends BVR-Z-R0002-2.0, not -1.0 (https://web.archive.org/web/20160818013650id_/http://www.isabellenhuette.de/uploads/media/PTN_BVR_01.pdf 15:29:15Z). Introduced: BVR series Issue 08/11/2001 (https://web.archive.org/web/20030830182309id_/http://www.isabellenhuette.de:80/pdf/passiv/bvr.pdf 15:29:13Z); BVR-Z-R0002 listed in Issue BVR-2011-11-02: since November 2011 at the latest, not flagged. Distributor: Digi-Key Active (10:20:01Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C6869644.html 15:34:52Z)",
+      "second_source": "second-vendor: Digi-Key 11190 >= 50 (10:20:01Z)",
+      "alternates": [],
+      "driver_in_shared": "none (passive)",
+      "reason": "Widest margin (path 0.50 A of 1.5 A), four-terminal, largest second-vendor stock",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "BVE-M-R0002-1.0",
+      "maker": "Isabellenhuette (BVE Issue 17-July-2025); S2; datasheets (all times 2026-09-29 UTC): BVE https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BVE.pdf 15:22:44Z; BAS https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BAS.pdf 15:22:42Z",
+      "lcsc": "C466575",
+      "package": "5930 SMD, two terminals, MANGANIN",
+      "placements": 1,
+      "placements_basis": "fixed: one onboard shunt",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "continuous current",
+        "required": "150 A",
+        "datasheet": "(10 W / 0.2 mOhm)^1/2 = 224 A at 100 degC",
+        "pass": true,
+        "source": "BVE p3"
+       },
+       {
+        "name": "dissipation",
+        "required": "<= 4.5 W",
+        "datasheet": "0.2 mOhm: 4.5 W",
+        "pass": true,
+        "source": "BVE p3"
+       },
+       {
+        "name": "trip inside full scale",
+        "required": "<= 40.96 mV",
+        "datasheet": "1 %: 30.3 mV",
+        "pass": true,
+        "source": "BVE technical data"
+       },
+       {
+        "name": "power rating at the trip temperature",
+        "required": ">= 4.5 W at 100 degC",
+        "datasheet": "P>100 degC 10 W",
+        "pass": true,
+        "source": "BVE p3"
+       },
+       {
+        "name": "accuracy share",
+        "required": "<= 1.3685 A; <= 102.9 mA",
+        "datasheet": "TCR 50 +/- 50 ppm/K (20 to 60 degC); Rthi 3 K/W, element 113.5 degC: 1327.5 mA; at 15 A 37.5 mA. EMF not in the BVE sheet: the 41 mA left hold 0.61 uV/K; the maker's MANGANIN 0.6 uV/K (BAS sheet) leaves 0.5 mA",
+        "pass": true,
+        "source": "BVE p3; BAS technical data"
+       },
+       {
+        "name": "Kelvin sense",
+        "required": "Kelvin pads",
+        "datasheet": "two terminals; sense pads at the pad inner edges (SLYS025B s7.4.1)",
+        "pass": true,
+        "source": "BVE pcb-layout proposal"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-65 to +170 degC",
+        "pass": true,
+        "source": "BVE technical data"
+       }
+      ],
+      "jlcpcb": "stockCount 2490, canPresaleNumber 2489, expand, 1.0251 at the 1 break (currency not in the reading); vendors.py jlcpcb C466575 exact match, 15:21:27Z, label Isabellenhuette, 5930",
+      "digikey": "stock_available 103; lead time 18 weeks; ProductStatus Active; vendors.py digikey BVE-M-R0002-1.0 (https://api.digikey.com/products/v4/search/BVE-M-R0002-1.0/productdetails), 10:01:52Z, cached",
+      "gate": "need 5, threshold 50: 2490, presale 2489: pass",
+      "lifecycle": "Maker status not read: https://www.isabellenhuette.com/solutions/products/bve HTTP 200, no status (15:30:07Z); reported. Longevity: none published (product page; https://www.isabellenhuette.com/company/quality 15:34:43Z), not a gate (S5); notices: none listed on the live site, the old discontinuations page answers 404 (https://www.isabellenhuette.de/en/precision-and-power-resistors/standard-products/discontinuations/ 15:29:51Z). Introduced: Issue 17-July-2025 only, no history: at the latest 14 months ago, not flagged. Distributor: Digi-Key Active (10:01:52Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C466575.html 15:34:52Z)",
+      "second_source": "second-vendor: Digi-Key 103 >= 50 (10:01:52Z)",
+      "alternates": [],
+      "driver_in_shared": "none (passive)",
+      "reason": "Passes the stated terms with a second vendor; below the BVR because TCR uses 0.885 % of 0.912 % and the unstated EMF could take the rest",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "WSLP2726L2000FEA",
+      "maker": "Vishay Dale (30179); S1 Vishay; datasheets (all times 2026-09-29 UTC): V30179 https://www.vishay.com/docs/30179/wslp2726.pdf 15:22:44Z",
+      "lcsc": "C1518132",
+      "package": "2726 SMD, two terminals",
+      "placements": 1,
+      "placements_basis": "fixed: one onboard shunt",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "continuous current",
+        "required": "150 A",
+        "datasheet": "(12 W / 0.2 mOhm)^1/2 = 245 A",
+        "pass": true,
+        "source": "V30179 elec. spec."
+       },
+       {
+        "name": "dissipation",
+        "required": "<= 4.5 W",
+        "datasheet": "4.5 W",
+        "pass": true,
+        "source": "V30179"
+       },
+       {
+        "name": "trip inside full scale",
+        "required": "<= 40.96 mV",
+        "datasheet": "1 %: 30.3 mV",
+        "pass": true,
+        "source": "V30179"
+       },
+       {
+        "name": "power rating at the trip temperature",
+        "required": ">= 4.5 W at 100 degC",
+        "datasheet": "12 W at a 100 degC terminal",
+        "pass": true,
+        "source": "V30179 note 2"
+       },
+       {
+        "name": "accuracy share",
+        "required": "<= 1.3685 A; <= 102.9 mA",
+        "datasheet": "component TCR +/-75 ppm/degC (0 to 150 degC); 3 K/W, element 113.5 degC: 995.6 mA; EMF < 3 uV/degC x 13.5 K = 202.5 mA; 1198 mA. At 15 A 30.1 mA",
+        "pass": true,
+        "source": "V30179 technical spec., thermal table"
+       },
+       {
+        "name": "Kelvin sense",
+        "required": "Kelvin pads",
+        "datasheet": "two terminals; sense pads at the pad inner edges",
+        "pass": true,
+        "source": "V30179 dimensions"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-65 to +170 degC",
+        "pass": true,
+        "source": "V30179"
+       }
+      ],
+      "jlcpcb": "stockCount 480, canPresaleNumber 475, expand, 3.9815 at the 1 break (currency not in the reading); vendors.py jlcpcb C1518132 exact match, 15:21:29Z, label Vishay Intertech, 2726",
+      "digikey": "stock_available 0; lead time 27 weeks; ProductStatus Active; vendors.py digikey WSLP2726L2000FEA (https://api.digikey.com/products/v4/search/WSLP2726L2000FEA/productdetails), 10:01:50Z, cached",
+      "gate": "need 5, threshold 50: 480, presale 475: pass",
+      "lifecycle": "Maker status not read: https://www.vishay.com/en/product/30179/ HTTP 200, no status (15:30:09Z); reported. Longevity: none published (https://www.vishay.com/en/quality/ links only the PCN search, 15:34:42Z), not a gate (S5). Introduced: PCN-DR-00014-2018-Rev-0 (2018-08-20) names WSLP2726: over 8 years. Notices: no obsolescence notice names WSLP2726 (https://www.vishay.com/en/quality/pcn-search/ 15:30:09Z, 2417 notices). Distributor: Digi-Key Active (10:01:50Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C1518132.html 15:34:52Z)",
+      "second_source": "none: Digi-Key 0; no same-footprint 0.2 mOhm alternate with stock",
+      "alternates": [],
+      "driver_in_shared": "none (passive)",
+      "reason": "Passes with stated TCR and EMF; last for no second source",
+      "second_source_route": "none",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "CSS2H-3920R-L200FE (C4126121), CSS2H-3920R-L200F (C2073640)",
+      "maker": "Bourns",
+      "reason": "accuracy not shown: +/-100 ppm/degC, no element-to-terminal thermal resistance (CSS2H-3920 REV. 01/26, read by FU-B1's P2 12:01:38Z)"
+     },
+     {
+      "part": "WSBS8518, WSBM8518, CSM2F, BAS, WSBE busbars on the board",
+      "maker": "Vishay, Bourns, Isabellenhuette",
+      "reason": "rule 4 at JLCPCB: all 0 to 7 (C1525723 and C20250835 re-read 15:21:47Z, 15:21:48Z; the rest by FU-B1's P2 11:55:39Z to 12:11:41Z)"
+     },
+     {
+      "part": "WSLP5931L2000FEA, WSLP5931L1000FEA, WSLP3921L2000FEA",
+      "maker": "Vishay Dale",
+      "reason": "accuracy share: TCR +/-150 to +300 ppm/degC (30176, read by T3's P2 09:49:59Z): 1.3 % or more against 0.912 %"
+     },
+     {
+      "part": "PU3921FKNP90U2L (C2084587)",
+      "maker": "YAGEO",
+      "reason": "accuracy share: +/-175 ppm/degC x 88.5 K = 1.55 %"
+     },
+     {
+      "part": "BVS-Z-R0002-1.0, CSS2H-5930R-L200F, PSR500HTQFB0L10",
+      "maker": "Isabellenhuette, Bourns, ROHM",
+      "reason": "rule 4: JLCPCB 0 (T3's P2 09:48:45Z)"
+     },
+     {
+      "part": "Milliohm, Shenzhen Yezhan, Yohey, SART, RALEC, RESI shunts",
+      "maker": "not on S1 or S2",
+      "reason": "rule 2"
+     }
+    ]
+   },
+   {
+    "function": "Onboard shunt temperature sensor",
+    "requirements": [
+     {
+      "name": "watched temperature",
+      "value": "the sensor the over-temperature action watches",
+      "source": "V157"
+     },
+     {
+      "name": "trip temperature",
+      "value": "reads 100 degC within range and accuracy",
+      "source": "V156"
+     },
+     {
+      "name": "range",
+      "value": "0 to >= 100 degC",
+      "source": "V170"
+     },
+     {
+      "name": "accuracy",
+      "value": "+/-2 degC at 3.3 V +/-3 %",
+      "source": "V170"
+     },
+     {
+      "name": "interface",
+      "value": "3.3 V I2C on the coprocessor's bus",
+      "source": "checkout e13f5f6: hardware/docs/IOBoard.md:54, :462"
+     },
+     {
+      "name": "board ambient",
+      "value": "0 to 50 degC",
+      "source": "V168"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "MCP9808T-E/MS",
+      "maker": "Microchip (DS20005095B); S1 Microchip; datasheets (all times 2026-09-29 UTC): DS20005095B https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/MCP9808-0.5C-Maximum-Accuracy-Digital-Temperature-Sensor-Data-Sheet-DS20005095B.pdf 15:32:19Z",
+      "lcsc": "C129490",
+      "package": "MSOP-8",
+      "placements": 1,
+      "placements_basis": "fixed: one sensor (IOBoard.md:422)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "watched temperature",
+        "required": "beside the shunt",
+        "datasheet": "digital I2C sensor placed beside the shunt",
+        "pass": true,
+        "source": "DS20005095B DC char., Table 3-2"
+       },
+       {
+        "name": "trip temperature",
+        "required": "100 degC",
+        "datasheet": "+/-0.5 degC max at 100 degC",
+        "pass": true,
+        "source": "DS20005095B DC char."
+       },
+       {
+        "name": "range",
+        "required": "0 to 100 degC",
+        "datasheet": "-40 to 125 degC",
+        "pass": true,
+        "source": "DS20005095B DC char."
+       },
+       {
+        "name": "accuracy",
+        "required": "+/-2 degC",
+        "datasheet": "+/-0.5 degC max -20 to 100 degC at 3.3 V, lifetime drift included; PSR -0.1 degC/V typ",
+        "pass": true,
+        "source": "DS20005095B DC char."
+       },
+       {
+        "name": "interface",
+        "required": "3.3 V I2C",
+        "datasheet": "VDD 2.7 to 5.5 V; 0x18 to 0x1F",
+        "pass": true,
+        "source": "DS20005095B DC char., Table 3-2"
+       },
+       {
+        "name": "board ambient",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to 125 degC",
+        "pass": true,
+        "source": "DS20005095B DC char."
+       }
+      ],
+      "jlcpcb": "stockCount 769, canPresaleNumber 718, expand, 2.3018 at the 1 break (currency not in the reading); vendors.py jlcpcb C129490 exact match, 15:21:31Z, label Microchip Tech, MSOP-8",
+      "digikey": "stock_available 21589; lead time 4 weeks; ProductStatus Active; vendors.py digikey MCP9808T-E/MS (https://api.digikey.com/products/v4/search/MCP9808T-E/MS/productdetails), 10:21:59Z, cached",
+      "gate": "need 5, threshold 50: 769, presale 718: pass",
+      "lifecycle": "Maker 'Status: In Production' (https://www.microchip.com/en-us/product/mcp9808 15:33:00Z). Longevity: no discontinuation with business in the past three years, no date (https://www.microchip.com/en-us/support/quality/product-longevity 15:33:01Z), not a gate. Introduced Revision A, October 2011, not flagged. Notices: PCN search needs a POST, not read. Distributor: Digi-Key Active (10:21:59Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C129490.html 15:34:53Z)",
+      "second_source": "second-vendor: Digi-Key 21589 >= 50 (10:21:59Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "+/-0.5 degC with a second vendor; addresses outside the 0x40 to 0x4F monitor block (among passing parts only the PCT2075 can also be set outside it)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "TMP116AIDRVR",
+      "maker": "Texas Instruments (SBOS740A); S1; datasheets (all times 2026-09-29 UTC): SBOS740A https://www.ti.com/lit/ds/symlink/tmp116.pdf 15:22:47Z",
+      "lcsc": "C2691433",
+      "package": "WSON-6 (DRV) 2 x 2 mm",
+      "placements": 1,
+      "placements_basis": "fixed: one sensor",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "watched temperature",
+        "required": "beside the shunt",
+        "datasheet": "digital I2C sensor placed beside the shunt",
+        "pass": true,
+        "source": "SBOS740A s1"
+       },
+       {
+        "name": "trip temperature",
+        "required": "100 degC",
+        "datasheet": "+/-0.25 degC max at 100 degC",
+        "pass": true,
+        "source": "SBOS740A s6.5"
+       },
+       {
+        "name": "range",
+        "required": "0 to 100 degC",
+        "datasheet": "-55 to 125 degC",
+        "pass": true,
+        "source": "SBOS740A s6.5"
+       },
+       {
+        "name": "accuracy",
+        "required": "+/-2 degC",
+        "datasheet": "+/-0.25 degC max -40 to 105 degC at 3.0 to 3.6 V",
+        "pass": true,
+        "source": "SBOS740A s6.5"
+       },
+       {
+        "name": "interface",
+        "required": "3.3 V I2C",
+        "datasheet": "V+ 1.9 to 5.5 V; 0x48 to 0x4B",
+        "pass": true,
+        "source": "SBOS740A Table 2"
+       },
+       {
+        "name": "board ambient",
+        "required": "0 to 50 degC",
+        "datasheet": "-55 to 125 degC",
+        "pass": true,
+        "source": "SBOS740A s6.5"
+       }
+      ],
+      "jlcpcb": "stockCount 2399, canPresaleNumber 2323, expand, 3.1271 at the 1 break (currency not in the reading); vendors.py jlcpcb C2691433 exact match, 15:21:35Z, label Texas Instruments, WSON-6-EP(2x2)",
+      "digikey": "stock_available 37390; lead time 16 weeks; ProductStatus Active; vendors.py digikey TMP116AIDRVR (https://api.digikey.com/products/v4/search/TMP116AIDRVR/productdetails), 12:37:20Z, cached",
+      "gate": "need 5, threshold 50: 2399, presale 2323: pass",
+      "lifecycle": "Maker ACTIVE: https://www.ti.com/product/TMP116 meta status and orderable TMP116AIDRVR ACTIVE (15:32:42Z). TI policy: life cycles 'typically 10 to 15 years', no dated commitment (https://www.ti.com/quality-reliability/quality/product-life-cycle.html 15:33:01Z), not a gate (S5); notices: no public TI PCN listing, J-STD-048 with 12 months to last order (https://www.ti.com/quality-reliability/quality/product-change-notification.html 15:33:01Z), none marks this orderable. Introduced May 2017 (SBOS740 original), not flagged. Distributor: Digi-Key Active (12:37:20Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C2691433.html 15:34:53Z); all agree",
+      "second_source": "second-vendor: Digi-Key 37390 >= 50 (12:37:20Z)",
+      "alternates": [
+       "TMP116NAIDRVR (C182074), JLCPCB 1085 (15:21:37Z)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "+/-0.25 degC, stock at both vendors; below the MCP9808 for addresses inside the monitor block",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "TMP112AIDRLR",
+      "maker": "Texas Instruments (SBOS473L); S1; Digi-Key also lists a UMW part under this number, not this part; datasheets (all times 2026-09-29 UTC): SBOS473L https://www.ti.com/lit/ds/symlink/tmp112.pdf 15:32:19Z",
+      "lcsc": "C28927",
+      "package": "SOT-563 (DRL)",
+      "placements": 1,
+      "placements_basis": "fixed: one sensor",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "watched temperature",
+        "required": "beside the shunt",
+        "datasheet": "digital I2C sensor placed beside the shunt",
+        "pass": true,
+        "source": "SBOS473L s1"
+       },
+       {
+        "name": "trip temperature",
+        "required": "100 degC",
+        "datasheet": "+/-1.0 degC max at 100 degC",
+        "pass": true,
+        "source": "SBOS473L features"
+       },
+       {
+        "name": "range",
+        "required": "0 to 100 degC",
+        "datasheet": "-40 to 125 degC",
+        "pass": true,
+        "source": "SBOS473L features"
+       },
+       {
+        "name": "accuracy",
+        "required": "+/-2 degC",
+        "datasheet": "+/-0.5 degC 0 to 65 degC, +/-1.0 degC -40 to 125 degC",
+        "pass": true,
+        "source": "SBOS473L features"
+       },
+       {
+        "name": "interface",
+        "required": "3.3 V I2C",
+        "datasheet": "supply 1.4 to 3.6 V (3.399 V fits); 0x48 to 0x4B",
+        "pass": true,
+        "source": "SBOS473L features, Table 7-4"
+       },
+       {
+        "name": "board ambient",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to 125 degC",
+        "pass": true,
+        "source": "SBOS473L features"
+       }
+      ],
+      "jlcpcb": "stockCount 43320, canPresaleNumber 42557, expand, 0.2941 at the 1 break (currency not in the reading); vendors.py jlcpcb C28927 exact match, 15:35:07Z, label Texas Instruments, SOT-563",
+      "digikey": "Texas Instruments product: stock_available 35787; lead time 16 weeks; Active; vendors.py digikey TMP112AIDRLR (duplicate, answered by keyword search https://api.digikey.com/products/v4/search/keyword), 10:01:59Z, cached",
+      "gate": "need 5, threshold 50: 43320, presale 42557: pass",
+      "lifecycle": "Maker ACTIVE: https://www.ti.com/product/TMP112 meta status and orderable TMP112AIDRLR ACTIVE (15:32:43Z). TI policy: life cycles 'typically 10 to 15 years', no dated commitment (https://www.ti.com/quality-reliability/quality/product-life-cycle.html 15:33:01Z), not a gate (S5); notices: no public TI PCN listing, J-STD-048 with 12 months to last order (https://www.ti.com/quality-reliability/quality/product-change-notification.html 15:33:01Z), none marks this orderable. Introduced March 2009 (SBOS473), not flagged. Distributor: Digi-Key Active (10:01:59Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C28927.html 15:34:54Z); all agree",
+      "second_source": "second-vendor: Digi-Key 35787 >= 50 (10:01:59Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "+/-1 degC, largest stock at both vendors; below the +/-0.5 degC parts",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "TMP117AIDRVR (C699536), TMP117NAIDRVR (C2876169)",
+      "maker": "Texas Instruments",
+      "reason": "pass every value (+/-0.2 degC); not recorded: Digi-Key 0 for both, each the other's alternate, which needs a fourth record; JLCPCB 41228 and 1371 (15:21:32Z, 15:21:34Z)"
+     },
+     {
+      "part": "PCT2075D,118, ADT7410TRZ-REEL7, LM75BD,118",
+      "maker": "NXP, Analog Devices",
+      "reason": "pass; not recorded: 11-bit and 330 at JLCPCB; highest price (4.7563); no margin (+/-2 degC)"
+     },
+     {
+      "part": "TMP275AIDR, TMP1075DR",
+      "maker": "Texas Instruments",
+      "reason": "Digi-Key 0, no qualified alternate: no second source"
+     },
+     {
+      "part": "TMP117MAIDRVR",
+      "maker": "Texas Instruments",
+      "reason": "range: orderable 0 to 85 degC"
+     },
+     {
+      "part": "TMP75AIDR, LM75BIMMX-3/NOPB",
+      "maker": "Texas Instruments",
+      "reason": "accuracy: +/-3 degC at 100 degC; +/-2 degC at nominal 3.3 V only"
+     },
+     {
+      "part": "UMW and MSKSEMI LM75/TMP75 copies",
+      "maker": "UMW, MSKSEMI",
+      "reason": "rule 2"
+     }
+    ]
+   },
+   {
+    "function": "External shunt",
+    "requirements": [
+     {
+      "name": "type",
+      "value": "busbar, off the board",
+      "source": "checkout e13f5f6: hardware/docs/IOBoard.md:423-424"
+     },
+     {
+      "name": "resistance",
+      "value": "50 to 136 uOhm",
+      "source": "V162"
+     },
+     {
+      "name": "highest current and duty",
+      "value": "300 A peak 30 s within rating at 50 degC",
+      "source": "V163, V164, V168"
+     },
+     {
+      "name": "accuracy share",
+      "value": "TCR x (shunt - 25 degC) + thermal EMF <= 2.737 A at 300 A (50 degC ambient + steady rise) and <= 65.2 mA at 15 A (25 K + rise): V166 less the INA238's 262.9 mA and 84.8 mA on 100 uOhm (PSRR included). EMF taken over the shunt's own rise",
+      "source": "V166, V168; SLYS025B s5.5"
+     },
+     {
+      "name": "Kelvin sense",
+      "value": "defined sense points",
+      "source": "checkout e13f5f6: hardware/docs/IOBoard.md:426"
+     },
+     {
+      "name": "vendor",
+      "value": "counted at Digi-Key; LCSC none",
+      "source": "rules 1, 3"
+     },
+     {
+      "name": "ambient range",
+      "value": "0 to 50 degC",
+      "source": "V168"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "WSBE8518L1000JKA2",
+      "maker": "Vishay Dale (30424); S1 Vishay; datasheets (all times 2026-09-29 UTC): V30424 https://www.vishay.com/docs/30424/wsbe.pdf 15:22:42Z",
+      "lcsc": "none",
+      "package": "busbar 85 x 18 x 3 mm, 7 mm holes 60 mm apart, sense pins at positions 1 and 4 of a 4-way header (A2), bulk",
+      "placements": 1,
+      "placements_basis": "fixed: one external shunt (IOBoard.md:423)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "type",
+        "required": "busbar",
+        "datasheet": "Power Metal Strip busbar",
+        "pass": true,
+        "source": "V30424 p1"
+       },
+       {
+        "name": "resistance",
+        "required": "50 to 136 uOhm",
+        "datasheet": "100 uOhm +/-5 %",
+        "pass": true,
+        "source": "V30424 elec. spec."
+       },
+       {
+        "name": "highest current and duty",
+        "required": "9 W at 300 A",
+        "datasheet": "36 W at 70 degC, 0 at 170 degC",
+        "pass": true,
+        "source": "V30424 derating p6"
+       },
+       {
+        "name": "accuracy share",
+        "required": "<= 2.737 A; <= 65.2 mA",
+        "datasheet": "TCR +/-10 ppm/degC (-20 to 150 degC); EMF < 1.25 uV/degC; 2.78 K/W, 25 K at 9 W. 300 A: 150 + 312.5 = 462.5 mA; 15 A: 4.6 mA",
+        "pass": true,
+        "source": "V30424 technical spec., derating"
+       },
+       {
+        "name": "Kelvin sense",
+        "required": "sense points",
+        "datasheet": "A2 sense pins 1 and 4",
+        "pass": true,
+        "source": "V30424 p6"
+       },
+       {
+        "name": "vendor",
+        "required": "Digi-Key",
+        "datasheet": "541-WSBE8518L1000JKA2-ND",
+        "pass": true,
+        "source": "Digi-Key reading"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-65 to +170 degC",
+        "pass": true,
+        "source": "V30424"
+       }
+      ],
+      "jlcpcb": "not a gate (off board); C20250835 reads 0/0 (15:21:48Z)",
+      "digikey": "stock_available 418 (Bulk); lead time 48 weeks; Active; vendors.py digikey WSBE8518L1000JKA2 from keyword search 'WSBE8518' (https://api.digikey.com/products/v4/search/keyword), 10:17:26Z, cached",
+      "gate": "need 5, threshold 50: Digi-Key 418: pass",
+      "lifecycle": "Maker status not read: https://www.vishay.com/en/product/30424/ HTTP 200, no status (15:30:08Z); reported. Longevity: none published (https://www.vishay.com/en/quality/ links only the PCN search, 15:34:42Z), not a gate (S5). Introduced: wsbeseries.pdf archived 2023-06-03 (https://web.archive.org/cdx/search/cdx?url=vishay.com/docs/30424/* 15:31:11Z): over 3 years. Notices: none ends WSBE; PTN-DR-00014-2024 ends WSBM and points to WSBE8518 (https://www.vishay.com/en/quality/pcn-search/ 15:30:09Z, 2417 notices). Distributor: Digi-Key Active (10:17:26Z)",
+      "second_source": "none: JKB2 10, JK no pins, JTA2 not listed at Digi-Key (10:17:26Z)",
+      "alternates": [
+       "WSBE8518L1000JKB2 (Digi-Key 10)"
+      ],
+      "driver_in_shared": "none (passive)",
+      "reason": "Best accuracy (path 0.73 A and 89.3 mA), 418 in stock; no second source, reported",
+      "second_source_route": "none",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "BAS-M-R0001-R-5.0",
+      "maker": "Isabellenhuette (BAS Issue 08-September-2026); S2; datasheets (all times 2026-09-29 UTC): BAS https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BAS.pdf 15:22:42Z",
+      "lcsc": "none",
+      "package": "busbar 84 x 20 x 3 mm, 8.3 mm holes 60 mm apart, version R sense holes 3.62 mm, 18.2 mm apart, MANGANIN",
+      "placements": 1,
+      "placements_basis": "fixed: one external shunt",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "type",
+        "required": "busbar",
+        "datasheet": "busbar shunt, bolt-mounted",
+        "pass": true,
+        "source": "BAS p1-2"
+       },
+       {
+        "name": "resistance",
+        "required": "50 to 136 uOhm",
+        "datasheet": "0.1 mOhm, 5 %",
+        "pass": true,
+        "source": "BAS p2"
+       },
+       {
+        "name": "highest current and duty",
+        "required": "9 W at 300 A",
+        "datasheet": "36 W at 70 degC, 15 W at 140 degC terminal; 350 A continuous",
+        "pass": true,
+        "source": "BAS p2-3"
+       },
+       {
+        "name": "accuracy share",
+        "required": "<= 2.737 A; <= 65.2 mA",
+        "datasheet": "TCR 0 +/- 50 ppm/K (20 to 60 degC only); Rthi 2 K/W, 18 K; EMF 0.6 uV/K. Terminal at 50 degC: 645 + 108 = 753 mA at 300 A; 19.0 mA at 15 A. Terminal temperature at 300 A is set by round 3's busbars, not known; +15 mA per K",
+        "pass": true,
+        "source": "BAS technical data, p2-3 curves"
+       },
+       {
+        "name": "Kelvin sense",
+        "required": "sense points",
+        "datasheet": "version R sense holes for wires",
+        "pass": true,
+        "source": "BAS p2"
+       },
+       {
+        "name": "vendor",
+        "required": "Digi-Key",
+        "datasheet": "4423-BAS-M-R0001-R-5.0-ND",
+        "pass": true,
+        "source": "Digi-Key reading"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to +170 degC",
+        "pass": true,
+        "source": "BAS"
+       }
+      ],
+      "jlcpcb": "not a gate (off board); C19842020 reads 0 (FU-B1's P2)",
+      "digikey": "stock_available 1273 (Bag); lead time 18 weeks; Active; vendors.py digikey-search 'BAS-M-R0001' --limit 50 (https://api.digikey.com/products/v4/search/keyword), 15:25:26Z",
+      "gate": "need 5, threshold 50: Digi-Key 1273: pass",
+      "lifecycle": "Maker status not read: https://www.isabellenhuette.com/solutions/products/bas HTTP 200, no status (15:30:07Z); reported. Longevity: none published (product page; https://www.isabellenhuette.com/company/quality 15:34:43Z), not a gate (S5); notices: none listed on the live site, the old discontinuations page answers 404 (https://www.isabellenhuette.de/en/precision-and-power-resistors/standard-products/discontinuations/ 15:29:51Z). Introduced: Issue BAS-2012-10-12 lists version R 0.1 mOhm (https://web.archive.org/web/20130507121724id_/http://www.isabellenhuette.de/fileadmin/content/praezisions-leistungswiderstaende/BAS.PDF 15:32:08Z): over 13 years. Distributor: Digi-Key Active (15:25:26Z)",
+      "second_source": "none: BAS-M-R0001-AR-5.0 0; E, AE, L have no sense holes; ABU, Z, G, A05, A07 not in the datasheet (15:25:26Z)",
+      "alternates": [
+       "BAS-M-R0001-AR-5.0 (Digi-Key 0)"
+      ],
+      "driver_in_shared": "none (passive)",
+      "reason": "Wide margin (path 1.02 A, 103.9 mA), largest stock; below the WSBE: TCR stated 20 to 60 degC only, terminal temperature unknown. No second source",
+      "second_source_route": "none",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "WSBS8536L1000JK60",
+      "maker": "Vishay Dale (30411); S1 Vishay; datasheets (all times 2026-09-29 UTC): V30411 https://www.vishay.com/docs/30411/wsbs8536-60.pdf 15:22:42Z",
+      "lcsc": "none",
+      "package": "busbar 85 x 36 x 3 mm, 10 mm holes 60 mm apart, plated sense pins 21.894 mm apart, bulk",
+      "placements": 1,
+      "placements_basis": "fixed: one external shunt",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "type",
+        "required": "busbar",
+        "datasheet": "Power Metal Strip busbar",
+        "pass": true,
+        "source": "V30411 p1"
+       },
+       {
+        "name": "resistance",
+        "required": "50 to 136 uOhm",
+        "datasheet": "100 uOhm +/-5 %",
+        "pass": true,
+        "source": "V30411"
+       },
+       {
+        "name": "highest current and duty",
+        "required": "9 W at 300 A",
+        "datasheet": "50 W at 70 degC, 0 at 170 degC",
+        "pass": true,
+        "source": "V30411 derating"
+       },
+       {
+        "name": "accuracy share",
+        "required": "<= 2.737 A; <= 65.2 mA",
+        "datasheet": "TCR +/-165 ppm/degC; EMF < 3 uV/degC; 2 K/W, 18 K. 300 A: 2128.5 + 540 = 2668.5 mA (margin 68.6 mA); 15 A: 63.4 mA (margin 1.9 mA)",
+        "pass": true,
+        "source": "V30411 technical spec., features, derating"
+       },
+       {
+        "name": "Kelvin sense",
+        "required": "sense points",
+        "datasheet": "code 60: two plated sense pins",
+        "pass": true,
+        "source": "V30411"
+       },
+       {
+        "name": "vendor",
+        "required": "Digi-Key",
+        "datasheet": "541-WSBS8536L1000JK60-ND",
+        "pass": true,
+        "source": "Digi-Key reading"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-65 to +170 degC",
+        "pass": true,
+        "source": "V30411"
+       }
+      ],
+      "jlcpcb": "not read (off board)",
+      "digikey": "stock_available 76 (Bulk); lead time 48 weeks; Active; from keyword search 'WSBS8536' (https://api.digikey.com/products/v4/search/keyword), 10:17:38Z, cached",
+      "gate": "need 5, threshold 50: Digi-Key 76: pass",
+      "lifecycle": "Maker status not read: https://www.vishay.com/en/product/30411/ HTTP 200, no status (15:30:09Z); reported. Longevity: none published (https://www.vishay.com/en/quality/ links only the PCN search, 15:34:42Z), not a gate (S5). Introduced: series sheet 30395 archived 2021-07-17 (https://web.archive.org/cdx/search/cdx?url=vishay.com/docs/30395/* 15:31:32Z): over 5 years. Notices: none names WSBS8536 (https://www.vishay.com/en/quality/pcn-search/ 15:30:09Z, 2417 notices). Distributor: Digi-Key Active (10:17:38Z)",
+      "second_source": "none: JK20 17, JK80 10, JT60 not listed (10:17:38Z)",
+      "alternates": [
+       "WSBS8536L1000JK20 (Digi-Key 17)"
+      ],
+      "driver_in_shared": "none (passive)",
+      "reason": "Passes with 1.9 mA and 68.6 mA margins; last: thinnest margins, no second source, larger body",
+      "second_source_route": "none",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "WSBS8518L1000JK20, WSBS8518L1000JT20",
+      "maker": "Vishay Dale",
+      "reason": "accuracy share (V166): TCR +/-175 ppm/degC, EMF < 3 uV/degC, 2.78 K/W (30341, https://www.vishay.com/docs/30341/wsbs8518-20.pdf 15:22:42Z): 15 A 84.8 + 65.8 + 1.9 = 152.5 mA > 150 mA (150.6 without EMF); 300 A 3.64 A > 3 A. Digi-Key 67 and 83"
+     },
+     {
+      "part": "WSBS8518L1250...20 (125 uOhm)",
+      "maker": "Vishay Dale",
+      "reason": "accuracy at 300 A: 0.985 % TCR plus 0.75 A EMF over 3 A"
+     },
+     {
+      "part": "50 uOhm shunts (WSBS/WSBE/BAS-M-R00005)",
+      "maker": "Vishay Dale, Isabellenhuette",
+      "reason": "V166 at 15 A: INA238 share alone 160.2 mA on 50 uOhm"
+     },
+     {
+      "part": "WSBS8518 and WSBE8518L1000JK without pins; BAS E, AE, EU; BAS ABU, Z, G, A05, A07",
+      "maker": "Vishay Dale, Isabellenhuette",
+      "reason": "Kelvin sense: no sense points, or versions not in the datasheet (BAS p2; Digi-Key 15:25:26Z)"
+     },
+     {
+      "part": "WSBE8518L1000JKB2 (10), BAS-M-R0001-AR-5.0 (0), WSBS8536L1000JK20 (17), WSBS8536L1250JK80 (29)",
+      "maker": "Vishay Dale, Isabellenhuette",
+      "reason": "rule 4 at Digi-Key, under 50"
+     },
+     {
+      "part": "WSBM8518",
+      "maker": "Vishay Dale",
+      "reason": "lifecycle: PTN-DR-00014-2024-REV-0 ends WSBM (https://www.vishay.com/en/quality/pcn-search/ 15:30:09Z, 2417 notices)"
+     },
+     {
+      "part": "HVIBSSE8518L100CAN",
+      "maker": "Vishay Dale",
+      "reason": "Digi-Key 12; a CAN sensor module, not a shunt"
+     },
+     {
+      "part": "CSM2F-8518-L100J01",
+      "maker": "Bourns",
+      "reason": "accuracy not shown: +/-125 ppm/degC, no thermal resistance or EMF (read by FU-B1's P2 11:58:45Z)"
+     },
+     {
+      "part": "ARCS6918",
+      "maker": "RESI",
+      "reason": "rule 2"
+     }
+    ]
+   },
+   {
+    "function": "External shunt sense input",
+    "requirements": [
+     {
+      "name": "common mode",
+      "value": "leads at up to 67.2 V to ground",
+      "source": "V177"
+     },
+     {
+      "name": "bus-voltage connection",
+      "value": "VBUS from the pack-side lead ahead of the filter",
+      "source": "V178"
+     },
+     {
+      "name": "input withstand",
+      "value": "85 V to ground and 85 V between leads, either polarity",
+      "source": "V179"
+     },
+     {
+      "name": "Kelvin and filter",
+      "value": "Kelvin, RC filter on IN+ and IN-",
+      "source": "checkout e13f5f6: hardware/docs/IOBoard.md:426"
+     },
+     {
+      "name": "monitor",
+      "value": "the external path's INA238",
+      "source": "F1"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "INA238AIDGSR",
+      "maker": "Texas Instruments (SLYS025B); S1; datasheets (all times 2026-09-29 UTC): SLYS025B https://www.ti.com/lit/ds/symlink/ina238.pdf 15:22:44Z",
+      "lcsc": "C2868250",
+      "package": "VSSOP-10 (DGS)",
+      "placements": 1,
+      "placements_basis": "fixed: the external path's INA238 of F1; need counted under Motor monitor",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "common mode",
+        "required": "67.2 V",
+        "datasheet": "VCM -0.3 to 85 V; CMRR 140 dB",
+        "pass": true,
+        "source": "SLYS025B s5.1, s5.5"
+       },
+       {
+        "name": "bus-voltage connection",
+        "required": "VBUS pin",
+        "datasheet": "VBUS pin 8, 0 to 85 V, 0.8 to 1.2 MOhm",
+        "pass": true,
+        "source": "SLYS025B Table 4-1, s5.5"
+       },
+       {
+        "name": "input withstand",
+        "required": "85 V between leads",
+        "datasheet": "differential abs max -40 to 40 V, 5 mA per pin; 'Do not use values greater than 100 Ohm for RFILTER' (85 V at 5 mA needs 17 kOhm)",
+        "pass": false,
+        "source": "SLYS025B s5.1, s7.1.4"
+       },
+       {
+        "name": "Kelvin and filter",
+        "required": "Kelvin, RC",
+        "datasheet": "Kelvin or 4-wire (s7.4.1); RC filter <= 100 Ohm (s7.1.4)",
+        "pass": true,
+        "source": "SLYS025B"
+       },
+       {
+        "name": "monitor",
+        "required": "INA238",
+        "datasheet": "DEVICE_ID 2381h",
+        "pass": true,
+        "source": "SLYS025B s6.6.1.17"
+       }
+      ],
+      "jlcpcb": "stockCount 0, canPresaleNumber -99, expand, 3.9864 at the 10 break (currency not in the reading); vendors.py jlcpcb C2868250 exact match, 15:21:13Z, label Texas Instruments, VSSOP-10-0.5mm",
+      "digikey": "stock_available 0; lead time 16 weeks; ProductStatus Active; vendors.py digikey INA238AIDGSR (https://api.digikey.com/products/v4/search/INA238AIDGSR/productdetails), 02:34:14Z, cached",
+      "gate": "need 10 under Motor monitor: stock 0, presale -99: fail; fixed input, reported",
+      "lifecycle": "Maker ACTIVE: https://www.ti.com/product/INA238 meta status and orderable INA238AIDGSR ACTIVE (15:32:40Z). TI policy: life cycles 'typically 10 to 15 years', no dated commitment (https://www.ti.com/quality-reliability/quality/product-life-cycle.html 15:33:01Z), not a gate (S5); notices: no public TI PCN listing, J-STD-048 with 12 months to last order (https://www.ti.com/quality-reliability/quality/product-change-notification.html 15:33:01Z), none marks this orderable. Introduced January 2021 (SLYS025 *), not flagged. Distributor: Digi-Key Active (02:34:14Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C2868250.html 15:34:51Z); all agree",
+      "second_source": "none: Digi-Key 0; INA238AQDGSRQ1 fails rule 4 at JLCPCB (1, presale -115); INA228AIDGSR 0/-174 and Digi-Key 0; INA237 fails V166; INA238AIDGST Obsolete (Digi-Key 11:56:46Z)",
+      "alternates": [
+       "INA238AQDGSRQ1 (C2876521)",
+       "INA228AIDGSR (C2887910)"
+      ],
+      "driver_in_shared": "none (settings.c:87-95 names the INA228 only)",
+      "reason": "The only part F1 allows; fails V179 (+/-40 V against 85 V) and the gate. Reported. V179 needs a clamp across IN+ and IN- under 40 V and a current limit in each lead, filter still <= 100 Ohm; round 2 selects sensor-connector protection",
+      "second_source_route": "none",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "INA238AQDGSRQ1, INA228AIDGSR, INA237AIDGSR",
+      "maker": "Texas Instruments",
+      "reason": "input withstand: differential abs max -40 to 40 V (SLYS026A, SLYS021A, SBOSA20A s6.1); INA228 and INA237 are not the INA238"
+     }
+    ]
+   },
+   {
+    "function": "Port current monitor",
+    "requirements": [
+     {
+      "name": "channels",
+      "value": "20, one per port",
+      "source": "checkout e13f5f6: hardware/docs/IOBoard.md:64, :351"
+     },
+     {
+      "name": "common-mode range",
+      "value": "to 8.7 V",
+      "source": "V171"
+     },
+     {
+      "name": "input withstand",
+      "value": "20 V",
+      "source": "V171"
+     },
+     {
+      "name": "full scale",
+      "value": ">= 6.35 A on the port shunt",
+      "source": "V172"
+     },
+     {
+      "name": "channel refresh",
+      "value": "each channel within 5 ms",
+      "source": "V173"
+     },
+     {
+      "name": "accuracy",
+      "value": "+/-50 mA to 3.0 A with the port shunt, uncalibrated, 0 to 50 degC, 3.3 V +/-3 %",
+      "source": "V174, V168"
+     },
+     {
+      "name": "noise",
+      "value": "<= 20 mA peak-to-peak",
+      "source": "V174"
+     },
+     {
+      "name": "alert output",
+      "value": "not required",
+      "source": "V175"
+     },
+     {
+      "name": "direction",
+      "value": "0 A to + full scale",
+      "source": "V180"
+     },
+     {
+      "name": "logic level",
+      "value": "3.3 V logic at every pin reaching the RP2354B",
+      "source": "checkout e13f5f6: hardware/docs/IOBoard.md:54, :351"
+     },
+     {
+      "name": "addresses",
+      "value": "fit on two buses beside the INA238 at >= 0x44",
+      "source": "checkout e13f5f6: hardware/docs/IOBoard.md:351, :464"
+     },
+     {
+      "name": "ambient range",
+      "value": "0 to 50 degC",
+      "source": "V168"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "INA3221AIRGVR",
+      "maker": "Texas Instruments (SBOS576C); S1; datasheets (all times 2026-09-29 UTC): SBOS576C https://www.ti.com/lit/ds/symlink/ina3221.pdf 15:22:46Z",
+      "lcsc": "C181255",
+      "package": "VQFN-16 (RGV) 4 x 4 mm",
+      "placements": 7,
+      "placements_basis": "fixed: 7 INA3221 for 20 ports (IOBoard.md:351)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channels",
+        "required": "20",
+        "datasheet": "3 a part, 21",
+        "pass": true,
+        "source": "SBOS576C s1"
+       },
+       {
+        "name": "common-mode range",
+        "required": "8.7 V",
+        "datasheet": "0 to 26 V, CMR 110 dB",
+        "pass": true,
+        "source": "SBOS576C s6.5"
+       },
+       {
+        "name": "input withstand",
+        "required": "20 V",
+        "datasheet": "abs max 26 V",
+        "pass": true,
+        "source": "SBOS576C s6.1"
+       },
+       {
+        "name": "full scale",
+        "required": "6.35 A",
+        "datasheet": "163.84 mV: 16.4 A",
+        "pass": true,
+        "source": "SBOS576C s6.5"
+       },
+       {
+        "name": "channel refresh",
+        "required": "5 ms",
+        "datasheet": "3 x 1.21 ms = 3.63 ms",
+        "pass": true,
+        "source": "SBOS576C s6.5"
+       },
+       {
+        "name": "accuracy",
+        "required": "50 mA",
+        "datasheet": "at 3 A: offset 8.0 + drift 1.25 + CMR 3.8 + PSRR 0.15 (15 uV/V typ, no max) + gain 7.5 + gain drift 3.75 + half LSB 2.0 = 26.4 mA; with ERJ-6CWDR010V 49.3 mA; holds PSRR to 80 uV/V",
+        "pass": true,
+        "source": "SBOS576C s6.5"
+       },
+       {
+        "name": "noise",
+        "required": "20 mA p-p",
+        "datasheet": "no max; Fig. 7-7 typ 80 uV p-p, 8 mA",
+        "pass": true,
+        "source": "SBOS576C Fig. 7-7"
+       },
+       {
+        "name": "alert output",
+        "required": "none",
+        "datasheet": "outputs unused",
+        "pass": true,
+        "source": "SBOS576C pin table"
+       },
+       {
+        "name": "direction",
+        "required": "0 to +FS",
+        "datasheet": "bidirectional",
+        "pass": true,
+        "source": "SBOS576C s6.5"
+       },
+       {
+        "name": "logic level",
+        "required": "3.3 V",
+        "datasheet": "VS 2.7 to 5.5 V; VIH 0.7 VS; VOL 0.4 V at 3 mA",
+        "pass": true,
+        "source": "SBOS576C s6.3, s6.5"
+       },
+       {
+        "name": "addresses",
+        "required": ">= 0x44 free",
+        "datasheet": "0x40 to 0x43; INA238 at 0x44+",
+        "pass": true,
+        "source": "SBOS576C Table 7-1"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to 125 degC",
+        "pass": true,
+        "source": "SBOS576C s6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 8704, canPresaleNumber 8561, expand, 1.8957 at the 30 break (need 35) (currency not in the reading); vendors.py jlcpcb C181255 exact match, 15:21:39Z, label Texas Instruments, QFN-16-EP(4x4)",
+      "digikey": "stock_available 67241; lead time 16 weeks; ProductStatus Active; vendors.py digikey INA3221AIRGVR (https://api.digikey.com/products/v4/search/INA3221AIRGVR/productdetails), 10:02:04Z, cached",
+      "gate": "need 5 x 7 = 35, threshold 175: 8704, presale 8561: pass",
+      "lifecycle": "Maker ACTIVE: https://www.ti.com/product/INA3221 meta status and orderable INA3221AIRGVR ACTIVE (15:32:41Z). TI policy: life cycles 'typically 10 to 15 years', no dated commitment (https://www.ti.com/quality-reliability/quality/product-life-cycle.html 15:33:01Z), not a gate (S5); notices: no public TI PCN listing, J-STD-048 with 12 months to last order (https://www.ti.com/quality-reliability/quality/product-change-notification.html 15:33:01Z), none marks this orderable. Introduced May 2012 (SBOS576); the page's OBSOLETE mark is another orderable's, not flagged. Distributor: Digi-Key Active (10:02:04Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C181255.html 15:34:54Z); all agree",
+      "second_source": "second-vendor: Digi-Key 67241 >= 175 (10:02:04Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Owner's seed; passes with 7 parts, thinnest margin (49.3 of 50 mA, on a typical PSRR)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "INA226AIDGSR",
+      "maker": "Texas Instruments (SBOS547C); S1; datasheets (all times 2026-09-29 UTC): SBOS547C https://www.ti.com/lit/ds/symlink/ina226.pdf 15:22:46Z",
+      "lcsc": "C49851",
+      "package": "VSSOP-10 (DGS)",
+      "placements": 20,
+      "placements_basis": "fixed: one channel a port, 20 parts (rule 4)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channels",
+        "required": "20",
+        "datasheet": "1 a part, 20",
+        "pass": true,
+        "source": "SBOS547C s1"
+       },
+       {
+        "name": "common-mode range",
+        "required": "8.7 V",
+        "datasheet": "0 to 36 V, CMRR 126 dB",
+        "pass": true,
+        "source": "SBOS547C s5.5"
+       },
+       {
+        "name": "input withstand",
+        "required": "20 V",
+        "datasheet": "abs max 40 V",
+        "pass": true,
+        "source": "SBOS547C s5.1"
+       },
+       {
+        "name": "full scale",
+        "required": "6.35 A",
+        "datasheet": "81.92 mV: 8.19 A",
+        "pass": true,
+        "source": "SBOS547C s5.5"
+       },
+       {
+        "name": "channel refresh",
+        "required": "5 ms",
+        "datasheet": "1.1 ms a part",
+        "pass": true,
+        "source": "SBOS547C s5.5"
+       },
+       {
+        "name": "accuracy",
+        "required": "50 mA",
+        "datasheet": "offset 1.0 + drift 0.25 + CMRR 0.6 + PSRR 0.02 (typ) + gain 3.0 + gain drift 3.75 + half LSB 0.13 = 8.75 mA; with ERJ-6CWDR010V 31.7 mA",
+        "pass": true,
+        "source": "SBOS547C s5.5"
+       },
+       {
+        "name": "noise",
+        "required": "20 mA p-p",
+        "datasheet": "no max; Fig. 6-2 typ 10 uV p-p, 1 mA",
+        "pass": true,
+        "source": "SBOS547C Fig. 6-2"
+       },
+       {
+        "name": "alert output",
+        "required": "none",
+        "datasheet": "ALERT unused",
+        "pass": true,
+        "source": "SBOS547C pin table"
+       },
+       {
+        "name": "direction",
+        "required": "0 to +FS",
+        "datasheet": "bidirectional",
+        "pass": true,
+        "source": "SBOS547C s5.5"
+       },
+       {
+        "name": "logic level",
+        "required": "3.3 V",
+        "datasheet": "VS 2.7 to 5.5 V; VIH 0.7 VS; VOL 0.4 V",
+        "pass": true,
+        "source": "SBOS547C s5.3, s5.5"
+       },
+       {
+        "name": "addresses",
+        "required": ">= 0x44 free",
+        "datasheet": "0x40 to 0x4F, 10 a bus",
+        "pass": true,
+        "source": "SBOS547C address table"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to 125 degC",
+        "pass": true,
+        "source": "SBOS547C s5.3"
+       }
+      ],
+      "jlcpcb": "stockCount 48110, canPresaleNumber 45641, expand, 0.4663 at the 100 break (currency not in the reading); vendors.py jlcpcb C49851 exact match, 15:21:40Z, label Texas Instruments, VSSOP-10",
+      "digikey": "stock_available 81470; lead time 16 weeks; ProductStatus Active; vendors.py digikey INA226AIDGSR (https://api.digikey.com/products/v4/search/INA226AIDGSR/productdetails), 10:02:06Z, cached",
+      "gate": "need 100, threshold 500: 48110, presale 45641: pass",
+      "lifecycle": "Maker ACTIVE: https://www.ti.com/product/INA226 meta status and orderable INA226AIDGSR ACTIVE (15:32:41Z). TI policy: life cycles 'typically 10 to 15 years', no dated commitment (https://www.ti.com/quality-reliability/quality/product-life-cycle.html 15:33:01Z), not a gate (S5); notices: no public TI PCN listing, J-STD-048 with 12 months to last order (https://www.ti.com/quality-reliability/quality/product-change-notification.html 15:33:01Z), none marks this orderable. Introduced June 2011 (SBOS547), not flagged. Distributor: Digi-Key Active (10:02:06Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C49851.html 15:34:54Z); all agree",
+      "second_source": "second-vendor: Digi-Key 81470 >= 500 (10:02:06Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Widest margin (31.7 mA), lowest price; 20 parts and 10 addresses a bus",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "INA237AIDGSR",
+      "maker": "Texas Instruments (SBOSA20A); S1; datasheets (all times 2026-09-29 UTC): SBOSA20A https://www.ti.com/lit/ds/symlink/ina237.pdf 15:22:46Z",
+      "lcsc": "C2864837",
+      "package": "VSSOP-10 (DGS)",
+      "placements": 20,
+      "placements_basis": "fixed: one channel a port, 20 parts (rule 4)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channels",
+        "required": "20",
+        "datasheet": "1 a part, 20",
+        "pass": true,
+        "source": "SBOSA20A s1"
+       },
+       {
+        "name": "common-mode range",
+        "required": "8.7 V",
+        "datasheet": "-0.3 to 85 V, CMRR 120 dB",
+        "pass": true,
+        "source": "SBOSA20A s6.5"
+       },
+       {
+        "name": "input withstand",
+        "required": "20 V",
+        "datasheet": "abs max 85 V",
+        "pass": true,
+        "source": "SBOSA20A s6.1"
+       },
+       {
+        "name": "full scale",
+        "required": "6.35 A",
+        "datasheet": "163.84 mV: 16.4 A",
+        "pass": true,
+        "source": "SBOSA20A s6.5"
+       },
+       {
+        "name": "channel refresh",
+        "required": "5 ms",
+        "datasheet": "1052 us x 4 = 4.2 ms",
+        "pass": true,
+        "source": "SBOSA20A Table 8-2"
+       },
+       {
+        "name": "accuracy",
+        "required": "50 mA",
+        "datasheet": "offset 5.0 + drift 0.05 + CMRR 0.87 + PSRR 0.02 + gain 9.0 + gain drift 3.75 + half LSB 0.25 = 18.9 mA; with ERJ-6CWDR010V 41.8 mA",
+        "pass": true,
+        "source": "SBOSA20A s6.5"
+       },
+       {
+        "name": "noise",
+        "required": "20 mA p-p",
+        "datasheet": "no max; typ ENOB 15.7, 6.2 uV p-p, 0.62 mA",
+        "pass": true,
+        "source": "SBOSA20A Table 8-2"
+       },
+       {
+        "name": "alert output",
+        "required": "none",
+        "datasheet": "ALERT unused",
+        "pass": true,
+        "source": "SBOSA20A pin table"
+       },
+       {
+        "name": "direction",
+        "required": "0 to +FS",
+        "datasheet": "bidirectional",
+        "pass": true,
+        "source": "SBOSA20A s6.5"
+       },
+       {
+        "name": "logic level",
+        "required": "3.3 V",
+        "datasheet": "VS 2.7 to 5.5 V; VIH 1.2 V; VOL 0.4 V",
+        "pass": true,
+        "source": "SBOSA20A s6.5"
+       },
+       {
+        "name": "addresses",
+        "required": ">= 0x44 free",
+        "datasheet": "0x40 to 0x4F, 10 a bus",
+        "pass": true,
+        "source": "SBOSA20A Table 7-2"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to 125 degC",
+        "pass": true,
+        "source": "SBOSA20A s6.5"
+       }
+      ],
+      "jlcpcb": "stockCount 5344, canPresaleNumber 5287, expand, 1.2395 at the 100 break (currency not in the reading); vendors.py jlcpcb C2864837 exact match, 15:21:18Z, label Texas Instruments, VSSOP-10-0.5mm",
+      "digikey": "stock_available 27742; lead time 16 weeks; ProductStatus Active; vendors.py digikey INA237AIDGSR (https://api.digikey.com/products/v4/search/INA237AIDGSR/productdetails), 09:56:11Z, cached",
+      "gate": "need 100, threshold 500: 5344, presale 5287: pass",
+      "lifecycle": "Maker ACTIVE: https://www.ti.com/product/INA237 meta status and orderable INA237AIDGSR ACTIVE (15:32:42Z). TI policy: life cycles 'typically 10 to 15 years', no dated commitment (https://www.ti.com/quality-reliability/quality/product-life-cycle.html 15:33:01Z), not a gate (S5); notices: no public TI PCN listing, J-STD-048 with 12 months to last order (https://www.ti.com/quality-reliability/quality/product-change-notification.html 15:33:01Z), none marks this orderable. Introduced February 2021 (SBOSA20 *), not flagged. Distributor: Digi-Key Active (09:56:11Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C2864837.html 15:34:55Z); all agree",
+      "second_source": "second-vendor: Digi-Key 27742 >= 500 (09:56:11Z)",
+      "alternates": [
+       "INA238AIDGSR (same registers)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Passes (41.8 mA), shares the INA238's registers; below the INA226 on margin and price",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "PAC1954T-E/4MX, PAC1954T-E/J6CX, PAC1934T-I/JQ",
+      "maker": "Microchip",
+      "reason": "accuracy not shown: gain maximum at 25 degC only (DS20006539F, DS20005850E, read by T3)"
+     },
+     {
+      "part": "PAC1944T-E/4MX, PAC1944T-E/J6CX, INA4235AIYBJR, INA230AIRGTR, INA230AIDGSR, INA260AIPWR",
+      "maker": "Microchip, Texas Instruments",
+      "reason": "rule 4 at JLCPCB (read by T3's P3 and FU-B1's P3)"
+     },
+     {
+      "part": "INA219BIDR, INA220AIDGSR",
+      "maker": "Texas Instruments",
+      "reason": "noise not shown: no noise limit or figure"
+     },
+     {
+      "part": "ACS70331EESATR-2P5U3 (held 20), ACS70331EESATR-005B3 (held 10), ACS711KLCTR-12AB-T (held 5)",
+      "maker": "Allegro",
+      "reason": "full scale 2.5 A and 5 A against 6.35 A; analogue outputs for 20 channels against 8 ADC inputs; held quantities under 100"
+     }
+    ]
+   },
+   {
+    "function": "Port shunt",
+    "requirements": [
+     {
+      "name": "value",
+      "value": "10 mOhm",
+      "source": "checkout e13f5f6: hardware/docs/IOBoard.md:351"
+     },
+     {
+      "name": "power",
+      "value": ">= 0.403 W at 50 degC",
+      "source": "V172, V168"
+     },
+     {
+      "name": "tolerance and TCR share",
+      "value": "tolerance + TCR x (25 K + self-heating) <= 23.6 mA (0.787 %) at 3 A: 50 mA less the INA3221's 26.4 mA; EMF not stated by any maker (1 uV is 0.1 mA)",
+      "source": "V174, V168"
+     },
+     {
+      "name": "placements",
+      "value": "20 a board",
+      "source": "rule 4"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "ERJ-6CWDR010V",
+      "maker": "Panasonic (AOA0000C313); S2; datasheets (all times 2026-09-29 UTC): AOA0000C313 https://industrial.panasonic.com/cdbs/www-data/pdf/RDN0000/AOA0000C313.pdf 15:22:47Z",
+      "lcsc": "C236284",
+      "package": "0805",
+      "placements": 20,
+      "placements_basis": "fixed: one a port (IOBoard.md:351)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "value",
+        "required": "10 mOhm",
+        "datasheet": "10 mOhm",
+        "pass": true,
+        "source": "AOA0000C313 ratings"
+       },
+       {
+        "name": "power",
+        "required": "0.403 W",
+        "datasheet": "0.5 W at 70 degC, 0 at 125 degC",
+        "pass": true,
+        "source": "AOA0000C313 derating"
+       },
+       {
+        "name": "tolerance and TCR share",
+        "required": "<= 23.6 mA",
+        "datasheet": "+/-0.5 %, +/-75 ppm/K, 9.9 K self-heating: 0.762 %, 22.9 mA",
+        "pass": true,
+        "source": "AOA0000C313"
+       },
+       {
+        "name": "placements",
+        "required": "20",
+        "datasheet": "20",
+        "pass": true,
+        "source": "rule 4"
+       }
+      ],
+      "jlcpcb": "stockCount 4062, canPresaleNumber 4026, expand, 0.2924 at the 100 break (currency not in the reading); vendors.py jlcpcb C236284 exact match, 15:21:42Z, label PANASONIC, 0805",
+      "digikey": "stock_available 12302; lead time 15 weeks; ProductStatus Active; vendors.py digikey ERJ-6CWDR010V (https://api.digikey.com/products/v4/search/ERJ-6CWDR010V/productdetails), 10:02:12Z, cached",
+      "gate": "need 100, threshold 500: 4062, presale 4026: pass",
+      "lifecycle": "Maker Active: model search 'New (0) Active (1) NRFND (0)' (https://industrial.panasonic.com/ww/products/pt/current-sensing-chip-resistors/models?model_number=ERJ6CWDR010V 15:33:01Z). Longevity: none published (https://industrial.panasonic.com/ww/support 404, 15:34:42Z), not a gate. Introduced by February 2018 (JLCPCB copy of the sheet), not flagged. Notices: EOL search 'EOL scheduled (0) Discontinued products (0)' (https://industrial.panasonic.com/ww/eol/pt/current-sensing-chip-resistors/models?model_number=ERJ6CW 15:33:03Z). Distributor: Digi-Key Active (10:02:12Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C236284.html 15:34:55Z)",
+      "second_source": "second-vendor: Digi-Key 12302 >= 500 (10:02:12Z)",
+      "alternates": [],
+      "driver_in_shared": "none (passive)",
+      "reason": "Passes with the INA3221 (22.9 of 23.6 mA); only +/-0.5 % part with stock at both vendors",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "PE1206DRM470R01L",
+      "maker": "YAGEO (PE_L V13); S2 Yageo; datasheets (all times 2026-09-29 UTC): Yageo PE_L V13, https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8755496999599132672 15:35:14Z",
+      "lcsc": "C4144857",
+      "package": "1206",
+      "placements": 20,
+      "placements_basis": "fixed: one a port",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "value",
+        "required": "10 mOhm",
+        "datasheet": "10 mOhm",
+        "pass": true,
+        "source": "Yageo PE_L"
+       },
+       {
+        "name": "power",
+        "required": "0.403 W",
+        "datasheet": "1 W at 70 degC (code 47), 0 at 170 degC",
+        "pass": true,
+        "source": "Yageo PE_L Table 2"
+       },
+       {
+        "name": "tolerance and TCR share",
+        "required": "<= 23.6 mA",
+        "datasheet": "D +/-0.5 %, M +/-75 ppm/degC, 9 K: 0.755 %, 22.7 mA",
+        "pass": true,
+        "source": "Yageo PE_L Table 2"
+       },
+       {
+        "name": "placements",
+        "required": "20",
+        "datasheet": "20",
+        "pass": true,
+        "source": "rule 4"
+       }
+      ],
+      "jlcpcb": "stockCount 1221, canPresaleNumber 1203, expand, 0.132 at the 50 break (currency not in the reading); vendors.py jlcpcb C4144857 exact match, 15:21:43Z, label YAGEO, 1206",
+      "digikey": "stock_available 0; lead time 27 weeks; ProductStatus Active; vendors.py digikey PE1206DRM470R01L (https://api.digikey.com/products/v4/search/PE1206DRM470R01L/productdetails), 10:02:10Z, cached",
+      "gate": "need 100, threshold 500: 1221, presale 1203: pass",
+      "lifecycle": "Maker status not read: yageogroup.com answers 200 for any path (P0); reported. Longevity, notices not read. Introduced PE Version 0 Feb. 10 2015, not flagged. Distributor: Digi-Key Active (10:02:10Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C4144857.html 15:34:55Z)",
+      "second_source": "alternate: PA1206DRE470R01Z, JLCPCB 1283/1274 (15:21:45Z); same 3.2 x 1.6 mm body, one 1206 land takes both",
+      "alternates": [
+       "PA1206DRE470R01Z (C20160275)"
+      ],
+      "driver_in_shared": "none (passive)",
+      "reason": "Passes (22.7 mA), twice the power; Digi-Key 0, second source by the PA1206 alternate",
+      "second_source_route": "alternate",
+      "second_source_part": "PA1206DRE470R01Z"
+     },
+     {
+      "rank": 3,
+      "part": "PA1206DRE470R01Z",
+      "maker": "YAGEO (PA V2); S2 Yageo; datasheets (all times 2026-09-29 UTC): Yageo PA V2, https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8604345029422952448 15:35:18Z",
+      "lcsc": "C20160275",
+      "package": "1206",
+      "placements": 20,
+      "placements_basis": "fixed: one a port",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "value",
+        "required": "10 mOhm",
+        "datasheet": "10 mOhm",
+        "pass": true,
+        "source": "Yageo PA"
+       },
+       {
+        "name": "power",
+        "required": "0.403 W",
+        "datasheet": "1 W at 70 degC (code 47), to 170 degC",
+        "pass": true,
+        "source": "Yageo PA Table 2"
+       },
+       {
+        "name": "tolerance and TCR share",
+        "required": "<= 23.6 mA",
+        "datasheet": "D +/-0.5 %, E +/-50 ppm/degC, 9 K: 0.67 %, 20.1 mA",
+        "pass": true,
+        "source": "Yageo PA Table 2"
+       },
+       {
+        "name": "placements",
+        "required": "20",
+        "datasheet": "20",
+        "pass": true,
+        "source": "rule 4"
+       }
+      ],
+      "jlcpcb": "stockCount 1283, canPresaleNumber 1274, expand, 0.1333 at the 50 break (currency not in the reading); vendors.py jlcpcb C20160275 exact match, 15:21:45Z, label YAGEO, 1206",
+      "digikey": "stock_available 0; lead time 31 weeks; ProductStatus Active; vendors.py digikey PA1206DRE470R01Z (https://api.digikey.com/products/v4/search/PA1206DRE470R01Z/productdetails), 10:02:15Z, cached",
+      "gate": "need 100, threshold 500: 1283, presale 1274: pass",
+      "lifecycle": "Maker status not read (yageogroup.com, P0); reported. Longevity, notices not read. Introduced PA history from Jun. 10 2021, not flagged. Distributor: Digi-Key Active (10:02:15Z); JLCPCB expand; LCSC 'normal' (https://www.lcsc.com/product-detail/C20160275.html 15:34:56Z)",
+      "second_source": "alternate: PE1206DRM470R01L, JLCPCB 1221/1203 (15:21:43Z)",
+      "alternates": [
+       "PE1206DRM470R01L (C4144857)"
+      ],
+      "driver_in_shared": "none (passive)",
+      "reason": "Widest TCR margin (20.1 mA); second source by the PE1206 alternate",
+      "second_source_route": "alternate",
+      "second_source_part": "PE1206DRM470R01L"
+     }
+    ],
+    "dropped": [
+     {
+      "part": "WSLP1206R0100FEA, WSL2512R0100FEA, PMR18EZPFU10L0, PA2512FKE7T0R01E, CRA2512-FZ-R010ELF, PE1206FRF7W0R01L",
+      "maker": "Vishay, ROHM, YAGEO, Bourns",
+      "reason": "tolerance: +/-1 % is 30 mA against 23.6 mA with the INA3221"
+     },
+     {
+      "part": "PE0603DRF570R01L",
+      "maker": "YAGEO",
+      "reason": "+/-100 ppm/degC in 0603: 0.93 % against 0.787 %"
+     },
+     {
+      "part": "WSLP1206R0100DEA, WSLP2512R0100DEA, PE2512DKE070R01L",
+      "maker": "Vishay, YAGEO",
+      "reason": "rule 4 at JLCPCB: 0, 1, 0 (FU-B1's P2 12:20:41Z)"
+     },
+     {
+      "part": "Ohmite, RESI, Shenzhen Yezhan parts",
+      "maker": "not on S2",
+      "reason": "rule 2"
+     }
+    ]
+   },
+   {
+    "function": "Servo rail monitor",
+    "requirements": [
+     {
+      "name": "required",
+      "value": "no rail monitor; the function takes no part",
+      "source": "V176"
+     }
+    ],
+    "shortlist": [],
+    "dropped": [
+     {
+      "part": "INA745AIRELR (C50400161), INA745BIRELR (C35213810)",
+      "maker": "Texas Instruments",
+      "reason": "the function takes no part (V176). JLCPCB 50/50 and 13274/13270 (15:21:51Z to 15:21:53Z)"
+     }
+    ]
+   }
+  ],
+  "report": [
+   {
+    "figure": "INA238 stock, fixed input",
+    "value": "JLCPCB C2868250 0, presale -99 against 50 (need 10); Digi-Key 0, 16 weeks, Active; not held: fails rule 4, reported, not replaced",
+    "source": "vendors.py jlcpcb C2868250 2026-09-29T15:21:13Z; vendors.py digikey INA238AIDGSR (https://api.digikey.com/products/v4/search/INA238AIDGSR/productdetails) 02:34:14Z cached"
+   },
+   {
+    "figure": "INA238 second source",
+    "value": "none by rule 5. Route through rule 6: INA238AQDGSRQ1 (same die) Digi-Key 5024, JLCPCB 1/-115. INA228AIDGSR 0/-174 and Digi-Key 0; INA237 fails V166; INA238AIDGST Obsolete",
+    "source": "vendors.py jlcpcb C2876521, C2887910 15:21:15Z-15:21:16Z; vendors.py digikey INA238AQDGSRQ1 09:56:16Z, INA228AIDGSR 09:56:14Z, INA238AIDGST 11:56:46Z"
+   },
+   {
+    "figure": "External sense input withstand",
+    "value": "INA238 fails V179: differential abs max +/-40 V, 5 mA a pin, against 85 V; RFILTER <= 100 Ohm rules out a 17 kOhm limit. Needs a clamp under 40 V across IN+ and IN- and a current limit per lead (round 2). Reported",
+    "source": "SLYS025B s5.1, s7.1.4, https://www.ti.com/lit/ds/symlink/ina238.pdf 2026-09-29T15:22:44Z"
+   },
+   {
+    "figure": "Motor overcurrent path for P5",
+    "value": "trip 150 A onboard, 300 A external, one reading; 1052 us x 2 x 4 averages = 8.4 ms inside the 20 ms poll; ALERT to no switch; detection to disarm <= 20 ms; pack switch opens 155 to 185 ms after the last heartbeat edge, all power switches within 200 ms",
+    "source": "SLYS025B s5.5, https://www.ti.com/lit/ds/symlink/ina238.pdf 15:22:44Z; V155, V158-V160; checkout e13f5f6 hardware/docs/IOBoard.md:57"
+   },
+   {
+    "figure": "Charge and energy conflict",
+    "value": "INA238 has no accumulator; IOBoard.md:417 conflicts with the fixed input; firmware integrates at 20 ms (V161)",
+    "source": "SLYS025B register map 15:22:44Z; checkout e13f5f6 hardware/docs/IOBoard.md:417"
+   },
+   {
+    "figure": "Parts on the ESC pack node for R3's clamp",
+    "value": "INA238 (both paths): VBUS, VIN+, VIN- -0.3 to 85 V abs max; differential +/-40 V",
+    "source": "SLYS025B s5.1, https://www.ti.com/lit/ds/symlink/ina238.pdf 15:22:44Z"
+   },
+   {
+    "figure": "Supply currents of R8 rank-1 parts for the 3.3 V rail",
+    "value": "INA238 1.1 mA max x 2; INA3221 450 uA max x 7 (25 degC only); MCP9808 400 uA max: 5.75 mA",
+    "source": "SLYS025B s5.5 (15:22:44Z); SBOS576C s6.5 (https://www.ti.com/lit/ds/symlink/ina3221.pdf 15:22:46Z); DS20005095B (15:32:19Z)"
+   },
+   {
+    "figure": "I2C addresses for P5",
+    "value": "MCP9808 0x18-0x1F; INA3221 0x40-0x43 (4 + 3 parts on two buses); INA238 0x44-0x4F; alternatives TMP116, TMP112 0x48-0x4B; INA226, INA237 0x40-0x4F, 10 a bus",
+    "source": "DS20005095B Table 3-2; SBOS576C Table 7-1; SLYS025B; SBOS740A Table 2; SBOS473L Table 7-4; SBOSA20A Table 7-2 (2026-09-29T15:22:44Z-15:32:19Z)"
+   },
+   {
+    "figure": "Temperature sensor addresses, corrected",
+    "value": "MCP9808 (0x18-0x1F) and PCT2075 (19 of 27 addresses outside 0x40-0x4F) can sit outside the monitor block; TMP116, TMP117, TMP112, ADT7410 take 0x48-0x4B, TMP275, LM75B 0x48-0x4F. The re-rank's 'only the MCP9808' left out the PCT2075",
+    "source": "DS20005095B Table 3-2 15:32:19Z; SBOS740A Table 2 15:22:47Z; PCT2075 Rev. 10.1 Table 5, https://www.nxp.com/docs/en/data-sheet/PCT2075.pdf (FU-B1 P2 11:58:12Z)"
+   },
+   {
+    "figure": "Port monitor timing for P5",
+    "value": "INA3221 3 x 1.21 ms = 3.63 ms per channel, inside 5 ms; 21 reads per 5 ms on two buses; sample to abort <= 5 ms; no alert GPIO",
+    "source": "SBOS576C s6.5, https://www.ti.com/lit/ds/symlink/ina3221.pdf 15:22:46Z; V173, V175"
+   },
+   {
+    "figure": "Port current accuracy budget",
+    "value": "INA3221 26.4 mA + ERJ-6CWDR010V 22.9 mA = 49.3 of 50 mA (PSRR typical only); INA226 31.7 mA; INA237 41.8 mA",
+    "source": "SBOS576C, SBOS547C, SBOSA20A (15:22:46Z); AOA0000C313 15:22:47Z"
+   },
+   {
+    "figure": "Onboard-path accuracy margin",
+    "value": "INA238 on 200 uOhm 131.5 mA at 150 A, 47.1 mA at 15 A (PSRR included). BVR 0.50 A and 55.5 mA; BVE 1.459 A before its unstated EMF (1.4995 A at the maker's MANGANIN figure); WSLP2726 1.33 A and 77.2 mA; limits 1.5 A and 150 mA",
+    "source": "SLYS025B 15:22:44Z; BVR 15:22:43Z; BVE 15:22:44Z; BAS 15:22:42Z; Vishay 30179 15:22:44Z (URLs in the records)"
+   },
+   {
+    "figure": "External-path accuracy margin",
+    "value": "INA238 on 100 uOhm 262.9 mA at 300 A, 84.8 mA at 15 A (PSRR included); EMF over the shunt's own rise. WSBE 0.73 A, 89.3 mA; BAS 1.02 A, 103.9 mA (terminal at ambient); WSBS8536 2.93 A, 148.1 mA; WSBS8518...20 fails: 3.64 A and 152.5 mA; 50 uOhm fails at 15 A (160.2 mA). No datasheet bounds the sense-junction difference",
+    "source": "SLYS025B; Vishay 30424, 30411, 30341 (15:22:42Z); BAS 15:22:42Z (URLs in the records)"
+   },
+   {
+    "figure": "External shunt second source",
+    "value": "none of the three passing shunts has one (WSBE JKB2 10; BAS AR 0; WSBS8536 JK20 17). Reported",
+    "source": "vendors.py digikey-search 'WSBE8518' 10:17:26Z, 'BAS-M-R0001' 2026-09-29T15:25:26Z, 'WSBS8536' 10:17:38Z (https://api.digikey.com/products/v4/search/keyword)"
+   },
+   {
+    "figure": "Onboard shunt dissipation and temperature",
+    "value": "4.5 W at 150 A; BVR 6 W at >100 degC, Rthi 4 K/W, element 118 degC at a 100 degC terminal",
+    "source": "BVR p2, https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BVR.pdf 15:22:43Z"
+   },
+   {
+    "figure": "External shunt dissipation and temperature",
+    "value": "9 W at 300 A for 30 s; WSBE 2.78 K/W, 75 degC at 50 degC ambient; BAS 18 K over its terminal, terminal set by round 3",
+    "source": "Vishay 30424 p6, https://www.vishay.com/docs/30424/wsbe.pdf 15:22:42Z; BAS p2 15:22:42Z"
+   },
+   {
+    "figure": "Current accuracy needs calibration",
+    "value": "shunt tolerances 1 % onboard, 5 % external exceed V166 uncalibrated; the Shunt setting takes 0.1 to 20 mOhm in 0.1 steps, so 50 uOhm or a calibrated value cannot be entered",
+    "source": "BVR, Vishay 30424 datasheets; checkout e13f5f6 shared/settings/settings.c:93-95"
+   },
+   {
+    "figure": "Servo rail monitor",
+    "value": "no part (V176)",
+    "source": "V176"
+   },
+   {
+    "figure": "Lifecycle not read, reported to the owner",
+    "value": "no status in the page body of Isabellenhuette bvr, bve, bas and Vishay 30424, 30411, 30179 pages; Yageo not read; Digi-Key Active for all. No longevity programme found at Isabellenhuette, Vishay or Panasonic (S5 needs none)",
+    "source": "https://www.isabellenhuette.com/solutions/products/bvr (2026-09-29T15:30:06Z); https://www.vishay.com/en/product/30424/ (15:30:08Z); https://www.vishay.com/en/quality/ (15:34:42Z)"
+   },
+   {
+    "figure": "BVR market introduction",
+    "value": "series Issue 08/11/2001; BVR-Z-R0002 in Issue BVR-2011-11-02: on the market since November 2011 at the latest; PTN_BVR_01 (2013) ended the -2.0 tolerance only",
+    "source": "web.archive.org copies read 2026-09-29T15:29:13Z-15:29:26Z (URLs in the BVR record)"
+   }
+  ]
+ }
+}

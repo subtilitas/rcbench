@@ -1,0 +1,306 @@
+{
+ "role": "rerank",
+ "category": "R7",
+ "label": "rerank-R7",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "functions": [
+   {
+    "function": "Pack charger",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "BQ25713RSNR",
+      "reason": "Unchanged from P2. Meets every Pack charger requirement value with a second source at Digi-Key; no P3 candidate qualifies to unseat it (the only P3 find for this function, the Renesas ISL9241, fails sourcing rule 4 outright).",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "BQ25703ARSNR",
+      "reason": "Unchanged from P2: same NVDC circuit and pins as rank 1 in its own firmware configuration, larger JLCPCB stock, second source at Digi-Key.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "BQ25723RSNR",
+      "reason": "Unchanged from P2: meets every value with 8 mV charge-voltage steps and its own IIN_HOST/VSYS_MIN codes, lowest JLCPCB stock of the three but still well above the gate.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "ISL9241IRTZ (C5657483) / ISL9241HRTZ-T (C6061854)",
+      "maker": "Renesas",
+      "reason": "Fails sourcing rule 4 (S4 stock gate, 50 units for 5 boards x 1 placement): the best-stocked LCSC rows read stockCount 10, canPresaleNumber 10 for both C5657483 and C6061854 (vendors.py jlcpcb, re-read 2026-09-29T17:13:45Z and 17:13:46Z), and the other two rows, C6644362 and C6968746, read stockCount 0 (re-read 17:13:48Z and 17:13:49Z). Digi-Key stock_available 0 for ISL9241IRTZ (P3's cached read, 15:54:51Z) gives no second-vendor route either. An NVDC buck-boost charger with an external P-channel/N-channel BATFET on the same architecture as the ranked parts, and S1 allows Renesas, so the family is otherwise a legitimate seed, but the stock gate ends its candidacy before its requirement values or lifecycle need checking."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "BQ25713RSNR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Cell balancing",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MAX17320G22+",
+      "reason": "Unchanged from P2. Balances autonomously from NVM at the required 50 mA average with RBAL sized for the top-cell corner; no P3 candidate qualifies to unseat it.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "BQ29209DRBR",
+      "reason": "Unchanged from P2: voltage-based automatic balancing, no firmware, reaches 50 mA only in its external mode.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "BQ40Z50RSMR-R2",
+      "reason": "Unchanged from P2: balances from data flash, needs external FETs and a sized series resistor to reach 50 mA, and its own chemistry profile for the P30B.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "ISL94212INZ (C3681518)",
+      "maker": "Renesas",
+      "reason": "Fails sourcing rule 4: stockCount 6, canPresaleNumber 6 at C3681518 (vendors.py jlcpcb, re-read 2026-09-29T17:13:54Z), and the only other jlcparts row, C123714 (ISL94212INZ-T), reads stockCount 0 (re-read 17:13:56Z); both well under the 50-unit S4 gate. Also needs a host controller over SPI to run its balance modes (not autonomous from NVM like the rank-1 MAX17320), has no built-in overcurrent or short-circuit protection of its own, and its datasheet's reduced-cell-count examples stop at 6 series cells, so operation at exactly 2S is not demonstrated even apart from stock, as P3 itself notes."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MAX17320G22+",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Power path",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "BQ25713RSNR",
+      "reason": "Unchanged from P2: the same part as the rank-1 Pack charger; its external BATFET carries the 12.23 A pack current and the NVDC path runs the board from USB-C with the pack flat.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "BQ25703ARSNR",
+      "reason": "Unchanged from P2: the same power path, pairs with the rank-2 Pack charger.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "BQ25723RSNR",
+      "reason": "Unchanged from P2: the same NVDC power path with an external P-channel BATFET, pairs with the rank-3 Pack charger.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "ISL9241IRTZ (C5657483) / ISL9241HRTZ-T (C6061854)",
+      "maker": "Renesas",
+      "reason": "Same reading as the Pack charger entry: fails sourcing rule 4, best JLCPCB stockCount 10 against the 50-unit gate (re-read 2026-09-29T17:13:45Z and 17:13:46Z), other rows at 0 (17:13:48Z, 17:13:49Z), Digi-Key stock_available 0 (P3, cached 15:54:51Z). Its BGATE charge pump references VBAT rather than VSYS as the rank-1 part's BATDRV does, so the recorded VSYS-floor gate-drive concern would need its own re-derivation, but this is moot given the stock failure."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "BQ25713RSNR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Charger input limit",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "FUSB303BTMX",
+      "reason": "Unchanged from P2: dead-battery Rd, runs from VBUS to 2.85 V, GPIO outputs set the charger's limit with no firmware; no P3 candidate qualifies to unseat it.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TUSB321AIRWBR",
+      "reason": "Unchanged from P2: the same firmware-free GPIO role with a stated dead-battery Rd.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TUSB321RWBR",
+      "reason": "Unchanged from P2: as rank 2 with a narrower 0 to 70 degC ambient rating.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "STUSB1600AQTR (C2156023) / STUSB1602AQTR (C713192)",
+      "maker": "STMicroelectronics",
+      "reason": "Clears sourcing rule 4 (JLCPCB C2156023 stockCount 60, canPresaleNumber 58, re-read 2026-09-29T17:13:51Z; C713192 stockCount 92, canPresaleNumber 92, re-read 17:13:53Z; both above the 50-unit gate) but fails the S5 lifecycle gate (active only): Digi-Key ProductStatus reads Obsolete for both order codes, stock_available 0 at every packaging variant (re-read 2026-09-29T17:10:37Z and 17:10:57Z, cached). ST's own product pages for either part answer HTTP 404 (re-read 17:15:29Z and 17:15:50Z), so the manufacturer status is not read; the USB Type-C/PD controller family listing page (HTTP 200, re-read 17:15:30Z) does not mention STUSB1600 at all and mentions STUSB1602 only inside a banner-image file path, not as a listed current part. With no manufacturer confirmation of an active status and the only distributor figure reading Obsolete, S5 is not met; reported to the owner because the manufacturer's own page could not be read."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "FUSB303BTMX",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Pack cells",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "INR-18650-P30B",
+      "reason": "Unchanged from P2: the only S9 cell read that meets every value and passes rule 4 at Liion Wholesale, V151's vendor. The P3 candidate (EVE INR18650/30P) fails rule 4 at the same vendor, so it does not join or displace it.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "EVE INR18650/30P",
+      "maker": "EVE",
+      "reason": "Fails sourcing rule 4 at Liion Wholesale, the vendor V151 established for rule-4 and rule-6 counting on this function: its product feed reads inventory_quantity -2, available false, inventory_policy deny (vendors.py fetch of the product's .js feed, re-read 2026-09-29T17:14:48Z), the same negative/zero-inventory pattern that already dropped the Molicel P26A and P28A SKUs at this vendor. Its vendor-page figures, manufacturer-rated 30 A (10C) discharge at a 75 degC cutoff and a manufacturer-rated 2900 mAh minimum capacity, would otherwise have cleared the discharge-current and capacity rows, but no EVE manufacturer datasheet was reached to confirm charge voltage, charge current or the charge/discharge temperature rows, and the stock failure ends its candidacy regardless. EVE is on the S9 allowlist."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "INR-18650-P30B",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Pack overcurrent protection",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MAX17320G22+",
+      "reason": "Unchanged from P2. P3 raised no candidate for this function.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "BQ40Z50RSMR-R2",
+      "reason": "Unchanged from P2.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "BQ28Z610DRZR",
+      "reason": "Unchanged from P2.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MAX17320G22+",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Bench pack balance lead",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MAX17320G22+",
+      "reason": "Unchanged from P2. P3 raised no candidate for this function.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "BQ40Z50RSMR-R2",
+      "reason": "Unchanged from P2.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "BQ28Z610DRZR",
+      "reason": "Unchanged from P2.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MAX17320G22+",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "ISL9241 JLCPCB stock (Pack charger / Power path)",
+    "value": "C5657483 (ISL9241IRTZ): stockCount 10, canPresaleNumber 10. C6061854 (ISL9241HRTZ-T): stockCount 10, canPresaleNumber 10. C6644362 (ISL9241IRTZ-T) and C6968746 (ISL9241HRTZ): stockCount 0, canPresaleNumber 0. All four under the S4 gate of 50 (5 boards x 1 placement, floored at 50).",
+    "source": "vendors.py jlcpcb C5657483/C6061854/C6644362/C6968746, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, read 2026-09-29T17:13:45Z, 17:13:46Z, 17:13:48Z, 17:13:49Z"
+   },
+   {
+    "figure": "STUSB1600/1602 lifecycle (Charger input limit)",
+    "value": "Digi-Key ProductStatus 'Obsolete' for both STUSB1600AQTR and STUSB1602AQTR, discontinued false, end_of_life false, stock_available 0 at every packaging variant (Tape & Reel, Cut Tape, Digi-Reel) for both parts. ST's own product pages for both parts (stusb1600.html, stusb1602.html) answer HTTP 404, so the manufacturer's own status is not read",
+    "source": "vendors.py digikey STUSB1600AQTR and STUSB1602AQTR, https://api.digikey.com/products/v4/search/<part>/productdetails, read 2026-09-29T17:10:37Z and 17:10:57Z (cached); vendors.py fetch https://www.st.com/en/interfaces-and-transceivers/stusb1600.html and stusb1602.html, read 2026-09-29T17:15:29Z and 17:15:50Z"
+   },
+   {
+    "figure": "STUSB1600/1602 family listing (Charger input limit)",
+    "value": "ST's USB Type-C and Power Delivery controllers family page (HTTP 200) does not mention 'STUSB1600' anywhere in its body, and mentions 'STUSB1602' only inside a banner-image file path (a whitepaper graphic), not as a listed current part, consistent with both parts being withdrawn",
+    "source": "vendors.py fetch https://www.st.com/en/interfaces-and-transceivers/usb-type-c-and-power-delivery-controllers.html, read 2026-09-29T17:15:30Z"
+   },
+   {
+    "figure": "ISL94212INZ JLCPCB stock (Cell balancing)",
+    "value": "C3681518 (ISL94212INZ): stockCount 6, canPresaleNumber 6. C123714 (ISL94212INZ-T): stockCount 0, canPresaleNumber 0. Both under the 50-unit S4 gate",
+    "source": "vendors.py jlcpcb C3681518 and C123714, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, read 2026-09-29T17:13:54Z and 17:13:56Z"
+   },
+   {
+    "figure": "EVE INR18650/30P vendor stock (Pack cells)",
+    "value": "Liion Wholesale product feed: vendor 'EVE', SKU EVE-18650-30P, inventory_quantity -2, available false, inventory_policy deny; manufacturer-rated figures on the same page: 30 A (10C) max discharge at 75 degC cutoff, 3000 mAh nominal / 2900 mAh minimum capacity, 3.6 V nominal / 4.2 V peak. Below the rule-4 gate of 50 (5 boards x 2 cells = 10, floored at 50), the same negative/zero-inventory pattern already seen for the Molicel P26A and P28A SKUs at this vendor",
+    "source": "vendors.py fetch https://liionwholesale.com/products/eve-inr18650-30p-10a-3000mah-flat-top-18650-battery-wholesale-discount.js, read 2026-09-29T17:14:48Z"
+   },
+   {
+    "figure": "Allowlist check on P3's makers",
+    "value": "Renesas (ISL9241, ISL94212) and STMicroelectronics (STUSB1600/1602) are both on the S1 IC allowlist; EVE (INR18650/30P) is on the S9 cell-maker allowlist. None of P3's five R7 candidates is excluded by sourcing rule 2 (maker allowlist); all five are excluded instead by rule 4 (stock gate: ISL9241, ISL94212, EVE) or by the S5 lifecycle gate (STUSB1600/1602)",
+    "source": "hardware/docs/Research.md S1 and S9 rows, checkout e13f5f60d2e553032b27a14f31ed4a93ef4fe828"
+   }
+  ]
+ }
+}
