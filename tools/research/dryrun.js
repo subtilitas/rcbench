@@ -412,6 +412,11 @@ async function main() {
   check(r.result.summary.stopped === true, 'P0: a wrong database SHA-256 stops the task')
   r = await runTask('T2', { p0: { snapshot: '2020-01-01T00:00:00Z' } })
   check(r.result.summary.stopped === true, 'P0: a wrong manifest time stops the task')
+  // P0 may add a note after the manifest's time.
+  r = await runTask('T2', { p0: { snapshot: '2026-09-14T09:56:01+00:00 (manifest.json "created", equal to 2026-09-14T09:56:01Z)' } })
+  check(!r.result.summary.stopped, 'snapshot with a note after its time: not stopped')
+  r = await runTask('T2', { p0: { snapshot: 'created 2026-09-14T09:56:01Z' } })
+  check(r.result.summary.stopped === true, 'snapshot that does not start with a time: stopped')
   r = await runTask('T2', { p0: { checkout_head: 'cafe' } })
   check(r.result.summary.stopped === true, 'P0: a wrong checkout stops the task')
   r = await runTask('T2', { hosts: [{ host: 'jlcpcb.com', stop: 'stock-tasks', hold: [] }], down: ['jlcpcb.com'] })
