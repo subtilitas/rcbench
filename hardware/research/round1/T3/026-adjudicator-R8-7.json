@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R8",
+ "label": "adjudicator-R8-7",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "function": "P2 report: Supply currents of R8 parts for the 3.3 V rail",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The claim gives the TMP1075 as 6 uA max and the rail total as \"at most 5.36 mA\". SBOS854F, section 6.5, gives 6 uA max only at conversion-rate setting R1 = 1, R0 = 0. At the default setting (R1 = R0 = 0) the maximum is 20 uA, and during the 5.5 ms active conversion it is 85 uA. The upper bound for the sum is therefore 2.2 + 3.15 + 0.020 = 5.37 mA, averaged at the default setting, and 2.2 + 3.15 + 0.085 = 5.435 mA while a conversion runs. Both are above 5.36 mA. The INA238 and INA3221 figures are quoted correctly. The INA3221's 450 uA max holds at TA = 25 degC only (SBOS576C 6.5 header \"at TA = 25 C, VS = 3.3 V\"). SBOS576C gives no maximum over temperature, so the INA3221 part of the total is not bounded over the operating range. The error is in this figure's value for the rail budget. The parts are not affected, so the scope is function.",
+  "evidence": "TMP1075 SBOS854F (revised June 2024), 6.5 Electrical Characteristics, TA = -55 to 125 degC, V+ = 1.7 to 5.5 V. IQ (serial bus inactive) max: 20 uA at R1 = 0, R0 = 0 (default); 9 uA at R1 = 0, R0 = 1; 6 uA at R1 = 1, R0 = 0; 4 uA at R1 = 1, R0 = 1. 85 uA max during the 5.5 ms active conversion. 13 uA typ with the serial bus active at 400 kHz, no max given. INA238 SLYS025B 5.5 (TA = 25 degC, VS = 3.3 V): IQ 640 uA typ, 750 uA max; 1.1 mA max at TA = -40 to +125 degC. INA3221 SBOS576C 6.5 (TA = 25 degC, VS = 3.3 V unless noted): quiescent current 350 uA typ, 450 uA max, with no over-temperature maximum in the table. Recomputed at 2 x INA238 and 7 x INA3221: 2.2 mA + 3.15 mA + 0.020 mA = 5.37 mA at the TMP1075 default setting, and 5.435 mA during a conversion, against the claimed 5.36 mA.",
+  "source": "https://www.ti.com/lit/ds/symlink/tmp1075.pdf (SBOS854F section 6.5), https://www.ti.com/lit/ds/symlink/ina238.pdf (SLYS025B section 5.5), https://www.ti.com/lit/ds/symlink/ina3221.pdf (SBOS576C section 6.5), each fetched with vendors.py fetch --out; copies at /home/claude/rcbench-research/round1/scratch/T3/adjudicator-R8/p2supply/",
+  "read_at": "2026-09-29T11:03:27Z (tmp1075.pdf, ina3221.pdf), 2026-09-29T11:03:28Z (ina238.pdf)",
+  "scope": "function"
+ }
+}

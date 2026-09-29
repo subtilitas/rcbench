@@ -684,5 +684,371 @@
    "decision": "none",
    "q_options_missing": []
   }
+ },
+ "R5": {
+  "reverse-polarity protection": {
+   "part": "LM74800QDRRRQ1",
+   "rank": 1,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "overvoltage protection": {
+   "part": "LM74800QDRRRQ1",
+   "rank": 1,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "inrush limiting": {
+   "part": "LM74800QDRRRQ1",
+   "rank": 1,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "source selection": {
+   "part": "LM74800QDRRRQ1",
+   "rank": 1,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "pack disconnect": {
+   "part": "R5460N212AF-TR-FE",
+   "rank": 1,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": true,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "3.3 V logic buck": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "5 V rail": {
+   "part": "TPS62933DRLR",
+   "rank": 1,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "display supply": {
+   "part": "TPS259474ARPWR",
+   "rank": 1,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "receiver supply": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "encoder 12 V supply": {
+   "part": "TPS55288RPMR",
+   "rank": 1,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "2S pack connector": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "logic supply from the RP2354B's USB port (IOBoard.md:384, marked R5)": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ },
+ "R6": {
+  "Servo supply": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Servo supply inductor": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Port supply switch": {
+   "part": "TPS259474LRPWR",
+   "rank": 1,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "I/O expander": {
+   "part": "MCP23017T-E/SS",
+   "rank": 1,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Port voltage ceiling": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ },
+ "R7": {
+  "Pack charger": {
+   "part": "BQ25713RSNR",
+   "rank": 1,
+   "alternate": "BQ25703ARSNR",
+   "run": "T3",
+   "alternate_unverified": [
+    "BQ25703ARSNR"
+   ],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Cell balancing": {
+   "part": "MAX17320G22+",
+   "rank": 1,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Power path": {
+   "part": "BQ25713RSNR",
+   "rank": 1,
+   "alternate": "BQ25703ARSNR",
+   "run": "T3",
+   "alternate_unverified": [
+    "BQ25703ARSNR"
+   ],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Charger input limit": {
+   "part": "FUSB303BTMX",
+   "rank": 1,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Pack cells": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Pack overcurrent protection": {
+   "part": "MAX17320G22+",
+   "rank": 1,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Bench pack balance lead": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ },
+ "R8": {
+  "Motor monitor": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Onboard shunt": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Onboard shunt temperature sensor": {
+   "part": "MCP9808T-E/MS",
+   "rank": 1,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "External shunt": {
+   "part": "WSBE8518L1000JKA2",
+   "rank": 1,
+   "alternate": "WSBS8518L1000JK20",
+   "run": "T3",
+   "alternate_unverified": [
+    "WSBS8518L1000JK20"
+   ],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "External shunt sense input": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Port current monitor": {
+   "part": "INA3221AIRGVR",
+   "rank": 1,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Port shunt": {
+   "part": "ERJ-6CWDR010V",
+   "rank": 1,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Servo rail monitor": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "T3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
  }
 }

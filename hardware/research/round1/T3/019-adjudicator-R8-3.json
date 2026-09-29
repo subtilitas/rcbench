@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R8",
+ "label": "adjudicator-R8-3",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "function": "External shunt",
+  "part": "WSBS8518L1000JK20",
+  "stands": true,
+  "ruling": "The datasheet verifier's refutation stands. WSBS8518L1000JK20 is off the board. By sourcing rule 5 its second source must be an alternate that fits the same mounting and connections as the rank-1 part it stands in for, WSBE8518L1000JKA2. The mounting matches. The sense connections do not. The WSBE8518...A2 carries its two voltage-sense pins in a 4-position header, at positions 1 and 4, with positions 2 and 3 blank. Those pins are 0.300 in (7.62 mm) apart and 0.320 in (8.13 mm) high (reference dimension). The WSBS8518...20 carries two separate single pins. For 100 uOhm they are dimension B = 0.495 in (12.57 mm) apart, and they stand 0.310 in (7.87 mm) high. The re-rank read the WSBS's 7.87 mm pin height as the WSBE's 7.62 mm pin spacing. They are different dimensions, so the two parts are not 0.25 mm apart but 4.95 mm apart in pin spacing. A sense lead ending in a housing for the WSBE's header (Vishay's connection options: an A-series connector with the middle two pins removed) does not fit the WSBS8518...20. The two parts fit one lead only if each lead ends in a separate contact per pin. The sense-lead connector is a round 2 question (IOBoard.md:471), so that condition is not in place. The stock and lifecycle verifier confirmed the part: Digi-Key 67 in stock against a gate of 50, status Active, no end-of-life notice. Nothing about the part itself fails. The failure is only that it is not a connection-compatible alternate for WSBE8518L1000JKA2 in this function. Scope: function.",
+  "evidence": "Datasheet 30341 (WSBS8518...20), revision 26-May-2026, page 2. Drawing: body 85 +/- 0.4 x 18 +/- 0.2 x 3 +/- 0.05 mm, holes 7 +/- 0.13 mm at 60 +/- 0.30 mm, sense pins 0.310 +/- 0.016 in (7.87 +/- 0.4 mm) high. A/B table: for 100 uOhm, A = 0.370 in (9.40 mm) reference and B = 0.495 +/- 0.005 in (12.57 +/- 0.13 mm) between the two single pins. Note: minimum pull strength of the sense pins is 200 N. Part numbering: special code 20 = sense pins attached; K = bulk pack. Datasheet 30424 (WSBE), revision 04-Aug-2026, page 2, drawing of WSBE8518L1000JTA2: same body and holes; a 4-position header between the holes; pins 0.300 +/- 0.008 in (7.62 +/- 0.20 mm) apart and 0.320 in (8.13 mm) high (reference). Page 6, connection options: A series has voltage-sense pins at positions 1 and 4, with 2 and 3 blank, and takes an A-series connector with the middle two pins removed. Packaging code K (bulk) against T (tray) changes nothing on the drawing. Both page-2 drawings were rendered and read. Stock and lifecycle checks, as reported by the stock verifier (not re-read here): Digi-Key 67, Active, lead time 49 weeks, no end-of-life notice.",
+  "source": "vendors.py fetch https://www.vishay.com/doc?30341 (final URL https://www.vishay.com/docs/30341/wsbs8518-20.pdf, 108577 bytes, page 2 rendered); vendors.py fetch https://www.vishay.com/doc?30424 (final URL https://www.vishay.com/docs/30424/wsbe.pdf, 152566 bytes, pages 2 and 6); Research.md sourcing rule 5 and IOBoard.md:423-426 and :471 at checkout e13f5f60d2e5",
+  "read_at": "2026-09-29T10:53:26Z",
+  "scope": "function"
+ }
+}

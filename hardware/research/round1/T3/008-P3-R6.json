@@ -1,0 +1,114 @@
+{
+ "role": "P3",
+ "category": "R6",
+ "label": "P3-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "missed": [
+   {
+    "function": "Port supply switch",
+    "part": "TPS259480AYWPR",
+    "maker": "Texas Instruments (data sheet SLVSGT9D, Feb 2023, rev. Apr 2026); S1 allowlist name Texas Instruments",
+    "why": "TPS25948 family, not considered by P2. It passes every requirement value. Data sheet https://www.ti.com/lit/ds/symlink/tps25948.pdf, read 2026-09-29T10:15:48Z (vendors.py fetch, chrome, HTTP 200). Operating input 3.5 to 23 V; IN absolute maximum 28 V; OUT absolute maximum min(28 V, VIN + 21 V). Passes 4.8 to 8.7 V operation and the 20 V withstand. True reverse current blocking at all times for the 480/482 variants; both FETs are off when disabled. Passes V126 on and off with the pin at 12 V. Current limit adjustable 1 to 9 A, +/-10 % max above 3 A. Set to 4.4 A it gives 3.96 to 4.84 A, inside 3.0 to 6.35 A. Table points: 7.2 to 8.7 A at RILM 604 Ohm, 2.7 to 3.3 A at 1.62 kOhm. RON 12.2 mOhm typ and 15 mOhm max at 25 C; 20 mOhm max at 3 A over -40 to 125 C TJ. That is 60 mV at 3 A, against the 590 mV limit. IOUTLKG(OFF) is 29 uA max, against 5 mA. EN/UVLO is active high, rising threshold 1.17 to 1.23 V, pin maximum 6.5 V. A 3.3 V expander output with a pull-down drives it. tD,OFF is 13.5 to 17.3 us typ, so it opens well inside 5 ms. RthetaJA 33.4 C/W. Fault response is auto-retry, tRST 103 ms, which goes against STATUS.md:340 as P2's rank 2 does. Package: 12-ball PowerWCSP (YWP), 2.4 x 1.7 mm. Market introduction Feb 2023. TI product page https://www.ti.com/product/TPS25948, read 2026-09-29T10:26:49Z: TPS259480AYWPR ACTIVE. JLCPCB C22421991: stockCount 627, canPresaleNumber 627, expand, 1.1371 at 1000, read 2026-09-29T10:17:14Z. Passes the 500 gate (5 boards x 20). Digi-Key TPS259480AYWPR: 8295 in stock, Active, lead 16 weeks, read 2026-09-29T10:27:25Z. RON is 12.2 mOhm against 28.3 mOhm for the TPS25947. The OVLO pin (1.18 to 1.23 V) fails the HV ceiling band, as the TPS25947's does."
+   },
+   {
+    "function": "Port supply switch",
+    "part": "TPS259480LYWPR",
+    "maker": "Texas Instruments (data sheet SLVSGT9D); S1 allowlist name Texas Instruments",
+    "why": "Latch-off variant of the TPS259480, the same die. It passes every requirement value above. Its latch-off matches STATUS.md:340 as P2's rank 1 TPS259474LRPWR does. It fails rule 4 at JLCPCB: C25836658 stockCount 67, presale 67, read 2026-09-29T10:17:13Z, under 500. Digi-Key TPS259480LYWPR: 4185 in stock, Active, lead 16 weeks, read 2026-09-29T10:27:27Z. TI product page, read 2026-09-29T10:26:49Z: ACTIVE. Usable only if bought into the personal library (rule 6)."
+   },
+   {
+    "function": "Port supply switch",
+    "part": "TPS26632RGET (TPS2663x family)",
+    "maker": "Texas Instruments (data sheet SLVSE94G); S1 allowlist name Texas Instruments",
+    "why": "Examined; does not qualify. https://www.ti.com/lit/ds/symlink/tps2663.pdf, read 2026-09-29T10:15:48Z: 4.5 to 60 V, 67 V absolute maximum, current limit 0.6 to 6 A (+/-7 %), MODE selects latch-off or auto-retry. Reverse current blocking needs an external N-channel FET on B_GATE, so each of the 20 ports needs an added MOSFET. Rule 4 fails in every variant read at JLCPCB on 2026-09-29 between 10:17:16Z and 10:17:18Z: TPS26632RGET 142, TPS26631RGET 1 (presale -4), TPS26630RGET 0 (presale -1), TPS26633PWPR 6, TPS26631PWPR 0 (presale -49), TPS26633PWPT 24, TPS26633RGET 10. The TPS1663x (SLVSET9G, read 10:15:48Z) claims no reverse current blocking and fails V126."
+   },
+   {
+    "function": "Port supply switch",
+    "part": "FPF2895CUCX",
+    "maker": "onsemi (data sheet FPF2895C); S1 allowlist name onsemi",
+    "why": "Examined; does not qualify. https://www.onsemi.com/download/data-sheet/pdf/fpf2895c-d.pdf, read 2026-09-29T10:15:48Z: 28 V / 5 A rated, 4 to 22 V operating, current limit 0.5 to 5 A +/-10 %, True Reverse Current Block (trip 25 to 40 mV), 27 mOhm typ, -40 to 85 C. Values pass on its face. It fails rule 4: JLCPCB C479720 stockCount 111, read 2026-09-29T10:17:15Z, under 500. The LM73100 (https://www.ti.com/lit/ds/symlink/lm7310.pdf, read 10:15:48Z) was also examined. It has only a fixed 21.9 A fast-trip and no current limit, so it fails V123."
+   },
+   {
+    "function": "I/O expander",
+    "part": "PCA9698DGG,518",
+    "maker": "NXP (data sheet PCA9698 Rev. 3, 2010-08-03); S1 allowlist name NXP",
+    "why": "A 40-bit part, so one part covers all 26 outputs. https://www.nxp.com/docs/en/data-sheet/PCA9698.pdf, read 2026-09-29T10:18:56Z. Active-low RESET input returns every register to default. All 40 I/Os are inputs at power-up and at RESET. The data sheet names no internal pull-up on the I/Os; it has none on the address pins. Supply 2.3 to 5.5 V. Fm+ at 1 MHz, so 400 kHz passes. 64 addresses on AD2..AD0 include 0x20 (Table 12), clear of 0x40 to 0x44 and 0x74/0x75. Tamb -40 to +85 C. It adds an active-low OE pin that holds every output 3-stated, and IOFF on the I/Os. TSSOP-56. NXP product page https://www.nxp.com/products/PCA9698, read 2026-09-29T10:19:49Z: Status Active. JLCPCB C729177: stockCount 1957, presale 1944, expand, read 2026-09-29T10:18:49Z. (C71320, the ,512 packing, has 0.) Digi-Key PCA9698DGG,518: 3547 in stock, Active, lead 16 weeks, read 2026-09-29T10:27:30Z."
+   },
+   {
+    "function": "I/O expander",
+    "part": "TCA6424ARGJR",
+    "maker": "Texas Instruments (data sheet SCPS193D, rev. Jan 2023); S1 allowlist name Texas Instruments",
+    "why": "24-bit, so two parts give 48 outputs. https://www.ti.com/lit/ds/symlink/tca6424a.pdf, read 2026-09-29T10:18:56Z. Active-low RESET: tW 4 ns, tRESET 600 ns. Every P-port pin is an input at power-on. Push-pull ports; the data sheet names no internal pull-up. Supply 1.65 to 5.5 V; 400 kHz. Address 0100 01(ADDR) gives 0x22/0x23, exactly two, clear of the TPS55285 and INA parts. TA -40 to 85 C. VQFN-32 5 x 5 mm. TI product page https://www.ti.com/product/TCA6424A, read 2026-09-29T10:26:49Z: TCA6424ARGJR ACTIVE. JLCPCB C80692: stockCount 5700, presale 5584, expand, 0.9779 at 1000, read 2026-09-29T10:18:38Z. Digi-Key TCA6424ARGJR: 1709 in stock, Active, lead 16 weeks, read 2026-09-29T10:27:32Z."
+   },
+   {
+    "function": "I/O expander",
+    "part": "PCAL6524HEAZ",
+    "maker": "NXP (data sheet PCAL6524DS); S1 allowlist name NXP",
+    "why": "24-bit, two parts. https://www.nxp.com/docs/en/data-sheet/PCAL6524DS.pdf, read 2026-09-29T10:20:02Z. Active-low RESET. All I/Os are inputs at power-on and at reset. Pull-up/pull-down enable registers 4Ch to 4Eh default to 0000 0000, so the pulls are off. ADDR on SCL/SDA/VSS/VDD gives 7-bit 0x20 to 0x23; the table lists them as 40h to 46h with the R/W bit. VDD(P) 1.65 to 5.5 V, VDD(I2C-bus) 0.8 to 3.6 V. Fm+ at 1 MHz. Tamb -40 to 85 C. HUQFN-32 5 x 5 mm. NXP product page https://www.nxp.com/products/PCAL6524, read 2026-09-29T10:19:48Z: Status Active. JLCPCB C3000497: stockCount 2417, presale 2391, expand, 1.0234 at 1000, read 2026-09-29T10:18:39Z. Digi-Key PCAL6524HEAZ: 25591 in stock, Active, lead 30 weeks, read 2026-09-29T10:27:34Z."
+   },
+   {
+    "function": "I/O expander",
+    "part": "TCA6416APWR",
+    "maker": "Texas Instruments (data sheet SCPS194, TCA6416A); S1 allowlist name Texas Instruments",
+    "why": "The TSSOP-24 version of the TCA6416A. P2 dropped TCA6416ARTWR (WQFN) only for 0 stock at Digi-Key. This orderable has Digi-Key stock, so its second source is the second vendor. P2's copy of the TCA6416A data sheet, which P2 found passing, covers both packages. JLCPCB C130203: stockCount 2526, presale 2368, expand, 0.9763 at 1000, read 2026-09-29T10:18:54Z. Digi-Key TCA6416APWR: 12068 in stock, Active, lead 16 weeks, read 2026-09-29T10:27:36Z. Addresses 0x20/0x21. Lifecycle on TI's page: not read in this pass."
+   },
+   {
+    "function": "I/O expander",
+    "part": "NCA9539PW-Q100J",
+    "maker": "Nexperia (data sheet NCA9539); S1 allowlist name Nexperia",
+    "why": "A TSSOP-24 16-bit expander with a RESET pin in the TCA9539/PCA9539 pinout: a candidate pin-compatible alternate for P2's rank 2 TCA9539PWR (rule 5). https://assets.nexperia.com/documents/data-sheet/NCA9539.pdf, read 2026-09-29T10:18:56Z. 1.65 to 5.5 V. RESET returns registers to default. All I/Os are inputs at reset. A0/A1 give 4 addresses in the 9539 range, so the TPS55285 clash is the same as the TCA9539's. Nexperia product page https://www.nexperia.com/product/NCA9539PW-Q100, read 2026-09-29T10:28:22Z: Production. JLCPCB C20235690: stockCount 4591, presale 4591, expand, 0.7473 at 1000, read 2026-09-29T10:18:42Z. Digi-Key NCA9539PW-Q100J: 2766 in stock, Active, lead 22 weeks, read 2026-09-29T10:27:38Z. NCA9539PWJ (C20235691) has 100, read 10:18:44Z."
+   },
+   {
+    "function": "Servo supply inductor",
+    "part": "ETQP5M4R7YFC (Digi-Key: ETQ-P5M4R7YFC)",
+    "maker": "Panasonic (data sheet AGL0000C59, PCC-M1050M series); S2 allowlist name Panasonic",
+    "why": "It passes every requirement value. Panasonic model page https://industrial.panasonic.com/ww/products/pt/automotive-inductors/models/ETQP5M4R7YFC read 2026-09-29T10:23:14Z, and data sheet https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C59.pdf read 10:23:42Z. 4.7 uH +/-20 % gives 3.76 uH min, above 3.0 uH. DCR 10.2 mOhm typ, 11.30 mOhm max, against 16.5 mOhm. Rated current dT=40 K is 10.9 A on 4-layer FR4 and 13.1 A on a high-dissipation board, against 8 A. dL=-30 % current 20.0 A typ, against 13 A. Tc -40 to +170 C including self-heating; AEC-Q200; 10.0 x 10.7 x 5.4 mm. That is smaller than P2's rank 1 SRP1265A (13.5 x 12.5 mm), which has less DCR margin. JLCPCB C409638: stockCount 337, presale 264, expand, 0.5588 at 1000, read 2026-09-29T10:21:07Z; gate 50. Digi-Key ETQ-P5M4R7YFC: 39362 in stock, Active, lead 23 weeks, read 2026-09-29T10:28:10Z. The number without hyphens returned 404 at 10:27:40Z. Rule 5 passes at Digi-Key. Manufacturer status: the Panasonic page body carries no lifecycle field, so not read."
+   },
+   {
+    "function": "Servo supply inductor",
+    "part": "IHLP5050CEER4R7M01",
+    "maker": "Vishay (data sheet IHLP-5050CE-01, doc 34105, rev. 07-Jun-17); S2 allowlist name Vishay",
+    "why": "It passes every requirement value. https://www.vishay.com/docs/34105/ihlp-5050ce-01.pdf, reached from https://www.vishay.com/doc?34105, read 2026-09-29T10:24:19Z. 4.7 uH +/-20 %, DCR 14.3 mOhm typ and 15 mOhm max at 25 C, heat rating 10 A, saturation 24 A typ, -55 to +125 C. Body 13.2 x 12.9 mm. JLCPCB C845092: stockCount 727, presale 727, expand, 0.7099 at 1000, read 2026-09-29T10:21:09Z. Digi-Key IHLP5050CEER4R7M01: 476 in stock, Active, lead 23 weeks, read 2026-09-29T10:27:43Z; rule 5 passes against the gate of 50. Vishay product page https://www.vishay.com/en/product/34105/, read 10:24:20Z: no lifecycle status in the page body, so not read."
+   },
+   {
+    "function": "Servo supply inductor",
+    "part": "XAL1010-472MED",
+    "maker": "Coilcraft (data sheet xal1010); S2 allowlist name Coilcraft",
+    "why": "Passes every requirement value with the widest margins read. P2's scratch holds a JLCPCB reading of it (C19271849, 09:53:02Z), but P2's shortlist and drops do not name it. https://www.coilcraft.com/getmedia/dd74e670-e705-456a-9a69-585fe02eaf3c/xal1010.pdf, read 2026-09-29T10:22:20Z: 4.7 uH +/-20 %, DCR 5.20 typ and 5.70 max mOhm, Isat 25.4 A (30 % drop), Irms 17.5 A at 20 C rise and 24.0 A at 40 C rise, ambient -40 to +125 C, 11.3 x 10 mm. JLCPCB C19271849: stockCount 170, presale 161, expand, 9.5679 at 104, read 2026-09-29T10:21:04Z; passes the gate of 50. It fails rule 5, as P2's XAL7070 does: Digi-Key XAL1010-472MED returned 404 at 2026-09-29T10:27:39Z. Lifecycle: the Coilcraft page (https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xal/xal1010/, read 10:26:50Z) was not parsed to a status, so not read."
+   },
+   {
+    "function": "Servo supply inductor",
+    "part": "ETQP8M4R7JFA (Digi-Key: ETQ-P8M4R7JFA)",
+    "maker": "Panasonic (data sheet AGL0000C61, MF series); S2 allowlist name Panasonic",
+    "why": "Passes every requirement value, but fails rule 5. Model page, read 2026-09-29T10:23:17Z, and https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C61.pdf, read 10:23:42Z. 4.7 uH +/-20 %, DCR 4.9 mOhm typ and 5.39 mOhm max. Rated current dT=40 K is 16.8 A on 4-layer FR4 and 20.2 A on a high-dissipation board; dL=-30 % current 24.7 A. Tc -40 to +160 C; 12.6 x 13.1 x 8.0 mm. JLCPCB C409644: stockCount 210, presale 209, read 2026-09-29T10:21:12Z. Digi-Key ETQ-P8M4R7JFA: 8 in stock, Active, lead 23 weeks, read 2026-09-29T10:28:12Z. That is under 50, so rule 5 fails."
+   },
+   {
+    "function": "Servo supply inductor",
+    "part": "SPM12565VT-4R7M-D",
+    "maker": "TDK; S2 allowlist name TDK",
+    "why": "Examined; fails the lifecycle gate. TDK page https://product.tdk.com/en/search/inductor/inductor/smd/info?part_no=SPM12565VT-4R7M-D, read 2026-09-29T10:22:22Z: 'Product Status Production (NRND)', recommended alternate SPM12565VC-4R7M-D. Values would pass: 4.7 uH +/-20 %, 7.1 mOhm typ and 7.81 mOhm max, 30.1 A (30 % down), 14 A (40 C rise). JLCPCB C2048059: 581, read 10:21:06Z. Neither SPM12565VC-4R7M-D nor SPM10065VC-4R7M-D is in the jlcparts copy. A JLCPCB keyword search for each returned no results at 10:22:47Z and 10:22:48Z."
+   },
+   {
+    "function": "Port voltage ceiling",
+    "part": "TPS3703 (e.g. TPS3703A4085DSERQ1, TPS3703A7080DSERQ1)",
+    "maker": "Texas Instruments (data sheet SBVS249B, Nov 2020); S1 allowlist name Texas Instruments",
+    "why": "The only family found with a built-in latch, the requirement P2's rank 1 TLV6710 misses. https://www.ti.com/lit/ds/symlink/tps3703.pdf, read 2026-09-29T10:15:48Z. Section 9.1.3 'RESET Latch Mode': with CT to ground through a resistor, RESET stays low after a trip until CT is driven above VCT, 1.133 to 1.167 V; TI recommends above 1.2 V. That unlatch is a firmware or operator action, which meets V130. VIT+(OV) accuracy is +/-0.7 % over -40 to 125 C for thresholds of 800 mV and above, and +/-1 % below. With 0.1 % dividers that is +/-0.9 %, against the +/-0.99 % HV band. ISENSE is 1.5 uA max at 5 V; that error needs a divider source impedance under about 500 Ohm to stay in the band. SENSE absolute maximum is 6 V. A 0.85 V nominal option maps 20 V on the rail to about 3 V on SENSE in either jumper position. The 1.8 V option exceeds 6 V in the LV position, and the 3.3 V option exceeds it in both. It is a window part: the UV side also pulls RESET low and latches, including at power-up with the rail or port down, so firmware must hold CT high until the rail is in range. JLCPCB fails rule 4 (500) in every suitable variant. TPS3703A4085DSERQ1 C2931004: 72, read 10:25:51Z. TPS3703A7080DSERQ1 C3687441: 10, read 10:25:52Z. TPS3703A5180DSER C2862899: 80, read 10:25:51Z. TPS3703A4120DSERQ1 C2067330: 55, read 10:25:52Z. TPS3703A7330DSERQ1 C1849519 has 307, read 10:25:51Z, and fails the 20 V withstand without a clamp. Digi-Key: TPS3703A4085DSERQ1 0 in stock, Active, lead 26 weeks, read 10:27:46Z; TPS3703A7080DSERQ1 0 in stock, Active, lead 26 weeks, read 10:27:49Z. TI product page, read 10:26:50Z: A-variant orderables listed ACTIVE. The TLV6713 (read 10:15:48Z) and TPS3899 (read 10:15:48Z) were examined. The TLV6713's rising threshold is 400 to 413 mV and the TPS3899's accuracy is +/-2.5 % max; both fail the HV band."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "IHLP4040DZER4R7M01",
+    "reason_given": "not qualified: Vishay's data sheet could not be read (https://www.vishay.com/docs/34257/ihlp4040dz01.pdf HTTP 404, search HTTP 500); left for P3",
+    "why_it_fails": "Doc 34257 is the IHLP-2525BD-L1. The IHLP-4040DZ-01 data sheet is Vishay document 34193: https://www.vishay.com/doc?34193 redirects to https://www.vishay.com/docs/34193/ihlp-4040dz-01.pdf, read 2026-09-29T10:24:19Z (HTTP 200). 4.7 uH +/-20 % at 100 kHz; DCR 15.00 mOhm typ and 16.50 mOhm max at 25 C; heat rating 9.5 A; saturation 17.0 A typ; -55 to +125 C. It passes every requirement value; its DCR max equals the 16.5 mOhm limit with no margin. JLCPCB C845077: stockCount 1435, presale 1424, expand, 0.6287 at 1000, read 2026-09-29T10:21:21Z. Digi-Key IHLP4040DZER4R7M01: 30425 in stock, Active, lead 13 weeks, read 2026-09-29T10:27:45Z. Rule 5 passes. Vishay product page https://www.vishay.com/en/product/34193/, read 10:24:20Z: no lifecycle status in the page body, so not read. It re-enters the Servo supply inductor list; body 10.16 x 10.16 mm."
+   },
+   {
+    "part": "TCKE812NL,RF (C6716887)",
+    "reason_given": "not qualified: its data sheet was not read; left for P3",
+    "why_it_fails": "The stated reason no longer applies; the exclusion stands on a value. Toshiba product page https://toshiba.semicon-storage.com/ap-en/semiconductor/product/power-management-ics/efuse-ics/detail.TCKE812NL.html, read 2026-09-29T10:16:27Z (HTTP 200). Absolute maximum input 18 V, operating 4.4 to 18 V, output current 5.0 A max, RON 28 mOhm typ, fixed over-voltage clamp 15.1 V typ, latch recovery, operating -40 to 85 C. Reverse current blocking reads 'Y (External MOSFET)'. It fails V136 (18 V against the 20 V withstand), and V126 needs an added MOSFET per port. The other Toshiba eFuses in the jlcparts copy (TCKE805, TCKE800, TCKE812NA) also list 18 V."
+   }
+  ],
+  "missed_functions": []
+ }
+}
