@@ -460,10 +460,10 @@
  },
  "R9": {
   "Cell monitor": {
-   "part": null,
-   "rank": null,
+   "part": "ADBMS1818ASWAZ-RL",
+   "rank": 1,
    "alternate": "",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -476,13 +476,13 @@
    "part": "ADCS7476AIMFX/NOPB",
    "rank": 1,
    "alternate": "",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [
     {
-     "part": "REF3030AIDBZR",
-     "status": "refuted, not adjudicated",
+     "part": "LM4040AIM3-3.0/NOPB",
+     "status": "verified",
      "alternate": "",
      "alternate_status": "",
      "second_source_missing": false,
@@ -490,28 +490,27 @@
     }
    ],
    "decision": "Q4",
-   "q_options_missing": [
-    "reference"
-   ]
+   "q_options_missing": []
   }
  },
  "R11": {
   "accelerometer": {
-   "part": "ADXL316WBCSZ",
-   "rank": 1,
+   "part": null,
+   "rank": null,
    "alternate": "",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
    "decision": "none",
-   "q_options_missing": []
+   "q_options_missing": [],
+   "not_requalified": "ADXL316WBCSZ"
   },
   "optical index": {
    "part": null,
    "rank": null,
    "alternate": "",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -522,7 +521,7 @@
    "part": "DRV5015A1QDBZR",
    "rank": 1,
    "alternate": "",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -530,10 +529,10 @@
    "q_options_missing": []
   },
   "phase-wire clip": {
-   "part": "TLV7011DBVR",
+   "part": "TLV3201AIDBVR",
    "rank": 1,
-   "alternate": "",
-   "run": "T4",
+   "alternate": "TLV3601DBVR",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -544,7 +543,7 @@
    "part": "AM26LV32EIDR",
    "rank": 1,
    "alternate": "",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -552,10 +551,10 @@
    "q_options_missing": []
   },
   "encoder decode": {
-   "part": null,
-   "rank": null,
+   "part": "RP2354B",
+   "rank": 1,
    "alternate": "",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -566,7 +565,7 @@
    "part": null,
    "rank": null,
    "alternate": "",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -577,7 +576,7 @@
    "part": null,
    "rank": null,
    "alternate": "",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -588,7 +587,7 @@
    "part": null,
    "rank": null,
    "alternate": "",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -599,7 +598,7 @@
    "part": null,
    "rank": null,
    "alternate": "",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -609,10 +608,10 @@
  },
  "R12": {
   "motor temperature thermocouple": {
-   "part": null,
-   "rank": null,
+   "part": "MAX31856MUD+T",
+   "rank": 1,
    "alternate": "",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -620,10 +619,10 @@
    "q_options_missing": []
   },
   "motor temperature infrared": {
-   "part": null,
-   "rank": null,
+   "part": "MLX90614ESF-BCC-000-TU",
+   "rank": 1,
    "alternate": "",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -634,7 +633,7 @@
    "part": "TCA9548APWR",
    "rank": 1,
    "alternate": "PCA9548APWR",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -642,21 +641,13 @@
    "q_options_missing": []
   },
   "non-volatile store": {
-   "part": null,
-   "rank": null,
+   "part": "MB85RC256VPNF-G-AMERE2",
+   "rank": 1,
    "alternate": "",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [
-    {
-     "part": "MB85RC256VPNF-G-AMERE2",
-     "status": "not verified",
-     "alternate": "",
-     "alternate_status": "",
-     "second_source_missing": false,
-     "option": "FRAM"
-    },
     {
      "part": "M24256E-FMN6TP",
      "status": "verified",
@@ -667,17 +658,15 @@
     }
    ],
    "decision": "Q8",
-   "q_options_missing": [
-    "FRAM"
-   ]
+   "q_options_missing": []
   }
  },
  "R13": {
   "load-cell bridge ADC": {
-   "part": null,
-   "rank": null,
+   "part": "ADS1235IRHBR",
+   "rank": 1,
    "alternate": "",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -688,7 +677,7 @@
    "part": "BD450M2FP3-CE2",
    "rank": 1,
    "alternate": "",
-   "run": "T4",
+   "run": "FU-C1",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],

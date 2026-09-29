@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R12",
+ "label": "adjudicator-R12",
+ "attempt": 0,
+ "data": {
+  "category": "R12",
+  "function": "P2 report: Q8 store candidate: M24256E-FMN6TP",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The figure gives the part one I2C address: 1010 C2 C1 C0, 0x50 to 0x57. The datasheet shows the part answers at two addresses. Table 5 (Device select code, page 11) lists the memory at 1010 C2 C1 C0. It lists the identification page, the identification page lock and the configurable device address (CDA) register at 1011 C2 C1 C0. Sections 4.1 and 4.2 (pages 6 and 8) repeat \"Device type identifier = 1011\" for the CDA register and for the identification page. Note 1 of Table 5 says C0 to C2 in both codes are compared with the CDA register bits. Section 7 (Initial delivery state) gives the CDA register as 00h at delivery. So each part also takes 0x58 + C, 0x58 to 0x5F, and 0x58 as delivered. P5's whole-board I2C address map (Research.md P5 row; IOBoard.md lines 464 and 472) needs every address a device acknowledges, and the figure leaves one out. The ruling rests on the missing second address alone. The verifier's other readings (capacity, pages, endurance, save time, supply range, retention, lifecycle, stock) are not disputed here and were not re-read. The verifier also says the MLX90614 defaults to 0x5A. That was not re-read, because the Melexis pages refused every client (Research.md, Lifecycle check), and the ruling does not depend on it. Scope is function: the error is in this figure's address footprint for P5, not in the part's lifecycle, maker or LCSC identity. The corrected figure is two addresses per part, 0x50 + C and 0x58 + C, set by the CDA register.",
+  "evidence": "DS12687 Rev 5, February 2025. Table 5, page 11: \"Memory 1 0 1 0 C2 C1 C0 RW\"; \"Identification page 1 0 1 1 C2 C1 C0 RW\"; \"Identification page lock 1 0 1 1 C2 C1 C0 RW\"; \"Configurable device address 1 0 1 1 C2 C1 C0 RW\"; note 1: \"C0, C1 and C2 are compared with the value read on bits b1, b2, and b3 of the CDA register.\" Section 4.1, page 6: CDA instructions use \"Device type identifier = 1011\". Section 4.2, page 8: identification page instructions use \"Device type identifier = 1011\". Section 7: \"The CDA register set to 00000000 (00h)\" at factory delivery. Result: the memory is at 0x50 + C and the ID page and CDA register at 0x58 + C, 0x58 to 0x5F in all. The claim gives only 0x50 to 0x57. IOBoard.md line 464: P5 maps the devices on the two buses against each other. Line 472: P5 draws up the whole-board I2C address map. Datasheet saved at /home/claude/rcbench-research/round1/scratch/FU-C1/adjudicator-R12/m24256e-f.pdf, text at ds.txt in the same directory.",
+  "source": "https://www.st.com/resource/en/datasheet/m24256e-f.pdf (DS12687 Rev 5), fetched with python3 /home/claude/rcbench-research/round1/tools/b5225222477b945a/vendors.py fetch --client chrome, 2,107,314 bytes, no challenge: Table 5 page 11, sections 4.1 and 4.2 pages 6 to 8, section 7. Requirement: hardware/docs/Research.md P5 row, and hardware/docs/IOBoard.md lines 464 and 472, at commit e13f5f60d2e553032b27a14f31ed4a93ef4fe828",
+  "read_at": "2026-09-29T03:44:58Z",
+  "scope": "function"
+ }
+}

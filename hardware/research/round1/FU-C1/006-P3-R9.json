@@ -1,0 +1,78 @@
+{
+ "role": "P3",
+ "category": "R9",
+ "label": "P3-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "missed": [
+   {
+    "function": "Cell monitor",
+    "part": "LTC6813HLWE-1#3ZZPBF (C2758259) and LTC6813HLWE-1#3ZZTRPBF (C2979142)",
+    "maker": "Analog Devices (S1)",
+    "why": "P2 read both rows (its scratch holds jlc_C2758259.json, jlc_C2979142.json and Digi-Key readings of both) but returned no shortlist or drop entry for them; T4's re-rank had them at ranks 4 and 5. They meet the requirement values as far as P2's rank 1 does, and need the same auxiliary V+ supply. Source: LTC6813-1 Rev. B, https://www.analog.com/media/en/technical-documentation/data-sheets/LTC6813-1.pdf, vendors.py fetch --client safari, HTTP 200, read 2026-09-29T02:58:35Z (3,890,523 bytes, the same size as P2's copy). Figures: up to 18 cells. V+ 16 to 90 V for TME (total measurement error). V+ to C12 at most 40 V for TME, C13 at least 2.5 V and C7 at least 1 V for TME, so the tie on unused inputs must hold them at a cell top of 2.8 V or more. Absolute maximum C18 to V- is MIN(V+ + 5.5 V, 112.5 V), which is above the 85 V of V188. C(n) to V- is -0.3 V minimum, so a reversed lead (V191) needs the external network, as for rank 1. TME in normal mode, H grade, -40 to 125 C: +/-4.2 mV at 4.2 V and +/-3.3 mV at 3.3 V, inside the +/-6 mV static check of V183. Resolution 0.1 mV/bit (V182). tCYCLE for 18 cells in normal mode is 2488 us max (V185: 20 ms). Input leakage is +/-250 nA max when an input is not measured and +/-1 uA typ while measuring (V190). Open-wire detection draws 70 to 130 uA; the average over 1 s depends on how often it runs, and that is not checked. ISOMD selects 4-wire SPI or isoSPI on port A (V189). JLCPCB (vendors.py jlcpcb): C2758259 stockCount 350, canPresaleNumber 337, read 2026-09-29T02:57:45Z. C2979142 stockCount 270, canPresaleNumber 247, read 02:57:47Z. Both are extended library and above the gate of 50. Digi-Key (vendors.py digikey, answers marked cached: true, first read by P2 on the same UTC day): LTC6813HLWE-1#3ZZPBF ProductStatus 'Discontinued at DigiKey', stock_available 0, lead time 36 weeks, read 2026-09-29T02:44:54Z. LTC6813HLWE-1#3ZZTRPBF answered HTTP 404, read 02:44:55Z. The lifecycle table lists 'Discontinued at DigiKey' neither as a pass nor as a fail, so it is recorded and reported to the owner. Rule 5 then rests on a pin-compatible alternate that passes rules 1 to 4. The T4 adjudicator-R9-4 ruling (read 2026-09-28T15:59:14Z, not re-read here) puts LTC6813 LWE and ADBMS1818ASWZ-RL (C2971928) on the same outline, 05-08-1982."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "ADBMS6832MWCCSZ-RL (C18168954), ADBMS6832MWCCSZ (C18166020)",
+    "maker": "Analog Devices (S1)",
+    "why": "P2's own database scan lists C18166020, but P2 returned no entry for this family. T4's re-rank dropped it because its values cannot be read. JLCPCB: C18168954 stockCount 6097, canPresaleNumber 6096, read 2026-09-29T02:57:48Z. C18166020 stockCount 136, canPresaleNumber 136, read 02:57:50Z. Both are above the gate of 50. The data sheet is still the short form Rev. SpC, https://www.analog.com/media/en/technical-documentation/data-sheets/adbms6832-6833.pdf, vendors.py fetch --client safari, HTTP 200, 153,853 bytes, read 2026-09-29T03:01:46Z. It gives up to 18 cells (ADBMS6832) or 16 (ADBMS6833), lifetime TME +/-1.8 mV at 3.3 V from -40 to 125 C, an input range of -2 V to +5.5 V, simultaneous measurement, built-in isoSPI (capacitor or transformer coupled), 'hot-plug tolerant without external protection' and 'can be powered from the battery stack or an isolated supply'. It does not give the lowest cell count (V181), the stack range at 67.2 V (F15), the absolute maximum against 85 V (V188), the error at 4.2 V or 2.8 V (V183, V184), the reading period (V185) or the tap current (V190). The part is not qualified, so Digi-Key was not read."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "Barrier parts for V189: LTC6820HMS#3ZZTRPBF (C514444), LTC6820IMS#TRPBF (C581009), LTC6820HMS#TRPBF (C689580), ADBMS6822WCCSZ-RL (C19190031)",
+    "maker": "Analog Devices (S1)",
+    "why": "V189's answer puts an isoSPI or digital-isolator barrier, rated 85 V DC working or more, between the monitor and the RP2354B. P2's requirement list names it, but P2's shortlist holds no barrier part. P2 read the stock of C514444, C581009 and C19190031 and returned no entry for them. JLCPCB: C514444 2734/2716, read 2026-09-29T02:58:09Z. C581009 3313/3283, read 02:58:10Z. C689580 406/404, read 02:58:13Z. C19190031 5360/5354, read 02:58:12Z. All pass the gate of 50. LTC6820 data sheet (https://www.analog.com/media/en/technical-documentation/data-sheets/LTC6820.pdf, safari, HTTP 200, read 2026-09-29T03:01:46Z): VDD 2.7 to 5.5 V and VDDS 1.7 to 5.5 V, so 3.3 V logic fits; the H grade is rated -40 to 125 C. The 85 V DC working rating sits in the isoSPI pulse transformer or coupling capacitors, not in the LTC6820. No transformer, and no digital isolator for ISOMD = V- SPI, was searched or checked against 85 V. The ADBMS6822 data sheet was not read: .../adbms6822-6823.pdf answered HTTP 404 at 03:01:46Z. The part is not qualified, so Digi-Key was not read."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "MC33774ATP1AER2 (C24873268), MC33774ATP1AE (C27243666)",
+    "maker": "NXP (S1)",
+    "why": "P2 did not consider this family, and T4's P3 did not list it either. It fails V181. NXP product page https://www.nxp.com/products/MC33774 (vendors.py fetch, HTTP 200, read 2026-09-29T02:58:45Z): 'From 4 to 18 cells per device'. Supply range: MC33774ATP 9 to 90 V (94 V maximum), MC33774ATA 9 to 81 V (84 V). The page shows Active. A 1-to-3-cell pack is outside the 4-cell minimum. No public data sheet was found: .../data-sheet/MC33774A.pdf and the fact-sheet URLs tried answered HTTP 404 at 02:58:31Z to 02:58:45Z. The page lists only a product brief. JLCPCB: C24873268 stockCount 1830, canPresaleNumber 1830, read 02:58:02Z. C27243666 678/666, read 02:58:04Z."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "BQ79616PAPRQ1 (C3682338), BQ79656PAPRQ1 (C3681535), BQ75614PAPRQ1 (C3681912)",
+    "maker": "Texas Instruments (S1)",
+    "why": "No entry in P2's return, although P2 fetched the BQ79616 data sheet. All three fail V181 with a 6-cell minimum. BQ75614-Q1, SLUSDT5B (https://www.ti.com/lit/ds/symlink/bq75614-q1.pdf, HTTP 200, read 2026-09-29T02:58:29Z): 'a minimum of 6 cells to a maximum of 16 cells to be measured'. BQ79656-Q1, SLUSE48C (https://www.ti.com/lit/ds/symlink/bq79656-q1.pdf, HTTP 200, read 02:58:30Z): 'a minimum of 6S to a maximum of ... 16S (BQ79656-Q1)'. BQ79616: the T4 adjudicator-R9-3 ruling read SLUSF21A 'a minimum of 6 cells to a maximum of 16 cells' (2026-09-28T15:57:48Z). JLCPCB: C3682338 4211/4186 (02:57:55Z), C3681535 115/115 (02:57:58Z), C3681912 405/400 (02:57:56Z)."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "MAX14921ECS+T (C2932577)",
+    "maker": "Analog Devices (Maxim) (S1)",
+    "why": "No entry in P2's return, although P2 fetched its data sheet. It fails F15 and V188. MAX14920/MAX14921 data sheet p. 1 (https://www.analog.com/media/en/technical-documentation/data-sheets/MAX14920-MAX14921.pdf, safari, HTTP 200, read 2026-09-29T02:58:36Z): 'up to 16 cells/+65V (max)' and '+6V Minimum (3 Cells) Operation'. 65 V is below 67.2 V. It is also an analog front end that needs an external ADC. JLCPCB: C2932577 stockCount 1091, canPresaleNumber 1085, read 02:57:51Z."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "LTC6812HLWE-1#3ZZTRPBF (C18171243)",
+    "maker": "Analog Devices (S1)",
+    "why": "Not in P2's return. LTC6812-1 p. 1 (https://www.analog.com/media/en/technical-documentation/data-sheets/LTC6812-1.pdf, safari, HTTP 200, read 2026-09-29T02:58:35Z): 'Measures Up to 15 Battery Cells in Series'. One device misses 16 cells on the one 17-pin input (V192), and a stack meets the same objections as the LTC6811 entry under exclusions. JLCPCB: stockCount 1875, canPresaleNumber 1874, read 02:58:06Z."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "ISL94216IRZ (C3681570)",
+    "maker": "Renesas (S1)",
+    "why": "P2 did not consider it. It fails F15: ISL94216 data sheet (https://www.renesas.com/us/en/document/dst/isl94216-datasheet, HTTP 200, read 2026-09-29T02:58:34Z) gives a VBAT range of 12 to 55 V and a hot-plug rating of 62 V, below 67.2 V and 85 V. Its VBAT minimum of 12 V also rules out small packs without an auxiliary supply. It fails rule 4: JLCPCB stockCount 20, canPresaleNumber 20, read 02:58:01Z."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "BQ76PL455APFCR (C2877182)",
+    "maker": "Texas Instruments (S1)",
+    "why": "P2 did not record it, although P2's database scan lists it. No requirement value was read. https://www.ti.com/lit/ds/symlink/bq76pl455a.pdf, .../bq76pl455a-q1.pdf, https://www.ti.com/lit/gpn/bq76pl455a and https://www.ti.com/product/BQ76PL455A all answered HTTP 404 (2026-09-29T02:58:30Z, 02:58:44Z, 02:58:45Z, 03:01:58Z). The jlcparts attribute '6~16' cells points to a V181 failure, but rule 3 does not allow that attribute as the reason. JLCPCB: stockCount 1325, canPresaleNumber 1320, read 02:57:59Z."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "LTC6811-1/-2 (for example LTC6811HG-1#3ZZTRPBF, C459704), two stacked devices",
+    "reason_given": "One device measures up to 12 cells. In a two-device stack the upper device needs V+ of 11 to 55 V for TME. With the board's tie it holds 1 to 3 cells or none, so it runs below 11 V or unpowered, with no setting to change that (V181 with V193).",
+    "why_it_fails": "The supply argument does not follow. P2's own rank 1 meets V181 through an auxiliary V+ supply that is always present and needs no setting. The same remedy, floating at the split tap, keeps the upper LTC6811 at 11 V or more for any count. The data sheet allows it: absolute maximum V+ to C6 is 50 V and V+ to V- is 75 V, and V+ to C12 is -0.3 V minimum for TME (LTC6811-1/-2 Rev. C, https://www.analog.com/media/en/technical-documentation/data-sheets/LTC6811-1-6811-2.pdf, safari, HTTP 200, read 2026-09-29T03:00:48Z). The stack also passes rule 4. C459704 has stockCount 3761 and canPresaleNumber 3755 (read 2026-09-29T02:58:07Z) against a gate of 50 for 2 per board. It meets V183 with more margin than rank 1: TME +/-2.8 mV at 4.2 V over temperature. The drop may still stand, but on grounds P2 did not give or check. (1) V190 at the split tap: IVP is 0.375 to 0.775 mA per device in REFUP or MEASURE, and IREG(CORE) is 10.7 to 12.3 mA in MEASURE if VREG is taken from V+ through DRIVE. A device powered from a mid tap puts that current on a tap pin, against 100 uA. (2) Each device's V+ to V- absolute maximum is 75 V, against V188's 85 V. (3) The floating supply needs its own barrier under V189. The LTC6804-1/-2 drop rests on the same argument. It stands on rule 4 instead: C581004 LTC6804HG-1#PBF 46/44 (03:00:24Z) and C689540 LTC6804HG-1#3ZZPBF 26/26 (03:00:26Z), both under 50."
+   },
+   {
+    "part": "LTC6810-1/-2",
+    "reason_given": "measures up to 6 cells in series (data sheet p. 1)",
+    "why_it_fails": "'Up to 6 cells' alone does not exclude a stack. V192 fixes one 17-pin connector, not one IC, and P2 treated the LTC6811 as a possible stack. The drop stands on rule 4. Three devices per board makes a need of 15 and a gate of 75. JLCPCB: C689556 LTC6810HG-1#3ZZTRPBF 2/2 (2026-09-29T03:00:19Z), C689560 LTC6810IG-1#3ZZTRPBF 12/12 (03:00:21Z), C689562 LTC6810IG-2#3ZZTRPBF 5/5 (03:00:22Z). The stack objections of the LTC6811 entry also apply."
+   }
+  ],
+  "missed_functions": []
+ }
+}

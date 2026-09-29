@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R10",
+ "label": "adjudicator-R10",
+ "attempt": 0,
+ "data": {
+  "category": "R10",
+  "function": "P2 report: Q4 reference supply headroom",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The figure gets its own low-end headroom wrong. It gives the REF3330 output as 2.983 to 3.017 V and the rail's low end as 3.201 V (3.3 V - 3 %, Research.md R3 and R5). From those numbers the headroom is 3.201 - 3.017 = 184 mV to 3.201 - 2.983 = 218 mV. The figure says 195 to 218 mV. Its own supply-range sentence (\"up to 3.216 V for a unit at its limits\") implies an output maximum of about 3.016 V, which gives about 185 mV, not 195 mV. The corrected value is 184 to 218 mV. The rest of the figure matches the datasheet: dropout 70 mV max at ILOAD +/-2 mA over -40 to 85 degC; VS specified from VOUT + 0.2 V to 5.5 V; line regulation stated only from VIN = VOUT + 200 mV. The conclusion also holds at 184 mV, which is above the 70 mV dropout limit. The fault is this function's arithmetic, not the part, so the scope is function.",
+  "evidence": "SBOS392I (revised April 2026), 6.5 Electrical Characteristics, REF3330: VOUT 3.0 V typ, initial accuracy -0.15 % to +0.15 %. REF33xx output voltage temperature drift 30 ppm/degC max over -40 to 85 degC. Line regulation -50 to 50 ppm/V, stated only for VIN = VOUT + 200 mV to 5.5 V. Minimum dropout voltage 70 mV max at ILOAD = +/-2 mA, -40 to 85 degC. POWER SUPPLY: VS specified voltage range VOUT + 0.2 V min to 5.5 V; operating voltage range VOUT + 0.005 V at ILOAD = 0 mA. Research.md line 283 (R5): the 3.3 V rail stays within 3.3 V +/-3 %, so its low end is 3.201 V (also stated in R3). Arithmetic with the figure's stated range of 2.983 to 3.017 V: 3.201 - 3.017 = 0.184 V; 3.201 - 2.983 = 0.218 V. The claimed low end of 195 mV does not follow from the figure's own range.",
+  "source": "https://www.ti.com/lit/ds/symlink/ref33.pdf (vendors.py fetch, client chrome, HTTP 200, 1,512,901 bytes, SBOS392I sections 6.3 and 6.5); hardware/docs/Research.md:283 at commit e13f5f60d2e553032b27a14f31ed4a93ef4fe828",
+  "read_at": "2026-09-29T03:42:26Z",
+  "scope": "function"
+ }
+}
