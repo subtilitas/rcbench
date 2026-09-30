@@ -57,9 +57,10 @@ runs down to the TPS55285's 0.8 V to test a servo's brownout behavior (owner,
 the voltage setting. LV and HV servos and an ESC on the multiprotocol ports
 run at the same time (owner, 2026-09-30).
 From the DC input each rail's limit goes to 6.35 A. From the pack the
-firmware sets the three limits and the adjustable supply's to a sum of 6.35 A,
-which holds the pack at
-its 12.23 A budget (owner, 2026-09-30). The sum is derated for the limit's
+firmware sets the three limits and the adjustable supply's to a sum of 6.35 A
+(owner, 2026-09-30). The adjustable supply's limit counts weighted by its set
+voltage over 8.4 V, so the sum holds the four outputs to 53.3 W at any setting
+up to 15 V, which holds the pack at its 12.23 A budget. The sum is derated for the limit's
 tolerance, which the datasheet gives only at the 1, 3 and 5 A settings
 (4.7 to 5.3 A at 5 A); the derated sum is not known.
 For one servo 4 to 6.35 A is a short peak: a servo that draws it without
