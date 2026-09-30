@@ -106,8 +106,10 @@ The MCP23017 drives 26 outputs: 20 port-switch enables, 5 bias selectors and
 P5's budget in T5, as its critic upheld it
 (`hardware/research/round1/T5/002-P5.json`,
 `hardware/research/round1/T5/004-P5-critic.json`). Over their limit: the
-servo rail, the cell rating, the pack protection, the motor overcurrent path
-and the shared-part stock of INA238AIDGSR.
+servo rail, the pack protection, the motor overcurrent path and the
+shared-part stock of INA238AIDGSR. The cell rating, over its limit in T5
+against the P30B, passes on the owner's SLS XTRON pack's vendor-stated 90 A
+(2026-09-30).
 
 | Budget | Value | Within its limit |
 | --- | --- | --- |
@@ -117,7 +119,7 @@ and the shared-part stock of INA238AIDGSR.
 | Current, display supply | the TPS259474ARPWR breaker trips from 2.25 to 2.75 A, above the display's 2 A peak | yes |
 | Current, encoder 12 V supply | TPS55288RPMR against an assumed 100 mA at 12 V; the encoder's own current (V102) is not found | yes |
 | Pack current | 12.23 A at the 6.0 V floor: 10.02 A for the servo supply (53.3 W through 88.7 %), 1.30 A for the display through the 5 V rail (7.5 W through 96.0 %), 0.91 A for the 3.3 V rail, the encoder supply and the load-cell excitation | yes |
-| Cell rating | the owner's SLS XTRON pack: 30C, 90 A continuous, against 12.23 A (vendor page, 2026-09-30). Round 1's INR-18650-P30B: 30 A continuous a cell, 2900 mAh at least | yes, on the vendor's figure |
+| Cell rating | the owner's SLS XTRON pack: 30C, a C rate of 30 times its 3.0 Ah capacity, 90 A continuous, against 12.23 A (vendor page, 2026-09-30). Round 1's INR-18650-P30B: 30 A continuous a cell, 2900 mAh at least | yes, on the vendor's figure |
 | Pack protection | MAX17320G22+'s thresholds are set against 12.23 A and the cell's rating (V150). The owner's pack is rated 90 A continuous, and its vendor page states no cell or temperature limit, so the thresholds are not confirmed | no |
 | ESC (electronic speed controller) pack node clamp | no clamp part: every TVS diode read clamps at 113 to 126 V at 12 to 13 A, above the 85 V ceiling. The pack switch's controlled turn-off holds the node instead: 11 to 45 mJ on the pack leads and 5.6 to 22.5 mJ on the switch-to-ESC leads (V45, V54) | yes |
 | Alert pins | 0 GPIO: no monitor's ALERT output is wired, and the firmware checks every sample. The ALERT outputs of the servo supply temperature sensors, an MCP9808T-E/MS beside each of the 3 TPS55285 the owner added on 2026-09-30, are wired to their rails' switch-off through a latch the operator clears and take no GPIO either ([IOBoard](IOBoard.md)) | yes |
