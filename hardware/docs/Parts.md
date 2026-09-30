@@ -12,7 +12,7 @@ set on 2026-09-30: a rail gate on each servo rail and a temperature sensor
 beside each of the 4 converters. The adjustable supply's gate is not counted:
 the BTS7004-1EPP does not switch its output below about 4.1 V. The owner's 0.8 V lowest servo rail (2026-09-30)
 refutes two rows below it: the BTS7004-1EPP starts at 4.1 V at most, and the
-TPS259474LRPWR takes 2.7 V at least. Round 2 replaces both. The Read column gives the time, in UTC (Coordinated
+TPS259474LRPWR takes 2.7 V at least. Follow-ups of R3 and R6 replace them. The Read column gives the time, in UTC (Coordinated
 Universal Time), the JLCPCB figures were read. LCSC is the distributor whose parts library
 JLCPCB assembles from; an LCSC number is `C` followed by digits.
 
