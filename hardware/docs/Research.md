@@ -516,8 +516,8 @@ known and reported to the owner. Follow-up tasks add to the total of 102.
    and steady: 2 A peak and 1.5 A continuous at 5 V (owner, 2026-09-25).
 8. **The owner's answers** to the questions below.
 9. **The held parts** in the owner's personal library, exported on 2026-09-25:
-   [Held parts](#held-parts). The RP2354B is held at 20 against a need of 5 for
-   the first build (S7).
+   [Held parts](#held-parts). The RP2354B is held at 20 against a need of 10 for
+   the first build (S7): 2 a board (owner, 2026-09-30).
 
 ## Questions for the owner
 
