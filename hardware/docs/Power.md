@@ -104,7 +104,8 @@ Digi-Key. MP8859 stops at 3 A.
 4.9 A from a 12 V input and 3.0 A from 20 V. The 3 rails at full load draw
 177.8 W: 14.8 A from 12 V and 8.9 A from 20 V, before the other loads. The
 adjustable supply at 15 V and 6.35 A delivers 95.3 W more; the four draw
-283.6 W: 23.6 A from 12 V and 14.2 A from 20 V. The DC input is 12 to 20 V (owner, 2026-09-25).
+283.6 W: 23.6 A from 12 V and 14.2 A from 20 V. These are nominal at the
+assumed 90 %; the datasheet guarantees no efficiency. The DC input is 12 to 20 V (owner, 2026-09-25).
 
 ## Pack charger: BQ25887 (candidate)
 
