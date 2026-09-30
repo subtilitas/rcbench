@@ -50,7 +50,7 @@ inputs, as R3 selected. It adds no part and changes none.
 ## R1: the RP2354B and its support
 
 The RP2354B is the fixed input (owner, 2026-09-27) and is held:
-20 in the personal library, stated 2026-09-25, against a need of 5. FU-A4 did not
+20 in the personal library, stated 2026-09-25, against a need of 10: 2 a board, a main and a measurement coprocessor (owner, 2026-09-30). FU-A4 did not
 requalify it for R1; FU-C2 verified it as the part of the R11 functions that
 run on its PIO (programmable input/output) and firmware. JLCPCB C39843328
 read 2982 on 2026-09-29T07:37:59Z. Raspberry Pi states that the RP2350 stays
@@ -127,7 +127,7 @@ P5's budget in T5, as its critic upheld it
 
 | Budget | Value | Within its limit |
 | --- | --- | --- |
-| GPIO | about 51 committed signals against 48 GPIO, before the accelerometer path, the converter and port-ceiling status lines and the latch read-back. No pin map exists. The owner adds a second RP2354B for the measurement (2026-09-30): 96 GPIO on two chips, which P5 counts again ([IOBoard](IOBoard.md#two-coprocessors)) | no in T5 |
+| GPIO | about 51 committed signals against 48 GPIO, before the accelerometer path, the converter and port-ceiling status lines and the latch read-back. No pin map exists. The owner adds a second RP2354B for the measurement (2026-09-30): each chip has its own 48, and whether the main coprocessor fits is not known; P5 counts each chip ([IOBoard](IOBoard.md#two-coprocessors)) | no in T5 |
 | PIO state machines | 10 of 12: 8 for bidirectional DShot on the 4 multiprotocol ports, 1 for PPM (pulse-position modulation) on one PWM (pulse-width modulation) port, 1 for the receiver input. Assumed, by P5 and upheld by its critic: 1 PIO state machine serves the board's one receiver input, whichever bus is selected; the programmer modes take 0 state machines beyond the 8 booked for bidirectional DShot, because a multiprotocol port runs one protocol at a time | yes |
 | PIO instruction memory | 68 of 96 words: 64 for bidirectional DShot in 2 whole blocks, 4 for PPM; 28 words free in the third block for the receiver and programmer programs, which are not written | yes |
 | DMA (direct memory access) channels | 2 of 16, for PPM | yes |
