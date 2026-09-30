@@ -28,7 +28,7 @@ to R8.
 
 | Need | Part | Package | Reason |
 | --- | --- | --- | --- |
-| Buck-boost, I²C (Inter-Integrated Circuit) voltage and current | TPS55285 | VQFN (very thin quad flat no-lead) | the owner holds 12 (2026-09-25), 3 a board (owner, 2026-09-30); its limit stops at 6.35 A, so each rail runs to 6.35 A. The TPS55288, whose limit scales past 6.35 A, is the alternative below |
+| Buck-boost, I²C (Inter-Integrated Circuit) voltage and current | TPS55285 | VQFN (very thin quad flat no-lead) | the owner holds 12 (2026-09-25), 4 a board: 3 servo rails and the adjustable supply (owner, 2026-09-30); its limit stops at 6.35 A, so each rail runs to 6.35 A. The TPS55288, whose limit scales past 6.35 A, is the alternative below |
 | 2S charger with balancing | BQ25887RGER, a candidate | QFN-24-EP 4×4 | the only single die from a maker question S1 allows that charges 2S and balances it. A seed of research category R7, not a choice: the charge input is up to 3 A from USB-C at 5 V ([Research](Research.md#research-categories)) |
 | Output port monitors, ≤15 V | INA3221, 7 parts for 20 ports | VQFN-16 4×4 | 3 channels a part, 26 V bus, 13-bit shunt reading. One channel per port (owner, 2026-09-25); a seed of research category R8, which may replace it (owner, 2026-09-27) |
 | Motor monitor, 67.2 V (16 cells), 300 A | INA228AIDGSR | VSSOP-10 | 85 V and 20 bits, fixed by the owner (2026-09-30); the INA238, 16 bits on the same footprint, is the alternative below |
@@ -41,23 +41,26 @@ It has no energy or charge accumulator; the motor keeps its INA228.
 ## Servo supply: TPS55285
 
 The servo supply is the TPS55285 (owner, 2026-09-25): 12 are held in the
-personal library. Three on each board feed three servo rails: 8 PWM ports,
+personal library. Four sit on each board (owner, 2026-09-30): a fourth is a
+simple adjustable supply, 0.8 to 15 V and 0.5 to 6.35 A, out on an XT60
+socket. Three feed three servo rails: 8 PWM ports,
 the other 8 PWM ports, and the 4 multiprotocol ports (owner, 2026-09-30).
-At 3 a board the 12 held cover 4 boards. Each rail runs to 6.35 A, and the
+At 4 a board the 12 held cover 3 boards. Each rail runs to 6.35 A, and the
 DC (direct current) input is 12 to 20 V to stay inside the 22 V input rating
 ([where things stand](../STATUS.md#decided)).
 The TPS55288 and TPS55289 below are the alternatives, not used.
 
 Each servo rail has two output settings: up to 5.5 V for LV (low-voltage)
-servos and up to 8.4 V for HV (high-voltage) servos, at 4 to 6.35 A. Both are
-set from software for each rail on its own, and the current limit follows
+servos and up to 8.4 V for HV (high-voltage) servos, at 4 to 6.35 A. Each
+runs down to the TPS55285's 0.8 V to test a servo's brownout behavior (owner,
+2026-09-30). Both are set from software for each rail on its own, and the current limit follows
 the voltage setting. LV and HV servos and an ESC on the multiprotocol ports
 run at the same time (owner, 2026-09-30).
-From the DC input each rail's limit goes to 6.35 A. From the pack the
-firmware sets the three limits to a sum of 6.35 A, which holds the pack at
-its 12.23 A budget (owner, 2026-09-30). The sum is derated for the limit's
-tolerance, which the datasheet gives only at the 1, 3 and 5 A settings
-(4.7 to 5.3 A at 5 A); the derated sum is not known.
+Each rail's limit goes to 6.35 A from the DC input and from the pack alike:
+the SLS XTRON pack's 90 A carries all four converters (owner, 2026-09-30).
+At the 6.0 V pack floor the four at 6.35 A draw about 47.3 A at an assumed
+90 %, nominal. The limit's tolerance is stated only at the 1, 3 and 5 A
+settings (4.7 to 5.3 A at 5 A).
 For one servo 4 to 6.35 A is a short peak: a servo that draws it without
 pause burns out. Several servos on one rail can draw it without a time
 limit; an MCP9808T-E/MS beside each TPS55285 switches its rail off when it
@@ -98,7 +101,10 @@ Digi-Key. MP8859 stops at 3 A.
 
 8.4 V at 6.35 A is 53.3 W out a rail. At 90 % efficiency that is 59.3 W in:
 4.9 A from a 12 V input and 3.0 A from 20 V. The 3 rails at full load draw
-177.8 W: 14.8 A from 12 V and 8.9 A from 20 V, before the other loads. The DC input is 12 to 20 V (owner, 2026-09-25).
+177.8 W: 14.8 A from 12 V and 8.9 A from 20 V, before the other loads. The
+adjustable supply at 15 V and 6.35 A delivers 95.3 W more; the four draw
+283.6 W: 23.6 A from 12 V and 14.2 A from 20 V. These are nominal at the
+assumed 90 %; the datasheet guarantees no efficiency. The DC input is 12 to 20 V (owner, 2026-09-25).
 
 ## Pack charger: BQ25887 (candidate)
 

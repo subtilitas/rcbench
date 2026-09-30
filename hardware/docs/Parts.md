@@ -7,8 +7,12 @@ and lifecycle verifier named in each row. Every figure in a row is that
 verifier's reading, except the placements of SN74LVC1G04DBVR,
 BTS7004-1EPP, 2N7002BK,215 and MCP9808T-E/MS. The SN74LVC1G04DBVR row adds
 the counts of two verifiers, as the research's cross-category check does.
-The other three follow the 3 servo rails the owner set on 2026-09-30: a rail
-gate on each rail and a temperature sensor beside each rail's converter. The Read column gives the time, in UTC (Coordinated
+The other three follow the 3 servo rails and the adjustable supply the owner
+set on 2026-09-30: a rail gate on each servo rail and a temperature sensor
+beside each of the 4 converters. The adjustable supply's gate is not counted:
+the BTS7004-1EPP does not switch its output below about 4.1 V. The owner's 0.8 V lowest servo rail (2026-09-30)
+refutes two rows below it: the BTS7004-1EPP starts at 4.1 V at most, and the
+TPS259474LRPWR takes 2.7 V at least. Round 2 replaces both. The Read column gives the time, in UTC (Coordinated
 Universal Time), the JLCPCB figures were read. LCSC is the distributor whose parts library
 JLCPCB assembles from; an LCSC number is `C` followed by digits.
 
@@ -84,7 +88,7 @@ research categories of [Research](Research.md#research-categories).
 | R7 cell balancing, pack overcurrent protection and bench pack balance lead | MAX17320G22+ | Analog Devices | C2914309 | QFN-24-EP (4 x 4 mm) | 578 | 482 | extended | 2026-09-29T17:18:01Z | 1 | not held (export of 2026-09-25) | Digi-Key: 355 (2026-09-29T09:56:05Z) | Active (Digi-Key, the status of record for Analog Devices) | not read | none | `hardware/research/round1/FU-B3/016-P4-stock-R7.json` |
 | R7 charger input limit | FUSB303BTMX | onsemi | C895444 | X2-QFN-12 (1.6 x 1.6 mm) | 5194 | 5163 | extended | 2026-09-29T17:18:04Z | 1 | not held (export of 2026-09-25) | Digi-Key: 4224 (2026-09-29T09:56:14Z) | Active (onsemi page) | not read | none | `hardware/research/round1/FU-B3/016-P4-stock-R7.json` |
 | R8 onboard shunt | BVR-Z-R0002-1.0 | Isabellenhütte | C6869644 | 4026 | 359 | 354 | extended | 2026-09-29T17:18:35Z | 1 | not held (export of 2026-09-25) | Digi-Key: 11190 (2026-09-29T10:20:01Z) | maker status not read (no status in the page body); Digi-Key Active, reported to the owner | none published | none | `hardware/research/round1/FU-B3/017-P4-stock-R8.json` |
-| R8 onboard shunt temperature sensor and servo supply temperature sensors | MCP9808T-E/MS | Microchip | C129490 | MSOP-8 | 764 | 713 | extended | 2026-09-29T17:18:36Z | 4 (R8 counts 1 beside the onboard shunt; the owner adds 1 beside each of the 3 TPS55285, 2026-09-30) | not held (export of 2026-09-25) | Digi-Key: 21589 (2026-09-29T10:21:59Z) | In Production (Microchip page) | no dated commitment | none | `hardware/research/round1/FU-B3/017-P4-stock-R8.json` |
+| R8 onboard shunt temperature sensor and servo supply temperature sensors | MCP9808T-E/MS | Microchip | C129490 | MSOP-8 | 764 | 713 | extended | 2026-09-29T17:18:36Z | 5 (R8 counts 1 beside the onboard shunt; the owner adds 1 beside each of the 4 TPS55285, 2026-09-30) | not held (export of 2026-09-25) | Digi-Key: 21589 (2026-09-29T10:21:59Z) | In Production (Microchip page) | no dated commitment | none | `hardware/research/round1/FU-B3/017-P4-stock-R8.json` |
 | R8 external shunt (off the board) | WSBE8518L1000JKA2 | Vishay | none (off the board, rule 1) | 8518 busbar | not applicable | not applicable | not applicable | Digi-Key 2026-09-29T10:17:26Z | 1 | not held (export of 2026-09-25) | none: no alternate found, so rule 5 has no route (reported to the owner); Digi-Key stock of the part: 418 | maker status not read (no status on the Vishay page); Digi-Key Active, reported to the owner | none published | none | `hardware/research/round1/FU-B3/017-P4-stock-R8.json` |
 | R8 port current monitor | INA3221AIRGVR | Texas Instruments | C181255 | QFN-16-EP (4 x 4 mm) | 8704 | 8561 | extended | 2026-09-29T17:18:38Z | 7 (20 ports, 3 channels a part) | not held (export of 2026-09-25) | Digi-Key: 67241 (2026-09-29T10:02:04Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-B3/017-P4-stock-R8.json` |
 | R8 port shunt | ERJ-6CWDR010V | Panasonic | C236284 | 0805 | 4062 | 4026 | extended | 2026-09-29T17:18:39Z | 20 (one per port) | not held (export of 2026-09-25) | Digi-Key: 12302 (2026-09-29T10:02:12Z) | Active (Panasonic page) | not read (Panasonic support page 404) | none | `hardware/research/round1/FU-B3/017-P4-stock-R8.json` |

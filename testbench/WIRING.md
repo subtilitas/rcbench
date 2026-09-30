@@ -540,7 +540,7 @@ nodes, so what they do is the hardware's doing.
 **Two instruments, and both are needed.**
 
 *The analyser, on logic only.* The output enable takes a lead directly. The
-servo and ESC power do not: the servo rail is 8.4 V and an ESC pack is higher,
+servo and ESC power do not: a servo rail is 8.4 V, the IO board's adjustable supply up to 15 V and an ESC pack higher,
 every analyser lead here is a direct connection with a series resistor, and
 `capture.sh`'s threshold argument sets a comparator level rather than
 attenuating anything. An LA2016 input is rated to 5 V. So the analyser takes
@@ -551,7 +551,7 @@ rail -- which is logic and carries the timing.
 was told to open. It does not say the rail went down: a switch that is
 bypassed, miswired or failed short deasserts its gate exactly the same way.
 `docs/Safety.md` requires the **power path** to be gated, so the verdict is
-measured on the switched side, with a probe rated for 8.4 V or whatever the
+measured on the switched side, with a probe rated for 8.4 V, 15 V or whatever the
 ESC pack is.
 
 **A meter is not enough.** It says the rail is down by the time you look,
@@ -568,7 +568,7 @@ instrument fires on an arbitrary one and the rail's fall lands outside the
 record. Triggering on the rail and looking backwards puts the last trigger
 edge in the same capture, and the interval between them is the number.
 
-**Both rails, and to a voltage the load is known to stop at.** Two things make
+**Every switched rail, and to a voltage the load is known to stop at.** Two things make
 that measurement mean something:
 
 - *A threshold the load actually respects.* Leaving the regulation band is not
@@ -583,16 +583,16 @@ that measurement mean something:
   measures whatever the capacitor decides. Take it with the servo or the ESC
   connected -- the bench's own load, in the state the interlock exists for.
 
-The servo rail and the ESC pack are separate supplies, so each has its own
-switch and each is its own claim. Measuring one proves nothing about the
-other: a bypassed or failed-short switch on the unmeasured rail leaves that
-load powered through a check that passed. Capture both, or repeat the whole
-measurement for each.
+The switched supplies are separate -- on the IO board, each of the 3 servo rails, the adjustable supply and the ESC pack -- so each has its own
+switch and each is its own claim. Measuring one proves nothing about another:
+a bypassed or failed-short switch on an unmeasured rail leaves that
+load powered through a check that passed. Repeat the whole
+measurement for each of the five.
 
 Passing the control side without the rail is the interlock's own failure mode:
 the switch told to open and the power still on. Passing the rail without a
 timebase is the same failure with a slower clock, and passing one rail is the
-same failure on the other one.
+same failure on another one.
 
 *The differential test.* Keep the firmware happy and starve only the hardware.
 
