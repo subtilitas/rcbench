@@ -8,6 +8,22 @@ servo draw. This page records the choice, the alternatives and the stock.
 that date. Re-check before a layout commits, by the method in
 [Sourcing](Sourcing.md).
 
+## Round 1 result
+
+Round 1 of [the research](Research.md) read these parts again on 2026-09-29
+and selected the power path's parts; [Supply](Supply.md) records each choice,
+its alternatives and its stock, and [Parts](Parts.md) each part's row. The
+comparison below is the one of 2026-09-01 that seeded research categories R6
+to R8.
+
+| Need | Round 1 result |
+| --- | --- |
+| Servo supply | TPS55285VALR, the held fixed input, is refuted on its ambient range. At 6.0 V in, 8.4 V and 4.0 A out and 50 °C ambient its estimated junction temperature spans 89 to 179 °C against the 125 °C recommended maximum, because its datasheet gives no loss figure for the IC (integrated circuit) at that point. No servo supply is selected, and the owner has the report |
+| 2S (two cells in series) charger with balancing | BQ25713RSNR, with MAX17320G22+ for balancing and pack protection and FUSB303BTMX for the USB-C (Universal Serial Bus Type-C) input limit. The BQ25887 is not selected |
+| Output port monitors | INA3221AIRGVR, 7 parts, with ERJ-6CWDR010V, a 10 mΩ shunt, on each of the 20 ports |
+| Motor monitor | INA238AIDGSR fails the stock gate at both vendors: JLCPCB 0 with a presale count of −99, Digi-Key 0 (2026-09-29T17:18:33Z). No motor monitor is selected |
+| Motor shunts | BVR-Z-R0002-1.0 on the board for 150 A, and WSBE8518L1000JKA2 off the board, bought at Digi-Key, with no second source |
+
 ## Summary
 
 | Need | Part | Package | Reason |
@@ -25,7 +41,7 @@ It has no energy or charge accumulator; the motor keeps its INA238.
 ## Servo supply: TPS55285
 
 The servo supply is the TPS55285 (owner, 2026-09-25): 12 are held in the
-personal library. The rail runs to 6.35 A, and the DC input is 12 to 20 V to
+personal library. The rail runs to 6.35 A, and the DC (direct current) input is 12 to 20 V to
 stay inside its 22 V input rating ([where things stand](../STATUS.md#decided)).
 The TPS55288 and TPS55289 below are the alternatives, not used.
 
@@ -33,7 +49,7 @@ The servo rail has two output settings: up to 5.5 V for LV (low-voltage)
 servos and up to 8.4 V for HV (high-voltage) servos, at 4 to 6.35 A. Both are
 set from software, and the current limit follows the voltage setting.
 
-Three parts of the same TI family:
+Three parts of the same TI (Texas Instruments) family:
 
 | | TPS55288 | TPS55289 | TPS55285 |
 | --- | --- | --- | --- |
@@ -169,5 +185,5 @@ at 0.2 mΩ and would dissipate 18 W. Kelvin-sense it, with an RC
 ## Not answered here
 
 - The converter's input connector and heatsink.
-- The shunt part numbers. Only the class is settled.
+- The shunt part numbers are on [Supply](Supply.md); their mounting and the 300 A path's busbar are round 3.
 - Layout, isolation, and how a 300 A path and a 3.3 V I²C bus share a board.

@@ -1,19 +1,39 @@
 # IO (input/output) board component research, round 1
 
 The plan for the multi-agent research that selects the integrated circuits
-(ICs) of the IO board. **It has not run.** The owner accepted it on
-2026-09-25. It is planned as six
-tasks (question S8), each a workflow of at most 32 agents (owner, 2026-09-24).
-Prerequisites 1 to 3 are in place (2026-09-27). T1 starts on the owner's go
-once prerequisites 4 to 6 are in place (owner, 2026-09-27;
-[Prerequisites](#prerequisites)). A research task starts when every
-[blocking question](#blocking-answered-before-the-research-tasks) and every
-[question raised by P1](#raised-by-p1) that its categories depend on is
-answered. A question whose value only feeds a decision under
-[Decided on the research's output](#decided-on-the-researchs-output) holds
-neither P2 nor the start of its task. The
-[decisions that wait on the research](#decided-on-the-researchs-output) are
-taken before the last task.
+(ICs) of the IO board, and the record of its run. The owner accepted the plan
+on 2026-09-25. **Round 1 ran from 2026-09-28 to 2026-09-30**, as six tasks
+(question S8) and 9 follow-up tasks, each a workflow of at most 32 agents
+(owner, 2026-09-24). Each task read the commit of `research/round1`, the
+branch of [prerequisite 4](#prerequisites), that its `task.json` under
+`hardware/research/round1/<run>/` records:
+
+| Task | Run | Date | Commit of `research/round1` read |
+| --- | --- | --- | --- |
+| T1 | T1 | 2026-09-28 | `be1f24767452` |
+| T2 | T2 | 2026-09-28 | `c25aa863372d` |
+| T4 | T4 | 2026-09-28 | `c25aa863372d` |
+| Follow-up | FU-P1R5 | 2026-09-28 | `249be1e5ea81` |
+| Follow-up | FU-A1 | 2026-09-28 | `10b0bade34de` |
+| T3 | T3 | 2026-09-29 | `e13f5f60d2e5` |
+| Follow-up | FU-A2, FU-A3, FU-A4, FU-B1, FU-B3, FU-C1, FU-C2 | 2026-09-29 | `e13f5f60d2e5` |
+| T5 | T5 | 2026-09-29 | `e13f5f60d2e5` |
+| T6 | T6 | 2026-09-30 | `9460c22ec32d` |
+
+Two runs stopped and were run again: FU-A4 (`FU-A4-stopped-1`, 2026-09-29,
+`e13f5f60d2e5`) and T6 (`T6-stopped-1`, 2026-09-29, `9460c22ec32d`). The
+parts round 1 selected are in [Parts](Parts.md), with the reasons and the
+open items on [Control](Control.md), [Supply](Supply.md) and
+[Sensing](Sensing.md). The sections below are the plan as the tasks read it.
+Some tables below use a term before the text expands it: PWM is pulse-width
+modulation, PPM pulse-position modulation, UART a universal asynchronous
+receiver-transmitter, RGB LED a red-green-blue light-emitting diode, LV and
+HV low and high voltage, ESR equivalent series resistance, IEC the
+International Electrotechnical Commission, FD the flexible data rate of
+CAN (Controller Area Network) FD, TVS transient-voltage-suppression, BEC
+the battery eliminator circuit of an ESC (electronic speed controller), its
+servo supply, I2C Inter-Integrated Circuit, AC alternating
+current and EEPROM electrically erasable programmable read-only memory.
 
 The IO board is the coprocessor board: the RP2354B, the CAN (Controller Area
 Network) link to the display, the outputs, the receiver inputs, the sensor
