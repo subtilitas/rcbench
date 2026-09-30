@@ -1,0 +1,2934 @@
+{
+ "role": "P2",
+ "category": "R5",
+ "label": "P2-R5",
+ "attempt": 0,
+ "data": {
+  "category": "R5",
+  "found_values": [
+   {
+    "question_id": "V79",
+    "value": "4.5 V at the display end while it draws 2 A: the display's CAN transceiver U7, a TJA1051T/3, runs from its 5V net (VCC pin 3 on 5V, VIO pin 5 on 3V3), and the TJA1051 supply range is VCC 4.5 V to 5.5 V (Table 7). Its differential output VO(dif) is specified only at VCC 4.75 V to 5.25 V, so between 4.5 V and 4.75 V the transmit level is not specified (report). Drops inside the display between its supply entry and U7 are not read",
+    "source": "https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-7/ESP32-S3-Touch-LCD-7-Sch.pdf (V1.2, page 1, rendered at 400 dpi and 500 dpi), CAN block; https://www.nxp.com/docs/en/data-sheet/TJA1051.pdf Rev. 9 (28 November 2017), Tables 1 and 7",
+    "read_at": "2026-09-29T11:56:18Z (schematic and TJA1051)"
+   },
+   {
+    "question_id": "V80",
+    "value": "No. The native USB-C socket Type_C2 ties its VBUS pins A4/B9 and A9/B4 straight to the display's 5V net, with only TVS2 (LTVS16H5.0ET5G) to ground: a direct connection. The USB-UART socket Type_C1 is isolated: its VBUS net VUART reaches the 5V net through Q10 and the CH343 VBUS net through Q5, each an AO3401 P-channel MOSFET driven by an MMBT3906 pair as an ideal diode, which block current from the 5V net into that socket. 5 V from the link cable therefore appears on the native socket's VBUS pins; R5 states it as a conflict (report)",
+    "source": "https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-7/ESP32-S3-Touch-LCD-7-Sch.pdf (V1.2, page 1, rendered at 400 dpi and 500 dpi), blocks USB and USB to UART; docs/Link.md:19-23 at checkout e13f5f6",
+    "read_at": "2026-09-29T11:56:18Z"
+   },
+   {
+    "question_id": "V81",
+    "value": "5.5 V at the display end at no load: the TJA1051T/3 on the display's 5V net is specified to VCC 5.5 V at most (Table 7). The breakdown of TVS2 on the native VBUS is not read",
+    "source": "https://www.nxp.com/docs/en/data-sheet/TJA1051.pdf Rev. 9 (28 November 2017), Table 7; https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-7/ESP32-S3-Touch-LCD-7-Sch.pdf (V1.2, page 1, rendered at 400 dpi and 500 dpi)",
+    "read_at": "2026-09-29T11:56:18Z"
+   },
+   {
+    "question_id": "V82",
+    "value": "2.5 A nominal, 2.25 A to 2.75 A: the TPS25947 current limit holds +/-10 % above 1 A; the lowest corner is above the display's 2 A peak (prerequisite 7). A short on the cable draws at most 2.75 A from the 5 V rail, inside the 3 A rating of the 5 V rail's rank 1, so the 5 V and 3.3 V rails stay up; the 3.3 V rail runs from the input bus, not from the 5 V rail. The circuit-breaker variant TPS259474A turns the output off after the ITIMER blanking",
+    "source": "https://www.ti.com/lit/ds/symlink/tps25947.pdf SLVSFC9C, features and 6.5 ILIM; Research.md:489-490 (prerequisite 7) at checkout e13f5f6",
+    "read_at": "2026-09-29T11:56:07Z"
+   },
+   {
+    "question_id": "V83",
+    "value": "25.2 V continuous without damage: the V267 Answer names the mis-connections the DC input survives as a 6S pack (6 x 4.2 V = 25.2 V) or a 24 V supply; connected the right way round they give 25.2 V forward. A 24 V supply adjusted above 25.2 V is not covered",
+    "source": "V267 Answer, hardware/docs/Research.md at checkout e13f5f6:827",
+    "read_at": "2026-09-29T11:47Z (checkout read)"
+   },
+   {
+    "question_id": "V84",
+    "value": "The cut-off trips above 20.0 V and at or below 22.0 V at every tolerance corner. 22.0 V is the TPS55285's recommended maximum input (the servo converter shares the input bus); 20 V is taken to include the DC source's tolerance, since the tree states 12 to 20 V without one. With the LM7480x OV comparator (1.195 V to 1.267 V) set to 21.0 V at 1.231 V, it trips at 20.39 V to 21.61 V, 20.35 V to 21.65 V with 0.1 % divider resistors",
+    "source": "https://www.ti.com/lit/ds/symlink/tps55285.pdf SLVSI72A 5.3 (VIN 2.4 V to 22 V); https://www.ti.com/lit/ds/symlink/lm7480-q1.pdf SNOSD95C 7.5 V(OVR); Research.md:61 and IOBoard.md:322 at checkout e13f5f6",
+    "read_at": "2026-09-29T11:56:07Z"
+   },
+   {
+    "question_id": "V85",
+    "value": "60 V peak for 10 us at the DC input terminals before any clamp. Linear Technology Application Note 88 measures a 24 V adapter hot-plugged through 1 uH onto 10 uF of ceramic capacitance peaking at 57.2 V, 2.38 times the step (Table 1, trace CH1). Applied to the 25.2 V of V83 that is 60 V; the half period of 1 uH and 10 uF, pi x sqrt(L x C), is 9.9 us. It is clamped by a bidirectional TVS of 27 V standoff (TVS2701DRBR: 35.7 V maximum at IPP, 37.3 V at 125 degC; report 'input TVS')",
+    "source": "https://www.analog.com/media/en/technical-documentation/application-notes/an88f.pdf (AN88), Table 1, vendors.py fetch --client safari; https://www.ti.com/lit/ds/symlink/tvs2701.pdf SLVSEQ5A 7.6",
+    "read_at": "2026-09-29T12:08:59Z (AN88), 11:56:07Z (TVS2701)"
+   },
+   {
+    "question_id": "V86",
+    "value": "Yes: reverse-polarity, overvoltage and inrush protection sit on the 2S pack input as well. The pack input takes the same mis-connections the owner names for V267, and one LM7480x controller per input gives all three with the ideal-diode OR of source selection (section 9.5.1, redundant supply OR-ing with inrush current limiting and overvoltage protection). The pack cut-off sits above the 8.45 V of V92",
+    "source": "V267 Answer, hardware/docs/Research.md at checkout e13f5f6:827; https://www.ti.com/lit/ds/symlink/lm7480-q1.pdf SNOSD95C 9.5.1",
+    "read_at": "2026-09-29T11:56:07Z"
+   },
+   {
+    "question_id": "V87",
+    "value": "2.0 A peak on each input at plug-in. No source in the tree states a limit; 2.0 A is the display's own 2 A peak (prerequisite 7), a current each source supplies in operation, and below the steady input currents (6.4 A, V105; 13.1 A, V90). The LM7480x sets it with a capacitor on HGATE: I_INRUSH = I_HGATE x C_OUT / C_dVdT with I_HGATE 39 uA to 75 uA, so a design at 1.46 A nominal stays at or under 1.99 A",
+    "source": "https://www.ti.com/lit/ds/symlink/lm7480-q1.pdf SNOSD95C 7.5 I(HGATE), 9.3.2.2 Equation 2; Research.md:489-490",
+    "read_at": "2026-09-29T11:56:07Z"
+   },
+   {
+    "question_id": "V88",
+    "value": "The DC input counts as absent below 10.1 V falling and present above 11.0 V rising, set with the LM7480x EN/UVLO comparator (rising 1.195 V to 1.267 V, falling 1.091 V to 1.159 V) through a divider of 8.936. With 0.1 % resistors: falling 9.73 V to 10.38 V, rising 10.66 V to 11.34 V (the former 9.8 V to 10.4 V and 10.7 V to 11.3 V rounded the corners inward). The requirement is the bounds: the falling threshold stays above the pack's highest 8.45 V at its lowest corner, so a pack back-feed never reads as present, and the rising threshold is at or below 11.4 V at its highest corner. 12 V is taken as the lowest the DC source delivers including its tolerance (the tree states 12 to 20 V without one); 11.4 V leaves 0.6 V for the input lead at 6.4 A",
+    "source": "https://www.ti.com/lit/ds/symlink/lm7480-q1.pdf SNOSD95C section 7.5 (V(UVLOR), V(UVLOF)); Research.md:61, IOBoard.md:322 at checkout e13f5f6",
+    "read_at": "2026-09-29T11:56:07Z"
+   },
+   {
+    "question_id": "V89",
+    "value": "0 ms on both rails. A 3.3 V dip resets the RP2354B and the monostable's reset supervisor (F12); a 5 V dip resets the display, which stops the heartbeat and the link. The ideal-diode OR keeps the input bus up across the switchover: on DC removal the pack path's MOSFET body diode conducts at once and DGATE turns on in 2.8 us to 3.8 us; on DC connection the pack path's DGATE turns off in 0.5 us to 0.875 us. The bus falls at most to the pack voltage less one diode drop for microseconds",
+    "source": "https://www.ti.com/lit/ds/symlink/lm7480-q1.pdf SNOSD95C 7.5, 7.6; Monostable.md at 23c82ca (window 155 to 185 ms); IOBoard.md:57 at checkout e13f5f6",
+    "read_at": "2026-09-29T11:56:07Z"
+   },
+   {
+    "question_id": "V90",
+    "value": "12.7 A at 6.0 V and 13.1 A at a 5.8 V bus, on option 1 with 90 % for every converter: servo supply 53.3 W / 0.9 = 59.3 W (9.9 A at 6.0 V), display 10 W peak / 0.9 = 11.1 W, 3.3 V rail 1.09 A x 3.3 V / 0.9 = 4.0 W, encoder supply 1.2 W / 0.9 = 1.3 W, load-cell excitation 0.06 A linear. Option 2 has no datasheet figure at 6.0 V in and 8.4 V, 6.35 A out: the TPS55285's average inductor current limit ILIM_AVG is 7 A minimum, 8 A typical, no maximum, and 8.4 V x 6.35 A from 6.0 V needs 8.9 A even at 100 %, so it current-limits there. R5 sizes the pack path for 13.1 A",
+    "source": "IOBoard.md:326 at checkout e13f5f6; https://www.ti.com/lit/ds/symlink/tps55285.pdf SLVSI72A 5.4 ILIM_AVG; FU-C1/004-P2-R13.json (60 mA excitation, V254)",
+    "read_at": "2026-09-29T11:56:07Z"
+   },
+   {
+    "question_id": "V91",
+    "value": "No. The owner's power decision names two sources, the 12 to 20 V DC input and the 2S pack (Research.md:61); USB-C charges the pack (F8). No rail runs from the RP2354B's USB VBUS; whether the charger's power path runs the board from USB-C is R7's (V152)",
+    "source": "hardware/docs/Research.md at checkout e13f5f6:61, :536 (F8), V152",
+    "read_at": "2026-09-29T11:47Z (checkout read)"
+   },
+   {
+    "question_id": "V92",
+    "value": "8.45 V: the charger R7 selected, BQ25713, regulates 2S at 8.4 V +/-0.6 % over 0 to 85 degC (VBAT_REG_ACC, REG0x05/04 = 0x20D0h), 8.35 V to 8.45 V. The pack path is designed for 8.45 V; R7's cell is not selected (selection.json)",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25713.pdf SLUSD83C, electrical characteristics VBAT_REG_ACC; selection.json (R7 Pack charger BQ25713RSNR)",
+    "read_at": "2026-09-29T12:10:28Z"
+   },
+   {
+    "question_id": "V93",
+    "value": "The USB-C charger present, and then every cell above the release voltage of V94. The R5460 F version releases over-discharge only after a charger is connected and the cell voltage is above VREL2; the load returning alone never reconnects the pack. It senses the charger at its V- pin ('charger negative input pin'), so the charger connects on the V- side of the discharge MOSFET (report). The DC input present does not reconnect it: the DC input never charges the pack (F8)",
+    "source": "https://www.nisshinbo-microdevices.co.jp/en/pdf/datasheet/r5460-ea.pdf NO.EA-165-250616, outline, VDET2 section, pin description V-; F8 Answer, Research.md:536",
+    "read_at": "2026-09-29T11:56:18Z"
+   },
+   {
+    "question_id": "V94",
+    "value": "3.2 V a cell (3.12 V to 3.28 V at x0.975 to x1.025, Ta 25 degC): the R5460N212AF over-discharge released voltage VREL2U and VREL2L, 0.200 V above the 3.0 V floor",
+    "source": "https://www.nisshinbo-microdevices.co.jp/en/pdf/datasheet/r5460-ea.pdf NO.EA-165-250616, product code table (R5460x212AF: VDET2 3.000 V, VREL2 3.200 V), electrical characteristics AF version",
+    "read_at": "2026-09-29T11:56:18Z"
+   },
+   {
+    "question_id": "V95",
+    "value": "3.0 V is the nominal trip point, held to +/-75 mV (x0.975 to x1.025, 2.925 V to 3.075 V) at Ta 25 degC. The datasheet states the over-discharge accuracy at 25 degC only, so the tolerance over 0 to 50 degC is not stated",
+    "source": "https://www.nisshinbo-microdevices.co.jp/en/pdf/datasheet/r5460-ea.pdf NO.EA-165-250616, electrical characteristics VDET2U, VDET2L (Ta 25 degC)",
+    "read_at": "2026-09-29T11:56:18Z"
+   },
+   {
+    "question_id": "V96",
+    "value": "128 ms typical, 89 ms to 167 ms: a cell at or below the floor for that long disconnects the pack; a shorter sag under a load step does not (tVDET2)",
+    "source": "https://www.nisshinbo-microdevices.co.jp/en/pdf/datasheet/r5460-ea.pdf NO.EA-165-250616, electrical characteristics tVDET2",
+    "read_at": "2026-09-29T11:56:18Z"
+   },
+   {
+    "question_id": "V97",
+    "value": "10 uA at most from the pack while disconnected. No source fixes it; at 10 uA a disconnected pack loses 7.2 mAh in 30 days. The R5460 C and F versions draw 0.1 uA at most in standby after over-discharge, which leaves 9.9 uA for MOSFET leakage and the parts R7 places on the cells",
+    "source": "https://www.nisshinbo-microdevices.co.jp/en/pdf/datasheet/r5460-ea.pdf NO.EA-165-250616, features (standby max 0.1 uA, C/F) and IS row",
+    "read_at": "2026-09-29T11:56:18Z"
+   },
+   {
+    "question_id": "V98",
+    "value": "(a) or (b); not (c). The owner's decision disconnects the pack in hardware (Research.md:61); a threshold firmware writes over I2C at start-up is not in force before the write. R5 takes (a): the R5460N212AF, threshold factory-trimmed. R7 left the per-cell undervoltage to R5 (T3 R7 P2, V150)",
+    "source": "hardware/docs/Research.md at checkout e13f5f6:61, :537 (F9); https://www.nisshinbo-microdevices.co.jp/en/pdf/datasheet/r5460-ea.pdf NO.EA-165-250616 product code table; T3/003-P2-R7.json V150",
+    "read_at": "2026-09-29T11:56:18Z"
+   },
+   {
+    "question_id": "V99",
+    "value": "25 % on each rail: each rail part is rated at least 1.25 x its summed load. The margin covers the R6, R7 and R8 parts not in the sum (on their seeds about 11 mA from the 3.3 V rail: 7 x INA3221 0.45 mA, 2 x INA238 1.1 mA, TMP117, TCA6424A), the isoSPI transceiver R9 names without selecting (LTC6820 5.8 mA) and the loads given only as typical figures (TPSI3052 26 mA each, ADXL316 0.35 mA). 3.3 V: 1090 mA x 1.25 = 1.36 A. 5 V: 2.0 A x 1.25 = 2.5 A",
+    "source": "T3/006-P2-R5.json V99 (quiescent-current rows of INA3221, INA238, TMP117, TCA6424A and LTC6820, read 2026-09-29T09:48Z to 09:52Z) and report '3.3 V rail load, summed maxima'",
+    "read_at": "2026-09-29T09:52Z (T3 readings, confirmed by T3 P4)"
+   },
+   {
+    "question_id": "V100",
+    "value": "+/-5 %, 4.75 V to 5.25 V at the IO board's own 5 V loads. The load-cell excitation is not on the 5 V rail: R13 found it as a 5 V regulator of its own on the input bus (V254). The 5 V load left is the encoder's 5 V supply of F4, now made by the encoder converter in its 5 V position; the E6B2-CWZ1X line-driver encoder takes 5 VDC +/-5 %",
+    "source": "https://www.ia.omron.com/products/family/487/specification.html (last update February 1, 2023), power supply voltage row; FU-C1/004-P2-R13.json V254",
+    "read_at": "2026-09-29T11:56:18Z"
+   },
+   {
+    "question_id": "V101",
+    "value": "345 Ohm: 350 Ohm +/-5 Ohm input resistance for each of the 3 cells (HT Sensor TAS501, the cell class R13 took for V255). Three cells on one 5.25 V excitation draw 45.7 mA from R13's own regulator, not from the 5 V rail",
+    "source": "https://cdn.sparkfun.com/assets/parts/1/2/2/3/8/TAS501.pdf, specifications table (input resistance 350 +/- 5 Ohm)",
+    "read_at": "2026-09-29T12:08:58Z"
+   },
+   {
+    "question_id": "V102",
+    "value": "100 mA at 12 V and 160 mA at 5 V. No encoder is named in the tree; the figures are the maxima of the Omron E6B2-C series: E6B2-CWZ5B (12 VDC -10 % to 24 VDC +15 %) 100 mA max, E6B2-CWZ3E (5 VDC -5 % to 12 VDC +10 %) 100 mA max, E6B2-CWZ6C 80 mA max, E6B2-CWZ1X line driver (AM26LS31 equivalent, 5 VDC +/-5 %) 160 mA max",
+    "source": "https://www.ia.omron.com/products/family/487/specification.html (last update February 1, 2023), current consumption row",
+    "read_at": "2026-09-29T11:56:18Z"
+   },
+   {
+    "question_id": "V103",
+    "value": "10.8 V to 13.2 V at the encoder connector: 12 V -10 % is the lowest supply of the E6B2-CWZ5B; 12 V +10 % is the highest the E6B2-CWZ3E takes, so every E6B2-C model that takes 12 V runs across the range",
+    "source": "https://www.ia.omron.com/products/family/487/specification.html (last update February 1, 2023), power supply voltage row",
+    "read_at": "2026-09-29T11:56:18Z"
+   },
+   {
+    "question_id": "V104",
+    "value": "No. The receiver connects by one signal wire and ground (docs/Receivers.md:15-16), and the analyser's SILENT state sends the operator to check receiver power (docs/Receivers.md:29): the receiver takes its power from its own source or from an output port's supply pin (IOBoard.md:64). No rail, voltage or current is assigned to it",
+    "source": "docs/Receivers.md:15-16 and :29; hardware/docs/IOBoard.md:64 at checkout e13f5f6",
+    "read_at": "2026-09-29T11:47Z (checkout read)"
+   },
+   {
+    "question_id": "V105",
+    "value": "6.4 A at 12 V and 3.9 A at 20 V, option 1 with 90 % for every converter: servo 53.3 W / 0.9 = 59.3 W, display 10 W peak / 0.9 = 11.1 W, 3.3 V rail 4.0 W, encoder supply 1.3 W, load-cell excitation 0.06 A linear (0.72 W at 12 V): 76.4 W / 12 V = 6.37 A. Option 2 (TPS55285 datasheet efficiency) gives less: T3 read 95 % at VIN 12 V, 6 A, VOUT 9 V (Figure 5-3), 6.0 A in total. R5 sizes the DC path for 6.4 A",
+    "source": "IOBoard.md:326 at checkout e13f5f6; https://www.ti.com/lit/ds/symlink/tps55285.pdf SLVSI72A Figure 5-3 (T3/006-P2-R5.json V105, read 09:46:56Z); FU-C1/004-P2-R13.json (60 mA)",
+    "read_at": "2026-09-29T11:56:07Z"
+   },
+   {
+    "question_id": "V106",
+    "value": "Either order. No IO board part is supplied from both rails: the 5 V rail feeds only the display through the TPS25947, which blocks reverse current; the encoder supply and the load-cell excitation run from the input bus. The parts T2 and T4 selected that see signals from 5 V circuits while 3.3 V is down take them: AM26LV32E line inputs -14 V to 14 V with no VCC condition and outputs Ioff +/-100 uA at VCC 0 V; TCAN3413 unpowered bus leakage 5 uA at CANH = CANL = 5 V. The 3.3 V ramp is bound by the reset supervisor of F12 instead, which P5 checks",
+    "source": "https://www.ti.com/lit/ds/symlink/am26lv32e.pdf SLLS849E (absolute maximum ratings, Ioff); https://www.ti.com/lit/ds/symlink/tcan3413.pdf SLLSFS8A ILKG(IOFF); FU-C1/004-P2-R13.json V254",
+    "read_at": "2026-09-29T12:13:56Z (AM26LV32E), 12:04:36Z (TCAN3413)"
+   },
+   {
+    "question_id": "V107",
+    "value": "Yes: with the balance lead unplugged or one balance wire open the disconnect holds the pack off. The R5460 detects over-discharge when either cell reads at or below VDET2; a pull-down from its VC pin to VSS (round 2) makes an open middle wire read as a 0 V cell and keeps DOUT low, and a pull-down on the DOUT gate holds the MOSFET off with the IC unpowered. The datasheet does not state its behaviour with VC left open",
+    "source": "https://www.nisshinbo-microdevices.co.jp/en/pdf/datasheet/r5460-ea.pdf NO.EA-165-250616, VDET2 section; F9 Answer, Research.md:537",
+    "read_at": "2026-09-29T11:56:18Z"
+   },
+   {
+    "question_id": "V108",
+    "value": "250 mA nominal, 233 mA to 267 mA: above the encoder's highest draw (160 mA at 5 V, 100 mA at 12 V, V102). The limit is the encoder converter's own output current limit, in both jumper positions, because the F4 jumper selects the converter's feedback divider. The converter runs from the input bus, so a short on the encoder cable leaves the 5 V rail and the display supply untouched. TPS55288: VSNS 28 mV to 32 mV at the 30 mV setting across 120 milliohm",
+    "source": "https://www.ti.com/lit/ds/symlink/tps55288.pdf SLVSF01B 6.5 VSNS; https://www.ia.omron.com/products/family/487/specification.html (last update February 1, 2023)",
+    "read_at": "2026-09-29T11:56:07Z"
+   }
+  ],
+  "functions": [
+   {
+    "function": "reverse-polarity protection",
+    "requirements": [
+     {
+      "name": "reverse voltage survived",
+      "value": "-25.2 V on the DC input and on the pack input, without damage",
+      "source": "V267 Answer (Research.md:827); V86 found"
+     },
+     {
+      "name": "forward continuous voltage survived",
+      "value": "25.2 V continuous on either input without damage",
+      "source": "V83 found"
+     },
+     {
+      "name": "input transient survived",
+      "value": "60 V for 10 us at the terminals, clamped by a bidirectional TVS of 27 V standoff (TVS2701DRBR) to at most 37.3 V; the parts behind the TVS take 37.3 V",
+      "source": "V85 found; report 'input TVS'"
+     },
+     {
+      "name": "operating input range",
+      "value": "5.8 V to 22 V (the pack floor of 6.0 V less 0.2 V of pack path drop, up to the 22.0 V overvoltage cut-off)",
+      "source": "F9 (Research.md:537); V84 found; V113 (R6)"
+     },
+     {
+      "name": "current carried",
+      "value": "6.4 A on the DC path at 12 V; 13.1 A on the pack path at a 5.8 V bus, through external MOSFETs",
+      "source": "V105 found; V90 found"
+     },
+     {
+      "name": "DC pins kept free of the pack voltage",
+      "value": "with the DC input unplugged or its source off, the pack's 6.0 V to 8.45 V does not reach the DC input pins",
+      "source": "V268 Answer (Research.md:828); V92 found"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 50 degC ambient",
+      "source": "V7 Answer, Research.md:567 at checkout e13f5f6: 0 to 50 degC ambient for the IO board"
+     },
+     {
+      "name": "maker allowed",
+      "value": "IC maker on the S1 list",
+      "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "LM74800QDRRRQ1",
+      "maker": "Texas Instruments (datasheet LM7480-Q1 SNOSD95C); S1 Texas Instruments",
+      "lcsc": "C3215600",
+      "package": "WSON-12 (DRR) 3 x 3 mm",
+      "placements": 2,
+      "placements_basis": "fixed at 2 by the design: one controller on the DC input and one on the pack input (V86 found: the protection sits on both inputs); each drives back-to-back N-channel MOSFETs (LM7480-Q1 section 9.5.1)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "reverse voltage survived",
+        "required": "-25.2 V on the DC input and on the pack input, without damage",
+        "datasheet": "A to GND -65 V to 70 V absolute maximum, -60 V to 65 V recommended (sections 7.1, 7.3): -25.2 V inside",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] sections 7.1 and 7.3"
+       },
+       {
+        "name": "forward continuous voltage survived",
+        "required": "25.2 V continuous on either input without damage",
+        "datasheet": "A to GND 65 V recommended, 70 V absolute: 25.2 V inside",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.1, 7.3"
+       },
+       {
+        "name": "input transient survived",
+        "required": "60 V for 10 us at the terminals, clamped by a bidirectional TVS of 27 V standoff (TVS2701DRBR) to at most 37.3 V; the parts behind the TVS take 37.3 V",
+        "datasheet": "70 V absolute maximum at A, VS and OUT; 37.3 V inside",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.1"
+       },
+       {
+        "name": "operating input range",
+        "required": "5.8 V to 22 V (the pack floor of 6.0 V less 0.2 V of pack path drop, up to the 22.0 V overvoltage cut-off)",
+        "datasheet": "VS 3 V to 65 V operating; 5.8 V to 22 V inside",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.3, features"
+       },
+       {
+        "name": "current carried",
+        "required": "6.4 A on the DC path at 12 V; 13.1 A on the pack path at a 5.8 V bus, through external MOSFETs",
+        "datasheet": "the current flows in the external MOSFETs; the controller sets no current ceiling (the MOSFETs are reported, not selected)",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] section 9.5.1"
+       },
+       {
+        "name": "DC pins kept free of the pack voltage",
+        "required": "with the DC input unplugged or its source off, the pack's 6.0 V to 8.45 V does not reach the DC input pins",
+        "datasheet": "ideal-diode DGATE turns the reverse MOSFET off at V(AC_REV) -6.4 mV to -1.3 mV, DGATE off in 0.5 us typical, 0.875 us maximum (7.5, 7.6): the pack cannot back-feed the DC pins",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.5, 7.6, 9.3.1"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 150 degC operating (7.1), AEC-Q100: 0 to 50 degC ambient inside",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.1"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 3138, canPresaleNumber 3069, componentLibraryType expand, USD 2.3603 each at the need of 10 (price break 10); read 2026-09-29T11:57:10Z, vendors.py jlcpcb C3215600 (exact LCSC match)",
+      "digikey": "stock_available 7634, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T10:00:06Z (cached reading of that time, returned at 12:03Z), vendors.py digikey LM74800QDRRRQ1",
+      "gate": "need 5 boards x 2 = 10; S4 gate max(5 x 10, 50) = 50; stockCount 3138 >= 50, canPresaleNumber 3069 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/LM7480-Q1 meta status, read 2026-09-29T12:12:12Z); longevity: none published; first datasheet April 2020 (SNOSD95C header), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:00:06Z)",
+      "second_source": "second vendor: Digi-Key LM74800QDRRRQ1 stock_available 7634 >= the rule 4 gate 50 (read 2026-09-29T10:00:06Z, vendors.py digikey LM74800QDRRRQ1): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "LM74800MDRRR (C7216630): same pins and thresholds, non-automotive",
+       "LM74810QDRRRQ1 (C3215601): same WSON-12 pin table and thresholds",
+       "LM74801QDRRRQ1 (C2873366): same pins, 4.7 us OV cut-off"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Meets every value with -65 V and an ideal diode; the same part gives the overvoltage cut-off, inrush control and the OR of source selection on each input, so one part type covers four functions. Largest Digi-Key stock of the three (7634), lowest price at JLCPCB (USD 2.36 at 10)."
+     },
+     {
+      "rank": 2,
+      "part": "LM74810QDRRRQ1",
+      "maker": "Texas Instruments (datasheet LM7481-Q1 SNOSD98A); S1 Texas Instruments",
+      "lcsc": "C3215601",
+      "package": "WSON-12 (DRR) 3 x 3 mm",
+      "placements": 2,
+      "placements_basis": "fixed at 2 by the design: one controller on the DC input and one on the pack input (V86 found: the protection sits on both inputs); each drives back-to-back N-channel MOSFETs (LM7480-Q1 section 9.5.1)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "reverse voltage survived",
+        "required": "-25.2 V on the DC input and on the pack input, without damage",
+        "datasheet": "A to GND -65 V to 70 V absolute maximum, -60 V to 65 V recommended: -25.2 V inside",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] sections 7.1 and 7.3"
+       },
+       {
+        "name": "forward continuous voltage survived",
+        "required": "25.2 V continuous on either input without damage",
+        "datasheet": "A to GND 65 V recommended, 70 V absolute: 25.2 V inside",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.1, 7.3"
+       },
+       {
+        "name": "input transient survived",
+        "required": "60 V for 10 us at the terminals, clamped by a bidirectional TVS of 27 V standoff (TVS2701DRBR) to at most 37.3 V; the parts behind the TVS take 37.3 V",
+        "datasheet": "70 V absolute maximum at A, VS and OUT; 37.3 V inside",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.1"
+       },
+       {
+        "name": "operating input range",
+        "required": "5.8 V to 22 V (the pack floor of 6.0 V less 0.2 V of pack path drop, up to the 22.0 V overvoltage cut-off)",
+        "datasheet": "VS 3 V to 65 V operating; 5.8 V to 22 V inside",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.3, features"
+       },
+       {
+        "name": "current carried",
+        "required": "6.4 A on the DC path at 12 V; 13.1 A on the pack path at a 5.8 V bus, through external MOSFETs",
+        "datasheet": "the current flows in the external MOSFETs; the controller sets no current ceiling (the MOSFETs are reported, not selected)",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] section 9.5.1"
+       },
+       {
+        "name": "DC pins kept free of the pack voltage",
+        "required": "with the DC input unplugged or its source off, the pack's 6.0 V to 8.45 V does not reach the DC input pins",
+        "datasheet": "ideal-diode DGATE turns the reverse MOSFET off at V(AC_REV) -6.4 mV to -1.3 mV: the pack cannot back-feed the DC pins",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.5, 7.6, 9.3.1"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 150 degC operating, AEC-Q100: 0 to 50 degC ambient inside",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.1"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 1934, canPresaleNumber 1926, componentLibraryType expand, USD 3.1043 each at the need of 10; read 2026-09-29T11:57:10Z, vendors.py jlcpcb C3215601 (exact LCSC match)",
+      "digikey": "stock_available 2738, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T10:33:46Z (cached reading of that time), vendors.py digikey LM74810QDRRRQ1",
+      "gate": "need 5 boards x 2 = 10; S4 gate max(5 x 10, 50) = 50; stockCount 1934 >= 50, canPresaleNumber 1926 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/LM7481-Q1 meta status, read 2026-09-29T12:12:12Z); longevity: none published; first datasheet May 2020 (SNOSD98A header), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:33:46Z)",
+      "second_source": "second vendor: Digi-Key LM74810QDRRRQ1 stock_available 2738 >= the rule 4 gate 50 (read 2026-09-29T10:33:46Z, vendors.py digikey LM74810QDRRRQ1): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "LM74800QDRRRQ1 (C3215600)",
+       "LM74800MDRRR (C7216630)",
+       "LM74801QDRRRQ1 (C2873366)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The same pin table, thresholds and -65 V rating as rank 1, so it drops into the same footprint; USD 3.10 at 10 and 1934 at JLCPCB against 3138."
+     },
+     {
+      "rank": 3,
+      "part": "LM74800MDRRR",
+      "maker": "Texas Instruments (datasheet LM7480 SNOSDD8); S1 Texas Instruments",
+      "lcsc": "C7216630",
+      "package": "WSON-12 (DRR) 3 x 3 mm",
+      "placements": 2,
+      "placements_basis": "fixed at 2 by the design: one controller on the DC input and one on the pack input (V86 found: the protection sits on both inputs); each drives back-to-back N-channel MOSFETs (LM7480-Q1 section 9.5.1)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "reverse voltage survived",
+        "required": "-25.2 V on the DC input and on the pack input, without damage",
+        "datasheet": "A to GND -65 V to 70 V absolute maximum, -60 V to 65 V recommended: -25.2 V inside",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] sections 7.1 and 7.3"
+       },
+       {
+        "name": "forward continuous voltage survived",
+        "required": "25.2 V continuous on either input without damage",
+        "datasheet": "A to GND 65 V recommended, 70 V absolute: 25.2 V inside",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.1, 7.3"
+       },
+       {
+        "name": "input transient survived",
+        "required": "60 V for 10 us at the terminals, clamped by a bidirectional TVS of 27 V standoff (TVS2701DRBR) to at most 37.3 V; the parts behind the TVS take 37.3 V",
+        "datasheet": "70 V absolute maximum at A, VS and OUT; 37.3 V inside",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.1"
+       },
+       {
+        "name": "operating input range",
+        "required": "5.8 V to 22 V (the pack floor of 6.0 V less 0.2 V of pack path drop, up to the 22.0 V overvoltage cut-off)",
+        "datasheet": "VS 3 V to 65 V operating; 5.8 V to 22 V inside",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.3, features"
+       },
+       {
+        "name": "current carried",
+        "required": "6.4 A on the DC path at 12 V; 13.1 A on the pack path at a 5.8 V bus, through external MOSFETs",
+        "datasheet": "the current flows in the external MOSFETs; the controller sets no current ceiling (the MOSFETs are reported, not selected)",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] section 9.5.1"
+       },
+       {
+        "name": "DC pins kept free of the pack voltage",
+        "required": "with the DC input unplugged or its source off, the pack's 6.0 V to 8.45 V does not reach the DC input pins",
+        "datasheet": "ideal-diode DGATE turns the reverse MOSFET off at V(AC_REV) -6.5 mV to -1.3 mV: the pack cannot back-feed the DC pins",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.5, 7.6, 9.3.1"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -55 to 150 degC operating; orderable addendum -55 to 125 degC: 0 to 50 degC ambient inside",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.1"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 6031, canPresaleNumber 5968, componentLibraryType expand, USD 3.2895 each at the need of 10; read 2026-09-29T11:57:10Z, vendors.py jlcpcb C7216630 (exact LCSC match)",
+      "digikey": "stock_available 2153, manufacturer lead time 9 weeks, ProductStatus Active; read 2026-09-29T10:00:08Z (cached reading of that time), vendors.py digikey LM74800MDRRR",
+      "gate": "need 5 boards x 2 = 10; S4 gate max(5 x 10, 50) = 50; stockCount 6031 >= 50, canPresaleNumber 5968 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/LM7480 meta status, read 2026-09-29T12:12:12Z); longevity: none published; first datasheet December 2022 (SNOSDD8, first edition), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:00:08Z)",
+      "second_source": "second vendor: Digi-Key LM74800MDRRR stock_available 2153 >= the rule 4 gate 50 (read 2026-09-29T10:00:08Z, vendors.py digikey LM74800MDRRR): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "LM74800QDRRRQ1 (C3215600)",
+       "LM74810QDRRRQ1 (C3215601)",
+       "LM74801MDRRR (not read at JLCPCB)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Rank 1's die in the non-automotive orderable with the same thresholds and pins; largest JLCPCB stock (6031) but the highest price of the three (USD 3.29 at 10) and 2153 at Digi-Key."
+     }
+    ],
+    "dropped": [
+     {
+      "part": "LTC4365IDDB#TRPBF",
+      "maker": "Analog Devices (Linear)",
+      "reason": "passes every value (VIN -40 V to 60 V, LTC4365 Rev. B absolute maximum ratings, https://www.analog.com/media/en/technical-documentation/data-sheets/LTC4365.pdf read 2026-09-29T11:56:17Z) but has no ideal diode: the DC pins are kept free only while its UV window holds the MOSFETs off. Not among the three kept: -40 V against -65 V, and it cannot serve source selection (below)"
+     },
+     {
+      "part": "LM74801QDRRRQ1",
+      "maker": "Texas Instruments",
+      "reason": "passes every value (LM7480-Q1 SNOSD95C, the same ratings as rank 1); not among the three kept: JLCPCB stockCount 708 (vendors.py jlcpcb C2873366, 2026-09-29T11:57:11Z), the smallest of the WSON-12 parts; listed as an alternate"
+     },
+     {
+      "part": "LM74910QRGERQ1",
+      "maker": "Texas Instruments",
+      "reason": "passes the reverse-polarity values (-65 V, ideal diode; LM749x0-Q1 SNOSDE6C, https://www.ti.com/lit/ds/symlink/lm74910-q1.pdf read 2026-09-29T11:56:07Z); not among the three kept: 24-pin package with a circuit breaker and sense resistor the function does not need, no pin-compatible partner"
+     },
+     {
+      "part": "LM74720QDRRRQ1",
+      "maker": "Texas Instruments",
+      "reason": "passes the reverse-polarity values (-65 V; SLVSFH8B, https://www.ti.com/lit/ds/symlink/lm74720-q1.pdf read 2026-09-29T11:56:07Z); not among the three kept: its OV comparator V(OVR) 1.13 V to 1.33 V (17.7 %) cannot serve the overvoltage band, so the board would need a second part type"
+     },
+     {
+      "part": "LM74700QDBVRQ1",
+      "maker": "Texas Instruments",
+      "reason": "passes the reverse-polarity values (-65 V, SNOSD17G read 2026-09-29T11:56:07Z); not among the three kept: one MOSFET per path, no load disconnect, so it serves neither the overvoltage cut-off nor inrush limiting nor the V88 threshold"
+     },
+     {
+      "part": "LM74502DDFR",
+      "maker": "Texas Instruments",
+      "reason": "passes the reverse-polarity values with back-to-back MOSFETs (SNOSDE5A, read 2026-09-29T11:56:07Z); not among the three kept: no ideal-diode reverse blocking while on, and its V(OVR) 1.165 V to 1.333 V fails the overvoltage band (below)"
+     },
+     {
+      "part": "LTC4418CUF#TRPBF",
+      "maker": "Analog Devices (Linear)",
+      "reason": "fails rule 4 at JLCPCB: C688512 stockCount 30, canPresaleNumber 27, under the gate of 50 (vendors.py jlcpcb C688512, 2026-09-29T11:57:18Z)"
+     },
+     {
+      "part": "LTC4417IUF#TRPBF",
+      "maker": "Analog Devices (Linear)",
+      "reason": "passes with the TVS2701DRBR ahead: V1 to V3 -42 V to 42 V absolute (LTC4417 Rev. G, read 2026-09-29T11:56:18Z), above the 37.3 V clamp and below -25.2 V; not among the three kept: USD 11.98 at 5 (vendors.py jlcpcb C688510, 11:57:18Z), a third input unused, P-channel MOSFETs for 13.1 A"
+     },
+     {
+      "part": "LTC4367CDD#TRPBF",
+      "maker": "Analog Devices (Linear)",
+      "reason": "passes (-40 V to 100 V); not among the three kept: no ideal diode and no second source (Digi-Key 0 for this orderable, T3 P3 reading 2026-09-29T10:33:52Z)"
+     },
+     {
+      "part": "TPS259474ARPWR (as input protection)",
+      "maker": "Texas Instruments",
+      "reason": "fails 'reverse voltage survived': IN minimum max(-15 V, VOUT - 21 V) (TPS25947 SLVSFC9C 6.1), above -25.2 V; and 5.5 A class against 13.1 A"
+     }
+    ]
+   },
+   {
+    "function": "overvoltage protection",
+    "requirements": [
+     {
+      "name": "cut-off band",
+      "value": "DC input: trips above 20.0 V and at or below 22.0 V at every tolerance corner; pack input: trips above 8.45 V and at or below 22.0 V",
+      "source": "V84 found; V92 found"
+     },
+     {
+      "name": "continuous overvoltage survived",
+      "value": "25.2 V continuous on either input without damage",
+      "source": "V83 found"
+     },
+     {
+      "name": "transient survived",
+      "value": "60 V for 10 us at the terminals, clamped by a bidirectional TVS of 27 V standoff (TVS2701DRBR) to at most 37.3 V; the parts behind the TVS take 37.3 V",
+      "source": "V85 found"
+     },
+     {
+      "name": "cut-off response",
+      "value": "a stated maximum delay from the threshold to the load disconnected, recorded for P5 against the TPS55285 VIN absolute maximum of 27 V",
+      "source": "TPS55285 SLVSI72A section 5.1 (VIN -0.3 V to 27 V), https://www.ti.com/lit/ds/symlink/tps55285.pdf read 2026-09-29T11:56:07Z"
+     },
+     {
+      "name": "current carried",
+      "value": "6.4 A on the DC path at 12 V; 13.1 A on the pack path at a 5.8 V bus, through external MOSFETs",
+      "source": "V105 found; V90 found"
+     },
+     {
+      "name": "operating input range",
+      "value": "5.8 V to 22 V (the pack floor of 6.0 V less 0.2 V of pack path drop, up to the 22.0 V overvoltage cut-off)",
+      "source": "F9; V84 found"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 50 degC ambient",
+      "source": "V7 Answer, Research.md:567 at checkout e13f5f6: 0 to 50 degC ambient for the IO board"
+     },
+     {
+      "name": "maker allowed",
+      "value": "IC maker on the S1 list",
+      "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "LM74800QDRRRQ1",
+      "maker": "Texas Instruments (datasheet LM7480-Q1 SNOSD95C); S1 Texas Instruments",
+      "lcsc": "C3215600",
+      "package": "WSON-12 (DRR) 3 x 3 mm",
+      "placements": 2,
+      "placements_basis": "fixed at 2 by the design: one controller on the DC input and one on the pack input (V86 found: the protection sits on both inputs); each drives back-to-back N-channel MOSFETs (LM7480-Q1 section 9.5.1)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "cut-off band",
+        "required": "DC input: trips above 20.0 V and at or below 22.0 V at every tolerance corner; pack input: trips above 8.45 V and at or below 22.0 V",
+        "datasheet": "V(OVR) 1.195 V to 1.267 V (6.0 % span). DC input divider set for 21.0 V at 1.231 V typical: 20.39 V to 21.61 V, 20.35 V to 21.65 V with 0.1 % resistors. Pack input set for 10.0 V: 9.71 V to 10.29 V",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] section 7.5 V(OVR)"
+       },
+       {
+        "name": "continuous overvoltage survived",
+        "required": "25.2 V continuous on either input without damage",
+        "datasheet": "A to GND 65 V recommended, 70 V absolute",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.1, 7.3"
+       },
+       {
+        "name": "transient survived",
+        "required": "60 V for 10 us at the terminals, clamped by a bidirectional TVS of 27 V standoff (TVS2701DRBR) to at most 37.3 V; the parts behind the TVS take 37.3 V",
+        "datasheet": "70 V absolute maximum at A, VS, SW, OV and OUT",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.1"
+       },
+       {
+        "name": "cut-off response",
+        "required": "a stated maximum delay from the threshold to the load disconnected, recorded for P5 against the TPS55285 VIN absolute maximum of 27 V",
+        "datasheet": "3.98 us typical, 5.4 us maximum (OV rising to HGATE low, 7.6); HGATE sink current 168 mA minimum",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.5, 7.6"
+       },
+       {
+        "name": "current carried",
+        "required": "6.4 A on the DC path at 12 V; 13.1 A on the pack path at a 5.8 V bus, through external MOSFETs",
+        "datasheet": "carried by the external MOSFETs; no ceiling in the controller",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 9.5.1"
+       },
+       {
+        "name": "operating input range",
+        "required": "5.8 V to 22 V (the pack floor of 6.0 V less 0.2 V of pack path drop, up to the 22.0 V overvoltage cut-off)",
+        "datasheet": "VS 3 V to 65 V",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.3"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 150 degC operating (7.1), AEC-Q100",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.1"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 3138, canPresaleNumber 3069, componentLibraryType expand, USD 2.3603 each at the need of 10 (price break 10); read 2026-09-29T11:57:10Z, vendors.py jlcpcb C3215600 (exact LCSC match)",
+      "digikey": "stock_available 7634, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T10:00:06Z (cached reading of that time, returned at 12:03Z), vendors.py digikey LM74800QDRRRQ1",
+      "gate": "need 5 boards x 2 = 10; S4 gate max(5 x 10, 50) = 50; stockCount 3138 >= 50, canPresaleNumber 3069 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/LM7480-Q1 meta status, read 2026-09-29T12:12:12Z); longevity: none published; first datasheet April 2020 (SNOSD95C header), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:00:06Z)",
+      "second_source": "second vendor: Digi-Key LM74800QDRRRQ1 stock_available 7634 >= the rule 4 gate 50 (read 2026-09-29T10:00:06Z, vendors.py digikey LM74800QDRRRQ1): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "LM74800MDRRR (C7216630): same pins and thresholds, non-automotive",
+       "LM74810QDRRRQ1 (C3215601): same WSON-12 pin table and thresholds",
+       "LM74801QDRRRQ1 (C2873366): same pins, 4.7 us OV cut-off"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The 20 V to 22 V band holds with 0.35 V to spare at each edge, 5.4 us maximum cut-off, 70 V at A; the same part as rank 1 of reverse polarity, inrush and source selection."
+     },
+     {
+      "rank": 2,
+      "part": "LM74810QDRRRQ1",
+      "maker": "Texas Instruments (datasheet LM7481-Q1 SNOSD98A); S1 Texas Instruments",
+      "lcsc": "C3215601",
+      "package": "WSON-12 (DRR) 3 x 3 mm",
+      "placements": 2,
+      "placements_basis": "fixed at 2 by the design: one controller on the DC input and one on the pack input (V86 found: the protection sits on both inputs); each drives back-to-back N-channel MOSFETs (LM7480-Q1 section 9.5.1)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "cut-off band",
+        "required": "DC input: trips above 20.0 V and at or below 22.0 V at every tolerance corner; pack input: trips above 8.45 V and at or below 22.0 V",
+        "datasheet": "V(OVR) 1.195 V to 1.267 V (6.0 % span). DC input divider set for 21.0 V at 1.231 V typical: 20.39 V to 21.61 V, 20.35 V to 21.65 V with 0.1 % resistors. Pack input set for 10.0 V: 9.71 V to 10.29 V",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] section 7.5 V(OVR)"
+       },
+       {
+        "name": "continuous overvoltage survived",
+        "required": "25.2 V continuous on either input without damage",
+        "datasheet": "A to GND 65 V recommended, 70 V absolute",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.1, 7.3"
+       },
+       {
+        "name": "transient survived",
+        "required": "60 V for 10 us at the terminals, clamped by a bidirectional TVS of 27 V standoff (TVS2701DRBR) to at most 37.3 V; the parts behind the TVS take 37.3 V",
+        "datasheet": "70 V absolute maximum at A, VS, SW, OV and OUT",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.1"
+       },
+       {
+        "name": "cut-off response",
+        "required": "a stated maximum delay from the threshold to the load disconnected, recorded for P5 against the TPS55285 VIN absolute maximum of 27 V",
+        "datasheet": "3.98 us typical, 5.4 us maximum (OV rising to HGATE low); HGATE sink current 168 mA minimum",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.5, 7.6"
+       },
+       {
+        "name": "current carried",
+        "required": "6.4 A on the DC path at 12 V; 13.1 A on the pack path at a 5.8 V bus, through external MOSFETs",
+        "datasheet": "carried by the external MOSFETs; no ceiling in the controller",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 9.5.1"
+       },
+       {
+        "name": "operating input range",
+        "required": "5.8 V to 22 V (the pack floor of 6.0 V less 0.2 V of pack path drop, up to the 22.0 V overvoltage cut-off)",
+        "datasheet": "VS 3 V to 65 V",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.3"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 150 degC operating, AEC-Q100",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.1"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 1934, canPresaleNumber 1926, componentLibraryType expand, USD 3.1043 each at the need of 10; read 2026-09-29T11:57:10Z, vendors.py jlcpcb C3215601 (exact LCSC match)",
+      "digikey": "stock_available 2738, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T10:33:46Z (cached reading of that time), vendors.py digikey LM74810QDRRRQ1",
+      "gate": "need 5 boards x 2 = 10; S4 gate max(5 x 10, 50) = 50; stockCount 1934 >= 50, canPresaleNumber 1926 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/LM7481-Q1 meta status, read 2026-09-29T12:12:12Z); longevity: none published; first datasheet May 2020 (SNOSD98A header), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:33:46Z)",
+      "second_source": "second vendor: Digi-Key LM74810QDRRRQ1 stock_available 2738 >= the rule 4 gate 50 (read 2026-09-29T10:33:46Z, vendors.py digikey LM74810QDRRRQ1): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "LM74800QDRRRQ1 (C3215600)",
+       "LM74800MDRRR (C7216630)",
+       "LM74801QDRRRQ1 (C2873366)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The same OV comparator and cut-off timing as rank 1 in the same footprint; less JLCPCB stock and a higher price."
+     },
+     {
+      "rank": 3,
+      "part": "LM74800MDRRR",
+      "maker": "Texas Instruments (datasheet LM7480 SNOSDD8); S1 Texas Instruments",
+      "lcsc": "C7216630",
+      "package": "WSON-12 (DRR) 3 x 3 mm",
+      "placements": 2,
+      "placements_basis": "fixed at 2 by the design: one controller on the DC input and one on the pack input (V86 found: the protection sits on both inputs); each drives back-to-back N-channel MOSFETs (LM7480-Q1 section 9.5.1)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "cut-off band",
+        "required": "DC input: trips above 20.0 V and at or below 22.0 V at every tolerance corner; pack input: trips above 8.45 V and at or below 22.0 V",
+        "datasheet": "V(OVR) 1.195 V to 1.267 V (6.0 % span). DC input divider set for 21.0 V at 1.231 V typical: 20.39 V to 21.61 V, 20.35 V to 21.65 V with 0.1 % resistors. Pack input set for 10.0 V: 9.71 V to 10.29 V",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] section 7.5 V(OVR)"
+       },
+       {
+        "name": "continuous overvoltage survived",
+        "required": "25.2 V continuous on either input without damage",
+        "datasheet": "A to GND 65 V recommended, 70 V absolute",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.1, 7.3"
+       },
+       {
+        "name": "transient survived",
+        "required": "60 V for 10 us at the terminals, clamped by a bidirectional TVS of 27 V standoff (TVS2701DRBR) to at most 37.3 V; the parts behind the TVS take 37.3 V",
+        "datasheet": "70 V absolute maximum at A, VS, SW, OV and OUT",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.1"
+       },
+       {
+        "name": "cut-off response",
+        "required": "a stated maximum delay from the threshold to the load disconnected, recorded for P5 against the TPS55285 VIN absolute maximum of 27 V",
+        "datasheet": "3.98 us typical, 5.4 us maximum (OV rising to HGATE low, LM74800 only); HGATE sink current 168 mA minimum",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.5, 7.6"
+       },
+       {
+        "name": "current carried",
+        "required": "6.4 A on the DC path at 12 V; 13.1 A on the pack path at a 5.8 V bus, through external MOSFETs",
+        "datasheet": "carried by the external MOSFETs; no ceiling in the controller",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 9.5.1"
+       },
+       {
+        "name": "operating input range",
+        "required": "5.8 V to 22 V (the pack floor of 6.0 V less 0.2 V of pack path drop, up to the 22.0 V overvoltage cut-off)",
+        "datasheet": "VS 3 V to 65 V",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.3"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -55 to 150 degC operating; orderable addendum -55 to 125 degC",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.1"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 6031, canPresaleNumber 5968, componentLibraryType expand, USD 3.2895 each at the need of 10; read 2026-09-29T11:57:10Z, vendors.py jlcpcb C7216630 (exact LCSC match)",
+      "digikey": "stock_available 2153, manufacturer lead time 9 weeks, ProductStatus Active; read 2026-09-29T10:00:08Z (cached reading of that time), vendors.py digikey LM74800MDRRR",
+      "gate": "need 5 boards x 2 = 10; S4 gate max(5 x 10, 50) = 50; stockCount 6031 >= 50, canPresaleNumber 5968 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/LM7480 meta status, read 2026-09-29T12:12:12Z); longevity: none published; first datasheet December 2022 (SNOSDD8, first edition), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:00:08Z)",
+      "second_source": "second vendor: Digi-Key LM74800MDRRR stock_available 2153 >= the rule 4 gate 50 (read 2026-09-29T10:00:08Z, vendors.py digikey LM74800MDRRR): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "LM74800QDRRRQ1 (C3215600)",
+       "LM74810QDRRRQ1 (C3215601)",
+       "LM74801MDRRR (not read at JLCPCB)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Rank 1's comparator and timing in the non-automotive orderable; highest price of the three."
+     }
+    ],
+    "dropped": [
+     {
+      "part": "LM74502DDFR",
+      "maker": "Texas Instruments",
+      "reason": "fails 'cut-off band': V(OVR) 1.165 V to 1.333 V (SNOSDE5A 6.5, read 2026-09-29T11:56:07Z) spans 14.4 %, wider than the 10 % between 20.0 V and 22.0 V: no divider keeps both corners inside"
+     },
+     {
+      "part": "LM74720QDRRRQ1",
+      "maker": "Texas Instruments",
+      "reason": "fails 'cut-off band': V(OVR) 1.13 V to 1.33 V (SLVSFH8B, read 2026-09-29T11:56:07Z), 17.7 %"
+     },
+     {
+      "part": "LM5060MM/NOPB",
+      "maker": "Texas Instruments",
+      "reason": "fails 'cut-off band': OVPTH 1.88 V to 2.12 V over TJ -40 to 125 degC (SNVS628H, read 2026-09-29T11:56:07Z), 12.8 %"
+     },
+     {
+      "part": "LTC4365IDDB#TRPBF",
+      "maker": "Analog Devices (Linear)",
+      "reason": "passes (60 V, adjustable OV); not among the three kept: needs its own part beside the source-selection controller, which rank 1 does not"
+     },
+     {
+      "part": "LTC4367CDD#TRPBF",
+      "maker": "Analog Devices (Linear)",
+      "reason": "passes (VOV +/-1.5 %, 100 V); not among the three kept: no second source (Digi-Key 0, T3 P3 reading 2026-09-29T10:33:52Z)"
+     },
+     {
+      "part": "LM74910QRGERQ1",
+      "maker": "Texas Instruments",
+      "reason": "passes (V(OVR) 0.585 V to 0.630 V, 7.7 %, 7 us maximum cut-off; SNOSDE6C read 2026-09-29T11:56:07Z); not among the three kept: less margin in the band and a 24-pin package"
+     },
+     {
+      "part": "LM74801QDRRRQ1",
+      "maker": "Texas Instruments",
+      "reason": "passes (rank 1's comparator, 4.7 us maximum cut-off); not among the three kept: JLCPCB 708 (2026-09-29T11:57:11Z)"
+     },
+     {
+      "part": "LTC4417IUF#TRPBF",
+      "maker": "Analog Devices (Linear)",
+      "reason": "passes with the TVS2701DRBR ahead (VOV_UV(THR) 0.985 V to 1.015 V; 42 V absolute above the 37.3 V clamp; LTC4417 Rev. G read 2026-09-29T11:56:18Z); not among the three kept: tpVALID(OFF) 5 us to 13 us, the slowest cut-off read, and USD 11.98 at 5"
+     },
+     {
+      "part": "LTC4418CUF#TRPBF",
+      "maker": "Analog Devices (Linear)",
+      "reason": "fails rule 4 at JLCPCB: stockCount 30, canPresaleNumber 27 (C688512, 2026-09-29T11:57:18Z), under 50"
+     },
+     {
+      "part": "TVS2701DRBR, SMBJ26CA-13-F (input TVS)",
+      "maker": "Texas Instruments / Diodes Incorporated",
+      "reason": "not candidates for this function: a TVS clamps and does not cut the input off, so it has no cut-off band or cut-off response; the TVS is reported (report 'input TVS')"
+     }
+    ]
+   },
+   {
+    "function": "inrush limiting",
+    "requirements": [
+     {
+      "name": "inrush limit",
+      "value": "at most 2.0 A peak when the DC input or the pack is connected, set by a component value, at every tolerance corner",
+      "source": "V87 found"
+     },
+     {
+      "name": "current carried",
+      "value": "6.4 A on the DC path at 12 V; 13.1 A on the pack path at a 5.8 V bus, through external MOSFETs",
+      "source": "V105 found; V90 found"
+     },
+     {
+      "name": "operating input range",
+      "value": "5.8 V to 22 V; where it sits at a terminal it survives -25.2 V and 25.2 V",
+      "source": "F9; V84, V83 found; V267 Answer"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 50 degC ambient",
+      "source": "V7 Answer, Research.md:567 at checkout e13f5f6: 0 to 50 degC ambient for the IO board"
+     },
+     {
+      "name": "maker allowed",
+      "value": "IC maker on the S1 list",
+      "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "LM74800QDRRRQ1",
+      "maker": "Texas Instruments (datasheet LM7480-Q1 SNOSD95C); S1 Texas Instruments",
+      "lcsc": "C3215600",
+      "package": "WSON-12 (DRR) 3 x 3 mm",
+      "placements": 2,
+      "placements_basis": "fixed at 2 by the design: one controller on the DC input and one on the pack input (V86 found: the protection sits on both inputs); each drives back-to-back N-channel MOSFETs (LM7480-Q1 section 9.5.1)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inrush limit",
+        "required": "at most 2.0 A peak when the DC input or the pack is connected, set by a component value, at every tolerance corner",
+        "datasheet": "CdVdT on HGATE sets I_INRUSH = I_HGATE x C_OUT / CdVdT; I(HGATE) source 39 uA to 75 uA (55 uA typical). Sized for 1.46 A at 55 uA, the highest corner is 1.46 x 75 / 55 = 1.99 A",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.5 I(HGATE), 9.3.2.2 Equation 2"
+       },
+       {
+        "name": "current carried",
+        "required": "6.4 A on the DC path at 12 V; 13.1 A on the pack path at a 5.8 V bus, through external MOSFETs",
+        "datasheet": "external MOSFETs; no ceiling in the controller",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 9.5.1"
+       },
+       {
+        "name": "operating input range",
+        "required": "5.8 V to 22 V; where it sits at a terminal it survives -25.2 V and 25.2 V",
+        "datasheet": "VS 3 V to 65 V; A to GND -65 V to 70 V",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.1, 7.3"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 150 degC operating (7.1), AEC-Q100",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.1"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 3138, canPresaleNumber 3069, componentLibraryType expand, USD 2.3603 each at the need of 10 (price break 10); read 2026-09-29T11:57:10Z, vendors.py jlcpcb C3215600 (exact LCSC match)",
+      "digikey": "stock_available 7634, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T10:00:06Z (cached reading of that time, returned at 12:03Z), vendors.py digikey LM74800QDRRRQ1",
+      "gate": "need 5 boards x 2 = 10; S4 gate max(5 x 10, 50) = 50; stockCount 3138 >= 50, canPresaleNumber 3069 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/LM7480-Q1 meta status, read 2026-09-29T12:12:12Z); longevity: none published; first datasheet April 2020 (SNOSD95C header), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:00:06Z)",
+      "second_source": "second vendor: Digi-Key LM74800QDRRRQ1 stock_available 7634 >= the rule 4 gate 50 (read 2026-09-29T10:00:06Z, vendors.py digikey LM74800QDRRRQ1): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "LM74800MDRRR (C7216630): same pins and thresholds, non-automotive",
+       "LM74810QDRRRQ1 (C3215601): same WSON-12 pin table and thresholds",
+       "LM74801QDRRRQ1 (C2873366): same pins, 4.7 us OV cut-off"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The HGATE capacitor sets the inrush on each input with the part already there for reverse polarity; no extra part."
+     },
+     {
+      "rank": 2,
+      "part": "LM74810QDRRRQ1",
+      "maker": "Texas Instruments (datasheet LM7481-Q1 SNOSD98A); S1 Texas Instruments",
+      "lcsc": "C3215601",
+      "package": "WSON-12 (DRR) 3 x 3 mm",
+      "placements": 2,
+      "placements_basis": "fixed at 2 by the design: one controller on the DC input and one on the pack input (V86 found: the protection sits on both inputs); each drives back-to-back N-channel MOSFETs (LM7480-Q1 section 9.5.1)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inrush limit",
+        "required": "at most 2.0 A peak when the DC input or the pack is connected, set by a component value, at every tolerance corner",
+        "datasheet": "CdVdT on HGATE sets I_INRUSH = I_HGATE x C_OUT / CdVdT; I(HGATE) source 39 uA to 75 uA (55 uA typical). Sized for 1.46 A at 55 uA, the highest corner is 1.46 x 75 / 55 = 1.99 A",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.5 I(HGATE), 9.3.2.2 Equation 2"
+       },
+       {
+        "name": "current carried",
+        "required": "6.4 A on the DC path at 12 V; 13.1 A on the pack path at a 5.8 V bus, through external MOSFETs",
+        "datasheet": "external MOSFETs; no ceiling in the controller",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 9.5.1"
+       },
+       {
+        "name": "operating input range",
+        "required": "5.8 V to 22 V; where it sits at a terminal it survives -25.2 V and 25.2 V",
+        "datasheet": "VS 3 V to 65 V; A to GND -65 V to 70 V",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.1, 7.3"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 150 degC operating, AEC-Q100",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.1"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 1934, canPresaleNumber 1926, componentLibraryType expand, USD 3.1043 each at the need of 10; read 2026-09-29T11:57:10Z, vendors.py jlcpcb C3215601 (exact LCSC match)",
+      "digikey": "stock_available 2738, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T10:33:46Z (cached reading of that time), vendors.py digikey LM74810QDRRRQ1",
+      "gate": "need 5 boards x 2 = 10; S4 gate max(5 x 10, 50) = 50; stockCount 1934 >= 50, canPresaleNumber 1926 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/LM7481-Q1 meta status, read 2026-09-29T12:12:12Z); longevity: none published; first datasheet May 2020 (SNOSD98A header), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:33:46Z)",
+      "second_source": "second vendor: Digi-Key LM74810QDRRRQ1 stock_available 2738 >= the rule 4 gate 50 (read 2026-09-29T10:33:46Z, vendors.py digikey LM74810QDRRRQ1): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "LM74800QDRRRQ1 (C3215600)",
+       "LM74800MDRRR (C7216630)",
+       "LM74801QDRRRQ1 (C2873366)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The same HGATE source current and inrush equation in the same footprint."
+     },
+     {
+      "rank": 3,
+      "part": "LM74800MDRRR",
+      "maker": "Texas Instruments (datasheet LM7480 SNOSDD8); S1 Texas Instruments",
+      "lcsc": "C7216630",
+      "package": "WSON-12 (DRR) 3 x 3 mm",
+      "placements": 2,
+      "placements_basis": "fixed at 2 by the design: one controller on the DC input and one on the pack input (V86 found: the protection sits on both inputs); each drives back-to-back N-channel MOSFETs (LM7480-Q1 section 9.5.1)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inrush limit",
+        "required": "at most 2.0 A peak when the DC input or the pack is connected, set by a component value, at every tolerance corner",
+        "datasheet": "CdVdT on HGATE sets I_INRUSH = I_HGATE x C_OUT / CdVdT; I(HGATE) source 39 uA to 75 uA (55 uA typical). Sized for 1.46 A at 55 uA, the highest corner is 1.46 x 75 / 55 = 1.99 A",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.5 I(HGATE), 9.3.2.2 Equation 2"
+       },
+       {
+        "name": "current carried",
+        "required": "6.4 A on the DC path at 12 V; 13.1 A on the pack path at a 5.8 V bus, through external MOSFETs",
+        "datasheet": "external MOSFETs; no ceiling in the controller",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 9.5.1"
+       },
+       {
+        "name": "operating input range",
+        "required": "5.8 V to 22 V; where it sits at a terminal it survives -25.2 V and 25.2 V",
+        "datasheet": "VS 3 V to 65 V; A to GND -65 V to 70 V",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.1, 7.3"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -55 to 150 degC operating; orderable addendum -55 to 125 degC",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.1"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 6031, canPresaleNumber 5968, componentLibraryType expand, USD 3.2895 each at the need of 10; read 2026-09-29T11:57:10Z, vendors.py jlcpcb C7216630 (exact LCSC match)",
+      "digikey": "stock_available 2153, manufacturer lead time 9 weeks, ProductStatus Active; read 2026-09-29T10:00:08Z (cached reading of that time), vendors.py digikey LM74800MDRRR",
+      "gate": "need 5 boards x 2 = 10; S4 gate max(5 x 10, 50) = 50; stockCount 6031 >= 50, canPresaleNumber 5968 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/LM7480 meta status, read 2026-09-29T12:12:12Z); longevity: none published; first datasheet December 2022 (SNOSDD8, first edition), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:00:08Z)",
+      "second_source": "second vendor: Digi-Key LM74800MDRRR stock_available 2153 >= the rule 4 gate 50 (read 2026-09-29T10:00:08Z, vendors.py digikey LM74800MDRRR): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "LM74800QDRRRQ1 (C3215600)",
+       "LM74810QDRRRQ1 (C3215601)",
+       "LM74801MDRRR (not read at JLCPCB)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Rank 1's inrush circuit in the non-automotive orderable; highest price."
+     }
+    ],
+    "dropped": [
+     {
+      "part": "LM5060MM/NOPB",
+      "maker": "Texas Instruments",
+      "reason": "passes on the common bus behind the reverse-polarity stage (VIN 5.5 V to 65 V, SNVS628H read 2026-09-29T11:56:07Z); not among the three kept: adds a part and a MOSFET where rank 1 needs none"
+     },
+     {
+      "part": "LTC4365IDDB#TRPBF",
+      "maker": "Analog Devices (Linear)",
+      "reason": "not among the three kept: no inrush function stated in LTC4365 Rev. B (read 2026-09-29T11:56:17Z); a gate capacitor would set it against a gate current the datasheet does not tie to inrush"
+     },
+     {
+      "part": "LTC4417IUF#TRPBF",
+      "maker": "Analog Devices (Linear)",
+      "reason": "passes with the TVS2701DRBR ahead: soft-start of the first input, and switchover inrush set by a resistor, capacitor and Schottky diode on the gate driver (LTC4417 Rev. G, applications information, Figure 8, read 2026-09-29T11:56:18Z; P4 of T3 refuted the re-rank's drop on this ground); not among the three kept: USD 11.98 at 5, P-channel MOSFETs for 13.1 A"
+     },
+     {
+      "part": "TPS259474ARPWR / TPS259470ARPWR (as input inrush limiter)",
+      "maker": "Texas Instruments",
+      "reason": "fails 'operating input range' at a terminal: IN minimum -15 V (SLVSFC9C 6.1); and a 5.5 A class switch against 13.1 A"
+     }
+    ]
+   },
+   {
+    "function": "source selection",
+    "requirements": [
+     {
+      "name": "DC input selected when present",
+      "value": "the DC input runs the board when present; it counts as absent below a falling threshold whose lowest corner stays above 8.45 V, and as present above a rising threshold whose highest corner is at or below 11.4 V; the pack runs the board otherwise",
+      "source": "V88 found; owner, 2026-09-24 (Research.md:61)"
+     },
+     {
+      "name": "switchover interruption",
+      "value": "0 ms on the 3.3 V and 5 V rails when the DC input is connected or removed",
+      "source": "V89 found"
+     },
+     {
+      "name": "pack kept off the DC pins",
+      "value": "the DC side blocks reverse current with the DC input unplugged or its source off",
+      "source": "V268 Answer (Research.md:828)"
+     },
+     {
+      "name": "DC kept out of the pack",
+      "value": "while the DC input runs the board, no current flows from the DC input into the pack",
+      "source": "F8 Answer (Research.md:536): the pack never charges from the DC input"
+     },
+     {
+      "name": "current carried",
+      "value": "6.4 A on the DC path at 12 V; 13.1 A on the pack path at a 5.8 V bus, through external MOSFETs",
+      "source": "V105 found; V90 found"
+     },
+     {
+      "name": "input survival",
+      "value": "-25.2 V and 25.2 V on either input; 60 V for 10 us clamped to at most 37.3 V",
+      "source": "V267 Answer; V83, V85, V86 found"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 50 degC ambient",
+      "source": "V7 Answer, Research.md:567 at checkout e13f5f6: 0 to 50 degC ambient for the IO board"
+     },
+     {
+      "name": "maker allowed",
+      "value": "IC maker on the S1 list",
+      "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "LM74800QDRRRQ1",
+      "maker": "Texas Instruments (datasheet LM7480-Q1 SNOSD95C); S1 Texas Instruments",
+      "lcsc": "C3215600",
+      "package": "WSON-12 (DRR) 3 x 3 mm",
+      "placements": 2,
+      "placements_basis": "fixed at 2: one ideal-diode controller on the DC path and one on the pack path, OR-ed on the common bus (LM7480-Q1 section 9.5.1); the same two parts as reverse polarity, overvoltage and inrush",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "DC input selected when present",
+        "required": "the DC input runs the board when present; it counts as absent below a falling threshold whose lowest corner stays above 8.45 V, and as present above a rising threshold whose highest corner is at or below 11.4 V; the pack runs the board otherwise",
+        "datasheet": "EN/UVLO V(UVLOR) 1.195 V to 1.267 V, V(UVLOF) 1.091 V to 1.159 V; divider 8.936 (11.0 V at 1.231 V): present above 10.66 V to 11.34 V rising, absent below 9.73 V to 10.38 V falling with 0.1 % resistors. Between V(ENF) and V(UVLOF) only HGATE turns off, disconnecting the DC path; the pack path's ideal diode then carries the load. The DC input (12 V to 20 V) is above the pack (at most 8.45 V), so the OR selects it whenever it is present",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.5, 9.3.4, 9.5.1"
+       },
+       {
+        "name": "switchover interruption",
+        "required": "0 ms on the 3.3 V and 5 V rails when the DC input is connected or removed",
+        "datasheet": "on DC removal the pack MOSFET's body diode conducts at once and DGATE turns on in 2.8 us to 3.8 us (tDGATE_ON(dly)); the bus falls to the pack voltage less one diode drop for microseconds, inside the hold-up of the rails' output capacitors",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.6 tDGATE_ON(dly)"
+       },
+       {
+        "name": "pack kept off the DC pins",
+        "required": "the DC side blocks reverse current with the DC input unplugged or its source off",
+        "datasheet": "DC-path DGATE blocks reverse current: V(AC_REV) -6.4 mV to -1.3 mV, DGATE off in 0.5 us typical, 0.875 us maximum (7.5, 7.6)",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.5, 7.6"
+       },
+       {
+        "name": "DC kept out of the pack",
+        "required": "while the DC input runs the board, no current flows from the DC input into the pack",
+        "datasheet": "pack-path DGATE is reverse biased while the DC bus is above the pack and blocks the DC input from the cells: V(AC_REV) -6.4 mV to -1.3 mV, DGATE off in 0.5 us typical, 0.875 us maximum (7.5, 7.6)",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.5, 9.5.1"
+       },
+       {
+        "name": "current carried",
+        "required": "6.4 A on the DC path at 12 V; 13.1 A on the pack path at a 5.8 V bus, through external MOSFETs",
+        "datasheet": "external MOSFETs; no ceiling in the controller",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 9.5.1"
+       },
+       {
+        "name": "input survival",
+        "required": "-25.2 V and 25.2 V on either input; 60 V for 10 us clamped to at most 37.3 V",
+        "datasheet": "A to GND -65 V to 70 V absolute",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.1"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 150 degC operating (7.1), AEC-Q100",
+        "pass": true,
+        "source": "[LM7480-Q1 SNOSD95C] 7.1"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 3138, canPresaleNumber 3069, componentLibraryType expand, USD 2.3603 each at the need of 10 (price break 10); read 2026-09-29T11:57:10Z, vendors.py jlcpcb C3215600 (exact LCSC match)",
+      "digikey": "stock_available 7634, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T10:00:06Z (cached reading of that time, returned at 12:03Z), vendors.py digikey LM74800QDRRRQ1",
+      "gate": "need 5 boards x 2 = 10; S4 gate max(5 x 10, 50) = 50; stockCount 3138 >= 50, canPresaleNumber 3069 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/LM7480-Q1 meta status, read 2026-09-29T12:12:12Z); longevity: none published; first datasheet April 2020 (SNOSD95C header), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:00:06Z)",
+      "second_source": "second vendor: Digi-Key LM74800QDRRRQ1 stock_available 7634 >= the rule 4 gate 50 (read 2026-09-29T10:00:06Z, vendors.py digikey LM74800QDRRRQ1): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "LM74800MDRRR (C7216630): same pins and thresholds, non-automotive",
+       "LM74810QDRRRQ1 (C3215601): same WSON-12 pin table and thresholds",
+       "LM74801QDRRRQ1 (C2873366): same pins, 4.7 us OV cut-off"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The two-input ideal-diode OR with a UV-gated DC path, no gap at switchover, both V88 corners inside the bounds."
+     },
+     {
+      "rank": 2,
+      "part": "LM74810QDRRRQ1",
+      "maker": "Texas Instruments (datasheet LM7481-Q1 SNOSD98A); S1 Texas Instruments",
+      "lcsc": "C3215601",
+      "package": "WSON-12 (DRR) 3 x 3 mm",
+      "placements": 2,
+      "placements_basis": "fixed at 2: one ideal-diode controller on the DC path and one on the pack path, OR-ed on the common bus (LM7480-Q1 section 9.5.1); the same two parts as reverse polarity, overvoltage and inrush",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "DC input selected when present",
+        "required": "the DC input runs the board when present; it counts as absent below a falling threshold whose lowest corner stays above 8.45 V, and as present above a rising threshold whose highest corner is at or below 11.4 V; the pack runs the board otherwise",
+        "datasheet": "EN/UVLO V(UVLOR) 1.195 V to 1.267 V, V(UVLOF) 1.091 V to 1.159 V; divider 8.936 (11.0 V at 1.231 V): present above 10.66 V to 11.34 V rising, absent below 9.73 V to 10.38 V falling with 0.1 % resistors. Between V(ENF) and V(UVLOF) only HGATE turns off, disconnecting the DC path; the pack path's ideal diode then carries the load. The DC input (12 V to 20 V) is above the pack (at most 8.45 V), so the OR selects it whenever it is present",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.5, 9.3.4, 9.5.1"
+       },
+       {
+        "name": "switchover interruption",
+        "required": "0 ms on the 3.3 V and 5 V rails when the DC input is connected or removed",
+        "datasheet": "on DC removal the pack MOSFET's body diode conducts at once and DGATE turns on in 2.8 us to 3.8 us (tDGATE_ON(dly)); the bus falls to the pack voltage less one diode drop for microseconds, inside the hold-up of the rails' output capacitors",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.6 tDGATE_ON(dly)"
+       },
+       {
+        "name": "pack kept off the DC pins",
+        "required": "the DC side blocks reverse current with the DC input unplugged or its source off",
+        "datasheet": "DC-path DGATE blocks reverse current: V(AC_REV) -6.4 mV to -1.3 mV",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.5, 7.6"
+       },
+       {
+        "name": "DC kept out of the pack",
+        "required": "while the DC input runs the board, no current flows from the DC input into the pack",
+        "datasheet": "pack-path DGATE is reverse biased while the DC bus is above the pack and blocks the DC input from the cells: V(AC_REV) -6.4 mV to -1.3 mV",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.5, 9.5.1"
+       },
+       {
+        "name": "current carried",
+        "required": "6.4 A on the DC path at 12 V; 13.1 A on the pack path at a 5.8 V bus, through external MOSFETs",
+        "datasheet": "external MOSFETs; no ceiling in the controller",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 9.5.1"
+       },
+       {
+        "name": "input survival",
+        "required": "-25.2 V and 25.2 V on either input; 60 V for 10 us clamped to at most 37.3 V",
+        "datasheet": "A to GND -65 V to 70 V absolute",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.1"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 150 degC operating, AEC-Q100",
+        "pass": true,
+        "source": "[LM7481-Q1 SNOSD98A] 7.1"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 1934, canPresaleNumber 1926, componentLibraryType expand, USD 3.1043 each at the need of 10; read 2026-09-29T11:57:10Z, vendors.py jlcpcb C3215601 (exact LCSC match)",
+      "digikey": "stock_available 2738, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T10:33:46Z (cached reading of that time), vendors.py digikey LM74810QDRRRQ1",
+      "gate": "need 5 boards x 2 = 10; S4 gate max(5 x 10, 50) = 50; stockCount 1934 >= 50, canPresaleNumber 1926 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/LM7481-Q1 meta status, read 2026-09-29T12:12:12Z); longevity: none published; first datasheet May 2020 (SNOSD98A header), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:33:46Z)",
+      "second_source": "second vendor: Digi-Key LM74810QDRRRQ1 stock_available 2738 >= the rule 4 gate 50 (read 2026-09-29T10:33:46Z, vendors.py digikey LM74810QDRRRQ1): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "LM74800QDRRRQ1 (C3215600)",
+       "LM74800MDRRR (C7216630)",
+       "LM74801QDRRRQ1 (C2873366)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Rank 1's OR circuit and thresholds in the same footprint."
+     },
+     {
+      "rank": 3,
+      "part": "LM74800MDRRR",
+      "maker": "Texas Instruments (datasheet LM7480 SNOSDD8); S1 Texas Instruments",
+      "lcsc": "C7216630",
+      "package": "WSON-12 (DRR) 3 x 3 mm",
+      "placements": 2,
+      "placements_basis": "fixed at 2: one ideal-diode controller on the DC path and one on the pack path, OR-ed on the common bus (LM7480-Q1 section 9.5.1); the same two parts as reverse polarity, overvoltage and inrush",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "DC input selected when present",
+        "required": "the DC input runs the board when present; it counts as absent below a falling threshold whose lowest corner stays above 8.45 V, and as present above a rising threshold whose highest corner is at or below 11.4 V; the pack runs the board otherwise",
+        "datasheet": "EN/UVLO V(UVLOR) 1.195 V to 1.267 V, V(UVLOF) 1.091 V to 1.159 V; divider 8.936 (11.0 V at 1.231 V): present above 10.66 V to 11.34 V rising, absent below 9.73 V to 10.38 V falling with 0.1 % resistors. Between V(ENF) and V(UVLOF) only HGATE turns off, disconnecting the DC path; the pack path's ideal diode then carries the load. The DC input (12 V to 20 V) is above the pack (at most 8.45 V), so the OR selects it whenever it is present",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.5, 9.3.4, 9.5.1"
+       },
+       {
+        "name": "switchover interruption",
+        "required": "0 ms on the 3.3 V and 5 V rails when the DC input is connected or removed",
+        "datasheet": "on DC removal the pack MOSFET's body diode conducts at once and DGATE turns on in 2.8 us to 3.8 us (tDGATE_ON(dly)); the bus falls to the pack voltage less one diode drop for microseconds, inside the hold-up of the rails' output capacitors",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.6 tDGATE_ON(dly)"
+       },
+       {
+        "name": "pack kept off the DC pins",
+        "required": "the DC side blocks reverse current with the DC input unplugged or its source off",
+        "datasheet": "DC-path DGATE blocks reverse current: V(AC_REV) -6.5 mV to -1.3 mV",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.5, 7.6"
+       },
+       {
+        "name": "DC kept out of the pack",
+        "required": "while the DC input runs the board, no current flows from the DC input into the pack",
+        "datasheet": "pack-path DGATE is reverse biased while the DC bus is above the pack and blocks the DC input from the cells: V(AC_REV) -6.5 mV to -1.3 mV",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.5, 9.5.1"
+       },
+       {
+        "name": "current carried",
+        "required": "6.4 A on the DC path at 12 V; 13.1 A on the pack path at a 5.8 V bus, through external MOSFETs",
+        "datasheet": "external MOSFETs; no ceiling in the controller",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 9.5.1"
+       },
+       {
+        "name": "input survival",
+        "required": "-25.2 V and 25.2 V on either input; 60 V for 10 us clamped to at most 37.3 V",
+        "datasheet": "A to GND -65 V to 70 V absolute",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.1"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -55 to 150 degC operating; orderable addendum -55 to 125 degC",
+        "pass": true,
+        "source": "[LM7480 SNOSDD8] 7.1"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 6031, canPresaleNumber 5968, componentLibraryType expand, USD 3.2895 each at the need of 10; read 2026-09-29T11:57:10Z, vendors.py jlcpcb C7216630 (exact LCSC match)",
+      "digikey": "stock_available 2153, manufacturer lead time 9 weeks, ProductStatus Active; read 2026-09-29T10:00:08Z (cached reading of that time), vendors.py digikey LM74800MDRRR",
+      "gate": "need 5 boards x 2 = 10; S4 gate max(5 x 10, 50) = 50; stockCount 6031 >= 50, canPresaleNumber 5968 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/LM7480 meta status, read 2026-09-29T12:12:12Z); longevity: none published; first datasheet December 2022 (SNOSDD8, first edition), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:00:08Z)",
+      "second_source": "second vendor: Digi-Key LM74800MDRRR stock_available 2153 >= the rule 4 gate 50 (read 2026-09-29T10:00:08Z, vendors.py digikey LM74800MDRRR): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "LM74800QDRRRQ1 (C3215600)",
+       "LM74810QDRRRQ1 (C3215601)",
+       "LM74801MDRRR (not read at JLCPCB)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Rank 1's OR circuit in the non-automotive orderable; highest price."
+     }
+    ],
+    "dropped": [
+     {
+      "part": "LM74700QDBVRQ1",
+      "maker": "Texas Instruments",
+      "reason": "fails 'DC input selected when present': one MOSFET per path with no load disconnect, so the DC input feeds the bus down to the pack voltage (6.0 V to 8.45 V), not above 8.45 V at every corner (SNOSD17G, read 2026-09-29T11:56:07Z)"
+     },
+     {
+      "part": "LM5050MK-1/NOPB",
+      "maker": "Texas Instruments",
+      "reason": "the same single-MOSFET ideal diode as LM74700: fails 'DC input selected when present' (T3 P2 reading of the LM5050-1 datasheet, 2026-09-29T09:55:22Z)"
+     },
+     {
+      "part": "LTC4365IDDB#TRPBF",
+      "maker": "Analog Devices (Linear)",
+      "reason": "fails 'DC kept out of the pack': back-to-back MOSFETs conduct both ways when enabled, so a pack path built from it lets the DC input into the pack (LTC4365 Rev. B, read 2026-09-29T11:56:17Z)"
+     },
+     {
+      "part": "LM74801QDRRRQ1",
+      "maker": "Texas Instruments",
+      "reason": "passes (rank 1's pins and thresholds); not among the three kept: JLCPCB 708 (2026-09-29T11:57:11Z)"
+     },
+     {
+      "part": "LTC4417IUF#TRPBF",
+      "maker": "Analog Devices (Linear)",
+      "reason": "passes with the TVS2701DRBR ahead: VOV_UV(THR) 0.985 V to 1.015 V with 420 nA to 620 nA hysteresis current gives, for example, falling 9.33 V to 9.68 V and rising 9.98 V to 10.63 V, inside the bounds (LTC4417 Rev. G read 2026-09-29T11:56:18Z; P4 of T3 refuted the re-rank's drop on V88's former bands); not among the three kept: USD 11.98 at 5, break-before-make switchover"
+     },
+     {
+      "part": "LTC4418CUF#TRPBF",
+      "maker": "Analog Devices (Linear)",
+      "reason": "fails rule 4 at JLCPCB: stockCount 30, canPresaleNumber 27 (C688512, 2026-09-29T11:57:18Z)"
+     }
+    ]
+   },
+   {
+    "function": "pack disconnect",
+    "requirements": [
+     {
+      "name": "per-cell floor",
+      "value": "3.0 V a cell nominal, held to +/-75 mV at 25 degC, read per cell from the balance lead",
+      "source": "F9 Answer (Research.md:537); V95 found"
+     },
+     {
+      "name": "cells",
+      "value": "2 in series, lithium-ion 18650",
+      "source": "F9 Answer; owner, 2026-09-24"
+     },
+     {
+      "name": "reconnect condition",
+      "value": "the USB-C charger present and every cell above 3.2 V; never on the load returning",
+      "source": "V93 and V94 found"
+     },
+     {
+      "name": "trip filter",
+      "value": "89 ms to 167 ms at or below the floor before the disconnect",
+      "source": "V96 found"
+     },
+     {
+      "name": "current while disconnected",
+      "value": "at most 10 uA from the pack",
+      "source": "V97 found"
+     },
+     {
+      "name": "threshold set in hardware",
+      "value": "option (a): a part of its own with the 3.0 V threshold fixed by resistors or factory trim",
+      "source": "V98 found"
+     },
+     {
+      "name": "balance lead open",
+      "value": "with the balance lead unplugged or one balance wire open, the pack stays disconnected",
+      "source": "V107 found"
+     },
+     {
+      "name": "pack voltage",
+      "value": "up to 8.45 V",
+      "source": "V92 found"
+     },
+     {
+      "name": "pack current",
+      "value": "13.1 A through the disconnect MOSFETs without tripping the part's own overcurrent detector",
+      "source": "V90 found"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 50 degC ambient",
+      "source": "V7 Answer, Research.md:567 at checkout e13f5f6: 0 to 50 degC ambient for the IO board"
+     },
+     {
+      "name": "maker allowed",
+      "value": "IC maker on the S1 list",
+      "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "R5460N212AF-TR-FE",
+      "maker": "Nisshinbo Micro Devices (datasheet R5460x2xxXX, NO.EA-165-250616); S1 Nisshinbo",
+      "lcsc": "C259717",
+      "package": "SOT-23-6",
+      "placements": 1,
+      "placements_basis": "fixed at 1: one 2-cell protector on the bench pack (F9)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "per-cell floor",
+        "required": "3.0 V a cell nominal, held to +/-75 mV at 25 degC, read per cell from the balance lead",
+        "datasheet": "VDET2U and VDET2L 3.000 V (product code R5460x212AF), x0.975 to x1.025: 2.925 V to 3.075 V at Ta 25 degC; cell1 VDD-VC, cell2 VC-VSS",
+        "pass": true,
+        "source": "[R5460 EA-165-250616] product code table, electrical characteristics AF version"
+       },
+       {
+        "name": "cells",
+        "required": "2 in series, lithium-ion 18650",
+        "datasheet": "Li-ion/polymer 2-cell protector",
+        "pass": true,
+        "source": "[R5460 EA-165-250616] title and outline"
+       },
+       {
+        "name": "reconnect condition",
+        "required": "the USB-C charger present and every cell above 3.2 V; never on the load returning",
+        "datasheet": "F version: released only after a charger is connected and the cell voltage is above VREL2 3.200 V (3.12 V to 3.28 V); hysteresis kept with a charger connected. The charger is sensed at V-, the 'charger negative input pin'",
+        "pass": true,
+        "source": "[R5460 EA-165-250616] outline, VDET2 section, pin table (V-)"
+       },
+       {
+        "name": "trip filter",
+        "required": "89 ms to 167 ms at or below the floor before the disconnect",
+        "datasheet": "tVDET2 89 ms to 167 ms, 128 ms typical",
+        "pass": true,
+        "source": "[R5460 EA-165-250616] electrical characteristics AF version"
+       },
+       {
+        "name": "current while disconnected",
+        "required": "at most 10 uA from the pack",
+        "datasheet": "standby after over-discharge 0.1 uA maximum (C and F versions)",
+        "pass": true,
+        "source": "[R5460 EA-165-250616] features; IS row AF version"
+       },
+       {
+        "name": "threshold set in hardware",
+        "required": "option (a): a part of its own with the 3.0 V threshold fixed by resistors or factory trim",
+        "datasheet": "threshold factory-trimmed (product code), no register",
+        "pass": true,
+        "source": "[R5460 EA-165-250616] product code table"
+       },
+       {
+        "name": "balance lead open",
+        "required": "with the balance lead unplugged or one balance wire open, the pack stays disconnected",
+        "datasheet": "either cell at or below VDET2 sets DOUT low; a round 2 pull-down from VC to VSS makes an open middle wire read as a 0 V cell, and a pull-down on the DOUT gate holds the MOSFET off with the IC unpowered. Behaviour with VC left open is not stated",
+        "pass": true,
+        "source": "[R5460 EA-165-250616] VDET2 section"
+       },
+       {
+        "name": "pack voltage",
+        "required": "up to 8.45 V",
+        "datasheet": "VDD1 operating 1.5 V to 10.0 V; 30 V absolute (features); 8.45 V inside",
+        "pass": true,
+        "source": "[R5460 EA-165-250616] electrical characteristics, features"
+       },
+       {
+        "name": "pack current",
+        "required": "13.1 A through the disconnect MOSFETs without tripping the part's own overcurrent detector",
+        "datasheet": "VDET3 0.200 V +/-0.015 V across the MOSFETs: 13.1 A passes with a total RDS(on) under 14.1 milliohm at operating temperature (MOSFETs reported, not selected)",
+        "pass": true,
+        "source": "[R5460 EA-165-250616] product code table, VDET3 row"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "operating Ta -40 to 85 degC; thresholds stated at 25 degC only",
+        "pass": true,
+        "source": "[R5460 EA-165-250616] absolute maximum ratings table"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Nisshinbo, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 1220, canPresaleNumber 1220, componentLibraryType expand, USD 0.2861 each at the need of 5; read 2026-09-29T11:57:11Z, vendors.py jlcpcb C259717 (exact LCSC match)",
+      "digikey": "stock_available 0, manufacturer lead time 12 weeks, ProductStatus Active (Bulk, minimum order 3000); read 2026-09-29T10:00:21Z (cached reading of that time), vendors.py digikey R5460N212AF-TR-FE",
+      "gate": "need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; stockCount 1220 >= 50, canPresaleNumber 1220 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status not read: https://www.nisshinbo-microdevices.co.jp/en/products/lithium-ion-battery-protection/spec/?product=r5460 answered HTTP 200 with no status in the page body (vendors.py fetch, 2026-09-29T11:57:59Z); reported to the owner. Longevity: the Product Longevity Program list names R5460N (SOT-23-6), 10 years from January 2026 (https://www.nisshinbo-microdevices.co.jp/en/design-support/plp/list/, 11:58:01Z). Market introduction: on or before 2009-12-21, the Ricoh edition NO.EA-165-091221 lists R5460N212AF (http://web.archive.org/web/20150513040913id_/http://www.e-devices.ricoh.co.jp:80/en/products/product_power/bmu/r5460/r5460-e.pdf, archived 2015-05-13, read 11:59:58Z); over 12 months. Notices: R5460 is on neither the NRND/Discontinued list (https://www.nisshinbo-microdevices.co.jp/en/design-support/discon/, 11:58:03Z) nor the PLP termination list (.../plp/list/eol.html, 11:58:04Z). Distributor: Digi-Key ProductStatus Active (10:00:21Z)",
+      "second_source": "none: Digi-Key stock_available 0 (2026-09-29T10:00:21Z); R5460x225AF has the same over-discharge thresholds and F release but no JLCPCB listing (T3 P3, vendors.py jlcpcb-search, 10:35:44Z) and no jlcparts row. Reported to the owner",
+      "second_source_route": "none",
+      "second_source_part": "",
+      "alternates": [
+       "R5460x225AF (same VDET2 3.000 V, VREL2 3.200 V, F version; no JLCPCB listing)",
+       "R5460N212AE (same thresholds; releases without a charger, fails the reconnect condition)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The only part read that trips each cell at 3.0 V by factory trim and releases only with a charger connected and above 3.2 V. No second source."
+     }
+    ],
+    "dropped": [
+     {
+      "part": "R5460N212AA / R5460N212AE",
+      "maker": "Nisshinbo Micro Devices",
+      "reason": "fail 'reconnect condition': A releases without a charger at VREL2, E releases whether a charger is connected or not, so a cell rebounding after the load is removed reconnects the pack (EA-165-250616 outline, read 2026-09-29T11:56:18Z)"
+     },
+     {
+      "part": "R5460N214AF-TR-FE",
+      "maker": "Nisshinbo Micro Devices",
+      "reason": "fails 'per-cell floor': VDET2 2.800 V (product code table)"
+     },
+     {
+      "part": "R5460N208AA-TR-FE, R5460x209AD, R5460x207AF",
+      "maker": "Nisshinbo Micro Devices",
+      "reason": "fail 'per-cell floor': VDET2 2.400 V, 2.500 V and 2.300 V"
+     },
+     {
+      "part": "R5460x215AF",
+      "maker": "Nisshinbo Micro Devices",
+      "reason": "fails 'per-cell floor': VDET2 3.200 V, above the 3.0 V floor"
+     },
+     {
+      "part": "R5460x225AF",
+      "maker": "Nisshinbo Micro Devices",
+      "reason": "fails rule 1: no JLCPCB listing (T3 P3, vendors.py jlcpcb-search R5460N225AF, 2026-09-29T10:35:44Z) and no jlcparts row; thresholds would pass"
+     },
+     {
+      "part": "BQ29209DRBR, BQ29200DRBR",
+      "maker": "Texas Instruments",
+      "reason": "fail 'per-cell floor': 2-cell overvoltage protection and balancing only, no over-discharge detector (jlcparts descriptions of C139352 and C2865505)"
+     },
+     {
+      "part": "TPS3700",
+      "maker": "Texas Instruments",
+      "reason": "fails 'per-cell floor' and 'reconnect condition': a ground-referenced window comparator cannot read the upper cell without a differential stage and has no charger-gated release"
+     },
+     {
+      "part": "MAX17320G22+ (R7's pack protector, option (b))",
+      "maker": "Analog Devices (Maxim)",
+      "reason": "not qualified here: R7 left the per-cell undervoltage to R5's 3.0 V floor (T3 R7 P2, V150); option (a) is taken"
+     }
+    ]
+   },
+   {
+    "function": "3.3 V logic buck",
+    "requirements": [
+     {
+      "name": "output current",
+      "value": "at least 1.36 A: the 1090 mA summed from the parts T2 and T4 selected plus the 25 % of V99",
+      "source": "V99 found; report '3.3 V rail load, summed maxima'"
+     },
+     {
+      "name": "input range",
+      "value": "5.8 V to 22 V operating; at least 27 V absolute maximum (the bus the TPS55285 shares, VIN 27 V absolute)",
+      "source": "F9; V84 found; TPS55285 SLVSI72A 5.1"
+     },
+     {
+      "name": "3.3 V tolerance at the monostable",
+      "value": "3.201 V to 3.399 V with reference, feedback resistors, feedback leakage, ripple, load regulation and drift over 0 to 50 degC ambient, at every load from light load to 1.36 A",
+      "source": "Research.md:283 (R5 row); Monostable.md at 23c82ca"
+     },
+     {
+      "name": "start-up ramp",
+      "value": "a soft-start time with a stated minimum and maximum, for the P5 check against the TPS3703A7330 reset supervisor (F12)",
+      "source": "Research.md:359 (P5); FU-A3 selection (TPS3703A7330DSERQ1)"
+     },
+     {
+      "name": "rail order",
+      "value": "either order with the 5 V rail",
+      "source": "V106 found"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 50 degC ambient",
+      "source": "V7 Answer, Research.md:567 at checkout e13f5f6: 0 to 50 degC ambient for the IO board"
+     },
+     {
+      "name": "maker allowed",
+      "value": "IC maker on the S1 list",
+      "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "LMR51420YFDDCR",
+      "maker": "Texas Instruments (datasheet SLUSEF6C); S1 Texas Instruments",
+      "lcsc": "C7296200",
+      "package": "SOT-23-6 (DDC)",
+      "placements": 1,
+      "placements_basis": "fixed at 1: one 3.3 V logic buck (IOBoard.md:337)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "output current",
+        "required": "at least 1.36 A: the 1090 mA summed from the parts T2 and T4 selected plus the 25 % of V99",
+        "datasheet": "IOUT 2 A (recommended operating conditions)",
+        "pass": true,
+        "source": "[LMR51420 SLUSEF6C] 7.3"
+       },
+       {
+        "name": "input range",
+        "required": "5.8 V to 22 V operating; at least 27 V absolute maximum (the bus the TPS55285 shares, VIN 27 V absolute)",
+        "datasheet": "VIN 4.5 V to 36 V operating, 38 V absolute",
+        "pass": true,
+        "source": "[LMR51420 SLUSEF6C] 7.1, 7.6"
+       },
+       {
+        "name": "3.3 V tolerance at the monostable",
+        "required": "3.201 V to 3.399 V with reference, feedback resistors, feedback leakage, ripple, load regulation and drift over 0 to 50 degC ambient, at every load from light load to 1.36 A",
+        "datasheet": "Vfb 0.591 V to 0.609 V (+/-1.5 %) over TJ -40 to 150 degC and VIN 4.5 V to 36 V; FPWM output regulation -1.5 % to 1.5 % from 0 A to full load (reference and load regulation together). Budget: 1.5 % + 0.2 % (0.1 % resistors) + 0.07 % (FB leakage 50 nA through 45.3 kOhm) + 0.3 % ripple + 0.7 % load transient (round 2 output capacitors) = 2.77 %, 3.209 V to 3.391 V. FPWM keeps constant frequency at light load, so the figure holds at every load",
+        "pass": true,
+        "source": "[LMR51420 SLUSEF6C] 7.5 Vfb, IFB(LKG); 7.6 VOUT regulation; device comparison table (Y F = 1.1 MHz FPWM)"
+       },
+       {
+        "name": "start-up ramp",
+        "required": "a soft-start time with a stated minimum and maximum, for the P5 check against the TPS3703A7330 reset supervisor (F12)",
+        "datasheet": "tSS 3.2 ms to 5.4 ms, internal fixed",
+        "pass": true,
+        "source": "[LMR51420 SLUSEF6C] 7.5 tSS"
+       },
+       {
+        "name": "rail order",
+        "required": "either order with the 5 V rail",
+        "datasheet": "no sequencing input needed; EN free",
+        "pass": true,
+        "source": "[LMR51420 SLUSEF6C] pin functions"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 150 degC; Vfb stated over the whole range",
+        "pass": true,
+        "source": "[LMR51420 SLUSEF6C] 7.1, 7.5"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 6208, canPresaleNumber 6159, componentLibraryType expand, USD 1.2135 each at the need of 5; read 2026-09-29T11:57:12Z, vendors.py jlcpcb C7296200 (exact LCSC match)",
+      "digikey": "stock_available 0, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T12:03:21Z, vendors.py digikey LMR51420YFDDCR",
+      "gate": "need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; stockCount 6208 >= 50, canPresaleNumber 6159 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/LMR51420 meta status, read 2026-09-29T12:12:13Z); longevity: none published; first datasheet October 2021 (SLUSEF6C header), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (12:03:21Z)",
+      "second_source": "alternate LMR51430YFDDCR (C5219261): JLCPCB stockCount 13541, canPresaleNumber 13424 (2026-09-29T12:03:41Z) >= 50; the same SOT-23-6 pins (GND 1, SW 2, VIN 3, FB 4, EN 5, CB 6), Vfb 0.591 V to 0.609 V, 1.1 MHz FPWM and 3.2 ms to 5.4 ms soft-start, so it takes the same divider, inductor and capacitors; 3 A. Digi-Key holds 0 of this part",
+      "second_source_route": "alternate",
+      "second_source_part": "LMR51430YFDDCR",
+      "alternates": [
+       "LMR51430YFDDCR (C5219261)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Its reference holds +/-1.5 % over the whole junction range and FPWM keeps that at light load, so the 3.0 % budget closes at 2.77 % with no temperature or load condition; 2 A against 1.36 A; alternate at the same vendor."
+     },
+     {
+      "rank": 2,
+      "part": "LMR51430YFDDCR",
+      "maker": "Texas Instruments (datasheet SLUSEF4A); S1 Texas Instruments",
+      "lcsc": "C5219261",
+      "package": "SOT-23-6 (DDC)",
+      "placements": 1,
+      "placements_basis": "fixed at 1: one 3.3 V logic buck (IOBoard.md:337)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "output current",
+        "required": "at least 1.36 A: the 1090 mA summed from the parts T2 and T4 selected plus the 25 % of V99",
+        "datasheet": "IOUT 3 A (recommended operating conditions)",
+        "pass": true,
+        "source": "[LMR51430 SLUSEF4A] 7.3"
+       },
+       {
+        "name": "input range",
+        "required": "5.8 V to 22 V operating; at least 27 V absolute maximum (the bus the TPS55285 shares, VIN 27 V absolute)",
+        "datasheet": "VIN 4.5 V to 36 V operating, 38 V absolute",
+        "pass": true,
+        "source": "[LMR51430 SLUSEF4A] 7.1, 7.6"
+       },
+       {
+        "name": "3.3 V tolerance at the monostable",
+        "required": "3.201 V to 3.399 V with reference, feedback resistors, feedback leakage, ripple, load regulation and drift over 0 to 50 degC ambient, at every load from light load to 1.36 A",
+        "datasheet": "Vfb 0.591 V to 0.609 V (+/-1.5 %) over TJ -40 to 150 degC and VIN 4.5 V to 36 V; FPWM output regulation -1.5 % to 1.5 % from 0 A to full load (reference and load regulation together). Budget: 1.5 % + 0.2 % (0.1 % resistors) + 0.07 % (FB leakage 50 nA through 45.3 kOhm) + 0.3 % ripple + 0.7 % load transient (round 2 output capacitors) = 2.77 %, 3.209 V to 3.391 V. FPWM keeps constant frequency at light load, so the figure holds at every load",
+        "pass": true,
+        "source": "[LMR51430 SLUSEF4A] 7.5 Vfb, IFB(LKG); 7.6 VOUT regulation; device comparison table (Y F = 1.1 MHz FPWM)"
+       },
+       {
+        "name": "start-up ramp",
+        "required": "a soft-start time with a stated minimum and maximum, for the P5 check against the TPS3703A7330 reset supervisor (F12)",
+        "datasheet": "tSS 3.2 ms to 5.4 ms, internal fixed",
+        "pass": true,
+        "source": "[LMR51430 SLUSEF4A] 7.5 tSS"
+       },
+       {
+        "name": "rail order",
+        "required": "either order with the 5 V rail",
+        "datasheet": "no sequencing input needed; EN free",
+        "pass": true,
+        "source": "[LMR51430 SLUSEF4A] pin functions"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 150 degC; Vfb stated over the whole range",
+        "pass": true,
+        "source": "[LMR51430 SLUSEF4A] 7.1, 7.5"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 13541, canPresaleNumber 13424, componentLibraryType expand, USD 0.8382 each at the need of 5; read 2026-09-29T12:03:41Z, vendors.py jlcpcb C5219261 (exact LCSC match)",
+      "digikey": "stock_available 0, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T10:00:32Z (cached reading of that time), vendors.py digikey LMR51430YFDDCR",
+      "gate": "need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; stockCount 13541 >= 50, canPresaleNumber 13424 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/LMR51430 meta status, read 2026-09-29T12:12:13Z); longevity: none published; first datasheet June 2022 (SLUSEF4A header), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:00:32Z)",
+      "second_source": "alternate LMR51420YFDDCR (C7296200): JLCPCB stockCount 6208, canPresaleNumber 6159 (2026-09-29T11:57:12Z) >= 50; same pins, reference, FPWM and soft-start; 2 A covers 1.36 A. Digi-Key holds 0 of this part",
+      "second_source_route": "alternate",
+      "second_source_part": "LMR51420YFDDCR",
+      "alternates": [
+       "LMR51420YFDDCR (C7296200)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Rank 1's reference, FPWM and pins with 3 A; larger JLCPCB stock and lower price, but 1.64 A of rating the rail does not use and a larger current limit into a fault. Ranks second as rank 1's rule-5 alternate."
+     }
+    ],
+    "dropped": [
+     {
+      "part": "TPS62933DRLR",
+      "maker": "Texas Instruments",
+      "reason": "fails '3.3 V tolerance at the monostable': VFB 788 mV to 812 mV only for TJ 0 to 85 degC, 784 mV to 816 mV (+/-2.0 %) over TJ -40 to 150 degC (SLUSEA4D 8.5, read 2026-09-29T11:56:07Z): the budget is 3.5 % unless TJ stays at or under 85 degC, which the IO board's thermal resistance does not show; PFM at light load with no regulation stated (P4 of T3 refuted it on this ground)"
+     },
+     {
+      "part": "TPS62933FDRLR",
+      "maker": "Texas Instruments",
+      "reason": "fails '3.3 V tolerance at the monostable': FCCM, but the same VFB rows as TPS62933 (+/-2.0 % over TJ -40 to 150 degC)"
+     },
+     {
+      "part": "AP63203WU-7, AP63203QWU-7",
+      "maker": "Diodes Incorporated",
+      "reason": "fail '3.3 V tolerance at the monostable' at light load: VOUT 3.27 V to 3.33 V is stated in CCM only (DS41326 Rev. 3-2, read 2026-09-29T11:56:18Z); the AP63203 runs PFM at light load with no regulation stated"
+     },
+     {
+      "part": "AP63201WU-7",
+      "maker": "Diodes Incorporated",
+      "reason": "fails rule 4: JLCPCB C2071044 stockCount 0, canPresaleNumber -331 (vendors.py jlcpcb, 2026-09-29T12:03:43Z); its forced PWM and 792 mV to 808 mV reference would pass"
+     },
+     {
+      "part": "AP64350SP-13",
+      "maker": "Diodes Incorporated",
+      "reason": "fails '3.3 V tolerance at the monostable' at light load: VFB 792 mV to 808 mV stated in CCM only, PFM at light load (DS41976, read 2026-09-29T11:56:18Z)"
+     },
+     {
+      "part": "LMR36015BRNXR",
+      "maker": "Texas Instruments",
+      "reason": "fails '3.3 V tolerance at the monostable': PFM variant, output regulation -1.5 % to +2.5 % (SNVSB49D 7.6, read 2026-09-29T11:56:07Z); +2.5 % with ripple and transient exceeds 3.0 %"
+     },
+     {
+      "part": "LMR33630ADDAR",
+      "maker": "Texas Instruments",
+      "reason": "fails '3.3 V tolerance at the monostable': 3.3 V regulation -1.5 % to +2.5 % from 0 A to maximum load (SNVSAN3F 7.6, read 2026-09-29T11:56:07Z)"
+     },
+     {
+      "part": "LMR51420YDDCR",
+      "maker": "Texas Instruments",
+      "reason": "fails '3.3 V tolerance at the monostable': PFM variant, -1.5 % to +2.5 % (SLUSEF6C 7.6)"
+     },
+     {
+      "part": "TPS563300DRLR",
+      "maker": "Texas Instruments",
+      "reason": "fails '3.3 V tolerance at the monostable': VFB +/-2.0 % over TJ -40 to 150 degC (SLUSES9, read 2026-09-29T11:56:07Z), 3.5 % with the other terms"
+     },
+     {
+      "part": "TPS62130RGTR, TPS62913RPUR, TPS62903",
+      "maker": "Texas Instruments",
+      "reason": "fail 'input range': VIN at most 17 V or 18 V (jlcparts descriptions of C43590, C5189914, C2866502)"
+     }
+    ]
+   },
+   {
+    "function": "5 V rail",
+    "requirements": [
+     {
+      "name": "output current",
+      "value": "at least 2.5 A: the display's 2 A peak plus the 25 % of V99 (no part T2 or T4 selected, and not the encoder, runs from the 5 V rail)",
+      "source": "prerequisite 7 (Research.md:489-490); V99 found; encoder supply design in the report"
+     },
+     {
+      "name": "regulation at the lowest input",
+      "value": "in regulation at 5.8 V in and 2.0 A out",
+      "source": "F9; V113 (R6); prerequisite 7"
+     },
+     {
+      "name": "input range",
+      "value": "5.8 V to 22 V operating; at least 27 V absolute maximum",
+      "source": "V84 found; TPS55285 SLVSI72A 5.1"
+     },
+     {
+      "name": "tolerance at the IO board loads",
+      "value": "4.75 V to 5.25 V",
+      "source": "V100 found"
+     },
+     {
+      "name": "voltage at the display end",
+      "value": "the rail's lowest value, less up to 90 mV across the display supply switch and 0.2 V across the link cable at 2 A, stays at or above 4.5 V; the rail's highest value stays at or below 5.5 V at no load",
+      "source": "V79 and V81 found; display supply rank 1 (TPS25947 RON)"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 50 degC ambient",
+      "source": "V7 Answer, Research.md:567 at checkout e13f5f6: 0 to 50 degC ambient for the IO board"
+     },
+     {
+      "name": "maker allowed",
+      "value": "IC maker on the S1 list",
+      "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "TPS62933DRLR",
+      "maker": "Texas Instruments (datasheet SLUSEA4D); S1 Texas Instruments",
+      "lcsc": "C3200405",
+      "package": "SOT-583 (DRL) 1.6 x 2.1 mm",
+      "placements": 1,
+      "placements_basis": "fixed at 1: one 5 V rail (IOBoard.md:338)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "output current",
+        "required": "at least 2.5 A: the display's 2 A peak plus the 25 % of V99 (no part T2 or T4 selected, and not the encoder, runs from the 5 V rail)",
+        "datasheet": "IOUT 3 A",
+        "pass": true,
+        "source": "[TPS62933 SLUSEA4D] recommended operating conditions"
+       },
+       {
+        "name": "regulation at the lowest input",
+        "required": "in regulation at 5.8 V in and 2.0 A out",
+        "datasheet": "98 % maximum duty, RDSON_HS 76 milliohm typical at 25 degC: 0.98 x 5.8 V - 2.0 A x (0.114 + 0.02 inductor) = 5.42 V, above the 5.175 V highest setpoint",
+        "pass": true,
+        "source": "[TPS62933 SLUSEA4D] features (maximum duty), electrical characteristics RDSON"
+       },
+       {
+        "name": "input range",
+        "required": "5.8 V to 22 V operating; at least 27 V absolute maximum",
+        "datasheet": "VIN 3.8 V to 30 V operating, 32 V absolute",
+        "pass": true,
+        "source": "[TPS62933 SLUSEA4D] absolute maximum ratings, recommended operating conditions"
+       },
+       {
+        "name": "tolerance at the IO board loads",
+        "required": "4.75 V to 5.25 V",
+        "datasheet": "VFB 784 mV to 816 mV (+/-2.0 %) over TJ -40 to 150 degC; budget 2.0 % + 0.2 % resistors + 0.3 % load regulation + 0.3 % ripple + 0.7 % transient = 3.5 %, 4.825 V to 5.175 V",
+        "pass": true,
+        "source": "[TPS62933 SLUSEA4D] electrical characteristics VFB"
+       },
+       {
+        "name": "voltage at the display end",
+        "required": "the rail's lowest value, less up to 90 mV across the display supply switch and 0.2 V across the link cable at 2 A, stays at or above 4.5 V; the rail's highest value stays at or below 5.5 V at no load",
+        "datasheet": "rail 4.825 V to 5.175 V: 4.825 - 0.090 - 0.200 = 4.535 V >= 4.5 V; 5.175 V <= 5.5 V at no load; PFM at no load, its offset not stated, 0.325 V of headroom to 5.5 V",
+        "pass": true,
+        "source": "[TPS62933 SLUSEA4D] VFB; TPS25947 SLVSFC9C 6.5 RON"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 150 degC with VFB stated over it",
+        "pass": true,
+        "source": "[TPS62933 SLUSEA4D] absolute maximum ratings"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 37190, canPresaleNumber 36377, componentLibraryType expand, USD 0.5881 each at the need of 5; read 2026-09-29T11:57:13Z, vendors.py jlcpcb C3200405 (exact LCSC match)",
+      "digikey": "stock_available 63937, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T10:00:23Z (cached reading of that time), vendors.py digikey TPS62933DRLR",
+      "gate": "need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; stockCount 37190 >= 50, canPresaleNumber 36377 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/TPS62933 meta status, read 2026-09-29T12:12:13Z); longevity: none published; first datasheet June 2021 (SLUSEA4D header), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:00:23Z)",
+      "second_source": "second vendor: Digi-Key TPS62933DRLR stock_available 63937 >= 50 (2026-09-29T10:00:23Z): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "TPS62933FDRLR (C5219272, FCCM, same pins)",
+       "TPS563300DRLR (C5219249, same SOT-583 pins, VIN to 28 V)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "3 A against 2.5 A, 98 % duty for the 5.8 V floor, the tolerance closes at 3.5 % against 5 %, the largest stock at both vendors and the lowest price."
+     },
+     {
+      "rank": 2,
+      "part": "TPS563300DRLR",
+      "maker": "Texas Instruments (datasheet SLUSES9; jlcparts maker blank, JLCPCB and Digi-Key label Texas Instruments); S1 Texas Instruments",
+      "lcsc": "C5219249",
+      "package": "SOT-583 (DRL) 1.6 x 2.1 mm",
+      "placements": 1,
+      "placements_basis": "fixed at 1: one 5 V rail (IOBoard.md:338)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "output current",
+        "required": "at least 2.5 A: the display's 2 A peak plus the 25 % of V99 (no part T2 or T4 selected, and not the encoder, runs from the 5 V rail)",
+        "datasheet": "IOUT 3 A",
+        "pass": true,
+        "source": "[TPS563300 SLUSES9] recommended operating conditions"
+       },
+       {
+        "name": "regulation at the lowest input",
+        "required": "in regulation at 5.8 V in and 2.0 A out",
+        "datasheet": "98 % maximum duty, RDSON_HS 76 milliohm typical: 5.42 V available at 5.8 V and 2.0 A",
+        "pass": true,
+        "source": "[TPS563300 SLUSES9] features (maximum duty), electrical characteristics RDSON"
+       },
+       {
+        "name": "input range",
+        "required": "5.8 V to 22 V operating; at least 27 V absolute maximum",
+        "datasheet": "VIN 3.8 V to 28 V operating, 30 V absolute",
+        "pass": true,
+        "source": "[TPS563300 SLUSES9] absolute maximum ratings, recommended operating conditions"
+       },
+       {
+        "name": "tolerance at the IO board loads",
+        "required": "4.75 V to 5.25 V",
+        "datasheet": "VFB 784 mV to 816 mV (+/-2.0 %) over TJ -40 to 150 degC; budget 3.5 %, 4.825 V to 5.175 V",
+        "pass": true,
+        "source": "[TPS563300 SLUSES9] electrical characteristics VFB"
+       },
+       {
+        "name": "voltage at the display end",
+        "required": "the rail's lowest value, less up to 90 mV across the display supply switch and 0.2 V across the link cable at 2 A, stays at or above 4.5 V; the rail's highest value stays at or below 5.5 V at no load",
+        "datasheet": "rail 4.825 V to 5.175 V: 4.825 - 0.090 - 0.200 = 4.535 V >= 4.5 V; 5.175 V <= 5.5 V at no load; PFM at no load, offset not stated",
+        "pass": true,
+        "source": "[TPS563300 SLUSES9] VFB; TPS25947 SLVSFC9C 6.5 RON"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 150 degC with VFB stated over it",
+        "pass": true,
+        "source": "[TPS563300 SLUSES9] absolute maximum ratings"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 4612, canPresaleNumber 4526, componentLibraryType expand, USD 0.5247 each at the need of 5; read 2026-09-29T11:57:13Z, vendors.py jlcpcb C5219249 (exact LCSC match)",
+      "digikey": "stock_available 3564, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T10:17:41Z (cached reading of that time), vendors.py digikey TPS563300DRLR",
+      "gate": "need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; stockCount 4612 >= 50, canPresaleNumber 4526 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/TPS563300 meta status, read 2026-09-29T12:12:14Z); longevity: none published; first datasheet July 2022 (SLUSES9 header), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:17:41Z)",
+      "second_source": "second vendor: Digi-Key TPS563300DRLR stock_available 3564 >= 50 (2026-09-29T10:17:41Z): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "TPS62933DRLR (C3200405, same SOT-583 pins)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Rank 1's reference, duty and switch in the same pins; less stock at both vendors and 28 V operating against 30 V."
+     },
+     {
+      "rank": 3,
+      "part": "LMR51430YFDDCR",
+      "maker": "Texas Instruments (datasheet SLUSEF4A); S1 Texas Instruments",
+      "lcsc": "C5219261",
+      "package": "SOT-23-6 (DDC)",
+      "placements": 1,
+      "placements_basis": "fixed at 1: one 5 V rail (IOBoard.md:338)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "output current",
+        "required": "at least 2.5 A: the display's 2 A peak plus the 25 % of V99 (no part T2 or T4 selected, and not the encoder, runs from the 5 V rail)",
+        "datasheet": "IOUT 3 A",
+        "pass": true,
+        "source": "[LMR51430 SLUSEF4A] recommended operating conditions"
+       },
+       {
+        "name": "regulation at the lowest input",
+        "required": "in regulation at 5.8 V in and 2.0 A out",
+        "datasheet": "DMAX 98 %, RDSON(HS) 0.12 Ohm typical: 0.98 x 5.8 V - 2.0 A x (0.18 + 0.02) = 5.28 V, above 5.139 V",
+        "pass": true,
+        "source": "[LMR51430 SLUSEF4A] features (maximum duty), electrical characteristics RDSON"
+       },
+       {
+        "name": "input range",
+        "required": "5.8 V to 22 V operating; at least 27 V absolute maximum",
+        "datasheet": "VIN 4.5 V to 36 V operating, 38 V absolute",
+        "pass": true,
+        "source": "[LMR51430 SLUSEF4A] absolute maximum ratings, recommended operating conditions"
+       },
+       {
+        "name": "tolerance at the IO board loads",
+        "required": "4.75 V to 5.25 V",
+        "datasheet": "Vfb 0.591 V to 0.609 V (+/-1.5 %) over TJ -40 to 150 degC; FPWM regulation +/-1.5 % from 0 A to full load; budget 1.5 % + 0.2 % + 0.07 % leakage + 0.3 % ripple + 0.7 % transient = 2.77 %, 4.861 V to 5.139 V",
+        "pass": true,
+        "source": "[LMR51430 SLUSEF4A] electrical characteristics VFB"
+       },
+       {
+        "name": "voltage at the display end",
+        "required": "the rail's lowest value, less up to 90 mV across the display supply switch and 0.2 V across the link cable at 2 A, stays at or above 4.5 V; the rail's highest value stays at or below 5.5 V at no load",
+        "datasheet": "rail 4.861 V to 5.139 V: 4.861 - 0.090 - 0.200 = 4.571 V >= 4.5 V; 5.139 V <= 5.5 V at no load; FPWM, so the figure holds at no load",
+        "pass": true,
+        "source": "[LMR51430 SLUSEF4A] VFB; TPS25947 SLVSFC9C 6.5 RON"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 150 degC with VFB stated over it",
+        "pass": true,
+        "source": "[LMR51430 SLUSEF4A] absolute maximum ratings"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 13541, canPresaleNumber 13424, componentLibraryType expand, USD 0.8382 each at the need of 5; read 2026-09-29T12:03:41Z, vendors.py jlcpcb C5219261 (exact LCSC match)",
+      "digikey": "stock_available 0, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T10:00:32Z (cached reading of that time), vendors.py digikey LMR51430YFDDCR",
+      "gate": "need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; stockCount 13541 >= 50, canPresaleNumber 13424 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/LMR51430 meta status, read 2026-09-29T12:12:13Z); longevity: none published; first datasheet June 2022 (SLUSEF4A header), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:00:32Z)",
+      "second_source": "none: Digi-Key 0 (2026-09-29T10:00:32Z), and the pin-compatible LMR51420YFDDCR is rated 2 A, under the 2.5 A this rail needs",
+      "second_source_route": "none",
+      "second_source_part": "",
+      "alternates": [
+       "LMR51420YFDDCR (C7296200, 2 A: under 2.5 A)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The tightest rail of the three and FPWM at no load, but no second source."
+     }
+    ],
+    "dropped": [
+     {
+      "part": "TPS54302DDCR",
+      "maker": "Texas Instruments",
+      "reason": "fails 'tolerance at the IO board loads' as stated: VFB 0.581 V to 0.611 V (+/-2.5 %) is stated at VIN 12 V only (SLVSDG6C, read 2026-09-29T11:56:07Z); across 5.8 V to 22 V it is not stated"
+     },
+     {
+      "part": "LMR33630ADDAR",
+      "maker": "Texas Instruments",
+      "reason": "passes (5 V regulation -1.5 % to +2.5 %, 3 A; SNVSAN3F read 2026-09-29T11:56:07Z); not among the three kept: no second source (Digi-Key 0, T3 P2 reading)"
+     },
+     {
+      "part": "LMR36015BRNXR",
+      "maker": "Texas Instruments",
+      "reason": "fails 'output current': 1.5 A, under 2.5 A"
+     },
+     {
+      "part": "LMR51420YFDDCR",
+      "maker": "Texas Instruments",
+      "reason": "fails 'output current': 2 A, under 2.5 A"
+     },
+     {
+      "part": "AP64350SP-13",
+      "maker": "Diodes Incorporated",
+      "reason": "passes (3.5 A, VFB +/-1 % in CCM, 42 V absolute); not among the three kept: manufacturer status not in the page body and no second source (Digi-Key 0, T3 P3 reading 2026-09-29T10:37:41Z)"
+     },
+     {
+      "part": "TPS62130RGTR, TPS62913RPUR",
+      "maker": "Texas Instruments",
+      "reason": "fail 'input range': VIN at most 17 V"
+     }
+    ]
+   },
+   {
+    "function": "display supply",
+    "requirements": [
+     {
+      "name": "reverse current blocked",
+      "value": "no current from the display into the IO board while the display runs from its own USB-C and the IO board is unpowered or on the pack",
+      "source": "V266 Answer (Research.md:826)"
+     },
+     {
+      "name": "current limit",
+      "value": "2.5 A nominal, 2.25 A to 2.75 A",
+      "source": "V82 found"
+     },
+     {
+      "name": "current carried",
+      "value": "2 A peak, 1.5 A continuous at 5 V",
+      "source": "prerequisite 7 (Research.md:489-490)"
+     },
+     {
+      "name": "input voltage",
+      "value": "the 5 V rail, 4.825 V to 5.175 V, inside the operating range",
+      "source": "5 V rail rank 1"
+     },
+     {
+      "name": "voltage drop at 2 A",
+      "value": "at most 90 mV, the switch's share of the display-end budget",
+      "source": "V79 found; report 'link cable allowed drop at 2 A'"
+     },
+     {
+      "name": "voltage at the display end at no load",
+      "value": "at most 5.5 V",
+      "source": "V81 found"
+     },
+     {
+      "name": "5 V back-fed on the output with the input at 0 V",
+      "value": "the display's 5 V (up to 5.5 V) on OUT with IN at 0 V is survived and blocked",
+      "source": "V266 Answer; V81 found"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 50 degC ambient",
+      "source": "V7 Answer, Research.md:567 at checkout e13f5f6: 0 to 50 degC ambient for the IO board"
+     },
+     {
+      "name": "maker allowed",
+      "value": "IC maker on the S1 list",
+      "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "TPS259474ARPWR",
+      "maker": "Texas Instruments (datasheet TPS25947 SLVSFC9C); S1 Texas Instruments",
+      "lcsc": "C3662807",
+      "package": "VQFN-HR-10 (RPW) 2 x 2 mm",
+      "placements": 1,
+      "placements_basis": "fixed at 1: one switch on the link cable supply (F6)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "reverse current blocked",
+        "required": "no current from the display into the IO board while the display runs from its own USB-C and the IO board is unpowered or on the pack",
+        "datasheet": "true reverse current blocking: V(REVTH) -36.45 mV to -22.3 mV, BFET off in 1 us (tRCB); IREVLKG 10.1 uA typical at 21.5 V",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 6.5, 6.6"
+       },
+       {
+        "name": "current limit",
+        "required": "2.5 A nominal, 2.25 A to 2.75 A",
+        "datasheet": "ILIM +/-10 % above 1 A (1.65 kOhm: 1.800 A to 2.200 A); RILM for 2.5 A gives 2.25 A to 2.75 A. Circuit breaker: turns off after the ITIMER blanking, then auto-retry.",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] features, 6.5 ILIM"
+       },
+       {
+        "name": "current carried",
+        "required": "2 A peak, 1.5 A continuous at 5 V",
+        "datasheet": "5.5 A class (title), 2 A inside",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] title"
+       },
+       {
+        "name": "input voltage",
+        "required": "the 5 V rail, 4.825 V to 5.175 V, inside the operating range",
+        "datasheet": "VIN 2.7 V to 23 V recommended",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 6.3"
+       },
+       {
+        "name": "voltage drop at 2 A",
+        "required": "at most 90 mV, the switch's share of the display-end budget",
+        "datasheet": "RON 45 milliohm maximum over TJ -40 to 125 degC and VIN 2.7 V to 23 V: 90 mV at 2 A",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 6.5 RON"
+       },
+       {
+        "name": "voltage at the display end at no load",
+        "required": "at most 5.5 V",
+        "datasheet": "the switch passes the rail and adds no voltage: 5.175 V at most",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 7.3"
+       },
+       {
+        "name": "5 V back-fed on the output with the input at 0 V",
+        "required": "the display's 5 V (up to 5.5 V) on OUT with IN at 0 V is survived and blocked",
+        "datasheet": "VOUT absolute maximum min(28 V, VIN + 21 V): 21 V with IN at 0 V; reverse current blocked",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 6.1, 7.3.7"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 125 degC",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 6.1"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 337, canPresaleNumber 290, componentLibraryType expand, USD 1.644 each at the need of 5; read 2026-09-29T11:57:14Z, vendors.py jlcpcb C3662807 (exact LCSC match)",
+      "digikey": "stock_available 125, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T09:55:46Z (cached reading of that time), vendors.py digikey TPS259474ARPWR",
+      "gate": "need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; stockCount 337 >= 50, canPresaleNumber 290 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/TPS25947 meta status, read 2026-09-29T12:12:14Z); longevity: none published; first datasheet October 2020 (SLVSFC9C header, revised May 2026), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (09:55:46Z)",
+      "second_source": "second vendor: Digi-Key TPS259474ARPWR stock_available 125 >= 50 (2026-09-29T09:55:46Z): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "TPS259470ARPWR (C3662799; pin 3 AUXOFF/FLT in place of PG)",
+       "TPS259474LRPWR (C2864845; latch-off)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "True reverse current blocking, a circuit breaker that turns a cable short off rather than holding 2.5 A into it, and auto-retry. The least Digi-Key margin of the three (125 against a gate of 50)."
+     },
+     {
+      "rank": 2,
+      "part": "TPS259470ARPWR",
+      "maker": "Texas Instruments (datasheet TPS25947 SLVSFC9C); S1 Texas Instruments",
+      "lcsc": "C3662799",
+      "package": "VQFN-HR-10 (RPW) 2 x 2 mm",
+      "placements": 1,
+      "placements_basis": "fixed at 1: one switch on the link cable supply (F6)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "reverse current blocked",
+        "required": "no current from the display into the IO board while the display runs from its own USB-C and the IO board is unpowered or on the pack",
+        "datasheet": "true reverse current blocking: V(REVTH) -36.45 mV to -22.3 mV, BFET off in 1 us (tRCB); IREVLKG 10.1 uA typical at 21.5 V",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 6.5, 6.6"
+       },
+       {
+        "name": "current limit",
+        "required": "2.5 A nominal, 2.25 A to 2.75 A",
+        "datasheet": "ILIM +/-10 % above 1 A (1.65 kOhm: 1.800 A to 2.200 A); RILM for 2.5 A gives 2.25 A to 2.75 A. Active current limit at ILIM with auto-retry after thermal shutdown.",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] features, 6.5 ILIM"
+       },
+       {
+        "name": "current carried",
+        "required": "2 A peak, 1.5 A continuous at 5 V",
+        "datasheet": "5.5 A class (title), 2 A inside",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] title"
+       },
+       {
+        "name": "input voltage",
+        "required": "the 5 V rail, 4.825 V to 5.175 V, inside the operating range",
+        "datasheet": "VIN 2.7 V to 23 V recommended",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 6.3"
+       },
+       {
+        "name": "voltage drop at 2 A",
+        "required": "at most 90 mV, the switch's share of the display-end budget",
+        "datasheet": "RON 45 milliohm maximum over TJ -40 to 125 degC and VIN 2.7 V to 23 V: 90 mV at 2 A",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 6.5 RON"
+       },
+       {
+        "name": "voltage at the display end at no load",
+        "required": "at most 5.5 V",
+        "datasheet": "the switch passes the rail and adds no voltage: 5.175 V at most",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 7.3"
+       },
+       {
+        "name": "5 V back-fed on the output with the input at 0 V",
+        "required": "the display's 5 V (up to 5.5 V) on OUT with IN at 0 V is survived and blocked",
+        "datasheet": "VOUT absolute maximum min(28 V, VIN + 21 V): 21 V with IN at 0 V; reverse current blocked",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 6.1, 7.3.7"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 125 degC",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 6.1"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 2618, canPresaleNumber 2529, componentLibraryType expand, USD 1.2768 each at the need of 5; read 2026-09-29T11:57:14Z, vendors.py jlcpcb C3662799 (exact LCSC match)",
+      "digikey": "stock_available 59298, manufacturer lead time 9 weeks, ProductStatus Active; read 2026-09-29T09:55:50Z (cached reading of that time), vendors.py digikey TPS259470ARPWR",
+      "gate": "need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; stockCount 2618 >= 50, canPresaleNumber 2529 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/TPS25947 meta status, read 2026-09-29T12:12:14Z); longevity: none published; first datasheet October 2020 (SLVSFC9C header, revised May 2026), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (09:55:50Z)",
+      "second_source": "second vendor: Digi-Key TPS259470ARPWR stock_available 59298 >= 50 (2026-09-29T09:55:50Z): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "TPS259474ARPWR (C3662807)",
+       "TPS259474LRPWR (C2864845)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The same switch holding a short at 2.5 A instead of breaking it; the largest stock at both vendors."
+     },
+     {
+      "rank": 3,
+      "part": "TPS259474LRPWR",
+      "maker": "Texas Instruments (datasheet TPS25947 SLVSFC9C); S1 Texas Instruments",
+      "lcsc": "C2864845",
+      "package": "VQFN-HR-10 (RPW) 2 x 2 mm",
+      "placements": 1,
+      "placements_basis": "fixed at 1: one switch on the link cable supply (F6)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "reverse current blocked",
+        "required": "no current from the display into the IO board while the display runs from its own USB-C and the IO board is unpowered or on the pack",
+        "datasheet": "true reverse current blocking: V(REVTH) -36.45 mV to -22.3 mV, BFET off in 1 us (tRCB); IREVLKG 10.1 uA typical at 21.5 V",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 6.5, 6.6"
+       },
+       {
+        "name": "current limit",
+        "required": "2.5 A nominal, 2.25 A to 2.75 A",
+        "datasheet": "ILIM +/-10 % above 1 A (1.65 kOhm: 1.800 A to 2.200 A); RILM for 2.5 A gives 2.25 A to 2.75 A. Circuit breaker with latch-off: restarts only on EN or power cycled.",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] features, 6.5 ILIM"
+       },
+       {
+        "name": "current carried",
+        "required": "2 A peak, 1.5 A continuous at 5 V",
+        "datasheet": "5.5 A class (title), 2 A inside",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] title"
+       },
+       {
+        "name": "input voltage",
+        "required": "the 5 V rail, 4.825 V to 5.175 V, inside the operating range",
+        "datasheet": "VIN 2.7 V to 23 V recommended",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 6.3"
+       },
+       {
+        "name": "voltage drop at 2 A",
+        "required": "at most 90 mV, the switch's share of the display-end budget",
+        "datasheet": "RON 45 milliohm maximum over TJ -40 to 125 degC and VIN 2.7 V to 23 V: 90 mV at 2 A",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 6.5 RON"
+       },
+       {
+        "name": "voltage at the display end at no load",
+        "required": "at most 5.5 V",
+        "datasheet": "the switch passes the rail and adds no voltage: 5.175 V at most",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 7.3"
+       },
+       {
+        "name": "5 V back-fed on the output with the input at 0 V",
+        "required": "the display's 5 V (up to 5.5 V) on OUT with IN at 0 V is survived and blocked",
+        "datasheet": "VOUT absolute maximum min(28 V, VIN + 21 V): 21 V with IN at 0 V; reverse current blocked",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 6.1, 7.3.7"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 125 degC",
+        "pass": true,
+        "source": "[TPS25947 SLVSFC9C] 6.1"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 3862, canPresaleNumber 3821, componentLibraryType expand, USD 1.2898 each at the need of 5; read 2026-09-29T11:57:15Z, vendors.py jlcpcb C2864845 (exact LCSC match)",
+      "digikey": "stock_available 40352, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T09:55:44Z (cached reading of that time), vendors.py digikey TPS259474LRPWR",
+      "gate": "need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; stockCount 3862 >= 50, canPresaleNumber 3821 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/TPS25947 meta status, read 2026-09-29T12:12:14Z); longevity: none published; first datasheet October 2020 (SLVSFC9C header, revised May 2026), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (09:55:44Z)",
+      "second_source": "second vendor: Digi-Key TPS259474LRPWR stock_available 40352 >= 50 (2026-09-29T09:55:44Z): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "TPS259474ARPWR (C3662807)",
+       "TPS259470ARPWR (C3662799)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Rank 1 with latch-off: a short holds the display off until EN is toggled, a control the tree does not provide."
+     }
+    ],
+    "dropped": [
+     {
+      "part": "TPS25961DRVR",
+      "maker": "Texas Instruments",
+      "reason": "fails 'current limit': 0.1 A to 2 A (jlcparts description of C5571272), under the 2.25 A lowest limit"
+     },
+     {
+      "part": "LM66200",
+      "maker": "Texas Instruments",
+      "reason": "fails 'current limit': ideal diode with no current limit, rated to 5.5 V (FU-P1R5/002-P1-R5.json)"
+     },
+     {
+      "part": "TPS25940AQRVCRQ1",
+      "maker": "Texas Instruments",
+      "reason": "fails 'reverse current blocked': V(REVTH) -77 mV to -55 mV with RON 26 to 58 milliohm lets 0.95 A to 2.96 A flow back before the comparator trips (SLVSDJ0E, T3 re-rank reading 2026-09-29T10:53:36Z)"
+     }
+    ]
+   },
+   {
+    "function": "receiver supply",
+    "requirements": [
+     {
+      "name": "receiver powered by the IO board",
+      "value": "no: the receiver takes its power from its own source or from an output port's supply pin; no rail, voltage or current is assigned to it",
+      "source": "V104 found; docs/Receivers.md:15-16, :29; IOBoard.md:64"
+     }
+    ],
+    "shortlist": [],
+    "dropped": []
+   },
+   {
+    "function": "encoder 12 V supply",
+    "requirements": [
+     {
+      "name": "input range",
+      "value": "5.8 V to 22 V, below and above the 12 V output: a buck-boost converter",
+      "source": "Research.md:283 (R5 row); F9; V84 found"
+     },
+     {
+      "name": "output voltage at the connector",
+      "value": "10.8 V to 13.2 V in the 12 V position; 4.75 V to 5.25 V in the 5 V position; the F4 jumper selects the converter's feedback divider",
+      "source": "V103 and V100 found; F4 Answer"
+     },
+     {
+      "name": "output current",
+      "value": "at least 100 mA at 12 V and at least 160 mA at 5 V",
+      "source": "V102 found"
+     },
+     {
+      "name": "output current limit",
+      "value": "250 mA nominal, at least 160 mA at its lowest corner and at most 300 mA at its highest, in both positions",
+      "source": "V108 found"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 50 degC ambient",
+      "source": "V7 Answer, Research.md:567 at checkout e13f5f6: 0 to 50 degC ambient for the IO board"
+     },
+     {
+      "name": "maker allowed",
+      "value": "IC maker on the S1 list",
+      "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "TPS55288RPMR",
+      "maker": "Texas Instruments (datasheet SLVSF01B); S1 Texas Instruments",
+      "lcsc": "C2864583",
+      "package": "VQFN-HR-26 (RPM) 3.5 x 4 mm",
+      "placements": 1,
+      "placements_basis": "fixed at 1: one encoder supply converter (F4); the F4 jumper switches its feedback divider between 5 V and 12 V, so its own output current limit covers both positions",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "input range",
+        "required": "5.8 V to 22 V, below and above the 12 V output: a buck-boost converter",
+        "datasheet": "VIN 2.7 V to 36 V; four-switch buck-boost",
+        "pass": true,
+        "source": "[TPS55288 SLVSF01B] recommended operating conditions"
+       },
+       {
+        "name": "output voltage at the connector",
+        "required": "10.8 V to 13.2 V in the 12 V position; 4.75 V to 5.25 V in the 5 V position; the F4 jumper selects the converter's feedback divider",
+        "datasheet": "VREF 1.117 V to 1.141 V with external feedback, REF=03C0h: 12 V setting 11.84 V to 12.16 V, 5 V setting 4.93 V to 5.07 V with 0.1 % resistors",
+        "pass": true,
+        "source": "[TPS55288 SLVSF01B] electrical characteristics VREF"
+       },
+       {
+        "name": "output current",
+        "required": "at least 100 mA at 12 V and at least 160 mA at 5 V",
+        "datasheet": "16-A switches, programmable output current limit up to 6.35 A; 160 mA inside; OE bit resets to 0, firmware sets it over I2C before the output starts",
+        "pass": true,
+        "source": "[TPS55288 SLVSF01B] title, features"
+       },
+       {
+        "name": "output current limit",
+        "required": "250 mA nominal, at least 160 mA at its lowest corner and at most 300 mA at its highest, in both positions",
+        "datasheet": "VSNS 28 mV to 32 mV at the IOUT_LIMIT 30 mV setting, 120 milliohm between ISP and ISN: 233 mA to 267 mA",
+        "pass": true,
+        "source": "[TPS55288 SLVSF01B] electrical characteristics VSNS"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 125 degC or wider",
+        "pass": true,
+        "source": "[TPS55288 SLVSF01B] recommended operating conditions"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 5183, canPresaleNumber 5116, componentLibraryType expand, USD 2.2011 each at the need of 5; read 2026-09-29T11:57:15Z, vendors.py jlcpcb C2864583 (exact LCSC match)",
+      "digikey": "stock_available 5262, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T10:00:36Z (cached reading of that time), vendors.py digikey TPS55288RPMR",
+      "gate": "need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; stockCount 5183 >= 50, canPresaleNumber 5116 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/TPS55288 meta status, read 2026-09-29T12:12:14Z); longevity: none published; first datasheet November 2018 (SLVSF01B header), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:00:36Z)",
+      "second_source": "second vendor: Digi-Key TPS55288RPMR stock_available 5262 >= 50 (2026-09-29T10:00:36Z): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "TPS55288QRPMRQ1 (C2876595, same package; not read at JLCPCB)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Integrated switches and its own output current limit at a stated row, stock at both vendors; needs the I2C bus, the address opposite the TPS55285, and a firmware OE write."
+     },
+     {
+      "rank": 2,
+      "part": "LM5176PWPR",
+      "maker": "Texas Instruments (datasheet SNVSAI1D); S1 Texas Instruments",
+      "lcsc": "C442493",
+      "package": "HTSSOP-28 (PWP)",
+      "placements": 1,
+      "placements_basis": "fixed at 1: one encoder supply controller (F4) with four external MOSFETs; the jumper switches its feedback divider",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "input range",
+        "required": "5.8 V to 22 V, below and above the 12 V output: a buck-boost converter",
+        "datasheet": "VIN 4.2 V to 55 V (60 V absolute); four-switch buck-boost",
+        "pass": true,
+        "source": "[LM5176 SNVSAI1D] recommended operating conditions"
+       },
+       {
+        "name": "output voltage at the connector",
+        "required": "10.8 V to 13.2 V in the 12 V position; 4.75 V to 5.25 V in the 5 V position; the F4 jumper selects the converter's feedback divider",
+        "datasheet": "VREF 0.788 V to 0.812 V: 12 V setting 11.80 V to 12.20 V, 5 V setting 4.915 V to 5.085 V with 0.1 % resistors",
+        "pass": true,
+        "source": "[LM5176 SNVSAI1D] electrical characteristics VREF"
+       },
+       {
+        "name": "output current",
+        "required": "at least 100 mA at 12 V and at least 160 mA at 5 V",
+        "datasheet": "controller: the output current is set by the external MOSFETs and the 0.2 Ohm sense resistor, 215 mA at the lowest corner; 160 mA inside; no I2C",
+        "pass": true,
+        "source": "[LM5176 SNVSAI1D] title, features"
+       },
+       {
+        "name": "output current limit",
+        "required": "250 mA nominal, at least 160 mA at its lowest corner and at most 300 mA at its highest, in both positions",
+        "datasheet": "average current loop VSNS 43 mV to 57 mV, 0.2 Ohm on the output side: 215 mA to 285 mA",
+        "pass": true,
+        "source": "[LM5176 SNVSAI1D] electrical characteristics VSNS"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 125 degC or wider",
+        "pass": true,
+        "source": "[LM5176 SNVSAI1D] recommended operating conditions"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 12226, canPresaleNumber 12169, componentLibraryType expand, USD 3.8515 each at the need of 5; read 2026-09-29T11:57:16Z, vendors.py jlcpcb C442493 (exact LCSC match)",
+      "digikey": "stock_available 253, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T10:42:07Z (cached reading of that time), vendors.py digikey LM5176PWPR",
+      "gate": "need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; stockCount 12226 >= 50, canPresaleNumber 12169 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/LM5176 meta status, read 2026-09-29T12:12:15Z); longevity: none published; first datasheet June 2017 (SNVSAI1D header), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:42:07Z)",
+      "second_source": "second vendor: Digi-Key LM5176PWPR stock_available 253 >= 50 (2026-09-29T10:42:07Z): passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Meets every value with no I2C and no firmware step, but drives four external MOSFETs and two sense resistors for a 160 mA load and costs USD 3.85."
+     },
+     {
+      "rank": 3,
+      "part": "TPS55289RYQR",
+      "maker": "Texas Instruments (datasheet SLVSGA9A); S1 Texas Instruments",
+      "lcsc": "C5942077",
+      "package": "VQFN-HR-21 (RYQ) 3 x 5 mm",
+      "placements": 1,
+      "placements_basis": "fixed at 1: one encoder supply converter (F4); the jumper switches its feedback divider",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "input range",
+        "required": "5.8 V to 22 V, below and above the 12 V output: a buck-boost converter",
+        "datasheet": "VIN 3.0 V to 30 V; four-switch buck-boost",
+        "pass": true,
+        "source": "[TPS55289 SLVSGA9A] recommended operating conditions"
+       },
+       {
+        "name": "output voltage at the connector",
+        "required": "10.8 V to 13.2 V in the 12 V position; 4.75 V to 5.25 V in the 5 V position; the F4 jumper selects the converter's feedback divider",
+        "datasheet": "VREF 1.117 V to 1.141 V with external feedback, REF=0780h: 12 V setting 11.84 V to 12.16 V, 5 V setting 4.93 V to 5.07 V with 0.1 % resistors",
+        "pass": true,
+        "source": "[TPS55289 SLVSGA9A] electrical characteristics VREF"
+       },
+       {
+        "name": "output current",
+        "required": "at least 100 mA at 12 V and at least 160 mA at 5 V",
+        "datasheet": "8-A average inductor current limit; 160 mA inside; I2C at 74h or 75h, OE by firmware",
+        "pass": true,
+        "source": "[TPS55289 SLVSGA9A] title, features"
+       },
+       {
+        "name": "output current limit",
+        "required": "250 mA nominal, at least 160 mA at its lowest corner and at most 300 mA at its highest, in both positions",
+        "datasheet": "VSNS 28.5 mV to 31.5 mV at the 30 mV setting, 120 milliohm: 238 mA to 263 mA",
+        "pass": true,
+        "source": "[TPS55289 SLVSGA9A] electrical characteristics VSNS"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC ambient",
+        "datasheet": "TJ -40 to 125 degC or wider",
+        "pass": true,
+        "source": "[TPS55289 SLVSGA9A] recommended operating conditions"
+       },
+       {
+        "name": "maker allowed",
+        "required": "IC maker on the S1 list",
+        "datasheet": "Texas Instruments, on the S1 list",
+        "pass": true,
+        "source": "Research.md:510 (S1 Answer) at checkout e13f5f6"
+       }
+      ],
+      "jlcpcb": "stockCount 4559, canPresaleNumber 4528, componentLibraryType expand, USD 5.2128 each at the need of 5; read 2026-09-29T11:57:15Z, vendors.py jlcpcb C5942077 (exact LCSC match)",
+      "digikey": "stock_available 0, manufacturer lead time 16 weeks, ProductStatus Active; read 2026-09-29T10:00:34Z (cached reading of that time), vendors.py digikey TPS55289RYQR",
+      "gate": "need 5 boards x 1 = 5; S4 gate max(5 x 5, 50) = 50; stockCount 4559 >= 50, canPresaleNumber 4528 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE (https://www.ti.com/product/TPS55289 meta status, read 2026-09-29T12:12:15Z); longevity: none published; first datasheet March 2022 (SLVSGA9A header), over 12 months; PCN listing needs a login, not read; distributor: Digi-Key ProductStatus Active (10:00:34Z)",
+      "second_source": "none: Digi-Key 0 (2026-09-29T10:00:34Z) and no pin-compatible alternate read (TPS55288 is in another package)",
+      "second_source_route": "none",
+      "second_source_part": "",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Rank 1's function with a tighter current-limit row, but no second source and USD 5.21."
+     }
+    ],
+    "dropped": [
+     {
+      "part": "TPS63070RNMR",
+      "maker": "Texas Instruments",
+      "reason": "fails 'input range': VIN 2 V to 16 V (jlcparts description of C109322)"
+     },
+     {
+      "part": "LTC3112EDHD#TRPBF",
+      "maker": "Analog Devices (Linear)",
+      "reason": "fails 'input range': VIN 2.7 V to 15 V (jlcparts description of C684093)"
+     },
+     {
+      "part": "LTC3115EFE-1#TRPBF, LTC3115EFE-2#TRPBF",
+      "maker": "Analog Devices (Linear)",
+      "reason": "fail rule 4 at JLCPCB: C684128 stockCount 13, C684130 stockCount 18 (T3 P2, vendors.py jlcpcb, 2026-09-29T10:17:16Z and 10:17:17Z)"
+     },
+     {
+      "part": "TPS55165QPWPRQ1",
+      "maker": "Texas Instruments",
+      "reason": "fails 'output current limit' alone (internal switch limit, ISW 4.5 A peak; SLVSD46A); passes only with a TPS259631DDAR after it (0.224 A to 0.269 A), two parts, and no second source (Digi-Key 0, T3 re-rank 10:53:06Z)"
+     },
+     {
+      "part": "LM5118MHX/NOPB",
+      "maker": "Texas Instruments",
+      "reason": "fails 'output current limit' alone (cycle-by-cycle switch limit, SNVS566J); passes only with a TPS259631DDAR after it; no second source (Digi-Key 0, T3 P3)"
+     }
+    ]
+   },
+   {
+    "function": "2S pack connector",
+    "requirements": [
+     {
+      "name": "current",
+      "value": "13.1 A continuous from the pack at a 5.8 V bus",
+      "source": "V90 found"
+     },
+     {
+      "name": "voltage",
+      "value": "8.45 V; survives the 25.2 V and -25.2 V mis-connections of V267 behind the input protection",
+      "source": "V92, V83 found; V267 Answer"
+     },
+     {
+      "name": "polarity",
+      "value": "keyed so a 2S pack plugs in one way; a reversed connection is still survived",
+      "source": "V86 found"
+     },
+     {
+      "name": "balance lead",
+      "value": "the pack's balance lead reaches the IO board beside the power leads, on an input separate from the ESC pack's balance lead",
+      "source": "IOBoard.md:365 (Bench pack balance lead) at checkout e13f5f6"
+     }
+    ],
+    "shortlist": [],
+    "dropped": []
+   },
+   {
+    "function": "logic supply from the RP2354B's USB port (IOBoard.md:384, marked R5)",
+    "requirements": [
+     {
+      "name": "USB port powers the logic",
+      "value": "no: with neither the DC input nor the pack present, no rail runs from the RP2354B's USB VBUS; whether the charger's power path runs the board from USB-C is R7's (V152)",
+      "source": "V91 found; IOBoard.md:384; Research.md:61"
+     }
+    ],
+    "shortlist": [],
+    "dropped": []
+   }
+  ],
+  "report": [
+   {
+    "figure": "3.3 V rail load, summed maxima",
+    "value": "1090 mA from the parts T2 and T4 selected, at their datasheet maxima (T3 P2 sum, confirmed by T3's datasheet verifier): RP2354B 321 mA (VREG_LX 200 mA maximum taken as the VREG_VIN bound, IIOVDD_MAX 100 mA, IQSPI_IOVDD_MAX 20 mA, USB/OTP/AVDD 0.9 mA), 2 x MCP2518FDT-E/SL 20 mA, 2 x TCAN3413DR 60 mA dominant into 50 Ohm, 4 x TPSI3052DWZR 26 mA typical (no maximum stated), Qwiic ports 2 x 226 mA (V245), AM26LV32EIDR 17 mA and 60 mA of smaller loads. Re-read here: VREG_LX 200 mA, IIOVDD_MAX 100 mA, IQSPI_IOVDD_MAX 20 mA (RP2350 datasheet build 2025-07-29, pin table and Table 1436) and TCAN3413 ICC 60 mA maximum dominant (SLLSFS8A 5.6). The selection has not changed since T3 (selection.json, 11:46Z)",
+    "source": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf read 2026-09-29T12:04:29Z; https://www.ti.com/lit/ds/symlink/tcan3413.pdf read 12:04:36Z; T3/006-P2-R5.json report and T3/032-P4-datasheet-R5.json"
+   },
+   {
+    "figure": "3.3 V logic buck rating needed",
+    "value": "1.36 A: 1090 mA x 1.25 (V99). Rank 1 LMR51420YFDDCR is rated 2 A; its alternate LMR51430YFDDCR 3 A",
+    "source": "V99 found; [LMR51420 SLUSEF6C] 7.3; [LMR51430 SLUSEF4A] 7.3"
+   },
+   {
+    "figure": "5 V rail load and rating needed",
+    "value": "2.0 A peak and 1.5 A continuous: the display alone. 2.5 A with the 25 % of V99. The encoder's 5 V now comes from the encoder converter in its 5 V position and the load-cell excitation from R13's own regulator (60 mA, V254), so neither is on the 5 V rail; T3 counted the encoder's 0.16 A on both, which T3's verifier refuted. Rank 1 TPS62933DRLR is rated 3 A",
+    "source": "prerequisite 7 (Research.md:489-490); V102 found; FU-C1/004-P2-R13.json; T3/032-P4-datasheet-R5.json 'function requirements: encoder 12 V supply'"
+   },
+   {
+    "figure": "lowest voltage at the display",
+    "value": "4.5 V at the display end while it draws 2 A: the TJA1051T/3's VCC minimum on the display's 5V net. Its differential output VO(dif) is specified only for VCC 4.75 V to 5.25 V, so the link's transmit level from the display is not specified between 4.5 V and 4.75 V. For a decision: holding 4.75 V at the display needs the 5 V rail set above 5.0 V (at 5.0 V nominal the rail's lowest 4.825 V less 90 mV across the switch leaves 4.735 V, under 4.75 V with no cable)",
+    "source": "V79 found; https://www.nxp.com/docs/en/data-sheet/TJA1051.pdf Rev. 9 Table 7, read 2026-09-29T11:56:18Z"
+   },
+   {
+    "figure": "link cable allowed drop at 2 A",
+    "value": "0.235 V over the supply and return conductors together, a 117 milliohm loop: the 5 V rail at its lowest 4.825 V with rank 1 TPS62933DRLR (VFB -2.0 % over TJ -40 to 150 degC, resistors -0.2 %, load regulation -0.3 %, ripple -0.3 %, load transient -0.7 %) less 90 mV across the TPS25947 (45 milliohm maximum), down to 4.5 V. The function requirements allot 0.2 V to the cable, leaving 35 mV. Round 2 selects the conductors and connector. The drop inside the display between its supply entry and U7 is not read and comes out of this budget",
+    "source": "[TPS62933 SLUSEA4D] 8.5 VFB; [TPS25947 SLVSFC9C] 6.5 RON; V79 found"
+   },
+   {
+    "figure": "display VBUS conflict",
+    "value": "Conflict: the display does not isolate the VBUS of its native USB-C socket (Type_C2 VBUS tied to its 5V net). With the link supply up, 5 V reaches that socket's VBUS pins and back-feeds a host or charger plugged there. The USB-UART socket (Type_C1) is isolated by the AO3401 ideal diodes Q5 and Q10. The IO board side blocks reverse current (V266, TPS25947), so the IO board is protected either way; the host port is not. Until the owner decides, connecting the link supply and the native USB-C at once is not specified as safe (IOBoard.md:386)",
+    "source": "V80 found; https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-7/ESP32-S3-Touch-LCD-7-Sch.pdf (V1.2, page 1, rendered at 400 dpi and 500 dpi) read 2026-09-29T11:56:18Z"
+   },
+   {
+    "figure": "DC input current",
+    "value": "6.4 A at 12 V and 3.9 A at 20 V with the display at its 2 A peak and 90 % for every converter (V105). The reverse-polarity, overvoltage and source-selection MOSFETs on the DC path are sized for 6.4 A",
+    "source": "V105 found"
+   },
+   {
+    "figure": "pack path current",
+    "value": "12.7 A at 6.0 V and 13.1 A at a 5.8 V bus (V90), of which the servo supply 9.9 A; the disconnect, source selection and pack connector are sized for 13.1 A",
+    "source": "V90 found"
+   },
+   {
+    "figure": "servo converter from the 6.0 V pack",
+    "value": "The TPS55285 cannot deliver 8.4 V at 6.35 A from 6.0 V: that needs 8.9 A input even at 100 %, above its average inductor current limit ILIM_AVG of 7 A minimum, 8 A typical, no maximum stated. For R6 and P5",
+    "source": "https://www.ti.com/lit/ds/symlink/tps55285.pdf SLVSI72A 5.4 ILIM_AVG, read 2026-09-29T11:56:07Z"
+   },
+   {
+    "figure": "3.3 V tolerance budget",
+    "value": "With LMR51420YFDDCR or LMR51430YFDDCR: reference +/-1.5 % (Vfb 0.591 V to 0.609 V over TJ -40 to 150 degC, VIN 4.5 V to 36 V), FPWM output regulation within +/-1.5 % from 0 A to full load (system characteristics, typical components, not production tested), 0.1 % feedback resistors +/-0.2 %, FB leakage 50 nA maximum through a 45.3 kOhm top resistor +/-0.07 %, ripple +/-0.3 % and load transient +/-0.7 % (round 2 output capacitors) = +/-2.77 %, 3.209 V to 3.391 V against 3.201 V to 3.399 V, with no junction-temperature or load condition. TPS62933DRLR, T3's rank 1, closes at 3.0 % only for TJ 0 to 85 degC and is dropped",
+    "source": "[LMR51420 SLUSEF6C] 7.5, 7.6; [LMR51430 SLUSEF4A] 7.5, 7.6; [TPS62933 SLUSEA4D] 8.5"
+   },
+   {
+    "figure": "3.3 V start-up ramp",
+    "value": "LMR51420YFDDCR and LMR51430YFDDCR: internal soft-start tSS 3.2 ms to 5.4 ms, 4.0 ms typical, not adjustable. For P5 against the TPS3703A7330 reset supervisor of F12",
+    "source": "[LMR51420 SLUSEF6C] 7.5 tSS; [LMR51430 SLUSEF4A] 7.5 tSS"
+   },
+   {
+    "figure": "overvoltage cut-off response",
+    "value": "LM74800-Q1 and LM74800: OV rising to HGATE low 3.98 us typical, 5.4 us maximum; HGATE sink current 168 mA minimum. For P5 against the TPS55285 VIN absolute maximum of 27 V while a transient clamped to at most 37.3 V (TVS2701DRBR) reaches the input. At plug-in HGATE starts off and ramps with CdVdT, so the bus capacitance is behind an off MOSFET while the lead rings on the input side",
+    "source": "[LM7480-Q1 SNOSD95C] 7.5, 7.6, 9.3.2.2; https://www.ti.com/lit/ds/symlink/tps55285.pdf SLVSI72A 5.1"
+   },
+   {
+    "figure": "input TVS",
+    "value": "TVS2701DRBR (Texas Instruments, S1), one on each input, bidirectional: VRWM +/-27 V (above 25.2 V in both directions), VBR 29.6 V minimum, VCLAMP 34 V typical, 35.7 V maximum at IPP 8/20 us (27 degC), 37.3 V at 125 degC, 3.5 A 10/1000 us. JLCPCB C2878109 stockCount 155, canPresaleNumber 137, USD 0.6628 at 10 (vendors.py jlcpcb, 2026-09-29T11:57:16Z): need 10, gate 50, pass. Digi-Key 25005, lead 9 weeks, Active (cached reading of 10:44:54Z). TI status ACTIVE (https://www.ti.com/product/TVS2701, 12:12:15Z). Alternate SMBJ26CA-13-F (Diodes, bidirectional, VRWM 26 V, VBR 28.9 V to 33.2 V, VC 42.1 V at 14.2 A): JLCPCB C135063 stockCount 63, canPresaleNumber 62 (11:57:16Z), pass at 50; Digi-Key 8483 (10:45:05Z). SMBJ26A-13-F, named by T3, is unidirectional (ds19002 note 8, 'Suffix C denotes Bi-directional device') and conducts forward under the -25.2 V of V267: not used",
+    "source": "https://www.ti.com/lit/ds/symlink/tvs2701.pdf SLVSEQ5A 7.4, 7.6 read 2026-09-29T11:56:07Z; https://www.diodes.com/assets/Datasheets/ds19002.pdf Rev. 20-2 read 11:56:18Z; vendors.py jlcpcb C2878109, C135063; vendors.py digikey TVS2701DRBR, SMBJ26CA-13-F"
+   },
+   {
+    "figure": "MOSFETs not selected",
+    "value": "R5 needs MOSFETs that round 1 lists for no category: back-to-back N-channel pairs for each LM7480x (DC path 6.4 A, pack path 13.1 A, VDS at least 40 V against the 37.3 V clamp and the -25.2 V reverse, safe operating area for the 2.0 A inrush of V87) and the R5460 discharge and charge MOSFETs (total RDS(on) under 14.1 milliohm at operating temperature at 13.1 A, from VDET3 0.200 V +/-0.015 V). Reported for a decision on which round selects them",
+    "source": "Research.md:27-28 (scope of rounds 1 and 2); V87, V90, V105 found; [R5460 EA-165-250616] VDET3"
+   },
+   {
+    "figure": "pack disconnect second source",
+    "value": "None: R5460N212AF-TR-FE has Digi-Key stock 0 (cached reading of 2026-09-29T10:00:21Z); R5460x225AF has the same over-discharge thresholds and F release but no JLCPCB listing. Its manufacturer status is not in the Nisshinbo page body (not read, reported); the Product Longevity Program names R5460N for 10 years from January 2026. Its over-discharge accuracy is stated at 25 degC only, and its behaviour with VC open is not stated",
+    "source": "vendors.py digikey R5460N212AF-TR-FE; [R5460 EA-165-250616]; https://www.nisshinbo-microdevices.co.jp/en/design-support/plp/list/ read 11:58:01Z"
+   },
+   {
+    "figure": "pack disconnect market introduction",
+    "value": "On or before 2009-12-21: the Ricoh datasheet edition NO.EA-165-091221, archived on 2015-05-13, lists R5460N212AF with VDET2 3.000 V and VREL2 3.200 V; over 12 months on the market. The current edition NO.EA-165-250616 carries no revision history",
+    "source": "http://web.archive.org/web/20150513040913id_/http://www.e-devices.ricoh.co.jp:80/en/products/product_power/bmu/r5460/r5460-e.pdf, vendors.py fetch --client plain, read 2026-09-29T11:59:58Z; index from http://web.archive.org/cdx/search/cdx (11:59:04Z)"
+   },
+   {
+    "figure": "pack disconnect and charger placement",
+    "value": "Conflict for P5: the R5460 senses a charger at its V- pin ('charger negative input pin'), and its F version releases over-discharge only after a charger is connected there. R7 answered V153 with the charger on the cells' side of R5's disconnect and the disconnect between VSYS and the loads (T3 R7 P2). With that placement the R5460 never sees the charger and never releases after a floor trip. With the charger on the V- side, as in the datasheet's typical application, the pack still charges while DOUT holds the discharge MOSFET off: COUT keeps the charge MOSFET on and the charge current flows through the discharge MOSFET's body diode ('Even if a battery is discharged to 0V, charge current is acceptable')",
+    "source": "[R5460 EA-165-250616] pin description (V-), outline, application notes on R3; T3/003-P2-R7.json V153"
+   },
+   {
+    "figure": "encoder supply design",
+    "value": "The F4 jumper switches the encoder converter's feedback divider between 5 V and 12 V, so its own output current limit (250 mA, V108) covers both positions and the 5 V rail carries the display alone. TPS55288 and TPS55289 answer at 74h or 75h, the same pair as the TPS55285 servo supply (75h or 74h by its MODE resistor): on one bus the two take opposite addresses. Both start with OE = 0 until firmware sets it. LM5176PWPR (rank 2) needs no I2C",
+    "source": "[TPS55288 SLVSF01B] Table 7-2, register 06h OE reset 0b; [TPS55289 SLVSGA9A] 7.5; https://www.ti.com/lit/ds/symlink/tps55285.pdf SLVSI72A (address 75h or 74h)"
+   },
+   {
+    "figure": "display supply stock margin",
+    "value": "TPS259474ARPWR, ranked first, has Digi-Key stock 125 (cached reading of 2026-09-29T09:55:46Z) and JLCPCB 337 with presale 290 (11:57:14Z), both above the gate of 50 with the least margin in R5",
+    "source": "vendors.py digikey TPS259474ARPWR; vendors.py jlcpcb C3662807"
+   },
+   {
+    "figure": "LTC4418 stock at the gate",
+    "value": "LTC4418CUF#TRPBF fails rule 4 at JLCPCB: C688512 stockCount 30, canPresaleNumber 27 (2026-09-29T11:57:18Z), under the gate of 50; the T3 re-rank's 50 of 10:52:02Z no longer holds",
+    "source": "vendors.py jlcpcb C688512"
+   },
+   {
+    "figure": "datasheets read",
+    "value": "[LM7480-Q1 SNOSD95C] https://www.ti.com/lit/ds/symlink/lm7480-q1.pdf; [LM7480 SNOSDD8] .../lm7480.pdf; [LM7481-Q1 SNOSD98A] .../lm7481-q1.pdf; [LMR51420 SLUSEF6C] .../lmr51420.pdf; [LMR51430 SLUSEF4A] .../lmr51430.pdf; [TPS62933 SLUSEA4D] .../tps62933.pdf; [TPS563300 SLUSES9] .../tps563300.pdf; [TPS25947 SLVSFC9C] .../tps25947.pdf; [TPS55288 SLVSF01B] .../tps55288.pdf; [TPS55289 SLVSGA9A] .../tps55289.pdf; [LM5176 SNVSAI1D] .../lm5176.pdf; all under https://www.ti.com/lit/ds/symlink/, vendors.py fetch read 2026-09-29T11:56:07Z; [R5460 EA-165-250616] https://www.nisshinbo-microdevices.co.jp/en/pdf/datasheet/r5460-ea.pdf read 11:56:18Z. Also read: LM74502 SNOSDE5A, LM74700-Q1 SNOSD17G, LM74720-Q1 SLVSFH8B, LM749x0-Q1 SNOSDE6C, LM5060 SNVS628H, LMR33630 SNVSAN3F, LMR36015 SNVSB49D, TPS54302 SLVSDG6C, TPS2596, TPS55285 SLVSI72A, TVS2701 SLVSEQ5A, BQ25887 SLUSD89B (11:56:07Z); BQ25713 SLUSD83C (12:10:28Z); LTC4365 Rev. B, LTC4418 Rev. A (11:56:17Z) and LTC4417 Rev. G (11:56:18Z) from www.analog.com with --client safari; AP63200/1/3/5 DS41326 Rev. 3-2, AP64350 DS41976, ds19002 Rev. 20-2 (11:56:18Z); RP2350 build 2025-07-29 (12:04:29Z); TCAN3413 SLLSFS8A (12:04:36Z); AM26LV32E SLLS849E (12:13:56Z). Copies in /home/claude/rcbench-research/round1/scratch/FU-B1/P2-R5/ds/",
+    "source": "vendors.py fetch readings named"
+   }
+  ]
+ }
+}

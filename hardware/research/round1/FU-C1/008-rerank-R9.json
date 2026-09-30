@@ -1,0 +1,478 @@
+{
+ "role": "rerank",
+ "category": "R9",
+ "label": "rerank-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "functions": [
+   {
+    "function": "Cell monitor",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "ADBMS1818ASWAZ-RL",
+      "option": "",
+      "reason": "Stays first. No P3 candidate qualifies above it. It meets every requirement value P2 recorded, with an auxiliary V+ of at least 16 V for packs under 16 V and round 2's input network for a reversed lead. Normal-mode TME (total measurement error) is ±4.8 mV at 4.2 V over temperature (Table 1), inside the ±6 mV static check. It has the most JLCPCB stock and the lowest price of the rows that pass: stockCount 12500, canPresaleNumber 12495, 7.591 at the 1 break, read 2026-09-29T03:06:12Z (vendors.py jlcpcb C5372802). Rule 5 by second vendor: Digi-Key stock_available 564, Active, 38 weeks, read 2026-09-29T03:06:19Z (vendors.py digikey-search ADBMS1818). V186 and V187 are not found, so skew and pairing are not checked against any part"
+     },
+     {
+      "rank": 2,
+      "part": "ADBMS1818ASWAZ-R7",
+      "option": "",
+      "reason": "The same orderable model and SW-64-2 outline as rank 1, on a 300-part reel, so it fits rank 1's land pattern unchanged. JLCPCB stockCount 195, canPresaleNumber 195, 7.8135 at 1, read 2026-09-29T03:06:13Z. Digi-Key 290, Active, 38 weeks, read 2026-09-29T03:06:19Z. Ranked above rank 3 because it needs no second land pattern"
+     },
+     {
+      "rank": 3,
+      "part": "ADBMS1818ASWZ-RL",
+      "option": "",
+      "reason": "The same die and figures as rank 1, with more stock than rank 2: JLCPCB stockCount 2723, canPresaleNumber 2716, 8.5185 at 1, read 2026-09-29T03:06:15Z; Digi-Key 854, Active, 39 weeks, read 03:06:19Z. Its outline is 05-08-1982, with an exposed pad of 5.74 ± 0.10 mm against 5.50 mm for SW-64-2 (ADBMS1818 Rev. B Figures 113 and 114, pp. 91-92). A board that takes it needs a land pattern made for both outlines. It is also the pin-for-pin, same-outline alternate of ranks 4 and 5"
+     },
+     {
+      "rank": 4,
+      "part": "LTC6813HLWE-1#3ZZPBF",
+      "option": "",
+      "reason": "Qualifies on every requirement value that rank 1 meets, with the same auxiliary V+ and input-network conditions. H-grade TME is ±4.2 mV at 4.2 V over -40 to 125 °C, tighter than rank 1's ±4.8 mV. It ranks below the three ADBMS1818 rows for three reasons. JLCPCB stock is 350 (presale 337, read 2026-09-29T03:06:09Z). The price is 16.0282 at 1, about twice rank 1's. Digi-Key reads 'Discontinued at DigiKey' with stock 0 (read 2026-09-29T02:44:54Z, cached; keyword search 03:06:17Z). That status is neither a pass nor a fail in the Lifecycle check, so it is reported to the owner. The ADI (Analog Devices) product page shows PRODUCTION (read 03:07:38Z). Rule 5 goes by the alternate ADBMS1818ASWZ-RL: the same pinout, the same outline 05-08-1982 and the same command set"
+     },
+     {
+      "rank": 5,
+      "part": "LTC6813HLWE-1#3ZZTRPBF",
+      "option": "",
+      "reason": "Rank 4's model on tape and reel. JLCPCB stockCount 270, canPresaleNumber 247, 16.1338 at 1, read 2026-09-29T03:06:10Z. JLCPCB labels the package 'LQFP-64(10x10)' without the EP, which contradicts the data sheet. Digi-Key answered HTTP 404 (read 2026-09-29T02:44:55Z, cached), and the keyword search 'LTC6813HLWE-1' at 03:06:17Z lists only the tray row. The Digi-Key status, which counts as the status for Analog Devices, is therefore not read and is reported to the owner. The ADI page shows PRODUCTION (03:07:38Z). Rule 5 goes by the alternate ADBMS1818ASWZ-RL. The least stock of the rows that pass"
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 4,
+      "part": "LTC6813HLWE-1#3ZZPBF",
+      "maker": "Analog Devices (LTC6813-1 data sheet Rev. B, a Linear Technology part); counts as Analog Devices on the S1 list",
+      "lcsc": "C2758259",
+      "package": "LWE 64-lead plastic eLQFP, 10 × 10 mm body, 0.50 mm pitch, exposed pad (pin 65) is V- and must be soldered; outline 'Reference LTC DWG #05-08-1982 Rev A' (LTC6813-1 Rev. B pp. 3 and 88), the same outline as ADBMS1818ASWZ-RL; JLCPCB 'LQFP-64-EP(10x10)'",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1: one 18-channel monitor reads the 16 cells of the one 17-pin connector (V192); gate applied at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "cell count",
+        "required": "1 to 16 cells in series (V181, F15)",
+        "datasheet": "up to 18 cells. 'Using the LTC6813-1 with Fewer than 18 Cells': unused C inputs are shorted to the highest connected cell or left open, unused S pins are left unconnected, and unused inputs read 0.0 V (p. 85). TME needs V+ 16 to 90 V, V+ to C18 at least -0.3 V, C13 at least 2.5 V and C7 at least 1 V (p. 6). With V193's tie, C7 and C13 sit at the top cell, at least 2.8 V. Packs under 16 V (1 to 3 cells at 4.2 V, 1 to 5 cells at 2.8 V) need an auxiliary V+ of at least 16 V",
+        "pass": true,
+        "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/LTC6813-1.pdf, Rev. B, vendors.py fetch --client safari, HTTP 200, 3,890,523 bytes, SHA-256 8750492f...a479, read 2026-09-29T03:06:40Z"
+       },
+       {
+        "name": "stack voltage",
+        "required": "67.2 V between the lead's top and bottom pins (F15)",
+        "datasheet": "V+ 16 to 90 V for TME. V+ to C12 at most 40 V: 67.2 - 50.4 = 16.8 V at 16 cells (p. 6)",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 6, read 2026-09-29T03:06:40Z"
+       },
+       {
+        "name": "input rating",
+        "required": "at least 85 V (V188)",
+        "datasheet": "absolute maximum V+ to V- 112.5 V. C(n) and S(n) -0.3 V to MIN(8 × n, 112.5 V), so C16 is 112.5 V. C18 -0.3 V to MIN(V+ + 5.5 V, 112.5 V) (p. 3)",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 3, read 2026-09-29T03:06:40Z"
+       },
+       {
+        "name": "separate input",
+        "required": "its own input, apart from the 2S pack's lead of F9",
+        "datasheet": "one IC on the ESC pack's lead only; the 2S pack's lead belongs to R5 and R7",
+        "pass": true,
+        "source": "board arrangement, Research.md:287"
+       },
+       {
+        "name": "one connector",
+        "required": "16 cells on one 17-pin connector (V192)",
+        "datasheet": "18 cell channels, C0 to C18, in one IC (p. 3 pin configuration)",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 3, read 2026-09-29T03:06:40Z"
+       },
+       {
+        "name": "no count setting",
+        "required": "any count from 1 to 16 with no setting; the board ties unused inputs (V193)",
+        "datasheet": "unused inputs shorted to the highest connected cell read 0.0 V (p. 85); no register sets the count. The tie network is a board circuit that the data sheet does not specify",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 85, read 2026-09-29T03:06:40Z"
+       },
+       {
+        "name": "isolation",
+        "required": "monitor on the pack's negative; isoSPI or digital-isolator barrier rated 85 V DC working or more (V189)",
+        "datasheet": "ISOMD tied to VREG makes pins 61 and 62 port A isoSPI (IMA, IPA); ISOMD tied to V- gives 4-wire SPI (CSB, SCK, SDI, SDO) referenced to V-, for a digital isolator (p. 3). The 85 V rating belongs to the transformer, capacitors or isolator, not to this IC",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 3, read 2026-09-29T03:06:40Z"
+       },
+       {
+        "name": "tap current",
+        "required": "at most 100 µA per tap pin powered and 10 µA unpowered, averaged over 1 s; the supply from top to bottom excluded (V190)",
+        "datasheet": "C(n) leakage 10 nA typical, ±250 nA maximum when not measured. ±1 µA typical while measured (MEASURE state), no maximum given. 70 / 100 / 130 µA during open-wire detection only (p. 5). At 130 µA an open-wire check stays within 100 µA averaged over 1 s at a duty under 76 %. The figures are specified at V+ = 59.4 V. The C pin current with V+ under 16 V is not specified; that case is a pack under 16 V with the IO board unpowered",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 5, read 2026-09-29T03:06:40Z"
+       },
+       {
+        "name": "cell resolution",
+        "required": "1 mV (V182)",
+        "datasheet": "0.1 mV/bit (p. 4)",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 4, read 2026-09-29T03:06:40Z"
+       },
+       {
+        "name": "error under load",
+        "required": "±6 mV per cell over 0 to 50 °C, sample timing included; the timing term is not fixed (V183, V186 not found)",
+        "datasheet": "normal-mode TME, LTC6813H, over -40 to 125 °C: ±4.2 mV at 4.2 V (p. 4). That leaves 1.8 mV for the timing term, which V186 does not fix. Fast mode is ±8.3 mV at 4.2 V, over the budget (p. 5)",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B pp. 4-5, read 2026-09-29T03:06:40Z"
+       },
+       {
+        "name": "cell voltage range",
+        "required": "2.8 V to 4.2 V within ±6 mV (V184, F15)",
+        "datasheet": "input range C(n-1) to C(n-1) + 5 V (p. 5). H-grade TME over temperature: ±2.0 mV at 2.0 V, ±3.3 mV at 3.3 V, ±4.2 mV at 4.2 V (p. 4). The data sheet gives no point at 2.8 V itself; 2.8 V lies between the 2.0 V and 3.3 V points",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B pp. 4-5, read 2026-09-29T03:06:40Z"
+       },
+       {
+        "name": "reading period",
+        "required": "every cell of a 16-cell pack at least every 20 ms (V185)",
+        "datasheet": "tCYCLE for 18 cells in normal mode is 1743 / 2343 / 2488 µs from REFUP (p. 6). tREFUP from STANDBY is 2.7 / 3.5 / 4.4 ms (p. 7). At most 6.9 ms",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B pp. 6-7, read 2026-09-29T03:06:40Z"
+       },
+       {
+        "name": "resistance resolution",
+        "required": "0.1 mΩ per cell over a current step of at least 10 A (V194)",
+        "datasheet": "0.1 mV/bit over 10 A is 0.01 mΩ",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 4; arithmetic"
+       },
+       {
+        "name": "mis-plugged lead",
+        "required": "4.2 V between adjacent pins and up to 4.2 V on the lowest pin; 67.2 V reverse (V191)",
+        "datasheet": "C(n) to C(n-1) -0.3 V to 8 V. Groups of three cells (C18 to C15 ... C3 to C0) -0.3 V to 21 V. C0 -0.3 V to 6 V (p. 3). A shifted lead is inside these ratings. Every C and S pin is rated -0.3 V minimum, so the IC alone does not survive a reversed lead. The pass holds only with the input network ahead of the IC that round 2 selects (Research.md:28), as for rank 1",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 3, read 2026-09-29T03:06:40Z"
+       },
+       {
+        "name": "pack presence",
+        "required": "presence read from the lead; the count from SET_PACK_CELLS (V195)",
+        "datasheet": "open-wire conversion ADOW with 70 to 130 µA pull currents (p. 5, command table p. 61). Tied or empty inputs read 0.0 V (p. 85)",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B pp. 5, 61, 85, read 2026-09-29T03:06:40Z"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 °C ambient (V7)",
+        "datasheet": "LTC6813H-1 specified junction temperature -40 to 125 °C (p. 3)",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 3, read 2026-09-29T03:06:40Z"
+       },
+       {
+        "name": "host logic level",
+        "required": "3.3 V logic at the RP2354B through the V189 barrier",
+        "datasheet": "4-wire SPI VIH(SPI) 2.3 V min, VIL(SPI) 0.8 V max; SDO VOL 0.3 V max sinking 1 mA (p. 7). These are on the pack side. The RP2354B side belongs to the isoSPI transceiver or the isolator",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 7, read 2026-09-29T03:06:40Z"
+       },
+       {
+        "name": "quantities",
+        "required": "per-cell voltage; resistance from the voltage and the INA238's current",
+        "datasheet": "18 cell-voltage channels. The current comes from the INA238 (R8), not from this part",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 1"
+       }
+      ],
+      "jlcpcb": "stockCount 350, canPresaleNumber 337, componentLibraryType expand, 16.0282 a part at the 1 break for the need of 5 (the next break is 10; the API gives no currency); read 2026-09-29T03:06:09Z, vendors.py jlcpcb C2758259 (exact match), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList",
+      "digikey": "ProductStatus 'Discontinued at DigiKey', stock_available 0 (tray, LTC6813HLWE-1#3ZZPBF-ND), manufacturer lead time 36 weeks, discontinued false, end_of_life false. Read 2026-09-29T02:44:54Z by vendors.py digikey LTC6813HLWE-1#3ZZPBF (https://api.digikey.com/products/v4/search/LTC6813HLWE-1%233ZZPBF/productdetails), cached: true, a reading of this task. Confirmed by vendors.py digikey-search 'LTC6813HLWE-1' at 2026-09-29T03:06:17Z (https://api.digikey.com/products/v4/search/keyword), which gives 1 result with the same figures",
+      "gate": "need 5 boards × 1 = 5; S4 threshold 5 × 5 = 25, never under 50, so 50; JLCPCB 350 >= 50 and presale 337 >= 0: pass (rule 4)",
+      "lifecycle": "Status: Digi-Key ProductStatus 'Discontinued at DigiKey' (2026-09-29T02:44:54Z), which counts as the status for Analog Devices. The Lifecycle check lists that value neither as a pass nor as a fail, so it is recorded and reported to the owner. The maker page https://www.analog.com/en/products/ltc6813-1.html (vendors.py fetch --client safari, HTTP 200, read 2026-09-29T03:07:38Z) disagrees. It shows the family badge PRODUCTION and lists LTC6813HLWE-1#3ZZPBF as PRODUCTION; the page field lifeCycle is null. Longevity: not read. First data sheet: Rev. 0 is undated in the revision history; Rev. A is dated 03/19 and Rev. B 11/20 (p. 89), so the part has been on the market more than 12 months. PCNs on the maker page: 22_0159 (Aug 1, 2022, LTC6812-1 and LTC6813-1 assembly site second source, UTAC) and 19_0140 (Jul 19, 2019, die revision and data sheet change). No end-of-life notice. Distributor: JLCPCB in stock (350); LCSC page not read",
+      "second_source": "alternate ADBMS1818ASWZ-RL, which passes rules 1 to 4: LCSC C2971928, JLCPCB stockCount 2723, presale 2716, against the gate of 50, read 2026-09-29T03:06:15Z. Evidence it works in the same circuit and firmware configuration: (1) Pins: the pin functions of ADBMS1818 Table 14 (Rev. B pp. 12-13) and the LTC6813-1 pin configuration (Rev. B p. 3) are the same on all 65 pins: V+ 1, C18 to C0 and S18 to S1 on 2 to 38, GPIO1 to GPIO9 on 39 to 47, VREG 48, DRIVE 49, VREF2 50, VREF1 51, DTEN 52, SDI/SDO 53/54, ISOMD 55, WDT 56, IBIAS 57, ICMP 58, V- 59 and 60, CSB(IMA)/SCK(IPA) 61/62, IMB/IPB 63/64, exposed pad V-. (2) Outline: both are 05-08-1982 (ADBMS1818 ordering guide p. 92 and Figure 113 p. 91; LTC6813-1 p. 88). (3) Ratings: the absolute maximum ratings are the same (ADBMS1818 Table 11; LTC6813-1 p. 3). (4) Commands: all 47 command names of LTC6813-1 Table 36 appear in ADBMS1818 Table 52. The codes of WRCFGA through ADAX were compared and match. The rest are compared by name only, and the register maps were not compared line by line. Differences: normal-mode TME at 4.2 V is ±4.8 mV against ±4.2 mV, both inside ±6 mV; the temperature range is -40 to 85 °C against -40 to 125 °C, both covering 0 to 50 °C. Both data sheets were read 2026-09-29T03:06:40Z (SHA-256 36b07646...fbfb and 8750492f...a479). The second-vendor route fails: Digi-Key stock 0",
+      "alternates": [
+       "ADBMS1818ASWZ-RL",
+       "ADBMS1818ASWAZ-RL",
+       "ADBMS1818ASWAZ-R7",
+       "LTC6813HLWE-1#3ZZTRPBF"
+      ],
+      "driver_in_shared": "none",
+      "reason": "meets every requirement value that rank 1 meets, with a tighter TME, but it has 350 in stock at JLCPCB, costs about twice as much, and has 0 at Digi-Key with a status reported to the owner. Rule 5 rests on ADBMS1818ASWZ-RL",
+      "second_source_route": "alternate",
+      "second_source_part": "ADBMS1818ASWZ-RL"
+     },
+     {
+      "rank": 5,
+      "part": "LTC6813HLWE-1#3ZZTRPBF",
+      "maker": "Analog Devices (LTC6813-1 data sheet Rev. B, a Linear Technology part); counts as Analog Devices on the S1 list",
+      "lcsc": "C2979142",
+      "package": "LWE 64-lead plastic eLQFP, 10 × 10 mm body, 0.50 mm pitch, exposed pad V-, outline 05-08-1982 Rev A (LTC6813-1 Rev. B pp. 3 and 88), tape and reel of 1500. JLCPCB labels it 'LQFP-64(10x10)' without the EP, which contradicts the data sheet; the data sheet counts",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1: one 18-channel monitor reads the 16 cells of the one 17-pin connector (V192); gate applied at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "cell count",
+        "required": "1 to 16 cells",
+        "datasheet": "as rank 4, the same model: up to 18 cells, unused inputs tied or open, reading 0.0 V (p. 85); TME needs V+ 16 to 90 V, C13 at least 2.5 V and C7 at least 1 V (p. 6); an auxiliary V+ for packs under 16 V",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B, read 2026-09-29T03:06:40Z"
+       },
+       {
+        "name": "stack voltage",
+        "required": "67.2 V",
+        "datasheet": "V+ 16 to 90 V; V+ to C12 16.8 V against 40 V (p. 6)",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 6"
+       },
+       {
+        "name": "input rating",
+        "required": "at least 85 V",
+        "datasheet": "V+ to V- 112.5 V; C16 112.5 V absolute maximum (p. 3)",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 3"
+       },
+       {
+        "name": "separate input",
+        "required": "own input",
+        "datasheet": "one IC on the ESC pack's lead",
+        "pass": true,
+        "source": "Research.md:287"
+       },
+       {
+        "name": "one connector",
+        "required": "16 cells, one 17-pin connector",
+        "datasheet": "18 channels in one IC",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 3"
+       },
+       {
+        "name": "no count setting",
+        "required": "no setting; the board ties unused inputs",
+        "datasheet": "tied inputs read 0.0 V (p. 85)",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 85"
+       },
+       {
+        "name": "isolation",
+        "required": "85 V DC working barrier",
+        "datasheet": "ISOMD selects isoSPI port A or 4-wire SPI (p. 3); the barrier part carries the rating",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 3"
+       },
+       {
+        "name": "tap current",
+        "required": "100 µA powered, 10 µA unpowered",
+        "datasheet": "±250 nA max when not measured; ±1 µA typical while measured, no maximum given; 70 to 130 µA during open-wire checks only (p. 5); not specified with V+ under 16 V",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 5"
+       },
+       {
+        "name": "cell resolution",
+        "required": "1 mV",
+        "datasheet": "0.1 mV/bit (p. 4)",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 4"
+       },
+       {
+        "name": "error under load",
+        "required": "±6 mV, timing included",
+        "datasheet": "H grade ±4.2 mV at 4.2 V over temperature, normal mode (p. 4); timing term not fixed (V186 not found)",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 4"
+       },
+       {
+        "name": "cell voltage range",
+        "required": "2.8 to 4.2 V",
+        "datasheet": "±2.0 / ±3.3 / ±4.2 mV at 2.0 / 3.3 / 4.2 V over temperature (p. 4); no point at 2.8 V itself",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 4"
+       },
+       {
+        "name": "reading period",
+        "required": "20 ms",
+        "datasheet": "2488 µs max plus tREFUP 4.4 ms max (pp. 6-7)",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B pp. 6-7"
+       },
+       {
+        "name": "resistance resolution",
+        "required": "0.1 mΩ over 10 A",
+        "datasheet": "0.01 mΩ",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 4; arithmetic"
+       },
+       {
+        "name": "mis-plugged lead",
+        "required": "shifted and reversed lead",
+        "datasheet": "a shifted lead is inside the p. 3 ratings; a reversed lead needs round 2's input network (C pins -0.3 V minimum)",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 3"
+       },
+       {
+        "name": "pack presence",
+        "required": "from the lead",
+        "datasheet": "ADOW open-wire check; empty inputs read 0.0 V (pp. 5, 85)",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B pp. 5, 85"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 °C",
+        "datasheet": "-40 to 125 °C (p. 3)",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 3"
+       },
+       {
+        "name": "host logic level",
+        "required": "3.3 V logic",
+        "datasheet": "SPI VIH 2.3 V, VIL 0.8 V, SDO open drain 0.3 V at 1 mA (p. 7); RP2354B side through the transceiver or isolator",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 7"
+       },
+       {
+        "name": "quantities",
+        "required": "per-cell voltage",
+        "datasheet": "18 channels",
+        "pass": true,
+        "source": "LTC6813-1 Rev. B p. 1"
+       }
+      ],
+      "jlcpcb": "stockCount 270, canPresaleNumber 247, componentLibraryType expand, 16.1338 a part at the 1 break for the need of 5 (the API gives no currency); read 2026-09-29T03:06:10Z, vendors.py jlcpcb C2979142 (exact match)",
+      "digikey": "not read: vendors.py digikey LTC6813HLWE-1#3ZZTRPBF answered HTTP 404 'Requested Product ltc6813hlwe-1#3zztrpbf Not Found' (read 2026-09-29T02:44:55Z, cached: true). vendors.py digikey-search 'LTC6813HLWE-1' at 2026-09-29T03:06:17Z lists only the tray row LTC6813HLWE-1#3ZZPBF. Digi-Key does not list this tape-and-reel model",
+      "gate": "need 5 × 1 = 5; threshold 50 (S4); JLCPCB 270 >= 50 and presale 247 >= 0: pass (rule 4)",
+      "lifecycle": "Status: not read at Digi-Key (HTTP 404, not listed), and Digi-Key's status is the one that counts for Analog Devices. Reported to the owner. The maker page https://www.analog.com/en/products/ltc6813-1.html (read 2026-09-29T03:07:38Z) lists LTC6813HLWE-1#3ZZTRPBF as PRODUCTION; the page field lifeCycle is null. Longevity: not read. First data sheet: Rev. 0 is undated; tape and reel was added in Rev. A, 03/19 (p. 89), more than 12 months ago. PCNs 22_0159 (Aug 1, 2022, assembly site second source) and 19_0140 (Jul 19, 2019, die revision); no end-of-life notice. Distributor: JLCPCB in stock; LCSC page not read",
+      "second_source": "alternate ADBMS1818ASWZ-RL (C2971928), which passes rules 1 to 4: JLCPCB 2723, presale 2716, against the gate of 50, read 2026-09-29T03:06:15Z. The same pin functions on all 65 pins, the same outline 05-08-1982, the same absolute maximum ratings and the same command names (codes compared from WRCFGA to ADAX), as in rank 4's record. The second-vendor route cannot be read: Digi-Key 404",
+      "alternates": [
+       "ADBMS1818ASWZ-RL",
+       "ADBMS1818ASWAZ-RL",
+       "ADBMS1818ASWAZ-R7",
+       "LTC6813HLWE-1#3ZZPBF"
+      ],
+      "driver_in_shared": "none",
+      "reason": "rank 4's model on tape and reel, with the least JLCPCB stock of the rows that pass and no Digi-Key reading",
+      "second_source_route": "alternate",
+      "second_source_part": "ADBMS1818ASWZ-RL"
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "ADBMS6832MWCCSZ-RL (C18168954), ADBMS6832MWCCSZ (C18166020)",
+      "maker": "Analog Devices (S1)",
+      "reason": "The requirement values cannot be read, so the part cannot be qualified. The only public data sheet is the 2-page short form Rev. SpC, https://www.analog.com/media/en/technical-documentation/data-sheets/adbms6832-6833.pdf (read by P3 2026-09-29T03:01:46Z, 153,853 bytes). It gives up to 18 cells, lifetime TME ±1.8 mV at 3.3 V, simultaneous measurement, isoSPI, and power from the stack or an isolated supply. It gives no lowest cell count (V181), no stack range at 67.2 V (F15), no absolute maximum against 85 V (V188), no error at 4.2 V or 2.8 V (V183, V184), no reading period (V185) and no tap current (V190). Stock passes rule 4 (C18168954 6097/6096, C18166020 136/136, read by P3 02:57:48Z and 02:57:50Z), but stock does not qualify a part"
+     },
+     {
+      "part": "LTC6820HMS#3ZZTRPBF (C514444), LTC6820IMS#TRPBF (C581009), LTC6820HMS#TRPBF (C689580), ADBMS6822WCCSZ-RL (C19190031)",
+      "maker": "Analog Devices (S1)",
+      "reason": "These are not cell monitors. They are the host-side isoSPI transceiver of the V189 barrier. They have no cell inputs, so they miss every cell requirement of this function (cell count, stack voltage, resolution, error). The LTC6820 fits 3.3 V logic: VDD 2.7 to 5.5 V and VDDS 1.7 to 5.5 V (LTC6820 data sheet, read by P3 2026-09-29T03:01:46Z). The 85 V DC working rating sits in the pulse transformer or coupling capacitors, which nobody has searched. The barrier has no function of its own in R9. It is reported as a gap in report 'V189 barrier parts', not ranked here"
+     },
+     {
+      "part": "MC33774ATP1AER2 (C24873268), MC33774ATP1AE (C27243666)",
+      "maker": "NXP (S1)",
+      "reason": "Fails V181 (1 to 16 cells). The NXP product page, https://www.nxp.com/products/MC33774 (vendors.py fetch, HTTP 200, read 2026-09-29T03:10:22Z), states 'From 4 to 18 cells per device' and 'Voltage Channels 4..18' for both the MC33774ATA and the MC33774ATP. It gives the supply range as 9 V to 90 V (94 V) for the ATP. No public data sheet was found (P3: HTTP 404 on the data sheet and fact-sheet URLs, 02:58:31Z to 02:58:45Z), so nothing shows a way to run below 4 cells"
+     },
+     {
+      "part": "BQ79616PAPRQ1 (C3682338), BQ79656PAPRQ1 (C3681535), BQ75614PAPRQ1 (C3681912)",
+      "maker": "Texas Instruments (S1)",
+      "reason": "Fail V181: each measures 'a minimum of 6 cells to a maximum of 16 cells'. BQ75614-Q1: https://www.ti.com/lit/ds/symlink/bq75614-q1.pdf, HTTP 200, read 2026-09-29T03:10:22Z. BQ79656-Q1: SLUSE48C, https://www.ti.com/lit/ds/symlink/bq79656-q1.pdf, HTTP 200, read 2026-09-29T03:10:23Z. BQ79616: SLUSF21A, https://www.ti.com/lit/ds/symlink/bq79616.pdf, read by P2 2026-09-29T02:50:06Z, section 6.3.2.1.1.1. A pack of 1 to 5 cells is outside that range"
+     },
+     {
+      "part": "MAX14921ECS+T (C2932577)",
+      "maker": "Analog Devices (Maxim) (S1)",
+      "reason": "Fails F15 and V188. The data sheet, p. 1, gives 'up to 16 cells/+65V (max)', which is below the 67.2 V stack and the 85 V input rating (https://www.analog.com/media/en/technical-documentation/data-sheets/MAX14920-MAX14921.pdf, read by P2 2026-09-29T02:50:07Z and by P3 02:58:36Z). It also gives '+6V Minimum (3 Cells) Operation', which misses 1 and 2 cells (V181). It is an analog front end that needs an external ADC (analog-to-digital converter)"
+     },
+     {
+      "part": "LTC6812HLWE-1#3ZZTRPBF (C18171243)",
+      "maker": "Analog Devices (S1)",
+      "reason": "One device measures up to 15 cells (LTC6812-1 p. 1, read by P3 2026-09-29T02:58:35Z), so one device misses 16 cells on the one 17-pin input (V192). A two-device stack fails V190 with the IO board unpowered. One device's V- must sit on a middle tap of the lead. Its supply current then enters or leaves the lead through that tap pin, and V190 excludes only the supply from top to bottom. IVP in SLEEP with VREG = 0 V is 6.1 µA typical, 11 µA maximum at 25 °C and 18 µA maximum over the full range (LTC6812-1 p. 5), against 10 µA. To keep C inputs within their MIN(V+ + 5.5 V, ...) rating, that device stays powered from its cells whenever the IO board is off"
+     },
+     {
+      "part": "ISL94216IRZ (C3681570)",
+      "maker": "Renesas (S1)",
+      "reason": "Fails F15 and V188. The VBAT range is 12 to 55 V and the hot-plug rating 62 V, both below 67.2 V (ISL94216 data sheet, https://www.renesas.com/us/en/document/dst/isl94216-datasheet, HTTP 200, read 2026-09-29T03:10:23Z). It also fails rule 4: JLCPCB stockCount 20, presale 20, against 50 (read by P3 2026-09-29T02:58:01Z)"
+     },
+     {
+      "part": "BQ76PL455APFCR (C2877182)",
+      "maker": "Texas Instruments (S1)",
+      "reason": "No requirement value can be read. Four TI URLs for the data sheet and product page answered HTTP 404 (P3, 2026-09-29T02:58:30Z to 03:01:58Z). Digi-Key reads ProductStatus 'Obsolete', stock 0 (vendors.py digikey BQ76PL455APFCR, read 2026-09-29T03:10:42Z). Obsolete fails the Lifecycle check. The TI page that would carry the maker's status answers 404, so the Digi-Key status is recorded as the distributor figure"
+     },
+     {
+      "part": "LTC6811HG-1#3ZZTRPBF (C459704) and the other LTC6811-1/-2 rows, two stacked devices (P2's exclusion, re-read)",
+      "maker": "Analog Devices (S1)",
+      "reason": "P3 is right that P2's reason does not hold. A fixed auxiliary V+ keeps the upper device at 11 V or more for any count, as rank 1's auxiliary supply does at 16 V. The stack fails V190 on the data sheet's maximums instead. With the IO board unpowered, the upper device's C12 must stay within MIN(V+ + 5.5 V, 75 V) (LTC6811-1/-2 Rev. C p. 3), so its V+ is fed from its own cells. Its V- sits on the split tap, so its supply current leaves the lead through that tap pin, and V190 excludes only the supply from top to bottom. IVP in SLEEP with VREG = 0 V is 4.1 µA typical, 7 µA maximum at 25 °C and 10 µA maximum over the full range (p. 6); the data sheet gives no maximum for 0 to 50 °C alone. The lower device's supply cannot cancel it, because no minimum is given. At least two more C pins join that tap: the upper device's C0 and the lower device's top used input. Each carries ±250 nA maximum when not measured (p. 5). Worst case 10 + 0.5 = 10.5 µA, over the 10 µA of V190. On typical figures (about 4.1 µA) it would pass. In the powered state the upper device also needs a floating auxiliary supply, which P3 names: from its cells it would draw 0.4 to 0.75 mA in REFUP or MEASURE (p. 6) through the split tap, against 100 µA. That floating supply needs its own 85 V barrier (V189). Source: https://www.analog.com/media/en/technical-documentation/data-sheets/LTC6811-1-6811-2.pdf, Rev. C, read by P3 2026-09-29T03:00:48Z and by P2 02:45:04Z, the same 4,362,021-byte file"
+     },
+     {
+      "part": "LTC6804-1/-2, two stacked devices (C581004 LTC6804HG-1#PBF, C689540 LTC6804HG-1#3ZZPBF and the other rows)",
+      "maker": "Analog Devices (S1)",
+      "reason": "The rows P3 read fail rule 4: C581004 stockCount 46, presale 44 (2026-09-29T03:00:24Z), and C689540 26/26 (03:00:26Z), against 50. The jlcparts copy of 2026-09-14 has 0 stock on every other LTC6804 row except C84771 (1) and C581005 (9). A stack also meets the V190 objection of the LTC6811 entry. IVP in SLEEP with VREG = 0 V is 3.8 µA typical, 6 µA maximum at 25 °C and 10 µA over the full range (680412fc p. 5, read by P2 2026-09-29T02:45:05Z), plus C-pin leakage on the split tap"
+     },
+     {
+      "part": "LTC6810-1/-2, three stacked devices (C689556, C689560, C689562)",
+      "maker": "Analog Devices (S1)",
+      "reason": "P3 is right that 'up to 6 cells' alone does not exclude a stack. The drop stands on rule 4. Three devices per board make a need of 15 and a gate of 75. JLCPCB: C689556 LTC6810HG-1#3ZZTRPBF 2/2 (2026-09-29T03:00:19Z), C689560 LTC6810IG-1#3ZZTRPBF 12/12 (03:00:21Z), C689562 LTC6810IG-2#3ZZTRPBF 5/5 (03:00:22Z), all read by P3. A stack also meets the split-tap objection of the LTC6811 entry. The LTC6810 sleep current was not read"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "ADBMS1818ASWAZ-RL",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   }
+  ],
+  "report": [
+   {
+    "figure": "rank-row stock re-read",
+    "value": "JLCPCB, exact matches: C5372802 ADBMS1818ASWAZ-RL 12500 / presale 12495, 7.591 at 1. C7455595 ADBMS1818ASWAZ-R7 195 / 195, 7.8135. C2971928 ADBMS1818ASWZ-RL 2723 / 2716, 8.5185. C2758259 LTC6813HLWE-1#3ZZPBF 350 / 337, 16.0282. C2979142 LTC6813HLWE-1#3ZZTRPBF 270 / 247, 16.1338 (package label 'LQFP-64(10x10)' without EP). The same as P2's readings of 02:41",
+    "source": "vendors.py jlcpcb C5372802, C7455595, C2971928, C2758259, C2979142, read 2026-09-29T03:06:09Z to 03:06:15Z, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList"
+   },
+   {
+    "figure": "Digi-Key ADBMS1818 rows",
+    "value": "ADBMS1818ASWAZ-RL 564, ADBMS1818ASWZ-RL 854, ADBMS1818ASWAZ-R7 290, ADBMS1818ASWZ-R7 439 cut tape plus 300 on reel, ADBMS1818ASWAZ 230, ADBMS1818ASWZ 0. All Active, lead time 38 or 39 weeks",
+    "source": "vendors.py digikey-search ADBMS1818 --limit 50, read 2026-09-29T03:06:19Z, https://api.digikey.com/products/v4/search/keyword"
+   },
+   {
+    "figure": "Digi-Key LTC6813HLWE-1 rows",
+    "value": "only LTC6813HLWE-1#3ZZPBF is listed: 'Discontinued at DigiKey', stock 0, 36 weeks. LTC6813HLWE-1#3ZZTRPBF answers 404 and is not in the keyword listing. 'Discontinued at DigiKey' is neither a pass nor a fail in the Lifecycle check; reported to the owner",
+    "source": "vendors.py digikey-search LTC6813HLWE-1, read 2026-09-29T03:06:17Z; vendors.py digikey LTC6813HLWE-1#3ZZPBF (02:44:54Z, cached) and LTC6813HLWE-1#3ZZTRPBF (02:44:55Z, cached)"
+   },
+   {
+    "figure": "LTC6813-1 maker page status",
+    "value": "family badge PRODUCTION; LTC6813HLWE-1#3ZZPBF, #3ZZTRPBF, LTC6813ILWE-1#3ZZPBF and #3ZZTRPBF each PRODUCTION; page field lifeCycle null. PCNs 22_0159 (Aug 1, 2022, assembly site second source, UTAC) and 19_0140 (Jul 19, 2019, die revision and data sheet change); no end-of-life notice. This disagrees with Digi-Key's 'Discontinued at DigiKey' for the tray row",
+    "source": "https://www.analog.com/en/products/ltc6813-1.html, vendors.py fetch --client safari, HTTP 200, 177,047 bytes, read 2026-09-29T03:07:38Z"
+   },
+   {
+    "figure": "LTC6813-1 to ADBMS1818 match",
+    "value": "The pin functions are the same on all 65 pins: ADBMS1818 Table 14 (Rev. B pp. 12-13) against the LTC6813-1 pin configuration (Rev. B p. 3). The absolute maximum ratings are the same (Table 11 against p. 3). All 47 command names of LTC6813-1 Table 36 appear in ADBMS1818 Table 52, and the codes from WRCFGA to ADAX match. LTC6813-1 LWE and ADBMS1818ASWZ, -R7 and -RL share outline 05-08-1982; ADBMS1818ASWAZ, -R7 and -RL use SW-64-2. Not compared: the register maps line by line, and the codes after ADAX",
+    "source": "LTC6813-1.pdf and adbms1818.pdf, vendors.py fetch --client safari, HTTP 200, read 2026-09-29T03:06:40Z; SHA-256 8750492f...a479 and 36b07646...fbfb, identical to P2's copies"
+   },
+   {
+    "figure": "LTC6811 stack tap current, unpowered",
+    "value": "worst case 10.5 µA on the split tap against V190's 10 µA: IVP SLEEP (VREG = 0 V) 10 µA maximum over the full range plus 2 × 250 nA C-pin leakage. Typical 4.1 µA. The 25 °C maximum is 7 µA; no maximum is given for 0 to 50 °C alone. LTC6804: 10 µA full range, 6 µA at 25 °C. LTC6812-1: 18 µA full range, 11 µA at 25 °C",
+    "source": "LTC6811-1/-2 Rev. C pp. 3, 5, 6 (read by P3 2026-09-29T03:00:48Z); 680412fc p. 5 (P2, 02:45:05Z); LTC6812-1 p. 5 (P3, 02:58:35Z); arithmetic"
+   },
+   {
+    "figure": "LTC6811 stack supply window",
+    "value": "with a fixed auxiliary V+ on the lower device, TME needs V+ at least C12 - 0.3 V and V+ - C6 at most 40 V (LTC6811 Rev. C p. 6). A 1-cell pack at 2.8 V gives V+ at most 42.8 V, and a full lower section of k cells at 4.2 V needs V+ at least 4.2 k - 0.3 V. So k is 10 cells or fewer, and the upper device holds 6 or more. A supply taken from the split tap would draw 0.4 to 0.75 mA through it (p. 6), against 100 µA",
+    "source": "LTC6811-1/-2 Rev. C p. 6 (P3's copy, read 2026-09-29T03:00:48Z); V184, V190, V193; arithmetic"
+   },
+   {
+    "figure": "V189 barrier parts",
+    "value": "V189 requires an isoSPI or digital-isolator barrier rated 85 V DC working. R9 has no function for it, so round 1 selects no part for it. The parts are the RP2354B-side isoSPI transceiver and either a pulse transformer or coupling capacitors, or a digital isolator for 4-wire SPI. Rows that pass rule 4 on stock (read by P3): LTC6820HMS#3ZZTRPBF C514444 2734 / 2716, LTC6820IMS#TRPBF C581009 3313 / 3283, LTC6820HMS#TRPBF C689580 406 / 404, ADBMS6822WCCSZ-RL C19190031 5360 / 5354. None is qualified. No transformer, capacitor or isolator has been searched against 85 V. A gap for P5 and P6",
+    "source": "Research.md:749 (V189 answer) at commit e13f5f6; vendors.py jlcpcb readings by P3, 2026-09-29T02:58:09Z to 02:58:13Z; LTC6820 data sheet (P3, 03:01:46Z)"
+   },
+   {
+    "figure": "MC33774 cell range",
+    "value": "4 to 18 cells per device, 'Voltage Channels 4..18'; supply 9 V to 81 V (84 V) for the ATA and 9 V to 90 V (94 V) for the ATP; status Active",
+    "source": "https://www.nxp.com/products/MC33774, vendors.py fetch, HTTP 200, 255,314 bytes, read 2026-09-29T03:10:22Z"
+   },
+   {
+    "figure": "BQ76PL455APFCR status",
+    "value": "Digi-Key ProductStatus Obsolete, stock 0, lead time 8 weeks; the TI data sheet and product URLs answer 404",
+    "source": "vendors.py digikey BQ76PL455APFCR, read 2026-09-29T03:10:42Z, https://api.digikey.com/products/v4/search/BQ76PL455APFCR/productdetails; P3's fetches 2026-09-29T02:58:30Z to 03:01:58Z"
+   },
+   {
+    "figure": "TME margin for the timing term",
+    "value": "±6 mV (V183) minus normal-mode TME at 4.2 V over temperature leaves 1.2 mV for the ADBMS1818 (±4.8 mV, Table 1) and 1.8 mV for the LTC6813H (±4.2 mV, p. 4). V186 is not found, so the timing term is not checked",
+    "source": "adbms1818.pdf Rev. B Table 1 and LTC6813-1.pdf Rev. B p. 4, read 2026-09-29T03:06:40Z; V183"
+   }
+  ]
+ }
+}

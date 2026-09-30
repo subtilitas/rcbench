@@ -1,0 +1,841 @@
+{
+ "role": "P4",
+ "category": "R8",
+ "label": "P4-stock-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "Motor monitor",
+    "part": "INA238AIDGSR",
+    "kind": "first",
+    "verdict": "refuted",
+    "refutation": "Stock and presale both still fail sourcing rule 4 at JLCPCB (stockCount 0, canPresaleNumber -99 against threshold 50 for a need of 10 across the two INA238 placements), reconfirmed live 2026-09-29T17:18:33Z, and Digi-Key stock is 0 (cached 02:34:14Z). This is the fixed input (F1); P2 already reported this same failure to the owner with no rule-5 route, and this re-read does not change that outcome.",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 0, need 10, threshold 50: fail (rule 4)",
+      "read": "stockCount 0",
+      "source": "vendors.py jlcpcb C2868250 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-09-29T17:18:33Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber -99",
+      "read": "-99",
+      "source": "vendors.py jlcpcb C2868250",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-09-29T17:18:33Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Maker ACTIVE (TI product page, orderable INA238AIDGSR)",
+      "read": "marketingStatusDescription \"ACTIVE\" for orderablePartNumber INA238AIDGSR; no OBSOLETE anywhere on the INA238 family page",
+      "source": "https://www.ti.com/product/INA238",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:24:44Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no public TI PCN listing; J-STD-048 12-month last-order policy; none marks this orderable",
+      "read": "confirmed: no obsolete/discontinued/last-time-buy text on the INA238 product page or the PCN policy page; policy page still only a generic J-STD-048/12-month statement with no part-specific notice search",
+      "source": "https://www.ti.com/product/INA238; https://www.ti.com/quality-reliability/quality/product-change-notification.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:24:44Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2 (fixed: one INA238 per path, F1)",
+      "read": "IOBoard.md:416 \"Monitors for the two shunt positions: one INA238 for each path (F1). ... Two INA238 on one bus\"",
+      "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:416",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:26:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on board, LCSC C2868250",
+      "read": "JLCPCB exact match confirms LCSC C2868250 = INA238AIDGSR; IOBoard.md places both path monitors on the IO board (\"INA238 on the IO board\", IOBoard.md:406-416)",
+      "source": "vendors.py jlcpcb C2868250; checkout hardware/docs/IOBoard.md:406-416",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:33Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no dated commitment; TI policy \"typically 10 to 15 years\"; not a gate (S5)",
+      "read": "page text: \"TI's product life cycles are typically 10 to 15 years and often extend longer\"",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:23:00Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "January 2021 (SLYS025 original)",
+      "read": "datasheet header \"SLYS025B – JANUARY 2021 – REVISED MAY 2025\"",
+      "source": "https://www.ti.com/lit/ds/symlink/ina238.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:21:08Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB expand; LCSC normal; all agree",
+      "read": "Digi-Key status Active (cached); JLCPCB componentLibraryType \"expand\"; LCSC page marker \"normal\"",
+      "source": "vendors.py digikey INA238AIDGSR; vendors.py jlcpcb C2868250; https://www.lcsc.com/product-detail/C2868250.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:48Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "16 weeks",
+      "read": "lead_weeks \"16\"",
+      "source": "vendors.py digikey INA238AIDGSR (https://api.digikey.com/products/v4/search/INA238AIDGSR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:34:14Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "exact_match names INA238AIDGSR, VSSOP-10-0.5mm",
+      "read": "exact_match part \"INA238AIDGSR\", package \"VSSOP-10-0.5mm\"",
+      "source": "vendors.py jlcpcb C2868250",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:33Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType \"expand\"",
+      "source": "vendors.py jlcpcb C2868250",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:33Z"
+     }
+    ]
+   },
+   {
+    "function": "Onboard shunt",
+    "part": "BVR-Z-R0002-1.0",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 359, need 5, threshold 50: pass",
+      "read": "stockCount 359",
+      "source": "vendors.py jlcpcb C6869644 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:35Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 354",
+      "read": "354",
+      "source": "vendors.py jlcpcb C6869644",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:35Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Maker status not read: no status in the page body",
+      "read": "fetched product page fresh: no Active/Status/Discontinued/Obsolete text found anywhere in the body",
+      "source": "https://www.isabellenhuette.com/solutions/products/bvr",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:24:32Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none listed on the live site; old discontinuations page answers 404; PTN_BVR_01 (2013) ends BVR-Z-R0002-2.0, not -1.0",
+      "read": "discontinuations page still HTTP 404; product and quality pages show no PCN/discontinu/obsolete text; PTN_BVR_01 PDF text names only \"BVR-Z-R0002-2.0\", not the 1% -1.0 part on this board",
+      "source": "https://www.isabellenhuette.de/en/precision-and-power-resistors/standard-products/discontinuations/; https://www.isabellenhuette.com/solutions/products/bvr; https://www.isabellenhuette.com/company/quality; https://web.archive.org/web/20160818013650id_/http://www.isabellenhuette.de/uploads/media/PTN_BVR_01.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:25:43Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 (fixed: one onboard shunt, IOBoard.md:419-421)",
+      "read": "IOBoard.md: \"Onboard shunt value and part... Selected in R8\", singular onboard shunt",
+      "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:26:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on board, LCSC C6869644",
+      "read": "JLCPCB exact match confirms LCSC C6869644 = BVR-Z-R0002-1.0; IOBoard.md: the onboard shunt carries current \"on the same board\" as the 3.3 V I2C bus",
+      "source": "vendors.py jlcpcb C6869644; checkout hardware/docs/IOBoard.md",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:35Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published; not a gate (S5)",
+      "read": "no \"longevity\" text anywhere on the quality page",
+      "source": "https://www.isabellenhuette.com/company/quality",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:22:13Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "Issue BVR-2011-11-02 (November 2011 at the latest); BVR-Z-R0002 listed there",
+      "read": "archived PDF text confirms \"Ausgabe / Issue BVR-2011-11-02\" with the BVR-Z-R0002 value shown",
+      "source": "https://web.archive.org/web/20130507090849id_/http://www.isabellenhuette.de/fileadmin/content/praezisions-leistungswiderstaende/BVR.PDF",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:21:51Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB expand; LCSC normal; all agree",
+      "read": "Digi-Key status Active (cached); JLCPCB componentLibraryType \"expand\"; LCSC page marker \"normal\"",
+      "source": "vendors.py digikey BVR-Z-R0002-1.0; vendors.py jlcpcb C6869644; https://www.lcsc.com/product-detail/C6869644.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:48Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "18 weeks",
+      "read": "lead_weeks \"18\"",
+      "source": "vendors.py digikey BVR-Z-R0002-1.0 (https://api.digikey.com/products/v4/search/BVR-Z-R0002-1.0/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:20:01Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "exact_match names BVR-Z-R0002-1.0, package 4026",
+      "read": "exact_match part \"BVR-Z-R0002-1.0\", package \"4026\"",
+      "source": "vendors.py jlcpcb C6869644",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:35Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType \"expand\"",
+      "source": "vendors.py jlcpcb C6869644",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:35Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 11190 >= 50",
+      "read": "stock_available 11190",
+      "source": "vendors.py digikey BVR-Z-R0002-1.0",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:20:01Z"
+     }
+    ]
+   },
+   {
+    "function": "Onboard shunt temperature sensor",
+    "part": "MCP9808T-E/MS",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 769, need 5, threshold 50: pass",
+      "read": "stockCount 764 (moved down 5 units since the prior reading; still well above threshold)",
+      "source": "vendors.py jlcpcb C129490 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:36Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 718",
+      "read": "713 (moved with stock; still passes)",
+      "source": "vendors.py jlcpcb C129490",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:36Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Maker \"Status: In Production\"",
+      "read": "marker \"In Production\" found in the page body",
+      "source": "https://www.microchip.com/en-us/product/mcp9808",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:19:53Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN search needs a POST, not read",
+      "read": "product page shows no genuine obsolescence text (the one \"obsolete\" hit is an unrelated JS/caching code comment); Microchip's PCN search still requires a POST request and was not read via GET",
+      "source": "https://www.microchip.com/en-us/product/mcp9808",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:25:23Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 (fixed: one sensor, IOBoard.md:422)",
+      "read": "IOBoard.md: \"a temperature sensor beside the onboard shunt. Part not chosen (R8)\", singular",
+      "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:26:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on board, LCSC C129490",
+      "read": "JLCPCB exact match confirms LCSC C129490 = MCP9808T-E/MS; sensor sits beside the onboard shunt, on the IO board",
+      "source": "vendors.py jlcpcb C129490; checkout hardware/docs/IOBoard.md",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:36Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no discontinuation with business in the past three years, no dated commitment; not a gate",
+      "read": "longevity page reachable, generic \"year\" language present, no dated per-product commitment found",
+      "source": "https://www.microchip.com/en-us/support/quality/product-longevity",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:19:54Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "Revision A, October 2011, not flagged",
+      "read": "datasheet DS20005095B carries \"© 2011-2018 Microchip Technology Inc.\" throughout, consistent with a 2011 original release",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/MCP9808-0.5C-Maximum-Accuracy-Digital-Temperature-Sensor-Data-Sheet-DS20005095B.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:21:23Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB expand; LCSC normal; all agree",
+      "read": "Digi-Key status Active (cached); JLCPCB componentLibraryType \"expand\"; LCSC page marker \"normal\"",
+      "source": "vendors.py digikey MCP9808T-E/MS; vendors.py jlcpcb C129490; https://www.lcsc.com/product-detail/C129490.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:48Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "4 weeks",
+      "read": "lead_weeks \"4\"",
+      "source": "vendors.py digikey MCP9808T-E/MS (https://api.digikey.com/products/v4/search/MCP9808T-E%2FMS/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:21:59Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "exact_match names MCP9808T-E/MS, package MSOP-8",
+      "read": "exact_match part \"MCP9808T-E/MS\", package \"MSOP-8\"",
+      "source": "vendors.py jlcpcb C129490",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:36Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType \"expand\"",
+      "source": "vendors.py jlcpcb C129490",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:36Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 21589 >= 50",
+      "read": "stock_available 21589",
+      "source": "vendors.py digikey MCP9808T-E/MS",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:21:59Z"
+     }
+    ]
+   },
+   {
+    "function": "External shunt",
+    "part": "WSBE8518L1000JKA2",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "Digi-Key stock_available 418, need 5, threshold 50: pass",
+      "read": "stock_available 418 (unchanged, cached same UTC day)",
+      "source": "vendors.py digikey WSBE8518L1000JKA2, from keyword search \"WSBE8518\" (https://api.digikey.com/products/v4/search/keyword)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:17:26Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Maker status not read: no status in the page body",
+      "read": "fetched product page fresh; the only \"Active\" matches are a CSS tab class (\"Tab_active\") and an unrelated \"active-discharge-400\" landing-page link, not a lifecycle badge — confirms no genuine status text is shown",
+      "source": "https://www.vishay.com/en/product/30424/",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:23:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none ends WSBE; PTN-DR-00014-2024 ends WSBM and points to WSBE8518 as the replacement",
+      "read": "PCN search text contains only 4 \"WSBE\" occurrences: one \"WSBE Pin Coat Material Change\" product-change notice (PCN-DR-00012-2024, pin plating only) and one mention of WSBE8518 as the recommended replacement inside another part's notice; no notice discontinues WSBE8518 itself",
+      "source": "https://www.vishay.com/en/quality/pcn-search/",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:22Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 (fixed: one external shunt, IOBoard.md:423)",
+      "read": "IOBoard.md: \"External shunt input: an off-board shunt for currents above 150 A... connected to the IO board by its sense leads\", singular",
+      "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:26:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "off board, no LCSC number",
+      "read": "no LCSC/JLCPCB listing for this part; IOBoard.md places the external shunt off the board, reaching it only by sense leads",
+      "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:26:00Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published; not a gate",
+      "read": "no \"longevity\" text on Vishay's quality page, which links only to the PCN search",
+      "source": "https://www.vishay.com/en/quality/",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:23:24Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "wsbeseries.pdf archived 2023-06-03: over 3 years",
+      "read": "earliest web.archive.org capture of wsbeseries.pdf is 2023-06-03T11:13:49Z",
+      "source": "https://web.archive.org/cdx/search/cdx?url=vishay.com/docs/30424/*",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:21:53Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active (off board; no JLCPCB/LCSC)",
+      "read": "Digi-Key ProductStatus Active",
+      "source": "vendors.py digikey WSBE8518L1000JKA2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:17:26Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "48 weeks",
+      "read": "lead_weeks \"48\"",
+      "source": "vendors.py digikey WSBE8518L1000JKA2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:17:26Z"
+     }
+    ]
+   },
+   {
+    "function": "External shunt sense input",
+    "part": "INA238AIDGSR",
+    "kind": "first",
+    "verdict": "refuted",
+    "refutation": "Same INA238AIDGSR reading as Motor monitor: JLCPCB stockCount 0 / canPresaleNumber -99 (reconfirmed live 2026-09-29T17:18:33Z) fails the combined rule-4 need of 10 across both INA238 placements, and Digi-Key stock is 0 (cached 02:34:14Z). The external path's current input has no working monitor stock while this holds; already reported to the owner (P2), and this re-read does not change that.",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "need 10 under Motor monitor: JLCPCB stockCount 0: fail",
+      "read": "stockCount 0",
+      "source": "vendors.py jlcpcb C2868250",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-09-29T17:18:33Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber -99",
+      "read": "-99",
+      "source": "vendors.py jlcpcb C2868250",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-09-29T17:18:33Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Maker ACTIVE (TI product page, orderable INA238AIDGSR)",
+      "read": "marketingStatusDescription \"ACTIVE\" for orderablePartNumber INA238AIDGSR",
+      "source": "https://www.ti.com/product/INA238",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:24:44Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no public TI PCN listing; none marks this orderable",
+      "read": "confirmed: no obsolete/discontinued/last-time-buy text on the INA238 product page or the PCN policy page",
+      "source": "https://www.ti.com/product/INA238; https://www.ti.com/quality-reliability/quality/product-change-notification.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:24:44Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 (fixed: the external path's INA238 of F1; need counted under Motor monitor)",
+      "read": "IOBoard.md:416 F1: one INA238 for each path — this function's own placement is the single external-path unit",
+      "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:416",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:26:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on board, LCSC C2868250",
+      "read": "JLCPCB exact match confirms LCSC C2868250 = INA238AIDGSR, mounted on the IO board even though it senses the off-board external shunt",
+      "source": "vendors.py jlcpcb C2868250; checkout hardware/docs/IOBoard.md:406-428",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:33Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no dated commitment; TI policy \"typically 10 to 15 years\"; not a gate (S5)",
+      "read": "page text: \"TI's product life cycles are typically 10 to 15 years and often extend longer\"",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:23:00Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "January 2021 (SLYS025 original)",
+      "read": "datasheet header \"SLYS025B – JANUARY 2021 – REVISED MAY 2025\"",
+      "source": "https://www.ti.com/lit/ds/symlink/ina238.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:21:08Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB expand; LCSC normal; all agree",
+      "read": "Digi-Key status Active (cached); JLCPCB componentLibraryType \"expand\"; LCSC page marker \"normal\"",
+      "source": "vendors.py digikey INA238AIDGSR; vendors.py jlcpcb C2868250; https://www.lcsc.com/product-detail/C2868250.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:48Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "16 weeks",
+      "read": "lead_weeks \"16\"",
+      "source": "vendors.py digikey INA238AIDGSR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:34:14Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "exact_match names INA238AIDGSR, VSSOP-10-0.5mm",
+      "read": "exact_match part \"INA238AIDGSR\", package \"VSSOP-10-0.5mm\"",
+      "source": "vendors.py jlcpcb C2868250",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:33Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType \"expand\"",
+      "source": "vendors.py jlcpcb C2868250",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:33Z"
+     }
+    ]
+   },
+   {
+    "function": "Port current monitor",
+    "part": "INA3221AIRGVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 8704, need 35, threshold 175: pass",
+      "read": "stockCount 8704 (unchanged)",
+      "source": "vendors.py jlcpcb C181255 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:38Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 8561",
+      "read": "8561",
+      "source": "vendors.py jlcpcb C181255",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:38Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Maker ACTIVE (orderable INA3221AIRGVR)",
+      "read": "JSON-LD marketingStatusDescription \"ACTIVE\" for orderablePartNumber INA3221AIRGVR specifically (the page-wide OBSOLETE flag belongs to a different orderable, INA3221AIRGVT)",
+      "source": "https://www.ti.com/product/INA3221",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:24:44Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no public TI PCN listing; the page's OBSOLETE mark is another orderable's, not flagged",
+      "read": "confirmed by inspecting the page's own JSON: the OBSOLETE marketingStatusDescription is attached only to orderablePartNumber \"INA3221AIRGVT\"; INA3221AIRGVR's own entry reads ACTIVE",
+      "source": "https://www.ti.com/product/INA3221",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:24:44Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "7 (fixed: 7 INA3221 for 20 ports, IOBoard.md:351)",
+      "read": "IOBoard.md:351 \"one INA3221 channel per port, 20 ports on 7 INA3221 (21 channels)\"",
+      "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:351",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:26:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on board, LCSC C181255",
+      "read": "JLCPCB exact match confirms LCSC C181255 = INA3221AIRGVR; IOBoard.md:351 places the 7 parts on the RP2354B's I2C buses, on the IO board",
+      "source": "vendors.py jlcpcb C181255; checkout hardware/docs/IOBoard.md:351",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:38Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no dated commitment; TI policy \"typically 10 to 15 years\"; not a gate (S5)",
+      "read": "page text confirmed unchanged",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:23:00Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "May 2012 (SBOS576), not flagged",
+      "read": "datasheet header \"SBOS576C – MAY 2012 – REVISED SEPTEMBER 2026\"",
+      "source": "https://www.ti.com/lit/ds/symlink/ina3221.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:21:08Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB expand; LCSC normal; all agree",
+      "read": "Digi-Key status Active (cached); JLCPCB componentLibraryType \"expand\"; LCSC page marker \"normal\"",
+      "source": "vendors.py digikey INA3221AIRGVR; vendors.py jlcpcb C181255; https://www.lcsc.com/product-detail/C181255.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:49Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "16 weeks",
+      "read": "lead_weeks \"16\"",
+      "source": "vendors.py digikey INA3221AIRGVR (https://api.digikey.com/products/v4/search/INA3221AIRGVR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:02:04Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "exact_match names INA3221AIRGVR, QFN-16-EP(4x4)",
+      "read": "exact_match part \"INA3221AIRGVR\", package \"QFN-16-EP(4x4)\"",
+      "source": "vendors.py jlcpcb C181255",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:38Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType \"expand\"",
+      "source": "vendors.py jlcpcb C181255",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:38Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 67241 >= 175",
+      "read": "stock_available 67241",
+      "source": "vendors.py digikey INA3221AIRGVR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:02:04Z"
+     }
+    ]
+   },
+   {
+    "function": "Port shunt",
+    "part": "ERJ-6CWDR010V",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 4062, need 100, threshold 500: pass",
+      "read": "stockCount 4062 (unchanged)",
+      "source": "vendors.py jlcpcb C236284 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:39Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 4026",
+      "read": "4026",
+      "source": "vendors.py jlcpcb C236284",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:39Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Maker Active: model search \"New (0) Active (1) NRFND (0)\"",
+      "read": "exact counts confirmed: \"Active (1)\", \"New (0)\", \"NRFND (0)\" for model ERJ6CWDR010V",
+      "source": "https://industrial.panasonic.com/ww/products/pt/current-sensing-chip-resistors/models?model_number=ERJ6CWDR010V",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:20Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "EOL search \"EOL scheduled (0) Discontinued products (0)\"",
+      "read": "exact counts confirmed: \"Discontinued products (0)\", \"EOL scheduled (0)\"",
+      "source": "https://industrial.panasonic.com/ww/eol/pt/current-sensing-chip-resistors/models?model_number=ERJ6CW",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:17Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "20 (fixed: one a port, IOBoard.md:351)",
+      "read": "IOBoard.md:351 \"a 10 mΩ shunt per port\", 20 ports",
+      "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:351",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:26:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on board, LCSC C236284",
+      "read": "JLCPCB exact match confirms LCSC C236284 = ERJ6CWDR010V; port shunts sit on the IO board per port",
+      "source": "vendors.py jlcpcb C236284; checkout hardware/docs/IOBoard.md:351",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:39Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published (Panasonic support page answers 404); not a gate",
+      "read": "https://industrial.panasonic.com/ww/support re-fetched: HTTP 404, confirmed",
+      "source": "https://industrial.panasonic.com/ww/support",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:27:43Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "by February 2018 (JLCPCB copy of the sheet), not flagged",
+      "read": "Panasonic's own current datasheet AOA0000C313 (fetched fresh) is only dated by its latest revision footer \"30-Jun-23\"; no earlier original-issue date is shown on the live sheet, so the specific Feb-2018 figure is not independently re-derived here, but the part is confirmed well over 12 months old either way",
+      "source": "https://industrial.panasonic.com/cdbs/www-data/pdf/RDN0000/AOA0000C313.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:21:24Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB expand; LCSC normal; all agree",
+      "read": "Digi-Key status Active (cached); JLCPCB componentLibraryType \"expand\"; LCSC page marker \"normal\"",
+      "source": "vendors.py digikey ERJ-6CWDR010V; vendors.py jlcpcb C236284; https://www.lcsc.com/product-detail/C236284.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:49Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "15 weeks",
+      "read": "lead_weeks \"15\"",
+      "source": "vendors.py digikey ERJ-6CWDR010V (https://api.digikey.com/products/v4/search/ERJ-6CWDR010V/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:02:12Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "exact_match names ERJ-6CWDR010V, 0805",
+      "read": "exact_match part \"ERJ6CWDR010V\" (dash-normalized), package \"0805\"",
+      "source": "vendors.py jlcpcb C236284",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:39Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType \"expand\"",
+      "source": "vendors.py jlcpcb C236284",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:39Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 12302 >= 500",
+      "read": "stock_available 12302",
+      "source": "vendors.py digikey ERJ-6CWDR010V",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:02:12Z"
+     }
+    ]
+   }
+  ]
+ }
+}

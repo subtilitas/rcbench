@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R1",
+ "label": "adjudicator-R1-2",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "function": "P2 report: stepping-A4 errata",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The figure states E12's workaround wrongly. It gives \"clk_sys faster than clk_usb, above 48 MHz\". The erratum in Appendix E requires clk_sys to be faster than clk_usb by at least 10 % while the USB peripheral is in use. With clk_usb at 48 MHz, which section 12.7.3.1 requires, that means clk_sys of at least 52.8 MHz. \"Above 48 MHz\" is what the note in section 12.7.3.1 says (\"clk_sys must also be running at > 48MHz. See RP2350-E12\"), not the erratum's workaround. Under the figure's wording, a clk_sys of 48 to 52.8 MHz would count as compliant, and the erratum does not cover that range. The figure cites Appendix E as its source, so it has to match the erratum text. The correction is: E12, Affects \"RP2350 A2, RP2350 A3, RP2350 A4 (mitigated on A3)\". Workaround: clk_sys at least 10 % faster than clk_usb (at least 52.8 MHz with clk_usb at 48 MHz) while the USB peripheral is in use. The quasi-static bus states (reset, suspend and resume) are exempt. The E12 error is enough on its own for the refutation to stand, so the rest of the list (13 IDs, CHIP_ID.REVISION 0x8, out_ppm.c) was not re-checked in this ruling. Scope: function. The error is in this report's figure, not in the RP2354B's lifecycle, identity or allowlist status.",
+  "evidence": "RP2350 datasheet, build-date 2025-07-29, build-version d126e9e-clean, SHA-256 2877d0f270fb6d6a57943bee58aaad536aa027bea1e5b1c4ce2541a3230d4be8. That hash matches the one the verifier and the claim cite. Appendix E, RP2350-E12, pages 1375-1376. Summary: \"Inadequate synchronisation of USB status signals\". Affects: \"RP2350 A2, RP2350 A3, RP2350 A4 (mitigated on A3)\". Description: events are not reliably registered \"when clk_sys is equal to or slower than clk_usb\". Workaround, verbatim: \"Run clk_sys faster than clk_usb by at least 10% when the peripheral is in use. Signalling of quasi-static bus states such as reset, suspend, and resume aren't affected by this erratum, so clk_sys can be lower in these cases.\" Fixed by: Documentation, Software. Section 12.7.3.1: \"This controller requires clk_usb to be running at 48MHz.\" Its note says \"clk_sys must also be running at > 48MHz. See RP2350-E12.\" That note is the source of the figure's \"above 48 MHz\", but it is weaker than the erratum's own workaround. 1.10 x 48 MHz = 52.8 MHz. Saved copy: /home/claude/rcbench-research/round1/scratch/FU-A1/adjudicator-R1/rp2350-ds.pdf, with text in rp2350-ds.txt at lines 103452-103505 and 86320-86326.",
+  "source": "python3 tools/research/vendors.py fetch --out rp2350-ds.pdf https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (HTTP 200, 7968417 bytes, final URL https://pip-assets.raspberrypi.com/categories/1214-rp2350/documents/RP-008373-DS-2-rp2350-datasheet.pdf), Appendix E RP2350-E12 and section 12.7.3.1",
+  "read_at": "2026-09-28T18:20:24Z",
+  "scope": "function"
+ }
+}

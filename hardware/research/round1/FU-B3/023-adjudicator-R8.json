@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R8",
+ "label": "adjudicator-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "function": "Motor monitor",
+  "part": "INA238AIDGSR",
+  "stands": true,
+  "ruling": "The stock verifier's refutation holds. It fails sourcing rule 4 on both of the rule's conditions. Need: 5 boards (S7) x 2 placements, one INA238 for each shunt path (F1, IOBoard.md:427) = 10. Gate: 5 x 10 = 50, never under 50 (S4) = 50. JLCPCB stockCount is 0 against that gate of 50. canPresaleNumber is -99, and any negative presale count fails whatever the stock. Rule 6 gives no route: INA238AIDGSR is not in the Held parts table of the 2026-09-25 export. Rule 5 gives no second source either. Digi-Key holds 0 on all three packagings, and the INA228 route already failed on the figures in rule 5. The datasheet verifier's confirmation does not cure a stock failure, because rule 4 is a sourcing gate and not a datasheet figure. The scope is function: the gate is set by this function's need (boards x placements). Nothing about the part itself fails. The maker's status is ACTIVE, Digi-Key's is Active with discontinued and end_of_life false, the LCSC identity matches, and Texas Instruments is on S1. The INA238 is a fixed input (Scope, Fixed inputs table, \"Motor monitor | INA238\"). Under Scope, a fixed input that fails a check is reported to the owner and not re-selected. So this standing refutation goes to the owner as a stock and second-source failure. It does not send a next-ranked candidate to a new pair of verifiers.",
+  "evidence": "JLCPCB exact match C2868250: part \"INA238AIDGSR\", maker_label \"Texas Instruments\", package \"VSSOP-10-0.5mm\", stockCount 0, canPresaleNumber -99, componentLibraryType \"expand\", read 2026-09-29T17:33:59Z. Digi-Key INA238AIDGSR: status \"Active\", lead_weeks \"16\", discontinued false, end_of_life false, stock 0 on 296-INA238AIDGSRTR-ND, 296-INA238AIDGSRCT-ND and 296-INA238AIDGSRDKR-ND, stock_available 0. That Digi-Key reading is marked cached, read 2026-09-29T02:34:14Z the same UTC day, and it counts as this task's reading. Need 10 = 5 boards (Research.md S7) x 2 placements (F1; IOBoard.md:427 \"one INA238 for each path (F1)... Two INA238 on one bus\"). Gate 50 (S4: 5 x need, never under 50). Research.md rule 4: \"A negative presale count fails whatever the stock says.\" INA238AIDGSR is absent from Research.md \"Held parts\", so rule 6 does not apply. Research.md Scope: \"A fixed input that fails a check is reported to the owner, not re-selected.\" selection.json R8 \"Motor monitor\" has part null, run FU-B1.",
+  "source": "python3 /home/claude/rcbench-research/round1/tools/974e3cae7b788338/vendors.py jlcpcb C2868250 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList); vendors.py digikey INA238AIDGSR (https://api.digikey.com/products/v4/search/INA238AIDGSR/productdetails); checkout e13f5f60d2e5 hardware/docs/Research.md Scope (Fixed inputs), Sourcing rules 4 to 6, Held parts, S4, S7, F1; hardware/docs/IOBoard.md:427",
+  "read_at": "2026-09-29T17:33:59Z",
+  "scope": "function"
+ }
+}

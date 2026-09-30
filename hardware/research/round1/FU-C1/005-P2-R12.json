@@ -1,0 +1,1402 @@
+{
+ "role": "P2",
+ "category": "R12",
+ "label": "P2-R12",
+ "attempt": 0,
+ "data": {
+  "category": "R12",
+  "found_values": [
+   {
+    "question_id": "V232",
+    "value": "Register 5 and valid bit 4 carry the thermocouple; the infrared channel gets a new BENCH register 13 (0.1 °C, signed) and valid bit 5, a minor protocol change. Applied as the requirement 'register channel' of both motor temperature functions (owner answer in the Answer column, 2026-09-28; an owner value, not a research finding; applied as given)",
+    "source": "hardware/docs/Research.md:792 (Raised by P1, Answer column) at checkout e13f5f6",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V233",
+    "value": "Type K. Applied as the requirement 'thermocouple type' (owner answer in the Answer column, 2026-09-28; an owner value, not a research finding; applied as given)",
+    "source": "hardware/docs/Research.md:793 at checkout e13f5f6",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V234",
+    "value": "0 to 200 °C, applied as the requirement 'measured temperature range'. The owner's answers to V235 and V240 state their accuracies 'over 0 to 200 °C', the same span. The high end is also the winding rating of the one motor read: KDE Direct 5215XF-435 gives 'Enameled Magnet Wire Thermal Class 200 °C' and '200°C continuous high-temperature solid-core copper windings'. The low end is the lowest IO board ambient of V7, 0 °C, a motor at rest being at ambient. No source in the tree names the motors the bench tests",
+    "source": "hardware/docs/Research.md:795, :800 (V235, V240 Answer column), :567 (V7) at checkout e13f5f6; https://www.kdedirect.com/products/kde5215xf-435 (vendors.py fetch --client chrome, HTTP 200, read 2026-09-29T02:45:09Z)",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V235",
+    "value": "±2 °C over 0 to 200 °C at 0 to 50 °C board ambient: converter and cold junction together, probe tolerance excluded. Applied as the requirement 'accuracy' (owner answer in the Answer column, 2026-09-28; an owner value, not a research finding; applied as given)",
+    "source": "hardware/docs/Research.md:795 at checkout e13f5f6",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V236",
+    "value": "a new reading at least every 2,000 ms (0.5 Hz), applied as the requirement 'reading interval'. The tree lets a temperature stand 2,000 ms before its field goes empty: '#define EDT_STALE_MS 2000u' for the ESC's telemetry temperature (firmware/iomcu/src/main.c:673; IOBoard.md:455 'Not reported 2000 ms after the last reading'). The coprocessor's 20 ms sampling and the display's 50 ms poll (IOBoard.md:431) are loop rates of every bench number, not a stated need for a temperature",
+    "source": "checkout e13f5f6: firmware/iomcu/src/main.c:664-673; hardware/docs/IOBoard.md:431, :455, read 2026-09-29T02:52:20Z",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V237",
+    "value": "67.2 V between either thermocouple lead and the IO board's ground, applied as the requirement 'input withstand'. A motor's phases and windings swing between the ESC pack's rails; the highest pack is 16 cells, 67.2 V at 4.2 V a cell (F15, owner, 2026-09-25). Whether the pack's negative is the IO board's ground is still for research (V177, R8); 67.2 V holds with a common ground. Overvoltage protection on the sensor connectors is round 2's (Research.md:28), so the requirement is met by that protection in front of the converter, and each converter's own input rating is recorded",
+    "source": "checkout e13f5f6: hardware/docs/Research.md:28, :543 (F15), :737 (V177), read 2026-09-29T02:52:20Z",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V238",
+    "value": "2 m. Applied inside the requirement 'sensor position and lead length' (owner answer in the Answer column, 2026-09-28; an owner value, not a research finding; applied as given)",
+    "source": "hardware/docs/Research.md:798 at checkout e13f5f6",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V239",
+    "value": "0 to 200 °C object temperature, applied as the requirement 'object temperature range'. The owner's answer to V240 states its accuracy 'over 0 to 200 °C object'; the KDE Direct 5215XF-435 winding class of 200 °C and V7's 0 °C floor give the same span, as for V234",
+    "source": "hardware/docs/Research.md:800 (V240 Answer column), :567 (V7) at checkout e13f5f6; https://www.kdedirect.com/products/kde5215xf-435, read 2026-09-29T02:45:09Z",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V240",
+    "value": "±3 °C over 0 to 200 °C object at 0 to 85 °C sensor ambient, object filling the field of view; the motor surface's emissivity error excluded. Applied as the requirement 'accuracy' (owner answer in the Answer column, 2026-09-28; an owner value, not a research finding; applied as given)",
+    "source": "hardware/docs/Research.md:800 at checkout e13f5f6",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V241",
+    "value": "35° full field of view at 25 mm from the motor: a spot of about 16 mm on the bell. Applied as the requirement 'field of view' (owner answer in the Answer column, 2026-09-28; an owner value, not a research finding; applied as given)",
+    "source": "hardware/docs/Research.md:801 at checkout e13f5f6",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V242",
+    "value": "a new reading at least every 2,000 ms (0.5 Hz), applied as the requirement 'reading interval', from the tree's 2,000 ms staleness limit for a temperature (EDT_STALE_MS, firmware/iomcu/src/main.c:673; IOBoard.md:455), as for V236",
+    "source": "checkout e13f5f6: firmware/iomcu/src/main.c:664-673; hardware/docs/IOBoard.md:455, read 2026-09-29T02:52:20Z",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V243",
+    "value": "400 kHz, applied as the requirement 'clock rate'. The only I2C rate setting in the tree spans 100 to 400 kHz in 100 kHz steps with 400 kHz as default: SET_I2C_KHZ 'I2C speed', help 'Shared with the touch controller', min 100, max 400, step 100, default 400 (shared/settings/settings.c:105-107). It is labelled for the display's bus; the coprocessor bus rate is V120 (R6), still for research. UM10204 Rev. 7.0 Table 11: Fast-mode runs to 400 kHz with at most 400 pF on each bus line",
+    "source": "checkout e13f5f6: shared/settings/settings.c:105-107, read 2026-09-29T02:52:20Z; I2C-bus specification UM10204 Rev. 7.0 (1 October 2021), Table 11, https://www.nxp.com/docs/en/user-guide/UM10204.pdf, read 2026-09-29T02:52:27Z",
+    "read_at": "2026-09-29T02:52:27Z"
+   },
+   {
+    "question_id": "V244",
+    "value": "1 m, applied as the requirement 'cable length and bus load'. SparkFun, which defines Qwiic: 'we've successfully communicated with sensors and boards via I2C over 1 meter (~4 ft)'; it names NXP's PCA9615 differential extender for longer runs",
+    "source": "https://www.sparkfun.com/qwiic, section 'How far can I run the Qwiic system?' (vendors.py fetch --client chrome, HTTP 200, read 2026-09-29T02:45:09Z)",
+    "read_at": "2026-09-29T02:45:09Z"
+   },
+   {
+    "question_id": "V245",
+    "value": "226 mA per port on the 3.3 V pin, applied as the requirement 'port supply current'. SparkFun: 'The very conservative max current on a Qwiic cable is 226mA'. 2 ports x 226 mA = 452 mA on the 3.3 V rail; the ports' supply does not pass through the I2C switch",
+    "source": "https://www.sparkfun.com/qwiic, section 'How much power can I use?', read 2026-09-29T02:45:09Z",
+    "read_at": "2026-09-29T02:45:09Z"
+   },
+   {
+    "question_id": "V246",
+    "value": "0x40, 0x41, 0x44 and 0x45, applied as the requirement 'address separation'. The tree's external I2C sensor is the INA228; its address setting offers exactly these four, 'Set by its A0 and A1 pins' (shared/settings/settings.c:29, :90-92; IOBoard.md:464). The coprocessor's buses hold 0x40 to 0x43 for the port monitors and 0x44 and up for the INA238 (IOBoard.md:464), so a port's segment is separated from those devices while its device is addressed. docs/Manifest.md does not name the INA228 (P4, T4)",
+    "source": "checkout e13f5f6: shared/settings/settings.c:29, :88-92; hardware/docs/IOBoard.md:464, read 2026-09-29T02:52:20Z",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V247",
+    "value": "at least 792 bytes, applied as the requirement 'capacity' (feeds Q8 only). record_t is a 20-byte header (magic, zeros, zeros_inv 4 bytes each; crc and version 2 each; seq 4) plus out_store_t, uint16 slots[LINK_OS_COUNT] and chan_cfg[LINK_CC_COUNT] with 4 registers a slot and 4 a channel (firmware/iomcu/src/out_store.c:99-107; out_store.h:64-67; link_pages.h:92-94, :125-127). Today 8 slots and 8 channels (link_pages.h:75-76) give 148 bytes. The 20-port record is not defined (IOBoard.md:248); with a slot per port, 20, and 27 channels (19 single-channel ports plus 8 on the one port switched to PPM, IOBoard.md:64, :250) one record is 20 + 2 x (20 x 4 + 27 x 4) = 396 bytes. The store keeps the record from before a save readable while the next is written (out_store.c:30-33), so it holds 2 records: 792 bytes",
+    "source": "checkout e13f5f6: firmware/iomcu/src/out_store.c:28-39, :95-107; firmware/iomcu/src/out_store.h:60-67; shared/link/include/link_pages.h:75-76, :92-94, :125-127; hardware/docs/IOBoard.md:64, :248, :250, read 2026-09-29T02:52:20Z",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V248",
+    "value": "3,200,000 saves, applied as the requirement 'saves' (feeds Q8 only). No source states how many saves the board needs; the tree's only figure is what the flash store allows: 'a sector pair of 32 slots at 100,000 erase cycles a sector accepts about 3.2 million saves' (shared/outputs/include/out_store_map.h:82-84; IOBoard.md:117), a packaged-part figure (owner, 2026-09-27). A store allowing fewer would be worse than the flash on this count",
+    "source": "checkout e13f5f6: shared/outputs/include/out_store_map.h:80-86; hardware/docs/IOBoard.md:117, read 2026-09-29T02:52:20Z",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V249",
+    "value": "Off the IO board at the motor, on a small sensor board of its own that JLCPCB assembles (parts with LCSC numbers), on a lead to the IO board's infrared connector. Applied inside the requirement 'sensor position and lead length'; the sensor is a part with an LCSC number (sourcing rule 1), 1 per sensor board (owner answer in the Answer column, 2026-09-28; an owner value, not a research finding; applied as given)",
+    "source": "hardware/docs/Research.md:809 at checkout e13f5f6",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V250",
+    "value": "yes, applied as the requirement 'open thermocouple detection'. A valid bit is set only when a sensor answered (IOBoard.md:432; link_pages.h:248 'a sensor answered; else the field is 0'; LINK_BN_TEMP_MOT_OK bit 4 at :269), and the log writer writes a field nothing measures as empty, never as zero (shared/bench/log_writer.c:110-117). A converter answers on its bus with no thermocouple fitted, so the channel detects an open thermocouple to hold bit 4 clear",
+    "source": "checkout e13f5f6: hardware/docs/IOBoard.md:432; shared/link/include/link_pages.h:246-269; shared/bench/log_writer.c:108-118, read 2026-09-29T02:52:20Z",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V251",
+    "value": "0 to 50 °C ambient, applied as the requirement 'cold-junction ambient range'. V7's answer sets one range for the whole IO board: '0 to 50 °C ambient, one range for the whole IO board (owner, 2026-09-28)'; the owner's V235 answer uses the same '0 to 50 °C board ambient'. The cold junction sits at the board's connector",
+    "source": "checkout e13f5f6: hardware/docs/Research.md:567 (V7), :795 (V235), read 2026-09-29T02:52:20Z",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V252",
+    "value": "0 to 85 °C. Applied as the requirement 'sensor ambient range' (owner answer in the Answer column, 2026-09-28; an owner value, not a research finding; applied as given)",
+    "source": "hardware/docs/Research.md:812 at checkout e13f5f6",
+    "read_at": "2026-09-29T02:52:20Z"
+   },
+   {
+    "question_id": "V253",
+    "value": "Yes: plugging in or out while powered leaves the other port and the coprocessor's internal buses running; a transfer on the plugged port may fail and is retried. Applied as the requirement 'hot plug' (owner answer in the Answer column, 2026-09-28; an owner value, not a research finding; applied as given)",
+    "source": "hardware/docs/Research.md:813 at checkout e13f5f6",
+    "read_at": "2026-09-29T02:52:20Z"
+   }
+  ],
+  "functions": [
+   {
+    "function": "motor temperature thermocouple",
+    "requirements": [
+     {
+      "name": "channel count",
+      "value": "1 thermocouple channel",
+      "source": "F5, hardware/docs/Research.md:533 (owner, 2026-09-25); hardware/docs/IOBoard.md:72, :458"
+     },
+     {
+      "name": "register channel",
+      "value": "the thermocouple reading fills BENCH register 5 (0.1 °C, signed) and valid bit 4",
+      "source": "V232, hardware/docs/Research.md:792 (owner, 2026-09-28)"
+     },
+     {
+      "name": "thermocouple type",
+      "value": "type K",
+      "source": "V233, hardware/docs/Research.md:793 (owner, 2026-09-28)"
+     },
+     {
+      "name": "measured temperature range",
+      "value": "0 to 200 °C",
+      "source": "V234 found value"
+     },
+     {
+      "name": "accuracy",
+      "value": "±2 °C over 0 to 200 °C at 0 to 50 °C board ambient, converter and cold junction together, probe tolerance excluded",
+      "source": "V235, hardware/docs/Research.md:795 (owner, 2026-09-28)"
+     },
+     {
+      "name": "reading interval",
+      "value": "a new reading at least every 2,000 ms (0.5 Hz)",
+      "source": "V236 found value"
+     },
+     {
+      "name": "input withstand",
+      "value": "67.2 V between either lead and the IO board's ground, met by round 2's sensor-connector protection in front of the converter; the converter's own input rating recorded",
+      "source": "V237 found value; hardware/docs/Research.md:28"
+     },
+     {
+      "name": "open thermocouple detection",
+      "value": "yes: an open or unplugged thermocouple is detected, so valid bit 4 stays clear while none is fitted",
+      "source": "V250 found value"
+     },
+     {
+      "name": "cold-junction ambient range",
+      "value": "0 to 50 °C",
+      "source": "V251 found value (V7, owner, 2026-09-28)"
+     },
+     {
+      "name": "3.3 V logic at the RP2354B",
+      "value": "every output that reaches an RP2354B pin at 3.3 V logic",
+      "source": "hardware/docs/IOBoard.md:54"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "ADS1220IPWR",
+      "maker": "Texas Instruments (datasheet SBAS501D, https://www.ti.com/lit/ds/symlink/ads1220.pdf); S1 Texas Instruments; JLCPCB label Texas Instruments",
+      "lcsc": "C48263",
+      "package": "TSSOP-16",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: F5 gives 1 thermocouple channel, one converter a channel",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channel count",
+        "required": "1 thermocouple channel",
+        "datasheet": "one differential input pair (AIN0, AIN1) for the thermocouple, of 4 inputs; one device for the one channel",
+        "pass": true,
+        "source": "SBAS501D (ti.com ads1220.pdf, read 2026-09-29T02:40:44Z), section 9.2.1 Figure 9-3"
+       },
+       {
+        "name": "register channel",
+        "required": "the thermocouple reading fills BENCH register 5 (0.1 °C, signed) and valid bit 4",
+        "datasheet": "delivers the thermocouple voltage and its internal sensor's temperature (0.03125 °C resolution); firmware computes the signed temperature it writes to register 5 in 0.1 °C and sets bit 4",
+        "pass": true,
+        "source": "SBAS501D (ti.com ads1220.pdf, read 2026-09-29T02:40:44Z), Electrical Characteristics, section 9.2.1.2"
+       },
+       {
+        "name": "thermocouple type",
+        "required": "type K",
+        "datasheet": "any type: the microcontroller converts with the NIST tables or equations; the datasheet design example is type K (Table 9-1)",
+        "pass": true,
+        "source": "SBAS501D (ti.com ads1220.pdf, read 2026-09-29T02:40:44Z), section 9.2.1"
+       },
+       {
+        "name": "measured temperature range",
+        "required": "0 to 200 °C",
+        "datasheet": "differential input ±VREF/gain: ±16 mV at gain 128 on the 2.048 V internal reference, ±64 mV at gain 32; type K at 200 °C is about 8.26 mV at the 41.276 µV/°C nominal sensitivity of the MAX31855 datasheet; the design example covers -200 to +1250 °C",
+        "pass": true,
+        "source": "SBAS501D (ti.com ads1220.pdf, read 2026-09-29T02:40:44Z), Recommended Operating Conditions, Table 9-1; MAX31855 19-5793 Rev 5 (read 2026-09-29T02:40:44Z)"
+       },
+       {
+        "name": "accuracy",
+        "required": "±2 °C over 0 to 200 °C at 0 to 50 °C board ambient, converter and cold junction together, probe tolerance excluded",
+        "datasheet": "with firmware offset calibration (section 8.3.12, inputs shorted by MUX 1110b): gain error ±0.1 % max (gain 1 to 128, 25 °C), gain drift 4 ppm/°C max, internal reference 2.045 to 2.051 V (±0.15 %) with 30 ppm/°C max drift: ±0.33 % of 8.26 mV = ±27 µV = ±0.66 °C at 200 °C over 0 to 50 °C; INL ±15 ppm of the 32 mV range = ±0.5 µV; offset drift 0.3 µV/°C max after a calibration at 25 °C = ±7.5 µV = ±0.18 °C; cold junction from the internal sensor ±0.5 °C (TA 0 to 75 °C). Sum ±1.35 °C. Input offset at gain 2 to 128 has no maximum (±4 µV typical), so the budget holds only with the offset calibration",
+        "pass": true,
+        "source": "SBAS501D (ti.com ads1220.pdf, read 2026-09-29T02:40:44Z), Electrical Characteristics pages 7-8, section 8.3.12"
+       },
+       {
+        "name": "reading interval",
+        "required": "a new reading at least every 2,000 ms (0.5 Hz)",
+        "datasheet": "20 to 2,000 samples/s; at 20 SPS a thermocouple reading, a temperature-sensor reading and an offset calibration take well under 2,000 ms",
+        "pass": true,
+        "source": "SBAS501D (ti.com ads1220.pdf, read 2026-09-29T02:40:44Z), Electrical Characteristics (data rate)"
+       },
+       {
+        "name": "input withstand",
+        "required": "67.2 V between either lead and the IO board's ground, met by round 2's sensor-connector protection in front of the converter; the converter's own input rating recorded",
+        "datasheet": "analog inputs AVSS - 0.3 V to AVDD + 0.3 V absolute maximum; relies on round 2 protection for 67.2 V",
+        "pass": true,
+        "source": "SBAS501D (ti.com ads1220.pdf, read 2026-09-29T02:40:44Z), 6.1 Absolute Maximum Ratings"
+       },
+       {
+        "name": "open thermocouple detection",
+        "required": "yes: an open or unplugged thermocouple is detected, so valid bit 4 stays clear while none is fitted",
+        "datasheet": "10 µA burn-out current sources (BCS bit) drive an open sensor to a full-scale reading (section 8.3.10); biasing resistors RB1 and RB2 also pull an open lead to full scale (section 9.2.1)",
+        "pass": true,
+        "source": "SBAS501D (ti.com ads1220.pdf, read 2026-09-29T02:40:44Z), sections 8.3.10, 9.2.1"
+       },
+       {
+        "name": "cold-junction ambient range",
+        "required": "0 to 50 °C",
+        "datasheet": "internal temperature sensor ±0.5 °C max at TA 0 to 75 °C, ±1 °C at -40 to +125 °C; operating -40 to +125 °C",
+        "pass": true,
+        "source": "SBAS501D (ti.com ads1220.pdf, read 2026-09-29T02:40:44Z), Electrical Characteristics, TEMPERATURE SENSOR"
+       },
+       {
+        "name": "3.3 V logic at the RP2354B",
+        "required": "every output that reaches an RP2354B pin at 3.3 V logic",
+        "datasheet": "DVDD 2.3 to 5.5 V, run at 3.3 V (the characterisation condition); SPI",
+        "pass": true,
+        "source": "SBAS501D (ti.com ads1220.pdf, read 2026-09-29T02:40:44Z), Recommended Operating Conditions"
+       }
+      ],
+      "jlcpcb": "stockCount 16,924; canPresaleNumber 16,512; componentLibraryType expand; price 2.4529 at the 1-piece break, which covers a need of 5 (currency not in the reading); read 2026-09-29T02:43:00Z, vendors.py jlcpcb C48263 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match, maker label 'Texas Instruments')",
+      "digikey": "stock_available 660; manufacturer lead time 16 weeks; ProductStatus Active; read 2026-09-29T02:47:36Z, vendors.py digikey ADS1220IPWR (https://api.digikey.com/products/v4/search/ADS1220IPWR/productdetails)",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; threshold max(5 x 5, 50) = 50 (S4); stockCount 16,924 >= 50 and canPresaleNumber 16,512 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "ACTIVE (TI product page https://www.ti.com/product/ADS1220, marketingStatusDescription for OPN ADS1220IPWR, read 2026-09-29T02:46:37Z); longevity: no TI programme page read, none recorded; first datasheet: SBAS501, May 2013, over 12 months; change and discontinuation notices: TI PCN listing not read; distributor: Digi-Key Active, discontinued false, end_of_life false (02:47:36Z); the JLCPCB API row carries no status field; LCSC page not read",
+      "second_source": "second vendor: Digi-Key stock_available 660 >= gate 50, read 2026-09-29T02:47:36Z (sourcing rule 5)",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "ADS1220IRVAR (C2651338): the same die in VQFN-16 3.5 x 3.5 mm, not pin-compatible; JLCPCB 7,509, presale 7,302 (02:50:47Z)"
+      ],
+      "driver_in_shared": "none (shared/ holds artwork, bench, can, dshot, gfx, link, logfile, openyge, outputs, ppm, safety, sbus, servo, settings, touch, ui; no match for the part names)",
+      "reason": "Meets every requirement value, the ±2 °C one with a firmware offset calibration: its budget is ±1.35 °C over 0 to 200 °C at 0 to 50 °C. It detects an open thermocouple on chip, takes type K through firmware, and has the most stock of the survivors at both vendors (JLCPCB 16,924; Digi-Key 660). Cold-junction compensation and the NIST conversion run in firmware, and it takes an SPI chip select; its inputs are rated only to AVDD + 0.3 V, so round 2 protection carries the 67.2 V."
+     },
+     {
+      "rank": 2,
+      "part": "MCP9601-E/MX",
+      "maker": "Microchip Technology (datasheet DS20005426F, https://ww1.microchip.com/downloads/en/DeviceDoc/MCP960X-L0X-RL0X-Data-Sheet-20005426F.pdf); S1 Microchip; JLCPCB label Microchip Tech",
+      "lcsc": "C5229264",
+      "package": "MQFN-20 (5 x 5 mm)",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: F5 gives 1 thermocouple channel",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channel count",
+        "required": "1 thermocouple channel",
+        "datasheet": "one thermocouple input pair (VIN+, VIN-) with one cold-junction sensor",
+        "pass": true,
+        "source": "DS20005426F (read 2026-09-29T02:40:43Z), section 3.2"
+       },
+       {
+        "name": "register channel",
+        "required": "the thermocouple reading fills BENCH register 5 (0.1 °C, signed) and valid bit 4",
+        "datasheet": "Thermocouple Hot-Junction register TH, cold-junction compensated, signed, 0.0625 °C a bit at 18-bit resolution; firmware writes it to register 5 in 0.1 °C",
+        "pass": true,
+        "source": "DS20005426F (read 2026-09-29T02:40:43Z), section 5, register map"
+       },
+       {
+        "name": "thermocouple type",
+        "required": "type K",
+        "datasheet": "types K, J, T, N, S, E, B and R; type K TΔ -200 to +1372 °C",
+        "pass": true,
+        "source": "DS20005426F (read 2026-09-29T02:40:43Z), DC Characteristics"
+       },
+       {
+        "name": "measured temperature range",
+        "required": "0 to 200 °C",
+        "datasheet": "type K, TΔ -200 to +1372 °C, VEMF -5.907 to 54.886 mV",
+        "pass": true,
+        "source": "DS20005426F (read 2026-09-29T02:40:43Z), DC Characteristics, MCP9600/01 table"
+       },
+       {
+        "name": "accuracy",
+        "required": "±2 °C over 0 to 200 °C at 0 to 50 °C board ambient, converter and cold junction together, probe tolerance excluded",
+        "datasheet": "TH hot-junction accuracy ±1.5 °C max (±0.5 °C typical) at TA 0 to 85 °C, VDD 3.3 V, TH = TC + TΔ, cold junction included",
+        "pass": true,
+        "source": "DS20005426F (read 2026-09-29T02:40:43Z), Thermocouple Sensor Measurement Accuracy, MCP9600/01"
+       },
+       {
+        "name": "reading interval",
+        "required": "a new reading at least every 2,000 ms (0.5 Hz)",
+        "datasheet": "tCONV 320 ms typical at 18-bit, 80 ms at 16-bit, 5 ms at 12-bit (TA 25 °C)",
+        "pass": true,
+        "source": "DS20005426F (read 2026-09-29T02:40:43Z), Sampling Rate"
+       },
+       {
+        "name": "input withstand",
+        "required": "67.2 V between either lead and the IO board's ground, met by round 2's sensor-connector protection in front of the converter; the converter's own input rating recorded",
+        "datasheet": "all input/output pins GND - 0.3 V to 6.0 V absolute maximum; relies on round 2 protection for 67.2 V",
+        "pass": true,
+        "source": "DS20005426F (read 2026-09-29T02:40:43Z), Absolute Maximum Ratings"
+       },
+       {
+        "name": "open thermocouple detection",
+        "required": "yes: an open or unplugged thermocouple is detected, so valid bit 4 stays clear while none is fitted",
+        "datasheet": "open-circuit and short-circuit detection on the MCP9601/L01/RL01 through the VSENSE pin with 1 MΩ resistors (Figure 1-1)",
+        "pass": true,
+        "source": "DS20005426F (read 2026-09-29T02:40:43Z), page 1, VSENSE table"
+       },
+       {
+        "name": "cold-junction ambient range",
+        "required": "0 to 50 °C",
+        "datasheet": "cold-junction accuracy ±1.0 °C max at TA 0 to 85 °C; ambient with power applied -40 to +125 °C",
+        "pass": true,
+        "source": "DS20005426F (read 2026-09-29T02:40:43Z), DC Characteristics, Absolute Maximum Ratings"
+       },
+       {
+        "name": "3.3 V logic at the RP2354B",
+        "required": "every output that reaches an RP2354B pin at 3.3 V logic",
+        "datasheet": "VDD 2.7 to 5.5 V, run at 3.3 V; I2C 10 to 100 kHz (fSCL), open-drain; address 0x60 to 0x67 by the ADDR pin",
+        "pass": true,
+        "source": "DS20005426F (read 2026-09-29T02:40:43Z), serial interface table"
+       }
+      ],
+      "jlcpcb": "stockCount 72; canPresaleNumber 67; componentLibraryType expand; price 14.2673 at the 1-piece break, which covers a need of 5 (currency not in the reading); read 2026-09-29T02:42:56Z, vendors.py jlcpcb C5229264 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match, maker label 'Microchip Tech')",
+      "digikey": "stock_available 2; manufacturer lead time 10 weeks; ProductStatus Active; read 2026-09-29T02:47:38Z, vendors.py digikey MCP9601-E/MX (https://api.digikey.com/products/v4/search/MCP9601-E%2FMX/productdetails)",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; threshold max(5 x 5, 50) = 50 (S4); stockCount 72 >= 50 and canPresaleNumber 67 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "In Production (Microchip product page https://www.microchip.com/en-us/product/MCP9601, productSatus, read 2026-09-29T02:46:39Z); longevity: Microchip programme page not read, none recorded; first datasheet: the MCP9601 was added in Revision F (August 2019) of DS20005426, whose Revision A is August 2015; over 12 months; notices: Microchip PCN listing not read; distributor: Digi-Key Active, discontinued false, end_of_life false (02:47:38Z); the JLCPCB API row carries no status field",
+      "second_source": "none: Digi-Key holds 2, under the gate of 50 (02:47:38Z); the tape-and-reel MCP9601T-E/MX (C5127745) holds 25 at JLCPCB, presale 18 (02:42:57Z), under 50; the pin- and register-compatible MCP96L01T-E/MX misses the ±2 °C accuracy (±4.0 °C max)",
+      "second_source_route": "none",
+      "second_source_part": "",
+      "alternates": [
+       "MCP9601T-E/MX (C5127745): same part on tape and reel; JLCPCB 25, presale 18 (02:42:57Z), under the gate",
+       "MCP96L01T-E/MX (C2653173): same MQFN-20 pinout, register map and ADDR-pin addresses (DS20005426F); hot junction ±4.0 °C max, misses V235"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Meets every requirement value on chip: ±1.5 °C max hot-junction accuracy with the cold junction included, NIST conversion, open and short detection, type K. Ranked 2nd: JLCPCB holds 72 against a gate of 50, and no route of rule 5 passes. Its I2C runs at 100 kHz at most, which holds any bus it shares to Standard-mode (P5)."
+     }
+    ],
+    "dropped": [
+     {
+      "part": "MAX31856MUD+T (C2653162)",
+      "maker": "Analog Devices (Maxim Integrated datasheet 19-7534)",
+      "reason": "accuracy (V235, ±2 °C) not shown. 'Full-Scale and INL Error' is ±0.15 %FS at TA -20 to +85 °C, and the type K range uses the ±78.125 mV full scale: read as a share of full scale, ±117 µV = ±2.84 °C at 41.276 µV/°C, plus input offset ±11.7 µV (±0.28 °C), cold junction ±0.7 °C and linearisation ±0.13 °C: up to ±3.95 °C at 200 °C. Read as a share of the reading (8.26 mV at 200 °C), the sum is ±1.41 °C; the datasheet does not separate gain error from INL, so only the first reading is a guaranteed bound. JLCPCB 11,419, presale 11,165 (02:42:52Z). MAX31856 datasheet 19-7534 Rev 0 (2/15), https://www.analog.com/media/en/technical-documentation/data-sheets/MAX31856.pdf (vendors.py fetch --client safari), read 2026-09-29T02:40:42Z, Electrical Characteristics, Note 7; MAX31855 datasheet 19-5793 Rev 5 (1/15), https://www.analog.com/media/en/technical-documentation/data-sheets/max31855.pdf (--client safari), read 2026-09-29T02:40:44Z (sensitivity)"
+     },
+     {
+      "part": "MAX31856MUD+ (C116632)",
+      "maker": "Analog Devices (Maxim Integrated)",
+      "reason": "the MAX31856 in tubes, same datasheet and the same accuracy reading as MAX31856MUD+T; JLCPCB 126, presale 97 (02:42:54Z)"
+     },
+     {
+      "part": "MCP96L01T-E/MX (C2653173)",
+      "maker": "Microchip Technology",
+      "reason": "accuracy: TH hot-junction ±4.0 °C max at TA 0 to 85 °C, against ±2 °C (V235). DS20005426F (read 2026-09-29T02:40:43Z), MCP96L00/L01 table"
+     },
+     {
+      "part": "MAX31855KASA+T (C52028)",
+      "maker": "Analog Devices (Maxim Integrated)",
+      "reason": "accuracy: thermocouple gain and offset error ±2 °C (-200 to +700 °C, TA -20 to +85 °C) not including the internal cold-junction error of ±2 °C or the type K nonlinearity (Note 4): up to ±4 °C before nonlinearity, against ±2 °C (V235). MAX31855 datasheet 19-5793 Rev 5 (1/15), https://www.analog.com/media/en/technical-documentation/data-sheets/max31855.pdf (--client safari), read 2026-09-29T02:40:44Z, Thermal Characteristics"
+     },
+     {
+      "part": "MAX6675ISA+T (C16030)",
+      "maker": "Analog Devices (Maxim Integrated)",
+      "reason": "accuracy: temperature error ±8 LSB (±2 °C at 0.25 °C a bit) for 0 to 700 °C at TA 25 °C and 3.3 V, plus cold-junction compensation error ±3.0 °C at TA -20 to +85 °C, against ±2 °C (V235). MAX6675 datasheet 19-2235 Rev 3 (6/21), https://www.analog.com/media/en/technical-documentation/data-sheets/MAX6675.pdf (--client safari), read 2026-09-29T02:50:13Z"
+     },
+     {
+      "part": "MCP9600-E/MX (C220851), MCP9600T-E/MX (C623918), MCP96L00T-E/MX (C623919)",
+      "maker": "Microchip Technology",
+      "reason": "no open-thermocouple detection: DS20005426F gives open- and short-circuit detection through VSENSE to the MCP9601/L01/RL01 only; misses V250 (yes). DS20005426F (read 2026-09-29T02:40:43Z)"
+     },
+     {
+      "part": "MCP9601T-E/MX (C5127745)",
+      "maker": "Microchip Technology",
+      "reason": "JLCPCB stockCount 25, canPresaleNumber 18, read 2026-09-29T02:42:57Z, under the gate of 50 (rule 4)"
+     },
+     {
+      "part": "AD8495ARMZ-R7 (C59658)",
+      "maker": "Analog Devices",
+      "reason": "accuracy: A grade initial accuracy 3 °C at TA = TRJ = TMJ = 25 °C, against ±2 °C (V235), before the RP2354B ADC it drives. AD8494/AD8495/AD8496/AD8497 datasheet Rev. D, https://www.analog.com/media/en/technical-documentation/data-sheets/AD8494_8495_8496_8497.pdf (--client safari), read 2026-09-29T02:50:14Z, Table 2"
+     },
+     {
+      "part": "AD8495CRMZ (C578737)",
+      "maker": "Analog Devices",
+      "reason": "JLCPCB stockCount 0, canPresaleNumber -1, read 2026-09-29T02:50:42Z (rule 4)"
+     },
+     {
+      "part": "ADS1118IDGSR (C55347)",
+      "maker": "Texas Instruments",
+      "reason": "accuracy not shown at the ±0.256 V range a thermocouple needs: offset error, INL and the 0.15 % maximum gain error are specified at FSR ±2.048 V; at ±0.256 V the gain error has a typical value only. ADS1118 datasheet, https://www.ti.com/lit/ds/symlink/ads1118.pdf, read 2026-09-29T02:50:13Z, Electrical Characteristics"
+     },
+     {
+      "part": "LTC2983ILX#PBF (C427448), LTC2986ILX#PBF (C683928), LTC2984ILX#PBF (C683923)",
+      "maker": "Analog Devices",
+      "reason": "JLCPCB stockCount 1 (presale -4), 38 (38) and 0 (0), read 2026-09-29T02:50:38Z to 02:50:41Z, under the gate of 50 (rule 4)"
+     },
+     {
+      "part": "MAX31855TASA+T (C476183) and other MAX31855 letters",
+      "maker": "Analog Devices (Maxim Integrated)",
+      "reason": "other thermocouple types; V233 fixes type K"
+     },
+     {
+      "part": "ADS1220IRVAR (C2651338)",
+      "maker": "Texas Instruments",
+      "reason": "the rank-1 die in VQFN-16; not listed twice"
+     }
+    ]
+   },
+   {
+    "function": "motor temperature infrared",
+    "requirements": [
+     {
+      "name": "channel count",
+      "value": "1 infrared channel",
+      "source": "F5, hardware/docs/Research.md:533; hardware/docs/IOBoard.md:72, :458"
+     },
+     {
+      "name": "register channel",
+      "value": "the infrared reading fills new BENCH register 13 (0.1 °C, signed) and valid bit 5",
+      "source": "V232, hardware/docs/Research.md:792 (owner, 2026-09-28)"
+     },
+     {
+      "name": "sensor position and lead length",
+      "value": "off the IO board on a sensor board JLCPCB assembles (parts with LCSC numbers), at the end of a 2 m lead to the IO board's infrared connector",
+      "source": "V249, hardware/docs/Research.md:809; V238, hardware/docs/Research.md:798 (owner, 2026-09-28)"
+     },
+     {
+      "name": "object temperature range",
+      "value": "0 to 200 °C",
+      "source": "V239 found value"
+     },
+     {
+      "name": "accuracy",
+      "value": "±3 °C over 0 to 200 °C object at 0 to 85 °C sensor ambient, object filling the field of view, the motor surface's emissivity error excluded",
+      "source": "V240, hardware/docs/Research.md:800 (owner, 2026-09-28)"
+     },
+     {
+      "name": "field of view",
+      "value": "35° full field of view (a spot of about 16 mm at 25 mm from the motor)",
+      "source": "V241, hardware/docs/Research.md:801 (owner, 2026-09-28)"
+     },
+     {
+      "name": "reading interval",
+      "value": "a new reading at least every 2,000 ms (0.5 Hz)",
+      "source": "V242 found value"
+     },
+     {
+      "name": "sensor ambient range",
+      "value": "0 to 85 °C",
+      "source": "V252, hardware/docs/Research.md:812 (owner, 2026-09-28)"
+     },
+     {
+      "name": "3.3 V supply and logic",
+      "value": "a 3.3 V supply; every signal that reaches an RP2354B pin at 3.3 V logic",
+      "source": "hardware/docs/IOBoard.md:54"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "MLX90614ESF-BCC-000-TU",
+      "maker": "Melexis (datasheet DOC#3901090614, https://www.melexis.com/-/media/files/documents/datasheets/mlx90614-datasheet-melexis.pdf); S1 Melexis; JLCPCB label Melexis",
+      "lcsc": "C7501763",
+      "package": "TO-39, 4 leads",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: F5 gives 1 infrared channel; 1 on each sensor board (V249), one sensor board per IO board, so 5 for 5 boards (S7)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channel count",
+        "required": "1 infrared channel",
+        "datasheet": "one single-zone infrared thermometer (object and ambient temperatures), one device for the channel",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), page 1, section 2"
+       },
+       {
+        "name": "register channel",
+        "required": "the infrared reading fills new BENCH register 13 (0.1 °C, signed) and valid bit 5",
+        "datasheet": "object temperature in RAM over SMBus at 0.02 °C resolution; firmware writes register 13 in 0.1 °C and sets bit 5",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), section 3.2.2 (To output resolution)"
+       },
+       {
+        "name": "sensor position and lead length",
+        "required": "off the IO board on a sensor board JLCPCB assembles (parts with LCSC numbers), at the end of a 2 m lead to the IO board's infrared connector",
+        "datasheet": "TO-39 with an LCSC number and JLCPCB stock, so it can sit on the JLCPCB-assembled sensor board. SMBus 10 to 100 kHz, SDA and SCL 10 pF each; the datasheet gives no lead length, and the 2 m lead's capacitance is not read: P5 checks it against the 400 pF of UM10204 Table 11. The datasheet also offers a push-pull PWM output (10-bit, 1.024 ms period) on the same pin",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), sections 3.2.2, 4.1; I2C-bus specification UM10204 Rev. 7.0 (1 October 2021), Table 11, https://www.nxp.com/docs/en/user-guide/UM10204.pdf, read 2026-09-29T02:52:27Z"
+       },
+       {
+        "name": "object temperature range",
+        "required": "0 to 200 °C",
+        "datasheet": "factory calibrated -70 to +380 °C object",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), page 1"
+       },
+       {
+        "name": "accuracy",
+        "required": "±3 °C over 0 to 200 °C object at 0 to 85 °C sensor ambient, object filling the field of view, the motor surface's emissivity error excluded",
+        "datasheet": "Figure 21, Ta 0 to 85 °C: ±0.5 °C (To 0 to 60 °C, Ta to 50 °C), ±1 °C to To 120 °C, ±2 °C to To 180 °C, ±3 °C for To 180 to 240 °C; so ±3 °C at most over To 0 to 200 °C. Valid under settled isothermal conditions and with the object filling the FOV (section 4.3.1)",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), section 4.3.2, Figure 21 (read from the page image), section 4.3.1"
+       },
+       {
+        "name": "field of view",
+        "required": "35° full field of view (a spot of about 16 mm at 25 mm from the motor)",
+        "datasheet": "35° (BCC, Table 19)",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), Table 19"
+       },
+       {
+        "name": "reading interval",
+        "required": "a new reading at least every 2,000 ms (0.5 Hz)",
+        "datasheet": "settling time 0.14 s at the factory filter setting for ACC, BCC and DCC (Table 12)",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), Table 12"
+       },
+       {
+        "name": "sensor ambient range",
+        "required": "0 to 85 °C",
+        "datasheet": "operating ambient -40 to +85 °C (ESF type)",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), Table 3 Absolute Maximum Ratings"
+       },
+       {
+        "name": "3.3 V supply and logic",
+        "required": "a 3.3 V supply; every signal that reaches an RP2354B pin at 3.3 V logic",
+        "datasheet": "Bxx/Dxx: VDD 2.6 to 3.6 V (3.0 V typical); SDA/SCL input high VDD - 0.1 V min, input low 0.6 V max; open-drain SMBus at 10 to 100 kHz, address 0x5A (EEPROM-programmable). The pull-ups sit at the sensor's own supply so the high level reaches VDD - 0.1 V",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), Tables 6 and 7 (3.2.2 MLX90614Bxx and MLX90614Dxx)"
+       }
+      ],
+      "jlcpcb": "stockCount 311; canPresaleNumber 308; componentLibraryType expand; price 8.8791 at the 1-piece break, which covers a need of 5 (currency not in the reading); read 2026-09-29T02:47:18Z, vendors.py jlcpcb C7501763 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match, maker label 'Melexis')",
+      "digikey": "stock_available 933; manufacturer lead time 12 weeks; ProductStatus Active; read 2026-09-29T02:47:40Z, vendors.py digikey MLX90614ESF-BCC-000-TU (https://api.digikey.com/products/v4/search/MLX90614ESF-BCC-000-TU/productdetails)",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; threshold max(5 x 5, 50) = 50 (S4); stockCount 311 >= 50 and canPresaleNumber 308 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "Active: Digi-Key ProductStatus, the status for Melexis parts (owner, 2026-09-27), discontinued false, end_of_life false, read 2026-09-29T02:47:40Z; longevity: no Melexis page read (Melexis pages refused every client on 2026-09-27); first datasheet date not read (the copy is Datasheet Rev 021, 02-Jun-2026, with no revision history); notices: not read; distributor: Digi-Key Active; the JLCPCB API row carries no status field",
+      "second_source": "second vendor: Digi-Key stock_available 933 >= gate 50, read 2026-09-29T02:47:40Z (rule 5)",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "MLX90614ESF-DCC-000-TU (C3663116): same TO-39 pinout, SMBus address 0x5A, registers and 35° view; medical accuracy class"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Meets every requirement value: 35° view, ±3 °C at most over 0 to 200 °C at 0 to 85 °C ambient, 3.3 V, thermal-gradient compensation on (xCx). Stocked at both vendors (JLCPCB 311, Digi-Key 933). Its SMBus runs at 100 kHz at most over the 2 m lead, whose capacitance is not read."
+     },
+     {
+      "rank": 2,
+      "part": "MLX90614ESF-DCC-000-TU",
+      "maker": "Melexis (datasheet DOC#3901090614); S1 Melexis; JLCPCB label Melexis",
+      "lcsc": "C3663116",
+      "package": "TO-39, 4 leads",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: F5 gives 1 infrared channel; 1 on each sensor board (V249), 5 for 5 boards (S7)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channel count",
+        "required": "1 infrared channel",
+        "datasheet": "one single-zone infrared thermometer (object and ambient temperatures), one device for the channel",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), page 1, section 2"
+       },
+       {
+        "name": "register channel",
+        "required": "the infrared reading fills new BENCH register 13 (0.1 °C, signed) and valid bit 5",
+        "datasheet": "object temperature in RAM over SMBus at 0.02 °C resolution; firmware writes register 13 in 0.1 °C and sets bit 5",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), section 3.2.2 (To output resolution)"
+       },
+       {
+        "name": "sensor position and lead length",
+        "required": "off the IO board on a sensor board JLCPCB assembles (parts with LCSC numbers), at the end of a 2 m lead to the IO board's infrared connector",
+        "datasheet": "TO-39 with an LCSC number and JLCPCB stock, so it can sit on the JLCPCB-assembled sensor board. SMBus 10 to 100 kHz, SDA and SCL 10 pF each; the datasheet gives no lead length, and the 2 m lead's capacitance is not read: P5 checks it against the 400 pF of UM10204 Table 11. The datasheet also offers a push-pull PWM output (10-bit, 1.024 ms period) on the same pin",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), sections 3.2.2, 4.1; I2C-bus specification UM10204 Rev. 7.0 (1 October 2021), Table 11, https://www.nxp.com/docs/en/user-guide/UM10204.pdf, read 2026-09-29T02:52:27Z"
+       },
+       {
+        "name": "object temperature range",
+        "required": "0 to 200 °C",
+        "datasheet": "factory calibrated -70 to +380 °C object",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), page 1"
+       },
+       {
+        "name": "accuracy",
+        "required": "±3 °C over 0 to 200 °C object at 0 to 85 °C sensor ambient, object filling the field of view, the motor surface's emissivity error excluded",
+        "datasheet": "Figure 21, Ta 0 to 85 °C: ±0.5 °C (To 0 to 60 °C, Ta to 50 °C), ±1 °C to To 120 °C, ±2 °C to To 180 °C, ±3 °C for To 180 to 240 °C; so ±3 °C at most over To 0 to 200 °C. Valid under settled isothermal conditions and with the object filling the FOV (section 4.3.1). The D (medical) class adds ±0.2 °C in Ta 16 to 40 °C, To 22 to 40 °C only; elsewhere Figure 21 applies (section 4.3.3)",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), section 4.3.2, Figure 21 (read from the page image), section 4.3.1"
+       },
+       {
+        "name": "field of view",
+        "required": "35° full field of view (a spot of about 16 mm at 25 mm from the motor)",
+        "datasheet": "35° (DCC, Table 19)",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), Table 19"
+       },
+       {
+        "name": "reading interval",
+        "required": "a new reading at least every 2,000 ms (0.5 Hz)",
+        "datasheet": "settling time 0.14 s at the factory filter setting for ACC, BCC and DCC (Table 12)",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), Table 12"
+       },
+       {
+        "name": "sensor ambient range",
+        "required": "0 to 85 °C",
+        "datasheet": "operating ambient -40 to +85 °C (ESF type)",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), Table 3 Absolute Maximum Ratings"
+       },
+       {
+        "name": "3.3 V supply and logic",
+        "required": "a 3.3 V supply; every signal that reaches an RP2354B pin at 3.3 V logic",
+        "datasheet": "Bxx/Dxx: VDD 2.6 to 3.6 V (3.0 V typical); SDA/SCL input high VDD - 0.1 V min, input low 0.6 V max; open-drain SMBus at 10 to 100 kHz, address 0x5A (EEPROM-programmable). The pull-ups sit at the sensor's own supply so the high level reaches VDD - 0.1 V",
+        "pass": true,
+        "source": "MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z), Tables 6 and 7 (3.2.2 MLX90614Bxx and MLX90614Dxx)"
+       }
+      ],
+      "jlcpcb": "stockCount 583; canPresaleNumber 564; componentLibraryType expand; price 8.5737 at the 1-piece break, which covers a need of 5 (currency not in the reading); read 2026-09-29T02:47:18Z, vendors.py jlcpcb C3663116 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match, maker label 'Melexis')",
+      "digikey": "stock_available 178; manufacturer lead time 12 weeks; ProductStatus Active; read 2026-09-29T02:47:41Z, vendors.py digikey MLX90614ESF-DCC-000-TU (https://api.digikey.com/products/v4/search/MLX90614ESF-DCC-000-TU/productdetails)",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; threshold max(5 x 5, 50) = 50 (S4); stockCount 583 >= 50 and canPresaleNumber 564 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "Active: Digi-Key ProductStatus (Melexis status source), discontinued false, end_of_life false, read 2026-09-29T02:47:41Z; longevity: not read; first datasheet date not read; notices: not read; distributor: Digi-Key Active; the JLCPCB API row carries no status field",
+      "second_source": "second vendor: Digi-Key stock_available 178 >= gate 50, read 2026-09-29T02:47:41Z (rule 5)",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "MLX90614ESF-BCC-000-TU (C7501763)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The same optics and interface as rank 1; its medical accuracy applies only near body temperature, so it adds nothing at a motor. Ranked 2nd for less Digi-Key stock (178 against 933)."
+     }
+    ],
+    "dropped": [
+     {
+      "part": "MLX90614ESF-BAA-000-TU (C490604)",
+      "maker": "Melexis",
+      "reason": "field of view 90° (xAA, Table 19) against 35° (V241). MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z)"
+     },
+     {
+      "part": "MLX90614ESF-DCI-000-TU (C17444569)",
+      "maker": "Melexis",
+      "reason": "field of view 5° (xCI, Table 19) against 35° (V241); the datasheet warns that small-FOV types are more sensitive to package thermal gradients (section 2). MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z)"
+     },
+     {
+      "part": "MLX90614ESF-BCF, -BCH, -BCI, -BCK, -ACF and other narrow-view types",
+      "maker": "Melexis",
+      "reason": "fields of view 10°, 10°, 5° and 13° (Table 19) against 35° (V241); stock 0 to 3 in the 2026-09-14 jlcparts copy"
+     },
+     {
+      "part": "MLX90614ESF-AAA, -ACC, -ACA, KSF-AAA, KSF-ACC and other Axx types",
+      "maker": "Melexis",
+      "reason": "5 V types: VDD 4.5 to 5.5 V (Table 4), not the 3.3 V supply (IOBoard.md:54). MLX90614 Datasheet Rev 021 (read 2026-09-29T02:40:44Z)"
+     },
+     {
+      "part": "MLX90640ESF-BAB-000-TU (C488251)",
+      "maker": "Melexis",
+      "reason": "field of view 55° x 35° (option xxB, MLX90640 datasheet revision 12, read by P3 in T4 at 2026-09-28T15:36:52Z), not 35° (V241); JLCPCB 184, presale 183 (02:47:19Z)"
+     },
+     {
+      "part": "MLX90640ESF-BAA-000-TU (C17380659), MLX90641ESF-BCB-000-TU (C3663386)",
+      "maker": "Melexis",
+      "reason": "field of view 110° for the BAA (P3, T4) against 35°; JLCPCB stock 0 (presale -3) and 1 at the P3 reading of 2026-09-28T15:33:37Z and 15:33:40Z, under 50; not re-read"
+     },
+     {
+      "part": "MLX90632SLD-DCB-000-RE (C7541116), MLX90632SLD-BCB-000-RE (C5382520)",
+      "maker": "Melexis",
+      "reason": "the medical version is calibrated for 35 to 42 °C with an extended range to 100 °C, under 200 °C (V239); the standard version held 4 at JLCPCB on 2026-09-28T15:10:01Z (T4 P2 reading, not re-read); the standard version has a 50° view, not 35° (T4 P2, datasheet revision 13)"
+     },
+     {
+      "part": "MLX90615SSG-DAA-000-TU (C93959)",
+      "maker": "Melexis",
+      "reason": "Digi-Key ProductStatus Obsolete at the T4 P2 reading of 2026-09-28T15:11:08Z (lifecycle gate); not re-read"
+     },
+     {
+      "part": "MLX90614ESF-BAA-000-SP (C3663353)",
+      "maker": "Melexis",
+      "reason": "90° view, as the BAA-TU"
+     },
+     {
+      "part": "TPIS 1T/1S rows",
+      "maker": "maker not stated in jlcparts; the TPIS series is not from an S1 maker",
+      "reason": "maker not on the S1 list (rule 2); stock 0 in the 2026-09-14 copy"
+     }
+    ]
+   },
+   {
+    "function": "external I2C ports",
+    "requirements": [
+     {
+      "name": "ports",
+      "value": "2 ports at 3.3 V, Qwiic (JST SH, 4 pins)",
+      "source": "Q7, hardware/docs/Research.md:545 (owner, 2026-09-25); hardware/docs/IOBoard.md:74, :463"
+     },
+     {
+      "name": "clock rate",
+      "value": "400 kHz",
+      "source": "V243 found value"
+     },
+     {
+      "name": "cable length and bus load",
+      "value": "1 m of cable from a port to its device; each bus line at or under 400 pF at 400 kHz",
+      "source": "V244 found value; UM10204 Rev. 7.0 Table 11"
+     },
+     {
+      "name": "address separation",
+      "value": "a device on a port free to use 0x40, 0x41, 0x44 and 0x45, so each port sits on a segment switched off from the port monitors (0x40 to 0x43) and the INA238 (0x44 and up)",
+      "source": "V246 found value; hardware/docs/IOBoard.md:464"
+     },
+     {
+      "name": "port supply current",
+      "value": "226 mA per port on the 3.3 V pin, 452 mA for both, carried outside the switch",
+      "source": "V245 found value"
+     },
+     {
+      "name": "hot plug",
+      "value": "yes: a device plugged in or out while powered leaves the other port and the coprocessor's internal buses running; a transfer on the plugged port may fail and is retried",
+      "source": "V253, hardware/docs/Research.md:813 (owner, 2026-09-28)"
+     },
+     {
+      "name": "ambient range",
+      "value": "0 to 50 °C",
+      "source": "V7, hardware/docs/Research.md:567 (owner, 2026-09-28)"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "TCA9548APWR",
+      "maker": "Texas Instruments (datasheet SCPS207H, https://www.ti.com/lit/ds/symlink/tca9548a.pdf); S1 Texas Instruments",
+      "lcsc": "C130026",
+      "package": "TSSOP-24",
+      "placements": 1,
+      "placements_basis": "one switch of 2 or more channels carries both ports of Q7; 1 per board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "ports",
+        "required": "2 ports at 3.3 V, Qwiic (JST SH, 4 pins)",
+        "datasheet": "8 bidirectional channels, each pulled up to its own rail, so a channel carries 3.3 V; VCC 1.65 to 5.5 V",
+        "pass": true,
+        "source": "SCPS207H (read 2026-09-29T02:45:20Z), Features, pin table"
+       },
+       {
+        "name": "clock rate",
+        "required": "400 kHz",
+        "datasheet": "0 to 400 kHz clock frequency",
+        "pass": true,
+        "source": "SCPS207H (read 2026-09-29T02:45:20Z), Features, timing table"
+       },
+       {
+        "name": "cable length and bus load",
+        "required": "1 m of cable from a port to its device; each bus line at or under 400 pF at 400 kHz",
+        "datasheet": "Cb 400 pF max for each bus line; the on-state channel adds its load to the upstream bus; the cable's capacitance a metre is not read (P5)",
+        "pass": true,
+        "source": "SCPS207H (read 2026-09-29T02:45:20Z), timing table"
+       },
+       {
+        "name": "address separation",
+        "required": "a device on a port free to use 0x40, 0x41, 0x44 and 0x45, so each port sits on a segment switched off from the port monitors (0x40 to 0x43) and the INA238 (0x44 and up)",
+        "datasheet": "channels selected in any combination by one control register, all deselected at power-up; its own address 1110 A2 A1 A0, 0x70 to 0x77 (Table 7-1), clear of 0x40 to 0x4F; 8 channels let the port monitors and INA238 sit behind other channels of the same bus (P5 address map)",
+        "pass": true,
+        "source": "SCPS207H (read 2026-09-29T02:45:20Z), Description, device address"
+       },
+       {
+        "name": "port supply current",
+        "required": "226 mA per port on the 3.3 V pin, 452 mA for both, carried outside the switch",
+        "datasheet": "the switch passes SDA and SCL only; the 3.3 V pin is supplied outside it",
+        "pass": true,
+        "source": "SCPS207H (read 2026-09-29T02:45:20Z), pin table"
+       },
+       {
+        "name": "hot plug",
+        "required": "yes: a device plugged in or out while powered leaves the other port and the coprocessor's internal buses running; a transfer on the plugged port may fail and is retried",
+        "datasheet": "'Supports hot insertion'; active-low RESET input: the system controller can reset the TCA9548A in the event of a time-out, for example if a downstream I2C bus is stuck low, and RESET deselects all channels. With each port on its own channel, a device plugged into a deselected port touches no running bus; a fault on the selected port is cleared by RESET, which deselects every channel, and the transfer is retried",
+        "pass": true,
+        "source": "SCPS207H (read 2026-09-29T02:45:20Z), Features, Description, RESET"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 °C",
+        "datasheet": "operating free-air -40 to +85 °C at VCC 1.65 to 5.5 V (to +125 °C at 1.65 to 3.6 V)",
+        "pass": true,
+        "source": "SCPS207H (read 2026-09-29T02:45:20Z), Recommended Operating Conditions"
+       }
+      ],
+      "jlcpcb": "stockCount 39,690; canPresaleNumber 39,348; componentLibraryType expand; price 0.835 at the 1-piece break, which covers a need of 5 (currency not in the reading); read 2026-09-29T02:47:19Z, vendors.py jlcpcb C130026 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match, maker label 'Texas Instruments')",
+      "digikey": "stock_available 0; manufacturer lead time 16 weeks; ProductStatus Active; read 2026-09-29T02:47:43Z, vendors.py digikey TCA9548APWR (https://api.digikey.com/products/v4/search/TCA9548APWR/productdetails)",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; threshold max(5 x 5, 50) = 50 (S4); stockCount 39,690 >= 50 and canPresaleNumber 39,348 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "ACTIVE (TI product page https://www.ti.com/product/TCA9548A, marketingStatusDescription for OPN TCA9548APWR, read 2026-09-29T02:46:38Z); longevity: no TI programme page read, none recorded; first datasheet: SCPS207, May 2012, over 12 months; notices: TI PCN listing not read; distributor: Digi-Key Active, discontinued false, end_of_life false (02:47:43Z); the JLCPCB API row carries no status field",
+      "second_source": "alternate: PCA9548APWR (C295762, Texas Instruments): the same TSSOP-24 pin table (A0 1, A1 2, RESET 3, SD0 to SC3 4 to 11, GND 12, SD4 to SC7 13 to 20, A2 21, SCL 22, SDA 23, VCC 24), the same 1110 A2 A1 A0 address and one control register, VCC 2.3 to 5.5 V covers 3.3 V; passes rules 1 to 4 (JLCPCB 5,100, presale 5,084 at 02:47:20Z). Digi-Key holds 0 TCA9548APWR (02:47:43Z), so the second-vendor route fails",
+      "second_source_route": "alternate",
+      "second_source_part": "PCA9548APWR",
+      "alternates": [
+       "PCA9548APWR (C295762, Texas Instruments)",
+       "PCA9548APW,118 (C21198, NXP): the same pin table and address"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Meets every requirement value: 8 channels at 400 kHz on 3.3 V with hot insertion and a RESET that clears a stuck port, and room behind other channels for the port monitors. The most JLCPCB stock of the switches (39,690); Digi-Key holds 0, so its second source is the pin- and register-compatible TI PCA9548A."
+     },
+     {
+      "rank": 2,
+      "part": "PCA9548APW,118",
+      "maker": "NXP (datasheet PCA9548A Rev. 5.1, https://www.nxp.com/docs/en/data-sheet/PCA9548A.pdf); S1 NXP; JLCPCB label NXP Semicon",
+      "lcsc": "C21198",
+      "package": "TSSOP-24",
+      "placements": 1,
+      "placements_basis": "one switch carries both ports; 1 per board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "ports",
+        "required": "2 ports at 3.3 V, Qwiic (JST SH, 4 pins)",
+        "datasheet": "8 bidirectional channels, each pulled up to its own rail, so a channel carries 3.3 V; operating supply 2.3 to 5.5 V",
+        "pass": true,
+        "source": "NXP PCA9548A Rev. 5.1 (read 2026-09-29T02:45:21Z), Features, pin table"
+       },
+       {
+        "name": "clock rate",
+        "required": "400 kHz",
+        "datasheet": "0 to 400 kHz clock frequency",
+        "pass": true,
+        "source": "NXP PCA9548A Rev. 5.1 (read 2026-09-29T02:45:21Z), Features, timing table"
+       },
+       {
+        "name": "cable length and bus load",
+        "required": "1 m of cable from a port to its device; each bus line at or under 400 pF at 400 kHz",
+        "datasheet": "Cb 400 pF max for each bus line; the on-state channel adds its load to the upstream bus; the cable's capacitance a metre is not read (P5)",
+        "pass": true,
+        "source": "NXP PCA9548A Rev. 5.1 (read 2026-09-29T02:45:21Z), timing table"
+       },
+       {
+        "name": "address separation",
+        "required": "a device on a port free to use 0x40, 0x41, 0x44 and 0x45, so each port sits on a segment switched off from the port monitors (0x40 to 0x43) and the INA238 (0x44 and up)",
+        "datasheet": "channels selected in any combination by one control register, all deselected at power-up; its own address 1110 A2 A1 A0, 0x70 to 0x77 (Fig 5 slave address), clear of 0x40 to 0x4F; 8 channels let the port monitors and INA238 sit behind other channels of the same bus (P5 address map)",
+        "pass": true,
+        "source": "NXP PCA9548A Rev. 5.1 (read 2026-09-29T02:45:21Z), Description, device address"
+       },
+       {
+        "name": "port supply current",
+        "required": "226 mA per port on the 3.3 V pin, 452 mA for both, carried outside the switch",
+        "datasheet": "the switch passes SDA and SCL only; the 3.3 V pin is supplied outside it",
+        "pass": true,
+        "source": "NXP PCA9548A Rev. 5.1 (read 2026-09-29T02:45:21Z), pin table"
+       },
+       {
+        "name": "hot plug",
+        "required": "yes: a device plugged in or out while powered leaves the other port and the coprocessor's internal buses running; a transfer on the plugged port may fail and is retried",
+        "datasheet": "'Supports hot insertion', 'No glitch on power-up'; active LOW RESET 'allows the PCA9548A to recover from a situation where one of the downstream I2C-buses is stuck in a LOW state'. With each port on its own channel, a device plugged into a deselected port touches no running bus; a fault on the selected port is cleared by RESET, which deselects every channel, and the transfer is retried",
+        "pass": true,
+        "source": "NXP PCA9548A Rev. 5.1 (read 2026-09-29T02:45:21Z), Features, Description, RESET"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 °C",
+        "datasheet": "Tamb -40 to +85 °C (ordering information)",
+        "pass": true,
+        "source": "NXP PCA9548A Rev. 5.1 (read 2026-09-29T02:45:21Z), ordering information"
+       }
+      ],
+      "jlcpcb": "stockCount 24,771; canPresaleNumber 24,739; componentLibraryType expand; price 0.8951 at the 1-piece break, which covers a need of 5 (currency not in the reading); read 2026-09-29T02:47:20Z, vendors.py jlcpcb C21198 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match, maker label 'NXP Semicon')",
+      "digikey": "NXP USA Inc. row: stock_available 23,508; manufacturer lead time 30 weeks; ProductStatus Active; discontinued false; read 2026-09-29T02:47:48Z, vendors.py digikey PCA9548APW,118 (duplicate products, read by keyword search, https://api.digikey.com/products/v4/search/keyword); a second row of the same number, maker Flip Electronics, 5,000, is another seller's listing",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; threshold max(5 x 5, 50) = 50 (S4); stockCount 24,771 >= 50 and canPresaleNumber 24,739 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "Active (NXP product page https://www.nxp.com/products/PCA9548A, which redirects to .../eight-channel-ic-bus-switch-with-reset:PCA9548A, 'Active. Fully qualified to meet NXP quality and reliability requirements', read 2026-09-29T02:46:38Z); longevity: NXP longevity programme page not read; first datasheet date not read (the copy is Rev. 5.1 of 1 October 2015, over 12 months on the market); notices: NXP PCN listing not read; distributor: Digi-Key Active (02:47:48Z); the JLCPCB API row carries no status field",
+      "second_source": "second vendor: Digi-Key stock_available 23,508 (NXP row) >= gate 50, read 2026-09-29T02:47:48Z (rule 5)",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "TCA9548APWR (C130026)",
+       "PCA9548APWR (C295762)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The same function, pin table and address as rank 1, Active at NXP and stocked at both vendors (JLCPCB 24,771; Digi-Key 23,508). Below the TCA9548A for less JLCPCB stock and a 2.3 V supply floor."
+     },
+     {
+      "rank": 3,
+      "part": "PCA9548APWR",
+      "maker": "Texas Instruments (datasheet SCPS143G, https://www.ti.com/lit/ds/symlink/pca9548a.pdf); S1 Texas Instruments",
+      "lcsc": "C295762",
+      "package": "TSSOP-24",
+      "placements": 1,
+      "placements_basis": "one switch carries both ports; 1 per board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "ports",
+        "required": "2 ports at 3.3 V, Qwiic (JST SH, 4 pins)",
+        "datasheet": "8 bidirectional channels, each pulled up to its own rail, so a channel carries 3.3 V; VCC 2.3 to 5.5 V",
+        "pass": true,
+        "source": "SCPS143G (read 2026-09-29T02:45:21Z), Features, pin table"
+       },
+       {
+        "name": "clock rate",
+        "required": "400 kHz",
+        "datasheet": "0 to 400 kHz clock frequency",
+        "pass": true,
+        "source": "SCPS143G (read 2026-09-29T02:45:21Z), Features, timing table"
+       },
+       {
+        "name": "cable length and bus load",
+        "required": "1 m of cable from a port to its device; each bus line at or under 400 pF at 400 kHz",
+        "datasheet": "Cb 400 pF max for each bus line; the on-state channel adds its load to the upstream bus; the cable's capacitance a metre is not read (P5)",
+        "pass": true,
+        "source": "SCPS143G (read 2026-09-29T02:45:21Z), timing table"
+       },
+       {
+        "name": "address separation",
+        "required": "a device on a port free to use 0x40, 0x41, 0x44 and 0x45, so each port sits on a segment switched off from the port monitors (0x40 to 0x43) and the INA238 (0x44 and up)",
+        "datasheet": "channels selected in any combination by one control register, all deselected at power-up; its own address 1110 A2 A1 A0, 0x70 to 0x77 (Table 8-1), clear of 0x40 to 0x4F; 8 channels let the port monitors and INA238 sit behind other channels of the same bus (P5 address map)",
+        "pass": true,
+        "source": "SCPS143G (read 2026-09-29T02:45:21Z), Description, device address"
+       },
+       {
+        "name": "port supply current",
+        "required": "226 mA per port on the 3.3 V pin, 452 mA for both, carried outside the switch",
+        "datasheet": "the switch passes SDA and SCL only; the 3.3 V pin is supplied outside it",
+        "pass": true,
+        "source": "SCPS143G (read 2026-09-29T02:45:21Z), pin table"
+       },
+       {
+        "name": "hot plug",
+        "required": "yes: a device plugged in or out while powered leaves the other port and the coprocessor's internal buses running; a transfer on the plugged port may fail and is retried",
+        "datasheet": "'Supports Hot Insertion'; active-low RESET: the datasheet states that asserting RESET deselects all channels and allows recovery when a downstream I2C bus is stuck low; the RESET erratum (section 8.4.1.1) asks that RESET stay at or below VCC. With each port on its own channel, a device plugged into a deselected port touches no running bus; a fault on the selected port is cleared by RESET, which deselects every channel, and the transfer is retried",
+        "pass": true,
+        "source": "SCPS143G (read 2026-09-29T02:45:21Z), Features, Description, RESET"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 °C",
+        "datasheet": "operating free-air -40 to +85 °C",
+        "pass": true,
+        "source": "SCPS143G (read 2026-09-29T02:45:21Z), Recommended Operating Conditions"
+       }
+      ],
+      "jlcpcb": "stockCount 5,100; canPresaleNumber 5,084; componentLibraryType expand; price 1.2135 at the 1-piece break, which covers a need of 5 (currency not in the reading); read 2026-09-29T02:47:20Z, vendors.py jlcpcb C295762 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match, maker label 'Texas Instruments')",
+      "digikey": "stock_available 13,790; manufacturer lead time 16 weeks; ProductStatus Not For New Designs; read 2026-09-29T02:47:45Z, vendors.py digikey PCA9548APWR (https://api.digikey.com/products/v4/search/PCA9548APWR/productdetails)",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; threshold max(5 x 5, 50) = 50 (S4); stockCount 5,100 >= 50 and canPresaleNumber 5,084 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "ACTIVE (TI product page https://www.ti.com/product/PCA9548A, OPN PCA9548APWR, read 2026-09-29T02:46:38Z). Disagreement written down: Digi-Key ProductStatus 'Not For New Designs' (02:47:45Z); the manufacturer's page is the status (Lifecycle check); another orderable on TI's page, PCA9548ADB, is listed for existing designs only. Longevity: not read; first datasheet June 2009; notices: not read; the JLCPCB API row carries no status field",
+      "second_source": "second vendor: Digi-Key stock_available 13,790 >= gate 50, read 2026-09-29T02:47:45Z (rule 5)",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "TCA9548APWR (C130026)",
+       "PCA9548APW,118 (C21198)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Pin- and register-compatible with rank 1 and its rule-5 alternate. Ranked 3rd for the least JLCPCB stock of the three (5,100) and Digi-Key's Not For New Designs, which disagrees with TI's ACTIVE."
+     }
+    ],
+    "dropped": [
+     {
+      "part": "TCA9546APWR (C201653), PCA9546APW,118 (C149507), PCA9546APWR (C400705)",
+      "maker": "Texas Instruments, NXP",
+      "reason": "not shortlisted: three survivors at most (owner, 2026-09-28); 4-channel switches that meet the values with 2 spare channels instead of 6 (JLCPCB 5,763 and 6,386 at 02:47:20Z)"
+     },
+     {
+      "part": "TCA9543APWR (C2653307), PCA9543ADR (C181521)",
+      "maker": "Texas Instruments",
+      "reason": "not shortlisted, three survivors at most: 2 channels, both taken by the ports, so the port monitors at 0x40 to 0x43 cannot share its upstream bus"
+     },
+     {
+      "part": "TCA4307DGKR, TCA4311ADGKR, TCA9511ADGKR, TCA9517ADGKR, TCA9617ADGKR, TCA9617BDGKR",
+      "maker": "Texas Instruments",
+      "reason": "not shortlisted, three survivors at most: one buffer and one enable line per port where one switch takes none (P3 and re-rank, T4)"
+     },
+     {
+      "part": "PI4MSD5V9548ALEX (C3001700) and its 4- and 2-channel parts",
+      "maker": "Diodes Incorporated",
+      "reason": "lifecycle not readable: the Diodes part page carried no status in its body (P3 and P4, T4, 2026-09-28); not re-read"
+     },
+     {
+      "part": "PCA9615DPZ (C3824272)",
+      "maker": "NXP",
+      "reason": "a differential extender that needs a PCA9615 at the far end, which a Qwiic device does not carry (Q7); not needed at 1 m (V244)"
+     },
+     {
+      "part": "LTC4316IDD#PBF (C688147)",
+      "maker": "Analog Devices",
+      "reason": "JLCPCB stockCount 0, presale -4 at the T4 P2 reading of 2026-09-28T15:10:11Z (rule 4); an address translator, which does not separate a port"
+     },
+     {
+      "part": "TCA9548ARGER (C555456)",
+      "maker": "Texas Instruments",
+      "reason": "the rank-1 part in VQFN-24; not listed twice"
+     },
+     {
+      "part": "P82B96DGKR, PCA9515ADP,118, PCA9517ADP,118",
+      "maker": "Texas Instruments, NXP",
+      "reason": "buffers and repeaters; the P82B96 has no enable pin and passes every address (P3, T4)"
+     }
+    ]
+   },
+   {
+    "function": "non-volatile store",
+    "requirements": [
+     {
+      "name": "capacity",
+      "value": "at least 792 bytes (2 records of 396 bytes)",
+      "source": "V247 found value (feeds Q8 only)"
+     },
+     {
+      "name": "saves",
+      "value": "at least 3,200,000 saves of one record",
+      "source": "V248 found value (feeds Q8 only)"
+     },
+     {
+      "name": "interface",
+      "value": "I²C FRAM or EEPROM",
+      "source": "Q8, hardware/docs/Research.md:841; hardware/docs/IOBoard.md:75, :115"
+     },
+     {
+      "name": "supply",
+      "value": "3.3 V",
+      "source": "hardware/docs/IOBoard.md:54"
+     },
+     {
+      "name": "ambient range",
+      "value": "0 to 50 °C",
+      "source": "V7, hardware/docs/Research.md:567"
+     },
+     {
+      "name": "address",
+      "value": "outside 0x40 to 0x4F, the port monitors' and INA238's addresses",
+      "source": "hardware/docs/IOBoard.md:464"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "MB85RC256VPNF-G-AMERE2",
+      "maker": "RAMXEED (datasheet DS501-00017-11v3-E, RAMXEED LIMITED, https://www.ramxeed.com/assets/images/products/datasheet/FeRAM/i3/MB85RC256V-DS11v3-E.pdf); counts as Fujitsu (S1, owner 2026-09-27); JLCPCB label RAMXEED/FUJITSU",
+      "lcsc": "C45273903",
+      "package": "SOP-8 (150 mil)",
+      "placements": 1,
+      "placements_basis": "one store for the output binding (Q8); 1 per board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "capacity",
+        "required": "at least 792 bytes (2 records of 396 bytes)",
+        "datasheet": "32,768 words x 8 bits: 32,768 bytes",
+        "pass": true,
+        "source": "DS501-00017-11v3-E (read 2026-09-29T02:45:22Z), page 1"
+       },
+       {
+        "name": "saves",
+        "required": "at least 3,200,000 saves of one record",
+        "datasheet": "read/write endurance 10^12 times a byte; writes need no programming wait",
+        "pass": true,
+        "source": "DS501-00017-11v3-E (read 2026-09-29T02:45:22Z), page 1"
+       },
+       {
+        "name": "interface",
+        "required": "I²C FRAM or EEPROM",
+        "datasheet": "I²C FeRAM, 1 MHz max",
+        "pass": true,
+        "source": "DS501-00017-11v3-E (read 2026-09-29T02:45:22Z), page 1"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V",
+        "datasheet": "2.7 to 5.5 V",
+        "pass": true,
+        "source": "DS501-00017-11v3-E (read 2026-09-29T02:45:22Z), page 1, Recommended Operating Conditions"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 °C",
+        "datasheet": "-40 to +85 °C (RAMXEED product list); retention 10 years at 85 °C, 95 years at 55 °C",
+        "pass": true,
+        "source": "DS501-00017-11v3-E (read 2026-09-29T02:45:22Z), page 1; https://www.ramxeed.com/products/feram/feram-products.html, read 2026-09-29T02:46:40Z"
+       },
+       {
+        "name": "address",
+        "required": "outside 0x40 to 0x4F, the port monitors' and INA238's addresses",
+        "datasheet": "device code fixed at 1010 plus A2 A1 A0: 0x50 to 0x57",
+        "pass": true,
+        "source": "DS501-00017-11v3-E (read 2026-09-29T02:45:22Z), device address word"
+       }
+      ],
+      "jlcpcb": "stockCount 6,523; canPresaleNumber 6,467; componentLibraryType expand; price 2.1605 at the 1-piece break, which covers a need of 5 (currency not in the reading); read 2026-09-29T02:47:21Z, vendors.py jlcpcb C45273903 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match, maker label 'RAMXEED/FUJITSU')",
+      "digikey": "stock_available 484; manufacturer lead time 30 weeks; ProductStatus Active; read 2026-09-29T02:47:50Z, vendors.py digikey MB85RC256VPNF-G-AMERE2 (https://api.digikey.com/products/v4/search/MB85RC256VPNF-G-AMERE2/productdetails)",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; threshold max(5 x 5, 50) = 50 (S4); stockCount 6,523 >= 50 and canPresaleNumber 6,467 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "MP (mass production) for MB85RC256VPNF-G-AMERE2 in RAMXEED's FeRAM product list (https://www.ramxeed.com/products/feram/feram-products.html, commented-out rows excluded, read 2026-09-29T02:46:40Z); longevity: not read; first datasheet date not read (edition 11v3); notices: not read; distributor: Digi-Key Active, discontinued false, end_of_life false (02:47:50Z); the JLCPCB API row carries no status field",
+      "second_source": "second vendor: Digi-Key stock_available 484 >= gate 50, read 2026-09-29T02:47:50Z (rule 5)",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "FM24W256-GTR (C66020, Infineon, 256 Kbit I²C FRAM, SOIC-8, 2.7 to 5.5 V; not qualified here)",
+       "MB85RC256VNPNF-G-AMERE2 (RAMXEED list: MP, -40 to +95 °C; not in the 2026-09-14 jlcparts copy, not qualified)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Q8's FRAM option: 41 times the capacity needed, 10^12 cycles a byte, no write wait, 1 MHz. Stocked at both vendors (JLCPCB 6,523; Digi-Key 484). A seed."
+     },
+     {
+      "rank": 2,
+      "part": "FM24CL64B-GTR",
+      "maker": "Infineon (Cypress datasheet 001-84458, https://www.infineon.com/dgdl/Infineon-FM24CL64B_64-Kbit_(8_K_8)_Serial_(I2C)_F-RAM-DataSheet-v12_00-EN.pdf?fileId=8ac78c8c7d0d8da4017d0ebdf13330fe); S1 Infineon; JLCPCB label Infineon/Cypress Semicon",
+      "lcsc": "C9829",
+      "package": "SOIC-8 (150 mil)",
+      "placements": 1,
+      "placements_basis": "one store (Q8); 1 per board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "capacity",
+        "required": "at least 792 bytes (2 records of 396 bytes)",
+        "datasheet": "8K x 8: 8,192 bytes",
+        "pass": true,
+        "source": "001-84458 Rev. *K (read 2026-09-29T02:45:24Z), page 1"
+       },
+       {
+        "name": "saves",
+        "required": "at least 3,200,000 saves of one record",
+        "datasheet": "10^14 read/writes; NoDelay writes",
+        "pass": true,
+        "source": "001-84458 Rev. *K (read 2026-09-29T02:45:24Z), page 1"
+       },
+       {
+        "name": "interface",
+        "required": "I²C FRAM or EEPROM",
+        "datasheet": "I²C F-RAM, up to 1 MHz",
+        "pass": true,
+        "source": "001-84458 Rev. *K (read 2026-09-29T02:45:24Z), page 1"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V",
+        "datasheet": "VDD 2.7 to 3.65 V, 3.3 V typical",
+        "pass": true,
+        "source": "001-84458 Rev. *K (read 2026-09-29T02:45:24Z), page 1, DC Electrical Characteristics"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 °C",
+        "datasheet": "industrial -40 to +85 °C; 151-year data retention",
+        "pass": true,
+        "source": "001-84458 Rev. *K (read 2026-09-29T02:45:24Z), Operating Range, page 1"
+       },
+       {
+        "name": "address",
+        "required": "outside 0x40 to 0x4F, the port monitors' and INA238's addresses",
+        "datasheet": "slave ID 1010b plus A2 to A0: 0x50 to 0x57",
+        "pass": true,
+        "source": "001-84458 Rev. *K (read 2026-09-29T02:45:24Z), Slave Address"
+       }
+      ],
+      "jlcpcb": "stockCount 22,907; canPresaleNumber 22,229; componentLibraryType expand; price 1.6293 at the 1-piece break, which covers a need of 5 (currency not in the reading); read 2026-09-29T02:47:21Z, vendors.py jlcpcb C9829 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match, maker label 'Infineon/Cypress Semicon')",
+      "digikey": "stock_available 23,793; manufacturer lead time 26 weeks; ProductStatus Active; read 2026-09-29T02:47:51Z, vendors.py digikey FM24CL64B-GTR (https://api.digikey.com/products/v4/search/FM24CL64B-GTR/productdetails)",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; threshold max(5 x 5, 50) = 50 (S4); stockCount 22,907 >= 50 and canPresaleNumber 22,229 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "active and preferred (Infineon part page https://www.infineon.com/part/FM24CL64B-GTR, Product Status, read 2026-09-29T02:46:42Z); longevity: not read; first datasheet 02/25/2013 (document 001-84458 rev **, 'New spec.'), over 12 months; notices: not read; distributor: Digi-Key Active (02:47:51Z); the JLCPCB API row carries no status field",
+      "second_source": "second vendor: Digi-Key stock_available 23,793 >= gate 50, read 2026-09-29T02:47:51Z (rule 5)",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "MB85RC64TAPNF-G-BDERE1 (C189804, RAMXEED, 64 Kbit I²C FRAM, SOP-8, 1.8 to 3.6 V; not qualified here)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "FRAM with 10 times the capacity needed, 10^14 cycles and the most FRAM stock at both vendors (JLCPCB 22,907; Digi-Key 23,793). Below the MB85RC256V for less capacity headroom and a 3.65 V supply ceiling."
+     },
+     {
+      "rank": 3,
+      "part": "M24256E-FMN6TP",
+      "maker": "STMicroelectronics (datasheet DS12687, https://www.st.com/resource/en/datasheet/m24256e-f.pdf); S1 STMicroelectronics",
+      "lcsc": "C5221744",
+      "package": "SO-8 (SO8N)",
+      "placements": 1,
+      "placements_basis": "one store (Q8); 1 per board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "capacity",
+        "required": "at least 792 bytes (2 records of 396 bytes)",
+        "datasheet": "256 Kbit, 32 Kbyte (32,768 bytes); 64-byte pages",
+        "pass": true,
+        "source": "DS12687 Rev 5 (read 2026-09-29T02:45:25Z), page 1"
+       },
+       {
+        "name": "saves",
+        "required": "at least 3,200,000 saves of one record",
+        "datasheet": "Ncycle 4,000,000 at TA <= 25 °C and 1,200,000 at 85 °C per group of four bytes (Table 12). A 396-byte record takes 7 pages; 32,768 / 448 bytes gives 73 record slots written in turn, so each page is written once per 73 saves: 73 x 1,200,000 = 87,600,000 saves on the 85 °C figure",
+        "pass": true,
+        "source": "DS12687 Rev 5 (read 2026-09-29T02:45:25Z), Table 12"
+       },
+       {
+        "name": "interface",
+        "required": "I²C FRAM or EEPROM",
+        "datasheet": "I²C EEPROM, 1 MHz (Fast-mode Plus); byte and page write within 5 ms (3.2 ms typical)",
+        "pass": true,
+        "source": "DS12687 Rev 5 (read 2026-09-29T02:45:25Z), page 1"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V",
+        "datasheet": "1.65 to 5.5 V",
+        "pass": true,
+        "source": "DS12687 Rev 5 (read 2026-09-29T02:45:25Z), page 1"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 °C",
+        "datasheet": "-40 to +85 °C; retention 200 years at 55 °C (Table 13)",
+        "pass": true,
+        "source": "DS12687 Rev 5 (read 2026-09-29T02:45:25Z), page 1, Table 13"
+       },
+       {
+        "name": "address",
+        "required": "outside 0x40 to 0x4F, the port monitors' and INA238's addresses",
+        "datasheet": "device select 1010 C2 C1 C0 from the configurable device address register (Table 5): 0x50 to 0x57; the preprogrammed -T0 to -T7 codes fix it at delivery (Table 4)",
+        "pass": true,
+        "source": "DS12687 Rev 5 (read 2026-09-29T02:45:25Z), Tables 4 and 5"
+       }
+      ],
+      "jlcpcb": "stockCount 125,256; canPresaleNumber 125,243; componentLibraryType expand; price 0.241 at the 1-piece break, which covers a need of 5 (currency not in the reading); read 2026-09-29T02:47:21Z, vendors.py jlcpcb C5221744 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match, maker label 'STMicroelectronics')",
+      "digikey": "stock_available 185; manufacturer lead time 26 weeks; ProductStatus Active; read 2026-09-29T02:47:53Z, vendors.py digikey M24256E-FMN6TP (https://api.digikey.com/products/v4/search/M24256E-FMN6TP/productdetails)",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; threshold max(5 x 5, 50) = 50 (S4); stockCount 125,256 >= 50 and canPresaleNumber 125,243 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "Active, 'Product is in volume production' (ST product page https://www.st.com/en/memories/m24256e-f.html, row M24256E-FMN6TP, read 2026-09-29T02:46:42Z); longevity: 'Available until: 01/2035' on that page; first datasheet: DS12687 Rev 1, initial release 01-Mar-2022, over 12 months; notices: ST PCN listing not read; distributor: Digi-Key Active, discontinued false, end_of_life false (02:47:53Z); the JLCPCB API row carries no status field",
+      "second_source": "second vendor: Digi-Key stock_available 185 >= gate 50, read 2026-09-29T02:47:53Z (rule 5)",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "AT24C256C-SSHL-T (C6482), CAT24C256WI-GT3 (C79987), 24LC256T-I/SN (C5458): 256 Kbit SOIC-8 EEPROMs with 64-byte pages and 1010 addressing whose 1,000,000-cycle endurance is stated at 25 °C only; not qualified as alternates"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Q8's EEPROM option: the only 256 Kbit EEPROM here with endurance stated at 85 °C, above V7's 50 °C, so its 87,600,000 rotated saves rest on a stated figure. Below the FRAMs: up to 5 ms busy per page, 7 pages a record, and the record rotated across the array."
+     }
+    ],
+    "dropped": [
+     {
+      "part": "FM24CL16B-GTR (C31082), MB85RC16PNF-G-AMERE2 (C46681954)",
+      "maker": "Infineon, RAMXEED",
+      "reason": "not shortlisted, three survivors at most (owner, 2026-09-28): 2,048 bytes, 5 records, and each takes all of 0x50 to 0x57; the MB85RC16 held 0 at Digi-Key at the T4 P3 reading (2026-09-28T15:35:05Z)"
+     },
+     {
+      "part": "AT24C256C-SSHL-T (C6482), CAT24C256WI-GT3 (C79987), 24LC256T-I/SN (C5458)",
+      "maker": "Microchip, onsemi",
+      "reason": "not shortlisted, three survivors at most: endurance 1,000,000 cycles is stated at 25 °C only (the CAT24C256 at 5 V, the 24LC256 at 5.5 V), so the 3,200,000 saves of V248 at up to 50 °C rest on no stated figure; JLCPCB 97,030, 65,351 and 25,391 (02:47:22Z to 02:47:23Z)"
+     },
+     {
+      "part": "M24C64-RMN6TP (C79988)",
+      "maker": "STMicroelectronics",
+      "reason": "not shortlisted, three survivors at most: the same 85 °C endurance, but 32-byte pages make a record 13 page writes and 19 slots give 22,800,000 saves (re-rank, T4); JLCPCB 175,682 (02:47:23Z)"
+     },
+     {
+      "part": "MB85RC16VPNF-G-JNN1ERE1 (C22044)",
+      "maker": "RAMXEED/Fujitsu",
+      "reason": "Digi-Key ProductStatus Obsolete at the T4 P2 reading of 2026-09-28T15:11:37Z (lifecycle gate); not re-read"
+     },
+     {
+      "part": "MB85RC04VPNF-G-JNERE1 (C8738), FM24CL04B-GTR (C914924), FM24C04B-GTR (C9826)",
+      "maker": "RAMXEED/Fujitsu, Infineon",
+      "reason": "4 Kbit, 512 bytes, under the 792 bytes of V247"
+     },
+     {
+      "part": "FM24C64B-GTR (C914923), FM24C16B-GTR (C66016)",
+      "maker": "Infineon",
+      "reason": "5 V parts, 4.5 to 5.5 V (jlcparts description), not 3.3 V"
+     },
+     {
+      "part": "MB85RC64TAPNF-G-BDERE1 (C189804), FM24W256-GTR (C66020), FM24V02A-GTR (C382041), FM24V10-GTR (C466851)",
+      "maker": "RAMXEED, Infineon",
+      "reason": "not shortlisted, three survivors at most"
+     },
+     {
+      "part": "FM24C16D, FM24C64D, FM24C256E and other FUDAN MICRO rows; AT24C16 (IDCHIP), AT24C32M/TR (HGSEMI), 24LC16BT (Tudi), 24LC64 (lingxingic)",
+      "maker": "FUDAN MICRO, IDCHIP, HGSEMI, Tudi, lingxingic",
+      "reason": "maker not on the S1 list (rule 2)"
+     },
+     {
+      "part": "MB85RC256V rows labelled 'JLCPCB Assembly'",
+      "maker": "JLCPCB Assembly",
+      "reason": "not a maker (rule 2)"
+     }
+    ]
+   }
+  ],
+  "report": [
+   {
+    "figure": "Q8 store candidate: MB85RC256VPNF-G-AMERE2",
+    "value": "FRAM, Q8 option FRAM, first-ranked. 32,768 bytes against 792 needed (V247); 10^12 read/writes a byte against 3,200,000 saves (V248); no programming wait. A 396-byte record with a 2-byte word address is (1 + 2 + 396) x 9 = 3,591 SCL cycles: 8.98 ms at 400 kHz, 3.59 ms at its 1 MHz maximum, with interrupts on and the core running from flash, so a save stops no CAN reception. The flash store's saves run with interrupts off: 3 ms page program and 400 ms sector erase maximum, packaged-part figures (IOBoard.md:116). Moving the binding off flash frees the store's 8,192 bytes of the 2 MB. 0x50 to 0x57 by A2 to A0; 2.7 to 5.5 V; retention 10 years at 85 °C, 95 years at 55 °C. JLCPCB 6,523 (02:47:21Z), Digi-Key 484 (02:47:50Z)",
+    "source": "MB85RC256V datasheet DS501-00017-11v3-E (RAMXEED LIMITED), https://www.ramxeed.com/assets/images/products/datasheet/FeRAM/i3/MB85RC256V-DS11v3-E.pdf, read 2026-09-29T02:45:22Z; checkout e13f5f6 hardware/docs/IOBoard.md:115-117"
+   },
+   {
+    "figure": "Q8 store candidate: FM24CL64B-GTR",
+    "value": "FRAM, Q8 option FRAM. 8,192 bytes; 10^14 read/writes; NoDelay writes; I²C to 1 MHz; a 396-byte record is 3,591 SCL cycles: 8.98 ms at 400 kHz, 3.59 ms at 1 MHz, interrupts on; 2.7 to 3.65 V; 0x50 to 0x57; 151-year retention. JLCPCB 22,907 (02:47:21Z), Digi-Key 23,793 (02:47:51Z)",
+    "source": "FM24CL64B datasheet 001-84458 Rev. *K (revised 5 December 2018), https://www.infineon.com/dgdl/Infineon-FM24CL64B_64-Kbit_(8_K_8)_Serial_(I2C)_F-RAM-DataSheet-v12_00-EN.pdf?fileId=8ac78c8c7d0d8da4017d0ebdf13330fe, read 2026-09-29T02:45:24Z"
+   },
+   {
+    "figure": "Q8 store candidate: M24256E-FMN6TP",
+    "value": "EEPROM, Q8 option EEPROM, first-ranked of that option. 32,768 bytes; 64-byte pages; endurance per 4-byte group 1,200,000 at 85 °C and 4,000,000 at 25 °C or below (50 °C not stated; the 85 °C figure is used). A 396-byte record is 7 page writes; 73 slots of 448 bytes written in turn give 87,600,000 saves. Each page write is (3 + 64) x 9 = 603 SCL cycles plus tW 5 ms max: at most 45.6 ms a save at 400 kHz, 39.2 ms at 1 MHz. During tW the part does not respond while the bus stays free for other devices, and interrupts stay on. Address 1010 C2 C1 C0 from its configurable register, 0x50 to 0x57; 1.65 to 5.5 V; retention 200 years at 55 °C; ST longevity to 01/2035. JLCPCB 125,256 (02:47:21Z), Digi-Key 185 (02:47:53Z)",
+    "source": "M24256E-F datasheet DS12687 Rev 5 (February 2025), https://www.st.com/resource/en/datasheet/m24256e-f.pdf, read 2026-09-29T02:45:25Z; https://www.st.com/en/memories/m24256e-f.html, read 2026-09-29T02:46:42Z"
+   },
+   {
+    "figure": "Q8 store candidate: ADS1220IPWR",
+    "value": "not applicable: a 24-bit ADC for the motor temperature thermocouple function, not a store",
+    "source": "ADS1220 datasheet SBAS501D (May 2013, revised May 2026), https://www.ti.com/lit/ds/symlink/ads1220.pdf, read 2026-09-29T02:40:44Z, page 1"
+   },
+   {
+    "figure": "Q8 store candidate: MCP9601-E/MX",
+    "value": "not applicable: a thermocouple EMF-to-temperature converter for the motor temperature thermocouple function, not a store",
+    "source": "MCP960X/L0X/RL0X datasheet DS20005426F, https://ww1.microchip.com/downloads/en/DeviceDoc/MCP960X-L0X-RL0X-Data-Sheet-20005426F.pdf, read 2026-09-29T02:40:43Z, page 1"
+   },
+   {
+    "figure": "Q8 store candidate: MLX90614ESF-BCC-000-TU",
+    "value": "not applicable: an infrared thermometer for the motor temperature infrared function, not a store",
+    "source": "MLX90614 datasheet DOC#3901090614, Datasheet Rev 021 (02-Jun-2026), https://www.melexis.com/-/media/files/documents/datasheets/mlx90614-datasheet-melexis.pdf, read 2026-09-29T02:40:44Z, page 1"
+   },
+   {
+    "figure": "Q8 store candidate: MLX90614ESF-DCC-000-TU",
+    "value": "not applicable: an infrared thermometer for the motor temperature infrared function, not a store",
+    "source": "MLX90614 datasheet DOC#3901090614, Datasheet Rev 021 (02-Jun-2026), https://www.melexis.com/-/media/files/documents/datasheets/mlx90614-datasheet-melexis.pdf, read 2026-09-29T02:40:44Z, page 1"
+   },
+   {
+    "figure": "Q8 store candidate: TCA9548APWR",
+    "value": "not applicable: an 8-channel I2C switch for the external I2C ports, not a store",
+    "source": "TCA9548A datasheet SCPS207H (May 2012, revised September 2024), https://www.ti.com/lit/ds/symlink/tca9548a.pdf, read 2026-09-29T02:45:20Z, page 1"
+   },
+   {
+    "figure": "Q8 store candidate: PCA9548APW,118",
+    "value": "not applicable: an 8-channel I2C switch for the external I2C ports, not a store",
+    "source": "PCA9548A product data sheet Rev. 5.1 (1 October 2015), https://www.nxp.com/docs/en/data-sheet/PCA9548A.pdf, read 2026-09-29T02:45:21Z, page 1"
+   },
+   {
+    "figure": "Q8 store candidate: PCA9548APWR",
+    "value": "not applicable: an 8-channel I2C switch for the external I2C ports, not a store",
+    "source": "PCA9548A datasheet SCPS143G (June 2009, revised March 2021), https://www.ti.com/lit/ds/symlink/pca9548a.pdf, read 2026-09-29T02:45:21Z, page 1"
+   },
+   {
+    "figure": "Q8 flash alternative for comparison",
+    "value": "the binding in the RP2354B's flash: 32 record slots of one 256-byte page in the last 2 sectors of 4,096 bytes; a save programs one page, 3 ms max, and one save in 16 needs a 4 kB sector erase, 400 ms max, both with interrupts off, so no CAN frame is collected for their length; about 3,200,000 saves at 100,000 cycles a sector. All are packaged W25Q16JV figures as the page states them; the die's are not known (R1)",
+    "source": "checkout e13f5f6: hardware/docs/IOBoard.md:115-117, read 2026-09-29T02:52:20Z"
+   },
+   {
+    "figure": "external port supply load for R5 and P5",
+    "value": "2 ports x 226 mA = 452 mA on the 3.3 V rail, from SparkFun's Qwiic cable limit (V245); carried outside the I2C switch",
+    "source": "https://www.sparkfun.com/qwiic, read 2026-09-29T02:45:09Z"
+   },
+   {
+    "figure": "thermocouple accuracy reading: MAX31856MUD+T",
+    "value": "dropped on V235 (±2 °C): its 'Full-Scale and INL Error' of ±0.15 %FS (TA -20 to +85 °C) on the ±78.125 mV range bounds the error at ±117 µV, ±2.84 °C at 41.276 µV/°C, before offset (±11.7 µV) and cold junction (±0.7 °C): up to ±3.95 °C at 200 °C. Taken as a share of the reading the total is ±1.41 °C. The datasheet does not separate gain error from INL, so the re-rank or P4 may rule on the reading",
+    "source": "MAX31856 datasheet 19-7534 Rev 0 (2/15), https://www.analog.com/media/en/technical-documentation/data-sheets/MAX31856.pdf (vendors.py fetch --client safari), read 2026-09-29T02:40:42Z, Electrical Characteristics and Note 7"
+   },
+   {
+    "figure": "thermocouple converter bus for P5",
+    "value": "ADS1220IPWR: SPI, one chip select, up to 2,000 samples/s; MCP9601-E/MX: I2C at 10 to 100 kHz, address 0x60 to 0x67 by its ADDR pin, which holds a shared bus to Standard-mode",
+    "source": "ADS1220 datasheet SBAS501D (May 2013, revised May 2026), https://www.ti.com/lit/ds/symlink/ads1220.pdf, read 2026-09-29T02:40:44Z; MCP960X/L0X/RL0X datasheet DS20005426F, https://ww1.microchip.com/downloads/en/DeviceDoc/MCP960X-L0X-RL0X-Data-Sheet-20005426F.pdf, read 2026-09-29T02:40:43Z"
+   },
+   {
+    "figure": "infrared sensor bus for P5",
+    "value": "MLX90614ESF-BCC-000-TU and -DCC-000-TU: SMBus at 10 to 100 kHz, address 0x5A (EEPROM-programmable), 10 pF on SDA and on SCL, over a 2 m lead (V238) whose capacitance is not read; input high at VDD - 0.1 V minimum",
+    "source": "MLX90614 datasheet DOC#3901090614, Datasheet Rev 021 (02-Jun-2026), https://www.melexis.com/-/media/files/documents/datasheets/mlx90614-datasheet-melexis.pdf, read 2026-09-29T02:40:44Z, section 3.2.2"
+   }
+  ]
+ }
+}

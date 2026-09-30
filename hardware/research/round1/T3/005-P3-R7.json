@@ -1,0 +1,102 @@
+{
+ "role": "P3",
+ "category": "R7",
+ "label": "P3-R7",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "missed": [
+   {
+    "function": "Pack charger",
+    "part": "BQ25710RSNR (LCSC C2864000)",
+    "maker": "Texas Instruments",
+    "why": "This is the SMBus member of P2's rank-1 family, and it meets every Pack charger value P2 lists. Source: SLUSD20B (https://www.ti.com/lit/ds/symlink/bq25710.pdf, read 2026-09-29T10:12:58Z). It is an NVDC buck-boost charge controller for 1S to 4S packs. Input operating range (VINPUT_OP) is 3.5 to 26 V. Maximum charge current is 8.128 A, charge voltage steps are 8 mV, and an ILIM_HIZ hardware pin sets the input current limit. The Device Comparison Table of SLUSE65A (read 10:12:58Z) gives it 'BATFET Power Path Yes'. Charge current is sensed at SRP/SRN on the cells' side, and the host terminates charge, as on the BQ25713. The watchdog ends charging when no write arrives within 175 s. Recommended TJ is -20 to 125 degC. It is not the firmware-identical alternate of rank 1: it uses SMBus at address 09h, where the BQ25713 uses I2C at 6Bh (comparison table, SLUSD20B section 6). JLCPCB (selectSmtComponentList, exact match C2864000, 2026-09-29T10:16:02Z): stockCount 1857, canPresaleNumber 1834, expand. TI (https://www.ti.com/product/BQ25710, 10:19:56Z): ACTIVE. Digi-Key (https://api.digikey.com/products/v4/search/BQ25710RSNR/productdetails, 10:21:44Z): 406 in stock, Active, 16 weeks."
+   },
+   {
+    "function": "Power path",
+    "part": "BQ25710RSNR (LCSC C2864000)",
+    "maker": "Texas Instruments",
+    "why": "It has the same power path as P2's rank 1. SLUSD20B (read 2026-09-29T10:12:58Z) gives NVDC power path management with an external BATFET, so the cell-to-board path is a MOSFET chosen for 11.29 A. It also gives instant-on with no battery or a depleted battery, so the board runs from USB-C with the pack flat or held off (V152). Charge current is sensed at SRP/SRN between the BATFET and the cells, so termination follows the cells' current. Stock, status and Digi-Key figures are as in the Pack charger entry: JLCPCB 1857 at 10:16:02Z; TI ACTIVE at 10:19:56Z; Digi-Key 406, Active, 16 weeks at 10:21:44Z."
+   },
+   {
+    "function": "Pack charger",
+    "part": "BQ25700ARSNR (LCSC C965493)",
+    "maker": "Texas Instruments",
+    "why": "This is the SMBus member of P2's rank-2 family. Source: SLUSCQ8A, May 2017, revised May 2018 (https://www.ti.com/lit/ds/symlink/bq25700a.pdf, read 2026-09-29T10:12:58Z). It is an NVDC buck-boost charger for 1S to 4S packs with an input operating range (VINPUT_OP) of 3.5 to 26 V. Charge voltage steps are 16 mV, so 8.4 V is 525 steps. It has the ILIM_HIZ hardware input-limit pin and host-controlled termination. It uses SMBus at 09h, so it is not firmware-identical to the BQ25703A (I2C at 6Bh). JLCPCB (exact match C965493, 10:16:02Z): stockCount 1680, canPresaleNumber 1680, expand. TI (https://www.ti.com/product/BQ25700A, 10:19:57Z): ACTIVE. Digi-Key (https://api.digikey.com/products/v4/search/BQ25700ARSNR/productdetails, 10:21:45Z): 7182 in stock, Active, 16 weeks."
+   },
+   {
+    "function": "Power path",
+    "part": "BQ25700ARSNR (LCSC C965493)",
+    "maker": "Texas Instruments",
+    "why": "SLUSCQ8A (read 2026-09-29T10:12:58Z) gives Narrow-VDC power path management with an external BATFET. It gives instant-on with no battery or a deeply discharged battery, and charge current sensed at the cells (SRP/SRN). This is the same power-path circuit as P2's rank 2. JLCPCB 1680 (10:16:02Z). TI ACTIVE (10:19:57Z). Digi-Key 7182, Active, 16 weeks (10:21:45Z)."
+   },
+   {
+    "function": "Pack overcurrent protection",
+    "part": "BQ28Z610DRZR (LCSC C157573)",
+    "maker": "Texas Instruments",
+    "why": "It meets every value P2 lists for this function. Sources: SLUSAS3D (https://www.ti.com/lit/ds/symlink/bq28z610.pdf, read 2026-09-29T10:13:00Z) and technical reference manual SLUUA65E (https://www.ti.com/lit/pdf/sluua65, resolved to sluua65e.pdf, read 10:16:53Z). It is a gauge and protector for 1S to 2S packs. VCC (VC2, PBI) is 2.2 to 26 V and TOPR is -40 to 85 degC. It drives high-side N-channel CHG and DSG FETs, so the pack's negative stays on board ground. Discharge overcurrent: the firmware OCD threshold is -32768 to 32767 mA in data flash (TRM 13.10.4). The hardware OCD is 8.3 to 100 mV across the sense resistor with a delay of 1 to 31 ms. Short circuit: SCD1 is 22.2 to 200 mV in 11.1 or 22.2 mV steps, with a delay of 0 to 915 us, or 1850 us with SCDDx2. With a 2 mOhm resistor, 66.6 mV is 33.3 A; that figure is computed, not a data sheet value. Cell overvoltage (COV) threshold is 0 to 32767 mV in data flash, so 4250 mV can be set. OTC and OTD are -40.0 to 150.0 degC in 0.1 degC steps (defaults 55.0 and 60.0 degC). UTC is -40.0 to 150.0 degC (default 0 degC) and blocks charging below it. Temperatures come from the TS1 thermistor input, and TI's default thermistor model is not read here. Protection runs from data flash with no host writes at start-up, once the flash is programmed. It also balances (see Cell balancing), so one part covers the three functions that MAX17320G22+ covers. JLCPCB (exact match C157573, 10:16:03Z): stockCount 6816, canPresaleNumber 6797, expand. TI (https://www.ti.com/product/BQ28Z610, 10:19:56Z): ACTIVE. Digi-Key (https://api.digikey.com/products/v4/search/BQ28Z610DRZR/productdetails, 10:21:49Z): 2261 in stock, Active, 16 weeks. Related parts found in jlcparts but not qualified here: BQ40Z50RSMR-R1 (C179743, 1S to 4S, same AFE threshold table in SLUSCB3) and BQ4050RSMR (C157570). Their technical reference manuals were not read."
+   },
+   {
+    "function": "Cell balancing",
+    "part": "BQ28Z610DRZR (LCSC C157573)",
+    "maker": "Texas Instruments",
+    "why": "It balances on its own from data flash, during charge or at rest (SLUUA65E section 7, read 2026-09-29T10:16:53Z). It uses internal bypass FETs on VC1 and VC2. RCB is 200 Ohm maximum (SLUSAS3D table 7.14, read 10:13:00Z) and 150 Ohm in the TRM's balancing equation. VCC is 2.2 to 26 V, which covers the 6.0 to 8.442 V pack, and TOPR is -40 to 85 degC. It does not depend on the charger, since the rank-1 charger has no balancing. Balance current is not stated as a figure, and no floor applies (V142). JLCPCB 6816 (10:16:03Z). TI ACTIVE (10:19:56Z). Digi-Key 2261, Active, 16 weeks (10:21:49Z)."
+   },
+   {
+    "function": "Cell balancing",
+    "part": "BQ29200DRBR (LCSC C2865505)",
+    "maker": "Texas Instruments",
+    "why": "This is the pin-compatible alternate of P2's rank 3 (BQ29209DRBR). Both parts share one data sheet, SLUSA52C (https://www.ti.com/lit/ds/symlink/bq29200.pdf, read 2026-09-29T10:13:02Z), with the same VSON-8 pinout and the same automatic balancing up to 15 mA. They differ only in the fixed overvoltage threshold: 4.35 V on the BQ29200 and 4.30 V on the BQ29209. P2 lists the BQ29200 only as an overcurrent drop, not as the balancer's alternate. JLCPCB (exact match C2865505, 10:16:05Z): stockCount 3354, canPresaleNumber 3353. TI (https://www.ti.com/product/BQ29200, 10:20:01Z): ACTIVE. Digi-Key: 3931 in stock, Active, 9 weeks (cached reading of 09:56:12Z)."
+   },
+   {
+    "function": "Bench pack balance lead",
+    "part": "BQ28Z610DRZR (LCSC C157573)",
+    "maker": "Texas Instruments",
+    "why": "The 3-conductor 2S lead (negative, mid-point, positive) can end at this part. SLUSAS3D (read 2026-09-29T10:13:00Z) pin table: VC1 is the sense and balance input for the least positive cell, VC2 for the most positive cell, and VSS is the negative. It is the protector and balancer of the Pack overcurrent protection and Cell balancing entries above. The connector and its protection are round 2."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "TUSB321AIRWBR (LCSC C2674046)",
+    "maker": "Texas Instruments",
+    "why": "It covers the same role as FUSB303B, P2's rank 1, with no firmware in the path. Source: SLLSER2A (https://www.ti.com/lit/ds/symlink/tusb321ai.pdf, read 2026-09-29T10:13:03Z). VDD is 4.5 to 5.5 V, so it runs straight from VBUS. Dead-battery Rd (RCC_DB) is 4.1 to 6.1 kOhm at VDD = 0 V (section 7.4.3: 'CC pins always default to pull-down resistors'). In UFP mode the OUT1 and OUT2 pins report Default, 1.5 A or 3.0 A, which can set the charger's ILIM_HIZ pin. TA is -40 to 85 degC. JLCPCB (exact match C2674046, 10:16:06Z): stockCount 2892, canPresaleNumber 2863. TI (https://www.ti.com/product/TUSB321AI, 10:19:58Z): ACTIVE. Digi-Key (https://api.digikey.com/products/v4/search/TUSB321AIRWBR/productdetails, 10:21:50Z): 7004 in stock, Active, 9 weeks."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "TUSB321RWBR (LCSC C139392)",
+    "maker": "Texas Instruments",
+    "why": "Source: SLLSEO6C (https://www.ti.com/lit/ds/symlink/tusb321.pdf, read 2026-09-29T10:13:03Z). VDD is 4.5 to 5.5 V, so it runs from VBUS. Section 8.3: 'System is powered off (device has no VDD). The TUSB321 device is configured internally in UFP mode with Rds on CC pins'; no RCC_DB figure is given. The OUT1 and OUT2 GPIOs report the current mode (Default, 1.5 A, 3.0 A). TA is 0 to 70 degC. It comes in the same X2QFN-12 package as the TUSB321AI. JLCPCB (exact match C139392, 10:16:06Z): stockCount 3249, canPresaleNumber 3238. TI (https://www.ti.com/product/TUSB321, 10:19:59Z): ACTIVE. Digi-Key (10:21:52Z): 3214 in stock, Active, 9 weeks."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "TUSB322IRWBR (LCSC C2674422)",
+    "maker": "Texas Instruments",
+    "why": "Source: SLLSEO5D (https://www.ti.com/lit/ds/symlink/tusb322i.pdf, read 2026-09-29T10:13:03Z). VDD is 4.5 to 5.5 V, so it runs from VBUS. RCC_DB (dead-battery pull-down) is 4.1 to 6.1 kOhm (section 6.4.4). It reports over I2C with the INT_N/OUT3 interrupt, or through the OUT1/OUT2 GPIOs. TA is -40 to 85 degC. JLCPCB (exact match C2674422, 10:16:06Z): stockCount 695, canPresaleNumber 691. TI (https://www.ti.com/product/TUSB322I, 10:22:40Z): ACTIVE. Digi-Key (https://api.digikey.com/products/v4/search/TUSB322IRWBR/productdetails, 10:22:47Z): 4383 in stock, Active, 26 weeks."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "FUSB301TMX (LCSC C132290)",
+    "maker": "onsemi",
+    "why": "Source: FUSB301/D Rev. 2, November 2023 (https://www.onsemi.com/download/data-sheet/pdf/fusb301-d.pdf, read 2026-09-29T10:19:43Z). It gives 'Dead Battery Support (SINK Support when No Power Applied)'. VDD is 2.8 to 5.5 V, so it runs from VBUS, and TA is -40 to 85 degC. It reports over I2C with the INT_N interrupt. Sink thresholds: vRd-1.5A is 1.16 to 1.31 V and vRd-3.0A is 2.04 to 2.18 V. Like P2's ranks 2 and 3, it needs firmware to pass the limit to the charger. JLCPCB (exact match C132290, 10:16:09Z): stockCount 10325, canPresaleNumber 10301. onsemi: the product URL https://www.onsemi.com/products/interfaces/usb-type-c/fusb301tmx redirected to the USB Type-C category page, whose FUSB301TMX row reads Active (10:20:32Z). Digi-Key (10:21:58Z): 28649 in stock, Active, 52 weeks."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "TPS25751DREFR (LCSC C30169739)",
+    "maker": "Texas Instruments",
+    "why": "Source: SLVSH93A (https://www.ti.com/lit/ds/symlink/tps25751.pdf, read 2026-09-29T10:13:04Z). It is a Type-C and PD sink controller with 'Integrated I2C control for TI battery chargers', including the BQ25713 and BQ25731. It therefore writes the input limit of P2's rank-1 charger itself, with no RP2354B firmware in the path. VBUS is 4 to 22 V. It boots from VBUS through its LDO in dead battery (section 'booting from no-battery or dead-battery conditions'), with the dead-battery Rd clamp VCLAMP at 0.65 to 1.32 V. TJ is -40 to 125 degC. Constraint: at boot it loads its configuration and patch from an external I2C EEPROM of at least 36 kB at address 0x50, or from a host. Like STUSB4500, it is a PD controller. JLCPCB (exact match C30169739, 10:16:07Z): stockCount 5554, canPresaleNumber 5532. TI (https://www.ti.com/product/TPS25751, 10:20:00Z): ACTIVE. Digi-Key (10:22:00Z): 10594 in stock, Active, 16 weeks."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "BQ25731RSNR (LCSC C2871872), Texas Instruments, under Pack charger",
+    "reason_given": "Not qualified in this pass because the data sheets were not read. BQ25731 is a 1S to 5S controller (jlcparts description). P3 to qualify.",
+    "why_it_fails": "Qualified from SLUSE66A (https://www.ti.com/lit/ds/symlink/bq25731.pdf, read 2026-09-29T10:12:57Z), it meets every Pack charger value P2 lists. Input is 3.5 to 26 V and it charges 1S to 5S. Charge current reaches 16.2 A with a 5 mOhm resistor. The input limit reaches 10 A in 100 mA steps (IIN_HOST), and there is an ILIM_HIZ pin. ChargeVoltage defaults to 4.2 V a cell. Charge current is regulated across SRP/SRN between VSYS and the cells, and in 'forward supplement mode' the cells feed the system through the same resistor (IBAT reads discharge). The host terminates on that cell current with CHRG_INHIBIT or ChargeCurrent = 0 (section 9.4.1), and the watchdog is 175 s. It has no BATFET (Device Comparison Table: 'BATFET Power Path No'), and pulling CELL_BATPRESZ low on battery removal disables charge. So it is a Pack charger only, not a Power path: V152's USB-only operation with the pack held off is not shown. JLCPCB (exact match C2871872, 10:16:03Z): stockCount 1135, canPresaleNumber 1132. TI (https://www.ti.com/product/BQ25731, 10:19:57Z): ACTIVE. Digi-Key (10:21:47Z): 2079 in stock, Active, 16 weeks. The other two parts of the same drop were qualified, and their drops hold on other grounds. BQ25730RSNR (SLUSE65A, read 10:12:58Z) has the BATFET power path, 1S to 5S and 16.2 A, but JLCPCB C5219071 reads stockCount 1, canPresaleNumber -3 (10:16:03Z), which fails rule 4. LTC4020EUHF#TRPBF (Rev. E, https://www.analog.com/media/en/technical-documentation/data-sheets/LTC4020.pdf, read 10:14:57Z) has a PowerPath with an external PFET and C/10 termination on the battery sense resistor. However, its only input-side limit is the inductor current limit set by RSENSEA = RSENSEB = 0.05/ILMAX, with no pin or register to change it, so it cannot follow a 1.5 A or 0.5 A advertisement. Its NTC window is 0 to 40 degC for a 10 kOhm, beta 3380 thermistor."
+   },
+   {
+    "part": "TUSB320IRWBR (LCSC C80170) and TUSB320LIRWBR (LCSC C2836598), Texas Instruments, under Charger input limit",
+    "reason_given": "SLLSEN9F (https://www.ti.com/lit/ds/symlink/tusb320.pdf, read 2026-09-29T09:53:15Z) states no dead-battery Rd. VDD is 2.7 to 5 V, under the 5.5 V VBUS of V10, so it cannot run from VBUS. It misses dead-battery Rd.",
+    "why_it_fails": "SLLSEN9F does state dead-battery Rd. The copy re-read at 2026-09-29T10:18:49Z from the same URL lists RCC_DB, 'Pulldown resistor when in dead-battery mode', as 4.1/5.1/6.1 kOhm. Section 7.4.3 says 'During dead battery mode, VDD is not available. CC pins always default to pulldown resistors'. The TUSB320LI sheet, SLLSEP2D (https://www.ti.com/lit/ds/symlink/tusb320li.pdf, read 10:18:49Z), lists the same RCC_DB. The supply requirement P2 wrote allows 'a rail present whenever VBUS is'. VDD of 2.7 to 5 V fits the 3.3 V rail, which is present with VBUS when the board runs from USB-C (V152), or an LDO from VBUS. A direct connection to 5.5 V VBUS is indeed outside the 5 V maximum. Both parts report through OUT1/OUT2 GPIOs or over I2C with INT_N, and both have TA -40 to 85 degC (TUSB320I and TUSB320LI). JLCPCB exact matches: C80170 stockCount 1878, canPresaleNumber 1861 (10:18:52Z); C2836598 stockCount 6109, canPresaleNumber 6084 (10:18:53Z). TI: ACTIVE for TUSB320 (10:19:59Z) and TUSB320LI (10:20:00Z). Digi-Key: TUSB320IRWBR 0 in stock, Active, 26 weeks (10:21:54Z); TUSB320LIRWBR 654, Active, 9 weeks (10:21:56Z)."
+   }
+  ],
+  "missed_functions": []
+ }
+}

@@ -1,0 +1,338 @@
+{
+ "role": "P1-critic",
+ "category": "R11",
+ "label": "P1-critic-R11",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/IOBoard.md:447",
+    "quantity": "vibration sensor type",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "docs/Balance.md:62-63 (commit be1f247, read 2026-09-28) says 'Use an analogue sensor (piezo or analogue accelerometer) into the coprocessor's ADC'. This is guidance in the tree, not an owner decision, so sourced is right. The source's reason is bandwidth and fused-IMU delay (Balance.md:60-69). That reason does not rule out a raw digital sensor, which question 17 asks."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/IOBoard.md:448",
+    "quantity": "vibration fundamental at 10,000 rpm",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Balance.md:60-62 gives 167 Hz at 10,000 rpm. 10,000 / 60 = 166.7 Hz. A 100 Hz stream resolves at most 50 Hz. Sourced holds. 10,000 rpm is an example (IOBoard.md:487), and question 3 asks for the highest speed."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/IOBoard.md:449",
+    "quantity": "vibration delay",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Balance.md:65-69 states the cancellation and gives both figures. 15 µs × 166.7 Hz × 360° = 0.90°. 5 ms × 166.7 Hz × 360° = 300°. No limit on the delay variation is stated, and question 16 asks for one. Sourced holds."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/IOBoard.md:450",
+    "quantity": "timebase",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "docs/Manifest.md:30 says 'Both sensors on the coprocessor, sampled on one timebase'. STATUS.md:26 lists 'Accelerometer and index pulse, one timebase' on the coprocessor side. Both were read at be1f247 on 2026-09-28. Sourced holds."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/IOBoard.md:451",
+    "quantity": "sensing axis",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Balance.md:47-48, shared/ui/balance_screen.c:218-219 (across the shaft) and :330-336 (three axes, use one in the firewall's plane) agree. Sourced holds."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/IOBoard.md:453",
+    "quantity": "ADC input rating while the 3.3 V rail is down",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Re-read in RP2350 datasheet build 2025-07-29: vendors.py fetch --client chrome https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, final URL https://pip-assets.raspberrypi.com/categories/1214-rp2350/documents/RP-008373-DS-2-rp2350-datasheet.pdf, HTTP 200, read 2026-09-28T10:37:24Z. Table 1433 gives 'Voltage at IO (Standard)' VPIN as -0.5 V to IOVDD + 0.5 V. Table 1427 lists GPIO40_ADC0 at pin 49 and GPIO41_ADC1 to GPIO47_ADC7 at pins 52 to 58. Section 12.4 says the maximum ADC input voltage is set by IOVDD. With IOVDD at 0 V that is 0.5 V. Sourced holds."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/IOBoard.md:493",
+    "quantity": "accelerometer location",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Balance.md:38-39 (rigid part near the bearing) and :45-46 (flat on the firewall) agree with balance_screen.c:212-215 and :330-336. balance_screen.c:476-478 and :499-501 ('A lead that flaps is a second accelerometer') confirm the sensor sits on a lead. No lead length or connector is stated. Sourced holds."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/IOBoard.md:441",
+    "quantity": "optical index",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Balance.md:8-9 (optional index, one pulse per revolution) and :32-37 (pen line on the bell, seen from below) support it. shared/settings/settings.c:99-101 names 'Optical tacho'. shared/ui/stub_screen.c:33 lists rpm from an optical pickup. The owner's decision (Research.md:65) does not name it, so sourced is right."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/IOBoard.md:442",
+    "quantity": "magnetic pickup",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:65, the owner's Sensor inputs decision of 2026-09-24, names 'a magnetic rpm pickup'. hardware/STATUS.md:28 says rpm comes from a phase-wire clip and a magnetic pickup. The decision names the input only. Owner holds."
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/IOBoard.md:443",
+    "quantity": "phase-wire clip input voltage rating",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F15 (Research.md:543) fixes the pack at 67.2 V. That the clip's rating equals the pack voltage comes only from the plan's R11 row (Research.md:289), which cites nothing for it. The owner's decision (Research.md:65) gives the clip no voltage. A phase node swings from below ground to above the pack at each switching edge. The ESC pack switch gets a margin question (IOBoard.md:189); the clip gets none. Assumption holds, and question 5 carries it."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/IOBoard.md:443",
+    "quantity": "phase-wire clip",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:65 (owner, 2026-09-24) names 'a phase-wire rpm (revolutions per minute) clip'. hardware/STATUS.md:28 agrees. Owner holds."
+   },
+   {
+    "index": 11,
+    "where": "hardware/docs/Research.md:543",
+    "quantity": "highest ESC pack voltage",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The F15 answer is '16 cells, 67.2 V at 4.2 V a cell (owner, 2026-09-25)', and R11 is in its Blocks column. 16 × 4.2 V = 67.2 V. Owner holds."
+   },
+   {
+    "index": 12,
+    "where": "hardware/docs/IOBoard.md:444",
+    "quantity": "encoder form",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:65 (owner) says ABI and names the encoder in the pin budget of firmware/iomcu/CMakeLists.txt. CMakeLists.txt:8-13 names the encoder among 27 to 32 GPIO. Owner holds."
+   },
+   {
+    "index": 13,
+    "where": "hardware/docs/IOBoard.md:445",
+    "quantity": "encoder highest rate",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The F4 answer (Research.md:532, owner 2026-09-25) is '5 V single-ended up to 1 MHz, and RS-422 differential up to 5 MHz'. F4 asked for 'the highest count rate', and the answer gives MHz, so the unit is ambiguous (question 18). Owner holds."
+   },
+   {
+    "index": 14,
+    "where": "hardware/docs/IOBoard.md:445",
+    "quantity": "encoder single-ended input level",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F4 offered 3.3 V or 5 V, and the owner answered 5 V single-ended (Research.md:532). The 12 V supply setting leaves the signal level open (question 19). Owner holds."
+   },
+   {
+    "index": 15,
+    "where": "hardware/docs/IOBoard.md:445",
+    "quantity": "encoder supply",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The F4 answer gives '5 V or 12 V, selected by a jumper; 12 V needs a source while the board runs from the 2S pack (R5)'. IOBoard.md:387 states that R5 makes it from both sources. The encoder's current is not stated (IOBoard.md:338, :387). R5 takes that value, and it qualifies no R11 part. Owner holds."
+   },
+   {
+    "index": 16,
+    "where": "hardware/docs/IOBoard.md:445",
+    "quantity": "encoder mounting",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The F4 answer: 'It measures either the servo output shaft or the motor shaft, wherever the operator mounts it'. Owner holds."
+   },
+   {
+    "index": 17,
+    "where": "hardware/docs/IOBoard.md:446",
+    "quantity": "encoder decode rate",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The 5 MHz is F4's owner figure. The list of decode methods is the plan's instruction to R11, not a requirement value. The rate carries F4's unit question (question 18). The PWM note checks out: RP2350 datasheet build 2025-07-29, section 12.5.2.5 (same fetch, read 2026-09-28T10:37:24Z), lists counting on rising or falling edges of the B pin only. A slice therefore counts one channel with no direction. Owner holds."
+   },
+   {
+    "index": 18,
+    "where": "hardware/docs/IOBoard.md:440",
+    "quantity": "rotation from the ESC",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "firmware/iomcu/src/main.c:663 gives RPM_STALE_MS 200u. main.c:702-706 reports speed only with poles != 0 and age <= 200 ms, and passes poles / 2 to dshot_rpm. docs/Link.md:159-163 gives MOTOR_POLES as even, 2 to 42, with 0 meaning no speed. Sourced holds."
+   },
+   {
+    "index": 19,
+    "where": "hardware/docs/IOBoard.md:430",
+    "quantity": "BENCH rpm register",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "shared/bench/bench_state.c:21-28: to_u16 returns 0 for a value that is not positive and saturates at 65535. bench_state.c:82 sets regs[LINK_BN_RPM] = to_u16(b->rpm, 1.0f). Sourced holds."
+   },
+   {
+    "index": 20,
+    "where": "hardware/docs/IOBoard.md:431",
+    "quantity": "BENCH sample period",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "firmware/iomcu/src/main.c:1013-1015 calls sample() when now - last_sample >= 20u. That is 20 ms, 50 Hz. Sourced holds."
+   },
+   {
+    "index": 21,
+    "where": "hardware/docs/IOBoard.md:489",
+    "quantity": "ESC speed after a disarm",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Sourced holds, but the value misses one fact. firmware/iomcu/src/outputs_hw.c:419-422 calls forget_telem() on the edge out of driving. That clears have_erpm, so outputs_hw_erpm() (:426-431) returns false from the disarm on. The ESC's speed therefore stops at the disarm, not 200 ms after its last reply. The 200 ms window (main.c:663) applies to replies that stop while driving. The conclusion stands and is stronger: another input has to cover the coast-down (docs/Screens.md:76-79)."
+   },
+   {
+    "index": 22,
+    "where": "hardware/docs/IOBoard.md:454",
+    "quantity": "servo measured position",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "docs/Screens.md:156-158 (solid arm is the measured position), shared/ui/include/servo_screen.h:66-67 (servo_screen_feedback(uint16_t position_us, ...)), docs/Servo.md:79-80 and stub_screen.c:37-43 support the value. No input is specified. Only host tests call servo_screen_feedback (test/host/bench_frame.c:203 passes the commanded value). Sourced holds."
+   },
+   {
+    "index": 23,
+    "where": "hardware/docs/IOBoard.md:596",
+    "quantity": "Tacho pin setting range",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "shared/settings/settings.c:102-104 gives optical_pin a range of -1 to 48. Research.md:47 gives the RP2354B 48 GPIO, 0 to 47. It is a display setting and selects no part. Sourced holds."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "This is the 'servo measured position sensor' item in 'P1 asks' (Research.md:289; Scope). IOBoard.md:454 specifies no input. Whether R11 selects a part depends on the answer."
+   },
+   {
+    "index": 1,
+    "verdict": "confirmed",
+    "reason": "No measurement resolution or range is stated. Two corrections for the text written under Raised by P1. First, the cited IOBoard.md:50 is a blank line; the 1 µs and 500 to 2500 µs figures are at IOBoard.md:249. Second, the servo screen draws the measured angle over at most ±90° (shared/ui/servo_screen.c:380, :452-459) and shows it in tenths of a degree (:332, :811). Those are display figures, not a sensor requirement, so the question still stands."
+   },
+   {
+    "index": 2,
+    "verdict": "confirmed",
+    "reason": "This is the 'BENCH rpm register source' item in 'P1 asks' (Research.md:289; IOBoard.md:488). shared/link/include/link_pages.h:233 is the one LINK_BN_RPM register. Link.md:150 gives it one valid bit. IOBoard.md:434 also leaves the stall threshold and time unstated. Those are coprocessor code, which Scope places in no round; the part-level need is covered by questions 4 and 9."
+   },
+   {
+    "index": 3,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:487 says the highest speed is not stated, and 10,000 rpm is only an example (Balance.md:60-62). It sets the highest input frequency of every front end. With 21 pole pairs (Link.md:159-160), 65,535 rpm gives 22.9 kHz at the clip. The sample rate that IOBoard.md:493 leaves unstated follows from this figure, and R10 reports it for Q4."
+   },
+   {
+    "index": 4,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:489 leaves the coast-down input unstated, and no lowest speed is stated anywhere. One correction to the why: the ESC's speed stops at the disarm itself, not 200 ms later. outputs_hw.c:419-422 clears the telemetry on the edge out of driving. That makes another input's lowest speed more urgent, not less."
+   },
+   {
+    "index": 5,
+    "verdict": "confirmed",
+    "reason": "It carries the assumption at index 9. F15 bounds the pack, not the switching phase node. IOBoard.md:189 asks a margin for the pack switch, and nothing asks one for the clip."
+   },
+   {
+    "index": 6,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:491 says the clip's conditioning is not stated. A galvanic clip and a clip through the insulation need different front-end parts, so P2 cannot choose the topology."
+   },
+   {
+    "index": 7,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:491 says the isolation from the 3.3 V logic is not stated. IOBoard.md:547 routes the ESC pack return to the star by its own lead. An isolator would be an R11 part."
+   },
+   {
+    "index": 8,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:491 says the pickup's type, supply and output are not stated. The owner's decision (Research.md:65) names only 'a magnetic rpm pickup'. A Hall sensor and a variable-reluctance coil need different front ends."
+   },
+   {
+    "index": 9,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:490 says it is not stated whether the pickup uses MOTOR_POLES. Pulses per revolution times the highest rpm sets the input frequency."
+   },
+   {
+    "index": 10,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:491 says the optical sensor's type, supply and output are not stated. The seeds are comparators only (Research.md:289), so whether R11 selects a sensor head is open."
+   },
+   {
+    "index": 11,
+    "verdict": "confirmed",
+    "reason": "Balance.md:32-37 places the mark and the sensor but gives no distance. A reflective sensor is specified at a working distance. The question applies only if the answer to question 10 has R11 select the sensor."
+   },
+   {
+    "index": 12,
+    "verdict": "confirmed",
+    "reason": "Sourcing rule 1 (Research.md:134-139) covers a part on the IO board or a part off it bought at Digi-Key. It does not cover a second assembled board. The accelerometer sits away from the board (Balance.md:38-39, :45-46; balance_screen.c:476-478). The same fork applies to the optical and magnetic sensors if R11 selects them (questions 8 and 10)."
+   },
+   {
+    "index": 13,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:493 says the lead from the rig arm or firewall is not stated. Its length decides whether the sensor end needs a buffer or a differential driver."
+   },
+   {
+    "index": 14,
+    "verdict": "confirmed",
+    "reason": "No full-scale range is stated. The '0.42 g' on the balance screen (balance_screen.c:548) is a modelled display value, not a requirement."
+   },
+   {
+    "index": 15,
+    "verdict": "confirmed",
+    "reason": "No resolution or noise requirement is stated for the vibration path. P2 needs it to qualify noise density, and R10 needs it for the ENOB of Q4 (Research.md:572)."
+   },
+   {
+    "index": 16,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:449 and Balance.md:65-66 say only the variation of the delay matters, and neither gives a limit. Q4 asks R10 for latency jitter (Research.md:572) with no figure to judge it against."
+   },
+   {
+    "index": 17,
+    "verdict": "confirmed",
+    "reason": "Research.md:289 makes the IIS3DWB a seed only if Q4 accepts a digital sensor. Q4 (Research.md:572) offers only two converters, so no digital part can reach a decision. Balance.md:60-69 rules out a fused 100 Hz IMU, not a raw kHz-rate sensor."
+   },
+   {
+    "index": 18,
+    "verdict": "confirmed",
+    "reason": "F4 asked for 'the highest count rate' (Research.md:532), and the answer is in MHz. The count rate and the per-channel frequency differ by a factor of 4. This sets the receivers and the decode reported under IOBoard.md:446."
+   },
+   {
+    "index": 19,
+    "verdict": "confirmed",
+    "reason": "The F4 answer fixes the single-ended form at 5 V and puts the supply on a separate 5 V or 12 V jumper (Research.md:532). A push-pull encoder on 12 V can drive 12 V. IOBoard.md:105 requires translation to 3.3 V."
+   }
+  ],
+  "added": [
+   {
+    "function": "phase-wire clip",
+    "question": "What range of ESC PWM (pulse-width modulation) switching frequency, in kHz, must the phase-wire clip's front end reject while it passes the motor's electrical frequency? The programmer screen offers 24, 48 and 96 kHz (shared/ui/programmer_screen.c:115). Does that range apply, or a wider one?",
+    "why": "The phase node carries the ESC's PWM chopping on top of the commutation. The electrical frequency is rpm / 60 × pole pairs. At the BENCH register's 65,535 rpm with 21 pole pairs (docs/Link.md:159-160) that is 22.9 kHz, next to a 24 kHz PWM. The clip's conditioning is not stated (IOBoard.md:491), and no switching frequency to reject is given. Without it P2 cannot qualify the comparator's speed and hysteresis, or choose between a filtered comparator and another topology.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:491",
+    "for_quantity": "phase-wire clip PWM switching frequency rejected",
+    "asks": ""
+   },
+   {
+    "function": "accelerometer",
+    "question": "What is the lowest shaft speed, in rpm, at which a balance run is measured?",
+    "why": "It sets the lowest vibration fundamental, rpm / 60, that the sensor must pass. The specification allows a piezo sensor (IOBoard.md:447), which is AC-coupled and has a low-frequency corner that must sit below that fundamental. P1's lowest-speed question covers the rotation inputs and the coast-down, not the vibration path. IOBoard.md:448 gives only the 167 Hz example at 10,000 rpm. Without it P2 cannot qualify a piezo sensor's low-frequency response.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:448",
+    "for_quantity": "lowest balance rpm (lowest vibration fundamental)",
+    "asks": ""
+   },
+   {
+    "function": "accelerometer",
+    "question": "Across what ambient temperature range, in °C, must the sensors mounted at the motor work? That is the accelerometer on the rig arm or firewall, and the optical and magnetic sensors if R11 selects them.",
+    "why": "The tree states no operating temperature for a part off the IO board. The only range in the specification is 0 to 50 °C, for the monostable window (IOBoard.md:184, :220). The accelerometer goes hard against the motor (docs/Balance.md:38-39; shared/ui/balance_screen.c:212-215), beside a motor whose temperature the bench measures (F5). P2 cannot check a sensor's rated temperature range against nothing.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:493",
+    "for_quantity": "operating temperature at the sensor mount",
+    "asks": ""
+   }
+  ],
+  "functions_missing": []
+ }
+}

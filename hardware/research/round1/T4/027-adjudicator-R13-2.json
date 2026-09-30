@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R13",
+ "label": "adjudicator-R13-2",
+ "attempt": 0,
+ "data": {
+  "category": "R13",
+  "function": "P2 report: excitation load on the input bus",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The claim gives \"57 mA at most\" as a bound, but it computes the bridge current at the regulator's typical 5.00 V. The worst case is higher. The excitation regulator that both R13 P4 verifiers checked is BD450M2FP3-CE2 (C308595). Its datasheet specifies VOUT up to 5.10 V (6 V ≤ VCC ≤ 42 V). At that voltage, 3 bridges of 345 Ω draw 3 × 5.10 / 345 = 44.35 mA, not 43.5 mA. The regulator's circuit current (up to 150 µA with IOUT ≤ 200 mA) also comes from the input bus, and the claim leaves it out. The worst case with 2 × AD7190 is 44.35 + 13.5 + 0.15 = 58.0 mA, 1.0 mA over the stated 57 mA. With the ADS1235 it is 44.35 + 6.5 + 0.15 = 51.0 mA. The claim's parts check out against the datasheets: AD7190 B grade AIDD is 6.75 mA max (2 × 6.75 = 13.5 mA), ADS1235 IAVDD is 6.5 mA max, and 345 Ω is the lowest input resistance of the TAS501 (350 ± 5 Ω). The error is in the sum, not in those figures. The corrected figure is 58.0 mA at most (2 × AD7190), about 29 % of the regulator's 200 mA rating, so it does not change the regulator choice. Scope is function: the error is in this figure's sum for R5's rail sums and P5's per-rail check. It says nothing against any part.",
+  "evidence": "BD4xxM2-C datasheet Rev.006 (22.May.2025), Electrical Characteristics (-40 °C ≤ Tj ≤ +150 °C): VOUT for BD450M2FP3-C is 4.90 / 5.00 / 5.10 V min/typ/max at 0 mA ≤ IOUT ≤ 50 mA, and 4.80 / 5.00 / 5.10 V at IOUT ≤ 200 mA. Circuit Current Icc is 90 µA max at IOUT = 0 mA (Tj ≤ 125 °C) and 150 µA max at IOUT ≤ 200 mA (Tj ≤ 150 °C). AD7190 Rev. C, Power Requirements, page 6: AVDD is 4.75 to 5.25 V. B grade AIDD is 6.75 mA max (5.5 mA typical) at gain 16 to 128 with the buffer on. ADS1235, section 6.5: IAVDD is 6.5 mA max (4.3 mA typical) in PGA mode at gain 64 and 128. TAS501 datasheet (HTC-Sensor, saved by P2 at scratch/T4/P2-R13/TAS501.txt): input resistance is 350 ± 5 Ω, so 345 Ω is the minimum. Arithmetic: 3 × 5.10 / 345 = 44.35 mA; 44.35 + 13.5 + 0.15 = 58.0 mA, above the claimed 57 mA. With the ADS1235: 44.35 + 6.5 + 0.15 = 51.0 mA. The claim uses 3 × 5.00 / 345 = 43.48 mA and leaves out Icc. Files: /home/claude/rcbench-research/round1/scratch/T4/adjudicator-R13/adj-bd4xxm2.txt, adj-AD7190.txt, adj-ads1235.txt.",
+  "source": "https://fscdn.rohm.com/en/products/databook/datasheet/ic/power/linear_regulator/bd4xxm2-c-e.pdf (Rev.006, Electrical Characteristics); https://www.analog.com/media/en/technical-documentation/data-sheets/AD7190.pdf (Rev. C, Power Requirements, fetched with --client safari); https://www.ti.com/lit/ds/symlink/ads1235.pdf (section 6.5 Electrical Characteristics, Power Supply); TAS501 datasheet as saved by P2 in scratch/T4/P2-R13/TAS501.pdf (not re-fetched)",
+  "read_at": "2026-09-28T16:10:56Z (BD4xxM2-C, ADS1235), 2026-09-28T16:10:57Z (AD7190); TAS501 read from P2's copy saved 2026-09-28T15:06 local file time",
+  "scope": "function"
+ }
+}

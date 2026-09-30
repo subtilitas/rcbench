@@ -1,0 +1,225 @@
+{
+ "task": "FU",
+ "run": "FU-A4",
+ "run_id": "61c14de491406041",
+ "commit": "e13f5f60d2e553032b27a14f31ed4a93ef4fe828",
+ "date": "2026-09-29",
+ "run_info": {
+  "claude_code": "2.1.284 (Claude Code)",
+  "cpus": 48,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "concurrency": 16,
+  "concurrency_setting": "unset",
+  "digikey_calls_left": 569,
+  "vendors_sha256": "214b14a3af0a4a1e0edfab77124a786c4e0fade844ec4d0c72149c1571ff8bf6"
+ },
+ "followup": {
+  "phases": "P2-P4",
+  "round": 1,
+  "categories": [
+   "R1"
+  ],
+  "items": [
+   {
+    "role": "P2",
+    "category": "R1",
+    "function": "Microcontroller",
+    "part": "RP2354B",
+    "reason": "shortlisted states other values than the function for: part, stepping, GPIO count, ADC inputs, on-die SRAM, PSRAM, in-package flash, flash supply range, logic level, GPIO0-39 fault tolerance, fault-tolerant pin current at IOVDD 0 V, GPIO40-47 rating, ADC input range, pin input leakage, input-low level, SWDIO reset bias, SWD port, BOOT pin, RESET pin, USB device port, USB pin steady voltage, crystal input, core regulator, PIO blocks and reach, PIO instruction memory, PWM slices, servo PWM timing, pad inversion, DMA channels, serial controllers, pin budget, GPIO reset state, heartbeat input, store endurance, flash write window, image size limit, board header, firmware build, operating ambient, watchdog enabled, watchdog stop deadline (V1), watchdog stall cover (V2), watchdog window (V1 and V2), image watchdog timeout (V4), held quantity; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "function": "12 MHz crystal",
+    "part": "ABM8-272-T3",
+    "reason": "shortlisted states other values than the function for: total frequency error, DShot clock budget, USB data rate, operating temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "function": "Core regulator inductor",
+    "part": "AOTA-B201610S3R3-101-T",
+    "reason": "shortlisted states other values than the function for: polarity marking, operating temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "function": "Core regulator inductor",
+    "part": "VLS4015CX-3R3M-H",
+    "reason": "shortlisted states other values than the function for: inductance, saturation current, DC resistance, fully shielded, polarity marking, operating temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "function": "Core regulator inductor",
+    "part": "74438357033",
+    "reason": "shortlisted states other values than the function for: inductance, saturation current, DC resistance, fully shielded, polarity marking, operating temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "function": "Core regulator inductor",
+    "part": "XGL4020-332MEC",
+    "reason": "shortlisted states other values than the function for: polarity marking, operating temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "function": "Core regulator inductor",
+    "part": "XAL4030-332MEC",
+    "reason": "shortlisted states other values than the function for: inductance, saturation current, DC resistance, fully shielded, polarity marking, operating temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "function": "Core regulator inductor",
+    "part": "XEL4030-332MEC",
+    "reason": "shortlisted states other values than the function for: inductance, saturation current, DC resistance, fully shielded, polarity marking, operating temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "function": "Core regulator inductor",
+    "part": "XFL4020-332MEC",
+    "reason": "shortlisted states other values than the function for: polarity marking, operating temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "function": "Core regulator inductor",
+    "part": "ETQP3M3R3KVP",
+    "reason": "shortlisted states other values than the function for: inductance, saturation current, DC resistance, fully shielded, polarity marking, operating temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "function": "Core regulator inductor",
+    "part": "XAL6030-332MEC",
+    "reason": "shortlisted states other values than the function for: inductance, saturation current, DC resistance, fully shielded, polarity marking, operating temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "function": "Core regulator inductor",
+    "part": "XEL6030-332MEC",
+    "reason": "alternate states other values than the function for: inductance, saturation current, DC resistance, fully shielded, polarity marking, operating temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "rerank",
+    "category": "R1",
+    "function": "USB protection",
+    "reason": "the re-rank ranked no part"
+   },
+   {
+    "role": "P4",
+    "category": "R1",
+    "function": "12 MHz crystal",
+    "part": "ABM8-272-T3",
+    "figure": "longevity commitment",
+    "reason": "recorded as not read: not read: no Abracon longevity or product-lifecycle programme page found; the quality page (HTTP 200) carries no longevity, lifecycle or obsolescence text and the product page answers 404. S5 does not require one",
+    "notice": true
+   },
+   {
+    "role": "P4",
+    "category": "R1",
+    "function": "Core regulator inductor",
+    "part": "AOTA-B201610S3R3-101-T",
+    "figure": "longevity commitment",
+    "reason": "recorded as not read: not read: no Abracon longevity or product-lifecycle programme page found; the quality page (HTTP 200) carries no longevity or lifecycle text, and the product page states only 'Part Status Active'. S5 does not require one",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "figure": "found V1",
+    "reason": "figure refuted"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R1",
+    "function": "P2 report: watchdog reset pad state",
+    "part": "",
+    "reason": "the ruling gives no evidence, source and time read"
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "figure": "P2 report: watchdog reset pad state",
+    "reason": "figure refuted without a ruling"
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "figure": "re-rank report: inductor ranking basis",
+    "reason": "figure refuted"
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "figure": "function requirements: Microcontroller",
+    "reason": "figure refuted"
+   }
+  ]
+ },
+ "accept_open": null,
+ "decisions": {
+  "Q4": "",
+  "Q8": "",
+  "Q9": ""
+ },
+ "planned": 6,
+ "started": 1,
+ "extra_used": 0,
+ "free": 26,
+ "skipped": [],
+ "summary": {
+  "stopped": true,
+  "reasons": [
+   "the parts database's manifest is 2026-09-14T09:56:01+00:00 (manifest.json \"created\", equal to 2026-09-14T09:56:01Z), not 2026-09-14T09:56:01Z"
+  ],
+  "held": []
+ },
+ "followUps": [
+  {
+   "role": "P0",
+   "host": "www.vishay.com",
+   "categories": [
+    "R3",
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P0",
+   "host": "www.isabellenhuette.com",
+   "categories": [
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P0",
+   "host": "abracon.com",
+   "categories": [
+    "R1"
+   ],
+   "reason": "lifecycle status not read from the page"
+  }
+ ],
+ "missing": [],
+ "sequence": 10,
+ "output_sha256": "eb53fb11347dc661411edc19b6d281d123fa31c1aa8cea8e18c3b4c0156faf22"
+}

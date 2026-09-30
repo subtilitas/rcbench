@@ -1,0 +1,88 @@
+{
+ "role": "P3",
+ "category": "R12",
+ "label": "P3-R12",
+ "attempt": 0,
+ "data": {
+  "category": "R12",
+  "missed": [
+   {
+    "function": "motor temperature thermocouple",
+    "part": "ADS1220IPWR (LCSC C48263); also ADS1220IRVAR (C2651338), and the 16-bit ADS1120IPWR (C84284)",
+    "maker": "Texas Instruments (datasheet SBAS501D, revised May 2026)",
+    "why": "A family P2 did not consider. It is a general 24-bit ADC like the ADS1118 that P2 dropped, but it detects an open thermocouple on chip. SBAS501D section 8.3.10 (Sensor Detection) gives 10 µA burn-out current sources (BCS bit): an open sensor pulls AINP to AVDD and AINN to AVSS, so the reading goes full scale. That meets V250 with no added resistor. Supply: AVDD 2.3 to 5.5 V, so it runs on 3.3 V. The internal temperature sensor for cold-junction compensation is ±0.5 °C max over TA 0 to 75 °C (Electrical Characteristics), which covers V251's 0 to 50 °C. Data rates run 20 to 2,000 samples/s, so V236's one reading per 2,000 ms is met. It is on SPI. Linearisation is left to firmware for any thermocouple type, which fits V233 (type not found). Input absolute maximum is AVSS - 0.3 V to AVDD + 0.3 V, so like every other candidate it depends on round 2's protection for V237. Stock: JLCPCB C48263 stockCount 16,905, canPresaleNumber 16,491, expand, US$2.4522 at qty 1 (vendors.py jlcpcb C48263, 2026-09-28T15:33:21Z). C2651338: 7,501 / 7,252 (15:33:23Z). C84284: 2,080 / 2,025 (15:33:24Z). Digi-Key ADS1220IPWR: ProductStatus Active, stock 660, lead 16 weeks (vendors.py digikey ADS1220IPWR, 15:35:08Z), which clears the gate of 50. The datasheet was read from https://www.ti.com/lit/ds/symlink/ads1220.pdf at 15:37:44Z. TI's product-page lifecycle was not read; Digi-Key's status is recorded only as the distributor figure."
+   },
+   {
+    "function": "motor temperature infrared",
+    "part": "MLX90640ESF-BAB-000-TU (LCSC C488251)",
+    "maker": "Melexis (datasheet MLX90640, revision 12, 2019-12-03); S1 Melexis",
+    "why": "This is the 55°x35° version of the thermal array. P2 named only the 110° MLX90640ESF-BAA and the MLX90641 and dropped them as 'five survivors at most', but the infrared shortlist holds 4. The datasheet, read from https://www.melexis.com/-/media/files/documents/datasheets/mlx90640-datasheet-melexis.pdf at 15:36:52Z, gives target temperature -40 to 300 °C (covers V239's 0 to 200 °C), a 3.3 V supply, I²C, and a programmable refresh of 0.5 to 64 Hz (meets V242's 2,000 ms). The option code xxB is the 55°x35° field of view. Per-pixel temperatures are computed on the host, as P2 noted. Stock: JLCPCB C488251 stockCount 184, canPresaleNumber 183, US$23.0761 at qty 1 (vendors.py jlcpcb C488251, 2026-09-28T15:33:38Z), above the gate of 50. Digi-Key: ProductStatus Active, stock 454, lead 12 weeks (vendors.py digikey MLX90640ESF-BAB-000-TU, 15:34:34Z). By the Lifecycle check, Digi-Key's status is the status for Melexis. The accuracy and the fit of the field of view were not checked against V240 and V241 (both not found)."
+   },
+   {
+    "function": "external I2C ports",
+    "part": "PI4MSD5V9548ALEX (LCSC C3001700); also PI4MSD5V9546ALEX (C2674743) and PI4MSD5V9543ALEX (C2674741)",
+    "maker": "Diodes Incorporated (datasheet DS44955 Rev 3-2, September 2025); S1 Diodes Incorporated",
+    "why": "A family P2 did not consider, from an S1 maker. It is an 8-channel I²C switch with reset. Its TSSOP-24 pin table matches the TCA9548APWR: 1 A0, 2 A1, 3 RESET, 4 to 11 SD0/SC0 to SD3/SC3, 12 GND, 13 to 20 SD4/SC4 to SD7/SC7, 21 A2, 22 SCL, 23 SDA, 24 VCC. That makes it a pin-compatible alternate for rank 1 under rule 5. VCC is 1.65 to 5.5 V, fSCL 0 to 400 kHz, and Cb 400 pF. The device-address figure (Figure 3) is an image and its fixed bits were not read. Stock: JLCPCB C3001700 stockCount 2,042, canPresaleNumber 2,021, US$0.9501 at qty 1 (vendors.py jlcpcb C3001700, 2026-09-28T15:33:46Z). Digi-Key: Active, stock 23,810, lead 52 weeks (15:34:39Z). C2674743: JLCPCB 2,109 / 2,109 (15:33:47Z), Digi-Key Active 1,701 (15:34:41Z). C2674741: JLCPCB 887 / 887 (15:33:49Z). Maker status is not read: https://www.diodes.com/part/view/PI4MSD5V9548A (15:39:05Z) carried no status in its body. The datasheet was read from https://www.diodes.com/assets/Datasheets/PI4MSD5V9548A.pdf at 15:37:40Z."
+   },
+   {
+    "function": "external I2C ports",
+    "part": "PCA9546APW,118 (LCSC C149507)",
+    "maker": "NXP (datasheet PCA9546A Rev. 6, 2014-04-30); JLCPCB label NXP Semicon",
+    "why": "NXP's own PCA9546A was not considered. P2 lists only TI's PCA9546APWR and TCA9546APWR. It is a 4-channel switch in TSSOP16 with hot insertion listed as a feature (relevant to V253). Supply is 2.3 to 5.5 V and the clock 0 to 400 kHz (datasheet from https://www.nxp.com/docs/en/data-sheet/PCA9546A.pdf, read 15:40:50Z). It is a candidate alternate to rank 3, the TCA9546APWR; the pin-for-pin match was not checked line by line. Maker status: 'PCA9546A Active' in the page body at https://www.nxp.com/products/PCA9546A (read 2026-09-28T15:39:04Z). Stock: JLCPCB stockCount 6,386, canPresaleNumber 6,383, US$0.6756 at qty 1 (vendors.py jlcpcb C149507, 15:33:52Z). Digi-Key: Active, stock 14,066, lead 16 weeks (vendors.py digikey 'PCA9546APW,118', 15:34:43Z)."
+   },
+   {
+    "function": "external I2C ports",
+    "part": "TCA4311ADGKR (LCSC C130025)",
+    "maker": "Texas Instruments (datasheet SCPS226C, revised August 2018)",
+    "why": "This covers a design P2 did not consider: one hot-swappable buffer per port, with its enable driven by the RP2354B, in place of a switch. From the SCPS226C pin table: with EN low, SDAIN is isolated from SDAOUT and SCLIN from SCLOUT, so the port's segment is cut off from the port monitors (meets V246). The part is hot-swappable, which answers V253 whatever the owner decides. VCC is 2.7 to 5.5 V. Each port takes 1 buffer and 1 enable line. Stock: JLCPCB stockCount 2,634, canPresaleNumber 2,616, US$0.7779 at qty 1 (vendors.py jlcpcb C130025, 2026-09-28T15:33:57Z). Digi-Key: Active, stock 1,428, lead 16 weeks (15:34:46Z). The datasheet was read from https://www.ti.com/lit/ds/symlink/tca4311a.pdf at 15:35:49Z. The 400 kHz rating and the rise-time accelerators were not checked against V244's 400 pF."
+   },
+   {
+    "function": "non-volatile store",
+    "part": "MB85RC16PNF-G-AMERE2 (LCSC C46681954)",
+    "maker": "RAMXEED (datasheet DS501-00001-12v2-E); counts as Fujitsu (S1, owner 2026-09-27); JLCPCB label RAMXEED/FUJITSU",
+    "why": "P2 dropped only the MB85RC16V (JNN1ERE1 code). The 3 V MB85RC16 in its current -AMERE2 code was not considered. Datasheet (https://www.ramxeed.com/assets/images/products/datasheet/FeRAM/i3/MB85RC16-DS12v2-E.pdf, read 15:38:52Z): 16 Kbit = 2,048 bytes, which covers V247's 792 bytes. Endurance is 10^12 read/writes per byte (V248). Supply is 2.7 to 3.6 V, 3.3 V typical, and the bus runs at 1 MHz. Device code '1010', so it sits at 0x50 to 0x57, outside 0x40 to 0x4F. The addressing and pinout are the same as the FM24CL16B, P2's rank 3, which can serve as its rule-5 alternate. Maker status: 'MP' for MB85RC16PNF-G-AMERE2 (and -AME2, PN-G-AMERE1) in the table at https://www.ramxeed.com/products/feram/feram-products.html (read 2026-09-28T15:38:17Z, commented-out rows excluded). Stock: JLCPCB stockCount 25,316, canPresaleNumber 24,721, US$0.5538 at qty 1 (vendors.py jlcpcb C46681954, 15:34:04Z). Digi-Key: Active, stock 0, lead 30 weeks (15:35:05Z), so its second source must be the FM24CL16B alternate. The same table lists MB85RC16VPNF-G-AME2 and -AMERE2 as MP. Neither is in the 2026-09-14 jlcparts copy."
+   },
+   {
+    "function": "non-volatile store",
+    "part": "M24C64-RMN6TP (LCSC C79988); M24256E-FMN6TP (LCSC C5221744)",
+    "maker": "STMicroelectronics (datasheets DS6638 Rev 38, February 2023, and DS12687 Rev 5, February 2025)",
+    "why": "An S1 family P2 did not consider. It is the EEPROM with the highest endurance found. DS6638 Table 14 gives write-cycle endurance of 4,000,000 at TA ≤ 25 °C and 1,200,000 at 85 °C. DS12687 gives 1,200,000 at 85 °C and 'more than 4 million write cycles' on its front page. Endurance at 50 °C is not stated, so V248's 3,200,000 saves still needs the record rotated, but over fewer locations than the 1,000,000-cycle AT24C256C and 24LC256 (ranks 4 and 5). Other figures: 1 MHz. M24C64-R runs on 1.8 to 5.5 V, M24256E-F on 1.65 to 5.5 V. 5 ms write. Device select '1010 E2 E1 E0', which is 0x50 to 0x57. Datasheets read from https://www.st.com/resource/en/datasheet/m24c64-r.pdf (15:37:02Z) and .../m24256e-f.pdf (15:37:03Z). Maker status: M24C64-RMN6TP 'Active, Product is in volume production', longevity 'Available until: 01/2035', at https://www.st.com/en/memories/m24c64-r.html (15:40:21Z). M24256E-FMN6TP 'Active', same longevity date, at https://www.st.com/en/memories/m24256e-f.html (15:40:27Z). Stock: JLCPCB C79988 168,822 / 155,003, US$0.1496 (15:34:02Z). C5221744 125,256 / 125,243, US$0.2409 (15:34:02Z). Digi-Key M24C64-RMN6TP Active 15,188, lead 36 weeks (15:34:58Z). M24256E-FMN6TP Active 835, lead 26 weeks (15:35:00Z). Not a candidate: M24256-BWMN6TP (C118279), which Digi-Key lists Not For New Designs (15:35:02Z)."
+   },
+   {
+    "function": "non-volatile store",
+    "part": "CAT24C256WI-GT3 (LCSC C79987)",
+    "maker": "onsemi (datasheet CAT24C256/D Rev. 16, February 2022)",
+    "why": "An S1 maker P2 did not consider. It is a 256 Kbit EEPROM in SOIC-8 with a 1.8 to 5.5 V supply, 1 MHz (Fast-mode Plus) and 1,000,000 program/erase cycles. Device code '1010', so it sits at 0x50 to 0x57. It is a possible rule-5 alternate for the AT24C256C-SSHL-T (rank 4); the pin-for-pin and page-size match was not checked. Datasheet read from https://www.onsemi.com/pub/Collateral/CAT24C256-D.PDF at 15:37:44Z. Stock: JLCPCB stockCount 65,356, canPresaleNumber 65,085, US$0.5132 at qty 1 (vendors.py jlcpcb C79987, 2026-09-28T15:34:03Z). Digi-Key: Active, stock 19,585, lead 40 weeks (15:35:03Z). onsemi's product-page status was not read. It carries the same 1,000,000-cycle limit as ranks 4 and 5, so the record must be rotated."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "MLX90640ESF-BAA-000-TU (C17380659), MLX90641ESF-BCB-000-TU (C3663386)",
+    "reason_given": "not shortlisted, five survivors at most: thermal arrays whose per-pixel temperature calculation runs on the host; datasheets not read",
+    "why_it_fails": "The infrared shortlist holds 4 parts, so it had room for a fifth and the five-survivor cut does not apply. Both datasheets were read (https://www.melexis.com/-/media/files/documents/datasheets/mlx90640-datasheet-melexis.pdf and .../mlx90641-datasheet-melexis.pdf, 2026-09-28T15:36:52Z and 15:36:53Z). Each gives target temperature -40 to 300 °C, a 3.3 V supply (MLX90641: VDD 3.0 to 3.6 V, I²C up to 1 MHz) and a refresh of 0.5 to 64 Hz, which meets V239 and V242. Each part named still fails rule 4 on today's JLCPCB read. C17380659: stockCount 0, canPresaleNumber -3 (15:33:37Z). C3663386: 1 and 1 (15:33:40Z). Digi-Key holds 895 of the BAA and 464 of the MLX90641, both Active (15:34:35Z, 15:34:37Z). The sibling MLX90640ESF-BAB-000-TU passes (see missed)."
+   },
+   {
+    "part": "TCA4307DGKR (C880333)",
+    "maker_note": "Texas Instruments",
+    "reason_given": "a hot-swap buffer with one downstream bus: it does not switch a segment off, so misses the address separation of V246",
+    "why_it_fails": "The TCA4307 datasheet SCPS270B (https://www.ti.com/lit/ds/symlink/tca4307.pdf, read 2026-09-28T15:35:37Z), pin 1 EN: 'If EN is low, the TCA4307 is in a low current mode. It also isolates SDAIN from SDAOUT and isolates SCLIN from SCLOUT.' One TCA4307 per port, with EN on an RP2354B or expander line, therefore switches that port's segment off from the port monitors. That meets V246. It is also hot-swappable with stuck-bus recovery (V253). VCC is 2.3 to 5.5 V. Stock: JLCPCB stockCount 2,704, canPresaleNumber 2,621 (vendors.py jlcpcb C880333, 15:33:58Z). Digi-Key: Active, 6,746, lead 16 weeks (15:34:48Z)."
+   },
+   {
+    "part": "TCA9517ADGKR, TCA9617ADGKR, TCA9617BDGKR, TCA9511ADGKR (and NXP PCA9517ADP,118, PCA9515ADP,118)",
+    "reason_given": "buffers and repeaters: pass every address through, so miss V246",
+    "why_it_fails": "Each TI part named has an enable that cuts off its downstream side. SCPS245E section 7.3.2 (TCA9517A): an active-high EN 'can be used to isolate a badly behaved target'. SCPS259F section 7.4 (TCA9617B): EN 'can be used to separate a misbehaving target'. SCPS272C pin EN (TCA9511A): 'isolates SDAIN from SDAOUT and isolates SCLIN from SCLOUT'. Datasheets read from www.ti.com/lit/ds/symlink/ at 2026-09-28T15:35:47Z to 15:35:49Z. With one buffer per port and its EN driven, a port's segment is switched off like a switch channel. The constraint is that EN changes only while the bus is idle (SCPS259F: 'Disabling during a bus operation can hang the bus'). Stock: TCA9517ADGKR JLCPCB 19,592 / 19,503 (15:34:00Z), Digi-Key Active 24,797 (15:34:55Z). TCA9617BDGKR JLCPCB 11,926 / 11,910 (15:34:01Z), Digi-Key Active 43,886 (15:34:53Z). TCA9617ADGKR JLCPCB 3,312 / 3,289 (15:34:00Z), Digi-Key Active 0 (15:34:51Z). TCA9511ADGKR JLCPCB 1,703 / 1,671 (15:41:17Z), Digi-Key Active 0 (15:41:16Z). The NXP PCA9517A and PCA9515A datasheets were not read. The exclusion holds for the P82B96DGKR, whose SCPS144C shows no enable pin."
+   },
+   {
+    "part": "ADS1118IDGSR (C55347)",
+    "reason_given": "not shortlisted, five survivors at most: a general 16-bit ADC with linearisation and cold-junction compensation left to firmware and no built-in open-thermocouple detection; datasheet not read",
+    "why_it_fails": "The five-survivor cut stands, but the stated deficiency does not miss V250, which asks that an open thermocouple be detected, not that detection be built in. SBAS457F section 10.2.2 (https://www.ti.com/lit/ds/symlink/ads1118.pdf, read 2026-09-28T15:37:44Z): the biasing resistors RPU and RPD, 1 to 50 MΩ, 'offer a weak pullup and pulldown to detect an open thermocouple lead', and the ADC then reads full scale. That is the same added-resistor route P2 accepted for the AD8495 and the MAX6675. Stock: JLCPCB 3,252 / 3,110 (15:33:26Z). Digi-Key Active 8,410 (15:35:10Z). The ADS1220, from the same maker, has the detection on chip (see missed)."
+   },
+   {
+    "part": "PCA9548APW,118 (C21198)",
+    "reason_given": "not shortlisted, five survivors at most; NXP's part page carried no status in its body (https://www.nxp.com/part/PCA9548APW, 15:16:24Z), so its lifecycle is not read",
+    "why_it_fails": "The lifecycle can be read. NXP's product page https://www.nxp.com/products/PCA9548A (redirects to .../eight-channel-ic-bus-switch-with-reset:PCA9548A) carries 'PCA9548A Active' in its body (read 2026-09-28T15:39:47Z). The five-survivor cut holds, but the part matters beyond ranking. It is a pin-compatible TSSOP-24 alternate to rank 1 (TCA9548APWR) under rule 5, and the rank-2 TI PCA9548APWR that P2 names as rank 1's second source is Not For New Designs at Digi-Key. JLCPCB C21198: stockCount 24,781, canPresaleNumber 24,750 (vendors.py jlcpcb C21198, 15:41:12Z). Digi-Key stock not read: the API returned 404 'Duplicate Products found for pca9548apw,118' (15:41:24Z)."
+   }
+  ],
+  "missed_functions": []
+ }
+}

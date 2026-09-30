@@ -1,0 +1,133 @@
+{
+ "task": "FU",
+ "run": "FU-P1R5",
+ "run_id": "f2d604f9f6899268",
+ "commit": "249be1e5ea81a07f06fa290cc892ed9093c5e8fb",
+ "date": "2026-09-28",
+ "run_info": {
+  "claude_code": "2.1.284 (Claude Code)",
+  "cpus": 48,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "concurrency": 16,
+  "concurrency_setting": "unset"
+ },
+ "followup": {
+  "phases": "P1",
+  "round": 1,
+  "categories": [
+   "R5"
+  ],
+  "items": [
+   {
+    "role": "P1",
+    "category": "R5",
+    "value": {
+     "where": "hardware/docs/IOBoard.md:386",
+     "quantity": "reverse-current blocking on the display supply",
+     "value": "the link-cable supply blocks reverse current, so the display's USB-C feeds nothing into the IO board",
+     "marking": "assumption",
+     "source": "Research.md:283 and IOBoard.md:386 state it with no owner decision. The owner decision (Research.md:61) says only that the display is powered through the link cable. Read 2026-09-28",
+     "refutation_tried": "Searched F6, prerequisite 7 and the Power decision for a reverse-current rule: none states one.",
+     "question": 2
+    },
+    "reason": "assumption without a confirmed question"
+   }
+  ]
+ },
+ "accept_open": null,
+ "decisions": {
+  "Q4": "",
+  "Q8": "",
+  "Q9": ""
+ },
+ "planned": 4,
+ "started": 4,
+ "extra_used": 0,
+ "free": 28,
+ "skipped": [],
+ "summary": {
+  "categories": [
+   "R5"
+  ],
+  "held": [],
+  "questions": [
+   {
+    "function": "display supply",
+    "question": "Does the link cable's supply block current from the display back into the IO board while the display is on its own USB-C and the IO board is unpowered or running from the pack: yes or no?",
+    "why": "Research.md:283 and IOBoard.md:386 state the blocking, but no owner decision does. It entered the pages in commit 8d8964f (2026-09-25) as a plan item: 'The plan adds ... reverse-current blocking on the display's supply'. The Power decision (Research.md:61), F6 (Research.md:534) and prerequisite 7 (Research.md:489-490) do not contain it, and no question under Raised by P1 asks it: V80 asks the forward direction, link power into the display's VBUS. The answer decides whether P2 needs a reverse-blocking part (ideal diode or eFuse) on the display supply at all. The board running from the DC input is the same case at the blocking element as running from the pack: the 5 V rail is up and faces the display's VBUS through the cable. The answer for the pack case therefore holds for it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:386",
+    "for_quantity": "reverse-current blocking on the display supply",
+    "asks": "",
+    "category": "R5",
+    "source": "P1",
+    "id": "V266"
+   },
+   {
+    "function": "reverse-polarity protection",
+    "question": "What is the highest reverse voltage, in V, the DC input must survive without damage: the 20 V maximum reversed (-20 V), or the highest continuous voltage of V83 reversed?",
+    "why": "IOBoard.md:331 places reverse-polarity protection 'on the board's power input' with no voltage, and no row V1 to V264 gives one. V83 asks the forward overvoltage only. A protection part is qualified against its reverse rating. The TPS25947 seed's product page (https://www.ti.com/product/TPS25947, read 2026-09-28T19:39:50Z) lists 'Reverse polarity protection' but no reverse voltage; its datasheet was not read.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:331",
+    "for_quantity": "reverse voltage the DC input survives",
+    "asks": "",
+    "category": "R5",
+    "source": "P1 critic, re-checked",
+    "id": "V267"
+   },
+   {
+    "function": "source selection",
+    "question": "While the board runs from the 2S pack, must the source selection keep the pack's voltage off the DC input connector's pins, with the DC input unplugged or its source switched off: yes or no?",
+    "why": "IOBoard.md:324 and Research.md:61 state only that the selection is automatic. F8 (Research.md:536, owner 2026-09-25) says the pack does not charge from the DC input, so the selection blocks current from the DC input into the pack. No page states the other direction, pack out through the DC input's pins. It decides whether P2 needs reverse blocking on the DC input's side. A reverse-polarity stage built as a series P-channel MOSFET does not block it; an ideal diode or an eFuse with reverse blocking does.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:324",
+    "for_quantity": "pack voltage back-fed onto the DC input connector",
+    "asks": "",
+    "category": "R5",
+    "source": "P1 critic, re-checked",
+    "id": "V268"
+   }
+  ],
+  "inventory": {
+   "R5": [
+    "reverse-polarity protection",
+    "overvoltage protection",
+    "inrush limiting",
+    "source selection",
+    "pack disconnect",
+    "3.3 V logic buck",
+    "5 V rail",
+    "display supply",
+    "receiver supply",
+    "encoder 12 V supply",
+    "2S pack connector"
+   ]
+  }
+ },
+ "followUps": [
+  {
+   "role": "P0",
+   "host": "www.vishay.com",
+   "categories": [
+    "R3",
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P0",
+   "host": "www.isabellenhuette.com",
+   "categories": [
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  }
+ ],
+ "missing": [],
+ "sequence": 5,
+ "output_sha256": "a9bf3c68df4a2333eb2edfdb68c7dd21f19c3bcdd088c6e3e380bee75f9b309d"
+}

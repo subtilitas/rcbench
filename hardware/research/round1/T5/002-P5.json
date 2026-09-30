@@ -1,0 +1,422 @@
+{
+ "role": "P5",
+ "category": "",
+ "label": "P5",
+ "attempt": 0,
+ "data": {
+  "assumptions": [
+   {
+    "item": "receiver bus state machines",
+    "value": "1 PIO state machine (a soft decoder) serves the board's one physical receiver input (V68 found: the board brings out 1 receiver input, not one per protocol); whichever of S.BUS/iBUS/SUMD/CRSF/SRXL2/JETI EX Bus is selected reuses that one SM, since no receiver PIO program is written and the tree does not fix a count (IOBoard.md:258, :281 'no receiver PIO program is written').",
+    "why": "R11's row and R4's row both leave the receiver decode method open ('P5 states the count it assumes ... and whether a bus uses a hardware UART instead'); with only 1 physical input (V68) and both hardware UARTs already booked (OpenYGE + VESC), a PIO program is the only free resource, and S.BUS is explicitly described in IOBoard.md:267 as 'received by a PIO program that is not written', which extends by analogy to the other framed buses on the same single input.",
+    "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:258, :267, :281; Research.md P5 row; FU-A3/008-P4-stock-R4.json placements figure for 'receiver inputs' (V68 found: 1 receiver input)",
+    "read_at": "2026-09-29 (session reading of the cited files)"
+   },
+   {
+    "item": "programmer state machines",
+    "value": "0 additional state machines beyond the 8 already booked for bidirectional DShot on the 4 multiprotocol ports: a port runs one protocol at a time, and the one-wire bootloader (19,200 baud), ESCape32 and Hitec D-series each fit inside the 2-SM/port allocation sized for bidirectional DShot, the heaviest mode a multiprotocol port can carry.",
+    "why": "IOBoard.md:258 states bidirectional DShot on the 4 multiprotocol ports already takes 8 of the 12 state machines, and no programmer protocol has run on a wire or has a written PIO program (IOBoard.md:261-265, 'no protocol has run on a wire'); since the ports are exclusive-mode, booking the DShot worst case as the ceiling avoids double-counting an SM that is never used concurrently with DShot on the same pin.",
+    "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:233-234, :258, :261-265; Research.md Agent layout, P5 row",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "servo current sample period",
+    "value": "20 ms, the coprocessor's main-loop BENCH sample cadence.",
+    "why": "docs/Servo.md:35 requires the 3.0 A ceiling checked 'at every sample' but does not itself state a period; the coprocessor's only stated periodic reading cadence in the tree is the 20 ms figure V158 (owner, 2026-09-28) gives for the motor-monitor reading window ('read at the 20 ms sample'), and firmware/iomcu/src/main.c:1013 is cited as the same sampling call for both; no separate rate is stated for the port monitors.",
+    "source": "checkout e13f5f60d2e5 docs/Servo.md:35; hardware/docs/IOBoard.md:431; FU-B3/005-P2-R8.json found value V158, read_at 2026-09-29T15:37:34Z",
+    "read_at": "2026-09-29"
+   }
+  ],
+  "budgets": [
+   {
+    "item": "GPIO",
+    "value": "Capacity 48 (RP2350B package, PICO_RP2350A=0; R1 confirms NUM_BANK0_GPIOS=48 applies to the IO board's own header). P5's own tally of committed signals: heartbeat in (1) + Link CAN controller SPI+INT+CS (5) + External CAN controller SPI+INT+CS (5, own bus assumed) + 20 output-port pins (20) + UART socket (2, half-duplex TX/RX both wired to the one line) + VESC's separate TX/RX lines (2, V67) + the one receiver input (1, V68) + 2 I2C buses (4) + encoder A/B/index after RS-422 translation (3) + load-cell ADC ADS1235 CS+DRDY (2, sharing an existing SPI bus) + thermocouple MAX31856 CS+fault (2, sharing a SPI bus) + phase-wire comparator output (1) + magnetic pickup output (1) + onboard/external pack-switch-driver enables (2) = 51, before the accelerometer path (0 to 4, Q4-dependent), the servo-converter/port-ceiling status lines (V115, V119, V135, not yet fixed) and the latch/clear read-back are added. This exceeds the 48-pin capacity on the currently selected part set even before those additions.",
+    "within": false,
+    "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:106-109 (pin budget, 27 to 32 stated as incomplete), :133 ('P5 counts the whole board against 48 GPIO'); Research.md P5 row; selection.json parts for R2, R4, R8, R11, R13; this session's own enumeration from those parts' interface requirements (SPI/I2C/UART pin counts per each part's datasheet role as described in the FU-A2/FU-A3/FU-B3/FU-C1/FU-C2 returns)",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "PIO GPIO windows",
+    "value": "A PIO block reaches GPIO 0-31 (base 0) or 16-47 (base 16), fixed for all 4 of its state machines while it holds a program (3 blocks, 12 SM total). The 4 multiprotocol ports (8 SM for bidirectional DShot) need 2 whole blocks based so that every multiprotocol port pin used falls inside one base window; no pin map exists yet (round 1 selects parts, not placement), so whether the eventual multiprotocol-port and receiver/PPM pins actually fit one base each cannot be confirmed at this stage.",
+    "within": true,
+    "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:107, :258-259; pico-sdk 2.3.1 platform_defs.h; pico-sdk 2.3.0 hardware_pio/pio.c:454-506 as cited in IOBoard.md:258",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "PIO state machines",
+    "value": "Capacity 12 (3 blocks x 4). Booked: 8 for bidirectional DShot on the 4 multiprotocol ports (fixed, IOBoard.md:258) + 1 for PPM on the one switchable PWM port (fixed, IOBoard.md:250) + 1 for the receiver input (assumption, above) = 10 of 12, leaving 2 spare for the programmer modes (assumption: 0 additional, reuse the DShot allocation) and encoder decode if PIO-based rather than PWM-slice-based.",
+    "within": true,
+    "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:250, :258-259; selection.json R11 'encoder decode': RP2354B",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "PIO instruction memory",
+    "value": "32 words per block, 96 total. Bidirectional DShot: 11 (transmitter) + 5 (receiver) = 16 words/port x 4 ports = 64 words across the 2 blocks committed to it (32 words/block, exactly 2 ports/block, no spare in those 2 blocks). PPM: 4 words in the third block. Programmer and receiver programs are not written, so their word count is not known; the third block has 28 words free after PPM for them.",
+    "within": true,
+    "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:259; firmware/iomcu/src/dshot.pio and ppm.pio as cited there",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "DMA channels",
+    "value": "Capacity 16. PPM is the only function the tree assigns DMA to: 2 channels for the one PPM-capable port. No DMA is stated for DShot (PIO/interrupt driven) or for the other output modes.",
+    "within": true,
+    "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:250 ('1 PIO state machine and 2 DMA channels'); firmware/iomcu/src/out_ppm.c as cited there",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "PWM slices",
+    "value": "Capacity 12 slices (24 channels), with the stated collision rule: two pins 16 apart below GP32, or 8 apart from GP32 up, share one compare register. The 16 PWM-type output ports need 16 channels of the 24 available, numerically inside budget, but only if the round-2 pin map avoids the collision spacing; no pin map exists yet to confirm it.",
+    "within": true,
+    "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:108; shared/outputs/include/out_pwm_map.h:4-16 as cited there",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "ADC inputs",
+    "value": "Capacity 8 (9 with the internal temperature channel, NUM_ADC_CHANNELS=9 under PICO_RP2350A=0). Under Q4's 'reference' alternative the RP2354B's own ADC takes up to 4 channels for the accelerometer (2 vibration axes, V201, plus up to 2 static-angle axes, V206); under Q4's 'external ADC' alternative (ADCS7476, external SPI ADC) 0 of the 8 channels are used for the accelerometer. Either way the 8-input budget is not exceeded by what round 1 has selected.",
+    "within": true,
+    "source": "checkout e13f5f60d2e5 hardware/docs/Research.md P5 row ('NUM_ADC_CHANNELS of 9'); Research.md V201, V206 (Raised by P1); selection.json R10",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "SPI controllers",
+    "value": "Capacity 2 hardware SPI blocks. Candidate users: Link CAN controller (MCP2518FDT-E/SL), External CAN controller (MCP2518FDT-E/SL), R13's load-cell ADC (ADS1235IRHBR), R12's motor-temperature thermocouple (MAX31856MUD+T), and, if Q4 picks the external-ADC alternative, R10's ADCS7476AIMFX/NOPB -- up to 5 SPI-protocol devices on 2 physical controllers. This is workable by multi-dropping several devices on one controller's SCK/MOSI/MISO with separate chip-selects and software-managed mode/clock switching between transactions (a standard pattern), but it has not been checked for timing conflict between the CAN controllers' continuous 10 MHz polling and the slower ADC/thermocouple transactions.",
+    "within": true,
+    "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:170 (CAN 'SPI at 10 MHz, mode 0'); selection.json R2, R10, R12, R13; Research.md P5 row ('2 SPI ... controllers with their pin options')",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "I2C controllers",
+    "value": "Capacity 2 hardware I2C blocks. Devices distributed across them per the P4 datasheet verifier's address-block work: 7x INA3221 (0x40-0x43, one address pin), 2x INA238 (0x44-0x4F subset), MCP9808 (0x18-0x1F), TCA9548A/PCA9548A mux (for the 2 external I2C ports and other bus fan-out), 2x MCP23017 (0x20-0x27), MAX17320G22+, TPS55285 and TPS55288 (opposite addresses per FU-B3 rerank note), BQ25713, FUSB303. The port-monitor block (0x40-0x4F) and the temperature-sensor block (0x18-0x1F, outside it) were deliberately kept apart by the rerank; no collision was found across the two buses in the returns read.",
+    "within": true,
+    "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:351, :462-464; FU-B3/021-P4-datasheet-R8.json figures 'P2 report: I2C addresses for P5' and 'P2 report: Temperature sensor addresses, corrected', read_at 2026-09-29T17:20:12Z and 17:29:10Z; FU-B3/013-rerank-R8.json 'Onboard shunt temperature sensor' entry; FU-B3/011-rerank-R6.json 'I/O expander' entry (0x20-0x27); FU-C1/025-P4-datasheet-R12.json address findings",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "UART controllers",
+    "value": "Capacity 2 hardware UART blocks, fully booked: one for the OpenYGE one-pin socket (half duplex 115,200 baud 8N1) and one for VESC's separate transmit/receive lines (115,200 baud, V67). 0 spare. The single receiver input is assumed PIO-decoded (see assumption), not a third hardware UART, since none is free.",
+    "within": true,
+    "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:273 (OpenYGE line); Research.md V67 (owner, 2026-09-28, VESC separate TX/RX)",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "in-package flash",
+    "value": "2 MB total; image-size limit 2,088,960 bytes (2 MB less the store's two 4,096-byte sectors) against a stated build size of 272,040 bytes plus an unknown board-picture size for the IO board (the module's own picture is 206,000 bytes). Both packaged-part erase/program figures (45 ms typ / 400 ms max sector erase; 0.4 ms typ / 3 ms max page program, W25Q16JV-DTR rev I) are used as the budget ceiling since the RP2354B's own die figures are not known (owner, 2026-09-27).",
+    "within": true,
+    "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:114-117, hardware/docs/Research.md 'Consequence of the RP2354B's 2 MB flash'",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "I2C address map",
+    "value": "Port and motor monitors occupy 0x40-0x4F (7x INA3221 at 0x40-0x43 via one address pin; 2x INA238 in the 0x44-0x4F subset). The onboard-shunt temperature sensor (MCP9808, 0x18-0x1F) and the motor-temperature devices sit outside that block by design; the P4 datasheet verifier re-derived and confirmed this partition and used it as the tiebreak that ranked MCP9808 above TMP116/ADT7410 (which sit inside 0x40-0x4F). I/O expanders sit at 0x20-0x27 (MCP23017), also clear of the monitor block. No collision was found in the returns read.",
+    "within": true,
+    "source": "FU-B3/021-P4-datasheet-R8.json figure 'P2 report: Temperature sensor addresses, corrected' and 're-rank report' entries, read_at 2026-09-29T17:26:50Z, 17:29:10Z; checkout e13f5f60d2e5 hardware/docs/IOBoard.md:462-464 (address-map constraint); FU-B3/011-rerank-R6.json I/O expander entry",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "current per rail: 3.3 V logic rail",
+    "value": "LMQ66430MC3RXBRQ1 rated 3 A against a verified load of 1.36 A (R5's own summation over T2/T4 parts plus margin, per the FU-B3 rerank reason text).",
+    "within": true,
+    "source": "FU-B3/010-rerank-R5.json '3.3 V logic buck' entry ('3 A against 1.36 A'); FU-B3/004-P2-R7.json found value V143 (0.63 A of the 3.3 V rail alone, before R6/R7/R8's own ~11 mA)",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "current per rail: 5 V rail",
+    "value": "TPS62933DRLR rated 3 A against a verified load of 2.5 A (display 1.5 A continuous/2 A peak plus load-cell excitation 51 mA plus margin).",
+    "within": true,
+    "source": "FU-B3/010-rerank-R5.json '5 V rail' entry ('3 A against 2.5 A'); FU-B3/004-P2-R7.json found value V143",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "current per rail: Servo rail",
+    "value": "TPS55285VALR (fixed input) is rated 4 to 6.35 A, but the standing FU-B1 adjudication (reconfirmed unchanged by the FU-B3 rerank) finds the part fails 'Ambient range' at the pack-floor corner (6.0 V in, 8.4 V/4.0 A out, 50 degC ambient): estimated TJ spans 89 to 179 degC against the 125 degC recommended maximum (150 degC absolute maximum), because the datasheet gives no IC-loss figure at that operating point and neither shows nor excludes a pass. selection.json accordingly carries 'Servo supply': part null.",
+    "within": false,
+    "source": "FU-B1/030-adjudicator-R6.json ruling (function 'Servo supply', 'stands': true on 'Ambient range'); FU-B3/011-rerank-R6.json 'Servo supply' entry, unchanged; selection.json R6.Servo supply",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "current per rail: Display supply",
+    "value": "TPS259474ARPWR's circuit-breaker trip band is 2.25 to 2.75 A (RILM 1.65 kOhm, +/-10 % above 1 A); the display's 2 A peak sits under the 2.25 A minimum trip, so a cable short trips the breaker before the IO board's 5 V rail sags.",
+    "within": true,
+    "source": "FU-B3/002-P2-R5.json found value V82; https://www.ti.com/lit/ds/symlink/tps25947.pdf SLVSFC9C as cited there",
+    "read_at": "2026-09-29T15:32:11Z"
+   },
+   {
+    "item": "current per rail: Encoder 12 V supply",
+    "value": "TPS55288RPMR against an assumed 100 mA at 12 V load (V102, the encoder's own current draw, is marked 'for research' and was not found in the returns read); the converter's own current-limit figure was not captured in this reading pass.",
+    "within": true,
+    "source": "FU-B3/004-P2-R7.json found value V143 (100 mA at 12 V assumed for the pack-current sum); Research.md V102 ('for research', not found in the returns read under FU-B3)",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "pack current",
+    "value": "12.23 A at the 6.0 V pack floor (F9), recomputed from the R5/R6-verified converter efficiencies: 10.02 A for the servo supply (53.3 W / 88.7 % TPS55285 efficiency / 6.0 V, SLVSI72A Figure 5-3) + 1.30 A for the display through the 5 V rail (7.5 W / 96.0 % TPS62933 efficiency / 6.0 V) + 0.91 A for the 3.3 V rail, the encoder's 12 V supply and the load-cell excitation (V143). This matches R7's own figure exactly.",
+    "within": true,
+    "source": "FU-B3/004-P2-R7.json found values V140, V141, V143, V137 (evidence text: '12.23 A pack current at the 6.0 V floor'), read_at 2026-09-29T17:19:05Z-onward",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "cell rating",
+    "value": "The rank-1 candidate (INR-18650-P30B, Molicel, 30 A continuous discharge per cell against the 12.23 A pack current, 17.77 A of margin; 2900 mAh minimum capacity) passes every technical and stock check the P2/P4 returns read, but selection.json carries 'Pack cells': part null: the cell is available only from Liion Wholesale (V151), not from Digi-Key, the second vendor sourcing rule 1 names for an off-board part, and Digi-Key's API returns no 18650 cell from an S9-listed maker. No cell currently holds this function.",
+    "within": false,
+    "source": "FU-B3/016-P4-stock-R7.json 'Pack cells' entry (verdict confirmed, no refutation); FU-B3/019-P4-datasheet-R7.json 'Pack cells' entry; FU-B3/004-P2-R7.json found values V137, V145, V151; selection.json R7.Pack cells (part: null); checkout e13f5f60d2e5 hardware/docs/Research.md sourcing rule 1",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "pack protection",
+    "value": "MAX17320G22+ selected for cell balancing, pack overcurrent protection and the bench pack balance lead (one physical part serving all three, per the FU-B3 rerank and stock-verifier notes). Its overcurrent/overvoltage/over-temperature thresholds are set against the 12.23 A pack current and the P30B cell's 30 A rating (V150), but since the cell itself is not currently a selected part (see 'cell rating'), the protection's thresholds have no confirmed cell to be set against.",
+    "within": false,
+    "source": "FU-B3/004-P2-R7.json found value V150; FU-B3/016-P4-stock-R7.json placements entries for 'Cell balancing', 'Pack overcurrent protection', 'Bench pack balance lead' (all '1, confirmed ... same physical charger/balancer'); selection.json R7",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "ESC pack node clamp",
+    "value": "No discrete clamp part is selected (R3 'pack overvoltage and transient clamp': null), and the P2 return for R3 found this to be the correct outcome rather than a gap: every TVS-diode candidate clamps at 113 to 126 V at 12 to 13 A, far above the 85 V INA238 absolute-maximum ceiling the clamp must hold to at 300 to 600 A (V48); the requirement is instead met by the pack switch's own controlled turn-off (the 5 ms budget and the sized lead inductance of V45/V54, giving 11 to 45 mJ of transient energy on the pack leads and 5.6 to 22.5 mJ on the switch-to-ESC leads), not by a clamp component.",
+    "within": true,
+    "source": "FU-A3/003-P2-R3.json 'pack overvoltage and transient clamp' function (dropped candidates and reasons); checkout e13f5f60d2e5 hardware/docs/Research.md V45, V48, V54 (Raised by P1, owner 2026-09-28)",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "I2C bus timing: bus carrying 4 port monitors (0x40-0x43)",
+    "value": "Each INA3221 takes 1.21 ms maximum per 3-channel conversion (CT=100); 4 devices read in series take up to 4.84 ms of conversion time per full sweep, plus I2C transaction overhead, against the assumed 20 ms servo-current sample period -- fits with margin.",
+    "within": true,
+    "source": "FU-B3/021-P4-datasheet-R8.json figure 'P2 report: Port monitor timing for P5' ('CT bit=100 gives 1.1 ms typ / 1.21 ms max per conversion; three channels x 1.21 ms = 3.63 ms'), read_at 2026-09-29T17:20:12Z",
+    "read_at": "2026-09-29T17:20:12Z"
+   },
+   {
+    "item": "I2C bus timing: bus carrying the remaining port and motor monitors",
+    "value": "Up to 3 INA3221 plus the 2 INA238 motor monitors on the second bus; at 3.63 ms per INA3221 sweep and the INA238's own conversion time (not captured in this pass) the combined read time was not fully computed in the returns read.",
+    "within": true,
+    "source": "FU-B3/021-P4-datasheet-R8.json (same figure as above, 'the one address pin (4 targets) supports 21 reads across two buses'); INA238 conversion time not found in the files read this pass",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "alert pins",
+    "value": "No port monitor's or motor monitor's ALERT/critical-alert output is wired to any GPIO or switch driver in the current selection: R8's own P4 finding (V160, V175) states the INA238's ALERT is open-drain and 'not shown wired to any switch driver', and Servo.md:39 has the coprocessor check every sample in firmware instead. The board therefore commits 0 alert-pin GPIOs, at the cost of no hardware-latched overcurrent/overvoltage response independent of firmware.",
+    "within": true,
+    "source": "FU-B3/021-P4-datasheet-R8.json figures 'found V160' and 'found V175', read_at 2026-09-29T17:20:04Z and 17:18:00Z",
+    "read_at": "2026-09-29T17:20:04Z"
+   },
+   {
+    "item": "motor overcurrent path",
+    "value": "Detection to firmware disarm: at most 20 ms (V158/V159, one averaged 20 ms sample). Detection to the ESC pack switch physically opening: no path exists via the overcurrent detection itself -- V160 (owner, 2026-09-28) states 'Nothing: the action disarms the outputs; the pack switches follow the enable node alone (no processor between GPIO6 and a gate)'. The switch only opens on loss of the heartbeat (155 to 185 ms after the last edge, 200 ms deadline) or the operator's latch clear, neither of which the overcurrent detection drives.",
+    "within": false,
+    "source": "checkout e13f5f60d2e5 hardware/docs/Research.md V158, V159, V160 (Raised by P1, owner 2026-09-28); FU-B3/005-P2-R8.json found values V159, V160, read_at 2026-09-29T15:37:34Z",
+    "read_at": "2026-09-29T15:37:34Z"
+   },
+   {
+    "item": "servo current abort",
+    "value": "3.0 A ceiling checked at every sample (docs/Servo.md:35), with no hardware alert path (V175 confirmed, no alert wired); worst case abort latency is bounded by the assumed 20 ms sample period alone, since the stall (1.0 A/400 ms) and bind-detection (80/120 ms) windows are all longer than one sample.",
+    "within": true,
+    "source": "checkout e13f5f60d2e5 docs/Servo.md:35, :68-69; FU-B3/021-P4-datasheet-R8.json figure 'found V175', read_at 2026-09-29T17:18:00Z; assumption 'servo current sample period' above",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "enable polarity",
+    "value": "R4's output-gate buffer enable and R3's monostable/OR-gate enable node both use 'enabled = high, disabled = low' (the enable node is 'high while retriggered', F10; the gated buffer's enable follows it directly, and the enable inverter/bias-selector chain V57's owner answer requires the selector's reset/unpowered state to select the pull-down, i.e. the disabled state). The two categories agree in polarity in every figure read.",
+    "within": true,
+    "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:182, :187, :256; Research.md V57 (owner, 2026-09-28, 'Yes, if the selector's reset and unpowered state selects the pull-down')",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "power-up sequence",
+    "value": "The reset supervisor (F12, TPS3703A7330DSERQ1) must release its clear output only after the 3.3 V rail (LMQ66430MC3RXBRQ1) is inside 3.3 V +/-3 %, so its threshold and delay are checked against the buck's start-up ramp; the 3.3 V ramp time itself is not stated in the returns read (IOBoard.md's own 'Not known' list records this as open, and R5/R6's FU-B3 returns did not supply a ramp-time figure), so the actual delay margin was not computed in this pass.",
+    "within": true,
+    "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:377 ('The 3.3 V ramp time on the IO board is not stated'); selection.json R3.reset supervisor (TPS3703A7330DSERQ1), R5.'3.3 V logic buck' (LMQ66430MC3RXBRQ1)",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "allowlist",
+    "value": "Every part checked in this pass carries a maker on the S1 (ICs), S2 (passives/shunts) or S9 (18650 cells) list: Texas Instruments, Microchip, Infineon, Analog Devices/Maxim, STMicroelectronics, Vishay, Panduit-class passives from Samsung Electro-Mechanics/Panasonic-class makers, and Molicel (S9) for the (currently unselected) cell. No candidate from an excluded maker (Monolithic Power Systems, Richtek, Silergy, SG Micro, 3PEAK) was found kept in selection.json.",
+    "within": true,
+    "source": "checkout e13f5f60d2e5 hardware/docs/Research.md S1, S2, S9 answers; selection.json (all categories); FU-B3/012-rerank-R7.json (Monolithic Power Systems/onsemi/Renesas candidates dropped for other reasons, not allowlist)",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "Q4 alternatives: reference",
+    "value": "RP2354B's own ADC with an external reference (LM4040AIM3-3.0/NOPB, rank-1 alternate, verified): uses up to 4 of the RP2354B's 8 ADC inputs (2 vibration axes plus up to 2 static-angle axes), 0 SPI/I2C controllers, and needs the ADC to be triggerable or timestamped on the index-pulse timebase, which R10 was asked to report and which was not found confirmed in the returns read.",
+    "within": true,
+    "source": "selection.json R10.'Converter for the accelerometer'.q_alternatives (LM4040AIM3-3.0/NOPB, option 'reference', status verified); Research.md Q4 row and V201, V206",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "Q4 alternatives: external ADC",
+    "value": "External SAR ADC (ADCS7476AIMFX/NOPB, rank-1 candidate, verified): uses 1 of the 2 SPI controllers (shared with the CAN controllers and R13's load-cell ADC, see 'SPI controllers'), 0 of the RP2354B's 8 ADC inputs, and needs its own conversion trigger tied to the index-pulse timebase for timestamping, per the same open reporting requirement as the reference alternative.",
+    "within": true,
+    "source": "selection.json R10.'Converter for the accelerometer' (ADCS7476AIMFX/NOPB, rank 1); Research.md Q4 row",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "Q8 alternatives: FRAM",
+    "value": "MB85RC256VPNF-G-AMERE2 (rank-1, verified): I2C FRAM at a fixed device-type address block 0x50-0x57 (or 0x58-0x5F via the configurable-address variant), entirely outside the 0x40-0x4F port/motor-monitor block, so it adds no address-map conflict; shares an existing I2C bus, 0 extra GPIO beyond the bus itself.",
+    "within": true,
+    "source": "FU-C1/025-P4-datasheet-R12.json figure on MB85RC256V addressing ('upper 4 bits ... fixed at 1010 ... 0x50 to 0x57, outside 0x40', and the configurable variant '0x58 to 0x5F'); selection.json R12.'non-volatile store'",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "Q8 alternatives: EEPROM",
+    "value": "M24256E-FMN6TP (verified alternate, option EEPROM): also an I2C part; its address block was not captured in this reading pass beyond the general 0x50-0x57-class EEPROM addressing referenced for other candidates in the same file, so its exact clash-freedom against the 0x40-0x4F block was not independently confirmed here.",
+    "within": true,
+    "source": "selection.json R12.'non-volatile store'.q_alternatives (M24256E-FMN6TP, option 'EEPROM', status verified); FU-C1/025-P4-datasheet-R12.json (address details for this specific part not captured in the excerpts read)",
+    "read_at": "2026-09-29"
+   },
+   {
+    "item": "absent IOVDD",
+    "value": "R1's confirmed pin ratings match the specification's own cited figures verbatim: GPIO0-39 (fault tolerant) VPIN_FT is 5.5 V at IOVDD 3.3 V, 4.2 V at 2.5 V, and 3.63 V at 1.8 V and at 0 V (RP2350 datasheet build 2025-07-29, Table 1433/1436); this is the same 3.63-V-at-0-V figure IOBoard.md already cites, so R1's re-check finds no revision to pull request #167's 'not specified as tolerating an input above an absent IOVDD' statement or to R3's I_off/4.7 kOhm-series-resistor isolation design.",
+    "within": true,
+    "source": "FU-A4/006-P4-datasheet-R1.json figure 'P2 report: pin ratings', read_at 2026-09-29T09:12:09Z; checkout e13f5f60d2e5 hardware/docs/IOBoard.md:105, :192",
+    "read_at": "2026-09-29T09:12:09Z"
+   },
+   {
+    "item": "shared-part stock: MCP2518FDT-E/SL",
+    "value": "2 placements (Link CAN controller + External CAN controller, same part number, P2's placements figure already totals the combined need rather than double-counting each row): need 10 (2 x 5 boards), gate 50; stock confirmed passing in the FU-A2 returns.",
+    "within": true,
+    "source": "FU-A2/009-P4-stock-R2.json 'placements' figure ('2 (range 1 to 2 ... 2 when the same part serves both ports)'); selection.json R2",
+    "read_at": "2026-09-29T01:05:57Z"
+   },
+   {
+    "item": "shared-part stock: TCAN3413DR",
+    "value": "2 placements (Link + External CAN transceivers, same combined-total treatment as MCP2518FDT-E/SL): need 10, gate 50; lifecycle ACTIVE, stock passing per the FU-A2 returns.",
+    "within": true,
+    "source": "FU-A2/009-P4-stock-R2.json 'placements' figure and lifecycle-status figure; selection.json R2",
+    "read_at": "2026-09-29T01:05:57Z"
+   },
+   {
+    "item": "shared-part stock: TPSI3052DWZR",
+    "value": "Onboard pack switch driver + external module driver output, same part: combined placement range 2 to 4 (already summed across both functions by the FU-A3 verifier, gate at 100 for the top of the combined range), not summed twice.",
+    "within": true,
+    "source": "FU-A3/009-P4-stock-R3.json 'placements' figures for 'onboard pack switch driver' ('range 1 to 2; gate at 2; summed with the external module driver 2 to 4, gate 100') and 'external module driver output'",
+    "read_at": "2026-09-29T05:45:46Z"
+   },
+   {
+    "item": "shared-part stock: SN74LVC1G04DBVR",
+    "value": "Used by both R3 ('inverter on an active-low output enable', 1 placement, explicitly noted as 'shared with R4's enable inverter') and R4 ('enable inverter', 2 placements, 'one inverter for the 4 OE pins, or one per 244', taken at the top of its own 1-to-2 range) -- these are two different agents' independent counts for what R3's own text calls the same physical inverter, so the true combined need is 1, 2 or 3 depending on which count is right; even at the most conservative 3 (5 boards x 3 = 15, gate max(75,50)=75), the LCSC C7827 stock (53,159-53,165) clears every reading with wide margin.",
+    "within": true,
+    "source": "FU-A3/009-P4-stock-R3.json 'inverter on an active-low output enable' placements figure and stock figure (53,165 vs gate 50); FU-A3/008-P4-stock-R4.json 'enable inverter' placements figure and stock figure (53,159 vs gate 50)",
+    "read_at": "2026-09-29T05:38:12Z"
+   },
+   {
+    "item": "shared-part stock: SN74CBTLV3126PWR",
+    "value": "Used by 4 R4 rows (multiprotocol port path, UART socket path, and the reply-path row listed twice under slightly different wording) but all four already carry the same combined total of 2 physical parts (5 to 6 lines at 4 switches/part), not summed per row: need 10 (2 x 5), gate 50; LCSC C543078 stock 401 clears it.",
+    "within": true,
+    "source": "FU-A3/008-P4-stock-R4.json placements and stock figures for all four rows citing LCSC C543078 (stockCount 401 against gate 50)",
+    "read_at": "2026-09-29T04:37:10Z"
+   },
+   {
+    "item": "shared-part stock: BQ25713RSNR",
+    "value": "Pack charger + Power path, same physical part, both rows explicitly confirmed as '1, same physical charger', not summed: need 5 (1 x 5), gate 50.",
+    "within": true,
+    "source": "FU-B3/016-P4-stock-R7.json placements figures for 'Pack charger' and 'Power path' (LCSC C2878935)",
+    "read_at": "2026-09-29T17:23:00Z"
+   },
+   {
+    "item": "shared-part stock: MAX17320G22+",
+    "value": "Cell balancing + Pack overcurrent protection + Bench pack balance lead, same physical part across all three rows, each explicitly confirmed as '1, ... one balancer/protector for the 2S pack', not summed: need 5 (1 x 5), gate 50.",
+    "within": true,
+    "source": "FU-B3/016-P4-stock-R7.json placements figures for all three rows (LCSC C2914309)",
+    "read_at": "2026-09-29T17:23:00Z"
+   },
+   {
+    "item": "shared-part stock: INA238AIDGSR",
+    "value": "Motor monitor + External shunt sense input, same physical part (fixed input F1), 2 placements (need 10, gate 50): JLCPCB stockCount 0 with canPresaleNumber -99, and Digi-Key stockCount 0, reconfirmed live during FU-B3. Fails rule 4 at both vendors with no rule-5 route; already reported to the owner (Sourcing rule 5's own worked example) and carried in selection.json as R8.'Motor monitor' and R8.'External shunt sense input', both part null.",
+    "within": false,
+    "source": "FU-B3/017-P4-stock-R8.json 'Motor monitor' and 'External shunt sense input' entries (verdict refuted, stock 0/-99 at JLCPCB, 0 at Digi-Key, reconfirmed 2026-09-29T17:18:33Z); checkout e13f5f60d2e5 hardware/docs/Research.md sourcing rule 5 worked example; selection.json R8",
+    "read_at": "2026-09-29T17:18:33Z"
+   }
+  ],
+  "combinations": [
+   {
+    "bind_order": "The 4 multiprotocol ports bound first (in any relative order among themselves) with bidirectional DShot, then the one PPM-capable PWM port, then the receiver input.",
+    "outputs": "4 multiprotocol ports x bidirectional DShot (8 SM, 64 instruction words, 2 whole PIO blocks fully consumed at 2 ports/block) + 1 PPM output on one PWM port (1 SM, 4 words, 2 DMA channels, in the third block) + 1 receiver input (1 SM, word count not written, assumption above, remaining room in the third block) + the other 15 PWM-type ports on hardware PWM slices (no PIO cost).",
+    "fits": true,
+    "resources": "PIO: 10 of 12 state machines used (2 spare, both in the third block, PIO0 under a base-0 or base-16 assignment reaching whichever GPIO the receiver and any programmer function use), 68 of 96 instruction words used across the 3 blocks (32+32+4, third block has 28 words free). DMA: 2 of 16. PWM: 16 of 24 channels (12 slices) for the 16 PWM-type ports, provided the round-2 pin map avoids the stated 16-/8-apart collision spacing.",
+    "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:107-109, :250, :258-259; pico-sdk 2.3.0 hardware_pio/pio.c:454-506, :66-81 as cited there; Research.md P5 row",
+    "read_at": "2026-09-29"
+   },
+   {
+    "bind_order": "Any bind order that puts a fifth or sixth bidirectional-DShot-class device (for example, a programmer protocol implemented as its own 2-SM pair running concurrently with DShot on a different port, rather than reusing a port's own allocation) ahead of the receiver and PPM.",
+    "outputs": "Would need an 11th or 12th state machine beyond the 10 this budget books, encroaching on the 2-SM spare margin; not evaluated further because no such concurrent 5th/6th bidirectional-DShot user is named in the specification or in any selection.json part.",
+    "fits": true,
+    "resources": "Not computed beyond the observation that only 2 spare state machines remain under the assumed bind order above; a design that needs a genuinely separate PIO consumer beyond the receiver and PPM (for example, a second, non-multiplexed programmer channel) would need to be checked against those 2 spares specifically.",
+    "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:258-259; this session's own arithmetic from the state-machine budget above",
+    "read_at": "2026-09-29"
+   }
+  ],
+  "conflicts": [
+   {
+    "parts": [
+     "INA238AIDGSR"
+    ],
+    "categories": [
+     "R8"
+    ],
+    "kind": "shared-part stock shortfall",
+    "description": "The fixed-input motor monitor (INA238) serves both the onboard-shunt path and the external-shunt-sense path, a combined need of 10 units (2 placements x 5 boards); it fails sourcing rule 4 at both vendors (JLCPCB stockCount 0 / canPresaleNumber -99; Digi-Key stockCount 0), with no rule-5 second-source route, reconfirmed live during the FU-B3 re-check.",
+    "evidence": "FU-B3/017-P4-stock-R8.json 'Motor monitor' and 'External shunt sense input' entries, verdict 'refuted', reconfirmed 2026-09-29T17:18:33Z; selection.json R8.'Motor monitor' and R8.'External shunt sense input' both part null"
+   },
+   {
+    "parts": [
+     "TPS55285VALR"
+    ],
+    "categories": [
+     "R6"
+    ],
+    "kind": "rail conflict (thermal)",
+    "description": "The servo supply's fixed input (TPS55285) fails an ambient-range check at the pack-floor operating corner (6.0 V in, 8.4 V/4.0 A out, 50 degC ambient): estimated junction temperature spans 89 to 179 degC against a 125 degC recommended maximum (150 degC absolute maximum), because the datasheet supplies no IC-loss curve at that point and the refutation was ruled to stand; the part is a fixed input and was reported to the owner rather than replaced, leaving 'Servo supply' unselected in selection.json.",
+    "evidence": "FU-B1/030-adjudicator-R6.json ruling (function Servo supply, stands: true on 'Ambient range'); FU-B3/011-rerank-R6.json 'Servo supply' entry, carried forward unchanged; selection.json R6.'Servo supply' part null"
+   },
+   {
+    "parts": [],
+    "categories": [
+     "R7"
+    ],
+    "kind": "sourcing-rule conflict",
+    "description": "The rank-1 pack cell (INR-18650-P30B, Molicel, an S9-listed maker) passes every technical, stock and lifecycle check read in the FU-B3 returns, but only at Liion Wholesale; sourcing rule 1 requires an off-board part to be bought at the second vendor of question S3 (Digi-Key), and Digi-Key's API carries no 18650 cell from any S9-listed maker (V151). No cell is currently selected, which leaves the 'cell rating' and 'pack protection' checks (whose thresholds are set against the cell's rating, V150) without a confirmed part to check against.",
+    "evidence": "FU-B3/016-P4-stock-R7.json 'Pack cells' entry (verdict confirmed, no refutation, vendor Liion Wholesale); FU-B3/004-P2-R7.json found value V151; selection.json R7.'Pack cells' part null; checkout e13f5f60d2e5 hardware/docs/Research.md sourcing rule 1"
+   },
+   {
+    "parts": [],
+    "categories": [
+     "R1"
+    ],
+    "kind": "no qualifying part",
+    "description": "No candidate found for the RP2354B's USB port protection covers all 5 required lines (VBUS, D+, D-, CC1, CC2) while holding D+/D- steady at 3.63 V: the passive clamps found break down too low (for example USBLC6-2 at VBR 6 V min against a required steady 3.63 V is not itself a failure, but every OVP switch tested trips at up to 5.2 V and every Type-C protector with the needed CC/VBUS coverage carries no D+/D- path). selection.json accordingly carries 'USB protection': part null.",
+    "evidence": "FU-A4/006-P4-datasheet-R1.json figures 'P2 report: USB protection: no survivor' and the associated re-rank drop list; selection.json R1.'USB protection' part null"
+   },
+   {
+    "parts": [],
+    "categories": [
+     "R8"
+    ],
+    "kind": "no hardware actuation path",
+    "description": "The R8 row asks P5 to budget the time from motor-overcurrent detection to the ESC pack switch opening, but the owner's own answer (V160) states no such path exists: the coprocessor can only disarm the output signal (at most 20 ms after the averaged sample, V158/V159); the pack switch itself opens only when the heartbeat stops (155-185 ms, 200 ms deadline) or the operator clears the latch, neither of which the overcurrent detection drives.",
+    "evidence": "checkout e13f5f60d2e5 hardware/docs/Research.md V158, V159, V160 (Raised by P1, owner 2026-09-28); FU-B3/005-P2-R8.json found values V159, V160"
+   },
+   {
+    "parts": [
+     "SN74LVC1G04DBVR"
+    ],
+    "categories": [
+     "R3",
+     "R4"
+    ],
+    "kind": "cross-category placement-count disagreement",
+    "description": "R3's 'inverter on an active-low output enable' and R4's 'enable inverter' both select SN74LVC1G04DBVR, and R3's own text describes it as the same physical inverter ('shared with R4's enable inverter'), yet R3 books 1 placement while R4 independently books 2 (one inverter for the 4 OE pins, or one per 244, taken at the top of that range). The two follow-up-task agents did not cross-check each other's placement count for what is described as one shared component. The stock margin (LCSC C7827, over 53,000 units) absorbs the discrepancy regardless of which count is right, so this is a specification/BOM-accuracy inconsistency rather than a stock shortfall.",
+    "evidence": "FU-A3/009-P4-stock-R3.json 'inverter on an active-low output enable' placements figure ('1: one inverter drives the active-low OE pins from the latch output (V30), shared with R4's enable inverter'); FU-A3/008-P4-stock-R4.json 'enable inverter' placements figure ('2, top of the range 1 to 2 ... one inverter for the 4 OE pins, or one per 244')"
+   },
+   {
+    "parts": [],
+    "categories": [
+     "R1",
+     "R2",
+     "R4",
+     "R8",
+     "R11",
+     "R13"
+    ],
+    "kind": "resource budget (GPIO)",
+    "description": "This session's own enumeration of the GPIO each selected part's interface needs (heartbeat, 2 CAN SPI buses, 20 output ports, UART socket, VESC lines, the one receiver input, 2 I2C buses, encoder A/B/index, a shared-SPI-bus load-cell ADC and thermocouple with their CS/DRDY pins, phase-wire and magnetic-pickup outputs, and the pack-switch-driver enables) totals approximately 51 of the 48 available GPIO, before adding the accelerometer path, the servo-converter enable, and the port-voltage-ceiling status lines the tree leaves open (V115, V119, V135). This enumeration depends on several unconfirmed sharing assumptions (a separate SPI bus per CAN controller, a shared bus for the load-cell ADC and thermocouple) and no pin map exists yet to confirm or refute it; it is reported as a likely-tight or exceeded budget for the follow-up pin-mapping work to resolve, not as a certain failure.",
+    "evidence": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:106-109, :133 ('P5 counts the whole board against 48 GPIO'); selection.json parts for R1 (Microcontroller support), R2 (CAN), R4 (output/programmer buffering), R8 (monitors), R11 (rotation/vibration), R13 (load cells); this session's own pin-count derivation from each part's datasheet interface"
+   }
+  ]
+ }
+}

@@ -1,0 +1,37 @@
+{
+ "role": "P3",
+ "category": "R5",
+ "label": "P3-R5",
+ "attempt": 0,
+ "data": {
+  "category": "R5",
+  "missed": [
+   {
+    "part": "NCV68261MTWAITBG (WDFNW6, JLCPCB C5206747; sibling NCV68061SNAIT1G, TSOP-6, C5206748, 0 stock)",
+    "function": "reverse-polarity protection / overvoltage protection / inrush limiting / source selection",
+    "maker": "onsemi (allowed under S1)",
+    "why": "P2's search never touched onsemi for the ideal-diode/high-side-switch controller function (its dropped and shortlisted lists for these four functions name only Texas Instruments and Analog Devices/Linear). jlcparts lists this part under 'ORing Controllers' with description 'External FET Reverse current blocking, Reverse polarity protection, Overvoltage lockout, Undervoltage lockout, With enable'; JLCPCB's own erpComponentName (read 2026-09-29T16:59:39Z) is 'NCV68261: Ideal Diode and High Side Switch NMOS Controller', a direct family match for the same slot the LM7480x family fills. Reading the onsemi datasheet NCV68261/D Rev. 1, May 2022 (fetched 2026-09-29T17:00:11Z): Table 2 gives Input and Source Voltage DC (V_S) -18 V to 45 V, so continuous reverse survival stops at -18 V, short of the -25.2 V the function requires (only the ISO 7637-2 transient pulse reaches -40 V, which is a pulse, not the continuous value V267/V86 ask for). Table 6 gives a fixed Recommended Input Voltage of 3 V to 32 V, and page 1's Features state the overvoltage disconnect trips at V_IN = 35.6 V typ with no external programming pin, far above the 20.0-22.0 V cut-off band the function needs and not adjustable to it. It should have appeared in P2's dropped list (it fails 'reverse voltage survived' and 'cut-off band') but was never searched or reported."
+   },
+   {
+    "part": "BD9P235EFV-CE2 (JLCPCB C1518752, stock 100, 2026-09-29 jlcparts snapshot)",
+    "function": "3.3 V logic buck",
+    "maker": "ROHM (allowed under S1)",
+    "why": "ROHM is not mentioned anywhere in P2's dropped or shortlisted candidates for either buck-converter function; the search covered only Texas Instruments, Analog Devices (Maxim), STMicroelectronics and Diodes Incorporated. BD9P235EFV-CE2 is a fixed 3.3 V synchronous buck (BD9P2x5EFV-C series), V_IN 3.5 V to 40 V, 2 A, comfortably spanning the 5.8-22 V operating range and the 1.36 A load. Reading ROHM datasheet TSZ02201-0J1J0AL01490-1-2 Rev.002, 08 Apr 2020 (fetched via JLCPCB's hosted copy, 2026-09-29T17:04:02Z): the Electrical Characteristics table is headed 'Ta = -40 degC to +125 degC, V_IN = 12 V' and the Output Voltage row (V_OUT_SNS1, PWM mode) is 3.250 V to 3.366 V under that single V_IN condition, with no across-input-range sweep stated; by the same standard P2 already applied to reject LMR51420YFDDCR, LMR51430YFDDCR, L6981N33DR, MAX17504ATP+T and TPS62933DRLR/FDRLR (a tolerance row scoped to one V_IN, or to TJ 0-85 degC only, is not usable as stated across 5.8-22 V and 0-50 degC ambient), BD9P235EFV-CE2 fails '3.3 V tolerance at the monostable' as stated. It also has an auto PFM/PWM 'SLEEP' light-load mode with its own Enter/Exit thresholds up to 3.424 V (page 11) unless the MODE pin is tied high to force PWM, another undocumented condition. It should have reached the dropped list under the same reasoning already used for its TI/ST peers, but P2 never searched ROHM at all."
+   },
+   {
+    "part": "ISL81401AFRZ and ISL81601FVEZ (VQFN-32-EP and HTSSOP-38-EP; JLCPCB C1019003-family and C1019005)",
+    "function": "encoder 12 V supply",
+    "maker": "Renesas (allowed under S1)",
+    "why": "Renesas does not appear anywhere in P2's records for this function (only Texas Instruments and Analog Devices/Linear were searched, per the dropped and shortlisted lists). ISL81401/ISL81601 are 4-switch synchronous buck-boost controllers built around external MOSFETs, the same architecture as the kept LM5175/LM5176 (rank 2/3): ISL81401 spans V_IN 4.5-40 V and ISL81601 4.5-60 V, both comfortably covering the 5.8-22 V input the encoder supply needs to buck-boost through. jlcparts' 2026-09-14 snapshot shows thin JLCPCB stock for every orderable in the family (ISL81401AFRZ 20, ISL81401AFRZ-T 0, ISL81601FVEZ 5, ISL81601AFRZ not listed with stock), all well under the roughly 50-unit gate the other single-per-board R5 candidates were held to, so the family likely fails rule 4 (stock) even before a full datasheet check of the current-limit and inrush-absorption values V102/V108 ask for. It is a genuine search gap (an allowed maker never queried for this function), even though the stock figures suggest it would not have displaced the TI shortlist."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "LTC4368IMS-2#TRPBF",
+    "reason_given": "Dropped from all three of 'reverse-polarity protection', 'overvoltage protection' and 'inrush limiting' with the identical text: 'no route of rule 5: Digi-Key 1 (#TRPBF) and 0 (#PBF), C580890 34/33 under 50' (FU-B1 P4 13:23:31Z).",
+    "why_it_fails": "C580890 is not LTC4368IMS-2#TRPBF's own LCSC number. Read today from JLCPCB's API (jlcpcb C580890, 2026-09-29T17:08:33Z): C580890 is 'LTC4368CMS-2#PBF' (Commercial temperature grade, PBF tube option), stockCount 34, canPresaleNumber 33 -- a different orderable part from the Industrial-grade LTC4368IMS-2#TRPBF being evaluated. The candidate's actual LCSC, read the same way (jlcpcb C688403, 2026-09-29T17:08:34Z), is 'LTC4368IMS-2#TRPBF' itself, with stockCount 79 and canPresaleNumber 77 today -- above the 50-unit gate cited in the same drop entries for other parts, so the JLCPCB stock route (rule 4) for the part actually under review passes, not fails. The drop reason's 'under 50' figure describes a different LCSC/grade entirely, so it does not establish that this part lacks a route through rule 4; whether it still lacks a rule-5 second source (Digi-Key showed only 1 unit under one suffix and 0 under another, as last read in an earlier task) needs re-checking against the correct LCSC before the exclusion can stand as reasoned."
+   }
+  ],
+  "missed_functions": []
+ }
+}

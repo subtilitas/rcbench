@@ -1,0 +1,1075 @@
+{
+ "role": "P4",
+ "category": "R7",
+ "label": "P4-stock-R7",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "Pack charger",
+    "part": "BQ25713RSNR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C2878935 stockCount 301 (2026-09-29T09:55:40Z); need 5 boards x 1 = 5, gate max(5 x 5, 50) = 50",
+      "read": "stockCount 301 at JLCPCB, exact row C2878935 (0 other results); gate 50 (need 5 x 1 = 5, S4 max(25, 50)); 301 >= 50: pass",
+      "source": "vendors.py jlcpcb C2878935, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:23Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 196",
+      "read": "canPresaleNumber 196 (>= 0)",
+      "source": "vendors.py jlcpcb C2878935, JLCPCB selectSmtComponentList API (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:23Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE on https://www.ti.com/product/BQ25713",
+      "read": "ACTIVE: product status badge status=1 ('This product has been released to the market and is available for purchase'); orderable table row BQ25713RSNR marketingStatusDescription ACTIVE, hasReplacements false, isPrototype false",
+      "source": "https://www.ti.com/product/BQ25713 (vendors.py fetch, chrome, HTTP 200, 289,707 bytes), orderable table JSON in the page body",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:40:12Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no TI per-part commitment read",
+      "read": "no per-part commitment published. TI's Product life cycle page gives a general policy: life cycles 'typically 10 to 15 years'; standard products are not eligible for obsolescence while the product had sales in the last five years, has been in production under 10 years, or has any current customer demand. Not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch, chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:05Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet SLUSD83, June 2018 (99 months on the market)",
+      "read": "SLUSD83C header 'JUNE 2018 - REVISED MAY 2023'; revision history starts 'Changes from Revision * (June 2018) to Revision A (July 2018)'. June 2018 to September 2026 is 99 months, over 12",
+      "source": "https://www.ti.com/lit/ds/symlink/bq25713.pdf (vendors.py fetch, chrome, HTTP 200), section 4 Revision History",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:06Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB row present, Digi-Key ProductStatus Active",
+      "read": "JLCPCB: exact row present, the API carries no lifecycle field. LCSC C2878935: productCycle 'normal', model BQ25713RSNR. Digi-Key: ProductStatus Active, discontinued false, end_of_life false. No disagreement with TI's ACTIVE",
+      "source": "vendors.py jlcpcb C2878935 (10:39:23Z); https://www.lcsc.com/product-detail/C2878935.html (vendors.py fetch, chrome, HTTP 200, 10:41:23Z); vendors.py digikey BQ25713RSNR, https://api.digikey.com/products/v4/search/BQ25713RSNR/productdetails (cached reading of this UTC day, 09:56:00Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:23Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 16",
+      "read": "manufacturer lead time 16 weeks",
+      "source": "vendors.py digikey BQ25713RSNR, https://api.digikey.com/products/v4/search/BQ25713RSNR/productdetails (cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:00Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended); S6 allows it",
+      "source": "vendors.py jlcpcb C2878935 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:23Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2878935, BQ25713RSNR, WQFN-32 4 x 4 mm (RSN); JLCPCB 'QFN-32-EP(4x4)'",
+      "read": "exact row C2878935: part BQ25713RSNR, maker label Texas Instruments, package QFN-32-EP(4x4), which is the 32-pin 4 x 4 mm RSN package",
+      "source": "vendors.py jlcpcb C2878935 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:23Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one charger for the one 2S pack; gate at 1",
+      "read": "1: IOBoard.md:358 names one Pack charger for the bench's 2S pack, and :359 one pack of 2 cells",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:358-359",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C2878935",
+      "read": "on the IO board: the charger is a line of the IO board specification (IOBoard.md:358) and charges from the board's USB-C connector (V10, V13). LCSC C2878935 is C and digits",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:358; Research.md V10, V13; vendors.py jlcpcb C2878935",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "TI PCN listing not read",
+      "read": "none found. The product page and the BQ25713RSNR part-details page carry ACTIVE and no NRND, last-time-buy or obsolete text; TI designates each product's status on its page and withdraws under J-STD-048 with 12 months for the last order. Digi-Key end_of_life false, discontinued false. TI publishes no public PCN listing: its PCN page describes notices sent to customers only",
+      "source": "https://www.ti.com/product/BQ25713 (10:40:12Z); https://www.ti.com/product/BQ25713/part-details/BQ25713RSNR (vendors.py fetch, chrome, HTTP 200, 10:41:06Z); https://www.ti.com/quality-reliability/quality/product-change-notification.html (HTTP 200, 10:43:17Z); vendors.py digikey BQ25713RSNR (09:56:00Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:43:17Z"
+     }
+    ]
+   },
+   {
+    "function": "Pack charger",
+    "part": "BQ25703ARSNR",
+    "kind": "alternate",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C188229 stockCount 5438 (2026-09-29T09:55:41Z); need 5 x 1 = 5, gate 50",
+      "read": "stockCount 5438 at JLCPCB, exact row C188229 (0 other results); gate 50 (need 5 x 1 = 5, S4 max(25, 50)); pass",
+      "source": "vendors.py jlcpcb C188229, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 5435",
+      "read": "canPresaleNumber 5435 (>= 0)",
+      "source": "vendors.py jlcpcb C188229 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE on https://www.ti.com/product/BQ25703A",
+      "read": "ACTIVE: product status badge status=1; orderable row BQ25703ARSNR marketingStatusDescription ACTIVE, isPrototype false. The row carries hasReplacements true, and the part-details page offers 'View alternates'; that is not a lifecycle state",
+      "source": "https://www.ti.com/product/BQ25703A (vendors.py fetch, chrome, HTTP 200, 285,503 bytes); https://www.ti.com/product/BQ25703A/part-details/BQ25703ARSNR (HTTP 200, 10:41:06Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:40:12Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "longevity not read",
+      "read": "no per-part commitment published. TI's Product life cycle page: life cycles 'typically 10 to 15 years'; standard products are not eligible for obsolescence while sold in the last five years, under 10 years in production, or in current demand. Not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch, chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:05Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet SLUSCU1, May 2017",
+      "read": "SLUSCU1A header 'MAY 2017 - REVISED MAY 2018'; revision history 'Changes from Original (May 2017) to Revision A'. 112 months on the market, over 12",
+      "source": "https://www.ti.com/lit/ds/symlink/bq25703a.pdf (vendors.py fetch, chrome, HTTP 200), section 4 Revision History",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:07Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active",
+      "read": "JLCPCB: exact row present, no lifecycle field in the API. LCSC C188229: productCycle 'normal', model BQ25703ARSNR. Digi-Key: ProductStatus Active, discontinued false, end_of_life false. No disagreement with TI",
+      "source": "vendors.py jlcpcb C188229 (10:39:24Z); https://www.lcsc.com/product-detail/C188229.html (vendors.py fetch, chrome, HTTP 200, 10:41:24Z); vendors.py digikey BQ25703ARSNR (cached reading of this UTC day, 09:56:03Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:24Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 16",
+      "read": "manufacturer lead time 16 weeks",
+      "source": "vendors.py digikey BQ25703ARSNR, https://api.digikey.com/products/v4/search/BQ25703ARSNR/productdetails (cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:03Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand; S6 allows it",
+      "source": "vendors.py jlcpcb C188229 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C188229, BQ25703ARSNR, WQFN-32 4 x 4 mm (RSN); JLCPCB 'VQFN-32-EP(4x4)'",
+      "read": "exact row C188229: part BQ25703ARSNR, maker label Texas Instruments, package VQFN-32-EP(4x4), the 32-pin 4 x 4 mm RSN package",
+      "source": "vendors.py jlcpcb C188229 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one charger for the one 2S pack; gate at 1",
+      "read": "1: it stands in for the BQ25713RSNR, one Pack charger for the one 2S pack (IOBoard.md:358-359)",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:358-359",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C188229",
+      "read": "on the IO board, in the rank-1 charger's place (IOBoard.md:358); LCSC C188229 is C and digits",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:358; vendors.py jlcpcb C188229",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN listing not read",
+      "read": "none found: product and part-details pages carry ACTIVE and no NRND, last-time-buy or obsolete text; Digi-Key end_of_life false, discontinued false. TI publishes no public PCN listing",
+      "source": "https://www.ti.com/product/BQ25703A (10:40:12Z); https://www.ti.com/product/BQ25703A/part-details/BQ25703ARSNR (10:41:06Z); https://www.ti.com/quality-reliability/quality/product-change-notification.html (10:43:17Z); vendors.py digikey BQ25703ARSNR (09:56:03Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:43:17Z"
+     }
+    ]
+   },
+   {
+    "function": "Cell balancing",
+    "part": "MAX17320G22+",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C2914309 stockCount 578 (2026-09-29T09:55:41Z); need 5 x 1 = 5, gate 50",
+      "read": "stockCount 578 at JLCPCB, exact row C2914309 (0 other results); gate 50 (need 5 x 1 = 5, S4 max(25, 50)); pass",
+      "source": "vendors.py jlcpcb C2914309, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 482",
+      "read": "canPresaleNumber 482 (>= 0)",
+      "source": "vendors.py jlcpcb C2914309 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Digi-Key ProductStatus Active (Analog Devices, distributor figure); analog.com '\"lifeCycle\":null'",
+      "read": "Digi-Key ProductStatus Active, the status for an Analog Devices part (Lifecycle check). analog.com page body carries '\"lifeCycle\":null'; its PCN table lists MAX17320G22+T PRODUCTION, and MAX17320G22+ (tray) appears only in the package-resources list with no status",
+      "source": "vendors.py digikey MAX17320G22+, https://api.digikey.com/products/v4/search/MAX17320G22%2B/productdetails (cached reading of this UTC day, 09:56:05Z); https://www.analog.com/en/products/max17320.html (vendors.py fetch, safari, HTTP 200, 10:41:31Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:05Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 355 >= 50 (2026-09-29T09:56:05Z)",
+      "read": "Digi-Key stock_available 355 (505-MAX17320G22+-ND, tray); gate 50: pass",
+      "source": "vendors.py digikey MAX17320G22+, https://api.digikey.com/products/v4/search/MAX17320G22%2B/productdetails (cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:05Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none read",
+      "read": "no per-part commitment. ADI's Product Life Cycle Information page gives a general policy: 'obsolescence should be avoided provided technology and customer demand exist ... and when it can't be avoided, customers are notified two years in advance'. Not a gate (S5)",
+      "source": "https://www.analog.com/en/support/product-life-cycle-information.html (vendors.py fetch, safari, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:31Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet Rev 0, 2/20 (79 months)",
+      "read": "revision history: Rev 0, 2/20, 'Initial release'; current Rev 12, 7/25. 79 months on the market, over 12",
+      "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/MAX17320.pdf (vendors.py fetch, safari, HTTP 200), Revision History",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:31Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB row present, Digi-Key Active",
+      "read": "JLCPCB: exact row present, maker label 'Analog Devices Inc./Maxim Integrated', no lifecycle field. LCSC C2914309: productCycle 'normal', brand 'MAXIM'. Digi-Key: Active, discontinued false, end_of_life false. No disagreement",
+      "source": "vendors.py jlcpcb C2914309 (10:39:24Z); https://www.lcsc.com/product-detail/C2914309.html (vendors.py fetch, chrome, HTTP 200, 10:41:24Z); vendors.py digikey MAX17320G22+ (09:56:05Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:24Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 10",
+      "read": "manufacturer lead time 10 weeks",
+      "source": "vendors.py digikey MAX17320G22+ (cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:05Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand; S6 allows it",
+      "source": "vendors.py jlcpcb C2914309 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2914309, MAX17320G22+, 24-pin TQFN 4 x 4 mm; JLCPCB 'QFN-24-EP(4x4)'",
+      "read": "exact row C2914309: part MAX17320G22+, maker label 'Analog Devices Inc./Maxim Integrated', package QFN-24-EP(4x4); the data sheet's ordering table gives MAX17320G22+ as 24 TQFN, I2C, SHA-256 included",
+      "source": "vendors.py jlcpcb C2914309 (exact match); MAX17320 Rev 12 Ordering Information",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one protector and balancer for the one 2S pack",
+      "read": "1: one 2S pack of 2 cells (IOBoard.md:359) balanced by one part (IOBoard.md:358)",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:358-359",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C2914309",
+      "read": "on the IO board: the balance lead reaches the IO board (IOBoard.md:365) and V149, marked for research, is found as on the IO board. LCSC C2914309 is C and digits",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:365; Research.md V149; vendors.py jlcpcb C2914309",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN 2571D of 2026-04-20 (PIN/ERRATA) and PCN 2452N of 2025-02-21 (ASSEMBLY), neither an end-of-life notice",
+      "read": "none: PIN 2571D (20-Apr-2026) changes the reel shipping box for MSL1 products, 'THIS IS NOT A PCN', and lists MAX17320G22+T; PCN 2452N (21-Feb-2025) adds UTAC Singapore as a bump site for WLP devices (the X models). No PDN, last-time-buy or obsolete text on the page; Digi-Key end_of_life false, discontinued false",
+      "source": "https://www.analog.com/en/products/max17320.html (10:41:31Z); https://www.analog.com/media/en/pcn/pcn_2571d.pdf and https://www.analog.com/media/en/pcn/pcn_2452n.pdf (vendors.py fetch, safari, HTTP 200, 10:43:50Z and 10:43:51Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:43:51Z"
+     }
+    ]
+   },
+   {
+    "function": "Power path",
+    "part": "BQ25713RSNR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 301 (2026-09-29T09:55:40Z); need 5 x 1 = 5, threshold 50",
+      "read": "stockCount 301, exact row C2878935; gate 50; pass",
+      "source": "vendors.py jlcpcb C2878935, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:23Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 196",
+      "read": "canPresaleNumber 196 (>= 0)",
+      "source": "vendors.py jlcpcb C2878935 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:23Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE on https://www.ti.com/product/BQ25713",
+      "read": "ACTIVE: status badge status=1; orderable row BQ25713RSNR marketingStatusDescription ACTIVE, hasReplacements false",
+      "source": "https://www.ti.com/product/BQ25713 (vendors.py fetch, chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:40:12Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "longevity not read",
+      "read": "no per-part commitment; TI's general policy: life cycles 'typically 10 to 15 years', no obsolescence while sold in the last five years, under 10 years in production, or in current demand. Not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:05Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet June 2018",
+      "read": "SLUSD83 original June 2018 (SLUSD83C revision history); 99 months, over 12",
+      "source": "https://www.ti.com/lit/ds/symlink/bq25713.pdf, section 4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:06Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active",
+      "read": "JLCPCB row present (no lifecycle field); LCSC productCycle 'normal'; Digi-Key Active, end_of_life false. No disagreement",
+      "source": "vendors.py jlcpcb C2878935 (10:39:23Z); https://www.lcsc.com/product-detail/C2878935.html (10:41:23Z); vendors.py digikey BQ25713RSNR (09:56:00Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:23Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 16",
+      "read": "16 weeks",
+      "source": "vendors.py digikey BQ25713RSNR (cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:00Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand; S6 allows it",
+      "source": "vendors.py jlcpcb C2878935 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:23Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2878935, BQ25713RSNR, WQFN-32 4 x 4 mm (RSN)",
+      "read": "exact row C2878935: BQ25713RSNR, Texas Instruments, QFN-32-EP(4x4)",
+      "source": "vendors.py jlcpcb C2878935 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:23Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: the power path is the charger's NVDC path, one per board",
+      "read": "1: one charger for the one pack (IOBoard.md:358-359); the power path is that charger's path (IOBoard.md:371)",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:358-359, :371",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C2878935",
+      "read": "on the IO board (IOBoard.md:358, :371); LCSC C2878935 is C and digits",
+      "source": "hardware/docs/IOBoard.md@e13f5f6; vendors.py jlcpcb C2878935",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN listing not read",
+      "read": "none found: TI pages carry ACTIVE and no NRND, last-time-buy or obsolete text; Digi-Key end_of_life false. TI publishes no public PCN listing",
+      "source": "https://www.ti.com/product/BQ25713/part-details/BQ25713RSNR (10:41:06Z); https://www.ti.com/quality-reliability/quality/product-change-notification.html (10:43:17Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:43:17Z"
+     }
+    ]
+   },
+   {
+    "function": "Power path",
+    "part": "BQ25703ARSNR",
+    "kind": "alternate",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 5438 (2026-09-29T09:55:41Z); need 5, threshold 50",
+      "read": "stockCount 5438, exact row C188229; gate 50; pass",
+      "source": "vendors.py jlcpcb C188229, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 5435",
+      "read": "canPresaleNumber 5435 (>= 0)",
+      "source": "vendors.py jlcpcb C188229 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE on https://www.ti.com/product/BQ25703A",
+      "read": "ACTIVE: status badge status=1; orderable row BQ25703ARSNR ACTIVE (hasReplacements true, 'View alternates'; not a lifecycle state)",
+      "source": "https://www.ti.com/product/BQ25703A (vendors.py fetch, chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:40:12Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "longevity not read",
+      "read": "no per-part commitment; TI's general policy, life cycles 'typically 10 to 15 years'. Not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:05Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet May 2017",
+      "read": "SLUSCU1 original May 2017 (SLUSCU1A revision history); 112 months, over 12",
+      "source": "https://www.ti.com/lit/ds/symlink/bq25703a.pdf, section 4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:07Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active",
+      "read": "JLCPCB row present (no lifecycle field); LCSC C188229 productCycle 'normal'; Digi-Key Active, end_of_life false. No disagreement",
+      "source": "vendors.py jlcpcb C188229 (10:39:24Z); https://www.lcsc.com/product-detail/C188229.html (10:41:24Z); vendors.py digikey BQ25703ARSNR (09:56:03Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:24Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 16",
+      "read": "16 weeks",
+      "source": "vendors.py digikey BQ25703ARSNR (cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:03Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand; S6 allows it",
+      "source": "vendors.py jlcpcb C188229 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C188229, BQ25703ARSNR, WQFN-32 4 x 4 mm (RSN)",
+      "read": "exact row C188229: BQ25703ARSNR, Texas Instruments, VQFN-32-EP(4x4)",
+      "source": "vendors.py jlcpcb C188229 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one per board",
+      "read": "1: in the rank-1 part's place, one per board (IOBoard.md:358-359, :371)",
+      "source": "hardware/docs/IOBoard.md@e13f5f6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C188229",
+      "read": "on the IO board; LCSC C188229 is C and digits",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:358; vendors.py jlcpcb C188229",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN listing not read",
+      "read": "none found: TI pages carry ACTIVE and no NRND, last-time-buy or obsolete text; Digi-Key end_of_life false. TI publishes no public PCN listing",
+      "source": "https://www.ti.com/product/BQ25703A/part-details/BQ25703ARSNR (10:41:06Z); https://www.ti.com/quality-reliability/quality/product-change-notification.html (10:43:17Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:43:17Z"
+     }
+    ]
+   },
+   {
+    "function": "Charger input limit",
+    "part": "FUSB303BTMX",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C895444 stockCount 5219 (2026-09-29T09:55:43Z); need 5 x 1 = 5, threshold 50",
+      "read": "stockCount 5214 at JLCPCB, exact row C895444 (0 other results); moved by 5 since P2's reading; gate 50; pass",
+      "source": "vendors.py jlcpcb C895444, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList (exact match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 5188",
+      "read": "canPresaleNumber 5183 (>= 0); moved by 5",
+      "source": "vendors.py jlcpcb C895444 (exact match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Active on https://www.onsemi.com/products/interfaces/usb-type-c/fusb303btmx (header and orderable row)",
+      "read": "Active: page header 'FUSB303BTMX Autonomous USB Type-C Port Controller with I2C and GPIO Control Active'; orderable row 'FUSB303BTMX ... Buy Options Active'. The FUSB303TMX row on the same page reads 'Last Shipments' and is a different part",
+      "source": "https://www.onsemi.com/products/interfaces/usb-type-c/fusb303btmx (vendors.py fetch, chrome, HTTP 200, 299,518 bytes)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:07Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 4224 >= 50 (2026-09-29T09:56:14Z)",
+      "read": "Digi-Key stock_available 4224 (cut tape 4224, Digi-Reel 4224); gate 50: pass",
+      "source": "vendors.py digikey FUSB303BTMX, https://api.digikey.com/products/v4/search/FUSB303BTMX/productdetails (cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:14Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none read",
+      "read": "not read: the product page carries no longevity statement, and no onsemi longevity programme page was found or read. Not a gate (S5)",
+      "source": "https://www.onsemi.com/products/interfaces/usb-type-c/fusb303btmx (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:07Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet date not read (the Rev. 3 copy carries (c) 2020)",
+      "read": "not read: FUSB303B/D Rev. 3 (September 2024) carries '(c) Semiconductor Components Industries, LLC, 2020' and no revision history, and onsemi's public PCN listing holds no notice naming FUSB303BTMX to date it",
+      "source": "https://www.onsemi.com/download/data-sheet/pdf/fusb303b-d.pdf (vendors.py fetch, chrome, HTTP 200, 10:41:18Z); https://www.onsemi.com/PowerSolutions/pcnPub.do?method=showAll (HTTP 200, 10:42:33Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:18Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active",
+      "read": "JLCPCB row present (no lifecycle field); LCSC C895444 productCycle 'normal', model FUSB303BTMX, brand onsemi; Digi-Key Active, discontinued false, end_of_life false. No disagreement with onsemi's Active",
+      "source": "vendors.py jlcpcb C895444 (10:39:24Z); https://www.lcsc.com/product-detail/C895444.html (vendors.py fetch, chrome, HTTP 200, 10:41:25Z); vendors.py digikey FUSB303BTMX (09:56:14Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:25Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 52",
+      "read": "manufacturer lead time 52 weeks",
+      "source": "vendors.py digikey FUSB303BTMX (cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:14Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand; S6 allows it",
+      "source": "vendors.py jlcpcb C895444 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C895444, FUSB303BTMX, X2QFN-12 1.6 x 1.6 mm (case 722AG)",
+      "read": "exact row C895444: part FUSB303BTMX, maker label onsemi, package X2-QFN-12(1.6x1.6)",
+      "source": "vendors.py jlcpcb C895444 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one USB-C connector (V13)",
+      "read": "1: one USB-C connector carries the charger input and the RP2354B's USB lines (V10, V13 answers, owner 2026-09-28), and one charger input limit (IOBoard.md:361)",
+      "source": "Research.md@e13f5f6 V10, V13; hardware/docs/IOBoard.md@e13f5f6:361",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C895444",
+      "read": "on the IO board, at the board's USB-C connector (IOBoard.md:361; V10); LCSC C895444 is C and digits",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:361; vendors.py jlcpcb C895444",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN listing not read",
+      "read": "none: onsemi's public PCN listing (5063 notices, 2007-05-21 to 2026-09-24) names FUSB303BTMX in no notice. PD26891XF (2025-07-02) discontinues FUSB303TMX, a different part, and PD26883X (2025-07-01) the FUSB303GEVB evaluation board. Digi-Key end_of_life false, discontinued false",
+      "source": "https://www.onsemi.com/PowerSolutions/pcnPub.do?method=showAll (vendors.py fetch, chrome, HTTP 200, 45,274,486 bytes, the data behind https://www.onsemi.com/PowerSolutions/pcnPub.do?pn=FUSB303BTMX); vendors.py digikey FUSB303BTMX (09:56:14Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:42:33Z"
+     }
+    ]
+   },
+   {
+    "function": "Pack cells",
+    "part": "INR-18650-P26A",
+    "kind": "first",
+    "verdict": "refuted",
+    "refutation": "Fails rule 4. The cell is a part off the board (rule 1), so its stock is read at Digi-Key, and Digi-Key does not carry it. The product details for INR-18650-P26A answer HTTP 404 'Requested Product inr-18650-p26a Not Found'. Keyword searches for 'E-One Moli', 'Molicel INR18650', 'INR18650-P26A' and '18650 2600mAh 35A' return no product, and 'P26A' returns 171 matches with no cell among the 50 listed (2026-09-29T10:39:46Z to 10:40:04Z). Stock is 0 against a gate of 50 (5 benches x 2 cells = 10; S4 max(50, 50)). No held quantity applies. Molicel's product page carries no lifecycle status either, so the lifecycle gate is not shown to pass",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "not carried at Digi-Key: details HTTP 404; keyword searches return no product; stock 0 against a gate of 50: fail (rule 4)",
+      "read": "not carried: details HTTP 404 'Requested Product inr-18650-p26a Not Found'. Keyword searches 'E-One Moli', 'Molicel INR18650', 'INR18650-P26A' and '18650 2600mAh 35A' return 0 products. 'P26A' returns 171 matches; the 50 listed are TVS diodes, connectors, couplings and regulators, none a cell. Stock 0; gate 50 (need 5 x 2 = 10, S4 max(50, 50)): fail",
+      "source": "vendors.py digikey INR-18650-P26A, https://api.digikey.com/products/v4/search/INR-18650-P26A/productdetails (cached reading of this UTC day, 09:58:23Z); vendors.py digikey-search --limit 50, https://api.digikey.com/products/v4/search/keyword (10:39:46Z to 10:40:04Z)",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-09-29T10:40:04Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "manufacturer status not read: the Molicel product page carries no lifecycle status, reported to the owner",
+      "read": "not read: https://www.molicel.com/product/inr-18650-p26a/ lists model, series, application, form, nominal voltage, capacity, charge and discharge current and energy density, with no lifecycle status. The cell is still listed in the site's current 18650 Power Cell menu. Digi-Key does not carry it, so no distributor status stands in. The gate (active or in production) is not shown to pass",
+      "source": "https://www.molicel.com/product/inr-18650-p26a/ (vendors.py fetch, chrome, HTTP 200, 64,873 bytes)",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-09-29T10:41:19Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published",
+      "read": "not read: the product page carries no longevity statement, and no Molicel longevity programme page was found. Not a gate (S5)",
+      "source": "https://www.molicel.com/product/inr-18650-p26a/ (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:19Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet date not stated on v1.4",
+      "read": "not read: the data sheet reads 'Version: 1.4' with no date and no revision history. The PDF's creation date, 2023-06-14, dates version 1.4 only",
+      "source": "https://www.molicel.com/wp-content/uploads/INR18650P26A_1.4_Product-Data-Sheet-of-INR-18650-P26A-80087.pdf (vendors.py fetch, chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:20Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "not at Digi-Key or JLCPCB",
+      "read": "no distributor status: Digi-Key does not carry the part (HTTP 404); as a part off the board it has no LCSC number, so JLCPCB and LCSC hold no row",
+      "source": "vendors.py digikey INR-18650-P26A (09:58:23Z, HTTP 404)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:58:23Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "no lead time exists to record",
+      "read": "not read: Digi-Key does not carry the part (HTTP 404), so its API gives no lead time",
+      "source": "vendors.py digikey INR-18650-P26A, https://api.digikey.com/products/v4/search/INR-18650-P26A/productdetails",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:58:23Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2, fixed: 2 cells a pack, 2S1P (V137); gate at 2",
+      "read": "2: IOBoard.md:359 gives '2 lithium-ion 18650 cells'; one pack per bench",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:359",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "off the board (rule 1), LCSC none",
+      "read": "off the board: the pack connects to the IO board through its power leads and balance lead (IOBoard.md:365). LCSC none agrees",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:359, :365",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "notices: none read",
+      "read": "none found: the product page carries no discontinuation or last-time-buy text, and the cell is listed in the current product menu. Molicel publishes no PCN listing that was found",
+      "source": "https://www.molicel.com/product/inr-18650-p26a/ (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:19Z"
+     }
+    ]
+   },
+   {
+    "function": "Pack overcurrent protection",
+    "part": "MAX17320G22+",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 578 (2026-09-29T09:55:41Z); need 5 x 1 = 5, threshold 50",
+      "read": "stockCount 578, exact row C2914309; gate 50; pass",
+      "source": "vendors.py jlcpcb C2914309, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 482",
+      "read": "canPresaleNumber 482 (>= 0)",
+      "source": "vendors.py jlcpcb C2914309 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Digi-Key ProductStatus Active (Analog Devices, distributor figure); analog.com '\"lifeCycle\":null'",
+      "read": "Digi-Key ProductStatus Active, the status for an Analog Devices part; analog.com '\"lifeCycle\":null', PCN table MAX17320G22+T PRODUCTION",
+      "source": "vendors.py digikey MAX17320G22+ (cached reading of this UTC day, 09:56:05Z); https://www.analog.com/en/products/max17320.html (safari, HTTP 200, 10:41:31Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:05Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 355 >= 50",
+      "read": "Digi-Key stock_available 355; gate 50: pass",
+      "source": "vendors.py digikey MAX17320G22+, https://api.digikey.com/products/v4/search/MAX17320G22%2B/productdetails (cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:05Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "longevity none read",
+      "read": "no per-part commitment; ADI's general policy: customers notified two years before an unavoidable obsolescence. Not a gate (S5)",
+      "source": "https://www.analog.com/en/support/product-life-cycle-information.html (safari, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:31Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet Rev 0, 2/20",
+      "read": "Rev 0, 2/20, 'Initial release'; 79 months, over 12",
+      "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/MAX17320.pdf, Revision History",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:31Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active",
+      "read": "JLCPCB row present (no lifecycle field); LCSC productCycle 'normal'; Digi-Key Active, end_of_life false. No disagreement",
+      "source": "vendors.py jlcpcb C2914309 (10:39:24Z); https://www.lcsc.com/product-detail/C2914309.html (10:41:24Z); vendors.py digikey MAX17320G22+ (09:56:05Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:24Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 10",
+      "read": "10 weeks",
+      "source": "vendors.py digikey MAX17320G22+ (cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:05Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand; S6 allows it",
+      "source": "vendors.py jlcpcb C2914309 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2914309, MAX17320G22+, 24-pin TQFN 4 x 4 mm",
+      "read": "exact row C2914309: MAX17320G22+, 'Analog Devices Inc./Maxim Integrated', QFN-24-EP(4x4)",
+      "source": "vendors.py jlcpcb C2914309 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one protector for the pack",
+      "read": "1: one protection for the one 2S pack (IOBoard.md:360)",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:360",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, an LCSC part JLCPCB places (V149)",
+      "read": "IOBoard.md:360 does not place it; V149, marked for research, is found as on the IO board. LCSC C2914309 is C and digits, which agrees",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:360; Research.md V149; vendors.py jlcpcb C2914309",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN 2571D (2026-04-20, PIN/ERRATA) and 2452N (2025-02-21, ASSEMBLY), no end-of-life notice",
+      "read": "none: PIN 2571D changes the reel shipping box, 'THIS IS NOT A PCN'; PCN 2452N adds a WLP bump site. No PDN, last-time-buy or obsolete text; Digi-Key end_of_life false",
+      "source": "https://www.analog.com/media/en/pcn/pcn_2571d.pdf, https://www.analog.com/media/en/pcn/pcn_2452n.pdf (safari, HTTP 200); https://www.analog.com/en/products/max17320.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:43:51Z"
+     }
+    ]
+   },
+   {
+    "function": "Bench pack balance lead",
+    "part": "MAX17320G22+",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 578 (2026-09-29T09:55:41Z); need 5, threshold 50",
+      "read": "stockCount 578, exact row C2914309; gate 50; pass",
+      "source": "vendors.py jlcpcb C2914309, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 482",
+      "read": "canPresaleNumber 482 (>= 0)",
+      "source": "vendors.py jlcpcb C2914309 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Digi-Key Active (distributor figure, Analog Devices)",
+      "read": "Digi-Key ProductStatus Active, the status for an Analog Devices part; analog.com '\"lifeCycle\":null'",
+      "source": "vendors.py digikey MAX17320G22+ (cached reading of this UTC day, 09:56:05Z); https://www.analog.com/en/products/max17320.html (10:41:31Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:05Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 355 >= 50",
+      "read": "Digi-Key stock_available 355; gate 50: pass",
+      "source": "vendors.py digikey MAX17320G22+ (cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:05Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not stated in this function's row; the Cell balancing row states none read",
+      "read": "no per-part commitment; ADI's general policy of two years' notice before an unavoidable obsolescence. Not a gate (S5)",
+      "source": "https://www.analog.com/en/support/product-life-cycle-information.html (safari, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:31Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet 2/20",
+      "read": "Rev 0, 2/20; 79 months, over 12",
+      "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/MAX17320.pdf, Revision History",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:31Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active",
+      "read": "JLCPCB row present (no lifecycle field); LCSC productCycle 'normal'; Digi-Key Active. No disagreement",
+      "source": "vendors.py jlcpcb C2914309; https://www.lcsc.com/product-detail/C2914309.html (10:41:24Z); vendors.py digikey MAX17320G22+",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:41:24Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 10",
+      "read": "10 weeks",
+      "source": "vendors.py digikey MAX17320G22+ (cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:05Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand; S6 allows it",
+      "source": "vendors.py jlcpcb C2914309 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2914309, MAX17320G22+, 24-pin TQFN 4 x 4 mm",
+      "read": "exact row C2914309: MAX17320G22+, 'Analog Devices Inc./Maxim Integrated', QFN-24-EP(4x4)",
+      "source": "vendors.py jlcpcb C2914309 (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:39:24Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: the lead terminates at one protector and balancer",
+      "read": "1: one bench pack balance lead (IOBoard.md:365) ends at one part",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:365",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C2914309",
+      "read": "on the IO board: the balance lead 'reaches the IO board beside its power leads' (IOBoard.md:365); LCSC C2914309 is C and digits",
+      "source": "hardware/docs/IOBoard.md@e13f5f6:365; vendors.py jlcpcb C2914309",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:45:29Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN 2571D and 2452N, no end-of-life",
+      "read": "none: PIN 2571D is a reel shipping box change ('THIS IS NOT A PCN'); PCN 2452N adds a WLP bump site. No PDN or last-time-buy; Digi-Key end_of_life false",
+      "source": "https://www.analog.com/media/en/pcn/pcn_2571d.pdf, https://www.analog.com/media/en/pcn/pcn_2452n.pdf (safari, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:43:51Z"
+     }
+    ]
+   }
+  ]
+ }
+}

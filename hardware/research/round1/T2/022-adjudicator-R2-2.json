@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R2",
+ "label": "adjudicator-R2-2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "function": "found V27",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The claim for V27 gives ±5,000 ppm (±0.5 %). It justifies that figure only with condition 1, the SJW (synchronisation jump width) condition, at a sample point of 87.5 %. That condition gives 0.625 % a node. The claim does not apply condition 2 at the same sample point. Condition 2 is Equation 3-7 in MCP25625 DS20005282C section 3.8.5: df <= min(PHSEG1, PHSEG2) / (2 x (13 x NBT - PHSEG2)). At 87.5 %, PHSEG2 is 0.125 of the nominal bit time (NBT), so min(PHSEG1, PHSEG2) is at most 0.125. The limit is therefore df <= 0.125 / (2 x 12.875) = 0.4854 %, or ±4,854 ppm a node. The ratio is independent of the number of time quanta in a bit. At a 90 % sample point, condition 2 gives 0.3876 % (±3,876 ppm). ±5,000 ppm is looser than what classic CAN allows at the claim's own sample point, so it is not a valid largest allowed error. The datasheet's own worked example (Table 3-2, p.24) shows the same ordering: condition 1 gives 1.25 % and condition 2 gives 0.98 %, and the stricter of the two sets the limit. The ±0.5 % input specifications of the MCP2518FD and TCAN4550 are requirements the controllers place on their clocks. They are not the bus limit, so they do not rescue the figure. Any CAN FD (flexible data rate) data-phase condition can only tighten the limit further. It was not evaluated here, because V20 and V21 (frame format and bit rate of the external port) are still marked for research in Research.md. The ruling is about this function's requirement value, not about any part.",
+  "evidence": "MCP25625 DS20005282C, section 3.8.5 \"Oscillator tolerance\", p.23. Equation 3-5 defines (1-df)fnom <= FOSC <= (1+df)fnom. Equation 3-6 (condition 1) is df <= SJW / (2 x 10 x NBT). Equation 3-7 (condition 2) is df <= min(PHSEG1, PHSEG2) / (2 x (13 x NBT - PHSEG2)). Table 3-2, p.24: condition 1 gives 1.25 %, condition 2 gives 0.98 %, with the note \"better than 1% crystal oscillator required\". Computed with PHSEG2 = (1 - SP) x NBT and SJW = PHSEG2:\n- SP 87.5 %: condition 1 = 0.6250 %, condition 2 = 0.4854 % (4,854 ppm).\n- SP 90 %: condition 1 = 0.5000 %, condition 2 = 0.3876 % (3,876 ppm).\n- SP 75 %: condition 1 = 1.25 %, condition 2 = 0.9804 %.\nThe claimed ±5,000 ppm exceeds 4,854 ppm. In Research.md at c25aa863, the Answer column of V27 (line 587) reads \"for research (owner, 2026-09-28)\". It carries no owner value that would override this. V20 and V21 (lines 580 and 581) carry the same entry, so the CAN FD data phase is undetermined.",
+  "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/MCP25625-CAN-Controller-Data-Sheet-20005282C.pdf, fetched with vendors.py fetch (client chrome, HTTP 200, 1,121,165 bytes), section 3.8.5, Equations 3-5 to 3-7, Table 3-2; hardware/docs/Research.md at c25aa863372d, lines 580, 581 and 587",
+  "read_at": "2026-09-28T14:06:25Z",
+  "scope": "function"
+ }
+}

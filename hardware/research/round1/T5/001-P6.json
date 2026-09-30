@@ -1,0 +1,100 @@
+{
+ "role": "P6",
+ "category": "",
+ "label": "P6",
+ "attempt": 0,
+ "data": {
+  "gaps": [
+   {
+    "spec_line": "IOBoard.md:118 \"USB port | one USB device port on the RP2354B's own USB pins... Its protection is selected in R1\" (state: required)",
+    "kind": "no-part",
+    "category": "R1",
+    "description": "No candidate for the RP2354B's USB protection survives V9 (IEC 61000-4-2 level 4 ESD), V12 (3.63 V steady limit on USB_DP/USB_DM) and V13 (5 lines: VBUS, D+, D-, CC1, CC2 in one connector). FU-A4's final rerank (004-rerank-R1.json) leaves the shortlist empty: repeater ICs (ADuM3160/4160, ISOUSB111) cover only D+/D- with no VBUS/CC path and rate the connector-side input at most ~4.1-6 V, not the required 3.63 V steady limit combined with full-line coverage; CC-only or VBUS-only OVP switches (TPD2S300, TCPP01/02-M12, TPD4S311, TPD6S300A) each fail 'lines covered'. Confirmed 'no survivor' by three successive P3/rerank passes (FU-A1, FU-A2, FU-A4). This is a genuine open item to report to the owner, not yet reflected as a follow-up task."
+   },
+   {
+    "spec_line": "IOBoard.md:221 \"The watchdog timeout and the stop deadline it serves are not stated; P1 asks the owner for the deadline.\" (Research.md V1, R1)",
+    "kind": "value-not-found",
+    "category": "R1",
+    "description": "V1 is marked 'for research' (owner, 2026-09-28). FU-A4's P2 return (002-P2-R1.json) reports the stop deadline as 'not found': no primary source in the tree gives the time from the coprocessor ceasing to feed the watchdog to every gate reaching its reset state; the 200 ms figures in the tree count different intervals (monostable drive-removed deadline, link-silence failsafe), neither of which is the watchdog stop deadline. This was already flagged once by an FU-A2 adjudicator and confirmed again in FU-A4; it remains unresolved and must go to the owner as a genuine unknown rather than be inferred from an unrelated 200 ms figure."
+   },
+   {
+    "spec_line": "Research.md V2, R1: \"What is the longest legitimate stall of the coprocessor's main loop, in ms, that the watchdog timeout must exceed?\"",
+    "kind": "value-not-found",
+    "category": "R1",
+    "description": "V2 is marked 'for research' (owner, 2026-09-28). FU-A4's P2 return shows no finite bound exists as the firmware is written: pico-sdk 2.3.1's stdio_usb_out_chars() restarts its 500 ms timeout on every byte the USB host accepts, so a host that keeps accepting data slowly can hold the main loop indefinitely; no watchdog timeout on any candidate part can exceed an unbounded stall. This is a real open question (the firmware needs a hard cap on a slow-host console write, not just a component pick) and should be reported to the owner as such rather than left implicit in a part confirmation."
+   },
+   {
+    "spec_line": "IOBoard.md:189 \"ESC pack gate, onboard 150 A path | a MOSFET array and its driver on the IO board (F7)... Rated for 67.2 V... and for 150 A continuous (F2)\" (decided (F7); parts required (R3))",
+    "kind": "no-part",
+    "category": "R3",
+    "description": "The shortlisted onboard pack-switch MOSFET, IPT015N10N5ATMA1, is refuted on safe operating area during a controlled 300 A turn-off (V48): the datasheet's VGS(th) spread (2.2-3.8 V) and its Diagram 9 rising RDS(on) show the 8-device array does not share the 300 A opening current equally while every device sits in its saturation region for the 16.9 µs turn-off, so one device can carry a multiple of the 37.5 A average. Three successive adjudicator rounds in FU-A3 (016, and the refutation is not overturned) let the refutation stand, and selection.json records 'onboard pack switch MOSFETs' with part: null and no fixed-input/covered-elsewhere annotation. No replacement candidate has been searched since; this is a genuine unresolved line needing a follow-up task or an owner-level trade-off (fewer, higher-current devices; a different turn-off profile)."
+   },
+   {
+    "spec_line": "IOBoard.md:190 \"ESC pack gate, external path above 150 A | a driven external module, whose driver output is on the IO board (F7)... The module is a part off the board\" (decided (F7); parts required (R3))",
+    "kind": "no-part",
+    "category": "R3",
+    "description": "Both ranked candidates for the external (above-150 A) pack switch module, VS-FC420SA10 and its alternate VS-FC270SA20, are refuted on safe operating area / temperature rise during a 600 A controlled turn-off (V48, V50): the modules' own Fig. 14 single-pulse SOA curves (100 µs line, ~136-169 A at 85 V per module) do not support the current sharing the P2 report assumed (600 A divided equally over 5 modules, 120 A each) while all modules sit in their saturation region for the 34 µs turn-off; the datasheets state no current-sharing behaviour there. FU-A3's adjudicators (017, 018) let both refutations stand. selection.json shows 'external pack switch module': null with no coverage note. This is a genuine open line; no further candidate has been searched."
+   },
+   {
+    "spec_line": "Research.md R3 row: \"the ESC pack's input protection sits with the switch: reverse polarity, overvoltage and transients, and inrush into the ESC's input capacitance... with the clamp level under the absolute maximum of every part on the pack node\"",
+    "kind": "no-part",
+    "category": "R3",
+    "description": "No candidate meets the pack overvoltage/transient clamp's 'clamp level at the path current' requirement (under 85 V at up to 600 A on the external path, V45/V48/V54): FU-A3's P2 return (003-P2-R3.json) drops every TVS candidate searched (SMCJ70A: clamps to 113 V at 13.3 A; SMCJ64A/75A/78A: 121-126 V at 12 A) and finds that a bare TVS or Schottky diode cannot limit the switched-node voltage by construction (it is a second element beside the controlled turn-off, and the controlled turn-off itself is what needs the clamp for the parts rated only to -0.3 V, e.g. the INA238). The shortlist is empty; this function has no candidate at all, not merely a refuted one."
+   },
+   {
+    "spec_line": "IOBoard.md:327-330 \"Pack disconnect | in hardware, when any cell falls to the 3.0 V floor of F9\" / \"Pack reconnect | the condition ... is not stated\" (decided / required)",
+    "kind": "no-part",
+    "category": "R5",
+    "description": "No candidate for the 2S bench-pack's hardware disconnect (F9's per-cell 3.0 V floor) passes every requirement together. FU-B3's P2 return (002-P2-R5.json) drops the whole R5460N/R5460x family on 'balance lead open' (V107) or 'reconnect condition' (V93/94) or 'per-cell floor' (V95), and drops MAX17320G22+ (the part R7 otherwise selects for the ESC-pack side) because its datasheet states no open-cell-tap detection. The shortlist for 'pack disconnect' is empty; this is a genuine no-candidate gap distinct from R7's cell-balancing IC, which does not need to be requalified as covering it."
+   },
+   {
+    "spec_line": "IOBoard.md:350 \"Port voltage ceiling | required, set in hardware per port: a jumper on each of the 20 ports selects an LV or an HV ceiling (F16)... R6 selects the parts\" (decided (F16))",
+    "kind": "no-part",
+    "category": "R6",
+    "description": "No candidate meets the combined HV trip-band tolerance (V128: must cut off by 8.70 V, may cut off from 8.53 V, i.e. inside +/-0.99%) and the 'stays off until an operator or firmware action' latch behaviour (V130). FU-B3's P2 return (003-P2-R6.json) drops TPS3701/TLV6710 (their OUTB releases automatically once the sense voltage falls back below the threshold, so they do not stay latched) and TLV6700/TPS3700/the TPS3703 family (their over-temperature trip-band tolerance, ~1.0-1.2%, is wider than the required window). The shortlist is empty; this is a genuine no-candidate gap for all 20 output ports' hardware ceiling."
+   },
+   {
+    "spec_line": "IOBoard.md:415-416 \"Motor current and voltage monitor | INA238 on the IO board...\" / \"Monitor footprint | ... second source open (round 1)\" (decided; second source open (round 1))",
+    "kind": "no-part",
+    "category": "R8",
+    "description": "INA238AIDGSR, the fixed input for the motor monitor (F1, 2 per board), fails sourcing rule 4 live on 2026-09-29: JLCPCB stockCount 0 and canPresaleNumber -99 against a gate of 50 (need 10 across both shunt-path placements), and Digi-Key stock is 0 on every packaging (FU-B3 017-P4-stock-R8.json, adjudicator 023-adjudicator-R8.json, refutation stands). The INA228 alternate footprint already failed rule 5 on the 2026-09-01 figures Research.md itself records. Per the Scope rule for fixed inputs, this failure is reported to the owner, not re-selected; selection.json correctly shows 'Motor monitor': null, but this needs to be surfaced as a hard stock blocker, not merely an unselected function."
+   },
+   {
+    "spec_line": "IOBoard.md:426 \"External shunt sense connection | Kelvin-sensed, with a resistor-capacitor filter on IN+ and IN- against switching edges\" (required)",
+    "kind": "no-part",
+    "category": "R8",
+    "description": "Beyond the stock failure shared with 'Motor monitor', the external-path INA238AIDGSR is separately refuted on its own datasheet in FU-B3 (021-P4-datasheet-R8.json, adjudicator 024-adjudicator-R8-2.json, stands): its differential input absolute maximum is only -40 V to +40 V between IN+ and IN-, and its own filter guidance rules out enough series resistance on a 5 mA/pin input to survive the required 85 V fault (a mis-plugged or shorted external sense lead, V179) safely. This is a second, independent failure mode of the same fixed input on the external shunt's sense input specifically, and needs its own line in the report to the owner (a different clamp/isolation approach on the sense leads, not just a stock issue)."
+   },
+   {
+    "spec_line": "IOBoard.md:441 \"Optical index | one pulse per revolution from a pen line on the motor bell, read from below. Optional.\" (required)",
+    "kind": "no-part",
+    "category": "R11",
+    "description": "No optical reflective sensor searched meets the delay-variation budget V225 sets for the optical index function (at most 1.244 µs of delay variation at 1,092 Hz / 65,535 rpm). FU-C2's P2 return (002-P2-R11.json) drops every candidate (VCNT2030, VCNT2020, VCNT2025X01, QRD1114, QRE1113GR, RPR-220, TCND5000, TCRT5000/5000L) because none states a propagation/response time under that figure (typical response times read are 10-70 µs, one to two orders of magnitude too slow). The shortlist is empty; this is a genuine no-candidate gap, separate from the already-selected magnetic pickup and phase-wire clip in the same category."
+   },
+   {
+    "spec_line": "IOBoard.md:341-345 \"Servo supply | TPS55285 buck-boost converter... 12 held (owner, 2026-09-25)\" / \"Servo converter input from the pack | ... R6 checks the converter from 6.0 V ... to 8.4 V\" (decided; from the pack required (R6))",
+    "kind": "other",
+    "category": "R6",
+    "description": "The fixed-input Servo supply (TPS55285VALR) has a standing refutation on 'Ambient range' that FU-B1's adjudicator (030-adjudicator-R6.json) upholds: at the worst-case operating point (4.0 A at 8.4 V from a 6.0 V pack floor, 50 C ambient), the datasheet gives no IC power-loss figure and no guaranteed efficiency, so the junction temperature cannot be shown to stay at or under the 125 C recommended maximum (the adjudicator's own bound spans 89-179 C depending on assumed IC loss). Per the Scope rule ('a fixed input that fails a check is reported to the owner, not re-selected'), this must be reported as an open thermal-margin question for the servo supply. selection.json shows plain 'part: null' with no distinguishing note (unlike R1's Microcontroller, whose overturned refutation is tagged not_requalified), so a reader of selection.json alone cannot tell this failing fixed input apart from an ordinary unselected function."
+   },
+   {
+    "spec_line": "IOBoard.md:332 \"Overvoltage protection | on the board's power input; threshold not stated. R5 selects it.\" (required)",
+    "kind": "other",
+    "category": "R5",
+    "description": "selection.json records R5 'overvoltage protection': part null, with no not_requalified annotation (unlike the sibling functions 'reverse-polarity protection' and 'inrush limiting', which are correctly tagged not_requalified: LM74800QDRRRQ1). The underlying record shows this function's rank-1 part, LM74800QDRRRQ1, was fully confirmed by both P4 verifiers in the original run (T3/031-P4-stock-R5.json, T3/032-P4-datasheet-R5.json, verdict 'confirmed', no refutation ever raised against it since), and FU-B3's rerank (010-rerank-R5.json) explicitly states 'the same part serves reverse polarity, inrush and source selection so the function adds no part.' This is a completeness-tracking gap in selection.json, not a missing part: taken at face value it would make P7 write this line as open/not chosen when a verified answer already exists."
+   },
+   {
+    "spec_line": "IOBoard.md:378 (Not known, Power section): \"The converter's inductor (R6). ... A resistor is not in the round 1 list, so round 2 selects it\"",
+    "kind": "other",
+    "category": "R6",
+    "description": "selection.json records R6 'Servo supply inductor': part null with no coverage note, but the underlying evidence shows SRP1265A-4R7M confirmed unrefuted by both FU-B3 P4 verifiers (015-P4-stock-R6.json and 020-P4-datasheet-R6.json, both verdict 'confirmed', no adjudicator ever raised against it) after passing every requirement value (4.7 µH, 28 A saturation, 8.4 mOhm max DCR, -55 to 150 C). This looks like the same selection.json aggregation gap seen on R5's overvoltage protection and R7's Pack cells (below): a confirmed, unrefuted part is not being carried into the consolidated selection record."
+   },
+   {
+    "spec_line": "IOBoard.md:359 \"Pack cells | 2 lithium-ion 18650 cells from Samsung SDI, LG Energy Solution, Molicel, EVE, Murata or Panasonic (S9, S2). ... R7 selects the cell\" (required)",
+    "kind": "other",
+    "category": "R7",
+    "description": "selection.json records R7 'Pack cells': part null, but FU-B3's P4 verifiers both confirm INR-18650-P30B unrefuted (016-P4-stock-R7.json, 019-P4-datasheet-R7.json, verdict 'confirmed' in both, no adjudicator entry against it), with a working vendor route found for V151 (Liion Wholesale, an authorized Molicel/NPE distributor, 6,533 in stock, at/above the rule-4 gate). This is the third instance in the FU-B3 task's output of a confirmed part not being carried into selection.json (see R5 overvoltage protection and R6 Servo supply inductor above), suggesting a systematic omission in how selection.json was built from FU-B3's records rather than three independent open items."
+   }
+  ]
+ }
+}

@@ -1,0 +1,747 @@
+{
+ "role": "rerank",
+ "category": "R1",
+ "label": "rerank-R1",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "functions": [
+   {
+    "function": "Microcontroller",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "reason": "Fixed input of the Scope table, ranked first and not replaced. P3 returned nothing for this function. P2's record stands: rule 4 passes on JLCPCB stock and rule 6 on the 20 held, and Digi-Key is the second vendor (SC1512(13)-A4). It fails the watchdog-window check: the longest legitimate stall found (900 ms, V2) exceeds the stop deadline found (200 ms, V1), and the image sets no timeout (V4). That is a conflict in the specification and firmware, not in the part, and it is reported to the owner",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "12 MHz crystal",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "ABM8-272-T3",
+      "reason": "P3 returned no crystal and disputed none of P2's crystal exclusions. It is the only candidate that meets every value of V5, V6, V7 and V15: ESR 50 Ohm max at CL 10 pF, C0 3.0 pF max, +/-65 ppm total. It is the crystal the RP2350 datasheet (Table 597) tunes the XOSC for. Its second source is Digi-Key (P2's record)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "ABM8-272-T3",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Core regulator inductor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "AOTA-B201610S3R3-101-T",
+      "reason": "The part the RP2350 datasheet (6.3.8.2 to 6.3.8.3) and the hardware design guide name. Its 2.0 x 1.6 mm 0806 case is the one the Figure 23 layout is drawn for, and the datasheet says that layout 'must be strictly followed'. It is the only candidate whose maker status reads Active, and its second source is Digi-Key (stock 28185). None of the P3 finds changes that",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "XGL4020-332MEC",
+      "reason": "Meets every value (Isat 4.8 A at 30 %, DCR 34.0 mOhm max). Its 4 x 4 mm land pattern is shared with XFL4020, XAL4030 and XEL4030, so it has pin-compatible alternates. At 2.1 mm it is the lowest of the 4 x 4 mm parts, and Coilcraft names it the drop-in replacement for XFL4020. It ranks below rank 1 because it departs from the Figure 23 layout and its maker status is not read. Digi-Key does not stock it",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "XAL4030-332MEC",
+      "reason": "P3 find, qualified. Every value passes, with the lowest DCR of the 4 x 4 mm parts (28.6 mOhm max) and Isat 5.9 A. Its land pattern is the same as XGL4020's, and its alternate is XEL4030-332MEC. JLCPCB stock is 1557. It ranks below XGL4020 because it is 1.0 mm taller (3.1 mm max) and gives no electrical advantage that V8 asks for. Its maker status is not read and Digi-Key does not list it",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "XEL4030-332MEC",
+      "reason": "P3 find, qualified. Its figures equal XAL4030-332MEC's: 3.3 uH, 28.6 mOhm max, Isat 5.9 A, 3.1 mm max, and the same land pattern. It ranks below XAL4030 because JLCPCB holds half the stock (768 against 1557). Its alternate is XAL4030-332MEC. Maker status is not read, and Digi-Key does not list it",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "XFL4020-332MEC",
+      "reason": "Meets every value, but Coilcraft's own XFL4020-332 page steers new use to XGL4020, its drop-in replacement (P2's record). JLCPCB stock is 723. Its alternate is XGL4020-332MEC",
+      "option": ""
+     },
+     {
+      "rank": 6,
+      "part": "XAL6030-332MEC",
+      "reason": "P3 find, qualified. Every value passes with the widest margins (Isat 12.2 A, DCR 20.81 mOhm max). Its body is 6.36 x 6.56 mm, about 13 times the area of the 0806 part that Figure 23 is drawn for, so it departs furthest from that layout. Its alternate XEL6030-332MEC clears the rule-4 gate by 24 parts (stock 74 against 50). Maker status is not read, and Digi-Key does not list either part",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 3,
+      "part": "XAL4030-332MEC",
+      "maker": "Coilcraft (datasheet Document 806, 'Shielded Power Inductors - XAL40xx'; JLCPCB maker label 'Coilcraft'); allowlisted as Coilcraft (S2)",
+      "lcsc": "C2937437",
+      "package": "molded, 2 terminals, 4.0 +/-0.3 x 4.0 +/-0.3 mm, 3.1 mm max height for -332 (JLCPCB 'SMD,4x4mm')",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one inductor on VREG_LX of the one RP2354B (RP2350 datasheet section 6.3.8.2; IOBoard.md:103)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inductance",
+        "required": "3.3 uH +/-20 %",
+        "datasheet": "XAL4030-332ME_: 3.3 uH, column '+/-20% (uH)', tested at 1 MHz, 0.1 Vrms, 0 Adc",
+        "pass": true,
+        "source": "XAL40xx datasheet Document 806-1, revised 02/25/26, https://www.coilcraft.com/getmedia/6adcb47d-8b55-416c-976e-1e22e0d2848c/xal4000.pdf, read 2026-09-28T13:32:36Z"
+       },
+       {
+        "name": "saturation current",
+        "required": ">= 1.5 A",
+        "datasheet": "Isat 5.9 A: DC current at 25 C that causes a 30 % (typ) inductance drop",
+        "pass": true,
+        "source": "XAL40xx datasheet Document 806-1, read 2026-09-28T13:32:36Z"
+       },
+       {
+        "name": "DC resistance",
+        "required": "<= 250 mOhm",
+        "datasheet": "26.0 mOhm typ, 28.6 mOhm max",
+        "pass": true,
+        "source": "XAL40xx datasheet Document 806-1, read 2026-09-28T13:32:36Z"
+       },
+       {
+        "name": "fully shielded",
+        "required": "yes",
+        "datasheet": "'Shielded Power Inductors - XAL40xx', composite core",
+        "pass": true,
+        "source": "XAL40xx datasheet Document 806-1, read 2026-09-28T13:32:36Z"
+       },
+       {
+        "name": "polarity marking",
+        "required": "yes",
+        "datasheet": "The drawing labels the 'Dash number': 'Indicates direction of terminals and start (short) lead. Connect high dv/dt here for lowest EMI'",
+        "pass": true,
+        "source": "XAL40xx datasheet Document 806-4, read 2026-09-28T13:32:36Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "covers 0 to 50 C ambient",
+        "datasheet": "ambient -40 to +125 C with Irms (40 C rise)",
+        "pass": true,
+        "source": "XAL40xx datasheet Document 806-1, read 2026-09-28T13:32:36Z"
+       }
+      ],
+      "jlcpcb": "stockCount 1557, canPresaleNumber 1542, componentLibraryType expand, price 9.6202 USD at the need of 5 (break 1-9); exact match, other_results 0; read 2026-09-28T13:31:46Z, vendors.py jlcpcb C2937437 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "not listed: productdetails answered HTTP 404 'Requested Product xal4030-332mec Not Found' (https://api.digikey.com/products/v4/search/XAL4030-332MEC/productdetails, 2026-09-28T13:31:58Z). Keyword searches 'XAL4030-332' (13:32:19Z) and 'XAL4030' (13:32:22Z) at https://api.digikey.com/products/v4/search/keyword returned no product. Stock, lead time and status not read",
+      "gate": "need 5 = 5 boards (S7) x 1 placement; S4 threshold max(5 x 5, 50) = 50; stockCount 1557 >= 50 and canPresaleNumber 1542 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status: not read. The part page https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xal/xal40xx/xal4030-332/ (HTTP 200, 2026-09-28T13:33:40Z) has no status field. Its only notice reads 'Great News! More choices! For XAL4020, see XGL3520 for space savings'. That notice names another series and is not an end-of-life notice. Reported to the owner. Longevity commitment: not read. Market introduction: not read; the datasheet carries only its latest revision date, 2026-02-25. Change and discontinuation notices: none found; Coilcraft's PCN listing not read. Distributor: LCSC productCycle 'normal' (https://www.lcsc.com/product-detail/C2937437.html, 2026-09-28T13:39:13Z); Digi-Key does not list it",
+      "second_source": "alternate: XEL4030-332MEC (C19191691). Both parts have a 4.0 +/-0.3 x 4.0 +/-0.3 mm body and a 3.1 mm maximum height for -332. Both drawings show the same recommended land pattern dimensions: 2.37 mm, 3.4 mm and 0.98 mm (XAL40xx Document 806-4; XEL4030 Document 1321-3). Both are 3.3 uH +/-20 %, 28.6 mOhm max and Isat 5.9 A, with the dash-number start-lead mark. The alternate passes rules 1 to 4: JLCPCB stockCount 768 >= 50 and canPresaleNumber 767 (2026-09-28T13:31:47Z). XGL4020-332MEC and XFL4020-332MEC use the same land pattern dimensions (Documents 1529-3 and 745-3) and are 2.1 mm high",
+      "alternates": [
+       "XEL4030-332MEC",
+       "XGL4020-332MEC",
+       "XFL4020-332MEC"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Meets every V7, V8 and V14 value with the lowest DCR of the 4 x 4 mm parts. It shares the land pattern of the XGL4020 and XFL4020 above it. It ranks third: it is 1.0 mm taller than XGL4020 and has no advantage that V8 asks for, its maker status is not read, and Digi-Key does not list it",
+      "second_source_route": "alternate",
+      "second_source_part": "XEL4030-332MEC"
+     },
+     {
+      "rank": 4,
+      "part": "XEL4030-332MEC",
+      "maker": "Coilcraft (datasheet Document 1321, 'Shielded Power Inductors XEL4030'; JLCPCB maker label 'Coilcraft'); allowlisted as Coilcraft (S2)",
+      "lcsc": "C19191691",
+      "package": "molded, 2 terminals, 4.0 +/-0.3 x 4.0 +/-0.3 mm, 3.10 mm max height for -332 (JLCPCB 'SMD,4x4mm')",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one inductor on VREG_LX of the one RP2354B (RP2350 datasheet section 6.3.8.2; IOBoard.md:103)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inductance",
+        "required": "3.3 uH +/-20 %",
+        "datasheet": "XEL4030-332ME_: 3.3 uH, column '+/-20% (uH)'",
+        "pass": true,
+        "source": "XEL4030 datasheet Document 1321-1, revised 02/19/26, https://www.coilcraft.com/getmedia/8245f050-f190-4295-8c41-7c03d662ee3d/xel4030.pdf, read 2026-09-28T13:32:36Z"
+       },
+       {
+        "name": "saturation current",
+        "required": ">= 1.5 A",
+        "datasheet": "Isat 5.9 A (30 % inductance drop, typ)",
+        "pass": true,
+        "source": "XEL4030 datasheet Document 1321-1, read 2026-09-28T13:32:36Z"
+       },
+       {
+        "name": "DC resistance",
+        "required": "<= 250 mOhm",
+        "datasheet": "26.1 mOhm typ, 28.6 mOhm max",
+        "pass": true,
+        "source": "XEL4030 datasheet Document 1321-1, read 2026-09-28T13:32:36Z"
+       },
+       {
+        "name": "fully shielded",
+        "required": "yes",
+        "datasheet": "'Shielded Power Inductors XEL4030', composite core",
+        "pass": true,
+        "source": "XEL4030 datasheet Document 1321-1, read 2026-09-28T13:32:36Z"
+       },
+       {
+        "name": "polarity marking",
+        "required": "yes",
+        "datasheet": "The page-3 drawing (an image, read from its render) labels the 'Dash number': 'Indicates direction of terminals and start (short) lead. Connect high dv/dt here for lowest EMI'",
+        "pass": true,
+        "source": "XEL4030 datasheet Document 1321-3, read 2026-09-28T13:32:36Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "covers 0 to 50 C ambient",
+        "datasheet": "ambient -40 to +125 C with (40 C) Irms current",
+        "pass": true,
+        "source": "XEL4030 datasheet Document 1321-1, read 2026-09-28T13:32:36Z"
+       }
+      ],
+      "jlcpcb": "stockCount 768, canPresaleNumber 767, componentLibraryType expand, price 8.412 USD at the need of 5 (break 1-9); exact match, other_results 0; read 2026-09-28T13:31:47Z, vendors.py jlcpcb C19191691 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "not listed: productdetails answered HTTP 404 (https://api.digikey.com/products/v4/search/XEL4030-332MEC/productdetails, 2026-09-28T13:31:59Z). Keyword search 'XEL4030-332' returned no product (https://api.digikey.com/products/v4/search/keyword, 13:32:21Z). Stock, lead time and status not read",
+      "gate": "need 5 = 5 boards x 1; threshold max(25, 50) = 50; stockCount 768 >= 50 and canPresaleNumber 767 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status: not read. The part page https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xel/xel4030/xel4030-332/ (HTTP 200, 2026-09-28T13:33:44Z) has no status field. Its notice ('Great News! More choices! See XGL3530 for space savings ... See XGL4030 for significantly lower DCR') is not an end-of-life notice. Reported to the owner. Longevity commitment: not read. Market introduction: not read; the datasheet carries only its latest revision date, 2026-02-19. Notices: none found; PCN listing not read. Distributor: LCSC productCycle 'normal' (https://www.lcsc.com/product-detail/C19191691.html, 2026-09-28T13:39:14Z); Digi-Key does not list it",
+      "second_source": "alternate: XAL4030-332MEC (C2937437). It has the same body, the same 3.1 mm maximum height and the same recommended land pattern dimensions (2.37, 3.4 and 0.98 mm; Documents 806-4 and 1321-3). It is 3.3 uH +/-20 %, 28.6 mOhm max and Isat 5.9 A, with the same start-lead mark. It passes rules 1 to 4: JLCPCB stockCount 1557 >= 50 and canPresaleNumber 1542 (2026-09-28T13:31:46Z)",
+      "alternates": [
+       "XAL4030-332MEC",
+       "XGL4020-332MEC",
+       "XFL4020-332MEC"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Its figures equal XAL4030-332MEC's, and it is AEC-Q200 qualified, as the XAL40xx series also is. It ranks below XAL4030 on JLCPCB stock (768 against 1557). Its maker status is not read and Digi-Key does not list it",
+      "second_source_route": "alternate",
+      "second_source_part": "XAL4030-332MEC"
+     },
+     {
+      "rank": 6,
+      "part": "XAL6030-332MEC",
+      "maker": "Coilcraft (datasheet Document 887, 'Shielded Power Inductors - XAL60xx'; JLCPCB maker label 'Coilcraft'; the jlcparts maker field is blank for C19191620); allowlisted as Coilcraft (S2)",
+      "lcsc": "C19191620",
+      "package": "molded, 2 terminals, 6.36 +/-0.2 x 6.56 +/-0.2 mm, 3.1 mm max height for -332 (JLCPCB 'SMD,6.5x6.3mm')",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one inductor on VREG_LX of the one RP2354B (RP2350 datasheet section 6.3.8.2; IOBoard.md:103)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inductance",
+        "required": "3.3 uH +/-20 %",
+        "datasheet": "XAL6030-332ME_: 3.3 uH, column '+/-20% (uH)'",
+        "pass": true,
+        "source": "XAL60xx datasheet Document 887-1, revised 02/25/26, https://www.coilcraft.com/getmedia/ea51f14b-7f32-4dc6-8dfe-d4b70549040f/xal60xx.pdf, read 2026-09-28T13:33:59Z"
+       },
+       {
+        "name": "saturation current",
+        "required": ">= 1.5 A",
+        "datasheet": "Isat 12.2 A (30 % inductance drop, typ)",
+        "pass": true,
+        "source": "XAL60xx datasheet Document 887-1, read 2026-09-28T13:33:59Z"
+       },
+       {
+        "name": "DC resistance",
+        "required": "<= 250 mOhm",
+        "datasheet": "19.92 mOhm typ, 20.81 mOhm max",
+        "pass": true,
+        "source": "XAL60xx datasheet Document 887-1, read 2026-09-28T13:33:59Z"
+       },
+       {
+        "name": "fully shielded",
+        "required": "yes",
+        "datasheet": "'Shielded Power Inductors - XAL60xx', composite core",
+        "pass": true,
+        "source": "XAL60xx datasheet Document 887-1, read 2026-09-28T13:33:59Z"
+       },
+       {
+        "name": "polarity marking",
+        "required": "yes",
+        "datasheet": "'Dash number: Indicates direction of terminals and start (short) lead. Connect high dv/dt here for lowest EMI'",
+        "pass": true,
+        "source": "XAL60xx datasheet Document 887-4, read 2026-09-28T13:33:59Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "covers 0 to 50 C ambient",
+        "datasheet": "ambient -40 to +125 C with (40 C rise) Irms current",
+        "pass": true,
+        "source": "XAL60xx datasheet Document 887-1, read 2026-09-28T13:33:59Z"
+       }
+      ],
+      "jlcpcb": "stockCount 770, canPresaleNumber 764, componentLibraryType expand, price 7.2249 USD at the need of 5 (break 1-9); exact match, other_results 0; read 2026-09-28T13:31:47Z, vendors.py jlcpcb C19191620 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "not listed: productdetails answered HTTP 404 (https://api.digikey.com/products/v4/search/XAL6030-332MEC/productdetails, 2026-09-28T13:32:01Z). Keyword search 'XAL6030-332' returned no product (https://api.digikey.com/products/v4/search/keyword, 13:40:37Z). Stock, lead time and status not read",
+      "gate": "need 5 = 5 boards x 1; threshold 50; stockCount 770 >= 50 and canPresaleNumber 764 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status: not read. The part page https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xal/xal60xx/xal6030-332/ (HTTP 200, 2026-09-28T13:33:43Z) has no status field. Its notice ('Great News! More choices! For XAL6030, see XGL5030 for space savings with 30% less board area') is not an end-of-life notice. Reported to the owner. Longevity commitment: not read. Market introduction: not read; the datasheet carries only its latest revision date, 2026-02-25. Notices: none found; PCN listing not read. Distributor: LCSC productCycle 'normal' (https://www.lcsc.com/product-detail/C19191620.html, 2026-09-28T13:39:14Z); Digi-Key does not list it",
+      "second_source": "alternate: XEL6030-332MEC (C19191645). Both are 6.36 +/-0.2 x 6.56 +/-0.2 mm with a 3.1 mm maximum height for -332. Both drawings show the same recommended land pattern dimensions: 4.04 mm, 5.50 mm and 1.43 mm (Documents 887-4 and 1353-3). Both are 3.3 uH +/-20 % and 20.81 mOhm max, with the same start-lead mark; Isat is 10.5 A. The alternate passes rules 1 to 4: JLCPCB stockCount 74 >= 50 and canPresaleNumber 70 (2026-09-28T13:35:21Z)",
+      "alternates": [
+       "XEL6030-332MEC"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Meets every value with the widest margins. It ranks last: its 6.36 x 6.56 mm body departs furthest from the 0806 layout of Figure 23. Its alternate clears the rule-4 gate by 24 parts. Its maker status is not read, and Digi-Key lists neither part",
+      "second_source_route": "alternate",
+      "second_source_part": "XEL6030-332MEC"
+     },
+     {
+      "rank": 0,
+      "part": "XEL6030-332MEC",
+      "maker": "Coilcraft (datasheet Document 1353, 'Shielded Power Inductors - XEL6030'; JLCPCB maker label 'Coilcraft'); allowlisted as Coilcraft (S2)",
+      "lcsc": "C19191645",
+      "package": "molded, 2 terminals, 6.36 +/-0.2 x 6.56 +/-0.2 mm, 3.1 mm max height for -332 (JLCPCB 'SMD,6.5x6.3mm')",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one inductor on VREG_LX of the one RP2354B (RP2350 datasheet section 6.3.8.2)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inductance",
+        "required": "3.3 uH +/-20 %",
+        "datasheet": "XEL6030-332ME_: 3.3 uH, column '+/-20% (uH)'",
+        "pass": true,
+        "source": "XEL6030 datasheet Document 1353-1, revised 02/20/26, https://www.coilcraft.com/getmedia/ed8d0314-5cbb-4be3-85da-32235c3701c8/xel6030.pdf, read 2026-09-28T13:35:39Z"
+       },
+       {
+        "name": "saturation current",
+        "required": ">= 1.5 A",
+        "datasheet": "Isat 10.5 A (30 % inductance drop, typ)",
+        "pass": true,
+        "source": "XEL6030 datasheet Document 1353-1, read 2026-09-28T13:35:39Z"
+       },
+       {
+        "name": "DC resistance",
+        "required": "<= 250 mOhm",
+        "datasheet": "19.92 mOhm typ, 20.81 mOhm max",
+        "pass": true,
+        "source": "XEL6030 datasheet Document 1353-1, read 2026-09-28T13:35:39Z"
+       },
+       {
+        "name": "fully shielded",
+        "required": "yes",
+        "datasheet": "'Shielded Power Inductors - XEL6030'",
+        "pass": true,
+        "source": "XEL6030 datasheet Document 1353-1, read 2026-09-28T13:35:39Z"
+       },
+       {
+        "name": "polarity marking",
+        "required": "yes",
+        "datasheet": "'Dash number': 'Indicates direction of terminals and start (short) lead. Connect high dv/dt here for lowest EMI'",
+        "pass": true,
+        "source": "XEL6030 datasheet Document 1353-3, read 2026-09-28T13:35:39Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "covers 0 to 50 C ambient",
+        "datasheet": "ambient -40 to +125 C with (40 C rise) Irms current",
+        "pass": true,
+        "source": "XEL6030 datasheet Document 1353-1, read 2026-09-28T13:35:39Z"
+       }
+      ],
+      "jlcpcb": "stockCount 74, canPresaleNumber 70, componentLibraryType expand, price 7.3419 USD at the need of 5 (break 1-9); exact match, other_results 0; read 2026-09-28T13:35:21Z, vendors.py jlcpcb C19191645 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "not listed: productdetails answered HTTP 404 (https://api.digikey.com/products/v4/search/XEL6030-332MEC/productdetails, 2026-09-28T13:35:22Z). Keyword search 'XEL6030-332' returned no product (13:40:38Z). Stock, lead time and status not read",
+      "gate": "need 5 = 5 boards x 1; threshold 50; stockCount 74 >= 50 and canPresaleNumber 70 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status: not read. The part page https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xel/xel6030/xel6030-332/ (HTTP 200, 2026-09-28T13:35:32Z) carries no status field. Reported to the owner. Longevity commitment: not read. Market introduction: not read; the datasheet carries only its latest revision date, 2026-02-20. Notices: none found; PCN listing not read. Distributor: LCSC productCycle 'normal' (https://www.lcsc.com/product-detail/C19191645.html, 2026-09-28T13:39:14Z); Digi-Key does not list it",
+      "second_source": "alternate of XAL6030-332MEC (C19191620): the same body, height and land pattern dimensions (Documents 887-4 and 1353-3). JLCPCB stockCount 770 >= 50 (2026-09-28T13:31:47Z)",
+      "alternates": [
+       "XAL6030-332MEC"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Not ranked. This is the record of the rule-5 alternate of XAL6030-332MEC (rank 6)",
+      "second_source_route": "alternate",
+      "second_source_part": "XAL6030-332MEC"
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "XAL5030-332MEC (C5342047)",
+      "maker": "Coilcraft",
+      "reason": "Fails rule 5. Its values pass: 3.3 uH +/-20 %, DCR 23.30 mOhm max, Isat 8.7 A, shielded, and the dash-number start-lead mark on a 5.28 x 5.48 mm body 3.1 mm high (XAL50xx datasheet Document 908, https://www.coilcraft.com/getmedia/49bc46c8-4b2c-45b9-9b6c-2eaa235ea698/xal50xx.pdf, read 2026-09-28T13:33:58Z). It passes rule 4: JLCPCB stockCount 117 >= 50, canPresaleNumber 103 (2026-09-28T13:31:47Z). It has no second source. Digi-Key productdetails answered HTTP 404 (13:32:02Z), and a keyword search for 'XAL5030-332' returned no product (13:40:35Z). No pin-compatible alternate was found in the jlcparts copy. It holds no XEL5030-332 row, and XGL5030-332MEC (C3911724) has a different 5.5 x 5.3 mm body and a stock of 1 in the copy"
+     },
+     {
+      "part": "VLS252012HBX-3R3M-1 (C360733)",
+      "maker": "TDK",
+      "reason": "Polarity marking (V14) is not shown. P3 is right that P2 read the wrong series. The VLS252012HBX-1 datasheet (https://product.tdk.com/en/system/files/dam/doc/product/inductor/inductor/smd/catalog/inductor_commercial_power_vls252012hbx-1_en.pdf, dated 20180709, read 2026-09-28T13:35:58Z) names the '-1' suffix 'Marking', and its shape drawing shows a dot mark near one end of the top face. The datasheet does not say that the mark gives the winding start or direction, so the V14 requirement is not shown to pass. Its other values pass: 3.3 uH +/-20 %; DCR 0.168 Ohm in the '( )max.' column; Isat 1.80 A in the 'Isat (A)max.' column (30 % drop); Itemp 1.55 A; -40 to 105 C. JLCPCB stockCount 1040 (13:31:48Z). Digi-Key 218, Active, lead 12 weeks (13:32:04Z)"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "AOTA-B201610S3R3-101-T",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "USB protection",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPD6E05U06RVZR",
+      "reason": "One placement covers all 5 lines with the lowest capacitance (0.47 pF typ, delta 0.07 pF max). Each channel is its own clamp to GND, so D+, D- and CC have no path to the VBUS net while the board runs from the DC input or the pack with no USB source. Its maker status reads ACTIVE, and its second source is Digi-Key (38541)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "VBUS54CV-HSF-G4-08",
+      "reason": "P3 find, qualified. One placement covers all 5 lines: 4 I/O lines plus the VBUS clamp on pin 5. It has the highest IEC rating (+/-30 kV contact and air). Its capacitance is higher (1.2 pF typ, 2.5 pF max). Its data-line diodes steer to pin 5: the datasheet keeps the lines 'between the ground- and the VBUS-level'. With the board running from the DC input or the pack and no USB source, a D+ or CC line above VBUS forward-biases into the VBUS net. The requirement values do not exclude that, but rank 1 has no such path. Its maker status is not read (Digi-Key: Active)",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TPD4E05U06DQAR",
+      "reason": "The same die family as rank 1, with the lowest cost and the largest stock. It needs two placements where ranks 1 and 2 need one",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "TPD4E1U06DBVR",
+      "reason": "+/-15 kV contact rating, but higher capacitance (0.8 pF) and two placements",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "TPD2E2U06DRLR",
+      "reason": "The highest IEC ratings of P2's parts, but three placements and 1.5 pF",
+      "option": ""
+     },
+     {
+      "rank": 6,
+      "part": "DT1240-04LP-7",
+      "reason": "P3 find, qualified. It needs two placements, with 0.55 pF typ and +/-14 kV contact, +/-16 kV air. It ranks last on the VBUS line. It is a snapback clamp whose holding voltage is 5.5 V minimum, equal to the 5.5 V VBUS maximum of V10, so an ESD strike on VBUS with 3 A available has no margin against the clamp holding on. The datasheet names data ports as its use. Digi-Key lead time is 32 weeks, and its maker status is not read (Digi-Key: Active)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "VBUS54CV-HSF-G4-08",
+      "maker": "Vishay (datasheet: Vishay Semiconductors, Document 84145; JLCPCB maker label 'Vishay Intertech'; Digi-Key 'Vishay General Semiconductor - Diodes Division'); allowlisted as Vishay (S1)",
+      "lcsc": "C511465",
+      "package": "LLP75-6L (JLCPCB 'UFDFN-6-EP'); 4 I/O lines on pins 1, 3, 4 and 6, VBUS clamp on pin 5, GND on pin 2",
+      "placements": 1,
+      "placements_basis": "Not fixed by the specification. The 5 lines of V13 are D+, D-, CC1 and CC2 on the 4 I/O pins and VBUS on pin 5, which gives 1 part; range 1 to 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "lines covered",
+        "required": "5 lines: VBUS, D+, D-, CC1, CC2",
+        "datasheet": "Nchannel 4 lines on pins 1, 3, 4 and 6, plus 'An avalanche diode clamps the supply line (VBUS at pin 5) to ground (pin 2)'",
+        "pass": true,
+        "source": "VBUS54CV-HSF datasheet Rev. 1.3, 04-Jan-2019, Document 84145, electrical characteristics and application note, https://www.vishay.com/docs/84145/vbus54cvhsf.pdf, read 2026-09-28T13:36:24Z"
+       },
+       {
+        "name": "IEC 61000-4-2 contact",
+        "required": ">= +/-8 kV on every line covered",
+        "datasheet": "+/-30 kV contact discharge, 10 pulses (absolute maximum ratings, ESD immunity)",
+        "pass": true,
+        "source": "Document 84145 Rev. 1.3, read 2026-09-28T13:36:24Z"
+       },
+       {
+        "name": "IEC 61000-4-2 air",
+        "required": ">= +/-15 kV on every line covered",
+        "datasheet": "+/-30 kV air discharge, 10 pulses",
+        "pass": true,
+        "source": "Document 84145 Rev. 1.3, read 2026-09-28T13:36:24Z"
+       },
+       {
+        "name": "VBUS working voltage",
+        "required": ">= 5.5 V",
+        "datasheet": "pin 5 to pin 2: VRWM 5.5 V, IR 0.1 uA max at 5.5 V, VBR 6.3 V min, 7.1 V typ",
+        "pass": true,
+        "source": "Document 84145 Rev. 1.3, electrical characteristics (pin 5 to pin 2), read 2026-09-28T13:36:24Z"
+       },
+       {
+        "name": "VBUS current",
+        "required": "the 3 A VBUS path does not pass through a shunt clamp",
+        "datasheet": "Pin 5 is a clamp from VBUS to ground (pin 2), a shunt that the 3 A does not pass through. Surge: IPPM 13 A, 8/20 us",
+        "pass": true,
+        "source": "Document 84145 Rev. 1.3, absolute maximum ratings and application note, read 2026-09-28T13:36:24Z"
+       },
+       {
+        "name": "D+, D-, CC working voltage",
+        "required": ">= 3.63 V",
+        "datasheet": "pins 1, 3, 4, 6 to pin 2: VRWM 5.5 V, IR 0.1 uA max, VBR 7 V min. The application note gives the isolation 'as long as the signal voltage on the data lines is between the ground- and the VBUS-level'",
+        "pass": true,
+        "source": "Document 84145 Rev. 1.3, electrical characteristics (pin 1, 3, 4, or 6 to pin 2) and application note, read 2026-09-28T13:36:24Z"
+       },
+       {
+        "name": "D+/D- capacitance",
+        "required": "<= 75 pF shared",
+        "datasheet": "CD 1.2 pF typ, 2.5 pF max, with the I/O pin at 0 V, pin 5 at 5 V and f = 1 MHz",
+        "pass": true,
+        "source": "Document 84145 Rev. 1.3, read 2026-09-28T13:36:24Z"
+       },
+       {
+        "name": "D+/D- capacitance matching",
+        "required": "D+ and D- differ by < 10 %",
+        "datasheet": "line symmetry dCD, the difference of the line capacitances, 0.2 pF max",
+        "pass": true,
+        "source": "Document 84145 Rev. 1.3, read 2026-09-28T13:36:24Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "covers 0 to 50 C ambient",
+        "datasheet": "operating temperature, junction, TJ -40 to +125 C",
+        "pass": true,
+        "source": "Document 84145 Rev. 1.3, absolute maximum ratings, read 2026-09-28T13:36:24Z"
+       }
+      ],
+      "jlcpcb": "stockCount 2924, canPresaleNumber 2913, componentLibraryType expand, price 0.4656 USD at the need of 5 (break 1-49); exact match, other_results 0; read 2026-09-28T13:31:48Z, vendors.py jlcpcb C511465 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "stock_available 55692 (cut tape; tape and reel 54000), lead 11 weeks, ProductStatus Active; read 2026-09-28T13:32:06Z, vendors.py digikey VBUS54CV-HSF-G4-08 (https://api.digikey.com/products/v4/search/VBUS54CV-HSF-G4-08/productdetails)",
+      "gate": "need 5 = 5 boards (S7) x 1; S4 threshold max(25, 50) = 50; stockCount 2924 >= 50 and canPresaleNumber 2913 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status: not read. The product page https://www.vishay.com/en/product/84145/ (HTTP 200, 2026-09-28T13:39:25Z) carries no status in the page body. Reported to the owner. Longevity commitment: not read. Market introduction: the datasheet read is Rev. 1.3 of 2019-01-04, and the date of its first revision is not stated. It has been on the market since 2019-01-04 at the latest, so it is not flagged. Change and discontinuation notices: none found; Vishay's PCN listing not read. Distributor: Digi-Key ProductStatus Active (13:32:06Z); LCSC productCycle 'normal' (https://www.lcsc.com/product-detail/C511465.html, 2026-09-28T13:39:15Z)",
+      "second_source": "second-vendor: Digi-Key stock_available 55692 >= 50 (productdetails, 2026-09-28T13:32:06Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "It matches rank 1's single placement and has the highest IEC ratings (+/-30 kV). It ranks second: its capacitance is higher (1.2 pF typ against 0.47 pF), and its data-line diodes steer to the VBUS pin, which rank 1 does not. Its maker status is not read",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 6,
+      "part": "DT1240-04LP-7",
+      "maker": "Diodes Incorporated (datasheet DS36312; JLCPCB maker label 'Diodes Incorporated'); allowlisted (S1)",
+      "lcsc": "C444992",
+      "package": "U-DFN2510-10, 2.5 x 1.0 mm, 4 channels, flow-through (I/O on pins 1, 2, 4, 5; pins 6, 7, 9, 10 not connected; VSS on pins 3 and 8)",
+      "placements": 2,
+      "placements_basis": "Not fixed by the specification: 5 lines (V13) over 4 channels a part gives 2 parts (8 channels, 5 used); range 2 to 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "lines covered",
+        "required": "5 lines",
+        "datasheet": "4 channels of ESD protection a part; 2 parts give 8",
+        "pass": true,
+        "source": "DT1240-04LP datasheet DS36312 Rev. 5-2, April 2023, https://www.diodes.com/assets/Datasheets/DT1240-04LP.pdf, read 2026-09-28T13:36:24Z"
+       },
+       {
+        "name": "IEC 61000-4-2 contact",
+        "required": ">= +/-8 kV",
+        "datasheet": "+/-14 kV contact, I/O to VSS (maximum ratings)",
+        "pass": true,
+        "source": "DS36312 Rev. 5-2, read 2026-09-28T13:36:24Z"
+       },
+       {
+        "name": "IEC 61000-4-2 air",
+        "required": ">= +/-15 kV",
+        "datasheet": "+/-16 kV air, I/O to VSS",
+        "pass": true,
+        "source": "DS36312 Rev. 5-2, read 2026-09-28T13:36:24Z"
+       },
+       {
+        "name": "VBUS working voltage",
+        "required": ">= 5.5 V",
+        "datasheet": "VRWM 5.5 V max; IR 0.5 uA max; VBR 6 V min; operating voltage (DC) 6 V; holding voltage VH 5.5 V min",
+        "pass": true,
+        "source": "DS36312 Rev. 5-2, electrical characteristics, read 2026-09-28T13:36:24Z"
+       },
+       {
+        "name": "VBUS current",
+        "required": "the 3 A VBUS path does not pass through a shunt clamp",
+        "datasheet": "a TVS from I/O to VSS, a shunt that the 3 A does not pass through; IPP 5.5 A, 8/20 us",
+        "pass": true,
+        "source": "DS36312 Rev. 5-2, read 2026-09-28T13:36:24Z"
+       },
+       {
+        "name": "D+, D-, CC working voltage",
+        "required": ">= 3.63 V",
+        "datasheet": "VRWM 5.5 V on every channel",
+        "pass": true,
+        "source": "DS36312 Rev. 5-2, read 2026-09-28T13:36:24Z"
+       },
+       {
+        "name": "D+/D- capacitance",
+        "required": "<= 75 pF shared",
+        "datasheet": "CI/O 0.55 pF typ, 0.65 pF max",
+        "pass": true,
+        "source": "DS36312 Rev. 5-2, read 2026-09-28T13:36:24Z"
+       },
+       {
+        "name": "D+/D- capacitance matching",
+        "required": "< 10 % difference",
+        "datasheet": "Delta CI/O (CI/OMAX - CI/OMIN) is 0.04 pF typ, with no maximum stated. CI/O 0.65 pF max bounds the difference. D+ and D- go on one part",
+        "pass": true,
+        "source": "DS36312 Rev. 5-2, read 2026-09-28T13:36:24Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "covers 0 to 50 C ambient",
+        "datasheet": "operating and storage temperature range TJ -55 to +150 C",
+        "pass": true,
+        "source": "DS36312 Rev. 5-2, maximum ratings, read 2026-09-28T13:36:24Z"
+       }
+      ],
+      "jlcpcb": "stockCount 3191, canPresaleNumber 2915, componentLibraryType expand, price 0.2422 USD at the need of 10 (break 1-49); exact match, other_results 0; read 2026-09-28T13:31:49Z, vendors.py jlcpcb C444992 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "stock_available 131277 (cut tape; tape and reel 129000), lead 32 weeks, ProductStatus Active; read 2026-09-28T13:32:10Z, vendors.py digikey DT1240-04LP-7 (https://api.digikey.com/products/v4/search/DT1240-04LP-7/productdetails)",
+      "gate": "need 10 = 5 boards x 2; S4 threshold max(5 x 10, 50) = 50; stockCount 3191 >= 50 and canPresaleNumber 2915 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status: not read. The product page https://www.diodes.com/part/view/DT1240-04LP (HTTP 200, 2026-09-28T13:39:25Z) carries no status in the page body. Reported to the owner. Longevity commitment: not read. Market introduction: the datasheet read is DS36312 Rev. 5-2 of April 2023, and the date of its first revision is not stated. It has been on the market since April 2023 at the latest, so it is not flagged. Notices: none found; PCN listing not read. Distributor: Digi-Key ProductStatus Active (13:32:10Z); LCSC productCycle 'normal' (https://www.lcsc.com/product-detail/C444992.html, 2026-09-28T13:39:15Z)",
+      "second_source": "second-vendor: Digi-Key stock_available 131277 >= 50 (productdetails, 2026-09-28T13:32:10Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Meets every value, with IEC ratings above TPD4E05U06DQAR's in the same two-placement role. It ranks last. Its snapback holding voltage (5.5 V min) equals the 5.5 V VBUS maximum, leaving no margin on VBUS. Digi-Key's lead time is 32 weeks, and the maker status is not read",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "NUP4114UCW1T2G (C463643)",
+      "maker": "onsemi",
+      "reason": "Fails rule 5. Its values pass: VRWM 5.5 V; IEC 61000-4-2 +/-8 kV contact and +/-15 kV air; 0.6 pF I/O to GND; 4 I/O lines plus pin 5 for power-line protection (NUP4114/D Rev. 8, December 2021, https://www.onsemi.com/pdf/datasheet/nup4114-d.pdf, read 2026-09-28T13:36:27Z). JLCPCB stockCount 1926, presale 1863 (13:31:48Z). Digi-Key stock_available 0, lead 58 weeks, Active (13:32:08Z), under the gate of 50. No pin-compatible alternate passes. DRTR5V0U4S-7 (C460056) has the same pinout: I/O on pins 1, 3, 4, 6, GND on 2, VDD on 5, with +/-8 kV contact and +/-15 kV air (DS36008 Rev. 3-2, https://www.diodes.com/assets/Datasheets/DRTR5V0U4S.pdf, 13:37:31Z). Its JLCPCB stockCount is 4 (13:37:43Z), so it fails rule 4. TPD4E001DCKR has the same pinout but specifies VCC at 0.9 to 5.5 V and the I/O at 0 to VCC (SLLS682P, https://www.ti.com/lit/ds/symlink/tpd4e001.pdf, 13:37:54Z). It therefore does not work in this circuit, where VBUS is absent while the board runs from the DC input or the pack"
+     },
+     {
+      "part": "TPD6S300RUKR (C2649810)",
+      "maker": "Texas Instruments",
+      "reason": "Fails 'lines covered' (V13). Its protected pins are C_SBU1, C_SBU2, C_CC1, C_CC2, D1 and D2, and it has no VBUS pin (SLVSDK3C, Pin Functions, https://www.ti.com/lit/ds/symlink/tpd6s300.pdf, read 2026-09-28T13:38:37Z). It covers 4 of the 5 lines. VBUS needs a second, different part that neither P2 nor P3 qualified. It also needs a 2.7 to 3.6 V VPWR supply and a 0.1 uF VBIAS capacitor. On the lines it covers it meets V9 (C_CC1, C_CC2, D1, D2: +/-8 kV contact, +/-15 kV air). JLCPCB stockCount 17564 (13:31:49Z); Digi-Key 8366, Active (13:32:11Z)"
+     },
+     {
+      "part": "TPD4S012DRYR (C96506)",
+      "maker": "Texas Instruments",
+      "reason": "Fails V9 air. IEC 61000-4-2 air-gap discharge is +/-10 kV on D+, D- and ID and +/-9 kV on VBUS, below +/-15 kV (SLVS928B, https://www.ti.com/lit/ds/symlink/tpd4s012.pdf, read 2026-09-28T13:36:28Z). P3 is right that its VBUS pin is a shunt clamp, so V10's 3 A is not the ground for dropping it"
+     },
+     {
+      "part": "D5V0F4U6SO-7 (C445539)",
+      "maker": "Diodes Incorporated",
+      "reason": "Fails rule 4: JLCPCB stockCount 1 and canPresaleNumber -6 (vendors.py jlcpcb C445539, 2026-09-28T13:31:49Z)"
+     },
+     {
+      "part": "IP4234CZ6,125 (C455086)",
+      "maker": "Nexperia",
+      "reason": "V9 air is not shown. The datasheet rates 'all pins; IEC 61000-4-2 level 4; contact discharge' at +/-15 kV and states no air-discharge rating (Rev. 3.0, 31 January 2018, https://assets.nexperia.com/documents/data-sheet/IP4234CZ6.pdf, read 2026-09-28T13:38:54Z)"
+     },
+     {
+      "part": "PRTR5V0U2F,115 (C478118)",
+      "maker": "Nexperia",
+      "reason": "V9 air is not shown. VESD is 8 kV (IEC 61000-4-2 contact discharge), '> 8 kV (contact)', and no air-discharge rating is stated (PRTR5V0U2F_PRTR5V0U2K Rev. 02, 19 February 2009, https://assets.nexperia.com/documents/data-sheet/PRTR5V0U2F_PRTR5V0U2K.pdf, read 2026-09-28T13:39:02Z)"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPD6E05U06RVZR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "crystal tolerance: XAL4030-332MEC",
+    "value": "not applicable: a core regulator inductor has no frequency tolerance",
+    "source": "XAL40xx datasheet Document 806, https://www.coilcraft.com/getmedia/6adcb47d-8b55-416c-976e-1e22e0d2848c/xal4000.pdf, read 2026-09-28T13:32:36Z"
+   },
+   {
+    "figure": "crystal tolerance: XEL4030-332MEC",
+    "value": "not applicable: a core regulator inductor has no frequency tolerance",
+    "source": "XEL4030 datasheet Document 1321, https://www.coilcraft.com/getmedia/8245f050-f190-4295-8c41-7c03d662ee3d/xel4030.pdf, read 2026-09-28T13:32:36Z"
+   },
+   {
+    "figure": "crystal tolerance: XAL6030-332MEC",
+    "value": "not applicable: a core regulator inductor has no frequency tolerance",
+    "source": "XAL60xx datasheet Document 887, https://www.coilcraft.com/getmedia/ea51f14b-7f32-4dc6-8dfe-d4b70549040f/xal60xx.pdf, read 2026-09-28T13:33:59Z"
+   },
+   {
+    "figure": "crystal tolerance: XEL6030-332MEC",
+    "value": "not applicable: a core regulator inductor has no frequency tolerance",
+    "source": "XEL6030 datasheet Document 1353, https://www.coilcraft.com/getmedia/ed8d0314-5cbb-4be3-85da-32235c3701c8/xel6030.pdf, read 2026-09-28T13:35:39Z"
+   },
+   {
+    "figure": "crystal tolerance: VBUS54CV-HSF-G4-08",
+    "value": "not applicable: a USB ESD clamp has no frequency tolerance",
+    "source": "VBUS54CV-HSF datasheet Document 84145 Rev. 1.3, https://www.vishay.com/docs/84145/vbus54cvhsf.pdf, read 2026-09-28T13:36:24Z"
+   },
+   {
+    "figure": "crystal tolerance: DT1240-04LP-7",
+    "value": "not applicable: a USB ESD clamp has no frequency tolerance",
+    "source": "DT1240-04LP datasheet DS36312 Rev. 5-2, https://www.diodes.com/assets/Datasheets/DT1240-04LP.pdf, read 2026-09-28T13:36:24Z"
+   },
+   {
+    "figure": "4 x 4 mm inductor land pattern",
+    "value": "XGL4020, XFL4020, XAL4030 and XEL4030 all draw the same recommended land pattern dimensions: 2.37 mm, 3.4 mm and 0.98 mm. All have a 4.0 +/-0.3 x 4.0 +/-0.3 mm body. The -332 maximum heights are 2.1 mm (XGL4020, XFL4020) and 3.1 mm (XAL4030, XEL4030). All four carry the dash-number start-lead mark",
+    "source": "Coilcraft datasheets: XGL4020 Document 1529-3 (read 2026-09-28T13:32:37Z), XFL4020 Document 745-3, revised 03/10/26 (13:32:38Z), XAL40xx Document 806-4 (13:32:36Z), XEL4030 Document 1321-3, page-3 drawing rendered from the image (13:32:36Z)"
+   },
+   {
+    "figure": "6.5 mm inductor land pattern",
+    "value": "XAL6030-332 and XEL6030-332 both have a 6.36 +/-0.2 x 6.56 +/-0.2 mm body, a 3.1 mm maximum height, and the same recommended land pattern dimensions: 4.04 mm, 5.50 mm and 1.43 mm",
+    "source": "XAL60xx Document 887-4 (read 2026-09-28T13:33:59Z); XEL6030 Document 1353-3 (13:35:39Z)"
+   },
+   {
+    "figure": "Digi-Key: Coilcraft XAL and XEL 3.3 uH parts",
+    "value": "productdetails answered HTTP 404 for XAL4030-332MEC (13:31:58Z), XEL4030-332MEC (13:31:59Z), XAL6030-332MEC (13:32:01Z), XAL5030-332MEC (13:32:02Z) and XEL6030-332MEC (13:35:22Z). Keyword searches for 'XAL4030-332', 'XAL4030', 'XEL4030-332', 'XAL5030-332', 'XAL6030-332' and 'XEL6030-332' returned no product (13:32:19Z to 13:40:38Z). A keyword search for 'Coilcraft XGL4020' returned four Coilcraft XGL4020 parts, but not XGL4020-332MEC (13:32:25Z)",
+    "source": "vendors.py digikey and digikey-search; https://api.digikey.com/products/v4/search/<MPN>/productdetails and https://api.digikey.com/products/v4/search/keyword, 2026-09-28"
+   },
+   {
+    "figure": "Coilcraft maker status",
+    "value": "Not read for XAL4030-332, XEL4030-332, XAL5030-332, XAL6030-332 and XEL6030-332: each part page answers HTTP 200 with no status field. Each carries a 'Great News! More choices!' notice naming a newer series (XGL3520, XGL3530 or XGL4030, XGL4030, XGL5030); none is an end-of-life notice. Reported to the owner",
+    "source": "https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xal/xal40xx/xal4030-332/ (2026-09-28T13:33:40Z), .../xal/xal50xx/xal5030-332/ (13:33:42Z), .../xal/xal60xx/xal6030-332/ (13:33:43Z), .../xel/xel4030/xel4030-332/ (13:33:44Z), .../xel/xel6030/xel6030-332/ (13:35:32Z)"
+   },
+   {
+    "figure": "Vishay and Diodes maker status",
+    "value": "Not read for VBUS54CV-HSF and DT1240-04LP: both product pages answer HTTP 200 and carry no status in the page body. Digi-Key ProductStatus is Active for both. Reported to the owner",
+    "source": "https://www.vishay.com/en/product/84145/ and https://www.diodes.com/part/view/DT1240-04LP, read 2026-09-28T13:39:25Z; Digi-Key productdetails 13:32:06Z and 13:32:10Z"
+   },
+   {
+    "figure": "VBUS54CV-HSF steering to VBUS",
+    "value": "The data-line diodes of pins 1, 3, 4 and 6 steer to the VBUS clamp on pin 5. The application note gives the isolation only 'as long as the signal voltage on the data lines is between the ground- and the VBUS-level'. The IO board runs from the DC input or the pack with no USB source present, so VBUS is then absent. A D+ or CC line held above it then forward-biases into the VBUS net. The current into that net is not stated and not measured",
+    "source": "VBUS54CV-HSF datasheet Document 84145 Rev. 1.3, application note, read 2026-09-28T13:36:24Z; power decision (Research.md Scope) and V10"
+   },
+   {
+    "figure": "DT1240-04LP holding voltage",
+    "value": "Snapback clamp: holding voltage VH 5.5 V min, trigger voltage 9.5 V max, VBR 6 V min, DC operating voltage 6 V. VH equals the 5.5 V VBUS maximum of V10, so on VBUS it has no margin against holding on after a strike",
+    "source": "DT1240-04LP datasheet DS36312 Rev. 5-2, April 2023, electrical characteristics, read 2026-09-28T13:36:24Z"
+   },
+   {
+    "figure": "NUP4114UCW1T2G second source",
+    "value": "None passes. Digi-Key stock_available is 0 (lead 58 weeks, Active). DRTR5V0U4S-7 (C460056) has the same SOT-363 pinout and +/-8 kV contact, +/-15 kV air, but JLCPCB stockCount 4 and canPresaleNumber 0; Digi-Key 37319, lead 40 weeks, Active. TPD4E001DCKR has the same pinout, but VCC is 0.9 to 5.5 V and the IO range is 0 to VCC",
+    "source": "vendors.py digikey NUP4114UCW1T2G (2026-09-28T13:32:08Z); vendors.py jlcpcb C460056 (13:37:43Z) and digikey DRTR5V0U4S-7 (13:37:44Z); DS36008 Rev. 3-2, https://www.diodes.com/assets/Datasheets/DRTR5V0U4S.pdf (13:37:31Z); SLLS682P, https://www.ti.com/lit/ds/symlink/tpd4e001.pdf (13:37:54Z)"
+   },
+   {
+    "figure": "TPD6S300 protected pins",
+    "value": "C_SBU1 and C_SBU2 (+/-6 kV contact, +/-15 kV air); C_CC1, C_CC2, D1 and D2 (+/-8 kV contact, +/-15 kV air). There is no VBUS pin. VPWR is 2.7 to 3.6 V, and a 0.1 uF VBIAS capacitor is required",
+    "source": "TPD6S300 datasheet SLVSDK3C, Pin Functions and ESD ratings, https://www.ti.com/lit/ds/symlink/tpd6s300.pdf, read 2026-09-28T13:38:37Z"
+   },
+   {
+    "figure": "TPD4S012 IEC ratings",
+    "value": "Contact +/-10 kV on D+, D-, ID and VBUS; air-gap +/-10 kV on D+, D-, ID and +/-9 kV on VBUS; VBUS tolerance 20 V; TA -40 to 85 C",
+    "source": "TPD4S012 datasheet SLVS928B, https://www.ti.com/lit/ds/symlink/tpd4s012.pdf, read 2026-09-28T13:36:28Z"
+   },
+   {
+    "figure": "VLS252012HBX-3R3M-1 marking",
+    "value": "The part-number construction names the '-1' suffix 'Marking', and the shape drawing shows a dot mark offset on the top face. No text states that the mark gives the winding start or direction. Values: 3.3 uH +/-20 %; DCR 0.168 Ohm in the '( )max.' column and 0.140 Ohm in the '( )typ.' column; Isat 1.80 A in the '(A)max.' column and 2.10 A typ; Itemp 1.55 A; -40 to 105 C",
+    "source": "VLS252012HBX-1 datasheet (20180709), https://product.tdk.com/en/system/files/dam/doc/product/inductor/inductor/smd/catalog/inductor_commercial_power_vls252012hbx-1_en.pdf, read 2026-09-28T13:35:58Z"
+   },
+   {
+    "figure": "XAL5030-332MEC",
+    "value": "3.3 uH +/-20 %, DCR 21.20 mOhm typ and 23.30 mOhm max, Isat 8.7 A, 5.28 x 5.48 mm body, 3.1 mm high, start-lead dash mark. JLCPCB stockCount 117, canPresaleNumber 103. There is no second source: Digi-Key has no listing, and no alternate with the same body is in the jlcparts copy",
+    "source": "XAL50xx datasheet Document 908, revised 02/26/26, https://www.coilcraft.com/getmedia/49bc46c8-4b2c-45b9-9b6c-2eaa235ea698/xal50xx.pdf, read 2026-09-28T13:33:58Z; vendors.py jlcpcb C5342047 (13:31:47Z); jlcparts copy 2026-09-14, jlc_components searched by mfr"
+   },
+   {
+    "figure": "D5V0F4U6SO-7 stock",
+    "value": "stockCount 1, canPresaleNumber -6",
+    "source": "vendors.py jlcpcb C445539, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, read 2026-09-28T13:31:49Z"
+   },
+   {
+    "figure": "Nexperia IEC air ratings",
+    "value": "IP4234CZ6: +/-15 kV contact on all pins, no air rating stated. PRTR5V0U2F: 8 kV contact, no air rating stated",
+    "source": "https://assets.nexperia.com/documents/data-sheet/IP4234CZ6.pdf Rev. 3.0 (read 2026-09-28T13:38:54Z); https://assets.nexperia.com/documents/data-sheet/PRTR5V0U2F_PRTR5V0U2K.pdf Rev. 02 (13:39:02Z)"
+   }
+  ]
+ }
+}

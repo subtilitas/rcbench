@@ -1,0 +1,448 @@
+{
+ "role": "P1",
+ "category": "R6",
+ "label": "P1-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "functions": [
+   "Servo supply",
+   "Servo supply inductor",
+   "Port supply switch",
+   "I/O expander",
+   "Port voltage ceiling"
+  ],
+  "values": [
+   {
+    "where": "hardware/docs/Research.md:48",
+    "quantity": "Servo supply output current limit",
+    "value": "set internally, up to 6.35 A",
+    "marking": "sourced",
+    "source": "TI TPS55285 datasheet SLVSI72A (April 2025, revised October 2025), https://www.ti.com/lit/ds/symlink/tps55285.pdf, read 2026-09-28T10:22:46Z (vendors.py fetch, chrome, HTTP 200), sections 6.3.12 and 7.2: output current limit programmable from 500 mA to 6.35 A in 50 mA steps, no external current sense resistor; IOUT_LIMIT resets to 11100100b = 5 A. Part chosen by the owner (Research.md:48, owner, 2026-09-25)",
+    "refutation_tried": "Holds: 127 x 50 mA = 6.35 A, unit correct, sense internal. The datasheet gives the limit's accuracy only at 1 A, 3 A and 5 A (+/-0.2, +/-0.2, +/-0.3 A; VIN 19 V, VOUT 5 V, -20 to 85 C, engineering-sample characterization), none at 6.35 A. Power.md:42 calls it 'internal sense, fixed 6.35 A'; the datasheet makes it programmable with 6.35 A as the top. Power.md:60 says the part 'delivers 8 A'; the datasheet gives 8 A typical, 7 A minimum average inductor current limit and up to 7 A output in buck mode.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:48",
+    "quantity": "Servo supply input voltage range",
+    "value": "2.4 to 22 V",
+    "marking": "sourced",
+    "source": "SLVSI72A, URL and read time as above, sections 5.1, 5.2 and 5.4: VIN 2.4 to 22 V with VOUT >= 3.0 V (3.0 to 22 V below), start-up above the 2.8 to 3.0 V rising UVLO, input overvoltage protection 22.0 to 23.0 V rising with 0.9 V hysteresis, VIN absolute maximum 27 V",
+    "refutation_tried": "Holds for VOUT >= 3.0 V, which both rail settings are. The recommended maximum, 22 V, equals the lowest input-overvoltage trip, 22.0 V.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:48",
+    "quantity": "Servo supply quantity held",
+    "value": "12 in the owner's personal library (owner, 2026-09-25)",
+    "marking": "owner",
+    "source": "hardware/docs/inventory-2026-09-25.csv:18: TPS55285VALR, WQFN-15, C52160906, JLCPCB Parts Qty 12, Global Sourcing 0, Consigned 0; hardware/STATUS.md:34",
+    "refutation_tried": "Holds against the export. The export has no maker column; Texas Instruments comes from the part number. Need 5 boards (S7) x 1 = 5, under 12, so rule 6 passes by count. Not read today: agents cannot read the personal library (rule 6).",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:230",
+    "quantity": "Servo supply part and package",
+    "value": "TPS55285VALR, C52160906, WQFN-15",
+    "marking": "sourced",
+    "source": "SLVSI72A page 1 and Figure 4-1 (URL and read time as above): package VAL, 15-pin WQFN-HR, 2.5 x 3.5 mm. inventory-2026-09-25.csv:18. jlcparts copy cache.sqlite3 opened read-only 2026-09-28 between 10:26Z and 10:32Z: row lcsc 52160906, mfr TPS55285VALR, package WQFN-15, joints 15, manufacturer and attributes empty, fetched_at 2026-05-23T12:39:51Z",
+    "refutation_tried": "Holds. Power.md:15 gives the package as VQFN; the datasheet names WQFN-HR. The datasheet's revision history moves the device from Advance Information (revision *, April 2025) to Production Data in revision A (October 2025), which the lifecycle check's market-introduction date turns on (P2).",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:284",
+    "quantity": "Enable node through an RP2354B reset",
+    "value": "stays high while the panel beats, so an expander held off only by the enable does not open the port switches",
+    "marking": "sourced",
+    "source": "hardware/docs/IOBoard.md:221; Monostable.md at 23c82ca, lines 29 (one enable node, high while retriggered), 34 (no programmable element in the path from GPIO6 to either gate) and 453-454 (GP3 listens)",
+    "refutation_tried": "Holds: nothing the RP2354B does reaches the enable node, so through its reset the enable follows the panel's edges alone. The row's conclusion follows: the expander needs a reset of its own that follows the RP2354B.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:284",
+    "quantity": "TPS22990 and TPS22918 input rating",
+    "value": "5.5 V; they do not switch the 8.4 V setting",
+    "marking": "sourced",
+    "source": "https://www.ti.com/lit/ds/symlink/tps22990.pdf and https://www.ti.com/lit/ds/symlink/tps22918.pdf, both read 2026-09-28T10:26:11Z (vendors.py fetch, chrome, HTTP 200): TPS22990 input voltage range 0.6 V to 5.5 V; TPS22918 input voltage range 1 V to 5.5 V",
+    "refutation_tried": "Holds. Both stop below 8.4 V and below the LV ceiling of 6.0 V.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:325",
+    "quantity": "Pack voltage range at the converter's input",
+    "value": "6.0 to 8.4 V",
+    "marking": "owner",
+    "source": "F9, Research.md:537: lithium-ion 18650, floor 3.0 V a cell (owner, 2026-09-25); hardware/STATUS.md:25 (Board power, decided): 6.0 V lowest, full charge 8.4 V (2 x 4.2 V)",
+    "refutation_tried": "The floor follows from F9: a per-cell floor of 3.0 V keeps the pack connected down to 6.0 V with both cells at the floor. F9's answer does not state full charge; 4.2 V a cell is from the owner's hardware record, and the cell R7 selects sets it. Both ends lie inside the TPS55285's 2.4 to 22 V. The voltage at VIN is the pack voltage less a path drop the tree does not state (question 4).",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:326",
+    "quantity": "Servo converter efficiency from the pack",
+    "value": "90 %",
+    "marking": "assumption",
+    "source": "IOBoard.md:326, taken from Power.md:68, where 90 % is applied to the DC input without a source; Research.md:283 states the efficiency from the pack is not stated",
+    "refutation_tried": "No datasheet figure or measurement gives 90 % at 6.0 to 8.4 V in and 8.4 V out. SLVSI72A (URL and read time as above) gives 92.0 % at 20 V to 5 V, 5 A and 95.7 % at 12 V to 15 V, 5 A (page 1). Its efficiency curves (Figures 5-1 to 5-8) are for VIN 5, 9, 12 and 20 V, none at 6.0 V.",
+    "question": 2
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:326",
+    "quantity": "Servo supply input current from the pack",
+    "value": "59.3 W in; 7.1 A at 8.4 V, 9.9 A at 6.0 V",
+    "marking": "sourced",
+    "source": "arithmetic on IOBoard.md:326's own inputs: 8.4 V x 6.35 A = 53.3 W; / 0.9 = 59.3 W; / 8.4 V = 7.1 A; / 6.0 V = 9.9 A",
+    "refutation_tried": "The arithmetic holds (53.34 W, 59.27 W, 7.06 A, 9.88 A). It rests on two values marked assumption: the 90 % and 6.35 A at 8.4 V from the pack (questions 2 and 1). In boost mode the converter's input current is its inductor current. The average inductor current limit clamps that at 7 A minimum, 8 A typical (SLVSI72A 5.4; no maximum given; peak limit 13 A typical). At 6.0 V the rail current-limits and droops rather than drawing 9.9 A. 9.9 A remains an upper bound for R5 and R7.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:341",
+    "quantity": "Servo supply control",
+    "value": "output voltage and current limit set over I2C",
+    "marking": "sourced",
+    "source": "SLVSI72A (URL and read time as above), 6.3.11, 6.3.12, 6.5 and Table 6-2: VREF by an 11-bit DAC, current limit in IOUT_LIMIT, I2C target address 74h or 75h set by a MODE resistor, SCL 100 to 1000 kHz (5.5)",
+    "refutation_tried": "Holds. EN/UVLO below 0.4 V shuts the part down and resets every register (6.3.6). By default the output is 5 V with a 5 A limit.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:342",
+    "quantity": "Servo rail voltage settings",
+    "value": "up to 5.5 V (LV) and up to 8.4 V (HV), set from software",
+    "marking": "owner",
+    "source": "hardware/STATUS.md:37 (Servo rail, decided table, settled in commit da7232b of 2026-09-02); Power.md:32-34",
+    "refutation_tried": "Both settings lie in the TPS55285's 0.8 to 15 V output range (SLVSI72A 5.2). No tolerance is stated. With internal feedback the full-scale output is within +/-1.5 % (VOUT_FULL 9.85 to 10.15 V at the 10 V range, 5.4). That puts the 8.4 V setting at about 8.27 to 8.53 V before ripple and transients (question 5). The decided row's dated owner attribution (2026-09-24) covers the two sources, not the two settings. The settings stand in the owner's decided table.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:343",
+    "quantity": "Servo rail current ceiling",
+    "value": "6.35 A",
+    "marking": "sourced",
+    "source": "SLVSI72A 6.3.12 (URL and read time as above); owner's choice of the TPS55285 (2026-09-25)",
+    "refutation_tried": "Holds as the register's top. Accuracy at 6.35 A not specified (see the first value).",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:343",
+    "quantity": "Servo rail current lower end and per-setting limit",
+    "value": "4 A at the low end; the current limit follows the voltage setting, with no figure per setting",
+    "marking": "assumption",
+    "source": "IOBoard.md:343; Power.md:32-34; hardware/STATUS.md:37; git history: the 4 A enters in commit da7232b (2026-09-02) as 'a 5 V input delivers about 4 A' at 8.4 V on the TPS55288, and commit 2e4db2e (2026-09-25) changes 8 A to 6.35 A only",
+    "refutation_tried": "The 4 A has no source that still applies: the board has no 5 V input (DC 12 to 20 V, pack 6.0 to 8.4 V). The monostable page at 23c82ca, test step 9 (Monostable.md:569), reads the older 4 to 8 A as 8 A at 8.4 V and 4 A at 5.5 V. 'Follows the voltage setting' gives no limit per setting. The '(owner, 2026-09-25)' at IOBoard.md:343 covers the part and its 6.35 A stop, not the 4 A.",
+    "question": 0
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:344",
+    "quantity": "Converter input from the DC input",
+    "value": "12 to 20 V",
+    "marking": "owner",
+    "source": "owner, 2026-09-25 (Research.md owner decisions, Power row); hardware/STATUS.md:25",
+    "refutation_tried": "Inside 2.4 to 22 V, and 2.0 V under the lowest input-overvoltage trip of 22.0 V (SLVSI72A 5.4). No tolerance or transient is stated, and R5's overvoltage threshold is not stated (IOBoard.md:374); see question 3. At 12 V the rail's 59.3 W draws 4.9 A (Power.md:68-69); the arithmetic holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:345",
+    "quantity": "Rail current required at 8.4 V from the pack",
+    "value": "6.35 A, not checked",
+    "marking": "assumption",
+    "source": "IOBoard.md:345 and hardware/STATUS.md:37: the rail runs to 6.35 A, and 6.35 A at 8.4 V from the pack is not checked; no owner answer states the current from the pack",
+    "refutation_tried": "Checked against SLVSI72A (URL and read time as above). Boost-mode inductor DC current is VOUT x IOUT / (VIN x efficiency) (equation 7): 8.4 x 6.35 / (6.0 x 0.9) = 9.88 A at 6.0 V. The average inductor current limit is 7 A minimum, 8 A typical (5.4, specified at VIN 8 V, VOUT 15 V, 400 kHz). At that limit the rail gives 4.5 A (7 A) to 5.1 A (8 A) at 8.4 V from 6.0 V at 90 %. At 8.4 V in, near unity ratio, 6.35 A needs about 7.1 A, at the 7 A minimum. The datasheet rates boost mode at 60 W from 12 V and 30 W from 5 V. 6.35 A at 8.4 V is not deliverable at the pack floor.",
+    "question": 1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:346",
+    "quantity": "Converter current-limit sense",
+    "value": "internal to the TPS55285; no external sense resistor",
+    "marking": "sourced",
+    "source": "SLVSI72A page 1 and 6.3.12 (URL and read time as above)",
+    "refutation_tried": "Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:348",
+    "quantity": "Port supply switches",
+    "value": "20, one per port, for up to 8.4 V, driven through an I/O expander",
+    "marking": "owner",
+    "source": "owner, 2026-09-25 (hardware/STATUS.md:27 Output ports; Research.md owner decisions, Servo current row); R6 row Research.md:284",
+    "refutation_tried": "8.4 V matches the HV setting. The reason for the expander holds: 27 to 32 GPIO (IOBoard.md:106) plus 20 enables is 47 to 52 against 48. Not stated: current rating, current limit, drop, off-state leakage, reverse blocking and withstand voltage (questions 13 to 17 and 22).",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:349",
+    "quantity": "Signal-only mode",
+    "value": "per port, supply pin disconnected",
+    "marking": "sourced",
+    "source": "shared/ui/stub_screen.c:57",
+    "refutation_tried": "Holds against the stub line. The open port switch disconnects the pin; the leakage it may pass is not stated (question 16).",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:350",
+    "quantity": "Port voltage ceiling",
+    "value": "per-port jumper; port cut off above 6.0 V (LV) or 8.7 V (HV); follows the jumper, not the rail setting",
+    "marking": "owner",
+    "source": "F16, Research.md:544 (owner, 2026-09-25); shared/ui/stub_screen.c:56",
+    "refutation_tried": "Holds against F16. Margins above the settings: 0.5 V (LV) and 0.3 V (HV). Against the converter's +/-1.5 % full-scale accuracy the HV margin is about 0.17 V before ripple and transients. The TPS55285's own output overvoltage protection trips at 110.5 to 120 % of its set target (SLVSI72A 5.4), so it does not stand in for the ceiling. Not stated: tolerance, response time, recovery and withstand voltage (questions 19 to 22).",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:340",
+    "quantity": "Load gates at reset",
+    "value": "each port switch open and the servo converter off while the pin that drives it is an input; the expander reset with the RP2354B through a reset, a reflash and with either unpowered; a resistor holds each control input inactive",
+    "marking": "owner",
+    "source": "hardware/STATUS.md:32 (Coprocessor watchdog: every gate it drives opens while its pins are at their reset state, owner decision 2026-09-25); Research.md:284; testbench/WIRING.md:22; CONTRIBUTING.md:34-35",
+    "refutation_tried": "Follows from the watchdog decision and the cited fail-safe rule. The TPS55285 keeps its registers through an RP2354B reset unless EN/UVLO falls below 0.4 V (SLVSI72A 6.3.6). Whether a GPIO drives EN is not stated (question 6).",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:378",
+    "quantity": "ILIM resistor on the TPS55285",
+    "value": "whether the TPS55285 takes one: not stated in the tree",
+    "marking": "sourced",
+    "source": "SLVSI72A Table 4-1 and 6.3.9 (URL and read time as above)",
+    "refutation_tried": "Answered by the datasheet. Table 4-1 lists 15 pins (MODE, SCL, SDA, EN/UVLO, VIN, SW1, PGND, SW2, VOUT, FB/INT, COMP, AGND, VCC, BOOT2, BOOT1) and no ILIM pin. The average inductor current limit is internal, 8 A typical, 7 A minimum. The part takes a MODE resistor instead (0, 24.9, 48.7 or 82.5 kOhm, or open; Table 6-2). It sets the I2C address, 74h or 75h, and the default output-enable bit; round 2 selects it.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:536",
+    "quantity": "Servo rail current limit for a shorted output",
+    "value": "set in the TPS55285, 6.35 A at most; a port switch's limit not stated",
+    "marking": "sourced",
+    "source": "SLVSI72A 6.3.12 (URL and read time as above)",
+    "refutation_tried": "Holds. The one limit is shared by all 20 ports; see question 14.",
+    "question": -1
+   }
+  ],
+  "questions": [
+   {
+    "function": "Servo supply",
+    "question": "What output current must the servo rail deliver at the 5.5 V setting and at the 8.4 V setting, in A? What current limit applies at each setting, in A?",
+    "why": "IOBoard.md:343 gives 4 to 6.35 A and says the limit follows the setting, but gives no figure per setting. The 4 A comes from a 5 V input the board no longer has (commit da7232b). The monostable page's test step 9 reads it as 4 A at 5.5 V. P2 sizes the inductor, the port switches and the pack current from these figures.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:343",
+    "for_quantity": "Servo rail current lower end and per-setting limit",
+    "asks": ""
+   },
+   {
+    "function": "Servo supply",
+    "question": "What current must the servo rail deliver at the 8.4 V setting while the converter runs from the pack, with 6.0 to 8.4 V at its input, in A?",
+    "why": "The TPS55285's average inductor current limit is 7 A minimum, 8 A typical (SLVSI72A 5.4). From 6.0 V at 90 % that gives 4.5 to 5.1 A at 8.4 V. The 6.35 A the tree implies would need about 9.9 A. P2 cannot pass or fail the fixed input from the pack, or size the inductor's current, without the required figure.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:345",
+    "for_quantity": "Rail current required at 8.4 V from the pack",
+    "asks": ""
+   },
+   {
+    "function": "Servo supply",
+    "question": "What efficiency do the servo converter's pack figures use from 6.0 to 8.4 V in at 8.4 V out, in %: 90 %, or the figure R6 reads from the TPS55285 datasheet (for research)?",
+    "why": "IOBoard.md:326 borrows 90 % from Power.md's DC-input figure. The datasheet gives no efficiency at 6.0 V in. P2 computes the inductor's DC current at the low end as VOUT x IOUT / (VIN x efficiency).",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:326",
+    "for_quantity": "Servo converter efficiency from the pack",
+    "asks": ""
+   },
+   {
+    "function": "Servo supply",
+    "question": "What is the highest voltage the DC input can present at the servo converter's VIN, in V, as a steady value and as a transient with its duration in ms?",
+    "why": "The DC input is 12 to 20 V with no tolerance, and R5's overvoltage threshold is not stated (IOBoard.md:374). The TPS55285 is specified to 22 V. It stops switching at 22.0 to 23.0 V rising, and VIN's absolute maximum is 27 V (SLVSI72A 5.1, 5.4). P2 checks the fixed input's margin against this figure.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Servo supply",
+    "question": "What is the lowest voltage at the servo converter's VIN when it runs from the pack, in V? Is it 6.0 V, or 6.0 V less a stated drop across the pack path (R5's disconnect, source selection and protection) at the pack current?",
+    "why": "6.0 V is the pack terminals' floor (F9). The drop to VIN at up to about 8 A is not stated. The inductor's DC current at the low end scales with 1/VIN.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Servo supply",
+    "question": "What is the highest voltage allowed at a port's supply pin at each setting, in V? Are 5.5 V and 8.4 V upper limits that include setpoint tolerance, ripple and load-step overshoot, or nominal setpoints? If nominal, what tolerance applies, in V?",
+    "why": "With internal feedback the TPS55285's full-scale output is within +/-1.5 % (SLVSI72A 5.4). At 8.4 V that is 8.27 to 8.53 V before ripple and transients, 0.17 V under the 8.7 V HV ceiling (F16). P2 checks the converter's accuracy and the ceiling's band against this figure.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Servo supply",
+    "question": "What drives the servo converter's EN/UVLO pin: an RP2354B GPIO, an I/O expander output, or a divider from its input with the output switched only over I2C?",
+    "why": "IOBoard.md:340 requires the converter off while its driving pin is an input, and states that what drives it is not stated. Below 0.4 V on EN/UVLO the TPS55285 shuts down and resets its registers (SLVSI72A 6.3.6). Otherwise an RP2354B reset leaves it running at its last setting. The answer adds one expander output or one GPIO.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Servo supply",
+    "question": "What ambient temperature range must the IO board operate in, in C?",
+    "why": "Only the monostable is specified, at 0 to 50 C (IOBoard.md:184, 220). The TPS55285's junction-to-ambient resistance is 47.6 C/W on a standard board (SLVSI72A 5.3). P2 derates the inductor's saturation and heat currents and checks the converter's junction temperature at the highest ambient.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Servo supply inductor",
+    "question": "At which switching frequency does the servo converter run: 400 kHz, 800 kHz, 1.6 MHz or 2.1 MHz? Or is it marked for research?",
+    "why": "The inductance must exceed 1.2/fSW and sets the ripple (SLVSI72A 8.2.2.3). TI recommends 400 or 800 kHz at high current (6.3.7). The tree states none, so P2 cannot fix the inductance it qualifies.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Servo supply inductor",
+    "question": "What current must the inductor's saturation rating exceed, in A: the peak current at the highest operating point, or the TPS55285's cycle-by-cycle peak current limit (13 A typical)?",
+    "why": "The datasheet requires saturation above the calculated peak (SLVSI72A 8.2.2.3). It gives the peak limit as 13 A typical with no minimum or maximum, and its example inductor saturates at 15.2 A. An overload drives the inductor to that limit. The choice sets the inductor's size class.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "I/O expander",
+    "question": "How many outputs must the I/O expander drive? Is it the 20 port supply switches only, or also the servo converter's enable and R4's bias selectors?",
+    "why": "IOBoard.md:348 and 383 name the 20 port switches. IOBoard.md:340 leaves the converter's enable driver open, and IOBoard.md:256 asks whether R4's bias selector may sit on the I/O expander. P2 needs the count to qualify one expander or several.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "I/O expander",
+    "question": "At what clock rate does the coprocessor's I2C bus that carries the I/O expander and the TPS55285 run, in kHz?",
+    "why": "The rate is not stated (IOBoard.md:481). The TPS55285 takes 100 to 1000 kHz (SLVSI72A 5.5). P2 checks the expander's rated clock against the bus rate.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Port supply switch",
+    "question": "Are the 20 port supply switches not the servo rail gate, which is then R3's single high-side switch on the rail: yes or no?",
+    "why": "IOBoard.md:218 names R3 and R6 and asks for this confirmation; R3's P1 asks the same item. If the port switches were the gate, each would need I_off or 4.7 kOhm on its control input, 5 ms opening, failing open when undriven, and under 5 mA off (IOBoard.md:188, 192). None could then be driven through the I/O expander.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Port supply switch",
+    "question": "What continuous current must each port's supply switch carry, in A?",
+    "why": "The rating is not stated (IOBoard.md:379). Firmware aborts one servo above 3.0 A and a synchronised pair above 4.0 A (docs/Servo.md:35, 68-69), and the rail gives 6.35 A at most. P2 qualifies each switch's current rating and on-resistance.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Port supply switch",
+    "question": "Must each port supply switch limit its own current? If so, at what value, in A?",
+    "why": "The limit is not stated (IOBoard.md:536). The rail's only limit is the TPS55285's, up to 6.35 A, shared by 20 ports. A shorted port or a servo's inrush pulls the whole rail into limit. Parts with and without a current limit differ.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Port supply switch",
+    "question": "What voltage drop is allowed from the servo rail to a port's supply pin at the port's rated current, in mV?",
+    "why": "Each port has its switch and a 10 mOhm monitor shunt in series (IOBoard.md:351), and no drop is stated. P2 checks each switch's on-resistance against the allowed drop.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Port supply switch",
+    "question": "What off-state leakage may an open port supply switch pass at 8.4 V, in mA?",
+    "why": "Signal-only mode disconnects the supply pin (IOBoard.md:349). Only the servo rail gate has a leakage limit, a 5 mA placeholder (IOBoard.md:188). P2 checks each switch's off-state leakage against the answer.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Port supply switch",
+    "question": "Must a port supply switch block current flowing from the port's supply pin back into the servo rail? If so, up to what voltage on the pin, in V?",
+    "why": "A port lead carries signal, ground and rail (IOBoard.md:531). An ESC's BEC drives a regulated voltage onto that rail wire to feed the receiver and servos (docs/OpenYGE.md:253). The tree states no requirement, and switches with and without reverse blocking differ.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Port supply switch",
+    "question": "What is the longest time allowed from an RP2354B reset (watchdog, RUN or power loss) until every port supply switch is open, in ms?",
+    "why": "IOBoard.md:221 leaves open the stop deadline the watchdog serves; R1's P1 asks for it. Whatever remains after the watchdog timeout is R6's budget for the expander's reset path and the switch's turn-off with a servo's capacitance on the port. P2 qualifies turn-off time against it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Port voltage ceiling",
+    "question": "What trip band is allowed for each ceiling, in V? For the LV and HV positions, what is the lowest voltage at which each may cut a port off, and the highest at which each must?",
+    "why": "F16 gives 6.0 V and 8.7 V with no tolerance. The 8.4 V setting at the converter's +/-1.5 % accuracy reaches 8.53 V before ripple and transients. P2 qualifies the ceiling part's threshold accuracy against the band.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Port voltage ceiling",
+    "question": "Within what time must a port be cut off once its supply pin exceeds its ceiling, in microseconds?",
+    "why": "F16's answer states no response time. P2 needs one to qualify an overvoltage detector or protected switch.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Port voltage ceiling",
+    "question": "After a ceiling cut-off, does the port reconnect by itself once the rail falls below the ceiling? If so, with what hysteresis, in V? Or does it stay off until an operator or firmware action?",
+    "why": "F16's answer states the cut-off only. Auto-retry and latch-off parts differ.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   },
+   {
+    "function": "Port voltage ceiling",
+    "question": "What is the highest voltage the port supply switch and the ceiling must withstand at their input, in V? Candidates: 15 V, the TPS55285's highest programmable output; 17 V, its VOUT absolute maximum; or 20 V, the DC input through a failed converter.",
+    "why": "The ceiling cuts a port off above 6.0 V or 8.7 V, so its part sees whatever the rail can reach. The TPS55285 can be set to 15 V over I2C (SLVSI72A 5.2), and its own overvoltage protection trips at 110.5 to 120 % of its target. P2 checks each part's absolute maximum against the answer.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   }
+  ]
+ }
+}

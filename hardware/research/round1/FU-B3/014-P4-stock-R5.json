@@ -1,0 +1,643 @@
+{
+ "role": "P4",
+ "category": "R5",
+ "label": "P4-stock-R5",
+ "attempt": 0,
+ "data": {
+  "category": "R5",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "source selection",
+    "part": "LM74800QDRRRQ1",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C3215600 stockCount 3108, canPresaleNumber 3039, gate 50: pass",
+      "read": "stockCount 3105, canPresaleNumber 3036 (still >= gate 50)",
+      "source": "vendors.py jlcpcb C3215600 (JLCPCB API)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T17:15:46Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (ti.com/product/LM7480-Q1)",
+      "read": "meta status = ACTIVE",
+      "source": "https://www.ti.com/product/LM7480-Q1 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:06Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none stated",
+      "read": "no obsolete/discontinued/last-time-buy notice on the product page; only generic preview-part disclaimer text matched 'discontinu', unrelated to this part",
+      "source": "https://www.ti.com/product/LM7480-Q1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:06Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2, fixed: one controller per input (SNOSD95C 9.5.1)",
+      "read": "IOBoard.md:324 'Source selection | automatic: the DC input when present, the pack otherwise' (two inputs); SNOSD95C 9.5.1 states one controller per input, OR-ed onto the bus",
+      "source": "hardware/docs/IOBoard.md:324 at checkout e13f5f60d2e5; lm7480-q1.pdf 9.5.1 (on file)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:11Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board (rule 1)",
+      "read": "LCSC C3215600 (C + digits) found at JLCPCB: on the board",
+      "source": "vendors.py jlcpcb C3215600",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:15:46Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published",
+      "read": "no product-longevity-programme statement on the product page",
+      "source": "https://www.ti.com/product/LM7480-Q1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:06Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet April 2020 (SNOSD95C)",
+      "read": "header 'SNOSD95C – APRIL 2020 – REVISED DECEMBER 2020'",
+      "source": "lm7480-q1.pdf (local copy, pdftotext)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:30Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB, LCSC and Digi-Key Active",
+      "read": "JLCPCB live listing in stock; Digi-Key status Active",
+      "source": "vendors.py jlcpcb C3215600; vendors.py digikey LM74800QDRRRQ1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:15:46Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "16 weeks (Digi-Key)",
+      "read": "lead_weeks 16",
+      "source": "vendors.py digikey LM74800QDRRRQ1 (Digi-Key ProductDetails API)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:00:06Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 3039",
+      "read": "canPresaleNumber 3036",
+      "source": "vendors.py jlcpcb C3215600",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T17:15:46Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "LM74800QDRRRQ1, WSON-12 (DRR) 3 x 3 mm",
+      "read": "exact_match part 'LM74800QDRRRQ1', package 'SON-12(3x3)'",
+      "source": "vendors.py jlcpcb C3215600",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:15:46Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "extended",
+      "read": "componentLibraryType 'expand'",
+      "source": "vendors.py jlcpcb C3215600",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:15:46Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 7634 >= gate 50: passes",
+      "read": "stock_available 7634 (Cut Tape 7634, Tape & Reel 6000)",
+      "source": "vendors.py digikey LM74800QDRRRQ1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:00:06Z"
+     }
+    ]
+   },
+   {
+    "function": "3.3 V logic buck",
+    "part": "LMQ66430MC3RXBRQ1",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C19271903 stockCount 671, canPresaleNumber 566, gate 50: pass",
+      "read": "stockCount 671, canPresaleNumber 566",
+      "source": "vendors.py jlcpcb C19271903",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:14Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (ti.com/product/LMQ66430-Q1)",
+      "read": "meta status = ACTIVE",
+      "source": "https://www.ti.com/product/LMQ66430-Q1 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:45Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none stated",
+      "read": "no obsolete/discontinued/last-time-buy notice on the product page",
+      "source": "https://www.ti.com/product/LMQ66430-Q1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:45Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one 3.3 V logic buck (IOBoard.md:337)",
+      "read": "IOBoard.md:337 'Logic rail | 3.3 V, from the 3.3 V logic buck R5 selects' (singular)",
+      "source": "hardware/docs/IOBoard.md:337 at checkout e13f5f60d2e5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:11Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board (rule 1)",
+      "read": "LCSC C19271903 found at JLCPCB: on the board",
+      "source": "vendors.py jlcpcb C19271903",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:14Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published",
+      "read": "no product-longevity-programme statement on the product page",
+      "source": "https://www.ti.com/product/LMQ66430-Q1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:45Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet February 2022 (SNVSBV1F), current revision September 2026",
+      "read": "header 'SNVSBV1F – FEBRUARY 2022 – REVISED SEPTEMBER 2026'",
+      "source": "lmq66430-q1.pdf (local copy, pdftotext)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:30Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB, LCSC and Digi-Key Active",
+      "read": "JLCPCB live listing in stock; Digi-Key status Active",
+      "source": "vendors.py jlcpcb C19271903; vendors.py digikey LMQ66430MC3RXBRQ1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:14Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "16 weeks (Digi-Key)",
+      "read": "lead_weeks 16",
+      "source": "vendors.py digikey LMQ66430MC3RXBRQ1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T15:28:40Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 566",
+      "read": "canPresaleNumber 566",
+      "source": "vendors.py jlcpcb C19271903",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:14Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "LMQ66430MC3RXBRQ1, VQFN-FCRLF-14 (RXB) 2.5 x 2.5 mm",
+      "read": "exact_match part 'LMQ66430MC3RXBRQ1', package 'VQFN-FCRLF-14(2.5x2.5)'",
+      "source": "vendors.py jlcpcb C19271903",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:14Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "extended",
+      "read": "componentLibraryType 'expand'",
+      "source": "vendors.py jlcpcb C19271903",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:14Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 13558 >= gate 50: passes",
+      "read": "stock_available 13558 (Cut Tape 13558, Tape & Reel 12000)",
+      "source": "vendors.py digikey LMQ66430MC3RXBRQ1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T15:28:40Z"
+     }
+    ]
+   },
+   {
+    "function": "5 V rail",
+    "part": "TPS62933DRLR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C3200405 stockCount 37194, canPresaleNumber 36381, gate 50: pass",
+      "read": "stockCount 36974, canPresaleNumber 36161 (still >> gate 50)",
+      "source": "vendors.py jlcpcb C3200405",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:16Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (ti.com/product/TPS62933)",
+      "read": "meta status = ACTIVE",
+      "source": "https://www.ti.com/product/TPS62933 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:45Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none stated",
+      "read": "no obsolete/discontinued/last-time-buy notice on the product page",
+      "source": "https://www.ti.com/product/TPS62933",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:45Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one 5 V rail (IOBoard.md:338)",
+      "read": "IOBoard.md:338 '5 V rail | loads stated in the tree...' (one rail)",
+      "source": "hardware/docs/IOBoard.md:338 at checkout e13f5f60d2e5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:11Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board (rule 1)",
+      "read": "LCSC C3200405 found at JLCPCB: on the board",
+      "source": "vendors.py jlcpcb C3200405",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:16Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published",
+      "read": "no product-longevity-programme statement on the product page",
+      "source": "https://www.ti.com/product/TPS62933",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:45Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet June 2021 (SLUSEA4D)",
+      "read": "header 'SLUSEA4D – JUNE 2021 – REVISED AUGUST 2022'",
+      "source": "tps62933.pdf (local copy, pdftotext)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:30Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB, LCSC and Digi-Key Active",
+      "read": "JLCPCB live listing in stock; Digi-Key status Active",
+      "source": "vendors.py jlcpcb C3200405; vendors.py digikey TPS62933DRLR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:16Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "16 weeks (Digi-Key)",
+      "read": "lead_weeks 16",
+      "source": "vendors.py digikey TPS62933DRLR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:00:23Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 36381",
+      "read": "canPresaleNumber 36161",
+      "source": "vendors.py jlcpcb C3200405",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:16Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "TPS62933DRLR, SOT-583 (DRL) 1.6 x 2.1 mm",
+      "read": "exact_match part 'TPS62933DRLR', package 'SOT-583'",
+      "source": "vendors.py jlcpcb C3200405",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:16Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "extended",
+      "read": "componentLibraryType 'expand'",
+      "source": "vendors.py jlcpcb C3200405",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:16Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 63937 >= gate 50: passes",
+      "read": "stock_available 63937 (Cut Tape 63937, Tape & Reel 60000)",
+      "source": "vendors.py digikey TPS62933DRLR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:00:23Z"
+     }
+    ]
+   },
+   {
+    "function": "display supply",
+    "part": "TPS259474ARPWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C3662807 stockCount 331, canPresaleNumber 284, gate 50: pass",
+      "read": "stockCount 331, canPresaleNumber 284",
+      "source": "vendors.py jlcpcb C3662807",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:17Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (ti.com/product/TPS25947)",
+      "read": "meta status = ACTIVE",
+      "source": "https://www.ti.com/product/TPS25947 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:45Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none stated",
+      "read": "no obsolete/discontinued/last-time-buy notice on the product page",
+      "source": "https://www.ti.com/product/TPS25947",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:45Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one switch on the link cable supply (F6)",
+      "read": "Research.md:534 F6 fixes the link-cable voltage at 5 V; IOBoard.md 'Display supply | through the link cable, from the selected source' and 'Display current' rows are singular (one link cable, one display)",
+      "source": "hardware/docs/Research.md:534; hardware/docs/IOBoard.md:334-336 at checkout e13f5f60d2e5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:11Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board (rule 1)",
+      "read": "LCSC C3662807 found at JLCPCB: on the board",
+      "source": "vendors.py jlcpcb C3662807",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:17Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published",
+      "read": "no product-longevity-programme statement on the product page",
+      "source": "https://www.ti.com/product/TPS25947",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:45Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet October 2020 (SLVSFC9C, revised May 2026)",
+      "read": "header 'SLVSFC9C – OCTOBER 2020 – REVISED MAY 2026'",
+      "source": "tps25947.pdf (local copy, pdftotext)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:30Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB, LCSC and Digi-Key Active",
+      "read": "JLCPCB live listing in stock; Digi-Key status Active",
+      "source": "vendors.py jlcpcb C3662807; vendors.py digikey TPS259474ARPWR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:17Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "16 weeks (Digi-Key)",
+      "read": "lead_weeks 16",
+      "source": "vendors.py digikey TPS259474ARPWR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:55:46Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 284",
+      "read": "canPresaleNumber 284",
+      "source": "vendors.py jlcpcb C3662807",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:17Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "TPS259474ARPWR, VQFN-HR-10 (RPW) 2 x 2 mm",
+      "read": "exact_match part 'TPS259474ARPWR', package 'VQFN-10-HR(2x2)'",
+      "source": "vendors.py jlcpcb C3662807",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:17Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "extended",
+      "read": "componentLibraryType 'expand'",
+      "source": "vendors.py jlcpcb C3662807",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:17Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 125 >= gate 50: passes, least margin in R5",
+      "read": "stock_available 125 (Cut Tape 125, Tape & Reel 0)",
+      "source": "vendors.py digikey TPS259474ARPWR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:55:46Z"
+     }
+    ]
+   },
+   {
+    "function": "encoder 12 V supply",
+    "part": "TPS55288RPMR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C2864583 stockCount 5183, canPresaleNumber 5116, gate 50: pass",
+      "read": "stockCount 5183, canPresaleNumber 5116",
+      "source": "vendors.py jlcpcb C2864583",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:19Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (ti.com/product/TPS55288)",
+      "read": "meta status = ACTIVE",
+      "source": "https://www.ti.com/product/TPS55288 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:46Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none stated",
+      "read": "no obsolete/discontinued/last-time-buy notice on the product page",
+      "source": "https://www.ti.com/product/TPS55288",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:46Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one encoder supply converter (F4); the jumper switches its feedback divider",
+      "read": "IOBoard.md:387 'R5 makes it from both sources: stepped down from the 12 to 20 V DC input and boosted from the 6.0 to 8.4 V pack' (singular converter)",
+      "source": "hardware/docs/IOBoard.md:387 at checkout e13f5f60d2e5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:11Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board (rule 1)",
+      "read": "LCSC C2864583 found at JLCPCB: on the board",
+      "source": "vendors.py jlcpcb C2864583",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:19Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published",
+      "read": "no product-longevity-programme statement on the product page",
+      "source": "https://www.ti.com/product/TPS55288",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:46Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet November 2018 (SLVSF01B)",
+      "read": "header 'SLVSF01B – NOVEMBER 2018 – REVISED DECEMBER 2020'",
+      "source": "tps55288.pdf (local copy, pdftotext)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:30Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB, LCSC and Digi-Key Active",
+      "read": "JLCPCB live listing in stock; Digi-Key status Active",
+      "source": "vendors.py jlcpcb C2864583; vendors.py digikey TPS55288RPMR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:19Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "16 weeks (Digi-Key)",
+      "read": "lead_weeks 16",
+      "source": "vendors.py digikey TPS55288RPMR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:00:36Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 5116",
+      "read": "canPresaleNumber 5116",
+      "source": "vendors.py jlcpcb C2864583",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:19Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "TPS55288RPMR, VQFN-HR-26 (RPM) 3.5 x 4 mm",
+      "read": "exact_match part 'TPS55288RPMR', package 'VQFN-26-HR(3.5x4)'",
+      "source": "vendors.py jlcpcb C2864583",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:19Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "extended",
+      "read": "componentLibraryType 'expand'",
+      "source": "vendors.py jlcpcb C2864583",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:19Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 5262 >= gate 50: passes",
+      "read": "stock_available 5262 (Cut Tape 5262, Tape & Reel 3000)",
+      "source": "vendors.py digikey TPS55288RPMR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:00:36Z"
+     }
+    ]
+   }
+  ]
+ }
+}

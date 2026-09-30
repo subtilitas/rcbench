@@ -1,0 +1,515 @@
+{
+ "role": "P1-critic",
+ "category": "R8",
+ "label": "P1-critic-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/Research.md:49",
+    "quantity": "Motor monitor (fixed input)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:56-62, the owner decisions of 2026-09-24, Motor current row, reads 'the INA238 is on the IO board'. IOBoard.md:415 gives 'owner, 2026-09-24' as its source. hardware/STATUS.md:10-11 says the INA238 is decided 'for its reason', but the page's decision table holds. Owner is right."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/Research.md:62",
+    "quantity": "Onboard shunt current",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:62, an owner decision of 2026-09-24, reads 'An onboard shunt carries up to 150 A, with a temperature sensor beside it'. F2 (Research.md:530, owner, 2026-09-25) makes it continuous. The unit is A in both."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/Research.md:62",
+    "quantity": "External shunt current range",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:62 reads 'for currents above 150 A to 300 A and more (owner, 2026-09-25)'. hardware/STATUS.md:26 matches. It is owner-dated, and the upper end is open."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/Research.md:286",
+    "quantity": "Port monitor and port shunt (seed)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:286, the R8 row itself, attributes 'the INA3221, 7 parts with a 10 mΩ shunt a port' to the owner (2026-09-25). hardware/STATUS.md:45 puts '(owner, 2026-09-25)' after the 10 mΩ. The decision row at Research.md:64 names 7 INA3221 and no shunt value. The page holds, and its R8 row dates the shunt to the owner. Seed status: Research.md:79 (owner, 2026-09-27)."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/Research.md:186",
+    "quantity": "Placements per board of the port monitor",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Sourcing rule 4 (Research.md:185-187) states 20 for each per-port part and 7 for the INA3221. Both follow directly from owner decisions of 2026-09-25: 20 ports and 7 INA3221 (Research.md:63-64). The rule is part of the plan the owner accepted on 2026-09-25 (Research.md:4-5)."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/Research.md:200",
+    "quantity": "INA238 second-source figures of 2026-09-01",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The figures match Power.md:149-150: INA228 JLCPCB 29 with pre-sale −477; INA238 Digi-Key 0 with 2500 due 2026-10-27. They are dated sweep figures with a source. Research.md:91-92 states that round 1 takes them again, so P2 and P4 re-read them."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/Research.md:231",
+    "quantity": "Held ACS70331EESATR-2P5U3",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "inventory-2026-09-25.csv line 14 gives JLCPCB quantity 20. ACS70331-DS Rev. 9 (February 2, 2026), https://www.allegromicro.com/-/media/files/datasheets/acs70331-datasheet.pdf, read 2026-09-28T10:37:10Z, selection guide: 0 to 2.5 A, 800 mV/A; bandwidth 1 MHz (−3 dB). One correction to the page, not to this value: the datasheet titles the part a 'GMR-Based Current Sensor IC'. Research.md:231-232 calls it a Hall current sensor."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/Research.md:232",
+    "quantity": "Held ACS70331EESATR-005B3",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "inventory-2026-09-25.csv line 6 gives JLCPCB quantity 10. ACS70331-DS Rev. 9, read 2026-09-28T10:37:10Z: selection guide ±5 A and 200 mV/A; the performance table gives IPR −5 to 5 A and Sens 200 mV/A."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/Research.md:233",
+    "quantity": "Held ACS711KLCTR-12AB-T",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "inventory-2026-09-25.csv line 15 gives JLCPCB quantity 5. ACS711A-DS Rev. 9 (January 24, 2025), https://www.allegromicro.com/-/media/files/datasheets/acs711-datasheet.pdf, read 2026-09-28T10:37:12Z: selection guide ±12.5 A and 110 mV/A for KLCTR-12AB-T; internal bandwidth 100 kHz."
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/IOBoard.md:66",
+    "quantity": "Motor monitor bus input rating",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "INA238 SLYS025B (revised May 2025), https://www.ti.com/lit/ds/symlink/ina238.pdf, read 2026-09-28T10:35:12Z. Section 5.1 gives VBUS and IN± common mode −0.3 to 85 V. Section 5.5 gives the bus voltage input range as 0 to 85 V. 85 − 67.2 = 17.8 V. The differential limit of ±40 V (5.1) is correct as P1 notes."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/IOBoard.md:415",
+    "quantity": "Motor monitor ADC and shunt ranges",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "SLYS025B 5.5, read 2026-09-28T10:35:12Z: VDIFF ±163.84 mV (ADCRANGE 0) and ±40.96 mV (ADCRANGE 1); 1 LSB 5 µV and 1.25 µV; ADC resolution 16 bits."
+   },
+   {
+    "index": 11,
+    "where": "hardware/docs/IOBoard.md:415",
+    "quantity": "Highest ESC pack voltage",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F15 Answer (Research.md:543, owner, 2026-09-25): 16 cells, 67.2 V at 4.2 V a cell. 16 × 4.2 V = 67.2 V."
+   },
+   {
+    "index": 12,
+    "where": "hardware/docs/IOBoard.md:416",
+    "quantity": "Monitor footprint and DEVICE_ID",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "INA238 SLYS025B Table 4-1 and INA228 SLYS021A Table 5-1 (https://www.ti.com/lit/ds/symlink/ina228.pdf, read 2026-09-28T10:35:12Z) both give pins 1 to 10 as A1, A0, ALERT, SDA, SCL, VS, GND, VBUS, IN−, IN+. DEVICE_ID at 3Fh resets to 2381h (INA238 section 6.6.1.17) and 2281h (INA228 section 7.6.1.20). A grep of *.c and *.h files finds the INA228 only in shared/settings/settings.c and settings.h, with no driver."
+   },
+   {
+    "index": 13,
+    "where": "hardware/docs/IOBoard.md:417",
+    "quantity": "Charge and energy source",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "INA238 SLYS025B Table 6-3, read 2026-09-28T10:35:12Z, lists 0h to 8h, Bh to 11h, 3Eh and 3Fh. It has no ENERGY or CHARGE register. INA228 SLYS021A is titled a 'Power/Energy/Charge Monitor'. The line's source, Power.md:127 and :153-155, is contradicted by the primary source, so the value is not sourced. No owner decision states it, so assumption is right. The coprocessor's sample() fills no charge or energy (firmware/iomcu/src/main.c:692-755)."
+   },
+   {
+    "index": 14,
+    "where": "hardware/docs/IOBoard.md:418",
+    "quantity": "Current measurement method",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:62 (owner, 2026-09-24 and 2026-09-25) puts a shunt on both paths, onboard and external, so no Hall sensor sits on the 300 A path. The Not planned entry (hardware/STATUS.md:53-55) gives the reason, which is not quantified. One wording point: the held ACS70331 parts are GMR (giant magnetoresistance) sensors per their datasheet, not Hall."
+   },
+   {
+    "index": 15,
+    "where": "hardware/docs/IOBoard.md:420",
+    "quantity": "Onboard shunt duty",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F2 Answer (Research.md:530): '150 A continuous (owner, 2026-09-25)'. hardware/STATUS.md:46 matches."
+   },
+   {
+    "index": 16,
+    "where": "hardware/docs/IOBoard.md:421",
+    "quantity": "Onboard shunt example values",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Arithmetic checked. (150 A)² × 100 µΩ = 2.25 W and 150 A × 100 µΩ = 15 mV; 4.5 W and 30 mV at 200 µΩ. Both drops are under the 40.96 mV of SLYS025B 5.5. 40.96 mV / 150 A = 273 µΩ."
+   },
+   {
+    "index": 17,
+    "where": "hardware/docs/IOBoard.md:422",
+    "quantity": "Onboard shunt temperature sensor",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:62 (owner, 2026-09-24) reads 'with a temperature sensor beside it'. No range or accuracy is stated; P1's question 16 asks for them."
+   },
+   {
+    "index": 18,
+    "where": "hardware/docs/IOBoard.md:424",
+    "quantity": "External shunt class",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The class comes from Power.md:157-167, a design page. hardware/STATUS.md:47 says 'Class settled' with no owner date, and no Research.md decision or answer states it. 300² × 50 µΩ = 4.5 W and 300² × 100 µΩ = 9 W. 40.96 mV / 100 µΩ = 409.6 A. It is an assumption."
+   },
+   {
+    "index": 19,
+    "where": "hardware/docs/IOBoard.md:425",
+    "quantity": "Resolution on the external shunt",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "1.25 µV (SLYS025B 5.5, ADCRANGE 1) / 100 µΩ = 12.5 mA and / 50 µΩ = 25 mA. 30 / 40.96 = 73.2 % and 15 / 40.96 = 36.6 %. The value follows from the datasheet figure and the class."
+   },
+   {
+    "index": 20,
+    "where": "hardware/docs/IOBoard.md:426",
+    "quantity": "External shunt sense connection",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "SLYS025B, read 2026-09-28T10:35:12Z, section 7.1.4 (Input Filtering Considerations) recommends a series resistance of 100 Ω or less and 0.1 to 1 µF on the inputs. The layout guidelines read 'Connect the input pins (IN+ and IN–) to the sensing resistor using a Kelvin connection or a 4-wire connection'. Power.md:166-167 matches."
+   },
+   {
+    "index": 21,
+    "where": "hardware/docs/IOBoard.md:427",
+    "quantity": "Motor monitors per board",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F1 Answer (Research.md:529): 'one INA238 for each path (owner, 2026-09-25)'. SLYS025B Table 6-2 gives 16 addresses from the A0 and A1 pins."
+   },
+   {
+    "index": 22,
+    "where": "hardware/docs/IOBoard.md:428",
+    "quantity": "Voltage measurement point",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "docs/Screens.md:131-132 reads 'The bench measures pack voltage, not the motor's terminals'. The value follows from a tree source, so sourced is right even though no owner date is attached."
+   },
+   {
+    "index": 23,
+    "where": "hardware/docs/IOBoard.md:429",
+    "quantity": "BENCH voltage and current registers",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "shared/link/include/link_pages.h:230-231 reads '10 mV steps, 0..655.35 V' and '10 mA steps, 0..655.35 A'. shared/bench/bench_state.c:11-12 gives CV_PER_V and CA_PER_A as 100. to_u16 (bench_state.c:21-28) sends a value that is not above 0 as 0 and caps at 65535."
+   },
+   {
+    "index": 24,
+    "where": "hardware/docs/IOBoard.md:431",
+    "quantity": "Bench sample period",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "firmware/iomcu/src/main.c:1011-1016 samples when (now − last_sample) ≥ 20 ms. docs/Link.md:167 gives 'the next 50 ms poll'. The 'one poll in fifty' of link_pages.h:226-227 conflicts, as IOBoard.md:589 records."
+   },
+   {
+    "index": 25,
+    "where": "hardware/docs/IOBoard.md:433",
+    "quantity": "Fault action",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "docs/Safety.md:97-98: 'The coprocessor acts on overcurrent, over-temperature, stall timeout and a lost link on its own authority'. docs/Link.md:139-140 gives bit 1 as overcurrent and bit 2 as over-temperature. main.c:763-770 sets only LINK_FAULT_LINK_SILENT and LINK_FAULT_HEARTBEAT."
+   },
+   {
+    "index": 26,
+    "where": "hardware/docs/IOBoard.md:464",
+    "quantity": "Motor monitor I2C addresses",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "INA3221 SBOS576C Table 7-1 (https://www.ti.com/lit/ds/symlink/ina3221.pdf, read 2026-09-28T10:35:13Z): one A0 pin, addresses 1000000 to 1000011 (0x40 to 0x43). INA238 Table 6-2 gives 16 addresses from 0x40. shared/settings/settings.c:29 gives 0x40, 0x41, 0x44 and 0x45. One overstatement: 7 parts on 2 buses split 4 and 3, so one address in 0x40 to 0x43 stays free on one bus. The constraint still follows from the tables."
+   },
+   {
+    "index": 27,
+    "where": "hardware/docs/IOBoard.md:351",
+    "quantity": "Port current monitor",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:64 (owner, 2026-09-25) gives one channel per port and 7 INA3221. Research.md:286 and hardware/STATUS.md:45 attribute the 10 mΩ to the same owner choice. Seed status: Research.md:79 (owner, 2026-09-27)."
+   },
+   {
+    "index": 28,
+    "where": "hardware/docs/IOBoard.md:351",
+    "quantity": "Port monitor step and full scale",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "SBOS576C 6.5, read 2026-09-28T10:35:13Z: shunt input −163.84 to 163.8 mV, 1 LSB 40 µV. On 10 mΩ that is 4 mA and 16.38 A. The offset is ±80 µV maximum (±8 mA) and the gain error 0.25 % maximum, as P1 notes."
+   },
+   {
+    "index": 29,
+    "where": "hardware/docs/IOBoard.md:351",
+    "quantity": "Port monitor addresses",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "SBOS576C Table 7-1 gives 4 addresses from one A0 pin. 4 × 2 buses = 8 ≥ 7 parts. hardware/STATUS.md:45 attributes the two I²C buses to the owner (2026-09-25)."
+   },
+   {
+    "index": 30,
+    "where": "hardware/docs/IOBoard.md:351",
+    "quantity": "Port 3.0 A abort path",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Neither Research.md:64 nor hardware/STATUS.md:45 names the critical alert. docs/Servo.md:35 and shared/servo/servo_limit.c:60 put the 3.0 A check in firmware. SBOS576C Table 5-1 (pin 9) and section 7.3.2.1 give one open-drain Critical pin a part, pulled low when any channel exceeds its limit. The line is an assumption."
+   },
+   {
+    "index": 31,
+    "where": "hardware/docs/IOBoard.md:353",
+    "quantity": "Servo current ceiling",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "docs/Servo.md:35 reads '3.0 A | abort immediately, checked at every sample'. shared/servo/servo_limit.c:60 sets hard_limit_a = 3.0f."
+   },
+   {
+    "index": 32,
+    "where": "hardware/docs/IOBoard.md:354",
+    "quantity": "Stall timeout",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "docs/Servo.md:36 reads 'above 1.0 A for 400 ms'. servo_limit.c:61-62 sets stall_above_a = 1.0f and stall_ms = 400."
+   },
+   {
+    "index": 33,
+    "where": "hardware/docs/IOBoard.md:355",
+    "quantity": "Bind detection",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "docs/Servo.md:21-26 and servo_limit.c:56-59 give settle_ms 120, measure_ms 80, knee_ratio 1.8 and knee_margin_a 0.15."
+   },
+   {
+    "index": 34,
+    "where": "hardware/docs/IOBoard.md:356",
+    "quantity": "Synchroniser current ceiling",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "docs/Servo.md:68-69 and shared/servo/servo_sync.c:37 give hard_limit_a = 4.0f."
+   },
+   {
+    "index": 35,
+    "where": "hardware/docs/IOBoard.md:357",
+    "quantity": "Synchroniser minimum",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "docs/Servo.md:65-68 and servo_sync.c:35-36 give measure_ms = 100 and min_depth_a = 0.08f."
+   },
+   {
+    "index": 36,
+    "where": "hardware/docs/IOBoard.md:380",
+    "quantity": "Port monitor sensor noise",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "shared/servo/servo_sim.c:22 sets noise_a = 0.02f. servo_sim.h:60 calls it 'peak-to-peak sensor noise'. It is a parameter of the host model, not a measured or required figure, so assumption is right."
+   },
+   {
+    "index": 37,
+    "where": "hardware/docs/IOBoard.md:343",
+    "quantity": "Servo rail current",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:343 gives '(owner, 2026-09-25)'. Research.md:48 (fixed input) gives the TPS55285 limit up to 6.35 A. hardware/STATUS.md:34 and :37 match. TPS55285 SLVSI72A, https://www.ti.com/lit/ds/symlink/tps55285.pdf, read 2026-09-28T10:40:12Z, reads 'Programmable output current limit up to 6.35A'."
+   },
+   {
+    "index": 38,
+    "where": "hardware/docs/IOBoard.md:350",
+    "quantity": "Port voltage ceiling",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F16 Answer (Research.md:544, owner, 2026-09-25): a jumper per port cuts off above 6.0 V or 8.7 V."
+   },
+   {
+    "index": 39,
+    "where": "hardware/docs/Power.md:17",
+    "quantity": "Port monitor bus voltage class",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Power.md:17 cites no source. The label was already on the servo rail monitor row at 23c82ca, when the converter was the TPS55288 with a 0.8 to 22 V output, so it does not derive from the current parts. One correction to P1's refutation: Power.md:41 gives the TPS55285's output as 0.8 to 15 V, and SLVSI72A (read 2026-09-28T10:40:12Z, recommended operating conditions) confirms it. That bounds what the converter can be set to, not the rating a monitor needs, so assumption stands."
+   },
+   {
+    "index": 40,
+    "where": "hardware/docs/Power.md:18",
+    "quantity": "Motor monitor rating class",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "67.2 V is F15 (owner, 2026-09-25). 300 A is the owner's figure of Research.md:62 (owner, 2026-09-25). It is the lower bound of 'to 300 A and more', as P1 notes."
+   },
+   {
+    "index": 41,
+    "where": "hardware/docs/Power.md:162",
+    "quantity": "Motor current resolution needed on the external path",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "hardware/STATUS.md:58-59 reads 'The noise a running ESC puts on the wire is not measured'. IOBoard.md:586 records the conflict. The claim has no measured figure and no owner decision behind it, so it is an assumption."
+   },
+   {
+    "index": 42,
+    "where": "docs/Manifest.md:28",
+    "quantity": "Servo rail monitor",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "docs/Manifest.md:28 reads 'Parts selected: INA238 (motor), INA745A (servo rail)' with no owner date. Research.md:64 names only the per-port channels. IOBoard.md:382 leaves the rail monitor open and IOBoard.md:585 follows the owner. Power.md:13-18 lists no rail monitor."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "A named P1 ask (Research.md:37-40, :286; categories.json p1_asks R8). IOBoard.md:478 states it as not known. link_pages.h:230-231 has one register for each quantity. Today main.c:720-727 fills both from extended DShot telemetry at 0.25 V and 1 A a count."
+   },
+   {
+    "index": 1,
+    "verdict": "confirmed",
+    "reason": "A named P1 ask (Research.md:286), stated as not known at IOBoard.md:475. The arithmetic holds with SLYS025B 5.5 (read 2026-09-28T10:35:12Z): 40.96 mV / 150 A = 273 µΩ and 40.96 mV / 200 A = 204.8 µΩ."
+   },
+   {
+    "index": 2,
+    "verdict": "confirmed",
+    "reason": "A named P1 ask (Research.md:286), not stated in the tree (IOBoard.md:475). The LIMITS page (0x11) is declared and not served (docs/Link.md:126)."
+   },
+   {
+    "index": 3,
+    "verdict": "confirmed",
+    "reason": "A named P1 ask (Research.md:286; IOBoard.md:475). Each candidate exists: the INA238 has DIETEMP at 6h, −40 to 125 °C, ±1 °C at 25 °C and ±2 °C over range (SLYS025B Table 6-3 and 5.5). F5 gives 2 motor channels. main.c:728-735 reads the ESC's temperature from telemetry."
+   },
+   {
+    "index": 4,
+    "verdict": "confirmed",
+    "reason": "A named P1 ask (Research.md:286). SLYS025B 5.5 gives conversion times of 50 to 4120 µs, and 6.3.4.2 gives averaging of 1 to 1024. Section 6.3.6 and DIAG_ALRT bit 13 (SLOWALERT) choose between comparing each conversion and comparing the averaged value, so the filter sets the ALERT configuration."
+   },
+   {
+    "index": 5,
+    "verdict": "confirmed",
+    "reason": "A named P1 ask (Research.md:286). P5's budget of the motor overcurrent path (Research.md:359) has no limit to check against. IOBoard.md:475 states it as not known."
+   },
+   {
+    "index": 6,
+    "verdict": "confirmed",
+    "reason": "Not a P1 asks item, but the page leaves a real design choice open. Monostable.md:449-455 at 23c82ca reads 'No processor, no register and no firmware is in it', and GP3 'cannot remove the enable or add to it'. The ESC pack gates follow the enable node (IOBoard.md:189-190, :197). Research.md:359 budgets the path to the switch's turn-off, and no line names the input that opens it on overcurrent. The INA238 ALERT is open-drain and active low by default (SLYS025B Table 4-1). Its use depends on the answer."
+   },
+   {
+    "index": 7,
+    "verdict": "confirmed",
+    "reason": "Re-derived. SLYS025B Table 6-3 (read 2026-09-28T10:35:12Z) has no ENERGY or CHARGE register. INA228 SLYS021A (read 2026-09-28T10:35:12Z) has both. IOBoard.md:417 relies on Power.md:127 and :153-155, which claim them for the INA238. The fixed input fails its own line, so the owner states which holds."
+   },
+   {
+    "index": 8,
+    "verdict": "confirmed",
+    "reason": "Value 18 is an assumption, and every assumption becomes a question (Research.md:353). 40.96 mV / 100 µΩ = 409.6 A. No owner decision fixes 50 to 100 µΩ."
+   },
+   {
+    "index": 9,
+    "verdict": "confirmed",
+    "reason": "Research.md:62 gives 'above 150 A to 300 A and more' with no upper end. R3's P1 also asks 'external path highest current' (categories.json), so the session may merge the two. The arithmetic holds: 500² × 50 µΩ = 12.5 W, and 500 A × 100 µΩ = 50 mV is above 40.96 mV."
+   },
+   {
+    "index": 10,
+    "verdict": "confirmed",
+    "reason": "F2 (Research.md:530) answers the duty for the onboard path only. No line states it for the external path. 300² × 100 µΩ = 9 W continuous."
+   },
+   {
+    "index": 11,
+    "verdict": "confirmed",
+    "reason": "Value 41 is an assumption. hardware/STATUS.md:58-59 states that the ESC noise is not measured, and IOBoard.md:586 records the conflict. The question fills the missing resolution figure."
+   },
+   {
+    "index": 12,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:476 states the accuracy as not known and names R8. SLYS025B 5.5 gives shunt gain error ±0.1 % and offset ±5 µV maximum. 5 µV / 100 µΩ = 50 mA."
+   },
+   {
+    "index": 13,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:476 names both pack voltage and motor current as not stated. SLYS025B 5.5 gives VBUS gain error ±0.1 %, offset ±5 mV and input impedance 0.8 to 1.2 MΩ. A series filter resistor forms a divider with that impedance, so the path needs a figure."
+   },
+   {
+    "index": 14,
+    "verdict": "confirmed",
+    "reason": "No temperature range is stated for the measurement. SLYS025B 5.5 gives gain drift ±25 ppm/°C and offset drift ±20 nV/°C, and both need a range to become an error. IOBoard.md:184 specifies the monostable window over 0 to 50 °C."
+   },
+   {
+    "index": 15,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:421 gives two examples, 2.25 W and 4.5 W, and no limit. hardware/STATUS.md:49 lists the thermal layout as open."
+   },
+   {
+    "index": 16,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:422 states only that a sensor sits beside the shunt. The seeds TMP117 and TMP1075 (Research.md:286) cannot be qualified without a range and an accuracy."
+   },
+   {
+    "index": 17,
+    "verdict": "confirmed",
+    "reason": "Value 39 is an assumption. The INA3221 is rated to 26 V (SBOS576C 6.5), and F16 cuts the port off above 6.0 V or 8.7 V. The TPS55285 output range, 0.8 to 15 V (SLVSI72A, read 2026-09-28T10:40:12Z), is the highest the converter can be set to. The question stands."
+   },
+   {
+    "index": 18,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:380 states the range as not known. One correction to the why: ACS70331-DS Rev. 9 (read 2026-09-28T10:37:10Z) titles the held 2.5 A part a GMR-based sensor, not a Hall sensor. It reads 0 to 2.5 A, under the 3.0 A ceiling."
+   },
+   {
+    "index": 19,
+    "verdict": "confirmed",
+    "reason": "docs/Servo.md:35 gives only 'immediately'. IOBoard.md:380 states no sample rate. SBOS576C 6.5 (read 2026-09-28T10:35:13Z) gives conversion times of 140 µs to 8.244 ms typical and 154 µs to 9.068 ms maximum. P1's figures are the typical ones."
+   },
+   {
+    "index": 20,
+    "verdict": "confirmed",
+    "reason": "Value 36 is an assumption. The 0.08 A and 0.15 A criteria (servo_sync.c:36, servo_limit.c:59) have no noise or accuracy requirement behind them. SBOS576C 6.5 gives an offset of ±80 µV maximum, which is ±8 mA on 10 mΩ."
+   },
+   {
+    "index": 21,
+    "verdict": "confirmed",
+    "reason": "Value 30 is an assumption. SBOS576C 7.3.2.1 and Table 5-1 give one Critical pin per part for 3 channels. 7 parts give 7 lines or a wired-OR, which P5 counts as GPIO."
+   },
+   {
+    "index": 22,
+    "verdict": "confirmed",
+    "reason": "Value 42 is an assumption. IOBoard.md:382 leaves the rail monitor open and names R8."
+   }
+  ],
+  "added": [
+   {
+    "function": "External shunt sense input",
+    "question": "Does each motor shunt sit in the ESC pack's positive lead (high side) or in its return (low side)? Answer for the onboard path and for the external path. On the high side the sense leads sit at up to 67.2 V to ground; on the low side they sit within the shunt drop of ground.",
+    "why": "IOBoard.md:469 states it as not known and names R8. It sets the common-mode voltage at the INA238's IN+ and IN− (−0.3 to 85 V, SLYS025B section 5.3, https://www.ti.com/lit/ds/symlink/ina238.pdf, read 2026-09-28T10:35:12Z). It also decides whether the external sense leads carry pack voltage onto the IO board's connector, which sets the voltage rating and protection of the sense input. A low-side shunt puts its drop, 15 mV at 150 A on 100 µΩ, between the ESC's return and the star ground (IOBoard.md:547).",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:469",
+    "for_quantity": "Shunt position in the ESC pack path",
+    "asks": ""
+   },
+   {
+    "function": "External shunt sense input",
+    "question": "When a test runs through the external path, where does that path's INA238 take the pack voltage for its VBUS input? The options are a separate voltage-sense lead from the pack, the external shunt's pack-side sense lead, or no connection, with no voltage reading on the external path.",
+    "why": "IOBoard.md:470 states it as not known and names R8. The two paths replace each other, and only the sense leads reach the board (IOBoard.md:403-406). The page measures voltage at the pack (docs/Screens.md:131-132), and the BENCH voltage and power registers depend on it (link_pages.h:230-232). The answer decides whether the external input carries a lead at up to 67.2 V (F15). The INA238's VBUS input takes 0 to 85 V at 0.8 to 1.2 MΩ (SLYS025B 5.5, read 2026-09-28T10:35:12Z).",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:470",
+    "for_quantity": "External path bus-voltage connection",
+    "asks": ""
+   },
+   {
+    "function": "External shunt sense input",
+    "question": "What is the highest voltage, in V, the external sense input must withstand without damage, between its two sense leads and from either lead to the board's ground? The fault cases include a sense lead on the wrong terminal, a lead off, and the load side shorted to ground.",
+    "why": "The INA238 is rated at ±40 V between IN+ and IN− and at −0.3 to 85 V on either input (SLYS025B section 5.1, read 2026-09-28T10:35:12Z). Its section 7.1.4 names a short on the load side of the shunt as a case that puts the full supply voltage across the shunt. The pack reaches 67.2 V (F15), above the ±40 V limit, and the operator cables the external path for each test (IOBoard.md:405-406). Without a figure, the input in front of the fixed INA238 cannot be qualified. It may need series resistance and clamps.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:426",
+    "for_quantity": "External sense input fault withstand voltage",
+    "asks": ""
+   },
+   {
+    "function": "Port current monitor",
+    "question": "Must a port current monitor channel read current that flows back into the servo rail, from a back-driven or braking servo? If so, down to how many A in that direction? Or is a range from 0 A to the positive full scale enough?",
+    "why": "IOBoard.md:477 states that whether a negative current is measured is not stated. The held ACS70331EESATR-2P5U3 reads 0 to 2.5 A only (ACS70331-DS Rev. 9 selection guide, https://www.allegromicro.com/-/media/files/datasheets/acs70331-datasheet.pdf, read 2026-09-28T10:37:10Z). The INA3221 reads −163.84 to 163.8 mV (SBOS576C 6.5, https://www.ti.com/lit/ds/symlink/ina3221.pdf, read 2026-09-28T10:35:13Z). A unidirectional replacement passes or fails on the answer.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:477",
+    "for_quantity": "Negative current on a port channel",
+    "asks": ""
+   }
+  ],
+  "functions_missing": []
+ }
+}

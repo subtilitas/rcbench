@@ -1,0 +1,102 @@
+{
+ "role": "P3",
+ "category": "R2",
+ "label": "P3-R2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "missed": [
+   {
+    "function": "External CAN transceiver",
+    "part": "TCAN1044VDRQ1 (C1852061); TCAN1044VDRBRQ1 (C5215851)",
+    "maker": "Texas Instruments (JLCPCB API 'Texas Instruments'); S1 Texas Instruments",
+    "why": "P2 did not consider this family member; it considered only TCAN1044AV. Figures from TCAN1044-Q1 datasheet SLLSF17D (https://www.ti.com/lit/ds/symlink/tcan1044-q1.pdf, read 2026-09-28T17:55:10Z). Pinout: TXD 1, GND 2, VCC 3, RXD 4, VIO 5 (V variant), CANL 6, CANH 7, STB 8 with an integrated pull-up. STB high selects standby, so the enable node drives STB through an inverter (V18). tMODE, normal to standby or standby to normal, 20 us max (V19: 5 ms). VBUS -58 to +58 V (V24: +30 V). Classic CAN and CAN FD at 2, 5 and 8 Mbps (V21). tPROP(LOOP1) and tPROP(LOOP2) 210 ns max at VIO 2.8 to 5.5 V (limit 237 ns). ILKG(OFF) on STB -1 to 1 uA at STB = 5.5 V with VCC = VIO = 0 V, so STB has I_off. Supply: VCC 4.5 to 5.5 V from the 5 V rail, VIO 1.7 to 5.5 V. These are the figures P2 cites for TCAN1044AVDRQ1, on the same SOIC-8 pinout. It is a pin-compatible alternate for P2's external rank 4, which P2 ranked down because 'Digi-Key holds none, so its second source is the alternate only'. Digi-Key TCAN1044AVDRQ1 still shows 0 (2026-09-28T18:02:09Z). Beyond the figures above, the two parts are not compared. Stock: JLCPCB C1852061 stockCount 13438, presale 13374, expand, 0.3492 USD at 10 (vendors.py jlcpcb, 2026-09-28T17:54:21Z). C5215851 (SON-8): 20643, presale 20143 (17:54:35Z). Digi-Key TCAN1044VDRQ1: 5841, Active, lead 16 weeks (api.digikey.com productdetails, 18:01:43Z). TCAN1044VDRBRQ1: 15136, Active (18:08:27Z). TI product page https://www.ti.com/product/TCAN1044V-Q1 status ACTIVE (18:03:24Z). The datasheet's orderable addendum lists TCAN1044VDRQ1 Active."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "TCAN1044VDRQ1 (C1852061)",
+    "maker": "Texas Instruments; S1 Texas Instruments",
+    "why": "Meets the link's values, on the figures of the external entry (SLLSF17D, read 2026-09-28T17:55:10Z): VIO pin, so RXD is at 3.3 V; -58 to +58 V (V25: 5.5 V); loop 210 ns max (limit 350 ns); classic CAN at 1 Mbit/s; VCC from the 5 V rail. It costs 0.3492 USD at 10, the lowest price of any qualifying link transceiver P2 lists. JLCPCB 13438 (17:54:21Z). Digi-Key 5841, Active (18:01:43Z)."
+   },
+   {
+    "function": "External CAN transceiver",
+    "part": "TJA1443AT/0Z (C3233835)",
+    "maker": "NXP Semiconductors (JLCPCB API 'NXP Semicon'); S1 NXP",
+    "why": "P2 did not consider the TJA144x family. The TJA1443 is NXP's pin-compatible successor to the TJA1043, which P2 dropped for 240 ns and for giving no normal-to-standby time. Figures from TJA1443 Rev. 2, 15 October 2021 (https://www.nxp.com/docs/en/data-sheet/TJA1443.pdf, read 2026-09-28T17:56:21Z). STB_N (pin 14) is an active-LOW standby input with a 20 to 80 kOhm pull-down, so the enable node drives it directly with no inverter (V18). With EN held high, STB_N low is the go-to-sleep command: Sleep follows after th(gotosleep), 24 to 50 us, and the transmitter is disabled in Standby and in Sleep. A rising edge on STB_N leaves Sleep, and the part then enters Normal with STB_N and EN high (section 7.1.1.5). tt(moch), the mode change transition time, is 50 us max (V19: 5 ms). VCANH -36 to +40 V (V24: +30 V). CAN FD up to 5 Mbit/s (V21). td(TXDL-RXDL) and td(TXDH-RXDH) 215 ns max (limit 237 ns). VIO 2.95 to 5.5 V; VCC 4.5 to 5.5 V; VBAT 4.5 to 28 V. No I_off is given for STB_N, so it takes the 4.7 kOhm series resistor. With that resistor and the minimum 20 kOhm pull-down, a 3.3 V enable node gives 2.67 V at the pin, above VIH 0.7 x VIO = 2.31 V. Constraints: SOIC-14 with VBAT, EN, INH, ERR_N and WAKE to wire. VBAT from the 5 V rail holds only while that rail stays at 4.5 V or above, and that rail's tolerance is open (V100). Stock: JLCPCB 403, presale 402, expand, 0.7162 USD at 10 (vendors.py jlcpcb C3233835, 2026-09-28T17:54:24Z). Digi-Key TJA1443AT/0Z: 7016, Active, lead 16 weeks (18:01:52Z). NXP family page https://www.nxp.com/products/TJA144x: 'Status - Active' (18:03:11Z); the page lists TJA1443AT. The part page https://www.nxp.com/part/TJA1443AT carries no status in its body (18:02:44Z)."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "TJA1443AT/0Z (C3233835)",
+    "maker": "NXP Semiconductors; S1 NXP",
+    "why": "Meets the link's values (TJA1443 Rev. 2, read 2026-09-28T17:56:21Z): VIO 2.95 to 5.5 V; -36 to +40 V (V25: 5.5 V); 215 ns (limit 350 ns). JLCPCB 403 (17:54:24Z). Digi-Key 7016, Active (18:01:52Z). NXP TJA144x Active (18:03:11Z). The same constraints apply as in the external entry: SOIC-14, VBAT, EN."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "TJA1441AT/0Z (C3234084)",
+    "maker": "NXP Semiconductors (JLCPCB API 'NXP Semicon'); S1 NXP",
+    "why": "P2 did not consider this family. TJA1441 Rev. 2, 15 October 2021 (https://www.nxp.com/docs/en/data-sheet/TJA1441.pdf, read 2026-09-28T17:56:20Z). The TJA1441A variant has a VIO supply pin (pin 5), 2.95 to 5.5 V, so RXD is at 3.3 V. Pin 8 is S, silent mode, active-HIGH. VCC 4.5 to 5.5 V from the 5 V rail. VCANH -36 to +40 V (V25: 5.5 V). td(TXDL-RXDL) and td(TXDH-RXDH) 215 ns max (limit 350 ns). Up to 5 Mbit/s. The datasheet names it a pin-compatible replacement for the TJA1051 and TJA1057. On the TJA1051T/3 pinout (VIO on 5, S on 8) it is a rule-5 alternate for P2's link rank 2, TJA1051T/3/1J, with a shorter loop delay, 215 ns against 250. Stock: JLCPCB 192, presale 188, expand, 1.6613 USD at 10 (2026-09-28T17:54:23Z). Digi-Key TJA1441AT/0Z: 12862, Active, lead 20 weeks (18:01:54Z). NXP TJA144x family page: Active (18:03:11Z)."
+   },
+   {
+    "function": "External CAN transceiver",
+    "part": "TJA1448AT/0Z (C3029057)",
+    "maker": "NXP Semiconductors (JLCPCB API 'NXP Semicon'); S1 NXP",
+    "why": "P2 did not consider this family. It is a dual transceiver: one package can serve the external port and the link. TJA1448 Rev. 2.1, 2 March 2026 (https://www.nxp.com/docs/en/data-sheet/TJA1448.pdf, read 2026-09-28T17:57:26Z). The TJA1448A variant has a VIO pin, 2.95 to 5.5 V, and VCC 4.5 to 5.5 V. Pins STB1 and STB2 control each channel independently; HIGH selects Standby (V18, through an inverter from the enable node). They have a 20 to 80 kOhm pull-up and no I_off, so each takes the 4.7 kOhm resistor. tt(moch) 50 us max (V19). VCANH on CANH1 and CANH2 -36 to +40 V (V24). 5 Mbit/s (V21). td(TXDL-RXDL) and td(TXDH-RXDH) 215 ns max (limit 237 ns). SOIC-14. Stock: JLCPCB 1113, presale 1110, expand, 3.0904 USD at 10, for both transceivers (2026-09-28T17:57:19Z). Digi-Key productdetails for TJA1448AT/0Z answered HTTP 404 (18:01:55Z). Digi-Key keyword search 'TJA1448AT' (18:02:21Z) lists TJA1448AT/0Z by 'NXP USA Inc.' at 10357, Active, lead 16 weeks. A second listing by 'NXP Semiconductors' shows Obsolete with 2500 on reel; that disagreement is recorded. NXP TJA144x family page, which lists TJA1448AT: Active (18:03:11Z)."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "TJA1448AT/0Z (C3029057)",
+    "maker": "NXP Semiconductors; S1 NXP",
+    "why": "The second channel of the dual part in the external entry meets the link's values (TJA1448 Rev. 2.1, read 2026-09-28T17:57:26Z): VIO, -36 to +40 V, 215 ns, with STB1 held low. One part number then serves both transceiver functions. JLCPCB 1113 (17:57:19Z). Digi-Key search 10357, Active (18:02:21Z)."
+   },
+   {
+    "function": "External CAN transceiver",
+    "part": "TCAN1042GVDRQ1 (C2671658)",
+    "maker": "Texas Instruments; S1 Texas Instruments",
+    "why": "P2 considered TCAN1042VDRQ1, dropped for V21, and TCAN1042HGVDRQ1, its external rank 2 at 2.017 USD. It did not consider the GV variant: the same SOIC-8 pinout with the G (5 Mbps) and V (VIO) options and the non-H bus rating. SLLSES9D (https://www.ti.com/lit/ds/symlink/tcan1042-q1.pdf, read 2026-09-28T18:07:46Z) gives the following. Device table: TCAN1042GV-Q1 ±58 V, G and V options. 'G' options support 5 Mbps (V21). tPROP(LOOP1) 160 ns max and tPROP(LOOP2) 175 ns max (limit 237 ns). tMODE 45 us max (V19). STB standby input, with Ilkg(OFF) -1 to 1 uA at STB = 5.5 V and VCC = VIO = 0 V (I_off). VBUS -58 to +58 V for devices without the H suffix (V24: +30 V). It is a pin-compatible alternate for TCAN1042HGVDRQ1 at half the price. Stock: JLCPCB 86, presale 85, expand, 0.9923 USD at 10 (2026-09-28T18:08:05Z), over the gate of 50. Digi-Key: 4214, Active, lead 16 weeks (18:08:23Z). TI product page https://www.ti.com/product/TCAN1042-Q1: ACTIVE (18:08:27Z). The industrial TCAN1042HGVDR (C124014) holds JLCPCB 164, presale 155 (18:08:03Z). It is not in SLLSES9D and was not read."
+   },
+   {
+    "function": "External CAN transceiver",
+    "part": "TLE9252VSK (C540122; OPN TLE9252VSKXUMA1)",
+    "maker": "Infineon Technologies (JLCPCB API 'Infineon Technologies'); S1 Infineon",
+    "why": "P2 did not consider this family. The Infineon CAN FD transceivers P2 could have taken instead are all not for new design: TLE9251VSJ, TLE9351VSJ, TLE9350VSJ, TLE9250VSJ and TLE7251VLE at 17:57:39Z to 17:58:02Z (datalayer-productStatusInfo on https://www.infineon.com/part/<name>). The TLE9252VSK page reads 'active and preferred' (17:58:02Z). Datasheet TLE9252V Rev. 1.11, 2019-10-17 (https://www.infineon.com/assets/row/public/documents/10/49/infineon-tle9252v-datasheet-en.pdf, read 2026-09-28T17:58:40Z). NSTB is an active-low standby input. With EN held high, NSTB low is the Go-to-Sleep command, which disables the transmitter, then Sleep. A rising edge on NSTB returns the part to Normal (section 6.5.2) (V18). tMode 20 us max (V19). VCANH -40 to +40 V (V24). 5 Mbit/s (V21). tLoop 215 ns max (limit 237 ns). VIO 3.0 to 5.5 V; VCC 4.5 to 5.5 V. Constraints the re-rank must weigh: (1) VBAT is specified from 5.5 to 40 V, with VBAT_UV 4.8 to 5.5 V. The 5 V rail cannot supply VBAT; it needs the board's 6.0 to 20 V input path, which is outside P2's 'supply from the board's rails' requirement as P2 wrote it. (2) NSTB has no I_off. IMODE_H is 20 to 220 uA at VMODE = VIO. If that current is resistive, 4.7 kOhm leaves 2.51 V against VMODE_H 0.7 x VIO = 2.31 V. If it is constant at 220 uA, the pin sees 2.27 V, under 2.31 V. The datasheet does not say which. Stock: JLCPCB C540122 196, presale 196, expand, 1.4437 USD at 10 (2026-09-28T17:58:19Z); C191266 TLE9252VSKXUMA1 0 (17:58:20Z). Digi-Key TLE9252VSKXUMA1: 0, Active, lead 22 weeks (18:02:04Z)."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "SN65HVD233DR (C61643)",
+    "maker": "Texas Instruments; S1 Texas Instruments",
+    "why": "P2 did not consider this family. SLLS557H (https://www.ti.com/lit/ds/symlink/sn65hvd233.pdf, read 2026-09-28T17:55:01Z). Single 3.3 V supply, 3 to 3.6 V, so the 3.3 V rail alone supplies it. Bus terminal absolute maximum -36 to +36 V (V25: 5.5 V); recommended -7 to 12 V. t(loop1) and t(loop2) 135 ns max with RS at 0 V (limit 350 ns). Up to 1 Mbps. Pin 5 is LBK, loopback, active high. The datasheet states no internal pull on LBK, so it is tied to ground, and the part is not a drop-in for the SN65HVD230's Vref pin. Stock: JLCPCB 30754, presale 30581, expand, 0.6577 USD at 10 (2026-09-28T17:54:19Z). Digi-Key 31429, Active, lead 16 weeks (18:01:57Z). TI https://www.ti.com/product/SN65HVD233: ACTIVE (18:03:24Z). It is a 3.3 V part like the SN65HVD230, with the second-vendor stock the SN65HVD230 lacks."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "TCAN332DR (C73651); TCAN337DR (C2860648); TCAN330GDCNR (C191006)",
+    "maker": "Texas Instruments; S1 Texas Instruments",
+    "why": "Members of the TCAN33x family that P2 did not consider; P2 read only the TCAN334. SLLSEQ7F (https://www.ti.com/lit/ds/symlink/tcan332.pdf, read 2026-09-28T17:55:00Z). VCC 3 to 3.6 V, from the 3.3 V rail alone. Bus absolute maximum -14 to +14 V (V25: 5.5 V). tPROP(LOOP) 135 ns max (limit 350 ns). Device table: TCAN332 has pins 5 and 8 NC, normal mode only. TCAN337 has pin 5 FAULT (open drain) and pin 8 S. TCAN330G has pin 5 SHDN and pin 8 S, 5 Mbps. The TCAN332DR's pin set (NC on 5 and 8, 3.3 V) matches the SN65HVD232DR's, so each is a rule-5 alternate for the other. Stock: JLCPCB TCAN332DR 797, presale 747, 1.4908 USD at 10 (17:54:17Z). TCAN337DR 3312, presale 3310, 1.2066 USD (17:54:18Z). TCAN330GDCNR 3669, presale 3649, 1.9325 USD (17:54:19Z). TCAN332GDCNR 1594 (17:54:18Z). All are cheaper and better stocked than the TCAN334DR P2 ranked down at 2.6536 USD and 477. Digi-Key: TCAN332DR 8794, Active, lead 9 (18:01:59Z); TCAN337DR 2205, Active (18:02:00Z); TCAN330GDCNR 2360, Active (18:02:02Z); TCAN332GDCNR 0 (18:05:03Z). TI product pages TCAN332, TCAN337 and TCAN330: ACTIVE (18:03:25Z to 18:03:26Z). The ±14 V rating fails V24, so none serves the external port."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "NCV7357D13R2G (C603987); NCV7349D13R2G (C893047)",
+    "maker": "onsemi (JLCPCB API 'onsemi'); S1 onsemi",
+    "why": "P2 did not consider onsemi transceivers. NCV7357 (https://www.onsemi.com/download/data-sheet/pdf/ncv7357-d.pdf, read 2026-09-28T17:59:19Z). The -3 version has a VIO pin, 2.8 to 5.5 V, and pin 8 is S, silent. VCANH -42 to +42 V. tpd_dr and tpd_rd 210 ns max (limit 350 ns). CAN FD timing up to 5 Mbps. Characteristics are given at VCC 4.75 to 5.25 V; the 5 V rail's tolerance is open (V100). JLCPCB 179, presale 178, 0.4775 USD at 10 (17:54:29Z). Digi-Key 4397, Active, lead 24 weeks (18:02:05Z). NCV7349 (ncv7349-d.pdf, read 17:59:18Z). The D13 part is 'with VIO pin'; pin 8 is STB. VCANH -50 to +50 V; tpd 245 ns in the table, 250 ns for the -3 version in the key specifications; up to 1 Mbps. JLCPCB 170, presale 170, 1.0881 USD (17:54:29Z). Digi-Key 1036, Active (18:02:07Z). The onsemi product-page status is not read: https://www.onsemi.com/products/interfaces/can-transceivers/ncv7357 redirected to /products (18:05:59Z). NCV7344D13R2G (JLCPCB 59, 17:54:29Z) gives only td(stb-nm), 20 ms max, for the standby transition, so it fails V19 for the external port as the TJA1044 does."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "MAX13054ASA+T (C402690); LTC2875IS8#TRPBF (C683034); SN65HVD256DR (C132551)",
+    "maker": "Analog Devices (Maxim, Linear); Texas Instruments; S1",
+    "why": "Qualifying link parts that P2 did not consider, each high in price. MAX13050-MAX13054 datasheet (https://www.analog.com/media/en/technical-documentation/data-sheets/MAX13050-MAX13054.pdf, client safari, read 2026-09-28T18:06:24Z): VCC 5 V ±5 %, VCC2 3.0 to 3.6 V logic supply on the MAX13054, ±80 V, tONLOOP and tOFFLOOP 255 ns max, 1 Mbps, STBY. JLCPCB 173, presale 173, 3.9754 USD at 10 (18:06:40Z); Digi-Key 6475, Active (18:06:44Z). LTC2875 (https://www.analog.com/media/en/technical-documentation/data-sheets/2875f.pdf, safari, 18:04:12Z): runs at 3.3 V (3 to 3.6 V), ±60 V, tPTXRXD 180 ns and tPTXRXR 215 ns max at 3.3 V, 4 Mbps (so it misses V21 for the external port). JLCPCB 2513, presale 2508, 6.0817 USD (17:54:33Z); Digi-Key 0, Active, lead 24 (18:05:01Z). SN65HVD256 (SLLSEA2D, https://www.ti.com/lit/ds/symlink/sn65hvd256.pdf, 17:55:03Z): VCC 4.5 to 5.5 V, a VRXD pin that sets the RXD level, -27 to +40 V, tPROP(LOOP1/2) 150 ns max, S silent. JLCPCB 176, 3.3616 USD (17:54:33Z); Digi-Key 1517, Active (18:08:25Z). Lifecycle: Digi-Key ProductStatus for the Analog Devices parts, Active."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "SN65HVD230DR (C12084), Link CAN transceiver",
+    "reason_given": "Ranks below the five: Digi-Key 0 (17:26:00Z); its only alternate route is SN65HVD232DR, whose pins 5 and 8 are NC where the '230 has Vref and Rs, and whether NC pin 8 may be tied to ground is not stated; narrowest bus rating.",
+    "why_it_fails": "The SN65HVD232DR is not its only alternate route. The SN65HVD231DR (C129257) is in the same datasheet, SLOS346O (https://www.ti.com/lit/ds/symlink/sn65hvd230.pdf, read 2026-09-28T18:04:47Z). It has the '230's pins: Vref output on pin 5 and Rs on pin 8. It has the same t(LOOP1), 115 ns max, and t(LOOP2), 135 ns max, at V(Rs) = 0 V. It differs only in what Rs high selects: sleep, driver and receiver off, against the '230's standby. A circuit with Rs at 0 V does not use that mode. The device table gives the SN65HVD231 -40 to 85 °C, which covers the board's 0 to 50 °C (V7). JLCPCB C129257: stockCount 9366, presale 9172, 1.1693 USD at 10 (vendors.py jlcpcb, 2026-09-28T17:54:20Z), which passes rules 1 to 4. It is therefore a rule-5 alternate in the same circuit. Digi-Key SN65HVD231DR: 0, Active (18:04:59Z), and SN65HVD230DR still 0 (18:02:11Z). The other statements in the reason hold."
+   }
+  ],
+  "missed_functions": [
+   {
+    "function": "Link terminator (the 120 Ohm at the IO board's end: fitted, switchable or external)",
+    "why": "hardware/docs/IOBoard.md:205 (Not known) names R2 for it: 'Whether the IO board's terminator is fitted, switchable or external: not stated in the tree. ... R2, and round 2'. IOBoard.md:176 requires 120 Ohm at the IO board's end. P2 returned no entry for it. The resistor and any switch are passives, which round 2 selects (Research.md Scope). R2's share is the choice among fitted, switchable and external, or a question to the owner, and P2 returned neither."
+   }
+  ]
+ }
+}

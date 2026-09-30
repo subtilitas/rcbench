@@ -1,0 +1,12 @@
+{
+ "role": "P4",
+ "category": "R9",
+ "label": "P4-stock-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "verifier": "stock",
+  "parts": [],
+  "figures": []
+ }
+}

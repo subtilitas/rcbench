@@ -1,0 +1,87 @@
+{
+ "role": "P3",
+ "category": "R9",
+ "label": "P3-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "missed": [
+   {
+    "function": "Cell monitor",
+    "part": "ADBMS6832MWCCSZ (LCSC C18166020), with ADBMS6832MWCCSZ-RL (C18168954) as the same die on a reel; ADBMS6833 is the 16-channel sibling",
+    "maker": "Analog Devices (S1)",
+    "why": "P2 recorded only the -RL row, and only as 'no datasheet read'. It has the most JLCPCB stock of any 16-cell-or-more monitor. JLCPCB API: C18166020 stockCount 136, canPresaleNumber 136, extended library, 7.1941 USD at 1, read 2026-09-28T15:31:33Z. C18168954 stockCount 6097, canPresaleNumber 6096, 6.2522 USD at 1, read 15:31:31Z. Both pass the rule 4 gate of 50 (5 boards x 1 placement). Datasheet: https://www.analog.com/media/en/technical-documentation/data-sheets/adbms6832-6833.pdf (safari client, HTTP 200, read 15:32:34Z). It is a 2-page short form, Rev. SpC. Published values: up to 18 cells in series (ADBMS6832) or 16 (ADBMS6833); measurement input range -2 V to +5.5 V; maximum lifetime TME ±1.8 mV at 3.3 V per cell, -40 to +125 °C; all cells measured simultaneously by two ADCs sampling at 4.096 MHz, which bears on V186 and V187; 'can be powered from the battery stack or an isolated supply', which bears on V181; built-in isoSPI at 2 Mbps; 300 mA balancing; 4 µA sleep. Not published, so not read: the lowest cell count (V181), the stack operating range at 67.2 V, the pin rating against 85 V (V188), the error at 4.2 V a cell (V183, V184), the reading period (V185), the per-pin current draw (V190), and whether it has a host SPI port or needs an isoSPI transceiver such as ADBMS6822 to reach the RP2354B. The page asks for the full data sheet through BMS_Doc_Request@analog.com, which is a question for the owner. Status: https://www.analog.com/en/products/adbms6832.html redirects to adbms6832m.html (read 15:32:28Z). That page shows 'RECOMMENDED FOR NEW DESIGNS' and lists ADBMS6832MWCCSZ and ADBMS6832MWCCSZ-RL as PRODUCTION. Its only change notice is PCN 24_0016, an additional probe site (Feb 27, 2024), not an end-of-life notice. Digi-Key API: productdetails for ADBMS6832MWCCSZ-RL and ADBMS6832MWCCSZ answered HTTP 404 (15:32:13Z, 15:32:14Z). The keyword search 'ADBMS6832' returned only EVAL-ADBMS6832MCS, 'Discontinued at DigiKey', stock 0 (15:32:21Z). So the lifecycle rule's Digi-Key ProductStatus is not read, and there is no second vendor. The second source can only be the other packaging row, which is pin-for-pin the same part. ADBMS6833 has no JLCPCB row: jlcpcb-search 'ADBMS6833' returned no results at 15:36:28Z (rule 1)."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "Discrete front end: INA149AIDR (C183089) difference amplifier x16, with ADS8588SIPMR (C575544) 8-channel simultaneous-sampling ADC x2",
+    "maker": "Texas Instruments (S1)",
+    "why": "P2 did not consider this family. It has no minimum cell count and samples every cell at once, so it meets V181, V186 and V187 by construction. INA149 datasheet SBOS579B (https://www.ti.com/lit/ds/symlink/ina149.pdf, read 2026-09-28T15:34:35Z): common-mode range ±275 V and input protection ±500 V common-mode and differential, which covers V188 and V191. It fails V183 (±6 mV per cell over 0 to 50 °C) on the datasheet limits without calibration. INA149: initial offset 1100 µV max; drift 15 µV/°C max; CMRR 90 dB min from -40 to +125 °C, about 2.1 mV at a 67 V common mode; gain error ±0.02 %FSR max. ADS8588S datasheet (https://www.ti.com/lit/ds/symlink/ads8588s.pdf, read 15:34:36Z), ±5 V range: gain error ±64 LSB max from -40 to +85 °C, about 8.2 mV at 4.2 V; offset error ±1.8 mV max. The ADC alone exceeds ±6 mV. The INA149's 200 kΩ common-mode input impedance also draws current from every balance-lead pin, unevenly (V190, not checked). Stock passes. INA149AIDR: 591 at JLCPCB, presale 540, read 15:36:56Z, against a gate of 400 (16 placements x 5 boards x 5). ADS8588SIPMR: 2068, presale 2042, read 15:36:57Z, against a gate of 50."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "LTC6806HLW#3ZZTRPBF (C689553), LTC6806 family",
+    "maker": "Analog Devices (S1)",
+    "why": "P2 did not record it. It is a 36-channel fuel cell monitor. Datasheet p. 1 (https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6806.pdf, safari client, read 2026-09-28T15:35:22Z): channel range ±5 V, cell stack -80 V to 150 V, total measurement error under 15 mV, all 36 inputs measured in 6.75 ms in fast mode. It fails V183 (±6 mV). It fails rule 4: JLCPCB stockCount 5, presale 4, read 15:31:47Z."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "ADES1830CCSZ (C22463734), ADES1831CCSZ (C37992838)",
+    "maker": "Analog Devices (S1)",
+    "why": "P2 did not record them. The jlcparts attributes give 16 cells. Both fail rule 4 at JLCPCB: stockCount 4, presale 4 (read 2026-09-28T15:31:44Z) and stockCount 5, presale 5 (15:31:45Z). Datasheets not read."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "BQ78706PAPR (C44295454), BQ78702BPAPR (C49262227)",
+    "maker": "Texas Instruments (S1)",
+    "why": "P2 did not record them. https://www.ti.com/product/BQ78706 (read 2026-09-28T15:35:38Z): 'Number of series cells (min) 9, (max) 14', ACTIVE. It misses 1 and 16 cells. JLCPCB: stockCount 10, canPresaleNumber -14 (15:31:42Z), which fails rule 4. BQ78702: https://www.ti.com/product/BQ78702 answered HTTP 404 at 15:35:38Z, so no value was read. JLCPCB stockCount 0, presale 0 (15:31:41Z), which fails rule 4."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "BQ79716BQPAPRQ1 (C52019727), BQ79718BQPAPRQ1 (C50341507), BQ79758QPAPRQ1 (C41921942), BQ7697202PFBR (C22466635)",
+    "maker": "Texas Instruments (S1)",
+    "why": "P2 did not record them. All fail rule 4 at JLCPCB: C52019727 stock 3, presale 3 (2026-09-28T15:31:48Z); C50341507 stock 1, presale -8 (15:31:50Z); C41921942 stock 0, presale 0 (15:31:51Z); C22466635 stock 0, presale 0 (15:31:53Z). Cell counts are from jlcparts attributes only: BQ79758 9 to 18, BQ76972 3 to 16. https://www.ti.com/product/BQ79716-Q1 and /BQ79718-Q1 answered HTTP 404 at 15:35:39Z."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "MAX17852ACB/V+ (C3681505), MAX17853ACB/V+ (C7451746), MAX17854ACB/V+ (C17448489), MC33775ATA1AE (C5353387)",
+    "maker": "Analog Devices (Maxim); NXP (S1)",
+    "why": "P2 did not record them. All fail rule 4 at JLCPCB: C3681505 stock 13, presale 13 (2026-09-28T15:36:41Z); C7451746 stock 0, presale 0 (15:36:44Z); C17448489 stock 0, presale 0 (15:36:43Z); C5353387 stock 0, presale 2 (15:36:46Z). The jlcparts attributes give MC33775A 4 to 14 cells. The MAX1785x datasheets were not read."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "TLE9018DQK (C9900248531), TLE9018DQU (C9900113220)",
+    "maker": "Infineon (S1)",
+    "why": "P2 did not record them. These are 18-channel monitors. JLCPCB lists them only on rows labelled 'JLCPCB Assembly', with stock 0 (jlcpcb-search 'TLE9018', read 2026-09-28T15:36:27Z). By rule 2 such a row is not a candidate, and no other LCSC row exists (rule 1). The datasheet was not read."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "ADBMS6832MWCCSZ-RL (C18168954)",
+    "reason_given": "no datasheet read: analog.com/.../adbms6832.pdf answered HTTP 404 at 2026-09-28T15:14:57Z",
+    "why_it_fails": "The datasheet exists under another name. https://www.analog.com/en/products/adbms6832.html redirects to adbms6832m.html, which links https://www.analog.com/media/en/technical-documentation/data-sheets/adbms6832-6833.pdf. That URL answered HTTP 200 at 2026-09-28T15:32:34Z (safari client) with a 2-page short form, Rev. SpC. The part also has the most JLCPCB stock of any 16-cell-or-more monitor: stockCount 6097, presale 6096, read 15:31:31Z. The drop now rests on values the short form leaves out: the lowest cell count (V181), the stack range at 67.2 V and the 85 V rating (V188). It is not qualified until the owner obtains the full data sheet; see the missed entry for ADBMS6832MWCCSZ."
+   },
+   {
+    "part": "ADBMS6830 (MWCCSZ C18166017, MWCCSZ-RL C18168951, MWCSWZ-RL C18171253, MSW-ENG C42946217)",
+    "reason_given": "requirement values not readable (2-page short form Rev. SpE); jlcparts stock 16 to 40 on the rows, under the gate of 50 in the 2026-09-14 copy",
+    "why_it_fails": "The stock half of the reason counts from jlcparts, and rule 3 forbids counting there. The drop stands on JLCPCB's API: C18166017 stockCount 0, presale 0 (2026-09-28T15:31:34Z); C18168951 15, presale 15 (15:31:36Z); C18171253 0, presale -1 (15:31:37Z); C42946217, an engineering-sample row, 10, presale 9 (15:31:39Z). All fail rule 4."
+   },
+   {
+    "part": "ADBMS6948WCCSZ (C18166021)",
+    "reason_given": "requirement values not readable: 2-page short form Rev. SpC 04/2025; jlcparts stock 0",
+    "why_it_fails": "The stock figure is from jlcparts, which rule 3 forbids for counting. The drop stands on JLCPCB's API: stockCount 0, canPresaleNumber 0, read 2026-09-28T15:31:58Z."
+   },
+   {
+    "part": "LTC6811-1/-2, LTC6804, LTC6803, LTC6801, LTC6810",
+    "reason_given": "12 cells or fewer (LTC6810 6) in the jlcparts attributes, misses 16; datasheets not read",
+    "why_it_fails": "Rule 3 takes every requirement value from the datasheet, not from jlcparts attributes. Re-read at the source, the drop stands for two families. LTC6811-1/-2 datasheet p. 1: 'Measures Up to 12 Battery Cells in Series' (https://www.analog.com/media/en/technical-documentation/data-sheets/LTC6811-1-6811-2.pdf, read 2026-09-28T15:35:18Z). LTC6810-1/-2 p. 1: 'Measures Up to 6 Battery Cells in Series' (…/LTC6810-1-6810-2.pdf, read 15:35:20Z). For LTC6804 and LTC6803 the drop still rests on jlcparts only: …/ltc6804-1-6804-2.pdf and …/LTC6803-1-6803-3.pdf answered HTTP 404 at 15:35:19Z and 15:35:21Z. LTC6801 was not re-read."
+   },
+   {
+    "part": "Shortlist ranks 1 to 5 (ADBMS1818ASWAZ-RL, ADBMS1818ASWZ-RL, ADBMS1818ASWAZ-R7, LTC6813HLWE-1#3ZZPBF, LTC6813HLWE-1#3ZZTRPBF)",
+    "reason_given": "passes every requirement (rank 1; ranks 2 to 5 by reference)",
+    "why_it_fails": "This is not a drop; it is P2's claim for its survivors. P2's requirement list leaves out four questions the owner marked 'for research (owner, 2026-09-28)' in Research.md at checkout c25aa863372d. V189 (line 749): the largest voltage between the ESC pack's negative at the balance lead and the IO board's ground, or else the isolation voltage. This decides whether an isoSPI transceiver or an isolator is part of the function. V190 (line 750): the largest current drawn from any one balance-lead pin, with the IO board powered and unpowered. The LTC6813 and ADBMS1818 draw their supply through V+ from the top of the stack unless the auxiliary supply takes it. V192 (line 752): the number of connectors and cells per connector. V193 (line 753): whether a jumper or adapter may set the cell count. No survivor has been checked against V189 or V190, so 'passes every requirement' is not established."
+   }
+  ],
+  "missed_functions": []
+ }
+}

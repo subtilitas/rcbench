@@ -1,0 +1,1247 @@
+{
+ "role": "P2",
+ "category": "R13",
+ "label": "P2-R13",
+ "attempt": 0,
+ "data": {
+  "category": "R13",
+  "found_values": [
+   {
+    "question_id": "V254",
+    "value": "A 5 V linear regulator of its own for the bridges, which also supplies the bridge ADC's analogue supply (AVDD), fed from the board's selected input bus (6.0 to 20 V, R5 row). Not the IO board's 5 V rail. The bridge is excited from the ADC's own 5 V analogue supply and the excitation sense lines go to the ADC's reference input, so the measurement is ratiometric: noise and drift of the excitation cancel. The 5 V rail carries the display's 1.5 A continuous and 2 A peak over the link cable, and its tolerance at the IO board's own loads is open (V100). The ADC's AVDD must stay within 4.75 to 5.25 V (ADS1235 and ADS1261 recommended operating conditions). A regulator of its own holds that whatever the rail does. The excitation load moves to the input bus: at most 57 mA (V255 plus the ADC's AVDD)",
+    "source": "ADS1235 datasheet SBAS824 (October 2018) section 9.2 Typical Application ('The excitation voltage provided to the bridge is the ADC power supply voltage (5 V) ... sense lines are connected to the reference inputs ... ratiometric operation that cancels noise and drift of the excitation voltage') and section 6.3 (AVDD 4.75 to 5.25 V), https://www.ti.com/lit/ds/symlink/ads1235.pdf; hardware/docs/IOBoard.md:338 and Research.md R5 row at checkout c25aa863372d; V100 (open, for research)",
+    "read_at": "2026-09-28T15:10:38Z (ADS1235 datasheet); checkout read 2026-09-28T15:03Z"
+   },
+   {
+    "question_id": "V255",
+    "value": "350 Ω ± 5 Ω input (excitation) resistance per cell, the same for the thrust cell and both torque cells. The lowest is 345 Ω. With 3 cells on one 5.0 V excitation: 14.5 mA a cell, 43.5 mA for the three. No load cell is named in the tree. The value is read from a strain-gauge S-type load cell of the class that covers the thrust range of V258: HT Sensor TAS501, 5 to 5000 kg, input resistance 350 ± 5 Ω, output resistance 350 ± 3 Ω. Tedea-Huntleigh Model 620 gives the same 2.0 mV/V class. A cell with a higher bridge resistance draws less",
+    "source": "HT Sensor TAS501 S-type load cell datasheet, Specifications table, https://cdn.sparkfun.com/assets/parts/1/2/2/3/8/TAS501.pdf; tree: no load cell named (grep of checkout c25aa863372d for load cell, thrust, torque, strain, bridge)",
+    "read_at": "2026-09-28T15:06:51Z"
+   },
+   {
+    "question_id": "V256",
+    "value": "2.0 mV/V for each of the 3 cells (TAS501: rated output 2.0 ± 0.005 mV/V; zero balance ±1.0 %FS). At the 5 V excitation of F3 that gives ±10.0 mV full scale per cell. The ADC must also take ±0.1 mV zero balance and 2 % over-range at 500 N on a 490.3 N cell: ±10.3 mV at most. Tedea-Huntleigh Model 620 (document 12059, 25-Jul-2012) also gives 2.0 mV/V",
+    "source": "TAS501 datasheet, Specifications table, https://cdn.sparkfun.com/assets/parts/1/2/2/3/8/TAS501.pdf; Tedea-Huntleigh Model 620 datasheet, https://intertechnology.com/Tedea_Huntleigh/pdfs/620.pdf; F3 (5 V excitation)",
+    "read_at": "2026-09-28T15:06:51Z (TAS501), 2026-09-28T15:06:52Z (Model 620)"
+   },
+   {
+    "question_id": "V257",
+    "value": "Thrust cell: 490.3 N (50 kg). This is the TAS501 capacity step that covers the ±500 N of V258 within its 150 %FS safe overload (735 N). Torque cells: not read. Each torque cell's capacity is the torque range divided by the lever arm between the two cells. The lever arm is mechanical, round 3, and not stated in the tree",
+    "source": "TAS501 datasheet (capacities 5 ... 50, 100 ... kg; safe overload 150 %FS), https://cdn.sparkfun.com/assets/parts/1/2/2/3/8/TAS501.pdf; V258",
+    "read_at": "2026-09-28T15:06:51Z"
+   },
+   {
+    "question_id": "V258",
+    "value": "Thrust −500 N to +500 N; torque −30 N·m to +30 N·m. No figure is in the tree. These are the published ranges of the commercial thrust stand whose electrical class matches this bench: the Tyto Robotics Flight Stand 50, up to 180 V and 300 A. The bench's external path is above 150 A to 300 A and more (owner, 2026-09-25), and its pack is 67.2 V (F15). The same maker's Series 1585, 50 V and 55 A, measures thrust and torque on 3 load cells, as F3 does. It gives −5 to +5 kgf and −2 to +2 N·m and is too small for this bench's currents",
+    "source": "Tyto Robotics Flight Stand 50 Datasheet, document FSFI50 V5.1 2026-08-10, Product Specifications (Thrust Range ±500 N, Torque Range ±30 Nm, Current up to 300 A, Voltage up to 180 V), https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf; Series 1585 Datasheet AFU3XH V2.4 2024-08-01 Table 1 and page 7, https://cdn.rcbenchmark.com/landing_pages/Manuals/Series%201585%20Datasheet.pdf",
+    "read_at": "2026-09-28T15:04:30Z"
+   },
+   {
+    "question_id": "V259",
+    "value": "Thrust cell: 0.05 N. Each torque cell: 1/10,000 of its capacity (Flight Stand 50: 0.003 N·m over ±30 N·m). In N this is not read, because the torque cells' capacity is not read (V257). Flight Stand 50 defines resolution as 3 times the standard deviation of the noise floor over 1 s at the full sample rate. On a 490.3 N, 2.0 mV/V cell at 5 V, 0.05 N is 1.02 µV at the ADC input. The bridge ADC's input-referred noise is therefore at most 0.34 µV RMS at the data rate it runs, at the output rate of V261",
+    "source": "Flight Stand 50 Datasheet FSFI50 V5.1, Product Specifications (Thrust Resolution 0.05 N, Torque Resolution 0.003 Nm) and Technical definitions (Resolution), https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf; V256, V257",
+    "read_at": "2026-09-28T15:04:30Z"
+   },
+   {
+    "question_id": "V260",
+    "value": "1.0 % of the cell's rated output, applied to every channel, over 0 to 50 °C (V264), after one calibration at one temperature. Flight Stand 50 Standard gives thrust ±5 N over ±500 N (1.0 %) and torque ±0.4 N·m over ±30 N·m (1.33 %). These are whole-system figures that include the cell and the calibration. The bridge ADC's and the excitation's gain and offset drift over 0 to 50 °C are held to the tighter 1.0 %. With ratiometric measurement (V254) the excitation's gain error and drift cancel",
+    "source": "Flight Stand 50 Datasheet FSFI50 V5.1, Product Specifications (Thrust Accuracy ±5 N Standard; Torque Accuracy ±0.4 Nm Standard) and Technical definitions (Accuracy), https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf",
+    "read_at": "2026-09-28T15:04:30Z"
+   },
+   {
+    "question_id": "V261",
+    "value": "100 samples per second per channel, on each of the 3 channels: the Flight Stand 50 Standard sampling rate. The Pro version samples at 1,000 Hz. The Series 1585 samples at up to 80 Hz. The coprocessor samples the bench numbers every 20 ms (50 Hz) (IOBoard.md:431, firmware/iomcu/src/main.c:1011-1016), and 100 SPS gives each 20 ms sample a fresh reading",
+    "source": "Flight Stand 50 Datasheet FSFI50 V5.1 (Sampling rate 100 Hz Standard, 1,000 Hz Pro), https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf; Series 1585 Datasheet page 2 (up to ~80 Hz); firmware/iomcu/src/main.c:1011-1016 at checkout c25aa863372d",
+    "read_at": "2026-09-28T15:04:30Z"
+   },
+   {
+    "question_id": "V262",
+    "value": "One multiplexed converter may read the 3 channels in turn. The 3 readings of one set, the thrust cell and both torque cells, are taken within 10 ms, one output period at the 100 SPS of V261. Conversion at one instant is not required. The source is a derivation: V261 fixes one set every 10 ms. Neither the tree nor the Flight Stand 50 datasheet requires simultaneous conversion",
+    "source": "derived from V261; Flight Stand 50 Datasheet FSFI50 V5.1 (one sampling rate for the thrust and torque set), https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf",
+    "read_at": "2026-09-28T15:04:30Z"
+   },
+   {
+    "question_id": "V263",
+    "value": "4 wires: excitation + and −, signal + and −. TAS501: 4-core shielded PVC cable, 5 mm, 3 m. The board senses the reference at its own excitation terminals. A 6-wire cell, such as Tedea-Huntleigh Model 620 with its 2 sense wires, connects with its sense leads joined to its excitation leads at the connector. One reference input serves all 3 cells, because they share one excitation (V254)",
+    "source": "TAS501 datasheet (Electrical connection: 4 core shielded PVC cable, excitation(+) red, excitation(−) black, signal(+) green, signal(−) white), https://cdn.sparkfun.com/assets/parts/1/2/2/3/8/TAS501.pdf; Tedea-Huntleigh Model 620 datasheet (6-wire cable, sense circuit), https://intertechnology.com/Tedea_Huntleigh/pdfs/620.pdf",
+    "read_at": "2026-09-28T15:06:51Z (TAS501), 2026-09-28T15:06:52Z (Model 620)"
+   },
+   {
+    "question_id": "V264",
+    "value": "0 to 50 °C ambient. V7's answer sets one range for the whole IO board: '0 to 50 °C ambient, one range for the whole IO board (owner, 2026-09-28)'. For the stand itself, the TAS501 compensates −20 to +55 °C and operates −10 to +40 °C, and Flight Stand 50 operates 0 to 40 °C",
+    "source": "Research.md, Raised by P1, V7 Answer column, at checkout c25aa863372d; TAS501 datasheet (operating −10 to +40 °C, compensated −20 to +55 °C), https://cdn.sparkfun.com/assets/parts/1/2/2/3/8/TAS501.pdf",
+    "read_at": "2026-09-28T15:03Z (checkout), 2026-09-28T15:06:51Z (TAS501)"
+   },
+   {
+    "question_id": "V265",
+    "value": "20 ms from a step in thrust or torque to a fully settled reading on that channel. This is the coprocessor's sampling period of the bench numbers, 20 ms (50 Hz), so a step is settled by the next bench sample after the one it lands in. For a converter reading 3 channels in turn: one full channel cycle, at most 10 ms by V262, plus one settled conversion of that channel",
+    "source": "hardware/docs/IOBoard.md:431 and firmware/iomcu/src/main.c:1011-1016 ('if ((uint32_t)(now - last_sample) >= 20u) { sample(); ...') at checkout c25aa863372d; derivation with V261 and V262",
+    "read_at": "2026-09-28T15:21Z (checkout read)"
+   }
+  ],
+  "functions": [
+   {
+    "function": "load-cell bridge ADC",
+    "requirements": [
+     {
+      "name": "channels",
+      "value": "3 differential bridge inputs: thrust, and torque on 2 cells, on one part or spread over several",
+      "source": "F3"
+     },
+     {
+      "name": "differential input range",
+      "value": "bipolar ±10.3 mV per channel: 2.0 mV/V × 5.0 V = ±10.0 mV, plus zero balance ±1 %FS, plus 2 % over-range at 500 N on a 490.3 N cell",
+      "source": "V256, V257, V258, F3"
+     },
+     {
+      "name": "input common mode",
+      "value": "2.5 V, half the 5.0 V excitation, inside the PGA's linear input range at the gain used, with AVDD at 4.75 V",
+      "source": "F3, V254"
+     },
+     {
+      "name": "ratiometric reference input",
+      "value": "a differential reference input that takes the 5.0 V excitation (VREF up to 5.25 V)",
+      "source": "V254, V260"
+     },
+     {
+      "name": "analogue supply",
+      "value": "operates from the 5.0 V excitation regulator: 4.75 to 5.25 V inside the AVDD range",
+      "source": "V254"
+     },
+     {
+      "name": "digital supply and logic",
+      "value": "digital supply and I/O at 3.3 V, so every line to an RP2354B pin is 3.3 V logic",
+      "source": "hardware/docs/IOBoard.md:54"
+     },
+     {
+      "name": "input-referred noise",
+      "value": "at most 0.34 µV RMS at the data rate that meets the output rate (3σ of 1.02 µV = 0.05 N on a 490.3 N, 10.0 mV cell)",
+      "source": "V259, V256, V257"
+     },
+     {
+      "name": "output rate per channel",
+      "value": "at least 100 SPS on each of the 3 channels, including multiplexer settling",
+      "source": "V261"
+     },
+     {
+      "name": "channel skew",
+      "value": "the 3 readings of one set within 10 ms",
+      "source": "V262"
+     },
+     {
+      "name": "step settling",
+      "value": "a step settled on its channel within 20 ms",
+      "source": "V265"
+     },
+     {
+      "name": "temperature drift",
+      "value": "gain and offset drift over 0 to 50 °C (±25 K from a 25 °C calibration) within 1.0 % of the 10.0 mV rated output",
+      "source": "V260, V264"
+     },
+     {
+      "name": "operating temperature",
+      "value": "covers 0 to 50 °C ambient",
+      "source": "V264 (V7)"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "ADS1235IRHBR",
+      "maker": "Texas Instruments (datasheet SBAS824); S1 Texas Instruments",
+      "lcsc": "C2669975",
+      "package": "VQFN-32 (RHB) 5 × 5 mm",
+      "placements": 1,
+      "placements_basis": "range 1 to 1: 3 differential inputs on one part carry the 3 channels of F3; the specification fixes the channels, not the part count",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channels",
+        "required": "3 differential",
+        "datasheet": "three differential or five single-ended inputs (page 1; pins 25 to 30 AIN0 to AIN5)",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf read 2026-09-28T15:10:38Z"
+       },
+       {
+        "name": "differential input range",
+        "required": "±10.3 mV",
+        "datasheet": "±VREF/Gain = ±39 mV at gain 128, VREF 5 V (Table 3)",
+        "pass": true,
+        "source": "ads1235.pdf section 8.3"
+       },
+       {
+        "name": "input common mode",
+        "required": "2.5 V inside PGA range at AVDD 4.75 V",
+        "datasheet": "Equation 3: AVSS + 0.3 V + VIN·31/2 to AVDD − 0.3 V − VIN·31/2 = 0.46 to 4.29 V at 10.3 mV",
+        "pass": true,
+        "source": "ads1235.pdf Equation 3"
+       },
+       {
+        "name": "ratiometric reference input",
+        "required": "takes 5.0 V",
+        "datasheet": "VREF 0.9 V to AVDD − AVSS; REFP up to AVDD + 0.05 V; 2 reference inputs (section 6.3)",
+        "pass": true,
+        "source": "ads1235.pdf 6.3"
+       },
+       {
+        "name": "analogue supply",
+        "required": "4.75 to 5.25 V",
+        "datasheet": "AVDD − AVSS 4.75 to 5.25 V; IAVDD 6.5 mA max at gain 64/128",
+        "pass": true,
+        "source": "ads1235.pdf 6.3, 6.5"
+       },
+       {
+        "name": "digital supply and logic",
+        "required": "3.3 V",
+        "datasheet": "DVDD 2.7 to 5.25 V; VIH 0.7·DVDD",
+        "pass": true,
+        "source": "ads1235.pdf 6.3, 6.5"
+       },
+       {
+        "name": "input-referred noise",
+        "required": "≤ 0.34 µV RMS",
+        "datasheet": "0.13 µV RMS at 1200 SPS sinc3, gain 128, VREF 5 V (Table 1)",
+        "pass": true,
+        "source": "ads1235.pdf Table 1"
+       },
+       {
+        "name": "output rate per channel",
+        "required": "≥ 100 SPS × 3",
+        "datasheet": "conversion latency 2.925 ms at 1200 SPS sinc3, single-cycle settled (Table 6): 3 channels in 8.78 ms, 114 SPS a channel",
+        "pass": true,
+        "source": "ads1235.pdf Table 6"
+       },
+       {
+        "name": "channel skew",
+        "required": "≤ 10 ms",
+        "datasheet": "8.78 ms for the set",
+        "pass": true,
+        "source": "ads1235.pdf Table 6"
+       },
+       {
+        "name": "step settling",
+        "required": "≤ 20 ms",
+        "datasheet": "≤ 8.78 + 8.78 = 17.6 ms (one partial cycle, one settled cycle)",
+        "pass": true,
+        "source": "ads1235.pdf Table 6"
+       },
+       {
+        "name": "temperature drift",
+        "required": "≤ 1.0 % of 10 mV over ±25 K",
+        "datasheet": "offset drift 50 nV/°C max (gain 64/128), gain drift 4 ppm/°C max: 0.0125 % + 0.01 %",
+        "pass": true,
+        "source": "ads1235.pdf 6.5"
+       },
+       {
+        "name": "operating temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "−40 to +125 °C",
+        "pass": true,
+        "source": "ads1235.pdf 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 1340, canPresaleNumber 1220, componentLibraryType expand, 10.0473 USD each at 5 (break 1 to 9); read 2026-09-28T15:16:55Z, vendors.py jlcpcb C2669975 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact match)",
+      "digikey": "ADS1235IRHBR: stock_available 0, lead_weeks 16, status Active; read 2026-09-28T15:17:18Z, vendors.py digikey ADS1235IRHBR (https://api.digikey.com/products/v4/search/ADS1235IRHBR/productdetails). ADS1235IRHBT: stock_available 405, lead_weeks 16, Active; read 2026-09-28T15:17:27Z",
+      "gate": "need 5 × 1 = 5; threshold max(5 × 5, 50) = 50; stock 1340 ≥ 50 and presale 1220 ≥ 0: pass (rule 4)",
+      "lifecycle": "manufacturer status ACTIVE (www.ti.com/product/ADS1235 meta status, and orderable ADS1235IRHBR marketingStatusDescription ACTIVE, read 2026-09-28T15:19:43Z); longevity: not read; first datasheet SBAS824 October 2018, initial release, over 12 months on the market; PCN listing: not read; distributor: Digi-Key ProductStatus Active (15:17:18Z), JLCPCB lists it with stock (15:16:55Z), LCSC page not read",
+      "second_source": "second-vendor: ADS1235IRHBT at Digi-Key, 405 ≥ 50 (2026-09-28T15:17:27Z). It is the same device on a 250-unit small reel where IRHBR is a 3000-unit large reel (TI product page orderables, read 2026-09-28T15:19:43Z). ADS1235IRHBR itself has 0 at Digi-Key. No pin-compatible alternate with the same register map was found: the ADS1261 has a different pin order and multiplexer codes",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "The only allowlisted part found with exactly 3 differential inputs, 5 V ratiometric reference and single-cycle settling, on 1 placement. 0.13 µV RMS noise against the 0.34 µV limit. Chop and AC excitation are available for drift. JLCPCB stock covers the gate 26 times. The second vendor has only the small-reel orderable",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "ADS1261IRHBR",
+      "maker": "Texas Instruments (datasheet SBAS760C); S1 Texas Instruments",
+      "lcsc": "C2669985",
+      "package": "VQFN-32 (RHB) 5 × 5 mm",
+      "placements": 1,
+      "placements_basis": "range 1 to 1: 10 analog inputs (5 differential) carry the 3 channels on one part",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channels",
+        "required": "3 differential",
+        "datasheet": "AIN0 to AIN9 and AINCOM; 5 differential; 4 left with the reference on AIN0/AIN1 (REFP0/REFN0)",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/ads1261.pdf read 2026-09-28T15:10:39Z, Pin Functions"
+       },
+       {
+        "name": "differential input range",
+        "required": "±10.3 mV",
+        "datasheet": "±VREF/Gain = ±39 mV at gain 128, VREF 5 V",
+        "pass": true,
+        "source": "ads1261.pdf 7.3"
+       },
+       {
+        "name": "input common mode",
+        "required": "2.5 V",
+        "datasheet": "Equation 5 (as ADS1235): 0.46 to 4.29 V at 10.3 mV, AVDD 4.75 V",
+        "pass": true,
+        "source": "ads1261.pdf Equation 5"
+       },
+       {
+        "name": "ratiometric reference input",
+        "required": "takes 5.0 V",
+        "datasheet": "VREF 0.9 V to AVDD − AVSS; REFP up to AVDD + 0.05 V",
+        "pass": true,
+        "source": "ads1261.pdf 7.3"
+       },
+       {
+        "name": "analogue supply",
+        "required": "4.75 to 5.25 V",
+        "datasheet": "AVDD − AVSS 4.75 to 5.25 V; IAVDD 6.5 mA max at gain 64/128",
+        "pass": true,
+        "source": "ads1261.pdf 7.3, 7.5"
+       },
+       {
+        "name": "digital supply and logic",
+        "required": "3.3 V",
+        "datasheet": "DVDD 2.7 to 5.25 V",
+        "pass": true,
+        "source": "ads1261.pdf 7.3"
+       },
+       {
+        "name": "input-referred noise",
+        "required": "≤ 0.34 µV RMS",
+        "datasheet": "0.14 µV RMS at 1200 SPS sinc3, gain 128 (Table 1, internal 2.5 V reference)",
+        "pass": true,
+        "source": "ads1261.pdf Table 1"
+       },
+       {
+        "name": "output rate per channel",
+        "required": "≥ 100 SPS × 3",
+        "datasheet": "latency 2.925 ms at 1200 SPS sinc3 (Table 8): 114 SPS a channel",
+        "pass": true,
+        "source": "ads1261.pdf Table 8"
+       },
+       {
+        "name": "channel skew",
+        "required": "≤ 10 ms",
+        "datasheet": "8.78 ms",
+        "pass": true,
+        "source": "ads1261.pdf Table 8"
+       },
+       {
+        "name": "step settling",
+        "required": "≤ 20 ms",
+        "datasheet": "≤ 17.6 ms",
+        "pass": true,
+        "source": "ads1261.pdf Table 8"
+       },
+       {
+        "name": "temperature drift",
+        "required": "≤ 1.0 %",
+        "datasheet": "offset drift 50 nV/°C max (gain 16 to 128), gain drift 4 ppm/°C max",
+        "pass": true,
+        "source": "ads1261.pdf 7.5"
+       },
+       {
+        "name": "operating temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "−45 to +125 °C",
+        "pass": true,
+        "source": "ads1261.pdf 7.3"
+       }
+      ],
+      "jlcpcb": "stockCount 414, canPresaleNumber 406, expand, 16.0932 USD at 5; read 2026-09-28T15:16:55Z, vendors.py jlcpcb C2669985",
+      "digikey": "stock_available 4090, lead_weeks 16, status Active; read 2026-09-28T15:17:28Z, vendors.py digikey ADS1261IRHBR",
+      "gate": "need 5; threshold 50; 414 ≥ 50, presale 406 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE (www.ti.com/product/ADS1261 meta status, read 2026-09-28T15:19:43Z); longevity: not read; first datasheet SBAS760 March 2018 (revision C January 2019); PCN: not read; Digi-Key Active; LCSC page not read",
+      "second_source": "second-vendor: ADS1261IRHBR at Digi-Key 4090 ≥ 50 (2026-09-28T15:17:28Z)",
+      "alternates": [
+       "ADS1260BIRHBR (same datasheet, 3 differential inputs, fewer pins; JLCPCB C2669938 stock 79 at 15:16:55Z; not qualified further)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Meets every figure on 1 placement with the same filter and latency as rank 1. It costs 60 % more at JLCPCB (16.09 against 10.05 USD) and has less JLCPCB stock (414). It has the strongest second-vendor stock of the one-placement parts",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "AD7190BRUZ-REEL",
+      "maker": "Analog Devices (datasheet AD7190 Rev. C); S1 Analog Devices",
+      "lcsc": "C19566",
+      "package": "TSSOP-24",
+      "placements": 2,
+      "placements_basis": "range 2 to 2: 2 differential inputs a part; 3 channels need 2 parts (2 + 1)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channels",
+        "required": "3 differential",
+        "datasheet": "2 differential or 4 pseudo-differential a part; 2 parts give 4",
+        "pass": true,
+        "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/AD7190.pdf read 2026-09-28T15:13:20Z (safari), page 1"
+       },
+       {
+        "name": "differential input range",
+        "required": "±10.3 mV",
+        "datasheet": "±VREF/gain = ±39 mV at gain 128, REFIN = AVDD",
+        "pass": true,
+        "source": "AD7190.pdf Specifications"
+       },
+       {
+        "name": "input common mode",
+        "required": "2.5 V",
+        "datasheet": "buffered AIN AGND + 250 mV to AVDD − 250 mV",
+        "pass": true,
+        "source": "AD7190.pdf Specifications"
+       },
+       {
+        "name": "ratiometric reference input",
+        "required": "takes 5.0 V",
+        "datasheet": "REFIN 1 V to AVDD; absolute to AVDD + 50 mV",
+        "pass": true,
+        "source": "AD7190.pdf Specifications"
+       },
+       {
+        "name": "analogue supply",
+        "required": "4.75 to 5.25 V",
+        "datasheet": "AVDD 4.75 to 5.25 V; AIDD 6.75 mA max, gain 16 to 128, buffer on",
+        "pass": true,
+        "source": "AD7190.pdf Specifications"
+       },
+       {
+        "name": "digital supply and logic",
+        "required": "3.3 V",
+        "datasheet": "DVDD 2.7 to 5.25 V",
+        "pass": true,
+        "source": "AD7190.pdf Specifications"
+       },
+       {
+        "name": "input-referred noise",
+        "required": "≤ 0.34 µV RMS",
+        "datasheet": "121 nV RMS at 960 Hz sinc4 chop off, gain 128 (Table 6)",
+        "pass": true,
+        "source": "AD7190.pdf Table 6"
+       },
+       {
+        "name": "output rate per channel",
+        "required": "≥ 100 SPS × 3",
+        "datasheet": "settling 4.17 ms a channel at FS = 5 (Table 6): 2 channels a part in 8.33 ms, 120 SPS a channel",
+        "pass": true,
+        "source": "AD7190.pdf Table 6"
+       },
+       {
+        "name": "channel skew",
+        "required": "≤ 10 ms",
+        "datasheet": "8.33 ms within a part; the parts are started together",
+        "pass": true,
+        "source": "AD7190.pdf Table 6"
+       },
+       {
+        "name": "step settling",
+        "required": "≤ 20 ms",
+        "datasheet": "≤ 16.7 ms",
+        "pass": true,
+        "source": "AD7190.pdf Table 6"
+       },
+       {
+        "name": "temperature drift",
+        "required": "≤ 1.0 %",
+        "datasheet": "offset drift 5 nV/°C, gain drift 1 ppm/°C, typical only (page 1, Specifications)",
+        "pass": true,
+        "source": "AD7190.pdf"
+       },
+       {
+        "name": "operating temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "−40 to +105 °C",
+        "pass": true,
+        "source": "AD7190.pdf"
+       }
+      ],
+      "jlcpcb": "stockCount 8059, canPresaleNumber 7881, expand, 9.7615 USD each at 10 (break 10 to 29); read 2026-09-28T15:16:56Z, vendors.py jlcpcb C19566",
+      "digikey": "stock_available 2389 (cut tape), lead_weeks 21, status Active; read 2026-09-28T15:17:30Z, vendors.py digikey AD7190BRUZ-REEL",
+      "gate": "need 5 × 2 = 10; threshold max(50, 50) = 50; 8059 ≥ 50, presale 7881 ≥ 0: pass",
+      "lifecycle": "manufacturer status: Digi-Key ProductStatus Active, recorded as a distributor figure (Analog Devices, owner 2026-09-27), read 2026-09-28T15:17:30Z; longevity: not read; first datasheet Revision 0 10/08, current Rev. C 2/13; PCN: not read; JLCPCB lists it with stock; LCSC page not read",
+      "second_source": "second-vendor: Digi-Key 2389 ≥ 50 (15:17:30Z). The alternate AD7192BRUZ-REEL also passes rules 1 to 4: same 24-pin assignment (pin tables of both datasheets) and the same register addresses and reset values except the ID register (0xX4 against 0xX0)",
+      "alternates": [
+       "AD7192BRUZ-REEL"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Lowest noise of the shortlist (121 nV RMS at 960 Hz), but 2 placements, twice the AVDD current (13.5 mA for two) and 2 SPI chip selects. A pin-compatible alternate exists",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 4,
+      "part": "AD7192BRUZ-REEL",
+      "maker": "Analog Devices (datasheet AD7192 Rev. A); S1 Analog Devices",
+      "lcsc": "C392902",
+      "package": "TSSOP-24",
+      "placements": 2,
+      "placements_basis": "range 2 to 2: 2 differential inputs a part",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channels",
+        "required": "3 differential",
+        "datasheet": "2 differential or 4 pseudo-differential a part",
+        "pass": true,
+        "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/AD7192.pdf read 2026-09-28T15:13:23Z"
+       },
+       {
+        "name": "differential input range",
+        "required": "±10.3 mV",
+        "datasheet": "±VREF/gain = ±39 mV at gain 128",
+        "pass": true,
+        "source": "AD7192.pdf"
+       },
+       {
+        "name": "input common mode",
+        "required": "2.5 V",
+        "datasheet": "unbuffered AGND − 50 mV to AVDD + 50 mV; buffered narrower by 250 mV",
+        "pass": true,
+        "source": "AD7192.pdf Specifications"
+       },
+       {
+        "name": "ratiometric reference input",
+        "required": "takes 5.0 V",
+        "datasheet": "REFIN 1 V to AVDD",
+        "pass": true,
+        "source": "AD7192.pdf Specifications"
+       },
+       {
+        "name": "analogue supply",
+        "required": "4.75 to 5.25 V",
+        "datasheet": "AVDD 3 to 5.25 V; AIDD 5 mA max, gain 16 to 128, buffer on",
+        "pass": true,
+        "source": "AD7192.pdf Specifications"
+       },
+       {
+        "name": "digital supply and logic",
+        "required": "3.3 V",
+        "datasheet": "DVDD 2.7 to 5.25 V",
+        "pass": true,
+        "source": "AD7192.pdf"
+       },
+       {
+        "name": "input-referred noise",
+        "required": "≤ 0.34 µV RMS",
+        "datasheet": "145 nV RMS at 960 Hz sinc4 chop off, gain 128 (Table 6)",
+        "pass": true,
+        "source": "AD7192.pdf Table 6"
+       },
+       {
+        "name": "output rate per channel",
+        "required": "≥ 100 SPS × 3",
+        "datasheet": "settling 4.17 ms a channel: 120 SPS a channel, 2 a part",
+        "pass": true,
+        "source": "AD7192.pdf Table 6"
+       },
+       {
+        "name": "channel skew",
+        "required": "≤ 10 ms",
+        "datasheet": "8.33 ms",
+        "pass": true,
+        "source": "AD7192.pdf Table 6"
+       },
+       {
+        "name": "step settling",
+        "required": "≤ 20 ms",
+        "datasheet": "≤ 16.7 ms",
+        "pass": true,
+        "source": "AD7192.pdf Table 6"
+       },
+       {
+        "name": "temperature drift",
+        "required": "≤ 1.0 %",
+        "datasheet": "offset drift 5 nV/°C, gain drift 1 ppm/°C, typical",
+        "pass": true,
+        "source": "AD7192.pdf"
+       },
+       {
+        "name": "operating temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "−40 to +105 °C",
+        "pass": true,
+        "source": "AD7192.pdf"
+       }
+      ],
+      "jlcpcb": "stockCount 4970, canPresaleNumber 4679, expand, 10.2942 USD at 10; read 2026-09-28T15:16:58Z, vendors.py jlcpcb C392902",
+      "digikey": "stock_available 4193, lead_weeks 21, status Active; read 2026-09-28T15:17:35Z, vendors.py digikey AD7192BRUZ-REEL",
+      "gate": "need 10; threshold 50; 4970 ≥ 50, presale 4679 ≥ 0: pass",
+      "lifecycle": "Digi-Key ProductStatus Active (distributor figure, Analog Devices rule), 2026-09-28T15:17:35Z; longevity: not read; first datasheet Revision 0 5/09, current Rev. A; PCN: not read; LCSC page not read",
+      "second_source": "second-vendor: Digi-Key 4193 ≥ 50 (15:17:35Z); also the pin-compatible AD7190BRUZ-REEL (rank 3)",
+      "alternates": [
+       "AD7190BRUZ-REEL"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Stands in for rank 3 in the same footprint and register map with 20 % more noise (145 nV). 2 placements",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "ADS1220IPWR",
+      "maker": "Texas Instruments (datasheet SBAS501D); S1 Texas Instruments",
+      "lcsc": "C48263",
+      "package": "TSSOP-16",
+      "placements": 3,
+      "placements_basis": "range 2 to 3: 2 differential inputs a part. 2 parts sharing 2 channels need 330 SPS at 0.34 µV RMS, the limit with no margin. 3 parts, 1 channel each at 175 SPS, meet every figure. The gate is applied at 3",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channels",
+        "required": "3 differential",
+        "datasheet": "2 differential or 4 single-ended a part; 1 used on each of 3 parts",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/ads1220.pdf read 2026-09-28T15:10:41Z"
+       },
+       {
+        "name": "differential input range",
+        "required": "±10.3 mV",
+        "datasheet": "±VREF/Gain = ±39 mV at gain 128, VREF 5 V",
+        "pass": true,
+        "source": "ads1220.pdf 6.3"
+       },
+       {
+        "name": "input common mode",
+        "required": "2.5 V",
+        "datasheet": "Equations 12 to 14: max(AVSS + 0.2 V + ½·128·10.3 mV, AVDD/4) = 1.19 V to AVDD − 0.86 V = 3.89 V at AVDD 4.75 V",
+        "pass": true,
+        "source": "ads1220.pdf section 8.3.2"
+       },
+       {
+        "name": "ratiometric reference input",
+        "required": "takes 5.0 V",
+        "datasheet": "VREF 0.75 V to AVDD − AVSS; REFP up to AVDD + 0.1 V",
+        "pass": true,
+        "source": "ads1220.pdf 6.3"
+       },
+       {
+        "name": "analogue supply",
+        "required": "4.75 to 5.25 V",
+        "datasheet": "AVDD 2.3 to 5.5 V; IAVDD 510 µA typical at gain 64/128, maximum not stated for that gain",
+        "pass": true,
+        "source": "ads1220.pdf 6.3, 6.5"
+       },
+       {
+        "name": "digital supply and logic",
+        "required": "3.3 V",
+        "datasheet": "DVDD 2.3 to 5.5 V",
+        "pass": true,
+        "source": "ads1220.pdf 6.3"
+       },
+       {
+        "name": "input-referred noise",
+        "required": "≤ 0.34 µV RMS",
+        "datasheet": "0.26 µV RMS at 175 SPS normal mode, gain 128 (Table 7-1, AVDD 3.3 V, internal 2.048 V reference; the text says an external reference changes it only marginally)",
+        "pass": true,
+        "source": "ads1220.pdf Table 7-1"
+       },
+       {
+        "name": "output rate per channel",
+        "required": "≥ 100 SPS × 3",
+        "datasheet": "175 SPS on each part, single-cycle settling filter",
+        "pass": true,
+        "source": "ads1220.pdf 7.1, 8.x"
+       },
+       {
+        "name": "channel skew",
+        "required": "≤ 10 ms",
+        "datasheet": "one period, 5.7 ms, with the 3 parts started together",
+        "pass": true,
+        "source": "ads1220.pdf"
+       },
+       {
+        "name": "step settling",
+        "required": "≤ 20 ms",
+        "datasheet": "≤ 2 × 5.7 = 11.4 ms",
+        "pass": true,
+        "source": "ads1220.pdf"
+       },
+       {
+        "name": "temperature drift",
+        "required": "≤ 1.0 %",
+        "datasheet": "offset drift 0.3 µV/°C max (−40 to +85 °C), gain drift 4 ppm/°C max: 0.075 % + 0.01 % over ±25 K",
+        "pass": true,
+        "source": "ads1220.pdf 6.5"
+       },
+       {
+        "name": "operating temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "−40 to +125 °C",
+        "pass": true,
+        "source": "ads1220.pdf 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 16905, canPresaleNumber 16491, expand, 2.1258 USD each at 15 (break 10 to 29); read 2026-09-28T15:16:56Z, vendors.py jlcpcb C48263",
+      "digikey": "stock_available 660 (cut tape), lead_weeks 16, status Active; read 2026-09-28T15:17:33Z, vendors.py digikey ADS1220IPWR",
+      "gate": "need 5 × 3 = 15; threshold max(75, 50) = 75; 16905 ≥ 75, presale 16491 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE (www.ti.com/product/ADS1220 meta status, read 2026-09-28T15:19:44Z; datasheet package addendum lists ADS1220IPWR Active, Production); longevity: not read; first datasheet SBAS501 May 2013, revision D May 2026; PCN: not read; Digi-Key Active; LCSC page not read",
+      "second_source": "second-vendor: Digi-Key 660 ≥ 75 (15:17:33Z)",
+      "alternates": [
+       "ADS1220IRVAR (VQFN-16, a different footprint; not pin-compatible)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Cheapest per board (3 × 2.13 USD) with the deepest JLCPCB stock. It passes only at 3 placements with 0.08 µV of noise margin, and takes 3 chip selects and 3 data-ready lines",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "ADS1232IPWR",
+      "maker": "Texas Instruments",
+      "reason": "output rate: data rates 10 and 80 SPS only, below 100 SPS a channel (V261) even on one channel a part. JLCPCB C27919 stock 3676 (15:16:58Z)"
+     },
+     {
+      "part": "ADS1234IPWR",
+      "maker": "Texas Instruments",
+      "reason": "output rate: the same 10 and 80 SPS core as ADS1232 (one datasheet), below 100 SPS a channel. JLCPCB C914116 stock 330"
+     },
+     {
+      "part": "AD7124-4BCPZ-RL7",
+      "maker": "Analog Devices",
+      "reason": "ratiometric reference and analogue supply: AVDD 2.9 to 3.6 V (full power) and external REFIN at most AVDD, so it cannot take the 5.0 V excitation (V254) as supply or reference (AD7124-4 Rev. E Specifications, https://www.analog.com/media/en/technical-documentation/data-sheets/AD7124-4.pdf read 2026-09-28T15:13:16Z)"
+     },
+     {
+      "part": "AD7124-8BCPZ-RL7",
+      "maker": "Analog Devices",
+      "reason": "same AVDD 2.9 to 3.6 V family as AD7124-4 (by the family's specification); AVDD not read in its own datasheet"
+     },
+     {
+      "part": "ADS124S08IPBSR",
+      "maker": "Texas Instruments",
+      "reason": "noise at the rate one part needs: low-latency filter, gain 128, 400 SPS gives 0.39 µV RMS (Table 3, SBAS660C), above 0.34 µV. 200 SPS gives 0.28 µV but its latency leaves under 100 SPS a channel for 3 channels. It passes only as 3 placements of a 12-input part and is not recorded among the five"
+     },
+     {
+      "part": "ADS124S06IPBSR",
+      "maker": "Texas Instruments",
+      "reason": "same core and noise tables as ADS124S08 (one datasheet): same finding"
+     },
+     {
+      "part": "AD7799BRUZ-REEL",
+      "maker": "Analog Devices",
+      "reason": "noise at 470 Hz, gain 128: 0.374 µV RMS (Table 7, 2.5 V reference) above 0.34 µV. 242 Hz gives 0.308 µV but not 3 channels a part in 10 ms. It passes only as 3 placements and is not recorded among the five (AD7798_7799.pdf Rev. B read 2026-09-28T15:13:41Z)"
+     },
+     {
+      "part": "ADS1260BIRHBR",
+      "maker": "Texas Instruments",
+      "reason": "not a requirement miss: same datasheet as ADS1261 with 3 differential inputs; JLCPCB C2669938 stock 79, presale 78 (15:16:55Z), just above the gate of 50; not recorded beyond five"
+     },
+     {
+      "part": "AD7730BRZ-REEL",
+      "maker": "Analog Devices",
+      "reason": "not qualified: datasheet not read (analog.com returned HTTP 404 for ad7730.pdf and AD7730.pdf at 2026-09-28T15:13:32Z and 15:13:43Z)"
+     },
+     {
+      "part": "AD7195BCPZ-RL7",
+      "maker": "Analog Devices",
+      "reason": "not qualified: datasheet read (15:13:26Z) shows the AD7190 core with AC excitation that needs an external H-bridge; not evaluated further"
+     },
+     {
+      "part": "ADS131M04IPWR and ADS131M0x family",
+      "maker": "Texas Instruments",
+      "reason": "not qualified: datasheet not read in this task; JLCPCB listing gives a 3.3 V class analogue supply, which would fail the 5 V ratiometric requirement if the datasheet confirms it"
+     },
+     {
+      "part": "MCP3564-E/ST and MCP356x family",
+      "maker": "Microchip",
+      "reason": "not qualified: datasheet not read; the JLCPCB listing gives AVDD 2.7 to 3.6 V, which would fail the 5 V reference and supply requirements"
+     },
+     {
+      "part": "ADS1256IDBR",
+      "maker": "Texas Instruments",
+      "reason": "not qualified: datasheet not read in this task"
+     },
+     {
+      "part": "ADS125H02IRHBR",
+      "maker": "Texas Instruments",
+      "reason": "not qualified: found in the category search (JLCPCB snapshot stock 2285); datasheet not read"
+     },
+     {
+      "part": "AD7793BRUZ-REEL, AD7794BRUZ-REEL",
+      "maker": "Analog Devices",
+      "reason": "not qualified: datasheets not read; same 470 Hz class as AD7799"
+     },
+     {
+      "part": "CS5530-ISZ, CS5532-ASZR",
+      "maker": "Cirrus Logic",
+      "reason": "maker not on the S1 list (rule 2)"
+     },
+     {
+      "part": "CS1237-SOP8, CS1238-SOP14, CS1232-TS",
+      "maker": "CHIPSEA",
+      "reason": "maker not on the S1 list (rule 2)"
+     }
+    ]
+   },
+   {
+    "function": "load-cell excitation",
+    "requirements": [
+     {
+      "name": "output voltage",
+      "value": "5.0 V, held within 4.75 to 5.25 V over line, load and 0 to 50 °C, because it is also the bridge ADC's AVDD",
+      "source": "F3, V254, ADS1235/ADS1261 section 6.3/7.3"
+     },
+     {
+      "name": "output current",
+      "value": "at least 57 mA: 3 bridges at 5.0 V / 345 Ω = 43.5 mA, plus the ADC's AVDD, up to 13.5 mA for 2 × AD7190",
+      "source": "V255, V254"
+     },
+     {
+      "name": "input voltage range",
+      "value": "6.0 to 22 V: the selected input bus is 6.0 to 20 V (R5 row). 22 V is the TPS55285 input rating that V84's question text names as the highest DC-input cut-off; V84 is open",
+      "source": "Research.md R5 row, V84 (open)"
+     },
+     {
+      "name": "dropout",
+      "value": "at most 1.0 V at 57 mA (6.0 V in, 5.0 V out)",
+      "source": "R5 row, F3"
+     },
+     {
+      "name": "junction temperature",
+      "value": "within the part's operating Tj at 22 V in, 57 mA, 50 °C ambient, from the datasheet's θJA",
+      "source": "V264, derived"
+     },
+     {
+      "name": "output protection",
+      "value": "internal current limit and thermal shutdown: the excitation leaves the board on the load-cell leads",
+      "source": "IOBoard.md:558 (load-cell connectors)"
+     },
+     {
+      "name": "operating temperature",
+      "value": "covers 0 to 50 °C ambient",
+      "source": "V264 (V7)"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "BD450M2FP3-CE2",
+      "maker": "ROHM (datasheet BD4xxM2-C / BD4xxU2-C Series Rev.006, 22 May 2025); S1 ROHM",
+      "lcsc": "C308595",
+      "package": "SOT223-4(F)",
+      "placements": 1,
+      "placements_basis": "fixed at 1: one excitation for the 3 bridges (V254)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "output voltage",
+        "required": "4.75 to 5.25 V",
+        "datasheet": "4.90 to 5.10 V, 6 V ≤ VCC ≤ 42 V, 0 to 50 mA; 4.80 to 5.10 V to 200 mA; Tj −40 to +150 °C",
+        "pass": true,
+        "source": "https://fscdn.rohm.com/en/products/databook/datasheet/ic/power/linear_regulator/bd4xxm2-c-e.pdf read 2026-09-28T15:18:53Z, Electrical Characteristics"
+       },
+       {
+        "name": "output current",
+        "required": "≥ 57 mA",
+        "datasheet": "IOUT 0 to 200 mA",
+        "pass": true,
+        "source": "bd4xxm2-c-e.pdf Operating Conditions"
+       },
+       {
+        "name": "input voltage range",
+        "required": "6.0 to 22 V",
+        "datasheet": "operating VCC 5.8 to 42.0 V (IOUT ≤ 200 mA, 5 V output); absolute 45 V",
+        "pass": true,
+        "source": "bd4xxm2-c-e.pdf Operating Conditions, Absolute Maximum Ratings"
+       },
+       {
+        "name": "dropout",
+        "required": "≤ 1.0 V at 57 mA",
+        "datasheet": "0.35 V max at 100 mA",
+        "pass": true,
+        "source": "bd4xxm2-c-e.pdf Electrical Characteristics"
+       },
+       {
+        "name": "junction temperature",
+        "required": "≤ 150 °C at 22 V, 57 mA, 50 °C",
+        "datasheet": "θja 83.3 °C/W (SOT223-4(F), JEDEC 4-layer): (17 V × 57 mA + 22 V × 150 µA) = 0.972 W → Tj 131 °C",
+        "pass": true,
+        "source": "bd4xxm2-c-e.pdf Thermal Resistance"
+       },
+       {
+        "name": "output protection",
+        "required": "current limit and thermal shutdown",
+        "datasheet": "OCP about 550 mA typical; TSD 175 °C typical",
+        "pass": true,
+        "source": "bd4xxm2-c-e.pdf"
+       },
+       {
+        "name": "operating temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "Tj −40 to +150 °C",
+        "pass": true,
+        "source": "bd4xxm2-c-e.pdf"
+       }
+      ],
+      "jlcpcb": "stockCount 3170, canPresaleNumber 3067, expand, 0.6724 USD at 5; read 2026-09-28T15:17:01Z, vendors.py jlcpcb C308595",
+      "digikey": "stock_available 3618, lead_weeks 16, status Active; read 2026-09-28T15:17:44Z, vendors.py digikey BD450M2FP3-CE2",
+      "gate": "need 5; threshold 50; 3170 ≥ 50, presale 3067 ≥ 0: pass",
+      "lifecycle": "manufacturer status Active (www.rohm.com product page, Product Detail 'BD450M2FP3-CE2 Status Active', read 2026-09-28T15:18:44Z); longevity: not read; first datasheet date: not read (current Rev.006 22 May 2025, © 2013); PCN: not read; Digi-Key Active; LCSC page not read",
+      "second_source": "second-vendor: Digi-Key 3618 ≥ 50 (15:17:44Z). Pin-compatible alternates: TPS7B6950QDCYRQ1 and L5150BNTR (SOT-223, pin 1 input, pin 2 GND, pin 3 output, tab GND)",
+      "alternates": [
+       "TPS7B6950QDCYRQ1",
+       "L5150BNTR"
+      ],
+      "driver_in_shared": "none (no firmware)",
+      "reason": "Output accuracy is specified across the whole 6.0 to 22 V input range at the load, which no other survivor does from 6.0 V. Stock is on both vendors. Two SOT-223 alternates share its pinout and a 10 µF ceramic output capacitor",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "TPS7B6950QDCYRQ1",
+      "maker": "Texas Instruments (datasheet SLVSCJ8B); S1 Texas Instruments",
+      "lcsc": "C108469",
+      "package": "SOT-223-4 (DCY)",
+      "placements": 1,
+      "placements_basis": "fixed at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "output voltage",
+        "required": "4.75 to 5.25 V",
+        "datasheet": "±3 % (4.85 to 5.15 V) for VI 6.5 to 40 V, IO 1 to 150 mA. From 6.0 to 6.5 V it is out of dropout, but the accuracy is not specified",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/tps7b69-q1.pdf read 2026-09-28T15:16:01Z, 7.5"
+       },
+       {
+        "name": "output current",
+        "required": "≥ 57 mA",
+        "datasheet": "IO 0 to 150 mA",
+        "pass": true,
+        "source": "tps7b69-q1.pdf 7.5"
+       },
+       {
+        "name": "input voltage range",
+        "required": "6.0 to 22 V",
+        "datasheet": "VI 4 to 40 V (recommended); 5.5 V minimum for the 5 V version",
+        "pass": true,
+        "source": "tps7b69-q1.pdf 7.3, 7.5"
+       },
+       {
+        "name": "dropout",
+        "required": "≤ 1.0 V at 57 mA",
+        "datasheet": "400 mV max at 50 mA, 800 mV max at 100 mA",
+        "pass": true,
+        "source": "tps7b69-q1.pdf 7.5"
+       },
+       {
+        "name": "junction temperature",
+        "required": "≤ 150 °C",
+        "datasheet": "RθJA 64.2 °C/W (DCY, JEDEC 2s2p): 0.97 W → Tj 112 °C",
+        "pass": true,
+        "source": "tps7b69-q1.pdf 7.4"
+       },
+       {
+        "name": "output protection",
+        "required": "current limit and thermal shutdown",
+        "datasheet": "IOCL 150 to 500 mA; Tsd 175 °C",
+        "pass": true,
+        "source": "tps7b69-q1.pdf 7.5"
+       },
+       {
+        "name": "operating temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "TJ −40 to +150 °C",
+        "pass": true,
+        "source": "tps7b69-q1.pdf 7.3"
+       }
+      ],
+      "jlcpcb": "stockCount 24445, canPresaleNumber 24359, expand, 0.3326 USD at 5; read 2026-09-28T15:16:59Z, vendors.py jlcpcb C108469",
+      "digikey": "stock_available 0, lead_weeks 16, status Active; read 2026-09-28T15:17:40Z, vendors.py digikey TPS7B6950QDCYRQ1",
+      "gate": "need 5; threshold 50; 24445 ≥ 50, presale 24359 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE (www.ti.com/product/TPS7B69-Q1 meta status, read 2026-09-28T15:19:44Z); longevity: not read; first datasheet SLVSCJ8 November 2014; PCN: not read; Digi-Key Active; LCSC page not read",
+      "second_source": "alternate: BD450M2FP3-CE2, which passes rules 1 to 4 (rank 1). Same SOT-223 pin assignment (TPS7B69: 1 IN, 2 GND, 3 OUT, 4 GND; BD4xxM2FP3-C: 1 VCC, 2 GND, 3 VOUT, 4 FIN GND). One 10 µF ceramic output capacitor meets both: TPS7B69 2.2 to 100 µF, ESR 1 mΩ to 2 Ω; BD4xxM2 COUT ≥ 10 µF. No firmware. The second vendor has 0",
+      "alternates": [
+       "BD450M2FP3-CE2",
+       "L5150BNTR"
+      ],
+      "driver_in_shared": "none (no firmware)",
+      "reason": "Cheapest (0.33 USD) with the deepest JLCPCB stock. Its ±3 % is specified only from 6.5 V, and the second vendor has none, so its second source is the rank 1 part",
+      "second_source_route": "alternate",
+      "second_source_part": "BD450M2FP3-CE2"
+     },
+     {
+      "rank": 3,
+      "part": "L5150BNTR",
+      "maker": "STMicroelectronics (datasheet DS6183 Rev 13, March 2026); S1 STMicroelectronics",
+      "lcsc": "C125140",
+      "package": "SOT-223",
+      "placements": 1,
+      "placements_basis": "fixed at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "output voltage",
+        "required": "4.75 to 5.25 V",
+        "datasheet": "4.85 to 5.15 V, VS 5.6 to 31 V, Io 8 to 150 mA; Tj −40 to +150 °C",
+        "pass": true,
+        "source": "https://www.st.com/resource/en/datasheet/l5150bn.pdf read 2026-09-28T15:16:03Z, Table 5"
+       },
+       {
+        "name": "output current",
+        "required": "≥ 57 mA",
+        "datasheet": "specified to 150 mA; current limitation 0.28 A minimum",
+        "pass": true,
+        "source": "l5150bn.pdf Table 5"
+       },
+       {
+        "name": "input voltage range",
+        "required": "6.0 to 22 V",
+        "datasheet": "specified VS 5.6 to 31 V; absolute 40 V",
+        "pass": true,
+        "source": "l5150bn.pdf Tables 3 and 5"
+       },
+       {
+        "name": "dropout",
+        "required": "≤ 1.0 V at 57 mA",
+        "datasheet": "500 mV max at 150 mA",
+        "pass": true,
+        "source": "l5150bn.pdf Table 5"
+       },
+       {
+        "name": "junction temperature",
+        "required": "≤ 150 °C",
+        "datasheet": "Rthj-amb 79 K/W (2 cm² copper): 0.969 W + 22 V × 4.2 mA = 1.06 W → Tj 134 °C",
+        "pass": true,
+        "source": "l5150bn.pdf Table 4, Table 5"
+       },
+       {
+        "name": "output protection",
+        "required": "current limit and thermal shutdown",
+        "datasheet": "Ilim 0.28 to 0.85 A; thermal protection 150 to 190 °C",
+        "pass": true,
+        "source": "l5150bn.pdf Table 5"
+       },
+       {
+        "name": "operating temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "Tj −40 to +150 °C",
+        "pass": true,
+        "source": "l5150bn.pdf"
+       }
+      ],
+      "jlcpcb": "stockCount 1477, canPresaleNumber 1467, expand, 0.7958 USD at 5; read 2026-09-28T15:17:01Z, vendors.py jlcpcb C125140",
+      "digikey": "stock_available 30233, lead_weeks 30, status Active; read 2026-09-28T15:17:46Z, vendors.py digikey L5150BNTR",
+      "gate": "need 5; threshold 50; 1477 ≥ 50, presale 1467 ≥ 0: pass",
+      "lifecycle": "manufacturer status Active, 'Product is in volume production' (www.st.com/en/automotive-analog-and-power/l5150bn.html, read 2026-09-28T15:20:05Z); longevity: not read; first datasheet 18-Jun-2007 (revision 1); PCN: not read; Digi-Key Active; LCSC page not read",
+      "second_source": "second-vendor: Digi-Key 30233 ≥ 50 (15:17:46Z)",
+      "alternates": [
+       "BD450M2FP3-CE2",
+       "TPS7B6950QDCYRQ1"
+      ],
+      "driver_in_shared": "none (no firmware)",
+      "reason": "Meets every figure with the highest thermal load of the SOT-223 parts (Tj 134 °C). Its accuracy is specified from 5.6 V. The tab connection is not stated in its pin table (pins 1 VS, 2 GND, 3 Vo), so the pin-for-pin match to rank 1 is not confirmed",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 4,
+      "part": "TPS7B8150DGNR",
+      "maker": "Texas Instruments (datasheet SBVS402, April 2020); S1 Texas Instruments",
+      "lcsc": "C2864577",
+      "package": "HVSSOP-8 (DGN)",
+      "placements": 1,
+      "placements_basis": "fixed at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "output voltage",
+        "required": "4.75 to 5.25 V",
+        "datasheet": "±1.5 % (4.925 to 5.075 V), VIN = VOUT + dropout to 40 V, IOUT 1 to 150 mA",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/tps7b81.pdf read 2026-09-28T15:19:28Z, 6.5"
+       },
+       {
+        "name": "output current",
+        "required": "≥ 57 mA",
+        "datasheet": "0 to 150 mA",
+        "pass": true,
+        "source": "tps7b81.pdf 6.5"
+       },
+       {
+        "name": "input voltage range",
+        "required": "6.0 to 22 V",
+        "datasheet": "3 to 40 V; transient 45 V",
+        "pass": true,
+        "source": "tps7b81.pdf 6.3"
+       },
+       {
+        "name": "dropout",
+        "required": "≤ 1.0 V at 57 mA",
+        "datasheet": "350 mV max at 100 mA (DGN, 5 V)",
+        "pass": true,
+        "source": "tps7b81.pdf 6.5"
+       },
+       {
+        "name": "junction temperature",
+        "required": "≤ 150 °C",
+        "datasheet": "RθJA 63.9 °C/W (DGN): 0.97 W → Tj 112 °C",
+        "pass": true,
+        "source": "tps7b81.pdf 6.4"
+       },
+       {
+        "name": "output protection",
+        "required": "current limit and thermal shutdown",
+        "datasheet": "I(CL) 180 to 690 mA; thermal shutdown",
+        "pass": true,
+        "source": "tps7b81.pdf 6.5"
+       },
+       {
+        "name": "operating temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "TA −40 to +125 °C",
+        "pass": true,
+        "source": "tps7b81.pdf 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 661, canPresaleNumber 661, expand, 1.1206 USD at 5; read 2026-09-28T15:17:01Z, vendors.py jlcpcb C2864577",
+      "digikey": "stock_available 2591, lead_weeks 16, status Active; read 2026-09-28T15:17:48Z, vendors.py digikey TPS7B8150DGNR",
+      "gate": "need 5; threshold 50; 661 ≥ 50, presale 661 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE (www.ti.com/product/TPS7B81 meta status, read 2026-09-28T15:19:44Z); longevity: not read; first datasheet SBVS402 April 2020; PCN: not read; Digi-Key Active; LCSC page not read",
+      "second_source": "second-vendor: Digi-Key 2591 ≥ 50 (15:17:48Z)",
+      "alternates": [],
+      "driver_in_shared": "none (no firmware)",
+      "reason": "Tightest accuracy (±1.5 %) and an enable pin, but a different footprint from ranks 1 to 3 and 3.4 times the cost of rank 2",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "TPS7A1650DGNR",
+      "maker": "Texas Instruments (datasheet SBVS171F); S1 Texas Instruments",
+      "lcsc": "C468238",
+      "package": "HVSSOP-8 (DGN)",
+      "placements": 1,
+      "placements_basis": "fixed at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "output voltage",
+        "required": "4.75 to 5.25 V",
+        "datasheet": "overall accuracy ±2 %",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/tps7a16.pdf read 2026-09-28T15:16:01Z, 6.5"
+       },
+       {
+        "name": "output current",
+        "required": "≥ 57 mA",
+        "datasheet": "100 mA",
+        "pass": true,
+        "source": "tps7a16.pdf"
+       },
+       {
+        "name": "input voltage range",
+        "required": "6.0 to 22 V",
+        "datasheet": "3 to 60 V; its note limits the input to 24 V at full load for package dissipation",
+        "pass": true,
+        "source": "tps7a16.pdf 6.3, 6.5 note 1"
+       },
+       {
+        "name": "dropout",
+        "required": "≤ 1.0 V at 57 mA",
+        "datasheet": "500 mV max at 100 mA (VIN 4.5 V, 5 V output)",
+        "pass": true,
+        "source": "tps7a16.pdf 6.5"
+       },
+       {
+        "name": "junction temperature",
+        "required": "≤ 125 °C (its operating Tj max)",
+        "datasheet": "RθJA 66.2 °C/W (DGN): 0.97 W → Tj 114 °C",
+        "pass": true,
+        "source": "tps7a16.pdf 6.3, 6.4"
+       },
+       {
+        "name": "output protection",
+        "required": "current limit and thermal shutdown",
+        "datasheet": "ILIM 101 to 400 mA; thermal shutdown",
+        "pass": true,
+        "source": "tps7a16.pdf 6.5"
+       },
+       {
+        "name": "operating temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "TJ −40 to +125 °C",
+        "pass": true,
+        "source": "tps7a16.pdf 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 165, canPresaleNumber 125, expand, 4.8848 USD at 5; read 2026-09-28T15:17:00Z, vendors.py jlcpcb C468238",
+      "digikey": "stock_available 0, lead_weeks 9, status Active; read 2026-09-28T15:17:49Z, vendors.py digikey TPS7A1650DGNR",
+      "gate": "need 5; threshold 50; 165 ≥ 50, presale 125 ≥ 0: pass",
+      "lifecycle": "manufacturer status: www.ti.com product page not read for TPS7A16; Digi-Key ProductStatus Active (15:17:49Z), recorded as a distributor figure; longevity: not read; first datasheet SBVS171 December 2011; PCN: not read; LCSC page not read",
+      "second_source": "none: Digi-Key has 0 (15:17:49Z), and no pin-compatible alternate was checked",
+      "alternates": [],
+      "driver_in_shared": "none (no firmware)",
+      "reason": "Meets every figure with the most input headroom (60 V). It costs 4.88 USD, JLCPCB stock is low (165) and it has no second source",
+      "second_source_route": "none",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "NCV8664CST50T3G",
+      "maker": "onsemi",
+      "reason": "junction temperature: RθJA 109 °C/W (SOT-223, 100 mm² 1 oz copper) × (17 V × 57 mA + 22 V × 3 mA ground current) = 1.035 W → Tj 163 °C at 50 °C ambient, above its 150 °C operating Tj (NCV8664C/D Rev. 4, https://www.onsemi.com/download/data-sheet/pdf/ncv8664c-d.pdf read 2026-09-28T15:16:02Z). Status Active on onsemi's page (15:19:58Z)"
+     },
+     {
+      "part": "LM2936MP-5.0/NOPB",
+      "maker": "Texas Instruments",
+      "reason": "output current: rated 50 mA (JLCPCB listing C91309), below the 57 mA need; datasheet not read"
+     },
+     {
+      "part": "ADP7118ARDZ-5.0-R7",
+      "maker": "Analog Devices",
+      "reason": "input voltage range: 20 V maximum by the JLCPCB listing, below 22 V; datasheet not read"
+     },
+     {
+      "part": "LT3042 and LT3045",
+      "maker": "Analog Devices",
+      "reason": "input voltage range: 20 V maximum by the JLCPCB listing, below 22 V; datasheet not read"
+     },
+     {
+      "part": "TLV76050DBZR",
+      "maker": "Texas Instruments",
+      "reason": "not qualified: SOT-23 with 1.2 V dropout at 100 mA by the JLCPCB listing; datasheet not read"
+     },
+     {
+      "part": "ADP7142AUJZ-5.0-R7",
+      "maker": "Analog Devices",
+      "reason": "not qualified: TSOT-5 package; θJA and datasheet not read"
+     },
+     {
+      "part": "the IO board's 5 V rail",
+      "maker": "R5",
+      "reason": "not a part: V254 found a supply of its own for the bridges"
+     }
+    ]
+   }
+  ],
+  "report": [
+   {
+    "figure": "R13 row report figures",
+    "value": "none: the R13 row names no figure for a decision or for P5",
+    "source": "hardware/docs/Research.md R13 row at checkout c25aa863372d"
+   },
+   {
+    "figure": "excitation load on the input bus",
+    "value": "57 mA at most from the selected input bus (6.0 to 22 V) through the excitation regulator: 43.5 mA for 3 bridges of 345 Ω at 5.0 V, plus up to 13.5 mA of ADC analogue supply (2 × AD7190), 6.5 mA for ADS1235",
+    "source": "V255 (TAS501), ADS1235 datasheet 6.5, AD7190 datasheet Specifications; for R5's rail sums and P5's per-rail check"
+   },
+   {
+    "figure": "load-cell load on the 5 V rail",
+    "value": "0 mA: the excitation and the bridge ADC's analogue supply do not use the 5 V rail (V254)",
+    "source": "V254 found value; IOBoard.md:338 counts the excitation on the 5 V rail, which V254 changes"
+   },
+   {
+    "figure": "bridge ADC interface at rank 1",
+    "value": "ADS1235: one SPI (SCLK, DIN, DOUT/DRDY, CS) plus DRDY, START, RESET and PWDN, 4 to 8 GPIO on 3.3 V DVDD; ranks 3 to 5 need 2 or 3 chip selects",
+    "source": "ADS1235 datasheet SBAS824 Pin Functions, pins 7 to 14; for P5's GPIO and SPI budget"
+   },
+   {
+    "figure": "excitation regulator dissipation at rank 1",
+    "value": "0.97 W at 22 V in and 57 mA; Tj 131 °C at 50 °C ambient (θja 83.3 °C/W)",
+    "source": "BD4xxM2-C datasheet Rev.006 Thermal Resistance; for round 3 layout and P5"
+   }
+  ]
+ }
+}

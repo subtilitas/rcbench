@@ -1,0 +1,322 @@
+{
+ "role": "P7",
+ "category": "",
+ "label": "P7",
+ "attempt": 0,
+ "data": {
+  "checks": {
+   "check_docs": {
+    "passed": true,
+    "output": "docs agree with the tree"
+   },
+   "ruff": {
+    "passed": true,
+    "output": "All checks passed!"
+   },
+   "jlc_stock": {
+    "passed": false,
+    "output": "Personal library (rule 6, export of 2026-09-25):\n  [ok] RP2354B: held 20, need 5\n\n1 problem(s)\n(exit 1: ADS1235IRHBR's second-vendor (Digi-Key) stock read 0 against gate 50, a live sourcing-rule-5 failure on the load-cell bridge ADC; every other of the 49 parts, and the held RP2354B, pass. Not a script defect -- tools/jlc_stock.py --check 5 is designed to exit 1 on exactly this kind of live shortfall.)"
+   }
+  },
+  "files": [
+   "hardware/docs/Parts.md",
+   "hardware/docs/Digital.md",
+   "hardware/docs/PowerSupply.md",
+   "hardware/docs/Sensors.md",
+   "hardware/docs/Power.md",
+   "hardware/docs/IOBoard.md",
+   "hardware/docs/Research.md",
+   "hardware/STATUS.md",
+   "hardware/README.md",
+   "tools/jlc_stock.py"
+  ],
+  "corrections": [
+   "tools/jlc_stock.py's placements parser originally took the maximum of every digit run found anywhere in a Parts.md row's Placements/board cell, including digits embedded in an unrelated parenthetical note (e.g. the '11' in 'R11's rotation/encoder/BENCH-source functions'); this inflated the RP2354B's held-parts need from 5 to 55 and wrongly failed rule 6. Fixed to read only the leading count or range at the start of the cell.",
+   "tools/jlc_stock.py's Digi-Key lookup treated any non-200 response as 'no match', so six parts whose exact orderable string returns HTTP 404 'Duplicate Products found' (e.g. 74AUP1G32GW,125; SN74LVC1G04DBVR; 74LVC1G175GW,125; SN74AUP1G17DBVR; SN74LVC1G126DBVR) or a differing Digi-Key suffix (BTS7004-1EPP vs Digi-Key's BTS70041EPPXUMA1) were reported as failing when they are in stock. Added a keyword-search fallback that resolves the correct orderable by normalized part-number match.",
+   "tools/jlc_stock.py only required a second-vendor (Digi-Key) stock check to pass when the JLCPCB (rule 4) reading had already failed, so a row could pass --check while failing sourcing rule 5 outright. Corrected so the second-vendor gate is checked unconditionally, as the rule requires.",
+   "The life-cycle-status extraction used while building Parts.md matched the keyword 'Obsolete' anywhere in a candidate's lifecycle text, which mis-stated INA3221AIRGVR's status as Obsolete from a disclaimer clause ('the page's OBSOLETE mark is another orderable's, not flagged') that says the opposite; corrected to read only the reading's leading clause, giving the true status (Active)."
+  ],
+  "group_pages": {
+   "A": "hardware/docs/Digital.md",
+   "B": "hardware/docs/PowerSupply.md",
+   "C": "hardware/docs/Sensors.md"
+  },
+  "figures": [
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 39,
+    "figure": "15120 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 40,
+    "figure": "4566 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 41,
+    "figure": "2 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 42,
+    "figure": "2982 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 43,
+    "figure": "104 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 44,
+    "figure": "48987 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 45,
+    "figure": "339 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 46,
+    "figure": "41679 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 47,
+    "figure": "39 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 48,
+    "figure": "311 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 49,
+    "figure": "11 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 50,
+    "figure": "6 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 51,
+    "figure": "1340 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 52,
+    "figure": "3165 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 53,
+    "figure": "28 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 54,
+    "figure": "14 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 55,
+    "figure": "952 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 56,
+    "figure": "1126 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 57,
+    "figure": "53165 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 58,
+    "figure": "1973 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 59,
+    "figure": "5229 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 60,
+    "figure": "233 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 61,
+    "figure": "630 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 62,
+    "figure": "28320 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 63,
+    "figure": "307 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "20982 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "172635 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "8928 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "5252 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 68,
+    "figure": "401 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 69,
+    "figure": "73877 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 70,
+    "figure": "94504 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 71,
+    "figure": "392691 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "671 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 73,
+    "figure": "36974 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "331 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 75,
+    "figure": "5183 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 76,
+    "figure": "3105 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 77,
+    "figure": "6606 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 78,
+    "figure": "3795 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "578 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 80,
+    "figure": "5194 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "301 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "418 (Digi-Key, off-board part, rule 1; JLCPCB stock does not apply) (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 83,
+    "figure": "359 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "764 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 85,
+    "figure": "8704 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 86,
+    "figure": "4062 (2026-09-29)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 87,
+    "figure": "12500 (2026-09-29)"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 9,
+    "figure": "49 parts that serve 63"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 10,
+    "figure": "28 functions have no part"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 18,
+    "figure": "commit `be1f2476`"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 20,
+    "figure": "commit `e13f5f60`"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 21,
+    "figure": "commit `9460c22e`"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 24,
+    "figure": "49 parts for 63 of the 91 functions"
+   }
+  ]
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R7",
+ "label": "adjudicator-R7-8",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "function": "re-rank report: SLUA420A external balance current",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation holds. The claim calls 65 mA at a 3.6 V cell a value \"measured on a bq29330 AFE with bq20z70 firmware\". SLUA420A gets 65 mA by calculation, not by measurement: 3.6 V across 55 ohm, where 55 ohm is an assumed average Q1/Q2 Rds(on) of about 5 ohm (at Vgs >= 2 V) plus the 50 ohm series resistor (page 4, section 2). The note has one bench demonstration, with two 1900 mAh cells on a bq20z70 v110 evaluation module and a 208 mA charge current. It reports cell voltages, a 2.1 % state-of-charge imbalance and a 2.57 h balancing time. It does not report a bypass current. The note's only other bench figure is the internal bq29330 FET's Rds(on): 420 ohm at 3 V to 300 ohm at 4.2 V. The rest of the claim is correct as the note states it: 65 mA at 3.6 V, the 2-cell circuit of Figure 2, the bq29330/bq29312 AFE (analog front end) with bq20z70 firmware (D = 0.22), and no BQ40Z50-R2 anywhere in the note. The verifier's point that the note targets the bq29330/bq29312 matches the claim, so it does not refute it. Only the provenance is wrong: the figure is a calculated value, not a measured one. Answering V142 from it without saying so would present a calculation as a measurement. The scope is function: the ruling is about this figure in the re-rank report, not about the lifecycle, maker or LCSC identity of any part.",
+  "evidence": "SLUA420A (May 2007, revised January 2009), page 4: \"The average on-resistance of Q1, Q2 is about 5 Ω when Vgs ≥ 2 V. With a 50-Ω resistance placed in series with the external MOSFET, the external bypassing path resistance is summed to 55 Ω. At a nominal cell voltage of 3.6 V, the bypassing current is 65 mA. The same calculation for balancing a 10% difference in SOC for a 2000-mAh battery leads to 14 hours ... (using D = 0.22 ..., assuming the use of the bq20z70 v110 firmware).\" Page 4, the note's only bench data: \"Bench measurement of a few bq29330 devices indicates that the typical Rds(on) ranges from 420 Ω (at 3 V) to 300 Ω (at 4.2 V)\". Page 4, the demonstration: \"two new, 1900-mAh battery cells with a bq20z70 v110 evaluation module ... The test charge current is 208 mA. After 2.57 hours, cell balancing was automatically turned off ... 3784 mV for cell 1 and 3785 mV for cell 2\". The demonstration states no measured bypass current. Page 6, Summary: \"fast cell-balancing circuit using existing bq29330/bq29312 AFE for bq20z80/z70/z90/z75/z95\". The note does not mention the BQ40Z50 anywhere. Local copy: /home/claude/rcbench-research/round1/scratch/FU-B1/adjudicator-R7/adjR7_slua420a.pdf (157,033 bytes, HTTP 200), text in adjR7_slua420a.txt in the same directory.",
+  "source": "https://www.ti.com/lit/an/slua420a/slua420a.pdf, pages 3 to 6, fetched with vendors.py fetch (client chrome, HTTP 200, final URL unchanged)",
+  "read_at": "2026-09-29T13:21:35Z",
+  "scope": "function"
+ }
+}

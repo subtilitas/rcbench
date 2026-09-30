@@ -1,0 +1,734 @@
+{
+ "role": "rerank",
+ "category": "R1",
+ "label": "rerank-R1",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "functions": [
+   {
+    "function": "Microcontroller",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "reason": "The fixed input of the Scope table, ranked first and not replaced. P3 returned nothing for this function. P2's record stands: every requirement value of the part passes; rule 4 passes on JLCPCB stock (stockCount 2983, canPresaleNumber 2826 at 2026-09-29T00:18:53Z) and rule 6 on the 20 held; Digi-Key SC1512(13)-A4 (3560, Active, 00:23:00Z) is the second vendor; in production until at least January 2045. The one failed row, 'watchdog window (V1 and V2)', comes from the V1 deadline (200 ms) being shorter than the V2 stall (900 ms), which no part can meet. It is reported to the owner, not a reason to replace the part",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "12 MHz crystal",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "ABM8-272-T3",
+      "reason": "P3 returned no crystal and overturned none of P2's crystal drops. It is the only candidate that meets every value of V5, V6, V7 and V15: CL 10 pF, ESR 50 Ohm max, C0 3.0 pF max, drive level 200 uW max, and 65 ppm worst-case total error against the 1000 ppm limit. It is the crystal RP2350 datasheet Table 597 specifies the XOSC with. Rule 4 passes (stockCount 15635 at 2026-09-29T00:18:55Z). Digi-Key (28548, Active, 00:23:01Z) is its second vendor. Maker status is not read because the product page answered 404; that goes to the owner",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "ABM8-272-T3",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Core regulator inductor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "AOTA-B201610S3R3-101-T",
+      "reason": "The inductor RP2350 datasheet section 6.3.8.2 recommends. It has a polarity dot and comes in the 2.0 x 1.6 mm case the hardware design guide's layout is drawn for. Every value passes: 3.3 uH +/-20 %, Isat 2.4 A, DCR 140 mOhm max, shielded, -40 to +125 C. Maker status reads Active. Rule 4 passes on a re-read here (stockCount 4586, canPresaleNumber 4095, 2026-09-29T01:02:45Z), and Digi-Key (28175, Active) is its second vendor. Every P3 find departs from that layout, with a 2.5 x 2.0 mm to 6.6 x 6.4 mm body",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "VLS4015CX-3R3M-H",
+      "reason": "P3 find, qualified. Every value passes: 3.3 uH +/-20 %, Isat 2.41 A (max. column), DCR 96 mOhm max, magnetic shield, and a drawn 'Polarity Mark' and winding direction. It is the best of the parts off the design-guide layout. TDK's page reads Production, so maker status is read. Digi-Key is a second vendor (2479, Active). JLCPCB stock is 1845. At 1.5 mm max it is the lowest 4 x 4 mm body, and at 0.33 USD it is the cheapest. It ranks below rank 1 only because its 4.0 x 4.0 mm body departs from the 2.0 x 1.6 mm layout",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "74438357033",
+      "reason": "P3 find, qualified. Every value passes: 3.3 uH +/-20 %, DCR 33.5 mOhm max, Isat 3.3 A typ at a 10 % drop, a 'Start of Winding' dot, and 'Magnetically shielded' on the WE-MAPI page. It ranks above the Coilcraft parts because its maker status is read ('Active. Production is active. Expected lifetime: >10 years') and Digi-Key is a second vendor (4180, Active). It ranks below rank 2 for four reasons: JLCPCB stock of 78 is thin against the gate of 50; the 4.1 x 4.1 x 3.1 mm body is twice VLS4015CX's height; it costs 10 times as much (3.37 USD); and Digi-Key's lead time is 37 weeks",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "XGL4020-332MEC",
+      "reason": "P2's rank 2. Every value passes: Isat 2.2 A at a 10 % drop, DCR 34.0 mOhm max, 2.1 mm high. JLCPCB stock is 1446 (01:02:42Z). Its rule-5 alternate is XFL4020-332MEC, which Coilcraft's own XFL4020-332 page calls a drop-in match for XGL4020. It ranks below the TDK and Wurth parts for three reasons: maker status is not read, because the Coilcraft page carries none; Digi-Key does not carry Coilcraft, so the second source rests on the alternate; and it costs 10.24 USD",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "XAL4030-332MEC",
+      "reason": "P3 exclusion that does not hold; qualified. Every value passes: DCR 28.6 mOhm max, Isat 5.9 A, a dash-number start-lead mark. It uses the same land pattern as XGL4020. JLCPCB stock is 1557. Its alternate is XEL4030-332MEC. It ranks below XGL4020 because it is 1.0 mm taller (3.1 mm), V8 needs no more current than XGL4020 gives, and Coilcraft's page steers new use to XGL4030. Maker status is not read and Digi-Key does not carry it",
+      "option": ""
+     },
+     {
+      "rank": 6,
+      "part": "XEL4030-332MEC",
+      "reason": "P3 exclusion that does not hold; qualified. Its figures match XAL4030-332MEC: DCR 28.6 mOhm max, Isat 5.9 A, the same land pattern and 3.1 mm height. The dash-number start-lead mark is on the page-3 drawing, viewed here. It has half XAL4030's JLCPCB stock (768 against 1557). Its alternate is XAL4030-332MEC. Maker status is not read and Digi-Key does not carry it",
+      "option": ""
+     },
+     {
+      "rank": 7,
+      "part": "XFL4020-332MEC",
+      "reason": "P2's rank 3, kept. Every value passes. Coilcraft's XFL4020-332 page steers new use to XGL4020 as its drop-in replacement, which is a recommendation, not a lifecycle status. Its DCR (38.3 mOhm max) is the highest of the Coilcraft 4 x 4 mm parts. Its JLCPCB stock of 723 is the lowest of them. Maker status is not read and Digi-Key does not carry it. Alternate XGL4020-332MEC",
+      "option": ""
+     },
+     {
+      "rank": 8,
+      "part": "ETQP3M3R3KVP",
+      "reason": "P3 find, qualified. Every value passes: 3.3 uH +/-20 %, Isat 8.0 A, DCR 30.03 mOhm max, magnetically shielded, a mark labelled 'Polarity'. Digi-Key is a second vendor (2343, Active). It ranks below the 4 x 4 mm parts because its 5.5 x 5.0 x 3.0 mm body departs further from the layout, its JLCPCB stock (163) is thin, and maker status is not read (industry.panasonic.com answered 404)",
+      "option": ""
+     },
+     {
+      "rank": 9,
+      "part": "XAL6030-332MEC",
+      "reason": "P3 exclusion that does not hold. The row has a blank maker in jlcparts, and JLCPCB names Coilcraft. Qualified: 3.3 uH +/-20 %, DCR 20.81 mOhm max, Isat 12.2 A, a dash-number start-lead mark. Ranked last because its body is the largest, 6.36 x 6.56 x 3.1 mm. Maker status is not read. Coilcraft's page says the part is not available through its online store. Digi-Key does not carry it. Its rule-5 alternate, XEL6030-332MEC, has JLCPCB stock of 74, just above the gate of 50",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "VLS4015CX-3R3M-H",
+      "maker": "TDK (datasheet 'TDK'; JLCPCB maker_label 'TDK'; Digi-Key 'TDK'; LCSC brandNameEn 'TDK'); allowlist name TDK (S2)",
+      "lcsc": "C3222575",
+      "package": "4.0 +/-0.2 x 4.0 +/-0.2 x 1.5 mm max, wound ferrite, 2 terminals; recommended land pattern two 1.9 x 4.0 mm pads 1.2 mm apart (JLCPCB 'SMD,4x4mm')",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one core regulator inductor on VREG_LX of the one RP2354B (IOBoard.md:110; RP2350 datasheet section 6.3.8.2)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inductance",
+        "required": "3.3 uH +/-20 % (V8)",
+        "datasheet": "VLS4015CX-3R3M-H: L 3.3 uH, tolerance +/-20 %, measured at 1 MHz (characteristics specification table, page 1)",
+        "pass": true,
+        "source": "VLS4015CX-H datasheet, TDK file inductor_automotive_power_vls4015cx-h_en dated 20220609 (SHA-256 5d2a514b113eb5c8566b83a5669f2ef9105edfb8a1da8e18b2a80dddbc6d936a), https://product.tdk.com/system/files/dam/doc/product/inductor/inductor/smd/catalog/inductor_automotive_power_vls4015cx-h_en.pdf, read 2026-09-29T01:03:22Z"
+       },
+       {
+        "name": "saturation current",
+        "required": "at least 1.5 A (V8)",
+        "datasheet": "Isat 2.41 A (max. column), 2.84 A (typ.), at 30 % below the initial L; Itemp 2.40 A (max. column); rated current the smaller of the two, 2.40 A",
+        "pass": true,
+        "source": "VLS4015CX-H datasheet dated 20220609, page 1, read 2026-09-29T01:03:22Z"
+       },
+       {
+        "name": "DC resistance",
+        "required": "at most 250 mOhm (V8)",
+        "datasheet": "0.096 Ohm max, 0.080 Ohm typ",
+        "pass": true,
+        "source": "VLS4015CX-H datasheet dated 20220609, page 1, read 2026-09-29T01:03:22Z"
+       },
+       {
+        "name": "fully shielded",
+        "required": "yes (V14)",
+        "datasheet": "'Magnetic shield type wound inductor ... High magnetic shield construction' (features); TDK product page 'Shield Magnetic Shield'",
+        "pass": true,
+        "source": "VLS4015CX-H datasheet dated 20220609, page 1, read 2026-09-29T01:03:22Z; https://product.tdk.com/en/search/inductor/inductor/smd/info?part_no=VLS4015CX-3R3M-H, HTTP 200, read 2026-09-29T01:06:30Z"
+       },
+       {
+        "name": "polarity marking",
+        "required": "yes: marked for polarity (V14)",
+        "datasheet": "The shape and dimensions drawing labels a 'Polarity Mark' on the top face and the 'Winding direction' (page 3, rendered and viewed)",
+        "pass": true,
+        "source": "VLS4015CX-H datasheet dated 20220609, page 3, read 2026-09-29T01:03:22Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "rated across 0 to 50 C ambient (V7)",
+        "datasheet": "Operating temperature range -40 to +125 C, including self-temperature rise",
+        "pass": true,
+        "source": "VLS4015CX-H datasheet dated 20220609, pages 1 and 3, read 2026-09-29T01:03:22Z"
+       }
+      ],
+      "jlcpcb": "C3222575 exact match (other_results 0): stockCount 1845, canPresaleNumber 1845, componentLibraryType expand, USD 0.3324 each at the need of 5 (break 1 to 49); read 2026-09-29T01:02:30Z, vendors.py jlcpcb C3222575 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "VLS4015CX-3R3M-H, TDK: stock_available 2479 (cut tape 2479, Digi-Reel 2479, tape and reel 2000 at a 1000 minimum), lead 12 weeks, ProductStatus Active, discontinued false, end_of_life false; read 2026-09-29T01:02:58Z, vendors.py digikey VLS4015CX-3R3M-H (https://api.digikey.com/products/v4/search/VLS4015CX-3R3M-H/productdetails)",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; S4 threshold max(5 x 5, 50) = 50; stockCount 1845 >= 50 and canPresaleNumber 1845 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status: Production, from 'Product Status Production' on https://product.tdk.com/en/search/inductor/inductor/smd/info?part_no=VLS4015CX-3R3M-H (HTTP 200, 2026-09-29T01:06:30Z): pass. Longevity commitment: none on that page; no TDK longevity page read. Market introduction: the first datasheet revision's date is not read. The served datasheet is dated 20220609, so the type has been published for at least 3 years 3 months: not flagged. Notices: TDK's discontinuation listing not read; Digi-Key end_of_life false. Distributor: LCSC productCycle 'normal', stockNumber 1845 (https://www.lcsc.com/product-detail/C3222575.html, 01:06:31Z); Digi-Key Active (01:02:58Z); JLCPCB's API carries no status. Agrees with the maker",
+      "second_source": "second vendor: Digi-Key VLS4015CX-3R3M-H stock_available 2479 >= 50 (2026-09-29T01:02:58Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Qualifies on every value of V8, V14 and V7, with a labelled polarity mark. Maker status Production and a Digi-Key second vendor. Ranked 2: the best-sourced part off the design-guide layout, and the lowest and cheapest of the 4 x 4 mm bodies; below AOTA-B201610S3R3-101-T, whose 2.0 x 1.6 mm case the guide's layout is drawn for",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "74438357033",
+      "maker": "Wurth Elektronik (datasheet 'Wurth Elektronik eiSos'; JLCPCB maker_label 'Wurth Elektronik'; Digi-Key 'Wurth Elektronik'); allowlist name Wurth Elektronik (S2)",
+      "lcsc": "C17430655",
+      "package": "WE-MAPI 4030: 4.1 +/-0.2 x 4.1 +/-0.2 x 3.1 mm max, 2 terminals; datasheet: 'Landing pattern compatible with 40xx size WE-MXGI series' (JLCPCB 'SMD,4.1x4.1mm')",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one core regulator inductor on VREG_LX of the one RP2354B (IOBoard.md:110; RP2350 datasheet section 6.3.8.2)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inductance",
+        "required": "3.3 uH +/-20 % (V8)",
+        "datasheet": "L 3.3 uH +/-20 % at 100 kHz / 10 mA",
+        "pass": true,
+        "source": "Wurth Elektronik datasheet 74438357033, WE-MAPI SMT Power Inductor, revision 003.002, 2026-09-01, status Valid (SHA-256 a49aab25ec41c4dc03870529ed6b45e4b0dfa4d7d764ba8ae7260cc9006022fa), https://www.we-online.com/components/products/datasheet/74438357033.pdf, page 1, read 2026-09-29T01:03:22Z"
+       },
+       {
+        "name": "saturation current",
+        "required": "at least 1.5 A (V8)",
+        "datasheet": "ISAT 3.3 A typ at |dL/L| < 10 %, 6.8 A typ at |dL/L| < 30 %; IRP,40K 6.1 A max. Only typical saturation figures are given, as in Coilcraft's datasheets for the other ranked parts; 3.3 A typical at a 10 % drop is 2.2 times the 1.5 A",
+        "pass": true,
+        "source": "Wurth Elektronik datasheet 74438357033 revision 003.002, page 1, read 2026-09-29T01:03:22Z"
+       },
+       {
+        "name": "DC resistance",
+        "required": "at most 250 mOhm (V8)",
+        "datasheet": "RDC 29 mOhm typ, 33.5 mOhm max at 20 C",
+        "pass": true,
+        "source": "Wurth Elektronik datasheet 74438357033 revision 003.002, page 1, read 2026-09-29T01:03:22Z"
+       },
+       {
+        "name": "fully shielded",
+        "required": "yes (V14)",
+        "datasheet": "The datasheet does not state it. The WE-MAPI product page lists 'Magnetically shielded' under Characteristics and lists 74438357033 (3.3 uH, 6.1 A, 6.8 A) in the series",
+        "pass": true,
+        "source": "https://www.we-online.com/en/components/products/WE-MAPI, HTTP 200, read 2026-09-29T01:04:44Z"
+       },
+       {
+        "name": "polarity marking",
+        "required": "yes: marked for polarity (V14)",
+        "datasheet": "'Product Marking: Start of Winding' shown as a dot; 'Marking 3R3 (Inductance Code)'",
+        "pass": true,
+        "source": "Wurth Elektronik datasheet 74438357033 revision 003.002, page 1, read 2026-09-29T01:03:22Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "rated across 0 to 50 C ambient (V7)",
+        "datasheet": "Operating temperature -40 C up to +125 C; ambient temperature referring to IRP -40 C up to +85 C",
+        "pass": true,
+        "source": "Wurth Elektronik datasheet 74438357033 revision 003.002, page 1, read 2026-09-29T01:03:22Z"
+       }
+      ],
+      "jlcpcb": "C17430655 exact match (other_results 0): stockCount 78, canPresaleNumber 77, componentLibraryType expand, USD 3.3681 each at the need of 5 (break 1 to 9); read 2026-09-29T01:02:33Z, vendors.py jlcpcb C17430655 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "74438357033, Wurth Elektronik: stock_available 4180 (cut tape 4180, Digi-Reel 4180, tape and reel 3500 at a 700 minimum), lead 37 weeks, ProductStatus Active, discontinued false, end_of_life false; read 2026-09-29T01:03:02Z, vendors.py digikey 74438357033 (https://api.digikey.com/products/v4/search/74438357033/productdetails)",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; S4 threshold max(5 x 5, 50) = 50; stockCount 78 >= 50 and canPresaleNumber 77 >= 0: pass (rule 4), with 28 above the gate",
+      "lifecycle": "Maker status: Active. The WE-MAPI product page row for 74438357033 reads 'Status Active. Production is active. Expected lifetime: >10 years.' (https://www.we-online.com/en/components/products/WE-MAPI, HTTP 200, 2026-09-29T01:04:44Z): pass. Longevity: the same row states 'Expected lifetime: >10 years'. Market introduction: not read. The served datasheet is revision 003.002 of 2026-09-01 and has no revision history. Digi-Key's listed copy, https://www.we-online.com/components/products/datasheet/74438357033_valid_from_2026-09-01.pdf, answered HTTP 404 (01:03:23Z). Notices: Wurth's PCN listing not read; Digi-Key end_of_life false. Distributor: the LCSC page https://www.lcsc.com/product-detail/C17430655.html answered HTTP 404 (01:06:32Z), not read; Digi-Key Active (01:03:02Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 74438357033 stock_available 4180 >= 50 (2026-09-29T01:03:02Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Qualifies on every value of V8, V14 and V7, with a start-of-winding dot and a magnetically shielded series. Maker status is read (Active, expected lifetime over 10 years) and Digi-Key is a second vendor. Ranked 3: below VLS4015CX-3R3M-H for its thin JLCPCB stock (78 against a gate of 50), its 3.1 mm height, its 10-times price and a 37-week lead time",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "XAL4030-332MEC",
+      "maker": "Coilcraft (datasheet; JLCPCB maker_label 'Coilcraft'; LCSC brandNameEn 'Coilcraft'); allowlist name Coilcraft (S2)",
+      "lcsc": "C2937437",
+      "package": "4.0 +/-0.3 x 4.0 +/-0.3 x 3.1 mm max (-332), 2 terminals; recommended land pattern 0.093 in / 2.37 mm, 0.134 in / 3.4 mm, 0.038 in / 0.98 mm, the same as XGL4020 and XFL4020",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one core regulator inductor on VREG_LX of the one RP2354B (IOBoard.md:110; RP2350 datasheet section 6.3.8.2)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inductance",
+        "required": "3.3 uH +/-20 % (V8)",
+        "datasheet": "XAL4030-332ME_: 3.3 uH +/-20 %",
+        "pass": true,
+        "source": "Coilcraft 'Shielded Power Inductors - XAL40xx', Document 806-1 to 806-4, revised 02/25/26 (SHA-256 b26cf975bd56a807173b05665bddd49ed49323400330eb8f6fa63e24ff6d7d15), https://www.coilcraft.com/getmedia/6adcb47d-8b55-416c-976e-1e22e0d2848c/xal4000.pdf, read 2026-09-29T01:03:26Z"
+       },
+       {
+        "name": "saturation current",
+        "required": "at least 1.5 A (V8)",
+        "datasheet": "Isat 5.9 A: DC current at 25 C that causes a 30 % (typ) inductance drop; Irms 5.0 A (20 C rise), 6.6 A (40 C rise)",
+        "pass": true,
+        "source": "XAL40xx Document 806-1, read 2026-09-29T01:03:26Z"
+       },
+       {
+        "name": "DC resistance",
+        "required": "at most 250 mOhm (V8)",
+        "datasheet": "DCR 26.0 mOhm typ, 28.6 mOhm max",
+        "pass": true,
+        "source": "XAL40xx Document 806-1, read 2026-09-29T01:03:26Z"
+       },
+       {
+        "name": "fully shielded",
+        "required": "yes (V14)",
+        "datasheet": "'Shielded Power Inductors - XAL40xx'",
+        "pass": true,
+        "source": "XAL40xx Document 806-1, read 2026-09-29T01:03:26Z"
+       },
+       {
+        "name": "polarity marking",
+        "required": "yes: marked for polarity (V14)",
+        "datasheet": "Document 806-4 drawing: 'Dash number: Indicates direction of terminals and start (short) lead. Connect high dv/dt here for lowest EMI' (page 4, rendered and viewed)",
+        "pass": true,
+        "source": "XAL40xx Document 806-4, read 2026-09-29T01:03:26Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "rated across 0 to 50 C ambient (V7)",
+        "datasheet": "Ambient temperature -40 C to +125 C with (40 C rise) Irms current",
+        "pass": true,
+        "source": "XAL40xx Document 806-1, read 2026-09-29T01:03:26Z"
+       }
+      ],
+      "jlcpcb": "C2937437 exact match (other_results 0): stockCount 1557, canPresaleNumber 1542, componentLibraryType expand, USD 9.6202 each at the need of 5 (break 1 to 9); read 2026-09-29T01:02:39Z, vendors.py jlcpcb C2937437 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "not carried: vendors.py digikey XAL4030-332MEC answered HTTP 404 'Requested Product xal4030-332mec Not Found' (https://api.digikey.com/products/v4/search/XAL4030-332MEC/productdetails, 2026-09-29T01:03:08Z). No stock, lead time or status",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; S4 threshold max(5 x 5, 50) = 50; stockCount 1557 >= 50 and canPresaleNumber 1542 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status not read: the Coilcraft page https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xal/xal40xx/xal4030-332/ (HTTP 200, 2026-09-29T01:06:11Z) has no status in its body. It reads 'For XAL4030, See XGL4030 for significantly lower DCR (up to 35% lower)', a recommendation, not a status. Reported to the owner. No Digi-Key status, because Digi-Key does not carry the part. Longevity commitment: not read. Market introduction: not read; the served datasheet gives only its current revision, 02/25/26. Notices: Coilcraft's change notices need a sign-up and were not read. Distributor: LCSC productCycle 'normal', stockNumber 1557 (https://www.lcsc.com/product-detail/C2937437.html, 01:06:34Z)",
+      "second_source": "alternate: XEL4030-332MEC (C19191691) is pin-compatible. Both drawings give the same recommended land pattern (2.37 / 3.4 / 0.98 mm), the same 4.0 x 4.0 mm body, the same 3.1 mm max height for -332 and the same dash-number start-lead mark (XEL4030 Document 1321-3, XAL40xx Document 806-4). It is 3.3 uH +/-20 % with DCR 28.6 mOhm max and Isat 5.9 A. JLCPCB stockCount 768 >= 50, canPresaleNumber 767 (2026-09-29T01:02:41Z): passes rules 1 to 4. The second-vendor route fails: Digi-Key does not carry it",
+      "alternates": [
+       "XEL4030-332MEC"
+      ],
+      "driver_in_shared": "none",
+      "reason": "P2 dropped it without a failed requirement value. Every value of V8, V14 and V7 passes, and rule 4 passes on JLCPCB stock of 1557. Ranked 5: below XGL4020-332MEC, on the same land pattern, because it is 1.0 mm taller and Coilcraft steers new use to XGL4030. Maker status is not read and the second source rests on the alternate",
+      "second_source_route": "alternate",
+      "second_source_part": "XEL4030-332MEC"
+     },
+     {
+      "rank": 6,
+      "part": "XEL4030-332MEC",
+      "maker": "Coilcraft (datasheet; JLCPCB maker_label 'Coilcraft'; LCSC brandNameEn 'Coilcraft'); allowlist name Coilcraft (S2)",
+      "lcsc": "C19191691",
+      "package": "4.0 +/-0.3 x 4.0 +/-0.3 x 3.1 mm max (-332), 2 terminals; recommended land pattern 0.093 in / 2.37 mm, 0.134 in / 3.4 mm, 0.038 in / 0.98 mm",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one core regulator inductor on VREG_LX of the one RP2354B (IOBoard.md:110; RP2350 datasheet section 6.3.8.2)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inductance",
+        "required": "3.3 uH +/-20 % (V8)",
+        "datasheet": "XEL4030-332ME_: 3.3 uH +/-20 %",
+        "pass": true,
+        "source": "Coilcraft 'Shielded Power Inductors - XEL4030', Document 1321-1 to 1321-3, revised 02/19/26 (SHA-256 9764cf540f92fc19453469e99eb9d1a3d2ff1757c25c97e17be82e9a4854626e), https://www.coilcraft.com/getmedia/8245f050-f190-4295-8c41-7c03d662ee3d/xel4030.pdf, read 2026-09-29T01:03:27Z"
+       },
+       {
+        "name": "saturation current",
+        "required": "at least 1.5 A (V8)",
+        "datasheet": "Isat 5.9 A: DC current at 25 C that causes a 30 % (typ) inductance drop; Irms 5.0 A (20 C rise), 6.6 A (40 C rise)",
+        "pass": true,
+        "source": "XEL4030 Document 1321-1, read 2026-09-29T01:03:27Z"
+       },
+       {
+        "name": "DC resistance",
+        "required": "at most 250 mOhm (V8)",
+        "datasheet": "DCR 26.1 mOhm typ, 28.6 mOhm max",
+        "pass": true,
+        "source": "XEL4030 Document 1321-1, read 2026-09-29T01:03:27Z"
+       },
+       {
+        "name": "fully shielded",
+        "required": "yes (V14)",
+        "datasheet": "'Shielded Power Inductors - XEL4030'",
+        "pass": true,
+        "source": "XEL4030 Document 1321-1, read 2026-09-29T01:03:27Z"
+       },
+       {
+        "name": "polarity marking",
+        "required": "yes: marked for polarity (V14)",
+        "datasheet": "Document 1321-3 drawing: 'Dash number' and 'Indicates direction of terminals and start (short) lead. Connect high dv/dt here for lowest EMI'. The drawing is an image that pdftotext does not extract; page 3 was rendered and viewed",
+        "pass": true,
+        "source": "XEL4030 Document 1321-3, read 2026-09-29T01:03:27Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "rated across 0 to 50 C ambient (V7)",
+        "datasheet": "Ambient temperature -40 C to +125 C with (40 C) Irms current",
+        "pass": true,
+        "source": "XEL4030 Document 1321-1, read 2026-09-29T01:03:27Z"
+       }
+      ],
+      "jlcpcb": "C19191691 exact match (other_results 0): stockCount 768, canPresaleNumber 767, componentLibraryType expand, USD 8.412 each at the need of 5 (break 1 to 9); read 2026-09-29T01:02:41Z, vendors.py jlcpcb C19191691 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "not carried: vendors.py digikey XEL4030-332MEC answered HTTP 404 'Requested Product xel4030-332mec Not Found' (https://api.digikey.com/products/v4/search/XEL4030-332MEC/productdetails, 2026-09-29T01:03:09Z). No stock, lead time or status",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; S4 threshold max(5 x 5, 50) = 50; stockCount 768 >= 50 and canPresaleNumber 767 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status not read: the Coilcraft page https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xel/xel4030/xel4030-332/ (HTTP 200, 2026-09-29T01:05:44Z) has no status in its body. It reads 'See XGL3530 for space savings ... See XGL4030 for significantly lower DCR', a recommendation, not a status. Reported to the owner. No Digi-Key status (not carried). Longevity commitment: not read. Market introduction: not read; the served datasheet gives only its current revision, 02/19/26. Notices: Coilcraft's change notices need a sign-up and were not read. Distributor: LCSC productCycle 'normal', stockNumber 766 (https://www.lcsc.com/product-detail/C19191691.html, 01:06:34Z)",
+      "second_source": "alternate: XAL4030-332MEC (C2937437), pin-compatible by the same land pattern, body, 3.1 mm height and start-lead mark; 3.3 uH, DCR 28.6 mOhm max, Isat 5.9 A; JLCPCB stockCount 1557 >= 50, canPresaleNumber 1542 (2026-09-29T01:02:39Z): passes rules 1 to 4. The second-vendor route fails: Digi-Key does not carry it",
+      "alternates": [
+       "XAL4030-332MEC"
+      ],
+      "driver_in_shared": "none",
+      "reason": "P2 dropped it for a start-lead note not found in the text. The note is on the page-3 drawing, viewed here. Every value of V8, V14 and V7 passes. Ranked 6: the same figures as XAL4030-332MEC with half its JLCPCB stock. Maker status is not read and the second source rests on the alternate",
+      "second_source_route": "alternate",
+      "second_source_part": "XAL4030-332MEC"
+     },
+     {
+      "rank": 8,
+      "part": "ETQP3M3R3KVP",
+      "maker": "Panasonic (datasheet 'Panasonic Industry'; JLCPCB maker_label 'PANASONIC'; Digi-Key 'Panasonic Industry', listed as ETQ-P3M3R3KVP); allowlist name Panasonic (S2)",
+      "lcsc": "C542316",
+      "package": "PCC-M0530M-LP: 5.5 +/-0.4 x 5.0 +/-0.4 x 3.0 mm max, metal composite core, 2 terminals (JLCPCB 'SMD,5.5x5mm')",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one core regulator inductor on VREG_LX of the one RP2354B (IOBoard.md:110; RP2350 datasheet section 6.3.8.2)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inductance",
+        "required": "3.3 uH +/-20 % (V8)",
+        "datasheet": "ETQP3M3R3KVP: L0 3.3 uH, tolerance +/-20 %, measured at 100 kHz (PCC-M0530M-LP standard parts table)",
+        "pass": true,
+        "source": "Panasonic 'Power Choke Coil (Automotive Grade)' LP series catalog, edition 1-Jul-26 (SHA-256 3181caa00e4f342cbcccd4adabed32e007abd62172fe56d5eab0e52c58b53ee2), https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C63.pdf, read 2026-09-29T01:03:22Z"
+       },
+       {
+        "name": "saturation current",
+        "required": "at least 1.5 A (V8)",
+        "datasheet": "Saturation rated current 8.0 A typ at an L0 drop of 30 %; rated current 5.4 A (4.4 A) at a 40 K rise",
+        "pass": true,
+        "source": "LP series catalog edition 1-Jul-26, PCC-M0530M-LP table and notes *2 to *4, read 2026-09-29T01:03:22Z"
+       },
+       {
+        "name": "DC resistance",
+        "required": "at most 250 mOhm (V8)",
+        "datasheet": "DCR at 20 C 27.3 mOhm typ, 30.03 mOhm max",
+        "pass": true,
+        "source": "LP series catalog edition 1-Jul-26, read 2026-09-29T01:03:22Z"
+       },
+       {
+        "name": "fully shielded",
+        "required": "yes (V14)",
+        "datasheet": "'Magnetically shielded' (features)",
+        "pass": true,
+        "source": "LP series catalog edition 1-Jul-26, page 1, read 2026-09-29T01:03:22Z"
+       },
+       {
+        "name": "polarity marking",
+        "required": "yes: marked for polarity (V14)",
+        "datasheet": "The PCC-M0530M-LP dimension drawing labels 'Inductance', 'Suffix', 'Date Code' and 'Polarity' marks on the top face (page 10)",
+        "pass": true,
+        "source": "LP series catalog edition 1-Jul-26, page 10, read 2026-09-29T01:03:22Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "rated across 0 to 50 C ambient (V7)",
+        "datasheet": "Operating temperature range Tc -55 C to +170 C, including self-temperature rise",
+        "pass": true,
+        "source": "LP series catalog edition 1-Jul-26, page 1, read 2026-09-29T01:03:22Z"
+       }
+      ],
+      "jlcpcb": "C542316 exact match (other_results 0): stockCount 163, canPresaleNumber 154, componentLibraryType expand, USD 0.9354 each at the need of 5 (break 1 to 9); read 2026-09-29T01:02:31Z, vendors.py jlcpcb C542316 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "ETQ-P3M3R3KVP, Panasonic Industry: stock_available 2343 (cut tape 2343, Digi-Reel 2343, tape and reel 0), lead 23 weeks, ProductStatus Active, discontinued false, end_of_life false; read 2026-09-29T01:03:00Z, vendors.py digikey ETQ-P3M3R3KVP (https://api.digikey.com/products/v4/search/ETQ-P3M3R3KVP/productdetails)",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; S4 threshold max(5 x 5, 50) = 50; stockCount 163 >= 50 and canPresaleNumber 154 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status not read, reported to the owner. industry.panasonic.com answered HTTP 404 for .../global/en/products/pt/inductor/models/ETQP3M3R3KVP, .../power-inductor-automotive/models/ETQP3M3R3KVP and .../lp/models/ETQP3M3R3KVP (2026-09-29T01:06:44Z to 01:06:47Z). Longevity commitment: not read. Market introduction: the first edition's date is not read. The part is listed in the catalog edition of 30-Jun-22 (https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8589968333195288576, SHA-256 49d78ec18d36daa588d76849828af258925d5d36e3c1c390719a7a248e7b25bd, read 01:08:24Z): over 12 months, not flagged. The 1-Jul-26 edition marks ETQP3M5R6KVP 'NEW', not this part. Notices: Panasonic's PCN listing not read; Digi-Key end_of_life false. Distributor: LCSC productCycle 'normal', stockNumber 163 (https://www.lcsc.com/product-detail/C542316.html, 01:06:32Z); Digi-Key Active (01:03:00Z)",
+      "second_source": "second vendor: Digi-Key ETQ-P3M3R3KVP, the same part in Panasonic's hyphenated form, stock_available 2343 >= 50 (2026-09-29T01:03:00Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Qualifies on every value of V8, V14 and V7, with a mark the catalog labels 'Polarity'. Digi-Key is a second vendor. Ranked 8: the 5.5 x 5.0 x 3.0 mm body departs further from the 2.0 x 1.6 mm layout than any 4 x 4 mm part, JLCPCB stock is thin at 163, and maker status is not read",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 9,
+      "part": "XAL6030-332MEC",
+      "maker": "Coilcraft (datasheet; JLCPCB maker_label 'Coilcraft'; LCSC brandNameEn 'Coilcraft'; the jlcparts maker field is blank); allowlist name Coilcraft (S2)",
+      "lcsc": "C19191620",
+      "package": "6.36 +/-0.2 x 6.56 +/-0.2 x 3.1 mm max (-332), 2 terminals; recommended land pattern 0.159 in / 4.04 mm, 0.216 in / 5.50 mm, 0.056 in / 1.43 mm (JLCPCB 'SMD,6.5x6.3mm')",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one core regulator inductor on VREG_LX of the one RP2354B (IOBoard.md:110; RP2350 datasheet section 6.3.8.2)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inductance",
+        "required": "3.3 uH +/-20 % (V8)",
+        "datasheet": "XAL6030-332ME_: 3.3 uH +/-20 %",
+        "pass": true,
+        "source": "Coilcraft 'Shielded Power Inductors - XAL60xx', Document 887-1 to 887-4, revised 02/25/26 (SHA-256 236888dabe560055e7eb40e24b8bf938db132b66a0e9f1a3c512fb3b04361681), https://www.coilcraft.com/getmedia/ea51f14b-7f32-4dc6-8dfe-d4b70549040f/xal60xx.pdf, read 2026-09-29T01:03:24Z"
+       },
+       {
+        "name": "saturation current",
+        "required": "at least 1.5 A (V8)",
+        "datasheet": "Isat 12.2 A: DC current at 25 C that causes a 30 % (typ) inductance drop; Irms 6.0 A (20 C rise), 8.0 A (40 C rise)",
+        "pass": true,
+        "source": "XAL60xx Document 887-1, read 2026-09-29T01:03:24Z"
+       },
+       {
+        "name": "DC resistance",
+        "required": "at most 250 mOhm (V8)",
+        "datasheet": "DCR 19.92 mOhm typ, 20.81 mOhm max",
+        "pass": true,
+        "source": "XAL60xx Document 887-1, read 2026-09-29T01:03:24Z"
+       },
+       {
+        "name": "fully shielded",
+        "required": "yes (V14)",
+        "datasheet": "'Shielded Power Inductors - XAL60xx'",
+        "pass": true,
+        "source": "XAL60xx Document 887-1, read 2026-09-29T01:03:24Z"
+       },
+       {
+        "name": "polarity marking",
+        "required": "yes: marked for polarity (V14)",
+        "datasheet": "Document 887-4 drawing: 'Dash number: Indicates direction of terminals and start (short) lead. Connect high dv/dt here for lowest EMI' (page 4, rendered and viewed)",
+        "pass": true,
+        "source": "XAL60xx Document 887-4, read 2026-09-29T01:03:24Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "rated across 0 to 50 C ambient (V7)",
+        "datasheet": "Ambient temperature -40 C to +125 C with (40 C rise) Irms current",
+        "pass": true,
+        "source": "XAL60xx Document 887-1, read 2026-09-29T01:03:24Z"
+       }
+      ],
+      "jlcpcb": "C19191620 exact match (other_results 0): stockCount 770, canPresaleNumber 764, componentLibraryType expand, maker_label Coilcraft, USD 7.2249 each at the need of 5 (break 1 to 9); read 2026-09-29T01:02:36Z, vendors.py jlcpcb C19191620 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "not carried: vendors.py digikey XAL6030-332MEC answered HTTP 404 'Requested Product xal6030-332mec Not Found' (https://api.digikey.com/products/v4/search/XAL6030-332MEC/productdetails, 2026-09-29T01:03:05Z). No stock, lead time or status",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; S4 threshold max(5 x 5, 50) = 50; stockCount 770 >= 50 and canPresaleNumber 764 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status not read: the Coilcraft page https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xal/xal60xx/xal6030-332/ (HTTP 200, 2026-09-29T01:06:11Z) has no status in its body. It reads 'The part number you have selected is not available through our online store. Please click the \"Request Quote\" button' and steers to XGL5030 and XGL6030. Reported to the owner. No Digi-Key status (not carried). Longevity commitment: not read. Market introduction: not read; the served datasheet gives only its current revision, 02/25/26. Notices: Coilcraft's change notices need a sign-up and were not read. Distributor: LCSC productCycle 'normal', stockNumber 763 (https://www.lcsc.com/product-detail/C19191620.html, 01:06:33Z)",
+      "second_source": "alternate: XEL6030-332MEC (C19191645) is pin-compatible. Both drawings give the same 6.36 x 6.56 mm body, the same 3.1 mm max height for -332, the same recommended land pattern (4.04 / 5.50 / 1.43 mm) and the same dash-number start-lead mark (XEL6030 Document 1353-3, XAL60xx Document 887-4). It is 3.3 uH +/-20 % with DCR 20.81 mOhm max and Isat 10.5 A. JLCPCB stockCount 74 >= 50, canPresaleNumber 70 (2026-09-29T01:02:38Z): passes rules 1 to 4. The second-vendor route fails: Digi-Key does not carry it",
+      "alternates": [
+       "XEL6030-332MEC"
+      ],
+      "driver_in_shared": "none",
+      "reason": "P2 dropped it with the blank-maker rows, against rule 3. JLCPCB names Coilcraft, and every value of V8, V14 and V7 passes. Ranked last: the largest body of the ranked parts (6.36 x 6.56 x 3.1 mm), maker status not read, not on sale in Coilcraft's store, not at Digi-Key, and an alternate only 24 above the gate",
+      "second_source_route": "alternate",
+      "second_source_part": "XEL6030-332MEC"
+     },
+     {
+      "rank": 0,
+      "part": "XEL6030-332MEC",
+      "maker": "Coilcraft (datasheet; JLCPCB maker_label 'Coilcraft'; LCSC brandNameEn 'Coilcraft'); allowlist name Coilcraft (S2)",
+      "lcsc": "C19191645",
+      "package": "6.36 +/-0.2 x 6.56 +/-0.2 x 3.1 mm max (-332), 2 terminals; recommended land pattern 0.159 in / 4.04 mm, 0.216 in / 5.50 mm, 0.056 in / 1.43 mm (JLCPCB 'SMD,6.5x6.3mm')",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one core regulator inductor on VREG_LX of the one RP2354B (IOBoard.md:110; RP2350 datasheet section 6.3.8.2)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inductance",
+        "required": "3.3 uH +/-20 % (V8)",
+        "datasheet": "XEL6030-332ME_: 3.3 uH +/-20 %",
+        "pass": true,
+        "source": "Coilcraft 'Shielded Power Inductors - XEL6030', Document 1353-1 to 1353-3, revised 02/20/26 (SHA-256 a603fe9bf895e5b8b2ba84523e13b89aa04289632d6d0687f324a48fe07454e5), https://www.coilcraft.com/getmedia/ed8d0314-5cbb-4be3-85da-32235c3701c8/xel6030.pdf, read 2026-09-29T01:03:25Z"
+       },
+       {
+        "name": "saturation current",
+        "required": "at least 1.5 A (V8)",
+        "datasheet": "Isat 10.5 A: DC current at 25 C that causes a 30 % (typ) inductance drop; Irms 6.0 A (20 C rise), 8.0 A (40 C rise)",
+        "pass": true,
+        "source": "XEL6030 Document 1353-1, read 2026-09-29T01:03:25Z"
+       },
+       {
+        "name": "DC resistance",
+        "required": "at most 250 mOhm (V8)",
+        "datasheet": "DCR 19.92 mOhm typ, 20.81 mOhm max",
+        "pass": true,
+        "source": "XEL6030 Document 1353-1, read 2026-09-29T01:03:25Z"
+       },
+       {
+        "name": "fully shielded",
+        "required": "yes (V14)",
+        "datasheet": "'Shielded Power Inductors - XEL6030'",
+        "pass": true,
+        "source": "XEL6030 Document 1353-1, read 2026-09-29T01:03:25Z"
+       },
+       {
+        "name": "polarity marking",
+        "required": "yes: marked for polarity (V14)",
+        "datasheet": "Document 1353-3 drawing: 'Dash number' and 'Indicates direction of terminals and start (short) lead. Connect high dv/dt here for lowest EMI' (page 3, rendered and viewed)",
+        "pass": true,
+        "source": "XEL6030 Document 1353-3, read 2026-09-29T01:03:25Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "rated across 0 to 50 C ambient (V7)",
+        "datasheet": "Ambient temperature -40 C to +125 C with (40 C rise) Irms current",
+        "pass": true,
+        "source": "XEL6030 Document 1353-1, read 2026-09-29T01:03:25Z"
+       }
+      ],
+      "jlcpcb": "C19191645 exact match (other_results 0): stockCount 74, canPresaleNumber 70, componentLibraryType expand, USD 7.3419 each at the need of 5 (break 1 to 9); read 2026-09-29T01:02:38Z, vendors.py jlcpcb C19191645 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "not carried: vendors.py digikey XEL6030-332MEC answered HTTP 404 'Requested Product xel6030-332mec Not Found' (https://api.digikey.com/products/v4/search/XEL6030-332MEC/productdetails, 2026-09-29T01:03:06Z). No stock, lead time or status",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; S4 threshold max(5 x 5, 50) = 50; stockCount 74 >= 50 and canPresaleNumber 70 >= 0: pass (rule 4), with 24 above the gate",
+      "lifecycle": "Maker status not read: the Coilcraft page https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xel/xel6030/xel6030-332/ (HTTP 200, 2026-09-29T01:05:46Z) has no status in its body. It reads 'See XGL6030 for significantly lower DCR ... See XGL5030 to save 30% board space', a recommendation, not a status. Reported to the owner. No Digi-Key status (not carried). Longevity commitment: not read. Market introduction: not read; the served datasheet gives only its current revision, 02/20/26. Notices: Coilcraft's change notices need a sign-up and were not read. Distributor: LCSC productCycle 'normal', stockNumber 74 (https://www.lcsc.com/product-detail/C19191645.html, 01:06:33Z)",
+      "second_source": "alternate: XAL6030-332MEC (C19191620), pin-compatible by the same body, height, land pattern and start-lead mark; JLCPCB stockCount 770 >= 50, canPresaleNumber 764 (2026-09-29T01:02:36Z): passes rules 1 to 4. The second-vendor route fails: Digi-Key does not carry it",
+      "alternates": [
+       "XAL6030-332MEC"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Not ranked. Kept as the full record of the sourcing-rule-5 alternate of XAL6030-332MEC. It meets every value of V8, V14 and V7 and passes rules 1 to 4, and it has the same body, land pattern and mark as XAL6030",
+      "second_source_route": "alternate",
+      "second_source_part": "XAL6030-332MEC"
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "VLS252012HBX-3R3M-1 (C360733)",
+      "maker": "TDK",
+      "reason": "Fails 'polarity marking (V14)'. The datasheet does not show the part marked for polarity. The part-number construction names the '-1' suffix 'Marking'. The shape and dimensions drawing (page 3, rendered and viewed) shows an unlabelled dot pattern on the top face, with no 'Polarity Mark' label and no winding direction. TDK labels both on VLS4015CX-H, page 3. The mark's meaning is not stated, so V14 is not shown. The other values pass: 3.3 uH +/-20 %, DCR 0.168 Ohm max, Isat 1.80 A (max. column), magnetic shield, -40 to +105 C. VLS252012HBX-1 datasheet dated 20180709 (SHA-256 0190a95f70b860ae83f7183f6f81970d5de9c9310c83b23e7d6a1130da283ed9), https://product.tdk.com/en/system/files/dam/doc/product/inductor/inductor/smd/catalog/inductor_commercial_power_vls252012hbx-1_en.pdf, read 2026-09-29T01:03:24Z. Recorded, not decisive: JLCPCB stockCount 1040, canPresaleNumber 1011 (01:02:35Z); Digi-Key 218, Active (01:03:03Z)"
+     },
+     {
+      "part": "74438356033 (C2045382)",
+      "maker": "Wurth Elektronik (JLCPCB maker_label; jlcparts maker blank)",
+      "reason": "Fails rule 4: JLCPCB stockCount 9 < 50, canPresaleNumber 8 (vendors.py jlcpcb C2045382, 2026-09-29T01:02:47Z). P3 lists it as a blank-maker row whose drop holds on stock, not on marking"
+     },
+     {
+      "part": "TPD2S701-Q1 (C2865204, TPD2S701QDSKRQ1), with TPD2S703-Q1 (C5216312)",
+      "maker": "Texas Instruments",
+      "reason": "Fails 'D+/D- steady voltage (V12)'. In Mode 1 with VREF at 3.3 V, the VD+/VD- OVP threshold VOVP_3.3V is 3.61 min, 4.14 typ, 4.67 max V, so a steady voltage up to 4.67 V can reach USB_DP and USB_DM. The Mode 0 VOVP_RISING is 4.3 to 4.7 V. The internal D+ and D- range is at most VREF + 0.3 V (SLLSEY0A, April 2017, revised July 2017, SHA-256 066e20714b1c164e6c0f965c4870c9ea3a7a1ebb21b06a01cd9244e6ed11bfc6, https://www.ti.com/lit/ds/symlink/tpd2s701-q1.pdf, read 2026-09-29T01:06:58Z). A lower VREF brings the minimum threshold and the internal-pin limit below the 3.3 V full-speed level, so no setting passes both V12 and USB signalling. It covers D+ and D- only, so it also fails 'lines covered' (5 lines, V13). TPD2S703-Q1 shares the OVP design (https://www.ti.com/lit/ds/symlink/tpd2s703-q1.pdf, read 01:06:59Z)"
+     },
+     {
+      "part": "TPD3S714-Q1 (C2649829)",
+      "maker": "Texas Instruments",
+      "reason": "Fails 'D+/D- steady voltage (V12)'. The VD+/VD- OVP threshold VOVP(RISING) is VIN + 0.6 min, VIN + 0.8 typ, VIN + 1 max V. With VIN on the 3.3 V rail that is 3.9 to 4.3 V, so a steady 3.63 to 3.9 V reaches the system side. The VBUS_CON OVP is 5.4 to 5.8 V. It has no CC pins, so it also fails 'lines covered' (V13). Source: SLVSCG4C (January 2016, revised August 2020, SHA-256 e69732143c08a07348365b6af4e9be175d72e53e0e80840334f88b5ba6bf9df5), https://www.ti.com/lit/ds/symlink/tpd3s714-q1.pdf, read 2026-09-29T01:07:00Z"
+     },
+     {
+      "part": "TPD3S716-Q1 (C2649847)",
+      "maker": "Texas Instruments",
+      "reason": "Fails 'D+/D- steady voltage (V12)': VD+/VD- VOVP(RISING) is VIN + 0.6 min, VIN + 0.8 typ, VIN + 1 max V, 3.9 to 4.3 V at VIN 3.3 V. The VBUS_CON OVP is 5.6 to 6.0 V. It has no CC pins, so it also fails 'lines covered' (V13). Source: SLVSDH9D (March 2016, revised August 2020, SHA-256 3c73efd1fb7bad2bc2bdd9ea6b24dfb3365b3b2011678f346db0d08d427f3ce1), https://www.ti.com/lit/ds/symlink/tpd3s716-q1.pdf, read 2026-09-29T01:07:00Z"
+     },
+     {
+      "part": "ISL54225IRTZ (C1557049)",
+      "maker": "Renesas (Intersil)",
+      "reason": "Fails 'D+/D- steady voltage (V12)'. The positive fault-protection trip threshold VPFP is 3.63 V min, 3.8 V typ, 3.95 V max at 25 C for VDD 2.7 to 5.25 V (Table 1 and the electrical specifications). A steady 3.63 to 3.95 V can pass, and no figure is given across 0 to 50 C. It covers D+ and D- only (fails 'lines covered', V13). It carries no IEC 61000-4-2 rating, only HBM > 5.5 kV (fails V9). Source: FN7627 Rev 0.00 (SHA-256 c9110832b1fa0a4d27a7caa3712833028fdb62369540e95c1e8d75d1de89f48d), https://www.renesas.com/en/document/dst/isl54225-datasheet, read 2026-09-29T01:07:01Z"
+     },
+     {
+      "part": "PI3USB42ZMEX (C780880)",
+      "maker": "Diodes Incorporated (Pericom)",
+      "reason": "Fails 'D+/D- steady voltage (V12)', which is not shown. Page 1 says 'If the Vin (D+/-) is 0.6V greater than VDD, USB42 will turn off the switch', with no minimum or maximum for that threshold. On a 3.3 V VDD that is about 3.9 V, above 3.63 V. VDD range is 1.8 to 4.5 V. It covers D+ and D- only (fails 'lines covered', V13). It carries no IEC 61000-4-2 rating, only >8 kV HBM (fails V9). Source: DS42424 Rev 4-2, March 2025 (SHA-256 46f60c57f1fb7d1827adadbcb62d0a71247ec46a077394b8d1805f4d39448d65), https://www.diodes.com/assets/Datasheets/PI3USB42.pdf, page 1 rendered and viewed, read 2026-09-29T01:07:02Z"
+     },
+     {
+      "part": "SN74CB3T1G125 (C134001), SN74CB3T3306 (C543077)",
+      "maker": "Texas Instruments",
+      "reason": "Not qualified. 'D+/D- steady voltage (V12)' is not shown. Figure 1 note A says that for an input from VCC - 1 V to 5.5 V the output high level 'will be equal to approximately the VCC voltage level'. VOH is given only as typical curves (Figures 3 and 4), with no maximum output voltage. It carries no IEC 61000-4-2 rating (ESD tested per JESD 22), so it fails V9 without a separate clamp. It does not cover VBUS or CC (fails 'lines covered', V13). Sources: SCDS150A (October 2003, revised September 2006, SHA-256 c85b9867c881127e11df04eded2bb8de69fa8fe2542f6b4a6140f946f08f4c3f), https://www.ti.com/lit/ds/symlink/sn74cb3t1g125.pdf, read 2026-09-29T01:07:05Z; https://www.ti.com/lit/ds/symlink/sn74cb3t3306.pdf (SHA-256 031e6d810f30687ba0479e414ef536388b8d7fb8ad3ae92c6efb3b5526bfd3f3), read 01:07:05Z"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "AOTA-B201610S3R3-101-T",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "USB protection",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "TPD2S701-Q1 (C2865204, TPD2S701QDSKRQ1), with TPD2S703-Q1 (C5216312)",
+      "maker": "Texas Instruments",
+      "reason": "Fails 'D+/D- steady voltage (V12)'. VOVP_3.3V (Mode 1, VREF 3.3 V) is 3.61 min, 4.14 typ, 4.67 max V, and the Mode 0 VOVP_RISING is 4.3 to 4.7 V, so a steady voltage above 3.63 V can reach USB_DP and USB_DM. A lower VREF brings the internal D+/D- limit (VREF + 0.3 V) and the minimum threshold below the 3.3 V full-speed level. It covers D+ and D- only, so it also fails 'lines covered' (V13). Source: SLLSEY0A (SHA-256 066e20714b1c164e6c0f965c4870c9ea3a7a1ebb21b06a01cd9244e6ed11bfc6), https://www.ti.com/lit/ds/symlink/tpd2s701-q1.pdf, read 2026-09-29T01:06:58Z; TPD2S703-Q1, https://www.ti.com/lit/ds/symlink/tpd2s703-q1.pdf, read 01:06:59Z"
+     },
+     {
+      "part": "TPD3S714-Q1 (C2649829)",
+      "maker": "Texas Instruments",
+      "reason": "Fails 'D+/D- steady voltage (V12)': VD+/VD- VOVP(RISING) is VIN + 0.6 min, VIN + 0.8 typ, VIN + 1 max V, 3.9 to 4.3 V at VIN 3.3 V, so a steady 3.63 to 3.9 V passes. It has no CC pins, so it also fails 'lines covered' (V13). Source: SLVSCG4C (SHA-256 e69732143c08a07348365b6af4e9be175d72e53e0e80840334f88b5ba6bf9df5), https://www.ti.com/lit/ds/symlink/tpd3s714-q1.pdf, read 2026-09-29T01:07:00Z"
+     },
+     {
+      "part": "TPD3S716-Q1 (C2649847)",
+      "maker": "Texas Instruments",
+      "reason": "Fails 'D+/D- steady voltage (V12)': VD+/VD- VOVP(RISING) is VIN + 0.6 min, VIN + 0.8 typ, VIN + 1 max V, 3.9 to 4.3 V at VIN 3.3 V. It has no CC pins, so it also fails 'lines covered' (V13). Source: SLVSDH9D (SHA-256 3c73efd1fb7bad2bc2bdd9ea6b24dfb3365b3b2011678f346db0d08d427f3ce1), https://www.ti.com/lit/ds/symlink/tpd3s716-q1.pdf, read 2026-09-29T01:07:00Z"
+     },
+     {
+      "part": "ISL54225IRTZ (C1557049)",
+      "maker": "Renesas (Intersil)",
+      "reason": "Fails 'D+/D- steady voltage (V12)': the positive fault-protection trip threshold VPFP is 3.63 V min, 3.8 V typ, 3.95 V max at 25 C, so a steady 3.63 to 3.95 V can pass, and no figure is given across 0 to 50 C. It covers D+ and D- only ('lines covered', V13). It carries no IEC 61000-4-2 rating, only HBM > 5.5 kV (V9). Source: FN7627 Rev 0.00 (SHA-256 c9110832b1fa0a4d27a7caa3712833028fdb62369540e95c1e8d75d1de89f48d), https://www.renesas.com/en/document/dst/isl54225-datasheet, read 2026-09-29T01:07:01Z"
+     },
+     {
+      "part": "PI3USB42ZMEX (C780880)",
+      "maker": "Diodes Incorporated (Pericom)",
+      "reason": "Fails 'D+/D- steady voltage (V12)', which is not shown: the switch turns off when 'the Vin (D+/-) is 0.6V greater than VDD', with no minimum or maximum, about 3.9 V on a 3.3 V VDD. It covers D+ and D- only (V13). It carries no IEC 61000-4-2 rating, only >8 kV HBM (V9). Source: DS42424 Rev 4-2 (SHA-256 46f60c57f1fb7d1827adadbcb62d0a71247ec46a077394b8d1805f4d39448d65), https://www.diodes.com/assets/Datasheets/PI3USB42.pdf, page 1 rendered and viewed, read 2026-09-29T01:07:02Z"
+     },
+     {
+      "part": "SN74CB3T1G125 (C134001), SN74CB3T3306 (C543077)",
+      "maker": "Texas Instruments",
+      "reason": "Not qualified: 'D+/D- steady voltage (V12)' is not shown. VOH is 'approximately the VCC voltage level' (Figure 1 note A), given only as typical curves, with no maximum. It carries no IEC 61000-4-2 rating (V9) and no VBUS or CC coverage (V13). Source: SCDS150A (SHA-256 c85b9867c881127e11df04eded2bb8de69fa8fe2542f6b4a6140f946f08f4c3f), https://www.ti.com/lit/ds/symlink/sn74cb3t1g125.pdf, read 2026-09-29T01:07:05Z; https://www.ti.com/lit/ds/symlink/sn74cb3t3306.pdf, read 01:07:05Z"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "crystal tolerance: VLS4015CX-3R3M-H",
+    "value": "not applicable: a core regulator inductor, not a frequency source. The datasheet gives inductance, DC resistance and rated currents only",
+    "source": "VLS4015CX-H datasheet dated 20220609 (SHA-256 5d2a514b113eb5c8566b83a5669f2ef9105edfb8a1da8e18b2a80dddbc6d936a), https://product.tdk.com/system/files/dam/doc/product/inductor/inductor/smd/catalog/inductor_automotive_power_vls4015cx-h_en.pdf, read 2026-09-29T01:03:22Z"
+   },
+   {
+    "figure": "crystal tolerance: 74438357033",
+    "value": "not applicable: a core regulator inductor, not a frequency source",
+    "source": "Wurth Elektronik datasheet 74438357033 revision 003.002 (SHA-256 a49aab25ec41c4dc03870529ed6b45e4b0dfa4d7d764ba8ae7260cc9006022fa), https://www.we-online.com/components/products/datasheet/74438357033.pdf, read 2026-09-29T01:03:22Z"
+   },
+   {
+    "figure": "crystal tolerance: XAL4030-332MEC",
+    "value": "not applicable: a core regulator inductor, not a frequency source",
+    "source": "Coilcraft XAL40xx Document 806-1, revised 02/25/26, https://www.coilcraft.com/getmedia/6adcb47d-8b55-416c-976e-1e22e0d2848c/xal4000.pdf, read 2026-09-29T01:03:26Z"
+   },
+   {
+    "figure": "crystal tolerance: XEL4030-332MEC",
+    "value": "not applicable: a core regulator inductor, not a frequency source",
+    "source": "Coilcraft XEL4030 Document 1321-1, revised 02/19/26, https://www.coilcraft.com/getmedia/8245f050-f190-4295-8c41-7c03d662ee3d/xel4030.pdf, read 2026-09-29T01:03:27Z"
+   },
+   {
+    "figure": "crystal tolerance: ETQP3M3R3KVP",
+    "value": "not applicable: a core regulator inductor, not a frequency source",
+    "source": "Panasonic LP series catalog edition 1-Jul-26, https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C63.pdf, read 2026-09-29T01:03:22Z"
+   },
+   {
+    "figure": "crystal tolerance: XAL6030-332MEC",
+    "value": "not applicable: a core regulator inductor, not a frequency source",
+    "source": "Coilcraft XAL60xx Document 887-1, revised 02/25/26, https://www.coilcraft.com/getmedia/ea51f14b-7f32-4dc6-8dfe-d4b70549040f/xal60xx.pdf, read 2026-09-29T01:03:24Z"
+   },
+   {
+    "figure": "crystal tolerance: XEL6030-332MEC",
+    "value": "not applicable: a core regulator inductor, not a frequency source",
+    "source": "Coilcraft XEL6030 Document 1353-1, revised 02/20/26, https://www.coilcraft.com/getmedia/ed8d0314-5cbb-4be3-85da-32235c3701c8/xel6030.pdf, read 2026-09-29T01:03:25Z"
+   },
+   {
+    "figure": "AOTA-B201610S3R3-101-T stock re-read",
+    "value": "C42411119 exact match: stockCount 4586, canPresaleNumber 4095, expand, USD 0.2826 at break 1; rule 4 passes at the gate of 50",
+    "source": "vendors.py jlcpcb C42411119 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList), read 2026-09-29T01:02:45Z"
+   },
+   {
+    "figure": "Coilcraft 4 x 4 mm stock re-read",
+    "value": "XGL4020-332MEC C6937839: stockCount 1446, canPresaleNumber 1442, USD 10.2373 at break 1 to 9. XFL4020-332MEC C19191633: stockCount 723, canPresaleNumber 712, USD 8.8911. Both pass rule 4",
+    "source": "vendors.py jlcpcb C6937839 (2026-09-29T01:02:42Z) and C19191633 (01:02:44Z), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList"
+   },
+   {
+    "figure": "XFL4020-332 maker page",
+    "value": "The page reads 'Great News! More choices! Please see XGL4020 for a drop-in replacement with lower DCR (as much as 25% lower), higher Isat, and L choices up to 8.2 uH'. It carries no lifecycle status. The maker's own words support XGL4020-332MEC and XFL4020-332MEC as each other's pin-compatible alternates. It is a recommendation, not an NRND (not recommended for new designs) status, so XFL4020-332MEC stays ranked",
+    "source": "https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xfl/xfl4020/xfl4020-332/, HTTP 200, read 2026-09-29T01:05:41Z"
+   },
+   {
+    "figure": "Coilcraft maker status",
+    "value": "Not read for any Coilcraft part (XGL4020, XFL4020, XAL4030, XEL4030, XAL6030, XEL6030): no product page carries a lifecycle status in its body. Each page steers new use to a newer XGL type. Digi-Key's API answers 404 for every Coilcraft part number tried, so no second vendor exists for them. For the owner under the Lifecycle check",
+    "source": "Coilcraft product pages read 2026-09-29T01:05:41Z to 01:06:11Z; vendors.py digikey XAL6030-332MEC, XEL6030-332MEC, XAL4030-332MEC, XEL4030-332MEC, 01:03:05Z to 01:03:09Z, HTTP 404"
+   },
+   {
+    "figure": "USB protection: P3 finds",
+    "value": "None of P3's 8 USB protection finds qualifies. Every OVP (overvoltage protection) threshold found on D+ and D- has a maximum above 3.63 V: TPD2S701-Q1 4.67 V at VREF 3.3 V; TPD3S714-Q1 and TPD3S716-Q1 VIN + 1 V, 4.3 V; ISL54225 3.95 V; PI3USB42 VDD + 0.6 V, with no min or max given. The SN74CB3T bus switches specify no maximum output voltage. None covers VBUS, D+, D-, CC1 and CC2 together. The USB protection function stays without a qualifying part, as in P2's return",
+    "source": "datasheets read 2026-09-29T01:06:58Z to 01:07:05Z, as cited in the USB protection drops"
+   },
+   {
+    "figure": "inductor ranking basis",
+    "value": "Order of the grounds used: (1) the 2.0 x 1.6 mm case the hardware design guide's layout is drawn for; (2) maker status read (TDK Production, Wurth Active) against not read (Coilcraft, Panasonic); (3) a Digi-Key second vendor against an alternate only; (4) body size and height; (5) JLCPCB stock margin over the gate of 50. V8 asks for 1.5 A of saturation current. Every ranked part gives at least 2.2 A, so extra current is not a ranking ground",
+    "source": "the records in this return; V8, V14 and V7 answers in Research.md 'Raised by P1' at checkout e13f5f60d2e5"
+   }
+  ]
+ }
+}

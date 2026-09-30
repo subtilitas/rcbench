@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R2",
+ "label": "adjudicator-R2-3",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "function": "function requirements: Link CAN transceiver",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The requirement list for the Link CAN transceiver names five values: classic CAN at 1 Mbit/s, RXD at 3.3 V logic, the V25 bus-fault rating, the 350 ns loop delay and the supply rail. It leaves out a requirement the owner has answered. Research.md:567, V7, reads \"0 to 50 °C ambient, one range for the whole IO board (owner, 2026-09-28)\". The question was raised under R1, but the answer sets one range for every part on the IO board, so the Link CAN transceiver is included. The list is therefore incomplete: it is missing an operating range of at least 0 to 50 °C ambient. The five values it does name match their cited lines (IOBoard.md:166-167, :175, :177, :337-338; Research.md:585). The verifier states that TCAN3413DR is rated -40 to 125 °C, which would meet the missing range. I did not re-read that addendum, and a part meeting the range does not fix the list. What holds is about this function's requirement list, not the part, so the scope is function.",
+  "evidence": "Research.md:567 (V7 answer): \"0 to 50 °C ambient, one range for the whole IO board (owner, 2026-09-28)\". None of the five claim entries states a temperature range. Research.md:585 (V25) is marked \"for research\", so its value is found, not given. IOBoard.md:167 says classic CAN at 1 Mbit/s. IOBoard.md:175 says outputs at 3.3 V logic. IOBoard.md:177 says the bus is under 5 m. IOBoard.md:337-338 give the 3.3 V logic rail and the 5 V rail. IOBoard.md:184 and :220 also use 0 to 50 °C as the board's analysed range. selection.json shows no part kept for R2 \"Link CAN transceiver\" (part null, run T2).",
+  "source": "checkout 10b0bade34dea67341eff3d05793d6d50a7878b4: hardware/docs/Research.md:567, :585 and the Raised by P1 preamble at :547-556; hardware/docs/IOBoard.md:166-177, :184, :220, :334-338; /home/claude/rcbench-research/round1/results/hardware/research/round1/selection.json",
+  "read_at": "2026-09-28T18:38:14Z",
+  "scope": "function"
+ }
+}

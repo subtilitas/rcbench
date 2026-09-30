@@ -1,0 +1,139 @@
+{
+ "role": "P4",
+ "category": "R9",
+ "label": "P4-stock-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "Cell monitor",
+    "part": "ADBMS1818ASWAZ-RL",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 12500, read 2026-09-29T02:41:09Z (re-read 03:06:12Z)",
+      "read": "JLCPCB exact match C5372802: stockCount 12500; gate 5 boards x 1 = 5, S4 5 x 5 = 25, never under 50, so 50; 12500 >= 50",
+      "source": "python3 /home/claude/rcbench-research/round1/tools/b5225222477b945a/vendors.py jlcpcb C5372802, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, HTTP 200, exact_match, other_results 0",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:15:44Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 12495",
+      "read": "canPresaleNumber 12495 (>= 0)",
+      "source": "vendors.py jlcpcb C5372802, same call as stock",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:15:44Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Active from Digi-Key ProductStatus; discontinued false, end_of_life false",
+      "read": "Digi-Key ProductStatus 'Active', discontinued false, end_of_life false (details reading 02:44:49Z, cached: true; fresh keyword search 03:18:07Z gives the same, 1 result). Maker page shows 'RECOMMENDED FOR NEW DESIGNS', ADBMS1818ASWAZ-RL listed PRODUCTION, page field lifeCycle null. Active passes the Lifecycle check",
+      "source": "vendors.py digikey ADBMS1818ASWAZ-RL (https://api.digikey.com/products/v4/search/ADBMS1818ASWAZ-RL/productdetails, cached: true, read 2026-09-29T02:44:49Z); vendors.py digikey-search ADBMS1818ASWAZ-RL --limit 10 (https://api.digikey.com/products/v4/search/keyword, HTTP 200); https://www.analog.com/en/products/adbms1818.html via vendors.py fetch --client safari, HTTP 200, 160,680 bytes, SHA-256 7d661342...77c1, read 03:21:55Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:18:07Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 564 >= gate 50",
+      "read": "Digi-Key stock_available 564 (Cut Tape 564, Digi-Reel 564, Tape & Reel 0, min order 1500); 564 >= 50 (rule 4 gate), rule 5 passes by second vendor",
+      "source": "vendors.py digikey-search ADBMS1818ASWAZ-RL --limit 10, https://api.digikey.com/products/v4/search/keyword; details vendors.py digikey ADBMS1818ASWAZ-RL cached reading of 2026-09-29T02:44:49Z agrees",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:18:07Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "no part-specific commitment published. ADI's Product Life Cycle Information page gives a general policy: 'obsolescence should be avoided provided technology and customer demand exist ... customers are notified two years in advance'; a PDN under JESD48A with a 12-month last-time-buy period and shipment up to 18 months from the PDN. S5: recorded, not required",
+      "source": "vendors.py fetch https://www.analog.com/en/support/product-life-cycle-information.html --client safari, HTTP 200, 43,805 bytes",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T03:17:32Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "Rev. 0 undated; SW-64-2 (ASWAZ) added in Rev. A, 12/2021, over 12 months",
+      "read": "revision history of ADBMS1818 Rev. B: '9/2023 - Rev. A to Rev. B'; '12/2021 - Rev. 0 to Rev. A: Added 64-Lead LQFP_EP (SW-64-2)'; Rev. 0 carries no date. The ASWAZ package is on the market since 12/2021, 45 months, not under 12 months",
+      "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/adbms1818.pdf via vendors.py fetch --client safari, HTTP 200, 6,027,563 bytes, SHA-256 36b07646...fbfb, p. 1 revision history",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:15:58Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCNs 21_0182 (Aug 31, 2021) and 21_0170 (Aug 10, 2021); no end-of-life notice",
+      "read": "PCN/PDN tab lists exactly 2 rows: Aug 31, 2021 - 21_0182 'Addition of alternative Fab foundry and die revision for ADBMS1818' and Aug 10, 2021 - 21_0170 'Addition of alternative test site for ADBMS1818'; no PDN, no end-of-life or last-time-buy notice; no 'Not Recommended', 'Last Time Buy', 'Obsolete' or 'Discontinued' on the page. The page answered HTTP 403 (challenge) from 03:15:57Z to 03:20:25Z and HTTP 200 at 03:21:55Z",
+      "source": "vendors.py fetch https://www.analog.com/en/products/adbms1818.html --client safari, HTTP 200, 160,680 bytes, SHA-256 7d661342...77c1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:21:55Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB in stock; LCSC page not read; Digi-Key Active",
+      "read": "JLCPCB: stockCount 12500, no status field (03:15:44Z). LCSC: product page for C5372802 gives productModel ADBMS1818ASWAZ-RL, brandNameEn ADI, encapStandard LQFP-64-EP(10x10), stockNumber 12500, isPreSale false, 'In stock, ships now', no discontinued flag (03:15:58Z). Digi-Key ProductStatus Active (03:18:07Z). No disagreement with the maker's PRODUCTION listing",
+      "source": "vendors.py jlcpcb C5372802; vendors.py fetch https://www.lcsc.com/product-detail/C5372802.html (client chrome, HTTP 200, 398,604 bytes); vendors.py digikey-search ADBMS1818ASWAZ-RL",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:18:07Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 38 weeks",
+      "read": "lead_weeks 38 (Digi-Key API manufacturer lead time)",
+      "source": "vendors.py digikey-search ADBMS1818ASWAZ-RL --limit 10, https://api.digikey.com/products/v4/search/keyword",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:18:07Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType 'expand' (extended) on the exact row C5372802; S6 allows extended",
+      "source": "vendors.py jlcpcb C5372802, exact_match",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:15:44Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C5372802, ADBMS1818ASWAZ-RL, JLCPCB 'LQFP-64-EP(10x10)'; data sheet 64-lead LQFP_EP 10 x 10 mm, SW-64-2",
+      "read": "exact JLCPCB result for C5372802: part ADBMS1818ASWAZ-RL, maker_label Analog Devices, package LQFP-64-EP(10x10), description '-40~+85 18 ... LQFP-64-EP(10x10) Battery Management'; matches the candidate part number and the 64-lead 10 x 10 mm exposed-pad package",
+      "source": "vendors.py jlcpcb C5372802, exact_match, other_results 0",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:15:44Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1; not fixed by the specification; range 1 to 1, one 18-channel monitor reads the 16 cells of the one 17-pin connector (V192); gate applied at 1",
+      "read": "the specification fixes no count (IOBoard.md:67 and :435 'Cell monitor, 1 to 16 cells on the balance lead'); V192 answer (Research.md:752) '1 connector of 16 cells (17 pins) on the IO board'. One 18-cell ADBMS1818 covers 16 cells, so P2's range top is 1; the candidate's count 1 >= 1",
+      "source": "hardware/docs/IOBoard.md:67, :435 and hardware/docs/Research.md:752 at commit e13f5f60d2e553032b27a14f31ed4a93ef4fe828 (read-only checkout)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:14:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C5372802",
+      "read": "the specification places the cell monitor on the IO board: IOBoard.md:67 lists it among the IO board's functions and V192 puts the 17-pin balance-lead connector on the IO board (Research.md:752); V189 puts the monitor on the pack side of an isolation barrier, still on the board. LCSC number C5372802 (C and digits) says the same (rule 1)",
+      "source": "hardware/docs/IOBoard.md:67, hardware/docs/Research.md:749 and :752 at commit e13f5f6; vendors.py jlcpcb C5372802",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:15:44Z"
+     }
+    ]
+   }
+  ]
+ }
+}

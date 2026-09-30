@@ -1,0 +1,1129 @@
+{
+ "role": "P4",
+ "category": "R4",
+ "label": "P4-stock-R4",
+ "attempt": 0,
+ "data": {
+  "category": "R4",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "gated output buffer",
+    "part": "SN74LVC244APWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 94539; need 5 boards × 2 = 10, threshold max(5 × 10, 50) = 50",
+      "read": "JLCPCB stockCount 94539 in the exact row C7668. Need 5 boards (S7) × 2 = 10; S4 threshold max(5 × 10, 50) = 50; 94539 >= 50: rule 4 passes",
+      "source": "python3 tools/research/vendors.py jlcpcb C7668 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:37Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 94364",
+      "read": "canPresaleNumber 94364; >= 0",
+      "source": "python3 tools/research/vendors.py jlcpcb C7668 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:37Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE: meta status ACTIVE and orderable SN74LVC244APWR marketingStatusDescription ACTIVE",
+      "read": "ACTIVE: product page SN74LVC244A meta status ACTIVE; orderable SN74LVC244APWR marketingStatusDescription ACTIVE; the part-details page for SN74LVC244APWR shows the ACTIVE badge. No NRND, LIFEBUY or last-time-buy text on either page",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74LVC244A --client chrome (HTTP 200); python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74LVC244A/part-details/SN74LVC244APWR --client chrome (HTTP 200, 2026-09-28T18:34:30Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:32:36Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read (no PCN listing fetched); maker status ACTIVE",
+      "read": "None found. The product page and the SN74LVC244APWR part-details page carry ACTIVE and no end-of-life, last-time-buy or NRND text. TI's PCN page describes its process (J-STD-046; discontinuance per J-STD-048 with 12 months for the last order and 6 more for delivery) and links no public PCN listing, so no listing was read. LCSC productCycle 'normal'. Digi-Key's EndOfLife field not read (HTTP 429, daily rate limit). Nothing contradicts P2's record, which states no notice",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74LVC244A and https://www.ti.com/product/SN74LVC244A/part-details/SN74LVC244APWR --client chrome; python3 tools/research/vendors.py fetch https://www.ti.com/quality-reliability/quality/product-change-notification.html --client chrome (HTTP 200, 2026-09-28T18:33:11Z); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C7668.html --client chrome (2026-09-28T18:34:54Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:30Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (no maker programme page fetched in this task)",
+      "read": "Published, with no date per part: TI's guidelines state that TI standard products are not eligible for obsolescence while the product has had any sales within the last five years (seven for automotive or high-reliability), can be manufactured and has been in production for less than 10 years, or has any current customer demand. Recorded; S5 does not require a commitment",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/quality-reliability/quality/product-life-cycle.html --client chrome (HTTP 200), section 'Internal policies for standard product longevity'",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:33:11Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision November 1992, over 12 months",
+      "read": "Datasheet header 'SCAS414AG – NOVEMBER 1992 – REVISED JUNE 2026': first revision November 1992, about 406 months before 2026-09-28; over 12 months, not flagged",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf --client chrome (HTTP 200), page 1 header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:35:06Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; the JLCPCB API carries no status",
+      "read": "LCSC: productCycle 'normal' in the record of productCode C7668 (productModel SN74LVC244APWR, brand TI, TSSOP-20), stockNumber 94245; no discontinued, obsolete, EOL, NRND or sold_out text. JLCPCB: the exact API row carries no status field (componentLibraryType and preferredComponentFlag only). Digi-Key ProductStatus not read: HTTP 429, daily rate limit exhausted. No disagreement with the maker's ACTIVE among the readings made",
+      "source": "python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C7668.html --client chrome (HTTP 200); raw JLCPCB row via vendors.jlc_query('C7668') (2026-09-28T18:36:07Z); python3 tools/research/vendors.py digikey SN74LVC244APWR (https://api.digikey.com/products/v4/search/SN74LVC244APWR/productdetails), HTTP 429 (2026-09-28T18:30:52Z)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:54Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks",
+      "read": "not read: Digi-Key's API refused every request with HTTP 429, 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, retry-after 19728 s at 18:31:11Z and 19396 s at 18:36:43Z, so the quota resets at about 2026-09-29T00:00Z). ManufacturerLeadWeeks is carried by Digi-Key's API only, so the lead time is not re-read. passes true follows the rule that this reading always passes; it is not a reading",
+      "source": "python3 tools/research/vendors.py digikey SN74LVC244APWR (https://api.digikey.com/products/v4/search/SN74LVC244APWR/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:52Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType 'expand' (extended), preferredComponentFlag false; S6 allows basic and extended",
+      "source": "python3 tools/research/vendors.py jlcpcb C7668 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:37Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C7668 = SN74LVC244APWR, TSSOP-20, Texas Instruments",
+      "read": "The exact JLCPCB result for C7668 names componentModelEn SN74LVC244APWR, componentSpecificationEn TSSOP-20, componentBrandEn Texas Instruments (other_results 0). LCSC's page for C7668 names productModel SN74LVC244APWR, TSSOP-20. Part number and package match",
+      "source": "python3 tools/research/vendors.py jlcpcb C7668 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C7668.html --client chrome (2026-09-28T18:34:54Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:37Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "fixed: 16 lines / 8 buffers a part = 2 a board",
+      "read": "2 a board: IOBoard.md:64 fixes 16 PWM ports, and F13 (Research.md:541) puts them behind the gate; 8 buffers a part gives 16 / 8 = 2. The specification fixes the line count, not a part count, so the 2 is derived from it. Candidate count 2 >= 2",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de: lines 64-65, 227, 236-238; hardware/docs/Research.md at 10b0bade34de: F13 (line 541)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C7668",
+      "read": "The specification places the part's function on the IO board: the output gate between the RP2354B's pins and the connector (IOBoard.md:187, :236-238, F13). LCSC number C7668 is C and digits, so rule 1 says on the board as well",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de:187, :236-238; python3 tools/research/vendors.py jlcpcb C7668",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     }
+    ]
+   },
+   {
+    "function": "gated output buffer",
+    "part": "74LVC244APW,118",
+    "kind": "alternate",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 27938; need 5 boards × 2 = 10, threshold max(5 × 10, 50) = 50",
+      "read": "JLCPCB stockCount 27938 in the exact row C6079. Need 5 boards (S7) × 2 = 10; S4 threshold max(5 × 10, 50) = 50; 27938 >= 50: rule 4 passes, so the rule-5 alternate route of SN74LVC244APWR holds on stock",
+      "source": "python3 tools/research/vendors.py jlcpcb C6079 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:39Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 27915",
+      "read": "canPresaleNumber 27915; >= 0",
+      "source": "python3 tools/research/vendors.py jlcpcb C6079 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:39Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Production: www.nexperia.com/product/74LVC244APW, marker product-status--production",
+      "read": "Production: the product page for 74LVC244APW carries the marker product-status--production and the label 'Production'. No end-of-life, discontinued, last-time-buy or not-for-design text in the page body. The page gives the status for the type 74LVC244APW; the packing variant ',118' is not listed in the page body, so its orderable status is the type's",
+      "source": "python3 tools/research/vendors.py fetch https://www.nexperia.com/product/74LVC244APW --client chrome (HTTP 200, 100340 bytes)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:33:11Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read (no PCN listing fetched in this task)",
+      "read": "None found. The product page carries Production and no end-of-life, discontinued or last-time-buy text. Nexperia's 'Product change notification' link in its customer-support navigation goes to /my/login, so its PCN listing needs a login and was not read. LCSC productCycle 'normal'. Digi-Key's EndOfLife field not read (HTTP 429, daily rate limit). Nothing contradicts P2's record, which states no notice",
+      "source": "python3 tools/research/vendors.py fetch https://www.nexperia.com/product/74LVC244APW --client chrome; python3 tools/research/vendors.py fetch https://www.nexperia.com/support/customer-support/longevity --client chrome (navigation link to /my/login, 2026-09-28T18:33:42Z); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C6079.html --client chrome (2026-09-28T18:34:55Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:33:42Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (no maker programme page fetched in this task)",
+      "read": "Published: the Nexperia Longevity Program (Program 2026) lists standard logic families including LVC by package pin count; the 20-pin TSSOP SOT360-1 carries 10 years as of September 2025, so to about September 2035. The page states longevity statements are good-faith assumptions from which no legal rights derive, and that products stay subject to PCN and end-of-life policy. Recorded; S5 does not require a commitment",
+      "source": "python3 tools/research/vendors.py fetch https://www.nexperia.com/support/customer-support/longevity --client chrome (HTTP 200, linked from the product page's 'longevity program'), table 'Standard logic longevity based on package pin count'",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:33:42Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first revision 74LVC244A_74LVCH244A v.1, 1996-09-06, over 12 months",
+      "read": "Table 11 revision history of 74LVC_LVCH244A v.14 (29 November 2024): the earliest entry is 74LVC244A_74LVCH244A v.1, release date 19960906, Product specification. About 360 months before 2026-09-28; over 12 months, not flagged",
+      "source": "python3 tools/research/vendors.py fetch https://assets.nexperia.com/documents/data-sheet/74LVC_LVCH244A.pdf --client chrome (HTTP 200), section 13 Revision history",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:35:07Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; the JLCPCB API carries no status",
+      "read": "LCSC: productCycle 'normal' in the record of productCode C6079 (productModel 74LVC244APW,118, brand Nexperia, TSSOP-20), stockNumber 27935; no discontinued, obsolete, EOL, NRND or sold_out text. JLCPCB: the exact API row carries no status field (componentLibraryType and preferredComponentFlag only). Digi-Key ProductStatus not read: HTTP 429, daily rate limit exhausted. No disagreement with the maker's Production among the readings made",
+      "source": "python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C6079.html --client chrome (HTTP 200); raw JLCPCB row via vendors.jlc_query('C6079') (2026-09-28T18:36:07Z); python3 tools/research/vendors.py digikey 74LVC244APW,118 (https://api.digikey.com/products/v4/search/74LVC244APW%2C118/productdetails), HTTP 429 (2026-09-28T18:30:53Z)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:55Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 20 weeks",
+      "read": "not read: Digi-Key's API refused every request with HTTP 429, 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, retry-after 19728 s at 18:31:11Z and 19396 s at 18:36:43Z, so the quota resets at about 2026-09-29T00:00Z). ManufacturerLeadWeeks is carried by Digi-Key's API only, so the lead time is not re-read. passes true follows the rule that this reading always passes; it is not a reading",
+      "source": "python3 tools/research/vendors.py digikey 74LVC244APW,118 (https://api.digikey.com/products/v4/search/74LVC244APW%2C118/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:53Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType 'expand' (extended), preferredComponentFlag false; S6 allows basic and extended",
+      "source": "python3 tools/research/vendors.py jlcpcb C6079 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:39Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C6079 = 74LVC244APW,118, TSSOP-20, Nexperia",
+      "read": "The exact JLCPCB result for C6079 names componentModelEn 74LVC244APW,118, componentSpecificationEn TSSOP-20, componentBrandEn Nexperia. LCSC's page for C6079 names productModel 74LVC244APW,118, TSSOP-20. Part number and package match (TSSOP-20 is SOT360-1 in the datasheet's ordering table)",
+      "source": "python3 tools/research/vendors.py jlcpcb C6079 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C6079.html --client chrome (2026-09-28T18:34:55Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:39Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "fixed: 16 lines / 8 buffers a part = 2 a board",
+      "read": "2 a board, as the part it stands in for: 16 PWM ports (IOBoard.md:64, F13 at Research.md:541) / 8 buffers a part = 2. Candidate count 2 >= 2",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de: lines 64, 227, 236-238; hardware/docs/Research.md at 10b0bade34de: F13 (line 541)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C6079",
+      "read": "The specification places the part's function on the IO board: the output gate between the RP2354B's pins and the connector (IOBoard.md:187, :236-238, F13). LCSC number C6079 is C and digits, so rule 1 says on the board as well",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de:187, :236-238; python3 tools/research/vendors.py jlcpcb C6079",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     }
+    ]
+   },
+   {
+    "function": "enable inverter",
+    "part": "SN74LVC1G04DBVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 53258; need 5 boards × 2 = 10, threshold max(5 × 10, 50) = 50",
+      "read": "JLCPCB stockCount 53244 in the exact row C7827; moved by -14 since P2's reading. Need 5 boards (S7) × 2 = 10; S4 threshold max(5 × 10, 50) = 50; 53244 >= 50: rule 4 passes",
+      "source": "python3 tools/research/vendors.py jlcpcb C7827 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:40Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 51452",
+      "read": "canPresaleNumber 51438; moved by -14 since P2's reading; >= 0",
+      "source": "python3 tools/research/vendors.py jlcpcb C7827 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:40Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE: meta status ACTIVE and orderable SN74LVC1G04DBVR marketingStatusDescription ACTIVE",
+      "read": "ACTIVE: product page SN74LVC1G04 meta status ACTIVE; orderable SN74LVC1G04DBVR marketingStatusDescription ACTIVE; the part-details page for SN74LVC1G04DBVR shows the ACTIVE badge. No NRND, LIFEBUY or last-time-buy text on either page",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74LVC1G04 --client chrome (HTTP 200); python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74LVC1G04/part-details/SN74LVC1G04DBVR --client chrome (HTTP 200, 2026-09-28T18:34:30Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:32:36Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read (no PCN listing fetched); maker status ACTIVE",
+      "read": "None found. The product page and the SN74LVC1G04DBVR part-details page carry ACTIVE and no end-of-life, last-time-buy or NRND text. TI's PCN page describes its process (J-STD-046; discontinuance per J-STD-048 with 12 months for the last order and 6 more for delivery) and links no public PCN listing, so no listing was read. LCSC productCycle 'normal'. Digi-Key's EndOfLife field not read (HTTP 429, daily rate limit). Nothing contradicts P2's record, which states no notice",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74LVC1G04 and https://www.ti.com/product/SN74LVC1G04/part-details/SN74LVC1G04DBVR --client chrome; python3 tools/research/vendors.py fetch https://www.ti.com/quality-reliability/quality/product-change-notification.html --client chrome (HTTP 200, 2026-09-28T18:33:11Z); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C7827.html --client chrome (2026-09-28T18:34:55Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:30Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (no maker programme page fetched in this task)",
+      "read": "Published, with no date per part: TI's guidelines state that TI standard products are not eligible for obsolescence while the product has had any sales within the last five years (seven for automotive or high-reliability), can be manufactured and has been in production for less than 10 years, or has any current customer demand. Recorded; S5 does not require a commitment",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/quality-reliability/quality/product-life-cycle.html --client chrome (HTTP 200), section 'Internal policies for standard product longevity'",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:33:11Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision April 1999, over 12 months",
+      "read": "Datasheet header 'SCES214AF – APRIL 1999 – REVISED OCTOBER 2025': first revision April 1999, about 329 months before 2026-09-28; over 12 months, not flagged",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/lit/ds/symlink/sn74lvc1g04.pdf --client chrome (HTTP 200), page 1 header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:35:07Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; the JLCPCB API carries no status",
+      "read": "LCSC: productCycle 'normal' in the record of productCode C7827 (productModel SN74LVC1G04DBVR, brand TI, SOT-23-5), stockNumber 53240; no discontinued, obsolete, EOL, NRND or sold_out text. JLCPCB: the exact API row carries no status field (componentLibraryType and preferredComponentFlag only). Digi-Key ProductStatus not read: HTTP 429, daily rate limit exhausted. No disagreement with the maker's ACTIVE among the readings made",
+      "source": "python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C7827.html --client chrome (HTTP 200); raw JLCPCB row via vendors.jlc_query('C7827') (2026-09-28T18:36:07Z); python3 tools/research/vendors.py digikey SN74LVC1G04DBVR (https://api.digikey.com/products/v4/search/SN74LVC1G04DBVR/productdetails), HTTP 429 (2026-09-28T18:30:54Z)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:55Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks",
+      "read": "not read: Digi-Key's API refused every request with HTTP 429, 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, retry-after 19728 s at 18:31:11Z and 19396 s at 18:36:43Z, so the quota resets at about 2026-09-29T00:00Z). ManufacturerLeadWeeks is carried by Digi-Key's API only, so the lead time is not re-read. passes true follows the rule that this reading always passes; it is not a reading",
+      "source": "python3 tools/research/vendors.py digikey SN74LVC1G04DBVR (https://api.digikey.com/products/v4/search/SN74LVC1G04DBVR/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:54Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType 'expand' (extended), preferredComponentFlag false; S6 allows basic and extended",
+      "source": "python3 tools/research/vendors.py jlcpcb C7827 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:40Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C7827 = SN74LVC1G04DBVR, SOT-23-5, Texas Instruments",
+      "read": "The exact JLCPCB result for C7827 names componentModelEn SN74LVC1G04DBVR, componentSpecificationEn SOT-23-5, componentBrandEn Texas Instruments. LCSC's page for C7827 names productModel SN74LVC1G04DBVR, SOT-23-5. Part number and package match",
+      "source": "python3 tools/research/vendors.py jlcpcb C7827 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C7827.html --client chrome (2026-09-28T18:34:55Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:40Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "range 1 to 2: one inverter drives the 4 OE pins of the two 244s, each with its own 10 kΩ pull-up (1.3 mA); 2 if each buffer part takes its own. The gate applies at 2",
+      "read": "Top of P2's range 1 to 2: the gated output buffer's first-ranked part is SN74LVC244APWR, 2 parts with 4 active-low OE pins (IOBoard.md:64, 16 PWM ports); the switch path's first-ranked SN74CBTLV3126PWR has active-high OE and needs no inverter, so 1 inverter (all 4 OE pins) or 1 per 244 (2). The re-rank's range of 1 to 4 applies only with the 125A quads as the PWM gate, which are not first-ranked; at 4 the gate would be 5 × 4 = 20, threshold 100, and 53244 still passes. Candidate count 2 >= 2",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de: lines 64, 187, 191 (powered-off isolation: an inverter on an active-low output enable); hardware/docs/Research.md at 10b0bade34de: F13 (line 541); shortlist records of SN74LVC244APWR and SN74CBTLV3126PWR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C7827",
+      "read": "The specification places the part's function on the IO board: the inverter on an active-low output enable of the output gate between the RP2354B's pins and the connector (IOBoard.md:187, :236-238, F13). LCSC number C7827 is C and digits, so rule 1 says on the board as well",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de:187, :236-238; python3 tools/research/vendors.py jlcpcb C7827",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key keyword row stock_available 248323 >= 50",
+      "read": "not read: Digi-Key's API refused every request with HTTP 429, 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, retry-after 19728 s at 18:31:11Z and 19396 s at 18:36:43Z, so the quota resets at about 2026-09-29T00:00Z). Digi-Key's API is the only source rule 7 allows for this reading, so the rule-4 gate of 50 at Digi-Key is not re-read and P2's figure stands unconfirmed. passes true is not a claim that the gate passes; the check is written as not read so the part counts as not verified, not as refuted",
+      "source": "python3 tools/research/vendors.py digikey SN74LVC1G04DBVR (https://api.digikey.com/products/v4/search/SN74LVC1G04DBVR/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:54Z"
+     }
+    ]
+   },
+   {
+    "function": "bias selector",
+    "part": "SN74LVC1G126DBVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 73651; need 5 boards × 5 = 25, threshold max(5 × 25, 50) = 125",
+      "read": "JLCPCB stockCount 73660 in the exact row C7834; moved by +9 since P2's reading. Need 5 boards (S7) × 5 = 25; S4 threshold max(5 × 25, 50) = 125; 73660 >= 125: rule 4 passes",
+      "source": "python3 tools/research/vendors.py jlcpcb C7834 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:42Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 73279",
+      "read": "canPresaleNumber 73288; moved by +9 since P2's reading; >= 0",
+      "source": "python3 tools/research/vendors.py jlcpcb C7834 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:42Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE: meta status ACTIVE and orderable SN74LVC1G126DBVR marketingStatusDescription ACTIVE",
+      "read": "ACTIVE: product page SN74LVC1G126 meta status ACTIVE; orderable SN74LVC1G126DBVR marketingStatusDescription ACTIVE; the part-details page for SN74LVC1G126DBVR shows the ACTIVE badge. No NRND, LIFEBUY or last-time-buy text on either page",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74LVC1G126 --client chrome (HTTP 200); python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74LVC1G126/part-details/SN74LVC1G126DBVR --client chrome (HTTP 200, 2026-09-28T18:34:31Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:32:37Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read (no PCN listing fetched); maker status ACTIVE",
+      "read": "None found. The product page and the SN74LVC1G126DBVR part-details page carry ACTIVE and no end-of-life, last-time-buy or NRND text. TI's PCN page describes its process (J-STD-046; discontinuance per J-STD-048 with 12 months for the last order and 6 more for delivery) and links no public PCN listing, so no listing was read. LCSC productCycle 'normal'. Digi-Key's EndOfLife field not read (HTTP 429, daily rate limit). Nothing contradicts P2's record, which states no notice",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74LVC1G126 and https://www.ti.com/product/SN74LVC1G126/part-details/SN74LVC1G126DBVR --client chrome; python3 tools/research/vendors.py fetch https://www.ti.com/quality-reliability/quality/product-change-notification.html --client chrome (HTTP 200, 2026-09-28T18:33:11Z); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C7834.html --client chrome (2026-09-28T18:34:56Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:31Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (no maker programme page fetched in this task)",
+      "read": "Published, with no date per part: TI's guidelines state that TI standard products are not eligible for obsolescence while the product has had any sales within the last five years (seven for automotive or high-reliability), can be manufactured and has been in production for less than 10 years, or has any current customer demand. Recorded; S5 does not require a commitment",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/quality-reliability/quality/product-life-cycle.html --client chrome (HTTP 200), section 'Internal policies for standard product longevity'",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:33:11Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision April 1999, over 12 months",
+      "read": "Datasheet header 'SCES224S – APRIL 1999 – REVISED AUGUST 2026': first revision April 1999, about 329 months before 2026-09-28; over 12 months, not flagged",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/lit/ds/symlink/sn74lvc1g126.pdf --client chrome (HTTP 200), page 1 header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:35:08Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; the JLCPCB API carries no status",
+      "read": "LCSC: productCycle 'normal' in the record of productCode C7834 (productModel SN74LVC1G126DBVR, brand TI, SOT-23-5), stockNumber 73570; no discontinued, obsolete, EOL, NRND or sold_out text. JLCPCB: the exact API row carries no status field (componentLibraryType and preferredComponentFlag only). Digi-Key ProductStatus not read: HTTP 429, daily rate limit exhausted. No disagreement with the maker's ACTIVE among the readings made",
+      "source": "python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C7834.html --client chrome (HTTP 200); raw JLCPCB row via vendors.jlc_query('C7834') (2026-09-28T18:36:08Z); python3 tools/research/vendors.py digikey SN74LVC1G126DBVR (https://api.digikey.com/products/v4/search/SN74LVC1G126DBVR/productdetails), HTTP 429 (2026-09-28T18:30:55Z)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:56Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks",
+      "read": "not read: Digi-Key's API refused every request with HTTP 429, 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, retry-after 19728 s at 18:31:11Z and 19396 s at 18:36:43Z, so the quota resets at about 2026-09-29T00:00Z). ManufacturerLeadWeeks is carried by Digi-Key's API only, so the lead time is not re-read. passes true follows the rule that this reading always passes; it is not a reading",
+      "source": "python3 tools/research/vendors.py digikey SN74LVC1G126DBVR (https://api.digikey.com/products/v4/search/SN74LVC1G126DBVR/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:55Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType 'expand' (extended), preferredComponentFlag false; S6 allows basic and extended",
+      "source": "python3 tools/research/vendors.py jlcpcb C7834 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:42Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C7834 = SN74LVC1G126DBVR, SOT-23-5, Texas Instruments",
+      "read": "The exact JLCPCB result for C7834 names componentModelEn SN74LVC1G126DBVR, componentSpecificationEn SOT-23-5, componentBrandEn Texas Instruments. LCSC's page for C7834 names productModel SN74LVC1G126DBVR, SOT-23-5. Part number and package match",
+      "source": "python3 tools/research/vendors.py jlcpcb C7834 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C7834.html --client chrome (2026-09-28T18:34:56Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:42Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "fixed: one a biased line, 5 lines (V56)",
+      "read": "5 a board: one buffer a biased line, and the biased lines are the 4 multiprotocol ports and the UART socket (IOBoard.md:64-65; V56 found value; F13 at Research.md:541). Candidate count 5 >= 5",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de: lines 64-65; hardware/docs/Research.md at 10b0bade34de: F13 (line 541), V56 (line 616); the shortlist's found value V56",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C7834",
+      "read": "The specification places the part's function on the IO board: the bias of each gated connector line, selected per mode (IOBoard.md:187, :256, F14). LCSC number C7834 is C and digits, so rule 1 says on the board as well",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de:187, :256; python3 tools/research/vendors.py jlcpcb C7834",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key keyword row stock_available 19459 >= 125",
+      "read": "not read: Digi-Key's API refused every request with HTTP 429, 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, retry-after 19728 s at 18:31:11Z and 19396 s at 18:36:43Z, so the quota resets at about 2026-09-29T00:00Z). Digi-Key's API is the only source rule 7 allows for this reading, so the rule-4 gate of 125 at Digi-Key is not re-read and P2's figure stands unconfirmed. passes true is not a claim that the gate passes; the check is written as not read so the part counts as not verified, not as refuted",
+      "source": "python3 tools/research/vendors.py digikey SN74LVC1G126DBVR (https://api.digikey.com/products/v4/search/SN74LVC1G126DBVR/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:55Z"
+     }
+    ]
+   },
+   {
+    "function": "multiprotocol port path",
+    "part": "SN74CBTLV3126PWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 401; need 5 boards × 2 = 10, threshold max(5 × 10, 50) = 50",
+      "read": "JLCPCB stockCount 401 in the exact row C543078. Need 5 boards (S7) × 2 = 10; S4 threshold max(5 × 10, 50) = 50; 401 >= 50: rule 4 passes",
+      "source": "python3 tools/research/vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:43Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 395",
+      "read": "canPresaleNumber 395; >= 0",
+      "source": "python3 tools/research/vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:43Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE: meta status ACTIVE and orderable SN74CBTLV3126PWR marketingStatusDescription ACTIVE",
+      "read": "ACTIVE: product page SN74CBTLV3126 meta status ACTIVE; orderable SN74CBTLV3126PWR marketingStatusDescription ACTIVE; the part-details page for SN74CBTLV3126PWR shows the ACTIVE badge. No NRND, LIFEBUY or last-time-buy text on either page. The orderables SN74CBTLV3126PW (90 a tube) and SN74CBTLV3126D are OBSOLETE ('This product is no longer in production'); they are other carriers or packages, not the candidate reel PWR, which is ACTIVE",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74CBTLV3126 --client chrome (HTTP 200); python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74CBTLV3126/part-details/SN74CBTLV3126PWR --client chrome (HTTP 200, 2026-09-28T18:34:31Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:32:37Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read (no PCN listing fetched); maker status ACTIVE",
+      "read": "None found. The product page and the SN74CBTLV3126PWR part-details page carry ACTIVE and no end-of-life, last-time-buy or NRND text for the candidate (the OBSOLETE text there belongs to the tube carrier SN74CBTLV3126PW). TI's PCN page describes its process (J-STD-046; discontinuance per J-STD-048 with 12 months for the last order and 6 more for delivery) and links no public PCN listing, so no listing was read. LCSC productCycle 'normal'. Digi-Key's EndOfLife field not read (HTTP 429, daily rate limit). Nothing contradicts P2's record, which states no notice",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74CBTLV3126 and https://www.ti.com/product/SN74CBTLV3126/part-details/SN74CBTLV3126PWR --client chrome; python3 tools/research/vendors.py fetch https://www.ti.com/quality-reliability/quality/product-change-notification.html --client chrome (HTTP 200, 2026-09-28T18:33:11Z); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C543078.html --client chrome (2026-09-28T18:34:56Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:31Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "Published, with no date per part: TI's guidelines state that TI standard products are not eligible for obsolescence while the product has had any sales within the last five years (seven for automotive or high-reliability), can be manufactured and has been in production for less than 10 years, or has any current customer demand. Recorded; S5 does not require a commitment",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/quality-reliability/quality/product-life-cycle.html --client chrome (HTTP 200), section 'Internal policies for standard product longevity'",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:33:11Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision December 1997, over 12 months",
+      "read": "Datasheet header 'SCDS038N – DECEMBER 1997 – REVISED JULY 2026': first revision December 1997, about 345 months before 2026-09-28; over 12 months, not flagged",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf --client chrome (HTTP 200), page 1 header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:35:09Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; the JLCPCB API carries no status",
+      "read": "LCSC: productCycle 'normal' in the record of productCode C543078 (productModel SN74CBTLV3126PWR, brand TI, TSSOP-14), stockNumber 401; no discontinued, obsolete, EOL, NRND or sold_out text. JLCPCB: the exact API row carries no status field (componentLibraryType and preferredComponentFlag only). Digi-Key ProductStatus not read: HTTP 429, daily rate limit exhausted. No disagreement with the maker's ACTIVE among the readings made",
+      "source": "python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C543078.html --client chrome (HTTP 200); raw JLCPCB row via vendors.jlc_query('C543078') (2026-09-28T18:36:08Z); python3 tools/research/vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails), HTTP 429 (2026-09-28T18:30:57Z)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:56Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks",
+      "read": "not read: Digi-Key's API refused every request with HTTP 429, 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, retry-after 19728 s at 18:31:11Z and 19396 s at 18:36:43Z, so the quota resets at about 2026-09-29T00:00Z). ManufacturerLeadWeeks is carried by Digi-Key's API only, so the lead time is not re-read. passes true follows the rule that this reading always passes; it is not a reading",
+      "source": "python3 tools/research/vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:57Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType 'expand' (extended), preferredComponentFlag false; S6 allows basic and extended",
+      "source": "python3 tools/research/vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:43Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C543078 = SN74CBTLV3126PWR, TSSOP-14, Texas Instruments",
+      "read": "The exact JLCPCB result for C543078 names componentModelEn SN74CBTLV3126PWR, componentSpecificationEn TSSOP-14, componentBrandEn Texas Instruments (other_results 0). LCSC's page for C543078 names productModel SN74CBTLV3126PWR, TSSOP-14. Part number and package match",
+      "source": "python3 tools/research/vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C543078.html --client chrome (2026-09-28T18:34:56Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:43Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "fixed: 5 lines (4 multiprotocol ports and the UART socket) / 4 switches a part = 2 a board",
+      "read": "2 a board: 4 multiprotocol ports (IOBoard.md:64) and the UART socket (IOBoard.md:65) behind the gate (F13, Research.md:541) are 5 lines, or 6 if VESC's second line (V67 answer, Research.md:627: separate TX and RX) takes its own channel; 4 switches a part, so 2 parts (8 channels) cover 5 or 6. Candidate count 2 >= 2. At P2's alternative of 6 a board (the 16 PWM lines as well) the threshold is 150 and 401 still passes",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de: lines 64-65, 227, 234, 236-238; hardware/docs/Research.md at 10b0bade34de: F13 (line 541), V67 (line 627)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C543078",
+      "read": "The specification places the part's function on the IO board: the output gate between the RP2354B's pins and the connector (IOBoard.md:187, :236-238, F13). LCSC number C543078 is C and digits, so rule 1 says on the board as well",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de:187, :236-238; python3 tools/research/vendors.py jlcpcb C543078",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 3756 >= 50",
+      "read": "not read: Digi-Key's API refused every request with HTTP 429, 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, retry-after 19728 s at 18:31:11Z and 19396 s at 18:36:43Z, so the quota resets at about 2026-09-29T00:00Z). Digi-Key's API is the only source rule 7 allows for this reading, so the rule-4 gate of 50 at Digi-Key is not re-read and P2's figure stands unconfirmed. passes true is not a claim that the gate passes; the check is written as not read so the part counts as not verified, not as refuted",
+      "source": "python3 tools/research/vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:57Z"
+     }
+    ]
+   },
+   {
+    "function": "UART socket path",
+    "part": "SN74CBTLV3126PWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 401; need 5 boards × 2 = 10, threshold max(5 × 10, 50) = 50",
+      "read": "JLCPCB stockCount 401 in the exact row C543078. Need 5 boards (S7) × 2 = 10; S4 threshold max(5 × 10, 50) = 50; 401 >= 50: rule 4 passes",
+      "source": "python3 tools/research/vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:43Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 395",
+      "read": "canPresaleNumber 395; >= 0",
+      "source": "python3 tools/research/vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:43Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE: orderable SN74CBTLV3126PWR ACTIVE",
+      "read": "ACTIVE: product page SN74CBTLV3126 meta status ACTIVE; orderable SN74CBTLV3126PWR marketingStatusDescription ACTIVE; the part-details page for SN74CBTLV3126PWR shows the ACTIVE badge. No NRND, LIFEBUY or last-time-buy text on either page. The orderables SN74CBTLV3126PW (90 a tube) and SN74CBTLV3126D are OBSOLETE; they are other carriers or packages, not the candidate reel PWR, which is ACTIVE",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74CBTLV3126 --client chrome (HTTP 200); python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74CBTLV3126/part-details/SN74CBTLV3126PWR --client chrome (HTTP 200, 2026-09-28T18:34:31Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:32:37Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read; maker status ACTIVE",
+      "read": "None found. The product page and the SN74CBTLV3126PWR part-details page carry ACTIVE and no end-of-life, last-time-buy or NRND text for the candidate (the OBSOLETE text there belongs to the tube carrier SN74CBTLV3126PW). TI's PCN page describes its process (J-STD-046; discontinuance per J-STD-048 with 12 months for the last order and 6 more for delivery) and links no public PCN listing, so no listing was read. LCSC productCycle 'normal'. Digi-Key's EndOfLife field not read (HTTP 429, daily rate limit). Nothing contradicts P2's record, which states no notice",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74CBTLV3126 and https://www.ti.com/product/SN74CBTLV3126/part-details/SN74CBTLV3126PWR --client chrome; python3 tools/research/vendors.py fetch https://www.ti.com/quality-reliability/quality/product-change-notification.html --client chrome (HTTP 200, 2026-09-28T18:33:11Z); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C543078.html --client chrome (2026-09-28T18:34:56Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:31Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "Published, with no date per part: TI's guidelines state that TI standard products are not eligible for obsolescence while the product has had any sales within the last five years (seven for automotive or high-reliability), can be manufactured and has been in production for less than 10 years, or has any current customer demand. Recorded; S5 does not require a commitment",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/quality-reliability/quality/product-life-cycle.html --client chrome (HTTP 200), section 'Internal policies for standard product longevity'",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:33:11Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision December 1997",
+      "read": "Datasheet header 'SCDS038N – DECEMBER 1997 – REVISED JULY 2026': first revision December 1997, about 345 months before 2026-09-28; over 12 months, not flagged",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf --client chrome (HTTP 200), page 1 header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:35:09Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active",
+      "read": "LCSC: productCycle 'normal' in the record of productCode C543078 (productModel SN74CBTLV3126PWR, brand TI, TSSOP-14), stockNumber 401; no discontinued, obsolete, EOL, NRND or sold_out text. JLCPCB: the exact API row carries no status field (componentLibraryType and preferredComponentFlag only). Digi-Key ProductStatus not read: HTTP 429, daily rate limit exhausted. No disagreement with the maker's ACTIVE among the readings made",
+      "source": "python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C543078.html --client chrome (HTTP 200); raw JLCPCB row via vendors.jlc_query('C543078') (2026-09-28T18:36:08Z); python3 tools/research/vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails), HTTP 429 (2026-09-28T18:30:57Z)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:56Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks",
+      "read": "not read: Digi-Key's API refused every request with HTTP 429, 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, retry-after 19728 s at 18:31:11Z and 19396 s at 18:36:43Z, so the quota resets at about 2026-09-29T00:00Z). ManufacturerLeadWeeks is carried by Digi-Key's API only, so the lead time is not re-read. passes true follows the rule that this reading always passes; it is not a reading",
+      "source": "python3 tools/research/vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:57Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType 'expand' (extended), preferredComponentFlag false; S6 allows basic and extended",
+      "source": "python3 tools/research/vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:43Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C543078 = SN74CBTLV3126PWR, TSSOP-14, Texas Instruments",
+      "read": "The exact JLCPCB result for C543078 names componentModelEn SN74CBTLV3126PWR, componentSpecificationEn TSSOP-14, componentBrandEn Texas Instruments (other_results 0). LCSC's page for C543078 names productModel SN74CBTLV3126PWR, TSSOP-14. Part number and package match",
+      "source": "python3 tools/research/vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C543078.html --client chrome (2026-09-28T18:34:56Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:43Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "one channel of the second of the 2 parts the multiprotocol port path places; counted once, 2 a board",
+      "read": "2 a board, counted once with the multiprotocol port path: the UART socket (IOBoard.md:65) takes one channel of the 2 parts that carry the 5 switched lines (4 ports + socket, 4 switches a part). Candidate count 2 >= 2",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de: lines 64-65, 234, 236-238; hardware/docs/Research.md at 10b0bade34de: F13 (line 541)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C543078",
+      "read": "The specification places the part's function on the IO board: the output gate between the RP2354B's pins and the connector, which the UART socket passes (IOBoard.md:187, :236-238, F13). LCSC number C543078 is C and digits, so rule 1 says on the board as well",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de:187, :236-238; python3 tools/research/vendors.py jlcpcb C543078",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 3756 >= 50",
+      "read": "not read: Digi-Key's API refused every request with HTTP 429, 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, retry-after 19728 s at 18:31:11Z and 19396 s at 18:36:43Z, so the quota resets at about 2026-09-29T00:00Z). Digi-Key's API is the only source rule 7 allows for this reading, so the rule-4 gate of 50 at Digi-Key is not re-read and P2's figure stands unconfirmed. passes true is not a claim that the gate passes; the check is written as not read so the part counts as not verified, not as refuted",
+      "source": "python3 tools/research/vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:57Z"
+     }
+    ]
+   },
+   {
+    "function": "receiver inputs",
+    "part": "SN74LVC1T45DBVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 393327; need 5 boards × 1 = 5, threshold max(5 × 5, 50) = 50",
+      "read": "JLCPCB stockCount 393327 in the exact row C7843. Need 5 boards (S7) × 1 = 5; S4 threshold max(5 × 5, 50) = 50; 393327 >= 50: rule 4 passes",
+      "source": "python3 tools/research/vendors.py jlcpcb C7843 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:45Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 391306",
+      "read": "canPresaleNumber 391306; >= 0",
+      "source": "python3 tools/research/vendors.py jlcpcb C7843 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:45Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE: meta status ACTIVE and orderable SN74LVC1T45DBVR marketingStatusDescription ACTIVE",
+      "read": "ACTIVE: product page SN74LVC1T45 meta status ACTIVE; orderable SN74LVC1T45DBVR marketingStatusDescription ACTIVE; the part-details page for SN74LVC1T45DBVR shows the ACTIVE badge. No NRND, LIFEBUY or last-time-buy text on either page",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74LVC1T45 --client chrome (HTTP 200); python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74LVC1T45/part-details/SN74LVC1T45DBVR --client chrome (HTTP 200, 2026-09-28T18:34:32Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:32:37Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read; maker status ACTIVE",
+      "read": "None found. The product page and the SN74LVC1T45DBVR part-details page carry ACTIVE and no end-of-life, last-time-buy or NRND text. TI's PCN page describes its process (J-STD-046; discontinuance per J-STD-048 with 12 months for the last order and 6 more for delivery) and links no public PCN listing, so no listing was read. LCSC productCycle 'normal'. Digi-Key's EndOfLife field not read (HTTP 429, daily rate limit). Nothing contradicts P2's record, which states no notice",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74LVC1T45 and https://www.ti.com/product/SN74LVC1T45/part-details/SN74LVC1T45DBVR --client chrome; python3 tools/research/vendors.py fetch https://www.ti.com/quality-reliability/quality/product-change-notification.html --client chrome (HTTP 200, 2026-09-28T18:33:11Z); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C7843.html --client chrome (2026-09-28T18:34:56Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:32Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "Published, with no date per part: TI's guidelines state that TI standard products are not eligible for obsolescence while the product has had any sales within the last five years (seven for automotive or high-reliability), can be manufactured and has been in production for less than 10 years, or has any current customer demand. Recorded; S5 does not require a commitment",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/quality-reliability/quality/product-life-cycle.html --client chrome (HTTP 200), section 'Internal policies for standard product longevity'",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:33:11Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision December 2003, over 12 months",
+      "read": "Datasheet header 'SCES515N – DECEMBER 2003 – REVISED JUNE 2024': first revision December 2003, about 273 months before 2026-09-28; over 12 months, not flagged",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf --client chrome (HTTP 200), page 1 header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:35:10Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active",
+      "read": "LCSC: productCycle 'normal' in the record of productCode C7843 (productModel SN74LVC1T45DBVR, brand TI, SOT-23-6), stockNumber 389615; no discontinued, obsolete, EOL, NRND or sold_out text. JLCPCB: the exact API row carries no status field (componentLibraryType and preferredComponentFlag only). Digi-Key ProductStatus not read: HTTP 429, daily rate limit exhausted. No disagreement with the maker's ACTIVE among the readings made",
+      "source": "python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C7843.html --client chrome (HTTP 200); raw JLCPCB row via vendors.jlc_query('C7843') (2026-09-28T18:36:08Z); python3 tools/research/vendors.py digikey SN74LVC1T45DBVR (https://api.digikey.com/products/v4/search/SN74LVC1T45DBVR/productdetails), HTTP 429 (2026-09-28T18:30:58Z)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:56Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 9 weeks",
+      "read": "not read: Digi-Key's API refused every request with HTTP 429, 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, retry-after 19728 s at 18:31:11Z and 19396 s at 18:36:43Z, so the quota resets at about 2026-09-29T00:00Z). ManufacturerLeadWeeks is carried by Digi-Key's API only, so the lead time is not re-read. passes true follows the rule that this reading always passes; it is not a reading",
+      "source": "python3 tools/research/vendors.py digikey SN74LVC1T45DBVR (https://api.digikey.com/products/v4/search/SN74LVC1T45DBVR/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:58Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType 'expand' (extended), preferredComponentFlag false; S6 allows basic and extended",
+      "source": "python3 tools/research/vendors.py jlcpcb C7843 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:45Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C7843 = SN74LVC1T45DBVR, SOT-23-6, Texas Instruments",
+      "read": "The exact JLCPCB result for C7843 names componentModelEn SN74LVC1T45DBVR, componentSpecificationEn SOT-23-6, componentBrandEn Texas Instruments. LCSC's page for C7843 names productModel SN74LVC1T45DBVR, SOT-23-6. Part number and package match",
+      "source": "python3 tools/research/vendors.py jlcpcb C7843 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C7843.html --client chrome (2026-09-28T18:34:56Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:45Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "fixed: 1 input (V68)",
+      "read": "1 a board: the V68 found value is 1 receiver input (docs/Receivers.md:10-16, one signal wire per bus); one 1-bit transceiver a line. Candidate count 1 >= 1",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de: lines 61, 234, 266; hardware/docs/Research.md at 10b0bade34de: V68 (line 628); the shortlist's found value V68",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C7843",
+      "read": "The specification places the part's function on the IO board: the receiver input, one signal wire into an RP2354B pin (IOBoard.md:61, :234, :266). LCSC number C7843 is C and digits, so rule 1 says on the board as well",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de:61, :234, :266; python3 tools/research/vendors.py jlcpcb C7843",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 91082 >= 50",
+      "read": "not read: Digi-Key's API refused every request with HTTP 429, 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, retry-after 19728 s at 18:31:11Z and 19396 s at 18:36:43Z, so the quota resets at about 2026-09-29T00:00Z). Digi-Key's API is the only source rule 7 allows for this reading, so the rule-4 gate of 50 at Digi-Key is not re-read and P2's figure stands unconfirmed. passes true is not a claim that the gate passes; the check is written as not read so the part counts as not verified, not as refuted",
+      "source": "python3 tools/research/vendors.py digikey SN74LVC1T45DBVR (https://api.digikey.com/products/v4/search/SN74LVC1T45DBVR/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:58Z"
+     }
+    ]
+   },
+   {
+    "function": "reply path through the gate",
+    "part": "SN74CBTLV3126PWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 401; need 5 boards × 2 = 10, threshold max(5 × 10, 50) = 50",
+      "read": "JLCPCB stockCount 401 in the exact row C543078. Need 5 boards (S7) × 2 = 10; S4 threshold max(5 × 10, 50) = 50; 401 >= 50: rule 4 passes",
+      "source": "python3 tools/research/vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:43Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 395",
+      "read": "canPresaleNumber 395; >= 0",
+      "source": "python3 tools/research/vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:43Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE: orderable SN74CBTLV3126PWR ACTIVE",
+      "read": "ACTIVE: product page SN74CBTLV3126 meta status ACTIVE; orderable SN74CBTLV3126PWR marketingStatusDescription ACTIVE; the part-details page for SN74CBTLV3126PWR shows the ACTIVE badge. No NRND, LIFEBUY or last-time-buy text on either page. The orderables SN74CBTLV3126PW (90 a tube) and SN74CBTLV3126D are OBSOLETE; they are other carriers or packages, not the candidate reel PWR, which is ACTIVE",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74CBTLV3126 --client chrome (HTTP 200); python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74CBTLV3126/part-details/SN74CBTLV3126PWR --client chrome (HTTP 200, 2026-09-28T18:34:31Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:32:37Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read; maker status ACTIVE",
+      "read": "None found. The product page and the SN74CBTLV3126PWR part-details page carry ACTIVE and no end-of-life, last-time-buy or NRND text for the candidate (the OBSOLETE text there belongs to the tube carrier SN74CBTLV3126PW). TI's PCN page describes its process (J-STD-046; discontinuance per J-STD-048 with 12 months for the last order and 6 more for delivery) and links no public PCN listing, so no listing was read. LCSC productCycle 'normal'. Digi-Key's EndOfLife field not read (HTTP 429, daily rate limit). Nothing contradicts P2's record, which states no notice",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74CBTLV3126 and https://www.ti.com/product/SN74CBTLV3126/part-details/SN74CBTLV3126PWR --client chrome; python3 tools/research/vendors.py fetch https://www.ti.com/quality-reliability/quality/product-change-notification.html --client chrome (HTTP 200, 2026-09-28T18:33:11Z); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C543078.html --client chrome (2026-09-28T18:34:56Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:31Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "Published, with no date per part: TI's guidelines state that TI standard products are not eligible for obsolescence while the product has had any sales within the last five years (seven for automotive or high-reliability), can be manufactured and has been in production for less than 10 years, or has any current customer demand. Recorded; S5 does not require a commitment",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/quality-reliability/quality/product-life-cycle.html --client chrome (HTTP 200), section 'Internal policies for standard product longevity'",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:33:11Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision December 1997",
+      "read": "Datasheet header 'SCDS038N – DECEMBER 1997 – REVISED JULY 2026': first revision December 1997, about 345 months before 2026-09-28; over 12 months, not flagged",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf --client chrome (HTTP 200), page 1 header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:35:09Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active",
+      "read": "LCSC: productCycle 'normal' in the record of productCode C543078 (productModel SN74CBTLV3126PWR, brand TI, TSSOP-14), stockNumber 401; no discontinued, obsolete, EOL, NRND or sold_out text. JLCPCB: the exact API row carries no status field (componentLibraryType and preferredComponentFlag only). Digi-Key ProductStatus not read: HTTP 429, daily rate limit exhausted. No disagreement with the maker's ACTIVE among the readings made",
+      "source": "python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C543078.html --client chrome (HTTP 200); raw JLCPCB row via vendors.jlc_query('C543078') (2026-09-28T18:36:08Z); python3 tools/research/vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails), HTTP 429 (2026-09-28T18:30:57Z)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:56Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks",
+      "read": "not read: Digi-Key's API refused every request with HTTP 429, 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, retry-after 19728 s at 18:31:11Z and 19396 s at 18:36:43Z, so the quota resets at about 2026-09-29T00:00Z). ManufacturerLeadWeeks is carried by Digi-Key's API only, so the lead time is not re-read. passes true follows the rule that this reading always passes; it is not a reading",
+      "source": "python3 tools/research/vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:57Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType 'expand' (extended), preferredComponentFlag false; S6 allows basic and extended",
+      "source": "python3 tools/research/vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:43Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C543078 = SN74CBTLV3126PWR, TSSOP-14, Texas Instruments",
+      "read": "The exact JLCPCB result for C543078 names componentModelEn SN74CBTLV3126PWR, componentSpecificationEn TSSOP-14, componentBrandEn Texas Instruments (other_results 0). LCSC's page for C543078 names productModel SN74CBTLV3126PWR, TSSOP-14. Part number and package match",
+      "source": "python3 tools/research/vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C543078.html --client chrome (2026-09-28T18:34:56Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:43Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "the same 2 parts as the multiprotocol port path, counted once",
+      "read": "2 a board, the same 2 parts as the multiprotocol port path: the reply lines are the 4 multiprotocol ports and the UART socket (IOBoard.md:64-65, :254), 5 lines on 4-switch parts. Candidate count 2 >= 2",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de: lines 64-65, 236-238, 254; hardware/docs/Research.md at 10b0bade34de: F13 (line 541)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C543078",
+      "read": "The specification places the part's function on the IO board: the element of the output gate that passes the reply while enabled (IOBoard.md:187, :236-238, :254, F13). LCSC number C543078 is C and digits, so rule 1 says on the board as well",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de:187, :236-238, :254; python3 tools/research/vendors.py jlcpcb C543078",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 3756 >= 50",
+      "read": "not read: Digi-Key's API refused every request with HTTP 429, 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, retry-after 19728 s at 18:31:11Z and 19396 s at 18:36:43Z, so the quota resets at about 2026-09-29T00:00Z). Digi-Key's API is the only source rule 7 allows for this reading, so the rule-4 gate of 50 at Digi-Key is not re-read and P2's figure stands unconfirmed. passes true is not a claim that the gate passes; the check is written as not read so the part counts as not verified, not as refuted",
+      "source": "python3 tools/research/vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:57Z"
+     }
+    ]
+   },
+   {
+    "function": "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+    "part": "SN74CBTLV3126PWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 401; need 5 boards × 2 = 10, threshold max(5 × 10, 50) = 50",
+      "read": "JLCPCB stockCount 401 in the exact row C543078. Need 5 boards (S7) × 2 = 10; S4 threshold max(5 × 10, 50) = 50; 401 >= 50: rule 4 passes",
+      "source": "python3 tools/research/vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:43Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 395",
+      "read": "canPresaleNumber 395; >= 0",
+      "source": "python3 tools/research/vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:43Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE: orderable SN74CBTLV3126PWR ACTIVE",
+      "read": "ACTIVE: product page SN74CBTLV3126 meta status ACTIVE; orderable SN74CBTLV3126PWR marketingStatusDescription ACTIVE; the part-details page for SN74CBTLV3126PWR shows the ACTIVE badge. No NRND, LIFEBUY or last-time-buy text on either page. The orderables SN74CBTLV3126PW (90 a tube) and SN74CBTLV3126D are OBSOLETE; they are other carriers or packages, not the candidate reel PWR, which is ACTIVE",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74CBTLV3126 --client chrome (HTTP 200); python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74CBTLV3126/part-details/SN74CBTLV3126PWR --client chrome (HTTP 200, 2026-09-28T18:34:31Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:32:37Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices: not read; maker status ACTIVE",
+      "read": "None found. The product page and the SN74CBTLV3126PWR part-details page carry ACTIVE and no end-of-life, last-time-buy or NRND text for the candidate (the OBSOLETE text there belongs to the tube carrier SN74CBTLV3126PW). TI's PCN page describes its process (J-STD-046; discontinuance per J-STD-048 with 12 months for the last order and 6 more for delivery) and links no public PCN listing, so no listing was read. LCSC productCycle 'normal'. Digi-Key's EndOfLife field not read (HTTP 429, daily rate limit). Nothing contradicts P2's record, which states no notice",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/product/SN74CBTLV3126 and https://www.ti.com/product/SN74CBTLV3126/part-details/SN74CBTLV3126PWR --client chrome; python3 tools/research/vendors.py fetch https://www.ti.com/quality-reliability/quality/product-change-notification.html --client chrome (HTTP 200, 2026-09-28T18:33:11Z); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C543078.html --client chrome (2026-09-28T18:34:56Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:31Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "Published, with no date per part: TI's guidelines state that TI standard products are not eligible for obsolescence while the product has had any sales within the last five years (seven for automotive or high-reliability), can be manufactured and has been in production for less than 10 years, or has any current customer demand. Recorded; S5 does not require a commitment",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/quality-reliability/quality/product-life-cycle.html --client chrome (HTTP 200), section 'Internal policies for standard product longevity'",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:33:11Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision December 1997",
+      "read": "Datasheet header 'SCDS038N – DECEMBER 1997 – REVISED JULY 2026': first revision December 1997, about 345 months before 2026-09-28; over 12 months, not flagged",
+      "source": "python3 tools/research/vendors.py fetch https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf --client chrome (HTTP 200), page 1 header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:35:09Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active",
+      "read": "LCSC: productCycle 'normal' in the record of productCode C543078 (productModel SN74CBTLV3126PWR, brand TI, TSSOP-14), stockNumber 401; no discontinued, obsolete, EOL, NRND or sold_out text. JLCPCB: the exact API row carries no status field (componentLibraryType and preferredComponentFlag only). Digi-Key ProductStatus not read: HTTP 429, daily rate limit exhausted. No disagreement with the maker's ACTIVE among the readings made",
+      "source": "python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C543078.html --client chrome (HTTP 200); raw JLCPCB row via vendors.jlc_query('C543078') (2026-09-28T18:36:08Z); python3 tools/research/vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails), HTTP 429 (2026-09-28T18:30:57Z)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:34:56Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks",
+      "read": "not read: Digi-Key's API refused every request with HTTP 429, 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, retry-after 19728 s at 18:31:11Z and 19396 s at 18:36:43Z, so the quota resets at about 2026-09-29T00:00Z). ManufacturerLeadWeeks is carried by Digi-Key's API only, so the lead time is not re-read. passes true follows the rule that this reading always passes; it is not a reading",
+      "source": "python3 tools/research/vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:57Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType 'expand' (extended), preferredComponentFlag false; S6 allows basic and extended",
+      "source": "python3 tools/research/vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:43Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C543078 = SN74CBTLV3126PWR, TSSOP-14, Texas Instruments",
+      "read": "The exact JLCPCB result for C543078 names componentModelEn SN74CBTLV3126PWR, componentSpecificationEn TSSOP-14, componentBrandEn Texas Instruments (other_results 0). LCSC's page for C543078 names productModel SN74CBTLV3126PWR, TSSOP-14. Part number and package match",
+      "source": "python3 tools/research/vendors.py jlcpcb C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match); python3 tools/research/vendors.py fetch https://www.lcsc.com/product-detail/C543078.html --client chrome (2026-09-28T18:34:56Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:43Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "the same 2 parts as the multiprotocol port path, counted once",
+      "read": "2 a board, the same 2 parts as the multiprotocol port path: the reply lines are the 4 multiprotocol ports and the UART socket (IOBoard.md:64-65, :254), 5 lines on 4-switch parts. Candidate count 2 >= 2",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de: lines 64-65, 236-238, 254; hardware/docs/Research.md at 10b0bade34de: F13 (line 541)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C543078",
+      "read": "The specification places the part's function on the IO board: the element of the output gate that passes the reply while enabled (IOBoard.md:187, :236-238, :254, F13). LCSC number C543078 is C and digits, so rule 1 says on the board as well",
+      "source": "hardware/docs/IOBoard.md at 10b0bade34de:187, :236-238, :254; python3 tools/research/vendors.py jlcpcb C543078",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:36:30Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 3756 >= 50",
+      "read": "not read: Digi-Key's API refused every request with HTTP 429, 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, retry-after 19728 s at 18:31:11Z and 19396 s at 18:36:43Z, so the quota resets at about 2026-09-29T00:00Z). Digi-Key's API is the only source rule 7 allows for this reading, so the rule-4 gate of 50 at Digi-Key is not re-read and P2's figure stands unconfirmed. passes true is not a claim that the gate passes; the check is written as not read so the part counts as not verified, not as refuted",
+      "source": "python3 tools/research/vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:30:57Z"
+     }
+    ]
+   }
+  ]
+ }
+}

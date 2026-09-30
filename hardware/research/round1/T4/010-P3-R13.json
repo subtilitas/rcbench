@@ -1,0 +1,100 @@
+{
+ "role": "P3",
+ "category": "R13",
+ "label": "P3-R13",
+ "attempt": 0,
+ "data": {
+  "category": "R13",
+  "missed": [
+   {
+    "function": "load-cell bridge ADC",
+    "part": "ADS1262IPWR (alternate ADS1263IPWR, same TSSOP-28 pinout)",
+    "maker": "Texas Instruments (S1)",
+    "why": "P2 did not consider the ADS1262/ADS1263 family. It meets every requirement on 1 placement. Source: datasheet SBAS661C (May 2021), https://www.ti.com/lit/ds/symlink/ads1262.pdf, read 2026-09-28T15:31:51Z. Inputs: 10, i.e. 5 differential pairs. AVDD 4.75 to 5.25 V. DVDD 2.7 to 5.25 V (section 7.3). Reference: differential 0.9 V to AVDD-AVSS+0.2 V, with REFP up to AVDD+0.1 V, so it takes the 5.0 V excitation ratiometrically. PGA gain up to 32, giving a full-scale range of ±VREF/32 = ±156 mV. Input range by Equation 12 at gain 32 and 10.3 mV: 0.46 to 4.29 V at AVDD 4.75 V, so a 2.5 V common mode is inside. Noise, Table 8-1, gain 32: 1200 SPS sinc3 0.148 µV RMS, 1200 SPS sinc1 0.197 µV, 2400 SPS sinc4 0.198 µV, all below 0.34 µV. First-conversion latency, Table 9-13: sinc3 at 1200 SPS 2.924 ms, so 8.8 ms per set of 3, about 114 SPS per channel. Sinc4 at 2400 SPS 2.091 ms, so 6.3 ms per set, about 159 SPS per channel. Every channel settles in 1 conversion. Chop mode doubles the latency and divides noise by 1.4. Drift: gain drift at most 4 ppm/°C and offset drift at most 100/32+50 = 53 nV/°C with chop off, so 0.01 % and 0.013 % of 10 mV over 25 K. Ambient range −40 to 125 °C. IAVDD at most 6.5 mA, below the 13.5 mA P2 budgeted for 2 AD7190. The datasheet states the ADS1262 and ADS1263 are pin and functionally compatible. JLCPCB API, read 2026-09-28T15:39:01Z: C2669963 ADS1262IPWR stock 658, presale 637, extended, 13.38 USD at 10. C122460 ADS1262IPW stock 96, presale 90. C2861295 ADS1263IPWR stock 212, presale 209, 15.58 USD at 10 (15:39:02Z). Gate is 50 for 1 placement. Digi-Key API: ADS1262IPWR Active, 2127, lead 26 weeks (15:39:30Z). ADS1263IPWR Active, 2630, lead 16 weeks (15:39:34Z). TI product page https://www.ti.com/product/ADS1262 shows ACTIVE (15:39:53Z). No driver under shared/"
+   },
+   {
+    "function": "load-cell bridge ADC",
+    "part": "AD7193BRUZ-REEL / AD7193BCPZ-RL7",
+    "maker": "Analog Devices (S1)",
+    "why": "This is the 4-differential-input member of the AD7190/AD7192 family P2 ranked 3 and 4. It meets every requirement on 1 placement where the AD7190 and AD7192 need 2. It fails rule 4 today. Source: AD7193 Rev. E, https://www.analog.com/media/en/technical-documentation/data-sheets/AD7193.pdf, read 2026-09-28T15:33:13Z. AVDD 3 to 5.25 V. DVDD 2.7 to 5.25 V. REFIN 1 V to AVDD. Gain 128 range ±(AVDD−1.25 V)/gain, which is ±27.3 mV at 4.75 V. Buffered input AGND+0.25 V to AVDD−0.25 V. Table 7 (sinc4, chop off), FS=2: 2400 Hz, settling 1.67 ms, 230 nV RMS at gain 128. The sequencer takes tSETTLE × enabled channels, so 3 channels take 5.0 ms, 200 SPS per channel. Offset drift ±5 nV/°C at gain 32 to 128. Gain drift ±1 ppm/°C. JLCPCB API, 2026-09-28: C125128 AD7193BRUZ-REEL stock 0, presale −5 (15:39:02Z). C650628 AD7193BCPZ-RL7 stock 43, below the gate of 50 (15:39:18Z). C650629 AD7193BRUZ stock 0, presale −13. Digi-Key API: AD7193BCPZ-RL7 Active, 7380, lead 52 weeks (15:39:41Z). AD7193BRUZ-REEL Active, 0, lead 11 weeks (15:39:39Z). It becomes a 1-placement candidate if JLCPCB stock of the LFCSP reaches 50"
+   },
+   {
+    "function": "load-cell bridge ADC",
+    "part": "ADS122C04IPWR (3 placements)",
+    "maker": "Texas Instruments (S1)",
+    "why": "This is the I2C (Inter-Integrated Circuit) form of the ADS1220 core that P2 ranked 5th. It passes at 3 placements, one channel each, as the ADS1220 does. It shares one 2-wire bus with 16 pin-set addresses, in place of 3 SPI chip selects, which bears on P5's GPIO budget. Source: SBAS751B, https://www.ti.com/lit/ds/symlink/ads122c04.pdf, read 2026-09-28T15:31:52Z. AVDD 2.3 to 5.5 V. DVDD 2.3 to 5.5 V. VREF 0.75 V to AVDD−AVSS, so it takes the 5.0 V excitation. Noise at gain 128: normal mode 175 SPS 0.25 µV (Table 1), turbo 180 SPS 0.22 µV (Table 5). Both tables are at AVDD 3.3 V with the 2.048 V internal reference; the 5 V ratiometric figure is not in the datasheet. JLCPCB API: C2872338 stock 4157, presale 4033, 7.10 USD at 10 (15:39:04Z), above the gate of 75 for 3 placements. Digi-Key and lifecycle not read. It costs 3.3 times the ADS1220 per part"
+   },
+   {
+    "function": "load-cell excitation",
+    "part": "TPS7B8250QDGNRQ1",
+    "maker": "Texas Instruments (S1)",
+    "why": "This is the 300 mA member of the family of P2's rank 4. Its DGN pinout is identical to the TPS7B8150DGNR: 1 IN, 2 EN, 3/7 NC, 4/5/6 GND, 8 OUT. The pin tables were read in TPS7B82-Q1 SLVSDQ0K Table 4-1 (https://www.ti.com/lit/ds/symlink/tps7b82-q1.pdf, 15:37:42Z) and in TPS7B81 SBVS402 (https://www.ti.com/lit/ds/symlink/tps7b81.pdf, 15:38:47Z), so it is rank 4's pin-compatible alternate. VIN 3 to 40 V. VOUT ±1.5 % for VIN = VOUT+VDO to 40 V, IOUT 1 to 300 mA, TJ −40 to 150 °C. Dropout for the DGN package at most 350 mV at 100 mA, so ±1.5 % holds from 6.0 V. Current limit 310 to 690 mA. Thermal shutdown 175 °C typical. RθJA 63.9 °C/W for HVSSOP-8, so Tj ≈ 50 + 63.9 × (17 V × 57 mA) = 112 °C. Ground current at 57 mA not read. JLCPCB API: C424924 stock 2043, presale 2005, extended, 1.25 USD at 10 (15:39:00Z). The jlcparts copy lists this row with an empty maker under Voltage References. Digi-Key API: Active, 1616, lead 16 weeks (15:39:36Z), so the second vendor passes. TI page https://www.ti.com/product/TPS7B82-Q1 shows ACTIVE (15:39:54Z). The WSON-6 TPS7B8250QDRVRQ1 (C2862522, stock 1344, 1.27 USD at 10, 15:39:01Z) has RθJA 72.8 °C/W, Tj ≈ 121 °C. Digi-Key has 0 of it (15:39:37Z)"
+   },
+   {
+    "function": "load-cell excitation",
+    "part": "TLE42644G (Digi-Key orderable TLE42644GHTMA1)",
+    "maker": "Infineon (S1)",
+    "why": "This SOT-223 part has the pin order 1 I, 2 GND, 3 Q, 4/tab GND. Source: Infineon data sheet Rev. 1.1, 2014-07-03, read from JLCPCB's file link https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588906218983198720 at 2026-09-28T15:41:03Z. The copy on Infineon's own site was not read. VI 5.5 to 40 V. VQ 4.85 to 5.15 V for 5 to 100 mA over 6 < VI < 21 V at Tj −40 to 150 °C. Accuracy between 21 and 22 V under load is not specified: the line regulation of 30 mV over 6 to 28 V is given at 1 mA only. Dropout at most 500 mV at 100 mA. Current limit 150 to 500 mA. Overtemperature shutdown 151 to 200 °C. Current consumption at most 4 mA at 50 mA. RthJA: 54 K/W on 2s2p, 73 K/W on 1s0p with 300 mm², 139 K/W on the footprint only. Tj = 50 + 73 × 1.06 W = 127 °C (1.06 W uses the 4 mA ground current at 50 mA; the 57 mA value is not given). On the footprint only, Tj is 197 °C. JLCPCB API: C539683 stock 257, presale 257, 1.02 USD at 10 (15:41:28Z). Digi-Key API: TLE42644G listed Discontinued at DigiKey, 0 (15:41:34Z). TLE42644GHTMA1 Active, 2561, lead 13 weeks (15:41:36Z). Infineon status not read"
+   },
+   {
+    "function": "load-cell excitation",
+    "part": "BD750L2EFJ-CE2",
+    "maker": "ROHM (S1)",
+    "why": "Found in jlcparts and not qualified here. Its datasheet was not read: https://fscdn.rohm.com/en/products/databook/datasheet/ic/power/linear_regulator/bdxxxl2-c-e.pdf returned HTTP 404 at 2026-09-28T15:41:02Z, and https://www.rohm.com/datasheet/BD750L2EFJ-C returned 404 at 15:41:47Z. JLCPCB listing, not a datasheet: 45 V, 200 mA, 700 mV at 200 mA, HTSOP-J8 with exposed pad. JLCPCB API: C2766153 stock 655, presale 654, 0.66 USD at 10 (15:41:32Z)"
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "AD7195BCPZ-RL7",
+    "reason_given": "not qualified: datasheet read (15:13:26Z) shows the AD7190 core with AC excitation that needs an external H-bridge; not evaluated further",
+    "why_it_fails": "AC excitation is optional. The ACX bit (configuration register bit CON22) is 0 for DC-excited inputs, and the part then works as an AD7190 core with a DC bridge. Source: AD7195 datasheet, https://www.analog.com/media/en/technical-documentation/data-sheets/AD7195.pdf, read 2026-09-28T15:34:42Z. AVDD 4.75 to 5.25 V. DVDD 2.7 to 5.25 V. REFIN(+) = AVDD in the specification conditions. 2 differential inputs, so 2 placements, like rank 3. Table 6, 960 Hz, gain 128: 121 nV RMS, settling 4.17 ms, so 2 channels in 8.3 ms. It qualifies as P2's rank 3 does. It is not pin-compatible with the AD7190: LFCSP-32 against TSSOP-24. JLCPCB API: C578052 stock 672, presale 659, 18.09 USD at 10 (15:39:03Z)"
+   },
+   {
+    "part": "AD7730BRZ-REEL",
+    "reason_given": "not qualified: datasheet not read (analog.com returned HTTP 404 for ad7730.pdf and AD7730.pdf)",
+    "why_it_fails": "The datasheet is at https://www.analog.com/media/en/technical-documentation/data-sheets/AD7730_7730L.pdf (Rev. B), read 2026-09-28T15:33:13Z. The drop still stands, on a requirement. The input ranges are ±10, 20, 40 and 80 mV, so ±10.3 mV needs the ±20 mV range. Table III (chop off), 1200 Hz, ±20 mV: 210 nV RMS, normal-mode settling 20.8 ms. That exceeds the 20 ms step settling (V265). A channel change needs the full settling, so 2 channels a part give under 100 SPS a channel. FASTStep reaches a settled value in 2 outputs, but above the specified noise until full settling. AVDD current is at most 10.3 mA a part. JLCPCB API: C488325 stock 321 (15:39:04Z)"
+   },
+   {
+    "part": "ADS1256IDBR",
+    "reason_given": "not qualified: datasheet not read in this task",
+    "why_it_fails": "The drop stands, for a different reason. VREF is 0.5 to 2.6 V (SBAS288K, https://www.ti.com/lit/ds/symlink/ads1256.pdf, read 2026-09-28T15:31:53Z). The 5.0 V excitation cannot be its ratiometric reference, which fails V254/V260. JLCPCB API: C28186 stock 6910 (15:39:05Z)"
+   },
+   {
+    "part": "ADS125H02IRHBR",
+    "reason_given": "not qualified: found in the category search (JLCPCB snapshot stock 2285); datasheet not read",
+    "why_it_fails": "The drop stands on the analogue supply. SBAS790C section 7.3 (https://www.ti.com/lit/ds/symlink/ads125h02.pdf, read 2026-09-28T15:31:52Z) requires HV_AVDD−HV_AVSS of 10 to 36 V besides AVDD 4.75 to 5.25 V. The part cannot run from the 5.0 V excitation alone. It has 2 channels. JLCPCB API: C2872153 stock 2233 (15:39:05Z)"
+   },
+   {
+    "part": "AD7793BRUZ-REEL, AD7794BRUZ-REEL",
+    "reason_given": "not qualified: datasheets not read; same 470 Hz class as AD7799",
+    "why_it_fails": "AD7793 read in AD7792_7793.pdf Rev. B (https://www.analog.com/media/en/technical-documentation/data-sheets/AD7792_7793.pdf, 2026-09-28T15:33:14Z). Table 5, gain 128: 470 Hz 0.593 µV, 242 Hz 0.397 µV, 123 Hz 0.283 µV. Gain 64 at 123 Hz: 0.265 µV. A channel change costs 2/fADC. So it passes only at 3 placements, one channel each at 123 Hz, which is the AD7799's standing. The part is not excluded by a requirement. JLCPCB API: C27355 stock 7889, 8.81 USD at 10 (15:39:04Z). AD7794 datasheet not read"
+   },
+   {
+    "part": "ADS131M04IPWR and ADS131M0x family",
+    "reason_given": "not qualified: datasheet not read in this task; JLCPCB listing gives a 3.3 V class analogue supply",
+    "why_it_fails": "The listing is not a datasheet source (rule 3). Read in SBAS890D (https://www.ti.com/lit/ds/symlink/ads131m04.pdf, 2026-09-28T15:31:53Z): AVDD 2.7 to 3.6 V. The drop holds on that datasheet figure against V254"
+   },
+   {
+    "part": "MCP3564-E/ST and MCP356x family",
+    "reason_given": "not qualified: datasheet not read; the JLCPCB listing gives AVDD 2.7 to 3.6 V",
+    "why_it_fails": "The listing is not a datasheet source (rule 3). Read in DS20006181C (https://ww1.microchip.com/downloads/aemDocuments/documents/MSLD/ProductDocuments/DataSheets/MCP3561-2-4-Family-Data-Sheet-DS20006181C.pdf, 2026-09-28T15:35:16Z): AVDD 2.7 to 3.6 V and VREF at most AVDD. The drop holds on those figures"
+   },
+   {
+    "part": "AD7124-8BCPZ-RL7",
+    "reason_given": "same AVDD 2.9 to 3.6 V family as AD7124-4; AVDD not read in its own datasheet",
+    "why_it_fails": "Now read in its own datasheet, AD7124-8 Rev. F (https://www.analog.com/media/en/technical-documentation/data-sheets/AD7124-8.pdf, 2026-09-28T15:40:16Z). AVDD to AVSS is 2.9 to 3.6 V at full power and 2.7 to 3.6 V at low and mid power. REFIN is at most AVDD. The drop holds on those figures"
+   },
+   {
+    "part": "TLV76050DBZR",
+    "reason_given": "not qualified: SOT-23 with 1.2 V dropout at 100 mA by the JLCPCB listing; datasheet not read",
+    "why_it_fails": "The drop stands on junction temperature. SNVSAV1A (https://www.ti.com/lit/ds/symlink/tlv760.pdf, 2026-09-28T15:40:18Z): RθJA 275.2 °C/W and recommended TJ at most 125 °C. About 0.97 W at 22 V in and 57 mA would put TJ far above 125 °C"
+   },
+   {
+    "part": "ADP7142AUJZ-5.0-R7",
+    "reason_given": "not qualified: TSOT-5 package; θJA and datasheet not read",
+    "why_it_fails": "The drop stands on junction temperature. ADP7142 Rev. K (https://www.analog.com/media/en/technical-documentation/data-sheets/ADP7142.pdf, 2026-09-28T15:40:17Z): θJA 170 °C/W for 5-lead TSOT, so Tj ≈ 50 + 170 × 0.97 = 215 °C. The LFCSP-6 (C659362) and SOIC-8 (C116797) rows show 15 and 3 in the 2026-09-14 jlcparts copy. That copy is not a count, and their JLCPCB stock was not read"
+   }
+  ],
+  "missed_functions": []
+ }
+}

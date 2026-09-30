@@ -1,0 +1,265 @@
+{
+ "role": "P4",
+ "category": "R13",
+ "label": "P4-stock-R13",
+ "attempt": 0,
+ "data": {
+  "category": "R13",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "load-cell bridge ADC",
+    "part": "ADS1235IRHBR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C2669975 stockCount 1340 (02:42:52Z and 03:22:09Z); gate: need 5 boards × 1 = 5, threshold max(5 × 5, 50) = 50 (S4)",
+      "read": "stockCount 1340, exact match C2669975 (other_results 0). 1340 ≥ 50: pass (rule 4)",
+      "source": "vendors.py jlcpcb C2669975 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, keyword C2669975, exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:42Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 1220",
+      "read": "canPresaleNumber 1220 ≥ 0: pass",
+      "source": "vendors.py jlcpcb C2669975 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:42Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "manufacturer status ACTIVE (www.ti.com/product/ADS1235, meta status, 02:49:48Z); package addendum ADS1235IRHBR Active, Production (SBAS824)",
+      "read": "TI product page: <meta name=\"status\" content=\"ACTIVE\" />; orderable ADS1235IRHBR marketingStatusDescription \"ACTIVE\" (\"This product has been released to the market and is available for purchase\"), 3000, LARGE T&R; ADS1235IRHBT also ACTIVE, 250, SMALL T&R. SBAS824 Packaging Information: ADS1235IRHBR Active, Production. Active passes S5",
+      "source": "https://www.ti.com/product/ADS1235 (vendors.py fetch, HTTP 200, 283237 bytes, 03:27:53Z); https://www.ti.com/lit/ds/symlink/ads1235.pdf Packaging Information (vendors.py fetch, HTTP 200, 03:27:57Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:57Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not given: 'longevity commitment: not read'",
+      "read": "TI publishes a general commitment, not a per-part one: 'TI's product life cycles are typically 10 to 15 years and often extend longer'; a TI standard product is not eligible for obsolescence while it has had sales within the last 5 years (7 for automotive or high-reliability), has been in production for less than 10 years, or has current customer demand. No commitment in years for ADS1235. S5 records a commitment and does not require one",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch, HTTP 200, linked from the product page as statusPageUrl)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:25Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet SBAS824 October 2018, more than 12 months, not flagged",
+      "read": "SBAS824 Revision History: 'October 2018, *, Initial release.'; the current document is still SBAS824 – OCTOBER 2018. About 7 years on the market, more than 12 months: not flagged",
+      "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf, section 4 Revision History (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:57Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active (02:48:11Z); JLCPCB lists it with stock, no status field (02:42:52Z); LCSC page not read",
+      "read": "Digi-Key ADS1235IRHBR: status Active, discontinued false, end_of_life false. JLCPCB: listed, stockCount 1340, the API row carries no status field. LCSC: productCode C2669975, productModel ADS1235IRHBR, brand TI, VQFN-32-EP(5x5), stockNumber 1340, isPreSale false; the page carries no lifecycle field. No distributor disagrees with TI's ACTIVE",
+      "source": "vendors.py digikey ADS1235IRHBR (https://api.digikey.com/products/v4/search/ADS1235IRHBR/productdetails, cached reading of 2026-09-29T02:48:11Z); vendors.py jlcpcb C2669975 (03:27:42Z); https://www.lcsc.com/product-detail/C2669975.html (vendors.py fetch, HTTP 200, 03:27:56Z)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:56Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "16 weeks (Digi-Key)",
+      "read": "lead_weeks 16 (ManufacturerLeadWeeks) for ADS1235IRHBR; 16 for ADS1235IRHBT",
+      "source": "vendors.py digikey ADS1235IRHBR and ADS1235IRHBT (https://api.digikey.com/products/v4/search/ADS1235IRHBR/productdetails, .../ADS1235IRHBT/productdetails), returned cached with read times 2026-09-29T02:48:11Z and 02:48:13Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:48:11Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "not given: 'change and discontinuation notices: TI PCN listing not read'",
+      "read": "No end-of-life or last-time-buy notice found. The TI product page gives ACTIVE for both orderables; its only 'discontinuation' text is the generic preproduction tooltip. SBAS824 Packaging Information gives Active, Production. Digi-Key: end_of_life false, discontinued false. TI's PCN listing: not read, as stated; neither the product page nor the life-cycle page links one, and https://www.ti.com/support-quality/pcn.html answered HTTP 404 (03:28:40Z). TI designates a product in the process of discontinuation as LAST TIME BUY on its product page, and ADS1235 is not so designated",
+      "source": "https://www.ti.com/product/ADS1235 (03:27:53Z); https://www.ti.com/quality-reliability/quality/product-life-cycle.html (03:28:25Z); https://www.ti.com/lit/ds/symlink/ads1235.pdf (03:27:57Z); vendors.py digikey ADS1235IRHBR (cached, 02:48:11Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:40Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended); S6 allows basic and extended on merit",
+      "source": "vendors.py jlcpcb C2669975 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:42Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2669975, ADS1235IRHBR, VQFN-32 (RHB) 5 × 5 mm with thermal pad, Texas Instruments",
+      "read": "exact match lcsc C2669975, part ADS1235IRHBR, package VQFN-32-EP(5x5), maker_label Texas Instruments. Part number and package match the candidate",
+      "source": "vendors.py jlcpcb C2669975 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact match, other_results 0)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:42Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1: range 1 to 1, 3 differential inputs (AIN0/1, AIN2/3, AIN4/5) and a standalone reference pair REFP0/REFN0 carry the 3 channels of F3",
+      "read": "The specification fixes 3 channels (F3; IOBoard.md:73 and :461), not the number of ADC parts, so the top of P2's range applies: 1. SBAS824 gives 'Three Differential or Five Single-Ended Inputs' and 'The primary reference input pair (REFP0/REFN0) is available as standalone input pins', so 1 part carries the 3 channels and the shared reference (V263). Candidate count 1 ≥ 1; need 5 × 1 = 5",
+      "source": "hardware/docs/IOBoard.md:73, :461 and Research.md F3 Answer at checkout e13f5f60d2e5; https://www.ti.com/lit/ds/symlink/ads1235.pdf page 1 and section 8.1 (03:27:57Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:30:40Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C2669975",
+      "read": "On the IO board: IOBoard.md:73 lists thrust and torque load cells among the IO board's measurements and :460 gives 'load cells, with a bridge ADC and excitation (R13)'; nothing places the ADC off the board. LCSC number C2669975 (C and digits) says the same",
+      "source": "hardware/docs/IOBoard.md:73, :460 at checkout e13f5f60d2e5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:30:40Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "second-vendor: ADS1235IRHBT at Digi-Key, 401 ≥ 50 (02:48:13Z); ADS1235IRHBR itself 0 at Digi-Key (02:48:11Z)",
+      "read": "Digi-Key ADS1235IRHBR: stock_available 0 in every packaging (Tape & Reel 0, Cut Tape 0, Digi-Reel 0), Active, 16 weeks. Digi-Key ADS1235IRHBT: stock_available 401 (Cut Tape 401, Digi-Reel 401, Tape & Reel 250 at MOQ 250), Active, 16 weeks. 401 ≥ 50. Pass on this basis: TI's product page lists both as orderables of GPN ADS1235 differing only in packageQuantity and packageCarrier (3000 LARGE T&R against 250 SMALL T&R), and SBAS824 Packaging Information gives both VQFN (RHB) 32, NIPDAU, Level-3-260C-168 HR, −40 to 125 °C, marking 'ADS 1235', Active, Production. The suffix is a packaging of the same part, the class Sourcing.md counts across (stock of each packaging). Limitation: the exact orderable ADS1235IRHBR reads 0 at Digi-Key; a check keyed on that part number (tools/jlc_stock.py) reads 0 unless the row names ADS1235IRHBT as its Digi-Key part",
+      "source": "vendors.py digikey ADS1235IRHBR and ADS1235IRHBT (https://api.digikey.com/products/v4/search/ADS1235IRHBR/productdetails and .../ADS1235IRHBT/productdetails), cached readings of 2026-09-29T02:48:11Z and 02:48:13Z; https://www.ti.com/product/ADS1235 orderable JSON (03:27:53Z); SBAS824 Packaging Information (03:27:57Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:48:13Z"
+     }
+    ]
+   },
+   {
+    "function": "load-cell excitation",
+    "part": "BD450M2FP3-CE2",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C308595 stockCount 3170 (02:48:02Z); gate: need 5 boards × 1 = 5, threshold 50",
+      "read": "stockCount 3165, exact match C308595 (other_results 0); moved by 5 since 02:48:02Z, the same as the re-rank's 03:22:10Z reading. 3165 ≥ 50: pass (rule 4)",
+      "source": "vendors.py jlcpcb C308595 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, keyword C308595, exact match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:43Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 3067",
+      "read": "canPresaleNumber 3062 ≥ 0: pass (moved by 5)",
+      "source": "vendors.py jlcpcb C308595 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact match)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:43Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Active (ROHM product page, 'Part Number | BD450M2FP3-CE2 | Status | Active', 02:49:51Z)",
+      "read": "ROHM product page, Product Detail: 'Part Number | BD450M2FP3-CE2 Status | Active Package | SOT223-4F Packing Type | Taping Unit Quantity | 2000'. Active passes S5",
+      "source": "https://www.rohm.com/products/power-management/linear-regulators/single-output-ldo-regulators/bd450m2fp3-c-product (vendors.py fetch, HTTP 200, 590175 bytes)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:54Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published for this part: ROHM's Product Longevity Program list names BD450S2 and BD450S5 parts and no BD4xxM2 part (02:50:12Z)",
+      "read": "ROHM Product Longevity Program list (about 1758 table rows, 'Support Period from 2026 (Year)'): the BD4xx entries are BD433S2, BD433S5, BD450S2 and BD450S5 parts only; no BD450M2 or other BD4xxM2 row. No published commitment for this part; S5 does not require one",
+      "source": "https://www.rohm.com/product-info/product-longevity-program?p_p_id=com_rohm_plp_portlet_RohmPlpWebPortlet&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_resource_id=%2Fget%2FPlpProductListData&p_p_cacheability=cacheLevelPage (vendors.py fetch, HTTP 200, 684375 bytes)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:16Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "datasheet Rev.001 05 Dec 2012 (BD450M2WEFJ-C, BD450M2EFJ-C), Rev.002 15 Jan 2013 adds the BD4xxM2-C series; more than 12 months, not flagged",
+      "read": "Revision History: 05.Dec.2012 Rev.001 'New Release (BD450M2WEFJ-C, BD450M2EFJ-C)'; 15.Jan.2013 Rev.002 'Additional Entry (BD4xxM2-C Series)'. About 13 years on the market: not flagged",
+      "source": "https://fscdn.rohm.com/en/products/databook/datasheet/ic/power/linear_regulator/bd4xxm2-c-e.pdf, Revision History (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:18Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active (02:48:18Z); JLCPCB lists it with stock (02:48:02Z); LCSC page not read",
+      "read": "Digi-Key: status Active, discontinued false, end_of_life false. JLCPCB: listed, stockCount 3165, no status field in the API row. LCSC: productCode C308595, productModel BD450M2FP3-CE2, brand ROHM, SOT-223-4(F), stockNumber 3165, isPreSale false; no lifecycle field. No distributor disagrees with ROHM's Active",
+      "source": "vendors.py digikey BD450M2FP3-CE2 (https://api.digikey.com/products/v4/search/BD450M2FP3-CE2/productdetails, cached reading of 2026-09-29T02:48:18Z); vendors.py jlcpcb C308595 (03:27:43Z); https://www.lcsc.com/product-detail/C308595.html (vendors.py fetch, HTTP 200, 03:27:56Z)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:56Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "16 weeks (Digi-Key)",
+      "read": "lead_weeks 16 (ManufacturerLeadWeeks)",
+      "source": "vendors.py digikey BD450M2FP3-CE2 (https://api.digikey.com/products/v4/search/BD450M2FP3-CE2/productdetails), cached reading of 2026-09-29T02:48:18Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:48:18Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "not given: 'change and discontinuation notices: not read'",
+      "read": "No end-of-life or last-time-buy notice found. The ROHM product page gives Status Active and has no match for PCN, product change, discontinu, end of life, EOL, last time, not recommended or NRND. ROHM's sales support page carries no PCN listing; its only discontinuation text names Rochester Electronics as reseller of discontinued products. The PLP list does not name the part. Digi-Key: end_of_life false, discontinued false. ROHM's PCN listing is not public on www.rohm.com: not read, as stated",
+      "source": "ROHM product page (03:27:54Z); https://www.rohm.com/sales_support (vendors.py fetch, HTTP 200, 03:30:11Z); vendors.py digikey BD450M2FP3-CE2 (cached, 02:48:18Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:30:11Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended); S6 allows basic and extended on merit",
+      "source": "vendors.py jlcpcb C308595 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:43Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C308595, BD450M2FP3-CE2, SOT223-4(F), ROHM",
+      "read": "exact match lcsc C308595, part BD450M2FP3-CE2, package SOT-223-4(F), maker_label ROHM Semicon, '5V 200mA 42V'. Part number and package match the candidate",
+      "source": "vendors.py jlcpcb C308595 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact match, other_results 0)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:43Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one excitation for the 3 bridges and the ADC's AVDD (F3, V254)",
+      "read": "1 per board: F3 fixes one 5 V excitation for the 3 channels (IOBoard.md:73, :461), and V254's found value gives one regulator of its own for the 3 bridges and the ADC's AVDD. Candidate count 1 ≥ 1; need 5 × 1 = 5",
+      "source": "hardware/docs/IOBoard.md:73, :461 and Research.md F3 Answer and V254 row at checkout e13f5f60d2e5; V254 found value",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:30:40Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C308595",
+      "read": "On the IO board: IOBoard.md:338 counts the load-cell excitation (F3) among the IO board's loads, :460 gives 'load cells, with a bridge ADC and excitation (R13)', and V254's found value places a regulator of its own on the board fed from the input bus. LCSC number C308595 (C and digits) says the same",
+      "source": "hardware/docs/IOBoard.md:338, :460 and Research.md V254 row at checkout e13f5f60d2e5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:30:40Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "second-vendor: BD450M2FP3-CE2 at Digi-Key, 3618 ≥ 50 (02:48:18Z)",
+      "read": "Digi-Key BD450M2FP3-CE2: stock_available 3618 (Cut Tape 3618, Digi-Reel 3618, Tape & Reel 2000 at MOQ 2000), Active. 3618 ≥ 50: rule 5 holds by the second-vendor route",
+      "source": "vendors.py digikey BD450M2FP3-CE2 (https://api.digikey.com/products/v4/search/BD450M2FP3-CE2/productdetails), cached reading of 2026-09-29T02:48:18Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:48:18Z"
+     }
+    ]
+   }
+  ]
+ }
+}

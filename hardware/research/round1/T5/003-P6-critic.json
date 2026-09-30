@@ -1,0 +1,86 @@
+{
+ "role": "P6-critic",
+ "category": "",
+ "label": "P6-critic",
+ "attempt": 0,
+ "data": {
+  "verdicts": [
+   {
+    "index": 0,
+    "holds": true,
+    "reason": "Confirmed against FU-A4/004-rerank-R1.json: USB protection ranking is empty (no survivor). V9/V12/V13 in Research.md match exactly (IEC 61000-4-2 level 4; steady 3.63 V on USB_DP/USB_DM; 5 lines VBUS/D+/D-/CC1/CC2). Dropped candidates (ADuM3160/4160, ISOUSB111, TPD2S300, TCPP01/02-M12, TPD4S311, TPD6S300A) fail exactly as described (repeaters rate connector-side input ~4.1-6 V or lack VBUS/CC path; CC/VBUS-only OVP parts lack D+/D- lines or fail the 3.63 V VOVPSBU threshold). selection.json shows R1 USB protection: null with no not_requalified note, unlike Microcontroller in the same category. Genuine unresolved gap."
+   },
+   {
+    "index": 1,
+    "holds": true,
+    "reason": "FU-A4/002-P2-R1.json V1 entry states verbatim 'not found. No primary source... gives the stop deadline', citing IOBoard.md:221, Safety.md, link_dev.h and distinguishing the 200 ms figures from the watchdog stop deadline, matching P6's description closely. Research.md V1 Answer column is literally 'for research'."
+   },
+   {
+    "index": 2,
+    "holds": true,
+    "reason": "FU-A4/002-P2-R1.json V2 entry documents the unbounded stall from pico-sdk 2.3.1 stdio_usb_out_chars() restarting its 500 ms timeout on every accepted byte, exactly as described. Research.md V2 is 'for research'."
+   },
+   {
+    "index": 3,
+    "holds": true,
+    "reason": "FU-A3/016-adjudicator-R3.json (and 019) confirm the refutation of IPT015N10N5ATMA1 on SOA during a 300 A/16.9 us turn-off stands, citing the VGS(th) spread 2.2-3.8 V and rising RDS(on) diagram exactly as described. selection.json R3 'onboard pack switch MOSFETs': null, no annotation."
+   },
+   {
+    "index": 4,
+    "holds": true,
+    "reason": "FU-A3/017 and /018 adjudicator files confirm both VS-FC420SA10 and VS-FC270SA20 refutations stand on SOA during a 600 A/34 us turn-off, citing the same Fig. 14 100 us line (~136 A) and VGS(th) spread reasoning described. selection.json R3 'external pack switch module': null, no annotation."
+   },
+   {
+    "index": 5,
+    "holds": true,
+    "reason": "FU-A3/003-P2-R3.json 'pack overvoltage and transient clamp' function: shortlist empty, dropped list matches exactly (SMCJ70A clamps to 113 V at 13.3 A; SMCJ64A/75A/78A 121-126 V at 12 A; TVS/Schottky fails by construction as a second element beside the controlled turn-off). Confirmed no candidate at all."
+   },
+   {
+    "index": 6,
+    "holds": true,
+    "reason": "FU-B3/002-P2-R5.json 'pack disconnect' function: shortlist empty; R5460N dropped on 'balance lead open' (V107), matching wording almost verbatim; MAX17320G22+ dropped specifically because 'the datasheet read states no behaviour for an open cell tap and names no open-wire detection', confirming the claim precisely."
+   },
+   {
+    "index": 7,
+    "holds": true,
+    "reason": "FU-B3/003-P2-R6.json 'Port voltage ceiling': shortlist empty; TPS3701/TLV6710 dropped for auto-release ('goes high when the sense voltage falls below VIT-(INB)'), matching V130 failure as described. HV band figures (8.53 to 8.70 V, +/-0.99%) match V128 exactly. Minor imprecision: the dropped-list entry literally named 'TPS3703' was actually dropped for stock (rule 4) and a startup-latch issue, not the ~1.0-1.2% tolerance figure P6 attributes to it; that tolerance-band failure mode applies to TLV6700/TPS3700/TPS3710/TPS3702/TPS389x instead. The substance (no candidate meets both the trip-band tolerance and the latch requirement; shortlist empty) still holds."
+   },
+   {
+    "index": 8,
+    "holds": true,
+    "reason": "FU-B3/017-P4-stock-R8.json and 023-adjudicator-R8.json confirm INA238AIDGSR: JLCPCB stockCount 0, canPresaleNumber -99 against gate 50 (need 10), Digi-Key stock 0 on all three packagings. Refutation stands under Scope's fixed-input rule; selection.json shows null with no distinguishing note."
+   },
+   {
+    "index": 9,
+    "holds": true,
+    "reason": "FU-B3/021-P4-datasheet-R8.json and 024-adjudicator-R8-2.json show 'External shunt sense input' independently refuted (verdict 'refuted', ruling 'stands') on the -40 V to +40 V differential absolute maximum and the 'do not use values greater than 100 ohm for RFILTER' guidance versus the 85 V fault requirement (V179) -- a distinct, independently-adjudicated failure from the Motor monitor's stock failure, exactly as described."
+   },
+   {
+    "index": 10,
+    "holds": true,
+    "reason": "FU-C2/002-P2-R11.json 'optical index': shortlist empty; every dropped candidate (VCNT2030, VCNT2020, VCNT2025X01, QRD1114, etc.) fails on stated rise/fall/propagation times of 10-70 us against the 1.244 us delay-variation budget derived from V225, matching the description and order-of-magnitude claim."
+   },
+   {
+    "index": 11,
+    "holds": true,
+    "reason": "FU-B1/030-adjudicator-R6.json confirms the 'Ambient range' refutation of TPS55285VALR stands, with the exact reasoning given: no datasheet IC-loss/efficiency figure at the 4.0 A/8.4 V/6.0 V-input/50 degC operating point, and the adjudicator's own bound of 89-179 C spans above the 125 C recommended maximum. selection.json shows 'Servo supply': null with no not_requalified note, unlike R1 Microcontroller's tagged entry -- confirming the described selection.json ambiguity."
+   },
+   {
+    "index": 12,
+    "holds": true,
+    "reason": "T3/031 and /032 (P4 stock and datasheet) both confirm LM74800QDRRRQ1 for 'overvoltage protection' with verdict 'confirmed', and FU-B3/010-rerank-R5.json explicitly gives the reason 'the same part serves reverse polarity, inrush and source selection so the function adds no part.' selection.json shows 'overvoltage protection': part null with no not_requalified tag, while the sibling 'reverse-polarity protection' and 'inrush limiting' entries do carry 'not_requalified': 'LM74800QDRRRQ1'. This is exactly the completeness-tracking asymmetry P6 describes."
+   },
+   {
+    "index": 13,
+    "holds": true,
+    "reason": "FU-B3/015-P4-stock-R6.json and 020-P4-datasheet-R6.json both give verdict 'confirmed' for SRP1265A-4R7M ('Servo supply inductor'); no adjudicator file in FU-B3 (or elsewhere found) ever raised a refutation against it. selection.json shows this function as null with no note, matching the same aggregation-gap pattern as R5's overvoltage protection."
+   },
+   {
+    "index": 14,
+    "holds": true,
+    "reason": "FU-B3/016-P4-stock-R7.json and 019-P4-datasheet-R7.json both confirm INR-18650-P30B ('Pack cells'), and a Liion Wholesale vendor route is documented (Molicel/NPE authorized distributor) passing the rule-4 gate of 50. selection.json 'Pack cells': null with no note, matching the pattern. Two minor inaccuracies: (1) P6's evidence quotes the stock figure as '6,533 in stock', but the FU-B3 P4-stock re-read itself gives 6,529 (the 6,533 figure is the earlier P2/V151 record, marked 'agrees: false' against the re-read); (2) P6 says 'no adjudicator entry against it', but FU-B1/020-adjudicator-R7-2.json is an adjudicator entry naming this exact part and function, though it ruled the refutation does NOT stand (the part survives) -- so 'no adjudicator entry' is not quite accurate for the full task lineage, only within FU-B3 itself. The core claim (a confirmed, unrefuted-as-it-stands part omitted from selection.json) still holds despite these two imprecisions."
+   }
+  ],
+  "added": []
+ }
+}

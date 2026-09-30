@@ -1,0 +1,31 @@
+{
+ "role": "P3",
+ "category": "R6",
+ "label": "P3-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "missed": [
+   {
+    "function": "Port supply switch",
+    "part": "BTS716G (also BTS724G, BTS4140N, BTS50085-1TMA and the rest of Infineon's PROFET/BTS smart-high-side-switch line)",
+    "maker": "Infineon Technologies",
+    "why": "Family from the S1 allowlist that P2 did not search (it only covered TI, onsemi, Toshiba and Vishay for this function). BTS716G (C85135, 4-channel, 28 mOhm, 5.5-40 V, 5.3 A/ch) covers the operating range and input withstand with margin. Its datasheet (jlcpcb.com/api/file/downloadByFileSystemAccessId/8588884724097540096, read 2026-09-29T17:03:48Z, pdftotext lines 329-364) states 'Reverse load current through the intrinsic drain-source diode' during reverse operation, i.e. it does not block current fed back from a port into the rail while off - the same V126 failure P2 already found in TPS25946xx and TPS1663x. Also now JLCPCB stockCount 0, canPresaleNumber -25 (vendors.py jlcpcb C85135, 2026-09-29T17:10:21Z), under the 500 gate this function used elsewhere. Not read at Digi-Key because it does not pass every requirement value."
+   },
+   {
+    "function": "Port supply switch",
+    "part": "VN5050JTR-E",
+    "maker": "STMicroelectronics",
+    "why": "ST's VIPower high-side-switch family, also not in P2's search (P2 covered no STMicroelectronics part for this function). VN5050JTR-E (C75918, single channel, 50 mOhm, 4.5-36 V, 13.5 A) covers the operating range, input withstand and current with margin, and JLCPCB stockCount 1699 (vendors.py jlcpcb C75918, 2026-09-29T17:10:21Z) clears the 500 gate. Its datasheet (jlcpcb.com/api/file/downloadByFileSystemAccessId/8588917154171531264, read 2026-09-29T17:04:34Z) rates an absolute-maximum 'Reverse DC output current' of 12 A and defines VF = VOUT - VCC 'during reverse battery condition' (pdftotext lines 43, 283, 299-305), i.e. the part is only rated to survive reverse current, not block it - it fails V126 for the same intrinsic-diode reason as the Infineon family above. Not read at Digi-Key because it does not pass every requirement value."
+   },
+   {
+    "function": "I/O expander",
+    "part": "NCA9535PWJ",
+    "maker": "Nexperia",
+    "why": "Not in P2's search (P2's dropped list covers Nexperia's NCA9539 only, for the address-overlap reason; NCA9535 is a separate part). JLCPCB's attributes list 'Reset function' among its features, which would answer the gap P2 found in TI's TCA9535/PCA9535 (no reset pin). Its datasheet (jlcpcb.com/api/file/downloadByFileSystemAccessId/8604338695147708416, read 2026-09-29T17:05:52Z) shows a 24-pin TSSOP with INT, A0, A1, A2, SCL, SDA, VCC, GND and 16 I/O pins only (pdftotext pin table, lines 189-235) - no external RESET pin exists; the 'Reset function' feature is the internal power-on reset shown in the block diagram (line 91), and 'All I/Os are set to inputs at reset' (line 108) refers to that same internal POR. It therefore fails the Hardware reset input requirement for the same reason P2 already gave for TCA9535/PCA9535, not a genuine miss but a mislabelled JLCPCB attribute worth flagging. JLCPCB stockCount 2431 (vendors.py jlcpcb C20235689, 2026-09-29T17:10:22Z). Not read at Digi-Key because it does not pass every requirement value."
+   }
+  ],
+  "exclusions_not_holding": [],
+  "missed_functions": []
+ }
+}

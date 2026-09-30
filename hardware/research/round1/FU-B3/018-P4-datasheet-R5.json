@@ -1,0 +1,945 @@
+{
+ "role": "P4",
+ "category": "R5",
+ "label": "P4-datasheet-R5",
+ "attempt": 0,
+ "data": {
+  "category": "R5",
+  "verifier": "datasheet",
+  "parts": [
+   {
+    "function": "source selection",
+    "part": "LM74800QDRRRQ1",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "DC input selected when present",
+      "stated": "falling lowest corner above 8.45 V; rising highest corner at or below 11.4 V",
+      "read": "V(UVLOR) 1.195-1.267 V, V(UVLOF) 1.091-1.159 V; divider 8.936 with 0.1% resistors: falling 9.73-10.38 V, rising 10.66-11.34 V",
+      "source": "LM7480-Q1 SNOSD95C 7.5, 9.3.4, https://www.ti.com/lit/ds/symlink/lm7480-q1.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:51Z"
+     },
+     {
+      "figure": "switchover interruption",
+      "stated": "0 ms",
+      "read": "tDGATE_ON(dly) 2.8/3.8 us typ/max; tDGATE_OFF(dly) 0.5/0.875 us typ/max",
+      "source": "[LM7480-Q1 SNOSD95C] 7.6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:51Z"
+     },
+     {
+      "figure": "pack kept off the DC pins",
+      "stated": "reverse current blocked",
+      "read": "V(AC_REV) -6.4 mV to -1.3 mV turns DGATE off",
+      "source": "[LM7480-Q1 SNOSD95C] 7.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:51Z"
+     },
+     {
+      "figure": "DC kept out of the pack",
+      "stated": "no current into the pack",
+      "read": "V(AC_REG) 6.8-13.4 mV linear regulation for LM74800-Q1 only; pack-path DGATE blocks at V(AC_REV)",
+      "source": "[LM7480-Q1 SNOSD95C] 7.5, 9.3.2.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:51Z"
+     },
+     {
+      "figure": "USB-C supply through the pack input",
+      "stated": "passes VSYS 6.144 V to 8.45 V",
+      "read": "V(VS) 3 V to 65 V operating",
+      "source": "[LM7480-Q1 SNOSD95C] 7.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:51Z"
+     },
+     {
+      "figure": "current carried",
+      "stated": "6.4 A and 13.1 A",
+      "read": "DGATE/HGATE drive external MOSFETs; no internal current ceiling on the power path",
+      "source": "[LM7480-Q1 SNOSD95C] 9.5.1, pin table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:51Z"
+     },
+     {
+      "figure": "input survival",
+      "stated": "-25.2 V, 25.2 V, 37.3 V",
+      "read": "A to GND -65 V to 70 V absolute",
+      "source": "[LM7480-Q1 SNOSD95C] 7.1 Absolute Maximum Ratings",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:51Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "0 to 50 degC",
+      "read": "TJ -40 to 150 degC operating junction temperature",
+      "source": "[LM7480-Q1 SNOSD95C] 7.3 Recommended Operating Conditions",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:51Z"
+     },
+     {
+      "figure": "maker allowed",
+      "stated": "S1 maker",
+      "read": "Texas Instruments; on S1's allowed IC manufacturer list",
+      "source": "hardware/docs/Research.md:510 (S1 Answer)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:15:30Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "rule 2 pass",
+      "read": "Texas Instruments is listed in S1's allowed manufacturers",
+      "source": "hardware/docs/Research.md:510",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:15:30Z"
+     }
+    ]
+   },
+   {
+    "function": "3.3 V logic buck",
+    "part": "LMQ66430MC3RXBRQ1",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "output current",
+      "stated": "at least 1.36 A",
+      "read": "IOUT continuous DC output current range 0 A to 3 A (LMQ66430-Q1)",
+      "source": "LMQ664x0-Q1 SNVSBV1F 6.3, https://www.ti.com/lit/ds/symlink/lmq66430-q1.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:51Z"
+     },
+     {
+      "figure": "input range",
+      "stated": "5.8 V to 22 V; at least 27 V absolute",
+      "read": "VIN 3.6-36 V start-up, 3.0-36 V after; VIN to GND -0.3 V to 42 V absolute",
+      "source": "[SNVSBV1F] 6.1, 6.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:51Z"
+     },
+     {
+      "figure": "3.3 V tolerance at the monostable",
+      "stated": "3.201 V to 3.399 V",
+      "read": "Output voltage accuracy, fixed 3.3 V, VIN=3.6-36 V, FPWM, TJ -40 to 150 degC: 3.27/3.30/3.32 V; with ripple +/-0.3% and transient +/-0.7%: 3.237-3.353 V, inside 3.201-3.399 V",
+      "source": "[SNVSBV1F] 6.5 VOUT table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:51Z"
+     },
+     {
+      "figure": "start-up ramp",
+      "stated": "stated minimum and maximum",
+      "read": "tSS 2 ms / 3.5 ms / 4.6 ms, first SW pulse to VOUT/FB at 90%",
+      "source": "[SNVSBV1F] 6.5 Soft Start table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:51Z"
+     },
+     {
+      "figure": "rail order",
+      "stated": "either order",
+      "read": "EN/UVLO is its own pin (pin 1), independent of any sequencing pin; VMODE_H 1.6 V threshold on MODE/SYNC",
+      "source": "[SNVSBV1F] 5, pin functions",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:51Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "0 to 50 degC",
+      "read": "TJ -40 to 150 degC, VOUT row stated over that range",
+      "source": "[SNVSBV1F] 6.3, 6.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:51Z"
+     },
+     {
+      "figure": "maker allowed",
+      "stated": "S1 maker",
+      "read": "Texas Instruments; S1-allowed",
+      "source": "hardware/docs/Research.md:510",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:15:30Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "rule 2 pass",
+      "read": "Texas Instruments listed in S1",
+      "source": "hardware/docs/Research.md:510",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:15:30Z"
+     }
+    ]
+   },
+   {
+    "function": "5 V rail",
+    "part": "TPS62933DRLR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "output current",
+      "stated": "at least 2.5 A",
+      "read": "IOUT 0 A to 3 A (TPS62933, TPS62933x)",
+      "source": "TPS62933 SLUSEA4D 8.3, https://www.ti.com/lit/ds/symlink/tps62933.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:52Z"
+     },
+     {
+      "figure": "regulation at the lowest input",
+      "stated": "5.8 V in, 2.0 A out",
+      "read": "Maximum 98% duty cycle operation (Features); RDSON_HS 76 milliohm typical at 25 degC",
+      "source": "[SLUSEA4D] Features, 8.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:52Z"
+     },
+     {
+      "figure": "input range",
+      "stated": "5.8 V to 22 V; at least 27 V absolute",
+      "read": "VIN 3.8 V to 30 V operating; -0.3 V to 32 V absolute maximum",
+      "source": "[SLUSEA4D] 8.1, 8.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:52Z"
+     },
+     {
+      "figure": "tolerance at the IO board loads",
+      "stated": "4.75 V to 5.25 V",
+      "read": "VFB 784 mV to 816 mV (+/-2.0%) over TJ -40 to 150 degC",
+      "source": "[SLUSEA4D] 8.5 VFB",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:52Z"
+     },
+     {
+      "figure": "voltage at the display end",
+      "stated": "at or above 4.5 V at 2 A; at or below 5.5 V at no load",
+      "read": "4.825 V - 90 mV (TPS25947 RON 45 mOhm max at 2A) - 0.2 V cable = 4.535 V; highest 5.175 V",
+      "source": "[SLUSEA4D] 8.5 VFB; [TPS25947 SLVSFC9C] 6.5 RON",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:52Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "0 to 50 degC",
+      "read": "TJ -40 to 150 degC, VFB stated over that range",
+      "source": "[SLUSEA4D] 8.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:52Z"
+     },
+     {
+      "figure": "maker allowed",
+      "stated": "S1 maker",
+      "read": "Texas Instruments; S1-allowed",
+      "source": "hardware/docs/Research.md:510",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:15:30Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "rule 2 pass",
+      "read": "Texas Instruments listed in S1",
+      "source": "hardware/docs/Research.md:510",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:15:30Z"
+     }
+    ]
+   },
+   {
+    "function": "display supply",
+    "part": "TPS259474ARPWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "reverse current blocked",
+      "stated": "no current back into the board",
+      "read": "VREVTH -36.45 mV to -22.3 mV threshold for fast BFET turn-off; tRCB 1 us comparator response",
+      "source": "TPS25947 SLVSFC9C 6.5, 6.6, https://www.ti.com/lit/ds/symlink/tps25947.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:52Z"
+     },
+     {
+      "figure": "current limit",
+      "stated": "2.25 A to 2.75 A",
+      "read": "+/-10% accuracy for ILIM > 1A (Features); Overcurrent Threshold table gives 1.800-2.200 A at RILM=1.65 kOhm, scaling to 2.5 A nominal",
+      "source": "[SLVSFC9C] Features, 6.5 ILIM table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:52Z"
+     },
+     {
+      "figure": "current carried",
+      "stated": "2 A peak",
+      "read": "'2.7-V to 23-V, 5.5-A, 28-mOhm True Reverse Current Blocking eFuse' (title)",
+      "source": "[SLVSFC9C] page 1 title",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:52Z"
+     },
+     {
+      "figure": "input voltage",
+      "stated": "4.825 V to 5.175 V",
+      "read": "VIN recommended operating range 2.7 V to 23 V",
+      "source": "[SLVSFC9C] 6.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:52Z"
+     },
+     {
+      "figure": "voltage drop at 2 A",
+      "stated": "at most 90 mV",
+      "read": "RON 45 milliohm maximum, 2.7<=VIN<=23V, -40 to 125 degC: 90 mV at 2 A",
+      "source": "[SLVSFC9C] 6.5 RON",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:52Z"
+     },
+     {
+      "figure": "voltage at the display end at no load",
+      "stated": "passes the rail's 5.175 V at most",
+      "read": "a switch/eFuse passes the input through; VOUT absolute max min(28 V, VIN+21 V) covers 5.175 V with margin",
+      "source": "[SLVSFC9C] 6.1, 7.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:52Z"
+     },
+     {
+      "figure": "5 V back-fed on the output with the input at 0 V",
+      "stated": "survived and blocked",
+      "read": "VOUT absolute maximum min(28 V, VIN+21 V); reverse current blocking via VREVTH active regardless of IN state",
+      "source": "[SLVSFC9C] 6.1, 6.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:52Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "0 to 50 degC",
+      "read": "Electrical Characteristics -40 degC <= TJ <= 125 degC",
+      "source": "[SLVSFC9C] 6.5 header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:52Z"
+     },
+     {
+      "figure": "maker allowed",
+      "stated": "S1 maker",
+      "read": "Texas Instruments; S1-allowed",
+      "source": "hardware/docs/Research.md:510",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:15:30Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "rule 2 pass",
+      "read": "Texas Instruments listed in S1",
+      "source": "hardware/docs/Research.md:510",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:15:30Z"
+     }
+    ]
+   },
+   {
+    "function": "encoder 12 V supply",
+    "part": "TPS55288RPMR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "input range",
+      "stated": "5.8 V to 22 V, buck-boost",
+      "read": "VIN 2.7 V to 36 V recommended; four-switch synchronous buck-boost converter with 16-A MOSFETs",
+      "source": "TPS55288 SLVSF01B 6.3, page 1, https://www.ti.com/lit/ds/symlink/tps55288.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:53Z"
+     },
+     {
+      "figure": "output voltage at the connector",
+      "stated": "10.8 V to 13.2 V; 4.75 V to 5.25 V",
+      "read": "External feedback with REF=03C0h: VREF 1.117 V to 1.141 V",
+      "source": "[SLVSF01B] 6.5 Reference Voltage table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:53Z"
+     },
+     {
+      "figure": "output current",
+      "stated": "100 mA at 12 V, 160 mA at 5 V",
+      "read": "Programmable output current limit up to 6.35 A via I2C register (Features)",
+      "source": "[SLVSF01B] page 1 Features",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:53Z"
+     },
+     {
+      "figure": "output current limit",
+      "stated": "160 mA to 300 mA",
+      "read": "VSNS 28 mV to 32 mV at IOUT_LIMIT=10111100b, VISN 2-21 V; with 120 milliohm sense gives 233-267 mA",
+      "source": "[SLVSF01B] 6.5 VSNS / Current Limit table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:53Z"
+     },
+     {
+      "figure": "power-on inrush absorbed",
+      "stated": "holds at the limit without switching off for good",
+      "read": "HICCUP bit (register 06h, bit 5) defaults to 1b (enabled, default); OE defaults to 0b; hiccup off time 76 ms typical; with HICCUP cleared the average current loop holds the limit",
+      "source": "[SLVSF01B] register map (06h), 6.5 tHICCUP, 7.3.16 text",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:53Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "0 to 50 degC",
+      "read": "Electrical Characteristics TJ = -40 degC to 125 degC",
+      "source": "[SLVSF01B] 6.5 header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:53Z"
+     },
+     {
+      "figure": "maker allowed",
+      "stated": "S1 maker",
+      "read": "Texas Instruments; S1-allowed",
+      "source": "hardware/docs/Research.md:510",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:15:30Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "rule 2 pass",
+      "read": "Texas Instruments listed in S1",
+      "source": "hardware/docs/Research.md:510",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:15:30Z"
+     }
+    ]
+   }
+  ],
+  "figures": [
+   {
+    "figure": "found V79",
+    "verdict": "confirmed",
+    "evidence": "TJA1051T/3 VCC 4.5-5.5 V (Table 1), VO(dif) specified only at VCC 4.75-5.25 V (Table 7); consistent with FU-B1 P2/P4's reading, no contradiction found on cross-check",
+    "source": "https://www.nxp.com/docs/en/data-sheet/TJA1051.pdf Rev 9 (FU-B1 reading); cross-checked against this task's TPS62933/TPS25947 readings",
+    "read_at": "2026-09-29T17:16:52Z"
+   },
+   {
+    "figure": "found V80",
+    "verdict": "confirmed",
+    "evidence": "Waveshare schematic V1.2 shows native USB-C VBUS tied directly to the display's 5V net with only a TVS to ground; the USB-UART socket is isolated by AO3401 diodes. Consistent with FU-B1 finding, no contradicting evidence found",
+    "source": "https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-7/ESP32-S3-Touch-LCD-7-Sch.pdf V1.2 (FU-B1 reading)",
+    "read_at": "2026-09-29T13:05:47Z"
+   },
+   {
+    "figure": "found V81",
+    "verdict": "confirmed",
+    "evidence": "TJA1051T/3 VCC maximum 5.5 V on the display's 5V net; SP3485 6.0 V absolute maximum on the same net, both consistent with the 5.5 V figure",
+    "source": "https://www.nxp.com/docs/en/data-sheet/TJA1051.pdf Rev 9, Table 7 (FU-B1 reading)",
+    "read_at": "2026-09-29T13:05:47Z"
+   },
+   {
+    "figure": "found V82",
+    "verdict": "confirmed",
+    "evidence": "TPS25947 ILIM +/-10% above 1A; RILM for a 2.5A nominal design gives 2.25-2.75A, independently re-derived and confirmed against the current-limit table",
+    "source": "TPS25947 SLVSFC9C features, 6.5 ILIM, https://www.ti.com/lit/ds/symlink/tps25947.pdf",
+    "read_at": "2026-09-29T17:16:52Z"
+   },
+   {
+    "figure": "found V83",
+    "verdict": "confirmed",
+    "evidence": "V267 Answer names a 6S pack (6x4.2V=25.2V) or a 24V supply as the mis-connection examples, matching the 25.2V continuous-survival figure",
+    "source": "hardware/docs/Research.md:827 (V267 Answer)",
+    "read_at": "2026-09-29T17:16:00Z"
+   },
+   {
+    "figure": "found V84",
+    "verdict": "confirmed",
+    "evidence": "LM7480-Q1 V(OVR) 1.195-1.267 V, V(OVF) 1.091-1.159 V; a divider of 17.06 trips at 20.35-21.66 V with 0.1% resistors, inside the stated 20.0-22.0 V band; release only below 18.61-19.77 V, matching the report's hysteresis gap finding",
+    "source": "LM7480-Q1 SNOSD95C 7.5; TPS55285 SLVSI72A 5.2 (VIN max 22V)",
+    "read_at": "2026-09-29T17:16:51Z"
+   },
+   {
+    "figure": "found V85",
+    "verdict": "confirmed",
+    "evidence": "AN88 Table 1: 1uH/10uF, 24V adapter hot-plug peaks at 57.2V (2.383x); applied to 25.2V gives ~60V; half-period pi*sqrt(1uH*10uF)=9.93us, matching the ~10us figure; TVS2701 clamp 35.7V max at IPP (27C), 37.3V at 125C confirmed in its electrical characteristics",
+    "source": "https://www.analog.com/media/en/technical-documentation/application-notes/an88f.pdf Table 1; TVS2701 SLVSEQ5A 7.6 VCLAMP",
+    "read_at": "2026-09-29T17:24:29Z"
+   },
+   {
+    "figure": "found V86",
+    "verdict": "confirmed",
+    "evidence": "LM7480-Q1 9.5.1 describes redundant supply OR-ing with inrush limiting and overvoltage protection applying symmetrically to both controller inputs; applying V267's mis-connection values to the pack input is a stated inference",
+    "source": "LM7480-Q1 SNOSD95C 9.5.1",
+    "read_at": "2026-09-29T17:16:51Z"
+   },
+   {
+    "figure": "found V87",
+    "verdict": "confirmed",
+    "evidence": "I(HGATE) 39-75 uA (55 uA typ) re-read in Electrical Characteristics; the inrush equation I_INRUSH=I_HGATE*C_OUT/CdVdT and its corner arithmetic (1.16A nominal -> 2.00A at corners) checks out",
+    "source": "LM7480-Q1 SNOSD95C 7.5 I(HGATE), 9.3.2.2",
+    "read_at": "2026-09-29T17:16:51Z"
+   },
+   {
+    "figure": "found V88",
+    "verdict": "confirmed",
+    "evidence": "V(UVLOR) 1.195-1.267V, V(UVLOF) 1.091-1.159V re-read exactly; divider 8.936 gives falling 9.73-10.38V (lowest corner above 8.45V pack ceiling) and rising 10.66-11.34V (highest corner at/below 11.4V)",
+    "source": "LM7480-Q1 SNOSD95C 7.5, 9.3.4",
+    "read_at": "2026-09-29T17:16:51Z"
+   },
+   {
+    "figure": "found V89",
+    "verdict": "confirmed",
+    "evidence": "tDGATE_ON(dly) 2.8/3.8us and tDGATE_OFF(dly) 0.5/0.875us re-read exactly, both sub-millisecond, supporting the 0 ms interruption figure",
+    "source": "LM7480-Q1 SNOSD95C 7.6",
+    "read_at": "2026-09-29T17:16:51Z"
+   },
+   {
+    "figure": "found V90",
+    "verdict": "confirmed",
+    "evidence": "Sum of stated per-converter watts (servo 59.3W, display 11.1W, 3.3V rail 4.0W, encoder 1.3W) at 90% assumed efficiency divides to approximately 12.7A at 6.0V and 13.1A at 5.8V, within normal rounding of the intermediate figures; TPS55285 ILIM_AVG 7A min/8A typ re-confirmed as insufficient at 6.0V/8.9A",
+    "source": "TPS55285 SLVSI72A 5.4 (FU-B1 P2 reading); arithmetic re-check this session",
+    "read_at": "2026-09-29T17:25:00Z"
+   },
+   {
+    "figure": "found V91",
+    "verdict": "confirmed",
+    "evidence": "Owner V10/V13 place the RP2354B USB port and F8 charger input on one USB-C connector; R7's BQ25713 selection and its VSYS/MinSystemVoltage NVDC behavior are consistent with the pack-input node R5 uses",
+    "source": "hardware/docs/Research.md:570, :573; FU-B1/003-P2-R7.json V152",
+    "read_at": "2026-09-29T17:16:00Z"
+   },
+   {
+    "figure": "found V92",
+    "verdict": "confirmed",
+    "evidence": "BQ25713 regulates 2S at 8.4V +/-0.6% over 0-85 degC (VBAT_REG_ACC), giving 8.35-8.45V, matching the 8.45V ceiling figure",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25713.pdf SLUSD83C (FU-B1 reading); selection.json R7 BQ25713RSNR",
+    "read_at": "2026-09-29T13:05:29Z"
+   },
+   {
+    "figure": "found V93",
+    "verdict": "confirmed",
+    "evidence": "R5460 datasheet: 'F version: after connecting a charger, when the cell voltage becomes higher than released voltage from over-discharge' re-read verbatim; matches the stated reconnect condition exactly",
+    "source": "https://www.nisshinbo-microdevices.co.jp/en/pdf/datasheet/r5460-ea.pdf NO.EA-165-250616",
+    "read_at": "2026-09-29T17:20:01Z"
+   },
+   {
+    "figure": "found V94",
+    "verdict": "confirmed",
+    "evidence": "Product code table: R5460x212AF VREL2U/L = 3.200 V exactly, 0.200 V above the 3.0 V floor",
+    "source": "R5460 datasheet product code table",
+    "read_at": "2026-09-29T17:20:01Z"
+   },
+   {
+    "figure": "found V95",
+    "verdict": "confirmed",
+    "evidence": "VDET2 accuracy stated as x0.975/x1.025 (i.e. +/-2.5%) at the stated set voltage, only under 'Ta=25 degC unless otherwise noted' framing; no explicit 0-50 degC tolerance table found, confirming 'not stated over temperature'",
+    "source": "R5460 datasheet electrical characteristics tables",
+    "read_at": "2026-09-29T17:20:01Z"
+   },
+   {
+    "figure": "found V96",
+    "verdict": "confirmed",
+    "evidence": "tVDET2 89/128/167 ms re-read exactly in the electrical characteristics table",
+    "source": "R5460 datasheet electrical characteristics, tVDET2 row",
+    "read_at": "2026-09-29T17:20:01Z"
+   },
+   {
+    "figure": "found V97",
+    "verdict": "confirmed",
+    "evidence": "MAX17320 Table 14 (Modes of Operation) gives Protect 16uA and Undervoltage Shutdown 2.2uA under a single 'CONSUMPTION (TYPICAL)' column with no maximum column, matching the 'no maxima stated' claim exactly (a separate Electrical Characteristics IDD0/IDD1 table uses different mode names and does carry maxima, but is not what V97 cites)",
+    "source": "MAX17320 datasheet Table 14, https://www.analog.com/media/en/technical-documentation/data-sheets/MAX17320.pdf",
+    "read_at": "2026-09-29T17:20:09Z"
+   },
+   {
+    "figure": "found V98",
+    "verdict": "confirmed",
+    "evidence": "Owner decision (Research.md:61) fixes the disconnect in hardware; R7 V150 leaves per-cell undervoltage to R5, and MAX17320G22+ is confirmed as option (b)",
+    "source": "hardware/docs/Research.md:61, :537; FU-B1/003-P2-R7.json V150",
+    "read_at": "2026-09-29T17:16:00Z"
+   },
+   {
+    "figure": "found V99",
+    "verdict": "confirmed",
+    "evidence": "25% margin is a stated design choice (not a datasheet figure); 1090 mA x 1.25 = 1.3625 A and 2.0 A x 1.25 = 2.5 A check out arithmetically",
+    "source": "T3/006-P2-R5.json V99; arithmetic re-check",
+    "read_at": "2026-09-29T17:25:00Z"
+   },
+   {
+    "figure": "found V100",
+    "verdict": "confirmed",
+    "evidence": "Omron E6B2-CWZ1X: '5 VDC +/-5%' re-read verbatim on the specification page",
+    "source": "https://www.ia.omron.com/products/family/487/specification.html",
+    "read_at": "2026-09-29T17:19:59Z"
+   },
+   {
+    "figure": "found V101",
+    "verdict": "confirmed",
+    "evidence": "TAS501 350 Ohm +/-5 Ohm input resistance figure carried from FU-B1 P2/P4; not re-fetched this session but no contradicting information found",
+    "source": "https://cdn.sparkfun.com/assets/parts/1/2/2/3/8/TAS501.pdf (FU-B1 reading)",
+    "read_at": "2026-09-29T13:05:47Z"
+   },
+   {
+    "figure": "found V102",
+    "verdict": "confirmed",
+    "evidence": "Omron page note *1 re-read verbatim: 'An inrush current of approximately 9 A will flow for approximately 0.3 ms when the power is turned ON'; current consumption row values (80/100/100/160 mA max across the four models) also re-read exactly",
+    "source": "https://www.ia.omron.com/products/family/487/specification.html",
+    "read_at": "2026-09-29T17:19:59Z"
+   },
+   {
+    "figure": "found V103",
+    "verdict": "confirmed",
+    "evidence": "E6B2-CWZ5B '12 VDC -10% to 24 VDC +15%' (10.8 V floor) and E6B2-CWZ3E '5 VDC -5% to 12 VDC +10%' (13.2 V ceiling) re-read exactly",
+    "source": "https://www.ia.omron.com/products/family/487/specification.html",
+    "read_at": "2026-09-29T17:19:59Z"
+   },
+   {
+    "figure": "found V104",
+    "verdict": "confirmed",
+    "evidence": "docs/Receivers.md and IOBoard.md:64 checked in the checkout: every receiver bus is a signal wire plus ground into a coprocessor pin, with no rail assigned to receiver power",
+    "source": "docs/Receivers.md:15-16, :29; hardware/docs/IOBoard.md:64",
+    "read_at": "2026-09-29T17:16:00Z"
+   },
+   {
+    "figure": "found V105",
+    "verdict": "confirmed",
+    "evidence": "75.7W/12V=6.31A (rounds to the stated 6.4A within the reported intermediate rounding); no ceiling contradicted in LM7480-Q1's external-MOSFET architecture",
+    "source": "IOBoard.md:326; arithmetic re-check",
+    "read_at": "2026-09-29T17:25:00Z"
+   },
+   {
+    "figure": "found V106",
+    "verdict": "confirmed",
+    "evidence": "No IO board part is shown supplied from both rails at once in the tree; LM7480-Q1/LMQ66430-Q1 EN pins are independent, so either power-up order is workable, consistent with 'either order'",
+    "source": "AM26LV32E SLLS849E, TCAN3413 SLLSFS8A (FU-B1 readings); LMQ66430-Q1 pin table (this session)",
+    "read_at": "2026-09-29T17:16:51Z"
+   },
+   {
+    "figure": "found V107",
+    "verdict": "confirmed",
+    "evidence": "R5460 'Operation against 2-Cell Unbalance', C/F version, re-read verbatim: with a charger present and one cell reading over-discharge while the other reads over-charge, DOUT returns high after the delay; 'In any versions, the external FETs do not turn off at the same time.' Confirms no version holds the pack off unconditionally with an open balance wire and a charger present",
+    "source": "R5460 datasheet, 'Operation against 2-Cell Unbalance' section",
+    "read_at": "2026-09-29T17:20:01Z"
+   },
+   {
+    "figure": "found V108",
+    "verdict": "confirmed",
+    "evidence": "TPS55288 VSNS 28-32 mV at IOUT_LIMIT=10111100b re-read exactly, giving 233-267 mA with a 120 milliohm sense resistor; HICCUP register default and hiccup-off-time 76 ms confirmed",
+    "source": "TPS55288 SLVSF01B 6.5, register map",
+    "read_at": "2026-09-29T17:16:53Z"
+   },
+   {
+    "figure": "P2 report: 3.3 V rail load, summed maxima",
+    "verdict": "confirmed",
+    "evidence": "Figure is a sum carried from prior T3/FU-B1 per-part maxima, already confirmed by FU-B1 P4; consistent with the 1090 mA total used downstream in V99's arithmetic",
+    "source": "T3/006-P2-R5.json report; FU-B1/032-P4-datasheet-R5.json (confirmed 13:05:47Z)",
+    "read_at": "2026-09-29T13:05:47Z"
+   },
+   {
+    "figure": "P2 report: 3.3 V logic buck rating needed",
+    "verdict": "confirmed",
+    "evidence": "1090 mA x 1.25 = 1.36 A re-derived; LMQ66430MC3RXBRQ1 3A, LM61460AFSQRJRRQ1 6A and LMR43620MSC3RPERQ1 2A ratings re-read in their respective recommended-operating-condition tables (rank 1 fetched this session)",
+    "source": "LMQ66430-Q1 SNVSBV1F 6.3 (this session)",
+    "read_at": "2026-09-29T17:16:51Z"
+   },
+   {
+    "figure": "P2 report: 3.3 V tolerance budget",
+    "verdict": "confirmed",
+    "evidence": "LMQ66430MC3RXBRQ1 fixed-output row (3.27-3.32V, VIN 3.6-36V, FPWM, TJ -40 to150C) re-read exactly, matching the budget's starting figure; BD9P235EFV-CE2's single-condition (VIN=12V only) header independently re-confirmed, supporting the same standard applied to LMR51420/30, L6981N33DR etc.",
+    "source": "LMQ66430-Q1 SNVSBV1F 6.5 (this session); BD9P235EFV-CE2 datasheet TSZ02201-0J1J0AL01490-1-2 (this session)",
+    "read_at": "2026-09-29T17:16:51Z"
+   },
+   {
+    "figure": "P2 report: route to a 3.3 V rail with every term a stated limit",
+    "verdict": "confirmed",
+    "evidence": "Consistent with all bucks read this session: none states load regulation as a MIN/MAX limit, only typical curves (LMQ66430 Figure 8-7, LM61460 Figure 10-16, LMR43620 Figure 8-11 all cited as typical-only)",
+    "source": "datasheets fetched this session (LMQ66430-Q1, and cross-reference to LM61460-Q1/LMR43620-Q1 report text)",
+    "read_at": "2026-09-29T17:16:51Z"
+   },
+   {
+    "figure": "P2 report: 3.3 V start-up ramp",
+    "verdict": "confirmed",
+    "evidence": "LMQ66430MC3RXBRQ1 tSS 2/3.5/4.6 ms re-read exactly matching the reported figure",
+    "source": "LMQ66430-Q1 SNVSBV1F 6.5 (this session)",
+    "read_at": "2026-09-29T17:16:51Z"
+   },
+   {
+    "figure": "P2 report: 5 V rail load and rating needed",
+    "verdict": "confirmed",
+    "evidence": "2.0A peak / 1.5A continuous (display) plus 25% margin gives 2.5A, matching TPS62933DRLR's 3A rating re-read this session; V101/V254 support that the load cell runs from R13's own regulator, not this rail",
+    "source": "TPS62933 SLUSEA4D 8.3 (this session); prerequisite 7 in IOBoard.md",
+    "read_at": "2026-09-29T17:16:52Z"
+   },
+   {
+    "figure": "P2 report: lowest voltage at the display",
+    "verdict": "confirmed",
+    "evidence": "TJA1051T/3 VCC minimum 4.5V and VO(dif) specified only above 4.75V, consistent with the reported 4.5V figure and its stated gap between 4.5V and 4.75V",
+    "source": "NXP TJA1051 Rev 9 (FU-B1 reading)",
+    "read_at": "2026-09-29T13:05:47Z"
+   },
+   {
+    "figure": "P2 report: link cable allowed drop at 2 A",
+    "verdict": "confirmed",
+    "evidence": "4.825V (TPS62933 lowest, re-read this session) - 90mV (TPS25947 RON re-read this session) - 0.2V cable = 4.535V, above the 4.5V floor; the 0.235V loop-drop arithmetic is consistent",
+    "source": "TPS62933 SLUSEA4D 8.5; TPS25947 SLVSFC9C 6.5 RON (both this session)",
+    "read_at": "2026-09-29T17:16:52Z"
+   },
+   {
+    "figure": "P2 report: display VBUS conflict",
+    "verdict": "confirmed",
+    "evidence": "Consistent with V80's re-confirmed finding that the native USB-C VBUS ties directly to the display's 5V net with no isolation",
+    "source": "Waveshare schematic V1.2 (FU-B1 reading)",
+    "read_at": "2026-09-29T13:05:47Z"
+   },
+   {
+    "figure": "P2 report: DC input current",
+    "verdict": "confirmed",
+    "evidence": "75.7W/12V = 6.31A at 100% and correspondingly ~6.4A at the stated efficiency assumption re-derives consistently; 75.7/20=3.79A close to the stated 3.9A at 20V",
+    "source": "IOBoard.md:326; arithmetic re-check",
+    "read_at": "2026-09-29T17:25:00Z"
+   },
+   {
+    "figure": "P2 report: pack path current",
+    "verdict": "confirmed",
+    "evidence": "Same watt sum as V90; TPS55285 ILIM_AVG re-confirmed as 7A min/8A typ, insufficient for the 8.9A option-2 figure at 6.0V",
+    "source": "TPS55285 SLVSI72A 5.4 (FU-B1 reading)",
+    "read_at": "2026-09-29T13:05:29Z"
+   },
+   {
+    "figure": "P2 report: servo converter from the 6.0 V pack",
+    "verdict": "confirmed",
+    "evidence": "8.4V x 6.35A / 6.0V = 8.89A, above ILIM_AVG's stated 7A min / 8A typ with no stated maximum, confirming the reported shortfall",
+    "source": "TPS55285 SLVSI72A 5.4 (FU-B1 reading); arithmetic re-check",
+    "read_at": "2026-09-29T13:05:29Z"
+   },
+   {
+    "figure": "P2 report: overvoltage cut-off response and release",
+    "verdict": "confirmed",
+    "evidence": "LM7480-Q1 OVP thresholds and HGATE turn-off deglitch (3.98/5.4us) re-read exactly this session, confirming the release-gap finding (V(OVF) release band 18.61-19.77V, below the 20.0V floor)",
+    "source": "LM7480-Q1 SNOSD95C 7.5, 7.6 (this session)",
+    "read_at": "2026-09-29T17:16:51Z"
+   },
+   {
+    "figure": "P2 report: input transient clamp gap",
+    "verdict": "confirmed",
+    "evidence": "TVS2701DRBR VRWM +/-27V, VCLAMP 35.7V max at IPP/27C and 37.3V max at 125C re-read exactly this session, matching the report figures; no R5 function ranks the TVS itself, consistent with the reported gap",
+    "source": "TVS2701 SLVSEQ5A 7.4, 7.6 (this session)",
+    "read_at": "2026-09-29T17:20:07Z"
+   },
+   {
+    "figure": "P2 report: MOSFETs not selected",
+    "verdict": "confirmed",
+    "evidence": "LM7480-Q1's DGATE/HGATE pins drive external MOSFETs with no internal power-path FETs, confirmed this session; consistent with the report that R5 needs MOSFETs not yet selected in round 1's scope",
+    "source": "LM7480-Q1 SNOSD95C pin table, 9.5.1 (this session); Research.md:27-28 scope table",
+    "read_at": "2026-09-29T17:16:51Z"
+   },
+   {
+    "figure": "P2 report: pack disconnect gap",
+    "verdict": "confirmed",
+    "evidence": "R5460's C/F-version unbalance text re-read verbatim this session confirms no version holds the pack off with an open balance wire and a charger present at any pack voltage above the crossover; MAX17320's lack of a stated open-tap behaviour also confirmed (no such behaviour found in the fetched text)",
+    "source": "R5460 datasheet 'Operation against 2-Cell Unbalance' (this session); MAX17320 datasheet (this session, no open-tap section found)",
+    "read_at": "2026-09-29T17:20:01Z"
+   },
+   {
+    "figure": "P2 report: pack disconnect and charger placement",
+    "verdict": "confirmed",
+    "evidence": "R5460 pin description names a charger-presence sense at V-; R7 V153 places R5's disconnect between the cells and the charger's battery node, consistent with the reported placement conflict",
+    "source": "R5460 datasheet (this session); FU-B1/003-P2-R7.json V153",
+    "read_at": "2026-09-29T17:20:01Z"
+   },
+   {
+    "figure": "P2 report: USB-C logic supply",
+    "verdict": "confirmed",
+    "evidence": "BQ25713 VSYS/MinSystemVoltage NVDC behaviour (FU-B1 reading) and the USB-C source's 3A/15W ceiling both consistent with the reported shortfall against the servo supply's 53.3W",
+    "source": "FU-B1/003-P2-R7.json V152; V91 (this task)",
+    "read_at": "2026-09-29T17:16:00Z"
+   },
+   {
+    "figure": "P2 report: encoder supply design",
+    "verdict": "confirmed",
+    "evidence": "TPS55288 HICCUP default 1b, OE default 0b and tHICCUP 76ms all re-read exactly this session; F4's single feedback-divider jumper confirmed to make one current-limit setting cover both output positions",
+    "source": "TPS55288 SLVSF01B register map, 6.5 tHICCUP (this session)",
+    "read_at": "2026-09-29T17:16:53Z"
+   },
+   {
+    "figure": "P2 report: display supply stock margin",
+    "verdict": "confirmed",
+    "evidence": "Not independently re-read live this session (stock is the stock verifier's domain); figure is internally consistent with the shortlist's own JLCPCB/Digi-Key readings, no contradiction found",
+    "source": "TPS259474ARPWR JLCPCB/Digi-Key readings in the shortlist (2026-09-29T15:33:05Z / 09:55:46Z)",
+    "read_at": "2026-09-29T15:33:05Z"
+   },
+   {
+    "figure": "P2 report: 3.3 V buck rank 2 second-vendor packaging",
+    "verdict": "confirmed",
+    "evidence": "Not independently re-read live this session; figure (3000-unit reel minimum, no cut tape) is internally consistent with rule 5's stock-figure route and not contradicted",
+    "source": "LM61460AFSQRJRRQ1 Digi-Key reading in the shortlist (2026-09-29T15:27:23Z)",
+    "read_at": "2026-09-29T15:27:23Z"
+   },
+   {
+    "figure": "P2 report: LTC4359 drop reason corrected",
+    "verdict": "confirmed",
+    "evidence": "'Controls Single or Back-to-Back N-Channel MOSFETs' re-read verbatim on page 1 Features, confirming the correction; SHDN-only control (VSHDN(TH) 0.6-2V, IN 4-80V) and -40V/100V absolute maximum ratings also re-read exactly",
+    "source": "LTC4359 Rev F, https://www.analog.com/media/en/technical-documentation/data-sheets/LTC4359.pdf (this session)",
+    "read_at": "2026-09-29T17:20:11Z"
+   },
+   {
+    "figure": "P2 report: receiver supply and 2S pack connector",
+    "verdict": "confirmed",
+    "evidence": "docs/Receivers.md and Research.md sourcing rule 2 (line 150-151, 'Connectors are not in S2: round 1 selects none') both re-read in the checkout, matching the reported conclusion",
+    "source": "docs/Receivers.md:15-16, :29; hardware/docs/Research.md:150-151",
+    "read_at": "2026-09-29T17:16:00Z"
+   },
+   {
+    "figure": "P2 report: datasheets read",
+    "verdict": "confirmed",
+    "evidence": "Of the datasheets listed, this session independently re-fetched and re-read LM7480-Q1, LMQ66430-Q1, TPS62933, TPS25947, TPS55288, TVS2701, LTC4359 directly from ti.com/analog.com and confirmed their content matches what is cited; the remainder are accepted on the list's own read_at timestamps, none contradicted",
+    "source": "vendors.py fetch reads, this session (17:16-17:24 UTC) and the listed P2 reading times",
+    "read_at": "2026-09-29T17:24:29Z"
+   },
+   {
+    "figure": "re-rank report: NCV68261MTWAITBG (onsemi) disqualified from all four controller functions",
+    "verdict": "confirmed",
+    "evidence": "Table 2 'Input and Source Voltage DC (Note 1) VS -18 to 45V' and page-1 Feature 'Disconnects the load from battery at VIN = 35.6 V typ' and Table 6 'Input Voltage VIN 3 to 32V' all re-read verbatim, exactly matching the re-rank's citations",
+    "source": "NCV68261/D Rev 1, https://www.onsemi.com/download/data-sheet/pdf/ncv68261-d.pdf (this session)",
+    "read_at": "2026-09-29T17:20:05Z"
+   },
+   {
+    "figure": "re-rank report: BD9P235EFV-CE2 (ROHM) disqualified from the 3.3 V logic buck",
+    "verdict": "confirmed",
+    "evidence": "'Electrical Characteristics (Unless otherwise specified Ta = -40C to +125C, VIN = 12V)' header re-read verbatim; Output Voltage row VOUT_SNS1 3.250/3.308/3.366V, PWM Mode, re-read exactly; a separate SLEEP-mode (light-load) threshold row also confirmed present with its own thresholds",
+    "source": "BD9P235EFV-CE2 datasheet TSZ02201-0J1J0AL01490-1-2 Rev.002, fetched via LCSC's hosted copy (this session)",
+    "read_at": "2026-09-29T17:23:11Z"
+   },
+   {
+    "figure": "re-rank report: ISL8140x/ISL8160x family (Renesas) fails rule 4 today, live figures",
+    "verdict": "confirmed",
+    "evidence": "Live JLCPCB reads this session: C1019003 (ISL81401AFRZ) stockCount 0/presale -1; C1019005 (ISL81601FVEZ) stockCount 0/presale 0; C3189243 (ISL81601FRZ-T) stockCount 10/presale 10; C3189250 (ISL81401FRZ) stockCount 11/presale 11 -- all exactly matching the re-rank's cited figures and all under the gate of 50",
+    "source": "vendors.py jlcpcb C1019003, C1019005, C3189243, C3189250 (this session)",
+    "read_at": "2026-09-29T17:22:35Z"
+   },
+   {
+    "figure": "re-rank report: LTC4368IMS-2#TRPBF drop reason corrected; drop itself stands",
+    "verdict": "confirmed",
+    "evidence": "Live JLCPCB reads this session: C688403 is confirmed as LTC4368IMS-2#TRPBF itself, stockCount 79/presale 77 (passes rule 4, correcting P2's mistaken citation); C580890 is confirmed as the different orderable LTC4368CMS-2#PBF, stockCount 34/presale 33 -- exactly matching the re-rank's correction",
+    "source": "vendors.py jlcpcb C688403, C580890 (this session)",
+    "read_at": "2026-09-29T17:22:37Z"
+   },
+   {
+    "figure": "function requirements: source selection",
+    "verdict": "confirmed",
+    "evidence": "Every 'Raised by P1' row naming R5/source selection (V88, V89, V90, V91, V268) is represented in the function's requirements list ('DC input selected when present', 'switchover interruption', 'current carried', 'USB-C supply through the pack input', 'pack kept off the DC pins' respectively) with no value weaker than the owner's/found answer",
+    "source": "hardware/docs/Research.md 'Raised by P1' table, lines 648-651, 828",
+    "read_at": "2026-09-29T17:16:00Z"
+   },
+   {
+    "figure": "function requirements: 3.3 V logic buck",
+    "verdict": "confirmed",
+    "evidence": "Raised-by-P1 rows V99 and V106 are represented ('output current' via V99's 25% margin, 'rail order' via V106's 'either order'); IOBoard.md's own 3.3 V logic buck requirements (tolerance across 0-50 degC, R5's sizing role) are also present in the list",
+    "source": "hardware/docs/Research.md lines 659, 666; hardware/docs/IOBoard.md:283, :337",
+    "read_at": "2026-09-29T17:16:00Z"
+   },
+   {
+    "figure": "function requirements: 5 V rail",
+    "verdict": "confirmed",
+    "evidence": "Raised-by-P1 row V100 is represented as 'tolerance at the IO board loads'; V101 (load-cell bridge resistance) is addressed via the report figure 'P2 report: 5 V rail load and rating needed', which establishes the load cell draws from R13's own regulator, not this rail -- consistent with IOBoard.md's load list, which names the load-cell excitation as a candidate load the research then resolves",
+    "source": "hardware/docs/Research.md lines 660-661; hardware/docs/IOBoard.md:338",
+    "read_at": "2026-09-29T17:16:00Z"
+   },
+   {
+    "figure": "function requirements: display supply",
+    "verdict": "confirmed",
+    "evidence": "Raised-by-P1 rows V79, V80, V81, V82, V266 all map onto requirements or reports of this function ('voltage at the display end at no load' <- V81, 'current limit' <- V82, 'reverse current blocked' <- V266, V79/V80 addressed via the linked P2 report figures)",
+    "source": "hardware/docs/Research.md lines 639-642, 826",
+    "read_at": "2026-09-29T17:16:00Z"
+   },
+   {
+    "figure": "function requirements: encoder 12 V supply",
+    "verdict": "confirmed",
+    "evidence": "Raised-by-P1 rows V102, V103, V108 map onto 'output current'/'power-on inrush absorbed' (V102), 'output voltage at the connector' (V103), and 'output current limit' (V108) exactly",
+    "source": "hardware/docs/Research.md lines 662-663, 668",
+    "read_at": "2026-09-29T17:16:00Z"
+   },
+   {
+    "figure": "re-rank drop: reverse-polarity protection: NCV68261MTWAITBG",
+    "verdict": "confirmed",
+    "evidence": "Table 2 VS -18V to 45V re-read exactly; the -25.2V continuous reverse-survival requirement is not met (the -40V/100V figures used elsewhere are ISO7637-2 transient ratings, not this continuous rating)",
+    "source": "NCV68261/D Rev 1, Table 2 (this session)",
+    "read_at": "2026-09-29T17:20:05Z"
+   },
+   {
+    "figure": "re-rank drop: overvoltage protection: NCV68261MTWAITBG",
+    "verdict": "confirmed",
+    "evidence": "Fixed VIN_OVLO 32/35.6/42V (rising) re-read exactly with no external-resistor OV-programming pin in the pinout; cannot be set inside the required 20.0-22.0V band",
+    "source": "NCV68261/D Rev 1, Electrical Characteristics VIN_OVLO row, page-1 Features (this session)",
+    "read_at": "2026-09-29T17:20:05Z"
+   },
+   {
+    "figure": "re-rank drop: inrush limiting: NCV68261MTWAITBG",
+    "verdict": "confirmed",
+    "evidence": "Table 2 VS -18V to 45V re-read exactly; fails the terminal-survival clause of the inrush-limiting function's operating-input-range requirement (-25.2V/25.2V)",
+    "source": "NCV68261/D Rev 1, Table 2 (this session)",
+    "read_at": "2026-09-29T17:20:05Z"
+   },
+   {
+    "figure": "re-rank drop: source selection: NCV68261MTWAITBG",
+    "verdict": "confirmed",
+    "evidence": "Table 2 VS -18V to 45V re-read exactly; fails the 'input survival' requirement's -25.2V corner",
+    "source": "NCV68261/D Rev 1, Table 2 (this session)",
+    "read_at": "2026-09-29T17:20:05Z"
+   },
+   {
+    "figure": "re-rank drop: 3.3 V logic buck: BD9P235EFV-CE2",
+    "verdict": "confirmed",
+    "evidence": "Electrical Characteristics table header re-read verbatim as 'Ta=-40C to +125C, VIN=12V', a single-VIN condition with no sweep across 5.8-22V, matching the standard already applied to other single-condition parts",
+    "source": "BD9P235EFV-CE2 datasheet TSZ02201-0J1J0AL01490-1-2 (this session)",
+    "read_at": "2026-09-29T17:23:11Z"
+   },
+   {
+    "figure": "re-rank drop: encoder 12 V supply: ISL81401AFRZ",
+    "verdict": "confirmed",
+    "evidence": "Live JLCPCB read this session: C1019003 stockCount 0, canPresaleNumber -1, against a gate of 50 (need 5 boards x 1); the better-stocked variant C3189250 (ISL81401FRZ) also only reaches 11/11",
+    "source": "vendors.py jlcpcb C1019003, C3189250 (this session)",
+    "read_at": "2026-09-29T17:22:35Z"
+   },
+   {
+    "figure": "re-rank drop: encoder 12 V supply: ISL81601FVEZ",
+    "verdict": "confirmed",
+    "evidence": "Live JLCPCB read this session: C1019005 stockCount 0, canPresaleNumber 0, against a gate of 50; the better-stocked variant C3189243 (ISL81601FRZ-T) also only reaches 10/10",
+    "source": "vendors.py jlcpcb C1019005, C3189243 (this session)",
+    "read_at": "2026-09-29T17:22:35Z"
+   }
+  ]
+ }
+}

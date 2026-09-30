@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R11",
+ "label": "adjudicator-R11-4",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "function": "function requirements: accelerometer",
+  "part": "",
+  "stands": true,
+  "scope": "function",
+  "ruling": "The refutation stands. The requirement list leaves out an owner decision that applies to this accelerometer. V206 (owner, 2026-09-28) answers \"Yes, to 0.1°, 2 axes, zeroed on a reference surface\". The list's \"sensing axis\" asks for at least one axis, which is weaker than V206's 2 axes. The list also gives no static, DC-coupled resolution: 0.1° is sin(0.1°) x 1 g = 1.75 mg. V206 is filed under R10 and says \"an accelerometer on the surface\". Even so, the project names one accelerometer. The specification says \"the accelerometer\" in IOBoard.md:454, docs/Servo.md:80 and shared/servo/include/servo_sync.h:24-25 (\"a separate measurement with the accelerometer on the surface\"). R10's kept converter (ADCS7476AIMFX/NOPB, FU-C1) is sized at 2 channels for \"the 2 static-angle axes\" of the ADXL316, R11's accelerometer. This task's own P2 \"R11 pins\" figure says \"V206 adds a second [channel] for the static angle\". A list that the function's part is qualified against must carry V206's 2 axes and 0.1° (1.75 mg) static resolution. The failure is about this function's requirements, not about a part. The verifier's note that ADXL316 (3 axes, DC response) is not refuted by this is not ruled on here.",
+  "evidence": "Research.md:766 V206, \"Must the converter for the accelerometer also measure a control surface's static angle from gravity, with an accelerometer on the surface, and if so to what resolution, in degrees?\": \"Yes, to 0.1°, 2 axes, zeroed on a reference surface (owner, 2026-09-28)\". IOBoard.md:451 \"one axis, across the shaft\" (balance only). IOBoard.md:454: \"Two servos that agree with each other and are both wrong need the accelerometer or inspection. An accelerometer on the control surface cannot observe rotation about the gravity vector\". servo_sync.h:23-25: \"That is a separate measurement with the accelerometer on the surface.\" FU-C1/003-P2-R10.json, R10 converter: \"channels: 2 channels: the 2 static-angle axes, one of them the vibration axis\"; \"static angle resolution: 0.1 degree (1.75 mg at 1 g) on 2 axes, DC-coupled\"; placements 2 \"for the 2 axes of V206\". selection.json R10 keeps ADCS7476AIMFX/NOPB (run FU-C1). The FU-C2 P2-R11 \"R11 pins\" figure: \"The accelerometer takes 1 converter channel for the one in-plane axis (R10's V201; V206 adds a second for the static angle)\". The P2-R11 accelerometer requirement list, re-read from scratch/FU-C2/P2-R11/out.json, has 11 entries matching the claim. It has no 2-axis entry and no static-angle entry: \"sensing axis | at least one axis in the mounting plane\".",
+  "source": "checkout e13f5f60d2e5: hardware/docs/Research.md:766, :769-791; hardware/docs/IOBoard.md:447-454; docs/Servo.md:79-80; shared/servo/include/servo_sync.h:23-25; shared/ui/stub_screen.c:38-42. results/hardware/research/round1/FU-C1/003-P2-R10.json; results/hardware/research/round1/selection.json (R10, R11); scratch/FU-C2/P2-R11/out.json (accelerometer requirements, figure \"R11 pins\")",
+  "read_at": "2026-09-29T08:08:07Z"
+ }
+}

@@ -1,0 +1,421 @@
+{
+ "role": "rerank",
+ "category": "R1",
+ "label": "rerank-R1",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "functions": [
+   {
+    "function": "Microcontroller",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "reason": "Fixed input of the Scope table, ranked first and not replaced. P3 returned nothing for this function. P2's record stands: every requirement value passes; rule 4 passes on JLCPCB stock (stockCount 2983, canPresaleNumber 2826) and rule 6 on the 20 held; Digi-Key SC1512(13)-A4 (3560, Active) is the second vendor. The empty watchdog window between V1 (200 ms) and V2 (900 ms) is a conflict of the specification and the firmware, reported to the owner under 'watchdog', not a check the part fails",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "12 MHz crystal",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "ABM8-272-T3",
+      "reason": "P3 returned no crystal and overturned none of P2's crystal drops. It is the only candidate that meets every value of V5, V6, V7 and V15: CL 10 pF, ESR 50 Ohm max, C0 3.0 pF max, drive level 200 uW max, +/-65 ppm total. It is the crystal RP2350 datasheet Table 597 specifies the XOSC with. Rule 4 passes (stockCount 15660) and Digi-Key (28562, Active) is its second vendor",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "ABM8-272-T3",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Core regulator inductor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "AOTA-B201610S3R3-101-T",
+      "reason": "The inductor RP2350 datasheet sections 6.3.8.2 and 6.3.8.3 name, with a polarity dot, in the 2.0 x 1.6 mm case the Figure 23 layout is drawn for. Every value passes (3.3 uH +/-20 %, Isat 2.4 A, DCR 140 mOhm max). Its maker status reads Active and Digi-Key (28185) is its second vendor. Neither P3 find changes that: both depart from the Figure 23 case",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "VLS4015CX-3R3M-H",
+      "reason": "P3 find, qualified. Every value passes: 3.3 uH +/-20 %, Isat 2.41 A (max. column), DCR 96 mOhm max, magnetic shield, a polarity mark and winding direction drawn. It ranks above the Coilcraft 4 x 4 mm parts because its maker status is read (TDK: Production), Digi-Key stocks it (2479, Active), and at 1.5 mm max it is the lowest of the 4 x 4 mm bodies. It ranks below rank 1 because its 4.0 x 4.0 mm body departs from the Figure 23 layout",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "XGL4020-332MEC",
+      "reason": "Every value passes (Isat 4.8 A at 30 %, DCR 34.0 mOhm max), 2.1 mm high, with XFL4020-332MEC as its same-land-pattern rule-5 alternate. Below VLS4015CX-3R3M-H because its maker status is not read and Digi-Key does not list it",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "XAL4030-332MEC",
+      "reason": "Every value passes with the lowest DCR of the 4 x 4 mm parts (28.6 mOhm max) and Isat 5.9 A; alternate XEL4030-332MEC. Below XGL4020 because it is 1.0 mm taller and V8 asks for no more current than XGL4020 gives; maker status not read, Digi-Key does not list it",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "XEL4030-332MEC",
+      "reason": "Its figures equal XAL4030-332MEC's, with half the JLCPCB stock (768 against 1557); alternate XAL4030-332MEC. Maker status not read, Digi-Key does not list it",
+      "option": ""
+     },
+     {
+      "rank": 6,
+      "part": "XFL4020-332MEC",
+      "reason": "Every value passes, but Coilcraft's own XFL4020-332 page steers new use to XGL4020, its drop-in replacement, and its DCR (38.3 mOhm max) is the highest of the 4 x 4 mm Coilcraft parts. JLCPCB stock 723",
+      "option": ""
+     },
+     {
+      "rank": 7,
+      "part": "ETQP3M3R3KVP",
+      "reason": "P3 find, qualified. Every value passes: 3.3 uH +/-20 %, 8.0 A at a 30 % L drop, DCR 30.03 mOhm max, magnetically shielded, a mark labelled 'Polarity'. Digi-Key stocks it as ETQ-P3M3R3KVP (2343, Active). It ranks last: its 5.5 x 5.0 x 3.0 mm body departs furthest from the Figure 23 layout of the ranked parts, its JLCPCB stock (163) is the lowest, and its maker status is not read",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "VLS4015CX-3R3M-H",
+      "maker": "TDK (datasheet 'TDK Corporation'; JLCPCB maker label 'TDK'; Digi-Key 'TDK'); allowlisted as TDK (S2)",
+      "lcsc": "C3222575",
+      "package": "4.0 +/-0.2 x 4.0 +/-0.2 x 1.5 mm max, wound ferrite, 2 terminals; recommended land pattern two 1.9 x 4.0 mm pads 1.2 mm apart (JLCPCB 'SMD,4x4mm'), not the Coilcraft 4 x 4 mm land pattern",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one inductor on VREG_LX of the one RP2354B (RP2350 datasheet section 6.3.8.2; IOBoard.md:110)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inductance",
+        "required": "3.3 uH +/-20 %",
+        "datasheet": "VLS4015CX-3R3M-H: L 3.3 uH, tolerance +/-20 %, measured at 1 MHz (characteristics specification table)",
+        "pass": true,
+        "source": "VLS4015CX-H datasheet, TDK file inductor_automotive_power_vls4015cx-h_en dated 20220609 (SHA-256 5d2a514b...936a), https://product.tdk.com/system/files/dam/doc/product/inductor/inductor/smd/catalog/inductor_automotive_power_vls4015cx-h_en.pdf, read 2026-09-28T17:56:01Z, page 1"
+       },
+       {
+        "name": "saturation current",
+        "required": "at least 1.5 A",
+        "datasheet": "Isat 2.41 A (max. column) and 2.84 A (typ.), at 30 % below the initial L; Itemp 2.40 A (max. column), 3.00 A (typ.); rated current the smaller of Isat and Itemp, 2.40 A",
+        "pass": true,
+        "source": "VLS4015CX-H datasheet dated 20220609, https://product.tdk.com/system/files/dam/doc/product/inductor/inductor/smd/catalog/inductor_automotive_power_vls4015cx-h_en.pdf, read 2026-09-28T17:56:01Z, page 1"
+       },
+       {
+        "name": "DC resistance",
+        "required": "at most 250 mOhm",
+        "datasheet": "DC resistance 0.096 Ohm max, 0.080 Ohm typ (96 mOhm max)",
+        "pass": true,
+        "source": "VLS4015CX-H datasheet dated 20220609, https://product.tdk.com/system/files/dam/doc/product/inductor/inductor/smd/catalog/inductor_automotive_power_vls4015cx-h_en.pdf, read 2026-09-28T17:56:01Z, page 1"
+       },
+       {
+        "name": "fully shielded",
+        "required": "yes",
+        "datasheet": "'Magnetic shield type wound inductor ... High magnetic shield construction' (features); TDK product page 'Shield Magnetic Shield'",
+        "pass": true,
+        "source": "VLS4015CX-H datasheet dated 20220609, https://product.tdk.com/system/files/dam/doc/product/inductor/inductor/smd/catalog/inductor_automotive_power_vls4015cx-h_en.pdf, read 2026-09-28T17:56:01Z; https://product.tdk.com/en/search/inductor/inductor/smd/info?part_no=VLS4015CX-3R3M-H, read 2026-09-28T17:56:29Z"
+       },
+       {
+        "name": "polarity marking",
+        "required": "yes: marked for polarity",
+        "datasheet": "Shape and dimensions drawing labels a 'Polarity Mark' on the top face and the 'Winding direction' (page 3, rendered and viewed)",
+        "pass": true,
+        "source": "VLS4015CX-H datasheet dated 20220609, https://product.tdk.com/system/files/dam/doc/product/inductor/inductor/smd/catalog/inductor_automotive_power_vls4015cx-h_en.pdf, read 2026-09-28T17:56:01Z, page 3"
+       },
+       {
+        "name": "operating temperature",
+        "required": "rated across 0 to 50 C ambient",
+        "datasheet": "Operating temperature range -40 to 125 C, including self-temperature rise",
+        "pass": true,
+        "source": "VLS4015CX-H datasheet dated 20220609, https://product.tdk.com/system/files/dam/doc/product/inductor/inductor/smd/catalog/inductor_automotive_power_vls4015cx-h_en.pdf, read 2026-09-28T17:56:01Z, pages 1 and 3"
+       }
+      ],
+      "jlcpcb": "stockCount 1845, canPresaleNumber 1845, componentLibraryType expand, price 0.3324 USD each at the need of 5 (break 1+); exact match, other_results 0; read 2026-09-28T17:55:34Z, vendors.py jlcpcb C3222575 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "stock_available 2479 (cut tape; 2000 more on a 1000-piece-minimum reel), manufacturer lead time 12 weeks, ProductStatus Active, not discontinued, not end of life; read 2026-09-28T17:55:43Z, vendors.py digikey VLS4015CX-3R3M-H (https://api.digikey.com/products/v4/search/VLS4015CX-3R3M-H/productdetails)",
+      "gate": "need 5 = 5 boards (S7) x 1; threshold max(5 x 5, 50) = 50; stockCount 1845 >= 50 and canPresaleNumber 1845 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status: Production ('Product Status Production', https://product.tdk.com/en/search/inductor/inductor/smd/info?part_no=VLS4015CX-3R3M-H, HTTP 200, read 2026-09-28T17:56:29Z): pass. Longevity commitment: not read; none found on that page. Market introduction: the first datasheet revision's date is not read; the datasheet served is dated 20220609, so the type is published since at least 2022-06-09, over 12 months: not flagged. Notices: none found; TDK's EoL/NRND listing not read. Distributor: LCSC productCycle 'normal' (https://www.lcsc.com/product-detail/C3222575.html, read 2026-09-28T17:56:39Z); Digi-Key Active (17:55:43Z); JLCPCB's API carries no status",
+      "second_source": "second-vendor: Digi-Key VLS4015CX-3R3M-H, stock_available 2479 >= 50 (2026-09-28T17:55:43Z). No pin-compatible alternate passes rule 4: VLS4020CX-3R3M-H (C6745793), the same 4 x 4 mm terminal pitch, has JLCPCB stockCount 42 < 50 (17:55:35Z) and Digi-Key 1 (17:55:51Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Qualifies on every value of V8, V14 and V7 with a polarity mark and winding direction drawn; maker status Production and a Digi-Key second vendor. Ranked 2: above the Coilcraft 4 x 4 mm parts on a read maker status, a second vendor and the lowest height; below AOTA-B201610S3R3-101-T, whose 2.0 x 1.6 mm case is the one Figure 23 is drawn for",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 7,
+      "part": "ETQP3M3R3KVP",
+      "maker": "Panasonic (datasheet 'Panasonic Industry'; JLCPCB maker label 'PANASONIC'; Digi-Key 'Panasonic Industry'); allowlisted as Panasonic (S2)",
+      "lcsc": "C542316",
+      "package": "PCC-M0530M-LP: 5.5 +/-0.4 x 5.0 +/-0.4 x 3.0 mm max, metal composite core, 2 terminals (JLCPCB 'SMD,5.5x5mm')",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one inductor on VREG_LX of the one RP2354B (RP2350 datasheet section 6.3.8.2; IOBoard.md:110)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inductance",
+        "required": "3.3 uH +/-20 %",
+        "datasheet": "ETQP3M3R3KVP: L0 3.3 uH, tolerance +/-20 %, measured at 100 kHz",
+        "pass": true,
+        "source": "Panasonic 'Power Choke Coil (Automotive Grade)' LP series catalog, PCC-M0530M-LP type, edition 1-Jul-26 (SHA-256 3181caa0...e2), https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C63.pdf, read 2026-09-28T17:56:01Z, page 2 table"
+       },
+       {
+        "name": "saturation current",
+        "required": "at least 1.5 A",
+        "datasheet": "Saturation rated current 8.0 A typ at a -30 % L drop; rated current 5.4 A (4.4 A) at a 40 K rise",
+        "pass": true,
+        "source": "Panasonic LP series catalog edition 1-Jul-26, https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C63.pdf, read 2026-09-28T17:56:01Z, page 2 table and note 4"
+       },
+       {
+        "name": "DC resistance",
+        "required": "at most 250 mOhm",
+        "datasheet": "DCR at 20 C 27.3 mOhm typ, 30.03 mOhm max",
+        "pass": true,
+        "source": "Panasonic LP series catalog edition 1-Jul-26, https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C63.pdf, read 2026-09-28T17:56:01Z, page 2 table"
+       },
+       {
+        "name": "fully shielded",
+        "required": "yes",
+        "datasheet": "'Magnetically shielded' (features)",
+        "pass": true,
+        "source": "Panasonic LP series catalog edition 1-Jul-26, https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C63.pdf, read 2026-09-28T17:56:01Z, page 1"
+       },
+       {
+        "name": "polarity marking",
+        "required": "yes: marked for polarity",
+        "datasheet": "The PCC-M0530M-LP dimension drawing points a label 'Polarity' at a circle mark on the top face, beside the inductance, suffix and date code marks (page 10, rendered and viewed)",
+        "pass": true,
+        "source": "Panasonic LP series catalog edition 1-Jul-26, https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C63.pdf, read 2026-09-28T17:56:01Z, page 10"
+       },
+       {
+        "name": "operating temperature",
+        "required": "rated across 0 to 50 C ambient",
+        "datasheet": "Operating temperature range Tc -55 to +170 C, including self-temperature rise (edition 1-Jul-26; the 30-Jun-22 edition gives -55 to +155 C)",
+        "pass": true,
+        "source": "Panasonic LP series catalog edition 1-Jul-26, https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C63.pdf, read 2026-09-28T17:56:01Z, page 1; edition 30-Jun-22, https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8589968333195288576, read 2026-09-28T18:00:02Z"
+       }
+      ],
+      "jlcpcb": "stockCount 163, canPresaleNumber 153, componentLibraryType expand, price 0.9354 USD each at the need of 5 (break 1+); exact match, other_results 0; read 2026-09-28T17:55:34Z, vendors.py jlcpcb C542316 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "Listed as ETQ-P3M3R3KVP: stock_available 2343 (cut tape), manufacturer lead time 23 weeks, ProductStatus Active, not discontinued, not end of life; read 2026-09-28T17:55:45Z, vendors.py digikey ETQ-P3M3R3KVP (https://api.digikey.com/products/v4/search/ETQ-P3M3R3KVP/productdetails). productdetails for 'ETQP3M3R3KVP' answered HTTP 404 (17:55:46Z)",
+      "gate": "need 5 = 5 boards (S7) x 1; threshold max(5 x 5, 50) = 50; stockCount 163 >= 50 and canPresaleNumber 153 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status: not read, reported to the owner: industry.panasonic.com answered HTTP 404 for .../global/en/products/pt/power-inductors/models/ETQP3M3R3KVP, .../power-choke-coil/..., .../power-inductor/..., .../power-choke-coils/..., .../power-inductors-automotive/... and .../ww/products/pt/power-inductors/... (2026-09-28T17:57:25Z to 17:57:44Z). Longevity commitment: not read. Market introduction: the first datasheet revision's date is not read; the part is listed in the catalog edition of 30-Jun-22 (https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8589968333195288576, read 18:00:02Z), over 12 months: not flagged. The 1-Jul-26 edition marks ETQP3M5R6KVP 'NEW', not this part. Notices: none found; Panasonic's PCN listing not read. Distributor: LCSC productCycle 'normal' (https://www.lcsc.com/product-detail/C542316.html, read 2026-09-28T17:56:40Z); Digi-Key Active (17:55:45Z); JLCPCB's API carries no status",
+      "second_source": "second-vendor: Digi-Key ETQ-P3M3R3KVP, the same part in Panasonic's hyphenated form, stock_available 2343 >= 50 (2026-09-28T17:55:45Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Qualifies on every value of V8, V14 and V7, with a mark the catalog labels 'Polarity'. Ranked last: the largest body of the ranked parts (5.5 x 5.0 mm against the 2.0 x 1.6 mm of Figure 23), the lowest JLCPCB stock (163) and a maker status not read",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "AOTA-B201610S3R3-101-T",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "USB protection",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPD6E05U06RVZR",
+      "reason": "One placement covers all 5 lines with the lowest capacitance of the ranked parts (0.47 pF typ, 0.07 pF max matching). Each channel is its own clamp to GND, so no line has a path into the VBUS net while no USB source is connected. Maker status ACTIVE, Digi-Key second vendor (38541)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "VBUS54CV-HSF-G4-08",
+      "reason": "One placement covers all 5 lines with the widest IEC rating (+/-30 kV contact and air). Below rank 1 on capacitance (1.2 pF typ, 2.5 pF max), on data-line diodes that steer to the VBUS pin and conduct from a driven D+ or CC line into an absent VBUS, and on a maker status not read",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TPD4E05U06DQAR",
+      "reason": "The die family of rank 1 with separate clamps to GND, 0.5 pF typ, the largest stock and lowest price, but two placements",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "TPD4E1U06DBVR",
+      "reason": "+/-15 kV contact and air, separate clamps to GND, but 0.8 pF typ and two placements",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "TPD2E2U06DRLR",
+      "reason": "The highest IEC ratings of the TI parts (+/-25 kV contact), but three placements and 1.5 pF typ",
+      "option": ""
+     },
+     {
+      "rank": 6,
+      "part": "NUP4114HMR6T1G",
+      "reason": "P3 find, qualified: one placement, 0.6 pF max, and every value passes on the datasheet (NUP4114/D Rev. 8). Ranked last: its VBUS stand-off passes only on the datasheet's 5.5 V, while onsemi's own product page gives this orderable part VRWM 5 V, below the 5.5 V of V10 and V13; its IEC rating (+/-8 kV contact, +/-15 kV air) has no margin over V9; its data-line diodes steer to pin 5 as rank 2's do; and Digi-Key's stock is one 3000-piece reel listing, with 0 on cut tape",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 6,
+      "part": "NUP4114HMR6T1G",
+      "maker": "onsemi (datasheet NUP4114/D; JLCPCB maker label 'onsemi'; Digi-Key 'onsemi'); allowlisted as onsemi (S1)",
+      "lcsc": "C260431",
+      "package": "TSOP-6 (CASE 318G, STYLE 12), 3.00 x 2.75 x 1.00 mm: I/O on pins 1, 3, 4 and 6, GROUND on pin 2, VCC on pin 5",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification: the 5 lines of V13 over 4 I/O pins plus the pin-5 supply clamp, 5 channels a part, gives 1; range 1 to 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "lines covered",
+        "required": "5 lines: VBUS, D+, D-, CC1 and CC2 of one USB Type-C connector shared with the F8 charger input",
+        "datasheet": "'Data lines are connected at pins 1, 3, 4 and 6'; Option 1 'Protection of four data lines and the power supply using VCC as reference': pin 5 to the supply rail, 'The internal ESD diode prevents overvoltage on the supply rail'. D+, D-, CC1 and CC2 on the I/O pins, VBUS on pin 5",
+        "pass": true,
+        "source": "NUP4114/D Rev. 8, December 2021 (SHA-256 332600fa...8e99), https://www.onsemi.com/pdf/datasheet/nup4114-d.pdf, read 2026-09-28T17:56:01Z, applications information and TSOP-6 STYLE 12"
+       },
+       {
+        "name": "IEC 61000-4-2 contact",
+        "required": "at least +/-8 kV contact discharge on every line covered",
+        "datasheet": "IEC 61000-4-2 Contact +/-8 kV (maximum ratings)",
+        "pass": true,
+        "source": "NUP4114/D Rev. 8, https://www.onsemi.com/pdf/datasheet/nup4114-d.pdf, read 2026-09-28T17:56:01Z, maximum ratings, page 1"
+       },
+       {
+        "name": "IEC 61000-4-2 air",
+        "required": "at least +/-15 kV air discharge on every line covered",
+        "datasheet": "IEC 61000-4-2 Air +/-15 kV (maximum ratings)",
+        "pass": true,
+        "source": "NUP4114/D Rev. 8, https://www.onsemi.com/pdf/datasheet/nup4114-d.pdf, read 2026-09-28T17:56:01Z, maximum ratings, page 1"
+       },
+       {
+        "name": "VBUS stand-off",
+        "required": "at least 5.5 V on VBUS",
+        "datasheet": "Reverse working voltage VRWM 5.5 V max; VBR 5.5 V min, 6.5 V typ at IT 1 mA; IR 1.0 uA max at VRWM 5.5 V (the text layer prints the unit as 'mA', the symbol-font rendering of uA that also prints 8/20 us as 'ms'; JLCPCB's description gives 1 uA). onsemi's product page row for NUP4114HMR6T1G disagrees: 'V RWM Max (V)' 5 and 'V (BR) Min (V)' 6 (https://www.onsemi.com/products/discrete-power-modules/esd-protection-diodes/nup4114, read 2026-09-28T17:58:30Z); the datasheet counts (rule 3)",
+        "pass": true,
+        "source": "NUP4114/D Rev. 8, https://www.onsemi.com/pdf/datasheet/nup4114-d.pdf, read 2026-09-28T17:56:01Z, electrical characteristics, page 2"
+       },
+       {
+        "name": "VBUS current",
+        "required": "VBUS carries 3 A: a part in series carries 3 A; a shunt clamp to ground is outside the current path",
+        "datasheet": "Pin 5 is the internal ESD diode from the supply rail to pin 2 (GND), a shunt clamp; the 3 A does not pass through it",
+        "pass": true,
+        "source": "NUP4114/D Rev. 8, https://www.onsemi.com/pdf/datasheet/nup4114-d.pdf, read 2026-09-28T17:56:01Z, applications information, Option 1"
+       },
+       {
+        "name": "D+ and D- stand-off",
+        "required": "at least 3.63 V on D+ and D-, so the clamp does not conduct at the signal level",
+        "datasheet": "VRWM 5.5 V, above 3.63 V; with pin 5 on VBUS the I/O steering diode to pin 5 conducts only above VBUS + Vf, and with VBUS absent above one diode drop over the pin-5 net",
+        "pass": true,
+        "source": "NUP4114/D Rev. 8, https://www.onsemi.com/pdf/datasheet/nup4114-d.pdf, read 2026-09-28T17:56:01Z, electrical characteristics and applications information"
+       },
+       {
+        "name": "D+/D- steady voltage (V12)",
+        "required": "at most 3.63 V steady at USB_DP and USB_DM (QFN-80 pins 67 and 66)",
+        "datasheet": "A shunt clamp adds no source: with the stand-off above 3.63 V it passes the RP2354B's own drive, at most USB_OTP_VDD 3.63 V (RP2350 datasheet Table 1441), unchanged. It does not limit a steady external voltage between 3.63 V and its breakdown; no ESD clamp does. Its data-line diodes steer to pin 5: a line above an absent VBUS forward-biases into the VBUS net",
+        "pass": true,
+        "source": "NUP4114/D Rev. 8, https://www.onsemi.com/pdf/datasheet/nup4114-d.pdf, read 2026-09-28T17:56:01Z, applications information; RP2350 datasheet build 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, Table 1441 as P2 read it at 2026-09-28T17:13:28Z"
+       },
+       {
+        "name": "D+/D- ESD clamping (V12)",
+        "required": "clamping voltage at most 36 V at 16 A TLP (IEC 61000-4-2 +/-8 kV contact at 30 ns) on D+ and D-, ahead of the 27 Ohm series resistor",
+        "datasheet": "No TLP figure. Figure 1, 'ESD Clamping Voltage Screenshot, Positive 8 kV Contact per IEC61000-4-2' (10 V/div, 20 ns/div, typical), reads about 16 V at 30 ns after the pulse edge, where the IEC waveform is 16 A (Figure 3); VC 10 V max at 8 A, 8/20 us, pin 5 to pin 2",
+        "pass": true,
+        "source": "NUP4114/D Rev. 8, https://www.onsemi.com/pdf/datasheet/nup4114-d.pdf, read 2026-09-28T17:56:01Z, page 2 Figure 1 (rendered and viewed) and page 3 Figure 3"
+       },
+       {
+        "name": "D+/D- capacitance (V11)",
+        "required": "at most 75 pF of lumped capacitance to ground per line on D+ and D-, shared with the RP2354B's USB pins and the connector",
+        "datasheet": "CJ 0.6 pF max between I/O pins and GND at VR 0 V, 1 MHz",
+        "pass": true,
+        "source": "NUP4114/D Rev. 8, https://www.onsemi.com/pdf/datasheet/nup4114-d.pdf, read 2026-09-28T17:56:01Z, electrical characteristics"
+       },
+       {
+        "name": "D+/D- capacitance matching",
+        "required": "D+ and D- capacitance differ by less than 10 %",
+        "datasheet": "No channel-to-channel matching stated; each I/O is at most 0.6 pF to GND, so the part adds at most 0.6 pF of difference between D+ and D-, 0.8 % of the 75 pF line budget of V11; CJ between I/O pins 0.3 pF max",
+        "pass": true,
+        "source": "NUP4114/D Rev. 8, https://www.onsemi.com/pdf/datasheet/nup4114-d.pdf, read 2026-09-28T17:56:01Z, electrical characteristics"
+       },
+       {
+        "name": "operating temperature",
+        "required": "rated across 0 to 50 C ambient",
+        "datasheet": "Operating junction temperature range TJ -40 to +125 C",
+        "pass": true,
+        "source": "NUP4114/D Rev. 8, https://www.onsemi.com/pdf/datasheet/nup4114-d.pdf, read 2026-09-28T17:56:01Z, maximum ratings"
+       }
+      ],
+      "jlcpcb": "stockCount 7986, canPresaleNumber 7954, componentLibraryType expand, price 0.2704 USD each at the need of 5 (break 1+); exact match, other_results 0; read 2026-09-28T17:55:34Z, vendors.py jlcpcb C260431 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "stock_available 15000, all in variation 2832-NUP4114HMR6T1GTR-ND (tape and reel, minimum order 3000); the onsemi variations NUP4114HMR6T1GOSTR-ND, -OSCT-ND and -OSDKR-ND hold 0; manufacturer lead time 25 weeks, ProductStatus Active, not discontinued, not end of life; read 2026-09-28T17:55:47Z, vendors.py digikey NUP4114HMR6T1G (https://api.digikey.com/products/v4/search/NUP4114HMR6T1G/productdetails)",
+      "gate": "need 5 = 5 boards (S7) x 1; threshold max(5 x 5, 50) = 50; stockCount 7986 >= 50 and canPresaleNumber 7954 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status: Active (the NUP4114HMR6T1G row of https://www.onsemi.com/products/discrete-power-modules/esd-protection-diodes/nup4114, HTTP 200, read 2026-09-28T17:58:30Z); the same page lists NUP4114UCLW1T1G, another orderable part, as Obsolete. Longevity commitment: not read. Market introduction: the first datasheet revision's date is not read; NUP4114/D carries copyright 2014 and Rev. 8 of December 2021, over 12 months: not flagged. Notices: none found; onsemi's PCN listing not read. Distributor: LCSC productCycle 'normal' (https://www.lcsc.com/product-detail/C260431.html, read 2026-09-28T17:56:40Z); Digi-Key Active (17:55:47Z); JLCPCB's API carries no status",
+      "second_source": "second-vendor: Digi-Key NUP4114HMR6T1G, stock_available 15000 >= 50 (2026-09-28T17:55:47Z), held only in the 3000-piece-minimum reel variation 2832-NUP4114HMR6T1GTR-ND; cut tape 0",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Qualifies on every datasheet value in one placement with 0.6 pF max. Ranked last because onsemi's own page gives VRWM 5 V against the 5.5 V VBUS stand-off, the IEC rating has no margin over V9, its steering diodes conduct from a driven line into an absent VBUS, and Digi-Key holds it only as a 3000-piece reel",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "TPD6S300RUKR (C2649810), TPD8S300RUKR (C571205)",
+      "maker": "Texas Instruments",
+      "reason": "Fails 'lines covered' (V13) as a candidate: neither part has a VBUS channel. The TPD6S300's IEC-protected pins are C_CC1, C_CC2, D1 and D2 (+/-8 kV contact, +/-15 kV air) and C_SBU1, C_SBU2 (+/-6 kV contact), SLVSDK3C section 7.3 and Pin Functions (https://www.ti.com/lit/ds/symlink/tpd6s300.pdf, read 2026-09-28T17:56:02Z); the TPD8S300 has no VBUS pin either (SLVSDD6B Pin Functions, P2's reading at 17:21:11Z). No number of its placements covers VBUS, so its record, one part number with one placement count and one rule-4 need, cannot cover the 5 lines, as each ranked candidate's placements of its own part number do. The pairing P3 proposes adds a second part number, a VBUS clamp, that no record here qualifies. Its other values read pass: Dx VRWM_POS 5.5 V, CIO 1.7 pF typ, delta-CIO 0.02 pF typ, Figure 28 Dx TLP about 14 V at 16 A (typical); JLCPCB C2649810 stockCount 17564, canPresaleNumber 17559 (17:55:34Z), C571205 205 and 203 (17:55:35Z), TPD6S300ARUKR C2876380 284 and 225 (17:55:35Z); Digi-Key TPD6S300RUKR 8366, 16 weeks, Active (17:55:49Z). Paired with a VBUS clamp it would still rank below TPD6E05U06RVZR: two part numbers against one placement, 1.7 pF against 0.47 pF, a 2.7 to 4.5 V VPWR supply and a VBIAS capacitor rated 35 V minimum, and CC through OVP FETs that turn on only above the VPWR UVLO of 2.1 to 2.5 V, so with the 3.3 V rail down the CC path is open unless RPD_G1 and RPD_G2 are shorted to C_CC1 and C_CC2 for dead-battery resistors"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPD6E05U06RVZR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "crystal tolerance: VLS4015CX-3R3M-H",
+    "value": "not applicable: a core regulator inductor has no frequency tolerance; the VLS4015CX-H datasheet states inductance, DC resistance and rated currents only",
+    "source": "VLS4015CX-H datasheet dated 20220609, https://product.tdk.com/system/files/dam/doc/product/inductor/inductor/smd/catalog/inductor_automotive_power_vls4015cx-h_en.pdf, read 2026-09-28T17:56:01Z"
+   },
+   {
+    "figure": "crystal tolerance: ETQP3M3R3KVP",
+    "value": "not applicable: a core regulator inductor has no frequency tolerance; the LP series catalog states inductance, DC resistance and rated currents only",
+    "source": "Panasonic LP series catalog edition 1-Jul-26, https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C63.pdf, read 2026-09-28T17:56:01Z"
+   },
+   {
+    "figure": "crystal tolerance: NUP4114HMR6T1G",
+    "value": "not applicable: a USB ESD clamp has no frequency tolerance",
+    "source": "NUP4114/D Rev. 8, December 2021, https://www.onsemi.com/pdf/datasheet/nup4114-d.pdf, read 2026-09-28T17:56:01Z"
+   }
+  ]
+ }
+}

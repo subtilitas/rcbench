@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R9",
+ "label": "adjudicator-R9-2",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "function": "found V187",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. V187 asks how far apart a cell sample and \"the motor current sample it is paired with\" may be, and names the INA238 (R8) as the current's source. Under F1 the board carries one INA238 for each shunt path: the onboard 150 A path and the external path above 150 A. The claim of 741 µs uses only the onboard 150 A. The cell monitor reads the same ESC pack on either path. Nothing in the tree ties the pack settings to the onboard path: settings.c holds one set of pack settings, and IOBoard.md:66 sends currents above 150 A to the external shunt. The same derivation on the external path's 300 A (V35, T2) gives 300 %/s × 300 A = 900 A/s. At 900 A/s, 0.333 A (1 mV across a 3 mΩ cell) takes 370 µs. The largest allowed separation is therefore 370 µs, not 741 µs, and 741 µs does not answer V187. Two limits remain on the 370 µs figure. (1) It assumes the default pack of 6 cells and 18 mΩ. SET_PACK_MOHM accepts 0 to 200 mΩ, so the default is not a bound. (2) The external path's 300 A has no ceiling (\"300 A and more\"). A higher per-cell resistance or a higher current would make the limit tighter still.",
+  "evidence": "settings.c:38-40: SET_PACK_CELLS covers 1 to 14 cells, default 6. settings.c:44-46: SET_PACK_MOHM covers 0 to 200 mΩ for the whole pack, default 18. That is one set of pack settings, with no path field. settings.c:61-63: SET_OUT_RAMP covers 5 to 300 %/s. main.c:94-98 computes the ramp as OUT_SPAN × pct / 100 per second, with OUT_SPAN = 1000 (outputs.h:42). Research.md:529 (F1): \"one INA238 for each path (owner, 2026-09-25)\". IOBoard.md:66: \"Onboard shunt for 150 A continuous (F2) ...; external-shunt input for currents above 150 A (owner, 2026-09-25), to 300 A and more\". Research.md:62 says the same. T2/007-P2-R3.json V35: \"300 A: the highest figure any page in the tree gives for the external path; 'and more' carries no figure\". Arithmetic: 1 mV / 3 mΩ = 0.333 A. At 450 A/s that is 740.7 µs. At 900 A/s it is 370.4 µs.",
+  "source": "checkout c25aa863372d: shared/settings/settings.c:38-47, :61-63; firmware/panel/main/main.c:94-98; shared/outputs/include/outputs.h:42; hardware/docs/IOBoard.md:66; hardware/docs/Research.md:62, :529 (F1), :747 (V187); results T2/007-P2-R3.json V35",
+  "read_at": "2026-09-28T15:56:56Z",
+  "scope": "function"
+ }
+}

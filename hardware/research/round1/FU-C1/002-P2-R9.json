@@ -1,0 +1,785 @@
+{
+ "role": "P2",
+ "category": "R9",
+ "label": "P2-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "found_values": [
+   {
+    "question_id": "V181",
+    "value": "1 cell",
+    "source": "shared/settings/settings.c:33-40 at commit e13f5f6: the table comment 'Ranges are the physical ones: a pack cannot have zero cells' and SET_PACK_CELLS 'Series count in the pack', 1 to 14, default 6; hardware/docs/IOBoard.md:67 and :435 '1 to 16 cells on the balance lead'; F15 (Research.md:543) fixes the top at 16 cells",
+    "read_at": "2026-09-29T02:49:15Z"
+   },
+   {
+    "question_id": "V182",
+    "value": "1 mV per cell reading",
+    "source": "shared/ui/battery_screen.c:288 prints the pack mean with '%.3f V' (1 mV) and :290 the spread, a difference of two cell readings, with '%d mV'; :204 prints each cell with '%.2f'. 1 mV is the finest step the screen shows a cell-derived quantity in. Commit e13f5f6",
+    "read_at": "2026-09-29T02:49:15Z"
+   },
+   {
+    "question_id": "V183",
+    "value": "±6 mV per cell under load, over 0 to 50 °C ambient",
+    "source": "shared/ui/battery_screen.c:95-105 (spread = highest cell minus lowest cell, so it carries two readings' errors) and :41 (SCALE_FLOOR_MV 12.0f): 2 × 6 mV = 12 mV, the plot floor, under the 30 mV WATCH threshold (:46). Temperature: V7 answer, Research.md:567, '0 to 50 °C ambient, one range for the whole IO board (owner, 2026-09-28)'. Commit e13f5f6",
+    "read_at": "2026-09-29T02:49:15Z"
+   },
+   {
+    "question_id": "V184",
+    "value": "2.8 V a cell",
+    "source": "shared/ui/programmer_screen.c:139-141, :166-168 and :202-204 at commit e13f5f6: ESC parameter 'Low voltage cut', 'Per cell, where it starts pulling power back to save the pack', lo 28, hi 38, in tenths of a volt (:75). An ESC on the bench runs each cell under load down to 2.8 V before it pulls power back. The top, 4.2 V, is F15",
+    "read_at": "2026-09-29T02:49:15Z"
+   },
+   {
+    "question_id": "V185",
+    "value": "20 ms for every cell of a 16-cell pack",
+    "source": "hardware/docs/IOBoard.md:431 'the coprocessor samples the bench numbers every 20 ms (50 Hz)'; firmware/iomcu/src/main.c:1013 '(uint32_t)(now - last_sample) >= 20u'. One full cell reading per bench sample. Commit e13f5f6",
+    "read_at": "2026-09-29T02:49:15Z"
+   },
+   {
+    "question_id": "V186",
+    "value": "not found: no source in the tree bounds how fast a cell's voltage moves under load, so no time in µs follows. A throttle decrease is a step, not a ramp: shared/outputs/include/outputs.h:54-57 ('going up is ramped and coming down is immediate') and shared/outputs/outputs.c:353-363 (a throttle coming down is applied on the pass the command arrives). The only rate limit, SET_OUT_RAMP 5 to 300 %/s (shared/settings/settings.c:61-63), applies upward, and the motor current against throttle is not stated. The T4 figure of 741 µs rested on that upward ramp, a linear current law and default pack settings, and was refuted and adjudicated (T4/015-adjudicator-R9.json). The V183 budget still holds: the timing term and the part's error together stay within ±6 mV. Conditional figures are in the report",
+    "source": "commit e13f5f6: shared/outputs/include/outputs.h:54-57, shared/outputs/outputs.c:353-363, shared/settings/settings.c:38-47 and :61-63, firmware/panel/main/main.c:94-99; results T4/015-adjudicator-R9.json",
+    "read_at": "2026-09-29T02:49:15Z"
+   },
+   {
+    "question_id": "V187",
+    "value": "not found: the same missing bound as V186. The rate at which the motor current and the cell voltage change between a cell sample and its INA238 current sample is not stated. A throttle decrease steps the current (outputs.h:54-57, outputs.c:353-363), and the upward current law against throttle is not in the tree. The T4 figure of 741 µs was refuted and adjudicated (T4/017-adjudicator-R9-2.json)",
+    "source": "commit e13f5f6: shared/outputs/include/outputs.h:54-57, shared/outputs/outputs.c:353-363, shared/settings/settings.c:61-63; hardware/docs/IOBoard.md:66 (one INA238 per shunt path); results T4/017-adjudicator-R9-2.json",
+    "read_at": "2026-09-29T02:49:15Z"
+   },
+   {
+    "question_id": "V188",
+    "value": "85 V: the balance-lead input is rated for at least 85 V, 17.8 V above 67.2 V",
+    "source": "The balance lead's top pin is the ESC pack's positive terminal. R3 holds that node's clamp under the absolute maximum of every part on it, and the INA238's 85 V bus input is the lowest (Research.md:281; IOBoard.md:415, 'bus input rated to 85 V', 17.8 V above 67.2 V). INA238 SLYS025B section 5.1, -0.3 V to 85 V, read by T2 P2-R3 at 2026-09-28T13:17:45Z (results T2/007-P2-R3.json V34). Commit e13f5f6",
+    "read_at": "2026-09-29T02:49:15Z"
+   },
+   {
+    "question_id": "V189",
+    "value": "owner answer, not a research value: isolated. The monitor sits on the pack's negative and reaches the RP2354B across a barrier (isoSPI or digital isolator) rated 85 V DC working or more; no offset limit below that",
+    "source": "hardware/docs/Research.md:749, Answer column (owner, 2026-09-28), set by commit 249be1e 'Answer the R9 to R13 values the research did not find'; read at commit e13f5f6",
+    "read_at": "2026-09-29T02:49:15Z"
+   },
+   {
+    "question_id": "V190",
+    "value": "owner answer, not a research value: each tap pin 100 µA powered and 10 µA unpowered, averaged over 1 s; the monitor's supply from top to bottom not counted",
+    "source": "hardware/docs/Research.md:750, Answer column (owner, 2026-09-28), commit 249be1e; read at commit e13f5f6",
+    "read_at": "2026-09-29T02:49:15Z"
+   },
+   {
+    "question_id": "V191",
+    "value": "reverse: 67.2 V, the whole 16-cell pack at 4.2 V a cell, on the input's lowest pin with every other pin below it; adjacent pins: 4.2 V of either polarity, for a lead shifted by one pin or reversed",
+    "source": "F15, hardware/docs/Research.md:543 ('16 cells, 67.2 V at 4.2 V a cell'). A balance lead carries one cell between each pair of adjacent pins. A shift by one keeps 4.2 V between neighbours and puts up to 4.2 V on the lowest pin. A reversal swaps the pack end for end. Commit e13f5f6",
+    "read_at": "2026-09-29T02:49:15Z"
+   },
+   {
+    "question_id": "V192",
+    "value": "owner answer, not a research value: 1 connector of 16 cells (17 pins) on the IO board; each pack's own leads, one or several, reach it through an adapter lead",
+    "source": "hardware/docs/Research.md:752, Answer column (owner, 2026-09-28), commit 249be1e; read at commit e13f5f6",
+    "read_at": "2026-09-29T02:49:15Z"
+   },
+   {
+    "question_id": "V193",
+    "value": "owner answer, not a research value: No. A pack of any count from the lowest to 16 cells plugs in with no setting; the board ties unused inputs itself",
+    "source": "hardware/docs/Research.md:753, Answer column (owner, 2026-09-28), commit 249be1e; read at commit e13f5f6",
+    "read_at": "2026-09-29T02:49:15Z"
+   },
+   {
+    "question_id": "V194",
+    "value": "0.1 mΩ per cell, taken over a motor current step of at least 10 A",
+    "source": "shared/ui/battery_screen.c:295 prints the pack resistance with '%.1f mOhm' (0.1 mΩ); shared/ui/include/battery_screen.h:16 holds milliohms per cell under load. A 1 mV reading (V182) resolves 0.1 mΩ over 10 A (1 mV / 0.1 mΩ = 10 A). Commit e13f5f6",
+    "read_at": "2026-09-29T02:49:15Z"
+   },
+   {
+    "question_id": "V195",
+    "value": "from the setting for the cell count (SET_PACK_CELLS); from the lead for whether a pack is plugged in",
+    "source": "shared/settings/settings.c:38-40 ('pack_cells', 'Series count in the pack', 1 to 14) carries the count. shared/ui/include/battery_screen.h:19 ('valid ... a monitor answered') and :27 ('What the balance lead says. NULL, or valid false, means nothing is on'), and shared/ui/battery_screen.c:233 ('NO PACK', 'nothing on the lead') read presence from the lead. Commit e13f5f6",
+    "read_at": "2026-09-29T02:49:15Z"
+   }
+  ],
+  "functions": [
+   {
+    "function": "Cell monitor",
+    "requirements": [
+     {
+      "name": "cell count",
+      "value": "reads packs of 1 to 16 cells in series on the ESC pack's balance lead",
+      "source": "V181 (found), F15 (Research.md:543), IOBoard.md:67 and :435"
+     },
+     {
+      "name": "stack voltage",
+      "value": "operates with 67.2 V between the lead's top and bottom pins",
+      "source": "F15, Research.md:543"
+     },
+     {
+      "name": "input rating",
+      "value": "balance-lead input rated to at least 85 V",
+      "source": "V188 (found)"
+     },
+     {
+      "name": "separate input",
+      "value": "its own balance-lead input, apart from the 2S pack's lead of F9; both packs connected at once",
+      "source": "Research.md:287, IOBoard.md:365"
+     },
+     {
+      "name": "one connector",
+      "value": "16 cells on one 17-pin connector; each pack's leads arrive through an adapter lead",
+      "source": "V192 (owner, 2026-09-28)"
+     },
+     {
+      "name": "no count setting",
+      "value": "any count from 1 to 16 cells with no jumper or adapter setting; the board ties unused inputs itself",
+      "source": "V193 (owner, 2026-09-28)"
+     },
+     {
+      "name": "isolation",
+      "value": "monitor on the pack's negative; reaches the RP2354B across an isoSPI or digital-isolator barrier rated 85 V DC working or more",
+      "source": "V189 (owner, 2026-09-28)"
+     },
+     {
+      "name": "tap current",
+      "value": "at most 100 µA per tap pin with the IO board powered and 10 µA unpowered, averaged over 1 s; the monitor's supply from top to bottom excluded",
+      "source": "V190 (owner, 2026-09-28)"
+     },
+     {
+      "name": "cell resolution",
+      "value": "1 mV per cell reading",
+      "source": "V182 (found)"
+     },
+     {
+      "name": "error under load",
+      "value": "±6 mV per cell over 0 to 50 °C ambient, sample timing included. The timing term is not fixed because V186 is not found; the part's static error is checked against ±6 mV",
+      "source": "V183 (found), V7 answer (Research.md:567), V186 (not found)"
+     },
+     {
+      "name": "cell voltage range",
+      "value": "2.8 V to 4.2 V a cell within that error",
+      "source": "V184 (found), F15"
+     },
+     {
+      "name": "reading period",
+      "value": "every cell of a 16-cell pack read at least every 20 ms",
+      "source": "V185 (found)"
+     },
+     {
+      "name": "resistance resolution",
+      "value": "0.1 mΩ per cell over a current step of at least 10 A",
+      "source": "V194 (found)"
+     },
+     {
+      "name": "mis-plugged lead",
+      "value": "survives a lead shifted by one pin (4.2 V between adjacent pins, up to 4.2 V on the lowest pin) and a reversed lead (67.2 V reverse)",
+      "source": "V191 (found)"
+     },
+     {
+      "name": "pack presence",
+      "value": "tells from the lead whether a pack is plugged in; the cell count comes from SET_PACK_CELLS",
+      "source": "V195 (found)"
+     },
+     {
+      "name": "ambient range",
+      "value": "rated over 0 to 50 °C ambient",
+      "source": "V7 answer, Research.md:567"
+     },
+     {
+      "name": "host logic level",
+      "value": "reaches the RP2354B at 3.3 V logic, IOVDD 3.3 V, through the barrier of V189",
+      "source": "Research.md:47 (fixed input RP2354B), V189"
+     },
+     {
+      "name": "quantities",
+      "value": "per-cell voltage; resistance under load from the voltage and the INA238's motor current",
+      "source": "IOBoard.md:436, shared/ui/include/battery_screen.h:15-16"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "ADBMS1818ASWAZ-RL",
+      "maker": "Analog Devices (ADBMS1818 data sheet Rev. B); counts as Analog Devices on the S1 list",
+      "lcsc": "C5372802",
+      "package": "64-lead LQFP_EP, 10 × 10 mm body, 0.50 mm pitch, outline SW-64-2, exposed pad 5.40 to 5.60 mm (5.50 SQ); JLCPCB 'LQFP-64-EP(10x10)'",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1: one 18-channel monitor reads the 16 cells of the one 17-pin connector (V192); gate applied at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "cell count",
+        "required": "1 to 16 cells",
+        "datasheet": "up to 18 cells; unused C inputs shorted to the highest connected cell or left open, unused S pins left disconnected (p. 86). TME met with V+ 16 to 90 V, V+ to C18 at least -0.3 V, C7 at least 1 V, C13 at least 2.5 V (Table 3). With V193's tie, C7 and C13 sit at the top cell, at least 2.8 V. Packs under 16 V (1 to 3 cells at 4.2 V, 1 to 5 cells at 2.8 V) need at least 16 V on V+ from an auxiliary supply",
+        "pass": true,
+        "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/adbms1818.pdf, Rev. B, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "stack voltage",
+        "required": "67.2 V",
+        "datasheet": "V+ 16 to 90 V with TME met; V+ to C12 at most 40 V: 67.2 - 50.4 = 16.8 V at 16 cells (Table 3)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 3, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "input rating",
+        "required": "at least 85 V",
+        "datasheet": "absolute maximum V+ to V- 112.5 V; C(n) -0.3 V to min(8 × n, 112.5 V), so C16 112.5 V; C18 to min(V+ + 5.5 V, 112.5 V) (Table 11)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 11, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "separate input",
+        "required": "own input apart from the 2S pack's lead",
+        "datasheet": "one IC on the ESC pack's lead only; the 2S pack's lead belongs to R5 and R7",
+        "pass": true,
+        "source": "board arrangement, Research.md:287"
+       },
+       {
+        "name": "one connector",
+        "required": "16 cells on one 17-pin connector",
+        "datasheet": "18 cell channels in one IC, C0 to C18 (p. 1, Table 14)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "no count setting",
+        "required": "any count 1 to 16 with no setting; the board ties unused inputs",
+        "datasheet": "unused inputs shorted to the highest connected cell read 0.0 V (p. 86); no register sets the count. The tie network itself is a board circuit the data sheet does not specify",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 86, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "isolation",
+        "required": "isoSPI or digital-isolator barrier, 85 V DC working or more",
+        "datasheet": "ISOMD to VREG sets pins 53, 54, 61 and 62 for 2-wire isoSPI, transformer or capacitor coupled (Figures 79 and 106); ISOMD to V- gives 4-wire SPI referenced to V-, for a digital isolator. 'Can be powered directly from the battery stack or from an isolated supply' (p. 1). The barrier's 85 V rating belongs to the transformer, capacitors or isolator, not to this IC",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B pp. 1, 12 (pin 55), Figures 79 and 106, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "tap current",
+        "required": "at most 100 µA powered, 10 µA unpowered, per tap pin, 1 s average",
+        "datasheet": "C(n) leakage 10 nA typical, ±250 nA maximum when not measured; ±1 µA typical while measured, no maximum given; 70 / 100 / 130 µA only during open-wire detection (Table 1). An open-wire check at 130 µA stays within 100 µA averaged over 1 s at a duty under 76 %. These figures are specified at V+ = 59.4 V. With the IO board unpowered and a pack under 16 V (V+ below its 16 V minimum), the C pin current is not specified",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "cell resolution",
+        "required": "1 mV",
+        "datasheet": "0.1 mV/bit (Table 1)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "error under load",
+        "required": "±6 mV over 0 to 50 °C, timing included",
+        "datasheet": "normal-mode TME ±4.8 mV at 4.2 V over -40 to +85 °C (Table 1); 1.2 mV left for the timing term, which V186 does not fix. Filtered mode (±3.8 mV) takes 174.2 to 213.8 ms for 18 cells, over 20 ms; fast mode ±12.5 mV",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Tables 1 and 4, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "cell voltage range",
+        "required": "2.8 V to 4.2 V within ±6 mV",
+        "datasheet": "input range C(n-1) to C(n-1) + 5 V; TME over temperature ±2.8 mV at 2.0 V, ±4.0 mV at 3.3 V, ±4.8 mV at 4.2 V (Table 1)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "reading period",
+        "required": "16 cells within 20 ms",
+        "datasheet": "18 cells in normal mode 2027 / 2343 / 2488 µs from REFUP; plus tREFUP 2.7 to 4.4 ms from standby: 6.9 ms at most (Table 4)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 4, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "resistance resolution",
+        "required": "0.1 mΩ over a 10 A step",
+        "datasheet": "0.1 mV/bit over 10 A is 0.01 mΩ",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "mis-plugged lead",
+        "required": "4.2 V between adjacent pins and on the lowest pin; 67.2 V reverse",
+        "datasheet": "C(n) to C(n-1) -0.3 V to +8 V; groups of three cells -0.3 V to +21 V; C0 -0.3 V to +6 V (Table 11): a shifted lead is inside the ratings. Every C pin is rated -0.3 V minimum, so the IC alone does not survive a reversed lead. The pass holds only with the input network ahead of the IC that round 2 selects (Research.md:28)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 11, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "pack presence",
+        "required": "presence read from the lead",
+        "datasheet": "open-wire check (ADOW) with 70 to 130 µA pull currents (Table 1); tied or empty inputs read 0.0 V (p. 86)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1 and p. 86, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 °C",
+        "datasheet": "-40 to +85 °C (ordering guide)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 92, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "host logic level",
+        "required": "3.3 V logic at the RP2354B",
+        "datasheet": "4-wire SPI VIH 2.3 V min, VIL 0.8 V max; SDO open drain, VOL 0.3 V at 1 mA (Table 5), on the pack side. The RP2354B side is the isoSPI transceiver's or isolator's (report: isoSPI host-side transceiver)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 5, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "quantities",
+        "required": "per-cell voltage; resistance from voltage and current",
+        "datasheet": "18 cell-voltage channels; the current comes from the INA238 (R8), not from this part",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 1, read 2026-09-29T02:42:40Z"
+       }
+      ],
+      "jlcpcb": "stockCount 12500, canPresaleNumber 12495, componentLibraryType expand, 7.591 a part at the 1 break for the need of 5 (the API gives no currency); read 2026-09-29T02:41:09Z, vendors.py jlcpcb C5372802 (exact match), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList",
+      "digikey": "stock_available 564 (cut tape 564, Digi-Reel 564, tape and reel 0), manufacturer lead time 38 weeks, ProductStatus Active; read 2026-09-29T02:44:49Z, vendors.py digikey ADBMS1818ASWAZ-RL, https://api.digikey.com/products/v4/search/ADBMS1818ASWAZ-RL/productdetails",
+      "gate": "need 5 boards × 1 = 5; S4 threshold 5 × 5 = 25, never under 50, so 50; JLCPCB 12500 >= 50 and presale 12495 >= 0: pass (rule 4)",
+      "lifecycle": "status Active from Digi-Key's ProductStatus, the status for Analog Devices (Lifecycle check); discontinued false, end_of_life false; read 2026-09-29T02:44:49Z. Maker page https://www.analog.com/en/products/adbms1818.html (read 2026-09-29T02:47:29Z) shows 'RECOMMENDED FOR NEW DESIGNS', each ADBMS1818ASWAZ/ASWZ model PRODUCTION, and page field lifeCycle null. Longevity: not read. First data sheet: Rev. 0 carries no date in the revision history; SW-64-2 (ASWAZ) was added in Rev. A, 12/2021, over 12 months on the market. PCN listing on the same page: 21_0182 (Aug 31, 2021, alternative fab foundry and die revision) and 21_0170 (Aug 10, 2021, alternative test site); no end-of-life notice. Distributor: JLCPCB in stock; LCSC page not read",
+      "second_source": "second vendor: Digi-Key stock_available 564 >= gate 50, read 2026-09-29T02:44:49Z (rule 5)",
+      "alternates": [
+       "ADBMS1818ASWAZ-R7",
+       "ADBMS1818ASWZ-RL",
+       "LTC6813HLWE-1#3ZZPBF"
+      ],
+      "driver_in_shared": "none",
+      "reason": "meets every requirement value found or answered for R9, with an auxiliary V+ supply for packs under 16 V and round 2's input network for a reversed lead. It has the most JLCPCB stock of the monitors that read 1 to 16 cells on one IC and the lowest price, and it is Active at Digi-Key with 564. V186 and V187 are not found, so skew and pairing are not checked",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "ADBMS1818ASWAZ-R7",
+      "maker": "Analog Devices (ADBMS1818 data sheet Rev. B); counts as Analog Devices on the S1 list",
+      "lcsc": "C7455595",
+      "package": "64-lead LQFP_EP, 10 × 10 mm, 0.50 mm pitch, outline SW-64-2, exposed pad 5.50 SQ, reel of 300",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1: one 18-channel monitor reads the 16 cells of the one 17-pin connector (V192); gate applied at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "cell count",
+        "required": "1 to 16 cells",
+        "datasheet": "as rank 1, the same model: up to 18 cells, unused inputs tied or open (p. 86); V+ 16 to 90 V, C7 at least 1 V, C13 at least 2.5 V (Table 3); auxiliary V+ for packs under 16 V",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "stack voltage",
+        "required": "67.2 V",
+        "datasheet": "V+ 16 to 90 V; V+ to C12 16.8 V against 40 V (Table 3)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "input rating",
+        "required": "at least 85 V",
+        "datasheet": "V+ to V- 112.5 V; C16 112.5 V absolute maximum (Table 11)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 11"
+       },
+       {
+        "name": "separate input",
+        "required": "own input",
+        "datasheet": "one IC on the ESC pack's lead",
+        "pass": true,
+        "source": "Research.md:287"
+       },
+       {
+        "name": "one connector",
+        "required": "16 cells, one 17-pin connector",
+        "datasheet": "18 channels in one IC",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 1"
+       },
+       {
+        "name": "no count setting",
+        "required": "no setting; board ties unused inputs",
+        "datasheet": "tied inputs read 0.0 V (p. 86)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 86"
+       },
+       {
+        "name": "isolation",
+        "required": "85 V DC working barrier",
+        "datasheet": "isoSPI (ISOMD to VREG), transformer or capacitor coupled, or SPI through an isolator; the barrier part carries the rating",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B pin 55, Figures 79 and 106"
+       },
+       {
+        "name": "tap current",
+        "required": "100 µA powered, 10 µA unpowered",
+        "datasheet": "±250 nA max idle, ±1 µA typical measured (no maximum), 70 to 130 µA only during open-wire checks; not specified at V+ under 16 V",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "cell resolution",
+        "required": "1 mV",
+        "datasheet": "0.1 mV/bit",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "error under load",
+        "required": "±6 mV, timing included",
+        "datasheet": "±4.8 mV at 4.2 V over temperature, normal mode; timing term not fixed (V186 not found)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "cell voltage range",
+        "required": "2.8 to 4.2 V",
+        "datasheet": "±2.8 / ±4.0 / ±4.8 mV at 2.0 / 3.3 / 4.2 V over temperature",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "reading period",
+        "required": "20 ms",
+        "datasheet": "2488 µs max plus tREFUP 4.4 ms max",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 4"
+       },
+       {
+        "name": "resistance resolution",
+        "required": "0.1 mΩ over 10 A",
+        "datasheet": "0.01 mΩ",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "mis-plugged lead",
+        "required": "shifted and reversed lead",
+        "datasheet": "shifted lead within Table 11 ratings; reversed lead needs round 2's input network (C pins -0.3 V minimum)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 11"
+       },
+       {
+        "name": "pack presence",
+        "required": "from the lead",
+        "datasheet": "ADOW open-wire check; empty inputs read 0.0 V",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1, p. 86"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 °C",
+        "datasheet": "-40 to +85 °C",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 92"
+       },
+       {
+        "name": "host logic level",
+        "required": "3.3 V logic",
+        "datasheet": "SPI VIH 2.3 V, VIL 0.8 V, SDO open drain; RP2354B side through the transceiver or isolator",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 5"
+       },
+       {
+        "name": "quantities",
+        "required": "per-cell voltage",
+        "datasheet": "18 channels",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 1"
+       }
+      ],
+      "jlcpcb": "stockCount 195, canPresaleNumber 195, componentLibraryType expand, 7.8135 a part at the 1 break (the API gives no currency); read 2026-09-29T02:41:12Z, vendors.py jlcpcb C7455595 (exact match)",
+      "digikey": "stock_available 290 (cut tape 290, Digi-Reel 290, tape and reel 0), manufacturer lead time 38 weeks, ProductStatus Active; read 2026-09-29T02:44:52Z, vendors.py digikey ADBMS1818ASWAZ-R7, https://api.digikey.com/products/v4/search/ADBMS1818ASWAZ-R7/productdetails",
+      "gate": "need 5 × 1 = 5; threshold 50 (S4); JLCPCB 195 >= 50 and presale 195 >= 0: pass (rule 4)",
+      "lifecycle": "Active at Digi-Key (the status for Analog Devices), discontinued false, end_of_life false, read 2026-09-29T02:44:52Z; maker page read 2026-09-29T02:47:29Z lists ADBMS1818ASWAZ-R7 as PRODUCTION under 'RECOMMENDED FOR NEW DESIGNS'; longevity not read; SW-64-2 added in Rev. A 12/2021; PCNs 21_0182 and 21_0170 (2021), no end-of-life notice; JLCPCB in stock, LCSC page not read",
+      "second_source": "second vendor: Digi-Key stock_available 290 >= gate 50, read 2026-09-29T02:44:52Z (rule 5)",
+      "alternates": [
+       "ADBMS1818ASWAZ-RL",
+       "ADBMS1818ASWZ-RL",
+       "LTC6813HLWE-1#3ZZPBF"
+      ],
+      "driver_in_shared": "none",
+      "reason": "the same model and SW-64-2 outline as rank 1 on a 300 reel, so it fits rank 1's land pattern unchanged; less stock (195) than rank 3 but no footprint difference",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "ADBMS1818ASWZ-RL",
+      "maker": "Analog Devices (ADBMS1818 data sheet Rev. B); counts as Analog Devices on the S1 list",
+      "lcsc": "C2971928",
+      "package": "64-lead LQFP_EP, 10 × 10 mm, 0.50 mm pitch, outline 05-08-1982, exposed pad 5.74 ± 0.10 mm; JLCPCB 'LQFP-64-EP(10x10)'",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1: one 18-channel monitor reads the 16 cells of the one 17-pin connector (V192); gate applied at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "cell count",
+        "required": "1 to 16 cells",
+        "datasheet": "the same die and Tables as rank 1: up to 18 cells, unused inputs tied or open (p. 86); V+ 16 to 90 V, C7 at least 1 V, C13 at least 2.5 V (Table 3); auxiliary V+ for packs under 16 V",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B, read 2026-09-29T02:42:40Z"
+       },
+       {
+        "name": "stack voltage",
+        "required": "67.2 V",
+        "datasheet": "V+ 16 to 90 V; V+ to C12 16.8 V against 40 V",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "input rating",
+        "required": "at least 85 V",
+        "datasheet": "112.5 V absolute maximum V+ to V- and on C16",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 11"
+       },
+       {
+        "name": "separate input",
+        "required": "own input",
+        "datasheet": "one IC on the ESC pack's lead",
+        "pass": true,
+        "source": "Research.md:287"
+       },
+       {
+        "name": "one connector",
+        "required": "16 cells, one 17-pin connector",
+        "datasheet": "18 channels in one IC",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 1"
+       },
+       {
+        "name": "no count setting",
+        "required": "no setting; board ties unused inputs",
+        "datasheet": "tied inputs read 0.0 V (p. 86)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 86"
+       },
+       {
+        "name": "isolation",
+        "required": "85 V DC working barrier",
+        "datasheet": "isoSPI or SPI through an isolator; the barrier part carries the rating",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B pin 55, Figures 79 and 106"
+       },
+       {
+        "name": "tap current",
+        "required": "100 µA powered, 10 µA unpowered",
+        "datasheet": "±250 nA max idle, ±1 µA typical measured (no maximum), 70 to 130 µA during open-wire checks only; not specified at V+ under 16 V",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "cell resolution",
+        "required": "1 mV",
+        "datasheet": "0.1 mV/bit",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "error under load",
+        "required": "±6 mV, timing included",
+        "datasheet": "±4.8 mV at 4.2 V over temperature; timing term not fixed (V186 not found)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "cell voltage range",
+        "required": "2.8 to 4.2 V",
+        "datasheet": "within ±4.8 mV from 2.0 to 4.2 V",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "reading period",
+        "required": "20 ms",
+        "datasheet": "2488 µs max plus tREFUP 4.4 ms max",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 4"
+       },
+       {
+        "name": "resistance resolution",
+        "required": "0.1 mΩ over 10 A",
+        "datasheet": "0.01 mΩ",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "mis-plugged lead",
+        "required": "shifted and reversed lead",
+        "datasheet": "shifted lead within ratings; reversed lead needs round 2's input network",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 11"
+       },
+       {
+        "name": "pack presence",
+        "required": "from the lead",
+        "datasheet": "ADOW open-wire check",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 °C",
+        "datasheet": "-40 to +85 °C",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 92"
+       },
+       {
+        "name": "host logic level",
+        "required": "3.3 V logic",
+        "datasheet": "SPI VIH 2.3 V, VIL 0.8 V; RP2354B side through the transceiver or isolator",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 5"
+       },
+       {
+        "name": "quantities",
+        "required": "per-cell voltage",
+        "datasheet": "18 channels",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 1"
+       }
+      ],
+      "jlcpcb": "stockCount 2723, canPresaleNumber 2716, componentLibraryType expand, 8.5185 a part at the 1 break (the API gives no currency); read 2026-09-29T02:41:11Z, vendors.py jlcpcb C2971928 (exact match)",
+      "digikey": "stock_available 854 (cut tape 854, Digi-Reel 854, tape and reel 0), manufacturer lead time 39 weeks, ProductStatus Active; read 2026-09-29T02:44:51Z, vendors.py digikey ADBMS1818ASWZ-RL, https://api.digikey.com/products/v4/search/ADBMS1818ASWZ-RL/productdetails",
+      "gate": "need 5 × 1 = 5; threshold 50 (S4); JLCPCB 2723 >= 50 and presale 2716 >= 0: pass (rule 4)",
+      "lifecycle": "Active at Digi-Key (the status for Analog Devices), discontinued false, end_of_life false, read 2026-09-29T02:44:51Z; maker page read 2026-09-29T02:47:29Z lists ADBMS1818ASWZ-RL as PRODUCTION; longevity not read; first data sheet Rev. 0, undated in the revision history and earlier than Rev. A of 12/2021, over 12 months; PCNs 21_0170 (Aug 10, 2021, alternative test site) and 21_0182 (Aug 31, 2021), no end-of-life notice; JLCPCB in stock, LCSC page not read",
+      "second_source": "second vendor: Digi-Key stock_available 854 >= gate 50, read 2026-09-29T02:44:51Z (rule 5)",
+      "alternates": [
+       "ADBMS1818ASWAZ-RL",
+       "ADBMS1818ASWAZ-R7",
+       "LTC6813HLWE-1#3ZZPBF"
+      ],
+      "driver_in_shared": "none",
+      "reason": "the same die and figures as rank 1 with more stock than rank 2, but in outline 05-08-1982: the exposed pad is 5.74 mm against rank 1's 5.50 mm, so it needs a land pattern made for both. Body, leads and pitch match",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "ADBMS6830 (MWCCSZ C18166017, MWCCSZ-RL C18168951, MWCSWZ-RL C18171253, MSW-ENG C42946217)",
+      "maker": "Analog Devices",
+      "reason": "fails rule 4 at JLCPCB on every row: stockCount/canPresaleNumber 0/0, 15/15, 0/-1 and 10/9 against a gate of 50, read 2026-09-29T02:41:17Z, 02:41:19Z, 02:41:20Z, 02:41:22Z (vendors.py jlcpcb). The MSW-ENG row is an engineering-sample part. Requirement values not readable as well. The public data sheet is a 2-page short form, Rev. SpE, https://www.analog.com/media/en/technical-documentation/data-sheets/adbms6830.pdf, read 2026-09-29T02:42:41Z. It gives simultaneous and continuous measurement of 16 cells, isoSPI only, TME ±1.8 mV at 3.3 V and power 'directly from the battery'. It gives no lowest cell count, stack range, absolute maximum, error at 4.2 V or reading period"
+     },
+     {
+      "part": "ADBMS6948WCCSZ (C18166021)",
+      "maker": "Analog Devices",
+      "reason": "fails rule 4: JLCPCB stockCount 0, canPresaleNumber 0, read 2026-09-29T02:41:23Z. The public data sheet is a 2-page short form, Rev. SpC 04/2025, https://www.analog.com/media/en/technical-documentation/data-sheets/adbms6948.pdf, read 2026-09-29T02:42:41Z. It gives up to 16 cell channels, TME under 3 mV at 4.2 V and a 4-wire SPI interface with no isoSPI. It gives no lowest cell count, supply range or absolute maximum"
+     },
+     {
+      "part": "LTC6811-1/-2 (for example LTC6811HG-1#3ZZTRPBF C459704)",
+      "maker": "Analog Devices",
+      "reason": "measures up to 12 cells in series per device, so one device misses the 16 cells on one 17-pin input (V192, F15): LTC6811-1/-2 data sheet p. 1, https://www.analog.com/media/en/technical-documentation/data-sheets/LTC6811-1-6811-2.pdf, read 2026-09-29T02:45:04Z. Two stacked devices do not meet V181 with V193. The upper device needs V+ of 11 to 55 V for TME, and with the board's tie it holds 1 to 3 cells, or none, on packs where the lower device takes most cells, so it runs below 11 V or unpowered with no setting to change that. JLCPCB stock of C459704 (3761, presale 3755, read 2026-09-29T02:46:19Z) does not change this"
+     },
+     {
+      "part": "LTC6804-1/-2",
+      "maker": "Analog Devices",
+      "reason": "measures up to 12 cells in series per device, V+ 11 to 55 V for TME: data sheet 680412fc p. 1 and electrical characteristics, https://www.analog.com/media/en/technical-documentation/data-sheets/680412fc.pdf, read 2026-09-29T02:45:05Z. One device misses 16 cells, and a two-device stack fails as for the LTC6811"
+     },
+     {
+      "part": "LTC6803-1/-3",
+      "maker": "Analog Devices",
+      "reason": "up to 12 cells; resolution 1.5 mV/bit against the 1 mV of V182; total measurement error ±9.2 mV (IG) and ±10 mV (HG) at 4.2 V over temperature against the ±6 mV of V183; 11 to 15 ms per 12 cells: data sheet 680313fa, https://www.analog.com/media/en/technical-documentation/data-sheets/680313fa.pdf, read 2026-09-29T02:45:06Z"
+     },
+     {
+      "part": "LTC6801",
+      "maker": "Analog Devices",
+      "reason": "an independent fault monitor that reports over-voltage, under-voltage and over-temperature as a status clock, with no per-cell voltage readout; up to 12 cells; 60 V absolute maximum V+ to V-, under the 67.2 V of F15: data sheet 6801fc, https://www.analog.com/media/en/technical-documentation/data-sheets/6801fc.pdf, read 2026-09-29T02:45:06Z"
+     },
+     {
+      "part": "LTC6810-1/-2",
+      "maker": "Analog Devices",
+      "reason": "measures up to 6 cells in series: data sheet p. 1, https://www.analog.com/media/en/technical-documentation/data-sheets/LTC6810-1-6810-2.pdf, read 2026-09-29T02:45:05Z"
+     },
+     {
+      "part": "ADBMS1818ASWZ-R7 (C3682393), ADBMS1818ASWZ (C2944189), ADBMS1818ASWAZ (C3682263)",
+      "maker": "Analog Devices",
+      "reason": "fail rule 4 at JLCPCB: stockCount/canPresaleNumber 2/1, 5/5 and 0/0 against 50, read 2026-09-29T02:41:27Z, 02:41:28Z, 02:41:30Z"
+     },
+     {
+      "part": "LTC6813ILWE-1#3ZZTRPBF (C18171245)",
+      "maker": "Analog Devices",
+      "reason": "fails rule 4: JLCPCB stockCount 7, canPresaleNumber 7, read 2026-09-29T02:41:25Z"
+     }
+    ]
+   }
+  ],
+  "report": [
+   {
+    "figure": "V186 cell-to-cell skew",
+    "value": "not found. The tree bounds no rate of change of a cell's voltage under load. A throttle decrease is a step, not a ramp, and the current against throttle on the way up is not stated. The skew and its error term cannot be checked for any part. For the owner: the ADBMS1818 and LTC6813-1 sample 16 cells over tSKEW2 580 / 670 / 711 µs (normal mode) and 248 µs max (fast mode, where TME is ±12.5 mV and ±8.3 mV at 4.2 V, over the ±6 mV budget)",
+    "source": "shared/outputs/include/outputs.h:54-57 and shared/outputs/outputs.c:353-363 at commit e13f5f6; adbms1818.pdf Rev. B Tables 1 and 4 (read 2026-09-29T02:42:40Z); ltc6813-1.pdf Rev. B electrical characteristics (read 2026-09-29T02:42:41Z)"
+   },
+   {
+    "figure": "V187 cell-to-current pairing",
+    "value": "not found, for the same reason as V186. For the owner: in 7 kHz mode the ADBMS1818 takes every cell sample of one ADCV between t0 = 0 and t6M = 815 µs. An INA238 conversion that firmware starts near 400 µs lies within about 415 µs of every cell sample. P5 checks the firmware timing",
+    "source": "adbms1818.pdf Rev. B Table 21, read 2026-09-29T02:42:40Z"
+   },
+   {
+    "figure": "cell rate the error budget allows",
+    "value": "the V183 budget (±6 mV) minus the normal-mode TME at 4.2 V, spread over tSKEW2 711 µs: ADBMS1818 (±4.8 mV) leaves 1.2 mV, so a cell may move at most 1.69 V/s during one reading; LTC6813H (±4.2 mV) leaves 1.8 mV, 2.53 V/s",
+    "source": "adbms1818.pdf Rev. B Tables 1 and 4 (read 2026-09-29T02:42:40Z); ltc6813-1.pdf Rev. B (read 2026-09-29T02:42:41Z); V183"
+   },
+   {
+    "figure": "upward-ramp cell rate, conditional",
+    "value": "a conditional figure, not a found value. If a cell's sag followed throttle linearly, then 4.2 V to 2.8 V (F15, V184) over the fastest full upward ramp, 333 ms at 300 %/s (settings.c:61-63), gives 4.2 V/s. At that rate 1 mV (V182) takes 238 µs, and 711 µs moves a cell by 2.99 mV. That is over the ADBMS1818's 1.2 mV margin and the LTC6813H's 1.8 mV. The condition is not in the tree, and a throttle decrease is excluded because it is a step",
+    "source": "shared/settings/settings.c:61-63, shared/ui/programmer_screen.c:139-141, Research.md:543 at commit e13f5f6; arithmetic"
+   },
+   {
+    "figure": "skew limit on the external path, corrected",
+    "value": "the T4 figures (370 µs on the external path, 988 µs for 16 cells) rest on the refuted derivation of V186 and do not stand. Simultaneous sampling: the MAX14921 samples all cells at once but its VP is +6 to +65 V, under 67.2 V. The BQ79616 does not sample all cells at once. It measures 24 inputs round-robin on one Main ADC at 8 µs each, 192 µs a cycle, all cell channels within 128 µs, and it needs at least 6 cells. No part that reads 1 to 16 cells and passes rule 4 samples every cell at once",
+    "source": "https://www.ti.com/lit/ds/symlink/bq79616.pdf SLUSF21A section 6.3.2.1, pp. 1 and 6.3.2.1.1.1, read 2026-09-29T02:50:06Z; https://www.analog.com/media/en/technical-documentation/data-sheets/MAX14920-MAX14921.pdf p. 1 and electrical characteristics, read 2026-09-29T02:50:07Z"
+   },
+   {
+    "figure": "ADBMS1818 package outlines, corrected",
+    "value": "ADBMS1818ASWAZ, -R7 and -RL use SW-64-2: exposed pad 5.40 to 5.60 mm (5.50 SQ). ADBMS1818ASWZ, -R7 and -RL use 05-08-1982: exposed pad 5.74 ± 0.10 mm. Both are 10 mm bodies, 12 mm across the leads, 0.50 mm pitch. The LTC6813-1 LWE package also uses 05-08-1982 ('Reference LTC DWG #05-08-1982 Rev A'). So ADBMS1818ASWZ-RL, LTC6813HLWE-1#3ZZPBF and LTC6813HLWE-1#3ZZTRPBF share one outline, and ADBMS1818ASWAZ-RL and -R7 share the other. JLCPCB labels C2979142 'LQFP-64(10x10)' without EP, against the data sheet",
+    "source": "adbms1818.pdf Rev. B pp. 91-92 (Figures 113 and 114, ordering guide), read 2026-09-29T02:42:40Z; ltc6813-1.pdf Rev. B package description, read 2026-09-29T02:42:41Z; vendors.py jlcpcb C2979142, 2026-09-29T02:41:15Z"
+   },
+   {
+    "figure": "LTC6813-1 lowest cell count",
+    "value": "no minimum cell count. Unused C inputs are shorted to the highest connected cell or left open, and unused S pins are left unconnected. TME needs V+ 16 to 90 V, so packs under 16 V need an auxiliary V+",
+    "source": "ltc6813-1.pdf Rev. B, 'Using the LTC6813-1 with Fewer than 18 Cells' and electrical characteristics, read 2026-09-29T02:42:41Z"
+   },
+   {
+    "figure": "ADBMS6948 lowest cell count",
+    "value": "not read: the public data sheet is a 2-page short form (Rev. SpC 04/2025) with 'Up to 16-cell channels' and no lowest count or supply range; the full sheet is on request through BMS_Doc_Request@analog.com",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/adbms6948.pdf, read 2026-09-29T02:42:41Z"
+   },
+   {
+    "figure": "auxiliary V+ supply",
+    "value": "packs under 16 V at the lead need at least 16 V on V+, referenced to the pack's negative and diode-ORed with the stack top: 1 to 3 cells at 4.2 V, 1 to 5 cells at 2.8 V. With V189 the monitor sits on the pack side, so this supply crosses the barrier and needs the same 85 V DC working rating. Its load is V+ 1.4 mA max in MEASURE. If VREG is made from V+ through the DRIVE NPN, add VREG 16.5 mA max plus isoSPI 1.0 to 10.5 mA. VREG can instead be fed at 4.5 to 5.5 V",
+    "source": "adbms1818.pdf Rev. B Tables 3 and 14 (pin 49), read 2026-09-29T02:42:40Z; V184, V189"
+   },
+   {
+    "figure": "ADBMS1818 supply current",
+    "value": "V+ 0.95 mA typical, 1.4 mA maximum in MEASURE; 6.1 µA typical, 18 µA maximum in SLEEP (VREG 0 V). VREG 15 mA typical, 16.5 mA maximum in MEASURE; 3.1 µA typical in SLEEP. isoSPI adds 1.0 to 10.5 mA on VREG by bias and state. All of it is on the pack side of the barrier, from the pack or the auxiliary supply. None comes from the IO board's 3.3 V rail except through the host-side transceiver or isolator",
+    "source": "adbms1818.pdf Rev. B Table 3, read 2026-09-29T02:42:40Z"
+   },
+   {
+    "figure": "isoSPI host-side transceiver",
+    "value": "the RP2354B side of an isoSPI link needs a transceiver: LTC6820HMS#3ZZTRPBF C514444 stockCount 2734, presale 2716; LTC6820IMS#TRPBF C581009 3343, presale 3313; ADBMS6822WCCSZ-RL C19190031 5360, presale 5354. None is qualified here. The barrier's 85 V DC working rating is the transformer's or coupling capacitors' (round 2) or the digital isolator's",
+    "source": "vendors.py jlcpcb C514444, C581009, C19190031, read 2026-09-29T02:46:14Z to 02:46:17Z; adbms1818.pdf Rev. B Table 77 (LTC6820 named as companion)"
+   },
+   {
+    "figure": "balance-lead pin currents",
+    "value": "C(n): 10 nA typical, ±250 nA maximum when not measured; ±1 µA typical while measured, no maximum given; 70 / 100 / 130 µA during open-wire detection only. Specified at V+ = 59.4 V. Not specified with V+ under 16 V, which is a pack under 16 V with the IO board unpowered. A board tie network for unused inputs (V193) adds its own tap current against V190's 10 µA unpowered limit",
+    "source": "adbms1818.pdf Rev. B Table 1, read 2026-09-29T02:42:40Z; V190, V193"
+   },
+   {
+    "figure": "unused inputs for small packs",
+    "value": "TME needs C7 at least 1 V and C13 at least 2.5 V, so packs under 13 cells need the unused inputs tied to the top connected cell. With a 1-cell pack at 2.8 V, C7 = C13 = 2.8 V meets both. The data sheet also allows the unused inputs to be spread across the tops of its three multiplexers, each group tied through 100 Ω, to shorten skew. Such a split depends on the count, and V193 allows no setting",
+    "source": "adbms1818.pdf Rev. B Table 3 and p. 86, read 2026-09-29T02:42:40Z"
+   },
+   {
+    "figure": "reversed lead at the IC",
+    "value": "every C and S pin of the ADBMS1818 is rated -0.3 V minimum to V- and to the pin below. The 67.2 V reverse of V191 is survived only by the input network ahead of the IC that round 2 selects. A shifted lead (4.2 V a pin pair, up to 4.2 V on C0) is inside the ratings",
+    "source": "adbms1818.pdf Rev. B Table 11, read 2026-09-29T02:42:40Z; V191; Research.md:28"
+   },
+   {
+    "figure": "LTC6813-1 rows on the shortlist",
+    "value": "LTC6813HLWE-1#3ZZPBF (C2758259, stockCount 350, presale 337, 16.0282 at 1) and LTC6813HLWE-1#3ZZTRPBF (C2979142, 270, presale 247, 16.1338 at 1) meet every requirement value that the ADBMS1818 meets, and have a tighter TME (H grade ±4.2 mV at 4.2 V). They rank 4 and 5 and are not recorded in full, because P2 records three survivors. Digi-Key: LTC6813HLWE-1#3ZZPBF 'Discontinued at DigiKey', stock 0, 36 weeks. LTC6813HLWE-1#3ZZTRPBF: HTTP 404. Their rule-5 route is the ADBMS1818 alternate. Their pin-for-pin match to the ADBMS1818 is not re-read in this task",
+    "source": "vendors.py jlcpcb C2758259 and C2979142, 2026-09-29T02:41:14Z and 02:41:15Z; vendors.py digikey LTC6813HLWE-1#3ZZPBF 2026-09-29T02:44:54Z and LTC6813HLWE-1#3ZZTRPBF 2026-09-29T02:44:55Z; ltc6813-1.pdf Rev. B"
+   },
+   {
+    "figure": "V189, V190, V192 and V193 status",
+    "value": "answered by the owner on 2026-09-28, commit 249be1e. They are no longer marked for research and are applied as requirements: isolation, tap current, one connector and no count setting",
+    "source": "hardware/docs/Research.md:749-753 at commit e13f5f6; git log of the checkout"
+   }
+  ]
+ }
+}

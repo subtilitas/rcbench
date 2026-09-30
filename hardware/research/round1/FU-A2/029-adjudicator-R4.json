@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R4",
+ "label": "adjudicator-R4",
+ "attempt": 0,
+ "data": {
+  "category": "R4",
+  "function": "P2 report: SN74CBTLV3126PWR stock margin",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The figure's stock and Digi-Key numbers are right. Its clause \"no pin-compatible alternate passes\" is wrong. TC7MBL3126CFT(EL) (Toshiba, on the S1 list, LCSC C2675020) has the same pinout as SN74CBTLV3126PWR on all 14 pins, with active-high OE in both. Its outline matches the PW package. It passes the rule 4 stock gate of 50 (5 boards × 2 parts = need 10; S4 sets 5 × need, never under 50): stockCount 50 ≥ 50 and canPresaleNumber 50 ≥ 0. It also passes rules 1 to 3 and names the enable in its I_off row. P2 dropped it for the 3.6 V connector level. The re-rank overturned that drop: with the switch on, the absolute maximum is VCC + 0.5 V, which is 3.70 V at 3.201 V. The re-rank qualified the part and named it the rank 1 alternate. P2's reason cites only the Nexperia 74CBTLV3126, which does not cover the Toshiba part. Rank 1 keeps its Digi-Key second source (3756 ≥ 50), so the part itself does not fail. Only this figure's alternate clause is wrong. Not read: Toshiba's manufacturer lifecycle status (lifecycle is not one of rules 1 to 4).",
+  "evidence": "JLCPCB C2675020, exact match: TC7MBL3126CFT(EL), label TOSHIBA, TSSOP-14, stockCount 50, canPresaleNumber 50, expand (01:56:52Z). JLCPCB C543078: SN74CBTLV3126PWR, Texas Instruments, stockCount 401, canPresaleNumber 395 (01:56:52Z). Digi-Key SN74CBTLV3126PWR: stock_available 3756, lead 16 weeks, status Active (01:57:56Z, a fresh read, not cached). Toshiba datasheet Rev.7.0.A (2026-04-21), section 5 pin diagram for TC7MBL3126CFT: 1OE 1, A1 2, B1 3, 2OE 4, A2 5, B2 6, GND 7, B3 8, A3 9, 3OE 10, B4 11, A4 12, 4OE 13, VCC 14. TI SCDS038N (revised July 2026) Table 4-1 for PW has the same pins: 1OE 1, 1A 2, 1B 3, 2OE 4, 2A 5, 2B 6, GND 7, 3B 8, 3A 9, 3OE 10, 4B 11, 4A 12, 4OE 13, VCC 14, each OE active high. Toshiba section 8: OE H gives A = B, OE L disconnects. Outline, Toshiba page 11: 5.0 ± 0.1 × 4.4 ± 0.1 mm, 6.4 ± 0.2 mm over leads, 0.65 mm pitch. TI PW0014A: 4.9 to 5.1 × 4.3 to 4.5 mm, 6.2 to 6.6 mm over leads, 0.65 mm pitch. Toshiba section 9: VS with the switch on −0.5 V to VCC + 0.5 V, 3.70 V at VCC 3.201 V; with VCC 0 V or the switch off, −0.5 to 4.6 V. Toshiba 11.1: IOFF 10 µA max at OE, A, B = 0 to 3.6 V with VCC 0 V; IIN (OE) ±1.0 µA. Re-rank return (scratch/FU-A2/rerank-R4/return.json): TC7MBL3126CFT(EL) ranks 4 in the multiprotocol port path, UART socket path and both reply-path functions, and report item 5 names it the rank 1 alternate. P2's second_source field cites only Nexperia 74CBTLV3126 Rev. 7.",
+  "source": "vendors.py jlcpcb C2675020 and C543078 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match); vendors.py digikey SN74CBTLV3126PWR (https://api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails); vendors.py fetch https://toshiba.semicon-storage.com/info/docget.jsp?did=12249&prodName=TC7MBL3126CFT (final URL TC7MBL3126CFT_datasheet_ja_20221025.pdf, Rev.7.0.A, sections 5, 8, 9, 11.1 and page 11); vendors.py fetch https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf (SCDS038N, Table 4-1, section 5.1, PW0014A). Copies in /home/claude/rcbench-research/round1/scratch/FU-A2/adjudicator-R4/",
+  "read_at": "2026-09-29T01:56:52Z (JLCPCB), 01:57:00Z (both datasheets), 01:57:56Z (Digi-Key)",
+  "scope": "function"
+ }
+}

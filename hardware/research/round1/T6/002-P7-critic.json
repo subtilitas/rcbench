@@ -1,0 +1,6041 @@
+{
+ "role": "P7-critic",
+ "category": "",
+ "label": "P7-critic",
+ "attempt": 0,
+ "data": {
+  "figure_checks": [
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 52,
+    "figure": "15120",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 52,
+    "figure": "14476",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 52,
+    "figure": "Digi-Key: 28505",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 52,
+    "figure": "answered 404",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 52,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 53,
+    "figure": "4566",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 53,
+    "figure": "4075",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 53,
+    "figure": "Digi-Key: 28115",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 53,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 54,
+    "figure": "28,884",
+    "return_file": "hardware/research/round1/FU-A2/009-P4-stock-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 54,
+    "figure": "28,715",
+    "return_file": "hardware/research/round1/FU-A2/009-P4-stock-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 54,
+    "figure": "Digi-Key: 43,486",
+    "return_file": "hardware/research/round1/FU-A2/009-P4-stock-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 54,
+    "figure": "past 3 years",
+    "return_file": "hardware/research/round1/FU-A2/009-P4-stock-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 54,
+    "figure": "2 (one per port)",
+    "return_file": "hardware/research/round1/FU-A2/009-P4-stock-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 55,
+    "figure": "14,544",
+    "return_file": "hardware/research/round1/FU-A2/009-P4-stock-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 55,
+    "figure": "13,883",
+    "return_file": "hardware/research/round1/FU-A2/009-P4-stock-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 55,
+    "figure": "Digi-Key: 4,455",
+    "return_file": "hardware/research/round1/FU-A2/009-P4-stock-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 55,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-A2/009-P4-stock-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 55,
+    "figure": "2 (one per port)",
+    "return_file": "hardware/research/round1/FU-A2/009-P4-stock-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 56,
+    "figure": "233",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 56,
+    "figure": "231",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 56,
+    "figure": "Digi-Key: 2148",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 56,
+    "figure": "10 years (as of September 2025)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 56,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 57,
+    "figure": "952",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 57,
+    "figure": "949",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 57,
+    "figure": "Digi-Key: 14211",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 57,
+    "figure": "10 years (as of September 2025)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 57,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 58,
+    "figure": "307",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 58,
+    "figure": "305",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 58,
+    "figure": "Digi-Key: 280",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 58,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 58,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 59,
+    "figure": "1973",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 59,
+    "figure": "1897",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 59,
+    "figure": "Digi-Key: 36048",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 59,
+    "figure": "10 years (as of September 2025)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 59,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 60,
+    "figure": "5229",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 60,
+    "figure": "5079",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 60,
+    "figure": "Digi-Key: 27089",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 60,
+    "figure": "above 10 years",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 60,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 61,
+    "figure": "5252",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 61,
+    "figure": "5231",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 61,
+    "figure": "Digi-Key: 28635",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 61,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 61,
+    "figure": "1 (top of 0 to 1; 0 with the 74HC423)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 62,
+    "figure": "8928",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 62,
+    "figure": "8807",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 62,
+    "figure": "Digi-Key: 88895",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 62,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 62,
+    "figure": "2",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 63,
+    "figure": "20982",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 63,
+    "figure": "20887",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 63,
+    "figure": "Digi-Key as `BTS70041EPPXUMA1`: 34830",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 63,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "1126",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "1107",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "Digi-Key: 3184",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "4 (2 a path, the top of 1 to 2, on the onboard and the external path)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true,
+    "p7_figure": "4 (2 a path, top of 2 to 4)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "28320",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "26365",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "Digi-Key: 40281",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "10 (top of 8 to 10)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "630",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "593",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "Digi-Key: 3267",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "2 (top of 1 to 2)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "172635",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "172466",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "Digi-Key: 135525",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "1 (top of 0 to 1; 0 with the BTS7004-1EPP)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 68,
+    "figure": "53165",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 68,
+    "figure": "51355",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 68,
+    "figure": "Digi-Key: 248297",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 68,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 68,
+    "figure": "3 (R4 counts 2 and R3 counts 1 for one shared inverter; the true count is not known, and the gate is taken at the sum)",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 69,
+    "figure": "94504",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 69,
+    "figure": "94330",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 69,
+    "figure": "holds 0 of SN74LVC244APWR",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 69,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 69,
+    "figure": "2 (16 PWM ports, 8 buffers a part)",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 70,
+    "figure": "73877",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 70,
+    "figure": "73505",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 70,
+    "figure": "Digi-Key: 19254",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 70,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 70,
+    "figure": "5 (4 multiprotocol ports and the UART socket)",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 71,
+    "figure": "401",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 71,
+    "figure": "395",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 71,
+    "figure": "Digi-Key: 3756",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 71,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 71,
+    "figure": "2 (5 to 6 lines, 4 switches a part)",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "392691",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "390714",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "Digi-Key: 90872",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "1 (one receiver input, V68)",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 73,
+    "figure": "3105",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 73,
+    "figure": "3036",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 73,
+    "figure": "Digi-Key: 7634",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 73,
+    "figure": "2 (one controller per input)",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "671",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "566",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "Digi-Key: 13558",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 75,
+    "figure": "36974",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 75,
+    "figure": "36161",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 75,
+    "figure": "Digi-Key: 63937",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 75,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 76,
+    "figure": "331",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 76,
+    "figure": "284",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 76,
+    "figure": "Digi-Key: 125",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 76,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 77,
+    "figure": "5183",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 77,
+    "figure": "5116",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 77,
+    "figure": "Digi-Key: 5262",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 77,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 78,
+    "figure": "3795",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 78,
+    "figure": "3754",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 78,
+    "figure": "Digi-Key: 40352",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 78,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 78,
+    "figure": "20 (one per port)",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "6606",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "6390",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "Digi-Key: 17187",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "pages 404",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "2 (26 outputs, 16 lines a part)",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 80,
+    "figure": "301",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 80,
+    "figure": "196",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 80,
+    "figure": "Digi-Key: 2103",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 80,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "578",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "482",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "Digi-Key: 355",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "5194",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "5163",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "Digi-Key: 4224",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 83,
+    "figure": "359",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 83,
+    "figure": "354",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 83,
+    "figure": "Digi-Key: 11190",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 83,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "764",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "713",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "Digi-Key: 21589",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 85,
+    "figure": "Digi-Key stock of the part: 418",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 85,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 86,
+    "figure": "8704",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 86,
+    "figure": "8561",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 86,
+    "figure": "Digi-Key: 67241",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 86,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 86,
+    "figure": "7 (20 ports, 3 channels a part)",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 87,
+    "figure": "4062",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 87,
+    "figure": "4026",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 87,
+    "figure": "Digi-Key: 12302",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 87,
+    "figure": "page 404",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 87,
+    "figure": "20 (one per port)",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 88,
+    "figure": "12500",
+    "return_file": "hardware/research/round1/FU-C1/012-P4-stock-R9.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 88,
+    "figure": "12495",
+    "return_file": "hardware/research/round1/FU-C1/012-P4-stock-R9.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 88,
+    "figure": "Digi-Key: 564",
+    "return_file": "hardware/research/round1/FU-C1/012-P4-stock-R9.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 88,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-C1/012-P4-stock-R9.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "2,312",
+    "return_file": "hardware/research/round1/FU-C1/017-P4-stock-R10.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "2,279",
+    "return_file": "hardware/research/round1/FU-C1/017-P4-stock-R10.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "Digi-Key: 88",
+    "return_file": "hardware/research/round1/FU-C1/017-P4-stock-R10.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-C1/017-P4-stock-R10.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "2 (one per axis)",
+    "return_file": "hardware/research/round1/FU-C1/017-P4-stock-R10.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 90,
+    "figure": "104",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 90,
+    "figure": "84",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 90,
+    "figure": "Digi-Key: 387",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 90,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 91,
+    "figure": "339",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 91,
+    "figure": "336",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 91,
+    "figure": "Digi-Key: 2831",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 91,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 91,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 92,
+    "figure": "41679",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 92,
+    "figure": "40423",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 92,
+    "figure": "holds 0 of TLV3201AIDBVR",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 92,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 92,
+    "figure": "2 (the phase-wire clip and the optical index)",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 93,
+    "figure": "48987",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 93,
+    "figure": "48887",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 93,
+    "figure": "Digi-Key: 13484",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 93,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 93,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "2982",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "2825",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "Digi-Key as `SC1512(13)-A4`: 3560",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true,
+    "p7_figure": "Digi-Key as SC1512(13)-A4: 3560"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "January 2045",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "20 (2026-09-25)",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 95,
+    "figure": "11,459",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 95,
+    "figure": "11,205",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 95,
+    "figure": "Digi-Key: 12,023",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 95,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 96,
+    "figure": "311",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 96,
+    "figure": "308",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 96,
+    "figure": "Digi-Key: 933",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 96,
+    "figure": "answered 403",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 96,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 97,
+    "figure": "39,690",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 97,
+    "figure": "39,348",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 97,
+    "figure": "holds 0 of TCA9548APWR",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 97,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 97,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 98,
+    "figure": "6,523",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 98,
+    "figure": "6,467",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 98,
+    "figure": "Digi-Key: 484",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 98,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 99,
+    "figure": "1340",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 99,
+    "figure": "1220",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 99,
+    "figure": "Digi-Key: 0",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 99,
+    "figure": "401",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 99,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 99,
+    "figure": "250-piece reel",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 99,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 100,
+    "figure": "3165",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 100,
+    "figure": "3062",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 100,
+    "figure": "Digi-Key: 3618",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 100,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 116,
+    "figure": "27928",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 116,
+    "figure": "27905",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 116,
+    "figure": "10 years (as of September 2025)",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 116,
+    "figure": "2",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 117,
+    "figure": "2,969",
+    "return_file": "hardware/research/round1/FU-C1/017-P4-stock-R10.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 117,
+    "figure": "2,955",
+    "return_file": "hardware/research/round1/FU-C1/017-P4-stock-R10.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 117,
+    "figure": "Digi-Key: 26,705",
+    "return_file": "hardware/research/round1/FU-C1/017-P4-stock-R10.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 117,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-C1/017-P4-stock-R10.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 117,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-C1/017-P4-stock-R10.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 118,
+    "figure": "1623",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 118,
+    "figure": "1552",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 118,
+    "figure": "Digi-Key 6102",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 118,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 118,
+    "figure": "2",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 119,
+    "figure": "5,100",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 119,
+    "figure": "5,084",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 119,
+    "figure": "Digi-Key 13,790",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 119,
+    "figure": "typically 10 to 15 years",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 119,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 120,
+    "figure": "125,256",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 120,
+    "figure": "125,243",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 120,
+    "figure": "Digi-Key: 185",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 120,
+    "figure": "10 years from 2025-01-01",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 120,
+    "figure": "1",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 23,
+    "figure": "5 times the need, never under 50",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 24,
+    "figure": "5 boards (question S7)",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 16,
+    "figure": "--check 5",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 21,
+    "figure": "15120 / 28505",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 22,
+    "figure": "4566 / 28115",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 22,
+    "figure": "2.0 × 1.6 mm",
+    "return_file": "hardware/research/round1/FU-A4/006-P4-datasheet-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 23,
+    "figure": "28,884 / 43,486",
+    "return_file": "hardware/research/round1/FU-A2/009-P4-stock-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 23,
+    "figure": "holds 32 frames against the 9 of V16",
+    "return_file": "hardware/research/round1/FU-A2/013-P4-datasheet-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 24,
+    "figure": "14,544 / 4,455",
+    "return_file": "hardware/research/round1/FU-A2/009-P4-stock-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 24,
+    "figure": "loop delay 180 ns maximum against 350 ns",
+    "return_file": "hardware/research/round1/FU-A2/013-P4-datasheet-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 25,
+    "figure": "233 / 2148",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 26,
+    "figure": "952 / 14211",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 27,
+    "figure": "307 / 280",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 27,
+    "figure": "155 mV",
+    "return_file": "hardware/research/round1/FU-A3/015-P4-datasheet-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 28,
+    "figure": "1973 / 36048",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 28,
+    "figure": "24 mA output",
+    "return_file": "hardware/research/round1/FU-A3/015-P4-datasheet-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 29,
+    "figure": "5229 / 27089",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 29,
+    "figure": "2.9 × 3.5 mm",
+    "return_file": "hardware/research/round1/FU-A3/015-P4-datasheet-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 29,
+    "figure": "stated bounce of 10 ms",
+    "return_file": "hardware/research/round1/FU-A3/015-P4-datasheet-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 30,
+    "figure": "5252 / 28635",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 31,
+    "figure": "8928 / 88895",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 32,
+    "figure": "20982 / 34830",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 33,
+    "figure": "172635 / 135525",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 34,
+    "figure": "1126 / 3184",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 34,
+    "figure": "4 a board",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 35,
+    "figure": "28320 / 40281",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 35,
+    "figure": "10 a board",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 35,
+    "figure": "100 V blocks −67.2 V",
+    "return_file": "hardware/research/round1/FU-A3/015-P4-datasheet-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 36,
+    "figure": "630 / 3267",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 36,
+    "figure": "100 V in 3.3 × 3.3 mm",
+    "return_file": "hardware/research/round1/FU-A3/015-P4-datasheet-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 37,
+    "figure": "53165 / 248297",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 38,
+    "figure": "94504 / 0",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 38,
+    "figure": "142 Ω series resistor",
+    "return_file": "hardware/research/round1/FU-A3/010-P4-datasheet-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 38,
+    "figure": "JLCPCB 27928",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 39,
+    "figure": "73877 / 19254",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 39,
+    "figure": "5 a board",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 40,
+    "figure": "401 / 3756",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 41,
+    "figure": "392691 / 90872",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 41,
+    "figure": "inputs recommended to 5.5 V",
+    "return_file": "hardware/research/round1/FU-A3/010-P4-datasheet-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 53,
+    "figure": "20 in the personal library",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 53,
+    "figure": "a need of 5",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 56,
+    "figure": "read 2982",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 57,
+    "figure": "until at least January 2045",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 65,
+    "figure": "HTTP 404",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 73,
+    "figure": "holds 2 received frames",
+    "return_file": "hardware/research/round1/FU-A2/007-rerank-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 78,
+    "figure": "holds 32 frames",
+    "return_file": "hardware/research/round1/FU-A2/013-P4-datasheet-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 78,
+    "figure": "at most 9",
+    "return_file": "hardware/research/round1/FU-A2/013-P4-datasheet-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 79,
+    "figure": "400 ms flash stall",
+    "return_file": "hardware/research/round1/FU-A2/013-P4-datasheet-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 80,
+    "figure": "at most 8",
+    "return_file": "hardware/research/round1/FU-A2/013-P4-datasheet-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 80,
+    "figure": "3 ms one",
+    "return_file": "hardware/research/round1/FU-A2/013-P4-datasheet-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 81,
+    "figure": "The MCP2515 holds 2 received frames",
+    "return_file": "hardware/research/round1/FU-A2/007-rerank-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 130,
+    "figure": "about 51 committed signals against 48 GPIO",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 131,
+    "figure": "10 of 12",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 132,
+    "figure": "68 of 96 words",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 132,
+    "figure": "64 for bidirectional DShot",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 132,
+    "figure": "4 for PPM",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 132,
+    "figure": "28 words free",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 133,
+    "figure": "2 of 16",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 134,
+    "figure": "16 of 24 channels",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 135,
+    "figure": "0 of 8",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 135,
+    "figure": "up to 4",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 136,
+    "figure": "up to 5 devices on 2 controllers",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 136,
+    "figure": "10 MHz",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 137,
+    "figure": "2 of 2",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 137,
+    "figure": "115,200 baud",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 138,
+    "figure": "2,088,960 bytes",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 138,
+    "figure": "272,040 bytes",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 138,
+    "figure": "206,000 bytes",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 142,
+    "figure": "3.63 V at an IOVDD (input/output supply) of 0 V",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 143,
+    "figure": "at 4 (gate 100)",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 143,
+    "figure": "53,165 at JLCPCB",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 143,
+    "figure": "the largest gate, 75",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 148,
+    "figure": "10 of 12 state machines",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "combination",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 148,
+    "figure": "68 of 96 instruction words",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "combination",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 148,
+    "figure": "2 of 16 DMA channels",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "combination",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 149,
+    "figure": "16 of 24 PWM channels",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "combination",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 149,
+    "figure": "other 15 PWM ports",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "combination",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 160,
+    "figure": "the 5 lines",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 160,
+    "figure": "3.63 V steady limit",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 160,
+    "figure": "up to 5.2 V",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 161,
+    "figure": "the 200 ms figures",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 162,
+    "figure": "500 ms timeout",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 163,
+    "figure": "controlled 300 A turn-off",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 163,
+    "figure": "VGS(th) (gate threshold voltage) spread of 2.2 to 3.8 V",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true,
+    "p7_figure": "VGS(th) spread of 2.2 to 3.8 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 163,
+    "figure": "16.9 µs turn-off",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 163,
+    "figure": "37.5 A average",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 164,
+    "figure": "600 A controlled turn-off",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 164,
+    "figure": "about 136 to 169 A at 85 V a module",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 164,
+    "figure": "100 µs line",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 164,
+    "figure": "600 A shared equally over 5 modules",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 164,
+    "figure": "34 µs turn-off",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 165,
+    "figure": "under 85 V at up to 600 A",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 165,
+    "figure": "113 V at 13.3 A",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 165,
+    "figure": "121 to 126 V at 12 A",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 166,
+    "figure": "books 1 placement",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 166,
+    "figure": "books 2",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 166,
+    "figure": "over 53,000",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 170,
+    "figure": "about 51 signals",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 171,
+    "figure": "25 conflicts and gaps",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 174,
+    "figure": "7 combinations and budgets",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 175,
+    "figure": "6 budgets over their limit",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 176,
+    "figure": "5 ms a channel",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 176,
+    "figure": "P5 assumed 20 ms",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 167,
+    "figure": "115,200 baud link",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 24,
+    "figure": "3.3 V rail alone",
+    "return_file": "hardware/research/round1/FU-A2/013-P4-datasheet-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 34,
+    "figure": "3.3 V primary",
+    "return_file": "hardware/research/round1/FU-A3/015-P4-datasheet-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 131,
+    "figure": "8 for bidirectional DShot on the 4 multiprotocol ports",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 143,
+    "figure": "at 2 placements",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 143,
+    "figure": "1, 2 or 3 placements",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 160,
+    "figure": "61000-4-2 level 4",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 166,
+    "figure": "4 OE (output enable) pins",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 170,
+    "figure": "against 48 GPIO",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 174,
+    "figure": "carrying 4 port monitors",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 185,
+    "figure": "120 Ohm",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 192,
+    "figure": "3.3 V connector level",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 140,
+    "figure": "3.3 V ramp time",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 142,
+    "figure": "GPIO0 to 39",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 114,
+    "figure": "and 5 others",
+    "return_file": "hardware/research/round1/FU-A3/006-rerank-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 115,
+    "figure": "and 5 others",
+    "return_file": "hardware/research/round1/FU-A3/006-rerank-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 117,
+    "figure": "the same 2 parts",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 146,
+    "figure": "4 multiprotocol ports bound first",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "combination",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 151,
+    "figure": "1 PIO state machine for the one receiver input",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "combination",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 33,
+    "figure": "so 0 with the BTS7004-1EPP",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 22,
+    "figure": "3105 / 7634",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 22,
+    "figure": "2 a board",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 28,
+    "figure": "2 a board",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 23,
+    "figure": "671 / 13558",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 23,
+    "figure": "2.5 × 2.5 mm",
+    "return_file": "hardware/research/round1/FU-B3/018-P4-datasheet-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 23,
+    "figure": "−40 to 150 °C",
+    "return_file": "hardware/research/round1/FU-B3/018-P4-datasheet-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 23,
+    "figure": "3 A against a load of 1.36 A",
+    "return_file": "hardware/research/round1/FU-B3/018-P4-datasheet-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 24,
+    "figure": "36974 / 63937",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 24,
+    "figure": "3 A against a load of 2.5 A",
+    "return_file": "hardware/research/round1/FU-B3/018-P4-datasheet-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 25,
+    "figure": "331 / 125",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 26,
+    "figure": "5183 / 5262",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 27,
+    "figure": "3795 / 40352",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 27,
+    "figure": "20 a board",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 36,
+    "figure": "20 a board",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 27,
+    "figure": "3.96 to 4.84 A",
+    "return_file": "hardware/research/round1/FU-B3/020-P4-datasheet-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 28,
+    "figure": "6606 / 17187",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 28,
+    "figure": "0x20 to 0x27",
+    "return_file": "hardware/research/round1/FU-B3/020-P4-datasheet-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 29,
+    "figure": "301 / 2103",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 30,
+    "figure": "578 / 355",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 30,
+    "figure": "50 mA average",
+    "return_file": "hardware/research/round1/FU-B3/019-P4-datasheet-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 31,
+    "figure": "5194 / 4224",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 31,
+    "figure": "2.85 V",
+    "return_file": "hardware/research/round1/FU-B3/019-P4-datasheet-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 32,
+    "figure": "359 / 11190",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 32,
+    "figure": "0.50 A of 1.5 A at 150 A",
+    "return_file": "hardware/research/round1/FU-B3/021-P4-datasheet-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 33,
+    "figure": "764 / 21589",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 33,
+    "figure": "±0.5 °C at most from −20 to 100 °C",
+    "return_file": "hardware/research/round1/FU-B3/021-P4-datasheet-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 33,
+    "figure": "0x18 to 0x1F",
+    "return_file": "hardware/research/round1/FU-B3/021-P4-datasheet-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 33,
+    "figure": "0x40 to 0x4F",
+    "return_file": "hardware/research/round1/FU-B3/021-P4-datasheet-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 34,
+    "figure": "none / 418",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 34,
+    "figure": "0.73 A of 3 A at 300 A",
+    "return_file": "hardware/research/round1/FU-B3/021-P4-datasheet-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 35,
+    "figure": "8704 / 67241",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 35,
+    "figure": "7 a board",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 36,
+    "figure": "4062 / 12302",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 36,
+    "figure": "±0.5 % part",
+    "return_file": "hardware/research/round1/FU-B3/021-P4-datasheet-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 74,
+    "figure": "26 outputs",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 74,
+    "figure": "20 port-switch enables",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 74,
+    "figure": "5 bias selectors",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 75,
+    "figure": "1 converter enable",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 75,
+    "figure": "16 lines a part",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 93,
+    "figure": "Digi-Key 5024",
+    "return_file": "hardware/research/round1/FU-B3/021-P4-datasheet-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 93,
+    "figure": "JLCPCB 1",
+    "return_file": "hardware/research/round1/FU-B3/021-P4-datasheet-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 93,
+    "figure": "presale count of −115",
+    "return_file": "hardware/research/round1/FU-B3/021-P4-datasheet-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 112,
+    "figure": "rated 3 A against 1.36 A",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 113,
+    "figure": "rated 3 A against 2.5 A",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 113,
+    "figure": "1.5 A continuous",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 113,
+    "figure": "2 A peak",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 113,
+    "figure": "51 mA",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 114,
+    "figure": "6.0 V in, 8.4 V and 4.0 A out, 50 °C ambient",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 131,
+    "figure": "6.0 V in, 8.4 V and 4.0 A out, 50 °C ambient",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 114,
+    "figure": "89 to 179 °C",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 131,
+    "figure": "89 to 179 °C",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 140,
+    "figure": "89 to 179 °C",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 114,
+    "figure": "125 °C recommended maximum",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 114,
+    "figure": "150 °C absolute maximum",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 115,
+    "figure": "2.25 to 2.75 A",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 115,
+    "figure": "above the display's 2 A peak",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 116,
+    "figure": "100 mA at 12 V",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 117,
+    "figure": "12.23 A at the 6.0 V floor",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 117,
+    "figure": "10.02 A",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 117,
+    "figure": "53.3 W through 88.7 %",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 117,
+    "figure": "1.30 A",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 117,
+    "figure": "7.5 W through 96.0 %",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 117,
+    "figure": "0.91 A",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 118,
+    "figure": "30 A continuous a cell against 12.23 A",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 118,
+    "figure": "2900 mAh",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 119,
+    "figure": "against 12.23 A and the P30B's 30 A",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 120,
+    "figure": "113 to 126 V at 12 to 13 A",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 120,
+    "figure": "85 V ceiling",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 120,
+    "figure": "11 to 45 mJ",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 120,
+    "figure": "5.6 to 22.5 mJ",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 121,
+    "figure": "0 GPIO",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 122,
+    "figure": "at most 20 ms",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 134,
+    "figure": "at most 20 ms",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 122,
+    "figure": "155 to 185 ms",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 134,
+    "figure": "155 to 185 ms",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 122,
+    "figure": "200 ms deadline",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 134,
+    "figure": "200 ms deadline",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 123,
+    "figure": "1 placement, gate 50",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 123,
+    "figure": "2 placements, need 10, gate 50",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 123,
+    "figure": "JLCPCB 0 with a presale count of −99",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 123,
+    "figure": "Digi-Key 0",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 129,
+    "figure": "Digi-Key 0",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 139,
+    "figure": "Digi-Key 0",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 129,
+    "figure": "10 units for 5 boards",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 129,
+    "figure": "stockCount 0",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 139,
+    "figure": "stockCount 0",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 129,
+    "figure": "canPresaleNumber −99",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 139,
+    "figure": "canPresaleNumber −99",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 130,
+    "figure": "−40 V to +40 V",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 130,
+    "figure": "5 mA pin",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 130,
+    "figure": "85 V fault",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 131,
+    "figure": "the 125 °C recommended maximum",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 132,
+    "figure": "6529 at Liion Wholesale",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 135,
+    "figure": "0x21 or 0x31",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 135,
+    "figure": "0x20 to 0x27 block",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 135,
+    "figure": "2 MCP23017 expanders",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 136,
+    "figure": "P5 assumed 20 ms",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 136,
+    "figure": "5 ms a channel",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 136,
+    "figure": "4 INA3221 on one bus",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 136,
+    "figure": "4.84 ms of conversion",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 136,
+    "figure": "a margin of 0.16 ms",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 137,
+    "figure": "3.0 V a cell floor",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 138,
+    "figure": "off by 8.70 V",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 138,
+    "figure": "allowed from 8.53 V",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 138,
+    "figure": "inside ±0.99 %",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 138,
+    "figure": "about 1.0 to 1.2 %",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 139,
+    "figure": "a gate of 50",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 140,
+    "figure": "4.0 A at 8.4 V from 6.0 V",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 140,
+    "figure": "50 °C",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 140,
+    "figure": "at or under 125 °C",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 142,
+    "figure": "4.7 µH",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 142,
+    "figure": "28 A saturation",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 142,
+    "figure": "8.4 mΩ DC resistance at most",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 142,
+    "figure": "−55 to 150 °C",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 35,
+    "figure": "7 parts for 20 ports",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 129,
+    "figure": "(2 placements)",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 95,
+    "figure": "and 2 others",
+    "return_file": "hardware/research/round1/FU-B3/013-rerank-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 27,
+    "figure": "12500 / 564",
+    "return_file": "hardware/research/round1/FU-C1/012-P4-stock-R9.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 27,
+    "figure": "±4.8 mV at 4.2 V",
+    "return_file": "hardware/research/round1/FU-C1/019-P4-datasheet-R9.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 27,
+    "figure": "±6 mV check",
+    "return_file": "hardware/research/round1/FU-C1/019-P4-datasheet-R9.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 28,
+    "figure": "2,312 / 88",
+    "return_file": "hardware/research/round1/FU-C1/017-P4-stock-R10.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 28,
+    "figure": "11.34 at least over −40 to 125 °C",
+    "return_file": "hardware/research/round1/FU-C1/023-P4-datasheet-R10.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 28,
+    "figure": "aperture jitter 30 ps",
+    "return_file": "hardware/research/round1/FU-C1/023-P4-datasheet-R10.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 29,
+    "figure": "104 / 387",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 29,
+    "figure": "100 pF on XOUT",
+    "return_file": "hardware/research/round1/FU-C2/006-P4-datasheet-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 29,
+    "figure": "1.000 µs of delay variation at 1,092 Hz",
+    "return_file": "hardware/research/round1/FU-C2/006-P4-datasheet-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 29,
+    "figure": "1.244 µs share",
+    "return_file": "hardware/research/round1/FU-C2/006-P4-datasheet-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 29,
+    "figure": "210 µg/√Hz",
+    "return_file": "hardware/research/round1/FU-C2/006-P4-datasheet-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 30,
+    "figure": "339 / 2831",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 30,
+    "figure": "0.7 mT",
+    "return_file": "hardware/research/round1/FU-C2/006-P4-datasheet-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 30,
+    "figure": "20 kHz guaranteed bandwidth",
+    "return_file": "hardware/research/round1/FU-C2/006-P4-datasheet-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 31,
+    "figure": "41679 / 0",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 31,
+    "figure": "55 ns maximum delay",
+    "return_file": "hardware/research/round1/FU-C2/006-P4-datasheet-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 31,
+    "figure": "40 µA supply current",
+    "return_file": "hardware/research/round1/FU-C2/006-P4-datasheet-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 31,
+    "figure": "JLCPCB 1623",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 32,
+    "figure": "48987 / 13484",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 32,
+    "figure": "26 ns maximum delay",
+    "return_file": "hardware/research/round1/FU-C2/006-P4-datasheet-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 32,
+    "figure": "6 ns maximum output skew",
+    "return_file": "hardware/research/round1/FU-C2/006-P4-datasheet-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 33,
+    "figure": "held 20",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 34,
+    "figure": "11,459 / 12,023",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 34,
+    "figure": "±1.51 °C against ±2 °C",
+    "return_file": "hardware/research/round1/FU-C1/025-P4-datasheet-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 34,
+    "figure": "±45 V",
+    "return_file": "hardware/research/round1/FU-C1/025-P4-datasheet-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 35,
+    "figure": "311 / 933",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 35,
+    "figure": "35° view",
+    "return_file": "hardware/research/round1/FU-C1/025-P4-datasheet-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 35,
+    "figure": "±3 °C at most over 0 to 200 °C",
+    "return_file": "hardware/research/round1/FU-C1/025-P4-datasheet-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 36,
+    "figure": "39,690 / 0",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 36,
+    "figure": "JLCPCB 5,100",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 37,
+    "figure": "6,523 / 484",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 37,
+    "figure": "32,768 bytes against 792",
+    "return_file": "hardware/research/round1/FU-C1/025-P4-datasheet-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 37,
+    "figure": "10^12 cycles a byte",
+    "return_file": "hardware/research/round1/FU-C1/025-P4-datasheet-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 38,
+    "figure": "1340 / 0",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 38,
+    "figure": "0.13 µV RMS",
+    "return_file": "hardware/research/round1/FU-C1/022-P4-datasheet-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 38,
+    "figure": "1200 samples a second",
+    "return_file": "hardware/research/round1/FU-C1/022-P4-datasheet-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 38,
+    "figure": "gain 128",
+    "return_file": "hardware/research/round1/FU-C1/022-P4-datasheet-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 38,
+    "figure": "0.170 µV",
+    "return_file": "hardware/research/round1/FU-C1/022-P4-datasheet-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 39,
+    "figure": "3165 / 3618",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 39,
+    "figure": "0 to 60 mA",
+    "return_file": "hardware/research/round1/FU-C1/022-P4-datasheet-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 46,
+    "figure": "stock 0 against the gate of 50",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 47,
+    "figure": "401",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 48,
+    "figure": "250-piece reel",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 55,
+    "figure": "300-piece reel",
+    "return_file": "hardware/research/round1/FU-C1/008-rerank-R9.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 57,
+    "figure": "at least 16 V",
+    "return_file": "hardware/research/round1/FU-C1/019-P4-datasheet-R9.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 57,
+    "figure": "packs under 16 V",
+    "return_file": "hardware/research/round1/FU-C1/019-P4-datasheet-R9.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 65,
+    "figure": "JLCPCB 2,969",
+    "return_file": "hardware/research/round1/FU-C1/017-P4-stock-R10.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 65,
+    "figure": "Digi-Key 26,705",
+    "return_file": "hardware/research/round1/FU-C1/017-P4-stock-R10.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 76,
+    "figure": "2 PIO state machines",
+    "return_file": "hardware/research/round1/FU-C2/006-P4-datasheet-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 89,
+    "figure": "JLCPCB 125,256",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 89,
+    "figure": "Digi-Key 185",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 99,
+    "figure": "1 mA preload",
+    "return_file": "hardware/research/round1/FU-C1/013-rerank-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 109,
+    "figure": "1 of the 2 SPI",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 109,
+    "figure": "0 of the RP2354B's 8 ADC inputs",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 110,
+    "figure": "up to 4 of the RP2354B's 8 ADC inputs",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 111,
+    "figure": "0x50 to 0x57",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 111,
+    "figure": "0x40 to 0x4F",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 112,
+    "figure": "0x40 to 0x4F",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "budget",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 118,
+    "figure": "1.244 µs at 1,092 Hz (65,535 rpm)",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 118,
+    "figure": "10 to 70 µs",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 27,
+    "figure": "1 to 16 cells",
+    "return_file": "hardware/research/round1/FU-C1/019-P4-datasheet-R9.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 32,
+    "figure": "3.3 V quad receiver",
+    "return_file": "hardware/research/round1/FU-C2/006-P4-datasheet-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 35,
+    "figure": "at 3.3 V",
+    "return_file": "hardware/research/round1/FU-C1/025-P4-datasheet-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 73,
+    "figure": "and 4 others",
+    "return_file": "hardware/research/round1/FU-C2/004-rerank-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 75,
+    "figure": "and 2 others",
+    "return_file": "hardware/research/round1/FU-C2/004-rerank-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 10,
+    "figure": "2026-09-28 to 2026-09-30",
+    "return_file": "hardware/research/round1/T1/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 61,
+    "figure": "held 20",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 179,
+    "figure": "32 frames",
+    "return_file": "hardware/research/round1/FU-A2/013-P4-datasheet-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 391,
+    "figure": "0x20 to 0x27",
+    "return_file": "hardware/research/round1/FU-B3/020-P4-datasheet-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 372,
+    "figure": "50 mA average",
+    "return_file": "hardware/research/round1/FU-B3/019-P4-datasheet-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 391,
+    "figure": "0x21",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 358,
+    "figure": "0.5 V and 0.3 V above the rail settings of 5.5 V and 8.4 V",
+    "return_file": "hardware/research/round1/FU-B3/003-P2-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 454,
+    "figure": "2 PIO state machines",
+    "return_file": "hardware/research/round1/FU-C2/006-P4-datasheet-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 391,
+    "figure": "2 parts",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 5,
+    "figure": "2026-09-28 to 2026-09-30",
+    "return_file": "hardware/research/round1/T1/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 6,
+    "figure": "9 follow-up tasks",
+    "return_file": "hardware/research/round1/FU-C2/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 6,
+    "figure": "at most 32 agents",
+    "return_file": "hardware/research/round1/T2/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 13,
+    "figure": "`be1f24767452`",
+    "return_file": "hardware/research/round1/T1/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 14,
+    "figure": "`c25aa863372d`",
+    "return_file": "hardware/research/round1/T2/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 15,
+    "figure": "`c25aa863372d`",
+    "return_file": "hardware/research/round1/T4/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 16,
+    "figure": "`249be1e5ea81`",
+    "return_file": "hardware/research/round1/FU-P1R5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 17,
+    "figure": "`10b0bade34de`",
+    "return_file": "hardware/research/round1/FU-A1/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 18,
+    "figure": "`e13f5f60d2e5`",
+    "return_file": "hardware/research/round1/T3/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 19,
+    "figure": "`e13f5f60d2e5`",
+    "return_file": "hardware/research/round1/FU-A2/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 20,
+    "figure": "`e13f5f60d2e5`",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 24,
+    "figure": "`e13f5f60d2e5`",
+    "return_file": "hardware/research/round1/FU-A4-stopped-1/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 21,
+    "figure": "`9460c22ec32d`",
+    "return_file": "hardware/research/round1/T6-stopped-1/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 24,
+    "figure": "`9460c22ec32d`",
+    "return_file": "hardware/research/round1/T6-stopped-1/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 7,
+    "figure": "2026-09-28 to 2026-09-30",
+    "return_file": "hardware/research/round1/T1/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 90,
+    "figure": "2026-09-28 to 2026-09-30",
+    "return_file": "hardware/research/round1/T1/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 8,
+    "figure": "49 parts",
+    "return_file": "hardware/research/round1/selection.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 44,
+    "figure": "21 parts",
+    "return_file": "hardware/research/round1/selection.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 45,
+    "figure": "15 parts",
+    "return_file": "hardware/research/round1/selection.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 46,
+    "figure": "13 parts",
+    "return_file": "hardware/research/round1/selection.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 44,
+    "figure": "2 of each",
+    "return_file": "hardware/research/round1/FU-A2/009-P4-stock-R2.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 50,
+    "figure": "stock 0 against the gate of 50",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 61,
+    "figure": "6.0 V in, 8.4 V and 4.0 A out and 50 °C ambient",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 61,
+    "figure": "89 to 179 °C",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 61,
+    "figure": "against 125 °C",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 37,
+    "figure": "JLCPCB 0 with a presale count of −99",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 62,
+    "figure": "JLCPCB 0 with a presale count of −99",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 37,
+    "figure": "Digi-Key 0",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 62,
+    "figure": "Digi-Key 0",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 62,
+    "figure": "10 needed for 5 boards",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 62,
+    "figure": "±40 V differential rating",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 62,
+    "figure": "85 V fault",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 64,
+    "figure": "under 85 V at up to 600 A",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 65,
+    "figure": "the 5 lines",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 65,
+    "figure": "3.63 V limit",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 67,
+    "figure": "±0.99 % HV trip band",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 68,
+    "figure": "1.244 µs delay-variation",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 69,
+    "figure": "about 51 GPIO",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 69,
+    "figure": "against 48",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 69,
+    "figure": "0x21",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 69,
+    "figure": "5 ms a channel",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 69,
+    "figure": "20 ms P5 assumed",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 94,
+    "figure": "9 follow-up tasks",
+    "return_file": "hardware/research/round1/FU-C2/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 94,
+    "figure": "at most 32 agents",
+    "return_file": "hardware/research/round1/T2/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 15,
+    "figure": "20 of them",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 15,
+    "figure": "12 TPS55285",
+    "return_file": "hardware/research/round1/FU-B1/016-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/README.md",
+    "line": 10,
+    "figure": "2026-09-28 to 2026-09-30",
+    "return_file": "hardware/research/round1/T1/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/README.md",
+    "line": 11,
+    "figure": "49 parts",
+    "return_file": "hardware/research/round1/selection.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 21,
+    "figure": "6.0 V in, 8.4 V and 4.0 A out and 50 °C ambient",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 21,
+    "figure": "89 to 179 °C",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 21,
+    "figure": "125 °C recommended maximum",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 23,
+    "figure": "7 parts",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 23,
+    "figure": "10 mΩ",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 23,
+    "figure": "20 ports",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 24,
+    "figure": "JLCPCB 0 with a presale count of −99",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 24,
+    "figure": "Digi-Key 0",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 25,
+    "figure": "150 A",
+    "return_file": "hardware/research/round1/FU-B3/013-rerank-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 188,
+    "figure": "300 A",
+    "return_file": "hardware/research/round1/FU-B3/013-rerank-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 169,
+    "figure": "1 receiver input",
+    "return_file": "hardware/research/round1/FU-A3/010-P4-datasheet-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 168,
+    "figure": "test steps 7 and 10",
+    "return_file": "hardware/research/round1/FU-A3/015-P4-datasheet-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 136,
+    "figure": "V173 gives 5 ms",
+    "return_file": "hardware/research/round1/FU-B3/005-P2-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 63,
+    "figure": "parts: MCP2518FDT-E/SL and TCAN3413DR (R2)",
+    "return_file": "hardware/research/round1/selection.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 75,
+    "figure": "part: ADBMS1818ASWAZ-RL (R9)",
+    "return_file": "hardware/research/round1/selection.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 78,
+    "figure": "ADCS7476AIMFX/NOPB (Q4 decided, owner, 2026-09-29)",
+    "return_file": "hardware/research/round1/selection.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 359,
+    "figure": "required; part: INA3221AIRGVR with ERJ-6CWDR010V (R8)",
+    "return_file": "hardware/research/round1/selection.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 20,
+    "figure": "| T5 | T5 | 2026-09-29 |",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   }
+  ],
+  "sentence_issues": [],
+  "corrections_applied": [
+   "hardware/docs/Research.md: two edits below the status line are reverted, because P7 may change only the status line there. They were the GaN expansion in the Held parts table and the TLP expansion in the V12 answer.",
+   "Comparisons that no verified return backs with a figure now state the rank alone. Control.md: the crystal ('rank 1; meets every value of V5, V6, V7 and V15'), the OR gate, the trigger-path inverter and SN74LVC1G04DBVR ('rank 1 of the inverters read, on propagation delay and stock'); the unverified 4.2 ns re-rank figure is removed. Supply.md: the 3.3 V buck, the 5 V rail, both motor shunts ('rank 1 on accuracy: its path error is 0.50 A of 1.5 A at 150 A' and '0.73 A of 3 A at 300 A') and the port shunt. Sensing.md: the cell monitor, TCA9548APWR, ADS1235IRHBR and BD450M2FP3-CE2.",
+   "Where a return contradicts a statement in the specification, the contradiction is now stated as not known with both sources, and the specification text is left unchanged. Control.md, the latch's place: IOBoard.md Latch says it is not stated; FU-A3 found V30, confirmed in FU-A3/015. Control.md, the receiver input count: IOBoard.md Receiver inputs says it is not stated; FU-A3/010 confirms V68 = 1. Supply.md, the port monitor sample rate: IOBoard.md says it is not stated; V173 gives 5 ms.",
+   "Each of the 25 figure bullets under Not verified on Control.md, Supply.md and Sensing.md now reads '; not verified' on its own line.",
+   "Parts.md: S, Q and V question IDs, P4 and the FU- runs are now defined. The provenance sentence now names its one exception: the placements of SN74LVC1G04DBVR add the counts of two verifiers, as the cross-category check does. 'no alternate was found' now reads 'no alternate is known'.",
+   "IOBoard.md: FU- runs are now defined in the key paragraph. The meaning of 'required' in the state table no longer contradicts lines that name a round 1 part. The duplicated '(R2)' on Link to the display is removed. Port current monitor's state now starts with 'required;'. The ESC pack protection bullet now says in its own sentence that no part qualifies as the clamp. The ADC-input bullet no longer claims more than P5's count states.",
+   "STATUS.md: P4 is named as the verifiers' phase in the three group rows. The Open intro now says only its first nine rows come from round 1 and go to the owner.",
+   "Control.md and Supply.md are in present tense: 'or its part is not requalified' and 'both held or fixed inputs, and both refuted'.",
+   "An earlier P7-critic session in the same scratch directory left corrections in the tree. This session re-checked them against the returns and kept them. They are: TPSI3052DWZR placements '4 (2 a path, the top of 1 to 2, on the onboard and the external path)'; RP2354B's Digi-Key part in backticks; acronym expansions (SMD, HTTP, VGS(th), RDS(on), VBUS, CC, BENCH, DC, TI); the key-term paragraph on each group page; the Parts.md intro on library type and categories; full alternates lists (SN74LV244APWR and 74LV244APWJ, both LTC6813 parts); and sources for the VESC and GPIO not-known items."
+  ],
+  "checks": {
+   "check_docs": {
+    "passed": true,
+    "output": "docs agree with the tree"
+   },
+   "ruff": {
+    "passed": true,
+    "output": "All checks passed!"
+   },
+   "jlc_stock": {
+    "passed": true,
+    "output": "exit 1, read 2026-09-30T02:42Z. The only [FAIL] line is ADS1235IRHBR at Digi-Key. That is the owner's accepted stock exception (owner, 2026-09-29), so the check counts as passed. WSBE8518L1000JKA2 prints a note: it has no alternate. The held RP2354B passes rule 6.\n  [ok] ADS1235IRHBR (C2669975): stock 1340, presale 1216, gate 50\n[FAIL] ADS1235IRHBR (second vendor): stock 0, gate 50\nBD450M2FP3-CE2:\n  [ok] BD450M2FP3-CE2 (C308595): stock 3103, presale 3000, gate 50\n  [ok] BD450M2FP3-CE2 at Digi-Key as BD450M2FP3-CE2: stock 3618, gate 50\n  [ok] LM4040AIM3-3.0/NOPB (C544506), not selected: stock 2969, presale 2955, gate 50\n  [ok] LM4040AIM3-3.0/NOPB at Digi-Key as LM4040AIM3-3.0/NOPB, not selected: stock 26705, gate 50\n  [ok] M24256E-FMN6TP (C5221744), not selected: stock 125241, presale 125228, gate 50\n  [ok] M24256E-FMN6TP at Digi-Key as M24256E-FMN6TP, not selected: stock 185, gate 50\nPersonal library (rule 6):\n  [ok] RP2354B: held 20 (stated 2026-09-25), need 5; JLCPCB stock 2639, presale 2482\n  [ok] RP2354B at Digi-Key as SC1512(13)-A4: stock 3560, gate 50\n1 problem(s)"
+   }
+  },
+  "reviewed": [
+   "hardware/docs/IOBoard.md",
+   "hardware/docs/Parts.md",
+   "hardware/docs/Power.md",
+   "hardware/docs/Research.md",
+   "hardware/STATUS.md",
+   "hardware/README.md",
+   "tools/jlc_stock.py",
+   "hardware/docs/Control.md",
+   "hardware/docs/Supply.md",
+   "hardware/docs/Sensing.md",
+   "CONTRIBUTING.md",
+   "hardware/research/round1/selection.json",
+   "hardware/research/round1/T5/task.json",
+   "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+   "hardware/research/round1/FU-A4/006-P4-datasheet-R1.json",
+   "hardware/research/round1/FU-A2/009-P4-stock-R2.json",
+   "hardware/research/round1/FU-A2/013-P4-datasheet-R2.json",
+   "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+   "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+   "hardware/research/round1/FU-A3/010-P4-datasheet-R4.json",
+   "hardware/research/round1/FU-A3/015-P4-datasheet-R3.json",
+   "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+   "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+   "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+   "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+   "hardware/research/round1/FU-B3/018-P4-datasheet-R5.json",
+   "hardware/research/round1/FU-B3/019-P4-datasheet-R7.json",
+   "hardware/research/round1/FU-B3/020-P4-datasheet-R6.json",
+   "hardware/research/round1/FU-B3/021-P4-datasheet-R8.json",
+   "hardware/research/round1/FU-C1/012-P4-stock-R9.json",
+   "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+   "hardware/research/round1/FU-C1/017-P4-stock-R10.json",
+   "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+   "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+   "hardware/research/round1/FU-C2/006-P4-datasheet-R11.json"
+  ],
+  "marked": [
+   {
+    "index": 0,
+    "file": "hardware/docs/Supply.md",
+    "line": 129
+   },
+   {
+    "index": 1,
+    "file": "hardware/docs/Supply.md",
+    "line": 131
+   },
+   {
+    "index": 2,
+    "file": "hardware/docs/Supply.md",
+    "line": 132
+   },
+   {
+    "index": 3,
+    "file": "hardware/docs/Control.md",
+    "line": 160
+   },
+   {
+    "index": 4,
+    "file": "hardware/docs/Supply.md",
+    "line": 134
+   },
+   {
+    "index": 5,
+    "file": "hardware/docs/Control.md",
+    "line": 166
+   },
+   {
+    "index": 6,
+    "file": "hardware/docs/Control.md",
+    "line": 170
+   },
+   {
+    "index": 7,
+    "file": "hardware/docs/Supply.md",
+    "line": 135
+   },
+   {
+    "index": 8,
+    "file": "hardware/docs/Supply.md",
+    "line": 136
+   },
+   {
+    "index": 9,
+    "file": "hardware/docs/Control.md",
+    "line": 167
+   },
+   {
+    "index": 10,
+    "file": "hardware/docs/Control.md",
+    "line": 160
+   },
+   {
+    "index": 11,
+    "file": "hardware/docs/Control.md",
+    "line": 161
+   },
+   {
+    "index": 12,
+    "file": "hardware/docs/Control.md",
+    "line": 162
+   },
+   {
+    "index": 13,
+    "file": "hardware/docs/Control.md",
+    "line": 163
+   },
+   {
+    "index": 14,
+    "file": "hardware/docs/Control.md",
+    "line": 164
+   },
+   {
+    "index": 15,
+    "file": "hardware/docs/Control.md",
+    "line": 165
+   },
+   {
+    "index": 16,
+    "file": "hardware/docs/Supply.md",
+    "line": 137
+   },
+   {
+    "index": 17,
+    "file": "hardware/docs/Supply.md",
+    "line": 138
+   },
+   {
+    "index": 18,
+    "file": "hardware/docs/Supply.md",
+    "line": 139
+   },
+   {
+    "index": 19,
+    "file": "hardware/docs/Supply.md",
+    "line": 130
+   },
+   {
+    "index": 20,
+    "file": "hardware/docs/Sensing.md",
+    "line": 118
+   },
+   {
+    "index": 21,
+    "file": "hardware/docs/Supply.md",
+    "line": 140
+   },
+   {
+    "index": 22,
+    "file": "hardware/docs/Supply.md",
+    "line": 141
+   },
+   {
+    "index": 23,
+    "file": "hardware/docs/Supply.md",
+    "line": 142
+   },
+   {
+    "index": 24,
+    "file": "hardware/docs/Supply.md",
+    "line": 133
+   },
+   {
+    "index": 25,
+    "file": "hardware/docs/Control.md",
+    "line": 183
+   },
+   {
+    "index": 26,
+    "file": "hardware/docs/Control.md",
+    "line": 184
+   },
+   {
+    "index": 27,
+    "file": "hardware/docs/Control.md",
+    "line": 185
+   },
+   {
+    "index": 28,
+    "file": "hardware/docs/Control.md",
+    "line": 186
+   },
+   {
+    "index": 29,
+    "file": "hardware/docs/Control.md",
+    "line": 187
+   },
+   {
+    "index": 30,
+    "file": "hardware/docs/Control.md",
+    "line": 188
+   },
+   {
+    "index": 31,
+    "file": "hardware/docs/Control.md",
+    "line": 189
+   },
+   {
+    "index": 32,
+    "file": "hardware/docs/Control.md",
+    "line": 190
+   },
+   {
+    "index": 33,
+    "file": "hardware/docs/Control.md",
+    "line": 191
+   },
+   {
+    "index": 34,
+    "file": "hardware/docs/Control.md",
+    "line": 192
+   },
+   {
+    "index": 35,
+    "file": "hardware/docs/Control.md",
+    "line": 193
+   },
+   {
+    "index": 36,
+    "file": "hardware/docs/Control.md",
+    "line": 194
+   },
+   {
+    "index": 37,
+    "file": "hardware/docs/Control.md",
+    "line": 195
+   },
+   {
+    "index": 38,
+    "file": "hardware/docs/Supply.md",
+    "line": 149
+   },
+   {
+    "index": 39,
+    "file": "hardware/docs/Supply.md",
+    "line": 150
+   },
+   {
+    "index": 40,
+    "file": "hardware/docs/Supply.md",
+    "line": 151
+   },
+   {
+    "index": 41,
+    "file": "hardware/docs/Supply.md",
+    "line": 152
+   },
+   {
+    "index": 42,
+    "file": "hardware/docs/Supply.md",
+    "line": 153
+   },
+   {
+    "index": 43,
+    "file": "hardware/docs/Supply.md",
+    "line": 154
+   },
+   {
+    "index": 44,
+    "file": "hardware/docs/Supply.md",
+    "line": 155
+   },
+   {
+    "index": 45,
+    "file": "hardware/docs/Supply.md",
+    "line": 156
+   },
+   {
+    "index": 46,
+    "file": "hardware/docs/Supply.md",
+    "line": 157
+   },
+   {
+    "index": 47,
+    "file": "hardware/docs/Supply.md",
+    "line": 158
+   },
+   {
+    "index": 48,
+    "file": "hardware/docs/Supply.md",
+    "line": 159
+   },
+   {
+    "index": 49,
+    "file": "hardware/docs/Supply.md",
+    "line": 160
+   },
+   {
+    "index": 50,
+    "file": "hardware/docs/Supply.md",
+    "line": 161
+   },
+   {
+    "index": 51,
+    "file": "hardware/docs/Supply.md",
+    "line": 162
+   },
+   {
+    "index": 52,
+    "file": "hardware/docs/Supply.md",
+    "line": 163
+   },
+   {
+    "index": 53,
+    "file": "hardware/docs/Sensing.md",
+    "line": 127
+   },
+   {
+    "index": 54,
+    "file": "hardware/docs/Control.md",
+    "line": 200
+   },
+   {
+    "index": 55,
+    "file": "hardware/docs/Control.md",
+    "line": 201
+   },
+   {
+    "index": 56,
+    "file": "hardware/docs/Control.md",
+    "line": 202
+   },
+   {
+    "index": 57,
+    "file": "hardware/docs/Control.md",
+    "line": 203
+   },
+   {
+    "index": 58,
+    "file": "hardware/docs/Control.md",
+    "line": 204
+   },
+   {
+    "index": 59,
+    "file": "hardware/docs/Control.md",
+    "line": 205
+   },
+   {
+    "index": 60,
+    "file": "hardware/docs/Control.md",
+    "line": 206
+   },
+   {
+    "index": 61,
+    "file": "hardware/docs/Control.md",
+    "line": 207
+   },
+   {
+    "index": 62,
+    "file": "hardware/docs/Control.md",
+    "line": 208
+   },
+   {
+    "index": 63,
+    "file": "hardware/docs/Control.md",
+    "line": 209
+   },
+   {
+    "index": 64,
+    "file": "hardware/docs/Control.md",
+    "line": 210
+   },
+   {
+    "index": 65,
+    "file": "hardware/docs/Control.md",
+    "line": 211
+   },
+   {
+    "index": 66,
+    "file": "hardware/docs/Control.md",
+    "line": 212
+   },
+   {
+    "index": 67,
+    "file": "hardware/docs/Supply.md",
+    "line": 167
+   },
+   {
+    "index": 68,
+    "file": "hardware/docs/Supply.md",
+    "line": 168
+   },
+   {
+    "index": 69,
+    "file": "hardware/docs/Sensing.md",
+    "line": 131
+   },
+   {
+    "index": 70,
+    "file": "hardware/docs/Sensing.md",
+    "line": 132
+   },
+   {
+    "index": 71,
+    "file": "hardware/docs/Sensing.md",
+    "line": 133
+   },
+   {
+    "index": 72,
+    "file": "hardware/docs/Sensing.md",
+    "line": 134
+   },
+   {
+    "index": 73,
+    "file": "hardware/docs/Sensing.md",
+    "line": 135
+   },
+   {
+    "index": 74,
+    "file": "hardware/docs/Sensing.md",
+    "line": 136
+   },
+   {
+    "index": 75,
+    "file": "hardware/docs/Sensing.md",
+    "line": 137
+   },
+   {
+    "index": 76,
+    "file": "hardware/docs/Sensing.md",
+    "line": 138
+   },
+   {
+    "index": 77,
+    "file": "hardware/docs/Sensing.md",
+    "line": 139
+   },
+   {
+    "index": 78,
+    "file": "hardware/docs/Sensing.md",
+    "line": 140
+   },
+   {
+    "index": 79,
+    "file": "hardware/docs/Control.md",
+    "line": 171
+   },
+   {
+    "index": 80,
+    "file": "hardware/docs/Control.md",
+    "line": 172
+   },
+   {
+    "index": 81,
+    "file": "hardware/docs/Control.md",
+    "line": 173
+   },
+   {
+    "index": 82,
+    "file": "hardware/docs/Control.md",
+    "line": 174
+   },
+   {
+    "index": 83,
+    "file": "hardware/docs/Control.md",
+    "line": 175
+   },
+   {
+    "index": 84,
+    "file": "hardware/docs/Control.md",
+    "line": 176
+   },
+   {
+    "index": 85,
+    "file": "hardware/docs/Control.md",
+    "line": 196
+   },
+   {
+    "index": 86,
+    "file": "hardware/docs/Control.md",
+    "line": 131
+   },
+   {
+    "index": 87,
+    "file": "hardware/docs/Control.md",
+    "line": 131
+   },
+   {
+    "index": 88,
+    "file": "hardware/docs/Parts.md",
+    "line": 99
+   }
+  ],
+  "part_rows": [
+   {
+    "function": "12 MHz crystal",
+    "part": "ABM8-272-T3",
+    "parts_line": 52,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "Core regulator inductor",
+    "part": "AOTA-B201610S3R3-101-T",
+    "parts_line": 53,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "Link CAN controller",
+    "part": "MCP2518FDT-E/SL",
+    "parts_line": 54,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "TCAN3413DR",
+    "parts_line": 55,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "External CAN controller",
+    "part": "MCP2518FDT-E/SL",
+    "parts_line": 54,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "External CAN transceiver",
+    "part": "TCAN3413DR",
+    "parts_line": 55,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "monostable",
+    "part": "74HC423BQ,115",
+    "parts_line": 56,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "OR gate",
+    "part": "74AUP1G32GW,125",
+    "parts_line": 57,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "reset supervisor",
+    "part": "TPS3703A7330DSERQ1",
+    "parts_line": 58,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "latch",
+    "part": "74LVC1G175GW,125",
+    "parts_line": 59,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "latch clear control",
+    "part": "434153017835",
+    "parts_line": 60,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "trigger-path inverter",
+    "part": "SN74AUP1G14DBVR",
+    "parts_line": 61,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "trigger input I_off buffer (Q9)",
+    "part": "SN74AUP1G17DBVR",
+    "parts_line": 62,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "servo rail gate",
+    "part": "BTS7004-1EPP",
+    "parts_line": 63,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "onboard pack switch driver",
+    "part": "TPSI3052DWZR",
+    "parts_line": 64,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "external module driver output",
+    "part": "TPSI3052DWZR",
+    "parts_line": 64,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "pack reverse-polarity protection",
+    "part": "IPT015N10N5ATMA1",
+    "parts_line": 65,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "pack precharge",
+    "part": "CSD19537Q3T",
+    "parts_line": 66,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "servo rail gate driver",
+    "part": "2N7002BK,215",
+    "parts_line": 67,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "inverter on an active-low output enable",
+    "part": "SN74LVC1G04DBVR",
+    "parts_line": 68,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "gated output buffer",
+    "part": "SN74LVC244APWR",
+    "parts_line": 69,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "gated output buffer",
+    "part": "74LVC244APW,118",
+    "parts_line": 116,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "enable inverter",
+    "part": "SN74LVC1G04DBVR",
+    "parts_line": 68,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "bias selector",
+    "part": "SN74LVC1G126DBVR",
+    "parts_line": 70,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "multiprotocol port path",
+    "part": "SN74CBTLV3126PWR",
+    "parts_line": 71,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "UART socket path",
+    "part": "SN74CBTLV3126PWR",
+    "parts_line": 71,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "receiver inputs",
+    "part": "SN74LVC1T45DBVR",
+    "parts_line": 72,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "reply path through the gate",
+    "part": "SN74CBTLV3126PWR",
+    "parts_line": 71,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+    "part": "SN74CBTLV3126PWR",
+    "parts_line": 71,
+    "group_page": "hardware/docs/Control.md"
+   },
+   {
+    "function": "Cell monitor",
+    "part": "ADBMS1818ASWAZ-RL",
+    "parts_line": 88,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "Converter for the accelerometer",
+    "part": "ADCS7476AIMFX/NOPB",
+    "parts_line": 89,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "Converter for the accelerometer",
+    "part": "LM4040AIM3-3.0/NOPB",
+    "parts_line": 117,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "accelerometer",
+    "part": "ADXL316WBCSZ",
+    "parts_line": 90,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "magnetic pickup",
+    "part": "DRV5015A1QDBZR",
+    "parts_line": 91,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "phase-wire clip",
+    "part": "TLV3201AIDBVR",
+    "parts_line": 92,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "phase-wire clip",
+    "part": "TLV3601DBVR",
+    "parts_line": 118,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "encoder input",
+    "part": "AM26LV32EIDR",
+    "parts_line": 93,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "encoder decode",
+    "part": "RP2354B",
+    "parts_line": 94,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "rotation from ESC",
+    "part": "RP2354B",
+    "parts_line": 94,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "rotation inputs",
+    "part": "RP2354B",
+    "parts_line": 94,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "BENCH rpm source",
+    "part": "RP2354B",
+    "parts_line": 94,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "servo measured position",
+    "part": "RP2354B",
+    "parts_line": 94,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "motor temperature thermocouple",
+    "part": "MAX31856MUD+T",
+    "parts_line": 95,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "motor temperature infrared",
+    "part": "MLX90614ESF-BCC-000-TU",
+    "parts_line": 96,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "external I2C ports",
+    "part": "TCA9548APWR",
+    "parts_line": 97,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "external I2C ports",
+    "part": "PCA9548APWR",
+    "parts_line": 119,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "non-volatile store",
+    "part": "MB85RC256VPNF-G-AMERE2",
+    "parts_line": 98,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "non-volatile store",
+    "part": "M24256E-FMN6TP",
+    "parts_line": 120,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "load-cell bridge ADC",
+    "part": "ADS1235IRHBR",
+    "parts_line": 99,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "load-cell excitation",
+    "part": "BD450M2FP3-CE2",
+    "parts_line": 100,
+    "group_page": "hardware/docs/Sensing.md"
+   },
+   {
+    "function": "source selection",
+    "part": "LM74800QDRRRQ1",
+    "parts_line": 73,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "3.3 V logic buck",
+    "part": "LMQ66430MC3RXBRQ1",
+    "parts_line": 74,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "5 V rail",
+    "part": "TPS62933DRLR",
+    "parts_line": 75,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "display supply",
+    "part": "TPS259474ARPWR",
+    "parts_line": 76,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "encoder 12 V supply",
+    "part": "TPS55288RPMR",
+    "parts_line": 77,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "Port supply switch",
+    "part": "TPS259474LRPWR",
+    "parts_line": 78,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "I/O expander",
+    "part": "MCP23017T-E/SS",
+    "parts_line": 79,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "Pack charger",
+    "part": "BQ25713RSNR",
+    "parts_line": 80,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "Cell balancing",
+    "part": "MAX17320G22+",
+    "parts_line": 81,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "Power path",
+    "part": "BQ25713RSNR",
+    "parts_line": 80,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "Charger input limit",
+    "part": "FUSB303BTMX",
+    "parts_line": 82,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "Pack overcurrent protection",
+    "part": "MAX17320G22+",
+    "parts_line": 81,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "Bench pack balance lead",
+    "part": "MAX17320G22+",
+    "parts_line": 81,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "Onboard shunt",
+    "part": "BVR-Z-R0002-1.0",
+    "parts_line": 83,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "Onboard shunt temperature sensor",
+    "part": "MCP9808T-E/MS",
+    "parts_line": 84,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "External shunt",
+    "part": "WSBE8518L1000JKA2",
+    "parts_line": 85,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "Port current monitor",
+    "part": "INA3221AIRGVR",
+    "parts_line": 86,
+    "group_page": "hardware/docs/Supply.md"
+   },
+   {
+    "function": "Port shunt",
+    "part": "ERJ-6CWDR010V",
+    "parts_line": 87,
+    "group_page": "hardware/docs/Supply.md"
+   }
+  ],
+  "jlc_stock_review": [
+   {
+    "index": 0,
+    "holds": true,
+    "line": 273,
+    "reason": "check_jlc calls jlc_exact(row.lcsc) at line 273 for every selected row that has an LCSC number (called at 357). It reads the alternate's LCSC at 283. It reads each row of the 'Alternates and Q options' table that is not read yet at 364, and the held row at 387. The build quantity is the positional argument 'boards' (409), passed to gate()."
+   },
+   {
+    "index": 1,
+    "holds": true,
+    "line": 150,
+    "reason": "jlc_exact walks the result list and returns only the row whose componentCode equals the LCSC number, ignoring case. When no row matches it reports 'no exact match' (152) rather than taking the first result."
+   },
+   {
+    "index": 2,
+    "holds": true,
+    "line": 122,
+    "reason": "gate() returns max(5 x boards x placements, 50), which is S4's rule applied to the need. rule4() at 257 adds canPresaleNumber >= 0. Together these are sourcing rule 4."
+   },
+   {
+    "index": 3,
+    "holds": true,
+    "line": 275,
+    "reason": "A missing exact match comes back as an error from jlc_exact (152) and becomes a [FAIL] line through rep.fail at 275. The same happens at 285, 366 and 389 for alternates, option rows and held rows. main() returns 1 under --check when any [FAIL] was counted (417)."
+   },
+   {
+    "index": 4,
+    "holds": true,
+    "line": 302,
+    "reason": "When the part fails rule 4 and its alternate fails too, shortfalls() prints '[FAIL] PART: stock N, gate G' and/or '[FAIL] PART: presale N' for the alternate (293) and for the part (302). A part without an alternate fails the same way. Each [FAIL] counts, so --check exits 1."
+   },
+   {
+    "index": 5,
+    "holds": true,
+    "line": 296,
+    "reason": "When rule 4 fails and alt_ok is true, the tool prints '[warn] PART fails rule 4 and its alternate ALT passes'. No [FAIL] line and no count follow."
+   },
+   {
+    "index": 6,
+    "holds": true,
+    "line": 359,
+    "reason": "check_digikey is called for every row whose Second source starts with 'Digi-Key' and for every row without an LCSC number, the part off the board (358-359). The held row is also checked, at 400. For a part off the board it queries the part and its alternate (322-336). DigiKey() takes DIGIKEY_CLIENT_ID and DIGIKEY_CLIENT_SECRET from the environment (156-157), with DIGIKEY_ENV_FILE as a fallback, and never prints them."
+   },
+   {
+    "index": 7,
+    "holds": true,
+    "line": 314,
+    "reason": "For an on-board row, a Digi-Key stock under the row's gate prints '[FAIL] PART (second vendor): stock N, gate G' (314). For a part off the board, the part or its alternate under the gate prints '[FAIL] MPN: stock N, gate G' (333). Both count toward exit 1. The two 'not selected' Q-option rows are reported as [warn], since they are not parts of the build."
+   },
+   {
+    "index": 8,
+    "holds": true,
+    "line": 312,
+    "reason": "Without credentials DigiKey.stock returns the error 'no Digi-Key credentials'. Each such row then prints '[FAIL] PART: second vendor not checked, ...' (312), or '[FAIL] MPN: not checked, ...' for a part off the board (330). The run also prints 'its rows are not checked' (348), and the [FAIL] lines make --check exit 1."
+   },
+   {
+    "index": 9,
+    "holds": true,
+    "line": 393,
+    "reason": "Rows whose Held column starts with a number are collected apart (352-354). They are printed under 'Personal library (rule 6):'. Each passes when held >= boards x placements, and the line includes '(stated DATE)' taken from the Held cell (79-80). A shortfall is a [FAIL] (396)."
+   },
+   {
+    "index": 10,
+    "holds": true,
+    "line": 31,
+    "reason": "The docstring states 'Run by hand before an order, not in CI (continuous integration): a stock count moving is not a defect in the tree'. No workflow under .github references tools/jlc_stock.py."
+   }
+  ]
+ }
+}
