@@ -21,7 +21,7 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json
 | Chip | GPIO used | Free |
 | --- | --- | --- |
 | Main coprocessor | 44 of 48 | 4: GPIO 15, 35, 39, 47 |
-| Measurement coprocessor | 27 of 48 | 21 |
+| Measurement coprocessor | 28 of 48 | 20 |
 
 ## Owner decisions
 
@@ -45,7 +45,7 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json
 | --- | --- | --- | --- |
 | 0 | UART0_TX | inter-chip link TX |  |
 | 1 | UART0_RX | inter-chip link RX |  |
-| 2 | I2C1_SDA | main I2C SDA: 3 MCP23017, FRAM, TPS55288 |  |
+| 2 | I2C1_SDA | main I2C SDA: 3 MCP23017, FRAM, TPS55288 (provisional) |  |
 | 3 | I2C1_SCL | main I2C SCL |  |
 | 4 | UART1_TX | VESC TX | yes |
 | 5 | UART1_RX | VESC RX | yes |
@@ -118,17 +118,19 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json
 | 23 | PIO1 | receiver input (S.BUS, iBUS, SUMD, CRSF, SRXL2, EX Bus) | yes |
 | 24 | SIO | accelerometer ADC CS, second axis (ADCS7476), SIO, pulled up |  |
 | 25 | SIO | phase-wire clip comparator (TLV3201) | yes |
+| 26 | SIO | TCA9548A RESET, active low, pulled up: clears a Qwiic channel held low |  |
 | 27 | SIO | magnetic pickup (DRV5015A1) | yes |
 
 ## I/O expanders
 
 Three MCP23017 on the main coprocessor's I²C bus, at 0x20, 0x21 and 0x22, reset
-together from GPIO 14. They carry 32 lines: the 20 port switch enables, the 5
+together from GPIO 14. They carry 33 lines: the 20 port switch enables, the 5
 bias selectors of the multiprotocol ports and the UART socket, the 5 converter
-enables (4 TPS55285 and the TPS55288), the hardware latch read-back and the DC
-input's source-status and brownout signal. On the MCP23017, GPA7 and GPB7 are
+enables (4 TPS55285 and the TPS55288), the hardware latch read-back, and two
+inputs for the DC input's source status and its brownout, until a decision
+lets one signal serve both (IOBoard.md, DC input brownout detection). On the MCP23017, GPA7 and GPB7 are
 outputs only and come out of reset as inputs, so they carry no port switch,
-converter enable or input; the other 42 lines are free for them. The third
+converter enable or input; the other 42 lines are free for them, 33 of them used. The third
 expander follows from that; it takes no GPIO.
 
 ## Rules the map follows
@@ -179,5 +181,7 @@ the drafts, which read the datasheets. Round 1's records do not verify them.
   pack switches no pin; one line would take a free main pin.
 - The receiver input is receive-only in the map. EX Bus telemetry or an SRXL2
   handshake needs the SN74LVC1T45DBVR's direction pin.
+- The TPS55288's bus: the map puts it on the main I²C bus, provisionally; the
+  IO board specification leaves the main bus or a third measurement bus open.
 - The MCP2518FD clock source, the inter-chip UART's rate and silence limit, and
   the measurement coprocessor's load and debug route.

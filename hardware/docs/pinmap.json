@@ -18,7 +18,7 @@
     },
     {
      "gpio": 2,
-     "signal": "main I2C SDA: 3 MCP23017, FRAM, TPS55288",
+     "signal": "main I2C SDA: 3 MCP23017, FRAM, TPS55288 (provisional)",
      "function": "I2C1_SDA",
      "bus": "main_i2c"
     },
@@ -425,6 +425,11 @@
      "signal": "phase-wire clip comparator (TLV3201)",
      "function": "SIO",
      "external": true
+    },
+    {
+     "gpio": 26,
+     "signal": "TCA9548A RESET, active low, pulled up: clears a Qwiic channel held low",
+     "function": "SIO"
     },
     {
      "gpio": 27,
