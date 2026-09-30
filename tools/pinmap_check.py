@@ -8,7 +8,7 @@ PINMAP.json holds one object per coprocessor:
         {"gpio": 2, "signal": "link CAN SCLK", "function": "SPI0_SCLK",
          "bus": "can_spi", "external": false}, ...]}]}
 
-"function" is a name from io_bank0.h's FUNCSEL values (SPI0_SCK, UART1_TX,
+"function" is a name from io_bank0.h's FUNCSEL values (SPI0_SCLK, UART1_TX,
 I2C0_SDA, PWM_A_3, ...), or one of PIO0, PIO1, PIO2, SIO or ADC. "external"
 marks a signal that reaches a connector. The checks:
 

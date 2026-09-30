@@ -133,7 +133,7 @@ P5's budget in T5, as its critic upheld it
 | DMA (direct memory access) channels | 2 of 16, for PPM | yes |
 | PWM slices | 16 of 24 channels for the 16 PWM ports, if the pin map avoids the shared compare registers | yes |
 | ADC (analogue-to-digital converter) inputs | 0 of 8 with the external ADC of Q4; up to 4 with the reference option | yes |
-| SPI (Serial Peripheral Interface) controllers | up to 5 devices on 2 controllers: the 2 CAN controllers, the load-cell ADC, the thermocouple converter and the external ADC. The timing between the CAN controllers' polling at 10 MHz and the other transactions is not checked | yes |
+| SPI (Serial Peripheral Interface) controllers | in the draft pin map, 7 devices on 3 controllers of the two chips: the 2 CAN controllers on one main coprocessor controller, the 2 accelerometer ADCs on measurement SPI0, and the load-cell ADC, the thermocouple converter and the cell monitor on measurement SPI1; the main coprocessor's SPI0 is free ([Pins](Pins.md)). The timing between the two CAN controllers on one bus is not checked. In T5: up to 5 devices on 2 controllers | yes |
 | UART controllers | 2 of 2 on the main coprocessor: the inter-chip link and VESC's separate lines at 115,200 baud; the OpenYGE socket runs as a PIO UART (owner, 2026-09-30; [Pins](Pins.md)). In T5: the OpenYGE socket and VESC | yes |
 | In-package flash | image limit 2,088,960 bytes against a build of 272,040 bytes plus the IO board's picture, whose size is not known (the module's is 206,000 bytes) | yes |
 | Enable polarity | R4's buffer enable and R3's enable node are both high for enabled | yes |
