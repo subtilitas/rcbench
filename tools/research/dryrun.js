@@ -212,7 +212,7 @@ async function runTask(task, opts = {}) {
       else {
         data.reviewed = outs
         const figFiles = opts.oneFigure ? ['hardware/docs/Parts.md'] : outs.filter(f => f.startsWith('hardware/docs/'))
-        data.figure_checks = opts.noFigures ? [] : figFiles.map(file => ({ file, line: opts.checkLine === undefined ? 1 : opts.checkLine, figure: opts.blankFigure ? '' : 'stock', return_file: opts.blankFigure ? '' : opts.returnFile || 'hardware/research/round1/T2/012-P4-stock-R1.json', kind: opts.figureKind || 'other', agrees: !opts.criticDisagrees }))
+        data.figure_checks = opts.noFigures ? [] : figFiles.map(file => ({ ...(opts.p7FigureAlias ? { p7_figure: 'stock' } : {}), file, line: opts.checkLine === undefined ? 1 : opts.checkLine, figure: opts.blankFigure ? '' : opts.p7FigureAlias || 'stock', return_file: opts.blankFigure ? '' : opts.returnFile || 'hardware/research/round1/T2/012-P4-stock-R1.json', kind: opts.figureKind || 'other', agrees: !opts.criticDisagrees }))
         data.sentence_issues = opts.sentenceIssue ? [{ file: 'f', line: 1, issue: 'i' }] : []
         data.marked = opts.marked || []
         data.part_rows = opts.partRows || []
@@ -1426,6 +1426,11 @@ async function main() {
   check(r.result.summary.stopped === true && /no figure checked on|checked no figure/.test(r.result.summary.reasons[0]), 'T6: a figure check at line 0 checks nothing')
   r = await runTask('T6', { p7Figures: [{ file: 'hardware/docs/Parts.md', line: 0, figure: 'stock' }] })
   check(r.result.summary.stopped === true && /figures P7 wrote without their line/.test(r.result.summary.reasons[0]), 'T6: a figure P7 wrote without its line stops it')
+  // A check whose text the critic corrected stands for P7's figure it names.
+  r = await runTask('T6', { p7Figures: [{ file: 'hardware/docs/Parts.md', line: 1, figure: 'VGS(th) 3 V' }] })
+  check(r.result.summary.stopped === true && /figures P7 wrote without a check/.test(r.result.summary.reasons[0]), 'T6: a P7 figure whose text the critic changed, without p7_figure, is unchecked')
+  r = await runTask('T6', { p7Figures: [{ file: 'hardware/docs/Parts.md', line: 1, figure: 'stock' }], p7FigureAlias: 'stock (corrected)' })
+  check(!/figures P7 wrote without a check/.test((r.result.summary.reasons || [''])[0]), 'T6: a corrected check naming P7\'s text in p7_figure covers it')
   // A figure P7 wrote on two lines needs checks on two lines.
   r = await runTask('T6', { p7Figures: [{ file: 'hardware/docs/Parts.md', line: 1, figure: 'stock' }, { file: 'hardware/docs/Parts.md', line: 3, figure: 'stock' }] })
   check(r.result.summary.stopped === true && /figures P7 wrote without a check/.test(r.result.summary.reasons[0]), 'T6: one check for a figure P7 wrote on two lines stops it')
