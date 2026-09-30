@@ -55,7 +55,9 @@ the voltage setting. LV and HV servos and an ESC on the multiprotocol ports
 run at the same time (owner, 2026-09-30).
 From the DC input each rail's limit goes to 6.35 A. From the pack the
 firmware sets the three limits to a sum of 6.35 A, which holds the pack at
-its 12.23 A budget (owner, 2026-09-30).
+its 12.23 A budget (owner, 2026-09-30). The sum is derated for the limit's
+tolerance, which the datasheet gives only at the 1, 3 and 5 A settings
+(4.7 to 5.3 A at 5 A); the derated sum is not known.
 For one servo 4 to 6.35 A is a short peak: a servo that draws it without
 pause burns out. Several servos on one rail can draw it without a time
 limit; an MCP9808T-E/MS beside each TPS55285 switches its rail off when it
