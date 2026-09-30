@@ -25,7 +25,7 @@ The original requirement list, in German:
 
 | Requirement | Implementation | State |
 | --- | --- | --- |
-| External current sensors over I²C (Inter-Integrated Circuit) | On the coprocessor's I²C bus. The panel's I²C bus is reserved for the touch controller and the I/O expander. | Interface defined; no driver. Parts selected: INA238 (motor), INA745A (servo rail). |
+| External current sensors over I²C (Inter-Integrated Circuit) | On the coprocessor's I²C bus. The panel's I²C bus is reserved for the touch controller and the I/O expander. | Interface defined; no driver. Parts selected: INA228 (motor), INA745A (servo rail). |
 | ESC programmer (AM32 and BLHeli_S required) | One-wire half-duplex bootloader protocol at 19,200 baud on a PIO (programmable input/output) state machine | Screen built and table-driven for BLHeli_S, AM32, ESCape32 and VESC; no protocol is transmitted. BLHeli_32 parameters are not supported: [BLHeli_32](BLHeli32.md). |
 | Balancing with accelerometer and index sensor | Both sensors on the coprocessor, sampled on one timebase | Screen and placement guides built; the measurement waits on the sensors |
 | Servo tester with S.BUS and other protocols | Hardware PWM (pulse-width modulation) outputs; one PIO program per serial protocol | Screen built and commanding over the link. PWM has swung a servo from the panel on the bring-up bench; no pulse width, frame period or jitter has been read on an instrument, and the serial protocols have driven nothing |
