@@ -21,7 +21,7 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json
 | Chip | GPIO used | Free |
 | --- | --- | --- |
 | Main coprocessor | 44 of 48 | 4: GPIO 15, 35, 39, 47 |
-| Measurement coprocessor | 26 of 48 | 22 |
+| Measurement coprocessor | 27 of 48 | 21 |
 
 ## Owner decisions
 
@@ -96,9 +96,9 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json
 | 1 | UART0_RX | inter-chip link RX |  |
 | 2 | I2C1_SDA | sensor I2C bus B SDA: monitors, MCP9808, TPS55285 | yes |
 | 3 | I2C1_SCL | sensor I2C bus B SCL | yes |
-| 4 | SPI0_RX | accelerometer ADC data (ADCS7476 SDATA) | yes |
-| 5 | SPI0_SS_N | accelerometer ADC CS (ADCS7476) | yes |
-| 6 | SPI0_SCLK | accelerometer ADC SCLK | yes |
+| 4 | SPI0_RX | accelerometer ADC data, both ADCS7476 (SDATA) | yes |
+| 5 | SIO | accelerometer ADC CS, first axis (ADCS7476), SIO, pulled up | yes |
+| 6 | SPI0_SCLK | accelerometer ADC SCLK, both ADCS7476 | yes |
 | 7 | PIO2 | optical index, measurement copy, sampled by PIO on the ADC timebase | yes |
 | 8 | SPI1_RX | measurement SPI RX (MISO) |  |
 | 9 | SIO | load-cell ADC CS (ADS1235), SIO, pulled up |  |
@@ -116,6 +116,7 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json
 | 21 | PIO0 | encoder B | yes |
 | 22 | PIO0 | encoder index | yes |
 | 23 | PIO1 | receiver input (S.BUS, iBUS, SUMD, CRSF, SRXL2, EX Bus) | yes |
+| 24 | SIO | accelerometer ADC CS, second axis (ADCS7476), SIO, pulled up | yes |
 | 25 | SIO | phase-wire clip comparator (TLV3201) | yes |
 | 27 | SIO | magnetic pickup (DRV5015A1) | yes |
 
@@ -158,7 +159,7 @@ expander follows from that; it takes no GPIO.
   a pico-examples quadrature decoder reads at most one step every 10 system
   clocks.
 - The measurement coprocessor samples its copy of the optical index with PIO,
-  on the timebase of the accelerometer ADC, which has its own SPI0.
+  on the timebase of the two accelerometer ADCs (ADCS7476, one an axis), which share SPI0's data and clock with a chip select each.
 - USB VBUS reaches GPIO 37 through a divider, so the USB pull-up follows the
   cable.
 - No signal from a connector sits on GPIO 40 to 47.

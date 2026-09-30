@@ -5,8 +5,8 @@ Usage: pinmap_check.py PINMAP.json [--sdk PICO_SDK_PATH]
 PINMAP.json holds one object per coprocessor:
 
     {"chips": [{"chip": "main", "pins": [
-        {"gpio": 0, "signal": "link CAN SCK", "function": "SPI0_SCK",
-         "external": false}, ...]}]}
+        {"gpio": 2, "signal": "link CAN SCLK", "function": "SPI0_SCLK",
+         "bus": "can_spi", "external": false}, ...]}]}
 
 "function" is a name from io_bank0.h's FUNCSEL values (SPI0_SCK, UART1_TX,
 I2C0_SDA, PWM_A_3, ...), or one of PIO0, PIO1, PIO2, SIO or ADC. "external"
@@ -14,10 +14,12 @@ marks a signal that reaches a connector. The checks:
 
 - each GPIO is 0 to 47 and used once a chip;
 - a named function exists on that GPIO in the pico-sdk's io_bank0.h;
-- the pins of one SPI, UART or I2C instance agree on the instance;
+- every SPI, UART or I2C pin names its bus, and the pins of one bus
+  agree on the instance;
 - a PIO block's pins fit one 32-pin window, GPIO 0 to 31 or 16 to 47;
 - ADC is on GPIO 40 to 47, the RP2350B's ADC inputs;
-- an external signal is on GPIO 0 to 39, the fault-tolerant pins.
+- an external signal is on GPIO 0 to 39, the fault-tolerant pins;
+- the map has at least one chip, and each chip has pins.
 
 It prints one line per failure and the pin count per chip, and exits 1
 on any failure.
@@ -83,8 +85,13 @@ def check_chip(chip, table):
     groups = {}
     for pin in chip.get("pins", []):
         inst = instance(pin.get("function", ""))
-        if inst:
-            groups.setdefault(pin.get("bus", inst), set()).add(inst)
+        if not inst:
+            continue
+        if not pin.get("bus"):
+            where = f"{name} GPIO{pin.get('gpio')} ({pin.get('signal', '?')})"
+            fails.append(f"{where}: {pin.get('function')} names no bus")
+            continue
+        groups.setdefault(pin["bus"], set()).add(inst)
     for bus, insts in groups.items():
         if len(insts) > 1:
             fails.append(f"{name} bus {bus}: mixes {', '.join(sorted(insts))}")
@@ -100,7 +107,13 @@ def main():
     table = funcsel(args.sdk)
     doc = json.load(open(args.pinmap, encoding="utf-8"))
     total = []
-    for chip in doc.get("chips", []):
+    chips = doc.get("chips")
+    if not isinstance(chips, list) or not chips:
+        total.append("the map has no chips")
+        chips = []
+    for chip in chips:
+        if not chip.get("pins"):
+            total.append(f"{chip.get('chip', '?')}: no pins")
         fails, used = check_chip(chip, table)
         total += fails
         label = chip.get("chip", "?")
