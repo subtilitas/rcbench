@@ -1610,6 +1610,10 @@
        },
        "agrees": {
         "type": "boolean"
+       },
+       "p7_figure": {
+        "type": "string",
+        "description": "where you corrected the text that states a figure P7 listed: P7's figure text for it; empty otherwise"
        }
       },
       "required": [

@@ -426,7 +426,8 @@ combination or other. A budget or combination checked against any file but the
 last P5/P6 check's is superseded, and so is any figure checked against an
 earlier check's P5 return (a restarted one included), whatever its kind; every
 figure P7 lists as written needs a check of its own, a figure written on n
-lines of a file checks on n lines of it; another figure, such as a
+lines of a file checks on n lines of it (a check of text the critic corrected
+names P7's figure text in `p7_figure` and stands for it); another figure, such as a
 run's status line, may cite an earlier check's other files. P7 and its critic
 are given the three commands, the pages that need a figure checked, and the
 path rules for group pages and figure checks that `round1.js` and `record`
