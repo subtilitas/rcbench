@@ -156,11 +156,13 @@ replace it.
    part off the board, such as the external shunt or an external switch
    module (question F7), is bought at the second vendor of question S3 and
    passes rules 2, 4, 5 and 7 there, with the stock read from that vendor's
-   API (prerequisite 3). The pack cells are the exception: INR-18650-P30B is
-   bought at Liion Wholesale (owner, 2026-09-30), whose stock is not read
-   through an API.
+   API (prerequisite 3). The bench's pack is the exception: the SLS XTRON 3000 mAh
+   2S1P pack is bought at Stefansliposhop (owner, 2026-09-30), whose stock is
+   not read through an API.
 2. **Allowlisted manufacturers only.** The list is question S1 for ICs, S9
-   for the 18650 cells of the bench's own pack, and S2 for the rest. A part
+   for the 18650 cells of the bench's own pack, and S2 for the rest. The
+   bench's pack is the owner's SLS XTRON pack, from a maker outside S9
+   (owner, 2026-09-30). A part
    from a manufacturer not on the list is not a
    candidate, whatever its stock. A seed from such a manufacturer is dropped.
    A maker's other names count as its listed name: Maxim and Linear as Analog
@@ -556,7 +558,7 @@ whole run.
 | F6 | The display's supply on the link cable: which voltage? Its current is measured first (prerequisite 7). | R5 (T3) | 5 V | 5 V (owner, 2026-09-25) |
 | F7 | The switch on the ESC pack. The monostable specification requires one and leaves its technology open. On the onboard 150 A path: a MOSFET array with a driver IC, or a normally-open relay or contactor that opens within 5 ms of the enable falling? On the external 300 A path: a contactor or MOSFET module driven from the IO board, or the signal gate alone? | R3 (T2) | onboard: a MOSFET array and its driver on the IO board. External: a driven external module, whose driver output is on the IO board | onboard: a MOSFET array and its driver on the IO board. External: a driven external module, whose driver output is on the IO board (owner, 2026-09-25) |
 | F8 | Which source charges the 2S pack (the 12 to 20 V DC input, USB-C, or both), and at what current? 2 A is the BQ25887's charge current for a USB input ([Power](Power.md)); the tree states no requirement. | R7 (T3) | the DC input at 2 A; USB-C not required | USB-C only, drawing up to 3 A at 5 V (15 W); the pack does not charge from the DC input (owner, 2026-09-25) |
-| F9 | The 2S pack's cell chemistry and its discharge floor. A pack-voltage floor does not bound one cell: a pack at 6.6 V can hold cells at 3.0 V and 3.6 V. A per-cell floor reads the pack's balance lead. | R5, R6, R7 (T3) | chemistry: owner to state. Floor: 3.3 V a cell (6.6 V for the pack), a candidate for 4.2 V lithium-ion cells with no source in the tree. Reconnection only when the DC input or the charger is present | lithium-ion (18650), floor 3.0 V a cell, read per cell from the pack's balance lead (owner, 2026-09-25) |
+| F9 | The 2S pack's cell chemistry and its discharge floor. A pack-voltage floor does not bound one cell: a pack at 6.6 V can hold cells at 3.0 V and 3.6 V. A per-cell floor reads the pack's balance lead. | R5, R6, R7 (T3) | chemistry: owner to state. Floor: 3.3 V a cell (6.6 V for the pack), a candidate for 4.2 V lithium-ion cells with no source in the tree. Reconnection only when the DC input or the charger is present | lithium-ion (18650), floor 3.0 V a cell, read per cell from the pack's balance lead (owner, 2026-09-25). The pack is an SLS XTRON 3000 mAh 2S1P pack, whose vendor page states no chemistry, charge voltage or discharge floor a cell (owner, 2026-09-30) |
 | F10 | The monostable's long timing-element failures: the single-channel OR design, whose fault model excludes an R or C risen in value, or the two-channel AND design, which adds two both-edge detectors and an AND gate? | R3 (T2) | owner to state | the single-channel OR design (owner, 2026-09-25) |
 | F11 | A hardware latch set by the monostable's first expiry and cleared only by an operator action? It adds a clear input and a control to R3. | R3 (T2) | owner to state | yes: a hardware latch with an operator clear control (owner, 2026-09-25) |
 | F12 | The monostable's clear network: the RC (resistor-capacitor) network, which pull request #167 qualifies for a fast power-up ramp only, with no ramp time stated, or a reset supervisor with a stated threshold and delay? | R3 (T2) | a reset supervisor | a reset supervisor (owner, 2026-09-25) |
@@ -732,7 +734,7 @@ in its place (2026-09-30).
 | V148 | R7, Charger input limit | Is the charger's USB-C input the RP2354B's USB port, or a USB-C connector of its own? | for research (owner, 2026-09-28) |
 | V149 | R7, Pack overcurrent protection | Does the pack's protection sit in the pack, as a part off the board bought at Digi-Key (rule 1), or on the IO board, as an LCSC part that JLCPCB places? | for research (owner, 2026-09-28) |
 | V150 | R7, Pack overcurrent protection | Besides overcurrent, which protections must the pack's protection carry: per-cell overvoltage on charge (threshold in V), short circuit (threshold in A), over-temperature (threshold in °C), or none? | for research (owner, 2026-09-28) |
-| V151 | R7, Pack cells | Rule 1 has the 18650 cells, a part off the board, bought at Digi-Key, and Digi-Key's API returned no cell from an S9 maker on 2026-09-28. Which vendor sells the cells and counts them for rules 4 and 5? | Liion Wholesale, for INR-18650-P30B; the owner expects high-power 2S pouch cells instead, not decided (owner, 2026-09-30) |
+| V151 | R7, Pack cells | Rule 1 has the 18650 cells, a part off the board, bought at Digi-Key, and Digi-Key's API returned no cell from an S9 maker on 2026-09-28. Which vendor sells the cells and counts them for rules 4 and 5? | Stefansliposhop, for the SLS XTRON 3000 mAh 2S1P pack, article SLSXT30002130 (owner, 2026-09-30) |
 | V152 | R7, Power path | With USB-C present, no DC input, and the pack flat or opened by the 3.0 V floor disconnect, does the IO board run from USB-C? If yes, up to what current, in A at 5 V, does the power path deliver to the board? | for research (owner, 2026-09-28) |
 | V153 | R7, Pack charger | Must the charger charge the pack while R5's 3.0 V floor disconnect is open, with the charger connected on the cells' side of the disconnect? Answer yes or no. | for research (owner, 2026-09-28) |
 | V154 | R8, Motor monitor | The motor monitor (INA238) and the ESC's telemetry (extended DShot at 0.25 V and 1 A a count, or OpenYGE) can both report. Which source then fills the BENCH page's voltage and current registers (page 0x20, registers 0 and 1)? Answer with a rule, for example: the monitor whenever it answers, and the telemetry only when no monitor answers. | for research (owner, 2026-09-28) |
