@@ -56,7 +56,8 @@ set from software for each rail on its own, and the current limit follows
 the voltage setting. LV and HV servos and an ESC on the multiprotocol ports
 run at the same time (owner, 2026-09-30).
 From the DC input each rail's limit goes to 6.35 A. From the pack the
-firmware sets the three limits to a sum of 6.35 A, which holds the pack at
+firmware sets the three limits and the adjustable supply's to a sum of 6.35 A,
+which holds the pack at
 its 12.23 A budget (owner, 2026-09-30). The sum is derated for the limit's
 tolerance, which the datasheet gives only at the 1, 3 and 5 A settings
 (4.7 to 5.3 A at 5 A); the derated sum is not known.
