@@ -18,7 +18,7 @@ to R8.
 
 | Need | Round 1 result |
 | --- | --- |
-| Servo supply | TPS55285VALR, the held fixed input, is refuted on its ambient range. At 6.0 V in, 8.4 V and 4.0 A out and 50 °C ambient its estimated junction temperature spans 89 to 179 °C against the 125 °C recommended maximum, because its datasheet gives no loss figure for the IC (integrated circuit) at that point. The owner keeps it (2026-09-30): 4 to 6.35 A is a short peak for one servo; a small aluminum heatsink on a 6-layer board cools it; a second MCP9808T-E/MS beside it switches the servo rail off above a threshold, which bounds a sustained total from several servos. Round 2 finds the continuous total it holds at 6.0 V in and 50 °C |
+| Servo supply | TPS55285VALR, the held fixed input, is refuted on its ambient range. At 6.0 V in, 8.4 V and 4.0 A out and 50 °C ambient its estimated junction temperature spans 89 to 179 °C against the 125 °C recommended maximum, because its datasheet gives no loss figure for the IC (integrated circuit) at that point. The owner keeps it and uses three, one for each servo rail (2026-09-30): 4 to 6.35 A is a short peak for one servo; a small aluminum heatsink on a 6-layer board cools each; an MCP9808T-E/MS beside each switches its rail off above a threshold, which bounds a sustained current from several servos. Round 2 finds the continuous current one converter holds at 6.0 V in and 50 °C |
 | 2S (two cells in series) charger with balancing | BQ25713RSNR, with MAX17320G22+ for balancing and pack protection and FUSB303BTMX for the USB-C (Universal Serial Bus Type-C) input limit. The BQ25887 is not selected |
 | Output port monitors | INA3221AIRGVR, 7 parts, with ERJ-6CWDR010V, a 10 mΩ shunt, on each of the 20 ports |
 | Motor monitor | INA238AIDGSR fails the stock gate at both vendors: JLCPCB 0 with a presale count of −99, Digi-Key 0 (2026-09-29T17:18:33Z). No motor monitor is selected |
@@ -28,7 +28,7 @@ to R8.
 
 | Need | Part | Package | Reason |
 | --- | --- | --- | --- |
-| Buck-boost, I²C (Inter-Integrated Circuit) voltage and current | TPS55285 | VQFN (very thin quad flat no-lead) | the owner holds 12 (2026-09-25); its limit stops at 6.35 A, so the rail runs to 6.35 A. The TPS55288, whose limit scales past 6.35 A, is the alternative below |
+| Buck-boost, I²C (Inter-Integrated Circuit) voltage and current | TPS55285 | VQFN (very thin quad flat no-lead) | the owner holds 12 (2026-09-25), 3 a board (owner, 2026-09-30); its limit stops at 6.35 A, so each rail runs to 6.35 A. The TPS55288, whose limit scales past 6.35 A, is the alternative below |
 | 2S charger with balancing | BQ25887RGER, a candidate | QFN-24-EP 4×4 | the only single die from a maker question S1 allows that charges 2S and balances it. A seed of research category R7, not a choice: the charge input is up to 3 A from USB-C at 5 V ([Research](Research.md#research-categories)) |
 | Output port monitors, ≤15 V | INA3221, 7 parts for 20 ports | VQFN-16 4×4 | 3 channels a part, 26 V bus, 13-bit shunt reading. One channel per port (owner, 2026-09-25); a seed of research category R8, which may replace it (owner, 2026-09-27) |
 | Motor monitor, 67.2 V (16 cells), 300 A | INA238AIDGSR | VSSOP-10 | 85 V and 16 bits; the 20-bit part is unbuyable |
@@ -41,18 +41,26 @@ It has no energy or charge accumulator; the motor keeps its INA238.
 ## Servo supply: TPS55285
 
 The servo supply is the TPS55285 (owner, 2026-09-25): 12 are held in the
-personal library. The rail runs to 6.35 A, and the DC (direct current) input is 12 to 20 V to
-stay inside its 22 V input rating ([where things stand](../STATUS.md#decided)).
+personal library. Three on each board feed three servo rails: 8 PWM ports,
+the other 8 PWM ports, and the 4 multiprotocol ports (owner, 2026-09-30).
+At 3 a board the 12 held cover 4 boards. Each rail runs to 6.35 A, and the
+DC (direct current) input is 12 to 20 V to stay inside the 22 V input rating
+([where things stand](../STATUS.md#decided)).
 The TPS55288 and TPS55289 below are the alternatives, not used.
 
-The servo rail has two output settings: up to 5.5 V for LV (low-voltage)
+Each servo rail has two output settings: up to 5.5 V for LV (low-voltage)
 servos and up to 8.4 V for HV (high-voltage) servos, at 4 to 6.35 A. Both are
-set from software, and the current limit follows the voltage setting.
-4 to 6.35 A is the total of all 20 ports. For one servo it is a short peak:
-a servo that draws it without pause burns out. Several servos together can
-draw it without a time limit; a second MCP9808T-E/MS beside the TPS55285
-switches the rail off when it runs hot (owner, 2026-09-30). The continuous
-total at 6.0 V in and 50 °C is not known; round 2 finds it.
+set from software for each rail on its own, and the current limit follows
+the voltage setting. LV and HV servos and an ESC on the multiprotocol ports
+run at the same time (owner, 2026-09-30).
+From the DC input each rail's limit goes to 6.35 A. From the pack the
+firmware sets the three limits to a sum of 6.35 A, which holds the pack at
+its 12.23 A budget (owner, 2026-09-30).
+For one servo 4 to 6.35 A is a short peak: a servo that draws it without
+pause burns out. Several servos on one rail can draw it without a time
+limit; an MCP9808T-E/MS beside each TPS55285 switches its rail off when it
+runs hot (owner, 2026-09-30). The continuous current at 6.0 V in and 50 °C
+is not known; round 2 finds it.
 
 Three parts of the same TI (Texas Instruments) family:
 
@@ -86,8 +94,9 @@ Digi-Key. MP8859 stops at 3 A.
 
 ### Input rail
 
-8.4 V at 6.35 A is 53.3 W out. At 90 % efficiency that is 59.3 W in: 4.9 A from
-a 12 V input and 3.0 A from 20 V. The DC input is 12 to 20 V (owner, 2026-09-25).
+8.4 V at 6.35 A is 53.3 W out a rail. At 90 % efficiency that is 59.3 W in:
+4.9 A from a 12 V input and 3.0 A from 20 V. The 3 rails at full load draw
+177.8 W: 14.8 A from 12 V and 8.9 A from 20 V, before the other loads. The DC input is 12 to 20 V (owner, 2026-09-25).
 
 ## Pack charger: BQ25887 (candidate)
 
@@ -189,7 +198,7 @@ at 0.2 mΩ and would dissipate 18 W. Kelvin-sense it, with an RC
 
 ## Not answered here
 
-- The converter's input connector, its shutdown threshold and the size of
-  its heatsink.
+- The converters' input connector, their shutdown threshold and the size of
+  their heatsinks.
 - The shunt part numbers are on [Supply](Supply.md); their mounting and the 300 A path's busbar are round 3.
 - Layout, isolation, and how a 300 A path and a 3.3 V I²C bus share a board.
