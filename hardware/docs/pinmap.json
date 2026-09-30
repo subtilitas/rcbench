@@ -189,25 +189,30 @@
      "gpio": 32,
      "signal": "multiprotocol port 1",
      "function": "PIO0",
-     "external": true
+     "external": true,
+     "protocol": "dshot"
     },
     {
      "gpio": 33,
      "signal": "UART socket (OpenYGE, one pin)",
      "function": "PIO2",
-     "external": true
+     "external": true,
+     "protocol": "uart",
+     "bus": "socket_uart"
     },
     {
      "gpio": 34,
      "signal": "multiprotocol port 2",
      "function": "PIO0",
-     "external": true
+     "external": true,
+     "protocol": "dshot"
     },
     {
      "gpio": 36,
      "signal": "multiprotocol port 3",
      "function": "PIO1",
-     "external": true
+     "external": true,
+     "protocol": "dshot"
     },
     {
      "gpio": 37,
@@ -219,7 +224,8 @@
      "gpio": 38,
      "signal": "multiprotocol port 4",
      "function": "PIO1",
-     "external": true
+     "external": true,
+     "protocol": "dshot"
     },
     {
      "gpio": 40,
@@ -314,11 +320,12 @@
      "gpio": 7,
      "signal": "optical index, measurement copy, sampled by PIO on the ADC timebase",
      "function": "PIO2",
-     "external": true
+     "external": true,
+     "protocol": "input"
     },
     {
      "gpio": 8,
-     "signal": "measurement SPI RX (MISO)",
+     "signal": "measurement SPI RX (MISO); reaches the cell monitor only across the barrier",
      "function": "SPI1_RX",
      "bus": "meas_spi"
     },
@@ -330,13 +337,13 @@
     },
     {
      "gpio": 10,
-     "signal": "measurement SPI SCLK",
+     "signal": "measurement SPI SCLK; reaches the cell monitor only across the barrier",
      "function": "SPI1_SCLK",
      "bus": "meas_spi"
     },
     {
      "gpio": 11,
-     "signal": "measurement SPI TX (MOSI)",
+     "signal": "measurement SPI TX (MOSI); reaches the cell monitor only across the barrier",
      "function": "SPI1_TX",
      "bus": "meas_spi"
     },
@@ -358,7 +365,7 @@
     },
     {
      "gpio": 15,
-     "signal": "cell monitor CS (ADBMS1818), SIO, pulled up",
+     "signal": "cell monitor CS, to the host side of the isoSPI or digital-isolator barrier (V189), SIO, pulled up",
      "function": "SIO",
      "bus": "meas_spi"
     },
@@ -381,38 +388,45 @@
      "signal": "Qwiic and infrared I2C bus SDA: TCA9548A and MLX90614, PIO",
      "function": "PIO2",
      "external": true,
-     "bus": "qwiic_i2c"
+     "bus": "qwiic_i2c",
+     "protocol": "i2c"
     },
     {
      "gpio": 19,
      "signal": "Qwiic and infrared I2C bus SCL",
      "function": "PIO2",
      "external": true,
-     "bus": "qwiic_i2c"
+     "bus": "qwiic_i2c",
+     "protocol": "i2c"
     },
     {
      "gpio": 20,
      "signal": "encoder A",
      "function": "PIO0",
-     "external": true
+     "external": true,
+     "protocol": "quadrature"
     },
     {
      "gpio": 21,
      "signal": "encoder B",
      "function": "PIO0",
-     "external": true
+     "external": true,
+     "protocol": "quadrature"
     },
     {
      "gpio": 22,
      "signal": "encoder index",
      "function": "PIO0",
-     "external": true
+     "external": true,
+     "protocol": "quadrature"
     },
     {
      "gpio": 23,
      "signal": "receiver input (S.BUS, iBUS, SUMD, CRSF, SRXL2, EX Bus)",
      "function": "PIO1",
-     "external": true
+     "external": true,
+     "protocol": "uart",
+     "bus": "receiver_uart"
     },
     {
      "gpio": 24,
@@ -440,6 +454,21 @@
     {
      "gpio": 28,
      "signal": "thermocouple converter DRDY (MAX31856), active low",
+     "function": "SIO"
+    },
+    {
+     "gpio": 29,
+     "signal": "load-cell ADC START (ADS1235)",
+     "function": "SIO"
+    },
+    {
+     "gpio": 30,
+     "signal": "load-cell ADC RESET, active low (ADS1235)",
+     "function": "SIO"
+    },
+    {
+     "gpio": 31,
+     "signal": "load-cell ADC PWDN, active low (ADS1235)",
      "function": "SIO"
     }
    ]

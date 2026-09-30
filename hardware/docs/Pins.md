@@ -13,6 +13,8 @@ I²C (Inter-Integrated Circuit) bus stays on one instance, each PIO
 (programmable input/output) block's pins fit one 32-pin window (GPIO 0 to 31 or
 16 to 47), the ADC (analogue-to-digital converter) is on GPIO 40 to 47, and a
 signal that reaches a connector is on GPIO 0 to 39, the fault-tolerant pins.
+Every PIO pin names its protocol, every serial pin its bus, and an I²C bus
+has 2 pins.
 
 ```sh
 python3 tools/pinmap_check.py hardware/docs/pinmap.json
@@ -21,7 +23,7 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json
 | Chip | GPIO used | Free |
 | --- | --- | --- |
 | Main coprocessor | 44 of 48 | 4: GPIO 15, 35, 39, 47 |
-| Measurement coprocessor | 29 of 48 | 19 |
+| Measurement coprocessor | 32 of 48 | 16 |
 
 ## Owner decisions
 
@@ -100,14 +102,14 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json
 | 5 | SIO | accelerometer ADC CS, first axis (ADCS7476), SIO, pulled up |  |
 | 6 | SPI0_SCLK | accelerometer ADC SCLK, both ADCS7476 |  |
 | 7 | PIO2 | optical index, measurement copy, sampled by PIO on the ADC timebase | yes |
-| 8 | SPI1_RX | measurement SPI RX (MISO) |  |
+| 8 | SPI1_RX | measurement SPI RX (MISO); reaches the cell monitor only across the barrier |  |
 | 9 | SIO | load-cell ADC CS (ADS1235), SIO, pulled up |  |
-| 10 | SPI1_SCLK | measurement SPI SCLK |  |
-| 11 | SPI1_TX | measurement SPI TX (MOSI) |  |
+| 10 | SPI1_SCLK | measurement SPI SCLK; reaches the cell monitor only across the barrier |  |
+| 11 | SPI1_TX | measurement SPI TX (MOSI); reaches the cell monitor only across the barrier |  |
 | 12 | SIO | load-cell ADC DRDY (ADS1235) |  |
 | 13 | SIO | thermocouple converter CS (MAX31856), SIO, pulled up |  |
 | 14 | SIO | thermocouple converter FAULT (MAX31856) |  |
-| 15 | SIO | cell monitor CS (ADBMS1818), SIO, pulled up |  |
+| 15 | SIO | cell monitor CS, to the host side of the isoSPI or digital-isolator barrier (V189), SIO, pulled up |  |
 | 16 | I2C0_SDA | sensor I2C bus A SDA: monitors, MCP9808, TPS55285 | yes |
 | 17 | I2C0_SCL | sensor I2C bus A SCL | yes |
 | 18 | PIO2 | Qwiic and infrared I2C bus SDA: TCA9548A and MLX90614, PIO | yes |
@@ -121,6 +123,9 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json
 | 26 | SIO | TCA9548A RESET, active low, pulled up: clears a Qwiic channel held low |  |
 | 27 | SIO | magnetic pickup (DRV5015A1) | yes |
 | 28 | SIO | thermocouple converter DRDY (MAX31856), active low |  |
+| 29 | SIO | load-cell ADC START (ADS1235) |  |
+| 30 | SIO | load-cell ADC RESET, active low (ADS1235) |  |
+| 31 | SIO | load-cell ADC PWDN, active low (ADS1235) |  |
 
 ## I/O expanders
 
@@ -165,6 +170,12 @@ expander follows from that; it takes no GPIO.
   on the timebase of the two accelerometer ADCs (ADCS7476, one an axis), which share SPI0's data and clock with a chip select each.
 - USB VBUS reaches GPIO 37 through a divider, so the USB pull-up follows the
   cable.
+- The cell monitor reaches measurement SPI1 only across an isoSPI or
+  digital-isolator barrier rated 85 V DC working or more, because it sits on
+  the ESC pack's negative (V189, owner, 2026-09-28). GPIO 15 and the SPI1
+  lines drive the barrier's host side.
+- The ADS1235's START, RESET and PWDN each take a GPIO, beside its CS and
+  DRDY: the interface's upper bound of 8 lines (R13).
 - No signal from a connector sits on GPIO 40 to 47.
 
 The SPI modes, the MCP2518FD clock limit, the MLX90614's bus speed, the
@@ -182,6 +193,8 @@ the drafts, which read the datasheets. Round 1's records do not verify them.
   pack switches no pin; one line would take a free main pin.
 - The receiver input is receive-only in the map. EX Bus telemetry or an SRXL2
   handshake needs the SN74LVC1T45DBVR's direction pin.
+- The cell monitor's barrier part, an isoSPI transceiver pair or a digital
+  isolator: not selected (R9).
 - The TPS55288's bus: the map puts it on the main I²C bus, provisionally; the
   IO board specification leaves the main bus or a third measurement bus open.
 - The MCP2518FD clock source, the inter-chip UART's rate and silence limit, and

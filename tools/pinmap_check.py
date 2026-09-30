@@ -10,12 +10,17 @@ PINMAP.json holds one object per coprocessor:
 
 "function" is a name from io_bank0.h's FUNCSEL values (SPI0_SCLK, UART1_TX,
 I2C0_SDA, PWM_A_3, ...), or one of PIO0, PIO1, PIO2, SIO or ADC. "external"
-marks a signal that reaches a connector. The checks:
+marks a signal that reaches a connector. A PIO pin carries "protocol"
+(for example i2c, spi, uart, dshot, quadrature or input), and a pin of a
+shared bus carries "bus". The checks:
 
 - each GPIO is 0 to 47 and used once a chip;
 - a named function exists on that GPIO in the pico-sdk's io_bank0.h;
-- every SPI, UART or I2C pin names its bus, and the pins of one bus
-  agree on the instance, a PIO block counting as an instance;
+- every pin is an object with a GPIO number, a signal and a function;
+- every SPI, UART or I2C pin, and every PIO pin whose protocol is one of
+  them, names its bus; the pins of one bus agree on the instance, a PIO
+  block counting as an instance; an I2C bus has 2 pins;
+- every PIO pin names its protocol;
 - a PIO block's pins fit one 32-pin window, GPIO 0 to 31 or 16 to 47;
 - ADC is on GPIO 40 to 47, the RP2350B's ADC inputs;
 - an external signal is on GPIO 0 to 39, the fault-tolerant pins;
@@ -53,12 +58,23 @@ def instance(function):
     return m.group(1) if m else None
 
 
+SERIAL = ("i2c", "spi", "uart")
+
+
 def check_chip(chip, table):
     fails = []
     name = chip.get("chip", "?")
     seen = {}
     pio = {}
-    for pin in chip.get("pins", []):
+    raw = chip.get("pins", [])
+    raw = raw if isinstance(raw, list) else []
+    pins = [p for p in raw if isinstance(p, dict)]
+    if len(pins) != len(raw):
+        fails.append(f"{name}: a pin entry is not an object")
+    for pin in pins:
+        if not pin.get("signal") or not pin.get("function"):
+            fails.append(f"{name} GPIO{pin.get('gpio')}: a pin names no "
+                         f"signal or no function")
         gpio, fn = pin.get("gpio"), pin.get("function", "")
         sig = pin.get("signal", "?")
         where = f"{name} GPIO{gpio} ({sig})"
@@ -71,6 +87,8 @@ def check_chip(chip, table):
         seen[gpio] = sig
         if fn in ("PIO0", "PIO1", "PIO2"):
             pio.setdefault(fn, []).append(gpio)
+            if not pin.get("protocol"):
+                fails.append(f"{where}: a PIO pin names no protocol")
         elif fn == "ADC":
             if gpio not in ADC_PINS:
                 fails.append(f"{where}: ADC needs GPIO 40 to 47")
@@ -79,28 +97,36 @@ def check_chip(chip, table):
         if pin.get("external") and gpio > FT_LAST:
             fails.append(f"{where}: an external signal needs a fault-tolerant "
                          f"pin, GPIO 0 to {FT_LAST}")
-    for block, pins in pio.items():
-        lo_pin, hi_pin = min(pins), max(pins)
+    for block, gpios in pio.items():
+        lo_pin, hi_pin = min(gpios), max(gpios)
         if not any(lo <= lo_pin and hi_pin <= hi for lo, hi in PIO_WINDOWS):
             fails.append(f"{name} {block}: GPIO {lo_pin} to {hi_pin} do not "
                          f"fit one window, 0 to 31 or 16 to 47")
     groups = {}
-    for pin in chip.get("pins", []):
+    i2c = {}
+    for pin in pins:
         fn = pin.get("function", "")
-        if fn in ("PIO0", "PIO1", "PIO2") and pin.get("bus"):
-            groups.setdefault(pin["bus"], set()).add(fn)
-            continue
-        inst = instance(fn)
-        if not inst:
+        where = f"{name} GPIO{pin.get('gpio')} ({pin.get('signal', '?')})"
+        if fn in ("PIO0", "PIO1", "PIO2"):
+            inst, proto = fn, pin.get("protocol", "")
+        else:
+            inst = instance(fn)
+            proto = inst[:-1].lower() if inst else ""
+        if proto not in SERIAL:
             continue
         if not pin.get("bus"):
-            where = f"{name} GPIO{pin.get('gpio')} ({pin.get('signal', '?')})"
-            fails.append(f"{where}: {pin.get('function')} names no bus")
+            fails.append(f"{where}: {fn} {proto} names no bus")
             continue
         groups.setdefault(pin["bus"], set()).add(inst)
+        if proto == "i2c":
+            i2c[pin["bus"]] = i2c.get(pin["bus"], 0) + 1
     for bus, insts in groups.items():
         if len(insts) > 1:
             fails.append(f"{name} bus {bus}: mixes {', '.join(sorted(insts))}")
+    for bus, count in i2c.items():
+        if count != 2:
+            fails.append(f"{name} bus {bus}: an I2C bus has 2 pins, not "
+                         f"{count}")
     return fails, len(seen)
 
 
@@ -113,11 +139,14 @@ def main():
     table = funcsel(args.sdk)
     doc = json.load(open(args.pinmap, encoding="utf-8"))
     total = []
-    chips = doc.get("chips")
+    chips = doc.get("chips") if isinstance(doc, dict) else None
     if not isinstance(chips, list):
         total.append("the map has no chips")
         chips = []
-    names = [c.get("chip") for c in chips if isinstance(c, dict)]
+    if not all(isinstance(c, dict) for c in chips):
+        total.append("a chip entry is not an object")
+        chips = [c for c in chips if isinstance(c, dict)]
+    names = [c.get("chip") for c in chips]
     for want in CHIPS:
         if names.count(want) != 1:
             total.append(f"the map has {names.count(want)} {want} chip(s), "
