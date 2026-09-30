@@ -163,8 +163,8 @@ replace it.
    3 days, and no second pack is named.
 2. **Allowlisted manufacturers only.** The list is question S1 for ICs, S9
    for the 18650 cells of the bench's own pack, and S2 for the rest. The
-   bench's pack is the owner's SLS XTRON pack, from a maker outside S9
-   (owner, 2026-09-30). A part
+   bench's pack is the owner's SLS XTRON pack, from a maker outside S9, and
+   is exempt from this rule (owner, 2026-09-30). A part
    from a manufacturer not on the list is not a
    candidate, whatever its stock. A seed from such a manufacturer is dropped.
    A maker's other names count as its listed name: Maxim and Linear as Analog
@@ -582,8 +582,9 @@ question whose value only feeds a decision under
 [Decided on the research's output](#decided-on-the-researchs-output) holds
 neither P2 nor the start of its task. The questions that name the INA238
 (V154 to V162, V179) apply to the INA228, the motor monitor the owner fixes
-in its place (2026-09-30). The questions that name 18650 cells (V137, V151)
-apply to the pouch cells of the SLS XTRON pack the owner names (2026-09-30).
+in its place (2026-09-30). The questions that name 18650 cells (V137, V145,
+V151) apply to the pouch cells of the SLS XTRON pack the owner names
+(2026-09-30).
 
 | ID | Category and function | Question | Answer (owner, date) |
 | --- | --- | --- | --- |
