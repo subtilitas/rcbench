@@ -96,9 +96,9 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json
 | 1 | UART0_RX | inter-chip link RX |  |
 | 2 | I2C1_SDA | sensor I2C bus B SDA: monitors, MCP9808, TPS55285 | yes |
 | 3 | I2C1_SCL | sensor I2C bus B SCL | yes |
-| 4 | SPI0_RX | accelerometer ADC data, both ADCS7476 (SDATA) | yes |
-| 5 | SIO | accelerometer ADC CS, first axis (ADCS7476), SIO, pulled up | yes |
-| 6 | SPI0_SCLK | accelerometer ADC SCLK, both ADCS7476 | yes |
+| 4 | SPI0_RX | accelerometer ADC data, both ADCS7476 (SDATA) |  |
+| 5 | SIO | accelerometer ADC CS, first axis (ADCS7476), SIO, pulled up |  |
+| 6 | SPI0_SCLK | accelerometer ADC SCLK, both ADCS7476 |  |
 | 7 | PIO2 | optical index, measurement copy, sampled by PIO on the ADC timebase | yes |
 | 8 | SPI1_RX | measurement SPI RX (MISO) |  |
 | 9 | SIO | load-cell ADC CS (ADS1235), SIO, pulled up |  |
@@ -116,7 +116,7 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json
 | 21 | PIO0 | encoder B | yes |
 | 22 | PIO0 | encoder index | yes |
 | 23 | PIO1 | receiver input (S.BUS, iBUS, SUMD, CRSF, SRXL2, EX Bus) | yes |
-| 24 | SIO | accelerometer ADC CS, second axis (ADCS7476), SIO, pulled up | yes |
+| 24 | SIO | accelerometer ADC CS, second axis (ADCS7476), SIO, pulled up |  |
 | 25 | SIO | phase-wire clip comparator (TLV3201) | yes |
 | 27 | SIO | magnetic pickup (DRV5015A1) | yes |
 

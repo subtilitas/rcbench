@@ -296,21 +296,18 @@
      "gpio": 4,
      "signal": "accelerometer ADC data, both ADCS7476 (SDATA)",
      "function": "SPI0_RX",
-     "external": true,
      "bus": "accel_spi"
     },
     {
      "gpio": 5,
      "signal": "accelerometer ADC CS, first axis (ADCS7476), SIO, pulled up",
      "function": "SIO",
-     "external": true,
      "bus": "accel_spi"
     },
     {
      "gpio": 6,
      "signal": "accelerometer ADC SCLK, both ADCS7476",
      "function": "SPI0_SCLK",
-     "external": true,
      "bus": "accel_spi"
     },
     {
@@ -421,7 +418,6 @@
      "gpio": 24,
      "signal": "accelerometer ADC CS, second axis (ADCS7476), SIO, pulled up",
      "function": "SIO",
-     "external": true,
      "bus": "accel_spi"
     },
     {

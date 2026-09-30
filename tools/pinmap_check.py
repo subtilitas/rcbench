@@ -19,7 +19,7 @@ marks a signal that reaches a connector. The checks:
 - a PIO block's pins fit one 32-pin window, GPIO 0 to 31 or 16 to 47;
 - ADC is on GPIO 40 to 47, the RP2350B's ADC inputs;
 - an external signal is on GPIO 0 to 39, the fault-tolerant pins;
-- the map has at least one chip, and each chip has pins.
+- the map has exactly one main and one measurement chip, each with pins.
 
 It prints one line per failure and the pin count per chip, and exits 1
 on any failure.
@@ -35,6 +35,7 @@ REGS = "src/rp2350/hardware_regs/include/hardware/regs/io_bank0.h"
 FT_LAST = 39
 ADC_PINS = range(40, 48)
 PIO_WINDOWS = ((0, 31), (16, 47))
+CHIPS = ("main", "measurement")
 
 
 def funcsel(sdk):
@@ -108,9 +109,16 @@ def main():
     doc = json.load(open(args.pinmap, encoding="utf-8"))
     total = []
     chips = doc.get("chips")
-    if not isinstance(chips, list) or not chips:
+    if not isinstance(chips, list):
         total.append("the map has no chips")
         chips = []
+    names = [c.get("chip") for c in chips if isinstance(c, dict)]
+    for want in CHIPS:
+        if names.count(want) != 1:
+            total.append(f"the map has {names.count(want)} {want} chip(s), "
+                         f"not 1")
+    for extra in sorted(set(names) - set(CHIPS), key=str):
+        total.append(f"the map has an unknown chip: {extra}")
     for chip in chips:
         if not chip.get("pins"):
             total.append(f"{chip.get('chip', '?')}: no pins")
