@@ -21,7 +21,7 @@ to R8.
 | Servo supply | TPS55285VALR, the held fixed input, is refuted on its ambient range. At 6.0 V in, 8.4 V and 4.0 A out and 50 °C ambient its estimated junction temperature spans 89 to 179 °C against the 125 °C recommended maximum, because its datasheet gives no loss figure for the IC (integrated circuit) at that point. The owner keeps it and uses three, one for each servo rail (2026-09-30): 4 to 6.35 A is a short peak for one servo; a small aluminum heatsink on a 6-layer board cools each; an MCP9808T-E/MS beside each switches its rail off above a threshold, which bounds a sustained current from several servos. Round 2 finds the continuous current one converter holds at 6.0 V in and 50 °C |
 | 2S (two cells in series) charger with balancing | BQ25713RSNR, with MAX17320G22+ for balancing and pack protection and FUSB303BTMX for the USB-C (Universal Serial Bus Type-C) input limit. The BQ25887 is not selected |
 | Output port monitors | INA3221AIRGVR, 7 parts, with ERJ-6CWDR010V, a 10 mΩ shunt, on each of the 20 ports |
-| Motor monitor | INA238AIDGSR fails the stock gate at both vendors: JLCPCB 0 with a presale count of −99, Digi-Key 0 (2026-09-29T17:18:33Z). No motor monitor is selected |
+| Motor monitor | INA238AIDGSR fails the stock gate at both vendors: JLCPCB 0 with a presale count of −99, Digi-Key 0 (2026-09-29T17:18:33Z). The owner fixes the INA228AIDGSR in its place (2026-09-30): it returns to stock soon, as the owner states; its stock is not read |
 | Motor shunts | BVR-Z-R0002-1.0 on the board for 150 A, and WSBE8518L1000JKA2 off the board, bought at Digi-Key, with no second source |
 
 ## Summary
@@ -31,12 +31,12 @@ to R8.
 | Buck-boost, I²C (Inter-Integrated Circuit) voltage and current | TPS55285 | VQFN (very thin quad flat no-lead) | the owner holds 12 (2026-09-25), 3 a board (owner, 2026-09-30); its limit stops at 6.35 A, so each rail runs to 6.35 A. The TPS55288, whose limit scales past 6.35 A, is the alternative below |
 | 2S charger with balancing | BQ25887RGER, a candidate | QFN-24-EP 4×4 | the only single die from a maker question S1 allows that charges 2S and balances it. A seed of research category R7, not a choice: the charge input is up to 3 A from USB-C at 5 V ([Research](Research.md#research-categories)) |
 | Output port monitors, ≤15 V | INA3221, 7 parts for 20 ports | VQFN-16 4×4 | 3 channels a part, 26 V bus, 13-bit shunt reading. One channel per port (owner, 2026-09-25); a seed of research category R8, which may replace it (owner, 2026-09-27) |
-| Motor monitor, 67.2 V (16 cells), 300 A | INA238AIDGSR | VSSOP-10 | 85 V and 16 bits; the 20-bit part is unbuyable |
+| Motor monitor, 67.2 V (16 cells), 300 A | INA228AIDGSR | VSSOP-10 | 85 V and 20 bits, fixed by the owner (2026-09-30); the INA238, 16 bits on the same footprint, is the alternative below |
 
 The INA3221 reads ±163.84 mV across its shunt in 40 µV steps. With a 10 mΩ
 shunt per port that is 4 mA a step and 16.4 A full scale, finer than the 0.08 A
 the servo synchroniser resolves. Seven parts give 21 channels for the 20 ports.
-It has no energy or charge accumulator; the motor keeps its INA238.
+It has no energy or charge accumulator; the motor keeps its INA228.
 
 ## Servo supply: TPS55285
 
@@ -156,7 +156,7 @@ lay out, no Kelvin connection, no four-terminal footprint.
 | ADC | 16 bit | 16 bit | 16 bit | 16 bit |
 | Shunt | integrated 800 µΩ | external | external | external |
 | Interface | I²C | I²C | SPI (Serial Peripheral Interface) | I²C |
-| Energy and charge accumulators | no | yes | yes | no |
+| Energy and charge accumulators | no | no (SLYS025B Table 6-3) | not read | no |
 | JLCPCB | B: 13,351 · $1.05; A: 50 | 2246 · $4.35 | 108 · $2.86 | 74,914 · $0.52 |
 | Digi-Key | A: 6611 · $1.67; B: 9330 · $1.27 | 0, 2500 due 2026-10-27 | 255 · $2.34 | 95,920 · $1.72 |
 
@@ -169,7 +169,7 @@ Alternatives: INA238 with a 5 mΩ shunt gives 40 mV at 8 A, a 0.25 mA LSB and
 fifth of the price and in large stock, but has no energy or charge accumulator,
 so consumption would have to be integrated in firmware.
 
-## Motor monitor: INA238
+## Motor monitor: INA228
 
 | | INA238 | INA228 | INA229 |
 | --- | --- | --- | --- |
@@ -181,18 +181,22 @@ so consumption would have to be integrated in firmware.
 | JLCPCB | 2246 · $4.35 | 29, pre-sale −477 | 0 to 3 |
 | Digi-Key | 0, 2500 due 2026-10-27 | 0, 666 due 2026-11-03 | 0, 2500 due 2026-12-23 |
 
-INA228 is unbuyable at both vendors; the automotive INA228AQDGSRQ1 is no better
-(JLCPCB none, Digi-Key 416 at $3.81). INA238 has the same bus range, the same
-two shunt ranges, the same energy and charge accumulators, the same VSSOP-10
-and the same pin order, at 16 bits instead of 20.
+The owner fixes the INA228 (2026-09-30): it returns to stock soon, as the
+owner states, and the monitor gets no further research. The stock figures
+above are those of 2026-09-01; the automotive INA228AQDGSRQ1 read JLCPCB none
+and Digi-Key 416 at $3.81 then. The INA238 has the same bus range, the same
+two shunt ranges, the same VSSOP-10 and the same pin order, at 16 bits
+instead of 20. It has no energy or charge register (SLYS025B Table 6-3); the
+INA228 has both (V161 in [Research](Research.md#raised-by-p1)). Round 1 read it at JLCPCB 0
+with a presale count of −99 and Digi-Key 0 on 2026-09-29.
 
-| R_shunt | Drop at 300 A | Of ±40.96 mV full scale | INA238 LSB | Dissipation at 300 A |
-| --- | --- | --- | --- | --- |
-| 100 µΩ | 30 mV | 73% | 12.5 mA | 9 W |
-| 50 µΩ | 15 mV | 37% | 25 mA | 4.5 W |
+| R_shunt | Drop at 300 A | Of ±40.96 mV full scale | INA228 LSB | INA238 LSB | Dissipation at 300 A |
+| --- | --- | --- | --- | --- | --- |
+| 100 µΩ | 30 mV | 73% | 0.78 mA | 12.5 mA | 9 W |
+| 50 µΩ | 15 mV | 37% | 1.56 mA | 25 mA | 4.5 W |
 
-25 mA of resolution on 300 A is below the noise a running ESC (electronic speed
-controller) puts on the wire. The shunt is the constraint: 300 A needs a
+The noise a running ESC (electronic speed controller) puts on the wire is not
+measured. The shunt is the constraint: 300 A needs a
 busbar-type resistor (Isabellenhütte BV series, Vishay WSBS8518); the largest
 four-terminal SMD (surface-mount device) parts (Bourns CSS2H-2512, 15 W) stop
 at 0.2 mΩ and would dissipate 18 W. Kelvin-sense it, with an RC

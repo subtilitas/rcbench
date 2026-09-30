@@ -202,7 +202,7 @@
     "R8": [
       {
         "function": "Motor monitor",
-        "part": "INA238"
+        "part": "INA228"
       }
     ]
   }

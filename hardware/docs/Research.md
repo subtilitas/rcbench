@@ -65,8 +65,8 @@ A fixed input that fails a check is reported to the owner, not re-selected:
 | Input | Value | Source |
 | --- | --- | --- |
 | Microcontroller | RP2354B: the RP2350B die and a 2 MB Winbond QSPI (quad serial peripheral interface) NOR (not-or) flash stacked in one QFN-80 (quad flat no-lead, 80 pads) 10 × 10 mm package; 48 GPIO (general-purpose input/output), 8 ADC inputs, 520 kB SRAM (static random-access memory) on the die, no PSRAM (pseudo-static random-access memory) in the package. Stepping A4 (owner, 2026-09-27), from the marking RP2354B0A4 in JLCPCB's product photograph of C39843328. In JLCPCB's API (application programming interface), C39843328 carries the `erpComponentName` `SC1512(13)-A4` (2026-09-27). The marking on the held parts is not read. The flash is a W25Q16JVWI according to section 14.3 of the RP2350 datasheet (build 2024-08-08), read from a copy. R1 reads the part number from Raspberry Pi's own copy at `datasheets.raspberrypi.com`. Section 14.3 gives the flash 2.7 to 3.6 V. Table 1441 of build 2025-07-29 gives QSPI_IOVDD, the supply of the QSPI interface, on the RP2354 as 2.97 to 3.63 V, 3.3 V nominal, because the in-package flash is a 3.3 V part; R1 confirms both | owner; held in the owner's JLCPCB personal parts library |
-| Servo supply | TPS55285: current limit set internally, up to 6.35 A; input 2.4 to 22 V; 12 held in the owner's personal library (owner, 2026-09-25) | [Power](Power.md) |
-| Motor monitor | INA238 | [Power](Power.md) |
+| Servo supply | TPS55285: current limit set internally, up to 6.35 A; input 2.4 to 22 V; 12 held in the owner's personal library (owner, 2026-09-25). Three a board, one for each of 3 servo rails (owner, 2026-09-30) | [Power](Power.md) |
+| Motor monitor | INA228 (owner, 2026-09-30), fixed without further research on the monitor. Round 1's records read the INA238 | [Power](Power.md) |
 
 The BQ25887 in [Power](Power.md) takes 3.9 to 6.2 V only and does not charge
 from the 12 to 20 V DC (direct current) input. It is a seed of R7, not a fixed
@@ -79,7 +79,7 @@ carries its date:
 | Decision | Value |
 | --- | --- |
 | Power | a DC input runs the IO board and the display when present, 12 to 20 V (owner, 2026-09-25); the bench's own 2S (two cells in series) pack runs both otherwise; the selection is automatic. The display is powered through the link cable. The pack is disconnected in hardware below a discharge floor (question F9) |
-| Motor current | the INA238 is on the IO board. An onboard shunt carries up to 150 A, with a temperature sensor beside it. An external shunt, for currents above 150 A to 300 A and more (owner, 2026-09-25), connects to the IO board by its sense leads |
+| Motor current | the INA228 is on the IO board (owner, 2026-09-30). An onboard shunt carries up to 150 A, with a temperature sensor beside it. An external shunt, for currents above 150 A to 300 A and more (owner, 2026-09-25), connects to the IO board by its sense leads |
 | Output ports | 20 typed ports (owner, 2026-09-25): 16 PWM ports (enable, pulse range, frame rate per pair, one switchable to PPM) and 4 multiprotocol ports (servo PWM, DShot, bidirectional DShot, ESC telemetry, servo configuration, ESC bootloader); a one-pin UART socket; an external CAN port on its own controller |
 | Servo current | one current monitor channel per port, beside each port's supply switch (owner, 2026-09-25). The owner's choice is 7 INA3221 for the 20 ports (owner, 2026-09-25), a seed of R8, which may replace it (owner, 2026-09-27) |
 | Sensor inputs | load cells for thrust and torque, a phase-wire rpm (revolutions per minute) clip, motor temperature, a magnetic rpm pickup, and the encoder (quadrature A and B plus an index pulse, ABI), which is the encoder in the pin budget of `firmware/iomcu/CMakeLists.txt` |
@@ -156,7 +156,9 @@ replace it.
    part off the board, such as the external shunt or an external switch
    module (question F7), is bought at the second vendor of question S3 and
    passes rules 2, 4, 5 and 7 there, with the stock read from that vendor's
-   API (prerequisite 3).
+   API (prerequisite 3). The pack cells are the exception: INR-18650-P30B is
+   bought at Liion Wholesale (owner, 2026-09-30), whose stock is not read
+   through an API.
 2. **Allowlisted manufacturers only.** The list is question S1 for ICs, S9
    for the 18650 cells of the bench's own pack, and S2 for the rest. A part
    from a manufacturer not on the list is not a
@@ -574,11 +576,13 @@ the branch of prerequisite 4. The owner answers each with a value, or marks it
 records it as found, not given. P4's datasheet verifier re-reads it. A
 question whose value only feeds a decision under
 [Decided on the research's output](#decided-on-the-researchs-output) holds
-neither P2 nor the start of its task.
+neither P2 nor the start of its task. The questions that name the INA238
+(V154 to V162, V179) apply to the INA228, the motor monitor the owner fixes
+in its place (2026-09-30).
 
 | ID | Category and function | Question | Answer (owner, date) |
 | --- | --- | --- | --- |
-| V1 | R1, Microcontroller | What is the stop deadline, in ms: the longest time from the coprocessor ceasing to feed the RP2350 watchdog (frozen while the panel keeps beating) to every output and power gate the coprocessor drives being at its reset state? | for research (owner, 2026-09-28) |
+| V1 | R1, Microcontroller | What is the stop deadline, in ms: the longest time from the coprocessor ceasing to feed the RP2350 watchdog (frozen while the panel keeps beating) to every output and power gate the coprocessor drives being at its reset state? | 500 ms (owner, 2026-09-30) |
 | V2 | R1, Microcontroller | What is the longest legitimate stall of the coprocessor's main loop, in ms, that the watchdog timeout must exceed? Is it the 400 ms packaged-part maximum of one 4 kB sector erase alone, or longer, to cover a USB console write that blocks while the host does not read (up to 500 ms a write at pico-sdk 2.3.1's default) and a pass that holds both? | for research (owner, 2026-09-28) |
 | V3 | R1, 12 MHz crystal | What clock error between an ESC and the bench, in percent, must the bidirectional DShot decoder accept? The tree states 'a percent or two' with no source, and the decoder is host-tested at ±5 % (4.75 and 5.25 samples a bit). | ±2 % (owner, 2026-09-28) |
 | V4 | R1, Microcontroller | What watchdog timeout, in ms, does the coprocessor image set? | for research (owner, 2026-09-28) |
@@ -586,10 +590,10 @@ neither P2 nor the start of its task.
 | V6 | R1, 12 MHz crystal | What load capacitance in pF, highest ESR in Ohm and lowest drive-level rating in uW must the 12 MHz crystal meet? | for research (owner, 2026-09-28) |
 | V7 | R1, 12 MHz crystal | Over what ambient temperature range, in °C, must the R1 parts be rated and the crystal stay within its tolerance: the 0 to 50 °C over which pull request #167 specifies the monostable window, or another range? | 0 to 50 °C ambient, one range for the whole IO board (owner, 2026-09-28) |
 | V8 | R1, Core regulator inductor | What inductance in uH (with its tolerance in %), lowest saturation current in A and highest DC resistance in mOhm must the RP2354B's core regulator inductor meet? | 3.3 µH ±20 %; saturation current at least 1.5 A; DC resistance at most 250 mΩ (owner, 2026-09-28) |
-| V9 | R1, USB protection | What ESD immunity must the USB protection give the USB port's lines, as IEC 61000-4-2 contact and air discharge voltages in kV? | IEC 61000-4-2 level 4: ±8 kV contact, ±15 kV air, on every line the protection covers (owner, 2026-09-28) |
+| V9 | R1, USB protection | What ESD immunity must the USB protection give the USB port's lines, as IEC 61000-4-2 contact and air discharge voltages in kV? | IEC 61000-4-2 level 4: ±8 kV contact, ±15 kV air, on every line the protection covers (owner, 2026-09-28). Relaxed to match standard USB protection parts: where a standard part misses a figure here, its datasheet figure stands (owner, 2026-09-30) |
 | V10 | R1, USB protection | What highest VBUS voltage in V and current in A must the protection on the RP2354B's USB port carry? Is it a data port whose VBUS is only sensed, or also the USB-C charger input of F8 at up to 3 A and 5 V on the same connector, with its CC1 and CC2 pins? | 5.5 V, 3 A: one USB-C connector for the charger input of F8 and the RP2354B's data lines, with CC1 and CC2 (owner, 2026-09-28) |
 | V11 | R1, USB protection | What highest capacitance per line, in pF, may the USB protection add on D+ and D-? | for research (owner, 2026-09-28) |
-| V12 | R1, USB protection | What highest voltage, in V, may the USB protection let reach USB_DP and USB_DM (QFN-80 pins 67 and 66)? Give the clamping voltage at the ESD level asked in the ESD question, and the highest steady voltage those pins may see. | Steady: 3.63 V. ESD: clamping voltage at most 36 V at 16 A TLP (IEC 61000-4-2 ±8 kV contact at 30 ns), ahead of the 27 Ω series resistor (owner, 2026-09-28) |
+| V12 | R1, USB protection | What highest voltage, in V, may the USB protection let reach USB_DP and USB_DM (QFN-80 pins 67 and 66)? Give the clamping voltage at the ESD level asked in the ESD question, and the highest steady voltage those pins may see. | Steady: 3.63 V. ESD: clamping voltage at most 36 V at 16 A TLP (IEC 61000-4-2 ±8 kV contact at 30 ns), ahead of the 27 Ω series resistor (owner, 2026-09-28). Relaxed to match standard USB protection parts: where a standard part misses a figure here, its datasheet figure stands (owner, 2026-09-30) |
 | V13 | R1, USB protection | Which connector type does the RP2354B's USB port use: USB Type-C or another type the owner names? How many lines must the protection cover: VBUS, D+ and D-, plus CC1 and CC2 on USB Type-C? | USB Type-C shared with the F8 charger input: 5 lines, VBUS rated 5.5 V at 3 A (owner, 2026-09-28) |
 | V14 | R1, Core regulator inductor | Must the core regulator inductor be fully shielded and marked for polarity (yes or no for each), as section 6.3.8.2 of the RP2350 datasheet requires? | yes: fully shielded, and marked for polarity (owner, 2026-09-28) |
 | V15 | R1, 12 MHz crystal | What highest shunt capacitance C0, in pF, and which cut and mode (fundamental AT-cut or another) must the 12 MHz crystal meet? | C0 at most 3.0 pF; fundamental-mode AT-cut (owner, 2026-09-28) |
@@ -728,7 +732,7 @@ neither P2 nor the start of its task.
 | V148 | R7, Charger input limit | Is the charger's USB-C input the RP2354B's USB port, or a USB-C connector of its own? | for research (owner, 2026-09-28) |
 | V149 | R7, Pack overcurrent protection | Does the pack's protection sit in the pack, as a part off the board bought at Digi-Key (rule 1), or on the IO board, as an LCSC part that JLCPCB places? | for research (owner, 2026-09-28) |
 | V150 | R7, Pack overcurrent protection | Besides overcurrent, which protections must the pack's protection carry: per-cell overvoltage on charge (threshold in V), short circuit (threshold in A), over-temperature (threshold in °C), or none? | for research (owner, 2026-09-28) |
-| V151 | R7, Pack cells | Rule 1 has the 18650 cells, a part off the board, bought at Digi-Key, and Digi-Key's API returned no cell from an S9 maker on 2026-09-28. Which vendor sells the cells and counts them for rules 4 and 5? | for research (owner, 2026-09-28) |
+| V151 | R7, Pack cells | Rule 1 has the 18650 cells, a part off the board, bought at Digi-Key, and Digi-Key's API returned no cell from an S9 maker on 2026-09-28. Which vendor sells the cells and counts them for rules 4 and 5? | Liion Wholesale, for INR-18650-P30B; the owner expects high-power 2S pouch cells instead, not decided (owner, 2026-09-30) |
 | V152 | R7, Power path | With USB-C present, no DC input, and the pack flat or opened by the 3.0 V floor disconnect, does the IO board run from USB-C? If yes, up to what current, in A at 5 V, does the power path deliver to the board? | for research (owner, 2026-09-28) |
 | V153 | R7, Pack charger | Must the charger charge the pack while R5's 3.0 V floor disconnect is open, with the charger connected on the cells' side of the disconnect? Answer yes or no. | for research (owner, 2026-09-28) |
 | V154 | R8, Motor monitor | The motor monitor (INA238) and the ESC's telemetry (extended DShot at 0.25 V and 1 A a count, or OpenYGE) can both report. Which source then fills the BENCH page's voltage and current registers (page 0x20, registers 0 and 1)? Answer with a rule, for example: the monitor whenever it answers, and the telemetry only when no monitor answers. | for research (owner, 2026-09-28) |
