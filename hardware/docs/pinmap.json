@@ -247,7 +247,7 @@
     },
     {
      "gpio": 44,
-     "signal": "link CAN controller INT",
+     "signal": "link CAN controller INT, active low, pulled up",
      "function": "SIO"
     },
     {
@@ -258,7 +258,7 @@
     },
     {
      "gpio": 46,
-     "signal": "external CAN controller INT",
+     "signal": "external CAN controller INT, active low, pulled up",
      "function": "SIO"
     }
    ]

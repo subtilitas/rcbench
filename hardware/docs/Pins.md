@@ -84,9 +84,9 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json
 | 41 | SIO | link CAN controller CS, SIO, pulled up |  |
 | 42 | SPI1_SCLK | CAN SPI SCLK |  |
 | 43 | SPI1_TX | CAN SPI TX (MOSI) |  |
-| 44 | SIO | link CAN controller INT |  |
+| 44 | SIO | link CAN controller INT, active low, pulled up |  |
 | 45 | SIO | external CAN controller CS, SIO, pulled up |  |
-| 46 | SIO | external CAN controller INT |  |
+| 46 | SIO | external CAN controller INT, active low, pulled up |  |
 
 ## Measurement coprocessor
 

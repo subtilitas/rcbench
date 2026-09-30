@@ -15,7 +15,7 @@ marks a signal that reaches a connector. The checks:
 - each GPIO is 0 to 47 and used once a chip;
 - a named function exists on that GPIO in the pico-sdk's io_bank0.h;
 - every SPI, UART or I2C pin names its bus, and the pins of one bus
-  agree on the instance;
+  agree on the instance, a PIO block counting as an instance;
 - a PIO block's pins fit one 32-pin window, GPIO 0 to 31 or 16 to 47;
 - ADC is on GPIO 40 to 47, the RP2350B's ADC inputs;
 - an external signal is on GPIO 0 to 39, the fault-tolerant pins;
@@ -62,7 +62,8 @@ def check_chip(chip, table):
         gpio, fn = pin.get("gpio"), pin.get("function", "")
         sig = pin.get("signal", "?")
         where = f"{name} GPIO{gpio} ({sig})"
-        if not isinstance(gpio, int) or not 0 <= gpio <= 47:
+        if (not isinstance(gpio, int) or isinstance(gpio, bool)
+                or not 0 <= gpio <= 47):
             fails.append(f"{where}: no such GPIO")
             continue
         if gpio in seen:
@@ -85,7 +86,11 @@ def check_chip(chip, table):
                          f"fit one window, 0 to 31 or 16 to 47")
     groups = {}
     for pin in chip.get("pins", []):
-        inst = instance(pin.get("function", ""))
+        fn = pin.get("function", "")
+        if fn in ("PIO0", "PIO1", "PIO2") and pin.get("bus"):
+            groups.setdefault(pin["bus"], set()).add(fn)
+            continue
+        inst = instance(fn)
         if not inst:
             continue
         if not pin.get("bus"):
