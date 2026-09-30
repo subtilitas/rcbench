@@ -18,7 +18,7 @@ to R8.
 
 | Need | Round 1 result |
 | --- | --- |
-| Servo supply | TPS55285VALR, the held fixed input, is refuted on its ambient range. At 6.0 V in, 8.4 V and 4.0 A out and 50 °C ambient its estimated junction temperature spans 89 to 179 °C against the 125 °C recommended maximum, because its datasheet gives no loss figure for the IC (integrated circuit) at that point. The owner keeps it (2026-09-30): 4 to 6.35 A are short peaks, not a sustained current; a small aluminum heatsink on a 6-layer board cools it; a second MCP9808T-E/MS beside it switches the servo rail off above a threshold. Round 2 checks it on those terms |
+| Servo supply | TPS55285VALR, the held fixed input, is refuted on its ambient range. At 6.0 V in, 8.4 V and 4.0 A out and 50 °C ambient its estimated junction temperature spans 89 to 179 °C against the 125 °C recommended maximum, because its datasheet gives no loss figure for the IC (integrated circuit) at that point. The owner keeps it (2026-09-30): 4 to 6.35 A is a short peak for one servo; a small aluminum heatsink on a 6-layer board cools it; a second MCP9808T-E/MS beside it switches the servo rail off above a threshold, which bounds a sustained total from several servos. Round 2 finds the continuous total it holds at 6.0 V in and 50 °C |
 | 2S (two cells in series) charger with balancing | BQ25713RSNR, with MAX17320G22+ for balancing and pack protection and FUSB303BTMX for the USB-C (Universal Serial Bus Type-C) input limit. The BQ25887 is not selected |
 | Output port monitors | INA3221AIRGVR, 7 parts, with ERJ-6CWDR010V, a 10 mΩ shunt, on each of the 20 ports |
 | Motor monitor | INA238AIDGSR fails the stock gate at both vendors: JLCPCB 0 with a presale count of −99, Digi-Key 0 (2026-09-29T17:18:33Z). No motor monitor is selected |
@@ -48,8 +48,11 @@ The TPS55288 and TPS55289 below are the alternatives, not used.
 The servo rail has two output settings: up to 5.5 V for LV (low-voltage)
 servos and up to 8.4 V for HV (high-voltage) servos, at 4 to 6.35 A. Both are
 set from software, and the current limit follows the voltage setting.
-4 to 6.35 A are short peaks, not a sustained current: a servo that draws
-them without pause burns out (owner, 2026-09-30).
+4 to 6.35 A is the total of all 20 ports. For one servo it is a short peak:
+a servo that draws it without pause burns out. Several servos together can
+draw it without a time limit; a second MCP9808T-E/MS beside the TPS55285
+switches the rail off when it runs hot (owner, 2026-09-30). The continuous
+total at 6.0 V in and 50 °C is not known; round 2 finds it.
 
 Three parts of the same TI (Texas Instruments) family:
 
