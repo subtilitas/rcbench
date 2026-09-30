@@ -156,7 +156,7 @@ lay out, no Kelvin connection, no four-terminal footprint.
 | ADC | 16 bit | 16 bit | 16 bit | 16 bit |
 | Shunt | integrated 800 µΩ | external | external | external |
 | Interface | I²C | I²C | SPI (Serial Peripheral Interface) | I²C |
-| Energy and charge accumulators | no | yes | yes | no |
+| Energy and charge accumulators | no | no (SLYS025B Table 6-3) | not read | no |
 | JLCPCB | B: 13,351 · $1.05; A: 50 | 2246 · $4.35 | 108 · $2.86 | 74,914 · $0.52 |
 | Digi-Key | A: 6611 · $1.67; B: 9330 · $1.27 | 0, 2500 due 2026-10-27 | 255 · $2.34 | 95,920 · $1.72 |
 
@@ -185,8 +185,9 @@ The owner fixes the INA228 (2026-09-30): it returns to stock soon, as the
 owner states, and the monitor gets no further research. The stock figures
 above are those of 2026-09-01; the automotive INA228AQDGSRQ1 read JLCPCB none
 and Digi-Key 416 at $3.81 then. The INA238 has the same bus range, the same
-two shunt ranges, the same energy and charge accumulators, the same VSSOP-10
-and the same pin order, at 16 bits instead of 20. Round 1 read it at JLCPCB 0
+two shunt ranges, the same VSSOP-10 and the same pin order, at 16 bits
+instead of 20. It has no energy or charge register (SLYS025B Table 6-3); the
+INA228 has both (V161 in [Research](Research.md#raised-by-p1)). Round 1 read it at JLCPCB 0
 with a presale count of −99 and Digi-Key 0 on 2026-09-29.
 
 | R_shunt | Drop at 300 A | Of ±40.96 mV full scale | INA228 LSB | INA238 LSB | Dissipation at 300 A |

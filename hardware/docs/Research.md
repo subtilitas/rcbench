@@ -65,8 +65,8 @@ A fixed input that fails a check is reported to the owner, not re-selected:
 | Input | Value | Source |
 | --- | --- | --- |
 | Microcontroller | RP2354B: the RP2350B die and a 2 MB Winbond QSPI (quad serial peripheral interface) NOR (not-or) flash stacked in one QFN-80 (quad flat no-lead, 80 pads) 10 × 10 mm package; 48 GPIO (general-purpose input/output), 8 ADC inputs, 520 kB SRAM (static random-access memory) on the die, no PSRAM (pseudo-static random-access memory) in the package. Stepping A4 (owner, 2026-09-27), from the marking RP2354B0A4 in JLCPCB's product photograph of C39843328. In JLCPCB's API (application programming interface), C39843328 carries the `erpComponentName` `SC1512(13)-A4` (2026-09-27). The marking on the held parts is not read. The flash is a W25Q16JVWI according to section 14.3 of the RP2350 datasheet (build 2024-08-08), read from a copy. R1 reads the part number from Raspberry Pi's own copy at `datasheets.raspberrypi.com`. Section 14.3 gives the flash 2.7 to 3.6 V. Table 1441 of build 2025-07-29 gives QSPI_IOVDD, the supply of the QSPI interface, on the RP2354 as 2.97 to 3.63 V, 3.3 V nominal, because the in-package flash is a 3.3 V part; R1 confirms both | owner; held in the owner's JLCPCB personal parts library |
-| Servo supply | TPS55285: current limit set internally, up to 6.35 A; input 2.4 to 22 V; 12 held in the owner's personal library (owner, 2026-09-25) | [Power](Power.md) |
-| Motor monitor | INA238 | [Power](Power.md) |
+| Servo supply | TPS55285: current limit set internally, up to 6.35 A; input 2.4 to 22 V; 12 held in the owner's personal library (owner, 2026-09-25). Three a board, one for each of 3 servo rails (owner, 2026-09-30) | [Power](Power.md) |
+| Motor monitor | INA228 (owner, 2026-09-30), fixed without further research on the monitor. Round 1's records read the INA238 | [Power](Power.md) |
 
 The BQ25887 in [Power](Power.md) takes 3.9 to 6.2 V only and does not charge
 from the 12 to 20 V DC (direct current) input. It is a seed of R7, not a fixed
@@ -79,7 +79,7 @@ carries its date:
 | Decision | Value |
 | --- | --- |
 | Power | a DC input runs the IO board and the display when present, 12 to 20 V (owner, 2026-09-25); the bench's own 2S (two cells in series) pack runs both otherwise; the selection is automatic. The display is powered through the link cable. The pack is disconnected in hardware below a discharge floor (question F9) |
-| Motor current | the INA238 is on the IO board. An onboard shunt carries up to 150 A, with a temperature sensor beside it. An external shunt, for currents above 150 A to 300 A and more (owner, 2026-09-25), connects to the IO board by its sense leads |
+| Motor current | the INA228 is on the IO board (owner, 2026-09-30). An onboard shunt carries up to 150 A, with a temperature sensor beside it. An external shunt, for currents above 150 A to 300 A and more (owner, 2026-09-25), connects to the IO board by its sense leads |
 | Output ports | 20 typed ports (owner, 2026-09-25): 16 PWM ports (enable, pulse range, frame rate per pair, one switchable to PPM) and 4 multiprotocol ports (servo PWM, DShot, bidirectional DShot, ESC telemetry, servo configuration, ESC bootloader); a one-pin UART socket; an external CAN port on its own controller |
 | Servo current | one current monitor channel per port, beside each port's supply switch (owner, 2026-09-25). The owner's choice is 7 INA3221 for the 20 ports (owner, 2026-09-25), a seed of R8, which may replace it (owner, 2026-09-27) |
 | Sensor inputs | load cells for thrust and torque, a phase-wire rpm (revolutions per minute) clip, motor temperature, a magnetic rpm pickup, and the encoder (quadrature A and B plus an index pulse, ABI), which is the encoder in the pin budget of `firmware/iomcu/CMakeLists.txt` |
@@ -156,7 +156,9 @@ replace it.
    part off the board, such as the external shunt or an external switch
    module (question F7), is bought at the second vendor of question S3 and
    passes rules 2, 4, 5 and 7 there, with the stock read from that vendor's
-   API (prerequisite 3).
+   API (prerequisite 3). The pack cells are the exception: INR-18650-P30B is
+   bought at Liion Wholesale (owner, 2026-09-30), whose stock is not read
+   through an API.
 2. **Allowlisted manufacturers only.** The list is question S1 for ICs, S9
    for the 18650 cells of the bench's own pack, and S2 for the rest. A part
    from a manufacturer not on the list is not a
@@ -574,7 +576,9 @@ the branch of prerequisite 4. The owner answers each with a value, or marks it
 records it as found, not given. P4's datasheet verifier re-reads it. A
 question whose value only feeds a decision under
 [Decided on the research's output](#decided-on-the-researchs-output) holds
-neither P2 nor the start of its task.
+neither P2 nor the start of its task. The questions that name the INA238
+(V154 to V162, V179) apply to the INA228, the motor monitor the owner fixes
+in its place (2026-09-30).
 
 | ID | Category and function | Question | Answer (owner, date) |
 | --- | --- | --- | --- |
