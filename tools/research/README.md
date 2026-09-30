@@ -179,7 +179,10 @@ keeps (kept part, alternate, Q alternative or its alternate). The pages state ea
 exception with its reason in the part's `Parts.md` row, and only a mark
 there counts. `prepare` reads the exceptions before it merges anything. `record` refuses an output whose exceptions differ from the
 prepared ones. P7 and its critic run the stock check once each, after their
-last edit: each run reads Digi-Key.
+last edit: each run reads Digi-Key. The critic corrects every sentence that
+breaks the writing rules in the files P7 listed, older sentences among them,
+before its stock check, and edits nothing after it; only a line that starts
+with `[FAIL]` is a problem line of the report.
 
 It refuses these unless `--accept-open REASON` records the owner's reason and
 the items in the arguments:

@@ -586,6 +586,8 @@ async function main() {
   check(!r.result.summary.stopped, 'T6: a presale reading below zero is a shortfall of an excepted part')
   r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: stock 0, gate 50\nTraceback (most recent call last):\n  KeyError', stockExceptions: exc, marked: atParts, partRows: excRow })
   check(r.result.summary.stopped === true, 'T6: an excepted shortfall beside a crash, with no problem count, stops it')
+  r = await runTask('T6', { passOutput: 'ran once; its one [FAIL] line is the owner\'s exception\n[FAIL] ADS1235IRHBR (second vendor): stock 0, gate 50\n1 problem(s)', stockExceptions: exc, marked: atParts, partRows: excRow })
+  check(!r.result.summary.stopped, 'T6: prose that mentions [FAIL] is not a problem line')
   r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: stock 0, gate 50\n1 problem(s)', stockExceptions: exc, marked: [{ index: 0, file: 'hardware/docs/Parts.md', line: 9 }], partRows: excRow })
   check(r.result.summary.stopped === true && /item 0 not stated/.test(r.result.summary.reasons[0]), 'T6: an exception marked on another line of Parts.md than its row stops it')
   r = await runTask('T6', { passOutput: '[FAIL] ADS1235IRHBR: stock 0, gate 50\n[FAIL] TCA9548APWR: stock 3, gate 50', stockExceptions: exc, marked: atParts })
