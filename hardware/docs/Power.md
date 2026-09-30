@@ -65,7 +65,7 @@ For one servo 4 to 6.35 A is a short peak: a servo that draws it without
 pause burns out. Several servos on one rail can draw it without a time
 limit; an MCP9808T-E/MS beside each TPS55285 switches its rail off when it
 runs hot (owner, 2026-09-30). The continuous current at 6.0 V in and 50 °C
-is not known; round 2 finds it.
+is not known; a follow-up of R6 finds it.
 
 Three parts of the same TI (Texas Instruments) family:
 
