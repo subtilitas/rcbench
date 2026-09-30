@@ -181,7 +181,11 @@ there counts. `prepare` reads the exceptions before it merges anything. `record`
 prepared ones. P7 and its critic run the stock check once each, after their
 last edit: each run reads Digi-Key. The critic corrects every sentence that
 breaks the writing rules in the files P7 listed, older sentences among them,
-before its stock check, and edits nothing after it; only a line that starts
+before its stock check, and edits nothing after it. It rephrases a
+comparison that no verified figure backs to state the rank alone, lists no
+sentence of `Research.md` below its status line, and states a contradiction
+between the specification and a return as not known instead of listing it
+as a writing issue; only a line that starts
 with `[FAIL]` is a problem line of the report.
 
 It refuses these unless `--accept-open REASON` records the owner's reason and
