@@ -39,8 +39,8 @@ The three fixed or held inputs of group B do not stand as selected parts:
 the servo supply TPS55285VALR is refuted on its ambient range, the motor
 monitor INA238AIDGSR fails the stock gate at both vendors, and no 18650 cell
 is selected. Each is under [Not known](#not-known). The owner keeps the
-TPS55285, fixes the INA228AIDGSR in place of the INA238, and accepts Liion
-Wholesale as the vendor of the cells (2026-09-30).
+TPS55285, fixes the INA228AIDGSR in place of the INA238, and names an SLS
+XTRON 3000 mAh 2S1P pack for the bench (2026-09-30).
 
 ## R5: board power input and rails
 
@@ -84,7 +84,7 @@ The MCP23017 drives 26 outputs: 20 port-switch enables, 5 bias selectors and
 | Cell balancing | MAX17320G22+ | BQ29209DRBR, BQ40Z50RSMR-R2; not verified |
 | Power path | BQ25713RSNR | BQ25703ARSNR, BQ25723RSNR; not verified |
 | Charger input limit | FUSB303BTMX | TUSB321AIRWBR, TUSB321RWBR; not verified |
-| Pack cells | no part selected; INR-18650-P30B (Molicel) passes every check, sold at Liion Wholesale, which the owner accepts as its vendor (2026-09-30); the owner expects a 2S pouch pack instead, not decided | none |
+| Pack cells | the owner names an SLS XTRON 3000 mAh 2S1P pack from Stefansliposhop (2026-09-30); round 1's INR-18650-P30B (Molicel) passes every check and is not used | none |
 | Pack overcurrent protection | MAX17320G22+ | BQ40Z50RSMR-R2, BQ28Z610DRZR; not verified |
 | Bench pack balance lead | MAX17320G22+ | BQ40Z50RSMR-R2, BQ28Z610DRZR; not verified |
 
@@ -107,7 +107,8 @@ P5's budget in T5, as its critic upheld it
 (`hardware/research/round1/T5/002-P5.json`,
 `hardware/research/round1/T5/004-P5-critic.json`). Over their limit: the
 servo rail, the cell rating, the pack protection, the motor overcurrent path
-and the shared-part stock of INA238AIDGSR.
+and the shared-part stock of INA238AIDGSR. The owner's SLS XTRON pack passes
+the cell rating on its vendor-stated 90 A (2026-09-30).
 
 | Budget | Value | Within its limit |
 | --- | --- | --- |
@@ -117,8 +118,8 @@ and the shared-part stock of INA238AIDGSR.
 | Current, display supply | the TPS259474ARPWR breaker trips from 2.25 to 2.75 A, above the display's 2 A peak | yes |
 | Current, encoder 12 V supply | TPS55288RPMR against an assumed 100 mA at 12 V; the encoder's own current (V102) is not found | yes |
 | Pack current | 12.23 A at the 6.0 V floor: 10.02 A for the servo supply (53.3 W through 88.7 %), 1.30 A for the display through the 5 V rail (7.5 W through 96.0 %), 0.91 A for the 3.3 V rail, the encoder supply and the load-cell excitation | yes |
-| Cell rating | INR-18650-P30B: 30 A continuous a cell against 12.23 A, 2900 mAh at least; no cell is selected, because it is sold only at Liion Wholesale and not at Digi-Key | no |
-| Pack protection | MAX17320G22+'s thresholds are set against 12.23 A and the P30B's 30 A (V150), and no selected cell confirms them | no |
+| Cell rating | INR-18650-P30B: 30 A continuous a cell against 12.23 A, 2900 mAh at least; no cell is selected in T5, because it is sold only at Liion Wholesale and not at Digi-Key. The owner's SLS XTRON pack: 30C, a C rate of 30 times its 3.0 Ah capacity, 90 A continuous, against 12.23 A (vendor page, 2026-09-30) | no in T5; yes for the owner's pack, on the vendor's figure |
+| Pack protection | MAX17320G22+'s thresholds are set against 12.23 A and the cell's rating (V150). The owner's pack is rated 90 A continuous, and its vendor page states no cell or temperature limit, so the thresholds are not confirmed | no |
 | ESC (electronic speed controller) pack node clamp | no clamp part: every TVS diode read clamps at 113 to 126 V at 12 to 13 A, above the 85 V ceiling. The pack switch's controlled turn-off holds the node instead: 11 to 45 mJ on the pack leads and 5.6 to 22.5 mJ on the switch-to-ESC leads (V45, V54) | yes |
 | Alert pins | 0 GPIO: no monitor's ALERT output is wired, and the firmware checks every sample. The ALERT outputs of the servo supply temperature sensors, an MCP9808T-E/MS beside each of the 3 TPS55285 the owner added on 2026-09-30, are wired to their rails' switch-off through a latch the operator clears and take no GPIO either ([IOBoard](IOBoard.md)) | yes |
 | Motor overcurrent path | at most 20 ms from detection to the firmware's disarm (V158, V159). No path from the detection to the ESC pack switch: the switch opens only when the heartbeat stops, 155 to 185 ms after the last edge with a 200 ms deadline, or at the operator's latch clear (V160) | no |
@@ -131,7 +132,7 @@ Each item is reported to the owner for round 2, with its evidence.
 - R8, INA238AIDGSR, a shared-part stock shortfall: not known how it is sourced. The fixed-input motor monitor serves the onboard-shunt path and the external-shunt sense path, 10 units for 5 boards (2 placements). It fails sourcing rule 4 at both vendors: JLCPCB stockCount 0 and canPresaleNumber −99, Digi-Key 0, with no rule-5 route, read again at 2026-09-29T17:18:33Z (`hardware/research/round1/FU-B3/017-P4-stock-R8.json`, `FU-B3/023-adjudicator-R8.json`). The INA228 alternate footprint failed rule 5 on the figures of 2026-09-01. selection.json keeps no part for either function. The owner fixes the INA228AIDGSR (2026-09-30), which returns to stock soon, as the owner states; its stock is not read.
 - R8, external shunt sense input, a second failure of INA238AIDGSR: not known. Beyond the stock, its differential input is rated −40 V to +40 V only, and its filter guidance allows too little series resistance on a 5 mA pin to survive the required 85 V fault of a mis-plugged or shorted sense lead (V179) (`FU-B3/021-P4-datasheet-R8.json`, `FU-B3/024-adjudicator-R8-2.json`). The sense leads need another clamp or isolation approach. The owner fixes the INA228 without further research on the monitor, and protects the sense leads with 1 kΩ in series with each input and a low-capacitance TVS behind them (2026-09-30). The INA228's rating against the 85 V fault, the error 1 kΩ adds to its reading and the protection's parts are not known; the INA238's datasheet allows at most 100 Ω of filter resistance (SLYS025B 7.1.4).
 - R6, TPS55285VALR, a rail conflict on temperature: not known whether it holds. At the pack-floor corner (6.0 V in, 8.4 V and 4.0 A out, 50 °C ambient) its estimated junction temperature spans 89 to 179 °C against the 125 °C recommended maximum, because its datasheet gives no IC-loss curve there. The refutation stands (`FU-B1/030-adjudicator-R6.json`, carried unchanged in `FU-B3/011-rerank-R6.json`). The part is a fixed input and is reported, not replaced; selection.json keeps no part for Servo supply and carries no note that sets it apart from an ordinary open function. The owner keeps the part and uses three, one for each servo rail (2026-09-30): 4 to 6.35 A is a short peak for one servo, a heatsink cools each, and an MCP9808T-E/MS beside each switches its rail off when it runs hot, which bounds a sustained current from several servos ([IOBoard](IOBoard.md)). Round 2 finds the continuous current one converter holds at this corner.
-- R7, pack cells, a sourcing-rule conflict that the owner resolves: sourcing rule 1 names Liion Wholesale for the cells (owner, 2026-09-30), and expects high-power 2S pouch cells instead, not decided; no pouch pack is named. INR-18650-P30B (Molicel, S9) passes every technical, stock and lifecycle check, with 6529 at Liion Wholesale (2026-09-29T17:21:44Z), but sourcing rule 1 buys a part off the board at Digi-Key, and Digi-Key's API (application programming interface) carries no 18650 cell from an S9 maker (V151) (`FU-B3/016-P4-stock-R7.json`, `FU-B3/004-P2-R7.json`). With no cell selected, the cell-rating and pack-protection checks, whose thresholds follow the cell (V150), have no confirmed part.
+- R7, pack cells, a sourcing-rule conflict that the owner resolves by naming the pack: an SLS XTRON 3000 mAh 2S1P pack from Stefansliposhop, which sourcing rule 1 names (owner, 2026-09-30). INR-18650-P30B (Molicel, S9) passes every technical, stock and lifecycle check, with 6529 at Liion Wholesale (2026-09-29T17:21:44Z), but sourcing rule 1 buys a part off the board at Digi-Key, and Digi-Key's API (application programming interface) carries no 18650 cell from an S9 maker (V151) (`FU-B3/016-P4-stock-R7.json`, `FU-B3/004-P2-R7.json`). The pack-protection thresholds follow the cell (V150); the owner's pack's vendor page states no cell or temperature limit, so they have no confirmed figures.
 - R7, pack cells, the selection record: selection.json keeps no part for Pack cells although both FU-B3 verifiers confirm INR-18650-P30B with no adjudicator against it (`FU-B3/016-P4-stock-R7.json`, `FU-B3/019-P4-datasheet-R7.json`). Not known whether the omission is the vendor question above or how selection.json was built.
 - R8, the motor overcurrent path to the ESC pack switch: no hardware actuation path exists, so its time is not known. The coprocessor can only disarm the outputs, at most 20 ms after the averaged sample (V158, V159); the pack switch opens only when the heartbeat stops (155 to 185 ms, 200 ms deadline) or the operator clears the latch, and the overcurrent detection drives neither (V160, owner, 2026-09-28; `FU-B3/005-P2-R8.json`).
 - R6 and R7, FUSB303BTMX and MCP23017T-E/SS, an I²C address omission: not known whether they collide. The FUSB303's 7-bit address is 0x21 or 0x31, set by its ADDR/ORIENT pin, and 0x21 is inside the 0x20 to 0x27 block P5 reserves for the 2 MCP23017 expanders. No return checks the pair on one bus (onsemi FUSB303 datasheet, Table 4, read by the P5 critic at 2026-09-29T17:58:39Z; `FU-B3/019-P4-datasheet-R7.json` records no FUSB303 address).
