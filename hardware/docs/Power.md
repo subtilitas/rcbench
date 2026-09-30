@@ -51,8 +51,9 @@ DC (direct current) input is 12 to 20 V to stay inside the 22 V input rating
 The TPS55288 and TPS55289 below are the alternatives, not used.
 
 Each servo rail has two output settings: up to 5.5 V for LV (low-voltage)
-servos and up to 8.4 V for HV (high-voltage) servos, at 4 to 6.35 A. Both are
-set from software for each rail on its own, and the current limit follows
+servos and up to 8.4 V for HV (high-voltage) servos, at 4 to 6.35 A. Each
+runs down to the TPS55285's 0.8 V to test a servo's brownout behavior (owner,
+2026-09-30). Both are set from software for each rail on its own, and the current limit follows
 the voltage setting. LV and HV servos and an ESC on the multiprotocol ports
 run at the same time (owner, 2026-09-30).
 From the DC input each rail's limit goes to 6.35 A. From the pack the

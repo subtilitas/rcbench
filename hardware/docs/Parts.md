@@ -9,7 +9,9 @@ BTS7004-1EPP, 2N7002BK,215 and MCP9808T-E/MS. The SN74LVC1G04DBVR row adds
 the counts of two verifiers, as the research's cross-category check does.
 The other three follow the 3 servo rails and the adjustable supply the owner
 set on 2026-09-30: a rail gate on each output and a temperature sensor beside
-each of their 4 converters. The Read column gives the time, in UTC (Coordinated
+each of their 4 converters. The owner's 0.8 V lowest servo rail (2026-09-30)
+refutes two rows below it: the BTS7004-1EPP starts at 4.1 V at most, and the
+TPS259474LRPWR takes 2.7 V at least. Round 2 replaces both. The Read column gives the time, in UTC (Coordinated
 Universal Time), the JLCPCB figures were read. LCSC is the distributor whose parts library
 JLCPCB assembles from; an LCSC number is `C` followed by digits.
 

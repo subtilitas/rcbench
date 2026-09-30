@@ -29,7 +29,7 @@ verifiers, P5 the cross-category check and P6 the completeness check. T1 to T6 a
 | Latch clear control | 434153017835 (Würth Elektronik) | SMD (surface-mount device), 2.9 × 3.5 mm | 5229 / 27089 | stated bounce of 10 ms; maker status read |
 | Trigger-path inverter | SN74AUP1G14DBVR (Texas Instruments) | SOT-23-5 | 5252 / 28635 | rank 1 of the inverters read, on I_off; placed only with a monostable whose trigger inputs have one polarity, so none with the 74HC423 |
 | Trigger input I_off buffer (Q9) | SN74AUP1G17DBVR (Texas Instruments), 2 a board | SOT-23-5 | 8928 / 88895 | the owner's Q9 decision; it is also the Schmitt buffer ahead of the latch clock |
-| Servo rail gate | BTS7004-1EPP (Infineon) | TSDSO-14 | 20982 / 34830 | states its off-state leakage and a turn-on voltage maximum |
+| Servo rail gate | BTS7004-1EPP (Infineon) | TSDSO-14 | 20982 / 34830 | states its off-state leakage and a turn-on voltage maximum. Its VS(OP), 4.1 V at most, misses the owner's 0.8 V lowest rail (V55, 2026-09-30) |
 | Servo rail gate driver | 2N7002BK,215 (Nexperia) | SOT-23 | 172635 / 135525 | placed only with a discrete P-channel rail switch, so 0 with the BTS7004-1EPP |
 | Onboard pack switch driver and external module driver output | TPSI3052DWZR (Texas Instruments), 4 a board | SOIC-8 | 1126 / 3184 | holds the arrays on from the 3.3 V primary at any pack voltage |
 | Pack reverse-polarity protection | IPT015N10N5ATMA1 (Infineon), 10 a board | HSOF-8 | 28320 / 40281 | an anti-series array of the switch MOSFET (metal-oxide-semiconductor field-effect transistor): 100 V blocks −67.2 V |

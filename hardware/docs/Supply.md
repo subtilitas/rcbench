@@ -24,7 +24,7 @@ verifiers, P5 the cross-category check and P6 the completeness check. T1 to T6 a
 | 5 V rail | TPS62933DRLR (Texas Instruments) | SOT-583 | 36974 / 63937 | 3 A against a load of 2.5 A; rank 1 on stock at both vendors |
 | Display supply | TPS259474ARPWR (Texas Instruments) | VQFN-10 | 331 / 125 | true reverse blocking, and a circuit breaker with auto-retry that turns a cable short off |
 | Encoder 12 V supply | TPS55288RPMR (Texas Instruments) | VQFN-26 | 5183 / 5262 | integrated switches and a stated output current limit; it needs the I²C (Inter-Integrated Circuit) address opposite the TPS55285's |
-| Port supply switch | TPS259474LRPWR (Texas Instruments), 20 a board | VQFN-10 | 3795 / 40352 | a latch-off circuit breaker, 3.96 to 4.84 A, which matches "every stop latches; nothing re-arms on its own" |
+| Port supply switch | TPS259474LRPWR (Texas Instruments), 20 a board | VQFN-10 | 3795 / 40352 | a latch-off circuit breaker, 3.96 to 4.84 A, which matches "every stop latches; nothing re-arms on its own". Its VIN of 2.7 V at least misses the owner's 0.8 V lowest rail (V55, 2026-09-30) |
 | I/O (input/output) expander | MCP23017T-E/SS (Microchip), 2 a board | SSOP-28 | 6606 / 17187 | eight addresses, 0x20 to 0x27, and a hardware RESET pin |
 | Pack charger and power path | BQ25713RSNR (Texas Instruments) | QFN-32 | 301 / 2103 | meets every charger value; its NVDC (narrow voltage direct current) path runs the board from USB-C (Universal Serial Bus Type-C) with the pack flat |
 | Cell balancing, pack overcurrent protection and bench pack balance lead | MAX17320G22+ (Analog Devices) | QFN-24 | 578 / 355 | balances on its own from its non-volatile memory at the required 50 mA average |
