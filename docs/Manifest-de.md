@@ -25,7 +25,7 @@ Die ursprüngliche Anforderungsliste:
 
 | Anforderung | Umsetzung | Stand |
 | --- | --- | --- |
-| Externe Stromsensoren über I²C (Inter-Integrated Circuit) | Am I²C-Bus des Koprozessors. Der I²C-Bus des Panels ist für den Touch-Controller und den I/O-Expander reserviert. | Schnittstelle festgelegt; kein Treiber. Bauteile gewählt: INA228 (Motor), INA745A (Servoschiene). |
+| Externe Stromsensoren über I²C (Inter-Integrated Circuit) | An den I²C-Bussen des Mess-Koprozessors, des zweiten der beiden RP2354B des IO-Boards (hardware/docs/IOBoard.md). Der I²C-Bus des Panels ist für den Touch-Controller und den I/O-Expander reserviert. | Schnittstelle festgelegt; kein Treiber. Bauteile gewählt: INA228 (Motor), INA745A (Servoschiene). |
 | ESC-Programmierer (AM32 und BLHeli_S gefordert) | One-Wire-Bootloader-Protokoll, Half Duplex, 19 200 Baud, auf einer PIO-State-Machine (PIO: Programmable Input/Output) | Bildschirm gebaut und tabellengesteuert für BLHeli_S, AM32, ESCape32 und VESC; kein Protokoll wird gesendet. BLHeli_32-Parameter werden nicht unterstützt: [BLHeli_32](BLHeli32-de.md). |
 | Auswuchten mit Beschleunigungs- und Indexsensor | Beide Sensoren am Koprozessor, auf einer gemeinsamen Zeitbasis abgetastet | Bildschirm und Platzierungsanleitungen gebaut; die Messung wartet auf die Sensoren |
 | Servotester mit S.BUS und weiteren Protokollen | PWM-Ausgänge (PWM: Pulsweitenmodulation) in Hardware; ein PIO-Programm je serielles Protokoll | Bildschirm gebaut und steuert über den Link. PWM hat auf dem Aufbau-Prüfstand ein Servo vom Panel aus bewegt; keine Impulsbreite, Rahmenperiode oder Jitter wurde an einem Messgerät gelesen, und die seriellen Protokolle haben nichts getrieben |
