@@ -21,7 +21,7 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json
 | Chip | GPIO used | Free |
 | --- | --- | --- |
 | Main coprocessor | 44 of 48 | 4: GPIO 15, 35, 39, 47 |
-| Measurement coprocessor | 28 of 48 | 20 |
+| Measurement coprocessor | 29 of 48 | 19 |
 
 ## Owner decisions
 
@@ -120,6 +120,7 @@ python3 tools/pinmap_check.py hardware/docs/pinmap.json
 | 25 | SIO | phase-wire clip comparator (TLV3201) | yes |
 | 26 | SIO | TCA9548A RESET, active low, pulled up: clears a Qwiic channel held low |  |
 | 27 | SIO | magnetic pickup (DRV5015A1) | yes |
+| 28 | SIO | thermocouple converter DRDY (MAX31856), active low |  |
 
 ## I/O expanders
 

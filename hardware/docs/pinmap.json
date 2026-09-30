@@ -436,6 +436,11 @@
      "signal": "magnetic pickup (DRV5015A1)",
      "function": "SIO",
      "external": true
+    },
+    {
+     "gpio": 28,
+     "signal": "thermocouple converter DRDY (MAX31856), active low",
+     "function": "SIO"
     }
    ]
   }
