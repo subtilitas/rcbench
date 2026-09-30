@@ -1,0 +1,435 @@
+{
+ "status": "draft, 2026-09-30; checked with tools/pinmap_check.py against pico-sdk 2.3.0 io_bank0.h",
+ "chips": [
+  {
+   "chip": "main",
+   "pins": [
+    {
+     "gpio": 0,
+     "signal": "inter-chip link TX",
+     "function": "UART0_TX",
+     "bus": "interchip_uart"
+    },
+    {
+     "gpio": 1,
+     "signal": "inter-chip link RX",
+     "function": "UART0_RX",
+     "bus": "interchip_uart"
+    },
+    {
+     "gpio": 2,
+     "signal": "main I2C SDA: 3 MCP23017, FRAM, TPS55288",
+     "function": "I2C1_SDA",
+     "bus": "main_i2c"
+    },
+    {
+     "gpio": 3,
+     "signal": "main I2C SCL",
+     "function": "I2C1_SCL",
+     "bus": "main_i2c"
+    },
+    {
+     "gpio": 4,
+     "signal": "VESC TX",
+     "function": "UART1_TX",
+     "external": true,
+     "bus": "vesc_uart"
+    },
+    {
+     "gpio": 5,
+     "signal": "VESC RX",
+     "function": "UART1_RX",
+     "external": true,
+     "bus": "vesc_uart"
+    },
+    {
+     "gpio": 6,
+     "signal": "heartbeat input",
+     "function": "SIO",
+     "external": true
+    },
+    {
+     "gpio": 7,
+     "signal": "optical index, main copy (rpm)",
+     "function": "SIO",
+     "external": true
+    },
+    {
+     "gpio": 8,
+     "signal": "INA3221 critical-alert shared line",
+     "function": "SIO"
+    },
+    {
+     "gpio": 9,
+     "signal": "INA3221 warning-alert shared line",
+     "function": "SIO"
+    },
+    {
+     "gpio": 10,
+     "signal": "INA228 ALERT shared line",
+     "function": "SIO"
+    },
+    {
+     "gpio": 11,
+     "signal": "alert shift register load",
+     "function": "SIO"
+    },
+    {
+     "gpio": 12,
+     "signal": "alert shift register clock",
+     "function": "SIO"
+    },
+    {
+     "gpio": 13,
+     "signal": "alert shift register data",
+     "function": "SIO"
+    },
+    {
+     "gpio": 14,
+     "signal": "I/O expander reset (the 3 MCP23017), pulled down",
+     "function": "SIO"
+    },
+    {
+     "gpio": 16,
+     "signal": "PWM port 1",
+     "function": "PWM_A_0",
+     "external": true
+    },
+    {
+     "gpio": 17,
+     "signal": "PWM port 2",
+     "function": "PWM_B_0",
+     "external": true
+    },
+    {
+     "gpio": 18,
+     "signal": "PWM port 3",
+     "function": "PWM_A_1",
+     "external": true
+    },
+    {
+     "gpio": 19,
+     "signal": "PWM port 4",
+     "function": "PWM_B_1",
+     "external": true
+    },
+    {
+     "gpio": 20,
+     "signal": "PWM port 5",
+     "function": "PWM_A_2",
+     "external": true
+    },
+    {
+     "gpio": 21,
+     "signal": "PWM port 6",
+     "function": "PWM_B_2",
+     "external": true
+    },
+    {
+     "gpio": 22,
+     "signal": "PWM port 7",
+     "function": "PWM_A_3",
+     "external": true
+    },
+    {
+     "gpio": 23,
+     "signal": "PWM port 8",
+     "function": "PWM_B_3",
+     "external": true
+    },
+    {
+     "gpio": 24,
+     "signal": "PWM port 9",
+     "function": "PWM_A_4",
+     "external": true
+    },
+    {
+     "gpio": 25,
+     "signal": "PWM port 10",
+     "function": "PWM_B_4",
+     "external": true
+    },
+    {
+     "gpio": 26,
+     "signal": "PWM port 11",
+     "function": "PWM_A_5",
+     "external": true
+    },
+    {
+     "gpio": 27,
+     "signal": "PWM port 12",
+     "function": "PWM_B_5",
+     "external": true
+    },
+    {
+     "gpio": 28,
+     "signal": "PWM port 13",
+     "function": "PWM_A_6",
+     "external": true
+    },
+    {
+     "gpio": 29,
+     "signal": "PWM port 14",
+     "function": "PWM_B_6",
+     "external": true
+    },
+    {
+     "gpio": 30,
+     "signal": "PWM port 15",
+     "function": "PWM_A_7",
+     "external": true
+    },
+    {
+     "gpio": 31,
+     "signal": "PWM port 16",
+     "function": "PWM_B_7",
+     "external": true
+    },
+    {
+     "gpio": 32,
+     "signal": "multiprotocol port 1",
+     "function": "PIO0",
+     "external": true
+    },
+    {
+     "gpio": 33,
+     "signal": "UART socket (OpenYGE, one pin)",
+     "function": "PIO2",
+     "external": true
+    },
+    {
+     "gpio": 34,
+     "signal": "multiprotocol port 2",
+     "function": "PIO0",
+     "external": true
+    },
+    {
+     "gpio": 36,
+     "signal": "multiprotocol port 3",
+     "function": "PIO1",
+     "external": true
+    },
+    {
+     "gpio": 37,
+     "signal": "USB VBUS detect, through a divider",
+     "function": "USB_MUXING_VBUS_DETECT",
+     "external": true
+    },
+    {
+     "gpio": 38,
+     "signal": "multiprotocol port 4",
+     "function": "PIO1",
+     "external": true
+    },
+    {
+     "gpio": 40,
+     "signal": "CAN SPI RX (MISO), link + external controller",
+     "function": "SPI1_RX",
+     "bus": "can_spi"
+    },
+    {
+     "gpio": 41,
+     "signal": "link CAN controller CS, SIO, pulled up",
+     "function": "SIO",
+     "bus": "can_spi"
+    },
+    {
+     "gpio": 42,
+     "signal": "CAN SPI SCLK",
+     "function": "SPI1_SCLK",
+     "bus": "can_spi"
+    },
+    {
+     "gpio": 43,
+     "signal": "CAN SPI TX (MOSI)",
+     "function": "SPI1_TX",
+     "bus": "can_spi"
+    },
+    {
+     "gpio": 44,
+     "signal": "link CAN controller INT",
+     "function": "SIO"
+    },
+    {
+     "gpio": 45,
+     "signal": "external CAN controller CS, SIO, pulled up",
+     "function": "SIO",
+     "bus": "can_spi"
+    },
+    {
+     "gpio": 46,
+     "signal": "external CAN controller INT",
+     "function": "SIO"
+    }
+   ]
+  },
+  {
+   "chip": "measurement",
+   "pins": [
+    {
+     "gpio": 0,
+     "signal": "inter-chip link TX",
+     "function": "UART0_TX",
+     "bus": "interchip_uart"
+    },
+    {
+     "gpio": 1,
+     "signal": "inter-chip link RX",
+     "function": "UART0_RX",
+     "bus": "interchip_uart"
+    },
+    {
+     "gpio": 2,
+     "signal": "sensor I2C bus B SDA: monitors, MCP9808, TPS55285",
+     "function": "I2C1_SDA",
+     "external": true,
+     "bus": "sensor_i2c_b"
+    },
+    {
+     "gpio": 3,
+     "signal": "sensor I2C bus B SCL",
+     "function": "I2C1_SCL",
+     "external": true,
+     "bus": "sensor_i2c_b"
+    },
+    {
+     "gpio": 4,
+     "signal": "accelerometer ADC data (ADCS7476 SDATA)",
+     "function": "SPI0_RX",
+     "external": true,
+     "bus": "accel_spi"
+    },
+    {
+     "gpio": 5,
+     "signal": "accelerometer ADC CS (ADCS7476)",
+     "function": "SPI0_SS_N",
+     "external": true,
+     "bus": "accel_spi"
+    },
+    {
+     "gpio": 6,
+     "signal": "accelerometer ADC SCLK",
+     "function": "SPI0_SCLK",
+     "external": true,
+     "bus": "accel_spi"
+    },
+    {
+     "gpio": 7,
+     "signal": "optical index, measurement copy, sampled by PIO on the ADC timebase",
+     "function": "PIO2",
+     "external": true
+    },
+    {
+     "gpio": 8,
+     "signal": "measurement SPI RX (MISO)",
+     "function": "SPI1_RX",
+     "bus": "meas_spi"
+    },
+    {
+     "gpio": 9,
+     "signal": "load-cell ADC CS (ADS1235), SIO, pulled up",
+     "function": "SIO",
+     "bus": "meas_spi"
+    },
+    {
+     "gpio": 10,
+     "signal": "measurement SPI SCLK",
+     "function": "SPI1_SCLK",
+     "bus": "meas_spi"
+    },
+    {
+     "gpio": 11,
+     "signal": "measurement SPI TX (MOSI)",
+     "function": "SPI1_TX",
+     "bus": "meas_spi"
+    },
+    {
+     "gpio": 12,
+     "signal": "load-cell ADC DRDY (ADS1235)",
+     "function": "SIO"
+    },
+    {
+     "gpio": 13,
+     "signal": "thermocouple converter CS (MAX31856), SIO, pulled up",
+     "function": "SIO",
+     "bus": "meas_spi"
+    },
+    {
+     "gpio": 14,
+     "signal": "thermocouple converter FAULT (MAX31856)",
+     "function": "SIO"
+    },
+    {
+     "gpio": 15,
+     "signal": "cell monitor CS (ADBMS1818), SIO, pulled up",
+     "function": "SIO",
+     "bus": "meas_spi"
+    },
+    {
+     "gpio": 16,
+     "signal": "sensor I2C bus A SDA: monitors, MCP9808, TPS55285",
+     "function": "I2C0_SDA",
+     "external": true,
+     "bus": "sensor_i2c_a"
+    },
+    {
+     "gpio": 17,
+     "signal": "sensor I2C bus A SCL",
+     "function": "I2C0_SCL",
+     "external": true,
+     "bus": "sensor_i2c_a"
+    },
+    {
+     "gpio": 18,
+     "signal": "Qwiic and infrared I2C bus SDA: TCA9548A and MLX90614, PIO",
+     "function": "PIO2",
+     "external": true,
+     "bus": "qwiic_i2c"
+    },
+    {
+     "gpio": 19,
+     "signal": "Qwiic and infrared I2C bus SCL",
+     "function": "PIO2",
+     "external": true,
+     "bus": "qwiic_i2c"
+    },
+    {
+     "gpio": 20,
+     "signal": "encoder A",
+     "function": "PIO0",
+     "external": true
+    },
+    {
+     "gpio": 21,
+     "signal": "encoder B",
+     "function": "PIO0",
+     "external": true
+    },
+    {
+     "gpio": 22,
+     "signal": "encoder index",
+     "function": "PIO0",
+     "external": true
+    },
+    {
+     "gpio": 23,
+     "signal": "receiver input (S.BUS, iBUS, SUMD, CRSF, SRXL2, EX Bus)",
+     "function": "PIO1",
+     "external": true
+    },
+    {
+     "gpio": 25,
+     "signal": "phase-wire clip comparator (TLV3201)",
+     "function": "SIO",
+     "external": true
+    },
+    {
+     "gpio": 27,
+     "signal": "magnetic pickup (DRV5015A1)",
+     "function": "SIO",
+     "external": true
+    }
+   ]
+  }
+ ]
+}
