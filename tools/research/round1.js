@@ -1,7 +1,7 @@
 export const meta = {
   name: 'rcbench-round1',
-  description: 'One task of round 1 of the IO board component research (hardware/docs/Research.md)',
-  whenToUse: 'Run by the research session with the arguments tools/research/session.py prepare writes; args.task is T1 to T6 or FU, args.mode plan counts agents only',
+  description: 'One task of a round of the IO board component research (hardware/docs/Research.md)',
+  whenToUse: 'Run by the research session with the arguments tools/research/session.py prepare writes; args.task is T1 to T6 or FU, args.research_round the round (1 when absent), args.mode plan counts agents only',
   phases: [
     { title: 'P0', detail: 'reachability, the parts database, the checkout' },
     { title: 'P1', detail: 'requirement critic, its critic, the re-check' },
@@ -54,6 +54,20 @@ const CAP = A.cap || 32
 const CATS = A.categories || {}
 const ORDER = Object.keys(CATS)
 const FU = A.followup || {}
+// The research round and where its records are, as prepare gives them;
+// without them, round 1's. The returns of every round up to this one count
+// as earlier runs, and the selection is the latest round's selection.json.
+const ROUND = A.research_round || 1
+const RUNS = A.runs_dir || 'hardware/research/round1'
+const RUN_DIRS = A.runs_dirs || [RUNS]
+const SELECTION_REL = A.selection_file || 'hardware/research/round1/selection.json'
+const SELECTION = `${P.results}/${SELECTION_REL}`
+const SPEC_BRANCH = A.branch || 'research/round1'
+// The page of each category group the previous round's T6 wrote, which a
+// later round's T6 updates: {A: PAGE, B: PAGE, C: PAGE}. Round 1 has none.
+const GROUP_PAGES = A.group_pages || null
+// The returns of earlier runs, as the prompts name them.
+const runDirs = tail => RUN_DIRS.map(d => `${P.results}/${d}/${tail}`).join(' and ')
 
 function groupOf(task) {
   const t = (A.tasks || {})[task]
@@ -164,10 +178,11 @@ function ctx(role, cat, label) {
     ? `the row ${row} of the table under "Agent layout" and the row ${cat} under "Research categories"`
     : `the row ${row} of the table under "Agent layout"`
   return [
-    `You are ${role}${catLine} in task ${TASK} of round 1 of the rcbench IO board component research.`,
+    `You are ${role}${catLine} in task ${TASK} of round ${ROUND} of the rcbench IO board component research.`,
     `Your instructions are hardware/docs/Research.md in the read-only checkout ${P.checkout} at commit ${A.commit}: ${rows}, the Sourcing rules, "Held parts" and "Lifecycle check". The requirement values are in hardware/docs/IOBoard.md in the same checkout and in the Answer columns of Research.md there, "Raised by P1" among them, and the owner's decisions in its Decision column; a proposed answer is not an answer. Where this prompt and the page differ, the page holds.`,
+    ...(ROUND > 1 ? [`Round ${ROUND}'s own rules are the section "Round ${ROUND}" of that page; where it and a category row or a phase row differ, that section holds.`] : []),
     `Today is ${A.date}. Every figure you report carries the time it was read and the URL or API call it came from. A value you could not read is written as not read, with the reason; never estimated. A search engine's summary is not a source.`,
-    `Paths: the monostable page and the pages it links, at commit 23c82ca: ${P.monostable}. The parts database, sqlite, opened read-only only (sqlite3.connect('file:${P.db}?mode=ro', uri=True)): ${P.db}. Returns of earlier tasks: ${P.results}/hardware/research/round1/<run>/. The part each function keeps after refutations and follow-ups is in ${P.results}/hardware/research/round1/selection.json; it counts over any re-rank's rank 1 and over a superseded selection. Your scratch directory: ${P.scratch}/${A.run || TASK}/${label}/.`,
+    `Paths: the monostable page and the pages it links, at commit 23c82ca: ${P.monostable}. The parts database, sqlite, opened read-only only (sqlite3.connect('file:${P.db}?mode=ro', uri=True)): ${P.db}. Returns of earlier tasks: ${runDirs('<run>/')}. The part each function keeps after refutations and follow-ups is in ${SELECTION}; it counts over any re-rank's rank 1 and over a superseded selection. Your scratch directory: ${P.scratch}/${A.run || TASK}/${label}/.`,
     `Clients: pages with \`python3 ${VENDORS} fetch URL\` (--client safari for www.analog.com); JLCPCB stock with \`python3 ${VENDORS} jlcpcb C<digits>\` (the exact LCSC match); Digi-Key with \`python3 ${VENDORS} digikey MPN\` or \`python3 ${VENDORS} digikey-search KEYWORDS\`; run this copy of vendors.py, no other, with DIGIKEY_ENV_FILE=${P.digikey_env}${P.digikey_cache ? ` and DIGIKEY_CACHE_DIR=${P.digikey_cache}` : ''} in that command's environment${P.digikey_cache ? '; Digi-Key allows 1,000 calls a day, so an answer any agent read earlier on the same UTC day comes back marked "cached": true with the time it was read, and counts as a reading of this task. A keyword search (--limit up to 50) is also kept as the reading of each part number it lists, with the same fields as vendors.py digikey, so one search can read many candidates. A part number several Digi-Key products carry comes back with its matches and their makers' : ''}. Never print a credential.`,
     `Write, commit and push nothing inside ${P.checkout} or ${P.results}. Return exactly the schema.`,
   ].join('\n')
@@ -224,7 +239,7 @@ This is task ${TASK}. It ${readsStock ? 'reads stock' : 'reads no stock'}. Set s
 
 // A P1 follow-up keeps the names earlier runs gave the category's
 // functions, so a function selection.json holds is not renamed.
-const namedBefore = cat => TASK === 'FU' ? ` Give a function the category's inventory${((A.inventory || {})[cat] || []).length ? ` (${A.inventory[cat].join('; ')})` : ''} or ${P.results}/hardware/research/round1/selection.json already names that exact name.` : ''
+const namedBefore = cat => TASK === 'FU' ? ` Give a function the category's inventory${((A.inventory || {})[cat] || []).length ? ` (${A.inventory[cat].join('; ')})` : ''} or ${SELECTION} already names that exact name.` : ''
 
 function p1Prompt(cat) {
   const items = TASK === 'FU' ? itemsFor(cat) : []
@@ -258,7 +273,7 @@ function p2Prompt(cat) {
   const named = [...new Set([...((A.inventory || {})[cat] || []), ...fixedFor(cat).map(x => x.function)])]
   return `${ctx('P2', cat, `P2-${cat}`)}
 
-Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, record it as found, and apply it as a requirement of the function its row names. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. Read Digi-Key only for candidates that pass every requirement value: a dropped candidate needs no Digi-Key figure. Return an entry for every function the ${cat} row and its lines in hardware/docs/IOBoard.md name${named.length ? `, among them these, by these exact names: ${named.join('; ')}` : ''}.${fixedFor(cat).length ? ` The Scope table fixes these inputs: ${fixedNames(cat)}. Shortlist each for its function with its full record, also where it misses a requirement or a gate; a fixed input that fails a check is reported to the owner, not replaced.` : ''} Give each requirement of a function a name of its own. For up to three survivors per function, record every field of the P2 row, and the rule-5 route in second_source_route and second_source_part; a part whose route is alternate needs a full record for that alternate among the survivors or in the re-rank. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5${((A.required_reports || {})[cat] || []).length ? `, among them these by these names: ${((A.required_reports || {})[cat]).join('; ')}` : ''}.${((A.per_part_reports || {})[cat] || []).length ? ` Report these once for each shortlisted part, named "NAME: PART", with "not applicable: REASON" as the value where one does not concern the part: ${((A.per_part_reports || {})[cat]).join('; ')}.` : ''}${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${P.results}/hardware/research/round1/selection.json; the returns in each run's directory carry their figures.` : ''}${cat === 'R3' && ((A.decisions || {}).Q9 || '').trim() ? `\n\nThe owner decided Q9: ${A.decisions.Q9}. A part it adds or changes is a function of R3 in this run, found and qualified as the others.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}${TASK === 'FU' ? ` Name each function exactly as ${P.results}/hardware/research/round1/selection.json names it for ${cat}.` : ''}`
+Find each value the owner marked "for research" under "Raised by P1" for ${cat} at its primary source, record it as found, and apply it as a requirement of the function its row names. Find candidates as Sourcing rule 3 sets out and keep those from allowlisted makers (rule 2). Drop those that miss a requirement value. Read Digi-Key only for candidates that pass every requirement value: a dropped candidate needs no Digi-Key figure. Return an entry for every function the ${cat} row and its lines in hardware/docs/IOBoard.md name${named.length ? `, among them these, by these exact names: ${named.join('; ')}` : ''}.${fixedFor(cat).length ? ` The Scope table fixes these inputs: ${fixedNames(cat)}. Shortlist each for its function with its full record, also where it misses a requirement or a gate; a fixed input that fails a check is reported to the owner, not replaced.` : ''} Give each requirement of a function a name of its own. For up to three survivors per function, record every field of the P2 row, and the rule-5 route in second_source_route and second_source_part; a part whose route is alternate needs a full record for that alternate among the survivors or in the re-rank. List in "report", one figure each, the figures the ${cat} row asks the category to report for a decision or for P5${((A.required_reports || {})[cat] || []).length ? `, among them these by these names: ${((A.required_reports || {})[cat]).join('; ')}` : ''}.${((A.per_part_reports || {})[cat] || []).length ? ` Report these once for each shortlisted part, named "NAME: PART", with "not applicable: REASON" as the value where one does not concern the part: ${((A.per_part_reports || {})[cat]).join('; ')}.` : ''}${t3 ? ` ${cat === 'R5' ? 'R5 sizes the 3.3 V logic buck and the 5 V rail from the supply currents of the parts T2 and T4 selected, as P4 verified them, plus the display\'s draw.' : ''} The parts earlier tasks selected are in ${SELECTION}; the returns in each run's directory carry their figures.` : ''}${cat === 'R3' && ((A.decisions || {}).Q9 || '').trim() ? `\n\nThe owner decided Q9: ${A.decisions.Q9}. A part it adds or changes is a function of R3 in this run, found and qualified as the others.` : ''}${items.length ? `\n\nThis is a follow-up task. Its items for ${cat}: ${J(items)}` : ''}${TASK === 'FU' ? ` Name each function exactly as ${SELECTION} names it for ${cat}.` : ''}`
 }
 
 function p2View(p2) {
@@ -323,7 +338,7 @@ const owedBudgets = () => (A.p5_budgets || []).map(n => optionsOf(n).length ? `$
 function p5Prompt() {
   return `${ctx('P5', '', 'P5')}
 
-Read every return under ${P.results}/hardware/research/round1/ (T2, T3, T4 and every FU-* directory) and run the checks of the P5 row over the whole board; check each part selection.json keeps for more than one function against the rule-4 stock gate at its summed placements ("shared-part stock: PART"; a shortfall is a conflict); and those the rows R5 and R7 under "Research categories" give P5: each rail's current with the parts R6, R7 and R8 selected, and the pack current recomputed from the converter efficiencies R5 and R6 verified, with the cell's rating and the pack's protection checked against it; a shortfall is a rail conflict. The parts to check are those in ${P.results}/hardware/research/round1/selection.json, each with its alternate, and both alternatives of Q4 and Q8.${(A.p5_budgets || []).length ? ` Return one budget for each of these: ${owedBudgets()}. Give each its source, its reading time and whether it is within its limit, and name its item as listed or, where it has several (each rail, each I2C bus), "NAME: DETAIL" once for each; every row of an item counts. A check the P5 row makes conditional (${(A.p5_conditional || []).join('; ')}) is returned with "not applicable: REASON" as its value when its condition does not hold.` : ''}${(A.p5_assumptions || []).length ? ` State in assumptions each of these, named as listed or "NAME: DETAIL" where it has several, with the value you assume, why, its source and its time: ${A.p5_assumptions.join('; ')}.` : ''}`
+Read every return under ${runDirs('')} (T2, T3, T4 and every FU-* directory) and run the checks of the P5 row over the whole board; check each part selection.json keeps for more than one function against the rule-4 stock gate at its summed placements ("shared-part stock: PART"; a shortfall is a conflict); and those the rows R5 and R7 under "Research categories" give P5: each rail's current with the parts R6, R7 and R8 selected, and the pack current recomputed from the converter efficiencies R5 and R6 verified, with the cell's rating and the pack's protection checked against it; a shortfall is a rail conflict. The parts to check are those in ${SELECTION}, each with its alternate, and both alternatives of Q4 and Q8.${(A.p5_budgets || []).length ? ` Return one budget for each of these: ${owedBudgets()}. Give each its source, its reading time and whether it is within its limit, and name its item as listed or, where it has several (each rail, each I2C bus), "NAME: DETAIL" once for each; every row of an item counts. A check the P5 row makes conditional (${(A.p5_conditional || []).join('; ')}) is returned with "not applicable: REASON" as its value when its condition does not hold.` : ''}${(A.p5_assumptions || []).length ? ` State in assumptions each of these, named as listed or "NAME: DETAIL" where it has several, with the value you assume, why, its source and its time: ${A.p5_assumptions.join('; ')}.` : ''}`
 }
 function p5CriticPrompt(p5) {
   return `${ctx('P5-critic', '', 'P5-critic')}
@@ -337,7 +352,7 @@ const P6_RULES = 'A line whose hardware is selected and whose link page or copro
 function p6Prompt() {
   return `${ctx('P6', '', 'P6')}
 
-Run the checks of the P6 row: every line of hardware/docs/IOBoard.md has a part or is marked "not round 1"; every figure in ${P.results}/hardware/research/round1/ has a date and a source; every question under "Raised by P1" is answered; every value marked for research is found. ${P6_RULES}`
+Run the checks of the P6 row: every line of hardware/docs/IOBoard.md has a part or is marked "not round 1"${ROUND > 1 ? ` or, as the section "Round ${ROUND}" sets out, "stage 2 of round ${ROUND}"` : ''}; every figure in ${runDirs('')} has a date and a source; every question under "Raised by P1" is answered; every value marked for research is found. ${P6_RULES}`
 }
 function p6CriticPrompt(p6) {
   return `${ctx('P6-critic', '', 'P6-critic')}
@@ -375,14 +390,14 @@ const OWED_PARTS = Object.entries(A.selection || {}).flatMap(([cat, fns]) => Obj
 function p7Prompt() {
   return `${ctx('P7', '', 'P7')}
 
-Exception to the rule above: write the outputs listed under "Outputs" of Research.md into the working tree ${P.results}, which the session has merged with research/round1 before this task. List every file you write in files, repository-relative, every figure you write in figures, with its file and line and the figure as the page states it, and the page of each category group (A, B, C) in group_pages: three new files hardware/docs/NAME.md, NAME of letters, digits, _ or -, none of them an output listed here. Required among them: ${(A.t6_outputs || []).join(', ')}. Write them from the returns under ${P.results}/hardware/research/round1/ only, the parts in hardware/research/round1/selection.json, P5's budget and combinations, and the owner's decisions in the "Decision (owner, date)" column for Q4, Q8 and Q9. P5's budget and combinations are those of the last P5/P6 check, ${A.last_p56 || 'T5'}, as its critic upheld them.${MARKS.length ? ` State each of these on the pages as its state says: ${J(MARKS)}.` : ''} Do not commit. Write tools/jlc_stock.py to read DIGIKEY_ENV_FILE as well as the two variables, as tools/research/vendors.py does. Run ${T6_CHECKS} and report each as passed or not with its last lines.`
+Exception to the rule above: write the outputs listed under "Outputs" of Research.md into the working tree ${P.results}, which the session has merged with ${SPEC_BRANCH} before this task. List every file you write in files, repository-relative, every figure you write in figures, with its file and line and the figure as the page states it, and the page of each category group (A, B, C) in group_pages: ${GROUP_PAGES ? `the pages ${J(GROUP_PAGES)}, which round ${ROUND - 1} wrote; update them` : 'three new files hardware/docs/NAME.md, NAME of letters, digits, _ or -, none of them an output listed here'}. Required among them: ${(A.t6_outputs || []).join(', ')}.${(A.t6_may_write || []).length ? ` Write each of ${A.t6_may_write.join(', ')} only where the returns of round ${ROUND} change its content, and list it in files only then.` : ''} Write them from the returns under ${runDirs('')} only, the parts in ${SELECTION_REL}, P5's budget and combinations, and the owner's decisions in the "Decision (owner, date)" column for Q4, Q8 and Q9. P5's budget and combinations are those of the last P5/P6 check, ${A.last_p56 || 'T5'}, as its critic upheld them.${MARKS.length ? ` State each of these on the pages as its state says: ${J(MARKS)}.` : ''} Do not commit.${(A.t6_outputs || []).includes('tools/jlc_stock.py') ? ' Write tools/jlc_stock.py to read DIGIKEY_ENV_FILE as well as the two variables, as tools/research/vendors.py does.' : ''} Run ${T6_CHECKS} and report each as passed or not with its last lines.`
 }
 function p7CriticPrompt(p7) {
   const pages = [...new Set([...(A.t6_outputs || []).filter(f => f.startsWith('hardware/docs/')), ...Object.values((p7 && p7.group_pages) || {})])]
   const decided = Object.fromEntries(['Q4', 'Q8', 'Q9'].map(q => [q, (A.decisions || {})[q] || '']))
   return `${ctx('P7-critic', '', 'P7-critic')}
 
-You are the critic of P7. Exception to the rule above: you may correct the pages in ${P.results}; do not commit. figure_checks and sentence_issues describe the pages as they stand after your corrections; list every figure you checked, every figure P7 lists in figures among them by the same file and figure text, one check for each line P7 lists it on (where you corrected the text that states one, figure is the text as it stands and p7_figure is P7's text for it), its file and return_file repository-relative, its line: the line of the page as it stands after your corrections that states the figure in that text, and its kind: budget or combination for one of P5, other for the rest. List in reviewed every file you checked, repository-relative; every file P7 listed is checked. Check every figure and every stated combination on the pages P7 wrote against the returns under ${P.results}/hardware/research/round1/: a budget or combination against the last P5/P6 check, ${A.last_p56 || 'T5'}, only, as its task.json marks it upheld, and the options chosen for Q4, Q8 and Q9 against the owner's decisions: ${J(decided)}. Check at least one figure on each of these pages: ${pages.join(', ')}; on hardware/docs/IOBoard.md a line's chosen part checked against hardware/research/round1/selection.json counts, and on hardware/docs/Research.md the status line checked against a run's task.json. Check every sentence against the writing rules in CONTRIBUTING.md and correct each one that breaks them, in every file P7 listed, a sentence P7 did not write among them; sentence_issues lists only what you could not correct. A comparison with no figure that a verified return gives (the lowest price, the tightest row) is rephrased to state the rank alone. hardware/docs/Research.md below its status line stays as it is and none of its sentences is listed: P7 may change only the status line there. A statement the specification makes that a return contradicts is no wording fault: state the contradiction as not known where the pages state the open items, with both sources, and leave the statement as it is.${MARKS.length ? ` Give in marked, by its 0-based index, the file and line where the pages state each of these as its state says: ${J(MARKS)}.` : ''}${OWED_PARTS.length ? ` Give in part_rows, for each of these parts under its function, the line of its row in hardware/docs/Parts.md and the group page that names it: ${J(OWED_PARTS)}.` : ''}${(A.jlc_stock_row || []).length ? ` Review tools/jlc_stock.py against each sentence of its row in the Outputs table, listed here, and give each, by its 0-based index, a verdict in jlc_stock_review with the line that does what it states and your reason: ${J(A.jlc_stock_row)}.` : ''} Apply every correction first, Parts.md and tools/jlc_stock.py included, then run the three checks P7 ran on the tree you leave, ${T6_CHECKS}, and report each as passed or not with its last lines; edit nothing after the stock check. P7's return:
+You are the critic of P7. Exception to the rule above: you may correct the pages in ${P.results}; do not commit. figure_checks and sentence_issues describe the pages as they stand after your corrections; list every figure you checked, every figure P7 lists in figures among them by the same file and figure text, one check for each line P7 lists it on (where you corrected the text that states one, figure is the text as it stands and p7_figure is P7's text for it), its file and return_file repository-relative, its line: the line of the page as it stands after your corrections that states the figure in that text, and its kind: budget or combination for one of P5, other for the rest. List in reviewed every file you checked, repository-relative; every file P7 listed is checked. Check every figure and every stated combination on the pages P7 wrote against the returns under ${runDirs('')}: a budget or combination against the last P5/P6 check, ${A.last_p56 || 'T5'}, only, as its task.json marks it upheld, and the options chosen for Q4, Q8 and Q9 against the owner's decisions: ${J(decided)}. Check at least one figure on each of these pages: ${pages.join(', ')}; on hardware/docs/IOBoard.md a line's chosen part checked against ${SELECTION_REL} counts, and on hardware/docs/Research.md the status line checked against a run's task.json. Check every sentence against the writing rules in CONTRIBUTING.md and correct each one that breaks them, in every file P7 listed, a sentence P7 did not write among them; sentence_issues lists only what you could not correct. A comparison with no figure that a verified return gives (the lowest price, the tightest row) is rephrased to state the rank alone. hardware/docs/Research.md below its status line stays as it is and none of its sentences is listed: P7 may change only the status line there. A statement the specification makes that a return contradicts is no wording fault: state the contradiction as not known where the pages state the open items, with both sources, and leave the statement as it is.${MARKS.length ? ` Give in marked, by its 0-based index, the file and line where the pages state each of these as its state says: ${J(MARKS)}.` : ''}${OWED_PARTS.length ? ` Give in part_rows, for each of these parts under its function, the line of its row in hardware/docs/Parts.md and the group page that names it: ${J(OWED_PARTS)}.` : ''}${(A.jlc_stock_row || []).length ? ` Review tools/jlc_stock.py against each sentence of its row in the Outputs table, listed here, and give each, by its 0-based index, a verdict in jlc_stock_review with the line that does what it states and your reason: ${J(A.jlc_stock_row)}.` : ''} Apply every correction first, Parts.md and tools/jlc_stock.py included${(A.t6_may_write || []).length ? ', in the files P7 listed only: a file P7 did not list stays as it is' : ''}, then run the three checks P7 ran on the tree you leave, ${T6_CHECKS}, and report each as passed or not with its last lines; edit nothing after the stock check. P7's return:
 ${J(p7)}`
 }
 
@@ -1626,10 +1641,12 @@ async function phaseP5P6() {
 
 // ---------------------------------------------------------------- the task
 
-// A committed file under hardware/research/round1/ that a figure comes from:
-// plain path segments ending in .json, wherever the path stands in the text.
-// session.py cited_returns() reads the same pattern.
-const RETURN_FILE = /(?:^|[^A-Za-z0-9_.-])hardware\/research\/round1\/(?:[A-Za-z0-9_-][A-Za-z0-9_.-]*\/)*[A-Za-z0-9_-][A-Za-z0-9_.-]*\.json(?![A-Za-z0-9_./-])/
+// A committed file under a round's records directory that a figure comes
+// from: plain path segments ending in .json, wherever the path stands in the
+// text. session.py cited_returns() reads the same pattern.
+const reEscape = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const RUN_DIRS_RE = RUN_DIRS.map(reEscape).join('|')
+const RETURN_FILE = new RegExp(`(?:^|[^A-Za-z0-9_.-])(?:${RUN_DIRS_RE})/(?:[A-Za-z0-9_-][A-Za-z0-9_.-]*/)*[A-Za-z0-9_-][A-Za-z0-9_.-]*\\.json(?![A-Za-z0-9_./-])`)
 
 let summary = {}
 if (TASK === 'T6') {
@@ -1707,9 +1724,11 @@ if (TASK === 'T6') {
     // A budget or combination comes from the last P5/P6 check: one checked
     // against any other file is not checked. Other figures, an earlier
     // check's open items or a run's status among them, may cite any return.
-    const p5File = /^hardware\/research\/round1\/([^/]+)\/\d+-P5(-critic)?(-\d+)?(-restart)?\.json$/
-    const stale = named.filter(x => (['budget', 'combination'].includes(x.kind) && !String(x.return_file).startsWith(`hardware/research/round1/${A.last_p56}/`))
-      || ((p5File.exec(String(x.return_file)) || [])[1] || A.last_p56) !== A.last_p56)
+    // The last check is a run of this round.
+    const lastP56 = `${RUNS}/${A.last_p56}`
+    const p5File = new RegExp(`^((?:${RUN_DIRS_RE})/[^/]+)/\\d+-P5(-critic)?(-\\d+)?(-restart)?\\.json$`)
+    const stale = named.filter(x => (['budget', 'combination'].includes(x.kind) && !String(x.return_file).startsWith(`${lastP56}/`))
+      || ((p5File.exec(String(x.return_file)) || [])[1] || lastP56) !== lastP56)
     if (stale.length) failed.push(`${stale.length} budgets or combinations not checked against the last P5/P6 check, ${A.last_p56}`)
     if ((critic.sentence_issues || []).length) failed.push(`${critic.sentence_issues.length} writing issues left`)
   }
@@ -1717,7 +1736,9 @@ if (TASK === 'T6') {
   const groupPages = Object.values((p7 && p7.group_pages) || {})
   if (p7 && (groupPages.length !== 3 || new Set(groupPages).size !== 3)) failed.push('the three group pages are not three files')
   for (const g of groupPages) if (!/^hardware\/docs\/[A-Za-z0-9_-]+\.md$/.test(g)) failed.push(`group page outside hardware/docs/: ${g}`)
-  for (const g of groupPages) if ((A.t6_outputs || []).includes(g)) failed.push(`group page is a fixed output: ${g}`)
+  for (const g of groupPages) if ([...(A.t6_outputs || []), ...(A.t6_may_write || [])].includes(g)) failed.push(`group page is a fixed output: ${g}`)
+  // A later round's T6 updates the previous round's page of each group.
+  if (p7 && GROUP_PAGES) for (const [g, f] of Object.entries(p7.group_pages || {})) if (GROUP_PAGES[g] !== f) failed.push(`group page ${f} is not group ${g}'s page`)
   const required = [...(A.t6_outputs || []), ...groupPages]
   const unwritten = p7 ? required.filter(f => !(p7.files || []).includes(f)) : []
   const unreviewed = critic ? required.filter(f => !(critic.reviewed || []).includes(f)) : []
@@ -1736,7 +1757,9 @@ if (TASK === 'T6') {
       const x = STOCK_EXCEPTIONS[i - firstException]
       return new Set((critic.part_rows || []).filter(p => x && p.part === x.part && p.parts_line > 0).map(p => p.parts_line))
     }
-    const marked = new Set((critic.marked || []).filter(x => required.includes(x.file) && x.line > 0 && (x.index < firstException || (x.file === 'hardware/docs/Parts.md' && exceptionRow(x.index).has(x.line)))).map(x => x.index))
+    // A mark counts on any output, one written only where it changes too.
+    const markFiles = [...required, ...(A.t6_may_write || [])]
+    const marked = new Set((critic.marked || []).filter(x => markFiles.includes(x.file) && x.line > 0 && (x.index < firstException || (x.file === 'hardware/docs/Parts.md' && exceptionRow(x.index).has(x.line)))).map(x => x.index))
     MARKS.forEach((m, i) => { if (!marked.has(i)) failed.push(`item ${i} not stated on the pages as ${m.state}`) })
     // Each part on the page of its category's group.
     for (const o of OWED_PARTS) if (!(critic.part_rows || []).some(x => x.function === o.function && x.part === o.part && x.parts_line > 0 && x.group_page === ((p7 && p7.group_pages) || {})[o.group])) failed.push(`no Parts.md row or group ${o.group} page for ${o.part} (${o.function}, ${o.category})`)

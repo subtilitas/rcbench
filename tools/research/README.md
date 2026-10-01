@@ -1,6 +1,6 @@
-# Round 1 research scripts
+# Component research scripts
 
-The scripts that run round 1 of the IO (input/output) board component
+The scripts that run rounds 1 and 2 of the IO (input/output) board component
 research, as [the plan](../../hardware/docs/Research.md) sets it out. The plan
 is the agents' instructions; these files run it and hold its counts, schemas
 and host table. Nothing here runs in CI (continuous integration) but
@@ -8,14 +8,14 @@ and host table. Nothing here runs in CI (continuous integration) but
 
 | File | Content |
 | --- | --- |
-| `round1.js` | the workflow script, one run per task: `args.task` is T1 to T6, or FU for a follow-up task. `args.mode` `plan` returns the task's planned agent count and starts none |
+| `round1.js` | the workflow script of both rounds, one run per task: `args.task` is T1 to T6, or FU for a follow-up task, and `args.research_round` the round, 1 when absent. `args.mode` `plan` returns the task's planned agent count and starts none |
 | `schemas.json` | the return schema of each role: P0, P1, P1-critic, P1-recheck, P2, P3, rerank, P4 (both verifiers), adjudicator, P5, P5-critic, P6, P6-critic, P7, P7-critic |
 | `categories.json` | R1 to R13, the three groups, the cap of 32, each task's planned agents, the "P1 asks" items of each row and its lines in IOBoard.md (`p1_asks`), and the fixed inputs of the Scope table, each with its category, function and part (`fixed_inputs`) |
 | `hosts.json` | each host P0 probes: its known page, its client, the regular expression the lifecycle status matches, and the categories it holds when unreachable |
 | `jlcparts.json` | the saved parts database of 2026-09-14: its path under the base directory, its SHA-256 (Secure Hash Algorithm, 256 bits), its row count and its manifest's created time |
 | `vendors.py` | the readings agents take: a page (`fetch`), JLCPCB stock by exact LCSC number (`jlcpcb`), Digi-Key stock, lead time and status (`digikey`), each dated |
-| `session.py` | the session's side: `check`, `prepare`, `record`, `raised` |
-| `dryrun.js` | runs `round1.js` for every task with mock agents and checks the counting |
+| `session.py` | the session's side: `check`, `prepare`, `record`, `raised`, `script` |
+| `dryrun.js` | runs `round1.js` for every task with mock agents and checks the counting, and round 2's prompts and T6 rules |
 
 ## Limits
 
@@ -60,6 +60,54 @@ and host table. Nothing here runs in CI (continuous integration) but
   for candidates that pass every requirement value, and P2 records up to
   three survivors per function.
 
+## Rounds
+
+`prepare`, `record`, `raised` and `script` take `--round N`, 1 unless given.
+Each round has its own branches, records and script name:
+
+| | Round 1 | Round 2 |
+| --- | --- | --- |
+| Plan branch, prerequisite 4 | `research/round1` | `research/round2` |
+| Results branch, prerequisite 5 | `research/round1-results` | `research/round2-results` |
+| Base directory (`--base`) | `~/rcbench-research/round1` | `~/rcbench-research/round2` |
+| Records | `hardware/research/round1/RUN/` | `hardware/research/round2/RUN/` |
+| Script `script` writes | `round1-RUN.js` | `round2-RUN.js` |
+
+The runs of every round up to N count as earlier runs: the gates, the
+selection, the inventories, the committed questions and the next question
+number read `hardware/research/round1/` and, in round 2,
+`hardware/research/round2/`, in the order the runs were recorded. A run's
+sequence number counts the runs of every round, so round 2's first record is
+18. `record` writes the round into each `task.json` as `research_round`;
+round 1's records, which lack it, are read as round 1. The round's own
+`selection.json` holds the part each function keeps over every round once a
+run of the round selects parts; until then a run reads the previous round's.
+`check` runs the round rules on a throwaway git repository, and fails when
+the plan has no section "Round 2".
+
+A follow-up file's `round` is the pass of follow-up tasks within the research
+round, 1 or 2: the plan's "Follow-up tasks run in at most 2 rounds". It is not
+the research round.
+
+`round1.js` runs both rounds. `prepare` gives it the round
+(`research_round`), the plan branch (`branch`), the round's records directory
+(`runs_dir`), every round's (`runs_dirs`) and the `selection.json` the run
+reads (`selection_file`); without them it uses round 1's. In round 2 every
+prompt names round 2, the records of both rounds and the selection file, and
+tells the agent that the plan's section "Round 2" holds where it and a
+category row or a phase row differ. P6 may mark a specification line
+"stage 2 of round 2".
+
+Round 2's T6 updates the group pages round 1's T6 wrote: `prepare` reads
+them from round 1's P7 return (`Control.md`, `Supply.md`, `Sensing.md`) and
+passes them as `group_pages`. P7 must name exactly those pages, or T6 is
+stopped. It must write `hardware/docs/IOBoard.md`, `hardware/docs/Research.md`
+and `hardware/STATUS.md` (`t6_outputs`), and writes `Parts.md`, `Power.md`,
+`hardware/README.md` and `tools/jlc_stock.py` (`t6_may_write`) only where
+round 2's returns change them, listing a file only when it changed it. The
+P7 critic corrects only the files P7 listed. A stock exception's mark counts
+on its `Parts.md` row whether or not P7 wrote `Parts.md`.
+
 ## Running a task
 
 On the research server, from a clone on `main`, with `research/round1` and
@@ -81,6 +129,25 @@ python3 tools/research/session.py raised --base $B
 git -C $B/plan push origin research/round1
 ```
 
+A round 2 run needs `research/round2` and `research/round2-results` on the
+remote, both cut from the same `main` commit, and takes `--round 2` on each
+command and its own base directory. Its follow-ups are named `FU-2` and a suffix: `--name 2P1` gives `FU-2P1`.
+A run that reads stock takes `--digikey-min 250`, as the plan's Round 2
+section sets out:
+
+```bash
+B=~/rcbench-research/round2
+O="--base $B --digikey-env PATH_TO_CREDENTIALS --model MODEL_ID --effort EFFORT"
+O="$O --agent-model sonnet --oversight-model opus --round 2"
+python3 tools/research/session.py prepare FU $O --followup FU-2P1.json --name 2P1
+python3 tools/research/session.py script FU-2P1 --base $B --round 2 --out SCRATCH
+# Workflow tool: scriptPath SCRATCH/round2-FU-2P1.js, no args
+python3 tools/research/session.py record FU TASK_OUTPUT_FILE --base $B --round 2 --name 2P1
+git -C $B/results push origin research/round2-results
+python3 tools/research/session.py raised --base $B --round 2 --run FU-2P1
+git -C $B/plan push origin research/round2
+```
+
 `script` writes `round1.js` with the prepared arguments in place of the
 Workflow tool's `args`, into the base directory or the one `--out` names. The
 Workflow tool reads a script only from the session's working directory or
@@ -88,11 +155,12 @@ its scratchpad directory, so `--out` names one of those: once P1 has raised ques
 were 132 KB), too long to copy into a tool call by hand. Only the line
 `const A = args || {}` changes, and the script is read back against both
 files. `record` takes the Workflow tool's task output file as it is, or its
-`result`.
+`result`. `record` and `script` refuse arguments `prepare` wrote for another
+round.
 
 The agents run `DIR/tools/RUN_ID/vendors.py`, a copy `prepare` makes of the
 `vendors.py` beside `session.py`; its SHA-256 goes into `run_info` as
-`vendors_sha256`. The read-only checkout of `research/round1` carries the
+`vendors_sha256`. The read-only checkout of the plan branch carries the
 tools of the day the branch was cut, so a change to `vendors.py` on `main`
 reaches the agents only through this copy. FU-A2 of 2026-09-29 ran the
 checkout's copy, without the Digi-Key cache of #184 and #185: 253 calls.
@@ -126,11 +194,22 @@ return.
 `prepare` fetches origin and refuses a run out of turn: T2 and T4 before T1 is
 recorded, T3 before T2 and T4, T5 before T3, T6 before T5, a P1 follow-up
 before T1, a P2-P4 follow-up before the tasks that own its categories, a P5-P6
-follow-up before T5, a round 2 follow-up before a round 1 follow-up is
-recorded, and any task once T6 is recorded. It fast-forwards the results tree
-to `origin/research/round1-results`, and refuses while that tree holds records
-origin does not (push after each `record`), any other commit than the merge
-before T6, which changes no record, or has diverged. It refuses a P1 run while
+follow-up before T5, and a pass 2 follow-up before a pass 1 follow-up of its
+research round is recorded. In round 1 it refuses any task once T6 is
+recorded. In round 2 it refuses:
+
+- T1 to T5, which run in round 1 only;
+- any run before round 1's T6 is recorded in the results tree, which also
+  refuses a results branch cut from a commit without round 1's records;
+- a run name any round recorded, T6 aside: T6 runs once in each round;
+- T6 before a P5-P6 follow-up of round 2 is recorded;
+- any run once round 2's T6 is recorded;
+- any run while the plan at the commit it reads has no section "Round 2".
+
+It fast-forwards the results tree to the round's results branch at origin,
+and refuses while that tree holds records origin does not (push after each
+`record`), any other commit than the merge before T6, which changes no record,
+or has diverged. It refuses a P1 run while
 another P1 run is prepared and neither recorded nor recorded as stopped, so
 question IDs do not repeat, and numbers new questions after the last one on
 the page and in the committed runs.
@@ -151,7 +230,7 @@ It refuses these without exception:
   follow-ups while S2, S4 to S7, S9 (for R7) or a Blocking row naming one of
   their categories has no answer.
 - T2 to T4, P2-P4 and P1 follow-ups while a question a committed P1 run raised
-  for their categories is not yet under "Raised by P1" on `research/round1`,
+  for their categories is not yet under "Raised by P1" on the round's plan branch,
   or is there without an answer or under another category or question. T5,
   P5-P6 follow-ups and T6 check every category. A question that only feeds Q4,
   Q8 or Q9 (`blocks` is `decision-only` and `decision` names one of them)
@@ -253,8 +332,8 @@ the items in the arguments:
   IDs, ranges, `and` and list separators); and while a run that decides an R3
   function was not given the Q9 decision now in force.
 
-Then, before T6, it merges `research/round1` into the results tree. The gates
-read committed run records and the plan on `research/round1`. The arguments
+Then, before T6, it merges the round's plan branch into the results tree. The
+gates read committed run records and the plan on the round's plan branch. The arguments
 hold the results tree's head, the owner's decisions, the questions committed
 P1 runs raised (`raised`), the Claude Code version, the model, the effort, the
 CPU count and the workflow concurrency. For T6 they also hold the P5/P6
@@ -422,9 +501,9 @@ read. A P0 row counts only at its host's endpoint: an API client's command
 with the probe, whatever environment assignments (`DIGIKEY_ENV_FILE=...`,
 `env`) and interpreter path precede it, a page client's probe URL, or with no
 probe a page on the host itself. The P7 critic checks at least one figure on
-each group page and each output under `hardware/docs/`, each check naming the
-figure and the file under `hardware/research/round1/` it comes from, a path
-ending in `.json`; text after the path, such as `:34` or `#L34`, is not part
+each group page and each output under `hardware/docs/` T6 must write, each
+check naming the figure and the file under a round's records directory it
+comes from, a path ending in `.json`; text after the path, such as `:34` or `#L34`, is not part
 of it, and `record` reads the same path. Each check gives its kind: budget,
 combination or other. A budget or combination checked against any file but the
 last P5/P6 check's is superseded, and so is any figure checked against an
@@ -443,12 +522,12 @@ apply. The schemas ask P5, P6 and their critics to write a conflict's parts as
 decisions or accepted open items differ from the prepared arguments, that
 lacks the result fields or the summary its task writes, or that did not stop
 and lacks the returns its task cannot finish without (P0, or P7 and its
-critic), an output already recorded, a plan or a refusal, a return that does
+critic), an output already recorded in any round, a plan or a refusal, a return that does
 not match its schema, and a results tree whose head moved since `prepare`. A
 task P0 stopped is recorded as `TASK-stopped-N` and does not count as
-recorded. After a run that selects parts it rewrites
-`hardware/research/round1/selection.json`, the part each function keeps: the
-latest run that names a function decides it. A run that names it and verifies
+recorded. After a run that selects parts it rewrites the round's
+`selection.json`, the part each function keeps over every round: the latest
+run that names a function decides it. A run that names it and verifies
 no part leaves it open and records the earlier part in `not_requalified`. A
 function an earlier P1 inventory of its category lists and the latest does not
 is retired: the next run that selects parts in the category without naming it
@@ -460,9 +539,10 @@ within the plan's Outputs (`hardware/docs/`, `hardware/STATUS.md`,
 `hardware/README.md`, `tools/jlc_stock.py`), an output or group page that is
 not a file afterwards, a file P7 declared that did not change, a group page
 outside `hardware/docs/` or among the fixed outputs, a group page HEAD already
-holds, a `Research.md` whose rows under "Raised by P1", Blocking and Sourcing
+holds other than its group's page the previous round's T6 wrote, a
+`Research.md` whose rows under "Raised by P1", Blocking and Sourcing
 answers or decisions differ from HEAD's, a figure the critic checked
-against a file under `hardware/research/round1/` that HEAD does not hold, and
+against a file under a round's records directory that HEAD does not hold, and
 a figure check whose line of its page, after T6, does not state the figure in
 the check's text as a value of its own (`5 V` is not read in `15 V`, `0.5 V`,
 `-5 V` or `5 VA`; runs of whitespace compare as one space). A
@@ -470,8 +550,10 @@ renamed file counts as both its old and its new path. A T6 is recorded as
 stopped unless P7 and its critic both return, the critic's three checks pass,
 it checked at least one figure and every figure agrees with its return, no
 budget or combination is superseded, no writing issue is left, P7 names three
-group pages, three files in `hardware/docs/` other than the fixed outputs, and
-every output of the plan and each group page was written and reviewed. The
+group pages, three files in `hardware/docs/` other than the fixed outputs (in
+round 2 the pages round 1 wrote), and every output T6 must write and each
+group page was written and reviewed: in round 1 every output of the plan, in
+round 2 `IOBoard.md`, `Research.md` and `hardware/STATUS.md`. The
 critic also gives, in an output or group page, the line that states each item
 as the arguments say: each conflict and gap the checks leave as not known,
 each item accepted open as not verified or not known, and each upheld
