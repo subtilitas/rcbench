@@ -204,6 +204,12 @@ recorded. In round 2 it refuses:
 - a run name any round recorded, T6 aside: T6 runs once in each round;
 - a P2-P4 follow-up before P1 follow-ups of round 2 that cover each of its
   categories are recorded;
+- a P2-P4 follow-up before P2-P4 follow-ups of round 2 are recorded in the
+  categories its task builds on, as far as round 2's P1 follow-ups cover
+  them: an R5 to R8 follow-up after R1 to R3 and R9 to R11, as T3 after T2
+  and T4;
+- a P5-P6 follow-up before P2-P4 follow-ups of round 2 are recorded in every
+  category its P1 follow-ups cover;
 - T6 before a P5-P6 follow-up of round 2 is recorded;
 - any run once round 2's T6 is recorded;
 - any run while the plan at the commit it reads has no section "Round 2".
