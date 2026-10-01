@@ -310,7 +310,7 @@ async function runTask(task, opts = {}) {
     }))
   }
   const args = { task, cap: opts.cap || cats.cap, categories: cats.categories, tasks: cats.tasks, schemas,
-    commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, inventory: opts.inventory || {}, jlcparts: JL, p5_budgets: opts.p5Budgets || [], p5_conditional: opts.p5Conditional || [], q_options: opts.qOptions || {},
+    commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, inventory: opts.inventory || {}, jlcparts: JL, p5_budgets: opts.p5Budgets || [], p5_conditional: opts.p5Conditional || [], p5_chips: opts.p5Chips || {}, q_options: opts.qOptions || {},
     followup: opts.followup, first_v: 5, decision_categories: { Q4: ['R10'], Q8: ['R2', 'R12'], Q9: ['R3'] }, t6_outputs: opts.t6Outputs || T6OUT, for_research: opts.forResearch || [], raised: opts.raised || [], p1_asks: opts.p1Asks || {}, fixed_inputs: opts.fixedInputs || {}, required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {},
     p5_assumptions: opts.p5Assumptions || [], decisions: opts.decisions || {}, accept_open: opts.acceptOpen || null, left_open: opts.leftOpen || [], p5_assumed: opts.p5AssumedT6 || [],
     last_p56: opts.lastP56 || '', p56_runs: opts.p56Runs || [], selection: opts.selection || {}, jlc_stock_row: opts.jlcRow || [], run_info: opts.runInfo || {}, stock_exceptions: opts.stockExceptions || [],
@@ -1470,6 +1470,19 @@ async function main() {
       check(prompts.find(x => x.label === 'P6').prompt.includes('or, as the section "Round 2" sets out, "stage 2 of round 2"; every figure in undefined/hardware/research/round1/ and undefined/hardware/research/round2/ has'), 'round 2 P6: the stage 2 mark and both rounds\' figures')
     }
   }
+  // From round 2 each budget of a chip's resources is owed for the main and
+  // the measurement coprocessor: one combined row does not do.
+  const P56 = { ...R2, followup: { phases: 'P5-P6', round: 1, categories: [], items: [] }, p5Budgets: ['GPIO', 'DMA channels', 'current per rail'], p5Chips: { chips: cats.p5_chips.chips, budgets: cats.p5_chips.budgets } }
+  r = await runTask('FU', { ...P56, p5Items: ['GPIO', 'DMA channels', 'current per rail'] })
+  check(r.result.summary.budgets_missing.join() === 'GPIO: main,GPIO: measurement,DMA channels: main,DMA channels: measurement'
+    && ['P5', 'P5-critic'].every(l => r.prompts.find(x => x.label === l).prompt.includes('GPIO, once for each chip as GPIO: main and GPIO: measurement; DMA channels, once for each chip as DMA channels: main and DMA channels: measurement; current per rail')),
+    `round 2 P5: combined chip budgets are missing for each chip: ${r.result.summary.budgets_missing}`)
+  r = await runTask('FU', { ...P56, p5Items: ['GPIO: main', 'DMA channels: main', 'DMA channels: measurement: PPM', 'current per rail'] })
+  check(r.result.summary.budgets_missing.join() === 'GPIO: measurement', `round 2 P5: a chip without its budget is missing: ${r.result.summary.budgets_missing}`)
+  r = await runTask('FU', { ...P56, p5Items: ['GPIO: main', 'GPIO: measurement', 'DMA channels: main', 'DMA channels: measurement', 'current per rail'] })
+  check(r.result.summary.budgets_missing.length === 0, `round 2 P5: each chip budgeted: ${r.result.summary.budgets_missing}`)
+  r = await runTask('FU', { ...P56, p5Chips: {}, p5Items: ['GPIO', 'DMA channels', 'current per rail'] })
+  check(r.result.summary.budgets_missing.length === 0 && !r.prompts.find(x => x.label === 'P5').prompt.includes('once for each chip'), 'without p5_chips a budget is owed once')
   r = await runTask('FU', { ...R2, selectionFile: 'hardware/research/round2/selection.json', followup: { phases: 'P2-P4', round: 1, categories: ['R5'], items: [] } })
   const p2r2 = r.prompts.find(x => x.label === 'P2-R5').prompt
   check(p2r2.includes('The parts earlier tasks selected are in undefined/hardware/research/round2/selection.json;') && p2r2.includes('Name each function exactly as undefined/hardware/research/round2/selection.json names it for R5.'), 'round 2 P2: the selection.json prepare gives')

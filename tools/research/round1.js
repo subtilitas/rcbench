@@ -333,7 +333,11 @@ ${J(evidence)}`
 // The Q4 or Q8 alternatives' budget is owed once for each option class of
 // the decision (categories.json q_options), as "Q4 alternatives: CLASS".
 const optionsOf = n => ((A.q_options || {})[(/^(Q\d+) alternatives$/.exec(n) || [])[1]] || []).map(c => `${n}: ${c}`)
-const owedBudgets = () => (A.p5_budgets || []).map(n => optionsOf(n).length ? `${n}, once for each option class as ${optionsOf(n).join(' and ')}` : n).join('; ')
+// From round 2 the board has two RP2354B, and each budget of a chip's
+// resources is owed once for each chip (categories.json p5_chips), as
+// "GPIO: main" and "GPIO: measurement".
+const chipsOf = n => ((A.p5_chips || {}).budgets || []).includes(n) ? ((A.p5_chips || {}).chips || []).map(c => `${n}: ${c}`) : []
+const owedBudgets = () => (A.p5_budgets || []).map(n => optionsOf(n).length ? `${n}, once for each option class as ${optionsOf(n).join(' and ')}` : chipsOf(n).length ? `${n}, once for each chip as ${chipsOf(n).join(' and ')}` : n).join('; ')
 
 function p5Prompt() {
   return `${ctx('P5', '', 'P5')}
@@ -1601,7 +1605,8 @@ async function phaseP5P6() {
   // A budget counts with a value read, its source and its time; "not
   // applicable" (or N/A, does not apply) only for a check the P5 row makes
   // conditional. Every row of an item counts, not one of them for all, and
-  // the Q4 and Q8 alternatives have one for each option class.
+  // the Q4 and Q8 alternatives have one for each option class, and from
+  // round 2 a chip's resources one for each chip.
   // A part the effective selection keeps for more than one function owes
   // its own shared-part stock row; with one, the check is not optional.
   // Every role counts: the kept part, its alternate, each Q alternative
@@ -1622,7 +1627,7 @@ async function phaseP5P6() {
     return !rows.length || !rows.every(ok)
   }
   // The critic lists each rail, I2C bus or other instance P5 did not budget.
-  const budgetsMissing = a.missing ? [] : [...new Set([...(A.p5_budgets || []).flatMap(n => [n, ...optionsOf(n), ...(n === 'shared-part stock' ? shared.map(part => `${n}: ${part}`) : [])]).filter(n => unmet(a.budgets, n, counts)),
+  const budgetsMissing = a.missing ? [] : [...new Set([...(A.p5_budgets || []).flatMap(n => [n, ...optionsOf(n), ...chipsOf(n), ...(n === 'shared-part stock' ? shared.map(part => `${n}: ${part}`) : [])]).filter(n => unmet(a.budgets, n, counts)),
     ...(a.budgets_missing || []).filter(n => !readsNone(n)).map(String)])]
   for (const n of budgetsMissing) followUps.push({ role: 'P5', item: n, reason: 'budget the P5 row names not returned and upheld' })
   // A budget the critic upheld that is not within its limit is a conflict

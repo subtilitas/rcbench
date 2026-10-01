@@ -131,6 +131,22 @@
     "programmer state machines",
     "servo current sample period"
   ],
+  "p5_chips": {
+    "from_round": 2,
+    "chips": ["main", "measurement"],
+    "budgets": [
+      "GPIO",
+      "PIO GPIO windows",
+      "PIO state machines",
+      "PIO instruction memory",
+      "DMA channels",
+      "PWM slices",
+      "ADC inputs",
+      "SPI controllers",
+      "I2C controllers",
+      "UART controllers"
+    ]
+  },
   "q_options": {
     "Q4": [
       "reference",
