@@ -392,8 +392,15 @@ function p7Prompt() {
 
 Exception to the rule above: write the outputs listed under "Outputs" of Research.md into the working tree ${P.results}, which the session has merged with ${SPEC_BRANCH} before this task. List every file you write in files, repository-relative, every figure you write in figures, with its file and line and the figure as the page states it, and the page of each category group (A, B, C) in group_pages: ${GROUP_PAGES ? `the pages ${J(GROUP_PAGES)}, which round ${ROUND - 1} wrote; update them` : 'three new files hardware/docs/NAME.md, NAME of letters, digits, _ or -, none of them an output listed here'}. Required among them: ${(A.t6_outputs || []).join(', ')}.${(A.t6_may_write || []).length ? ` Write each of ${A.t6_may_write.join(', ')} only where the returns of round ${ROUND} change its content, and list it in files only then.` : ''} Write them from the returns under ${runDirs('')} only, the parts in ${SELECTION_REL}, P5's budget and combinations, and the owner's decisions in the "Decision (owner, date)" column for Q4, Q8 and Q9. P5's budget and combinations are those of the last P5/P6 check, ${A.last_p56 || 'T5'}, as its critic upheld them.${MARKS.length ? ` State each of these on the pages as its state says: ${J(MARKS)}.` : ''} Do not commit.${(A.t6_outputs || []).includes('tools/jlc_stock.py') ? ' Write tools/jlc_stock.py to read DIGIKEY_ENV_FILE as well as the two variables, as tools/research/vendors.py does.' : ''} Run ${T6_CHECKS} and report each as passed or not with its last lines.`
 }
+// Each group page and each output under hardware/docs/ carries figures from
+// the returns: the required outputs, and an output written only where it
+// changes once P7 lists it in files.
+function figurePages(p7) {
+  const outs = [...(A.t6_outputs || []), ...(A.t6_may_write || []).filter(f => ((p7 && p7.files) || []).includes(f))]
+  return [...new Set([...outs.filter(f => f.startsWith('hardware/docs/')), ...Object.values((p7 && p7.group_pages) || {})])]
+}
 function p7CriticPrompt(p7) {
-  const pages = [...new Set([...(A.t6_outputs || []).filter(f => f.startsWith('hardware/docs/')), ...Object.values((p7 && p7.group_pages) || {})])]
+  const pages = figurePages(p7)
   const decided = Object.fromEntries(['Q4', 'Q8', 'Q9'].map(q => [q, (A.decisions || {})[q] || '']))
   return `${ctx('P7-critic', '', 'P7-critic')}
 
@@ -1699,10 +1706,8 @@ if (TASK === 'T6') {
     // figure.
     const named = (critic.figure_checks || []).filter(x => !readsNone(x.figure) && Number.isInteger(x.line) && x.line > 0 && RETURN_FILE.test(String(x.return_file || '')))
     if (!named.length) failed.push('the critic checked no figure')
-    // Each group page and each output under hardware/docs/ carries figures
-    // from the returns; each needs at least one figure checked.
-    const figPages = [...(A.t6_outputs || []).filter(f => f.startsWith('hardware/docs/')), ...Object.values((p7 && p7.group_pages) || {})]
-    for (const f of new Set(figPages)) if (!named.some(x => x.file === f)) failed.push(`no figure checked on ${f}`)
+    // Each page figurePages names needs at least one figure checked.
+    for (const f of figurePages(p7)) if (!named.some(x => x.file === f)) failed.push(`no figure checked on ${f}`)
     // Every figure P7 wrote has a check of its own: a figure written on n
     // lines of a file needs checks on n lines. The critic's corrections can
     // move lines, so P7's line numbers are not compared; session.py record

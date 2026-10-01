@@ -211,11 +211,12 @@ async function runTask(task, opts = {}) {
       const outs = [...(opts.t6Outputs || T6OUT), ...(pagesOut ? Object.values(pagesOut) : ['hardware/docs/GroupA.md', 'hardware/docs/GroupB.md', 'hardware/docs/GroupC.md'])].filter(f => !(role === 'P7' && f === opts.unwritten))
       if (opts.pageOutside) outs.push('tools/research/README.md')
       if (opts.fourthPage) outs.push('hardware/docs/GroupD.md')
+      if (opts.p7Extra) outs.push(...opts.p7Extra)
       if (role === 'P7') data.figures = opts.p7Figures || outs.filter(f => f.startsWith('hardware/docs/')).map(file => ({ file, line: 1, figure: 'stock' }))
       if (role === 'P7') { data.files = outs; data.group_pages = opts.pageOutside ? { A: 'hardware/docs/GroupA.md', B: 'tools/research/README.md', C: 'hardware/docs/GroupC.md' } : opts.samePages ? { A: 'hardware/docs/Power.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/Power.md' } : (opts.pagePower ? { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/GroupC.md' } : pagesOut ? { ...pagesOut } : { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/GroupB.md', C: 'hardware/docs/GroupC.md' }); if (opts.fourthPage) data.group_pages.D = 'hardware/docs/GroupD.md' }
       else {
         data.reviewed = outs
-        const figFiles = opts.oneFigure ? ['hardware/docs/Parts.md'] : outs.filter(f => f.startsWith('hardware/docs/'))
+        const figFiles = opts.oneFigure ? ['hardware/docs/Parts.md'] : outs.filter(f => f.startsWith('hardware/docs/') && f !== opts.noFigureOn)
         data.figure_checks = opts.noFigures ? [] : figFiles.map(file => ({ ...(opts.p7FigureAlias ? { p7_figure: 'stock' } : {}), file, line: opts.checkLine === undefined ? 1 : opts.checkLine, figure: opts.blankFigure ? '' : opts.p7FigureAlias || 'stock', return_file: opts.blankFigure ? '' : opts.returnFile || 'hardware/research/round1/T2/012-P4-stock-R1.json', kind: opts.figureKind || 'other', agrees: !opts.criticDisagrees }))
         data.sentence_issues = opts.sentenceIssue ? [{ file: 'f', line: 1, issue: 'i' }] : []
         data.marked = opts.marked || []
@@ -1489,6 +1490,15 @@ async function main() {
     && p7cr2.includes('in the files P7 listed only: a file P7 did not list stays as it is') && p7cr2.includes('Check at least one figure on each of these pages: hardware/docs/IOBoard.md, hardware/docs/Research.md, hardware/docs/Control.md, hardware/docs/Supply.md, hardware/docs/Sensing.md;'), 'round 2 T6: the critic checks both rounds\' returns on the pages P7 writes')
   r = await runTask('T6', { ...T6R2, p7Pages: { ...PAGES, A: 'hardware/docs/GroupA.md' } })
   check(r.result.summary.stopped === true && /group page hardware\/docs\/GroupA.md is not group A's page/.test(r.result.summary.reasons[0]), 'round 2 T6: a group page other than round 1\'s stops it')
+  // An output written only where it changes needs a figure checked once
+  // P7 lists it in files.
+  r = await runTask('T6', { ...T6R2, p7Extra: ['hardware/docs/Parts.md'] })
+  check(!r.result.summary.stopped && r.prompts.find(x => x.label === 'P7-critic').prompt.includes('Check at least one figure on each of these pages: hardware/docs/IOBoard.md, hardware/docs/Research.md, hardware/docs/Parts.md, hardware/docs/Control.md,'), `round 2 T6: Parts.md listed in files is among the pages to check: ${(r.result.summary.reasons || []).join()}`)
+  const r2Figs = ['IOBoard', 'Research', 'Control', 'Supply', 'Sensing'].map(n => ({ file: `hardware/docs/${n}.md`, line: 1, figure: 'stock' }))
+  r = await runTask('T6', { ...T6R2, p7Extra: ['hardware/docs/Parts.md'], noFigureOn: 'hardware/docs/Parts.md', p7Figures: r2Figs })
+  check(r.result.summary.stopped === true && /no figure checked on hardware\/docs\/Parts.md/.test(r.result.summary.reasons[0]), 'round 2 T6: Parts.md listed in files with no figure checked stops it')
+  r = await runTask('T6', { ...T6R2, noFigureOn: 'hardware/docs/Parts.md', p7Figures: r2Figs })
+  check(!r.result.summary.stopped, `round 2 T6: Parts.md not listed owes no figure check: ${(r.result.summary.reasons || []).join()}`)
   r = await runTask('T6', { ...T6R2, unwritten: 'hardware/STATUS.md' })
   check(r.result.summary.stopped === true && /not written: hardware\/STATUS.md/.test(r.result.summary.reasons[0]), 'round 2 T6: STATUS.md unwritten stops it')
   // A budget comes from round 2's last P5/P6 check, under round 2's
