@@ -1,4 +1,4 @@
-# IO (input/output) board component research, round 1
+# IO (input/output) board component research
 
 The plan for the multi-agent research that selects the integrated circuits
 (ICs) of the IO board, and the record of its run. The owner accepted the plan
@@ -24,7 +24,10 @@ Two runs stopped and were run again: FU-A4 (`FU-A4-stopped-1`, 2026-09-29,
 `e13f5f60d2e5`) and T6 (`T6-stopped-1`, 2026-09-29, `9460c22ec32d`). The
 parts round 1 selected are in [Parts](Parts.md), with the reasons and the
 open items on [Control](Control.md), [Supply](Supply.md) and
-[Sensing](Sensing.md). The sections below are the plan as the tasks read it.
+[Sensing](Sensing.md). The sections from [Scope](#scope) to
+[Prerequisites](#prerequisites) are the plan round 1's tasks read, with the
+owner's later decisions marked by their dates. [Round 2](#round-2) is the
+plan of round 2's runs. The questions below serve both rounds.
 Some tables below use a term before the text expands it: PWM is pulse-width
 modulation, PPM pulse-position modulation, UART a universal asynchronous
 receiver-transmitter, RGB LED a red-green-blue light-emitting diode, LV and
@@ -45,7 +48,7 @@ has to do; this page lists how its parts are found.
 | Round | Selects |
 | --- | --- |
 | 1 | ICs: microcontroller support, CAN, safety gate, output and input buffers, power conversion and protection, current and voltage monitors, cell monitor, ADC (analogue-to-digital converter) and reference, sensor front ends, non-volatile store. Also the parts that fix an IC's surroundings: the RP2354B's crystal and regulator inductor, the servo supply's inductor, the onboard and external motor shunts, and the switch of the ESC (electronic speed controller) pack with its input protection (R3). R7 also selects the 18650 cells of the bench's own pack and the pack's protection |
-| 2 | passives; ESD (electrostatic discharge) and overvoltage protection on the signal, sensor, balance-lead, link and heartbeat connectors (the power input's protection is R5 and the ESC pack path's is R3, both in round 1); connectors; crystals and inductors not fixed in round 1 |
+| 2 | first, follow-up tasks of round 1's categories for the ICs and IC surroundings that round 1 left without a part or whose requirement changed ([Round 2](#round-2); owner, 2026-10-01); then passives; ESD (electrostatic discharge) and overvoltage protection on the signal, sensor, balance-lead, link and heartbeat connectors (the power input's protection is R5 and the ESC pack path's is R3, both in round 1); connectors; crystals and inductors not fixed in round 1 |
 | 3 | mechanical, thermal, layout constraints; the busbar, mounting and cabling of the external 300 A path, whose shunt is in round 1 |
 
 Not in any round: the link pages and coprocessor code that carry a
@@ -518,6 +521,109 @@ known and reported to the owner. Follow-up tasks add to the total of 102.
 9. **The held parts** in the owner's personal library, exported on 2026-09-25:
    [Held parts](#held-parts). The RP2354B is held at 20 against a need of 10 for
    the first build (S7): 2 a board (owner, 2026-09-30).
+
+## Round 2
+
+Round 2 runs in two stages (owner, 2026-10-01):
+
+| Stage | Selects | Phases |
+| --- | --- | --- |
+| 1 | every function of R1 to R3 and R5 to R11 that the rules below do not leave to stage 2: the ICs and the parts round 1's categories name, among them those under [Follow-ups](#follow-ups), which round 1 left without a part or whose requirement changed after round 1 | round 1's, as follow-up tasks: one P1 follow-up, P2-P4 follow-ups, a P5-P6 follow-up, then T6 writes the pages |
+| 2 | the passives, connectors and connector protection of row 2 of the [Scope](#scope) table, by part type: resistors and capacitors, inductors and crystals, connectors, connector protection | no P1 and one verifier; the connector makers of Sourcing rule 2 are asked before it; its plan is not on this page |
+
+The scripts in `tools/research/` run stage 1. Stage 2 has no scripts: its
+categories, records and gates do not exist.
+
+Where this section differs from a row under [Research categories](#research-categories) or [Agent layout](#agent-layout), this section and [the specification](IOBoard.md) hold. The category rows are the plan as round 1 read it. For example, the 9.9 A pack current in R5 and R7 is about 49.7 A in the specification's Pack path current row.
+
+### Branches and records
+
+- `research/round2` takes the place of the branch of prerequisite 4. `research/round2-results` takes the place of the results branch of prerequisite 5. Both start from the same `main` commit, after the pull request that carries this section and round 2's support in `tools/research/`.
+- The owner's answers to round 2's questions arrive on `research/round2`. Before T6 the session merges it into `research/round2-results`.
+- The session runs `tools/research/session.py` with `--round 2` and the base directory `~/rcbench-research/round2`.
+- Each run's returns go under `hardware/research/round2/<run>/`. Round 1's returns under `hardware/research/round1/` count as earlier runs: the gates, the selection and the question numbers read both directories.
+- `hardware/research/round2/selection.json` holds the part each function keeps over both rounds, once a round 2 run selects parts. Until then `hardware/research/round1/selection.json` holds it.
+- A run name is unique over both rounds. Round 2's follow-ups are named `FU-2` and a suffix. T6 runs once in each round. After T6 of round 2, `session.py prepare --round 2` refuses every run.
+- Round 2's questions continue the table under [Raised by P1](#raised-by-p1), from V269.
+- Each run reads the commit of `research/round2` at its start. It reads the monostable pages at commit 23c82ca6ca976d956098cfafd25dbefa11584f5d, as prerequisite 4 sets out.
+
+### Rules of stage 1
+
+- A follow-up's pass is the `round` field of its follow-up file, 1 or 2. These are the two rounds of follow-up tasks under [Agent layout](#agent-layout). Stage 1 starts at pass 1. A gap left after pass 2 is written on the pages as not known.
+- A P2-P4 follow-up covers every function of its categories, as in round 1. It runs after P1 follow-ups of round 2 that cover each of its categories, and `prepare` refuses it before them. R4, R12 and R13 take a P1 follow-up of round 2 before a P2-P4 follow-up.
+- A function whose part is a resistor, a capacitor, a connector, or the protection on the signal, sensor, balance-lead, link or heartbeat connectors (row 2 of the [Scope](#scope) table) is returned without candidates and left to stage 2. The onboard, external and port shunts that R8 names, the USB protection (R1), the power input's protection (R5) and the ESC pack path's protection (R3) are researched in stage 1.
+- Stage 1 selects no connector. The connector makers of Sourcing rule 2 are asked before stage 2, which selects the connectors, not before stage 1.
+- A crystal, an oscillator or an inductor that a stage 1 category names is researched in stage 1.
+- P5 budgets each of the two RP2354B, the main and the measurement coprocessor (owner, 2026-09-30), against its pins in [Pins](Pins.md). The GPIO, PIO, DMA, PWM, ADC, SPI, I²C and UART budgets are given once for each chip, named `NAME: main` and `NAME: measurement`.
+- P6 marks a specification line whose part these rules leave to stage 2 "stage 2 of round 2" in place of "not round 1". Such a line is not a gap. A shunt, the USB protection, the power input's protection and the ESC pack path's protection are not marked so.
+- A run that reads stock starts only with at least 250 of the day's 1,000 Digi-Key calls left (`--digikey-min 250`). Of round 1's runs that used the day's cache, T3 lowered the count of calls left the most: 195 (see [Runs](#runs)).
+- Round 2's runs in R5 to R8, its P5-P6 follow-up and its T6 may start with these items open, the reason given to `--accept-open` (owner, 2026-10-01): round 1's parts in R4, R12 and R13, and every function of round 1 that round 2 does not decide again; the resistors, capacitors, connectors and connector protection left to stage 2; the functions a round 2 follow-up leaves without a part, which the pages state as not known; and T5's conflicts and gaps in the categories round 2 does not run.
+- Two of T5's conflicts name a part no run selected: INA238AIDGSR in R8 and TPS55285VALR in R6. The T6 gate counts each as open, and names both parts, until a run selects that part number; left open, they reach the pages as not known. No run selects the INA238AIDGSR, which the INA228 replaces (owner, 2026-09-30). R6 and R8 are categories round 2 runs, so the reason above does not cover these two conflicts. Whether round 2's T6 starts with them open is not decided.
+
+### Follow-ups
+
+Functions whose requirement changed after round 1 or that round 1 left without a part, by category. The P2-P4 follow-ups also requalify every other function of their categories. Each row gives the requirement that changed after round 1, or the reason round 1 left the function without a part. Function names are those of `selection.json`. A function marked "new" is in no inventory of round 1, and the P1 follow-up adds it.
+
+| Function | Category | Requirement or reason | Source |
+| --- | --- | --- | --- |
+| USB protection | R1 | Standard USB protection parts on VBUS, D+ and D−, CC1 and CC2. Where a standard part misses the 3.63 V steady limit on D+ and D−, or another figure of V9 and V12, its datasheet figure stands (owner, 2026-09-30). Round 1 found no part that covers the 5 lines | V9, V12; IOBoard.md, USB port; hardware/STATUS.md, USB protection |
+| CAN controller clock (the crystal, resonator or oscillator each controller takes) | R2 | The 40 MHz clock of each MCP2518FDT-E/SL (owner, 2026-10-01): a crystal or an oscillator, and its frequency error against V26 and V27. Round 1 found no part | V26, V27; IOBoard.md, Controller clock and Clock accuracy; Control.md, Not verified |
+| servo rail gate | R3 | Conducts from 0.8 V: on each of the 3 servo rails, 0.8 to 8.4 V, and on the adjustable supply's output, 0.8 to 15 V, each up to 6.35 A (V55; owner, 2026-09-30). The BTS7004-1EPP starts only at VS(OP), 4.1 V at most | IOBoard.md, Servo rail gate; hardware/STATUS.md, Servo path from 0.8 V |
+| onboard pack switch MOSFETs; external pack switch module; pack overvoltage and transient clamp | R3 | Round 1 refutes IPT015N10N5ATMA1 and the VS-FC420SA10 and VS-FC270SA20 modules on safe operating area during the controlled turn-off. It finds no clamp that holds the pack node under 85 V at up to 600 A | hardware/STATUS.md, ESC pack switch; Control.md, Not known |
+| source selection; pack disconnect | R5 | Sized for about 49.7 A: the board's draw from the pack at the 6.0 V floor with the four TPS55285 at 6.35 A, nominal at an assumed 90 %. Round 1 sized both for 12.23 A (V90). No pack disconnect passed round 1: each candidate failed an open balance lead (V107), the reconnect condition (V93, V94) or the per-cell floor (V95) | IOBoard.md, Pack path current and Pack reconnect; Supply.md, Not known |
+| overvoltage protection; reverse-polarity protection; inrush limiting | R5 | The DC input's overvoltage threshold, non-destructive (owner, 2026-09-30): round 1 left the overvoltage protection without a part. FU-B3 did not requalify the LM74800QDRRRQ1 for the reverse-polarity protection and the inrush limiting | IOBoard.md, Overvoltage protection, Reverse-polarity protection, Inrush limiting, and Not known under Power |
+| source-status signal (new) | R5 | A signal the coprocessor reads that tells the DC input from the pack: a DC-input-present input or the DC input voltage, on an RP2354B input or an expander pin within the pin budget | IOBoard.md, Servo rail current |
+| DC input brownout detection (new) | R5 | Detects the DC input falling below a threshold, which the coprocessor reads; non-destructive (owner, 2026-09-30). Its threshold and the time below it are not stated. The source selection's undervoltage gate is 10.1 V falling and 11.0 V rising (V88) | IOBoard.md, DC input brownout detection |
+| Port supply switch | R6 | Switches each of the 20 ports from 0.8 V (V55) to 8.4 V. The TPS259474LRPWR takes VIN only from 2.7 V | IOBoard.md, Port supply switch |
+| Servo supply | R6 | The continuous current one TPS55285 with its heatsink holds at 6.0 V in and 50 °C ambient, in A. This is each rail's continuous rating (owner, 2026-09-30). The heatsink's size is round 3's | IOBoard.md, Servo rail current |
+| servo supply temperature sensor (new) | R6 | The MCP9808T-E/MS beside each TPS55285, 4 a board, and its shutdown threshold against the TPS55285's 125 °C recommended junction maximum | IOBoard.md, Servo supply temperature |
+| Port voltage ceiling | R6 | Cuts the port off above 6.0 V (LV) or 8.7 V (HV), set by a jumper (F16). No candidate passed round 1: each failed the ±0.99 % HV trip band (V128) or the latch (V130) | IOBoard.md, Port voltage ceiling; Supply.md, Not known |
+| Pack overcurrent protection | R7 | Thresholds for about 49.7 A, against 3.0 V a cell (F9) and 0 to 55 °C (owner, 2026-09-30), at or below the pack's 90 A continuous. Round 1 set them for 12.23 A (V150) | IOBoard.md, Pack overcurrent protection and Pack temperature |
+| alert shift register (new) | R8 | Parallel-in, serial-out: two 8-bit parts in cascade take the 16 alert outputs at once, on 3 main coprocessor pins (owner, 2026-09-30) | IOBoard.md, Current aborts |
+| alert combining gate (new) | R8 | CD4082, a dual 4-input AND gate, 3 a board (owner, 2026-09-30): its part number, stock and speed at 3.3 V | IOBoard.md, Current aborts |
+| Port current monitor; Motor monitor | R8 | The alert thresholds, whether the monitors latch their alert outputs, and the critical line's blanking time, against the port switch's 3.96 to 4.84 A breaker and the INA3221's conversion time. The INA228 stays fixed (owner, 2026-09-30) | IOBoard.md, Current aborts |
+| cell monitor isolation barrier (new) | R9 | An isoSPI (isolated SPI) transceiver pair or a digital isolator between the ADBMS1818ASWAZ-RL and the measurement coprocessor's SPI1, rated 85 V DC working or more (V189) | V189; IOBoard.md, Cell monitor isolation; Pins.md |
+| Converter for the accelerometer; optical index | R10, R11 | Delay variation at most 1.244 µs at 1,092 Hz (65,535 rpm): the optical index's share of V225. None of the 9 reflective sensors round 1 searched meets it; they state 10 to 70 µs. R10 is read for its share of the same budget | V225; Sensing.md, Not known |
+
+### Runs
+
+| Run | Phases | Categories | Starts after | Agents planned, free |
+| --- | --- | --- | --- | --- |
+| FU-2P1 | P1 | R1, R2, R3, R5, R6, R7, R8, R9, R10, R11 | round 1's T6 | 22, 10 |
+| FU-2A | P2-P4 | R1, R2, R3 | FU-2P1, and the owner's answers to its questions in R1 to R3 | 16, 16 |
+| FU-2C | P2-P4 | R9, R10, R11 | FU-2P1, and the owner's answers in R9 to R11 | 16, 16 |
+| FU-2B1 | P2-P4 | R5, R7 | FU-2A and FU-2C, and the owner's answers in R5 and R7 | 11, 21 |
+| FU-2B2 | P2-P4 | R6, R8 | FU-2A and FU-2C, and the owner's answers in R6 and R8 | 11, 21 |
+| FU-2P56 | P5-P6 | the whole board | FU-2A, FU-2C, FU-2B1 and FU-2B2 | 5, 27 |
+| T6 | P7 | the pages | the last P5-P6 follow-up of round 2 | 2, 30 |
+
+Stage 1 plans 83 agents in 7 runs, the largest 22.
+
+FU-2A and FU-2C run in either order. FU-2B1 and FU-2B2 run after both, for the reason T3 ran after T2 and T4: R5 sizes the rails from the parts of R1 to R4 and R9 to R13.
+
+R5 and R7 run together, because the pack path's about 49.7 A sizes the source selection, the pack disconnect and the pack's protection. R6 and R8 run together, because the port switch, the converters' shutdown and the port monitors' alerts act on one servo path.
+
+A run of 3 categories or fewer keeps 16 free agents or more: 5 refutations at 3 agents each. Round 1's R3 has 19 functions.
+
+A conflict or gap that FU-2P56 returns goes to pass 2: a P2-P4 follow-up of its categories, then a P5-P6 follow-up, before T6.
+
+Each round 1 run from FU-A2 to T5 records in its `task.json` the Digi-Key calls left when `prepare` read the count (`run_info`, `digikey_calls_left`). The runs before FU-A2 and T6's two runs record no count. On 2026-09-29 the runs that used the day's cache lowered the count, from their own reading to that of the run recorded next, by 2 (FU-A4-stopped-1), 13 (FU-C2), 15 (FU-A4), 21 (FU-B3, four categories), 73 (FU-B1, four categories), 74 (FU-C1, five categories), 87 (FU-A3, three categories) and 195 (T3, four categories); each figure includes the next run's reading. T5's is not recorded. FU-A2, without the cache, lowered it by 255, and T2 made 367 calls ([the scripts' README](../../tools/research/README.md)). Round 2's figures are not measured. At round 1's figures, FU-2A, FU-2C, FU-2B1 and FU-2B2 take about 356 calls together: 87 as FU-A3, 74 as FU-C1, and 195 for R5 to R8 as T3. Of one UTC (Coordinated Universal Time) day's 1,000 calls, with no other use that day, each of the four starts with more than 600 left. FU-2P56's count is not measured, as T5's is not recorded. FU-2P1 reads no stock, and `prepare` reads no count for it; its P0 probes the Digi-Key API and its P1 agents may read Digi-Key, a count that is not measured. T6's two runs of `tools/jlc_stock.py --check 5` read Digi-Key for each row whose second source is Digi-Key; that count is not measured.
+
+### Pages of round 2
+
+T6 of round 2 writes the pages from:
+- the returns under `hardware/research/round1/` and `hardware/research/round2/`;
+- `hardware/research/round2/selection.json`;
+- the budget and combinations of round 2's last P5-P6 follow-up, as its critic upheld them;
+- the owner's decisions on Q4, Q8 and Q9.
+
+P7 writes `hardware/docs/IOBoard.md`, `hardware/STATUS.md`, this page's status line and the three group pages round 1 wrote: [Control](Control.md) for group A, [Supply](Supply.md) for group B and [Sensing](Sensing.md) for group C. It writes another file of [Outputs](#outputs) only where round 2's returns change its content: `hardware/docs/Parts.md`, `hardware/docs/Power.md`, `hardware/README.md` or `tools/jlc_stock.py`.
+
+The status line keeps round 1's table and adds a table of round 2's runs: each run, its date and the commit of `research/round2` it read.
+
+The critic checks as in round 1, each figure against a file under either directory.
+
+[Pins](Pins.md) and `hardware/docs/pinmap.json` are not outputs. A part that changes a pin's use is stated on its group page as not known in the pin map.
 
 ## Questions for the owner
 

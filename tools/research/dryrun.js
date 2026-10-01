@@ -4,7 +4,8 @@
 // script enforces: the counts and the cap, both verifiers on every part, an
 // adjudicator for every refutation and refuted figure, the next-ranked part
 // after a refutation that stands, restarts from the free agents, questions
-// that reach the owner only when checked, and P0's checks.
+// that reach the owner only when checked, P0's checks, and round 2's prompts
+// and T6 rules.
 //
 //   node tools/research/dryrun.js      exit 1 on the first failed check
 
@@ -60,7 +61,9 @@ const endpoint = h => h.probe == null ? `https://${h.host}/products/x` : /-api$/
 // opts: refute ['label:part'], refuteFigure ['label'], stands, omit ['label'],
 // nulls {label: count}, throws [label], critic 'none' | 'all', p0 {...}, hosts,
 // edit {figure: {...}} for every P4 check, editPart {'label:part': {figure:
-// {...}}} for one verifier's checks of one part
+// {...}}} for one verifier's checks of one part; researchRound, runsDir,
+// runsDirs, selectionFile, branch, groupPages, t6Outputs and t6MayWrite as
+// prepare writes them, p7Pages the group pages the mock P7 returns
 async function runTask(task, opts = {}) {
   const calls = []
   const prompts = []
@@ -204,14 +207,16 @@ async function runTask(task, opts = {}) {
     if (role === 'P3' && opts.p3overturned) data.exclusions_not_holding = [{ part: 'partY', reason_given: 'r', why_it_fails: 'w' }]
     if (role === 'P7-critic' || role === 'P7') {
       for (const k of Object.keys(data.checks)) data.checks[k] = { passed: !(opts.failCheck === k && role === 'P7-critic'), output: opts.failCheck === k && opts.failOutput ? opts.failOutput : k === 'jlc_stock' && opts.passOutput ? opts.passOutput : 'o' }
-      const outs = [...T6OUT, 'hardware/docs/GroupA.md', 'hardware/docs/GroupB.md', 'hardware/docs/GroupC.md'].filter(f => !(role === 'P7' && f === opts.unwritten))
+      const pagesOut = opts.p7Pages || opts.groupPages
+      const outs = [...(opts.t6Outputs || T6OUT), ...(pagesOut ? Object.values(pagesOut) : ['hardware/docs/GroupA.md', 'hardware/docs/GroupB.md', 'hardware/docs/GroupC.md'])].filter(f => !(role === 'P7' && f === opts.unwritten))
       if (opts.pageOutside) outs.push('tools/research/README.md')
       if (opts.fourthPage) outs.push('hardware/docs/GroupD.md')
+      if (opts.p7Extra) outs.push(...opts.p7Extra)
       if (role === 'P7') data.figures = opts.p7Figures || outs.filter(f => f.startsWith('hardware/docs/')).map(file => ({ file, line: 1, figure: 'stock' }))
-      if (role === 'P7') { data.files = outs; data.group_pages = opts.pageOutside ? { A: 'hardware/docs/GroupA.md', B: 'tools/research/README.md', C: 'hardware/docs/GroupC.md' } : opts.samePages ? { A: 'hardware/docs/Power.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/Power.md' } : (opts.pagePower ? { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/GroupC.md' } : { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/GroupB.md', C: 'hardware/docs/GroupC.md' }); if (opts.fourthPage) data.group_pages.D = 'hardware/docs/GroupD.md' }
+      if (role === 'P7') { data.files = outs; data.group_pages = opts.pageOutside ? { A: 'hardware/docs/GroupA.md', B: 'tools/research/README.md', C: 'hardware/docs/GroupC.md' } : opts.samePages ? { A: 'hardware/docs/Power.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/Power.md' } : (opts.pagePower ? { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/Power.md', C: 'hardware/docs/GroupC.md' } : pagesOut ? { ...pagesOut } : { A: 'hardware/docs/GroupA.md', B: 'hardware/docs/GroupB.md', C: 'hardware/docs/GroupC.md' }); if (opts.fourthPage) data.group_pages.D = 'hardware/docs/GroupD.md' }
       else {
         data.reviewed = outs
-        const figFiles = opts.oneFigure ? ['hardware/docs/Parts.md'] : outs.filter(f => f.startsWith('hardware/docs/'))
+        const figFiles = opts.oneFigure ? ['hardware/docs/Parts.md'] : outs.filter(f => f.startsWith('hardware/docs/') && f !== opts.noFigureOn)
         data.figure_checks = opts.noFigures ? [] : figFiles.map(file => ({ ...(opts.p7FigureAlias ? { p7_figure: 'stock' } : {}), file, line: opts.checkLine === undefined ? 1 : opts.checkLine, figure: opts.blankFigure ? '' : opts.p7FigureAlias || 'stock', return_file: opts.blankFigure ? '' : opts.returnFile || 'hardware/research/round1/T2/012-P4-stock-R1.json', kind: opts.figureKind || 'other', agrees: !opts.criticDisagrees }))
         data.sentence_issues = opts.sentenceIssue ? [{ file: 'f', line: 1, issue: 'i' }] : []
         data.marked = opts.marked || []
@@ -306,9 +311,10 @@ async function runTask(task, opts = {}) {
   }
   const args = { task, cap: opts.cap || cats.cap, categories: cats.categories, tasks: cats.tasks, schemas,
     commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, inventory: opts.inventory || {}, jlcparts: JL, p5_budgets: opts.p5Budgets || [], p5_conditional: opts.p5Conditional || [], q_options: opts.qOptions || {},
-    followup: opts.followup, first_v: 5, decision_categories: { Q4: ['R10'], Q8: ['R2', 'R12'], Q9: ['R3'] }, t6_outputs: T6OUT, for_research: opts.forResearch || [], raised: opts.raised || [], p1_asks: opts.p1Asks || {}, fixed_inputs: opts.fixedInputs || {}, required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {},
+    followup: opts.followup, first_v: 5, decision_categories: { Q4: ['R10'], Q8: ['R2', 'R12'], Q9: ['R3'] }, t6_outputs: opts.t6Outputs || T6OUT, for_research: opts.forResearch || [], raised: opts.raised || [], p1_asks: opts.p1Asks || {}, fixed_inputs: opts.fixedInputs || {}, required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {},
     p5_assumptions: opts.p5Assumptions || [], decisions: opts.decisions || {}, accept_open: opts.acceptOpen || null, left_open: opts.leftOpen || [], p5_assumed: opts.p5AssumedT6 || [],
-    last_p56: opts.lastP56 || '', p56_runs: opts.p56Runs || [], selection: opts.selection || {}, jlc_stock_row: opts.jlcRow || [], run_info: opts.runInfo || {}, stock_exceptions: opts.stockExceptions || [] }
+    last_p56: opts.lastP56 || '', p56_runs: opts.p56Runs || [], selection: opts.selection || {}, jlc_stock_row: opts.jlcRow || [], run_info: opts.runInfo || {}, stock_exceptions: opts.stockExceptions || [],
+    research_round: opts.researchRound, runs_dir: opts.runsDir, runs_dirs: opts.runsDirs, selection_file: opts.selectionFile, branch: opts.branch, group_pages: opts.groupPages, t6_may_write: opts.t6MayWrite }
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
     `return (async () => {${src}})()`)
   const result = await fn(args, agent, parallel, pipeline, () => {}, () => {})
@@ -1448,6 +1454,74 @@ async function main() {
     const { result } = await runTask('FU', { followup: { phases, round: 1, categories: ['R1', 'R2', 'R3'].slice(0, n), items: [] } })
     check(result.planned === want, `FU ${phases}: planned ${result.planned}, expected ${want}`)
   }
+
+  // Round 2: every prompt names the round, the records of both rounds, the
+  // selection.json prepare gives and the round's own section of the page;
+  // the follow-up plans count as in round 1.
+  const R2 = { researchRound: 2, runsDir: 'hardware/research/round2', runsDirs: ['hardware/research/round1', 'hardware/research/round2'], branch: 'research/round2' }
+  const bothRounds = 'undefined/hardware/research/round1/<run>/ and undefined/hardware/research/round2/<run>/'
+  for (const [phases, n, want] of [['P1', 2, 6], ['P2-P4', 3, 16], ['P5-P6', 0, 5]]) {
+    const { result, prompts } = await runTask('FU', { ...R2, selectionFile: 'hardware/research/round1/selection.json', followup: { phases, round: 1, categories: ['R1', 'R2', 'R3'].slice(0, n), items: [] } })
+    check(result.planned === want, `round 2 FU ${phases}: planned ${result.planned}, expected ${want}`)
+    const off = prompts.filter(x => !(x.prompt.includes('in task FU of round 2 of the rcbench') && x.prompt.includes(`Returns of earlier tasks: ${bothRounds}.`) && x.prompt.includes('is in undefined/hardware/research/round1/selection.json;') && x.prompt.includes('the section "Round 2" of that page; where it and a category row or a phase row differ, that section holds')))
+    check(prompts.length && !off.length, `round 2 FU ${phases}: ${off.map(x => x.label).join(', ')} miss the round, its records, its selection or its section`)
+    if (phases === 'P5-P6') {
+      check(prompts.find(x => x.label === 'P5').prompt.includes('Read every return under undefined/hardware/research/round1/ and undefined/hardware/research/round2/ (T2, T3, T4'), 'round 2 P5: both rounds\' returns')
+      check(prompts.find(x => x.label === 'P6').prompt.includes('or, as the section "Round 2" sets out, "stage 2 of round 2"; every figure in undefined/hardware/research/round1/ and undefined/hardware/research/round2/ has'), 'round 2 P6: the stage 2 mark and both rounds\' figures')
+    }
+  }
+  r = await runTask('FU', { ...R2, selectionFile: 'hardware/research/round2/selection.json', followup: { phases: 'P2-P4', round: 1, categories: ['R5'], items: [] } })
+  const p2r2 = r.prompts.find(x => x.label === 'P2-R5').prompt
+  check(p2r2.includes('The parts earlier tasks selected are in undefined/hardware/research/round2/selection.json;') && p2r2.includes('Name each function exactly as undefined/hardware/research/round2/selection.json names it for R5.'), 'round 2 P2: the selection.json prepare gives')
+  // Round 2's T6 updates the group pages round 1 wrote and must write
+  // IOBoard.md, Research.md and STATUS.md; the other outputs only where
+  // they change, so an unwritten README.md does not stop it.
+  const PAGES = { A: 'hardware/docs/Control.md', B: 'hardware/docs/Supply.md', C: 'hardware/docs/Sensing.md' }
+  const MAY = ['hardware/docs/Parts.md', 'hardware/docs/Power.md', 'hardware/README.md', 'tools/jlc_stock.py']
+  const T6R2 = { ...R2, selectionFile: 'hardware/research/round2/selection.json', groupPages: PAGES, t6Outputs: ['hardware/docs/IOBoard.md', 'hardware/docs/Research.md', 'hardware/STATUS.md'], t6MayWrite: MAY }
+  r = await runTask('T6', T6R2)
+  check(!r.result.summary.stopped, `round 2 T6: the given group pages and the three outputs finish it: ${(r.result.summary.reasons || []).join()}`)
+  const p7r2 = r.prompts.find(x => x.label === 'P7').prompt
+  const p7cr2 = r.prompts.find(x => x.label === 'P7-critic').prompt
+  check(p7r2.includes('merged with research/round2 before this task') && p7r2.includes(`group_pages: the pages ${JSON.stringify(PAGES)}, which round 1 wrote; update them.`) && !p7r2.includes('three new files')
+    && p7r2.includes(`Write each of ${MAY.join(', ')} only where the returns of round 2 change its content, and list it in files only then.`) && !p7r2.includes('Write tools/jlc_stock.py to read')
+    && p7r2.includes('Write them from the returns under undefined/hardware/research/round1/ and undefined/hardware/research/round2/ only, the parts in hardware/research/round2/selection.json,'), 'round 2 T6: P7 updates the group pages and writes the other outputs only where they change')
+  check(p7cr2.includes('against the returns under undefined/hardware/research/round1/ and undefined/hardware/research/round2/: a budget') && p7cr2.includes('checked against hardware/research/round2/selection.json counts')
+    && p7cr2.includes('in the files P7 listed only: a file P7 did not list stays as it is') && p7cr2.includes('Check at least one figure on each of these pages: hardware/docs/IOBoard.md, hardware/docs/Research.md, hardware/docs/Control.md, hardware/docs/Supply.md, hardware/docs/Sensing.md;'), 'round 2 T6: the critic checks both rounds\' returns on the pages P7 writes')
+  r = await runTask('T6', { ...T6R2, p7Pages: { ...PAGES, A: 'hardware/docs/GroupA.md' } })
+  check(r.result.summary.stopped === true && /group page hardware\/docs\/GroupA.md is not group A's page/.test(r.result.summary.reasons[0]), 'round 2 T6: a group page other than round 1\'s stops it')
+  // An output written only where it changes needs a figure checked once
+  // P7 lists it in files.
+  r = await runTask('T6', { ...T6R2, p7Extra: ['hardware/docs/Parts.md'] })
+  check(!r.result.summary.stopped && r.prompts.find(x => x.label === 'P7-critic').prompt.includes('Check at least one figure on each of these pages: hardware/docs/IOBoard.md, hardware/docs/Research.md, hardware/docs/Parts.md, hardware/docs/Control.md,'), `round 2 T6: Parts.md listed in files is among the pages to check: ${(r.result.summary.reasons || []).join()}`)
+  const r2Figs = ['IOBoard', 'Research', 'Control', 'Supply', 'Sensing'].map(n => ({ file: `hardware/docs/${n}.md`, line: 1, figure: 'stock' }))
+  r = await runTask('T6', { ...T6R2, p7Extra: ['hardware/docs/Parts.md'], noFigureOn: 'hardware/docs/Parts.md', p7Figures: r2Figs })
+  check(r.result.summary.stopped === true && /no figure checked on hardware\/docs\/Parts.md/.test(r.result.summary.reasons[0]), 'round 2 T6: Parts.md listed in files with no figure checked stops it')
+  r = await runTask('T6', { ...T6R2, noFigureOn: 'hardware/docs/Parts.md', p7Figures: r2Figs })
+  check(!r.result.summary.stopped, `round 2 T6: Parts.md not listed owes no figure check: ${(r.result.summary.reasons || []).join()}`)
+  r = await runTask('T6', { ...T6R2, unwritten: 'hardware/STATUS.md' })
+  check(r.result.summary.stopped === true && /not written: hardware\/STATUS.md/.test(r.result.summary.reasons[0]), 'round 2 T6: STATUS.md unwritten stops it')
+  // A budget comes from round 2's last P5/P6 check, under round 2's
+  // directory; one from round 1's T5, or from a run of that name under
+  // another round's directory, is superseded. A figure from a directory no
+  // round records in counts for no page.
+  r = await runTask('T6', { ...T6R2, p56Runs: ['T5', 'FU-2P56'], lastP56: 'FU-2P56', returnFile: 'hardware/research/round2/FU-2P56/003-P5.json', figureKind: 'budget' })
+  check(!r.result.summary.stopped, `round 2 T6: a budget from round 2's last P5/P6 check finishes it: ${(r.result.summary.reasons || []).join()}`)
+  r = await runTask('T6', { ...T6R2, p56Runs: ['T5', 'FU-2P56'], lastP56: 'FU-2P56', returnFile: 'hardware/research/round1/T5/003-P5.json', figureKind: 'budget' })
+  check(r.result.summary.stopped === true && /not checked against the last P5\/P6 check, FU-2P56/.test(r.result.summary.reasons[0]), 'round 2 T6: a budget from round 1\'s T5 stops it')
+  r = await runTask('T6', { ...T6R2, p56Runs: ['T5', 'FU-2P56'], lastP56: 'FU-2P56', returnFile: 'hardware/research/round1/FU-2P56/003-P5.json', figureKind: 'other' })
+  check(r.result.summary.stopped === true && /not checked against the last P5\/P6 check/.test(r.result.summary.reasons[0]), 'round 2 T6: a P5 return under another round\'s directory stops it')
+  r = await runTask('T6', { ...T6R2, returnFile: 'hardware/research/round3/T2/012-P4-stock-R1.json' })
+  check(r.result.summary.stopped === true && /the critic checked no figure/.test(r.result.summary.reasons[0]), 'round 2 T6: a figure from no round\'s directory counts for no page')
+  r = await runTask('T6', { returnFile: 'hardware/research/round2/T2/012-P4-stock-R1.json' })
+  check(r.result.summary.stopped === true && /the critic checked no figure/.test(r.result.summary.reasons[0]), 'round 1 T6: a figure from round 2\'s directory counts for no page')
+  // A stock exception's mark sits on its Parts.md row, an output round 2
+  // writes only where it changes.
+  const excR2 = { selection: { R1: { f1: { part: 'part1', alternate: '', q_alternatives: [] } } }, stockExceptions: [{ part: 'part1', reason: 'kept by the owner' }], partRows: [{ function: 'f1', part: 'part1', parts_line: 4, group_page: 'hardware/docs/Control.md' }] }
+  r = await runTask('T6', { ...T6R2, ...excR2, marked: [{ index: 0, file: 'hardware/docs/Parts.md', line: 4 }] })
+  check(!r.result.summary.stopped, `round 2 T6: a stock exception marked on its Parts.md row finishes it: ${(r.result.summary.reasons || []).join()}`)
+  r = await runTask('T6', { ...T6R2, ...excR2, marked: [] })
+  check(r.result.summary.stopped === true && /item 0 not stated on the pages/.test(r.result.summary.reasons[0]), 'round 2 T6: a stock exception not marked stops it')
 
   console.log(failures ? `${failures} checks failed` : 'dry run: every check passed')
   process.exit(failures ? 1 : 0)

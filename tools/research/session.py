@@ -1,37 +1,45 @@
 #!/usr/bin/env python3
-"""The research session's side of round 1 (hardware/docs/Research.md).
+"""The research session's side of the component research
+(hardware/docs/Research.md), in round 1 and round 2.
 
 A workflow script has no file or git access, so the session runs this tool
-around each task:
+around each run:
 
     session.py check
     session.py prepare TASK --base DIR --digikey-env FILE --model M --effort E
-                       [--followup FILE] [--db FILE] [--no-fetch]
-    session.py record TASK OUTPUT --base DIR [--name N]
-    session.py raised --base DIR [--run T1|FU-N]
-    session.py script RUN --base DIR [--out DIR]
+                       [--round N] [--followup FILE] [--db FILE] [--no-fetch]
+    session.py record TASK OUTPUT --base DIR [--round N] [--name N]
+    session.py raised --base DIR [--round N] [--run T1|FU-N]
+    session.py script RUN --base DIR [--round N] [--out DIR]
+
+`--round` selects the research round, 1 unless given. Round N reads its
+plan on `research/roundN`, keeps its results on `research/roundN-results`
+and records its runs under hardware/research/roundN/. The runs of every
+round up to N count as earlier runs. Round 1 runs T1 to T6 and follow-up
+tasks; a later round runs follow-up tasks and a T6 of its own.
 
 `check` holds the files in tools/research/ to the plan: the agent counts of
 the layout, the categories and the rows that carry "P1 asks", the schemas,
-the host table, and the dry run of round1.js when node is installed. It exits
-1 on the first disagreement.
+the host table, the round rules on a throwaway repository, and the dry run
+of round1.js when node is installed. It exits 1 on any disagreement.
 
-`prepare` fetches origin, checks the task's turn and its answered questions,
-makes the read-only checkout of `research/round1` at the commit the task
-reads, the monostable pages at 23c82ca and the working tree of
-`research/round1-results` under DIR, and writes DIR/args-TASK.json, the
-Workflow tool's `args` for tools/research/round1.js. Before T6 it merges
-`research/round1` into the results tree.
+`prepare` fetches origin, checks the run's turn and its answered questions,
+makes the read-only checkout of the round's plan branch at the commit the
+run reads, the monostable pages at 23c82ca and the working tree of the
+round's results branch under DIR, and writes DIR/args-RUN.json, the
+Workflow tool's `args` for tools/research/round1.js. Before T6 it merges the
+plan branch into the results tree.
 
-`record` takes the task output file the Workflow tool wrote, checks each
-agent's return against its schema, writes one JSON file per return under
-hardware/research/round1/RUN/ in the results tree, and commits only that
-directory (after T6, the pages P7 wrote as well).
+`record` takes the output file the Workflow tool wrote, checks each agent's
+return against its schema, writes one JSON file per return under
+hardware/research/roundN/RUN/ in the results tree, and commits that
+directory and the round's selection.json (after T6, the pages P7 wrote as
+well).
 
 `raised` appends the questions a P1 run confirmed under "Raised by P1" in a
-working tree of `research/round1` and commits them. Nothing is pushed.
+working tree of the round's plan branch and commits them. Nothing is pushed.
 
-`script` writes round1-RUN.js, round1.js with DIR/args-RUN.json in place of
+`script` writes roundN-RUN.js, round1.js with DIR/args-RUN.json in place of
 the Workflow tool's `args`, for the Workflow tool's scriptPath, into DIR or
 the directory --out names.
 """
@@ -47,6 +55,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+import tempfile
 
 import vendors
 
@@ -66,6 +75,13 @@ TASKS = ["T1", "T2", "T3", "T4", "T5", "T6", "FU"]
 AFTER = {"T2": ["T1"], "T4": ["T1"], "T3": ["T2", "T4"], "T5": ["T3"],
          "T6": ["T5"]}
 RUNS_DIR = os.path.join("hardware", "research", "round1")
+# The research rounds `--round` selects. The branches and the records
+# directory above are round 1's; use_round points them at another round.
+# RUNS_DIRS holds the records directory of every round up to the selected
+# one, oldest first: their runs count as earlier runs.
+ROUNDS = (1, 2)
+ROUND = 1
+RUNS_DIRS = (RUNS_DIR,)
 # The files T6 may write: the Outputs table of the plan.
 T6_DIRS = ("hardware/docs/",)
 T6_FILES = ("hardware/STATUS.md", "hardware/README.md", "tools/jlc_stock.py")
@@ -76,6 +92,30 @@ T6_REQUIRED = ["hardware/docs/IOBoard.md", "hardware/docs/Parts.md",
                "hardware/docs/Power.md", "hardware/docs/Research.md",
                "hardware/STATUS.md", "hardware/README.md",
                "tools/jlc_stock.py"]
+# The outputs T6 of each round must write. Round 2 updates the group pages
+# round 1 wrote and writes another output only where its returns change it.
+T6_WRITTEN = {1: T6_REQUIRED,
+              2: ["hardware/docs/IOBoard.md", "hardware/docs/Research.md",
+                  "hardware/STATUS.md"]}
+
+
+def runs_dir(n):
+    """Round n's records directory, as git names it."""
+    return f"hardware/research/round{n}"
+
+
+def use_round(n):
+    """Point the branches and the records directory at round n."""
+    global ROUND, BRANCH, RESULTS, RUNS_DIR, RUNS_DIRS
+    ROUND = n
+    BRANCH = f"research/round{n}"
+    RESULTS = f"research/round{n}-results"
+    RUNS_DIR = runs_dir(n)
+    RUNS_DIRS = tuple(runs_dir(k) for k in range(1, n + 1))
+
+
+def posix(path):
+    return path.replace(os.sep, "/")
 
 
 def t6_output(path):
@@ -388,6 +428,12 @@ def cmd_check(_args):
     if rule not in " ".join(text.split()):
         fails.append("the Sourcing section no longer states which task each "
                      "question blocks as session.py reads it")
+    # The prompts of a later round name its section of the page.
+    for n in ROUNDS[1:]:
+        if f"\n## Round {n}\n" not in text:
+            fails.append(f"the page has no section \"Round {n}\", which the "
+                         f"prompts of round {n} name")
+    fails += round_selftest()
 
     schemas = resolved_schemas()
     js = read(os.path.join(HERE, "round1.js"))
@@ -429,6 +475,135 @@ def cmd_check(_args):
     return 1 if fails else 0
 
 
+def round_selftest():
+    """The round rules on a throwaway repository: the order and the rounds
+    of the records, the directories a lookup reads, and the turn gate of
+    both rounds. Returns the failures; reads no network."""
+    cats = load("categories.json")
+    fails = []
+    tmp = tempfile.mkdtemp(prefix="rcbench-rounds-")
+    r1, r2 = (posix(runs_dir(k)) for k in (1, 2))
+    p1 = {"phases": "P1", "round": 1, "categories": ["R1"], "items": []}
+    p24 = {"phases": "P2-P4", "round": 1, "categories": ["R1"], "items": []}
+    p56 = {"phases": "P5-P6", "round": 1, "categories": [], "items": []}
+
+    def put(run, task):
+        path = os.path.join(tmp, run, "task.json")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(task, f)
+        git("add", "-A", cwd=tmp)
+        git("-c", "user.name=check", "-c", "user.email=check@localhost",
+            "-c", "commit.gpgsign=false", "commit", "-q", "--no-verify",
+            "-m", f"Record {run}", cwd=tmp)
+
+    def refusal(n, task, run, followup=None):
+        use_round(n)
+        try:
+            turn(tmp, task, run, followup, cats)
+        except SystemExit as err:
+            return str(err)
+        return ""
+
+    def expect(ok, what):
+        if not ok:
+            fails.append(f"round self-test: {what}")
+    try:
+        git("init", "-q", tmp)
+        put(f"{r1}/T1", {"task": "T1", "sequence": 1})
+        put(f"{r1}/T2", {"task": "T2", "sequence": 2})
+        put(f"{r1}/T4", {"task": "T4", "sequence": 3})
+        put(f"{r1}/T3", {"task": "T3", "sequence": 4})
+        put(f"{r1}/FU-A", {"task": "FU", "sequence": 5, "followup": p24})
+        put(f"{r1}/T5", {"task": "T5", "sequence": 6})
+        expect(refusal(2, "FU", "FU-2X", p1)
+               == "round 2 starts after round 1's T6",
+               "round 2 starts before round 1's T6")
+        put(f"{r1}/T6", {"task": "T6", "sequence": 7})
+        expect(refusal(1, "FU", "FU-B", p1)
+               == "T6 is recorded; round 1 is closed",
+               "round 1 runs a follow-up after its T6")
+        expect(refusal(2, "T3", "T3") == "T1 to T5 run in round 1 only",
+               "round 2 runs T3")
+        expect(refusal(2, "T6", "T6").startswith(
+            "T6 of round 2 runs after a P5-P6 follow-up of round 2"),
+            "round 2 runs T6 before a P5-P6 follow-up of its own")
+        expect(refusal(2, "FU", "FU-2X", {**p1, "round": 2}).startswith(
+            "a pass 2 follow-up runs after a pass 1 follow-up of round 2"),
+            "round 2 runs pass 2 on round 1's pass 1")
+        expect(refusal(2, "FU", "FU-A", p1) == "FU-A is recorded already",
+               "round 2 repeats a run name of round 1")
+        expect(refusal(2, "FU", "FU-2Y", p24)
+               == "FU-2Y runs after a P1 follow-up of round 2 covering R1, "
+               "which is not recorded",
+               "round 2 runs a P2-P4 follow-up before a P1 follow-up of its "
+               "own")
+        expect(refusal(2, "FU", "FU-2X", p1) == "",
+               "round 2 refuses its first follow-up")
+        put(f"{r2}/FU-2X", {"task": "FU", "sequence": 8, "followup": p1})
+        expect(refusal(2, "FU", "FU-2Y", p24) == "",
+               "round 2 refuses a P2-P4 follow-up after its P1 follow-up")
+        expect(refusal(2, "FU", "FU-2Y", {**p24, "categories": ["R1", "R2"]})
+               == "FU-2Y runs after a P1 follow-up of round 2 covering R2, "
+               "which is not recorded",
+               "round 2 runs a P2-P4 follow-up in a category no P1 follow-up "
+               "of its own covers")
+        put(f"{r2}/FU-2Q", {"task": "FU", "sequence": 9,
+                            "followup": {**p1, "categories": ["R5", "R9"]}})
+        expect(refusal(2, "FU", "FU-2W", {**p24, "categories": ["R5"]})
+               == "FU-2W runs after P2-P4 follow-ups of round 2 covering "
+               "R1, R9, which are not recorded",
+               "round 2 runs R5 before its P2-P4 follow-ups in R1 and R9")
+        expect(refusal(2, "FU", "FU-2P", p56)
+               == "FU-2P runs after P2-P4 follow-ups of round 2 covering "
+               "R1, R5, R9, which are not recorded",
+               "round 2 checks the board before its P2-P4 follow-ups")
+        use_round(2)
+        got = [(n, t.get("research_round")) for n, t in runs(tmp)]
+        expect(got == [("T1", 1), ("T2", 1), ("T4", 1), ("T3", 1),
+                       ("FU-A", 1), ("T5", 1), ("T6", 1), ("FU-2X", 2),
+                       ("FU-2Q", 2)],
+               f"round 2 reads the runs {got}")
+        expect(recorded(tmp, "FU-2X") and not recorded(tmp, "T1")
+               and recorded_any(tmp, "T1"),
+               "round 2 looks a run up in the wrong directories")
+        use_round(1)
+        expect([n for n, _ in runs(tmp)]
+               == ["T1", "T2", "T4", "T3", "FU-A", "T5", "T6"]
+               and not recorded_any(tmp, "FU-2X"),
+               "round 1 reads round 2's records")
+        expect(refusal(2, "FU", "FU-2X", p1) == "FU-2X is recorded already",
+               "round 2 repeats a run name of its own")
+        expect(refusal(2, "FU", "FU-2Y", {**p1, "round": 2}) == "",
+               "round 2 refuses pass 2 after its own pass 1")
+        put(f"{r2}/FU-2Y", {"task": "FU", "sequence": 10, "followup": p24})
+        put(f"{r2}/FU-2V", {"task": "FU", "sequence": 11,
+                            "followup": {**p24, "categories": ["R9"]}})
+        expect(refusal(2, "FU", "FU-2W", {**p24, "categories": ["R5"]})
+               == "", "round 2 refuses R5 after its P2-P4 follow-ups in R1 "
+               "and R9")
+        put(f"{r2}/FU-2W", {"task": "FU", "sequence": 12,
+                            "followup": {**p24, "categories": ["R5"]}})
+        expect(refusal(2, "FU", "FU-2P", p56) == "",
+               "round 2 refuses its P5-P6 follow-up after its P2-P4 "
+               "follow-ups")
+        put(f"{r2}/FU-2P", {"task": "FU", "sequence": 13, "followup": p56})
+        expect(refusal(2, "T6", "T6") == "",
+               "round 2 refuses its T6 after its P5-P6 follow-up")
+        put(f"{r2}/T6", {"task": "T6", "sequence": 14})
+        expect(refusal(2, "FU", "FU-2Z", p1)
+               == "T6 of round 2 is recorded; round 2 is closed",
+               "round 2 runs a follow-up after its T6")
+        expect(refusal(2, "T6", "T6") == "T6 is recorded already",
+               "round 2 runs T6 twice")
+    except SystemExit as err:
+        fails.append(f"round self-test: {err}")
+    finally:
+        use_round(1)
+        shutil.rmtree(tmp, ignore_errors=True)
+    return fails
+
+
 # ---------------------------------------------------------------- prepare
 
 def worktree(base, name, ref, detach=True):
@@ -461,28 +636,39 @@ def read_only(path):
     os.chmod(path, os.stat(path).st_mode & ~0o222)
 
 
-def recorded(results, run):
-    probe = git("-C", results, "cat-file", "-e",
-                f"HEAD:{RUNS_DIR}/{run}/task.json", check=False)
-    return probe.returncode == 0
+def recorded(results, run, dirs=None):
+    """Whether HEAD holds the run's record in this round's directory, or
+    in one of `dirs`."""
+    return any(git("-C", results, "cat-file", "-e",
+                   f"HEAD:{d}/{run}/task.json", check=False).returncode == 0
+               for d in dirs or (RUNS_DIR,))
+
+
+def recorded_any(results, run):
+    """Whether any round up to this one recorded the run."""
+    return recorded(results, run, RUNS_DIRS)
 
 
 def runs(results, stopped=False, pending=None):
-    """The committed runs in the order they were recorded, stopped ones
-    left out unless asked for: (name, task.json). They are read from HEAD,
-    so an uncommitted edit counts for nothing; `pending` adds the run being
-    recorded."""
+    """The committed runs of every round up to this one in the order they
+    were recorded, stopped ones left out unless asked for: (name,
+    task.json), each task.json carrying its round in `research_round`.
+    They are read from HEAD, so an uncommitted edit counts for nothing;
+    `pending` adds the run being recorded."""
     out = []
-    listed = git("-C", results, "ls-tree", "--name-only", "HEAD",
-                 RUNS_DIR + "/", check=False).stdout.split()
-    for path in listed:
-        name = os.path.basename(path)
-        if "-stopped-" in name and not stopped:
-            continue
-        shown = git("-C", results, "show", f"HEAD:{path}/task.json",
-                    check=False)
-        if shown.returncode == 0:
-            out.append((name, json.loads(shown.stdout)))
+    for k, d in enumerate(RUNS_DIRS, 1):
+        listed = git("-C", results, "ls-tree", "--name-only", "HEAD",
+                     d + "/", check=False).stdout.split()
+        for path in listed:
+            name = os.path.basename(path)
+            if "-stopped-" in name and not stopped:
+                continue
+            shown = git("-C", results, "show", f"HEAD:{path}/task.json",
+                        check=False)
+            if shown.returncode == 0:
+                task = json.loads(shown.stdout)
+                task.setdefault("research_round", k)
+                out.append((name, task))
     if pending:
         out.append(pending)
     return sorted(out, key=lambda r: r[1].get("sequence", 0))
@@ -596,10 +782,10 @@ def p1_unresolved(results, categories):
 
 def t6_open(results):
     """What stands between the last P5/P6 check and T6: a part changed
-    after it, or conflicts and gaps it listed with no round 2 run. Also
-    the conflicts and gaps the checks leave, which the pages state as not
-    known: each the last check lists, and each of an earlier check that no
-    P2-P4 follow-up after it covered. Returns (what is open, what is
+    after it, or conflicts and gaps it listed with no pass 2 follow-up.
+    Also the conflicts and gaps the checks leave, which the pages state as
+    not known: each the last check lists, and each of an earlier check that
+    no P2-P4 follow-up after it covered. Returns (what is open, what is
     left)."""
     done = runs(results)
     checks = [(n, t) for n, t in done if t.get("task") == "T5" or
@@ -620,9 +806,9 @@ def t6_open(results):
     out = [f"{c}: selections changed after {name}"
            for c in sorted(set(eff) | set(then))
            if bound(eff, c) != bound(then, c)]
-    # A P2-P4 follow-up of these rounds covers each function it verified a
-    # part for, and each category it verified any part in; not what its
-    # file named.
+    # A P2-P4 follow-up of these passes (the follow-up file's round)
+    # covers each function it verified a part for, and each category it
+    # verified any part in; not what its file named.
     def covered_between(start, end, rounds):
         fns = {(c, e["function"]) for _, t in done
                if (t.get("followup") or {}).get("round") in rounds
@@ -685,11 +871,11 @@ def t6_open(results):
                 out_items.append({"gap": x})
         return out_items
 
-    # The last check's items stand only when round 2 covered them after
-    # the check before it (never for the first check, whose items it
-    # found). An earlier check's items stay open, even when a later check
-    # omits them, until a P2-P4 follow-up of either round covered them
-    # after that check.
+    # The last check's items stand only when a pass 2 follow-up covered
+    # them after the check before it (never for the first check, whose
+    # items it found). An earlier check's items stay open, even when a
+    # later check omits them, until a P2-P4 follow-up of either pass
+    # covered them after that check.
     uncovered = []
     left = [{"check": name, "conflict": x}
             for x in summary.get("conflicts", [])] + [
@@ -1004,11 +1190,14 @@ GROUP_PAGE = re.compile(r"hardware/docs/[A-Za-z0-9_-]+\.md")
 
 
 def check_followup(followup, cats):
-    """The follow-up file: its phases, round, categories and items."""
+    """The follow-up file: its phases, round, categories and items. Its
+    `round` is the pass of follow-up tasks within the research round."""
     if followup.get("phases") not in ("P1", "P2-P4", "P5-P6"):
         raise SystemExit("the follow-up's phases is P1, P2-P4 or P5-P6")
     if followup.get("round") not in (1, 2):
-        raise SystemExit("follow-up tasks run in rounds 1 and 2 only")
+        raise SystemExit("follow-up tasks run in rounds 1 and 2 only"
+                         if ROUND == 1 else "a follow-up's pass, its round "
+                         "field, is 1 or 2")
     fc = followup.get("categories")
     items = followup.get("items", [])
     if not isinstance(items, list):
@@ -1031,7 +1220,8 @@ def check_followup(followup, cats):
 
 def pre_t6_merge(commit):
     """The merge prepare makes before T6: two parents, the second a pushed
-    research/round1 commit, and nothing beyond it but the run records."""
+    commit of the round's plan branch, and nothing beyond it but the run
+    records."""
     parents = git("rev-list", "--parents", "-n", "1", commit).split()[1:]
     if len(parents) != 2 or not git("log", "-1", "--format=%s", commit) \
             .startswith(f"Merge {BRANCH} at "):
@@ -1040,11 +1230,11 @@ def pre_t6_merge(commit):
            check=False).returncode:
         return False
     # The records are the results branch's own: the merge changes none.
-    if git("diff", "--quiet", parents[0], commit, "--", RUNS_DIR,
+    if git("diff", "--quiet", parents[0], commit, "--", *RUNS_DIRS,
            check=False).returncode:
         return False
-    runs_dir = RUNS_DIR.replace(os.sep, "/") + "/"
-    return all(p.startswith(runs_dir) for p in git(
+    dirs = tuple(posix(d) + "/" for d in RUNS_DIRS)
+    return all(p.startswith(dirs) for p in git(
         "diff", "--name-only", parents[1], commit).splitlines())
 
 
@@ -1067,13 +1257,13 @@ def sync_results(results):
     if git("merge-base", "--is-ancestor", there, here,
            check=False).returncode == 0:
         # Ahead by the merge before T6 alone is fine: a merge of a pushed
-        # research/round1 commit that adds nothing but the records. Ahead
+        # plan branch commit that adds nothing but the records. Ahead
         # by records is not, as other clones cannot see them; ahead by
         # anything else is a commit nobody reviewed.
         if all(pre_t6_merge(c) for c in
                git("rev-list", "--first-parent", f"{there}..{here}").split()):
             return
-        if git("diff", "--quiet", there, here, "--", RUNS_DIR,
+        if git("diff", "--quiet", there, here, "--", *RUNS_DIRS,
                check=False).returncode:
             raise SystemExit(f"{RESULTS} holds records {remote} does not; "
                              "push it first")
@@ -1156,10 +1346,123 @@ def pending_p1(base, results, run):
         a = json.loads(read(os.path.join(base, name)))
         is_p1 = a.get("task") == "T1" or \
             (a.get("followup") or {}).get("phases") == "P1"
-        if is_p1 and not recorded(results, m.group(1)) \
+        if is_p1 and not recorded_any(results, m.group(1)) \
                 and a.get("run_id") not in settled:
             out.append(m.group(1))
     return out
+
+
+def turn(results, task, run, followup, cats):
+    """The run's turn, refused out of order. Round 1 runs T1 to T6 in
+    their order and follow-ups after the tasks they build on, until its T6
+    closes it. A later round runs follow-ups and a T6 of its own after the
+    previous round's T6, a P2-P4 follow-up after P1 follow-ups of its own
+    that cover its categories and after P2-P4 follow-ups of its own in the
+    categories its task builds on, a P5-P6 follow-up after P2-P4 follow-ups
+    of its own in every category its P1 follow-ups cover, and its T6 after
+    a P5-P6 follow-up of its own; a run name is unique over the rounds, T6
+    aside."""
+    if ROUND == 1:
+        if recorded(results, run):
+            raise SystemExit(f"{run} is recorded already")
+        # The pages T6 committed close the round: no run changes what they
+        # rest on.
+        if recorded(results, "T6"):
+            raise SystemExit("T6 is recorded; round 1 is closed")
+    else:
+        prev = ROUND - 1
+        if task not in ("FU", "T6"):
+            raise SystemExit("T1 to T5 run in round 1 only")
+        if not recorded(results, "T6", (runs_dir(prev),)):
+            raise SystemExit(f"round {ROUND} starts after round {prev}'s T6")
+        if recorded(results, run) if run == "T6" else \
+                recorded_any(results, run):
+            raise SystemExit(f"{run} is recorded already")
+        if recorded(results, "T6"):
+            raise SystemExit(f"T6 of round {ROUND} is recorded; round "
+                             f"{ROUND} is closed")
+    phases = (followup or {}).get("phases")
+    owner = {c: t for t, v in cats["tasks"].items() for c in v["categories"]}
+    after = list(AFTER.get(task, []))
+    if phases == "P2-P4":
+        after += sorted({owner[c] for c in followup["categories"]})
+    elif phases == "P1":
+        after += ["T1"]
+    elif phases == "P5-P6":
+        after += ["T5"]
+    for t in after:
+        if not recorded_any(results, t):
+            raise SystemExit(f"{run} runs after {t}, which is not "
+                             "recorded")
+    # The passes of follow-up tasks count within the round.
+    done = [t for _, t in runs(results) if t.get("research_round") == ROUND]
+    if ROUND > 1 and task == "T6" and not any(
+            (t.get("followup") or {}).get("phases") == "P5-P6" for t in done):
+        raise SystemExit(f"T6 of round {ROUND} runs after a P5-P6 follow-up "
+                         f"of round {ROUND}, which is not recorded")
+    if phases and followup.get("round") == 2 and not any(
+            (t.get("followup") or {}).get("round") == 1 for t in done):
+        raise SystemExit("a round 2 follow-up runs after a round 1 "
+                         "follow-up is recorded" if ROUND == 1 else
+                         f"a pass 2 follow-up runs after a pass 1 follow-up "
+                         f"of round {ROUND} is recorded")
+    # A later round's P2-P4 follow-up selects against the requirements its
+    # own P1 follow-ups confirmed, and after its own P2-P4 follow-ups in the
+    # categories its task builds on (T3 on T2 and T4), as the plan's Runs
+    # table orders them. Its P5-P6 follow-up checks the board once its own
+    # P2-P4 follow-ups cover every category its P1 follow-ups cover.
+    if ROUND > 1 and phases in ("P2-P4", "P5-P6"):
+        def covered(kind):
+            return {c for t in done
+                    if (t.get("followup") or {}).get("phases") == kind
+                    for c in (t.get("followup") or {}).get("categories")
+                    or []}
+        asked, chosen = covered("P1"), covered("P2-P4")
+        order = sorted(cats["categories"], key=lambda c: int(c[1:]))
+        if phases == "P2-P4":
+            miss = [c for c in followup["categories"] if c not in asked]
+            if miss:
+                raise SystemExit(f"{run} runs after a P1 follow-up of round "
+                                 f"{ROUND} covering {', '.join(miss)}, which "
+                                 "is not recorded")
+            upstream = {u for c in followup["categories"]
+                        for t in cats["tasks"][owner[c]].get("after", [])
+                        for u in cats["tasks"][t]["categories"]}
+            need = upstream & asked
+        else:
+            need = asked
+        miss = [c for c in order if c in need and c not in chosen]
+        if miss:
+            raise SystemExit(f"{run} runs after P2-P4 follow-ups of round "
+                             f"{ROUND} covering {', '.join(miss)}, which are "
+                             "not recorded")
+
+
+def selection_file(results):
+    """The selection.json a run reads, repository-relative: that of the
+    latest round whose runs selected parts."""
+    for d in reversed(RUNS_DIRS):
+        rel = posix(d) + "/selection.json"
+        if git("-C", results, "cat-file", "-e", f"HEAD:{rel}",
+               check=False).returncode == 0:
+            return rel
+    return posix(RUNS_DIR) + "/selection.json"
+
+
+def group_pages(results):
+    """The group pages the previous round's T6 wrote, from its P7 return:
+    {group: page}."""
+    prev = posix(runs_dir(ROUND - 1)) + "/T6"
+    listed = git("-C", results, "ls-tree", "--name-only", "HEAD", prev + "/",
+                 check=False).stdout.split()
+    p7 = [p for p in listed
+          if re.fullmatch(r"\d+-P7(-restart)?\.json", os.path.basename(p))]
+    pages = json.loads(git("-C", results, "show", f"HEAD:{p7[-1]}"))[
+        "data"].get("group_pages") if p7 else None
+    if not pages:
+        raise SystemExit(f"{prev} holds no P7 return that names the group "
+                         "pages")
+    return pages
 
 
 def database_gate(db, manifest, info):
@@ -1237,35 +1540,22 @@ def cmd_prepare(args):
     commit = git("rev-parse", f"origin/{BRANCH}")
     text = git("show", f"{commit}:{PLAN_REL}")
     run = f"FU-{args.name}" if args.task == "FU" else args.task
+    # A later round's prompts name its section of the plan.
+    if ROUND > 1 and f"\n## Round {ROUND}\n" not in text:
+        raise SystemExit(f"{PLAN_REL} at {commit} has no section "
+                         f"\"Round {ROUND}\"")
 
     # The results tree: on its branch, its recorded runs committed.
     os.makedirs(base, exist_ok=True)
     results = worktree(base, "results", RESULTS, detach=False)
-    if changed_under(results, RUNS_DIR):
+    if any(changed_under(results, d) for d in RUNS_DIRS):
         raise SystemExit("recorded runs have uncommitted changes")
     # The gates read the runs every clone has recorded and pushed.
     sync_results(results)
-    if recorded(results, run):
-        raise SystemExit(f"{run} is recorded already")
-    # The pages T6 committed close the round: no run changes what they
-    # rest on.
-    if recorded(results, "T6"):
-        raise SystemExit("T6 is recorded; round 1 is closed")
 
     # The task's turn.
+    turn(results, args.task, run, followup, cats)
     phases = (followup or {}).get("phases")
-    owner = {c: t for t, v in cats["tasks"].items() for c in v["categories"]}
-    after = list(AFTER.get(args.task, []))
-    if phases == "P2-P4":
-        after += sorted({owner[c] for c in followup["categories"]})
-    elif phases == "P1":
-        after += ["T1"]
-    elif phases == "P5-P6":
-        after += ["T5"]
-    for task in after:
-        if not recorded(results, task):
-            raise SystemExit(f"{run} runs after {task}, which is not "
-                             "recorded")
     is_p1 = args.task == "T1" or phases == "P1"
     if is_p1:
         waiting = pending_p1(base, results, run)
@@ -1285,11 +1575,6 @@ def cmd_prepare(args):
         phases in ("P2-P4", "P5-P6")
     open_sel = []
     blocking_gate(text, args.task, task_cats, is_p1, reads_stock)
-    if phases and followup.get("round") == 2 and not any(
-            (t.get("followup") or {}).get("round") == 1
-            for _, t in runs(results)):
-        raise SystemExit("a round 2 follow-up runs after a round 1 "
-                         "follow-up is recorded")
     if reads_stock or is_p1 and args.task == "FU":
         questions_gate(results, rows, task_cats)
     if args.task == "T5" or phases == "P5-P6":
@@ -1315,6 +1600,7 @@ def cmd_prepare(args):
                  if o not in open_sel]
     t6 = {"last_p56": "", "p56_runs": [], "left_open": [], "p5_assumed": [],
           "selection": {}, "jlc_stock_row": []}
+    pages = None
     if args.task == "T5" or phases == "P5-P6":
         t6["selection"] = effective_selection(results)
     if args.task == "T6":
@@ -1331,6 +1617,9 @@ def cmd_prepare(args):
         if missing:
             raise SystemExit("the owner has not decided " + ", ".join(missing))
         open_sel += q9_open(results, decisions(text))
+        # A later round updates the group pages the round before wrote.
+        if ROUND > 1:
+            pages = group_pages(results)
         # An exception names a part the stock check reads: a kept part, an
         # alternate, a Q alternative or its alternate.
         kept = set()
@@ -1359,8 +1648,8 @@ def cmd_prepare(args):
                      check=False)
         if merged.returncode:
             git("-C", results, "merge", "--abort", check=False)
-            raise SystemExit("merging research/round1 into the results "
-                             "tree failed: " + merged.stderr.strip())
+            raise SystemExit(f"merging {BRANCH} into the results tree "
+                             "failed: " + merged.stderr.strip())
     # A run that reads stock starts only with enough of the day's Digi-Key
     # calls left to finish: 1,000 a day, and a task takes 400 to 500.
     quota = None
@@ -1388,8 +1677,8 @@ def cmd_prepare(args):
     for_research = [{"id": r[0], "category": r[1]} for r in rows
                     if "for research" in r[3].lower()]
     # The agents run this tool's vendors.py, copied for the run so a branch
-    # switch in this clone does not change it; the checkout of
-    # research/round1 carries the copy of the day the branch was cut.
+    # switch in this clone does not change it; the checkout of the round's
+    # plan branch carries the copy of the day the branch was cut.
     src = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                        "vendors.py")
     vendors_copy = os.path.join(base, "tools", run_id, "vendors.py")
@@ -1428,7 +1717,14 @@ def cmd_prepare(args):
         "p5_conditional": cats.get("p5_conditional", []),
         "p5_assumptions": cats.get("p5_assumptions", []),
         "q_options": cats.get("q_options", {}),
-        "t6_outputs": T6_REQUIRED if args.task == "T6" else [],
+        "research_round": ROUND, "branch": BRANCH,
+        "runs_dir": posix(RUNS_DIR),
+        "runs_dirs": [posix(d) for d in RUNS_DIRS],
+        "selection_file": selection_file(results),
+        "group_pages": pages,
+        "t6_outputs": T6_WRITTEN[ROUND] if args.task == "T6" else [],
+        "t6_may_write": [f for f in T6_REQUIRED if f not in T6_WRITTEN[ROUND]]
+        if args.task == "T6" else [],
         **t6,
         "run_info": {**run_info(args.model, args.effort),
                      "agent_model": args.agent_model,
@@ -1506,14 +1802,14 @@ def set_aside(results, paths, result):
 
 
 def cited_returns(returns):
-    """The files under RUNS_DIR the P7 critic's figure checks name,
+    """The files under RUNS_DIRS the P7 critic's figure checks name,
     repository-relative. The workflow counts a check that names no such
     file for no page. The pattern is round1.js's RETURN_FILE: plain path
     segments ending in .json, so ':34' or '#L34' after it is no part of
     the path."""
-    runs_rel = RUNS_DIR.replace(os.sep, "/")
+    runs_rel = "|".join(re.escape(posix(d)) for d in RUNS_DIRS)
     seg = "[A-Za-z0-9_-][A-Za-z0-9_.-]*"
-    path = re.compile(rf"(?:^|[^A-Za-z0-9_.-])({re.escape(runs_rel)}/"
+    path = re.compile(rf"(?:^|[^A-Za-z0-9_.-])((?:{runs_rel})/"
                       rf"(?:{seg}/)*{seg}\.json)(?![A-Za-z0-9_./-])")
     out = set()
     for r in returns:
@@ -1600,6 +1896,9 @@ def record(args):
     if not os.path.isfile(prepared):
         raise SystemExit(f"{prepared} is not there; prepare {run} first")
     want = json.loads(read(prepared))
+    if want.get("research_round", 1) != ROUND:
+        raise SystemExit(f"{prepared} is prepared for round "
+                         f"{want.get('research_round', 1)}, not round {ROUND}")
     on_branch(results, RESULTS)
     head = git("-C", results, "rev-parse", "HEAD")
     if want.get("results_head") and head != want["results_head"]:
@@ -1622,7 +1921,7 @@ def record(args):
     with open(args.output, "rb") as f:
         digest = hashlib.sha256(f.read()).hexdigest()
     dirty_runs = git("-C", results, "status", "--porcelain",
-                     "--untracked-files=all", "--", RUNS_DIR)
+                     "--untracked-files=all", "--", *RUNS_DIRS)
     if dirty_runs:
         why = ("recorded runs have uncommitted changes; the selection is "
                "built from committed records only:\n" + dirty_runs)
@@ -1666,10 +1965,11 @@ def record(args):
     meta = {k: v for k, v in result.items() if k != "returns"}
     meta["sequence"] = 1 + len(runs(results, stopped=True))
     meta["output_sha256"] = digest
+    meta["research_round"] = ROUND
     with open(os.path.join(tmp, "task.json"), "w") as f:
         json.dump(meta, f, indent=1, ensure_ascii=False)
     os.rename(tmp, target)
-    message = [f"Record {run} of round 1, {result['date']}",
+    message = [f"Record {run} of round {ROUND}, {result['date']}",
                f"Read {BRANCH} at {result['commit']}; {result['started']} "
                f"agents started, {len(result['followUps'])} items for "
                "follow-up."]
@@ -1695,8 +1995,9 @@ def record(args):
                  for f in r["data"].get("files", [])}
         seen = {f for r in rets if r["role"] == "P7-critic"
                 for f in r["data"].get("reviewed", [])}
-        pages = {f for r in rets if r["role"] == "P7"
-                 for f in (r["data"].get("group_pages") or {}).values()}
+        by_group = [(g, f) for r in rets if r["role"] == "P7"
+                    for g, f in (r["data"].get("group_pages") or {}).items()]
+        pages = {f for _, f in by_group}
 
         def refuse(why):
             shutil.rmtree(target, ignore_errors=True)
@@ -1709,10 +2010,12 @@ def record(args):
         if outside:
             refuse("group pages outside hardware/docs/ or among the fixed "
                    "outputs: " + ", ".join(outside))
-        # A group page is a new file, not a page the tree holds.
-        held = sorted(f for f in pages if git(
-            "-C", results, "cat-file", "-e", f"HEAD:{f}",
-            check=False).returncode == 0)
+        # A group page is a new file, not a page the tree holds, unless it
+        # is the page of its group the previous round's T6 wrote.
+        given = want.get("group_pages") or {}
+        held = sorted({f for g, f in by_group if f != given.get(g)
+                       and git("-C", results, "cat-file", "-e", f"HEAD:{f}",
+                               check=False).returncode == 0})
         if held:
             refuse("group pages that are not new files: " + ", ".join(held))
         # Every output of the plan and each group page is a file after T6;
@@ -1842,8 +2145,9 @@ ARGS_LINE = "const A = args || {}"
 
 
 def cmd_script(args):
-    """DIR/round1-RUN.js: round1.js with the prepared arguments of RUN in
-    place of the Workflow tool's `args`, for the Workflow tool's scriptPath.
+    """DIR/roundN-RUN.js, N the round: round1.js with the prepared arguments
+    of RUN in place of the Workflow tool's `args`, for the Workflow tool's
+    scriptPath.
     The arguments of a run grow past 100 KB once P1 has raised questions;
     embedding them leaves nothing to copy by hand. Only the line
     `const A = args || {}` changes, and the result is read back."""
@@ -1857,6 +2161,9 @@ def cmd_script(args):
     if not os.path.isfile(prepared):
         raise SystemExit(f"{prepared} is not there; run prepare first")
     a = json.loads(read(prepared))
+    if a.get("research_round", 1) != ROUND:
+        raise SystemExit(f"{prepared} is prepared for round "
+                         f"{a.get('research_round', 1)}, not round {ROUND}")
     src = read(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             "round1.js"))
     lines = src.split("\n")
@@ -1874,7 +2181,7 @@ def cmd_script(args):
         else base
     if not os.path.isdir(out_dir):
         raise SystemExit(f"{out_dir} is not a directory")
-    target = os.path.join(out_dir, f"round1-{args.run}.js")
+    target = os.path.join(out_dir, f"round{ROUND}-{args.run}.js")
     tmp = target + ".tmp"
     with open(tmp, "w") as f:
         f.write("\n".join(out))
@@ -1900,7 +2207,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("check").set_defaults(fn=cmd_check)
-    p = sub.add_parser("prepare")
+    # The research round of a run: its branches and its records directory.
+    rnd = argparse.ArgumentParser(add_help=False)
+    rnd.add_argument("--round", type=int, choices=ROUNDS, default=1,
+                     help="the research round (default: 1)")
+    p = sub.add_parser("prepare", parents=[rnd])
     p.add_argument("task", choices=TASKS)
     p.add_argument("--base", required=True)
     p.add_argument("--digikey-env", required=True)
@@ -1930,24 +2241,25 @@ def main():
                    "open (tools/research/README.md lists them); the "
                    "reason and the items go into the arguments")
     p.set_defaults(fn=cmd_prepare)
-    r = sub.add_parser("record")
+    r = sub.add_parser("record", parents=[rnd])
     r.add_argument("task", choices=TASKS)
     r.add_argument("output")
     r.add_argument("--base", required=True)
     r.add_argument("--name", default="1", help="follow-up run name")
     r.set_defaults(fn=cmd_record)
-    q = sub.add_parser("raised")
+    q = sub.add_parser("raised", parents=[rnd])
     q.add_argument("--base", required=True)
     q.add_argument("--run", default="T1")
     q.add_argument("--no-fetch", action="store_true")
     q.set_defaults(fn=cmd_raised)
-    w = sub.add_parser("script")
+    w = sub.add_parser("script", parents=[rnd])
     w.add_argument("run", help="T1 to T6, or FU-N for a follow-up")
     w.add_argument("--base", required=True)
-    w.add_argument("--out", help="directory to write round1-RUN.js to, "
+    w.add_argument("--out", help="directory to write roundN-RUN.js to, "
                    "one that the Workflow tool reads (default: the base)")
     w.set_defaults(fn=cmd_script)
     args = ap.parse_args()
+    use_round(getattr(args, "round", 1))
     return args.fn(args)
 
 
