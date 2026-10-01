@@ -4,7 +4,8 @@ One row per part that round 1 of [the component research](Research.md)
 selected for the IO (input/output) board, from
 `hardware/research/round1/selection.json` and the returns of the P4 stock
 and lifecycle verifier named in each row. Every figure in a row is that
-verifier's reading, except the placements of the RP2354B, its 12 MHz crystal
+verifier's reading, except the placements of MCP23017T-E/SS, 3 a board from the
+draft [pin map](Pins.md), of the RP2354B, its 12 MHz crystal
 and its core regulator inductor, 2 a board for the owner's two coprocessors
 (2026-09-30), and of SN74LVC1G04DBVR,
 BTS7004-1EPP, 2N7002BK,215 and MCP9808T-E/MS. The SN74LVC1G04DBVR row adds
@@ -85,7 +86,7 @@ research categories of [Research](Research.md#research-categories).
 | R5 display supply | TPS259474ARPWR | Texas Instruments | C3662807 | VQFN-10-HR (2 x 2 mm) | 331 | 284 | extended | 2026-09-29T17:17:17Z | 1 | not held (export of 2026-09-25) | Digi-Key: 125 (2026-09-29T09:55:46Z) | ACTIVE (TI page) | none on the product page | none | `hardware/research/round1/FU-B3/014-P4-stock-R5.json` |
 | R5 encoder 12 V supply | TPS55288RPMR | Texas Instruments | C2864583 | VQFN-26-HR (3.5 x 4 mm) | 5183 | 5116 | extended | 2026-09-29T17:17:19Z | 1 | not held (export of 2026-09-25) | Digi-Key: 5262 (2026-09-29T10:00:36Z) | ACTIVE (TI page) | none on the product page | none | `hardware/research/round1/FU-B3/014-P4-stock-R5.json` |
 | R6 port supply switch | TPS259474LRPWR | Texas Instruments | C2864845 | VQFN-10-HR (2 x 2 mm) | 3795 | 3754 | extended | 2026-09-29T17:16:45Z | 20 (one per port) | not held (export of 2026-09-25) | Digi-Key: 40352 (2026-09-29T09:55:44Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-B3/015-P4-stock-R6.json` |
-| R6 I/O expander | MCP23017T-E/SS | Microchip | C558584 | SSOP-28 | 6606 | 6390 | extended | 2026-09-29T17:16:47Z | 2 (26 outputs, 16 lines a part) | not held (export of 2026-09-25) | Digi-Key: 17187 (2026-09-29T09:55:57Z) | In Production (Microchip page) | not read (Microchip pages 404) | none | `hardware/research/round1/FU-B3/015-P4-stock-R6.json` |
+| R6 I/O expander | MCP23017T-E/SS | Microchip | C558584 | SSOP-28 | 6606 | 6390 | extended | 2026-09-29T17:16:47Z | 3 (33 lines in the draft pin map, 14 usable a part because GPA7 and GPB7 are outputs only; R6 counts 2 for 26 outputs) | not held (export of 2026-09-25) | Digi-Key: 17187 (2026-09-29T09:55:57Z) | In Production (Microchip page) | not read (Microchip pages 404) | none | `hardware/research/round1/FU-B3/015-P4-stock-R6.json` |
 | R7 pack charger and power path | BQ25713RSNR | Texas Instruments | C2878935 | QFN-32-EP (4 x 4 mm) | 301 | 196 | extended | 2026-09-29T17:17:57Z | 1 | not held (export of 2026-09-25) | Digi-Key: 2103 (2026-09-29T09:56:00Z) | ACTIVE (TI page) | not read | none | `hardware/research/round1/FU-B3/016-P4-stock-R7.json` |
 | R7 cell balancing, pack overcurrent protection and bench pack balance lead | MAX17320G22+ | Analog Devices | C2914309 | QFN-24-EP (4 x 4 mm) | 578 | 482 | extended | 2026-09-29T17:18:01Z | 1 | not held (export of 2026-09-25) | Digi-Key: 355 (2026-09-29T09:56:05Z) | Active (Digi-Key, the status of record for Analog Devices) | not read | none | `hardware/research/round1/FU-B3/016-P4-stock-R7.json` |
 | R7 charger input limit | FUSB303BTMX | onsemi | C895444 | X2-QFN-12 (1.6 x 1.6 mm) | 5194 | 5163 | extended | 2026-09-29T17:18:04Z | 1 | not held (export of 2026-09-25) | Digi-Key: 4224 (2026-09-29T09:56:14Z) | Active (onsemi page) | not read | none | `hardware/research/round1/FU-B3/016-P4-stock-R7.json` |
