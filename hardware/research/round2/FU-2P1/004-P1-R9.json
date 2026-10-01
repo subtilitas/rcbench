@@ -1,0 +1,99 @@
+{
+ "role": "P1",
+ "category": "R9",
+ "label": "P1-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "functions": [
+   "Cell monitor",
+   "cell monitor isolation barrier"
+  ],
+  "values": [
+   {
+    "where": "hardware/docs/IOBoard.md:473",
+    "quantity": "cell count range on the balance lead",
+    "value": "1 to 16 cells, for the 16-cell pack of F15",
+    "marking": "owner",
+    "source": "F15 (owner, 2026-09-25): 16 cells, 67.2 V at 4.2 V a cell",
+    "refutation_tried": "F15's answer only gives the top of the range (16 cells); the lower bound of 1 is SET_PACK_CELLS's physical floor (shared/settings/settings.c:39-41) and is already a question under Raised by P1 (V181), so it is not re-raised here",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:473",
+    "quantity": "firmware's own cell-count range",
+    "value": "1 to 14 cells, which changes with SET_PACK_CELLS",
+    "marking": "sourced",
+    "source": "shared/settings/settings.c:39-41; shared/ui/include/battery_screen.h:11-14; shared/link/include/link_pages.h:181",
+    "refutation_tried": "the three cited files describe a 1-to-14 setting range and a cell-count field in the battery screen's state; the cell monitor itself must still cover 1 to 16, above this, matching Research.md's R9 row",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:316",
+    "quantity": "balance-lead input separation from the 2S pack's lead",
+    "value": "a separate input, because both packs are connected during a motor test",
+    "marking": "sourced",
+    "source": "IOBoard.md:402, Bench pack balance lead: 'It has its own input, separate from the ESC pack's balance-lead input of the 1 to 16 cell monitor (R9): both packs are connected during a motor test'",
+    "refutation_tried": "matches IOBoard.md:402 word for word; the reason given there (both packs connected during a motor test) is stated, not inferred",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:474",
+    "quantity": "isolation barrier rated working voltage",
+    "value": "85 V DC working or more",
+    "marking": "owner",
+    "source": "V189 (owner, 2026-09-28), Research.md Raised by P1",
+    "refutation_tried": "matches V189's answer text exactly ('rated 85 V DC working or more ... no offset limit below that'); this is the owner's stated decision, not a P1-derived or assumed figure",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:474",
+    "quantity": "isolation barrier technology",
+    "value": "an isoSPI transceiver pair or a digital isolator",
+    "marking": "owner",
+    "source": "V189 (owner, 2026-09-28)",
+    "refutation_tried": "matches V189's answer wording; both technologies are explicitly left open by the owner, so this is not a P1 assumption narrowing it to one",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Pins.md:105-112",
+    "quantity": "signals crossing the barrier",
+    "value": "4 signals: SPI1_RX / MISO (device to host), SPI1_SCLK (host to device), SPI1_TX / MOSI (host to device), GPIO 15 / cell monitor CS (host to device)",
+    "marking": "sourced",
+    "source": "Pins.md measurement-coprocessor pin table, rows for GPIO 8, 10, 11 and 15",
+    "refutation_tried": "each row states its signal 'reaches the cell monitor only across the barrier' (GPIO 8, 10, 11) or is 'to the host side of the ... barrier' (GPIO 15); the direction follows from each signal's own name (RX/TX/SCLK/CS), not assumed by P1",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Pins.md:156-158",
+    "quantity": "SPI clock and mode the barrier must pass",
+    "value": "ADBMS1818 in SPI mode 3 at 1 MHz at most",
+    "marking": "sourced",
+    "source": "Pins.md, 'Rules the map follows': 'the ADBMS1818 in mode 3 at 1 MHz at most'",
+    "refutation_tried": "stated as a flat design rule for the shared measurement SPI1 bus, distinguishing the ADS1235's and MAX31856's modes from the ADBMS1818's; not computed or inferred by P1",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:473",
+    "quantity": "cell monitor part",
+    "value": "ADBMS1818ASWAZ-RL",
+    "marking": "sourced",
+    "source": "selection.json (R9, Cell monitor, rank 1, round 1 run FU-C1); IOBoard.md:473 state column",
+    "refutation_tried": "selection.json counts over any re-rank and round 2's Follow-ups table (Research.md:585) names only 'cell monitor isolation barrier (new)' for R9, not 'Cell monitor' itself, so this part and function are unchanged and not re-opened by this task",
+    "question": -1
+   }
+  ],
+  "questions": [
+   {
+    "function": "cell monitor isolation barrier",
+    "question": "What voltage, in V, and current, in mA, does the cell monitor isolation barrier's device-side logic need, referenced to the ESC pack's negative, and what on the IO board supplies it?",
+    "why": "P2 cannot shortlist an isoSPI transceiver pair or a digital isolator without knowing the supply voltage and current its device-side (pack-referenced) half must run from; IOBoard.md:474 and Pins.md state that GPIO 15 and the SPI1 lines drive only the barrier's host side, and name no device-side supply, voltage or source",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   }
+  ]
+ }
+}

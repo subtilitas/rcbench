@@ -1,0 +1,71 @@
+{
+ "role": "P1-critic",
+ "category": "R11",
+ "label": "P1-critic-R11",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/Research.md:921",
+    "quantity": "whole vibration-chain delay-variation budget at 65,535 rpm (accelerometer + optical-index front end + converter together), V225",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:921 records V225's answer dated 2026-09-28 as an owner figure: 1 degree at the highest rpm, whole chain, stated as 2.54 microseconds at 65,535 rpm and 16.7 microseconds at 10,000 rpm. Re-deriving: at 10,000 rpm the period is 6,000 microseconds and 1/360 of it is 16.67 microseconds, matching. At 65,535 rpm the period is 60/65,535 s = 915.54 microseconds (not the 915.65 microseconds P1's shown work states, a small arithmetic slip), and 1/360 of 915.54 microseconds is 2.5428 microseconds, which still rounds to the stated 2.54 and to P1's quoted 2.543 microseconds. The figure is dated and attributed to the owner on the page and nothing treats it as an assumption, so owner is the correct marking despite the minor error in P1's intermediate arithmetic."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/Sensing.md:118",
+    "quantity": "optical index's share of the delay-variation budget at 65,535 rpm (1,092 Hz)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Sensing.md:118 states the 1.244 microsecond figure, but V225's own recorded owner answer (Research.md:921) gives only the whole-chain total and explicitly leaves the converter's share 'inside it' without apportioning the remainder between the accelerometer and the optical-index front end; V202, which was meant to state the converter's own share, is still 'for research' (Research.md:898). The 1.244 microsecond figure is reached only by taking 2.543 microseconds, subtracting the converter's 30 ps and the comparator's 55 ns, and then splitting what remains evenly between the accelerometer and the optical index (confirmed in hardware/research/round1/FU-C2/002-P2-R11.json, which attributes the even split to an 'owner decision on V225 of 2026-09-29' that it itself says is 'not on the page'). No such decision carries a V-number or appears under Raised by P1 or Decided on the research's output. Per the rule that a proposed answer is not an answer, the even split is an unstated judgment call, not an owner decision or a value that follows necessarily from the source, so assumption is correct."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/Research.md:664",
+    "quantity": "encoder highest count rate and signal form (F4)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:664, F4's answer column (owner, 2026-09-25), states exactly this: both forms selected by a jumper, 5 V single-ended up to 1 MHz or RS-422 differential up to 5 MHz. IOBoard.md:484 (Encoder signal) and :485 (Encoder decode) restate the same two figures with no numeric drift. This is a dated, attributed owner decision, not a derived or assumed figure."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/Research.md:675",
+    "quantity": "phase-wire clip's rated pack voltage (F15)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:675, F15's answer column (owner, 2026-09-25), states 16 cells at 4.2 V a cell, 67.2 V; 16 x 4.2 = 67.2 confirms the arithmetic. IOBoard.md:482 (Phase-wire clip row) cites F15 for the same 67.2 V figure with no discrepancy. This is a dated owner decision, correctly marked owner."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/Sensing.md:76",
+    "quantity": "encoder decode resource allocation at 5 MHz",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Sensing.md's R11 table states 'two PIO state machines decode the encoder... No program is in the tree, and the decoding figures are not verified'; IOBoard.md:485 and Research.md:318 corroborate that R11's own finding, not an owner statement, drives this allocation, and that no external decoder from an allowlisted maker exists in the parts database. Sensing.md:135 and the 'Not verified' list confirm it is unverified but not refuted, and since it blocks no part sourcing (the RP2354B is already a held fixed input), sourced is the correct marking rather than owner or assumption."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "This is the follow-up task's own gap item, copied word for word, and the marking it stems from (index 1, Sensing.md:118) holds as assumption on independent re-derivation: no owner decision on the page allocates 1.244 microseconds specifically to the optical index, round 1 found no reflective sensor meeting it (10 to 70 microseconds stated against a 1.244 microsecond need, per Sensing.md's Not known section and FU-C2's P2 return), and the function is left without a part. P2 genuinely cannot shortlist or rank an optical-index sensor until the owner confirms, reapportions, or waives this share, so the question is correctly raised and blocks p2."
+   }
+  ],
+  "added": [
+   {
+    "function": "phase-wire clip",
+    "question": "Does the phase-wire clip's rpm reading divide by MOTOR_POLES / 2, as the ESC telemetry's 'Rotation from the ESC' conversion does (dividing the DShot reply's electrical period by MOTOR_POLES / 2), or does it already report mechanical rpm?",
+    "why": "P2 cannot fix the phase-wire clip front end's required frequency range, or the firmware's rpm conversion, without knowing whether its one-pulse-per-electrical-cycle output must be divided by MOTOR_POLES / 2 (up to 21) to reach mechanical rpm, or whether it is already mechanical. IOBoard.md:529 states plainly that whether the magnetic pickup and the phase-wire clip readings use MOTOR_POLES is not stated in the tree; V218 (Research.md:914) asks this for the magnetic pickup only, and no V-number covers the phase-wire clip's case. Left open, the clip's required bandwidth is ambiguous between the 1,092 Hz mechanical fundamental and an electrical frequency up to about 21 times higher",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:529",
+    "for_quantity": "whether the phase-wire clip's reading is divided by MOTOR_POLES / 2 to give mechanical rpm",
+    "asks": ""
+   }
+  ],
+  "functions_missing": []
+ }
+}

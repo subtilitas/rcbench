@@ -1,0 +1,97 @@
+{
+ "role": "P1-critic",
+ "category": "R2",
+ "label": "P1-critic-R2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/Research.md:309",
+    "quantity": "clock tolerance responsibility",
+    "verdict": "holds",
+    "correct_marking": "sourced",
+    "reason": "Research.md:309 (the R2 row) literally states 'R2 states each controller's clock tolerance, which the 1 Mbit/s bit rate depends on,' and can_timing.h:17-21 requires the bit rate to come out exact, so the framing is a direct restatement of the cited text, not an owner decision or an assumption."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/IOBoard.md:199",
+    "quantity": "CAN controller clock frequency",
+    "verdict": "holds",
+    "correct_marking": "owner",
+    "reason": "IOBoard.md:199 states the 40 MHz figure with an explicit '(owner, 2026-10-01)' tag; Pins.md:160-161 independently confirms the MCP2518FD's 0.85 x SYSCLK / 2 SPI-clock limit is the reason given, and 0.85 x 40 / 2 = 17 MHz clears the link's 10 MHz SPI rate, consistent with the owner's figure being sufficient though not the only value the arithmetic would allow."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/IOBoard.md:141",
+    "quantity": "whether the clock's frequency tolerance is stated",
+    "verdict": "holds",
+    "correct_marking": "sourced",
+    "reason": "IOBoard.md:141 (Clock accuracy row) states in its own text that the RP2354B crystal's and the CAN controllers' clock tolerance is not stated and that R1 and R2 state them; this is a direct reading of the row, not an owner decision."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/Research.md:722",
+    "quantity": "largest frequency error of the link CAN controller's clock (ppm)",
+    "verdict": "holds",
+    "correct_marking": "owner",
+    "reason": "Research.md:722 (V26) carries the answer 'for research (owner, 2026-09-28)', an explicit dated owner answer directing the ppm figure to research rather than supplying one; marking it owner (not a fresh question) is correct since it is already raised and answered."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/Research.md:723",
+    "quantity": "largest frequency error of the external CAN controller's clock (ppm)",
+    "verdict": "holds",
+    "correct_marking": "owner",
+    "reason": "Same as V26: Research.md:723 (V27) carries the dated owner answer 'for research (owner, 2026-09-28)'."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/Research.md:703",
+    "quantity": "ambient temperature range the clock's tolerance must hold over",
+    "verdict": "holds",
+    "correct_marking": "owner",
+    "reason": "Research.md:703 (V7) carries the dated owner answer '0 to 50 C ambient, one range for the whole IO board (owner, 2026-09-28)', and IOBoard.md:396 independently cites V7 as applying board-wide (outside R1), supporting its use for R2's clock as well."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/Research.md:570",
+    "quantity": "permitted clock part type",
+    "verdict": "holds",
+    "correct_marking": "owner",
+    "reason": "Research.md:570 is the Round 2 Follow-ups row dated '(owner, 2026-10-01)' and states 'a crystal or an oscillator'; the value correctly separates that owner-dated clause from the 'resonator' addition, which it attributes transparently to the function's own name in selection.json rather than misrepresenting it as an owner decision."
+   },
+   {
+    "index": 7,
+    "where": "hardware/research/round1/selection.json:R2.\"CAN controller clock\"",
+    "quantity": "part selected for the CAN controller clock after round 1",
+    "verdict": "holds",
+    "correct_marking": "sourced",
+    "reason": "Checked the actual selection.json: the R2 section's 'CAN controller clock (the crystal, resonator or oscillator each controller takes)' entry has part: null, rank: null, run: 'FU-A2', matching the value exactly."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/Control.md:203",
+    "quantity": "why round 1 left the function without a part",
+    "verdict": "holds",
+    "correct_marking": "sourced",
+    "reason": "Control.md:203 reads verbatim '- R2: figure re-rank report: CAN controller clock (P3's missed function), not confirmed in FU-A2; not verified.', matching the value exactly; this is a direct citation, not an owner decision."
+   }
+  ],
+  "question_verdicts": [],
+  "added": [
+   {
+    "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+    "question": "What load capacitance in pF, highest ESR in Ohm, lowest drive-level rating in uW, highest shunt capacitance C0 in pF, and which cut and mode must a crystal or resonator for the CAN controller's 40 MHz clock meet, and what supply voltage, output type/logic level and current must an oscillator meet instead, to drive the MCP2518FD's OSC1/OSC2 pins?",
+    "why": "P2 cannot qualify a candidate crystal, resonator or oscillator without these electrical limits; neither IOBoard.md's Controller clock and Clock accuracy rows, Pins.md:160-161 nor the Round 2 Follow-ups row (Research.md:570) state any of them, unlike R1's equivalent 12 MHz crystal, which has this exact class of value raised and answered as V6 (load capacitance, ESR, drive level) and V15 (shunt capacitance C0, cut and mode).",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": ""
+   }
+  ],
+  "functions_missing": []
+ }
+}

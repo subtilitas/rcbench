@@ -1,0 +1,53 @@
+{
+ "role": "P1",
+ "category": "R10",
+ "label": "P1-R10",
+ "attempt": 0,
+ "data": {
+  "category": "R10",
+  "functions": [
+   "Converter for the accelerometer"
+  ],
+  "values": [
+   {
+    "where": "hardware/docs/Research.md:921",
+    "quantity": "whole-chain delay-variation budget (V225): phase error at the highest rpm, expressed in µs at 65,535 rpm and at 10,000 rpm",
+    "value": "1° at the highest rpm across the whole chain (accelerometer, index-pulse front end and converter together); given as 2.54 µs of delay variation at 65,535 rpm and 16.7 µs at 10,000 rpm",
+    "marking": "owner",
+    "source": "hardware/docs/Research.md:921 (V225, owner answer, 2026-09-28)",
+    "refutation_tried": "recomputed: 65,535 rpm = 1,092.25 Hz, period 915.56 µs, 1°= period/360 = 2.543 µs, matches; 10,000 rpm = 166.67 Hz, period 6,000 µs, 1° = 16.67 µs, matches. Unit (µs of delay variation per degree of phase at a stated rpm) and arithmetic both hold; not refuted",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Sensing.md:118",
+    "quantity": "optical index's share of the V225 delay-variation budget, at 1,092 Hz (65,535 rpm)",
+    "value": "at most 1.244 µs",
+    "marking": "sourced",
+    "source": "hardware/docs/Sensing.md:29,118; derived in hardware/research/round1/FU-C2/006-P4-datasheet-R11.json: (2.5432 − 0.055 − 0.00003) / 2 = 1.2441 µs, splitting V225's 2.5432 µs total evenly between the accelerometer and the optical index after subtracting 55 ns for a TLV3201 comparator (SBOS321E-class figure) and 30 ps for the ADCS7476AIMFX/NOPB's aperture jitter (SNAS192G 6.5)",
+    "refutation_tried": "recomputed (2.5432 − 0.055 − 0.00003) / 2 = 1.24144 µs, rounds to 1.244 µs: the arithmetic holds. But the split treats the converter's own share as fixed at 30 ps (aperture jitter only); that figure is not stated as R10's share on any committed page, so this 1.244 µs rests on an unconfirmed assumption about the next value",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:921",
+    "quantity": "converter's (R10's) own share of the whole-chain delay-variation budget (V225), in µs at 65,535 rpm and at 10,000 rpm",
+    "value": "not stated on any committed page. V225's answer calls the whole 2.54 µs / 16.7 µs total \"V202's converter share\", which is not consistent with how round 1 actually used the figure: FU-C2's split instead gave the converter only 30 ps (its aperture jitter) and split the remaining budget between the accelerometer and the optical index",
+    "marking": "assumption",
+    "source": "none on a committed page; the 30 ps figure is round 1's working assumption only (hardware/research/round1/FU-C2/006-P4-datasheet-R11.json), never written onto Research.md, IOBoard.md or Sensing.md as R10's stated share",
+    "refutation_tried": "checked IOBoard.md:491 (Converter for the accelerometer), Research.md:317 (R10 row) and :976 (Q4 decision), and Sensing.md:28,60-65,109 (R10 section): none states a share for the converter. V202 (Research.md:898), which asks for exactly this figure, is still answered \"for research\" and not closed by a value written onto a page. Also unconfirmed: whether the ADCS7476AIMFX/NOPB's conversion is triggered or timestamped on the index pulse's timebase at all, and its worst-case latency jitter beyond the 30 ps aperture jitter (Sensing.md:109: \"Its conversion trigger on the index pulse's timebase is not confirmed in the returns\")",
+    "question": 0
+   }
+  ],
+  "questions": [
+   {
+    "function": "Converter for the accelerometer",
+    "question": "What is the converter's (R10's) own share of the whole-chain delay-variation budget that V225 sets (2.54 µs at 65,535 rpm, 16.7 µs at 10,000 rpm), in µs at each rpm figure: the ADCS7476AIMFX/NOPB's 30 ps aperture jitter alone, as round 1's split of the budget assumed when it gave the accelerometer and the optical index 1.244 µs each, or does it also include the latency jitter of triggering its conversion on the index pulse's timebase, which Sensing.md records as not confirmed?",
+    "why": "P2 needs R10's confirmed share to requalify the Converter for the accelerometer function against V225's budget, and to confirm or correct the 1.244 µs share round 1 gave the optical index (R11), which no reflective sensor searched meets",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Research.md:921",
+    "for_quantity": "converter's (R10's) share of the whole-chain delay-variation budget (V225), in µs at 65,535 rpm and at 10,000 rpm",
+    "asks": ""
+   }
+  ]
+ }
+}

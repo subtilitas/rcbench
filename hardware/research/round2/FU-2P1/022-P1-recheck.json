@@ -1,0 +1,160 @@
+{
+ "role": "P1-recheck",
+ "category": "",
+ "label": "P1-recheck",
+ "attempt": 0,
+ "data": {
+  "verdicts": [
+   {
+    "category": "R2",
+    "index": 0,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:141 (Clock accuracy) and :199 (Controller clock) give only the 40 MHz frequency and SPI-clock reason, not load capacitance, ESR, drive level, shunt C0, cut/mode or any oscillator spec; Pins.md:160-161 states only the SPI-clock relationship; Research.md:570 (the Follow-ups row) cites only V26/V27, which (Research.md:722-723) ask solely for frequency error in ppm, still 'for research'. No V-number anywhere gives the crystal/resonator/oscillator electrical limits this question asks for. (Note: the critic's comparison is slightly off since R1's analogous V6 for the 12 MHz crystal is itself still 'for research', not answered as claimed — only V15 is answered — but that inaccuracy doesn't change that the CAN-clock figures are genuinely missing.)"
+   },
+   {
+    "category": "R3",
+    "index": 0,
+    "verdict": "confirmed",
+    "evidence": "Monostable.md step 11 ('The corners') reads: 'steps 7 and 10 at 25 °C and 3.3 V, and at 0 °C and 50 °C each at 3.2 V and 3.4 V' — it names only steps 7 and 10, not step 9 ('The switches and the rails'). V38 (Research.md:734) asks the ambient range for 'the safety gate and the ESC pack switches' and is still 'for research'; it also does not ask about supply-voltage range, nor explicitly about the external module or the clamp. So no existing question covers the full ambient+supply corner set for the replacement MOSFET array, module and clamp."
+   },
+   {
+    "category": "R3",
+    "index": 1,
+    "verdict": "rejected",
+    "evidence": "V49 (Research.md:745) already has an owner decision: '7 W for the switch array at 150 A, RDS(on) taken at TJ 100 °C...(owner, 2026-09-28)'. Since this value is already answered, it is not an open question for the owner — re-adding it as a new raised question is a duplicate of an already-decided V-number; any gap is in carrying the figure into P1's value table, not in needing a new question."
+   },
+   {
+    "category": "R3",
+    "index": 2,
+    "verdict": "rejected",
+    "evidence": "V39 (Research.md:735) already asks exactly this: 'What off-state leakage, in mA, may the open servo rail gate pass? Pull request #167 sets 5 mA per rail as a placeholder...' and is still 'for research (owner, 2026-09-28)'. The critic's question duplicates an already-raised, still-open V-number."
+   },
+   {
+    "category": "R3",
+    "index": 3,
+    "verdict": "rejected",
+    "evidence": "The raw monostable figure (Monostable.md:401-402, '8.4 V, 4 to 8 A') is explicitly superseded and documented in IOBoard.md:610 ('Conflicts in the tree'): 'Pull request #167 ... gives the servo rail as up to 8.4 V and 4 to 8 A ... The owner decision gives the TPS55285 ... This page follows the owner decision: 4 to 6.35 A a rail, on 3 rails (owner, 2026-09-30).' This is already resolved/recorded, not an open assumption needing a new owner question."
+   },
+   {
+    "category": "R3",
+    "index": 4,
+    "verdict": "rejected",
+    "evidence": "V47 (Research.md:743) already asks exactly this: 'Does the closed ESC pack switch carry current from the ESC back into the pack ... and up to what current in A?' and is still 'for research (owner, 2026-09-28)'. Duplicate of an already-raised, open V-number."
+   },
+   {
+    "category": "R3",
+    "index": 5,
+    "verdict": "rejected",
+    "evidence": "V43 (Research.md:739) already asks exactly this: 'What shortest delay, in ms, does the reset supervisor hold the clear after the 3.3 V rail passes its threshold?' and is still 'for research (owner, 2026-09-28)'. Duplicate of an already-raised, open V-number."
+   },
+   {
+    "category": "R3",
+    "index": 6,
+    "verdict": "rejected",
+    "evidence": "V29 (Research.md:725) already asks exactly this: 'Does the hardware latch of F11 power up set, holding the gates disabled ..., or clear, letting the gates follow the enable node ...?' and is still 'for research (owner, 2026-09-28)'. Duplicate of an already-raised, open V-number."
+   },
+   {
+    "category": "R5",
+    "index": 0,
+    "verdict": "rejected",
+    "evidence": "V92 (Research.md:788, R5) and V131 (Research.md:827, R6) already ask the identical question — 'What is the highest 2S pack voltage ... 8.4 V (4.2 V a cell), or the charge voltage ... R7 selects?' — both still 'for research'. Duplicate of already-raised, open V-numbers."
+   },
+   {
+    "category": "R5",
+    "index": 1,
+    "verdict": "rejected",
+    "evidence": "The 'about 49.7 A' nominal draw depends on the 90% efficiency assumption, which is already tracked by open V-numbers V90, V105, V111, V132, V139-141 (all still 'for research'), and the figure itself is presented in the Follow-ups table (Research.md) as the given input to the round-2 follow-up, not an unstated assumption needing a fresh owner question."
+   },
+   {
+    "category": "R5",
+    "index": 2,
+    "verdict": "rejected",
+    "evidence": "Research.md:573 is already fully sourced text from the Follow-ups table itself, citing V107, V93/V94 and V95 inline for each failure reason. It is not an unconfirmed assumption; it is already-cited, already-recorded content, and each named cause is already its own open V-number."
+   },
+   {
+    "category": "R5",
+    "index": 3,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:366 states plainly: 'The threshold, how long the input stays below it before it counts, and the coprocessor's action are not stated.' 'DC input brownout detection' is listed as a 'new' function in the Follow-ups table (Research.md), meaning round 1 raised no V-number for it; a search of Research.md finds none. No existing question covers the trip/reset threshold."
+   },
+   {
+    "category": "R5",
+    "index": 4,
+    "verdict": "confirmed",
+    "evidence": "Same IOBoard.md:366 text ('how long the input stays below it before it counts ... are not stated') and same 'new' function with no round-1 V-number; no existing question covers the qualifying/debounce time either."
+   },
+   {
+    "category": "R5",
+    "index": 5,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:366 states outright 'whether one signal serves both is not stated', and 'source-status signal' is listed as a 'new' function in the Follow-ups table with no round-1 V-number. No existing question covers the signal's digital-vs-analogue form or its sharing with brownout detection."
+   },
+   {
+    "category": "R6",
+    "index": 0,
+    "verdict": "rejected",
+    "evidence": "The heatsink basis is already an owner decision, stated at IOBoard.md:375: 'A small aluminum heatsink on each TPS55285, on a 6-layer board (owner, 2026-09-30).' The text the critic actually quotes is from IOBoard.md:380 (the Adjustable supply row), whose further qualification is explicitly assigned as 'a follow-up of R6' (an engineering/research task, not an owner question) and whose heatsink SIZE is explicitly 'round 3's' per the Follow-ups table — out of round 2 P1's scope."
+   },
+   {
+    "category": "R7",
+    "index": 0,
+    "verdict": "rejected",
+    "evidence": "Same figure and same IOBoard.md:359 location as the R5 index-1 item: the 'about 49.7 A' nominal draw depends on the 90% efficiency assumption, which is already tracked by open V-numbers V90, V105, V111, V132, V139-141 (all still 'for research'), and the figure itself is presented in the Follow-ups table as the given input to the round-2 follow-up, not an unstated assumption needing a fresh owner question."
+   },
+   {
+    "category": "R7",
+    "index": 1,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:396 (Pack temperature row) states: 'The pack's own heating at up to about 49.7 A is not known, as its internal resistance is not stated.' A search of Research.md finds no V-number anywhere mentioning 'internal resistance' or 'self-heating' for the pack — this is a genuine, uncovered gap bearing on R7's pack-temperature and overcurrent-protection follow-up."
+   },
+   {
+    "category": "R7",
+    "index": 2,
+    "verdict": "rejected",
+    "evidence": "V139 (Research.md:835) already asks exactly this: 'What charger efficiency, in %, does R7 take from 5 V at 3 A into the pack between 6.0 V and 8.4 V? Or is it for research ...?' and is still 'for research (owner, 2026-09-28)'. Duplicate of an already-raised, open V-number."
+   },
+   {
+    "category": "R7",
+    "index": 3,
+    "verdict": "rejected",
+    "evidence": "V148 (Research.md:844) already asks exactly this: 'Is the charger's USB-C input the RP2354B's USB port, or a USB-C connector of its own?' and is still 'for research (owner, 2026-09-28)'. Duplicate of an already-raised, open V-number."
+   },
+   {
+    "category": "R8",
+    "index": 0,
+    "verdict": "rejected",
+    "evidence": "V154 (Research.md:850) already asks exactly this: 'Which source then fills the BENCH page's voltage and current registers (page 0x20, registers 0 and 1)? Answer with a rule...' and is still 'for research (owner, 2026-09-28)'. Although Research.md:315 and IOBoard.md:514 do instruct P1 of R8 to ask this, it was already raised (in round 1) and remains open; no new question is needed."
+   },
+   {
+    "category": "R8",
+    "index": 1,
+    "verdict": "confirmed",
+    "evidence": "V156 (over-temp threshold) and V157 (watched sensor) already exist and are open, so the critic's claim that P1 'never' asks about the threshold or watched sensor is inaccurate. However, V158 and V159 (Research.md:853-854) ask the trip filter and the time-to-switch-open only for the OVERCURRENT path ('must the motor current stay above the overcurrent threshold', 'from overcurrent detection to the ESC pack switch open'); no V-number asks the equivalent trip filter or switch-open latency for the OVER-TEMPERATURE path, which Research.md:315 and IOBoard.md's 'Not known' list (the over-temperature bullet) both call for and which P5's motor-overcurrent/over-temperature path budget needs. That part of the gap is real and uncovered."
+   },
+   {
+    "category": "R8",
+    "index": 2,
+    "verdict": "rejected",
+    "evidence": "V176 (Research.md:872) already asks exactly this: 'Does the servo rail keep a current monitor of its own beside the 20 port monitors? docs/Manifest.md lists the INA745A on the servo rail as selected.' and is still 'for research (owner, 2026-09-28)'. Duplicate of an already-raised, open V-number."
+   },
+   {
+    "category": "R9",
+    "index": 0,
+    "verdict": "rejected",
+    "evidence": "V181 (Research.md:877) already asks exactly this: 'What is the lowest cell count, in cells, of an ESC pack that the cell monitor reads on its balance lead? ...' and is still 'for research (owner, 2026-09-28)', as the critic's own 'why' field acknowledges. Correcting IOBoard.md:473's sourcing tag is a page-writing (P7) concern, not grounds for a new raised question when V181 already covers the substance and is still open."
+   },
+   {
+    "category": "R10",
+    "index": 0,
+    "verdict": "confirmed",
+    "evidence": "Sensing.md:109 states the ADCS7476 shares an SPI controller with the CAN controllers and the load-cell ADC, and that 'Its conversion trigger on the index pulse's timebase is not confirmed in the returns'. IOBoard.md:118/489 record a newer owner decision (2026-09-30) that the measurement coprocessor now samples the accelerometer ADC and the index pulse on one shared timebase of its own. V202 (Research.md:898, R10's own phase-error question) is still 'for research', and V225's owner answer (2026-09-28, Research.md:921) giving 2.54 µs/16.7 µs predates that 2026-09-30 timebase decision and the SPI-sharing detail, so it does not visibly account for SPI-arbitration or shared-timebase clock/timer jitter. The specific budget-share question, inclusive of these newer facts, is not answered anywhere."
+   },
+   {
+    "category": "R11",
+    "index": 0,
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:529 states: 'Whether the magnetic pickup and phase-wire clip readings use MOTOR_POLES: not stated in the tree (R11).' V218 (Research.md:914) asks the pulses-per-revolution/MOTOR_POLES question only for the magnetic pickup; a search of Research.md's phase-wire clip V-numbers (V211, V214-216, V229) finds none asking this for the phase-wire clip. Genuine, uncovered gap."
+   }
+  ]
+ }
+}

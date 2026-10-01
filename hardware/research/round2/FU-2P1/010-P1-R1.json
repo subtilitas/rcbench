@@ -1,0 +1,117 @@
+{
+ "role": "P1",
+ "category": "R1",
+ "label": "P1-R1",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "functions": [
+   "Microcontroller",
+   "12 MHz crystal",
+   "Core regulator inductor",
+   "USB protection"
+  ],
+  "values": [
+   {
+    "where": "hardware/docs/Research.md:308",
+    "quantity": "R1 category scope and functions",
+    "value": "RP2354B and its support: the part itself, 12 MHz crystal, core regulator inductor, USB protection",
+    "marking": "sourced",
+    "source": "Research.md, Research categories, R1 row",
+    "refutation_tried": "Checked against hardware/research/round1/selection.json's R1 keys (Microcontroller, 12 MHz crystal, Core regulator inductor, USB protection) and against IOBoard.md's own USB port and Crystal and core regulator rows: the same four functions and no others. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:569",
+    "quantity": "USB protection requirement (round 2 follow-up)",
+    "value": "Standard USB protection parts on VBUS, D+ and D−, CC1 and CC2. Where a standard part misses the 3.63 V steady limit on D+ and D−, or another figure of V9 and V12, its datasheet figure stands (owner, 2026-09-30). Round 1 found no part that covers the 5 lines",
+    "marking": "owner",
+    "source": "Research.md, Round 2, Follow-ups table, USB protection row, citing V9, V12, IOBoard.md USB port, hardware/STATUS.md USB protection",
+    "refutation_tried": "Compared word for word against hardware/STATUS.md:75 and hardware/docs/Control.md:160, both dated 2026-09-30 and citing the same V9/V12 pair; compared against the live V9 (Research.md:705) and V12 (Research.md:708) answers, each of which already carries this identical relaxation clause inline. No contradiction found across the four citing pages.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:705",
+    "quantity": "USB protection ESD immunity (IEC 61000-4-2 contact/air)",
+    "value": "IEC 61000-4-2 level 4: ±8 kV contact, ±15 kV air, on every line the protection covers; relaxed (owner, 2026-09-30) so a standard part's own datasheet figure stands where it misses this",
+    "marking": "owner",
+    "source": "Research.md, Raised by P1, V9 (owner, 2026-09-28; relaxed owner, 2026-09-30)",
+    "refutation_tried": "IEC 61000-4-2 defines level 4 as ±8 kV contact and ±15 kV air; the cited figures and units match the standard's own level-4 values. Holds as an owner decision with the stated relaxation.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:706",
+    "quantity": "USB port VBUS voltage and current",
+    "value": "5.5 V, 3 A: one USB-C connector for the charger input of F8 and the RP2354B's data lines, with CC1 and CC2",
+    "marking": "owner",
+    "source": "Research.md, Raised by P1, V10 (owner, 2026-09-28)",
+    "refutation_tried": "Checked against V13 (same connector, 5 lines, VBUS 5.5 V at 3 A, Research.md:709) and IOBoard.md:398 (Charger input limit, up to 3 A from F8). Consistent. Not named by the 2026-09-30 relaxation, which covers only V9 and V12, so this remains a hard gate P2 cannot relax.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:707",
+    "quantity": "USB protection D+/D- added capacitance",
+    "value": "for research (owner, 2026-09-28)",
+    "marking": "owner",
+    "source": "Research.md, Raised by P1, V11",
+    "refutation_tried": "The owner's answer directs research rather than giving a figure. Per the Agent layout rule for P1 ('P2 finds a value marked for research at its primary source and records it as found, not given'), this does not block P2 and is not re-raised here. Not altered by the 2026-09-30 relaxation, which names only V9 and V12.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:708",
+    "quantity": "Highest voltage on USB_DP/USB_DM (steady and ESD clamp)",
+    "value": "Steady: 3.63 V. ESD: clamping voltage at most 36 V at 16 A TLP (IEC 61000-4-2 ±8 kV contact at 30 ns), ahead of the 27 Ω series resistor; relaxed (owner, 2026-09-30) so a standard part's datasheet figure stands where it misses this",
+    "marking": "owner",
+    "source": "Research.md, Raised by P1, V12 (owner, 2026-09-28; relaxed owner, 2026-09-30)",
+    "refutation_tried": "3.63 V matches Table 1441's QSPI_IOVDD maximum and the fault-tolerant GPIO maximum IOBoard.md:135 states at IOVDD 0 V, so it is consistent with the RP2350's own 3.3 V-domain ceiling. The dedicated USB_DP/USB_DM pins (QFN-80 pins 67/66) are not in the GPIO table (1427) R1 checked in T1, so this figure's datasheet pedigree for the USB PHY pins specifically is not shown on the page; it stands as the owner's own figure (owner, 2026-09-28), which needs no further sourcing to govern P2.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:709",
+    "quantity": "USB connector type and lines covered",
+    "value": "USB Type-C shared with the F8 charger input: 5 lines, VBUS rated 5.5 V at 3 A",
+    "marking": "owner",
+    "source": "Research.md, Raised by P1, V13 (owner, 2026-09-28)",
+    "refutation_tried": "Matches IOBoard.md:148 (one USB device port) and IOBoard.md:398 (F8's charger input shares the connector's CC pins). Not altered by the 2026-09-30 relaxation. Still gates how many lines P2's candidate(s) must cover.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:703",
+    "quantity": "Operating ambient temperature range for R1 parts",
+    "value": "0 to 50 °C ambient, one range for the whole IO board",
+    "marking": "owner",
+    "source": "Research.md, Raised by P1, V7 (owner, 2026-09-28)",
+    "refutation_tried": "V7's question asks the range 'the R1 parts' (not the crystal alone) must be rated across, so it governs the USB protection parts too. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:148",
+    "quantity": "USB port state and protection status",
+    "value": "one USB device port on the main coprocessor's own USB pins; protection: no part (R1), relaxed to match standard parts (owner, 2026-09-30), a follow-up of R1",
+    "marking": "sourced",
+    "source": "IOBoard.md, Microcontroller flash and debug, USB port row",
+    "refutation_tried": "Matches hardware/STATUS.md:75 and hardware/docs/Control.md:63 and :160, each giving the same 'no part'/'relaxed' state dated 2026-09-30. This line also notes the measurement coprocessor's own USB port is not stated; that bears on placements per board, which Sourcing rule 4 already resolves (P2 states a range and the gate applies at its top), so it is not raised here as an owner question.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Control.md:160",
+    "quantity": "Round 1 USB protection search record",
+    "value": "No candidate covers the 5 lines while holding D+ and D− at the 3.63 V steady limit and meeting IEC 61000-4-2 level 4 (V9, V12, V13); three passes (FU-A1, FU-A2, FU-A4) found no survivor; OVP switches trip at up to 5.2 V; Type-C CC/VBUS protectors carry no D+/D- path",
+    "marking": "sourced",
+    "source": "Control.md, Not known, citing hardware/research/round1/FU-A4/006-P4-datasheet-R1.json and FU-A4/004-rerank-R1.json",
+    "refutation_tried": "Cross-checked against hardware/research/round1/FU-A4/002-P2-R1.json's 'dropped' list for USB protection (15 part families from Vishay, Texas Instruments, Renesas and Diodes Incorporated, each failing the V12 steady-voltage figure or 'lines covered'), which matches this summary. Holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Control.md:184",
+    "quantity": "USB protection verification state",
+    "value": "No part; not verified",
+    "marking": "sourced",
+    "source": "Control.md, Not verified",
+    "refutation_tried": "Consistent with hardware/research/round1/selection.json, R1.\"USB protection\" (part null, rank null, decision none, run FU-A4): no part has been kept for this function entering round 2. Consistent with Research.md Scope, which sends an unselected function to a follow-up rather than re-selecting it outside one.",
+    "question": -1
+   }
+  ],
+  "questions": []
+ }
+}

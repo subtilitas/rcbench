@@ -1,0 +1,170 @@
+{
+ "role": "P1-critic",
+ "category": "R6",
+ "label": "P1-critic-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/IOBoard.md:71",
+    "quantity": "Servo supply configuration (rail count, settings, current)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:71 states exactly this: four TPS55285 a board, one per each of 3 servo rails (5.5 V/8.4 V settings, 4 to 6.35 A) plus one adjustable supply (0.8 to 15 V, 0.5 to 6.35 A), run from both the 12-20 V DC input and the pack, all owner-decided 2026-09-25 and 2026-09-30. Every figure lies inside the TPS55285's own registers per SLVSI72A, confirmed in round 1 (T1/009-P1-R6.json). Owner is correct."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/IOBoard.md:375",
+    "quantity": "Servo supply heatsink basis for continuous-current rating",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:375 states 'A small aluminum heatsink on each TPS55285, on a 6-layer board (owner, 2026-09-30)' with no size, model or theta-JA given anywhere in the tree (confirmed by grep of Research.md and IOBoard.md). Owner decision, correctly marked."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/IOBoard.md:377",
+    "quantity": "Servo supply continuous current (TPS55285 + heatsink, 6.0 V in, 50 degC ambient)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:377 states this figure 'is not known: a follow-up of R6 finds it'. Supply.md:143 (the round-1 adjudicator's bound, FU-B1/030-adjudicator-R6.json) spans 89 to 179 degC against the 125 degC recommended max with no heatsink thermal-resistance figure, settling nothing. No source gives a value, so assumption (the catch-all for a quantity neither sourced with a figure nor an owner decision) is defensible, and the matching question is correctly raised."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/IOBoard.md:460",
+    "quantity": "TPS55285 recommended junction temperature maximum",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "125 degC recommended maximum (150 degC absolute) is confirmed in the round-1 adjudicator's reading of SLVSI72A section 5.2 (FU-B1/030-adjudicator-R6.json) and repeated in Supply.md:117, :134 and :143. IOBoard.md:460 itself references the same figure. The datasheet citation is one row removed from :460 (the number is not re-stated with 'SLVSI72A' literally on that line) but the figure is genuinely datasheet-sourced; sourced holds."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/IOBoard.md:376",
+    "quantity": "Servo rail voltage low end for brownout testing",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:376: 'Each rail works down to the TPS55285's lowest output, 0.8 V, so a servo's brownout behavior can be tested (owner, 2026-09-30)'. Matches V55 (owner, 2026-09-30, Research.md:751) and lies inside the TPS55285's 0.8-21.3 V register range (SLVSI72A 5.2). Owner holds."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/IOBoard.md:384",
+    "quantity": "Port supply switch operating input voltage range",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "0.8 V comes from V55 (owner, 2026-09-30) and 8.4 V from the decided HV rail setting (IOBoard.md:376, owner). TPS259474LRPWR's VIN floor of 2.7 V (SLVSFC9C) fails the 0.8 V requirement, matching the round 2 Follow-ups row verbatim. Owner holds, and the matching question (index 0) is required and present."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/Research.md:817",
+    "quantity": "Port supply switch continuous current",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "FU-B1/002-P2-R6.json gives V122 = '3.0 A continuous: the per-servo current ceiling ... checked at every sample' sourced to docs/Servo.md:35 (Servo.md:35 confirms 'Current ceiling | 3.0 A | abort immediately, checked at every sample'), independent of rail voltage, so it still applies at 0.8-8.4 V. Note the line number is one off (Research.md:817 is V121's row; V122 is at :818), but the found value and its sourcing are correct, so sourced holds."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/IOBoard.md:376",
+    "quantity": "Port supply switch current/voltage-drop requirement at the 0.8 V brownout setting",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:376 frames 0.8 V only as a brownout test point; no line states whether V122 (3.0 A) or V124 (570 mV, confirmed in FU-B1/002-P2-R6.json as built on the LV setting's 5.40 V edge and a 4.8 V lowest-rated LV servo, a premise that assumes a functioning, not failing, servo) extends to 0.8 V. This is P1's own inference of a gap, not a quoted 'not stated' sentence, which fits assumption; the matching question (index 5) is reasonable and needed."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/IOBoard.md:386",
+    "quantity": "Port voltage ceiling trip band and latch",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:386 (state: 'decided (F16)') fixes the 6.0 V/8.7 V ceilings as an owner decision; V128 and V130 (FU-B1/002-P2-R6.json) narrow the band to 5.59/6.00 V and 8.53/8.70 V and confirm the latch-until-action rule, both confirmed verbatim. Owner, matching the document's own state label, holds. (Minor nit: the +/-0.99% figure is about the 8.615 V midpoint, not literally '8.4/8.7 V', and Supply.md:161 only says 'not verified', not the percentage itself, but this does not change the marking.)"
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/IOBoard.md:460",
+    "quantity": "Servo supply temperature sensor part and placement",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:460 states the MCP9808T-E/MS placement (4 a board, own I2C address in 0x18-0x1F apart from the onboard shunt's) as an owner decision dated 2026-09-30. The MCP9808 has 8 addresses in that range, so 4 fit. Owner holds; correctly deferring the shunt-address collision check to P5."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/IOBoard.md:460",
+    "quantity": "MCP9808 alert shutdown threshold",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:460 literally states 'The threshold is not stated: a follow-up of R6 sets it against the TPS55285's 125 degC recommended junction maximum', and no junction-to-sensor offset exists anywhere in the tree to derive a setpoint. No number is available, so assumption is a defensible classification, and the matching question (index 2, the follow-up gap verbatim) is correctly raised."
+   },
+   {
+    "index": 11,
+    "where": "hardware/docs/Research.md:313",
+    "quantity": "Already-selected R6 parts standing into round 2",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "selection.json's R6 entries confirm I/O expander: MCP23017T-E/SS and Port supply switch: TPS259474LRPWR. The MCP23017's PCN refutation was overturned by the round-1 adjudicator (FU-B3/022-adjudicator-R6.json: Microchip's public PCN API shows no end-of-life notice among 43 matches), so it stands confirmed as stated. Sourced holds. (Research.md:313 is the R6 category-row text, which does not itself list these part numbers; the real support is selection.json and the cited FU-B3 files as the source field states, so the 'where' citation is loose, but the marking classification is correct.)"
+   },
+   {
+    "index": 12,
+    "where": "hardware/docs/Supply.md:145",
+    "quantity": "Servo supply inductor selection status",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Supply.md:145 reads verbatim: 'R6, servo supply inductor, the selection record: selection.json keeps no part, although both FU-B3 verifiers confirm SRP1265A-4R7M (4.7 uH, 28 A saturation, 8.4 mOhm DC resistance at most, -55 to 150 degC) ... Not known why the confirmed part is not carried.' selection.json indeed has no part for this function. Sourced holds, and P1 is correct that round 2's Follow-ups table has no row for this function, so no new question is required here."
+   },
+   {
+    "index": 13,
+    "where": "hardware/docs/IOBoard.md:460",
+    "quantity": "MCP9808 alert destination (interlock's latch vs. a latch of the rail's own)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:460 literally states 'Whether the alert sets the interlock's latch or a latch of the rail's own is not stated.' No F11-style decision or 'interlock' routing rule covers this anywhere in the tree. Assumption is defensible for an unresolved routing question, and the matching question (index 6) is needed by both P2 and P5."
+   },
+   {
+    "index": 14,
+    "where": "hardware/docs/IOBoard.md:380",
+    "quantity": "Servo supply heatsink basis for continuous-current rating",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:380 states the Adjustable supply's continuous current, across its wider 6-20 V in/0.8-15 V out range at 50 degC, 'is not known until' a follow-up of R6 qualifies it, and this depends on the same unresolved heatsink thermal-resistance figure as index 2/14's sibling. No separate figure exists for the Adjustable supply's own worst point. Assumption holds, matched by question index 4."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "Matches the round 2 Follow-ups gap verbatim. TPS259474LRPWR's datasheet VIN floor of 2.7 V (SLVSFC9C) fails the owner's 0.8 V floor (V55, 2026-09-30), so P2 cannot qualify a port supply switch without this answered or a new search run against it."
+   },
+   {
+    "index": 1,
+    "verdict": "confirmed",
+    "reason": "Matches the round 2 Follow-ups gap verbatim. No heatsink thermal-resistance figure exists anywhere in the tree, and round 1's own bound (89-179 degC) straddles the 125 degC recommended junction maximum, so P2 cannot state a continuous-current rating without an owner answer or a round-3 heatsink figure."
+   },
+   {
+    "index": 2,
+    "verdict": "confirmed",
+    "reason": "Matches the round 2 Follow-ups gap verbatim. No junction-to-sensor temperature offset exists in the tree to convert the TPS55285's 125 degC recommended junction maximum into an MCP9808 setpoint; P2 cannot set the alert threshold without it."
+   },
+   {
+    "index": 3,
+    "verdict": "confirmed",
+    "reason": "Matches the round 2 Follow-ups gap verbatim. No round-1 candidate met both the +/-0.99% HV trip band (V128) and the latch-until-action rule (V130) together (FU-B3/003-P2-R6.json), and the row gives no relaxed figure, so the owner must confirm the search target before P2 re-ranks."
+   },
+   {
+    "index": 4,
+    "verdict": "confirmed",
+    "reason": "A distinct, legitimate elaboration of question 1/the Servo supply gap: since IOBoard.md:377 and :380 both explicitly defer the heatsink's own size/model to round 3, P2 needs either a numeric thermal-resistance figure (or an owner-sanctioned stand-in) to compute a junction temperature at all for either the Servo rail current or the Adjustable supply qualification."
+   },
+   {
+    "index": 5,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:376 frames 0.8 V only as a brownout test point and nowhere states whether the 3.0 A (V122) and 570 mV (V124) figures, whose derivations assume a functioning low-voltage servo at 4.8 V, still apply at a 0.8 V brownout condition where the servo is expected to be failing. A low-VIN candidate cannot be ruled in or out at the 0.8 V end without this answered."
+   },
+   {
+    "index": 6,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:460 explicitly states the MCP9808 alert's destination (interlock latch vs. a rail-local latch) is not stated, and no F11-style decision or interlock-routing rule in the tree settles it. Both P2 (parts) and P5 (wiring/pin budget) need this answered."
+   }
+  ],
+  "added": [],
+  "functions_missing": []
+ }
+}

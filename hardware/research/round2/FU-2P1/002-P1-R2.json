@@ -1,0 +1,101 @@
+{
+ "role": "P1",
+ "category": "R2",
+ "label": "P1-R2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "functions": [
+   "Link CAN controller",
+   "Link CAN transceiver",
+   "External CAN controller",
+   "External CAN transceiver",
+   "Link terminator (the 120 Ohm at the IO board's end: fitted, switchable or external)",
+   "CAN controller clock (the crystal, resonator or oscillator each controller takes)"
+  ],
+  "values": [
+   {
+    "where": "hardware/docs/Research.md:309",
+    "quantity": "clock tolerance responsibility",
+    "value": "R2 states each controller's clock tolerance, which the 1 Mbit/s bit rate depends on",
+    "marking": "sourced",
+    "source": "Research.md:309 (R2 row), citing shared/can/include/can_timing.h:17-21 (requires the bit rate exact)",
+    "refutation_tried": "Checked against IOBoard.md:168 (Bit timing: exactly 1 Mbit/s) and IOBoard.md:199 (Controller clock: makes 1 Mbit/s exactly). The controller's clock accuracy sets whether the nominal bit time comes out exact, so the row's framing holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:199",
+    "quantity": "CAN controller clock frequency",
+    "value": "each MCP2518FDT-E/SL, the link's and the external CAN port's, takes a 40 MHz clock (owner, 2026-10-01)",
+    "marking": "owner",
+    "source": "IOBoard.md:199 (Controller clock row); reason at hardware/docs/Pins.md:160-161: the MCP2518FD limits its SPI clock to 0.85 x SYSCLK / 2, so the link's 10 MHz SPI needs a 40 MHz system clock",
+    "refutation_tried": "0.85 x 40 / 2 = 17 MHz >= the 10 MHz SPI rate the link uses (IOBoard.md:200, Controller interface). Arithmetic supports 40 MHz as sufficient, but a lower frequency (e.g. 24 MHz, giving 10.2 MHz) would also clear that bound, so the specific 40 MHz figure is the owner's choice, not the only value the arithmetic forces. Consistent, not refuted.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:141",
+    "quantity": "whether the clock's frequency tolerance is stated",
+    "value": "the CAN bit rate is exact to the controller's clock; the tolerance of the RP2354B's crystal and of the CAN controllers' clock is not stated; R1 and R2 state them",
+    "marking": "sourced",
+    "source": "IOBoard.md:141 (Clock accuracy row), citing docs/DShot.md:221-230, docs/Link.md:196-209, shared/can/include/can_timing.h:17-21",
+    "refutation_tried": "can_timing.h:17-21 requires an exact bit rate and states two nodes 1% apart fail on long frames, but gives no numeric ppm budget per node. This absence is already captured as V26 (Research.md:722) and V27 (Research.md:723) under Raised by P1, both answered 'for research' (owner, 2026-09-28): the owner has already assigned deriving the ppm limit to research rather than supplying a number, so this gap is not a new question for this follow-up.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:722",
+    "quantity": "largest frequency error of the link CAN controller's clock (ppm), including temperature and ageing",
+    "value": "for research (owner, 2026-09-28) -- no ppm figure given; only the 1% two-node long-frame failure point is stated",
+    "marking": "owner",
+    "source": "Research.md:722, V26 under Raised by P1",
+    "refutation_tried": "Confirmed V26 is already in the Raised by P1 table with an owner answer ('for research'), so it is a question already raised, not re-raised here; it is the value P2 must derive before qualifying a crystal/oscillator part, and the owner has already directed that derivation to research rather than to itself.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:723",
+    "quantity": "largest frequency error of the external CAN controller's clock (ppm), including temperature and ageing",
+    "value": "for research (owner, 2026-09-28)",
+    "marking": "owner",
+    "source": "Research.md:723, V27 under Raised by P1",
+    "refutation_tried": "Same status as V26: already raised and answered 'for research'; not re-raised.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:703",
+    "quantity": "ambient temperature range the clock's tolerance must hold over",
+    "value": "0 to 50 C ambient, one range for the whole IO board (owner, 2026-09-28)",
+    "marking": "owner",
+    "source": "Research.md:703, V7 under Raised by P1 (question column scoped to R1's 12 MHz crystal, answer states it is one range for the whole board)",
+    "refutation_tried": "V7's answer text ('one range for the whole IO board') is corroborated board-wide by IOBoard.md:396 (Pack temperature row: \"The board's 0 to 50 C ambient (V7)\"), which cites V7 outside R1. This covers the ambient range over which the CAN controller clock's V26/V27 ppm figure must hold, so no separate ambient-range question is needed for R2.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:570",
+    "quantity": "permitted clock part type",
+    "value": "a crystal or an oscillator (the function's own name, carried into selection.json, also allows a resonator)",
+    "marking": "owner",
+    "source": "Research.md:570 (Round 2 Follow-ups table, CAN controller clock row); function name as in hardware/research/round1/selection.json R2.\"CAN controller clock (the crystal, resonator or oscillator each controller takes)\"",
+    "refutation_tried": "Checked IOBoard.md:199 and :141: neither restricts the clock source to one type. No page excludes a crystal, resonator or oscillator; the choice among them is left to the part search, not something the owner is asked to narrow further.",
+    "question": -1
+   },
+   {
+    "where": "hardware/research/round1/selection.json:R2.\"CAN controller clock\"",
+    "quantity": "part selected for the CAN controller clock after round 1",
+    "value": "null (part: null, rank: null, run: FU-A2)",
+    "marking": "sourced",
+    "source": "hardware/research/round1/selection.json, R2 section",
+    "refutation_tried": "Matches Research.md:570 ('Round 1 found no part') and Control.md:186 ('A round-2 part; not verified'). Consistent across all three records; this is the gap the follow-up addresses.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Control.md:203",
+    "quantity": "why round 1 left the function without a part",
+    "value": "CAN controller clock (P3's missed function), not confirmed in FU-A2; not verified",
+    "marking": "sourced",
+    "source": "Control.md:203",
+    "refutation_tried": "Shows round 1's re-rank phase (P3, run FU-A2) skipped this function. The 40 MHz requirement was only decided 2026-10-01 (IOBoard.md:199), after FU-A2 ran, which explains why it had no frequency to search against then. Consistent with the follow-up's stated reason.",
+    "question": -1
+   }
+  ],
+  "questions": []
+ }
+}

@@ -1,0 +1,212 @@
+{
+ "role": "P1-critic",
+ "category": "R7",
+ "label": "P1-critic-R7",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/Research.md:314",
+    "quantity": "R7 category scope",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Matches Research.md:314 verbatim; it is a plain restatement of the category row's text (with internal owner-dated clauses called out separately elsewhere), not itself a single dated owner decision or an unconfirmed figure, so 'sourced' is the right category."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/Research.md:50",
+    "quantity": "pack cell identity assumed by round 1's scope",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Text is quoted accurately from the Scope table's round-1 row (line 50: 'the 18650 cells of the bench's own pack'). The marking is about whether the quote follows from its cited source, which it does; P1 separately and correctly notes it is superseded by IOBoard.md's Pack cells row."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/Research.md:581",
+    "quantity": "pack overcurrent protection requirement (round 2 restatement)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The Follow-ups row at line 581 is accurately quoted, and each of its four embedded figures is independently verified against its true source in the refutation (F9, IOBoard.md:359, :395, :396). 'owner' is defensible since the binding figures (3.0 V floor, 0-55 degC range, 90 A rating) are each owner decisions/readings; the one computed figure (49.7 A) is explicitly flagged elsewhere (index 4) as the nominal/assumed figure, so no information is lost by this categorization."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/IOBoard.md:397",
+    "quantity": "pack overcurrent protection trip threshold (exact value, A)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Correctly identifies that neither IOBoard.md:397 nor Research.md:581/846 states an exact trip current, only the floor (~49.7 A) and ceiling (90 A); V150's answer covers other protections, not the overcurrent trip point itself. Properly marked 'assumption' and tied to question index 0, satisfying the rule that every assumption is raised as a question."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/IOBoard.md:359",
+    "quantity": "nominal board draw from the pack at the 6.0 V floor",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Figures (49.7 A total, 47.3 A from the four TPS55285 converters) match IOBoard.md:359 exactly, including the 'nominal figures' / assumed-90%-efficiency caveat, so 'assumption' is correct. Not re-raised as a new question because the underlying 90% figure is already open as V140 (Research.md:836); that satisfies the 'every assumption is a question' rule without duplication."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/IOBoard.md:395",
+    "quantity": "cell continuous-discharge rating",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "90 A (30C) and 180 A (60C) match IOBoard.md:395 and the arithmetic (30x3.0=90, 60x3.0=180) is correct. 'owner' is right since this is the owner's 2026-09-30 reading of the vendor page, not a generic document fact."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/IOBoard.md:396",
+    "quantity": "pack temperature limits",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "0 to 55 degC matches IOBoard.md:396 and V150 (Research.md:846) exactly; an explicit '(owner, 2026-09-30)' decision, so 'owner' is correct."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/Research.md:669",
+    "quantity": "per-cell discharge floor",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "3.0 V a cell matches F9's Answer column at line 669 and is applied to the SLS XTRON pack by IOBoard.md:362. Correctly 'owner' (F9's owner-decided answer)."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/Research.md:669",
+    "quantity": "pack chemistry, vendor and model",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Matches F9's Answer text at line 669 (lithium-ion, cobalt-based, SLS XTRON 3000 mAh 2S1P pouch cells, replacing the 2026-09-25 18650 answer). Correctly 'owner'."
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/Research.md:650",
+    "quantity": "cell maker allowlist and its exception for the SLS pack",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "S9's Answer at line 650 lists exactly Murata, Panasonic, Samsung SDI, LG Energy Solution, Molicel and EVE, and IOBoard.md:395 states the SLS exception with rules 4 and 5 waived. Matches; correctly 'owner'."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/IOBoard.md:395",
+    "quantity": "pack capacity",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "3,000 mAh matches IOBoard.md:395's 'SLS XTRON 3000 mAh 2S1P pack', an owner-dated vendor-page reading (2026-09-30). Correctly 'owner'."
+   },
+   {
+    "index": 11,
+    "where": "hardware/docs/IOBoard.md:395",
+    "quantity": "pack charge rating",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:395 does state 'charge up to 4C (12 A)' and the arithmetic (4x3.0=12) holds, so the value and marking type ('owner', a vendor-page reading) are correct. However the secondary citation is inaccurate: hardware/STATUS.md:47 is the Pack charger row (BQ25713RSNR/MAX17320G22+/FUSB303BTMX) and contains no text matching 'the pack takes up to 4C, 12 A' anywhere in that file -- this quote does not exist in STATUS.md. The fabricated citation should be dropped even though the primary source and marking stand."
+   },
+   {
+    "index": 12,
+    "where": "hardware/docs/IOBoard.md:396",
+    "quantity": "pack internal resistance and self-heating under fault current",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:395-396 do state the vendor gives no internal resistance and that self-heating at ~49.7 A is therefore not known. Correctly 'assumption' (an acknowledged unconfirmed gap). Not raised as a blocking question here is reasonable: it affects thermal design, which Research.md's Scope table assigns to round 3, not this round-2 current-threshold follow-up."
+   },
+   {
+    "index": 13,
+    "where": "hardware/docs/IOBoard.md:397",
+    "quantity": "pack protection's board location",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:397 states the protection sits on the IO board as an LCSC/JLCPCB part, citing V149's answer. Research-derived rather than a dated owner statement, so 'sourced' is correct; already tracked under Raised by P1 (V149), rightly not re-raised."
+   },
+   {
+    "index": 14,
+    "where": "hardware/docs/Research.md:846",
+    "quantity": "protections besides overcurrent",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V150's Answer at line 846 states exactly this (55 degC over-temperature, 0 degC under-temperature, overvoltage/short-circuit deferred to research). Correctly 'owner' (V150 is an owner-dated answer)."
+   },
+   {
+    "index": 15,
+    "where": "hardware/docs/IOBoard.md:396",
+    "quantity": "pack NTC thermistor",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Matches IOBoard.md:396 and V147's Answer (Research.md:843): 10 kOhm/B3435K NTC, owner-added and Kapton-taped, read via MAX17320G22+'s TH1-TH4. Correctly 'owner'."
+   },
+   {
+    "index": 16,
+    "where": "hardware/docs/Research.md:668",
+    "quantity": "charger input source and limit",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Matches F8's Answer at line 668 (USB-C only, up to 3 A/5 V/15 W, never the DC input) plus IOBoard.md:398's CC-advertisement detail. Correctly 'owner' (F8 is an owner-dated answer)."
+   },
+   {
+    "index": 17,
+    "where": "hardware/docs/IOBoard.md:400",
+    "quantity": "charger efficiency and resulting charge current",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:400 states the assumed-90%/13.5 W/~1.6 A figures and the BQ25887 2 A reference exactly as quoted; arithmetic checks out. No source for the 90% figure, consistent with 'assumption'; correctly left untouched since it is already open as V139 (Research.md:835)."
+   },
+   {
+    "index": 18,
+    "where": "hardware/docs/IOBoard.md:401",
+    "quantity": "balance current",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:401 states exactly '50 mA average, balanced by the MAX17320G22+'. This is a research finding (resolves V142) rather than a dated owner statement, so 'sourced' is correct; already tracked, rightly not re-raised."
+   },
+   {
+    "index": 19,
+    "where": "hardware/docs/IOBoard.md:402",
+    "quantity": "bench pack balance lead's separation from the ESC pack's lead",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:402 states the bench pack's balance lead is its own input, separate from R9's 1-to-16 cell monitor lead, because both packs are connected during a motor test. A derived/research requirement rather than an owner statement, so 'sourced' is correct."
+   },
+   {
+    "index": 20,
+    "where": "hardware/docs/IOBoard.md:407",
+    "quantity": "charger's USB-C input connector identity",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:407's Not-known line states this exactly as quoted. Correctly 'assumption' (an acknowledged gap); already open as V148 (Research.md:844), rightly not re-raised."
+   },
+   {
+    "index": 21,
+    "where": "hardware/docs/IOBoard.md:410",
+    "quantity": "pack's mating connectors (XT60 socket, XH balance connector) on the board",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:410 states this exactly, and Round 2's Rules of stage 1 (Research.md) confirm stage 1 selects no connector and connector makers are asked only before stage 2. Correctly excluded from this task's questions; 'sourced' is the right category for a plain not-yet-stated specification fact."
+   },
+   {
+    "index": 22,
+    "where": "hardware/STATUS.md:47",
+    "quantity": "parts already selected for R7's functions",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "STATUS.md:47's Pack charger row names BQ25713RSNR, MAX17320G22+ and FUSB303BTMX exactly as grouped by function, matching selection.json's R7 entries (Pack cells correctly has no IC part). 'sourced' is correct, and selection.json is properly treated as authoritative over any re-rank per the task instructions."
+   },
+   {
+    "index": 23,
+    "where": "hardware/docs/Research.md:537",
+    "quantity": "which page holds where round 1's plan and the current specification differ",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:537 states this rule verbatim, including the R7 pack-current example (9.9 A vs ~49.7 A) that P1 applies throughout its own markings. Correctly 'sourced'."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "Reproduces the follow-up gap given for this task word for word. Independently verified: IOBoard.md:397 states only that R7 previously set thresholds for 12.23 A (V150, now superseded) and that a follow-up of R7 is needed for the ~49.7 A figure; neither IOBoard.md nor Research.md states an actual trip current, only the floor (~49.7 A, itself a nominal figure with no stated upper bound) and the ceiling (90 A, the cell's continuous rating). V150's Answer (Research.md:846) covers over/under-temperature and defers overvoltage/short-circuit to research, but says nothing about the overcurrent trip point itself. This is a genuine, unresolved gap that blocks P2/FU-2B1 from setting or verifying the MAX17320G22+'s (or any candidate's) overcurrent trip threshold."
+   }
+  ],
+  "added": [],
+  "functions_missing": []
+ }
+}

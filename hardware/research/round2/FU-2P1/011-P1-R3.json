@@ -1,0 +1,354 @@
+{
+ "role": "P1",
+ "category": "R3",
+ "label": "P1-R3",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "functions": [
+   "monostable",
+   "OR gate",
+   "reset supervisor",
+   "latch",
+   "latch clear control",
+   "trigger-path inverter",
+   "trigger input I_off buffer (Q9)",
+   "servo rail gate",
+   "onboard pack switch MOSFETs",
+   "onboard pack switch driver",
+   "external pack switch module",
+   "external module driver output",
+   "pack reverse-polarity protection",
+   "pack overvoltage and transient clamp",
+   "pack precharge",
+   "servo rail gate driver"
+  ],
+  "questions": [],
+  "values": [
+   {
+    "where": "hardware/docs/IOBoard.md:218",
+    "quantity": "servo rail gate conduction range, each of 3 servo rails",
+    "value": "0.8 V to 8.4 V, up to 6.35 A",
+    "marking": "owner",
+    "source": "IOBoard.md:218; V55 owner answer 2026-09-30, Research.md:751",
+    "refutation_tried": "cross-checked against hardware/STATUS.md:81 'Servo path from 0.8 V' and Power.md's adjustable-supply row, which repeat the same figure",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:218",
+    "quantity": "servo rail gate conduction range, adjustable supply output",
+    "value": "0.8 V to 15 V, up to 6.35 A",
+    "marking": "owner",
+    "source": "IOBoard.md:218; V55 owner answer 2026-09-30",
+    "refutation_tried": "cross-checked against hardware/docs/Power.md:381, which repeats 0.8-15 V for the adjustable supply and states the BTS7004-1EPP covers the high end only",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Monostable.md:413-416",
+    "quantity": "off-state leakage, servo rail gate",
+    "value": "under 5 mA per rail",
+    "marking": "assumption",
+    "source": "pull request #167 / Monostable.md:413-416: '5 mA per rail as the placeholder until that idle current is measured'",
+    "refutation_tried": "the primary source itself calls this a placeholder, not a measured limit; V39 (Research.md:735) already asks the owner for the real idle current and is still 'for research' -- not re-raised here since it is already under Raised by P1",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Monostable.md:410",
+    "quantity": "time to open after the enable node falls, servo and pack gates alike",
+    "value": "within 5 ms",
+    "marking": "sourced",
+    "source": "Monostable.md:410, verbatim: 'The switch is open within 5 ms of the enable node falling.'",
+    "refutation_tried": "quote matches the primary source word for word",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Monostable.md:406-409",
+    "quantity": "fail-open condition for every rail switch",
+    "value": "open with its control input undriven or the 3.3 V logic supply absent; excludes depletion-mode devices and normally-closed contacts",
+    "marking": "sourced",
+    "source": "Monostable.md:406-409",
+    "refutation_tried": "wording matches the primary source; the exclusion of depletion-mode/normally-closed parts is explicit there, not inferred",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Monostable.md:401-402",
+    "quantity": "servo rail current/voltage as the unmodified monostable spec (commit 23c82ca) states it",
+    "value": "up to 8.4 V, 4 to 8 A, no stated lower voltage bound",
+    "marking": "assumption",
+    "source": "Monostable.md:401-402, a page that predates the owner's 2026-09-30 decisions (prerequisite 4 notes the linked pages can predate later owner decisions)",
+    "refutation_tried": "superseded as a current requirement: the Round 2 section states that where it differs from a category row or the specification, the specification and that section hold (Research.md:537), and V55 (owner, 2026-09-30) replaces the lower bound and current figure; kept only as the stale seed figure, not something P2 should qualify a part against",
+    "question": -1
+   },
+   {
+    "where": "hardware/research/round1/FU-A3/015-P4-datasheet-R3.json:641",
+    "quantity": "BTS7004-1EPP turn-on threshold VS(OP)",
+    "value": "4.1 V maximum, rising; VS(UV) 3.1 V maximum, falling; switches on at 4.8 V in practice",
+    "marking": "sourced",
+    "source": "FU-A3/015-P4-datasheet-R3.json:640-642, BTS7004-1EPP Rev. 1.11 Tables 5, 9 and 13",
+    "refutation_tried": "verified against the P4 verifier's own quote of Table 9; IOBoard.md:218's '4.1 V at most' is the conservative worst-case reading, correctly used as the gate's failure threshold against the 0.8 V requirement",
+    "question": -1
+   },
+   {
+    "where": "hardware/research/round1/FU-A3/003-P2-R3.json:40-41",
+    "quantity": "ESC pack switch high-voltage rating margin above 67.2 V (F15)",
+    "value": "at least 85 V: a 100 V-rated device (32.8 V margin) qualifies, an 80 V-rated device (12.8 V margin) does not",
+    "marking": "sourced",
+    "source": "FU-A3/003-P2-R3.json, question_id V34 found value",
+    "refutation_tried": "arithmetic checked: 85 - 67.2 = 17.8 V margin, correct; 85 V matches the INA238's bus rating (Research.md:730) and the INA228 that replaces it (hardware/docs/Power.md:34: 'INA228AIDGSR ... 85 V and 20 bits'), so the figure still holds after the owner's 2026-09-30 motor-monitor swap -- not a new question, V34 is already under Raised by P1 and unanswered by the owner but already found by research",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:662 (F2)",
+    "quantity": "onboard ESC pack switch continuous current",
+    "value": "150 A continuous",
+    "marking": "owner",
+    "source": "F2 Answer, Research.md:662, owner 2026-09-25",
+    "refutation_tried": "value is an explicit owner answer, not computed; no refutation applies",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:744 (V48)",
+    "quantity": "highest current the onboard ESC pack switch opens without damage",
+    "value": "300 A",
+    "marking": "owner",
+    "source": "V48 Answer, Research.md:744, owner 2026-09-28",
+    "refutation_tried": "cross-checked against Control.md:163's '37.5 A average' per device across an 8-device array: 37.5 x 8 = 300 A, consistent",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:746 (V50); hardware/research/round1/FU-A3/003-P2-R3.json:46",
+    "quantity": "external ESC pack path highest current",
+    "value": "300 A peak for 30 s at most",
+    "marking": "owner",
+    "source": "V50 Answer, Research.md:746, owner 2026-09-28; cross-checked against V35's found value in FU-A3/003-P2-R3.json, which gives the same figure",
+    "refutation_tried": "V35's literal Answer column still reads 'for research' (Research.md:731) because V35 asks for the magnitude alone and V50 for the continuous/peak profile; the two converge on 300 A with no conflict, so this is not a missing value",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:744 (V48)",
+    "quantity": "highest current the external ESC pack switch opens without damage",
+    "value": "600 A, at a 300 A path",
+    "marking": "owner",
+    "source": "V48 Answer, Research.md:744, owner 2026-09-28",
+    "refutation_tried": "no refutation applies to an explicit owner figure; used directly by Control.md:164-165",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Control.md:163",
+    "quantity": "safe operating area during the controlled 300 A turn-off, IPT015N10N5ATMA1 8-device array",
+    "value": "refuted: VGS(th) spread 2.2-3.8 V and RDS(on) rise with temperature mean the array does not share current equally through a 16.9 µs turn-off, so one device can carry a multiple of the 37.5 A average",
+    "marking": "sourced",
+    "source": "Control.md:163, citing FU-A3/015-P4-datasheet-R3.json and FU-A3/016-adjudicator-R3.json",
+    "refutation_tried": "37.5 A x 8 devices = 300 A, consistent with V48's onboard figure; the adjudicator's ruling is not re-opened here, but the failure mode (current sharing, not single-device SOA) means a driver fast enough to equalise turn-off, or fewer higher-current devices, is not excluded and remains open for round 2's search",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Control.md:164",
+    "quantity": "safe operating area and temperature rise during the 600 A controlled turn-off, 5-module VS-FC420SA10/VS-FC270SA20 array",
+    "value": "refuted: Fig. 14 single-pulse SOA (about 136-169 A a module at 85 V on the 100 µs line) does not support 600 A shared over 5 modules through a 34 µs turn-off",
+    "marking": "sourced",
+    "source": "Control.md:164, citing FU-A3/017-adjudicator-R3-2.json and FU-A3/018-adjudicator-R3-3.json",
+    "refutation_tried": "600 A / 5 modules = 120 A a module, inside the cited 136-169 A SOA band, so unequal sharing (not the per-module average) is the stated failure mode; a module verified at a pulse width nearer the 5 ms turn-off budget (not the 100 µs curve) is not excluded by this refutation",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Control.md:165; hardware/docs/Power.md:34",
+    "quantity": "clamp ceiling vs. switch current, pack overvoltage and transient clamp",
+    "value": "must hold the pack node under 85 V at up to 600 A",
+    "marking": "owner",
+    "source": "Control.md:165 (85 V from the INA228's rating, Power.md:34); V48 Answer, Research.md:744 (600 A)",
+    "refutation_tried": "85 V re-confirmed for the INA228 (not just the superseded INA238) directly in Power.md:34 and IOBoard.md:452",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Control.md:165",
+    "quantity": "clamp voltage at rated current, candidates round 1 checked",
+    "value": "SMCJ70A clamps to 113 V at 13.3 A; SMCJ64A/SMCJ75A/SMCJ78A clamp to 121-126 V at 12 A",
+    "marking": "sourced",
+    "source": "Control.md:165, citing FU-A3/003-P2-R3.json",
+    "refutation_tried": "all four clamp well above the 85 V ceiling at their rated pulse current and none is rated near 600 A; Control.md:165 also states a TVS or Schottky cannot limit a switched node by construction at this current, consistent with P5's note that the node is instead held under the clamp level by the switch's controlled turn-off (Supply.md#power-budget) until a part is found",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:741 (V45); hardware/docs/Research.md:750 (V54)",
+    "quantity": "lead inductance assumed for the clamp's transient energy, pack-to-board and switch-to-ESC",
+    "value": "1 µH (pack to IO board); 0.5 µH (switch to ESC)",
+    "marking": "owner",
+    "source": "V45, V54 Answers, Research.md:741,750, owner 2026-09-28",
+    "refutation_tried": "energy = 0.5 x L x I^2 checked both ways: 0.5x1µHx150^2=11.25 mJ (owner states 11 mJ) and x300^2=45 mJ (matches); 0.5x0.5µHx150^2=5.625 mJ (owner states 5.6 mJ) and x300^2=22.5 mJ (matches) -- all four figures arithmetically confirmed",
+    "question": -1
+   },
+   {
+    "where": "hardware/research/round1/FU-A3/003-P2-R3.json:76",
+    "quantity": "highest sustained input voltage the overvoltage clamp must survive",
+    "value": "none: only switching transients are clamped; the highest sustained input is the 67.2 V of F15",
+    "marking": "sourced",
+    "source": "FU-A3/003-P2-R3.json, question_id V41 found value",
+    "refutation_tried": "consistent with F15's answer (67.2 V, 16 cells at 4.2 V) and with V41's own wording in Research.md:737 ('Answer none if only switching transients are clamped'); V41 is already under Raised by P1 and not re-raised",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:738 (V42)",
+    "quantity": "largest ESC input capacitance the pack switch precharges",
+    "value": "4700 µF",
+    "marking": "owner",
+    "source": "V42 Answer, Research.md:738, owner 2026-09-28",
+    "refutation_tried": "no refutation applies to an explicit owner figure",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:742 (V46)",
+    "quantity": "longest time an ESC pack switch may take to close, precharge included",
+    "value": "500 ms",
+    "marking": "owner",
+    "source": "V46 Answer, Research.md:742, owner 2026-09-28",
+    "refutation_tried": "no refutation applies to an explicit owner figure",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:743 (V47)",
+    "quantity": "reverse current the closed ESC pack switch carries back into the pack",
+    "value": "not answered; the reverse-polarity ideal-diode stage is expected to block it",
+    "marking": "assumption",
+    "source": "V47, Research.md:743, Answer column 'for research'",
+    "refutation_tried": "already raised as V47 and unanswered; not re-raised. Affects the onboard pack switch driver function, not the two follow-up gap functions (servo rail gate; onboard/external MOSFETs and clamp), so it does not block their search",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:422; hardware/research/round1/selection.json R3.pack reverse-polarity protection",
+    "quantity": "pack reverse-polarity protection part and rating",
+    "value": "IPT015N10N5ATMA1, qualified for 150 A continuous (F2), not refuted",
+    "marking": "sourced",
+    "source": "IOBoard.md:422; selection.json",
+    "refutation_tried": "confirmed the SOA refutation in Control.md:163 targets the switching-MOSFET role's 5 ms controlled turn-off at 300 A, not the reverse-polarity (non-switching, continuously-conducting) role; Control.md and the follow-up gap list both correctly exclude this function, so it is not re-researched here",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:739 (V43)",
+    "quantity": "reset supervisor delay after the 3.3 V rail crosses its threshold",
+    "value": "not stated; depends on the 3.3 V ramp time R5 selects",
+    "marking": "assumption",
+    "source": "V43, Research.md:739, Answer column 'for research'",
+    "refutation_tried": "already raised as V43; not re-raised. Not a value the two follow-up gap functions need",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:725 (V29)",
+    "quantity": "latch power-up state",
+    "value": "not stated",
+    "marking": "assumption",
+    "source": "V29, Research.md:725, Answer column 'for research'",
+    "refutation_tried": "already raised as V29; not re-raised. Not a value the two follow-up gap functions need",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:224; hardware/docs/Research.md:977 (Q9)",
+    "quantity": "monostable part meeting both the '423 behaviour and I_off",
+    "value": "no single part has both; 74HC423BQ,115 keeps the '423 behaviour and SN74AUP1G17DBVR (with I_off) goes in front of the trigger inputs",
+    "marking": "owner",
+    "source": "Q9 Decision, Research.md:977, owner 2026-09-29",
+    "refutation_tried": "decision already settled; not reopened by this follow-up, which concerns only the servo rail gate and the pack switch/clamp functions",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:222",
+    "quantity": "parts verified with I_off in the R3/R4 powered-off interlock",
+    "value": "SN74AUP1G17DBVR, 74AUP1G32GW,125, SN74LVC1G04DBVR",
+    "marking": "sourced",
+    "source": "IOBoard.md:222",
+    "refutation_tried": "matches selection.json's R3 entries for trigger input I_off buffer, OR gate and trigger-path inverter",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:222",
+    "quantity": "series resistor value used in place of I_off",
+    "value": "4.7 kΩ or more, at most 1 mA at 3.3 V",
+    "marking": "sourced",
+    "source": "IOBoard.md:222",
+    "refutation_tried": "3.3 V / 4.7 kΩ = 0.702 mA, under the stated 1 mA ceiling -- arithmetically consistent",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:212; hardware/research/round1/selection.json R3.OR gate",
+    "quantity": "OR gate part",
+    "value": "74AUP1G32GW,125",
+    "marking": "sourced",
+    "source": "IOBoard.md:212; selection.json",
+    "refutation_tried": "not in the follow-up gap list; not re-verified here",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:225",
+    "quantity": "reset supervisor part",
+    "value": "TPS3703A7330DSERQ1",
+    "marking": "sourced",
+    "source": "IOBoard.md:225",
+    "refutation_tried": "not in the follow-up gap list; not re-verified here",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:226,244",
+    "quantity": "latch part and operator clear control",
+    "value": "74LVC1G175GW,125; clear control 434153017835 (push button through an RC debounce and a Schmitt buffer)",
+    "marking": "sourced",
+    "source": "IOBoard.md:226,244",
+    "refutation_tried": "not in the follow-up gap list; not re-verified here",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:219; hardware/research/round1/selection.json R3.onboard pack switch driver",
+    "quantity": "onboard ESC pack switch driver part",
+    "value": "TPSI3052DWZR",
+    "marking": "sourced",
+    "source": "IOBoard.md:219; selection.json",
+    "refutation_tried": "a replacement onboard MOSFET array may need re-qualifying against this driver's turn-on/turn-off characteristics (the 16.9 µs turn-off that caused the refutation in Control.md:163 traces to this driver's gate drive), which P5/P2 recompute for any new device, not a new owner question",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:220; hardware/research/round1/selection.json R3.external module driver output",
+    "quantity": "external pack switch module driver output part",
+    "value": "TPSI3052DWZR",
+    "marking": "sourced",
+    "source": "IOBoard.md:220; selection.json",
+    "refutation_tried": "same driver as the onboard path; a replacement external module needs its own drive-input compatibility check against this part, which is a P2/P5 task, not a missing owner value",
+    "question": -1
+   },
+   {
+    "where": "hardware/research/round1/selection.json R3.servo rail gate driver",
+    "quantity": "servo rail gate driver part (round 1)",
+    "value": "2N7002BK,215",
+    "marking": "sourced",
+    "source": "selection.json",
+    "refutation_tried": "this driver was qualified against the BTS7004-1EPP's enable input; if round 2 replaces the servo rail gate switch IC, the driver needs re-qualification against the new switch's control-input requirements -- a P2/P5 task, not a new owner question",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:422; hardware/research/round1/selection.json R3.pack precharge",
+    "quantity": "pack precharge part",
+    "value": "CSD19537Q3T",
+    "marking": "sourced",
+    "source": "IOBoard.md:422; selection.json",
+    "refutation_tried": "not in the follow-up gap list; not re-verified here",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Monostable.md:449-455",
+    "quantity": "elements allowed in the GPIO6-to-gate path (Not defeatable rule)",
+    "value": "none: no processor, no register and no firmware is in it",
+    "marking": "sourced",
+    "source": "Monostable.md:449-455, verbatim: 'No processor, no register and no firmware is in it.'",
+    "refutation_tried": "quote matches the primary source word for word; applies equally to any replacement servo-rail-gate or pack-switch driver round 2 selects -- it must still be driven directly off the enable node with no programmable element in between",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Monostable.md:557,582-589",
+    "quantity": "ambient/supply corners the window (and by extension the gates it drives) are qualified over",
+    "value": "0 to 50 °C, 3.3 V ±3 %, via test steps 7 and 10 at 25°C/3.3V and at 0°C/50°C each at 3.2V/3.4V",
+    "marking": "sourced",
+    "source": "Monostable.md:586-589 (step 11, 'The corners')",
+    "refutation_tried": "confirmed step 7's wording ('Ten events, five each') matches the Research.md row's paraphrase 'step 7 times ten expiries in a row'; step 10's wording (edges every 200 ms producing discrete 15-45 ms low pulses, then edges every 150 ms with no falling edge) confirms the row's paraphrase 'step 10 passes on the enable returning at each resumed edge' -- both paraphrases hold up against the primary source",
+    "question": -1
+   }
+  ]
+ }
+}

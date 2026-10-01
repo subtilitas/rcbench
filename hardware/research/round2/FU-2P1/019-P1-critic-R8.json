@@ -1,0 +1,176 @@
+{
+ "role": "P1-critic",
+ "category": "R8",
+ "label": "P1-critic-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/Research.md:315",
+    "quantity": "R8 category scope (functions named)",
+    "verdict": "holds",
+    "correct_marking": "sourced",
+    "reason": "The value is a direct paraphrase of Research.md:315's own text (F1 motor monitor; F2 onboard shunt; external shunt and sense-lead input; onboard-shunt temperature sensor; 20-port monitors/shunts). It accurately transcribes the row without adding unsourced content; the row itself does not name 'Servo rail monitor', and the value does not claim it does."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/IOBoard.md:452",
+    "quantity": "motor monitor part and electrical rating",
+    "verdict": "holds",
+    "correct_marking": "owner",
+    "reason": "Line 452 reads 'INA228 on the IO board (owner, 2026-09-30): 20 bit, bus input rated to 85 V... (owner, 2026-09-24 and 2026-09-30)' and the State column says 'decided; INA228AIDGSR fixed by the owner'. The part fix is an explicit owner decision; the electrical figures are the datasheet figures of that fixed part."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/IOBoard.md:458",
+    "quantity": "onboard shunt value and dissipation at 150 A",
+    "verdict": "holds",
+    "correct_marking": "sourced",
+    "reason": "Line 458 states the part and gives the 2.25 W / 15 mV figures directly; recomputed 150^2 x 0.0001 = 2.25 W and 150 x 0.0001 = 0.015 V, both match."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/IOBoard.md:462",
+    "quantity": "external shunt class and resistance range",
+    "verdict": "holds",
+    "correct_marking": "sourced",
+    "reason": "Line 462 states busbar type, 50-100 microohm, 4.5-9 W at 300 A, part WSBE8518L1000JKA2; recomputed both ends of the dissipation range and both match exactly."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "alert line sharing topology (lines and node count)",
+    "verdict": "holds",
+    "correct_marking": "owner",
+    "reason": "Line 113 (Current aborts) attributes the 3-shared-line topology to '(owner, 2026-09-30)'; 7+7 INA3221 critical/warning outputs plus 2 INA228 ALERTs = 16 recomputes correctly against the text's own 16-node and 6-pin figures."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "alert shift register architecture",
+    "verdict": "holds",
+    "correct_marking": "owner",
+    "reason": "Line 113 states the two-cascaded-8-bit, load/clock/data, 3-pin scheme as '(owner, 2026-09-30)'; matches the Follow-ups table's identical owner-dated requirement row."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "alert shift register part selection status",
+    "verdict": "holds",
+    "correct_marking": "sourced",
+    "reason": "Line 113's State column states verbatim 'The shift register part is not selected', and selection.json has no 'alert shift register' key, confirming the status is a direct quote of the tree, not an assumption."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "alert line pull-up / shift-register and CD4082 logic voltage (V)",
+    "verdict": "holds",
+    "correct_marking": "assumption",
+    "reason": "No line in IOBoard.md or Research.md's R8 row states a supply or pull-up voltage for the shift register or CD4082; the 3.3 V figure is inferred from the general logic-rail and pin-rating facts elsewhere in the tree, which is a genuine inference rather than a direct statement, so 'assumption' is correct and the resulting question (index 0) is warranted."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "CD4082 combining-gate topology and count",
+    "verdict": "holds",
+    "correct_marking": "owner",
+    "reason": "Line 113 attributes the 3-CD4082, cascaded 4+3-input topology to '(owner, 2026-09-30)'; the gate math (7 critical, 7 warning via two cascaded 4-input gates each, 2 ALERT nodes on a third gate) reproduces the stated node counts exactly."
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "CD4082 part number, stock and propagation delay at 3.3 V",
+    "verdict": "holds",
+    "correct_marking": "sourced",
+    "reason": "Line 113's State column states verbatim that the CD4082 part number, stock and speed at 3.3 V are 'a follow-up of R8'; selection.json has no 'alert combining gate' key, confirming this is a direct quote of the tree's own gap statement, not an owner decision or an assumption."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/IOBoard.md:389; hardware/docs/IOBoard.md:390",
+    "quantity": "existing servo current alert thresholds (A, ms)",
+    "verdict": "wrong",
+    "correct_marking": "sourced",
+    "reason": "Lines 389-390 cite the 3.0 A and 1.0 A/400 ms figures to `docs/Servo.md:35-36` and `shared/servo/servo_limit.c:60-62`, with State 'required' (not 'decided'); the '(owner, 2026-09-30)' tags on line 389 attach only to the blanking-time-logging behaviour and the 3.96 A bound, not to the 3.0 A/1.0 A/400 ms thresholds themselves, which are pre-existing firmware/doc constants, not a round-2 owner decision. Line 390 carries no owner tag at all."
+   },
+   {
+    "index": 11,
+    "where": "hardware/docs/Supply.md:27",
+    "quantity": "port supply switch hardware breaker trip range and response time",
+    "verdict": "holds",
+    "correct_marking": "sourced",
+    "reason": "The 3.96-4.84 A at RILM 750 ohm and tCB about 2 microseconds figures are confirmed verbatim in hardware/research/round1/FU-B1/023-P4-datasheet-R6.json (P4-confirmed, citing SLVSFC9C 6.5/6.6/7.3.5.2). The re-arm-on-EN/VIN-cycle detail is standard latch-off behaviour implied by 'L variant stays latched off' but is not independently quoted in the read excerpt; this does not change the overall sourced status of the core trip-range figure."
+   },
+   {
+    "index": 12,
+    "where": "hardware/research/round1/FU-B3/021-P4-datasheet-R8.json",
+    "quantity": "INA3221 per-channel and full-cycle conversion time (ms)",
+    "verdict": "holds",
+    "correct_marking": "sourced",
+    "reason": "Confirmed in the cited file: 'CT bit=100 conversion time 1.1 ms typ / 1.21 ms max' and 'three channels x 1.21 ms = 3.63 ms'; the 1.21 x 3 = 3.63 recomputation matches."
+   },
+   {
+    "index": 13,
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "whether the current/temperature monitors latch their ALERT outputs",
+    "verdict": "wrong",
+    "correct_marking": "sourced",
+    "reason": "The value is a verbatim quote of line 113's own statement ('Whether the monitors latch their alert outputs is not read here'), exactly the same kind of direct 'not stated' quotation that indices 6 and 9 correctly mark 'sourced'; it requires no inference, so 'assumption' is the wrong category even though the gap still correctly becomes a question (it already does, as index 1)."
+   },
+   {
+    "index": 14,
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "critical alert line blanking time (ms)",
+    "verdict": "wrong",
+    "correct_marking": "sourced",
+    "reason": "The value directly quotes line 113's own statement ('The blanking time is not stated'), the same direct-quotation pattern marked 'sourced' at indices 6 and 9; no inference is being made here (the bounding-figures discussion is reasoning toward the question, not the marked value itself), so 'sourced' is the correct category, though the value still correctly feeds question index 1."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "No line in the tree states a logic or pull-up voltage for the new shift register or CD4082 parts; P2 cannot search for a specific part family without it, and the 3.3 V figure elsewhere in the tree is inferred, not stated for this circuit, so this is a legitimate open question for the owner."
+   },
+   {
+    "index": 1,
+    "verdict": "confirmed",
+    "reason": "This question reproduces word for word the Follow-ups table's own R8 row ('The alert thresholds, whether the monitors latch their alert outputs, and the critical line's blanking time...'), which Research.md explicitly lists as a round-2 gap against the port switch's 3.96-4.84 A breaker and the INA3221's 3.63 ms conversion cycle; neither figure is stated anywhere in the tree, so the question is correctly raised."
+   }
+  ],
+  "added": [
+   {
+    "function": "Motor monitor",
+    "question": "Which source then fills the BENCH page's voltage and current registers (page 0x20, registers 0 and 1) when the motor monitor and the ESC's telemetry both report? Answer with a rule, for example: the monitor whenever it answers, and the telemetry only when no monitor answers.",
+    "why": "Research.md:315 and IOBoard.md:514 both explicitly instruct P1 of R8 to ask the owner this ('P1 asks which source fills the BENCH voltage and current registers when the motor monitor and the ESC's telemetry both report'); P1's return contains no question on it at all.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:514",
+    "for_quantity": "BENCH voltage/current register source priority rule (motor monitor vs ESC telemetry)",
+    "asks": ""
+   },
+   {
+    "function": "Onboard shunt temperature sensor; Motor monitor",
+    "question": "At what temperature, in °C, does the over-temperature action trip; which temperature does it watch (the sensor beside the onboard shunt, the motor's infrared or thermocouple channel, the ESC's telemetry temperature, the INA228's die temperature, or more than one); what trip filter applies (how long above threshold, in ms, or is one conversion enough); and what is the longest time, in ms, from over-temperature detection to the ESC pack switch open?",
+    "why": "Research.md:315 ('P1 asks the motor overcurrent and over-temperature thresholds, the temperature the over-temperature action watches, the trip filter and the longest time from detection to the ESC pack switch open, which P5's budget of the motor overcurrent path needs') and IOBoard.md:514 both direct P1 of R8 to raise this; P1's return asks only about current-based alert thresholds (question 1) and never about the over-temperature threshold, the watched sensor, the trip filter or the switch-open latency.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:514",
+    "for_quantity": "over-temperature threshold (°C); temperature source watched; trip filter; longest time from over-temperature detection to ESC pack switch open (ms)",
+    "asks": ""
+   },
+   {
+    "function": "Servo rail monitor",
+    "question": "Does the servo rail keep a current monitor of its own beside the 20 port monitors? docs/Manifest.md lists the INA745A on the servo rail as selected.",
+    "why": "Servo rail monitor is one of R8's 8 inventory functions (selection.json) and IOBoard.md's Not known list states this is unresolved; P1's return names the function in its functions list but gives it no value, no sourced/owner/assumption marking and no question, leaving P2 with nothing to act on for this function.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:419",
+    "for_quantity": "whether a dedicated servo-rail current monitor exists, and if so its requirement values",
+    "asks": ""
+   }
+  ],
+  "functions_missing": []
+ }
+}

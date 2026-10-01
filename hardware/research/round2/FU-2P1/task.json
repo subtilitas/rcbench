@@ -1,0 +1,904 @@
+{
+ "task": "FU",
+ "run": "FU-2P1",
+ "run_id": "9ae831d6428deb45",
+ "commit": "ded6331f76f1a07d65deee771fffacea1525e2d1",
+ "date": "2026-10-01",
+ "run_info": {
+  "claude_code": "2.1.284 (Claude Code)",
+  "cpus": 48,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "concurrency": 16,
+  "concurrency_setting": "unset",
+  "agent_model": "sonnet",
+  "oversight_model": "opus",
+  "digikey_calls_left": null,
+  "vendors_sha256": "214b14a3af0a4a1e0edfab77124a786c4e0fade844ec4d0c72149c1571ff8bf6"
+ },
+ "followup": {
+  "phases": "P1",
+  "round": 1,
+  "categories": [
+   "R1",
+   "R2",
+   "R3",
+   "R5",
+   "R6",
+   "R7",
+   "R8",
+   "R9",
+   "R10",
+   "R11"
+  ],
+  "items": [
+   {
+    "category": "R1",
+    "function": "USB protection",
+    "requirement": "Standard USB protection parts on VBUS, D+ and D−, CC1 and CC2. Where a standard part misses the 3.63 V steady limit on D+ and D−, or another figure of V9 and V12, its datasheet figure stands (owner, 2026-09-30). Round 1 found no part that covers the 5 lines",
+    "source": "V9, V12; IOBoard.md, USB port; hardware/STATUS.md, USB protection",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R2",
+    "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+    "requirement": "The 40 MHz clock of each MCP2518FDT-E/SL (owner, 2026-10-01): a crystal or an oscillator, and its frequency error against V26 and V27. Round 1 found no part",
+    "source": "V26, V27; IOBoard.md, Controller clock and Clock accuracy; Control.md, Not verified",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R3",
+    "function": "servo rail gate",
+    "requirement": "Conducts from 0.8 V: on each of the 3 servo rails, 0.8 to 8.4 V, and on the adjustable supply's output, 0.8 to 15 V, each up to 6.35 A (V55; owner, 2026-09-30). The BTS7004-1EPP starts only at VS(OP), 4.1 V at most",
+    "source": "IOBoard.md, Servo rail gate; hardware/STATUS.md, Servo path from 0.8 V",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R3",
+    "function": "onboard pack switch MOSFETs; external pack switch module; pack overvoltage and transient clamp",
+    "requirement": "Round 1 refutes IPT015N10N5ATMA1 and the VS-FC420SA10 and VS-FC270SA20 modules on safe operating area during the controlled turn-off. It finds no clamp that holds the pack node under 85 V at up to 600 A",
+    "source": "hardware/STATUS.md, ESC pack switch; Control.md, Not known",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R5",
+    "function": "source selection; pack disconnect",
+    "requirement": "Sized for about 49.7 A: the board's draw from the pack at the 6.0 V floor with the four TPS55285 at 6.35 A, nominal at an assumed 90 %. Round 1 sized both for 12.23 A (V90). No pack disconnect passed round 1: each candidate failed an open balance lead (V107), the reconnect condition (V93, V94) or the per-cell floor (V95)",
+    "source": "IOBoard.md, Pack path current and Pack reconnect; Supply.md, Not known",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R5",
+    "function": "overvoltage protection; reverse-polarity protection; inrush limiting",
+    "requirement": "The DC input's overvoltage threshold, non-destructive (owner, 2026-09-30): round 1 left the overvoltage protection without a part. FU-B3 did not requalify the LM74800QDRRRQ1 for the reverse-polarity protection and the inrush limiting",
+    "source": "IOBoard.md, Overvoltage protection, Reverse-polarity protection, Inrush limiting, and Not known under Power",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R5",
+    "function": "source-status signal (new)",
+    "requirement": "A signal the coprocessor reads that tells the DC input from the pack: a DC-input-present input or the DC input voltage, on an RP2354B input or an expander pin within the pin budget",
+    "source": "IOBoard.md, Servo rail current",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R5",
+    "function": "DC input brownout detection (new)",
+    "requirement": "Detects the DC input falling below a threshold, which the coprocessor reads; non-destructive (owner, 2026-09-30). Its threshold and the time below it are not stated. The source selection's undervoltage gate is 10.1 V falling and 11.0 V rising (V88)",
+    "source": "IOBoard.md, DC input brownout detection",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R6",
+    "function": "Port supply switch",
+    "requirement": "Switches each of the 20 ports from 0.8 V (V55) to 8.4 V. The TPS259474LRPWR takes VIN only from 2.7 V",
+    "source": "IOBoard.md, Port supply switch",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R6",
+    "function": "Servo supply",
+    "requirement": "The continuous current one TPS55285 with its heatsink holds at 6.0 V in and 50 °C ambient, in A. This is each rail's continuous rating (owner, 2026-09-30). The heatsink's size is round 3's",
+    "source": "IOBoard.md, Servo rail current",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R6",
+    "function": "servo supply temperature sensor (new)",
+    "requirement": "The MCP9808T-E/MS beside each TPS55285, 4 a board, and its shutdown threshold against the TPS55285's 125 °C recommended junction maximum",
+    "source": "IOBoard.md, Servo supply temperature",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R6",
+    "function": "Port voltage ceiling",
+    "requirement": "Cuts the port off above 6.0 V (LV) or 8.7 V (HV), set by a jumper (F16). No candidate passed round 1: each failed the ±0.99 % HV trip band (V128) or the latch (V130)",
+    "source": "IOBoard.md, Port voltage ceiling; Supply.md, Not known",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R7",
+    "function": "Pack overcurrent protection",
+    "requirement": "Thresholds for about 49.7 A, against 3.0 V a cell (F9) and 0 to 55 °C (owner, 2026-09-30), at or below the pack's 90 A continuous. Round 1 set them for 12.23 A (V150)",
+    "source": "IOBoard.md, Pack overcurrent protection and Pack temperature",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R8",
+    "function": "alert shift register (new)",
+    "requirement": "Parallel-in, serial-out: two 8-bit parts in cascade take the 16 alert outputs at once, on 3 main coprocessor pins (owner, 2026-09-30)",
+    "source": "IOBoard.md, Current aborts",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R8",
+    "function": "alert combining gate (new)",
+    "requirement": "CD4082, a dual 4-input AND gate, 3 a board (owner, 2026-09-30): its part number, stock and speed at 3.3 V",
+    "source": "IOBoard.md, Current aborts",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R8",
+    "function": "Port current monitor; Motor monitor",
+    "requirement": "The alert thresholds, whether the monitors latch their alert outputs, and the critical line's blanking time, against the port switch's 3.96 to 4.84 A breaker and the INA3221's conversion time. The INA228 stays fixed (owner, 2026-09-30)",
+    "source": "IOBoard.md, Current aborts",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R9",
+    "function": "cell monitor isolation barrier (new)",
+    "requirement": "An isoSPI (isolated SPI) transceiver pair or a digital isolator between the ADBMS1818ASWAZ-RL and the measurement coprocessor's SPI1, rated 85 V DC working or more (V189)",
+    "source": "V189; IOBoard.md, Cell monitor isolation; Pins.md",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R10",
+    "function": "Converter for the accelerometer; optical index",
+    "requirement": "Delay variation at most 1.244 µs at 1,092 Hz (65,535 rpm): the optical index's share of V225. None of the 9 reflective sensors round 1 searched meets it; they state 10 to 70 µs. R10 is read for its share of the same budget",
+    "source": "V225; Sensing.md, Not known",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R11",
+    "function": "Converter for the accelerometer; optical index",
+    "requirement": "Delay variation at most 1.244 µs at 1,092 Hz (65,535 rpm): the optical index's share of V225. None of the 9 reflective sensors round 1 searched meets it; they state 10 to 70 µs. R10 is read for its share of the same budget",
+    "source": "V225; Sensing.md, Not known",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   }
+  ]
+ },
+ "stock_exceptions": [],
+ "accept_open": null,
+ "decisions": {
+  "Q4": "An external ADC: ADCS7476AIMFX/NOPB, the part R10 kept (owner, 2026-09-29)",
+  "Q8": "An I²C FRAM: MB85RC256VPNF-G-AMERE2, the part R12 kept (owner, 2026-09-29)",
+  "Q9": "The 74HC423 keeps the '423 behaviour, and an SN74AUP1G17DBVR with I_off goes in front of its trigger inputs, as R3 selected (owner, 2026-09-29)"
+ },
+ "planned": 22,
+ "started": 22,
+ "extra_used": 0,
+ "free": 10,
+ "skipped": [],
+ "summary": {
+  "categories": [
+   "R1",
+   "R2",
+   "R3",
+   "R5",
+   "R6",
+   "R7",
+   "R8",
+   "R9",
+   "R10",
+   "R11"
+  ],
+  "held": [],
+  "questions": [
+   {
+    "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+    "question": "What load capacitance in pF, highest ESR in Ohm, lowest drive-level rating in uW, highest shunt capacitance C0 in pF, and which cut and mode must a crystal or resonator for the CAN controller's 40 MHz clock meet, and what supply voltage, output type/logic level and current must an oscillator meet instead, to drive the MCP2518FD's OSC1/OSC2 pins?",
+    "why": "P2 cannot qualify a candidate crystal, resonator or oscillator without these electrical limits; neither IOBoard.md's Controller clock and Clock accuracy rows, Pins.md:160-161 nor the Round 2 Follow-ups row (Research.md:570) state any of them, unlike R1's equivalent 12 MHz crystal, which has this exact class of value raised and answered as V6 (load capacitance, ESR, drive level) and V15 (shunt capacitance C0, cut and mode).",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": "",
+    "category": "R2",
+    "source": "P1 critic, re-checked",
+    "id": "V269"
+   },
+   {
+    "category": "R3",
+    "function": "onboard pack switch MOSFETs; external pack switch module; pack overvoltage and transient clamp",
+    "question": "What ambient temperature range, in degC, and supply range, in V, must the replacement onboard MOSFET array, the external module and the overvoltage/transient clamp hold their safe-operating-area, turn-off and clamp figures across? Monostable.md's step 11 corner sweep (0 to 50 degC, 3.2-3.4 V) explicitly repeats only steps 7 and 10, the window's own timing tests; step 9, 'The switches and the rails', is not in that list, so the corner sweep does not qualify the switches, and V38 (R3, monostable), which asks the identical question for 'the safety gate and the ESC pack switches', is still unanswered.",
+    "why": "P2 cannot qualify a replacement MOSFET array, module or clamp on safe operating area and thermal rise without a stated ambient/supply range; P1's value (index 35) marks the window's corner sweep as extending 'by extension' to the gates it drives, but Monostable.md step 11 names only steps 7 and 10, not step 9, so that extension is unsupported and the underlying need (V38) remains open.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Monostable.md:557,582-589",
+    "for_quantity": "ambient/supply corners the window (and by extension the gates it drives) are qualified over",
+    "asks": "",
+    "source": "P1 critic, re-checked",
+    "id": "V270"
+   },
+   {
+    "function": "source-status signal",
+    "question": "Is the source-status signal the coprocessor reads a digital DC-input-present signal, or the DC input's voltage read as an analogue signal, and does it also serve the DC input brownout detection, or does brownout detection need a second, separate signal?",
+    "why": "P2 cannot choose between a comparator/logic part (digital) and an ADC-input circuit (analogue) for the source-status signal, or size the GPIO/ADC pin budget for it, without knowing its form and whether it is shared with DC input brownout detection",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "IOBoard.md:366",
+    "for_quantity": "source-status signal form (digital DC-input-present or analogue DC input voltage) and whether shared with DC input brownout detection",
+    "asks": "",
+    "category": "R5",
+    "source": "P1",
+    "id": "V271"
+   },
+   {
+    "function": "DC input brownout detection",
+    "question": "At which DC input voltage, in V, must the DC input brownout detection trip (falling), and at which voltage does it reset (rising): the source selection's existing 10.1 V falling / 11.0 V rising gate, or different values?",
+    "why": "P2 cannot qualify a part or circuit for the DC input brownout detection without a trip and reset threshold",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "IOBoard.md:366",
+    "for_quantity": "DC input brownout detection trip voltage (V, falling) and reset voltage (V, rising)",
+    "asks": "",
+    "category": "R5",
+    "source": "P1",
+    "id": "V272"
+   },
+   {
+    "function": "DC input brownout detection",
+    "question": "How long, in ms, must the DC input stay below the brownout threshold before the DC input brownout detection counts it as a brownout (the qualifying or debounce time)?",
+    "why": "P2 cannot qualify a part or circuit for the DC input brownout detection's timing without a qualifying time, and the coprocessor cannot distinguish a real brownout from a brief transient without it",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "IOBoard.md:366",
+    "for_quantity": "DC input brownout detection qualifying time (ms)",
+    "asks": "",
+    "category": "R5",
+    "source": "P1",
+    "id": "V273"
+   },
+   {
+    "function": "DC input brownout detection trip/reset threshold (V)",
+    "question": "State DC input brownout detection trip/reset threshold (V). P1 read \"not stated; distinct from, or possibly reusing, the 10.1 V falling / 11.0 V rising source-selection gate (V88)\" at IOBoard.md:366 and it is marked an assumption.",
+    "why": "every assumption is a question to the owner (P1 row)",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "IOBoard.md:366",
+    "for_quantity": "DC input brownout detection trip/reset threshold (V)",
+    "asks": "",
+    "synthetic": true,
+    "category": "R5",
+    "source": "P1 critic, re-checked",
+    "id": "V274"
+   },
+   {
+    "function": "DC input brownout detection qualifying/debounce time (ms)",
+    "question": "State DC input brownout detection qualifying/debounce time (ms). P1 read \"not stated\" at IOBoard.md:366 and it is marked an assumption.",
+    "why": "every assumption is a question to the owner (P1 row)",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "IOBoard.md:366",
+    "for_quantity": "DC input brownout detection qualifying/debounce time (ms)",
+    "asks": "",
+    "synthetic": true,
+    "category": "R5",
+    "source": "P1 critic, re-checked",
+    "id": "V275"
+   },
+   {
+    "function": "source-status signal form (digital DC-input-present vs analogue DC input voltage) and sharing with brownout detection",
+    "question": "State source-status signal form (digital DC-input-present vs analogue DC input voltage) and sharing with brownout detection. P1 read \"not stated -- the Servo rail current row (IOBoard.md:377) offers both a 'DC-input-present input' and 'the DC input voltage' as options, and line 366 states outright that 'whether one signal serves both is not stated'\" at IOBoard.md:366 and it is marked an assumption.",
+    "why": "every assumption is a question to the owner (P1 row)",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "IOBoard.md:366",
+    "for_quantity": "source-status signal form (digital DC-input-present vs analogue DC input voltage) and sharing with brownout detection",
+    "asks": "",
+    "synthetic": true,
+    "category": "R5",
+    "source": "P1 critic, re-checked",
+    "id": "V276"
+   },
+   {
+    "function": "Port supply switch",
+    "question": "Switches each of the 20 ports from 0.8 V (V55) to 8.4 V. The TPS259474LRPWR takes VIN only from 2.7 V",
+    "why": "P2 cannot select a port supply switch IC without knowing the true low end of its input operating range; the previously selected TPS259474LRPWR's 2.7 V minimum VIN fails the owner's 0.8 V floor (V55), so a different part (or circuit) must be searched and confirmed against this floor before the function can be ranked again",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:384",
+    "for_quantity": "Port supply switch operating input voltage range",
+    "asks": "",
+    "category": "R6",
+    "source": "P1",
+    "id": "V277"
+   },
+   {
+    "function": "Servo supply",
+    "question": "The continuous current one TPS55285 with its heatsink holds at 6.0 V in and 50 °C ambient, in A. This is each rail's continuous rating (owner, 2026-09-30). The heatsink's size is round 3's",
+    "why": "P2 cannot state a continuous-current rating for the TPS55285 servo rails without a heatsink thermal-resistance figure; round 1's own bound (89 to 179 °C of junction temperature at 4.0 A, 6.0 V in, 50 °C ambient) straddles the TPS55285's 125 °C recommended junction maximum and settles nothing on its own",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:377",
+    "for_quantity": "Servo supply continuous current (TPS55285 + heatsink, 6.0 V in, 50 degC ambient)",
+    "asks": "",
+    "category": "R6",
+    "source": "P1",
+    "id": "V278"
+   },
+   {
+    "function": "Servo supply temperature",
+    "question": "The MCP9808T-E/MS beside each TPS55285, 4 a board, and its shutdown threshold against the TPS55285's 125 °C recommended junction maximum",
+    "why": "P2 cannot set the MCP9808's alert threshold without a junction-to-sensor temperature offset (or an assumed board-level trip point) that converts the TPS55285's 125 °C recommended junction maximum into a setpoint the MCP9808, mounted beside the converter rather than on its die, can act on",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:460",
+    "for_quantity": "MCP9808 alert shutdown threshold",
+    "asks": "",
+    "category": "R6",
+    "source": "P1",
+    "id": "V279"
+   },
+   {
+    "function": "Port voltage ceiling",
+    "question": "Cuts the port off above 6.0 V (LV) or 8.7 V (HV), set by a jumper (F16). No candidate passed round 1: each failed the ±0.99 % HV trip band (V128) or the latch (V130)",
+    "why": "P2 needs the owner's confirmation that the function should keep searching against the existing ±0.99 % HV trip band (V128) and the latch-until-action rule (V130), since no round-1 candidate met both and the row gives no relaxed figure to search against instead",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:386",
+    "for_quantity": "Port voltage ceiling trip band and latch",
+    "asks": "",
+    "category": "R6",
+    "source": "P1",
+    "id": "V280"
+   },
+   {
+    "function": "Servo supply",
+    "question": "What heatsink thermal resistance (or size/model), in °C/W, should round 2 assume for each TPS55285 when qualifying its continuous current, given that the heatsink's own size is selected only in round 3?",
+    "why": "Without a heatsink thermal-resistance (or size/model) figure, P2 cannot compute the TPS55285's junction temperature at any ambient and current, which blocks both the Servo rail current's continuous rating (IOBoard.md:377) and the Adjustable supply's continuous-current qualification across its wider range (IOBoard.md:380); the heatsink itself is named as round 3's to select",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:375",
+    "for_quantity": "Servo supply heatsink basis for continuous-current rating",
+    "asks": "",
+    "category": "R6",
+    "source": "P1",
+    "id": "V281"
+   },
+   {
+    "function": "Port supply switch",
+    "question": "At the 0.8 V brownout-test setting of a servo rail, must the port supply switch still meet the 3.0 A continuous-current rating (V122) and the 570 mV voltage-drop budget (V124), or does a lower test current apply there?",
+    "why": "P2 needs to know whether the port supply switch's 3.0 A continuous-current and 570 mV voltage-drop requirements (V122, V124) still apply at the 0.8 V brownout-test point, or whether a lower test current applies there, before it can rule a low-VIN candidate in or out on that basis",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:376",
+    "for_quantity": "Port supply switch current/voltage-drop requirement at the 0.8 V brownout setting",
+    "asks": "",
+    "category": "R6",
+    "source": "P1",
+    "id": "V282"
+   },
+   {
+    "function": "Servo supply temperature",
+    "question": "Does each TPS55285's MCP9808 alert output set the safety interlock's own latch (pull request #167, F11), or a latch local to that rail alone?",
+    "why": "P2 and P5 need to know whether the MCP9808's alert output feeds R3's interlock latch or a latch of the rail's own, because that changes which parts (and how many wiring paths) the function needs: a shared interlock path may need isolation/OR-ing hardware that a rail-local latch would not",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:460",
+    "for_quantity": "MCP9808 alert destination (interlock's latch vs. a latch of the rail's own)",
+    "asks": "",
+    "category": "R6",
+    "source": "P1",
+    "id": "V283"
+   },
+   {
+    "function": "Pack overcurrent protection",
+    "question": "What overcurrent threshold must the pack's protection use? Thresholds for about 49.7 A, against 3.0 V a cell (F9) and 0 to 55 °C (owner, 2026-09-30), at or below the pack's 90 A continuous. Round 1 set them for 12.23 A (V150).",
+    "why": "IOBoard.md:397 states only that R7 set the thresholds for 12.23 A (V150) and that the about 49.7 A of the Pack path current row needs a follow-up of R7; neither page states the trip current itself, only the floor (about 49.7 A, itself nominal with no stated upper bound) and the ceiling (90 A, the cell's continuous rating). V150's Answer (Research.md:846) covers over-temperature, under-temperature, per-cell overvoltage and short-circuit, not the overcurrent trip point. Without a number, or an instruction that the exact value is for research, P2 cannot set or verify the MAX17320G22+'s, or any candidate's, overcurrent trip point for the FU-2B1 follow-up.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:397",
+    "for_quantity": "pack overcurrent protection trip threshold (exact value, A)",
+    "asks": "",
+    "category": "R7",
+    "source": "P1",
+    "id": "V284"
+   },
+   {
+    "function": "pack internal resistance and self-heating under fault current",
+    "question": "State pack internal resistance and self-heating under fault current. P1 read \"not stated by the vendor; the pack's own heating at up to about 49.7 A is not known\" at hardware/docs/IOBoard.md:396 and it is marked an assumption.",
+    "why": "every assumption is a question to the owner (P1 row)",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:396",
+    "for_quantity": "pack internal resistance and self-heating under fault current",
+    "asks": "",
+    "synthetic": true,
+    "category": "R7",
+    "source": "P1 critic, re-checked",
+    "id": "V285"
+   },
+   {
+    "function": "alert shift register; alert combining gate",
+    "question": "What logic supply voltage, in V, must the alert shift register (two cascaded 8-bit parallel-in serial-out parts) and the CD4082 alert-combining gates run at, and what is the pull-up voltage, in V, on each alert node feeding the shift register's parallel inputs?",
+    "why": "P2 cannot select a specific shift-register or CD4082 part number without a stated logic-voltage/input-threshold requirement; the tree only lets this be inferred from the board's general 3.3 V logic rail, not stated for this circuit directly.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:113",
+    "for_quantity": "alert line pull-up / shift-register and CD4082 logic voltage (V)",
+    "asks": "",
+    "category": "R8",
+    "source": "P1",
+    "id": "V286"
+   },
+   {
+    "function": "Port current monitor; Motor monitor",
+    "question": "The alert thresholds, whether the monitors latch their alert outputs, and the critical line's blanking time, against the port switch's 3.96 to 4.84 A breaker and the INA3221's conversion time. The INA228 stays fixed (owner, 2026-09-30)",
+    "why": "P5 cannot budget the motor and servo overcurrent abort paths, and P2 cannot qualify the alert shift register's and CD4082's timing margins, without the blanking time and latch mode the owner has not yet set; IOBoard.md states both as not read / not stated.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:113",
+    "for_quantity": "ALERT output latch mode (latching or auto-clearing); critical line blanking time (ms); alert thresholds (A)",
+    "asks": "",
+    "category": "R8",
+    "source": "P1",
+    "id": "V287"
+   },
+   {
+    "function": "Onboard shunt temperature sensor; Motor monitor",
+    "question": "At what temperature, in °C, does the over-temperature action trip; which temperature does it watch (the sensor beside the onboard shunt, the motor's infrared or thermocouple channel, the ESC's telemetry temperature, the INA228's die temperature, or more than one); what trip filter applies (how long above threshold, in ms, or is one conversion enough); and what is the longest time, in ms, from over-temperature detection to the ESC pack switch open?",
+    "why": "Research.md:315 ('P1 asks the motor overcurrent and over-temperature thresholds, the temperature the over-temperature action watches, the trip filter and the longest time from detection to the ESC pack switch open, which P5's budget of the motor overcurrent path needs') and IOBoard.md:514 both direct P1 of R8 to raise this; P1's return asks only about current-based alert thresholds (question 1) and never about the over-temperature threshold, the watched sensor, the trip filter or the switch-open latency.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:514",
+    "for_quantity": "over-temperature threshold (°C); temperature source watched; trip filter; longest time from over-temperature detection to ESC pack switch open (ms)",
+    "asks": "",
+    "category": "R8",
+    "source": "P1 critic, re-checked",
+    "id": "V288"
+   },
+   {
+    "function": "cell monitor isolation barrier",
+    "question": "What voltage, in V, and current, in mA, does the cell monitor isolation barrier's device-side logic need, referenced to the ESC pack's negative, and what on the IO board supplies it?",
+    "why": "P2 cannot shortlist an isoSPI transceiver pair or a digital isolator without knowing the supply voltage and current its device-side (pack-referenced) half must run from; IOBoard.md:474 and Pins.md state that GPIO 15 and the SPI1 lines drive only the barrier's host side, and name no device-side supply, voltage or source",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "",
+    "asks": "",
+    "category": "R9",
+    "source": "P1",
+    "id": "V289"
+   },
+   {
+    "function": "Converter for the accelerometer",
+    "question": "What is the converter's (R10's) own share of the whole-chain delay-variation budget that V225 sets (2.54 µs at 65,535 rpm, 16.7 µs at 10,000 rpm), in µs at each rpm figure: the ADCS7476AIMFX/NOPB's 30 ps aperture jitter alone, as round 1's split of the budget assumed when it gave the accelerometer and the optical index 1.244 µs each, or does it also include the latency jitter of triggering its conversion on the index pulse's timebase, which Sensing.md records as not confirmed?",
+    "why": "P2 needs R10's confirmed share to requalify the Converter for the accelerometer function against V225's budget, and to confirm or correct the 1.244 µs share round 1 gave the optical index (R11), which no reflective sensor searched meets",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Research.md:921",
+    "for_quantity": "converter's (R10's) share of the whole-chain delay-variation budget (V225), in µs at 65,535 rpm and at 10,000 rpm",
+    "asks": "",
+    "category": "R10",
+    "source": "P1",
+    "id": "V290"
+   },
+   {
+    "function": "Converter for the accelerometer",
+    "question": "The ADCS7476AIMFX/NOPB's conversion starts on a chip-select edge over 1 of the RP2354B's 2 SPI controllers, shared with the CAN controllers and the load-cell ADC (Sensing.md:109), and the measurement coprocessor now samples the accelerometer ADC and the index pulse on its own clock as one shared timebase (IOBoard.md, Index pulse and Timebase rows under Two coprocessors, owner 2026-09-30). What worst-case delay variation, in µs at 65,535 rpm and at 10,000 rpm, do SPI-bus arbitration (contention with the CAN controllers and the load-cell ADC) and the measurement coprocessor's own clock/timer resolution add on top of the ADCS7476's 30 ps aperture jitter, as R10's complete own share of the V225 budget?",
+    "why": "P2 cannot qualify the Converter for the accelerometer function against V225 from the aperture jitter alone: the ADC's conversion is firmware-triggered over a bus it shares with other devices, and that bus and clock path can add jitter no datasheet states, which the newer owner decision on the shared timebase (2026-09-30) makes newly relevant and which P1's return did not cite or fold into its question.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Research.md:921",
+    "for_quantity": "converter's (R10's) own share of the whole-chain delay-variation budget (V225), in µs at 65,535 rpm and at 10,000 rpm",
+    "asks": "",
+    "category": "R10",
+    "source": "P1 critic, re-checked",
+    "id": "V291"
+   },
+   {
+    "function": "optical index",
+    "question": "Delay variation at most 1.244 µs at 1,092 Hz (65,535 rpm): the optical index's share of V225. None of the 9 reflective sensors round 1 searched meets it; they state 10 to 70 µs. R10 is read for its share of the same budget",
+    "why": "P2 cannot shortlist or rank an optical-index sensor for R11 without knowing whether the 1.244 µs share stands, is reapportioned among the chain's legs (accelerometer, optical-index front end, converter), or is waived for this function; every reflective sensor R11 could find (VCNT2030, VCNT2020, VCNT2025X01, QRD1114, QRE1113GR, RPR-220, TCND5000, TCRT5000, TCRT5000L) states a 10 to 70 µs response time, so the function is left without a part until this is resolved",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Sensing.md:118",
+    "for_quantity": "optical index's share of the delay-variation budget at 65,535 rpm (1,092 Hz)",
+    "asks": "",
+    "category": "R11",
+    "source": "P1",
+    "id": "V292"
+   },
+   {
+    "function": "phase-wire clip",
+    "question": "Does the phase-wire clip's rpm reading divide by MOTOR_POLES / 2, as the ESC telemetry's 'Rotation from the ESC' conversion does (dividing the DShot reply's electrical period by MOTOR_POLES / 2), or does it already report mechanical rpm?",
+    "why": "P2 cannot fix the phase-wire clip front end's required frequency range, or the firmware's rpm conversion, without knowing whether its one-pulse-per-electrical-cycle output must be divided by MOTOR_POLES / 2 (up to 21) to reach mechanical rpm, or whether it is already mechanical. IOBoard.md:529 states plainly that whether the magnetic pickup and the phase-wire clip readings use MOTOR_POLES is not stated in the tree; V218 (Research.md:914) asks this for the magnetic pickup only, and no V-number covers the phase-wire clip's case. Left open, the clip's required bandwidth is ambiguous between the 1,092 Hz mechanical fundamental and an electrical frequency up to about 21 times higher",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:529",
+    "for_quantity": "whether the phase-wire clip's reading is divided by MOTOR_POLES / 2 to give mechanical rpm",
+    "asks": "",
+    "category": "R11",
+    "source": "P1 critic, re-checked",
+    "id": "V293"
+   }
+  ],
+  "inventory": {
+   "R1": [
+    "Microcontroller",
+    "12 MHz crystal",
+    "Core regulator inductor",
+    "USB protection"
+   ],
+   "R2": [
+    "Link CAN controller",
+    "Link CAN transceiver",
+    "External CAN controller",
+    "External CAN transceiver",
+    "Link terminator (the 120 Ohm at the IO board's end: fitted, switchable or external)",
+    "CAN controller clock (the crystal, resonator or oscillator each controller takes)"
+   ],
+   "R3": [
+    "monostable",
+    "OR gate",
+    "reset supervisor",
+    "latch",
+    "latch clear control",
+    "trigger-path inverter",
+    "trigger input I_off buffer (Q9)",
+    "servo rail gate",
+    "onboard pack switch MOSFETs",
+    "onboard pack switch driver",
+    "external pack switch module",
+    "external module driver output",
+    "pack reverse-polarity protection",
+    "pack overvoltage and transient clamp",
+    "pack precharge",
+    "servo rail gate driver",
+    "timing network (C and R of the monostable)",
+    "inverter on an active-low output enable",
+    "heartbeat-node series resistors, links and fail-safe pull-downs"
+   ],
+   "R5": [
+    "reverse-polarity protection",
+    "overvoltage protection",
+    "inrush limiting",
+    "source selection",
+    "pack disconnect",
+    "3.3 V logic buck",
+    "5 V rail",
+    "display supply",
+    "receiver supply",
+    "encoder 12 V supply",
+    "2S pack connector",
+    "logic supply from the RP2354B's USB port",
+    "source-status signal",
+    "DC input brownout detection"
+   ],
+   "R6": [
+    "Servo supply",
+    "Servo supply inductor",
+    "Port supply switch",
+    "I/O expander",
+    "Port voltage ceiling",
+    "Servo supply temperature"
+   ],
+   "R7": [
+    "Pack charger",
+    "Cell balancing",
+    "Power path",
+    "Charger input limit",
+    "Pack cells",
+    "Pack overcurrent protection",
+    "Bench pack balance lead"
+   ],
+   "R8": [
+    "Motor monitor",
+    "Onboard shunt",
+    "Onboard shunt temperature sensor",
+    "External shunt",
+    "External shunt sense input",
+    "Port current monitor",
+    "Port shunt",
+    "Servo rail monitor",
+    "alert shift register",
+    "alert combining gate"
+   ],
+   "R9": [
+    "Cell monitor",
+    "cell monitor isolation barrier"
+   ],
+   "R10": [
+    "Converter for the accelerometer"
+   ],
+   "R11": [
+    "accelerometer",
+    "optical index",
+    "magnetic pickup",
+    "phase-wire clip",
+    "encoder input",
+    "encoder decode",
+    "rotation from ESC",
+    "rotation inputs",
+    "BENCH rpm source",
+    "servo measured position"
+   ]
+  }
+ },
+ "followUps": [
+  {
+   "role": "P0",
+   "host": "www.vishay.com",
+   "categories": [
+    "R3",
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P0",
+   "host": "www.isabellenhuette.com",
+   "categories": [
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P1-critic",
+   "category": "R2",
+   "value": {
+    "where": "hardware/docs/Research.md:722",
+    "quantity": "largest frequency error of the link CAN controller's clock (ppm), including temperature and ageing",
+    "value": "for research (owner, 2026-09-28) -- no ppm figure given; only the 1% two-node long-frame failure point is stated",
+    "marking": "owner",
+    "source": "Research.md:722, V26 under Raised by P1",
+    "refutation_tried": "Confirmed V26 is already in the Raised by P1 table with an owner answer ('for research'), so it is a question already raised, not re-raised here; it is the value P2 must derive before qualifying a crystal/oscillator part, and the owner has already directed that derivation to research rather than to itself.",
+    "question": -1
+   },
+   "reason": "marking not ruled on"
+  },
+  {
+   "role": "P1-critic",
+   "category": "R2",
+   "value": {
+    "where": "hardware/docs/Research.md:723",
+    "quantity": "largest frequency error of the external CAN controller's clock (ppm), including temperature and ageing",
+    "value": "for research (owner, 2026-09-28)",
+    "marking": "owner",
+    "source": "Research.md:723, V27 under Raised by P1",
+    "refutation_tried": "Same status as V26: already raised and answered 'for research'; not re-raised.",
+    "question": -1
+   },
+   "reason": "marking not ruled on"
+  },
+  {
+   "role": "P1-critic",
+   "category": "R6",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:460",
+    "quantity": "MCP9808 alert destination (interlock's latch vs. a latch of the rail's own)",
+    "value": "not stated",
+    "marking": "assumption",
+    "source": "IOBoard.md:460: \"Whether the alert sets the interlock's latch or a latch of the rail's own is not stated\"",
+    "refutation_tried": "grepped Research.md and IOBoard.md for \"interlock\" near R6 and for any F11-style decision covering the MCP9808's alert routing; none found",
+    "question": 6
+   },
+   "reason": "marking not ruled on"
+  },
+  {
+   "role": "P1-critic",
+   "category": "R6",
+   "value": {
+    "where": "hardware/docs/Research.md:313",
+    "quantity": "Already-selected R6 parts standing into round 2",
+    "value": "I/O expander: MCP23017T-E/SS (confirmed); Port supply switch (round 1, now refuted at the low end only): TPS259474LRPWR",
+    "marking": "sourced",
+    "source": "hardware/research/round1/selection.json; confirmed in FU-B3/020-P4-datasheet-R6.json",
+    "refutation_tried": "MCP23017T-E/SS's only round-1 refutation (an unread Microchip PCN link, treated as a possible end-of-life notice) did not stand once the adjudicator re-read Microchip's public PCN search API and found no end-of-life notice (FU-B3/022-adjudicator-R6.json); stands unchanged for this follow-up",
+    "question": -1
+   },
+   "reason": "marking not ruled on"
+  },
+  {
+   "role": "P1-critic",
+   "category": "R6",
+   "value": {
+    "where": "hardware/docs/Supply.md:145",
+    "quantity": "Servo supply inductor selection status",
+    "value": "SRP1265A-4R7M was confirmed by both FU-B3 verifiers (4.7 uH, 28 A saturation, 8.4 mOhm DC resistance max, -55 to 150 degC), but hardware/research/round1/selection.json carries no part for this function",
+    "marking": "sourced",
+    "source": "FU-B3/015-P4-stock-R6.json, FU-B3/020-P4-datasheet-R6.json; Supply.md:145 records the same discrepancy",
+    "refutation_tried": "checked the Round 2 Follow-ups table (Research.md) for a 'Servo supply inductor' row: none exists, so this function is not one of this task's listed gaps and no new question is raised for it here; it is still listed in functions because the R6 row and IOBoard.md name it",
+    "question": -1
+   },
+   "reason": "marking not ruled on"
+  },
+  {
+   "role": "P1",
+   "category": "R3",
+   "value": {
+    "where": "hardware/docs/Monostable.md:413-416",
+    "quantity": "off-state leakage, servo rail gate",
+    "value": "under 5 mA per rail",
+    "marking": "assumption",
+    "source": "pull request #167 / Monostable.md:413-416: '5 mA per rail as the placeholder until that idle current is measured'",
+    "refutation_tried": "the primary source itself calls this a placeholder, not a measured limit; V39 (Research.md:735) already asks the owner for the real idle current and is still 'for research' -- not re-raised here since it is already under Raised by P1",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R3",
+   "value": {
+    "where": "hardware/docs/Monostable.md:401-402",
+    "quantity": "servo rail current/voltage as the unmodified monostable spec (commit 23c82ca) states it",
+    "value": "up to 8.4 V, 4 to 8 A, no stated lower voltage bound",
+    "marking": "assumption",
+    "source": "Monostable.md:401-402, a page that predates the owner's 2026-09-30 decisions (prerequisite 4 notes the linked pages can predate later owner decisions)",
+    "refutation_tried": "superseded as a current requirement: the Round 2 section states that where it differs from a category row or the specification, the specification and that section hold (Research.md:537), and V55 (owner, 2026-09-30) replaces the lower bound and current figure; kept only as the stale seed figure, not something P2 should qualify a part against",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R3",
+   "value": {
+    "where": "hardware/docs/Research.md:743 (V47)",
+    "quantity": "reverse current the closed ESC pack switch carries back into the pack",
+    "value": "not answered; the reverse-polarity ideal-diode stage is expected to block it",
+    "marking": "assumption",
+    "source": "V47, Research.md:743, Answer column 'for research'",
+    "refutation_tried": "already raised as V47 and unanswered; not re-raised. Affects the onboard pack switch driver function, not the two follow-up gap functions (servo rail gate; onboard/external MOSFETs and clamp), so it does not block their search",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R3",
+   "value": {
+    "where": "hardware/docs/Research.md:739 (V43)",
+    "quantity": "reset supervisor delay after the 3.3 V rail crosses its threshold",
+    "value": "not stated; depends on the 3.3 V ramp time R5 selects",
+    "marking": "assumption",
+    "source": "V43, Research.md:739, Answer column 'for research'",
+    "refutation_tried": "already raised as V43; not re-raised. Not a value the two follow-up gap functions need",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R3",
+   "value": {
+    "where": "hardware/docs/Research.md:725 (V29)",
+    "quantity": "latch power-up state",
+    "value": "not stated",
+    "marking": "assumption",
+    "source": "V29, Research.md:725, Answer column 'for research'",
+    "refutation_tried": "already raised as V29; not re-raised. Not a value the two follow-up gap functions need",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R5",
+   "value": {
+    "where": "IOBoard.md:358",
+    "quantity": "pack full-charge voltage used for sizing (V, upper bound)",
+    "value": "8.4 V (4.2 V/cell)",
+    "marking": "assumption",
+    "source": "IOBoard.md:358",
+    "refutation_tried": "checked the SLS XTRON vendor-page description at IOBoard.md:395 -- it states 7.4 V nominal and no per-cell charge limit, so 4.2 V/cell is not vendor-confirmed; already raised as V92 ('for research'), not re-raised",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R5",
+   "value": {
+    "where": "IOBoard.md:359",
+    "quantity": "board draw from the pack at the 6.0 V floor, nominal (A)",
+    "value": "about 49.7 A",
+    "marking": "assumption",
+    "source": "IOBoard.md:359; Research.md:573",
+    "refutation_tried": "recomputed the four-converter subtotal from the page's own per-converter figures: 3 servo converters at 9.9 A each (IOBoard.md:359) = 29.7 A, plus the adjustable supply at 17.6 A (IOBoard.md:381) = 47.3 A, matching the stated four-converter figure exactly; adding the display's 1.4 A (IOBoard.md:395) and the second RP2354B's 0.2 A (IOBoard.md:120) gives 48.9 A, about 0.8 A short of the stated 49.7 A, with the remainder (the main RP2354B's and other unitemized logic current) not broken out anywhere in the tree; the underlying 90% pack-side efficiency is explicitly 'not stated' and remains open at V90/V105/V111 ('for research')",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R5",
+   "value": {
+    "where": "Research.md:573",
+    "quantity": "stated failure reasons of the pack disconnect candidates",
+    "value": "each candidate failed an open balance lead (V107), the reconnect condition (V93, V94) or the per-cell floor (V95)",
+    "marking": "assumption",
+    "source": "Research.md:573",
+    "refutation_tried": "read every P2, P3, rerank and P4 return for R5's pack disconnect across T3, FU-B1 and FU-B3 -- only one candidate was ever shortlisted, R5460N212AF-TR-FE, refuted in both FU-B1 (hardware/research/round1/FU-B1/032-P4-datasheet-R5.json) and FU-B3 specifically on the balance-lead-open check (V107); the same P4 return shows it passing the reconnect-condition (V93, V94) and per-cell-floor (V95) checks. No candidate's recorded failure is the reconnect condition or the per-cell floor; the claim is not supported by the primary files read for this task",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R6",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:380",
+    "quantity": "Servo supply heatsink basis for continuous-current rating",
+    "value": "the Adjustable supply's continuous current, qualified across its full 6-20 V in, 0.8-15 V out range at 50 degC ambient, is not known until a follow-up of R6 qualifies it",
+    "marking": "assumption",
+    "source": "IOBoard.md:380",
+    "refutation_tried": "this depends on the same TPS55285 heatsink thermal-resistance figure the Servo rail current gap needs (IOBoard.md:375, :377); no separate figure found for the Adjustable supply's own worst point",
+    "question": 4
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R7",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:359",
+    "quantity": "nominal board draw from the pack at the 6.0 V floor",
+    "value": "about 49.7 A with the display, the logic rails and the second RP2354B included; about 47.3 A from the four TPS55285 converters alone at an assumed 90 % efficiency",
+    "marking": "assumption",
+    "source": "IOBoard.md:359 (Pack path current): 'at the 6.0 V floor the four converters at 6.35 A draw about 47.3 A at an assumed 90 %, and the board about 49.7 A ... nominal figures'.",
+    "refutation_tried": "The page itself calls these 'nominal figures' with 'no upper bound' until the protection threshold is set (IOBoard.md:395). The 90 % efficiency from the pack is unverified (already raised as V140, Research.md:836, 'for research'); not re-raised here. Holds as the nominal, not maximum, draw this follow-up's threshold has to clear.",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R7",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:400",
+    "quantity": "charger efficiency and resulting charge current",
+    "value": "assumed 90 %: 13.5 W, about 1.6 A into a full pack at 8.4 V; a 2 A charger (BQ25887 reference figure) uses the whole 13.5 W above 6.75 V",
+    "marking": "assumption",
+    "source": "IOBoard.md:400 (Charge current): 'At an assumed 90 % that is 13.5 W ...'.",
+    "refutation_tried": "No source is given for 90 %; the same unverified figure as V139 (Research.md:835, 'for research'), already under Raised by P1 and not re-raised. The arithmetic (15 W x 0.9 = 13.5 W; 13.5 W / 8.4 V = 1.607 A) holds.",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R7",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:407",
+    "quantity": "charger's USB-C input connector identity",
+    "value": "not stated: whether it is the RP2354B's own USB port or a separate USB-C connector",
+    "marking": "assumption",
+    "source": "IOBoard.md:407 (Not known): 'Whether the charger's USB-C input is the RP2354B's USB port or a connector of its own: not stated (F8, R7, round 2)'.",
+    "refutation_tried": "Matches V148 (Research.md:844, 'for research'), already under Raised by P1; not re-raised here.",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R9",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:473",
+    "quantity": "cell count range on the balance lead",
+    "value": "1 to 16 cells, for the 16-cell pack of F15",
+    "marking": "owner",
+    "source": "F15 (owner, 2026-09-25): 16 cells, 67.2 V at 4.2 V a cell",
+    "refutation_tried": "F15's answer only gives the top of the range (16 cells); the lower bound of 1 is SET_PACK_CELLS's physical floor (shared/settings/settings.c:39-41) and is already a question under Raised by P1 (V181), so it is not re-raised here",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  }
+ ],
+ "missing": [],
+ "sequence": 18,
+ "output_sha256": "b17944028535d756d03a5dc843395953e013ec2009347fce58cc80f80b2ecd34",
+ "research_round": 2
+}

@@ -1,0 +1,102 @@
+{
+ "role": "P1-critic",
+ "category": "R1",
+ "label": "P1-critic-R1",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/Research.md:308",
+    "quantity": "R1 category scope and functions",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:308 names exactly these four functions for R1 (the part itself, 12 MHz crystal, core regulator inductor, USB protection), matching selection.json's R1 keys and IOBoard.md's own rows. Direct restatement of page text, correctly marked sourced."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/Research.md:569",
+    "quantity": "USB protection requirement (round 2 follow-up)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Line 569 (Follow-ups table, USB protection/R1 row) quotes word for word, citing V9, V12, IOBoard.md USB port and STATUS.md USB protection as the row itself does. The row's substance is the owner's 2026-09-30 relaxation, so 'owner' is the correct marking, consistent with how V9/V12's own relaxation clauses are marked."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/Research.md:705",
+    "quantity": "USB protection ESD immunity (IEC 61000-4-2 contact/air)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V9 at line 705 reads exactly as quoted: level 4 (±8 kV contact, ±15 kV air) with the 2026-09-30 relaxation. IEC 61000-4-2's own level-4 figures match. This is an owner answer, correctly marked owner."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/Research.md:706",
+    "quantity": "USB port VBUS voltage and current",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V10 at line 706 matches the quoted value exactly and is consistent with V13 (line 709) and IOBoard.md:398 (charger input up to 3 A). Correctly noted as not covered by the V9/V12-only relaxation of line 569, so it remains a hard gate. Owner answer, correctly marked owner."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/Research.md:707",
+    "quantity": "USB protection D+/D- added capacitance",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V11 at line 707 is verbatim 'for research (owner, 2026-09-28)', an owner answer directing research rather than a figure. Per the P1 agent-layout rule, a value marked for research does not block P2 and needs no further question. Correctly marked owner."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/Research.md:708",
+    "quantity": "Highest voltage on USB_DP/USB_DM (steady and ESD clamp)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V12 at line 708 matches exactly, including the 2026-09-30 relaxation. The refutation correctly flags that the dedicated USB_DP/USB_DM pins (pins 67/66) are not in the GPIO ratings table R1 checked, so 3.63 V has no independent datasheet pedigree for those pins beyond the owner's own figure; since it is given as an owner decision rather than claimed as independently derived, 'owner' is the right marking."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/Research.md:709",
+    "quantity": "USB connector type and lines covered",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V13 at line 709 matches exactly and agrees with IOBoard.md:148 (one USB device port) and IOBoard.md:398 (shared CC pins with F8). Owner answer, correctly marked owner."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/Research.md:703",
+    "quantity": "Operating ambient temperature range for R1 parts",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V7 at line 703 asks for the range 'the R1 parts' must be rated across (not the crystal alone), so it governs USB protection too, as P1 notes. Owner answer, correctly marked owner."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/IOBoard.md:148",
+    "quantity": "USB port state and protection status",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:148 (USB port row, under Microcontroller, flash and debug) reads exactly as quoted, matching STATUS.md's Open table and Control.md:184. Direct specification text, correctly marked sourced."
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/Control.md:160",
+    "quantity": "Round 1 USB protection search record",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Control.md:160 matches the quoted summary (5 lines, 3.63 V/IEC 61000-4-2 level 4 gate, OVP switches tripping up to 5.2 V, Type-C protectors with no D+/D- path, three passes with no survivor). Correctly marked sourced. Note: the refutation's cross-check to FU-A4/002-P2-R1.json undercounts the dropped-candidate list as '15 part families from Vishay, Texas Instruments, Renesas and Diodes Incorporated' -- the file actually lists 16 dropped entries, including three makers P1's refutation omits (Nexperia, onsemi, STMicroelectronics). This does not change the marking, since the quoted value is sourced correctly from Control.md:160 itself, but the supporting refutation detail is inaccurate."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/Control.md:184",
+    "quantity": "USB protection verification state",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Control.md:184 reads exactly 'R1: USB protection. No part; not verified.' Matches selection.json's R1 'USB protection' entry (part null, rank null, decision none). Correctly marked sourced."
+   }
+  ],
+  "question_verdicts": [],
+  "added": [],
+  "functions_missing": []
+ }
+}

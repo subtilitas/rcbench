@@ -1,0 +1,80 @@
+{
+ "role": "P1",
+ "category": "R11",
+ "label": "P1-R11",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "functions": [
+   "accelerometer",
+   "optical index",
+   "magnetic pickup",
+   "phase-wire clip",
+   "encoder input",
+   "encoder decode",
+   "rotation from ESC",
+   "rotation inputs",
+   "BENCH rpm source",
+   "servo measured position"
+  ],
+  "values": [
+   {
+    "where": "hardware/docs/Research.md:921",
+    "quantity": "whole vibration-chain delay-variation budget at 65,535 rpm (accelerometer + optical-index front end + converter together), V225",
+    "value": "1° phase error at the highest rpm, i.e. 2.543 µs of delay variation at 65,535 rpm (16.7 µs at 10,000 rpm)",
+    "marking": "owner",
+    "source": "hardware/docs/Research.md:921, V225 (owner, 2026-09-28)",
+    "refutation_tried": "Unit and arithmetic check: at 65,535 rpm (1,092.25 rev/s) the period is 915.65 µs; 1°/360 x 915.65 µs = 2.543 µs, matching the stated figure. At 10,000 rpm the period is 6,000 µs; 1°/360 x 6,000 µs = 16.67 µs, matching the stated 16.7 µs. Both follow correctly from the 1° figure and the rpm-to-period conversion; this total is an owner decision recorded with a date on the page, not an assumption. The owner's text leaves the three-way split (accelerometer, optical-index front end, converter) unstated beyond noting the converter's share is 'inside it'.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Sensing.md:118",
+    "quantity": "optical index's share of the delay-variation budget at 65,535 rpm (1,092 Hz)",
+    "value": "at most 1.244 µs (the optical index's share of V225's 2.543 µs whole-chain budget)",
+    "marking": "assumption",
+    "source": "hardware/docs/Research.md:586 (Follow-ups row, source cited there as 'V225; Sensing.md, Not known'); hardware/docs/Sensing.md:118 (Not known); hardware/research/round1/FU-C2/002-P2-R11.json lines 106, 184, 511 (the 3-way split: 1.244 µs each to the accelerometer and the optical index, 55 ns to the index comparator, 30 ps to the converter, attributed there to 'the owner's decision on V225 of 2026-09-29 carried in this follow-up task's items and not on the page')",
+    "refutation_tried": "Checked whether 1.244 µs follows from what V225 states on the page: V225's recorded owner answer (Research.md:921) gives only the whole-chain total, 2.543 µs at 65,535 rpm, and says the converter's share sits 'inside it', without dividing the budget among the accelerometer, the optical-index front end and the converter. The 1.244 µs figure requires an additional, unequal split (2.543 µs minus the converter's 30 ps and the index comparator's 55 ns, the remaining 2.488 µs then divided evenly between the accelerometer and the optical index) that round 1's P2 return attributes to an owner decision dated 2026-09-29 -- but that decision carries no V-number, is not listed under Raised by P1 or Decided on the research's output, and the same JSON that cites it says it is 'not on the page'. Per the task's own rule that a proposed answer is not an answer, this split is not confirmed on either page and is marked an assumption here. The total (2.543 µs) is sourced/owner; the specific 1.244 µs allocated to the optical index is not.",
+    "question": 0
+   },
+   {
+    "where": "hardware/docs/Research.md:664",
+    "quantity": "encoder highest count rate and signal form (F4)",
+    "value": "both forms, jumper-selected: 5 V single-ended up to 1 MHz, or RS-422 differential up to 5 MHz",
+    "marking": "owner",
+    "source": "hardware/docs/Research.md:664, F4 (owner, 2026-09-25); hardware/docs/IOBoard.md:484-485",
+    "refutation_tried": "Traced to F4's answer column, dated and attributed to the owner; IOBoard.md's Encoder signal and Encoder decode rows restate the same two figures (1 MHz, 5 MHz) with no numeric drift. Nothing in the row or the cited lines treats this as a P1 assumption.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:675",
+    "quantity": "phase-wire clip's rated pack voltage (F15)",
+    "value": "67.2 V (16 cells x 4.2 V)",
+    "marking": "owner",
+    "source": "hardware/docs/Research.md:675, F15 (owner, 2026-09-25); hardware/docs/IOBoard.md:482",
+    "refutation_tried": "16 x 4.2 V = 67.2 V, arithmetic checks out; the figure is dated and attributed to the owner on the page, and IOBoard.md's Phase-wire clip row cites F15 for the same number with no discrepancy.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Sensing.md:76",
+    "quantity": "encoder decode resource allocation at 5 MHz",
+    "value": "RP2354B, 2 PIO (programmable input/output) state machines, no added part; no external decoder from an allowed maker is in the parts database",
+    "marking": "sourced",
+    "source": "hardware/docs/Sensing.md:76, R11; hardware/docs/IOBoard.md:485 (R11, P5 reserves the resources); hardware/docs/Research.md:318 (R11 row: 'R11 reports how the encoder is decoded at 5 MHz ... and P5 reserves those resources')",
+    "refutation_tried": "This follows from R11's own research return, not from an owner statement or an unstated assumption, so it is marked sourced rather than owner or assumption. It is listed as unverified, not refuted: Sensing.md:135 states 'R11: figure P2 report: encoder decoding, not confirmed in FU-C2; not verified', and Sensing.md:36 and the row above both note 'the decoding figures are not verified'. No decode program is in the tree to check the figure against. This does not block P2 (no part is being sourced for the decoder; the RP2354B is already a held fixed input) so it is not raised as a new question.",
+    "question": -1
+   }
+  ],
+  "questions": [
+   {
+    "function": "optical index",
+    "question": "Delay variation at most 1.244 µs at 1,092 Hz (65,535 rpm): the optical index's share of V225. None of the 9 reflective sensors round 1 searched meets it; they state 10 to 70 µs. R10 is read for its share of the same budget",
+    "why": "P2 cannot shortlist or rank an optical-index sensor for R11 without knowing whether the 1.244 µs share stands, is reapportioned among the chain's legs (accelerometer, optical-index front end, converter), or is waived for this function; every reflective sensor R11 could find (VCNT2030, VCNT2020, VCNT2025X01, QRD1114, QRE1113GR, RPR-220, TCND5000, TCRT5000, TCRT5000L) states a 10 to 70 µs response time, so the function is left without a part until this is resolved",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Sensing.md:118",
+    "for_quantity": "optical index's share of the delay-variation budget at 65,535 rpm (1,092 Hz)",
+    "asks": ""
+   }
+  ]
+ }
+}

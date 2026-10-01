@@ -1,0 +1,180 @@
+{
+ "role": "P1",
+ "category": "R8",
+ "label": "P1-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "functions": [
+   "Motor monitor",
+   "Onboard shunt",
+   "Onboard shunt temperature sensor",
+   "External shunt",
+   "External shunt sense input",
+   "Port current monitor",
+   "Port shunt",
+   "Servo rail monitor",
+   "alert shift register",
+   "alert combining gate"
+  ],
+  "values": [
+   {
+    "where": "hardware/docs/Research.md:315",
+    "quantity": "R8 category scope (functions named)",
+    "value": "the motor monitor or monitors (F1); the onboard 150 A shunt resistor (F2); the external shunt and its sense-lead input; the temperature sensor at the onboard shunt; the 20 output ports' monitors and shunts (INA3221, 7 parts, 10 mΩ shunt a port)",
+    "marking": "sourced",
+    "source": "hardware/docs/Research.md:315",
+    "refutation_tried": "Cross-checked against hardware/research/round1/selection.json's R8 entry (8 functions: Motor monitor, Onboard shunt, Onboard shunt temperature sensor, External shunt, External shunt sense input, Port current monitor, Port shunt, Servo rail monitor) and against every IOBoard.md line tagged (R8); all 8 inventory functions are named or implied in this row, none extra.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:452",
+    "quantity": "motor monitor part and electrical rating",
+    "value": "INA228AIDGSR fixed by the owner (2026-09-30); 20-bit, 85 V bus-input rating, ±163.84 mV or ±40.96 mV shunt full scale, 312.5 nV or 78.125 nV LSB",
+    "marking": "owner",
+    "source": "hardware/docs/IOBoard.md:452 (owner, 2026-09-24 and 2026-09-30)",
+    "refutation_tried": "Recomputed the margin the line states: 85 V - 67.2 V (16 cells x 4.2 V, F15) = 17.8 V, matches exactly.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:458",
+    "quantity": "onboard shunt value and dissipation at 150 A",
+    "value": "BVR-Z-R0002-1.0 (100 µΩ); at 150 A continuous: (150 A)² × 100 µΩ = 2.25 W, 150 A × 100 µΩ = 15 mV drop",
+    "marking": "sourced",
+    "source": "hardware/docs/IOBoard.md:458",
+    "refutation_tried": "Recomputed: 150²=22,500; 22,500 × 0.0001 Ω = 2.25 W (matches); 150 × 0.0001 = 0.015 V = 15 mV (matches); 15 mV is inside the INA228's stated ±40.96 mV minimum range.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:462",
+    "quantity": "external shunt class and resistance range",
+    "value": "WSBE8518L1000JKA2, busbar type, 50 to 100 µΩ, 4.5 to 9 W at 300 A",
+    "marking": "sourced",
+    "source": "hardware/docs/IOBoard.md:462",
+    "refutation_tried": "Recomputed: at 100 µΩ, (300 A)² × 100 µΩ = 9 W (matches top of range); at 50 µΩ, 90,000 × 0.00005 Ω = 4.5 W (matches bottom of range). Both reproduce exactly.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "alert line sharing topology (lines and node count)",
+    "value": "critical outputs (7, one per INA3221) on one shared line, warning outputs (7) on a second shared line, both INA228 ALERTs (2) on a third shared line: 3 shared lines against 16 individually-wired outputs",
+    "marking": "owner",
+    "source": "hardware/docs/IOBoard.md:113 (owner, 2026-09-30)",
+    "refutation_tried": "7 INA3221 parts each contribute 1 critical + 1 warning output = 7+7=14; 2 INA228 each contribute 1 ALERT = 2; 14+2=16, matching the stated '16 individual alert outputs' and 'so 6 pins with the 3 shared lines, against 16' (6 = 3 register pins + 3 shared interrupt lines) exactly.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "alert shift register architecture",
+    "value": "two 8-bit parallel-in, serial-out shift registers cascaded, latching all 16 alert nodes on one load pulse, read out over 3 main-coprocessor pins (load, clock, data)",
+    "marking": "owner",
+    "source": "hardware/docs/IOBoard.md:113 (owner, 2026-09-30)",
+    "refutation_tried": "2 x 8-bit = 16 bits, matching the 16-node count derived above; a load/clock/data interface is the minimum 3-pin PISO scheme and is consistent with the '6 pins' figure in the same paragraph.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "alert shift register part selection status",
+    "value": "the shift register part is not selected; no PISO family or manufacturer is named",
+    "marking": "sourced",
+    "source": "hardware/docs/IOBoard.md:113: \"The shift register part is not selected.\"",
+    "refutation_tried": "Checked hardware/research/round1/selection.json: the R8 entry has no 'alert shift register' key (the function is new to round 2, per Research.md's Follow-ups table), confirming no candidate was ever carried forward.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "alert line pull-up / shift-register and CD4082 logic voltage (V)",
+    "value": "not stated for these two new parts; 3.3 V is the only voltage domain the tree names near this circuit (the monitors sit on the measurement coprocessor's 3.3 V I²C buses and the main coprocessor's logic rail is 3.3 V)",
+    "marking": "assumption",
+    "source": "inferred from hardware/docs/IOBoard.md:371 (Logic rail, 3.3 V) and hardware/docs/IOBoard.md:387 (port monitors on the measurement coprocessor's I²C buses); IOBoard.md:113 itself states no voltage for the shift register or CD4082",
+    "refutation_tried": "Searched IOBoard.md and Research.md's R8 row for a stated supply or pull-up voltage for the shift register or the CD4082: none found. Checked whether another voltage domain (5 V rail, display bus) reaches this circuit: no line places either part off the 3.3 V domain, but the absence of a stated figure means this is still an assumption, not a sourced requirement.",
+    "question": 0
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "CD4082 combining-gate topology and count",
+    "value": "3 CD4082 dual 4-input AND gates a board: one combines the 7 critical nodes (cascaded within the package, 4+3 real inputs), one combines the 7 warning nodes the same way, and one gate of a third combines the 2 ALERT nodes, unused inputs tied high",
+    "marking": "owner",
+    "source": "hardware/docs/IOBoard.md:113 (owner, 2026-09-30)",
+    "refutation_tried": "A CD4082 has two 4-input AND gates; feeding one gate's output into a spare input of the second gate ANDs 4+3=7 real inputs to one output, matching the 7 critical and 7 warning node counts exactly; the 2 ALERT nodes fit one 4-input gate directly (2 tied high), leaving the package's second gate and the first cascade's spare gate unused, consistent with '3 CD4082 a board with the unused inputs tied high'.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "CD4082 part number, stock and propagation delay at 3.3 V",
+    "value": "not yet found: no MPN, stock figure or speed-at-3.3V datasheet figure is recorded",
+    "marking": "sourced",
+    "source": "hardware/docs/IOBoard.md:113 (State column): \"the CD4082's part number, stock and speed at 3.3 V: a follow-up of R8\"",
+    "refutation_tried": "Checked selection.json: no 'alert combining gate' key exists for R8 (function new to round 2). This is a P2 search task (allowlisted CD4082 variants, e.g. Texas Instruments or onsemi), not an owner decision, so it is not raised as a question.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:389; hardware/docs/IOBoard.md:390",
+    "quantity": "existing servo current alert thresholds (A, ms)",
+    "value": "INA3221 critical alert at 3.0 A per servo (checked every sample); warning/stall alert at 1.0 A for 400 ms",
+    "marking": "owner",
+    "source": "hardware/docs/IOBoard.md:389-390, citing docs/Servo.md:35-36 and shared/servo/servo_limit.c:60-62",
+    "refutation_tried": "Both figures sit below the port switch's 3.96 to 4.84 A hardware breaker floor (value below), so the software alert path is expected to act before the hardware breaker on a genuine persistent overcurrent; no numeric conflict found between the three figures.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Supply.md:27",
+    "quantity": "port supply switch hardware breaker trip range and response time",
+    "value": "TPS259474LRPWR circuit breaker trips at 3.96 to 4.84 A (ILIM at RILM=750 Ω); latches off after a minimal ITIMER blanking (ITIMER pin open), turn-off time tCB about 2 µs, re-arms only when EN is cycled or VIN is cycled",
+    "marking": "sourced",
+    "source": "TI datasheet SLVSFC9C sections 6.5, 6.6, 7.3.5.2 and Table 7-3, read 2026-09-29T12:47:01Z (hardware/research/round1/FU-B1/023-P4-datasheet-R6.json, P4-confirmed); hardware/docs/Supply.md:27",
+    "refutation_tried": "Checked the datasheet equation cited, RILM = 3334/ILIM: at RILM=750 Ω, ILIM≈4.45 A nominal, inside the stated 3.960-4.840 A band. Confirmed this part (TPS259474LRPWR, R6's port supply switch) is a different device from the R8 current monitors, so its figures only bound R8's blanking-time decision; they do not set an R8 part's own threshold.",
+    "question": -1
+   },
+   {
+    "where": "hardware/research/round1/FU-B3/021-P4-datasheet-R8.json",
+    "quantity": "INA3221 per-channel and full-cycle conversion time (ms)",
+    "value": "1.1 ms typical / 1.21 ms maximum per channel at CT bit=100; 3.63 ms maximum to cycle all 3 channels of one INA3221",
+    "marking": "sourced",
+    "source": "TI INA3221 datasheet SBOS576C section 5.5, read 2026-09-29T17:20:12Z (hardware/research/round1/FU-B3/021-P4-datasheet-R8.json, P4-confirmed)",
+    "refutation_tried": "Recomputed 1.21 ms × 3 = 3.63 ms, matches exactly. Noted CT bit=100 is the configuration round 1's P2/P4 assumed, not independently re-read in this task; if round 2 changes the INA3221's conversion-time register setting, this figure would need rereading.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "whether the current/temperature monitors latch their ALERT outputs",
+    "value": "not read here",
+    "marking": "assumption",
+    "source": "hardware/docs/IOBoard.md:113: \"Whether the monitors latch their alert outputs is not read here.\"",
+    "refutation_tried": "Checked whether the board-wide 'every stop latches' rule already answers this by extension (it is applied explicitly to the MCP9808 temperature trip, IOBoard.md:460, and to the TPS259474LRPWR port breaker, Supply.md:27, both different parts). The same paragraph that states the general case also explicitly says the monitors' own latching 'is not read here', so the general rule is not treated as deciding it for the INA3221/INA228 ALERT outputs.",
+    "question": 1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:113",
+    "quantity": "critical alert line blanking time (ms)",
+    "value": "not stated",
+    "marking": "assumption",
+    "source": "hardware/docs/IOBoard.md:113: \"The main coprocessor acts on the critical line only when it stays low longer than a blanking time... The blanking time is not stated.\"",
+    "refutation_tried": "Checked the two bounds the gap names: the port switch's near-instant 3.96-4.84 A hardware breaker (about 2 µs turn-off, value above) and the INA3221's 3.63 ms three-channel conversion cycle (value above). A blanking time must exceed 3.63 ms to see at least one full conversion of every channel, while staying well under the port breaker's response so the two layers do not race; no number between them is stated anywhere in the tree.",
+    "question": 1
+   }
+  ],
+  "questions": [
+   {
+    "function": "alert shift register; alert combining gate",
+    "question": "What logic supply voltage, in V, must the alert shift register (two cascaded 8-bit parallel-in serial-out parts) and the CD4082 alert-combining gates run at, and what is the pull-up voltage, in V, on each alert node feeding the shift register's parallel inputs?",
+    "why": "P2 cannot select a specific shift-register or CD4082 part number without a stated logic-voltage/input-threshold requirement; the tree only lets this be inferred from the board's general 3.3 V logic rail, not stated for this circuit directly.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:113",
+    "for_quantity": "alert line pull-up / shift-register and CD4082 logic voltage (V)",
+    "asks": ""
+   },
+   {
+    "function": "Port current monitor; Motor monitor",
+    "question": "The alert thresholds, whether the monitors latch their alert outputs, and the critical line's blanking time, against the port switch's 3.96 to 4.84 A breaker and the INA3221's conversion time. The INA228 stays fixed (owner, 2026-09-30)",
+    "why": "P5 cannot budget the motor and servo overcurrent abort paths, and P2 cannot qualify the alert shift register's and CD4082's timing margins, without the blanking time and latch mode the owner has not yet set; IOBoard.md states both as not read / not stated.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:113",
+    "for_quantity": "ALERT output latch mode (latching or auto-clearing); critical line blanking time (ms); alert thresholds (A)",
+    "asks": ""
+   }
+  ]
+ }
+}

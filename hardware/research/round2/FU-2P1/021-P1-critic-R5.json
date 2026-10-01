@@ -1,0 +1,230 @@
+{
+ "role": "P1-critic",
+ "category": "R5",
+ "label": "P1-critic-R5",
+ "attempt": 0,
+ "data": {
+  "category": "R5",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "IOBoard.md:355",
+    "quantity": "DC input operating voltage range (V)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "12 to 20 V is the owner's decision (IOBoard.md:355, Research.md owner table) and is consistent with the TPS55285's 2.4-22 V rating and the found 20.0-22.0 V OV band (V84); no contradiction."
+   },
+   {
+    "index": 1,
+    "where": "IOBoard.md:362",
+    "quantity": "pack discharge floor (V per cell)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "3.0 V/cell is an explicit, dated owner decision (F9; IOBoard.md:362), reaffirmed 2026-09-30; the vendor page states no floor of its own, so there is nothing to contradict it."
+   },
+   {
+    "index": 2,
+    "where": "IOBoard.md:358",
+    "quantity": "pack full-charge voltage used for sizing (V, upper bound)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "8.4 V (4.2 V/cell) is not confirmed by the SLS XTRON vendor page (7.4 V nominal only, IOBoard.md:395); it is carried forward from the design assumption and is exactly V92 ('for research'), already raised and not re-raised correctly."
+   },
+   {
+    "index": 3,
+    "where": "IOBoard.md:359",
+    "quantity": "board draw from the pack at the 6.0 V floor, nominal (A)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Independently re-summed the four-converter figure (29.7 A + 17.6 A = 47.3 A, matches IOBoard.md:359 exactly) and the display/second-RP2354B additions (48.9 A), confirming a real, unexplained ~0.8 A gap to 49.7 A, with the 90% pack-side efficiency still open at V90/V105/V111; P1's refutation is accurate."
+   },
+   {
+    "index": 4,
+    "where": "Research.md:573",
+    "quantity": "round 1's pack-path sizing current (A)",
+    "verdict": "wrong",
+    "correct_marking": "sourced",
+    "reason": "P1 checked only the raw P2 answers to V90 (12.5 A in T3, 12.7 A in FU-B1/FU-B3) and concluded 12.23 A is unsupported. It is in fact the figure round 1's P5 cross-category check computed and its critic upheld: T5/002-P5.json gives '12.23 A ... recomputed from the R5/R6-verified converter efficiencies: 10.02 A for the servo supply + 1.30 A for the display + ...', and T5/004-P5-critic.json explicitly holds that this reproduces R7's own figure (FU-B3/004-P2-R7.json V140/V141/V143: 10.02+1.30+0.91=12.23 A) exactly. Research.md:573's '(V90)' citation is a loose label for this P5 recomputation, not evidence that the number is unsourced; P1 missed the T5 files."
+   },
+   {
+    "index": 5,
+    "where": "Research.md:573",
+    "quantity": "stated failure reasons of the pack disconnect candidates",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Re-read T3/006, FU-B1/032-P4-datasheet-R5.json and FU-B3's shortlist: R5460N212AF-TR-FE is the only candidate ever shortlisted, and its sole recorded failure (FU-B1/032-P4-datasheet-R5.json) is the balance-lead-open check (V107, 'agrees': false); the reconnect-condition (V93/V94) and per-cell-floor (V95) checks both show 'agrees': true, 'passes': true in the same file. Research.md:573's claim of three possible failure reasons is not supported; P1's finding is correct."
+   },
+   {
+    "index": 6,
+    "where": "IOBoard.md:364",
+    "quantity": "reverse-polarity protection, non-destructive requirement",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Matches the dated owner decision at IOBoard.md:364 and Research.md:574 with no contradiction found."
+   },
+   {
+    "index": 7,
+    "where": "IOBoard.md:364",
+    "quantity": "verification status of LM74800QDRRRQ1 for reverse-polarity protection",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Confirmed directly: FU-B3/018-P4-datasheet-R5.json and 014-P4-stock-R5.json verify only {source selection, encoder 12 V supply, display supply, 3.3 V logic buck, 5 V rail} for R5 -- 'reverse-polarity protection' is absent from both, even though FU-B3/010-rerank-R5.json's 'verify' list queued it and its reasoning text literally says 'the same part serves reverse polarity, inrush and source selection'."
+   },
+   {
+    "index": 8,
+    "where": "IOBoard.md:365",
+    "quantity": "overvoltage protection verification status",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "selection.json's 'overvoltage protection' entry has part: null; FU-B3's rerank ranks LM74800QDRRRQ1 first for this function but neither FU-B3 P4 file verifies it. The V84 threshold itself is a separate, already-found figure (confirmed by T3/FU-B1/FU-B3 P4 'found V84'), so P1 correctly does not re-raise it."
+   },
+   {
+    "index": 9,
+    "where": "IOBoard.md:367",
+    "quantity": "inrush limiting verification status",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Same direct check as index 7: 'inrush limiting' is absent from both FU-B3 P4 returns' verified-function lists, confirming not requalified/not verified."
+   },
+   {
+    "index": 10,
+    "where": "IOBoard.md:366",
+    "quantity": "DC input brownout detection trip/reset threshold (V)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V88 (hardware/research/round1/T3/006-P2-R5.json) answers a different requirement -- the source-selection switchover gate (10.1 V falling / 11.0 V rising) -- not a stated brownout-detection threshold for the coprocessor; no V-number or spec line gives one for this new function. Correctly raised as question 1."
+   },
+   {
+    "index": 11,
+    "where": "IOBoard.md:366",
+    "quantity": "DC input brownout detection qualifying/debounce time (ms)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "No timing figure for this detection exists in IOBoard.md or Research.md; the monostable's 155-185 ms window is a different, unrelated timer. Correctly raised as question 2."
+   },
+   {
+    "index": 12,
+    "where": "IOBoard.md:366",
+    "quantity": "source-status signal form (digital DC-input-present vs analogue DC input voltage) and sharing with brownout detection",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:366 and :377 genuinely give inconsistent phrasings ('pin budget' with an RP2354B input or expander pin, vs 'GPIO budget' only) and :366 states outright that sharing with brownout detection is not stated. Correctly raised as question 0."
+   },
+   {
+    "index": 13,
+    "where": "IOBoard.md:368",
+    "quantity": "display supply routing",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Matches the dated owner decision (IOBoard.md:368, 2026-09-24) and is consistent with Research.md:312."
+   },
+   {
+    "index": 14,
+    "where": "IOBoard.md:368",
+    "quantity": "display supply part",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "TPS259474ARPWR is confirmed in both FU-B3/018-P4-datasheet-R5.json and 014-P4-stock-R5.json, matching selection.json."
+   },
+   {
+    "index": 15,
+    "where": "IOBoard.md:371",
+    "quantity": "3.3 V logic buck part",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "LMQ66430MC3RXBRQ1 is confirmed in FU-B3/018-P4-datasheet-R5.json with every check passing."
+   },
+   {
+    "index": 16,
+    "where": "IOBoard.md:372",
+    "quantity": "5 V rail part",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "TPS62933DRLR is confirmed in FU-B3's P4 datasheet and stock returns."
+   },
+   {
+    "index": 17,
+    "where": "IOBoard.md:372",
+    "quantity": "5 V rail loads said to be unquantified (load-cell excitation, encoder 5 V)",
+    "verdict": "wrong",
+    "correct_marking": "sourced",
+    "reason": "FU-B3/002-P2-R5.json's own 'output current and rating needed' report entry states plainly: 'The encoder's 5 V comes from the encoder converter in its 5 V position and the load-cell excitation from R13's own regulator (V254), so neither is on the 5 V rail' -- the 5 V rail's sizing is display-only (2.5 A with V99's margin). IOBoard.md:372's framing of these as unquantified 5 V-rail loads is stale/incorrect, not merely an unstated figure: the loads are not on this rail at all, and the encoder's own current (V102) is itself found (see index 19)."
+   },
+   {
+    "index": 18,
+    "where": "IOBoard.md:424",
+    "quantity": "encoder 12 V supply part",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "TPS55288RPMR is confirmed in both FU-B3/018-P4-datasheet-R5.json and 014-P4-stock-R5.json."
+   },
+   {
+    "index": 19,
+    "where": "IOBoard.md:424",
+    "quantity": "encoder's highest supply current (mA)",
+    "verdict": "wrong",
+    "correct_marking": "sourced",
+    "reason": "P1's refutation claims FU-B3/002-P2-R5.json found V108 'but not V102 itself'. This is false: that exact file's found_values list contains '\"question_id\": \"V102\", \"value\": \"Steady: 100 mA at 12 V and 160 mA at 5 V. At power-on: about 9 A for about 0.3 ms ...\"', and FU-B3/018-P4-datasheet-R5.json records 'found V102': verdict 'confirmed'. IOBoard.md:424's 'not stated' (and T5/002-P5.json's and its critic's repeated claim that V102 'was not found in the returns read') is contradicted by the primary FU-B3 files; P1 repeated the same stale claim instead of re-deriving it."
+   },
+   {
+    "index": 20,
+    "where": "IOBoard.md:317",
+    "quantity": "whether the IO board powers a receiver, and at what voltage/current",
+    "verdict": "wrong",
+    "correct_marking": "sourced",
+    "reason": "V104 was found ('No' -- the IO board does not power the receiver; every receiver bus is a signal wire plus ground, docs/Receivers.md:15-16,:29) in T3/006-P2-R5.json and reconfirmed, unchanged, in FU-B3/002-P2-R5.json; FU-B3/018-P4-datasheet-R5.json records 'found V104': verdict 'confirmed'. IOBoard.md:317's 'not stated in the tree' is stale; the question is answered and the 'receiver supply' function needs no part."
+   },
+   {
+    "index": 21,
+    "where": "IOBoard.md:410",
+    "quantity": "2S pack mating connectors (XT60 socket, XH balance connector)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Matches the Round 2 'Rules of stage 1' rule that a connector function is returned without candidates and left to stage 2; correctly needs no new question in this stage-1 follow-up."
+   },
+   {
+    "index": 22,
+    "where": "IOBoard.md:421",
+    "quantity": "whether the RP2354B's USB port powers board logic with neither DC input nor pack present",
+    "verdict": "wrong",
+    "correct_marking": "sourced",
+    "reason": "V91 was re-examined in FU-B3 and changed to 'Yes, through R7's charger power path; this replaces the \"No\" of FU-B1' (FU-B3/002-P2-R5.json): with neither the DC input nor the pack present, the 3.3 V rail, the 5 V rail, the display and the encoder supply all run from USB-C through R7's BQ25713RSNR NVDC path. FU-B3/018-P4-datasheet-R5.json records 'found V91': verdict 'confirmed'. IOBoard.md:421's 'not stated' is stale; P1 treated V91 as still open ('for research') without checking that FU-B3 superseded and confirmed it."
+   },
+   {
+    "index": 23,
+    "where": "Research.md:312",
+    "quantity": "3.3 V rail tolerance at the monostable",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Confirmed against FU-B3/002-P2-R5.json's 3.3 V tolerance budget entry: LMQ66430MC3RXBRQ1 holds 3.237-3.353 V inside the required 3.201-3.399 V band."
+   },
+   {
+    "index": 24,
+    "where": "Research.md:312",
+    "quantity": "lowest voltage the display takes at the link cable end",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V79's found value (4.5 V, the TJA1051T/3's VCC minimum) in T3/006-P2-R5.json is internally consistent with its cited Waveshare schematic and NXP datasheet; no contradiction found."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:366 and :377 give inconsistent phrasings of the source-status signal's budget ('pin budget', implying an ADC-capable pin, vs 'GPIO budget', digital-only) and :366 explicitly states sharing with brownout detection is undecided; P2 cannot size the circuit or the pin budget without this."
+   },
+   {
+    "index": 1,
+    "verdict": "confirmed",
+    "reason": "No V-number or spec line gives a trip/reset threshold for this new function; V88 answers the distinct source-selection switchover question (10.1 V falling/11.0 V rising). P2 cannot qualify a part without a threshold."
+   },
+   {
+    "index": 2,
+    "verdict": "confirmed",
+    "reason": "No qualifying/debounce time for this new function exists anywhere in IOBoard.md or Research.md; the monostable's 155-185 ms window is for a different signal. P2 cannot size the timing without it."
+   }
+  ],
+  "added": [],
+  "functions_missing": []
+ }
+}

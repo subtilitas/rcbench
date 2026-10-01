@@ -1,0 +1,55 @@
+{
+ "role": "P1-critic",
+ "category": "R10",
+ "label": "P1-critic-R10",
+ "attempt": 0,
+ "data": {
+  "category": "R10",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/Research.md:921",
+    "quantity": "whole-chain delay-variation budget (V225): phase error at the highest rpm, expressed in µs at 65,535 rpm and at 10,000 rpm",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:921 is V225's row, an explicit '(owner, 2026-09-28)' answer, not a datasheet-derived figure. Recomputation confirms the arithmetic: 65,535 rpm = 1,092.25 Hz, period 915.5 µs, 1°/360 = 2.543 µs; 10,000 rpm = 166.67 Hz, period 6,000 µs, 1°/360 = 16.67 µs. 'owner' is the correct category."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/Sensing.md:118",
+    "quantity": "optical index's share of the V225 delay-variation budget, at 1,092 Hz (65,535 rpm)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Sensing.md:118 (the R11 'Not known' item) states this exact figure in connection with the optical index's search failure, and line 29 states the parallel 1.244 µs share for the accelerometer; both are committed-page text, not a fresh derivation by this task. The cited derivation in FU-C2's 006-P4-datasheet-R11.json recomputes to (2.5432-0.055-0.00003)/2=1.24409 µs, rounding to 1.244 µs, confirmed. Even though the underlying 3-way split was round 1's own working method rather than an owner decision, the resulting number is written on a committed page, so 'sourced' (not 'assumption') is correct for a value already in Sensing.md."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/Research.md:921",
+    "quantity": "converter's (R10's) own share of the whole-chain delay-variation budget (V225), in µs at 65,535 rpm and at 10,000 rpm",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Checked IOBoard.md:491 (Converter for the accelerometer), Research.md:317 (R10 row, 'none' under concerns), Research.md:976 (Q4's 'Reported by' column, which explicitly tasked R10 with reporting 'whether each conversion can be triggered or timestamped on the index pulse's timebase, and its worst-case latency jitter' -- the Decision column only names the part, never answers this), and Sensing.md:28,60-65,109: none states a numeric share for the converter alone. IOBoard.md's newer 'Two coprocessors' section (Measurement coprocessor, Index pulse and Timebase rows, owner 2026-09-30) -- which P1 did not cite -- clarifies that the accelerometer ADC and the index pulse are sampled on the measurement coprocessor's own clock rather than the ADC being asynchronously triggered by the pulse's edge, but it still gives no µs figure for R10's own contribution. 'not stated on any committed page' remains true, so 'assumption' is correct."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "This is the single material figure P2 needs and round 1 left it open: Q4's own 'Reported by' column (Research.md:976) asked R10 to report the triggering mechanism and worst-case latency jitter, and this was never answered beyond naming the chosen part (ADCS7476AIMFX/NOPB). The question is correctly scoped to the Converter for the accelerometer function, cites the right sources (Research.md:921, Sensing.md:109), and correctly identifies that round 1's 1.244 µs/1.244 µs split (FU-C2) assumed, rather than confirmed, a 30 ps-only converter share. IOBoard.md's newer Index pulse/Timebase rows (owner, 2026-09-30) should additionally inform the owner's answer, since they establish the ADC is sampled on a shared clock rather than edge-triggered, but they do not supply the missing number, so the question still needs to reach the owner as posed."
+   }
+  ],
+  "added": [
+   {
+    "function": "Converter for the accelerometer",
+    "question": "The ADCS7476AIMFX/NOPB's conversion starts on a chip-select edge over 1 of the RP2354B's 2 SPI controllers, shared with the CAN controllers and the load-cell ADC (Sensing.md:109), and the measurement coprocessor now samples the accelerometer ADC and the index pulse on its own clock as one shared timebase (IOBoard.md, Index pulse and Timebase rows under Two coprocessors, owner 2026-09-30). What worst-case delay variation, in µs at 65,535 rpm and at 10,000 rpm, do SPI-bus arbitration (contention with the CAN controllers and the load-cell ADC) and the measurement coprocessor's own clock/timer resolution add on top of the ADCS7476's 30 ps aperture jitter, as R10's complete own share of the V225 budget?",
+    "why": "P2 cannot qualify the Converter for the accelerometer function against V225 from the aperture jitter alone: the ADC's conversion is firmware-triggered over a bus it shares with other devices, and that bus and clock path can add jitter no datasheet states, which the newer owner decision on the shared timebase (2026-09-30) makes newly relevant and which P1's return did not cite or fold into its question.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Research.md:921",
+    "for_quantity": "converter's (R10's) own share of the whole-chain delay-variation budget (V225), in µs at 65,535 rpm and at 10,000 rpm",
+    "asks": ""
+   }
+  ],
+  "functions_missing": []
+ }
+}

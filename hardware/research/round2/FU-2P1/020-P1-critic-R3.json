@@ -1,0 +1,329 @@
+{
+ "role": "P1-critic",
+ "category": "R3",
+ "label": "P1-critic-R3",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/IOBoard.md:218",
+    "quantity": "servo rail gate conduction range, each of 3 servo rails",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:218 gives 'up to 8.4 V' for the 3 rails and STATUS.md:81 ('Servo path from 0.8 V') plus V55's owner answer (2026-09-30, 'the servo rails work down to it') confirm the 0.8 V floor applies to the 3 rails too; correctly marked owner."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/IOBoard.md:218",
+    "quantity": "servo rail gate conduction range, adjustable supply output",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:218 states '0.8 V to 15 V, up to 6.35 A; owner, 2026-09-30' verbatim; Power.md:45 repeats 0.8 to 15 V. Correctly owner."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/Monostable.md:413-416",
+    "quantity": "off-state leakage, servo rail gate",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:413-416 verbatim calls 5 mA/rail 'the placeholder until that idle current is measured'; V39 remains 'for research', so assumption is correct and it is rightly not re-raised."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/Monostable.md:410",
+    "quantity": "time to open after the enable node falls, servo and pack gates alike",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Line 410 reads verbatim 'The switch is open within 5 ms of the enable node falling.' Correctly sourced."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/Monostable.md:406-409",
+    "quantity": "fail-open condition for every rail switch",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Lines 406-410 match: undriven control input or absent 3.3 V supply opens an enhancement-mode MOSFET or NO relay, but not a depletion-mode device or NC contact. Correctly sourced."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/Monostable.md:401-402",
+    "quantity": "servo rail current/voltage as the unmodified monostable spec (commit 23c82ca) states it",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Lines 401-402 verbatim give 'up to 8.4 V, 4 to 8 A'; this is itself an unconfirmed pre-V55 figure in the design doc (not an owner decision, not a tested fact), so 'assumption' fits, and the Round 2 rule (Research.md:537) and V55 correctly supersede it as the current requirement."
+   },
+   {
+    "index": 6,
+    "where": "hardware/research/round1/FU-A3/015-P4-datasheet-R3.json:641",
+    "quantity": "BTS7004-1EPP turn-on threshold VS(OP)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "File confirms verbatim: VS(OP) 4.1 V max rising, VS(UV) 3.1 V max falling, 'It switches on at 4.8 V.' Correctly sourced."
+   },
+   {
+    "index": 7,
+    "where": "hardware/research/round1/FU-A3/003-P2-R3.json:40-41",
+    "quantity": "ESC pack switch high-voltage rating margin above 67.2 V (F15)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "File line 40-41 gives verbatim 'at least 85 V ... a 100 V rating (32.8 V margin) meets it and an 80 V rating (12.8 V) does not'; V34's Answer column is still 'for research', so this is a P2 finding, correctly marked sourced rather than owner."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/Research.md:662 (F2)",
+    "quantity": "onboard ESC pack switch continuous current",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F2's Answer column at line 662 reads '150 A continuous (owner, 2026-09-25)' verbatim."
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/Research.md:744 (V48)",
+    "quantity": "highest current the onboard ESC pack switch opens without damage",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V48 Answer at line 744 gives '300 A onboard; 600 A external at a 300 A path (owner, 2026-09-28)'; the 300 A half matches."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/Research.md:746 (V50); hardware/research/round1/FU-A3/003-P2-R3.json:46",
+    "quantity": "external ESC pack path highest current",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V50 Answer gives 'Peak: 300 A for 30 s at most'; the JSON's V35 found value (line 46) independently gives 300 A, consistent."
+   },
+   {
+    "index": 11,
+    "where": "hardware/docs/Research.md:744 (V48)",
+    "quantity": "highest current the external ESC pack switch opens without damage",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Same V48 answer's second clause, '600 A external at a 300 A path', matches."
+   },
+   {
+    "index": 12,
+    "where": "hardware/docs/Control.md:163",
+    "quantity": "safe operating area during the controlled 300 A turn-off, IPT015N10N5ATMA1 8-device array",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Control.md:163 verbatim: VGS(th) spread 2.2-3.8 V and RDS(on) rising with temperature mean unequal current sharing through the 16.9 µs turn-off; 37.5 A x 8 = 300 A checks out."
+   },
+   {
+    "index": 13,
+    "where": "hardware/docs/Control.md:164",
+    "quantity": "safe operating area and temperature rise during the 600 A controlled turn-off, 5-module VS-FC420SA10/VS-FC270SA20 array",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Control.md:164 verbatim gives the 136-169 A/module SOA band at 85 V on the 100 µs line against the 34 µs turn-off; 600/5=120 A/module, inside the band, confirming the stated failure mode is sharing, not per-module average."
+   },
+   {
+    "index": 14,
+    "where": "hardware/docs/Control.md:165; hardware/docs/Power.md:34",
+    "quantity": "clamp ceiling vs. switch current, pack overvoltage and transient clamp",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Control.md:165 states the node must stay under 85 V at up to 600 A; Power.md:34 confirms the INA228 is rated to 85 V. Both legs are owner-derived (INA228 fixed by owner 2026-09-30; 600 A from V48 owner answer)."
+   },
+   {
+    "index": 15,
+    "where": "hardware/docs/Control.md:165",
+    "quantity": "clamp voltage at rated current, candidates round 1 checked",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Control.md:165 verbatim: SMCJ70A to 113 V at 13.3 A; SMCJ64A/75A/78A to 121-126 V at 12 A."
+   },
+   {
+    "index": 16,
+    "where": "hardware/docs/Research.md:741 (V45); hardware/docs/Research.md:750 (V54)",
+    "quantity": "lead inductance assumed for the clamp's transient energy, pack-to-board and switch-to-ESC",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V45 and V54 owner answers give 1 µH and 0.5 µH; 0.5 x L x I^2 at 150 A and 300 A reproduces 11/45 mJ and 5.6/22.5 mJ as stated."
+   },
+   {
+    "index": 17,
+    "where": "hardware/research/round1/FU-A3/003-P2-R3.json:76",
+    "quantity": "highest sustained input voltage the overvoltage clamp must survive",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Line 76 is exactly the V41 entry, value 'none: only switching transients are clamped; the highest sustained input is 67.2 V'; V41's Answer column is still 'for research', so sourced (not owner) is correct."
+   },
+   {
+    "index": 18,
+    "where": "hardware/docs/Research.md:738 (V42)",
+    "quantity": "largest ESC input capacitance the pack switch precharges",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V42 Answer at line 738 reads '4700 µF (owner, 2026-09-28)' verbatim."
+   },
+   {
+    "index": 19,
+    "where": "hardware/docs/Research.md:742 (V46)",
+    "quantity": "longest time an ESC pack switch may take to close, precharge included",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V46 Answer at line 742 reads '500 ms (owner, 2026-09-28)' verbatim."
+   },
+   {
+    "index": 20,
+    "where": "hardware/docs/Research.md:743 (V47)",
+    "quantity": "reverse current the closed ESC pack switch carries back into the pack",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V47's Answer column is still 'for research'; correctly assumption and correctly judged irrelevant to the two follow-up gap functions (it concerns the driver, not the MOSFETs/module/clamp or the servo gate)."
+   },
+   {
+    "index": 21,
+    "where": "hardware/docs/IOBoard.md:422; hardware/research/round1/selection.json R3.pack reverse-polarity protection",
+    "quantity": "pack reverse-polarity protection part and rating",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md's Power section states IPT015N10N5ATMA1 for reverse polarity at 150 A continuous; selection.json's R3['pack reverse-polarity protection'] is IPT015N10N5ATMA1. The SOA refutation (Control.md:163) targets the switching-MOSFET role only, so exclusion from re-research is correct."
+   },
+   {
+    "index": 22,
+    "where": "hardware/docs/Research.md:739 (V43)",
+    "quantity": "reset supervisor delay after the 3.3 V rail crosses its threshold",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V43's Answer column is still 'for research'; correctly assumption, and not needed by the two gap functions."
+   },
+   {
+    "index": 23,
+    "where": "hardware/docs/Research.md:725 (V29)",
+    "quantity": "latch power-up state",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "V29's Answer column is still 'for research'; correctly assumption, and not needed by the two gap functions."
+   },
+   {
+    "index": 24,
+    "where": "hardware/docs/IOBoard.md:224; hardware/docs/Research.md:977 (Q9)",
+    "quantity": "monostable part meeting both the '423 behaviour and I_off",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:977 gives the owner's Q9 decision verbatim ('The 74HC423 keeps the '423 behaviour, and an SN74AUP1G17DBVR with I_off goes in front of its trigger inputs ... owner, 2026-09-29'); IOBoard.md:224 repeats it."
+   },
+   {
+    "index": 25,
+    "where": "hardware/docs/IOBoard.md:222",
+    "quantity": "parts verified with I_off in the R3/R4 powered-off interlock",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Line 222's State column lists verbatim 'parts with I_off: SN74AUP1G17DBVR, 74AUP1G32GW,125, SN74LVC1G04DBVR (R3, R4)', matching selection.json's R3 entries."
+   },
+   {
+    "index": 26,
+    "where": "hardware/docs/IOBoard.md:222",
+    "quantity": "series resistor value used in place of I_off",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Line 222 gives '4.7 k ohm or more, at most 1 mA at 3.3 V' verbatim; 3.3/4.7=0.702 mA, under 1 mA, checks out."
+   },
+   {
+    "index": 27,
+    "where": "hardware/docs/IOBoard.md:212; hardware/research/round1/selection.json R3.OR gate",
+    "quantity": "OR gate part",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Line 212 names '74AUP1G32GW,125 (R3)'; selection.json's R3['OR gate'] matches exactly."
+   },
+   {
+    "index": 28,
+    "where": "hardware/docs/IOBoard.md:225",
+    "quantity": "reset supervisor part",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Line 225 names 'TPS3703A7330DSERQ1 (R3)' verbatim."
+   },
+   {
+    "index": 29,
+    "where": "hardware/docs/IOBoard.md:226,244",
+    "quantity": "latch part and operator clear control",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Line 226 names '74LVC1G175GW,125, clear control 434153017835'; line 244 adds the push-button/RC-debounce/Schmitt-buffer detail verbatim."
+   },
+   {
+    "index": 30,
+    "where": "hardware/docs/IOBoard.md:219; hardware/research/round1/selection.json R3.onboard pack switch driver",
+    "quantity": "onboard ESC pack switch driver part",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Line 219 names 'driver TPSI3052DWZR (R3)'; selection.json's R3['onboard pack switch driver'] matches."
+   },
+   {
+    "index": 31,
+    "where": "hardware/docs/IOBoard.md:220; hardware/research/round1/selection.json R3.external module driver output",
+    "quantity": "external pack switch module driver output part",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Line 220 names 'driver output TPSI3052DWZR (R3)'; selection.json's R3['external module driver output'] matches."
+   },
+   {
+    "index": 32,
+    "where": "hardware/research/round1/selection.json R3.servo rail gate driver",
+    "quantity": "servo rail gate driver part (round 1)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "selection.json's R3['servo rail gate driver'] is '2N7002BK,215', matching; correctly flagged as needing re-qualification if the switch IC changes."
+   },
+   {
+    "index": 33,
+    "where": "hardware/docs/IOBoard.md:422; hardware/research/round1/selection.json R3.pack precharge",
+    "quantity": "pack precharge part",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md's Power section names CSD19537Q3T for precharge; selection.json's R3['pack precharge'] matches."
+   },
+   {
+    "index": 34,
+    "where": "hardware/docs/Monostable.md:449-455",
+    "quantity": "elements allowed in the GPIO6-to-gate path (Not defeatable rule)",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Lines 449-455 verbatim: 'No processor, no register and no firmware is in it.'"
+   },
+   {
+    "index": 35,
+    "where": "hardware/docs/Monostable.md:557,582-589",
+    "quantity": "ambient/supply corners the window (and by extension the gates it drives) are qualified over",
+    "verdict": "wrong",
+    "correct_marking": "assumption",
+    "reason": "Step 11 (lines 586-589) names only 'steps 7 and 10' as swept over 0-50 degC and 3.2/3.4 V; step 9 ('The switches and the rails', lines 565-581), which tests the ESC pack switches' turn-off and leakage, is not in that list and is described as run at nominal conditions only. The claim that the corners extend 'by extension' to the gates the window drives is therefore not sourced, it is an assumption - confirmed by V38 (R3, monostable, Research.md:734), which asks the identical question for 'the safety gate and the ESC pack switches' and is still 'for research'."
+   }
+  ],
+  "question_verdicts": [],
+  "added": [
+   {
+    "category": "R3",
+    "function": "onboard pack switch MOSFETs; external pack switch module; pack overvoltage and transient clamp",
+    "question": "What ambient temperature range, in degC, and supply range, in V, must the replacement onboard MOSFET array, the external module and the overvoltage/transient clamp hold their safe-operating-area, turn-off and clamp figures across? Monostable.md's step 11 corner sweep (0 to 50 degC, 3.2-3.4 V) explicitly repeats only steps 7 and 10, the window's own timing tests; step 9, 'The switches and the rails', is not in that list, so the corner sweep does not qualify the switches, and V38 (R3, monostable), which asks the identical question for 'the safety gate and the ESC pack switches', is still unanswered.",
+    "why": "P2 cannot qualify a replacement MOSFET array, module or clamp on safe operating area and thermal rise without a stated ambient/supply range; P1's value (index 35) marks the window's corner sweep as extending 'by extension' to the gates it drives, but Monostable.md step 11 names only steps 7 and 10, not step 9, so that extension is unsupported and the underlying need (V38) remains open.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Monostable.md:557,582-589",
+    "for_quantity": "ambient/supply corners the window (and by extension the gates it drives) are qualified over",
+    "asks": ""
+   },
+   {
+    "category": "R3",
+    "function": "onboard pack switch MOSFETs",
+    "question": "What highest dissipation, in W, may the onboard ESC pack switch have at 150 A continuous?",
+    "why": "P2 needs a power-dissipation budget to size and rank a replacement MOSFET array for the refuted IPT015N10N5ATMA1. V49 (Research.md:745) already carries an owner answer - '7 W for the switch array at 150 A, RDS(on) taken at TJ 100 degC; a reverse-polarity stage in series has its own budget (owner, 2026-09-28)' - that P1's values omit entirely.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Research.md:745 (V49)",
+    "for_quantity": "highest dissipation the onboard ESC pack switch may have at 150 A continuous",
+    "asks": ""
+   }
+  ],
+  "functions_missing": [
+   "timing network (C and R of the monostable)",
+   "inverter on an active-low output enable",
+   "heartbeat-node series resistors, links and fail-safe pull-downs"
+  ]
+ }
+}

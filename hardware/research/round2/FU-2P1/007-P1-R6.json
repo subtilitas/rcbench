@@ -1,0 +1,226 @@
+{
+ "role": "P1",
+ "category": "R6",
+ "label": "P1-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "functions": [
+   "Servo supply",
+   "Servo supply inductor",
+   "Port supply switch",
+   "I/O expander",
+   "Port voltage ceiling",
+   "Servo supply temperature"
+  ],
+  "values": [
+   {
+    "where": "hardware/docs/IOBoard.md:71",
+    "quantity": "Servo supply configuration (rail count, settings, current)",
+    "value": "four TPS55285 a board: one per each of 3 servo rails (5.5 V or 8.4 V settings, 4 to 6.35 A) plus one adjustable supply (0.8 to 15 V, 0.5 to 6.35 A), run from the 12-20 V DC input and the 6.0-8.4 V pack alike",
+    "marking": "owner",
+    "source": "owner decisions 2026-09-25 and 2026-09-30, IOBoard.md:71",
+    "refutation_tried": "checked against the TPS55285 datasheet SLVSI72A (2.4-22 V input, 0.8-21.3 V output, 0.5-6.35 A current register): both the DC input and pack ranges, and every stated setting, lie inside the part's own registers",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:375",
+    "quantity": "Servo supply heatsink basis for continuous-current rating",
+    "value": "a small aluminum heatsink on each TPS55285, on a 6-layer board; no size, model or thermal resistance stated",
+    "marking": "owner",
+    "source": "owner decision 2026-09-30, IOBoard.md:375",
+    "refutation_tried": "grepped Research.md and IOBoard.md for a heatsink size, model or theta-JA figure; none found. IOBoard.md:377 states the heatsink's size is round 3's, a later round",
+    "question": 4
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:377",
+    "quantity": "Servo supply continuous current (TPS55285 + heatsink, 6.0 V in, 50 degC ambient)",
+    "value": "not known",
+    "marking": "assumption",
+    "source": "IOBoard.md:377, which assigns it to a follow-up of R6",
+    "refutation_tried": "round 1's adjudicator (Supply.md:143) bounds the junction at 4.0 A, 8.4 V out, 6.0 V in, 50 degC ambient between 89 and 179 degC on datasheet typical figures with no heatsink modeled and no guaranteed efficiency; that span straddles the TPS55285's 125 degC recommended junction maximum and settles nothing without a heatsink thermal-resistance figure",
+    "question": 1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:460",
+    "quantity": "TPS55285 recommended junction temperature maximum",
+    "value": "125 degC",
+    "marking": "sourced",
+    "source": "TPS55285 datasheet SLVSI72A, cited at IOBoard.md:460; consistent with the 125 degC reference in Supply.md:143's thermal-margin note",
+    "refutation_tried": "checked for a second mention of the same figure in the tree (Supply.md:143); both agree on 125 degC as the recommended (not absolute) junction maximum",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:376",
+    "quantity": "Servo rail voltage low end for brownout testing",
+    "value": "0.8 V, the TPS55285's lowest programmable output",
+    "marking": "owner",
+    "source": "V55 (owner, 2026-09-30, Research.md:751); IOBoard.md:376",
+    "refutation_tried": "checked against the TPS55285 datasheet's 0.8-21.3 V output register range (SLVSI72A), which includes 0.8 V",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:384",
+    "quantity": "Port supply switch operating input voltage range",
+    "value": "0.8 V to 8.4 V",
+    "marking": "owner",
+    "source": "V55 (owner, 2026-09-30) for the 0.8 V floor; the decided HV rail setting of 8.4 V (IOBoard.md:376) for the top",
+    "refutation_tried": "checked the previously selected TPS259474LRPWR against this range using its datasheet SLVSFC9C (recommended VIN 2.7 to 23 V, round 1 record FU-B1/023-P4-datasheet-R6.json): 2.7 V exceeds the 0.8 V floor, so the part fails the low end; nothing else in the row changes the 0.8-8.4 V figure",
+    "question": 0
+   },
+   {
+    "where": "hardware/docs/Research.md:817",
+    "quantity": "Port supply switch continuous current",
+    "value": "3.0 A continuous at 50 degC ambient",
+    "marking": "sourced",
+    "source": "V122, a found research value (FU-B1/002-P2-R6.json), citing the per-servo overcurrent-abort ceiling docs/Servo.md:35",
+    "refutation_tried": "re-read docs/Servo.md:35: confirms 3.0 A is the firmware's single-servo abort threshold checked at every sample, independent of the rail's voltage setting, so the figure still holds for the 0.8-8.4 V range",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:376",
+    "quantity": "Port supply switch current/voltage-drop requirement at the 0.8 V brownout setting",
+    "value": "not stated",
+    "marking": "assumption",
+    "source": "IOBoard.md:376 frames 0.8 V only as a brownout-test point for the rail; no line states whether the 3.0 A continuous rating and the 570 mV drop budget (V124) still apply there",
+    "refutation_tried": "re-read V124's derivation (Research.md:820): its 570 mV headroom is built from the LV setting's 5.40 V low edge and a 4.8 V lowest-rated LV servo; that premise (a servo still operating normally) does not extend to a 0.8 V brownout test, where the servo is expected to be failing, so V124 does not settle the question at 0.8 V",
+    "question": 5
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:386",
+    "quantity": "Port voltage ceiling trip band and latch",
+    "value": "LV ceiling: may cut off from 5.59 V, must cut off by 6.00 V. HV ceiling: may cut off from 8.53 V, must cut off by 8.70 V (V128). Stays off until an operator or firmware action; no self-reconnect (V130)",
+    "marking": "owner",
+    "source": "F16 fixes the 6.0 V/8.7 V ceilings (owner, 2026-09-25); V128 and V130 are found research values narrowing the band and the latch rule (Research.md:824, :826, FU-B1/002-P2-R6.json)",
+    "refutation_tried": "re-read V128's derivation: the band edges come from the TPS55285 reference tolerance at the rail set points, not from any candidate's own datasheet, since round 1 found no candidate; the resulting band width is about +/-0.99% around the 8.4/8.7 V figures, matching the gap's own description and Supply.md:161",
+    "question": 3
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:460",
+    "quantity": "Servo supply temperature sensor part and placement",
+    "value": "MCP9808T-E/MS, 4 a board (3 servo converters plus the adjustable supply), each at its own I2C address in 0x18-0x1F, apart from the onboard shunt's address",
+    "marking": "owner",
+    "source": "owner decision 2026-09-30, IOBoard.md:460",
+    "refutation_tried": "the MCP9808's address pins give 8 addresses in 0x18-0x1F, so 4 fit; whether the onboard shunt's own address collides with one of the 4 is not re-checked here (P5's job, named in the row)",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:460",
+    "quantity": "MCP9808 alert shutdown threshold",
+    "value": "not stated",
+    "marking": "assumption",
+    "source": "IOBoard.md:460: \"The threshold is not stated: a follow-up of R6 sets it against the TPS55285's 125 degC recommended junction maximum\"",
+    "refutation_tried": "searched the tree for a junction-to-board (or junction-to-sensor-location) temperature offset for the TPS55285/MCP9808 pair; none found, so no board-level setpoint can be derived from the 125 degC junction figure alone",
+    "question": 2
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:460",
+    "quantity": "MCP9808 alert destination (interlock's latch vs. a latch of the rail's own)",
+    "value": "not stated",
+    "marking": "assumption",
+    "source": "IOBoard.md:460: \"Whether the alert sets the interlock's latch or a latch of the rail's own is not stated\"",
+    "refutation_tried": "grepped Research.md and IOBoard.md for \"interlock\" near R6 and for any F11-style decision covering the MCP9808's alert routing; none found",
+    "question": 6
+   },
+   {
+    "where": "hardware/docs/Research.md:313",
+    "quantity": "Already-selected R6 parts standing into round 2",
+    "value": "I/O expander: MCP23017T-E/SS (confirmed); Port supply switch (round 1, now refuted at the low end only): TPS259474LRPWR",
+    "marking": "sourced",
+    "source": "hardware/research/round1/selection.json; confirmed in FU-B3/020-P4-datasheet-R6.json",
+    "refutation_tried": "MCP23017T-E/SS's only round-1 refutation (an unread Microchip PCN link, treated as a possible end-of-life notice) did not stand once the adjudicator re-read Microchip's public PCN search API and found no end-of-life notice (FU-B3/022-adjudicator-R6.json); stands unchanged for this follow-up",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Supply.md:145",
+    "quantity": "Servo supply inductor selection status",
+    "value": "SRP1265A-4R7M was confirmed by both FU-B3 verifiers (4.7 uH, 28 A saturation, 8.4 mOhm DC resistance max, -55 to 150 degC), but hardware/research/round1/selection.json carries no part for this function",
+    "marking": "sourced",
+    "source": "FU-B3/015-P4-stock-R6.json, FU-B3/020-P4-datasheet-R6.json; Supply.md:145 records the same discrepancy",
+    "refutation_tried": "checked the Round 2 Follow-ups table (Research.md) for a 'Servo supply inductor' row: none exists, so this function is not one of this task's listed gaps and no new question is raised for it here; it is still listed in functions because the R6 row and IOBoard.md name it",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:380",
+    "quantity": "Servo supply heatsink basis for continuous-current rating",
+    "value": "the Adjustable supply's continuous current, qualified across its full 6-20 V in, 0.8-15 V out range at 50 degC ambient, is not known until a follow-up of R6 qualifies it",
+    "marking": "assumption",
+    "source": "IOBoard.md:380",
+    "refutation_tried": "this depends on the same TPS55285 heatsink thermal-resistance figure the Servo rail current gap needs (IOBoard.md:375, :377); no separate figure found for the Adjustable supply's own worst point",
+    "question": 4
+   }
+  ],
+  "questions": [
+   {
+    "function": "Port supply switch",
+    "question": "Switches each of the 20 ports from 0.8 V (V55) to 8.4 V. The TPS259474LRPWR takes VIN only from 2.7 V",
+    "why": "P2 cannot select a port supply switch IC without knowing the true low end of its input operating range; the previously selected TPS259474LRPWR's 2.7 V minimum VIN fails the owner's 0.8 V floor (V55), so a different part (or circuit) must be searched and confirmed against this floor before the function can be ranked again",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:384",
+    "for_quantity": "Port supply switch operating input voltage range",
+    "asks": ""
+   },
+   {
+    "function": "Servo supply",
+    "question": "The continuous current one TPS55285 with its heatsink holds at 6.0 V in and 50 °C ambient, in A. This is each rail's continuous rating (owner, 2026-09-30). The heatsink's size is round 3's",
+    "why": "P2 cannot state a continuous-current rating for the TPS55285 servo rails without a heatsink thermal-resistance figure; round 1's own bound (89 to 179 °C of junction temperature at 4.0 A, 6.0 V in, 50 °C ambient) straddles the TPS55285's 125 °C recommended junction maximum and settles nothing on its own",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:377",
+    "for_quantity": "Servo supply continuous current (TPS55285 + heatsink, 6.0 V in, 50 degC ambient)",
+    "asks": ""
+   },
+   {
+    "function": "Servo supply temperature",
+    "question": "The MCP9808T-E/MS beside each TPS55285, 4 a board, and its shutdown threshold against the TPS55285's 125 °C recommended junction maximum",
+    "why": "P2 cannot set the MCP9808's alert threshold without a junction-to-sensor temperature offset (or an assumed board-level trip point) that converts the TPS55285's 125 °C recommended junction maximum into a setpoint the MCP9808, mounted beside the converter rather than on its die, can act on",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:460",
+    "for_quantity": "MCP9808 alert shutdown threshold",
+    "asks": ""
+   },
+   {
+    "function": "Port voltage ceiling",
+    "question": "Cuts the port off above 6.0 V (LV) or 8.7 V (HV), set by a jumper (F16). No candidate passed round 1: each failed the ±0.99 % HV trip band (V128) or the latch (V130)",
+    "why": "P2 needs the owner's confirmation that the function should keep searching against the existing ±0.99 % HV trip band (V128) and the latch-until-action rule (V130), since no round-1 candidate met both and the row gives no relaxed figure to search against instead",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:386",
+    "for_quantity": "Port voltage ceiling trip band and latch",
+    "asks": ""
+   },
+   {
+    "function": "Servo supply",
+    "question": "What heatsink thermal resistance (or size/model), in °C/W, should round 2 assume for each TPS55285 when qualifying its continuous current, given that the heatsink's own size is selected only in round 3?",
+    "why": "Without a heatsink thermal-resistance (or size/model) figure, P2 cannot compute the TPS55285's junction temperature at any ambient and current, which blocks both the Servo rail current's continuous rating (IOBoard.md:377) and the Adjustable supply's continuous-current qualification across its wider range (IOBoard.md:380); the heatsink itself is named as round 3's to select",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:375",
+    "for_quantity": "Servo supply heatsink basis for continuous-current rating",
+    "asks": ""
+   },
+   {
+    "function": "Port supply switch",
+    "question": "At the 0.8 V brownout-test setting of a servo rail, must the port supply switch still meet the 3.0 A continuous-current rating (V122) and the 570 mV voltage-drop budget (V124), or does a lower test current apply there?",
+    "why": "P2 needs to know whether the port supply switch's 3.0 A continuous-current and 570 mV voltage-drop requirements (V122, V124) still apply at the 0.8 V brownout-test point, or whether a lower test current applies there, before it can rule a low-VIN candidate in or out on that basis",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:376",
+    "for_quantity": "Port supply switch current/voltage-drop requirement at the 0.8 V brownout setting",
+    "asks": ""
+   },
+   {
+    "function": "Servo supply temperature",
+    "question": "Does each TPS55285's MCP9808 alert output set the safety interlock's own latch (pull request #167, F11), or a latch local to that rail alone?",
+    "why": "P2 and P5 need to know whether the MCP9808's alert output feeds R3's interlock latch or a latch of the rail's own, because that changes which parts (and how many wiring paths) the function needs: a shared interlock path may need isolation/OR-ing hardware that a rail-local latch would not",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:460",
+    "for_quantity": "MCP9808 alert destination (interlock's latch vs. a latch of the rail's own)",
+    "asks": ""
+   }
+  ]
+ }
+}

@@ -1,0 +1,95 @@
+{
+ "role": "P1-critic",
+ "category": "R9",
+ "label": "P1-critic-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/IOBoard.md:473",
+    "quantity": "cell count range on the balance lead",
+    "verdict": "wrong",
+    "correct_marking": "assumption",
+    "reason": "F15's actual owner answer (Research.md:675) is only '16 cells, 67.2 V at 4.2 V a cell' — it gives the top of the range only, never a '1'. The '1' lower bound IOBoard.md:473 states is not an owner figure for the cell monitor; it is carried over from SET_PACK_CELLS's firmware floor (settings.c:39-41), and whether the cell monitor's own hardware floor is also 1 cell is exactly V181, which is still 'for research' and unanswered as of 2026-10-01 (Research.md:877). So the combined value tags as 'owner' a figure that is only half owner-sourced; the lower bound is an unconfirmed assumption, not a decision. P1's own refutation_tried admits this ('F15's answer only gives the top of the range') but still leaves the marking as 'owner' for the whole quantity, which is inconsistent."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/IOBoard.md:473",
+    "quantity": "firmware's own cell-count range",
+    "verdict": "holds",
+    "correct_marking": "sourced",
+    "reason": "settings.c:39-41 gives SET_PACK_CELLS as 1 to 14; battery_screen.h:11-14 gives BATTERY_CELLS_MAX 14 and a 'cells' field documented '1 to 14'; link_pages.h:181 is the exact third citation IOBoard.md:473 itself gives (LINK_CAP_CELLS, a capability bit, not a range, but it is the page's own cited source, not P1's invention). The value follows from its sources."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/Research.md:316",
+    "quantity": "balance-lead input separation from the 2S pack's lead",
+    "verdict": "holds",
+    "correct_marking": "sourced",
+    "reason": "IOBoard.md:402 reads word for word: 'It has its own input, separate from the ESC pack's balance-lead input of the 1 to 16 cell monitor (R9): both packs are connected during a motor test.' Matches exactly; the reason is stated, not inferred."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/IOBoard.md:474",
+    "quantity": "isolation barrier rated working voltage",
+    "verdict": "holds",
+    "correct_marking": "owner",
+    "reason": "V189's owner answer (Research.md:885, 2026-09-28) reads 'rated 85 V DC working or more ... no offset limit below that', matching the value and IOBoard.md:474 exactly."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/IOBoard.md:474",
+    "quantity": "isolation barrier technology",
+    "verdict": "holds",
+    "correct_marking": "owner",
+    "reason": "V189's owner answer leaves the choice open between 'a barrier (isoSPI or digital isolator)'; this is the owner's own wording, not a P1 narrowing."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/Pins.md:105-112",
+    "quantity": "signals crossing the barrier",
+    "verdict": "holds",
+    "correct_marking": "sourced",
+    "reason": "Pins.md rows for GPIO 8 (SPI1_RX/MISO), 10 (SPI1_SCLK), 11 (SPI1_TX/MOSI) each state the signal 'reaches the cell monitor only across the barrier'; GPIO 15 (cell monitor CS) is 'to the host side of the isoSPI or digital-isolator barrier (V189)'. Each direction (device-to-host for MISO, host-to-device for SCLK/MOSI/CS) follows from the signal's own name/role, not from an assumption P1 added."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/Pins.md:156-158",
+    "quantity": "SPI clock and mode the barrier must pass",
+    "verdict": "holds",
+    "correct_marking": "sourced",
+    "reason": "Pins.md:156-158 reads verbatim: 'The measurement coprocessor's SPI1 carries parts in different SPI modes: the ADS1235 in mode 1, the MAX31856 in mode 1 and the ADBMS1818 in mode 3 at 1 MHz at most.' A stated design rule, not computed by P1."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/IOBoard.md:473",
+    "quantity": "cell monitor part",
+    "verdict": "holds",
+    "correct_marking": "sourced",
+    "reason": "selection.json (round1/selection.json) records R9/'Cell monitor' = ADBMS1818ASWAZ-RL, rank 1, run FU-C1, decision 'none', which counts over any re-rank. The Follow-ups table (Research.md:585) lists only 'cell monitor isolation barrier (new)' for R9, not 'Cell monitor', so this function and part are correctly treated as unchanged and not reopened by this round."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:474 and Pins.md (GPIO 15, GPIO 8/10/11 rows) state only that the host-side SPI1 lines and GPIO 15 reach 'the host side' of the barrier; no line in IOBoard.md or Pins.md states the device-side (pack-referenced) supply voltage/current for the barrier's device-side logic or what on the board sources it. The round-1 ADBMS1818 datasheet verification (FU-C1/019-P4-datasheet-R9.json) confirms the IC's own V+/VREG can be drawn from the stack or 'from an isolated supply' for packs under 16 V, but says nothing about a separate digital-isolator's device-side logic supply if that technology is chosen instead of isoSPI. Since V189 leaves the isoSPI-vs-digital-isolator choice open, P2 cannot shortlist a digital-isolator part without this figure. The question is real and not already answered elsewhere in the tree."
+   }
+  ],
+  "added": [
+   {
+    "function": "Cell monitor",
+    "question": "What is the lowest cell count, in cells, of an ESC pack that the cell monitor reads on its balance lead? The page gives 1 to 16 cells. F15 gives only the top, 16 cells. The 1 is the lower bound of SET_PACK_CELLS, which the settings table sets as a physical limit ('a pack cannot have zero cells').",
+    "why": "IOBoard.md:473 tags the full '1 to 16 cells' figure '(owner, 2026-09-25)', but the owner's actual F15 answer gives only the top (16 cells, 67.2 V). The '1' is carried from the firmware setting's floor, not from a cell-monitor-specific owner decision, and whether the hardware's own floor matches is unresolved (V181, still 'for research' as of 2026-10-01). Correcting the marking of this value to 'assumption' requires raising it as a question per the critic's rule, even though it duplicates the pending V181.",
+    "blocks": "decision-only",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:473",
+    "for_quantity": "cell count range on the balance lead",
+    "asks": ""
+   }
+  ],
+  "functions_missing": []
+ }
+}
