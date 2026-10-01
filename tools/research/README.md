@@ -222,7 +222,11 @@ results head it reads and neither recorded nor recorded as stopped: of two
 runs prepared on one head, the second to record is refused, and preparing it
 again gives a `run_id` its output does not carry. A run prepared on an
 earlier head no longer counts; an abandoned one prepared on the head now
-counts until its `args-RUN.json` leaves the base directory. It refuses a P1
+counts until its `args-RUN.json` leaves the base directory. A run is settled
+by its `run_id`, so round 1's T6 does not settle round 2's. Two prepares in
+one base directory do not overlap: each holds a lock on `.prepare.lock` there
+from these checks to the args file, which it writes whole, and the second is
+refused while the first holds it. It refuses a P1
 run while another P1 run is prepared and neither recorded nor recorded as
 stopped, so question IDs do not repeat, and numbers new questions after the
 last one on the page and in the committed runs.
