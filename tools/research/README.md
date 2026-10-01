@@ -319,7 +319,9 @@ the items in the arguments:
   unknown, not known or not stated), its source and its reading time for an
   item of `categories.json` `p5_budgets` (named as listed or `NAME: DETAIL`,
   every row of the item counting; the Q4 and Q8 alternatives once for each
-  option class of `q_options`, as `Q4 alternatives: CLASS`; only an item of
+  option class of `q_options`, as `Q4 alternatives: CLASS`; from round 2 each
+  item of `p5_chips` once for each chip, as `GPIO: main` and
+  `GPIO: measurement`; only an item of
   `p5_conditional` may be `not applicable: REASON`, `N/A: REASON` or
   `does not apply: REASON`) or for a rail, I²C bus or other instance its
   critic lists as not budgeted, has an upheld budget not within its limit,

@@ -388,6 +388,17 @@ def cmd_check(_args):
         if int(m.group(7)) != sum(cats["planned"].values()):
             fails.append(f"Size total {m.group(7)} against "
                          f"{sum(cats['planned'].values())}")
+    # Each budget P5 owes once for each chip is a budget of p5_budgets, and
+    # the plan names each chip's budgets as the gate does.
+    chips = cats.get("p5_chips") or {}
+    stray = [n for n in chips.get("budgets", [])
+             if n not in cats.get("p5_budgets", [])]
+    if stray:
+        fails.append(f"p5_chips budgets not in p5_budgets: {stray}")
+    for c in chips.get("chips", []):
+        if f"`NAME: {c}`" not in text:
+            fails.append(f"p5_chips names the chip {c}; the plan does not "
+                         f"name its budgets `NAME: {c}`")
     # The "P1 asks" inventory covers the rows that carry one, by distinct
     # names.
     asks = cats.get("p1_asks", {})
@@ -1189,6 +1200,17 @@ NAME = re.compile(r"[A-Za-z0-9]+")
 GROUP_PAGE = re.compile(r"hardware/docs/[A-Za-z0-9_-]+\.md")
 
 
+def p5_chips(cats):
+    """The chips P5 budgets one by one in this round, and the budgets owed
+    once for each: from round 2 the main and the measurement coprocessor
+    (Research.md, Round 2, Rules of stage 1). Empty before that round."""
+    chips = cats.get("p5_chips") or {}
+    if ROUND < chips.get("from_round", ROUND + 1):
+        return {}
+    return {"chips": chips.get("chips", []),
+            "budgets": chips.get("budgets", [])}
+
+
 def check_followup(followup, cats):
     """The follow-up file: its phases, round, categories and items. Its
     `round` is the pass of follow-up tasks within the research round."""
@@ -1716,6 +1738,7 @@ def cmd_prepare(args):
         "p5_budgets": cats.get("p5_budgets", []),
         "p5_conditional": cats.get("p5_conditional", []),
         "p5_assumptions": cats.get("p5_assumptions", []),
+        "p5_chips": p5_chips(cats),
         "q_options": cats.get("q_options", {}),
         "research_round": ROUND, "branch": BRANCH,
         "runs_dir": posix(RUNS_DIR),
