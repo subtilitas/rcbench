@@ -217,10 +217,15 @@ recorded. In round 2 it refuses:
 It fast-forwards the results tree to the round's results branch at origin,
 and refuses while that tree holds records origin does not (push after each
 `record`), any other commit than the merge before T6, which changes no record,
-or has diverged. It refuses a P1 run while
-another P1 run is prepared and neither recorded nor recorded as stopped, so
-question IDs do not repeat, and numbers new questions after the last one on
-the page and in the committed runs.
+or has diverged. It refuses any run while another run is prepared on the
+results head it reads and neither recorded nor recorded as stopped: of two
+runs prepared on one head, the second to record is refused, and preparing it
+again gives a `run_id` its output does not carry. A run prepared on an
+earlier head no longer counts; an abandoned one prepared on the head now
+counts until its `args-RUN.json` leaves the base directory. It refuses a P1
+run while another P1 run is prepared and neither recorded nor recorded as
+stopped, so question IDs do not repeat, and numbers new questions after the
+last one on the page and in the committed runs.
 
 It refuses these without exception:
 

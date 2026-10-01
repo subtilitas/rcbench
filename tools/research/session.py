@@ -493,6 +493,7 @@ def round_selftest():
     cats = load("categories.json")
     fails = []
     tmp = tempfile.mkdtemp(prefix="rcbench-rounds-")
+    base = tempfile.mkdtemp(prefix="rcbench-base-")
     r1, r2 = (posix(runs_dir(k)) for k in (1, 2))
     p1 = {"phases": "P1", "round": 1, "categories": ["R1"], "items": []}
     p24 = {"phases": "P2-P4", "round": 1, "categories": ["R1"], "items": []}
@@ -569,7 +570,21 @@ def round_selftest():
                == "FU-2P runs after P2-P4 follow-ups of round 2 covering "
                "R1, R5, R9, which are not recorded",
                "round 2 checks the board before its P2-P4 follow-ups")
+        # A run prepared on the head now and not recorded holds every
+        # other prepare; one on an earlier head, a recorded one or the
+        # run itself does not.
         use_round(2)
+        head = git("-C", tmp, "rev-parse", "HEAD")
+        older = git("-C", tmp, "rev-parse", "HEAD~1")
+        for run, at, rid in (("FU-2R", head, "r"), ("FU-2S", older, "s"),
+                             ("FU-2Q", head, "q")):
+            with open(os.path.join(base, f"args-{run}.json"), "w") as f:
+                json.dump({"run_id": rid, "results_head": at}, f)
+        got = pending_runs(base, tmp, "FU-2T")
+        expect(got == ["FU-2R"],
+               f"pending runs on the head {got}, expected FU-2R only")
+        expect(pending_runs(base, tmp, "FU-2R") == [],
+               "a run prepared again is held by its own args file")
         got = [(n, t.get("research_round")) for n, t in runs(tmp)]
         expect(got == [("T1", 1), ("T2", 1), ("T4", 1), ("T3", 1),
                        ("FU-A", 1), ("T5", 1), ("T6", 1), ("FU-2X", 2),
@@ -612,6 +627,7 @@ def round_selftest():
     finally:
         use_round(1)
         shutil.rmtree(tmp, ignore_errors=True)
+        shutil.rmtree(base, ignore_errors=True)
     return fails
 
 
@@ -1374,6 +1390,28 @@ def pending_p1(base, results, run):
     return out
 
 
+def pending_runs(base, results, run):
+    """Other runs prepared on the results head now and not recorded. Of
+    two runs prepared on one head the second to record is refused, since
+    the first moved the head, and preparing it again gives a run_id its
+    output does not carry. A run prepared on an earlier head can no longer
+    record and does not count; nor does the run being prepared again."""
+    head = git("-C", results, "rev-parse", "HEAD")
+    settled = {t["run_id"] for _, t in runs(results, stopped=True)
+               if t.get("run_id")}
+    out = []
+    for name in sorted(os.listdir(base)):
+        m = re.fullmatch(r"args-(.+)\.json", name)
+        if not m or m.group(1) == run:
+            continue
+        a = json.loads(read(os.path.join(base, name)))
+        if a.get("results_head") == head \
+                and not recorded_any(results, m.group(1)) \
+                and a.get("run_id") not in settled:
+            out.append(m.group(1))
+    return out
+
+
 def turn(results, task, run, followup, cats):
     """The run's turn, refused out of order. Round 1 runs T1 to T6 in
     their order and follow-ups after the tasks they build on, until its T6
@@ -1577,6 +1615,13 @@ def cmd_prepare(args):
 
     # The task's turn.
     turn(results, args.task, run, followup, cats)
+    waiting = pending_runs(base, results, run)
+    if waiting:
+        raise SystemExit("prepared on this results head and not recorded: "
+                         + ", ".join(waiting) + "; record each first, or "
+                         "move its args file out of the base directory if "
+                         "it is abandoned: of two runs prepared on one "
+                         "head, the second to record is refused")
     phases = (followup or {}).get("phases")
     is_p1 = args.task == "T1" or phases == "P1"
     if is_p1:
