@@ -21,7 +21,9 @@ under [Held parts](docs/Research.md#held-parts) (export of 2026-09-25).
 [The IO board specification](docs/IOBoard.md) is a draft with the chosen part
 on each line. The workflow scripts are in `tools/research/` (prerequisite 6),
 and the returns of every task are under `hardware/research/round1/` on the
-branch `research/round1-results`.
+branch `research/round1-results`. Round 2 is planned in
+[Research](docs/Research.md#round-2); its returns go under
+`hardware/research/round2/` on `research/round2-results`.
 
 ## Decided
 
@@ -58,9 +60,10 @@ branch `research/round1-results`.
 ## Open
 
 The first nine rows come from round 1 and are reported to the owner. A part
-a row needs comes from a follow-up of its research category, or from round 2
-for a passive, a connector, or the protection on the signal, sensor,
-balance-lead, link and heartbeat connectors ([Research](docs/Research.md#scope)). The group pages state each with its
+a row needs comes from a follow-up of its research category in stage 1 of
+round 2, or from stage 2 of round 2 for a passive, a connector, or the
+protection on the signal, sensor, balance-lead, link and heartbeat connectors
+([Research](docs/Research.md#round-2)). The group pages state each with its
 evidence, as not known or not verified.
 
 | Item | State | Needs |
@@ -74,6 +77,7 @@ evidence, as not known or not verified.
 | Pack disconnect and port voltage ceiling | no candidate passes: the disconnect fails an open balance lead, the reconnect condition or the per-cell floor; the ceiling fails the ±0.99 % HV trip band or the latch. Not known ([Supply](docs/Supply.md#not-known)) | a follow-up search |
 | Optical index | no reflective sensor meets the 1.244 µs delay-variation budget. Not known ([Sensing](docs/Sensing.md#not-known)) | a follow-up search |
 | Board budget | about 51 GPIO (general-purpose input/output) signals against 48 on one chip. With two RP2354B (owner, 2026-09-30) the draft pin map uses 44 of the main coprocessor's 48 and 32 of the measurement coprocessor's, with the rotation inputs and the receiver on the measurement coprocessor, the external CAN controller on the display link's SPI bus, a UART between the two and VESC through the gate (owner, 2026-09-30; [Pins](docs/Pins.md)); the FUSB303 address 0x21 inside the expanders' block; the servo current sample period, 5 ms a channel against the 20 ms P5 assumed; Not known ([Control](docs/Control.md#not-known), [Supply](docs/Supply.md#not-known)) | the pin map, the I²C address map and a P5 check after it |
+| Cell monitor barrier | the cell monitor sits on the ESC pack's negative and reaches the measurement coprocessor only across an isoSPI (isolated SPI) transceiver pair or a digital isolator rated 85 V DC working or more (V189, owner, 2026-09-28). Round 1 selected none: the barrier is not in its R9 inventory. Not selected ([IOBoard](docs/IOBoard.md#measurement), [Pins](docs/Pins.md#not-known)) | a follow-up of R9 |
 | Servo path from 0.8 V | the servo rails and the adjustable supply work down to the TPS55285's lowest output, 0.8 V, to test a servo's brownout behavior (owner, 2026-09-30). Round 1 selected the servo path for a lowest rail of 4.8 V (V55): the BTS7004-1EPP rail gate starts only at VS(OP), 4.1 V at most, and the TPS259474LRPWR port switches take VIN from 2.7 V. Neither switches a rail set below that ([IOBoard](docs/IOBoard.md#link-and-safety)) | a rail gate that conducts from 0.8 V (a follow-up of R3) and a port switch that does (a follow-up of R6) |
 | Converter input connector and heatsink | the converters run from the 12 to 20 V DC input or the 2S pack (owner, 2026-09-24). Three at 6.35 A and 8.4 V draw 14.8 A from 12 V; with the adjustable supply at 15 V and 6.35 A, the four draw 23.6 A, both at an assumed 90 % efficiency. A small aluminum heatsink on each TPS55285, on a 6-layer board, and an MCP9808T-E/MS beside each whose alert output switches its output off (owner, 2026-09-30) | the input connector (round 2), the shutdown threshold (a follow-up of R6), the heatsinks' size (round 3) |
 | Layout | Isolation, a 150 A path and a 3.3 V I²C bus on one board, connectors, thermal. | the schematic first |
@@ -91,19 +95,26 @@ evidence, as not known or not verified.
    ESC pack switch and the other items without a part. The TPS55285, the
    motor monitor, the pack, the USB protection and the stop deadline are
    ruled on (owner, 2026-09-30).
-2. The follow-ups those rulings call for. Round 1 of the component
-   research ran from 2026-09-28 to 2026-09-30, as in
-   [its scope](docs/Research.md#scope): the ICs, the parts that fix an IC's
-   surroundings, both motor shunts, the switch of the ESC pack with its input
-   protection, and the 18650 cells of the bench's own pack, in six tasks
-   (question S8) and 9 follow-up tasks, each of at most 32 agents (owner,
-   2026-09-24). The commit each task read is in the status line of
+2. Stage 1 of round 2 of the component research
+   ([Research](docs/Research.md#round-2)): follow-up tasks of round 1's
+   categories for the ICs and the parts round 1's categories name that round 1
+   left without a part or whose requirement changed, the follow-ups those
+   rulings call for among them, planned in 7 runs of at most 32 agents (owner,
+   2026-10-01). Round 1 of the component research ran from 2026-09-28 to
+   2026-09-30, as in [its scope](docs/Research.md#scope): the ICs, the parts
+   that fix an IC's surroundings, both motor shunts, the switch of the ESC pack
+   with its input protection, and the 18650 cells of the bench's own pack, in
+   six tasks (question S8) and 9 follow-up tasks, each of at most 32 agents
+   (owner, 2026-09-24). The commit each task read is in the status line of
    [Research](docs/Research.md).
-3. Round 2 selects the passives and the connectors, the DC input connector
-   among them. It also selects the protection on the signal, sensor,
+3. Stage 2 of round 2 selects the passives and the connectors, the DC input
+   connector among them, by part type, with no P1 and one verifier (owner,
+   2026-10-01). It also selects the protection on the signal, sensor,
    balance-lead, link and heartbeat connectors. The power input's protection
-   (R5) and the ESC pack path's (R3) are in round 1. Round 3 sets the mechanical, thermal and layout constraints,
-   the converter's heatsink among them ([Research](docs/Research.md#scope)).
+   (R5) and the ESC pack path's (R3) are round 1's categories, which stage 1
+   researches. Stage 2 has no scripts in `tools/research/`. Round 3 sets the
+   mechanical, thermal and layout constraints, the converter's heatsink among
+   them ([Research](docs/Research.md#scope)).
 4. Schematic.
 5. Order each part with a manufacturer lead time of 16 weeks or more as soon
    as the schematic fixes it. On 2026-09-01 Texas Instruments quoted 16 weeks
