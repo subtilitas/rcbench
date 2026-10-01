@@ -25,9 +25,9 @@ Two runs stopped and were run again: FU-A4 (`FU-A4-stopped-1`, 2026-09-29,
 parts round 1 selected are in [Parts](Parts.md), with the reasons and the
 open items on [Control](Control.md), [Supply](Supply.md) and
 [Sensing](Sensing.md). The sections from [Scope](#scope) to
-[Prerequisites](#prerequisites) are the plan as round 1's tasks read it.
-[Round 2](#round-2) is the plan of round 2's runs, and the questions below
-serve both.
+[Prerequisites](#prerequisites) are the plan round 1's tasks read, with the
+owner's later decisions marked by their dates. [Round 2](#round-2) is the
+plan of round 2's runs. The questions below serve both rounds.
 Some tables below use a term before the text expands it: PWM is pulse-width
 modulation, PPM pulse-position modulation, UART a universal asynchronous
 receiver-transmitter, RGB LED a red-green-blue light-emitting diode, LV and
@@ -528,8 +528,8 @@ Round 2 runs in two stages (owner, 2026-10-01):
 
 | Stage | Selects | Phases |
 | --- | --- | --- |
-| 1 | the functions under [Follow-ups](#follow-ups): ICs, and the parts round 1's categories name, that round 1 left without a part or whose requirement changed after round 1 | round 1's, as follow-up tasks: one P1 follow-up, P2-P4 follow-ups, a P5-P6 follow-up, then T6 writes the pages |
-| 2 | the passives, connectors and connector protection of row 2 of the [Scope](#scope) table, by part type: resistors and capacitors, inductors and crystals, connectors, connector protection | no P1 and one verifier; its plan is not on this page |
+| 1 | every function of R1 to R3 and R5 to R11 that the rules below do not leave to stage 2: the ICs and the parts round 1's categories name, among them those under [Follow-ups](#follow-ups), which round 1 left without a part or whose requirement changed after round 1 | round 1's, as follow-up tasks: one P1 follow-up, P2-P4 follow-ups, a P5-P6 follow-up, then T6 writes the pages |
+| 2 | the passives, connectors and connector protection of row 2 of the [Scope](#scope) table, by part type: resistors and capacitors, inductors and crystals, connectors, connector protection | no P1 and one verifier; the connector makers of Sourcing rule 2 are asked before it; its plan is not on this page |
 
 The scripts in `tools/research/` run stage 1. Stage 2 has no scripts: its
 categories, records and gates do not exist.
@@ -550,17 +550,19 @@ Where this section differs from a row under [Research categories](#research-cate
 ### Rules of stage 1
 
 - A follow-up's pass is the `round` field of its follow-up file, 1 or 2. These are the two rounds of follow-up tasks under [Agent layout](#agent-layout). Stage 1 starts at pass 1. A gap left after pass 2 is written on the pages as not known.
-- A P2-P4 follow-up covers every function of its categories, as in round 1.
-- A function whose part is a resistor, a capacitor, a connector or a connector's protection is returned without candidates and left to stage 2.
+- A P2-P4 follow-up covers every function of its categories, as in round 1. It runs after P1 follow-ups of round 2 that cover each of its categories, and `prepare` refuses it before them. R4, R12 and R13 take a P1 follow-up of round 2 before a P2-P4 follow-up.
+- A function whose part is a resistor, a capacitor, a connector, or the protection on the signal, sensor, balance-lead, link or heartbeat connectors (row 2 of the [Scope](#scope) table) is returned without candidates and left to stage 2. The onboard, external and port shunts that R8 names, the USB protection (R1), the power input's protection (R5) and the ESC pack path's protection (R3) are researched in stage 1.
+- Stage 1 selects no connector. The connector makers of Sourcing rule 2 are asked before stage 2, which selects the connectors, not before stage 1.
 - A crystal, an oscillator or an inductor that a stage 1 category names is researched in stage 1.
 - P5 budgets each of the two RP2354B, the main and the measurement coprocessor (owner, 2026-09-30), against its pins in [Pins](Pins.md). The GPIO, PIO, DMA, PWM, ADC, SPI, I²C and UART budgets are given once for each chip, named `NAME: main` and `NAME: measurement`.
-- P6 marks a specification line whose part is a resistor, a capacitor, a connector or a connector's protection "stage 2 of round 2" in place of "not round 1". Such a line is not a gap.
-- A run that reads stock starts only with at least 250 of the day's 1,000 Digi-Key calls left (`--digikey-min 250`). Across T3, the largest of round 1's runs that used the day's cache, the count of calls left fell by 195 (see [Runs](#runs)).
+- P6 marks a specification line whose part these rules leave to stage 2 "stage 2 of round 2" in place of "not round 1". Such a line is not a gap. A shunt, the USB protection, the power input's protection and the ESC pack path's protection are not marked so.
+- A run that reads stock starts only with at least 250 of the day's 1,000 Digi-Key calls left (`--digikey-min 250`). Of round 1's runs that used the day's cache, T3 lowered the count of calls left the most: 195 (see [Runs](#runs)).
 - Round 2's runs in R5 to R8, its P5-P6 follow-up and its T6 may start with these items open, the reason given to `--accept-open` (owner, 2026-10-01): round 1's parts in R4, R12 and R13, and every function of round 1 that round 2 does not decide again; the resistors, capacitors, connectors and connector protection left to stage 2; the functions a round 2 follow-up leaves without a part, which the pages state as not known; and T5's conflicts and gaps in the categories round 2 does not run.
+- Two of T5's conflicts name a part no run selected: INA238AIDGSR in R8 and TPS55285VALR in R6. The T6 gate counts each as open, and names both parts, until a run selects that part number; left open, they reach the pages as not known. No run selects the INA238AIDGSR, which the INA228 replaces (owner, 2026-09-30). R6 and R8 are categories round 2 runs, so the reason above does not cover these two conflicts. Whether round 2's T6 starts with them open is not decided.
 
 ### Follow-ups
 
-The functions stage 1 researches, by category. Each row gives the requirement that changed after round 1, or the reason round 1 left the function without a part. Function names are those of `selection.json`. A function marked "new" is in no inventory of round 1, and the P1 follow-up adds it.
+Functions whose requirement changed after round 1 or that round 1 left without a part, by category. The P2-P4 follow-ups also requalify every other function of their categories. Each row gives the requirement that changed after round 1, or the reason round 1 left the function without a part. Function names are those of `selection.json`. A function marked "new" is in no inventory of round 1, and the P1 follow-up adds it.
 
 | Function | Category | Requirement or reason | Source |
 | --- | --- | --- | --- |
@@ -605,7 +607,7 @@ A run of 3 categories or fewer keeps 16 free agents or more: 5 refutations at 3 
 
 A conflict or gap that FU-2P56 returns goes to pass 2: a P2-P4 follow-up of its categories, then a P5-P6 follow-up, before T6.
 
-Each round 1 run records in its `task.json` the Digi-Key calls left when `prepare` read the count (`run_info`, `digikey_calls_left`). On 2026-09-29 the runs that used the day's cache lowered the count, from their own reading to that of the run recorded next, by 13 (FU-C2), 73 (FU-B1), 74 (FU-C1), 87 (FU-A3) and 195 (T3, four categories); each figure includes the next run's reading. FU-A2, without the cache, lowered it by 255, and T2 made 367 calls ([the scripts' README](../../tools/research/README.md)). Round 2's figures are not measured. At round 1's figures, the four P2-P4 runs and FU-2P56 fit in one UTC (Coordinated Universal Time) day's 1,000 calls, or run into a second day. FU-2P1 reads no stock, and `prepare` reads no count for it; its P0 probes the Digi-Key API and its P1 agents may read Digi-Key, a count that is not measured. T6's two runs of `tools/jlc_stock.py --check 5` read Digi-Key for each row whose second source is Digi-Key; that count is not measured.
+Each round 1 run from FU-A2 to T5 records in its `task.json` the Digi-Key calls left when `prepare` read the count (`run_info`, `digikey_calls_left`). The runs before FU-A2 and T6's two runs record no count. On 2026-09-29 the runs that used the day's cache lowered the count, from their own reading to that of the run recorded next, by 2 (FU-A4-stopped-1), 13 (FU-C2), 15 (FU-A4), 21 (FU-B3, four categories), 73 (FU-B1, four categories), 74 (FU-C1, five categories), 87 (FU-A3, three categories) and 195 (T3, four categories); each figure includes the next run's reading. T5's is not recorded. FU-A2, without the cache, lowered it by 255, and T2 made 367 calls ([the scripts' README](../../tools/research/README.md)). Round 2's figures are not measured. At round 1's figures, FU-2A, FU-2C, FU-2B1 and FU-2B2 take about 356 calls together: 87 as FU-A3, 74 as FU-C1, and 195 for R5 to R8 as T3. Of one UTC (Coordinated Universal Time) day's 1,000 calls, with no other use that day, each of the four starts with more than 600 left. FU-2P56's count is not measured, as T5's is not recorded. FU-2P1 reads no stock, and `prepare` reads no count for it; its P0 probes the Digi-Key API and its P1 agents may read Digi-Key, a count that is not measured. T6's two runs of `tools/jlc_stock.py --check 5` read Digi-Key for each row whose second source is Digi-Key; that count is not measured.
 
 ### Pages of round 2
 

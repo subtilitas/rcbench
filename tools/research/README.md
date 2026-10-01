@@ -202,6 +202,8 @@ recorded. In round 2 it refuses:
 - any run before round 1's T6 is recorded in the results tree, which also
   refuses a results branch cut from a commit without round 1's records;
 - a run name any round recorded, T6 aside: T6 runs once in each round;
+- a P2-P4 follow-up before P1 follow-ups of round 2 that cover each of its
+  categories are recorded;
 - T6 before a P5-P6 follow-up of round 2 is recorded;
 - any run once round 2's T6 is recorded;
 - any run while the plan at the commit it reads has no section "Round 2".

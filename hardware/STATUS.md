@@ -95,17 +95,17 @@ evidence, as not known or not verified.
    ESC pack switch and the other items without a part. The TPS55285, the
    motor monitor, the pack, the USB protection and the stop deadline are
    ruled on (owner, 2026-09-30).
-2. Stage 1 of round 2 of the component research
-   ([Research](docs/Research.md#round-2)): follow-up tasks of round 1's
+2. Stage 1 of round 2 of the component research (owner, 2026-10-01;
+   [Research](docs/Research.md#round-2)): follow-up tasks of round 1's
    categories for the ICs and the parts round 1's categories name that round 1
    left without a part or whose requirement changed, the follow-ups those
-   rulings call for among them, planned in 7 runs of at most 32 agents (owner,
-   2026-10-01). Round 1 of the component research ran from 2026-09-28 to
-   2026-09-30, as in [its scope](docs/Research.md#scope): the ICs, the parts
-   that fix an IC's surroundings, both motor shunts, the switch of the ESC pack
-   with its input protection, and the 18650 cells of the bench's own pack, in
-   six tasks (question S8) and 9 follow-up tasks, each of at most 32 agents
-   (owner, 2026-09-24). The commit each task read is in the status line of
+   rulings call for among them, planned in 7 runs of at most 32 agents each.
+   Round 1 of the component research ran from 2026-09-28 to 2026-09-30, as in
+   [its scope](docs/Research.md#scope): the ICs, the parts that fix an IC's
+   surroundings, both motor shunts, the switch of the ESC pack with its input
+   protection, and the 18650 cells of the bench's own pack, in six tasks
+   (question S8) and 9 follow-up tasks, each of at most 32 agents (owner,
+   2026-09-24). The commit each task read is in the status line of
    [Research](docs/Research.md).
 3. Stage 2 of round 2 selects the passives and the connectors, the DC input
    connector among them, by part type, with no P1 and one verifier (owner,

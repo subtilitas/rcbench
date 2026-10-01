@@ -511,12 +511,13 @@ def round_selftest():
     try:
         git("init", "-q", tmp)
         put(f"{r1}/T1", {"task": "T1", "sequence": 1})
-        put(f"{r1}/FU-A", {"task": "FU", "sequence": 2, "followup": p24})
-        put(f"{r1}/T5", {"task": "T5", "sequence": 3})
+        put(f"{r1}/T2", {"task": "T2", "sequence": 2})
+        put(f"{r1}/FU-A", {"task": "FU", "sequence": 3, "followup": p24})
+        put(f"{r1}/T5", {"task": "T5", "sequence": 4})
         expect(refusal(2, "FU", "FU-2X", p1)
                == "round 2 starts after round 1's T6",
                "round 2 starts before round 1's T6")
-        put(f"{r1}/T6", {"task": "T6", "sequence": 4})
+        put(f"{r1}/T6", {"task": "T6", "sequence": 5})
         expect(refusal(1, "FU", "FU-B", p1)
                == "T6 is recorded; round 1 is closed",
                "round 1 runs a follow-up after its T6")
@@ -530,28 +531,41 @@ def round_selftest():
             "round 2 runs pass 2 on round 1's pass 1")
         expect(refusal(2, "FU", "FU-A", p1) == "FU-A is recorded already",
                "round 2 repeats a run name of round 1")
+        expect(refusal(2, "FU", "FU-2Y", p24)
+               == "FU-2Y runs after a P1 follow-up of round 2 covering R1, "
+               "which is not recorded",
+               "round 2 runs a P2-P4 follow-up before a P1 follow-up of its "
+               "own")
         expect(refusal(2, "FU", "FU-2X", p1) == "",
                "round 2 refuses its first follow-up")
-        put(f"{r2}/FU-2X", {"task": "FU", "sequence": 5, "followup": p1})
+        put(f"{r2}/FU-2X", {"task": "FU", "sequence": 6, "followup": p1})
+        expect(refusal(2, "FU", "FU-2Y", p24) == "",
+               "round 2 refuses a P2-P4 follow-up after its P1 follow-up")
+        expect(refusal(2, "FU", "FU-2Y", {**p24, "categories": ["R1", "R2"]})
+               == "FU-2Y runs after a P1 follow-up of round 2 covering R2, "
+               "which is not recorded",
+               "round 2 runs a P2-P4 follow-up in a category no P1 follow-up "
+               "of its own covers")
         use_round(2)
         got = [(n, t.get("research_round")) for n, t in runs(tmp)]
-        expect(got == [("T1", 1), ("FU-A", 1), ("T5", 1), ("T6", 1),
-                       ("FU-2X", 2)], f"round 2 reads the runs {got}")
+        expect(got == [("T1", 1), ("T2", 1), ("FU-A", 1), ("T5", 1),
+                       ("T6", 1), ("FU-2X", 2)],
+               f"round 2 reads the runs {got}")
         expect(recorded(tmp, "FU-2X") and not recorded(tmp, "T1")
                and recorded_any(tmp, "T1"),
                "round 2 looks a run up in the wrong directories")
         use_round(1)
-        expect([n for n, _ in runs(tmp)] == ["T1", "FU-A", "T5", "T6"]
+        expect([n for n, _ in runs(tmp)] == ["T1", "T2", "FU-A", "T5", "T6"]
                and not recorded_any(tmp, "FU-2X"),
                "round 1 reads round 2's records")
         expect(refusal(2, "FU", "FU-2X", p1) == "FU-2X is recorded already",
                "round 2 repeats a run name of its own")
         expect(refusal(2, "FU", "FU-2Y", {**p1, "round": 2}) == "",
                "round 2 refuses pass 2 after its own pass 1")
-        put(f"{r2}/FU-2P", {"task": "FU", "sequence": 6, "followup": p56})
+        put(f"{r2}/FU-2P", {"task": "FU", "sequence": 7, "followup": p56})
         expect(refusal(2, "T6", "T6") == "",
                "round 2 refuses its T6 after its P5-P6 follow-up")
-        put(f"{r2}/T6", {"task": "T6", "sequence": 7})
+        put(f"{r2}/T6", {"task": "T6", "sequence": 8})
         expect(refusal(2, "FU", "FU-2Z", p1)
                == "T6 of round 2 is recorded; round 2 is closed",
                "round 2 runs a follow-up after its T6")
@@ -743,10 +757,10 @@ def p1_unresolved(results, categories):
 
 def t6_open(results):
     """What stands between the last P5/P6 check and T6: a part changed
-    after it, or conflicts and gaps it listed with no round 2 run. Also
-    the conflicts and gaps the checks leave, which the pages state as not
-    known: each the last check lists, and each of an earlier check that no
-    P2-P4 follow-up after it covered. Returns (what is open, what is
+    after it, or conflicts and gaps it listed with no pass 2 follow-up.
+    Also the conflicts and gaps the checks leave, which the pages state as
+    not known: each the last check lists, and each of an earlier check that
+    no P2-P4 follow-up after it covered. Returns (what is open, what is
     left)."""
     done = runs(results)
     checks = [(n, t) for n, t in done if t.get("task") == "T5" or
@@ -767,9 +781,9 @@ def t6_open(results):
     out = [f"{c}: selections changed after {name}"
            for c in sorted(set(eff) | set(then))
            if bound(eff, c) != bound(then, c)]
-    # A P2-P4 follow-up of these rounds covers each function it verified a
-    # part for, and each category it verified any part in; not what its
-    # file named.
+    # A P2-P4 follow-up of these passes (the follow-up file's round)
+    # covers each function it verified a part for, and each category it
+    # verified any part in; not what its file named.
     def covered_between(start, end, rounds):
         fns = {(c, e["function"]) for _, t in done
                if (t.get("followup") or {}).get("round") in rounds
@@ -832,11 +846,11 @@ def t6_open(results):
                 out_items.append({"gap": x})
         return out_items
 
-    # The last check's items stand only when round 2 covered them after
-    # the check before it (never for the first check, whose items it
-    # found). An earlier check's items stay open, even when a later check
-    # omits them, until a P2-P4 follow-up of either round covered them
-    # after that check.
+    # The last check's items stand only when a pass 2 follow-up covered
+    # them after the check before it (never for the first check, whose
+    # items it found). An earlier check's items stay open, even when a
+    # later check omits them, until a P2-P4 follow-up of either pass
+    # covered them after that check.
     uncovered = []
     left = [{"check": name, "conflict": x}
             for x in summary.get("conflicts", [])] + [
@@ -1317,8 +1331,9 @@ def turn(results, task, run, followup, cats):
     """The run's turn, refused out of order. Round 1 runs T1 to T6 in
     their order and follow-ups after the tasks they build on, until its T6
     closes it. A later round runs follow-ups and a T6 of its own after the
-    previous round's T6, and its T6 after a P5-P6 follow-up of its own; a
-    run name is unique over the rounds, T6 aside."""
+    previous round's T6, a P2-P4 follow-up after P1 follow-ups of its own
+    that cover its categories, and its T6 after a P5-P6 follow-up of its
+    own; a run name is unique over the rounds, T6 aside."""
     if ROUND == 1:
         if recorded(results, run):
             raise SystemExit(f"{run} is recorded already")
@@ -1363,6 +1378,17 @@ def turn(results, task, run, followup, cats):
                          "follow-up is recorded" if ROUND == 1 else
                          f"a pass 2 follow-up runs after a pass 1 follow-up "
                          f"of round {ROUND} is recorded")
+    # A later round's P2-P4 follow-up selects against the requirements its
+    # own P1 follow-ups confirmed, as the plan's Runs table orders them.
+    if ROUND > 1 and phases == "P2-P4":
+        asked = {c for t in done
+                 if (t.get("followup") or {}).get("phases") == "P1"
+                 for c in (t.get("followup") or {}).get("categories") or []}
+        miss = [c for c in followup["categories"] if c not in asked]
+        if miss:
+            raise SystemExit(f"{run} runs after a P1 follow-up of round "
+                             f"{ROUND} covering {', '.join(miss)}, which is "
+                             "not recorded")
 
 
 def selection_file(results):
