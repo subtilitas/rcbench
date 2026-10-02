@@ -80,6 +80,59 @@ unpowered or unplugged panel reads as a line that is not edging.
 - STOP latches. The bench stays disarmed until it is armed again.
 - Arming is a two-second hold on ARM, and the command goes when the hold
   completes rather than when the finger lifts. Disarming is a press.
+- A hold is credited at most 250 ms per frame, so it spans at least eight
+  frames with the press standing. A frame's duration is measured at its top
+  and applied at its end, and without the cap one late frame credits a hold
+  that began while that same frame was dispatching its touch events. Both
+  the arming hold and the bus-fault acknowledgement take the cap.
+- A frame that lost touch events cancels the gesture in progress. A full
+  touch queue drops its oldest entry to take the newest, and no choice there
+  is safe on its own: a release that never arrives leaves a screen holding a
+  press, a press that never arrives orphans the release after it, and the
+  movement where a finger leaves a button is what abandons the hold. The
+  render task drains the queue from the other core, so inspecting an entry
+  does not decide which one is removed. The loss is counted instead, and the
+  frame that observes it tells every screen that its record of the glass is
+  stale, not only the one on top, because an event that survived the loss
+  can have navigated away from the screen holding the press; each screen
+  drops any gesture in progress. That asks for nothing,
+  exactly as letting go early does, with the one exception below. Both queues
+  are counted -- the driver's
+  own event queue evicts its oldest for the same reason -- and the count is
+  read after the drain and before the frame's tick, so an event lost while
+  the loop is running is answered in that frame rather than the next. The
+  frame log carries the two counts as `TOUCHLOST <panel>/<driver>`.
+- Every control that holds state between a press and its release cancels.
+  MOTOR & ESC, SERVO and CAN BUS FAULT have a gesture that completes on a
+  timer, so a lost release there arms or acknowledges on its own; the
+  overview's tiles, the outputs and picker screens' cells, the settings
+  screen's keys, the log viewer's buttons and rows and the tab rows of
+  MOTOR & ESC, ANALYSER and BALANCE act on the release instead, and a press left latched owns a
+  track id the controller reuses, so a later contact that began elsewhere is
+  taken for the missing release. HOME and STOP are the router's own gesture
+  and it cancels those itself.
+- A touch stream that breaks while STOP is held stops the bench. The control
+  task owns that press independently of the screens, and the release that
+  would have stopped the bench may be the event that went missing -- or it may
+  arrive and satisfy neither owner, because the render side cancels the band's
+  press for the same loss. Nothing else would stop it, and the operator has
+  already pressed STOP. What this gives up: a press that began on STOP and
+  would have been carried off it before lifting, which asks for nothing today,
+  stops the bench instead.
+- Cancelling an armed bench's disarm still disarms. Abandoning a gesture asks
+  for nothing, and on an armed bench that is the wrong direction for one of
+  them: disarming is a press, so its release is the whole command, and a
+  release lost to a full queue is a disarm the operator made and the bench
+  never saw. Arming has already sent its command by the time the finger
+  lifts, so an arm cancelled part way asks for nothing, which is correct. A
+  cancel also drops an arm the screen has posted and the application has not
+  yet collected, and an arm already handed to the control task carries the
+  count of lost touch events it was posted under: the control task drops an
+  arm whose count has moved, and looks again once the armed snapshot has
+  been handed to the screens, since the exchanges between the two can take
+  two seconds; a loss between the two looks disarms at once, and a loss
+  after the second is seen by the screens against an armed bench. Nothing
+  arms across a loss. A posted disarm stays.
 - The throttle moves by how far a finger travels, not to where it lands. A
   press on the track commands nothing, so a touch at the far end asks for
   nothing; a drag across the whole track asks for the whole span, and one

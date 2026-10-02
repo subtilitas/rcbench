@@ -63,6 +63,14 @@ bool ui_tabs_event(ui_tabs_t *t, const touch_event_t *evt)
     return false;
 }
 
+void ui_tabs_cancel(ui_tabs_t *t)
+{
+    if (t == NULL) {
+        return;
+    }
+    t->pressed = -1;
+}
+
 void ui_tabs_render(const ui_tabs_t *t, gfx_canvas_t *c)
 {
     if (t == NULL || c == NULL) {

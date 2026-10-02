@@ -6,6 +6,44 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- **A touch queue that filled dropped the release that ends an arming
+  gesture.** The panel's touch queue evicted an entry when it filled, and no
+  choice of which one is safe: a release that never arrives leaves a screen
+  holding a press, a press that never arrives orphans the release after it,
+  and the movement where a finger leaves a button is what abandons the hold.
+  The loss is counted now, in the panel's queue and the driver's, and the
+  frame that observes it tells every screen that its record of the glass is
+  stale, since a surviving event can have navigated away from the one that
+  holds the press: each screen drops the gesture in progress, which asks
+  for nothing. A DISARM that cancellation posts is forwarded in the same
+  frame. Every control that holds state between a press and its release
+  cancels, including the log viewer's buttons and rows and the tab rows of
+  MOTOR & ESC, ANALYSER and BALANCE, because a press left latched owns a
+  track id the controller reuses. The
+  frame log carries the two counts as `TOUCHLOST <panel>/<driver>`.
+  - Two controls are the exception, because asking for nothing is their
+    failure. Cancelling an armed bench's disarm still disarms: disarming is
+    a press, so a release lost to a full queue is a disarm the operator made
+    and the bench never saw. A touch stream that breaks while STOP is held
+    stops the bench: the control task owns that press on its own, and the
+    release that would have stopped the bench may be the event that went
+    missing.
+  - A hold cannot complete on a finger that has already gone. A screen's
+    command is collected on the frame after the one that posts it, and the
+    frame that observes a loss cancels before that collection, so an arm
+    completed by a hold whose contact was lost is dropped before it reaches
+    the bench. An arm already handed to the control task carries the count
+    of lost touch events it was posted under, and the control task drops an
+    arm whose count has moved, and looks again once the armed snapshot has
+    been handed to the screens, so a loss anywhere between the posting and
+    that handover retires it and a later one is seen against an armed
+    bench. A hold
+    is credited at most 250 ms per frame, so one late
+    frame cannot complete a hold that began while it was dispatching the
+    press.
+
 ### Changed
 
 - **The link protocol is 4.0.** The write that arms carries ARM, THROTTLE and

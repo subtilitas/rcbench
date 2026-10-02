@@ -464,6 +464,31 @@ TEST_CASE(an_empty_card_is_not_the_same_as_no_card)
     free(no_card);
 }
 
+/*
+ * A cancel abandons the press in progress.  Every view here acts on the
+ * release, and a press left standing after a lost event would let a later
+ * contact's release open the file that was selected.
+ */
+TEST_CASE(a_cancelled_press_opens_nothing)
+{
+    fresh();
+    tap(400, BR_ROW_Y(0));                      /* selects */
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = 400,
+                                   .y = (int16_t)BR_ROW_Y(0), .strength = 40 } };
+    log_viewer_screen()->event(&e);
+    log_viewer_screen()->cancel();
+    e.type = TOUCH_EVENT_UP;
+    log_viewer_screen()->event(&e);              /* would have opened */
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+
+    /* And nothing is stuck: a fresh tap on the selected row opens. */
+    tap(400, BR_ROW_Y(0));
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+}
+
 TEST_CASE(a_second_tap_opens_the_file_and_analyses_it)
 {
     fresh();
@@ -1152,6 +1177,7 @@ int main(void)
     RUN(no_card_says_so_and_stays_put);
     RUN(an_empty_card_is_not_the_same_as_no_card);
     RUN(a_second_tap_opens_the_file_and_analyses_it);
+    RUN(a_cancelled_press_opens_nothing);
     RUN(a_german_file_is_read_as_german);
     RUN(plotting_loads_exactly_the_picked_columns);
     RUN(tapping_a_column_toggles_it_and_the_time_axis_is_not_offered);

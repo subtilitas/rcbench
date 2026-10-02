@@ -236,6 +236,33 @@ TEST_CASE(a_negative_angle_does_not_index_before_the_first_blade)
 #define TAB_CY   22
 
 /*
+ * A cancel abandons a tab press: the panel's record of the glass is stale,
+ * and the track id the press owned is one the controller reuses, so a later
+ * contact lifting over the tab must not switch the pane.
+ */
+TEST_CASE(a_cancelled_tab_press_does_not_switch_the_pane)
+{
+    fresh();
+    scr->render(&cv, 0);
+    const int before = lit();
+
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = TAB1_X, .y = TAB_CY,
+                                   .strength = 40 } };
+    scr->event(&e);
+    scr->cancel();
+    e.type = TOUCH_EVENT_UP;
+    scr->event(&e);
+    scr->render(&cv, 0);
+    CHECK_EQ(lit(), before);
+
+    /* And the row is not stuck. */
+    tap(TAB1_X, TAB_CY);
+    scr->render(&cv, 0);
+    CHECK(lit() != before);
+}
+
+/*
  * All three panes draw, each a different picture.  The aircraft pane is the
  * third tab, not the second, and holds the most drawing code on the screen.
  */
@@ -313,6 +340,7 @@ int main(void)
     RUN(an_angle_names_the_blades_it_falls_between);
     RUN(a_negative_angle_does_not_index_before_the_first_blade);
     RUN(each_pane_draws_its_own_diagram);
+    RUN(a_cancelled_tab_press_does_not_switch_the_pane);
     RUN(both_rotor_types_draw_on_the_measure_pane);
     RUN(every_blade_count_draws);
     return test_summary("balance");

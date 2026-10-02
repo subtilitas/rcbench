@@ -991,6 +991,41 @@ static void leave(void)
     ++s.arm_rev;
 }
 
+/*
+ * Touch events were lost between two frames, so this screen's record of what
+ * is on the glass cannot be trusted.  Drop the gesture rather than let a
+ * hold that completes on a timer finish on a contact that may have gone.
+ * Nothing is commanded here: a gesture abandoned part way asks for nothing,
+ * which is what letting go early already does.
+ */
+static void cancel(void)
+{
+    /* Disarming is a press, so its release is the whole command: one that
+     * went missing is a DISARM the operator made and the bench never saw.
+     * Arming has already sent its command by the time the finger lifts, so
+     * cancelling one part way asks for nothing, which is correct. */
+    if (s.armed && s.arm_down && !s.arm.fired) {
+        post(SERVO_CMD_DISARM, 0);
+    }
+    /* And an arm posted but not yet collected: a command is forwarded on the
+     * frame after the one that posted it, and the frame that observes a loss
+     * cancels before that forwarding.  A disarm is kept. */
+    if (s.pending.kind == SERVO_CMD_ARM) {
+        s.pending.kind = SERVO_CMD_NONE;
+    }
+    ui_slider_release(&s.speed);
+    ui_hold_reset(&s.arm);
+    s.arm_down = false;
+    /*
+     * And the dial.  A drag left latched owns its track id, and the GT911
+     * reuses ids: a later contact that began somewhere else would satisfy
+     * the drag path and command a position with no press on the dial, which
+     * on an armed bench moves the servo.
+     */
+    s.dragging = false;
+    ++s.arm_rev;
+}
+
 static const ui_screen_t k_screen = {
     .title  = "SERVO",
     .reset  = reset,
@@ -998,6 +1033,7 @@ static const ui_screen_t k_screen = {
     .leave  = leave,
     .tick   = tick,
     .event  = event,
+    .cancel = cancel,
     .render = render,
 };
 

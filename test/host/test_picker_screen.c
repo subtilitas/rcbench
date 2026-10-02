@@ -135,6 +135,32 @@ TEST_CASE(a_button_binds_the_pad_it_is_wired_to)
     CHECK_EQ(outbind_chosen(&s_last), 0);
 }
 
+/*
+ * A button press toggles its pin on the release, when the release lands on
+ * the cell the press began on.  A press left latched after a lost event
+ * turns the next release over that cell into a binding change nobody asked
+ * for; the GT911 reuses track ids, so it need not be the same contact.
+ */
+TEST_CASE(a_cancelled_press_toggles_nothing)
+{
+    fresh();
+    int bx, by;
+    CHECK(button_point(idx(4u), &bx, &by));
+    const int was = s_applied;
+
+    touch_event_t d = { TOUCH_EVENT_DOWN, { 0, (int16_t)bx, (int16_t)by, 40 } };
+    touch_event_t u = { TOUCH_EVENT_UP,   { 0, (int16_t)bx, (int16_t)by, 40 } };
+    scr()->event(&d);
+    scr()->cancel();
+    scr()->event(&u);
+    CHECK_EQ(s_applied, was);
+
+    /* And nothing is stuck: a fresh press and release still toggles. */
+    scr()->event(&d);
+    scr()->event(&u);
+    CHECK_EQ(s_applied, was + 1);
+}
+
 TEST_CASE(every_button_binds_its_own_pin_and_no_other)
 {
     /*
@@ -511,5 +537,6 @@ int main(void)
     RUN(a_board_that_does_not_say_which_pads_are_ground_still_draws);
     RUN(the_marks_do_not_get_in_the_way_of_the_buttons);
     RUN(null_events_are_refused_rather_than_dereferenced);
+    RUN(a_cancelled_press_toggles_nothing);
     return test_summary("picker_screen");
 }

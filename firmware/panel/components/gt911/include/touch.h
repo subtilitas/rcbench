@@ -87,6 +87,15 @@ uint16_t touch_i2c_address(void);
  */
 uint32_t touch_age_ms(void);
 
+/**
+ * Events the driver's own queue dropped because nobody collected them, since
+ * boot. It only rises. A consumer that cares whether it saw every event of a
+ * gesture watches this for a change and abandons the gesture when it moves:
+ * a screen holding a press whose release was dropped goes on holding it, and
+ * a hold that completes on a timer finishes with nothing on the glass.
+ */
+unsigned touch_lost(void);
+
 #ifdef __cplusplus
 }
 #endif
