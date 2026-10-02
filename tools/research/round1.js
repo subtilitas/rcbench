@@ -786,8 +786,9 @@ function merge(cat, p2, rr, p3) {
   // number, or, for a find that names only a family, by a part of that
   // family the re-rank qualified or dropped as a P3 candidate. A part P2
   // shortlisted is no P3 candidate.
+  const shortlisted = (fn, c) => (((p2.functions || []).find(f => f.function === fn) || {}).shortlist || []).some(s => samePart(s, c, names))
   const handled = (fr, part) => fr && ([...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || [])].some(c => samePart(c, part, names)) || (fr.ranking || []).some(r => samePart(r, part, names))
-    || (familyOnly(part) && [...(fr.new_candidates || []), ...(fr.dropped_from_p3 || [])].some(c => ofFamily(c, part))))
+    || (familyOnly(part) && [...(fr.new_candidates || []), ...(fr.dropped_from_p3 || [])].some(c => ofFamily(c, part) && !shortlisted(fr.function, c))))
   const handledAny = part => (rr.functions || []).some(fr => names.includes(fr.function) && handled(fr, part))
   // A P3 find the re-rank neither qualified nor dropped leaves its function
   // open: the function P3 names, the function whose P2 drop P3 overturned,

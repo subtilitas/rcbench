@@ -1018,6 +1018,7 @@ async function main() {
     ['ABC1234 for the gate', { dropP3: ['ABC1234X'] }, true, 'a part number no family word follows'],
     ['ABC1234 rows', { dropShort: ['ABC1234X'] }, true, 'only a shortlist part of it dropped'],
     ['ABC1234 rows', kept, true, 'only a family part P2 kept ranked'],
+    ['ABC1234 rows', { ...kept, dropP3: ['ABC1234A'] }, true, 'a family part P2 shortlisted, listed as a P3 drop'],
     ['AB123 rows', { dropP3: ['AB12345'] }, true, 'a 5-character stem'],
     ['ABCDEFG parts', { dropP3: ['ABCDEFGH'] }, true, 'a stem without a digit'],
     ['1234567 parts', { dropP3: ['12345678'] }, true, 'a stem without a letter'],
