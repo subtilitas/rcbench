@@ -397,8 +397,10 @@ part.
   matches TMP1075DGKR, a different part, and that is a current limitation. An
   overturned exclusion's owner is a function whose P2 drop matches it either
   way, and the owner handles it when its re-rank qualifies, ranks or drops the
-  part P3 named, by part or LCSC number, or one of those drops; another part of
-  the family does not count. The drop of a find
+  part P3 named, by part or LCSC number, or the matching piece of one of those
+  drops (a drop record that names several parts is split as part numbers are);
+  another part of the family or of the same record does not count. An
+  exclusion with no owner is handled only by a re-rank that names P3's part. The drop of a find
   matched either way is re-read as the drop of any P3 find;
 - it has no requirement, or names one requirement twice;
 - it serves a fixed input of the Scope table (`categories.json`

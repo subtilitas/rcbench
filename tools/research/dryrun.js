@@ -989,6 +989,18 @@ async function main() {
   check(!overturnedOpen(r), 'family exclusion dropped again in P3\'s own words: handled')
   r = await runTask('T2', { ...famKept, p2DropParts: ['ABC1234XYZ', 'partQ'], dropShort: ['partQ'] })
   check(overturnedOpen(r), 'family exclusion, only another of the owner\'s drops dropped again: owner stays open')
+  // A drop record that names several parts: only the piece P3 overturned
+  // counts, not another member or a family the record also names.
+  r = await runTask('T2', { ...famKept, p3overPart: 'AS5048B-HTSP-500', p2DropParts: ['AS5048B-HTSP-500, AS5055A-BQFM, ABC1234 rows'] })
+  check(overturnedOpen(r), 'exact exclusion in a bundled drop record, a family part of the record ranked: owner stays open')
+  r = await runTask('T2', { ...famKept, p3overPart: 'AS5048B-HTSP-500', p2DropParts: ['AS5048B-HTSP-500, AS5055A-BQFM'], dropShort: ['AS5055A-BQFM'] })
+  check(overturnedOpen(r), 'exact exclusion in a bundled drop record, another member dropped again: owner stays open')
+  r = await runTask('T2', { ...famKept, p2DropParts: ['AS5048B-HTSP-500, ABC1234 rows'], dropShort: ['ABC1234XYZ'] })
+  check(!overturnedOpen(r), 'family exclusion in a bundled drop record, a part of the family dropped: handled')
+  // A family exclusion no P2 drop matches has no owner: only a re-rank that
+  // names P3's part closes it, not a family part P2 kept.
+  r = await runTask('T2', { ...famKept, p2DropY: false })
+  check(r.result.followUps.some(f => f.reason === 'P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank'), 'family exclusion with no owner, a kept family part ranked: open')
   // An exclusion matched to its P2 drop by LCSC number is handled when the
   // re-rank names the part P3 named, as before families.
   r = await runTask('T2', { p3overturned: true, p3overPart: 'partY (C123)', p2DropY: true, p2DropPart: 'partY-TR (C123)', dropShort: ['partY'] })

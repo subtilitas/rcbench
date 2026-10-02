@@ -769,6 +769,26 @@ function ofFamily(cand, find) {
   return !!n && familyStems(find).some(s => n.startsWith(s))
 }
 
+// The pieces of a record that names several parts, split where partKeys
+// splits, outside parentheses; a one-piece record keeps its lcsc field.
+function recordPieces(p) {
+  const rec = p && typeof p === 'object' ? p : { part: p }
+  const text = String(rec.part || '')
+  const out = []
+  let depth = 0, start = 0
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '(') depth++
+    else if (text[i] === ')') depth = Math.max(0, depth - 1)
+    else if (!depth) {
+      const m = /^(;|,\s+|\s+\/\s+|\s+and\s+)/i.exec(text.slice(i))
+      if (m) { out.push(text.slice(start, i)); start = i + m[0].length; i = start - 1 }
+    }
+  }
+  out.push(text.slice(start))
+  const parts = out.map(s => s.trim()).filter(Boolean)
+  return parts.length === 1 ? [{ ...rec, part: parts[0] }] : parts.map(part => ({ part }))
+}
+
 function merge(cat, p2, rr, p3) {
   // The functions are P2's. A find with no owner is handled by any of them.
   const names = (p2.functions || []).map(f => f.function)
@@ -791,19 +811,23 @@ function merge(cat, p2, rr, p3) {
   for (const x of (p3 && p3.exclusions_not_holding) || []) {
     // Each function whose P2 drop P3 overturned handles the part itself;
     // with no owner, any function's handling counts.
-    const overturned = f => (f.dropped || []).filter(d => samePart(d, x.part, names) || ofFamily(d, x.part))
+    // The pieces of the owner's P2 drops that P3 overturned: a drop record
+    // can name several parts and families, and only the matching ones count.
+    const overturned = f => (f.dropped || []).flatMap(recordPieces).filter(d => samePart(d, x.part, names) || ofFamily(d, x.part))
     const owners = (p2.functions || []).filter(f => overturned(f).length).map(f => f.function)
-    // An owner handles the exclusion when its re-rank qualifies, ranks or
-    // drops the part P3 named, by part or LCSC number, or one of the drops
-    // P3 overturned; another part of the family does not count.
+    // A re-rank entry names the part P3 named, by part or LCSC number.
+    const exact = fr => !!fr && [...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || []), ...(fr.ranking || [])].some(c => samePart(c, x.part, names))
+    // An owner handles the exclusion when its re-rank names the part P3
+    // named, or handles one of the overturned pieces; another part of the
+    // family, or of the same drop record, does not count. With no owner,
+    // only a re-rank that names P3's part does.
     const handledDrops = n => {
       const fr = (rr.functions || []).find(f => f.function === n)
-      const exact = !!fr && [...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || []), ...(fr.ranking || [])].some(c => samePart(c, x.part, names))
-      return exact || overturned((p2.functions || []).find(f => f.function === n) || {}).some(d => handled(fr, d))
+      return exact(fr) || overturned((p2.functions || []).find(f => f.function === n) || {}).some(d => handled(fr, d))
     }
     const open = owners.length
       ? owners.filter(n => !handledDrops(n))
-      : (handledAny(x.part) ? [] : names)
+      : ((rr.functions || []).some(fr => names.includes(fr.function) && exact(fr)) ? [] : names)
     if (!open.length) continue
     followUps.push({ role: 'rerank', category: cat, part: x.part, functions: open, reason: 'P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank' })
     for (const n of open) unhandled.add(n)
