@@ -384,19 +384,20 @@ part.
   qualifies or drops the part under one of P2's functions. The re-rank is told
   to list each entry of P3's under the functions these rules hold open for it,
   also where P3 says the drop stands for another reason: a qualified record by
-  its exact part number, with the entry's text in `p3_part` where the entry
-  names the part otherwise, or a drop with the entry's text copied exactly,
-  one drop for each entry. A part discussed only in the re-rank's report is
-  neither qualified nor dropped. A record in `new_candidates` handles the
-  entry its `p3_part` names. A find and the re-rank's part are the same part
-  when they share a part number or an LCSC number, a record's `lcsc` field
-  included: `TCAN3413DR (C22433320)`, `A (C1); B (C2)` and a part with its
-  function appended all match the bare part number. Part numbers are the
-  pieces between semicolons, commas followed by a space, slashes between
-  spaces and ` and `, without parenthesized text, case and spaces; a function
-  name is none. `2N7002BK,215` and `MCP2542FD-E/SN` are one part number each.
-  A `#` after 4 characters or more, a letter and a digit among them, starts an
-  ordering option: Analog Devices' packing and RoHS (Restriction of Hazardous
+  its exact part number, with the entry's text copied exactly in `p3_part`, or
+  a drop with the entry's text copied exactly, one drop for each entry. A part
+  discussed only in the re-rank's report is neither qualified nor dropped. A
+  record in `new_candidates` handles the entry whose text its `p3_part`
+  copies, spaces and case aside, and no other entry that shares a part number
+  with it. A find and the re-rank's part are the same part when they share a
+  part number or an LCSC number, a record's `lcsc` field included:
+  `TCAN3413DR (C22433320)`, `A (C1); B (C2)` and a part with its function
+  appended all match the bare part number. Part numbers are the pieces between
+  semicolons, commas followed by a space, slashes between spaces and ` and `,
+  without parenthesized text, case and spaces; a function name is none.
+  `2N7002BK,215` and `MCP2542FD-E/SN` are one part number each. A `#` after 4
+  characters or more, a letter and a digit among them, starts an ordering
+  option: Analog Devices' packing and RoHS (Restriction of Hazardous
   Substances) option in `LTC4020EUHF#PBF` and `LTC4020EUHF#TRPBF`, or an
   automotive flow (`#W`, `#3ZZ`). For a drop P3 overturned, the number before
   the `#` matches any option of it. The re-rank's drop of another option of
@@ -466,41 +467,42 @@ source or a reading time of the task, shows nothing. `longevity commitment`
 and `market introduction`, which the lifecycle table records without a gate
 (S5 records a commitment and does not require one), may read
 `not read: REASON` in the stock verifier's return: that is recorded, neither
-passing nor failing, and listed for the owner as an unread manufacturer
-status is. A stock verifier's `lifecycle status` written `not read: REASON`
-(a part whose maker status cannot be read and that Digi-Key does not list
-under its maker, or a
-Digi-Key value the Lifecycle check does not grade), with passes true, neither
-passes nor fails either, whatever agrees says, but shows no check, so the part
-stays not verified; with passes false it fails as any check. Either way it is
-listed for the owner. A datasheet requirement of the same name is a requirement. A
-placeholder reason (`none`, `N/A`, `-`, `unknown`) is none, and a refuted
-verdict that states no refutation and whose only failing checks are such
-readings is a confirmation; one that states a refutation is ruled on. A reading time is an ISO
-(International Organization for Standardization) 8601 date or date-time at the
-start of the text, on a date the calendar has (2026-02-31 is not one); a note,
-a second reading's time or a range's end may follow it, as in
-`2026-09-28T13:51Z to 13:56Z (JLCPCB)`. The time ends at the end of the text,
-at whitespace, at `,`, `;`, `(` or `)`, or at a hyphen before a range's end
-time, so `2026-09-28T10` and `2026-09-28T10:00+99` are no times. A date-time
-without a zone is UTC (Coordinated Universal Time). For a P4 check, a figure
-verdict or a ruling, the time may follow one word that names the source, as in
+passing nor failing, and listed for the owner as an unread manufacturer status
+is. A stock verifier's `lifecycle status` written `not read: REASON` (a part
+whose maker status cannot be read and that Digi-Key does not list under its
+maker, or a Digi-Key value the Lifecycle check does not grade), with passes
+true, neither passes nor fails either, whatever agrees says, but shows no
+check, so the part stays not verified; with passes false it fails as any
+check. Either way it is listed for the owner. A datasheet requirement of the
+same name is a requirement. A placeholder reason (`none`, `N/A`, `-`,
+`unknown`) is none, and a refuted verdict that states no refutation and whose
+only failing checks are such readings is a confirmation; one that states a
+refutation is ruled on. A reading time is an ISO (International Organization
+for Standardization) 8601 date or date-time at the start of the text, on a
+date the calendar has (2026-02-31 is not one); a note, a second reading's time
+or a range's end may follow it, as in `2026-09-28T13:51Z to 13:56Z (JLCPCB)`.
+The time ends at the end of the text, at whitespace, at `,`, `;`, `(` or `)`,
+or at a hyphen before a range's end time, so `2026-09-28T10` and
+`2026-09-28T10:00+99` are no times. A date-time without a zone is UTC
+(Coordinated Universal Time). For a P4 check, a figure verdict or a ruling,
+the time may follow one word that names the source, as in
 `JLCPCB 2026-10-02T15:17:10Z; Digi-Key 2026-10-02T15:17:30Z` or
 `ADXL316: 2026-10-02T11:27:32Z`. The word is a letter, then letters, digits,
-dots and hyphens, with a colon or none. `not`, `no`, `none`, `nothing`,
-`never`, `unknown`, `unread`, `pending`, `failed`, `na`, `n.a` and `n.a.`, in
-any case, name no source. Two words before the time are no reading. For a P4
-check, a figure verdict or a ruling, every date the text gives is also the
-date `prepare` gave the run or the next day,
-for a run that passes midnight, so a reading copied from an earlier return or
-the parts database, or dated later, shows nothing. The workflow script has no
-clock: a run that goes on past the day after `prepare` counts none of the
-readings it takes then. A check that disagrees or fails is a refutation, named
-in the refutation the adjudicator rules on whatever the verdict, and a
-confirmation whose refutation is not empty is one; a refutation that is
-`none`, or starts with `no refutation`, `not refuted`, `none found` or
-`nothing found`, counts as empty. A reading that moves or always passes
-(`stock`, `presale`, `second-vendor stock`, `lead time`, `distributor status`,
+dots and hyphens, with a colon or none. `not`, `no`, `none`, `nothing`, `nil`,
+`never`, `unknown`, `unread`, `unavailable`, `missing`, `pending`, `failed`,
+`na`, `n.a` and `n.a.`, in any case and also before a hyphen or dot
+(`No-data`, `None.`), name no source. Two words before the time are no
+reading. For a P4 check, a figure verdict or a ruling, every date the text
+gives is also the date `prepare` gave the run or the next day, for a run that
+passes midnight, so a reading copied from an earlier return or the parts
+database, or dated later, shows nothing. The workflow script has no clock: a
+run that goes on past the day after `prepare` counts none of the readings it
+takes then. A check that disagrees or fails is a refutation, named in the
+refutation the adjudicator rules on whatever the verdict, and a confirmation
+whose refutation is not empty is one; a refutation that is `none`, or starts
+with `no refutation`, `not refuted`, `none found` or `nothing found`, counts
+as empty. A reading that moves or always passes (`stock`, `presale`,
+`second-vendor stock`, `lead time`, `distributor status`,
 `market introduction`, `longevity commitment`, `library type`), and a
 requirement added as not given, refute only when they fail. A check for a
 route or role the part does not take refutes nothing: compatibility for a part
@@ -524,62 +526,63 @@ confirms no figure, but its datasheet verifier's refutation of one is
 adjudicated in the same way. A part on the board that the owner holds may pass
 the stock gate on a `held quantity` check in place of `stock` and `presale`
 (rule 6; a check named `held quantity, or both stock and presale`, the owed
-list's wording up to FU-2C of round 2, is the same check); a passing held quantity that shows a reading supersedes failing live
-readings, and passing live readings a failing held quantity. A return whose
-`category` names another category counts as not returned. Only the kept part's
-rule-5 alternate gates its selection, and the alternate of a part on the board
-must be on the board. The kept part counts for a Q4 or Q8 option class in
-which the datasheet verifier confirmed it: `kept_option` when it is the
-first-ranked part after the drops, the option the re-rank gives it in the
-ranking, or its option when it is a Q alternative. A kept part given two
-different classes in these two roles counts for neither. An alternate counts
-only for the part it was checked against: an alternate several parts name is
-checked against the first of them (the first-ranked part, then the Q
-alternatives in order), and a replacement's alternate against the replacement.
-A part verified in its own right, the first-ranked part or a Q alternative,
-that is also another part's alternate keeps that verification. It holds the
-alternate role while verified, also after a refutation that did not stand,
-with its compatibility checks. A category whose chain failed is left out of
-the run's selection, so the gates read the run before it. Each assumption
-needs a confirmed question of its own, whose `for_where` and `for_quantity`
-are the assumption's location and quantity. The P1 critic rules on a marking
-by the value's index, location and quantity, and a marking it upholds with the
-same marking is unchanged. A P1 critic or re-check verdict whose reason or
-evidence reads as none is no verdict. A P1 return with no value, and a
-category whose P1 and critic name no function, leave a P1 item. Each "P1 asks"
-item of the category that no question under "Raised by P1" names in `asks`
-needs a confirmed question that names it. Without one it leaves a P1 item,
-also when the critic or the re-check rejected the question for it. A question
-under "Raised by P1" is not raised again: it asks for an assumption at its
-`for_where` and `for_quantity`. A P1 follow-up gives its items to P1 and the
-critic, and lists again each item its run did not deal with: a value its P1
-did not return, a question neither its P1 nor its critic raised and not under
-"Raised by P1" (the same words, or the same `for_where` and `for_quantity`),
-and any other item of a category whose P1 or critic returned nothing; an item
-listed again stands for the item it carries. P1 and the critic are told to
-copy an item's question word for word; an item without a `for_where` whose
-question they raise in other words is listed again. P1 and the critic of a
-follow-up are given the names the category's inventory and `selection.json`
-give its functions, and keep them. P0 counts a host with two rows, or a status
-written as not read, none, no, false, absent or not in the page body, as not
-read. A P0 row counts only at its host's endpoint: an API client's command
-with the probe, whatever environment assignments (`DIGIKEY_ENV_FILE=...`,
-`env`) and interpreter path precede it, a page client's probe URL, or with no
-probe a page on the host itself. The P7 critic checks at least one figure on
-each group page and each output under `hardware/docs/` T6 must write, each
-check naming the figure and the file under a round's records directory it
-comes from, a path ending in `.json`; text after the path, such as `:34` or `#L34`, is not part
-of it, and `record` reads the same path. Each check gives its kind: budget,
-combination or other. A budget or combination checked against any file but the
-last P5/P6 check's is superseded, and so is any figure checked against an
-earlier check's P5 return (a restarted one included), whatever its kind; every
-figure P7 lists as written needs a check of its own, a figure written on n
-lines of a file checks on n lines of it (a check of text the critic corrected
-names P7's figure text in `p7_figure` and stands for it); another figure, such as a
-run's status line, may cite an earlier check's other files. P7 and its critic
-are given the three commands, the pages that need a figure checked, and the
-path rules for group pages and figure checks that `round1.js` and `record`
-apply. The schemas ask P5, P6 and their critics to write a conflict's parts as
+list's wording up to FU-2C of round 2, is the same check); a passing held
+quantity that shows a reading supersedes failing live readings, and passing
+live readings a failing held quantity. A return whose `category` names another
+category counts as not returned. Only the kept part's rule-5 alternate gates
+its selection, and the alternate of a part on the board must be on the board.
+The kept part counts for a Q4 or Q8 option class in which the datasheet
+verifier confirmed it: `kept_option` when it is the first-ranked part after
+the drops, the option the re-rank gives it in the ranking, or its option when
+it is a Q alternative. A kept part given two different classes in these two
+roles counts for neither. An alternate counts only for the part it was checked
+against: an alternate several parts name is checked against the first of them
+(the first-ranked part, then the Q alternatives in order), and a replacement's
+alternate against the replacement. A part verified in its own right, the
+first-ranked part or a Q alternative, that is also another part's alternate
+keeps that verification. It holds the alternate role while verified, also
+after a refutation that did not stand, with its compatibility checks. A
+category whose chain failed is left out of the run's selection, so the gates
+read the run before it. Each assumption needs a confirmed question of its own,
+whose `for_where` and `for_quantity` are the assumption's location and
+quantity. The P1 critic rules on a marking by the value's index, location and
+quantity, and a marking it upholds with the same marking is unchanged. A P1
+critic or re-check verdict whose reason or evidence reads as none is no
+verdict. A P1 return with no value, and a category whose P1 and critic name no
+function, leave a P1 item. Each "P1 asks" item of the category that no
+question under "Raised by P1" names in `asks` needs a confirmed question that
+names it. Without one it leaves a P1 item, also when the critic or the
+re-check rejected the question for it. A question under "Raised by P1" is not
+raised again: it asks for an assumption at its `for_where` and `for_quantity`.
+A P1 follow-up gives its items to P1 and the critic, and lists again each item
+its run did not deal with: a value its P1 did not return, a question neither
+its P1 nor its critic raised and not under "Raised by P1" (the same words, or
+the same `for_where` and `for_quantity`), and any other item of a category
+whose P1 or critic returned nothing; an item listed again stands for the item
+it carries. P1 and the critic are told to copy an item's question word for
+word; an item without a `for_where` whose question they raise in other words
+is listed again. P1 and the critic of a follow-up are given the names the
+category's inventory and `selection.json` give its functions, and keep them.
+P0 counts a host with two rows, or a status written as not read, none, no,
+false, absent or not in the page body, as not read. A P0 row counts only at
+its host's endpoint: an API client's command with the probe, whatever
+environment assignments (`DIGIKEY_ENV_FILE=...`, `env`) and interpreter path
+precede it, a page client's probe URL, or with no probe a page on the host
+itself. The P7 critic checks at least one figure on each group page and each
+output under `hardware/docs/` T6 must write, each check naming the figure and
+the file under a round's records directory it comes from, a path ending in
+`.json`; text after the path, such as `:34` or `#L34`, is not part of it, and
+`record` reads the same path. Each check gives its kind: budget, combination
+or other. A budget or combination checked against any file but the last P5/P6
+check's is superseded, and so is any figure checked against an earlier check's
+P5 return (a restarted one included), whatever its kind; every figure P7 lists
+as written needs a check of its own, a figure written on n lines of a file
+checks on n lines of it (a check of text the critic corrected names P7's
+figure text in `p7_figure` and stands for it); another figure, such as a run's
+status line, may cite an earlier check's other files. P7 and its critic are
+given the three commands, the pages that need a figure checked, and the path
+rules for group pages and figure checks that `round1.js` and `record` apply.
+The schemas ask P5, P6 and their critics to write a conflict's parts as
 `selection.json` writes them and each category by its ID alone.
 
 `prepare` gives each run an identity, `run_id`, which the workflow returns.

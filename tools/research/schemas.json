@@ -49,7 +49,7 @@
     },
     "p3_part": {
      "type": "string",
-     "description": "the re-rank's record of a P3 candidate only: the part text of the entry of P3's it answers, copied exactly, where that entry names the part otherwise"
+     "description": "the re-rank's record of a P3 candidate only: the part text of the entry of P3's it answers, copied exactly"
     },
     "maker": {
      "type": "string",
