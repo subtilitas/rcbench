@@ -759,6 +759,9 @@ def owner_selftest():
                      "part": "SLS XTRON 3000mAh (SLSXT30002130)",
                      "status": "not verified", "reason": "stock not read"},
                     {"function": "Pack cells",
+                     "part": "sls xtron (slsxt30002130)",
+                     "status": "refuted", "reason": "lower case"},
+                    {"function": "Pack cells",
                      "part": "SLS XTRON (SLSXT30002130)",
                      "status": "verified"}]}],
             "part_refuted": {"R8": ["INA228AIDGSR"]}}})
@@ -795,7 +798,7 @@ def owner_selftest():
         pack = eff.get("R7", {}).get("Pack cells") or {}
         expect(pack.get("part") == "SLSXT30002130" and
                [u["status"] for u in pack.get("owner_fixed", {})
-                .get("unverified", [])] == ["not verified"],
+                .get("unverified", [])] == ["not verified", "refuted"],
                "a ledger part that names the input in a longer name is "
                "its reading; a verified reading is not listed")
         before = effective_selection(tmp, before=2)
@@ -831,6 +834,9 @@ def owner_selftest():
         open_t6, _ = t6_open(tmp)
         expect("R11: selections changed after FU-2P" in open_t6,
                "an owner part the check was not given is a change")
+        expect([o["category"] for o in owner_items(effective_selection(
+            tmp))] == ["R7", "R8", "R8", "R11"],
+            "owner_items orders categories by number")
         fixed["R11"].pop()
         given = owner_fixed_of({"owner_fixed": owner_items(eff)})
         expect(given.get("R8", [{}])[0] == {
@@ -870,7 +876,35 @@ def owner_selftest():
         expect(any("owner_keeps" in f
                    for f in fixed_input_fails(loose, table, cats7)),
                "owner_keeps on a row that does not say so fails")
+        bare = {**good, "R7": [{"function": "Pack cells",
+                                "part": "SLSXT30002130"}]}
+        expect(any("owner_keeps" in f
+                   for f in fixed_input_fails(bare, table, cats7)),
+               "a row that says so without owner_keeps fails")
+        # The stale-selection gate compares the upstream parts a run saw,
+        # by the owner list it was given, with today's.
+        head = git("rev-parse", "HEAD").strip()
+        rows = raised_rows(read(os.path.join(ROOT, PLAN_REL)))
+        decider = {"task": "FU", "commit": head, "followup": {
+            "phases": "P2-P4", "round": 1, "categories": ["R7"],
+            "items": []}, "summary": {"selection": {
+                "R7": [{"function": "Pack charger", "part": "BQX"}]}}}
+        changed_up = ("R7: parts of T2 or T4 changed after FU-2S "
+                      "selected its parts")
+
+        def stale_with(seq, **given):
+            put(f"{r2}/FU-2S", {**decider, "sequence": seq, **given})
+            return stale_selections(tmp, ["R7"], rows, head, ["R8"],
+                                    ["R7"])
+        expect(changed_up not in stale_with(
+            10, owner_fixed=owner_items(effective_selection(tmp))),
+            "a run given today's owner list sees no upstream change")
+        expect(changed_up in stale_with(11, owner_fixed=[]),
+               "a run not given an upstream owner input sees a change")
+        expect(changed_up not in stale_with(12),
+               "a run recorded without the list is read under today's")
         sel_rel = os.path.join(RUNS_DIR, "selection.json")
+        eff = effective_selection(tmp)
         expect(selection_changed(tmp, sel_rel, eff),
                "no committed selection.json: changed")
         nosel = ("FU-2Q", {"task": "FU", "sequence": 4, "summary": {}})
@@ -1519,8 +1553,11 @@ def open_in_category(results, categories):
 
 def owner_fixed_of(task):
     """The owner-kept fixed inputs a recorded run was given, as
-    categories.json writes fixed inputs: none for a run recorded before
-    runs carried them."""
+    categories.json writes fixed inputs. None for a run recorded before
+    runs carried the list: it is read under today's list, as its plan's
+    Scope table already named the inputs."""
+    if "owner_fixed" not in task:
+        return None
     fixed = {}
     for x in task.get("owner_fixed") or []:
         fixed.setdefault(x["category"], []).append(

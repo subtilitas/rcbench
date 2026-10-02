@@ -372,7 +372,9 @@ hold the fixed inputs the owner keeps that no run verified (`owner_fixed`),
 and every prompt names them. The run's result carries the list, and `record`
 refuses an output whose list differs from the prepared one. `t6_open` rebuilds
 the selection the last check saw from the list that check was given, and the
-stale-selection gate rebuilds the upstream parts a run saw the same way. `session.py check`
+stale-selection gate rebuilds the upstream parts a run saw the same way. A run
+recorded without the list is read under today's, as its plan's Scope table
+named the inputs.`session.py check`
 confirms the Blocking and Sourcing tables still read as the gates expect, that
 the Outputs table has a row for `tools/jlc_stock.py`, and that `p1_asks` names
 exactly the rows that carry "P1 asks", each with distinct names, and that
@@ -433,7 +435,7 @@ each `orderable` number, where given, starting with its part.
 - it has no requirement, or names one requirement twice;
 - it serves a fixed input of the Scope table (`categories.json`
   `fixed_inputs`: the function by the table's input name, the input by a part
-  number that starts with the table's, INA238AIDGSR for INA238), and its
+  number that starts with the table's, INA228AIDGSR for INA228), and its
   first-ranked part after the drops is another part, or the input's refutation
   stands. The input is reported to the owner (role `owner`), not re-selected:
   no replacement pair runs, and the function keeps no other part, also none
@@ -619,10 +621,11 @@ category without naming it removes it. A fixed input of the Scope table the
 owner keeps whatever the runs return (`owner_keeps` in `categories.json`
 `fixed_inputs`) is its function's part. Where no run keeps a part that starts
 with the input's number, the function keeps the input's `orderable` number, or
-the input itself, with run `owner`. Its `owner_fixed` names the run that left
-the function open, the part it replaces and each ledger reading that did not
-verify it. Any other fixed input no run verifies stays open, for the owner to
-decide. `record` commits only the run's directory and that file.
+the input itself, with run `owner`. Its `owner_fixed` names the run that last
+decided the function (empty when no run named it), the part that run kept or
+did not requalify, and each ledger reading that did not verify the input. Any
+other fixed input no run verifies stays open, for the owner to decide.
+`record` commits only the run's directory and that file.
 
 After a T6 that was not stopped `record` also commits the pages P7 wrote. It
 refuses a changed file outside the files P7 declared and its critic reviewed
@@ -650,10 +653,10 @@ as the arguments say: each conflict and gap the checks leave as not known,
 each item accepted open as not verified or not known, and each upheld
 assumption as assumed; the `Parts.md` line and the page of its category's
 group for each verified part `selection.json` keeps (the kept part, its
-alternate, each Q alternative and its alternate) and each part the owner
-keeps, a part not verified being an item accepted open; the line that states
-each fixed input the owner keeps as the owner's, with each check no run
-confirmed as not known; and a verdict with its reason that `tools/jlc_stock.py`
+alternate, each Q alternative and its alternate), a part a run did not verify
+being an item accepted open; the same for each part the owner keeps, and the
+line that states it as the owner's, with each check no run confirmed as not
+known; and a verdict with its reason that `tools/jlc_stock.py`
 does what each sentence of its Outputs row states. A stopped T6 leaves the
 output paths as they were. A T6 that `record` refuses, for any reason, an
 unreadable output included, does too, and keeps what P7 changed in a stash

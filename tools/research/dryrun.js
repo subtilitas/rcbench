@@ -621,13 +621,13 @@ async function main() {
   r = await runTask('T6', { ...pack, failCheck: 'jlc_stock', failOutput: notListed })
   check(!r.result.summary.stopped, `T6: an owner-fixed pack Digi-Key does not list, excepted and marked, finishes it: ${(r.result.summary.reasons || []).join()}`)
   check(JSON.stringify(r.result.owner_fixed) === JSON.stringify(packOwner), 'T6: the result carries the owner-fixed parts it was given')
-  check(r.prompts.find(x => x.label === 'P7').prompt.includes('These fixed inputs of the Scope table are their functions\' parts, kept by the owner although no run verified them') && r.prompts.find(x => x.label === 'P7').prompt.includes('R7 Pack cells: SLSXT30002130'), 'T6: the prompts name the owner-fixed parts')
+  check(r.prompts.find(x => x.label === 'P7').prompt.includes('These fixed inputs of the Scope table are their functions\' parts, kept by the owner although no run verified them; where that file leaves one open or names another part, this list holds') && r.prompts.find(x => x.label === 'P7').prompt.includes('R7 Pack cells: SLSXT30002130'), 'T6: the prompts name the owner-fixed parts')
   check(r.prompts.find(x => x.label === 'P7-critic').prompt.includes('"state":"fixed by the owner; each check no run confirmed stated as not known","item":"R7 Pack cells: SLSXT30002130"'), 'T6: the critic marks the owner-fixed part as the owner\'s')
   const critP = r.prompts.find(x => x.label === 'P7-critic').prompt
   check(critP.indexOf('fixed by the owner; each check') < critP.indexOf("the owner's stock exception, with its reason"), 'T6: the stock exceptions come last among the marks')
   r = await runTask('T6', { ...pack, ownerFixed: [], marked: [{ index: 0, file: 'hardware/docs/Parts.md', line: 5 }], failCheck: 'jlc_stock', failOutput: notListed })
   check(r.result.summary.stopped === true, 'T6: a not-listed part that is not owner-fixed fails the stock check')
-  for (const out of ['[FAIL] SLSXT30002130: not checked, no Digi-Key product carries SLSXT3000\n1 problem(s)', '[FAIL] SLSXT30002130: not checked, Digi-Key search failed, HTTP 500\n1 problem(s)', '[FAIL] SLSXT30002130: not checked, no Digi-Key credentials\n1 problem(s)']) {
+  for (const out of ['[FAIL] SLSXT30002130: not checked, no Digi-Key product carries SLSXT3000\n1 problem(s)', '[FAIL] SLSXT30002130: not checked, Digi-Key search failed, HTTP 500\n1 problem(s)', '[FAIL] SLSXT30002130: not checked, no Digi-Key credentials\n1 problem(s)', '[FAIL] SLSXT30002130: not checked, Digi-Key lookup failed for SLSXT30002130\n1 problem(s)', '[FAIL] SLSXT30002130: not checked, no Digi-Key product carries SLSXT30002130, HTTP 500\n1 problem(s)']) {
     r = await runTask('T6', { ...pack, failCheck: 'jlc_stock', failOutput: out })
     check(r.result.summary.stopped === true, `T6: "${out.split('\n')[0]}" is no excepted line`)
   }
